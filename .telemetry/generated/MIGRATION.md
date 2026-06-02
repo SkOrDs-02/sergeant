@@ -12,13 +12,13 @@ This migration implements **Phase 1 of [delta.md](../delta.md)**: pair every Pos
 
 ## Files to create
 
-| Draft | Target path |
-|-------|-------------|
-| [`apps-web-identity.ts`](apps-web-identity.ts) | `apps/web/src/core/observability/identity.ts` |
+| Draft                                                    | Target path                                        |
+| -------------------------------------------------------- | -------------------------------------------------- |
+| [`apps-web-identity.ts`](apps-web-identity.ts)           | `apps/web/src/core/observability/identity.ts`      |
 | [`apps-web-identity.test.ts`](apps-web-identity.test.ts) | `apps/web/src/core/observability/identity.test.ts` |
-| [`apps-mobile-sentry.ts`](apps-mobile-sentry.ts) | `apps/mobile/src/lib/observability/sentry.ts` |
-| [`apps-mobile-identity.ts`](apps-mobile-identity.ts) | `apps/mobile/src/features/analytics/identity.ts` |
-| [`apps-server-identity.ts`](apps-server-identity.ts) | `apps/server/src/lib/identity.ts` |
+| [`apps-mobile-sentry.ts`](apps-mobile-sentry.ts)         | `apps/mobile/src/lib/observability/sentry.ts`      |
+| [`apps-mobile-identity.ts`](apps-mobile-identity.ts)     | `apps/mobile/src/features/analytics/identity.ts`   |
+| [`apps-server-identity.ts`](apps-server-identity.ts)     | `apps/server/src/lib/identity.ts`                  |
 
 ## Files to modify
 

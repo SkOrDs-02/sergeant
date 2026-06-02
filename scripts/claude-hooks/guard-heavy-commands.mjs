@@ -30,7 +30,10 @@ const stripped = command
   .replace(/'(?:[^'\\]|\\.)*'/g, "''")
   .replace(/<<-?\s*'?(\w+)'?[\s\S]*?\1/g, "");
 
-const segments = stripped.split(/&&|\|\||;|\|/).map((s) => s.trim()).filter(Boolean);
+const segments = stripped
+  .split(/&&|\|\||;|\|/)
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 const HEAVY = [
   { pattern: /^pnpm(\s+--filter\s+\S+)?\s+check(\s|$)/, label: "pnpm check" },
@@ -60,7 +63,9 @@ for (const seg of segments) {
 if (!hit) process.exit(0);
 
 if (process.env.SERGEANT_HEAVY_OK === "1") {
-  process.stderr.write(`Heavy command allowed via SERGEANT_HEAVY_OK: ${hit.label}\n`);
+  process.stderr.write(
+    `Heavy command allowed via SERGEANT_HEAVY_OK: ${hit.label}\n`,
+  );
   process.exit(0);
 }
 
@@ -68,6 +73,6 @@ process.stderr.write(
   `BLOCKED heavy command "${hit.label}" — slow-hardware policy (see CLAUDE.md § Local execution policy).\n` +
     `CI runs this on push. If the user explicitly asked you to run it locally,\n` +
     `prefix the command with: SERGEANT_HEAVY_OK=1\n` +
-    `Or suggest a cheaper alternative (pnpm typecheck, scoped --filter ... typecheck).\n`,
+    `Or suggest a cheaper alternative (pnpm typecheck, scoped --filter <pkg> typecheck).\n`,
 );
 process.exit(2);

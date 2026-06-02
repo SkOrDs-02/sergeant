@@ -66,7 +66,10 @@ export function createDebugWindowInternalRouter(): Router {
   router.get(
     "/api/internal/debug-window/status",
     asyncHandler(async (_req, res) => {
-      res.json({ level: currentLogLevel(), remainingMs: debugWindowRemainingMs() });
+      res.json({
+        level: currentLogLevel(),
+        remainingMs: debugWindowRemainingMs(),
+      });
     }),
   );
 

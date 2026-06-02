@@ -48,7 +48,9 @@ const mockedPrefs = useNutritionPrefs as jest.MockedFunction<
 const mockedPantries = useNutritionPantries as jest.MockedFunction<
   typeof useNutritionPantries
 >;
-const mockedLog = useNutritionLog as jest.MockedFunction<typeof useNutritionLog>;
+const mockedLog = useNutritionLog as jest.MockedFunction<
+  typeof useNutritionLog
+>;
 
 const mockAddMeal = jest.fn();
 
@@ -69,7 +71,11 @@ interface FetchCall {
 }
 
 function createTestApiClient(
-  responder: (call: FetchCall) => { ok: boolean; status: number; body: unknown },
+  responder: (call: FetchCall) => {
+    ok: boolean;
+    status: number;
+    body: unknown;
+  },
 ): { client: ReturnType<typeof createApiClient>; calls: FetchCall[] } {
   const calls: FetchCall[] = [];
   const client = createApiClient({
@@ -198,7 +204,9 @@ describe("RecipeRecommender", () => {
       if (calls.length === 0) throw new Error("no calls yet");
     });
 
-    const call = calls.find((c) => c.url.includes("nutrition/recommend-recipes"));
+    const call = calls.find((c) =>
+      c.url.includes("nutrition/recommend-recipes"),
+    );
     expect(call).toBeDefined();
     const body = call!.body as {
       pantry?: unknown[];

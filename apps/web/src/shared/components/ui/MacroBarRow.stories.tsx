@@ -26,9 +26,21 @@ export const Default: Story = {
     <Card module="nutrition" prominence="hero" radius="xl">
       <MacroBarRow
         macros={[
-          { label: "Білки", value: 92, max: 140, accent: "nutrition", unit: "г" },
+          {
+            label: "Білки",
+            value: 92,
+            max: 140,
+            accent: "nutrition",
+            unit: "г",
+          },
           { label: "Жири", value: 48, max: 70, accent: "warning", unit: "г" },
-          { label: "Вугл.", value: 210, max: 280, accent: "routine", unit: "г" },
+          {
+            label: "Вугл.",
+            value: 210,
+            max: 280,
+            accent: "routine",
+            unit: "г",
+          },
         ]}
       />
     </Card>
@@ -41,9 +53,21 @@ export const OverGoal: Story = {
     <Card module="nutrition" prominence="hero" radius="xl">
       <MacroBarRow
         macros={[
-          { label: "Білки", value: 165, max: 140, accent: "nutrition", unit: "г" },
+          {
+            label: "Білки",
+            value: 165,
+            max: 140,
+            accent: "nutrition",
+            unit: "г",
+          },
           { label: "Жири", value: 85, max: 70, accent: "warning", unit: "г" },
-          { label: "Вугл.", value: 310, max: 280, accent: "routine", unit: "г" },
+          {
+            label: "Вугл.",
+            value: 310,
+            max: 280,
+            accent: "routine",
+            unit: "г",
+          },
         ]}
       />
     </Card>

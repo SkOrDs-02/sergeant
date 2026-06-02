@@ -17,7 +17,4 @@ export type { PaywallModalProps, PaywallSurface } from "./PaywallModal";
 export { TrialBanner } from "./TrialBanner";
 export type { TrialBannerProps } from "./TrialBanner";
 export { useFeatureGate } from "./useFeatureGate";
-export type {
-  PremiumFeatureId,
-  UseFeatureGateResult,
-} from "./useFeatureGate";
+export type { PremiumFeatureId, UseFeatureGateResult } from "./useFeatureGate";

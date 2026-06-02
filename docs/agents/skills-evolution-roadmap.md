@@ -344,7 +344,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ### PR 10 — `sergeant-security-audit` skill (≈1 день, M) 🔄 (in progress: claude/review-ai-agents-templates-JQOrZ, 2026-05-16)
 
-**Проблема.** Sergeant має Hard Rules #20 (PAT safety), #21 (Pino redaction), #22 (skill security scan) і playbook `security-pen-test-checklist.md`, але немає specialist-skill-у, що веде агента через security review. Агент без цього skill-у системно пропускає Sergeant-specific вектори: перевірку `REDACT_KEY_NAMES` у `@sergeant/shared/lib/pii.ts`, Drizzle `sql\`...\`` injection, `pnpm audit` (не `npm audit`) для workspace-монорепо.
+**Проблема.** Sergeant має Hard Rules #20 (PAT safety), #21 (Pino redaction), #22 (skill security scan) і playbook `security-pen-test-checklist.md`, але немає specialist-skill-у, що веде агента через security review. Агент без цього skill-у системно пропускає Sergeant-specific вектори: перевірку `REDACT_KEY_NAMES` у `@sergeant/shared/lib/pii.ts`, Drizzle `sql\`...\``injection,`pnpm audit`(не`npm audit`) для workspace-монорепо.
 
 **Скоуп.**
 
@@ -402,17 +402,17 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ## Priority matrix
 
-| #   | PR                                | Effort | Value-per-hour | Dependencies        | Status   |
-| --- | --------------------------------- | ------ | -------------- | ------------------- | -------- |
-| 1   | Pushy descriptions audit          | S      | High           | none                | ✅ #2374 |
-| 2   | Verification gate in review skill | S      | **Highest**    | none                | ✅ #2373 |
-| 3   | Postgres references               | M      | High           | (no hard dep)       |          |
+| #   | PR                                | Effort | Value-per-hour | Dependencies        | Status         |
+| --- | --------------------------------- | ------ | -------------- | ------------------- | -------------- |
+| 1   | Pushy descriptions audit          | S      | High           | none                | ✅ #2374       |
+| 2   | Verification gate in review skill | S      | **Highest**    | none                | ✅ #2373       |
+| 3   | Postgres references               | M      | High           | (no hard dep)       |                |
 | 4   | E2E testing skill                 | M      | Medium         | (no hard dep)       | 🔄 in progress |
-| 5   | Security body-scan in lint:skills | M      | High           | none                | ✅ #2378 |
-| 6   | References folder convention      | S      | Medium         | depends on PR 3 / 4 |          |
-| 7   | Skill evals (substring)           | L      | Medium-High    | depends on PR 1     |          |
-| 8   | Real-LLM eval runner              | L      | Medium         | depends on PR 7     |          |
-| 9   | PR template cross-link            | S      | High           | depends on PR 2     | ✅ #2375 |
+| 5   | Security body-scan in lint:skills | M      | High           | none                | ✅ #2378       |
+| 6   | References folder convention      | S      | Medium         | depends on PR 3 / 4 |                |
+| 7   | Skill evals (substring)           | L      | Medium-High    | depends on PR 1     |                |
+| 8   | Real-LLM eval runner              | L      | Medium         | depends on PR 7     |                |
+| 9   | PR template cross-link            | S      | High           | depends on PR 2     | ✅ #2375       |
 | 10  | `sergeant-security-audit` skill   | M      | High           | none                | 🔄 in progress |
 | 11  | `sergeant-tech-debt` skill        | M      | High           | none                | 🔄 in progress |
 

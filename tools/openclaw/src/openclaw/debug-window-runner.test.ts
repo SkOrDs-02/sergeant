@@ -76,7 +76,8 @@ describe("executeDebugWindowEnable — happy path", () => {
     expect(result.ok).toBe(true);
     expect(result.reply).toContain("debug");
     expect(fetcher.enable).toHaveBeenCalledTimes(1);
-    const call = (fetcher.enable as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {
+    const call = (fetcher.enable as ReturnType<typeof vi.fn>).mock
+      .calls[0]?.[0] as {
       durationMs: number;
       requestedBy: string;
     };
@@ -93,7 +94,8 @@ describe("executeDebugWindowEnable — happy path", () => {
       durationMs: 5 * 60_000,
       fetcher,
     });
-    const call = (fetcher.enable as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as {
+    const call = (fetcher.enable as ReturnType<typeof vi.fn>).mock
+      .calls[0]?.[0] as {
       durationMs: number;
     };
     expect(call.durationMs).toBe(5 * 60_000);

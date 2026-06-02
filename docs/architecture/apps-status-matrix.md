@@ -1,6 +1,6 @@
 # Status-матриця apps і packages
 
-> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-17.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-17.
 > **Status:** Active
 
 Одна сторінка — хто живий, хто стабілізується, хто в міграції, хто legacy.
@@ -30,9 +30,9 @@
 
 ### Internal tooling (non-app surfaces under `tools/`)
 
-| Package                  | Path                   | Status   | Опис                                                                                                            | Глибше                                                                                                  |
-| ------------------------ | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `tsconfig-guard`         | `tools/tsconfig-guard` | `active` | Strict-family TypeScript flag guard (Hard Rule #19). Allowlist with expiry/owner; gates `pnpm lint`.            | [`docs/architecture/module-ownership.md` (Ops surfaces)](module-ownership.md)                            |
+| Package          | Path                   | Status   | Опис                                                                                                 | Глибше                                                                        |
+| ---------------- | ---------------------- | -------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `tsconfig-guard` | `tools/tsconfig-guard` | `active` | Strict-family TypeScript flag guard (Hard Rule #19). Allowlist with expiry/owner; gates `pnpm lint`. | [`docs/architecture/module-ownership.md` (Ops surfaces)](module-ownership.md) |
 
 ---
 
@@ -78,7 +78,7 @@
 | `@sergeant/config`              | `packages/config`                        | `stabilize` | Спільний tsconfig/eslint-base. Апи інгерять через `extends`.                                                                                                                                                                         | [AGENTS.md rule #5](../../AGENTS.md)                                                                                         |
 | `@sergeant/db-schema`           | `packages/db-schema`                     | `active`    | Drizzle ORM-схеми (Postgres + SQLite) і shared migration runner для `apps/server`. SQLite-схема включає `sync_op_outbox` + per-domain tables для v2 sync. Зміни схеми завжди в парі з SQL-міграцією у `apps/server/src/migrations/`. | [`packages/db-schema/src`](../../packages/db-schema/src), [AGENTS.md rule #4](../../AGENTS.md)                               |
 | `eslint-plugin-sergeant-design` | `packages/eslint-plugin-sergeant-design` | `active`    | Custom ESLint rules (`no-raw-local-storage`, `rq-keys-only-from-factory`, `no-bigint-string`, `no-raw-req-in-pino-log` та ін.).                                                                                                      | [AGENTS.md rules](../../AGENTS.md), [`packages/eslint-plugin-sergeant-design`](../../packages/eslint-plugin-sergeant-design) |
-| `@sergeant/openclaw-plugin`     | `packages/openclaw-plugin`               | `active`    | Gateway-only плагін, який живить OpenClaw Gateway-сервіс. **Не споживається** `apps/web` чи `apps/mobile`.                                                                                                                            | [`docs/architecture/service-catalog.md`](service-catalog.md)                                                                  |
+| `@sergeant/openclaw-plugin`     | `packages/openclaw-plugin`               | `active`    | Gateway-only плагін, який живить OpenClaw Gateway-сервіс. **Не споживається** `apps/web` чи `apps/mobile`.                                                                                                                           | [`docs/architecture/service-catalog.md`](service-catalog.md)                                                                 |
 
 ---
 

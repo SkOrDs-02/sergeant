@@ -4,13 +4,13 @@ Mockups were moved from `handoff-package/` to the unified `mockups/product/` tre
 
 ## Mockup locations
 
-| Screen | New path |
-|---|---|
+| Screen                | New path                                                                                            |
+| --------------------- | --------------------------------------------------------------------------------------------------- |
 | Finyk Overview Mobile | [`mockups/product/finyk/overview-mobile.html`](../../../mockups/product/finyk/overview-mobile.html) |
-| Fizruk Dashboard | [`mockups/product/fizruk/dashboard.html`](../../../mockups/product/fizruk/dashboard.html) |
-| Routine Today | [`mockups/product/routine/today.html`](../../../mockups/product/routine/today.html) |
-| Nutrition Today | [`mockups/product/nutrition/today.html`](../../../mockups/product/nutrition/today.html) |
-| Product index | [`mockups/product/index.html`](../../../mockups/product/index.html) |
+| Fizruk Dashboard      | [`mockups/product/fizruk/dashboard.html`](../../../mockups/product/fizruk/dashboard.html)           |
+| Routine Today         | [`mockups/product/routine/today.html`](../../../mockups/product/routine/today.html)                 |
+| Nutrition Today       | [`mockups/product/nutrition/today.html`](../../../mockups/product/nutrition/today.html)             |
+| Product index         | [`mockups/product/index.html`](../../../mockups/product/index.html)                                 |
 
 ## Rationale docs (stay in `handoff-package/`)
 

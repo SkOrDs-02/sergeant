@@ -33,9 +33,9 @@ export type ToolCallEnvelope = z.infer<typeof ToolCallEnvelopeSchema>;
 
 export const ToolCallsArraySchema = z.array(ToolCallEnvelopeSchema);
 
-export function parseToolCalls(value: unknown):
-  | { ok: true; value: ToolCallEnvelope[] }
-  | { ok: false; issues: string[] } {
+export function parseToolCalls(
+  value: unknown,
+): { ok: true; value: ToolCallEnvelope[] } | { ok: false; issues: string[] } {
   const parsed = ToolCallsArraySchema.safeParse(value);
   if (parsed.success) return { ok: true, value: parsed.data };
   const issues = parsed.error.issues

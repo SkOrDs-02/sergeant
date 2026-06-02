@@ -16,10 +16,7 @@ import { useLocale } from "@shared/i18n/useLocale";
 import { generateInsights } from "../lib/insightsEngine";
 import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
 import { PaywallModal, useFeatureGate } from "../billing";
-import {
-  getPeriodRange,
-  type Period,
-} from "./hubReports.aggregation";
+import { getPeriodRange, type Period } from "./hubReports.aggregation";
 
 // ── Lazy card chunks ──────────────────────────────────────────────────
 

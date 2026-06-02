@@ -6,81 +6,374 @@
     <title>Sergeant · Push-сповіщення — на екрані блокування</title>
     <link rel="stylesheet" href="../../_shared/tokens.css" />
     <style>
-      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html,body { font-family: var(--font-sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; line-height: 1.5; }
-      a { color: inherit; text-decoration: none; }
-      code,.mono { font-family: var(--font-mono); }
-      .serif { font-family: var(--font-serif); }
-      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .serif {
+        font-family: var(--font-serif);
+      }
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 32px 96px;
+      }
 
-      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
-      .crumb { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand); margin-bottom: 14px; display: flex; gap: 8px; align-items: center; }
-      .crumb a { color: var(--muted); }
-      .crumb .sep { color: var(--subtle); }
-      header.top h1 { font-size: clamp(36px, 5vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px; max-width: 920px; text-wrap: balance; }
-      header.top h1 em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--muted); }
-      header.top .lede { font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6; }
-      .meta-row { margin-top: 24px; display: flex; gap: 28px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; }
-      .meta-row span strong { color: var(--text); font-weight: 600; margin-left: 6px; }
+      header.top {
+        margin-bottom: 56px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
+      }
+      .crumb {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--brand);
+        margin-bottom: 14px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .crumb a {
+        color: var(--muted);
+      }
+      .crumb .sep {
+        color: var(--subtle);
+      }
+      header.top h1 {
+        font-size: clamp(36px, 5vw, 56px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        margin-bottom: 18px;
+        max-width: 920px;
+        text-wrap: balance;
+      }
+      header.top h1 em {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      header.top .lede {
+        font-size: 17px;
+        color: var(--muted);
+        max-width: 740px;
+        line-height: 1.6;
+      }
+      .meta-row {
+        margin-top: 24px;
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .meta-row span strong {
+        color: var(--text);
+        font-weight: 600;
+        margin-left: 6px;
+      }
 
-      .legend { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-xl); margin-bottom: 64px; overflow: hidden; }
-      .legend-head { padding: 18px 24px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; }
-      .legend-head h2 { font-size: 14px; font-weight: 800; letter-spacing: -0.005em; }
-      .legend-head .src { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
-      .legend-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); }
-      .legend-cell { background: var(--panel); padding: 22px 24px; }
-      .legend-cell .badge { font-family: var(--font-mono); font-weight: 800; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: var(--r-sm); display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-      .legend-cell .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-      .legend-cell.now .badge { color: var(--routine); background: var(--routine-soft); }
-      .legend-cell.plan .badge { color: var(--finyk-dark); background: var(--finyk-soft); }
-      .legend-cell.rec .badge { color: var(--fizruk-dark); background: var(--fizruk-soft); }
-      .legend-cell h3 { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 6px; }
-      .legend-cell p { font-size: 13px; color: var(--muted); line-height: 1.55; }
-      .legend-cell .when { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.1em; }
+      .legend {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        margin-bottom: 64px;
+        overflow: hidden;
+      }
+      .legend-head {
+        padding: 18px 24px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .legend-head h2 {
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: -0.005em;
+      }
+      .legend-head .src {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .legend-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--border);
+      }
+      .legend-cell {
+        background: var(--panel);
+        padding: 22px 24px;
+      }
+      .legend-cell .badge {
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: var(--r-sm);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .legend-cell .badge .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .legend-cell.now .badge {
+        color: var(--routine);
+        background: var(--routine-soft);
+      }
+      .legend-cell.plan .badge {
+        color: var(--finyk-dark);
+        background: var(--finyk-soft);
+      }
+      .legend-cell.rec .badge {
+        color: var(--fizruk-dark);
+        background: var(--fizruk-soft);
+      }
+      .legend-cell h3 {
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        margin-bottom: 6px;
+      }
+      .legend-cell p {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .legend-cell .when {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
 
-      section { margin-bottom: 72px; }
-      .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-      .section-head .sn { font-family: var(--font-mono); font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--brand); padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm); }
-      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
-      .section-head .event { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; }
-      .section-head .event strong { color: var(--text); }
-      .section-intro { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 740px; margin-bottom: 24px; }
+      section {
+        margin-bottom: 72px;
+      }
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .section-head .sn {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--brand);
+        padding: 3px 9px;
+        background: var(--brand-soft);
+        border-radius: var(--r-sm);
+      }
+      .section-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.022em;
+      }
+      .section-head .event {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .section-head .event strong {
+        color: var(--text);
+      }
+      .section-intro {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 740px;
+        margin-bottom: 24px;
+      }
 
-      .state-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; }
-      .state-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; border-left-width: 3px; }
-      .state-card.now { border-left-color: var(--routine); }
-      .state-card.plan { border-left-color: var(--finyk-dark); }
-      .state-card.rec { border-left-color: var(--fizruk-dark); }
-      .state-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-      .state-tag { font-family: var(--font-mono); font-weight: 800; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: var(--r-sm); display: inline-flex; gap: 6px; align-items: center; }
-      .state-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-      .state-card.now .state-tag { color: var(--routine); background: var(--routine-soft); }
-      .state-card.plan .state-tag { color: var(--finyk-dark); background: var(--finyk-soft); }
-      .state-card.rec .state-tag { color: var(--fizruk-dark); background: var(--fizruk-soft); }
-      .state-title { font-size: 13px; font-weight: 800; letter-spacing: -0.005em; }
-      .state-ref { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--subtle); white-space: nowrap; }
+      .state-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+      .state-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 16px 18px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        border-left-width: 3px;
+      }
+      .state-card.now {
+        border-left-color: var(--routine);
+      }
+      .state-card.plan {
+        border-left-color: var(--finyk-dark);
+      }
+      .state-card.rec {
+        border-left-color: var(--fizruk-dark);
+      }
+      .state-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .state-tag {
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: var(--r-sm);
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .state-tag .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .state-card.now .state-tag {
+        color: var(--routine);
+        background: var(--routine-soft);
+      }
+      .state-card.plan .state-tag {
+        color: var(--finyk-dark);
+        background: var(--finyk-soft);
+      }
+      .state-card.rec .state-tag {
+        color: var(--fizruk-dark);
+        background: var(--fizruk-soft);
+      }
+      .state-title {
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: -0.005em;
+      }
+      .state-ref {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--subtle);
+        white-space: nowrap;
+      }
 
       /* lock screen */
       .lock {
-        width: 100%; max-width: 280px; margin: 0 auto;
+        width: 100%;
+        max-width: 280px;
+        margin: 0 auto;
         aspect-ratio: 9 / 19.5;
         border-radius: 34px;
-        position: relative; overflow: hidden;
+        position: relative;
+        overflow: hidden;
         color: #f5f0eb;
-        box-shadow: 0 12px 28px rgba(28,25,23,0.2);
+        box-shadow: 0 12px 28px rgba(28, 25, 23, 0.2);
         background:
-          radial-gradient(circle at 30% 20%, rgba(16,185,129,0.18) 0%, transparent 50%),
-          radial-gradient(circle at 80% 70%, rgba(34,211,238,0.16) 0%, transparent 50%),
+          radial-gradient(
+            circle at 30% 20%,
+            rgba(16, 185, 129, 0.18) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 70%,
+            rgba(34, 211, 238, 0.16) 0%,
+            transparent 50%
+          ),
           linear-gradient(160deg, #1a1614 0%, #0a0a09 100%);
         border: 6px solid #0a0a09;
       }
-      .lock-island { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 32%; height: 16px; background: #0a0a09; border-radius: 999px; z-index: 5; }
-      .lock-screen { position: absolute; inset: 0; padding: 32px 12px 14px; display: flex; flex-direction: column; }
-      .lock-time { text-align: center; font-size: 36px; font-weight: 200; letter-spacing: -0.04em; line-height: 1.05; margin-bottom: 2px; font-feature-settings: "tnum"; }
-      .lock-date { text-align: center; font-size: 11px; font-weight: 600; color: rgba(245,240,235,0.85); margin-bottom: 16px; }
-      .notif-stack { display: flex; flex-direction: column; gap: 4px; }
+      .lock-island {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 32%;
+        height: 16px;
+        background: #0a0a09;
+        border-radius: 999px;
+        z-index: 5;
+      }
+      .lock-screen {
+        position: absolute;
+        inset: 0;
+        padding: 32px 12px 14px;
+        display: flex;
+        flex-direction: column;
+      }
+      .lock-time {
+        text-align: center;
+        font-size: 36px;
+        font-weight: 200;
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+        margin-bottom: 2px;
+        font-feature-settings: "tnum";
+      }
+      .lock-date {
+        text-align: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: rgba(245, 240, 235, 0.85);
+        margin-bottom: 16px;
+      }
+      .notif-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
       .notif {
-        background: rgba(40,38,36,0.7);
+        background: rgba(40, 38, 36, 0.7);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-radius: 14px;
@@ -88,106 +381,317 @@
         font-size: 9px;
         line-height: 1.4;
       }
-      .notif .nrow1 { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-      .notif .app-icon { width: 16px; height: 16px; border-radius: 4px; background: var(--finyk); display: grid; place-items: center; color: #0a0a09; font-weight: 800; font-size: 9px; flex-shrink: 0; }
-      .notif .app-name { font-size: 8px; font-weight: 700; color: rgba(245,240,235,0.6); text-transform: uppercase; letter-spacing: 0.06em; flex: 1; }
-      .notif .ago { font-size: 8px; color: rgba(245,240,235,0.45); }
-      .notif .title-l { font-weight: 700; color: #f5f0eb; font-size: 9.5px; margin-bottom: 1px; }
-      .notif .body-l { color: rgba(245,240,235,0.75); font-size: 9px; line-height: 1.4; }
-      .notif .body-l b { color: #f5f0eb; }
-      .notif.stacked-2 { margin-top: -10px; transform: scale(0.96); opacity: 0.6; }
-      .notif.stacked-3 { margin-top: -14px; transform: scale(0.92); opacity: 0.3; }
+      .notif .nrow1 {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 3px;
+      }
+      .notif .app-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        background: var(--finyk);
+        display: grid;
+        place-items: center;
+        color: #0a0a09;
+        font-weight: 800;
+        font-size: 9px;
+        flex-shrink: 0;
+      }
+      .notif .app-name {
+        font-size: 8px;
+        font-weight: 700;
+        color: rgba(245, 240, 235, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        flex: 1;
+      }
+      .notif .ago {
+        font-size: 8px;
+        color: rgba(245, 240, 235, 0.45);
+      }
+      .notif .title-l {
+        font-weight: 700;
+        color: #f5f0eb;
+        font-size: 9.5px;
+        margin-bottom: 1px;
+      }
+      .notif .body-l {
+        color: rgba(245, 240, 235, 0.75);
+        font-size: 9px;
+        line-height: 1.4;
+      }
+      .notif .body-l b {
+        color: #f5f0eb;
+      }
+      .notif.stacked-2 {
+        margin-top: -10px;
+        transform: scale(0.96);
+        opacity: 0.6;
+      }
+      .notif.stacked-3 {
+        margin-top: -14px;
+        transform: scale(0.92);
+        opacity: 0.3;
+      }
 
       /* expanded rich notification */
-      .notif.rich .ext { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08); }
+      .notif.rich .ext {
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
       .notif.rich .stats {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 6px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        margin-bottom: 6px;
       }
       .notif.rich .stat {
-        background: rgba(255,255,255,0.04);
+        background: rgba(255, 255, 255, 0.04);
         border-radius: 6px;
         padding: 5px 7px;
       }
-      .notif.rich .stat b { display: block; font-size: 11px; font-family: var(--font-mono); letter-spacing: -0.02em; color: #f5f0eb; }
-      .notif.rich .stat span { font-size: 7px; color: rgba(245,240,235,0.5); text-transform: uppercase; letter-spacing: 0.08em; }
+      .notif.rich .stat b {
+        display: block;
+        font-size: 11px;
+        font-family: var(--font-mono);
+        letter-spacing: -0.02em;
+        color: #f5f0eb;
+      }
+      .notif.rich .stat span {
+        font-size: 7px;
+        color: rgba(245, 240, 235, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
       .notif.rich .actions {
-        display: flex; gap: 4px;
+        display: flex;
+        gap: 4px;
       }
       .notif.rich .qa {
         flex: 1;
-        background: rgba(255,255,255,0.06);
+        background: rgba(255, 255, 255, 0.06);
         border-radius: 6px;
         padding: 5px 7px;
-        font-size: 8.5px; font-weight: 600;
+        font-size: 8.5px;
+        font-weight: 600;
         text-align: center;
-        color: rgba(245,240,235,0.9);
+        color: rgba(245, 240, 235, 0.9);
       }
-      .notif.rich .qa.primary { background: var(--finyk); color: #0a0a09; }
+      .notif.rich .qa.primary {
+        background: var(--finyk);
+        color: #0a0a09;
+      }
 
-      .notif.finyk .app-icon { background: var(--finyk); }
-      .notif.fizruk .app-icon { background: var(--fizruk); }
-      .notif.routine .app-icon { background: var(--routine); }
-      .notif.nutrition .app-icon { background: var(--nutrition); }
-      .notif.fizruk .app-name { color: rgba(34,211,238,0.75); }
-      .notif.routine .app-name { color: rgba(249,112,102,0.75); }
-      .notif.nutrition .app-name { color: rgba(146,204,23,0.75); }
-      .notif.cross { border: 1px solid rgba(34,211,238,0.18); }
-      .notif.cross .src-row { display: flex; gap: 3px; margin-top: 4px; }
+      .notif.finyk .app-icon {
+        background: var(--finyk);
+      }
+      .notif.fizruk .app-icon {
+        background: var(--fizruk);
+      }
+      .notif.routine .app-icon {
+        background: var(--routine);
+      }
+      .notif.nutrition .app-icon {
+        background: var(--nutrition);
+      }
+      .notif.fizruk .app-name {
+        color: rgba(34, 211, 238, 0.75);
+      }
+      .notif.routine .app-name {
+        color: rgba(249, 112, 102, 0.75);
+      }
+      .notif.nutrition .app-name {
+        color: rgba(146, 204, 23, 0.75);
+      }
+      .notif.cross {
+        border: 1px solid rgba(34, 211, 238, 0.18);
+      }
+      .notif.cross .src-row {
+        display: flex;
+        gap: 3px;
+        margin-top: 4px;
+      }
       .notif.cross .src-chip {
-        font-family: var(--font-mono); font-size: 6.5px;
-        padding: 1px 5px; border-radius: 999px;
-        background: rgba(255,255,255,0.05);
-        color: rgba(245,240,235,0.55);
-        display: inline-flex; align-items: center; gap: 2px;
+        font-family: var(--font-mono);
+        font-size: 6.5px;
+        padding: 1px 5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(245, 240, 235, 0.55);
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
       }
-      .notif.cross .src-chip .ch { width: 4px; height: 4px; border-radius: 50%; }
-      .notif.cross .src-chip.f .ch { background: var(--fizruk); }
-      .notif.cross .src-chip.n .ch { background: var(--nutrition); }
+      .notif.cross .src-chip .ch {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+      }
+      .notif.cross .src-chip.f .ch {
+        background: var(--fizruk);
+      }
+      .notif.cross .src-chip.n .ch {
+        background: var(--nutrition);
+      }
 
-      .state-foot { margin-top: 6px; padding-top: 12px; border-top: 1px dashed var(--border); font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); line-height: 1.5; }
-      .state-foot b { color: var(--text); font-weight: 600; }
-      .state-foot code { font-size: 10px; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
-      .state-foot dl { display: grid; gap: 4px; }
-      .state-foot dt { font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 9.5px; color: var(--subtle); }
+      .state-foot {
+        margin-top: 6px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border);
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .state-foot b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .state-foot code {
+        font-size: 10px;
+        background: var(--surface);
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .state-foot dl {
+        display: grid;
+        gap: 4px;
+      }
+      .state-foot dt {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 9.5px;
+        color: var(--subtle);
+      }
 
       /* schedule grid */
       .schedule {
-        background: var(--panel); border: 1px solid var(--border);
-        border-radius: var(--r-xl); padding: 28px; margin-top: 24px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 28px;
+        margin-top: 24px;
       }
-      .schedule h3 { font-size: 18px; font-weight: 800; letter-spacing: -0.015em; margin-bottom: 12px; }
-      .schedule p.intro { color: var(--muted); font-size: 14px; margin-bottom: 18px; max-width: 720px; line-height: 1.6; }
+      .schedule h3 {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -0.015em;
+        margin-bottom: 12px;
+      }
+      .schedule p.intro {
+        color: var(--muted);
+        font-size: 14px;
+        margin-bottom: 18px;
+        max-width: 720px;
+        line-height: 1.6;
+      }
       .schedule-grid {
-        display: grid; grid-template-columns: 80px repeat(4, 1fr); gap: 1px;
-        background: var(--border); border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden;
+        display: grid;
+        grid-template-columns: 80px repeat(4, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: var(--r-md);
+        overflow: hidden;
       }
-      .sch-h, .sch-cell { background: var(--panel); padding: 11px 12px; font-size: 12px; }
-      .sch-h { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--subtle); background: var(--surface); font-weight: 600; }
-      .sch-h.finyk { color: var(--finyk-dark); }
-      .sch-h.fizruk { color: var(--fizruk-dark); }
-      .sch-h.routine { color: var(--routine-dark); }
-      .sch-h.nutrition { color: var(--nutrition-dark); }
-      .sch-time { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text); }
-      .sch-cell.has { background: rgba(16,185,129,0.04); font-size: 11.5px; color: var(--text); line-height: 1.4; }
-      .sch-cell.has small { display: block; font-family: var(--font-mono); font-size: 9.5px; color: var(--muted); margin-top: 2px; }
-      .sch-cell.has.fizruk { background: rgba(34,211,238,0.04); }
-      .sch-cell.has.routine { background: rgba(249,112,102,0.04); }
-      .sch-cell.has.nutrition { background: rgba(146,204,23,0.04); }
-      .sch-cell.empty { color: var(--subtle); text-align: center; }
+      .sch-h,
+      .sch-cell {
+        background: var(--panel);
+        padding: 11px 12px;
+        font-size: 12px;
+      }
+      .sch-h {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--subtle);
+        background: var(--surface);
+        font-weight: 600;
+      }
+      .sch-h.finyk {
+        color: var(--finyk-dark);
+      }
+      .sch-h.fizruk {
+        color: var(--fizruk-dark);
+      }
+      .sch-h.routine {
+        color: var(--routine-dark);
+      }
+      .sch-h.nutrition {
+        color: var(--nutrition-dark);
+      }
+      .sch-time {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .sch-cell.has {
+        background: rgba(16, 185, 129, 0.04);
+        font-size: 11.5px;
+        color: var(--text);
+        line-height: 1.4;
+      }
+      .sch-cell.has small {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .sch-cell.has.fizruk {
+        background: rgba(34, 211, 238, 0.04);
+      }
+      .sch-cell.has.routine {
+        background: rgba(249, 112, 102, 0.04);
+      }
+      .sch-cell.has.nutrition {
+        background: rgba(146, 204, 23, 0.04);
+      }
+      .sch-cell.empty {
+        color: var(--subtle);
+        text-align: center;
+      }
 
-      footer.bot { margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-      footer.bot strong { color: var(--text); }
+      footer.bot {
+        margin-top: 64px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      footer.bot strong {
+        color: var(--text);
+      }
 
       @media (max-width: 980px) {
-        .wrap { padding: 40px 22px 80px; }
-        .legend-grid, .state-row { grid-template-columns: 1fr; }
-        .schedule-grid { grid-template-columns: 1fr; }
+        .wrap {
+          padding: 40px 22px 80px;
+        }
+        .legend-grid,
+        .state-row {
+          grid-template-columns: 1fr;
+        }
+        .schedule-grid {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
     <div class="wrap">
-
       <header class="top">
         <div class="crumb">
           <a href="../../index.html">мокапи</a><span class="sep">/</span>
@@ -196,16 +700,20 @@
         </div>
         <h1>Push без надокучання — <em>рідко, корисно, з діями</em></h1>
         <p class="lede">
-          Sergeant — інструмент, не годинник. Дозвіл на push питаємо не у
-          першу хвилину, а після першого запису. Самі сповіщення —
-          текстові, потім з даними у тілі, потім з діями просто з екрана
-          блокування. Стандарт від <code>cross-module-prompts.md</code> —
-          максимум 1 нагадування на день на модуль.
+          Sergeant — інструмент, не годинник. Дозвіл на push питаємо не у першу
+          хвилину, а після першого запису. Самі сповіщення — текстові, потім з
+          даними у тілі, потім з діями просто з екрана блокування. Стандарт від
+          <code>cross-module-prompts.md</code> — максимум 1 нагадування на день
+          на модуль.
         </p>
         <div class="meta-row">
           <span>Стан<strong>заплановано</strong></span>
           <span>Поверхні<strong>iOS / Android lockscreen</strong></span>
-          <span>Джерело<strong>cross-module-prompts.md · ftux-master-tracker S6.13</strong></span>
+          <span
+            >Джерело<strong
+              >cross-module-prompts.md · ftux-master-tracker S6.13</strong
+            ></span
+          >
         </div>
       </header>
 
@@ -219,8 +727,8 @@
             <span class="badge"><span class="dot"></span>Зараз</span>
             <h3>Базовий текст</h3>
             <p>
-              Назва модуля + рядок тексту. Тап → відкриває модуль. Працює,
-              але юзер мусить йти у застосунок щоб зрозуміти контекст.
+              Назва модуля + рядок тексту. Тап → відкриває модуль. Працює, але
+              юзер мусить йти у застосунок щоб зрозуміти контекст.
             </p>
             <div class="when">джерело: припущення поточного PWA-стану</div>
           </div>
@@ -228,8 +736,8 @@
             <span class="badge"><span class="dot"></span>Планується</span>
             <h3>З даними у тілі</h3>
             <p>
-              Заголовок + конкретні числа. Стрік, бюджет, калорії — прямо
-              у сповіщенні, не «зайди подивись». Юзер може не відкривати —
+              Заголовок + конкретні числа. Стрік, бюджет, калорії — прямо у
+              сповіщенні, не «зайди подивись». Юзер може не відкривати —
               інформація вже отримана.
             </p>
             <div class="when">джерело: ftux S6.13 push timing</div>
@@ -238,9 +746,8 @@
             <span class="badge"><span class="dot"></span>Рекомендую</span>
             <h3>Дії з екрана блокування</h3>
             <p>
-              Розгорнуте сповіщення: міні-статистика + 2 кнопки. Записати
-              без розблоку. Крос-модульні підказки — з обома джерелами на
-              чіпах.
+              Розгорнуте сповіщення: міні-статистика + 2 кнопки. Записати без
+              розблоку. Крос-модульні підказки — з обома джерелами на чіпах.
             </p>
             <div class="when">джерело: цей файл · iOS rich notif API</div>
           </div>
@@ -251,7 +758,9 @@
         <div class="section-head">
           <span class="sn">EКРАН</span>
           <h2>Екран блокування — три стани одного дня</h2>
-          <span class="event">подія<strong> push_notification_delivered</strong></span>
+          <span class="event"
+            >подія<strong> push_notification_delivered</strong></span
+          >
         </div>
         <p class="section-intro">
           День, 19:00. Sergeant має що сказати з 3-х модулів. Питання — як
@@ -259,7 +768,6 @@
         </p>
 
         <div class="state-row">
-
           <!-- now -->
           <div class="state-card now">
             <div class="state-head">
@@ -305,7 +813,10 @@
                 <dt>працює</dt>
                 <dd>текст + назва модуля; тап → застосунок</dd>
                 <dt>слабке</dt>
-                <dd>щоб дізнатися «які 2?» — треба відкрити; кілька сповіщень за годину — раптовий шум</dd>
+                <dd>
+                  щоб дізнатися «які 2?» — треба відкрити; кілька сповіщень за
+                  годину — раптовий шум
+                </dd>
               </dl>
             </div>
           </div>
@@ -330,7 +841,9 @@
                       <span class="ago">2 хв</span>
                     </div>
                     <div class="title-l">Стрік 12 днів 🔥</div>
-                    <div class="body-l">Залишилось <b>2 з 5</b>: вода (3/8) і медитація.</div>
+                    <div class="body-l">
+                      Залишилось <b>2 з 5</b>: вода (3/8) і медитація.
+                    </div>
                   </div>
                   <div class="notif finyk">
                     <div class="nrow1">
@@ -339,7 +852,9 @@
                       <span class="ago">15 хв</span>
                     </div>
                     <div class="title-l">Бюджет тижня</div>
-                    <div class="body-l"><b>₴487 з 800</b> на каву. Лишилось <b>₴313</b>.</div>
+                    <div class="body-l">
+                      <b>₴487 з 800</b> на каву. Лишилось <b>₴313</b>.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -347,11 +862,20 @@
             <div class="state-foot">
               <dl>
                 <dt>план</dt>
-                <dd>дані у тілі сповіщення; модуль в назві; не більше 1 на модуль на день</dd>
+                <dd>
+                  дані у тілі сповіщення; модуль в назві; не більше 1 на модуль
+                  на день
+                </dd>
                 <dt>правила</dt>
-                <dd>максимум 3 сповіщення на день усього (anti-nag з cross-module-prompts.md)</dd>
+                <dd>
+                  максимум 3 сповіщення на день усього (anti-nag з
+                  cross-module-prompts.md)
+                </dd>
                 <dt>чому</dt>
-                <dd>юзер отримує цінність не відкриваючи · стрік-нагадування — найсильніший момент для повернення</dd>
+                <dd>
+                  юзер отримує цінність не відкриваючи · стрік-нагадування —
+                  найсильніший момент для повернення
+                </dd>
               </dl>
             </div>
           </div>
@@ -376,10 +900,14 @@
                       <span class="ago">2 хв</span>
                     </div>
                     <div class="title-l">Тиждень фінішує</div>
-                    <div class="body-l">Кафе: <b>₴487/800</b>. Можеш зекономити ₴313.</div>
+                    <div class="body-l">
+                      Кафе: <b>₴487/800</b>. Можеш зекономити ₴313.
+                    </div>
                     <div class="ext">
                       <div class="stats">
-                        <div class="stat"><b>₴487</b><span>витрачено</span></div>
+                        <div class="stat">
+                          <b>₴487</b><span>витрачено</span>
+                        </div>
                         <div class="stat"><b>₴313</b><span>лишилось</span></div>
                       </div>
                       <div class="actions">
@@ -395,10 +923,16 @@
                       <span class="ago">15 хв</span>
                     </div>
                     <div class="title-l">Дефіцит ≈ 680 ккал</div>
-                    <div class="body-l">Тренування + менша вечеря — баланс.</div>
+                    <div class="body-l">
+                      Тренування + менша вечеря — баланс.
+                    </div>
                     <div class="src-row">
-                      <span class="src-chip n"><span class="ch"></span>Харч.</span>
-                      <span class="src-chip f"><span class="ch"></span>Фізрук</span>
+                      <span class="src-chip n"
+                        ><span class="ch"></span>Харч.</span
+                      >
+                      <span class="src-chip f"
+                        ><span class="ch"></span>Фізрук</span
+                      >
                     </div>
                   </div>
                 </div>
@@ -407,15 +941,23 @@
             <div class="state-foot">
               <dl>
                 <dt>додаю</dt>
-                <dd>розгорнуте сповіщення з 2 числами + 2 діями (записати без розблоку)</dd>
+                <dd>
+                  розгорнуте сповіщення з 2 числами + 2 діями (записати без
+                  розблоку)
+                </dd>
                 <dt>крос-модуль</dt>
-                <dd>чіпи джерел на тілі — той самий патерн, що й у HubChat відповідях</dd>
+                <dd>
+                  чіпи джерел на тілі — той самий патерн, що й у HubChat
+                  відповідях
+                </dd>
                 <dt>ризик</dt>
-                <dd>дії з lockscreen вимагають foreground-handler-у; на iOS обмеження на 4 категорії дій</dd>
+                <dd>
+                  дії з lockscreen вимагають foreground-handler-у; на iOS
+                  обмеження на 4 категорії дій
+                </dd>
               </dl>
             </div>
           </div>
-
         </div>
       </section>
 
@@ -423,16 +965,21 @@
         <div class="section-head">
           <span class="sn">правила</span>
           <h2>Коли і кому шлемо — графік на день</h2>
-          <span class="event">правило<strong> 1 на модуль на день · 3 разом max</strong></span>
+          <span class="event"
+            >правило<strong> 1 на модуль на день · 3 разом max</strong></span
+          >
         </div>
         <p class="section-intro">
-          Сповіщення не «розклад», а «вікно». Кожне має сильний привід.
-          Перед launch — лише ці 4 типи; решта — у backlog.
+          Сповіщення не «розклад», а «вікно». Кожне має сильний привід. Перед
+          launch — лише ці 4 типи; решта — у backlog.
         </p>
 
         <div class="schedule">
           <h3>4 типи нагадувань · 4 модулі</h3>
-          <p class="intro">Стовпці — модулі. Рядки — час доби. Зеленим — заплановані сповіщення. Сірим — пусто (модуль не нагадує у це вікно).</p>
+          <p class="intro">
+            Стовпці — модулі. Рядки — час доби. Зеленим — заплановані
+            сповіщення. Сірим — пусто (модуль не нагадує у це вікно).
+          </p>
           <div class="schedule-grid">
             <div class="sch-h">час</div>
             <div class="sch-h finyk">Фінік</div>
@@ -443,23 +990,31 @@
             <div class="sch-cell sch-time">08:00</div>
             <div class="sch-cell empty">—</div>
             <div class="sch-cell empty">—</div>
-            <div class="sch-cell has routine">Перша звичка <small>«вода 💧 — 1/8»</small></div>
+            <div class="sch-cell has routine">
+              Перша звичка <small>«вода 💧 — 1/8»</small>
+            </div>
             <div class="sch-cell empty">—</div>
 
             <div class="sch-cell sch-time">12:30</div>
             <div class="sch-cell empty">—</div>
             <div class="sch-cell empty">—</div>
             <div class="sch-cell empty">—</div>
-            <div class="sch-cell has nutrition">Обідній чек-ін <small>«500 ккал з 2100»</small></div>
+            <div class="sch-cell has nutrition">
+              Обідній чек-ін <small>«500 ккал з 2100»</small>
+            </div>
 
             <div class="sch-cell sch-time">18:00</div>
             <div class="sch-cell empty">—</div>
-            <div class="sch-cell has fizruk">Дотиснути тренув. <small>«план PUSH 45 хв»</small></div>
+            <div class="sch-cell has fizruk">
+              Дотиснути тренув. <small>«план PUSH 45 хв»</small>
+            </div>
             <div class="sch-cell empty">—</div>
             <div class="sch-cell empty">—</div>
 
             <div class="sch-cell sch-time">21:30</div>
-            <div class="sch-cell has finyk">Тижневий розбір <small>«пт ввечері»</small></div>
+            <div class="sch-cell has finyk">
+              Тижневий розбір <small>«пт ввечері»</small>
+            </div>
             <div class="sch-cell empty">—</div>
             <div class="sch-cell empty">—</div>
             <div class="sch-cell empty">—</div>
@@ -469,8 +1024,12 @@
 
       <footer class="bot">
         <span>Sergeant · <strong>product/push</strong> · 2026-05-18</span>
-        <span>Джерело · <strong>cross-module-prompts.md · ftux S6.13</strong></span>
-        <span>Правило · <strong>≤1 на модуль · ≤3 на день · anti-nag</strong></span>
+        <span
+          >Джерело · <strong>cross-module-prompts.md · ftux S6.13</strong></span
+        >
+        <span
+          >Правило · <strong>≤1 на модуль · ≤3 на день · anti-nag</strong></span
+        >
       </footer>
     </div>
   </body>

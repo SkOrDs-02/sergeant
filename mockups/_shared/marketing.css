@@ -6,7 +6,8 @@
   margin: 0;
   padding: 0;
 }
-html, body {
+html,
+body {
   font-family: var(--font-sans);
   background: var(--bg);
   color: var(--text);
@@ -169,15 +170,34 @@ button {
   border: none;
   cursor: pointer;
 }
-.btn-primary  { background: var(--brand);      color: white; }
-.btn-ink      { background: var(--text-strong); color: var(--surface); }
-.btn-outline  { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-primary {
+  background: var(--brand);
+  color: white;
+}
+.btn-ink {
+  background: var(--text-strong);
+  color: var(--surface);
+}
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
 
 /* --- Type helpers --- */
-.mono   { font-family: var(--font-mono); }
-.serif  { font-family: var(--font-serif); }
-.muted  { color: var(--muted); }
-.subtle { color: var(--subtle); font-size: 12px; }
+.mono {
+  font-family: var(--font-mono);
+}
+.serif {
+  font-family: var(--font-serif);
+}
+.muted {
+  color: var(--muted);
+}
+.subtle {
+  color: var(--subtle);
+  font-size: 12px;
+}
 
 /* --- Module chips --- */
 .chip {
@@ -187,10 +207,22 @@ button {
   font-size: 11px;
   font-weight: 600;
 }
-.chip-finyk     { background: var(--finyk-soft);     color: var(--finyk-dark); }
-.chip-fizruk    { background: var(--fizruk-soft);    color: var(--fizruk-dark); }
-.chip-routine   { background: var(--routine-soft);   color: var(--routine-dark); }
-.chip-nutrition { background: var(--nutrition-soft); color: var(--nutrition-dark); }
+.chip-finyk {
+  background: var(--finyk-soft);
+  color: var(--finyk-dark);
+}
+.chip-fizruk {
+  background: var(--fizruk-soft);
+  color: var(--fizruk-dark);
+}
+.chip-routine {
+  background: var(--routine-soft);
+  color: var(--routine-dark);
+}
+.chip-nutrition {
+  background: var(--nutrition-soft);
+  color: var(--nutrition-dark);
+}
 
 /* --- Phone frame --- */
 .phone {
@@ -229,5 +261,7 @@ button {
 }
 
 @media (max-width: 980px) {
-  .variants { grid-template-columns: 1fr; }
+  .variants {
+    grid-template-columns: 1fr;
+  }
 }

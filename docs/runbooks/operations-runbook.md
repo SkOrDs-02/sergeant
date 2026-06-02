@@ -186,20 +186,20 @@ Decision-tree коли щось «не працює»:
 
 Регулярні задачі, які не повинні зупинитися без `@Skords-01`:
 
-| Завдання                                       | Частота               | Runbook                                                                        |
-| ---------------------------------------------- | --------------------- | ------------------------------------------------------------------------------ |
-| DB backup smoke-test                           | Тижнева               | [`./database-backup-restore.md`](./database-backup-restore.md)                 |
-| Encryption key rotation                        | Раз на 90 днів        | [`./encryption-key-rotation.md`](./encryption-key-rotation.md)                 |
-| API token rotation (Anthropic / Voyage / Mono) | Раз на 90 днів        | [`docs/playbooks/rotate-secrets.md`](../playbooks/rotate-secrets.md)           |
+| Завдання                                       | Частота               | Runbook                                                                                                                             |
+| ---------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| DB backup smoke-test                           | Тижнева               | [`./database-backup-restore.md`](./database-backup-restore.md)                                                                      |
+| Encryption key rotation                        | Раз на 90 днів        | [`./encryption-key-rotation.md`](./encryption-key-rotation.md)                                                                      |
+| API token rotation (Anthropic / Voyage / Mono) | Раз на 90 днів        | [`docs/playbooks/rotate-secrets.md`](../playbooks/rotate-secrets.md)                                                                |
 | Monobank token re-bind (per-user)              | On-demand (юзер-flow) | `apps/server/src/modules/mono/connection.ts` — endpoint `POST /api/mono/connect` (route у `apps/server/src/routes/mono-webhook.ts`) |
-| Renovate PR-batch                              | Тижнева (вівторок)    | [`docs/observability/runbook.md §Renovate`](../observability/runbook.md)       |
-| n8n workflows audit                            | Місячна               | `pnpm ops:n8n:validate` + manual review executions-tab                         |
-| `pnpm docs:check-links`                        | Перед-merge per PR    | CI робить sам; локально для draft-PR-ів                                        |
-| Disaster-recovery drill                        | Раз на 6 місяців      | [`docs/playbooks/test-backup-restore.md`](../playbooks/test-backup-restore.md) |
-| Migration `down.sql` drill                     | Per-PR (CI)           | [§ 8.1 «Migration down drill»](#81-migration-downsql-drill)                    |
-| Two-phase DROP authoring                       | Per-PR (CI)           | [§ 8.2 «Two-phase DROP»](#82-two-phase-drop-authoring)                         |
-| DB index audit (prod-replica snapshot)         | Раз на квартал        | [§ 9 «Index hygiene»](#9-index-hygiene)                                        |
-| Access review (хто має які доступи)            | Квартальна            | [`docs/playbooks/run-access-review.md`](../playbooks/run-access-review.md)     |
+| Renovate PR-batch                              | Тижнева (вівторок)    | [`docs/observability/runbook.md §Renovate`](../observability/runbook.md)                                                            |
+| n8n workflows audit                            | Місячна               | `pnpm ops:n8n:validate` + manual review executions-tab                                                                              |
+| `pnpm docs:check-links`                        | Перед-merge per PR    | CI робить sам; локально для draft-PR-ів                                                                                             |
+| Disaster-recovery drill                        | Раз на 6 місяців      | [`docs/playbooks/test-backup-restore.md`](../playbooks/test-backup-restore.md)                                                      |
+| Migration `down.sql` drill                     | Per-PR (CI)           | [§ 8.1 «Migration down drill»](#81-migration-downsql-drill)                                                                         |
+| Two-phase DROP authoring                       | Per-PR (CI)           | [§ 8.2 «Two-phase DROP»](#82-two-phase-drop-authoring)                                                                              |
+| DB index audit (prod-replica snapshot)         | Раз на квартал        | [§ 9 «Index hygiene»](#9-index-hygiene)                                                                                             |
+| Access review (хто має які доступи)            | Квартальна            | [`docs/playbooks/run-access-review.md`](../playbooks/run-access-review.md)                                                          |
 
 ### 8.1. Migration `down.sql` drill
 

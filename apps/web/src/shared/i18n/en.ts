@@ -101,8 +101,7 @@ export const messagesEn: Partial<MessageCatalog> = {
       freeTagline: "Basic limits across all 4 modules. Local-first, no cloud.",
       premiumName: "Premium",
       premiumCadence: "/mo",
-      premiumTagline:
-        "Everything unlocked. One plan — no tiers, no add-ons.",
+      premiumTagline: "Everything unlocked. One plan — no tiers, no add-ons.",
     },
     features: {
       expensesFinyk: "Finyk expenses",
@@ -150,8 +149,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     },
     waitlist: {
       headline: "Waitlist email",
-      subtitle:
-        "One email when Premium launches. No spam, no auto-charges.",
+      subtitle: "One email when Premium launches. No spam, no auto-charges.",
     },
     footer:
       "Prices in EUR; Stripe charges the UAH-equivalent for the UA market. Final number lives in the pricing-strategy PR after market research.",

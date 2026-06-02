@@ -6,131 +6,588 @@
     <title>Sergeant · Глибокі екрани модулів — патерн</title>
     <link rel="stylesheet" href="../_shared/tokens.css" />
     <style>
-      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html,body { font-family: var(--font-sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; line-height: 1.5; }
-      a { color: inherit; text-decoration: none; }
-      code,.mono { font-family: var(--font-mono); }
-      .serif { font-family: var(--font-serif); }
-      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .serif {
+        font-family: var(--font-serif);
+      }
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 32px 96px;
+      }
 
-      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
-      .crumb { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand); margin-bottom: 14px; display: flex; gap: 8px; align-items: center; }
-      .crumb a { color: var(--muted); }
-      .crumb .sep { color: var(--subtle); }
-      header.top h1 { font-size: clamp(36px, 5vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px; max-width: 920px; text-wrap: balance; }
-      header.top h1 em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--muted); }
-      header.top .lede { font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6; }
+      header.top {
+        margin-bottom: 56px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
+      }
+      .crumb {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--brand);
+        margin-bottom: 14px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .crumb a {
+        color: var(--muted);
+      }
+      .crumb .sep {
+        color: var(--subtle);
+      }
+      header.top h1 {
+        font-size: clamp(36px, 5vw, 56px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        margin-bottom: 18px;
+        max-width: 920px;
+        text-wrap: balance;
+      }
+      header.top h1 em {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      header.top .lede {
+        font-size: 17px;
+        color: var(--muted);
+        max-width: 740px;
+        line-height: 1.6;
+      }
 
-      .scope { background: var(--surface-muted); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 22px 26px; margin-bottom: 56px; }
-      .scope h3 { font-size: 14px; font-weight: 800; margin-bottom: 8px; }
-      .scope p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
-      .scope b { color: var(--text); font-weight: 700; }
+      .scope {
+        background: var(--surface-muted);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 22px 26px;
+        margin-bottom: 56px;
+      }
+      .scope h3 {
+        font-size: 14px;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+      .scope p {
+        font-size: 13.5px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      .scope b {
+        color: var(--text);
+        font-weight: 700;
+      }
 
-      section { margin-bottom: 64px; }
-      .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-      .section-head .sn { font-family: var(--font-mono); font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--brand); padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm); }
-      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
-      .section-head .extra { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; }
-      .section-intro { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 740px; margin-bottom: 24px; }
+      section {
+        margin-bottom: 64px;
+      }
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .section-head .sn {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--brand);
+        padding: 3px 9px;
+        background: var(--brand-soft);
+        border-radius: var(--r-sm);
+      }
+      .section-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.022em;
+      }
+      .section-head .extra {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .section-intro {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 740px;
+        margin-bottom: 24px;
+      }
 
-      .triple { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
-      .scr { display: flex; flex-direction: column; gap: 10px; }
-      .scr .tag { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--subtle); }
-      .scr .name { font-size: 14px; font-weight: 800; letter-spacing: -0.005em; }
+      .triple {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        align-items: start;
+      }
+      .scr {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .scr .tag {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--subtle);
+      }
+      .scr .name {
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: -0.005em;
+      }
 
-      .phone { width: 100%; max-width: 280px; margin: 0 auto; aspect-ratio: 9/19.5; background: #1a1614; border: 6px solid #0a0a09; border-radius: 34px; box-shadow: 0 12px 28px rgba(28,25,23,0.16); position: relative; overflow: hidden; color: #f5f0eb; }
-      .phone-island { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 32%; height: 16px; background: #0a0a09; border-radius: 999px; z-index: 5; }
-      .phone-screen { position: absolute; inset: 0; padding: 30px 0 0; display: flex; flex-direction: column; overflow: hidden; }
-      .phone-statusbar { display: flex; justify-content: space-between; font-size: 8px; font-weight: 700; color: rgba(245,240,235,0.7); font-family: var(--font-mono); margin-bottom: 8px; padding: 0 16px; }
+      .phone {
+        width: 100%;
+        max-width: 280px;
+        margin: 0 auto;
+        aspect-ratio: 9/19.5;
+        background: #1a1614;
+        border: 6px solid #0a0a09;
+        border-radius: 34px;
+        box-shadow: 0 12px 28px rgba(28, 25, 23, 0.16);
+        position: relative;
+        overflow: hidden;
+        color: #f5f0eb;
+      }
+      .phone-island {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 32%;
+        height: 16px;
+        background: #0a0a09;
+        border-radius: 999px;
+        z-index: 5;
+      }
+      .phone-screen {
+        position: absolute;
+        inset: 0;
+        padding: 30px 0 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .phone-statusbar {
+        display: flex;
+        justify-content: space-between;
+        font-size: 8px;
+        font-weight: 700;
+        color: rgba(245, 240, 235, 0.7);
+        font-family: var(--font-mono);
+        margin-bottom: 8px;
+        padding: 0 16px;
+      }
 
-      .scr-head { padding: 0 12px 8px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-      .scr-back { font-size: 14px; color: rgba(245,240,235,0.7); }
-      .scr-title { font-size: 12px; font-weight: 800; flex: 1; }
-      .scr-more { color: rgba(245,240,235,0.45); }
+      .scr-head {
+        padding: 0 12px 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .scr-back {
+        font-size: 14px;
+        color: rgba(245, 240, 235, 0.7);
+      }
+      .scr-title {
+        font-size: 12px;
+        font-weight: 800;
+        flex: 1;
+      }
+      .scr-more {
+        color: rgba(245, 240, 235, 0.45);
+      }
 
-      .body { flex: 1; padding: 10px 12px 0; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+      .body {
+        flex: 1;
+        padding: 10px 12px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        overflow: hidden;
+      }
 
       /* Overview tiles */
-      .hero-glass { background: linear-gradient(135deg, rgba(16,185,129,0.14) 0%, rgba(4,120,87,0.06) 100%); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; padding: 11px; }
-      .hero-glass .small { font-size: 8px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; color: rgba(245,240,235,0.55); margin-bottom: 4px; }
-      .hero-glass .big { font-size: 26px; font-weight: 800; font-family: var(--font-mono); letter-spacing: -0.04em; color: var(--finyk); line-height: 1; }
-      .hero-glass .sub { font-size: 9px; color: rgba(245,240,235,0.6); margin-top: 4px; }
+      .hero-glass {
+        background: linear-gradient(
+          135deg,
+          rgba(16, 185, 129, 0.14) 0%,
+          rgba(4, 120, 87, 0.06) 100%
+        );
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        border-radius: 12px;
+        padding: 11px;
+      }
+      .hero-glass .small {
+        font-size: 8px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(245, 240, 235, 0.55);
+        margin-bottom: 4px;
+      }
+      .hero-glass .big {
+        font-size: 26px;
+        font-weight: 800;
+        font-family: var(--font-mono);
+        letter-spacing: -0.04em;
+        color: var(--finyk);
+        line-height: 1;
+      }
+      .hero-glass .sub {
+        font-size: 9px;
+        color: rgba(245, 240, 235, 0.6);
+        margin-top: 4px;
+      }
 
-      .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-      .stat-tile { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 7px 8px; }
-      .stat-tile .l { font-size: 7.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; color: rgba(245,240,235,0.5); margin-bottom: 2px; }
-      .stat-tile .v { font-size: 12px; font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.02em; }
+      .stats-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+      }
+      .stat-tile {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 7px 8px;
+      }
+      .stat-tile .l {
+        font-size: 7.5px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(245, 240, 235, 0.5);
+        margin-bottom: 2px;
+      }
+      .stat-tile .v {
+        font-size: 12px;
+        font-family: var(--font-mono);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
 
-      .list-row { display: flex; justify-content: space-between; padding: 6px 8px; border-radius: 6px; font-size: 9px; }
-      .list-row.alt { background: rgba(255,255,255,0.03); }
-      .list-row .l { display: flex; gap: 6px; align-items: center; }
-      .list-row .l .pill { width: 18px; height: 18px; border-radius: 6px; background: rgba(16,185,129,0.18); display: grid; place-items: center; font-size: 10px; }
-      .list-row .v { font-family: var(--font-mono); font-weight: 600; }
-      .day-sep { font-size: 8px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; color: rgba(245,240,235,0.35); padding: 4px 8px; }
+      .list-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 9px;
+      }
+      .list-row.alt {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .list-row .l {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .list-row .l .pill {
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+        background: rgba(16, 185, 129, 0.18);
+        display: grid;
+        place-items: center;
+        font-size: 10px;
+      }
+      .list-row .v {
+        font-family: var(--font-mono);
+        font-weight: 600;
+      }
+      .day-sep {
+        font-size: 8px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(245, 240, 235, 0.35);
+        padding: 4px 8px;
+      }
 
       /* Detail screen */
-      .detail-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 12px; }
-      .detail-amount { font-size: 28px; font-weight: 800; font-family: var(--font-mono); letter-spacing: -0.04em; color: var(--finyk); }
-      .detail-name { font-size: 11px; font-weight: 700; margin-top: 2px; }
-      .detail-cat { display: inline-flex; align-items: center; gap: 5px; font-size: 8.5px; padding: 2px 7px; border-radius: 999px; background: rgba(16,185,129,0.18); color: var(--finyk); margin-top: 6px; }
-      .meta-kv { padding-top: 8px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); display: grid; gap: 4px; }
-      .meta-kv .kv { display: flex; justify-content: space-between; font-size: 9px; }
-      .meta-kv .kv .k { color: rgba(245,240,235,0.5); }
-      .meta-kv .kv .v { color: #f5f0eb; font-family: var(--font-mono); }
-      .actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 6px; }
-      .btn { font-size: 9.5px; font-weight: 700; padding: 7px; border-radius: 8px; text-align: center; }
-      .btn.primary { background: var(--finyk); color: #0a0a09; }
-      .btn.ghost { background: rgba(255,255,255,0.06); color: rgba(245,240,235,0.85); }
+      .detail-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 12px;
+      }
+      .detail-amount {
+        font-size: 28px;
+        font-weight: 800;
+        font-family: var(--font-mono);
+        letter-spacing: -0.04em;
+        color: var(--finyk);
+      }
+      .detail-name {
+        font-size: 11px;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+      .detail-cat {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 8.5px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: rgba(16, 185, 129, 0.18);
+        color: var(--finyk);
+        margin-top: 6px;
+      }
+      .meta-kv {
+        padding-top: 8px;
+        margin-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        display: grid;
+        gap: 4px;
+      }
+      .meta-kv .kv {
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+      }
+      .meta-kv .kv .k {
+        color: rgba(245, 240, 235, 0.5);
+      }
+      .meta-kv .kv .v {
+        color: #f5f0eb;
+        font-family: var(--font-mono);
+      }
+      .actions-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5px;
+        margin-top: 6px;
+      }
+      .btn {
+        font-size: 9.5px;
+        font-weight: 700;
+        padding: 7px;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .btn.primary {
+        background: var(--finyk);
+        color: #0a0a09;
+      }
+      .btn.ghost {
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(245, 240, 235, 0.85);
+      }
 
       /* Create form */
-      .field { margin-bottom: 6px; }
-      .field .lab { font-size: 7.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; color: rgba(245,240,235,0.45); margin-bottom: 3px; }
-      .field .inp { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 7px 9px; font-size: 11px; color: #f5f0eb; font-family: var(--font-mono); }
-      .field .inp.amount { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; color: var(--finyk); padding: 9px 10px; }
-      .field .inp.empty { color: rgba(245,240,235,0.35); }
-      .cat-pills { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-top: 4px; }
-      .cat-pill { font-size: 8.5px; padding: 4px 6px; border-radius: 999px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); text-align: center; color: rgba(245,240,235,0.75); }
-      .cat-pill.on { background: rgba(16,185,129,0.18); border-color: var(--finyk); color: var(--finyk); }
+      .field {
+        margin-bottom: 6px;
+      }
+      .field .lab {
+        font-size: 7.5px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(245, 240, 235, 0.45);
+        margin-bottom: 3px;
+      }
+      .field .inp {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        padding: 7px 9px;
+        font-size: 11px;
+        color: #f5f0eb;
+        font-family: var(--font-mono);
+      }
+      .field .inp.amount {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--finyk);
+        padding: 9px 10px;
+      }
+      .field .inp.empty {
+        color: rgba(245, 240, 235, 0.35);
+      }
+      .cat-pills {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 4px;
+        margin-top: 4px;
+      }
+      .cat-pill {
+        font-size: 8.5px;
+        padding: 4px 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        text-align: center;
+        color: rgba(245, 240, 235, 0.75);
+      }
+      .cat-pill.on {
+        background: rgba(16, 185, 129, 0.18);
+        border-color: var(--finyk);
+        color: var(--finyk);
+      }
 
-      .scr-foot { font-family: var(--font-mono); font-size: 11px; color: var(--muted); line-height: 1.5; padding-top: 12px; border-top: 1px dashed var(--border); margin-top: 4px; }
-      .scr-foot b { color: var(--text); }
-      .scr-foot code { font-size: 10px; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
+      .scr-foot {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.5;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border);
+        margin-top: 4px;
+      }
+      .scr-foot b {
+        color: var(--text);
+      }
+      .scr-foot code {
+        font-size: 10px;
+        background: var(--surface);
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
 
       /* Pattern repeat */
       .pattern-grid {
-        display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
-        background: var(--border); border: 1px solid var(--border);
-        border-radius: var(--r-xl); overflow: hidden; margin-top: 32px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        overflow: hidden;
+        margin-top: 32px;
       }
-      .pattern-cell { background: var(--panel); padding: 18px 18px 20px; }
-      .pattern-cell h4 { font-size: 14px; font-weight: 800; margin-bottom: 4px; }
-      .pattern-cell .mod { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; margin-bottom: 8px; }
-      .pattern-cell.finyk .mod { color: var(--finyk); }
-      .pattern-cell.fizruk .mod { color: var(--fizruk); }
-      .pattern-cell.routine .mod { color: var(--routine); }
-      .pattern-cell.nutrition .mod { color: var(--nutrition); }
-      .pattern-cell ul { list-style: none; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
-      .pattern-cell ul li { padding-left: 14px; position: relative; margin-bottom: 4px; }
-      .pattern-cell ul li::before { content: "·"; position: absolute; left: 4px; color: var(--subtle); }
-      .pattern-cell ul li b { color: var(--text); font-weight: 600; }
+      .pattern-cell {
+        background: var(--panel);
+        padding: 18px 18px 20px;
+      }
+      .pattern-cell h4 {
+        font-size: 14px;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+      .pattern-cell .mod {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .pattern-cell.finyk .mod {
+        color: var(--finyk);
+      }
+      .pattern-cell.fizruk .mod {
+        color: var(--fizruk);
+      }
+      .pattern-cell.routine .mod {
+        color: var(--routine);
+      }
+      .pattern-cell.nutrition .mod {
+        color: var(--nutrition);
+      }
+      .pattern-cell ul {
+        list-style: none;
+        font-size: 12.5px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .pattern-cell ul li {
+        padding-left: 14px;
+        position: relative;
+        margin-bottom: 4px;
+      }
+      .pattern-cell ul li::before {
+        content: "·";
+        position: absolute;
+        left: 4px;
+        color: var(--subtle);
+      }
+      .pattern-cell ul li b {
+        color: var(--text);
+        font-weight: 600;
+      }
 
-      footer.bot { margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-      footer.bot strong { color: var(--text); }
+      footer.bot {
+        margin-top: 64px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      footer.bot strong {
+        color: var(--text);
+      }
 
-      @media (max-width: 980px) { .wrap { padding: 40px 22px 80px; } .triple, .pattern-grid { grid-template-columns: 1fr; } }
+      @media (max-width: 980px) {
+        .wrap {
+          padding: 40px 22px 80px;
+        }
+        .triple,
+        .pattern-grid {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
       <header class="top">
-        <div class="crumb"><a href="../index.html">мокапи</a><span class="sep">/</span><a href="./">продукт</a><span class="sep">/</span><span>глибокі екрани модулів</span></div>
+        <div class="crumb">
+          <a href="../index.html">мокапи</a><span class="sep">/</span
+          ><a href="./">продукт</a><span class="sep">/</span
+          ><span>глибокі екрани модулів</span>
+        </div>
         <h1>3 екрани на модуль — <em>один патерн для всіх чотирьох</em></h1>
         <p class="lede">
           Цей файл показує <strong>зразок патерну на прикладі Фініка</strong>:
           огляд → деталь → створення. Інші три модулі (Фізрук, Рутина,
-          Харчування) повторюють ту саму структуру з модульним колірним
-          акцентом і відмінним змістом. Замість 12 окремих мокапів — один
-          канонічний приклад + таблиця вмісту для решти.
+          Харчування) повторюють ту саму структуру з модульним колірним акцентом
+          і відмінним змістом. Замість 12 окремих мокапів — один канонічний
+          приклад + таблиця вмісту для решти.
         </p>
       </header>
 
@@ -139,8 +596,8 @@
         <p>
           Замість малювати <b>4 модулі × 3 екрани = 12 артбордів</b>, цей файл
           задає <b>патерн</b> один раз і пропонує його реплікацію для інших
-          модулів коли вони знадобляться у production. Огляд (Overview)
-          для Фінік + Фізрук + Рутина + Нутриція вже існує у
+          модулів коли вони знадобляться у production. Огляд (Overview) для
+          Фінік + Фізрук + Рутина + Нутриція вже існує у
           <code>product/&lt;module&gt;/</code>. Тут — деталь і створення для
           Фініка як зразок, плюс <b>вміст-таблиця</b> що має бути в решти.
         </p>
@@ -153,9 +610,9 @@
           <span class="extra">3 екрани · 1 модуль</span>
         </div>
         <p class="section-intro">
-          Кожен модуль має 3 ключові екрани: списковий огляд (за датою),
-          деталь окремого запису (амбер для важливого, кнопки дій), форма
-          створення (мінімум полів, одразу зі статистикою).
+          Кожен модуль має 3 ключові екрани: списковий огляд (за датою), деталь
+          окремого запису (амбер для важливого, кнопки дій), форма створення
+          (мінімум полів, одразу зі статистикою).
         </p>
 
         <div class="triple">
@@ -166,8 +623,14 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●●</span></div>
-                <div class="scr-head"><span class="scr-back">←</span><span class="scr-title">Транзакції</span><span class="scr-more">⋯</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●●</span>
+                </div>
+                <div class="scr-head">
+                  <span class="scr-back">←</span
+                  ><span class="scr-title">Транзакції</span
+                  ><span class="scr-more">⋯</span>
+                </div>
                 <div class="body">
                   <div class="hero-glass">
                     <div class="small">тиждень</div>
@@ -175,19 +638,52 @@
                     <div class="sub">з ₴3 200 бюджету · ❛на каві❜ −₴128</div>
                   </div>
                   <div class="stats-row">
-                    <div class="stat-tile"><div class="l">сер. день</div><div class="v">₴402</div></div>
-                    <div class="stat-tile"><div class="l">найвища</div><div class="v">₴890</div></div>
+                    <div class="stat-tile">
+                      <div class="l">сер. день</div>
+                      <div class="v">₴402</div>
+                    </div>
+                    <div class="stat-tile">
+                      <div class="l">найвища</div>
+                      <div class="v">₴890</div>
+                    </div>
                   </div>
                   <div class="day-sep">сьогодні</div>
-                  <div class="list-row alt"><div class="l"><span class="pill">☕</span>Кафе</div><span class="v">₴85</span></div>
-                  <div class="list-row"><div class="l"><span class="pill" style="background:rgba(34,211,238,0.18)">🚇</span>Транспорт</div><span class="v">₴42</span></div>
+                  <div class="list-row alt">
+                    <div class="l"><span class="pill">☕</span>Кафе</div>
+                    <span class="v">₴85</span>
+                  </div>
+                  <div class="list-row">
+                    <div class="l">
+                      <span
+                        class="pill"
+                        style="background: rgba(34, 211, 238, 0.18)"
+                        >🚇</span
+                      >Транспорт
+                    </div>
+                    <span class="v">₴42</span>
+                  </div>
                   <div class="day-sep">вчора</div>
-                  <div class="list-row alt"><div class="l"><span class="pill" style="background:rgba(249,112,102,0.18)">🍝</span>Ресторан</div><span class="v">₴450</span></div>
-                  <div class="list-row"><div class="l"><span class="pill">🛒</span>Продукти</div><span class="v">₴890</span></div>
+                  <div class="list-row alt">
+                    <div class="l">
+                      <span
+                        class="pill"
+                        style="background: rgba(249, 112, 102, 0.18)"
+                        >🍝</span
+                      >Ресторан
+                    </div>
+                    <span class="v">₴450</span>
+                  </div>
+                  <div class="list-row">
+                    <div class="l"><span class="pill">🛒</span>Продукти</div>
+                    <span class="v">₴890</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="scr-foot"><b>конвенція.</b> hero glass card зверху · 2 stat tiles · список з day-sep · кольорові pill-іконки по категорії</div>
+            <div class="scr-foot">
+              <b>конвенція.</b> hero glass card зверху · 2 stat tiles · список з
+              day-sep · кольорові pill-іконки по категорії
+            </div>
           </div>
 
           <!-- Detail -->
@@ -197,36 +693,90 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●●</span></div>
-                <div class="scr-head"><span class="scr-back">←</span><span class="scr-title">Витрата</span><span class="scr-more">⋯</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●●</span>
+                </div>
+                <div class="scr-head">
+                  <span class="scr-back">←</span
+                  ><span class="scr-title">Витрата</span
+                  ><span class="scr-more">⋯</span>
+                </div>
                 <div class="body">
                   <div class="detail-card">
                     <div class="detail-amount">₴450</div>
                     <div class="detail-name">Vino e Cucina</div>
                     <span class="detail-cat">🍝 Ресторан · автокатег.</span>
                     <div class="meta-kv">
-                      <div class="kv"><span class="k">дата</span><span class="v">17 травня · пт · 19:34</span></div>
-                      <div class="kv"><span class="k">картка</span><span class="v">Mono ••••8341</span></div>
-                      <div class="kv"><span class="k">бюджет</span><span class="v">їжа поза · 1/3</span></div>
-                      <div class="kv"><span class="k">нотатка</span><span class="v" style="color:rgba(245,240,235,0.4)">додати —</span></div>
+                      <div class="kv">
+                        <span class="k">дата</span
+                        ><span class="v">17 травня · пт · 19:34</span>
+                      </div>
+                      <div class="kv">
+                        <span class="k">картка</span
+                        ><span class="v">Mono ••••8341</span>
+                      </div>
+                      <div class="kv">
+                        <span class="k">бюджет</span
+                        ><span class="v">їжа поза · 1/3</span>
+                      </div>
+                      <div class="kv">
+                        <span class="k">нотатка</span
+                        ><span class="v" style="color: rgba(245, 240, 235, 0.4)"
+                          >додати —</span
+                        >
+                      </div>
                     </div>
                   </div>
                   <div class="actions-row">
                     <div class="btn ghost">Категорія</div>
                     <div class="btn ghost">Розбити</div>
                   </div>
-                  <div class="actions-row" style="margin-top:0">
-                    <div class="btn ghost" style="grid-column:1/-1;color:#fca5a5">Видалити</div>
+                  <div class="actions-row" style="margin-top: 0">
+                    <div
+                      class="btn ghost"
+                      style="grid-column: 1/-1; color: #fca5a5"
+                    >
+                      Видалити
+                    </div>
                   </div>
                   <!-- Cross-module hint -->
-                  <div style="background:rgba(146,204,23,0.06);border:1px solid rgba(146,204,23,0.18);border-radius:8px;padding:8px 9px;margin-top:6px;font-size:8.5px;color:rgba(245,240,235,0.75)">
-                    <span style="font-family:var(--font-mono);font-size:7.5px;text-transform:uppercase;letter-spacing:0.1em;color:var(--nutrition)">пов'язано</span><br/>
-                    Прийом їжі того ж вечора · <span style="color:var(--nutrition);text-decoration:underline">додати →</span>
+                  <div
+                    style="
+                      background: rgba(146, 204, 23, 0.06);
+                      border: 1px solid rgba(146, 204, 23, 0.18);
+                      border-radius: 8px;
+                      padding: 8px 9px;
+                      margin-top: 6px;
+                      font-size: 8.5px;
+                      color: rgba(245, 240, 235, 0.75);
+                    "
+                  >
+                    <span
+                      style="
+                        font-family: var(--font-mono);
+                        font-size: 7.5px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.1em;
+                        color: var(--nutrition);
+                      "
+                      >пов'язано</span
+                    ><br />
+                    Прийом їжі того ж вечора ·
+                    <span
+                      style="
+                        color: var(--nutrition);
+                        text-decoration: underline;
+                      "
+                      >додати →</span
+                    >
                   </div>
                 </div>
               </div>
             </div>
-            <div class="scr-foot"><b>конвенція.</b> hero number вгорі · меню kv-пар · 3 action-кнопки · крос-модульний натяк якщо є</div>
+            <div class="scr-foot">
+              <b>конвенція.</b> hero number вгорі · меню kv-пар · 3
+              action-кнопки · крос-модульний натяк якщо є
+            </div>
           </div>
 
           <!-- Create -->
@@ -236,8 +786,13 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●●</span></div>
-                <div class="scr-head"><span class="scr-back">×</span><span class="scr-title">Нова витрата</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●●</span>
+                </div>
+                <div class="scr-head">
+                  <span class="scr-back">×</span
+                  ><span class="scr-title">Нова витрата</span>
+                </div>
                 <div class="body">
                   <div class="field">
                     <div class="lab">сума</div>
@@ -259,14 +814,17 @@
                     <div class="lab">коли</div>
                     <div class="inp">Сьогодні · 14:23</div>
                   </div>
-                  <div class="actions-row" style="margin-top:auto">
+                  <div class="actions-row" style="margin-top: auto">
                     <div class="btn ghost">Скасувати</div>
                     <div class="btn primary">Зберегти</div>
                   </div>
                 </div>
               </div>
             </div>
-            <div class="scr-foot"><b>конвенція.</b> сума зверху (велика, кольорова) · поля з підказками · AI-категорія підказана але змінювана · 2 кнопки внизу</div>
+            <div class="scr-foot">
+              <b>конвенція.</b> сума зверху (велика, кольорова) · поля з
+              підказками · AI-категорія підказана але змінювана · 2 кнопки внизу
+            </div>
           </div>
         </div>
       </section>
@@ -289,7 +847,10 @@
             <h4>Гроші</h4>
             <ul>
               <li>огляд — <b>транзакції за тиждень</b> · hero ₴ + категорії</li>
-              <li>деталь — <b>одна транзакція</b> · сума, картка, категорія, нотатка</li>
+              <li>
+                деталь — <b>одна транзакція</b> · сума, картка, категорія,
+                нотатка
+              </li>
               <li>створення — <b>нова витрата</b> · сума + AI-категорія</li>
             </ul>
           </div>
@@ -297,16 +858,22 @@
             <div class="mod">Фізрук</div>
             <h4>Тіло</h4>
             <ul>
-              <li>огляд — <b>тренування за тиждень</b> · hero хв + графік сили</li>
+              <li>
+                огляд — <b>тренування за тиждень</b> · hero хв + графік сили
+              </li>
               <li>деталь — <b>одне тренування</b> · сети, ваги, нотатки</li>
-              <li>створення — <b>почати тренування</b> · план + AI-recom вправ</li>
+              <li>
+                створення — <b>почати тренування</b> · план + AI-recom вправ
+              </li>
             </ul>
           </div>
           <div class="pattern-cell routine">
             <div class="mod">Рутина</div>
             <h4>Звички</h4>
             <ul>
-              <li>огляд — <b>тиждень звичок</b> · hero стрік + календар heatmap</li>
+              <li>
+                огляд — <b>тиждень звичок</b> · hero стрік + календар heatmap
+              </li>
               <li>деталь — <b>одна звичка</b> · історія, тригери, контекст</li>
               <li>створення — <b>нова звичка</b> · ціль + час + дні тижня</li>
             </ul>
@@ -317,15 +884,23 @@
             <ul>
               <li>огляд — <b>прийоми за день</b> · hero ккал + macro ring</li>
               <li>деталь — <b>один прийом</b> · страви, інгредієнти, ккал</li>
-              <li>створення — <b>нова страва</b> · сканер / фото / пошук / ручне</li>
+              <li>
+                створення — <b>нова страва</b> · сканер / фото / пошук / ручне
+              </li>
             </ul>
           </div>
         </div>
       </section>
 
       <footer class="bot">
-        <span>Sergeant · <strong>product/details (pattern)</strong> · 2026-05-18</span>
-        <span>Реплікація · <strong>3 нових файли на модуль · post-launch</strong></span>
+        <span
+          >Sergeant · <strong>product/details (pattern)</strong> ·
+          2026-05-18</span
+        >
+        <span
+          >Реплікація ·
+          <strong>3 нових файли на модуль · post-launch</strong></span
+        >
       </footer>
     </div>
   </body>

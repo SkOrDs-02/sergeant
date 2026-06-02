@@ -192,7 +192,9 @@ export const DOMAIN_PATHS: Record<string, ReactNode> = {
     </>
   ),
   // `pen` — edit / annotate (alternative to Lucide `edit-2`).
-  pen: <path d="M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />,
+  pen: (
+    <path d="M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+  ),
   // `egg` — nutrition: dairy/protein category.
   egg: <path d="M12 3c-4 0-7 6-7 11a7 7 0 0 0 14 0c0-5-3-11-7-11z" />,
   // `scanner` — barcode / photo scanner trigger (Nutrition module).

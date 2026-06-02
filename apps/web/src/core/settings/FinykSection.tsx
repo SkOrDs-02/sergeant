@@ -286,350 +286,352 @@ export function FinykSection() {
     // already mounts each section inside its own `id="settings-finyk"`
     // anchor div, this is one extra inert wrapper just for the observer).
     <div ref={sectionRef}>
-    <SettingsGroup title="Фінік" emoji="💳">
-      <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
-        surface="mono_auto_sync"
-        title="Авто-Mono sync доступний у Pro"
-        description="Free лишається для ручного ведення фінансів. Pro підключає серверний Monobank webhook, backfill і автоматичне оновлення транзакцій."
-      />
-      <ConfirmModal
-        open={confirmKind !== null}
-        title={confirmKind === "cache" ? "Очистити кеш?" : "Вийти з Monobank?"}
-        body={
-          confirmKind === "cache"
-            ? "Буде видалено збережені транзакції в кеші. Потім дані підтягнуться з Monobank знову."
-            : "Webhook-з'єднання буде від'єднано. Щоб відновити — введіть токен заново."
-        }
-        confirmLabel={confirmKind === "cache" ? "Очистити" : "Вийти"}
-        danger={confirmKind === "disconnect"}
-        onCancel={() => setConfirmKind(null)}
-        onConfirm={() => {
-          if (confirmKind === "cache") clearTxCache();
-          if (confirmKind === "disconnect") disconnectWebhook();
-          setConfirmKind(null);
-        }}
-      />
+      <SettingsGroup title="Фінік" emoji="💳">
+        <PaywallModal
+          open={paywallOpen}
+          onClose={() => setPaywallOpen(false)}
+          surface="mono_auto_sync"
+          title="Авто-Mono sync доступний у Pro"
+          description="Free лишається для ручного ведення фінансів. Pro підключає серверний Monobank webhook, backfill і автоматичне оновлення транзакцій."
+        />
+        <ConfirmModal
+          open={confirmKind !== null}
+          title={
+            confirmKind === "cache" ? "Очистити кеш?" : "Вийти з Monobank?"
+          }
+          body={
+            confirmKind === "cache"
+              ? "Буде видалено збережені транзакції в кеші. Потім дані підтягнуться з Monobank знову."
+              : "Webhook-з'єднання буде від'єднано. Щоб відновити — введіть токен заново."
+          }
+          confirmLabel={confirmKind === "cache" ? "Очистити" : "Вийти"}
+          danger={confirmKind === "disconnect"}
+          onCancel={() => setConfirmKind(null)}
+          onConfirm={() => {
+            if (confirmKind === "cache") clearTxCache();
+            if (confirmKind === "disconnect") disconnectWebhook();
+            setConfirmKind(null);
+          }}
+        />
 
-      <SettingsSubGroup title="Власні категорії витрат">
-        <p className="text-xs text-subtle leading-snug">
-          Додаються до списку категорій у транзакціях, сплітах і лімітах (можна
-          вказати емодзі на початку назви).
-        </p>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newCategoryLabel}
-            onChange={(e) => setNewCategoryLabel(e.target.value)}
-            placeholder="Напр. 🎨 Хобі"
-            maxLength={80}
-            className={catInputClass}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && newCategoryLabel.trim()) {
+        <SettingsSubGroup title="Власні категорії витрат">
+          <p className="text-xs text-subtle leading-snug">
+            Додаються до списку категорій у транзакціях, сплітах і лімітах
+            (можна вказати емодзі на початку назви).
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newCategoryLabel}
+              onChange={(e) => setNewCategoryLabel(e.target.value)}
+              placeholder="Напр. 🎨 Хобі"
+              maxLength={80}
+              className={catInputClass}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && newCategoryLabel.trim()) {
+                  addCustomCategory(newCategoryLabel);
+                  setNewCategoryLabel("");
+                }
+              }}
+            />
+            <Button
+              type="button"
+              className="shrink-0 h-11 px-4"
+              onClick={() => {
                 addCustomCategory(newCategoryLabel);
                 setNewCategoryLabel("");
-              }
-            }}
-          />
-          <Button
-            type="button"
-            className="shrink-0 h-11 px-4"
-            onClick={() => {
-              addCustomCategory(newCategoryLabel);
-              setNewCategoryLabel("");
-            }}
-          >
-            Додати
-          </Button>
-        </div>
-        {customCategories.length > 0 ? (
-          <ul className="space-y-0 -mx-4">
-            {customCategories.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line last:border-0"
-              >
-                <span className="text-style-label truncate">{c.label}</span>
-                <button
-                  type="button"
-                  onClick={() => removeCustomCategory(c.id)}
-                  className="text-xs font-semibold text-danger/80 hover:text-danger shrink-0"
-                >
-                  Видалити
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState
-            compact
-            module="finyk"
-            icon={<Icon name="tag" size={20} />}
-            title="Поки немає власних категорій"
-            description="Додай першу категорію вище — вона зʼявиться у списку транзакцій, сплітів і лімітів."
-          />
-        )}
-      </SettingsSubGroup>
-
-      {/* ── Webhook mode: Monobank status & connect ── */}
-      <SettingsSubGroup title="Monobank (Webhook)">
-        {webhookConnected && webhookSyncState ? (
-          <div className="space-y-3">
-            <div
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-xl border",
-                webhookSyncState.status === "active"
-                  ? "bg-bg border-green-500/30"
-                  : webhookSyncState.status === "pending"
-                    ? "bg-bg border-yellow-500/30"
-                    : "bg-bg border-red-500/30",
-              )}
+              }}
             >
-              <div
-                className={cn(
-                  "w-2.5 h-2.5 rounded-full shrink-0",
-                  webhookSyncState.status === "active"
-                    ? "bg-success"
-                    : webhookSyncState.status === "pending"
-                      ? "bg-warning"
-                      : "bg-danger",
-                )}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="text-style-label">
-                  {webhookSyncState.status === "active"
-                    ? "Webhook active"
-                    : webhookSyncState.status === "pending"
-                      ? "Webhook pending"
-                      : "Webhook error"}
-                </div>
-                <div className="text-xs text-subtle mt-0.5">
-                  {webhookSyncState.accountsCount} рахунків
-                  {webhookSyncState.lastEventAt && (
-                    <>
-                      {" · "}
-                      {new Date(webhookSyncState.lastEventAt).toLocaleString(
-                        "uk-UA",
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          day: "numeric",
-                          month: "short",
-                        },
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                className="flex-1 h-11"
-                onClick={triggerBackfill}
-                disabled={backfillProgress?.status === "running"}
-              >
-                {backfillProgress?.status === "running"
-                  ? "Re-sync…"
-                  : "Re-sync (backfill)"}
-              </Button>
-              <Button
-                variant="danger"
-                className="flex-1 h-11"
-                onClick={() => setConfirmKind("disconnect")}
-              >
-                Від{"'"}єднати
-              </Button>
-            </div>
-            <BackfillProgressPill progress={backfillProgress} />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-xs text-subtle leading-snug">
-              Токен відправляється на сервер і не зберігається у браузері. Mono
-              → Налаштування → Інші → API.
-            </p>
-            <div className="relative">
-              <input
-                type={showWebhookToken ? "text" : "password"}
-                value={webhookTokenInput}
-                onChange={(e) => setWebhookTokenInput(e.target.value)}
-                placeholder="Токен Monobank API"
-                autoComplete="off"
-                className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-sm text-text"
-                onKeyDown={(e) => e.key === "Enter" && connectWebhook()}
-              />
-              <button
-                type="button"
-                onClick={() => setShowWebhookToken((v) => !v)}
-                className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
-                aria-label={
-                  showWebhookToken ? "Приховати токен" : "Показати токен"
-                }
-              >
-                {showWebhookToken ? "\u{1F648}" : "\u{1F441}"}
-              </button>
-            </div>
-            {webhookError && (
-              <p className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2">
-                {webhookError}
-              </p>
-            )}
-            <Button
-              className="w-full h-11"
-              onClick={connectWebhook}
-              disabled={webhookConnecting}
-            >
-              {webhookConnecting
-                ? messages.loadingActions.connecting
-                : "Підключити Monobank"}
+              Додати
             </Button>
           </div>
-        )}
-      </SettingsSubGroup>
-
-      <SettingsSubGroup title="Сервіс">
-        <p className="text-xs text-subtle leading-snug">
-          Дані Monobank приходять автоматично через webhook та оновлюються при
-          поверненні у вкладку. Якщо потрібно примусово перепитати сервер —
-          натисни «Оновити дані». Якщо список операцій виглядає некоректно —
-          очисти кеш і синхронізуй знову.
-        </p>
-        <Button
-          variant="ghost"
-          className="w-full h-11"
-          onClick={refreshAllData}
-          disabled={refreshing}
-        >
-          {refreshing ? "Оновлення…" : "🔄 Оновити дані"}
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full h-11"
-          onClick={() => setConfirmKind("cache")}
-        >
-          🧹 Очистити кеш транзакцій
-        </Button>
-      </SettingsSubGroup>
-
-      {PRIVAT_ENABLED && (
-        <SettingsSubGroup title="ПриватБанк (Приват24 для підприємців)">
-          {confirmDisconnectPrivat && (
-            <ConfirmModal
-              open
-              title="Від'єднати ПриватБанк?"
-              body="Credentials та кеш транзакцій ПриватБанку буде видалено з цього браузера."
-              confirmLabel="Від'єднати"
-              danger
-              onCancel={() => setConfirmDisconnectPrivat(false)}
-              onConfirm={disconnectPrivat}
+          {customCategories.length > 0 ? (
+            <ul className="space-y-0 -mx-4">
+              {customCategories.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line last:border-0"
+                >
+                  <span className="text-style-label truncate">{c.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeCustomCategory(c.id)}
+                    className="text-xs font-semibold text-danger/80 hover:text-danger shrink-0"
+                  >
+                    Видалити
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState
+              compact
+              module="finyk"
+              icon={<Icon name="tag" size={20} />}
+              title="Поки немає власних категорій"
+              description="Додай першу категорію вище — вона зʼявиться у списку транзакцій, сплітів і лімітів."
             />
           )}
-          {privatConnected ? (
+        </SettingsSubGroup>
+
+        {/* ── Webhook mode: Monobank status & connect ── */}
+        <SettingsSubGroup title="Monobank (Webhook)">
+          {webhookConnected && webhookSyncState ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-bg border border-green-500/30 rounded-xl">
-                <div className="w-9 h-9 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-base shrink-0">
-                  🏦
-                </div>
-                <div>
-                  <div className="text-style-label text-text">
-                    ПриватБанк підключено
+              <div
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-xl border",
+                  webhookSyncState.status === "active"
+                    ? "bg-bg border-green-500/30"
+                    : webhookSyncState.status === "pending"
+                      ? "bg-bg border-yellow-500/30"
+                      : "bg-bg border-red-500/30",
+                )}
+              >
+                <div
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-full shrink-0",
+                    webhookSyncState.status === "active"
+                      ? "bg-success"
+                      : webhookSyncState.status === "pending"
+                        ? "bg-warning"
+                        : "bg-danger",
+                  )}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-style-label">
+                    {webhookSyncState.status === "active"
+                      ? "Webhook active"
+                      : webhookSyncState.status === "pending"
+                        ? "Webhook pending"
+                        : "Webhook error"}
                   </div>
-                  <div className="text-xs text-subtle mt-0.5 font-mono truncate">
-                    ID: {(privatIdInput || "").slice(0, 6)}••••
+                  <div className="text-xs text-subtle mt-0.5">
+                    {webhookSyncState.accountsCount} рахунків
+                    {webhookSyncState.lastEventAt && (
+                      <>
+                        {" · "}
+                        {new Date(webhookSyncState.lastEventAt).toLocaleString(
+                          "uk-UA",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            day: "numeric",
+                            month: "short",
+                          },
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
-              <Button
-                variant="danger"
-                className="w-full h-11"
-                onClick={() => setConfirmDisconnectPrivat(true)}
-              >
-                Від{"'"}єднати ПриватБанк
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  className="flex-1 h-11"
+                  onClick={triggerBackfill}
+                  disabled={backfillProgress?.status === "running"}
+                >
+                  {backfillProgress?.status === "running"
+                    ? "Re-sync…"
+                    : "Re-sync (backfill)"}
+                </Button>
+                <Button
+                  variant="danger"
+                  className="flex-1 h-11"
+                  onClick={() => setConfirmKind("disconnect")}
+                >
+                  Від{"'"}єднати
+                </Button>
+              </div>
+              <BackfillProgressPill progress={backfillProgress} />
             </div>
           ) : (
             <div className="space-y-3">
               <p className="text-xs text-subtle leading-snug">
-                API Приват24 для підприємців. Merchant ID та токен знаходяться у
-                Приват24 Бізнес → Налаштування → API.
+                Токен відправляється на сервер і не зберігається у браузері.
+                Mono → Налаштування → Інші → API.
               </p>
-              <div>
-                <label
-                  htmlFor="hub-privat-merchant-id"
-                  className="text-xs text-muted mb-1 block"
-                >
-                  Merchant ID
-                </label>
+              <div className="relative">
                 <input
-                  id="hub-privat-merchant-id"
-                  type="text"
-                  value={privatIdInput}
-                  onChange={(e) => setPrivatIdInput(e.target.value)}
-                  placeholder="Ваш Merchant ID"
+                  type={showWebhookToken ? "text" : "password"}
+                  value={webhookTokenInput}
+                  onChange={(e) => setWebhookTokenInput(e.target.value)}
+                  placeholder="Токен Monobank API"
                   autoComplete="off"
-                  className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
+                  className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-sm text-text"
+                  onKeyDown={(e) => e.key === "Enter" && connectWebhook()}
                 />
-              </div>
-              <div>
-                <label
-                  htmlFor="hub-privat-token"
-                  className="text-xs text-muted mb-1 block"
+                <button
+                  type="button"
+                  onClick={() => setShowWebhookToken((v) => !v)}
+                  className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
+                  aria-label={
+                    showWebhookToken ? "Приховати токен" : "Показати токен"
+                  }
                 >
-                  Токен / пароль
-                </label>
-                <div className="relative">
-                  <input
-                    id="hub-privat-token"
-                    type={showPrivatToken ? "text" : "password"}
-                    value={privatTokenInput}
-                    onChange={(e) => setPrivatTokenInput(e.target.value)}
-                    placeholder="Merchant token"
-                    autoComplete="off"
-                    className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-sm text-text"
-                    onKeyDown={(e) => e.key === "Enter" && connectPrivat()}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPrivatToken((v) => !v)}
-                    className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
-                    aria-label={showPrivatToken ? "Приховати" : "Показати"}
-                  >
-                    {showPrivatToken ? "🙈" : "👁"}
-                  </button>
-                </div>
+                  {showWebhookToken ? "\u{1F648}" : "\u{1F441}"}
+                </button>
               </div>
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 rounded accent-emerald-600 cursor-pointer"
-                  checked={rememberPrivat}
-                  onChange={(e) => setRememberPrivat(e.target.checked)}
-                />
-                <span className="text-sm text-muted">
-                  Запам{"'"}ятати на цьому пристрої
-                </span>
-              </label>
-              {privatError && (
+              {webhookError && (
                 <p className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2">
-                  {privatError}
+                  {webhookError}
                 </p>
               )}
               <Button
                 className="w-full h-11"
-                onClick={connectPrivat}
-                disabled={privatConnecting}
+                onClick={connectWebhook}
+                disabled={webhookConnecting}
               >
-                {privatConnecting
+                {webhookConnecting
                   ? messages.loadingActions.connecting
-                  : "Підключити ПриватБанк"}
+                  : "Підключити Monobank"}
               </Button>
             </div>
           )}
         </SettingsSubGroup>
-      )}
-    </SettingsGroup>
+
+        <SettingsSubGroup title="Сервіс">
+          <p className="text-xs text-subtle leading-snug">
+            Дані Monobank приходять автоматично через webhook та оновлюються при
+            поверненні у вкладку. Якщо потрібно примусово перепитати сервер —
+            натисни «Оновити дані». Якщо список операцій виглядає некоректно —
+            очисти кеш і синхронізуй знову.
+          </p>
+          <Button
+            variant="ghost"
+            className="w-full h-11"
+            onClick={refreshAllData}
+            disabled={refreshing}
+          >
+            {refreshing ? "Оновлення…" : "🔄 Оновити дані"}
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full h-11"
+            onClick={() => setConfirmKind("cache")}
+          >
+            🧹 Очистити кеш транзакцій
+          </Button>
+        </SettingsSubGroup>
+
+        {PRIVAT_ENABLED && (
+          <SettingsSubGroup title="ПриватБанк (Приват24 для підприємців)">
+            {confirmDisconnectPrivat && (
+              <ConfirmModal
+                open
+                title="Від'єднати ПриватБанк?"
+                body="Credentials та кеш транзакцій ПриватБанку буде видалено з цього браузера."
+                confirmLabel="Від'єднати"
+                danger
+                onCancel={() => setConfirmDisconnectPrivat(false)}
+                onConfirm={disconnectPrivat}
+              />
+            )}
+            {privatConnected ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-bg border border-green-500/30 rounded-xl">
+                  <div className="w-9 h-9 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-base shrink-0">
+                    🏦
+                  </div>
+                  <div>
+                    <div className="text-style-label text-text">
+                      ПриватБанк підключено
+                    </div>
+                    <div className="text-xs text-subtle mt-0.5 font-mono truncate">
+                      ID: {(privatIdInput || "").slice(0, 6)}••••
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="danger"
+                  className="w-full h-11"
+                  onClick={() => setConfirmDisconnectPrivat(true)}
+                >
+                  Від{"'"}єднати ПриватБанк
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-subtle leading-snug">
+                  API Приват24 для підприємців. Merchant ID та токен знаходяться
+                  у Приват24 Бізнес → Налаштування → API.
+                </p>
+                <div>
+                  <label
+                    htmlFor="hub-privat-merchant-id"
+                    className="text-xs text-muted mb-1 block"
+                  >
+                    Merchant ID
+                  </label>
+                  <input
+                    id="hub-privat-merchant-id"
+                    type="text"
+                    value={privatIdInput}
+                    onChange={(e) => setPrivatIdInput(e.target.value)}
+                    placeholder="Ваш Merchant ID"
+                    autoComplete="off"
+                    className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="hub-privat-token"
+                    className="text-xs text-muted mb-1 block"
+                  >
+                    Токен / пароль
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="hub-privat-token"
+                      type={showPrivatToken ? "text" : "password"}
+                      value={privatTokenInput}
+                      onChange={(e) => setPrivatTokenInput(e.target.value)}
+                      placeholder="Merchant token"
+                      autoComplete="off"
+                      className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-sm text-text"
+                      onKeyDown={(e) => e.key === "Enter" && connectPrivat()}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPrivatToken((v) => !v)}
+                      className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
+                      aria-label={showPrivatToken ? "Приховати" : "Показати"}
+                    >
+                      {showPrivatToken ? "🙈" : "👁"}
+                    </button>
+                  </div>
+                </div>
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded accent-emerald-600 cursor-pointer"
+                    checked={rememberPrivat}
+                    onChange={(e) => setRememberPrivat(e.target.checked)}
+                  />
+                  <span className="text-sm text-muted">
+                    Запам{"'"}ятати на цьому пристрої
+                  </span>
+                </label>
+                {privatError && (
+                  <p className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2">
+                    {privatError}
+                  </p>
+                )}
+                <Button
+                  className="w-full h-11"
+                  onClick={connectPrivat}
+                  disabled={privatConnecting}
+                >
+                  {privatConnecting
+                    ? messages.loadingActions.connecting
+                    : "Підключити ПриватБанк"}
+                </Button>
+              </div>
+            )}
+          </SettingsSubGroup>
+        )}
+      </SettingsGroup>
     </div>
   );
 }

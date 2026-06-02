@@ -202,23 +202,20 @@ export default function OnboardingScreen() {
     dispatch({ type: "TOGGLE_PICK", id });
   }, []);
 
-  const setGoal = useCallback(
-    (key: keyof OnboardingGoals, value: unknown) => {
-      dispatch({ type: "SET_GOAL", key, value });
-      const goalToModule: Record<keyof OnboardingGoals, DashboardModuleId> = {
-        finykBudget: "finyk",
-        fizrukWeeklyGoal: "fizruk",
-        routineFirstHabit: "routine",
-        nutritionGoal: "nutrition",
-      };
-      trackEvent(ANALYTICS_EVENTS.ONBOARDING_GOAL_SET, {
-        module: goalToModule[key],
-        goalType: key,
-        value,
-      });
-    },
-    [],
-  );
+  const setGoal = useCallback((key: keyof OnboardingGoals, value: unknown) => {
+    dispatch({ type: "SET_GOAL", key, value });
+    const goalToModule: Record<keyof OnboardingGoals, DashboardModuleId> = {
+      finykBudget: "finyk",
+      fizrukWeeklyGoal: "fizruk",
+      routineFirstHabit: "routine",
+      nutritionGoal: "nutrition",
+    };
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_GOAL_SET, {
+      module: goalToModule[key],
+      goalType: key,
+      value,
+    });
+  }, []);
 
   const goToSignUp = useCallback(() => {
     router.replace("/(auth)/sign-up");
@@ -227,7 +224,10 @@ export default function OnboardingScreen() {
   const skipAll = useCallback(() => {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_SKIPPED, {
       step: inWizardRef.current ? state.step : "welcome",
-      durationMs: Math.max(0, Date.now() - (startedAtRef.current ?? Date.now())),
+      durationMs: Math.max(
+        0,
+        Date.now() - (startedAtRef.current ?? Date.now()),
+      ),
     });
     goToSignUp();
   }, [state.step, goToSignUp]);
@@ -279,7 +279,10 @@ export default function OnboardingScreen() {
   }, []);
 
   const reportPermission = useCallback(
-    (permission: "notifications" | "camera", result: PermissionPromptResult) => {
+    (
+      permission: "notifications" | "camera",
+      result: PermissionPromptResult,
+    ) => {
       trackEvent(ANALYTICS_EVENTS.PERMISSION_REQUESTED, {
         type: permission,
         context: "onboarding",
@@ -300,7 +303,8 @@ export default function OnboardingScreen() {
   );
 
   const handlePushResult = useCallback(
-    (result: PermissionPromptResult) => reportPermission("notifications", result),
+    (result: PermissionPromptResult) =>
+      reportPermission("notifications", result),
     [reportPermission],
   );
 
@@ -382,7 +386,9 @@ export default function OnboardingScreen() {
                 style={{
                   width: i === introIndexRef.current ? 24 : 8,
                   backgroundColor:
-                    i === introIndexRef.current ? slide.color : colors.textMuted,
+                    i === introIndexRef.current
+                      ? slide.color
+                      : colors.textMuted,
                 }}
               />
             </Pressable>

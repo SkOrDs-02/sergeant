@@ -253,14 +253,29 @@ describe("accumulatePlan + counters", () => {
     accumulatePlan(c, {
       rowId: "a",
       rekeys: [
-        { field: "accessToken", oldVersion: 1, newCiphertext: "x", oldCiphertext: "y" },
-        { field: "refreshToken", oldVersion: 1, newCiphertext: "x", oldCiphertext: "y" },
+        {
+          field: "accessToken",
+          oldVersion: 1,
+          newCiphertext: "x",
+          oldCiphertext: "y",
+        },
+        {
+          field: "refreshToken",
+          oldVersion: 1,
+          newCiphertext: "x",
+          oldCiphertext: "y",
+        },
       ],
     });
     accumulatePlan(c, {
       rowId: "b",
       rekeys: [
-        { field: "idToken", oldVersion: 2, newCiphertext: "x", oldCiphertext: "y" },
+        {
+          field: "idToken",
+          oldVersion: 2,
+          newCiphertext: "x",
+          oldCiphertext: "y",
+        },
       ],
     });
     expect(c.rowsScanned).toBe(2);

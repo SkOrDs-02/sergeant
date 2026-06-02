@@ -4,16 +4,16 @@ This directory holds the **factual state** of product analytics in Sergeant, plu
 
 ## Files
 
-| File | Owner skill | Purpose |
-|------|-------------|---------|
-| `current-state.yaml` | `product-tracking-audit-current-tracking` | Reverse-engineered inventory of what's actually tracked in code today. |
-| `current-implementation.md` | `product-tracking-audit-current-tracking` | How analytics is wired (SDKs, init, routing, identity, error handling). |
-| `audits/YYYY-MM-DD.md` | `product-tracking-audit-current-tracking` | Human-readable snapshot of an audit run. |
-| `product.md` (future) | `product-tracking-model-product` | Product model (value flows, entities, group hierarchy). |
-| `tracking-plan.yaml` (future) | `product-tracking-design-tracking-plan` | Target tracking plan (designed, not necessarily implemented). |
-| `delta.md` (future) | `product-tracking-design-tracking-plan` | Diff between current state and target. |
-| `instrument.md` (future) | `product-tracking-generate-implementation-guide` | SDK-specific implementation guide. |
-| `changelog.md` (future) | `product-tracking-instrument-new-feature` | Log of tracking-plan changes per release. |
+| File                          | Owner skill                                      | Purpose                                                                 |
+| ----------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| `current-state.yaml`          | `product-tracking-audit-current-tracking`        | Reverse-engineered inventory of what's actually tracked in code today.  |
+| `current-implementation.md`   | `product-tracking-audit-current-tracking`        | How analytics is wired (SDKs, init, routing, identity, error handling). |
+| `audits/YYYY-MM-DD.md`        | `product-tracking-audit-current-tracking`        | Human-readable snapshot of an audit run.                                |
+| `product.md` (future)         | `product-tracking-model-product`                 | Product model (value flows, entities, group hierarchy).                 |
+| `tracking-plan.yaml` (future) | `product-tracking-design-tracking-plan`          | Target tracking plan (designed, not necessarily implemented).           |
+| `delta.md` (future)           | `product-tracking-design-tracking-plan`          | Diff between current state and target.                                  |
+| `instrument.md` (future)      | `product-tracking-generate-implementation-guide` | SDK-specific implementation guide.                                      |
+| `changelog.md` (future)       | `product-tracking-instrument-new-feature`        | Log of tracking-plan changes per release.                               |
 
 ## Lifecycle
 

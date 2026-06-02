@@ -1,11 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { monoWebhookApi, billingApi, pushApi } from "@shared/api";
-import {
-  finykKeys,
-  billingKeys,
-  pushKeys,
-} from "@shared/lib/api/queryKeys";
+import { finykKeys, billingKeys, pushKeys } from "@shared/lib/api/queryKeys";
 import { shouldPrefetchOnConnection } from "./connectionGate";
 import type { HubModuleId } from "../hooks/useHubNavigation";
 

@@ -79,8 +79,8 @@ describe("lazyImport", () => {
       "Hello",
     );
 
-    await expect(getLoaderPromise(Lazy)).rejects.toSatisfy(
-      (err: unknown) => isChunkLoadError(err),
+    await expect(getLoaderPromise(Lazy)).rejects.toSatisfy((err: unknown) =>
+      isChunkLoadError(err),
     );
   });
 
@@ -139,8 +139,8 @@ describe("lazyDefault", () => {
       async () => undefined as unknown as { default: typeof Hello },
     );
 
-    await expect(getLoaderPromise(Lazy)).rejects.toSatisfy(
-      (err: unknown) => isChunkLoadError(err),
+    await expect(getLoaderPromise(Lazy)).rejects.toSatisfy((err: unknown) =>
+      isChunkLoadError(err),
     );
   });
 

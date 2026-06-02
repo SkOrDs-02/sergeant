@@ -6,197 +6,395 @@
     <title>Sergeant · Платний доступ — момент і копія</title>
     <link rel="stylesheet" href="../../_shared/tokens.css" />
     <style>
-      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html,body {
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
         font-family: var(--font-sans);
         background: var(--bg);
         color: var(--text);
         -webkit-font-smoothing: antialiased;
         line-height: 1.5;
       }
-      a { color: inherit; text-decoration: none; }
-      code,.mono { font-family: var(--font-mono); }
-      .serif { font-family: var(--font-serif); }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .serif {
+        font-family: var(--font-serif);
+      }
 
-      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 32px 96px;
+      }
 
       /* ─── HEADER ─── */
-      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
-      .crumb {
-        font-family: var(--font-mono); font-size: 11px; font-weight: 600;
-        text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand);
-        margin-bottom: 14px; display: flex; gap: 8px; align-items: center;
+      header.top {
+        margin-bottom: 56px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
       }
-      .crumb a { color: var(--muted); }
-      .crumb .sep { color: var(--subtle); }
+      .crumb {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--brand);
+        margin-bottom: 14px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .crumb a {
+        color: var(--muted);
+      }
+      .crumb .sep {
+        color: var(--subtle);
+      }
       header.top h1 {
-        font-size: clamp(36px, 5vw, 56px); font-weight: 800;
-        letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px;
-        max-width: 920px; text-wrap: balance;
+        font-size: clamp(36px, 5vw, 56px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        margin-bottom: 18px;
+        max-width: 920px;
+        text-wrap: balance;
       }
       header.top h1 em {
-        font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--muted);
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 400;
+        color: var(--muted);
       }
       header.top .lede {
-        font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6;
+        font-size: 17px;
+        color: var(--muted);
+        max-width: 740px;
+        line-height: 1.6;
       }
       .meta-row {
-        margin-top: 24px; display: flex; gap: 28px; flex-wrap: wrap;
-        font-family: var(--font-mono); font-size: 11px; color: var(--subtle);
-        text-transform: uppercase; letter-spacing: 0.12em;
+        margin-top: 24px;
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
       }
-      .meta-row span strong { color: var(--text); font-weight: 600; margin-left: 6px; }
+      .meta-row span strong {
+        color: var(--text);
+        font-weight: 600;
+        margin-left: 6px;
+      }
 
       /* ─── LEGEND ─── */
       .legend {
-        background: var(--panel); border: 1px solid var(--border);
-        border-radius: var(--r-xl); margin-bottom: 64px; overflow: hidden;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        margin-bottom: 64px;
+        overflow: hidden;
       }
       .legend-head {
-        padding: 18px 24px; background: var(--surface);
+        padding: 18px 24px;
+        background: var(--surface);
         border-bottom: 1px solid var(--border);
-        display: flex; justify-content: space-between; align-items: baseline;
-        flex-wrap: wrap; gap: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 12px;
       }
-      .legend-head h2 { font-size: 14px; font-weight: 800; letter-spacing: -0.005em; }
-      .legend-head .src { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+      .legend-head h2 {
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: -0.005em;
+      }
+      .legend-head .src {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
       .legend-grid {
-        display: grid; grid-template-columns: repeat(3, 1fr);
-        gap: 1px; background: var(--border);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--border);
       }
-      .legend-cell { background: var(--panel); padding: 22px 24px; }
+      .legend-cell {
+        background: var(--panel);
+        padding: 22px 24px;
+      }
       .legend-cell .badge {
-        font-family: var(--font-mono); font-weight: 800; font-size: 11px;
-        letter-spacing: 0.1em; text-transform: uppercase;
-        padding: 4px 10px; border-radius: var(--r-sm);
-        display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: var(--r-sm);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
       }
-      .legend-cell .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-      .legend-cell.now .badge { color: var(--routine); background: var(--routine-soft); }
-      .legend-cell.plan .badge { color: var(--finyk-dark); background: var(--finyk-soft); }
-      .legend-cell.rec .badge { color: var(--fizruk-dark); background: var(--fizruk-soft); }
-      .legend-cell h3 { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 6px; }
-      .legend-cell p { font-size: 13px; color: var(--muted); line-height: 1.55; }
+      .legend-cell .badge .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .legend-cell.now .badge {
+        color: var(--routine);
+        background: var(--routine-soft);
+      }
+      .legend-cell.plan .badge {
+        color: var(--finyk-dark);
+        background: var(--finyk-soft);
+      }
+      .legend-cell.rec .badge {
+        color: var(--fizruk-dark);
+        background: var(--fizruk-soft);
+      }
+      .legend-cell h3 {
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        margin-bottom: 6px;
+      }
+      .legend-cell p {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
       .legend-cell .when {
-        margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border);
-        font-family: var(--font-mono); font-size: 11px; color: var(--subtle);
-        text-transform: uppercase; letter-spacing: 0.1em;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
       }
 
       /* ─── SECTION ─── */
-      section { margin-bottom: 72px; scroll-margin-top: 32px; }
+      section {
+        margin-bottom: 72px;
+        scroll-margin-top: 32px;
+      }
       .section-head {
-        display: flex; align-items: baseline; gap: 16px;
-        margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
       }
       .section-head .sn {
-        font-family: var(--font-mono); font-size: 12px; font-weight: 800;
-        letter-spacing: 0.1em; color: var(--brand);
-        padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--brand);
+        padding: 3px 9px;
+        background: var(--brand-soft);
+        border-radius: var(--r-sm);
       }
-      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
+      .section-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.022em;
+      }
       .section-head .event {
-        margin-left: auto; font-family: var(--font-mono); font-size: 11px;
-        color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em;
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
         white-space: nowrap;
       }
-      .section-head .event strong { color: var(--text); }
+      .section-head .event strong {
+        color: var(--text);
+      }
       .section-intro {
-        color: var(--muted); font-size: 15px; line-height: 1.6;
-        max-width: 740px; margin-bottom: 24px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 740px;
+        margin-bottom: 24px;
       }
 
       /* ─── STATE ROW (3 phones side-by-side) ─── */
       .state-row {
-        display: grid; grid-template-columns: repeat(3, 1fr);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
         gap: 18px;
       }
       .state-card {
-        background: var(--panel); border: 1px solid var(--border);
+        background: var(--panel);
+        border: 1px solid var(--border);
         border-radius: var(--r-xl);
         padding: 16px 18px 18px;
-        display: flex; flex-direction: column; gap: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
         border-left-width: 3px;
       }
-      .state-card.now { border-left-color: var(--routine); }
-      .state-card.plan { border-left-color: var(--finyk-dark); }
-      .state-card.rec { border-left-color: var(--fizruk-dark); }
-      .state-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-      .state-tag {
-        font-family: var(--font-mono); font-weight: 800; font-size: 10px;
-        letter-spacing: 0.1em; text-transform: uppercase;
-        padding: 3px 8px; border-radius: var(--r-sm);
-        display: inline-flex; gap: 6px; align-items: center;
+      .state-card.now {
+        border-left-color: var(--routine);
       }
-      .state-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-      .state-card.now .state-tag { color: var(--routine); background: var(--routine-soft); }
-      .state-card.plan .state-tag { color: var(--finyk-dark); background: var(--finyk-soft); }
-      .state-card.rec .state-tag { color: var(--fizruk-dark); background: var(--fizruk-soft); }
-      .state-title { font-size: 13px; font-weight: 800; letter-spacing: -0.005em; }
+      .state-card.plan {
+        border-left-color: var(--finyk-dark);
+      }
+      .state-card.rec {
+        border-left-color: var(--fizruk-dark);
+      }
+      .state-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .state-tag {
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: var(--r-sm);
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .state-tag .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .state-card.now .state-tag {
+        color: var(--routine);
+        background: var(--routine-soft);
+      }
+      .state-card.plan .state-tag {
+        color: var(--finyk-dark);
+        background: var(--finyk-soft);
+      }
+      .state-card.rec .state-tag {
+        color: var(--fizruk-dark);
+        background: var(--fizruk-soft);
+      }
+      .state-title {
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: -0.005em;
+      }
       .state-ref {
-        margin-left: auto; font-family: var(--font-mono); font-size: 10px;
-        color: var(--subtle); white-space: nowrap;
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--subtle);
+        white-space: nowrap;
       }
 
       /* ─── PHONE ─── */
       .phone {
-        width: 100%; max-width: 280px;
+        width: 100%;
+        max-width: 280px;
         margin: 0 auto;
         aspect-ratio: 9 / 19.5;
         background: #1a1614;
         border: 6px solid #0a0a09;
         border-radius: 34px;
-        box-shadow: 0 12px 28px rgba(28,25,23,0.16);
+        box-shadow: 0 12px 28px rgba(28, 25, 23, 0.16);
         position: relative;
         overflow: hidden;
         color: #f5f0eb;
       }
       .phone-island {
-        position: absolute; top: 8px; left: 50%;
+        position: absolute;
+        top: 8px;
+        left: 50%;
         transform: translateX(-50%);
-        width: 32%; height: 16px;
-        background: #0a0a09; border-radius: 999px;
+        width: 32%;
+        height: 16px;
+        background: #0a0a09;
+        border-radius: 999px;
         z-index: 5;
       }
       .phone-screen {
-        position: absolute; inset: 0;
+        position: absolute;
+        inset: 0;
         padding: 30px 14px 0;
-        display: flex; flex-direction: column;
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
       }
       .phone-statusbar {
-        display: flex; justify-content: space-between;
-        font-size: 8px; font-weight: 700;
-        color: rgba(245,240,235,0.7); font-family: var(--font-mono);
-        margin-bottom: 10px; padding: 0 4px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 8px;
+        font-weight: 700;
+        color: rgba(245, 240, 235, 0.7);
+        font-family: var(--font-mono);
+        margin-bottom: 10px;
+        padding: 0 4px;
       }
       .phone-content {
-        flex: 1; display: flex; flex-direction: column;
-        min-height: 0; position: relative;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        position: relative;
       }
 
       /* ─── DASHBOARD (background under sheet) ─── */
       .dashboard-bg {
         flex: 1;
-        display: flex; flex-direction: column;
+        display: flex;
+        flex-direction: column;
       }
-      .dashboard-bg.dimmed { opacity: 0.32; }
+      .dashboard-bg.dimmed {
+        opacity: 0.32;
+      }
       .greeting {
-        font-size: 9px; color: rgba(245,240,235,0.55); margin-bottom: 4px;
+        font-size: 9px;
+        color: rgba(245, 240, 235, 0.55);
+        margin-bottom: 4px;
       }
       .greeting-h {
-        font-size: 12px; font-weight: 800; letter-spacing: -0.01em;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
         margin-bottom: 12px;
       }
       .outcome-mini {
-        background: rgba(16,185,129,0.06);
-        border: 1px solid rgba(16,185,129,0.18);
+        background: rgba(16, 185, 129, 0.06);
+        border: 1px solid rgba(16, 185, 129, 0.18);
         border-radius: 10px;
         padding: 9px;
         margin-bottom: 8px;
       }
       .outcome-mini .stat {
-        font-size: 18px; font-weight: 800;
+        font-size: 18px;
+        font-weight: 800;
         font-family: var(--font-mono);
         letter-spacing: -0.04em;
         color: var(--finyk);
@@ -204,44 +402,57 @@
         margin-bottom: 4px;
       }
       .outcome-mini .label {
-        font-size: 8px; color: rgba(245,240,235,0.55);
+        font-size: 8px;
+        color: rgba(245, 240, 235, 0.55);
       }
       .bento-mini {
-        display: grid; grid-template-columns: 1fr 1fr;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 4px;
       }
       .bento-mini .tile {
         aspect-ratio: 1.6;
-        background: rgba(255,255,255,0.04);
+        background: rgba(255, 255, 255, 0.04);
         border-radius: 6px;
         padding: 6px;
         font-size: 8px;
-        color: rgba(245,240,235,0.45);
+        color: rgba(245, 240, 235, 0.45);
       }
-      .bento-mini .tile.finyk { border-left: 2px solid var(--finyk); }
-      .bento-mini .tile.fizruk { border-left: 2px solid var(--fizruk); }
-      .bento-mini .tile.routine { border-left: 2px solid var(--routine); }
-      .bento-mini .tile.nutrition { border-left: 2px solid var(--nutrition); }
+      .bento-mini .tile.finyk {
+        border-left: 2px solid var(--finyk);
+      }
+      .bento-mini .tile.fizruk {
+        border-left: 2px solid var(--fizruk);
+      }
+      .bento-mini .tile.routine {
+        border-left: 2px solid var(--routine);
+      }
+      .bento-mini .tile.nutrition {
+        border-left: 2px solid var(--nutrition);
+      }
 
       /* ─── SHEET ─── */
       .sheet {
         position: absolute;
-        left: -14px; right: -14px;
+        left: -14px;
+        right: -14px;
         bottom: 0;
         background: linear-gradient(180deg, #2a2522 0%, #1a1614 100%);
         border-radius: 20px 20px 0 0;
         padding: 12px 16px 14px;
-        box-shadow: 0 -8px 24px rgba(0,0,0,0.4);
-        border-top: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
       .sheet-handle {
-        width: 32px; height: 4px;
-        background: rgba(255,255,255,0.2);
+        width: 32px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.2);
         border-radius: 2px;
         margin: 0 auto 12px;
       }
       .sheet-hero {
-        font-size: 13px; font-weight: 800;
+        font-size: 13px;
+        font-weight: 800;
         letter-spacing: -0.01em;
         line-height: 1.2;
         margin-bottom: 6px;
@@ -249,22 +460,25 @@
       }
       .sheet-sub {
         font-size: 9px;
-        color: rgba(245,240,235,0.6);
+        color: rgba(245, 240, 235, 0.6);
         line-height: 1.45;
         margin-bottom: 10px;
       }
       .trial-box {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 8px;
         padding: 9px 10px;
         margin-bottom: 10px;
       }
       .trial-box .title {
-        font-size: 10px; font-weight: 700;
+        font-size: 10px;
+        font-weight: 700;
         color: var(--finyk);
         margin-bottom: 6px;
-        display: flex; align-items: center; gap: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
       }
       .trial-box .title .pill {
         font-family: var(--font-mono);
@@ -278,40 +492,45 @@
       }
       .trial-box ul {
         list-style: none;
-        display: flex; flex-direction: column; gap: 3px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
       }
       .trial-box li {
         font-size: 8.5px;
-        color: rgba(245,240,235,0.6);
+        color: rgba(245, 240, 235, 0.6);
         line-height: 1.35;
         padding-left: 12px;
         position: relative;
       }
       .trial-box li::before {
         content: "·";
-        position: absolute; left: 4px;
-        color: rgba(245,240,235,0.4);
+        position: absolute;
+        left: 4px;
+        color: rgba(245, 240, 235, 0.4);
       }
       .sheet-cta {
-        font-size: 11px; font-weight: 700;
+        font-size: 11px;
+        font-weight: 700;
         padding: 9px 12px;
         border-radius: 8px;
         text-align: center;
         margin-bottom: 6px;
       }
       .sheet-cta.primary {
-        background: var(--finyk); color: #0a0a09;
+        background: var(--finyk);
+        color: #0a0a09;
       }
       .sheet-cta.ghost {
         background: transparent;
-        border: 1px solid rgba(255,255,255,0.18);
-        color: rgba(245,240,235,0.85);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: rgba(245, 240, 235, 0.85);
       }
       .sheet-foot {
         margin-top: 4px;
         text-align: center;
         font-size: 8.5px;
-        color: rgba(245,240,235,0.4);
+        color: rgba(245, 240, 235, 0.4);
         font-family: var(--font-mono);
         text-decoration: underline;
       }
@@ -319,31 +538,36 @@
       /* ─── EMPTY (Зараз — no paywall) ─── */
       .nothing {
         flex: 1;
-        display: flex; flex-direction: column;
-        justify-content: center; align-items: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
         text-align: center;
         gap: 10px;
         padding: 20px 12px;
         opacity: 0.7;
       }
       .nothing .glyph {
-        width: 36px; height: 36px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
-        background: rgba(255,255,255,0.06);
-        display: grid; place-items: center;
+        background: rgba(255, 255, 255, 0.06);
+        display: grid;
+        place-items: center;
         font-family: var(--font-mono);
         font-size: 14px;
-        color: rgba(245,240,235,0.4);
+        color: rgba(245, 240, 235, 0.4);
       }
       .nothing .t {
         font-size: 10px;
-        color: rgba(245,240,235,0.5);
+        color: rgba(245, 240, 235, 0.5);
       }
 
       /* ─── REC: phase-2 escalation badge ─── */
       .escalation-tag {
         position: absolute;
-        top: -8px; right: 8px;
+        top: -8px;
+        right: 8px;
         font-size: 7.5px;
         font-family: var(--font-mono);
         font-weight: 800;
@@ -366,32 +590,47 @@
         color: var(--muted);
         line-height: 1.5;
       }
-      .state-foot b { color: var(--text); font-weight: 600; }
+      .state-foot b {
+        color: var(--text);
+        font-weight: 600;
+      }
       .state-foot code {
         font-size: 10px;
         background: var(--surface);
         padding: 1px 5px;
         border-radius: 3px;
       }
-      .state-foot dl { display: grid; gap: 4px; }
+      .state-foot dl {
+        display: grid;
+        gap: 4px;
+      }
       .state-foot dt {
-        font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.08em; font-size: 9.5px; color: var(--subtle);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 9.5px;
+        color: var(--subtle);
       }
 
       /* ─── COPY VARIANTS ─── */
       .variant-row {
-        display: grid; grid-template-columns: repeat(3, 1fr);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
         gap: 18px;
       }
       .variant-card {
-        background: var(--panel); border: 1px solid var(--border);
+        background: var(--panel);
+        border: 1px solid var(--border);
         border-radius: var(--r-xl);
         padding: 16px 18px 18px;
-        display: flex; flex-direction: column; gap: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
       }
       .variant-card .var-head {
-        display: flex; align-items: center; gap: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
       .variant-card .var-greek {
         font-family: "Lora", serif;
@@ -401,22 +640,33 @@
         line-height: 1;
         letter-spacing: -0.02em;
       }
-      .variant-card.a .var-greek { color: var(--finyk-dark); }
-      .variant-card.b .var-greek { color: var(--fizruk-dark); }
-      .variant-card.c .var-greek { color: var(--routine-dark); }
+      .variant-card.a .var-greek {
+        color: var(--finyk-dark);
+      }
+      .variant-card.b .var-greek {
+        color: var(--fizruk-dark);
+      }
+      .variant-card.c .var-greek {
+        color: var(--routine-dark);
+      }
       .variant-card .var-title {
-        font-size: 13px; font-weight: 800; letter-spacing: -0.005em;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: -0.005em;
       }
       .variant-card .var-axis {
         margin-left: auto;
-        font-family: var(--font-mono); font-size: 10px;
+        font-family: var(--font-mono);
+        font-size: 10px;
         color: var(--subtle);
-        text-transform: uppercase; letter-spacing: 0.1em;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
       }
 
       /* ─── REJECTED matrix ─── */
       .rejected-grid {
-        display: grid; grid-template-columns: repeat(5, 1fr);
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
         gap: 1px;
         background: var(--border);
         border: 1px solid var(--border);
@@ -426,32 +676,50 @@
       .rej-card {
         background: var(--panel);
         padding: 18px 16px 16px;
-        display: flex; flex-direction: column;
+        display: flex;
+        flex-direction: column;
         gap: 10px;
       }
-      .rej-card.selected { background: var(--brand-soft); }
+      .rej-card.selected {
+        background: var(--brand-soft);
+      }
       .rej-head {
-        display: flex; align-items: baseline; gap: 8px;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
       }
       .rej-letter {
         font-family: var(--font-mono);
-        font-size: 14px; font-weight: 800;
+        font-size: 14px;
+        font-weight: 800;
         letter-spacing: -0.02em;
         color: var(--text);
       }
-      .rej-card.selected .rej-letter { color: var(--brand); }
+      .rej-card.selected .rej-letter {
+        color: var(--brand);
+      }
       .rej-verdict {
         margin-left: auto;
-        font-family: var(--font-mono); font-size: 9px;
+        font-family: var(--font-mono);
+        font-size: 9px;
         font-weight: 700;
         letter-spacing: 0.1em;
         text-transform: uppercase;
         padding: 2px 6px;
         border-radius: 3px;
       }
-      .rej-verdict.no { background: var(--danger-soft); color: var(--danger); }
-      .rej-verdict.yes { background: var(--success-soft); color: var(--success); }
-      .rej-verdict.later { background: var(--info-soft); color: var(--info); }
+      .rej-verdict.no {
+        background: var(--danger-soft);
+        color: var(--danger);
+      }
+      .rej-verdict.yes {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+      .rej-verdict.later {
+        background: var(--info-soft);
+        color: var(--info);
+      }
       .rej-name {
         font-size: 13px;
         font-weight: 800;
@@ -465,7 +733,8 @@
         flex: 1;
       }
       .rej-scores {
-        display: flex; gap: 4px;
+        display: flex;
+        gap: 4px;
         flex-wrap: wrap;
       }
       .rej-score {
@@ -491,7 +760,10 @@
         color: var(--subtle);
         line-height: 1.4;
       }
-      .rej-why b { color: var(--text); font-weight: 600; }
+      .rej-why b {
+        color: var(--text);
+        font-weight: 600;
+      }
 
       /* ─── TELEMETRY funnel ─── */
       .funnel {
@@ -501,44 +773,60 @@
         padding: 28px;
       }
       .funnel-head {
-        display: flex; justify-content: space-between; align-items: baseline;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
         margin-bottom: 18px;
-        flex-wrap: wrap; gap: 12px;
+        flex-wrap: wrap;
+        gap: 12px;
       }
       .funnel-head h3 {
-        font-size: 18px; font-weight: 800; letter-spacing: -0.015em;
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -0.015em;
       }
       .funnel-head .target {
-        font-family: var(--font-mono); font-size: 11px;
-        color: var(--brand); font-weight: 700;
-        text-transform: uppercase; letter-spacing: 0.1em;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--brand);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
         padding: 4px 10px;
         background: var(--brand-soft);
         border-radius: var(--r-sm);
       }
       .funnel-steps {
-        display: grid; grid-template-columns: repeat(5, 1fr);
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
         gap: 2px;
       }
       .funnel-step {
         background: var(--surface);
         padding: 14px 14px 16px;
         position: relative;
-        display: flex; flex-direction: column;
+        display: flex;
+        flex-direction: column;
         min-height: 130px;
       }
-      .funnel-step:first-child { border-radius: var(--r-md) 0 0 var(--r-md); }
-      .funnel-step:last-child { border-radius: 0 var(--r-md) var(--r-md) 0; }
+      .funnel-step:first-child {
+        border-radius: var(--r-md) 0 0 var(--r-md);
+      }
+      .funnel-step:last-child {
+        border-radius: 0 var(--r-md) var(--r-md) 0;
+      }
       .funnel-step .n {
         font-family: var(--font-mono);
-        font-size: 9px; font-weight: 800;
+        font-size: 9px;
+        font-weight: 800;
         color: var(--subtle);
         letter-spacing: 0.08em;
         margin-bottom: 4px;
       }
       .funnel-step .ev {
         font-family: var(--font-mono);
-        font-size: 10.5px; font-weight: 700;
+        font-size: 10.5px;
+        font-weight: 700;
         color: var(--text);
         line-height: 1.3;
         margin-bottom: 8px;
@@ -552,12 +840,17 @@
         color: var(--muted);
         line-height: 1.4;
       }
-      .funnel-step.target { background: var(--brand-soft); }
-      .funnel-step.target .ev { color: var(--brand); }
+      .funnel-step.target {
+        background: var(--brand-soft);
+      }
+      .funnel-step.target .ev {
+        color: var(--brand);
+      }
 
       .rules-row {
         margin-top: 22px;
-        display: grid; grid-template-columns: repeat(4, 1fr);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
         gap: 14px;
       }
       .rule {
@@ -582,27 +875,48 @@
 
       /* ─── FOOTER ─── */
       footer.bot {
-        margin-top: 64px; padding-top: 28px;
+        margin-top: 64px;
+        padding-top: 28px;
         border-top: 1px solid var(--border);
-        font-family: var(--font-mono); font-size: 11px;
-        color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em;
-        display: flex; justify-content: space-between;
-        gap: 16px; flex-wrap: wrap;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
       }
-      footer.bot strong { color: var(--text); }
+      footer.bot strong {
+        color: var(--text);
+      }
 
       @media (max-width: 980px) {
-        .wrap { padding: 40px 22px 80px; }
-        .legend-grid, .state-row, .variant-row, .rules-row { grid-template-columns: 1fr; }
-        .rejected-grid { grid-template-columns: 1fr; }
-        .funnel-steps { grid-template-columns: repeat(2, 1fr); }
-        .funnel-step { border-radius: var(--r-md) !important; min-height: auto; }
+        .wrap {
+          padding: 40px 22px 80px;
+        }
+        .legend-grid,
+        .state-row,
+        .variant-row,
+        .rules-row {
+          grid-template-columns: 1fr;
+        }
+        .rejected-grid {
+          grid-template-columns: 1fr;
+        }
+        .funnel-steps {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .funnel-step {
+          border-radius: var(--r-md) !important;
+          min-height: auto;
+        }
       }
     </style>
   </head>
   <body>
     <div class="wrap">
-
       <!-- ═══════════════ HEADER ═══════════════ -->
       <header class="top">
         <div class="crumb">
@@ -615,10 +929,11 @@
         <h1>Один лист після першого запису — <em>не блокатор, не модал</em></h1>
         <p class="lede">
           Команда вже визначилась: paywall з'являється не у момент реєстрації,
-          не на пустому дашборді, а <strong>після першого справжнього запису</strong> —
-          коли користувач уже відчув цінність. Це лист (sheet), не модал;
-          14 днів Pro без картки, з очевидним «залишитись на free».
-          Джерело — <code>docs/launch/product-os/paywall-ux-placement.md</code>.
+          не на пустому дашборді, а
+          <strong>після першого справжнього запису</strong> — коли користувач
+          уже відчув цінність. Це лист (sheet), не модал; 14 днів Pro без
+          картки, з очевидним «залишитись на free». Джерело —
+          <code>docs/launch/product-os/paywall-ux-placement.md</code>.
         </p>
         <div class="meta-row">
           <span>Стан<strong>заплановано</strong></span>
@@ -649,8 +964,8 @@
             <h3>Те, що описано у планах</h3>
             <p>
               Лист після першого запису. 3 варіанти копії α/β/γ для A/B.
-              14-денний trial без картки. Прапор за замовчуванням OFF до
-              моменту коли 0010 фаза 3 змерджена.
+              14-денний trial без картки. Прапор за замовчуванням OFF до моменту
+              коли 0010 фаза 3 змерджена.
             </p>
             <div class="when">джерело: paywall-ux-placement.md</div>
           </div>
@@ -659,8 +974,8 @@
             <h3>Доповнення поверх плану</h3>
             <p>
               Фаза 2 з документа (limit-aware + streak-moment), але як
-              <strong>послідовність</strong> після фази 1, не паралельно.
-              Захист від втоми + другий шанс для тих, хто dismiss-нув.
+              <strong>послідовність</strong> після фази 1, не паралельно. Захист
+              від втоми + другий шанс для тих, хто dismiss-нув.
             </p>
             <div class="when">джерело: цей файл · обговорення з founder-ом</div>
           </div>
@@ -672,17 +987,20 @@
         <div class="section-head">
           <span class="sn">КРОК</span>
           <h2>Головний момент — після CelebrationModal</h2>
-          <span class="event">подія<strong> first_real_entry → 4 сек → відкриття листа</strong></span>
+          <span class="event"
+            >подія<strong>
+              first_real_entry → 4 сек → відкриття листа</strong
+            ></span
+          >
         </div>
         <p class="section-intro">
           Користувач щойно зробив перший справжній запис — кава ₴45.
-          CelebrationModal закрилася, він повернувся на дашборд. Через
-          4 секунди знизу піднімається лист. Дашборд видно — він приглушений
-          до 30%, але не зник: «не блокуємо, пропонуємо».
+          CelebrationModal закрилася, він повернувся на дашборд. Через 4 секунди
+          знизу піднімається лист. Дашборд видно — він приглушений до 30%, але
+          не зник: «не блокуємо, пропонуємо».
         </p>
 
         <div class="state-row">
-
           <!-- ═══ ЗАРАЗ — нічого ═══ -->
           <div class="state-card now">
             <div class="state-head">
@@ -693,7 +1011,9 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="dashboard-bg">
                     <div class="greeting">Готово</div>
@@ -710,7 +1030,9 @@
                     </div>
                     <div class="nothing">
                       <div class="glyph">∅</div>
-                      <div class="t">Тут міг би бути лист.<br/>Поки прапор OFF.</div>
+                      <div class="t">
+                        Тут міг би бути лист.<br />Поки прапор OFF.
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -723,7 +1045,10 @@
                 <dt>стан</dt>
                 <dd>усі юзери — на free, ціни не показуються</dd>
                 <dt>чому</dt>
-                <dd>0010 фаза 3 (<code>usePlan()</code> hook) ще не змерджена → немає чим робити gate</dd>
+                <dd>
+                  0010 фаза 3 (<code>usePlan()</code> hook) ще не змерджена →
+                  немає чим робити gate
+                </dd>
               </dl>
             </div>
           </div>
@@ -738,7 +1063,9 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <!-- dimmed dashboard -->
                   <div class="dashboard-bg dimmed">
@@ -758,17 +1085,26 @@
                   <!-- sheet -->
                   <div class="sheet">
                     <div class="sheet-handle"></div>
-                    <div class="sheet-hero">Перший крок — за тобою. Решту — спростимо.</div>
-                    <div class="sheet-sub">Pro додає те, що економить час: AI-розбір, синхр. між пристроями, експорт у CSV.</div>
+                    <div class="sheet-hero">
+                      Перший крок — за тобою. Решту — спростимо.
+                    </div>
+                    <div class="sheet-sub">
+                      Pro додає те, що економить час: AI-розбір, синхр. між
+                      пристроями, експорт у CSV.
+                    </div>
                     <div class="trial-box">
-                      <div class="title">14 днів Pro <span class="pill">без картки</span></div>
+                      <div class="title">
+                        14 днів Pro <span class="pill">без картки</span>
+                      </div>
                       <ul>
                         <li>повна функціональність</li>
                         <li>без оплати наперед</li>
                         <li>вимкнути коли захочеш</li>
                       </ul>
                     </div>
-                    <div class="sheet-cta primary">Підключити Pro на 14 днів</div>
+                    <div class="sheet-cta primary">
+                      Підключити Pro на 14 днів
+                    </div>
                     <div class="sheet-cta ghost">Не зараз</div>
                     <div class="sheet-foot">Що таке Pro? →</div>
                   </div>
@@ -780,17 +1116,26 @@
                 <dt>тригер</dt>
                 <dd>CelebrationModal close → 4 сек → відкриття</dd>
                 <dt>умови</dt>
-                <dd>прапор ON · <code>usePlan() === 'free'</code> · не dismiss-али останні 14 днів · юзер &lt; 90 днів</dd>
+                <dd>
+                  прапор ON · <code>usePlan() === 'free'</code> · не dismiss-али
+                  останні 14 днів · юзер &lt; 90 днів
+                </dd>
                 <dt>дії</dt>
-                <dd>основна → <code>/pricing?via=post_ftux&amp;variant=β</code> · «не зараз» → close + 14 днів пауза · ESC = «не зараз»</dd>
+                <dd>
+                  основна → <code>/pricing?via=post_ftux&amp;variant=β</code> ·
+                  «не зараз» → close + 14 днів пауза · ESC = «не зараз»
+                </dd>
                 <dt>захист</dt>
-                <dd>2 dismiss поспіль → лист більше не показуємо (cohort <code>paywall_fatigue</code>)</dd>
+                <dd>
+                  2 dismiss поспіль → лист більше не показуємо (cohort
+                  <code>paywall_fatigue</code>)
+                </dd>
               </dl>
             </div>
           </div>
 
           <!-- ═══ РЕКОМЕНДУЮ — escalation ═══ -->
-          <div class="state-card rec" style="position:relative">
+          <div class="state-card rec" style="position: relative">
             <span class="escalation-tag">фаза 2</span>
             <div class="state-head">
               <span class="state-tag"><span class="dot"></span>Рекомендую</span>
@@ -800,13 +1145,21 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="dashboard-bg dimmed">
                     <div class="greeting">7 днів поспіль</div>
                     <div class="greeting-h">Стрік 7 днів 🔥</div>
-                    <div class="outcome-mini" style="background:rgba(249,112,102,0.08);border-color:rgba(249,112,102,0.18)">
-                      <div class="stat" style="color:var(--routine)">7</div>
+                    <div
+                      class="outcome-mini"
+                      style="
+                        background: rgba(249, 112, 102, 0.08);
+                        border-color: rgba(249, 112, 102, 0.18);
+                      "
+                    >
+                      <div class="stat" style="color: var(--routine)">7</div>
                       <div class="label">днів без пропуску · твій рекорд</div>
                     </div>
                     <div class="bento-mini">
@@ -818,18 +1171,41 @@
                   </div>
                   <div class="sheet">
                     <div class="sheet-handle"></div>
-                    <div style="font-size:8.5px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.12em;color:var(--routine);margin-bottom:4px">⚡ momentum-момент</div>
-                    <div class="sheet-hero">Тиждень тримався. Збережемо його?</div>
-                    <div class="sheet-sub">Pro збереже історію у хмарі, AI почне знаходити повторювані pattern-и у твоєму тижні.</div>
+                    <div
+                      style="
+                        font-size: 8.5px;
+                        font-family: var(--font-mono);
+                        text-transform: uppercase;
+                        letter-spacing: 0.12em;
+                        color: var(--routine);
+                        margin-bottom: 4px;
+                      "
+                    >
+                      ⚡ momentum-момент
+                    </div>
+                    <div class="sheet-hero">
+                      Тиждень тримався. Збережемо його?
+                    </div>
+                    <div class="sheet-sub">
+                      Pro збереже історію у хмарі, AI почне знаходити
+                      повторювані pattern-и у твоєму тижні.
+                    </div>
                     <div class="trial-box">
-                      <div class="title">14 днів Pro <span class="pill">без картки</span></div>
+                      <div class="title">
+                        14 днів Pro <span class="pill">без картки</span>
+                      </div>
                       <ul>
                         <li>цей стрік — лиш початок</li>
                         <li>AI-розбір тижневих pattern-ів</li>
                         <li>хмарний backup історії</li>
                       </ul>
                     </div>
-                    <div class="sheet-cta primary" style="background:var(--routine)">Зберегти стрік у Pro</div>
+                    <div
+                      class="sheet-cta primary"
+                      style="background: var(--routine)"
+                    >
+                      Зберегти стрік у Pro
+                    </div>
                     <div class="sheet-cta ghost">Не зараз</div>
                   </div>
                 </div>
@@ -838,17 +1214,28 @@
             <div class="state-foot">
               <dl>
                 <dt>момент</dt>
-                <dd>7-денний стрік — другий шанс для тих, хто dismiss-нув на день 0</dd>
+                <dd>
+                  7-денний стрік — другий шанс для тих, хто dismiss-нув на день
+                  0
+                </dd>
                 <dt>чому</dt>
-                <dd>стрік = доказ що інструмент потрібен; copy resonates сильніше ніж на день 0</dd>
+                <dd>
+                  стрік = доказ що інструмент потрібен; copy resonates сильніше
+                  ніж на день 0
+                </dd>
                 <dt>правило</dt>
-                <dd>тільки для cohort, де перший dismiss був 1, а не 2 (бо інакше — fatigue-захист спрацював)</dd>
+                <dd>
+                  тільки для cohort, де перший dismiss був 1, а не 2 (бо інакше
+                  — fatigue-захист спрацював)
+                </dd>
                 <dt>ризик</dt>
-                <dd>якщо conversion ≥ phase 1 — масштабувати до day-14/30 escalation; інакше — відкотити</dd>
+                <dd>
+                  якщо conversion ≥ phase 1 — масштабувати до day-14/30
+                  escalation; інакше — відкотити
+                </dd>
               </dl>
             </div>
           </div>
-
         </div>
       </section>
 
@@ -857,7 +1244,9 @@
         <div class="section-head">
           <span class="sn">A/B</span>
           <h2>Три варіанти копії — α, β, γ</h2>
-          <span class="event">прапор<strong> paywall_post_ftux_copy_v1</strong></span>
+          <span class="event"
+            >прапор<strong> paywall_post_ftux_copy_v1</strong></span
+          >
         </div>
         <p class="section-intro">
           Лист один, копія різна. Ваги <code>[0.34, 0.33, 0.33]</code>, мінімум
@@ -866,7 +1255,6 @@
         </p>
 
         <div class="variant-row">
-
           <!-- α -->
           <article class="variant-card a">
             <div class="var-head">
@@ -877,19 +1265,30 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="dashboard-bg dimmed">
-                    <div class="greeting-h" style="font-size:11px">Готово</div>
-                    <div class="outcome-mini" style="padding:6px;margin-bottom:4px">
-                      <div class="stat" style="font-size:14px">₴45</div>
-                      <div class="label" style="font-size:7px">Кава</div>
+                    <div class="greeting-h" style="font-size: 11px">Готово</div>
+                    <div
+                      class="outcome-mini"
+                      style="padding: 6px; margin-bottom: 4px"
+                    >
+                      <div class="stat" style="font-size: 14px">₴45</div>
+                      <div class="label" style="font-size: 7px">Кава</div>
                     </div>
                   </div>
                   <div class="sheet">
                     <div class="sheet-handle"></div>
-                    <div class="sheet-hero">Один запис є. Тепер — інструменти, щоб з нього виріс тиждень.</div>
-                    <div class="sheet-sub">14 днів Pro безкоштовно: AI-інсайти, хмарна синхр., експорт. Без карти. Вимкнути коли захочеш.</div>
+                    <div class="sheet-hero">
+                      Один запис є. Тепер — інструменти, щоб з нього виріс
+                      тиждень.
+                    </div>
+                    <div class="sheet-sub">
+                      14 днів Pro безкоштовно: AI-інсайти, хмарна синхр.,
+                      експорт. Без карти. Вимкнути коли захочеш.
+                    </div>
                     <div class="sheet-cta primary">Спробувати 14 днів Pro</div>
                     <div class="sheet-cta ghost">Залишитись на free</div>
                   </div>
@@ -899,11 +1298,17 @@
             <div class="state-foot">
               <dl>
                 <dt>вісь</dt>
-                <dd>outcome-led — від першого запису до тижневого результату</dd>
+                <dd>
+                  outcome-led — від першого запису до тижневого результату
+                </dd>
                 <dt>сильне</dt>
-                <dd>прив'язка до щойно зробленого запису · обіцянка масштабу</dd>
+                <dd>
+                  прив'язка до щойно зробленого запису · обіцянка масштабу
+                </dd>
                 <dt>слабке</dt>
-                <dd>довгий заголовок (15+ слів) — на 360 px екрана буде у 3 рядки</dd>
+                <dd>
+                  довгий заголовок (15+ слів) — на 360 px екрана буде у 3 рядки
+                </dd>
               </dl>
             </div>
           </article>
@@ -918,20 +1323,32 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="dashboard-bg dimmed">
-                    <div class="greeting-h" style="font-size:11px">Готово</div>
-                    <div class="outcome-mini" style="padding:6px;margin-bottom:4px">
-                      <div class="stat" style="font-size:14px">₴45</div>
-                      <div class="label" style="font-size:7px">Кава</div>
+                    <div class="greeting-h" style="font-size: 11px">Готово</div>
+                    <div
+                      class="outcome-mini"
+                      style="padding: 6px; margin-bottom: 4px"
+                    >
+                      <div class="stat" style="font-size: 14px">₴45</div>
+                      <div class="label" style="font-size: 7px">Кава</div>
                     </div>
                   </div>
                   <div class="sheet">
                     <div class="sheet-handle"></div>
-                    <div class="sheet-hero">Перший крок — за тобою. Решту — спростимо.</div>
-                    <div class="sheet-sub">Pro додає те, що економить час: AI-розбір, синхр. між пристроями, експорт у CSV. 14 днів безкоштовно.</div>
-                    <div class="sheet-cta primary">Підключити Pro на 14 днів</div>
+                    <div class="sheet-hero">
+                      Перший крок — за тобою. Решту — спростимо.
+                    </div>
+                    <div class="sheet-sub">
+                      Pro додає те, що економить час: AI-розбір, синхр. між
+                      пристроями, експорт у CSV. 14 днів безкоштовно.
+                    </div>
+                    <div class="sheet-cta primary">
+                      Підключити Pro на 14 днів
+                    </div>
                     <div class="sheet-cta ghost">Не зараз</div>
                   </div>
                 </div>
@@ -940,11 +1357,15 @@
             <div class="state-foot">
               <dl>
                 <dt>вісь</dt>
-                <dd>brand-tone — найближче до disciplined-helper з PR-04 winner</dd>
+                <dd>
+                  brand-tone — найближче до disciplined-helper з PR-04 winner
+                </dd>
                 <dt>сильне</dt>
                 <dd>короткий заголовок · resonance з welcome-screen tone</dd>
                 <dt>слабке</dt>
-                <dd>«не зараз» м'яка, але без часового якоря (як «через тиждень»)</dd>
+                <dd>
+                  «не зараз» м'яка, але без часового якоря (як «через тиждень»)
+                </dd>
               </dl>
             </div>
           </article>
@@ -959,19 +1380,29 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="dashboard-bg dimmed">
-                    <div class="greeting-h" style="font-size:11px">Готово</div>
-                    <div class="outcome-mini" style="padding:6px;margin-bottom:4px">
-                      <div class="stat" style="font-size:14px">₴45</div>
-                      <div class="label" style="font-size:7px">Кава</div>
+                    <div class="greeting-h" style="font-size: 11px">Готово</div>
+                    <div
+                      class="outcome-mini"
+                      style="padding: 6px; margin-bottom: 4px"
+                    >
+                      <div class="stat" style="font-size: 14px">₴45</div>
+                      <div class="label" style="font-size: 7px">Кава</div>
                     </div>
                   </div>
                   <div class="sheet">
                     <div class="sheet-handle"></div>
-                    <div class="sheet-hero">Твої дані заслуговують на бекап. І на дорогу далі.</div>
-                    <div class="sheet-sub">Pro: хмарна синхр., AI-інсайти, експорт. Без зобов'язань — 14 днів trial без карти.</div>
+                    <div class="sheet-hero">
+                      Твої дані заслуговують на бекап. І на дорогу далі.
+                    </div>
+                    <div class="sheet-sub">
+                      Pro: хмарна синхр., AI-інсайти, експорт. Без зобов'язань —
+                      14 днів trial без карти.
+                    </div>
                     <div class="sheet-cta primary">14 днів Pro безкоштовно</div>
                     <div class="sheet-cta ghost">Поки що — free</div>
                   </div>
@@ -983,13 +1414,17 @@
                 <dt>вісь</dt>
                 <dd>data-as-asset — резонує з local-first позиціонуванням</dd>
                 <dt>сильне</dt>
-                <dd>метафора «дані заслуговують» — privacy-aware audience hook</dd>
+                <dd>
+                  метафора «дані заслуговують» — privacy-aware audience hook
+                </dd>
                 <dt>слабке</dt>
-                <dd>«дорога далі» абстрактно для широкої аудиторії; може бути unclear на UA-mass</dd>
+                <dd>
+                  «дорога далі» абстрактно для широкої аудиторії; може бути
+                  unclear на UA-mass
+                </dd>
               </dl>
             </div>
           </article>
-
         </div>
       </section>
 
@@ -1001,9 +1436,9 @@
           <span class="event">розділ 3 paywall-ux-placement.md</span>
         </div>
         <p class="section-intro">
-          Команда оцінила 5 варіантів розміщення за 3 осями (бренд / proof-of-fit /
-          вартість розробки), скоринг 1–5. Обрано B. A і E відхилили. C і D —
-          фаза 2 для post-launch. Тут — підсумок розмови.
+          Команда оцінила 5 варіантів розміщення за 3 осями (бренд /
+          proof-of-fit / вартість розробки), скоринг 1–5. Обрано B. A і E
+          відхилили. C і D — фаза 2 для post-launch. Тут — підсумок розмови.
         </p>
 
         <div class="rejected-grid">
@@ -1013,15 +1448,22 @@
               <span class="rej-verdict no">відхилено</span>
             </div>
             <div class="rej-name">Жорстка стіна у момент signup</div>
-            <div class="rej-desc">Повноекранний blocker — карту вводь зразу, інакше не пускаємо.</div>
+            <div class="rej-desc">
+              Повноекранний blocker — карту вводь зразу, інакше не пускаємо.
+            </div>
             <div class="rej-scores">
               <span class="rej-score">бренд<b>1</b></span>
               <span class="rej-score">proof<b>1</b></span>
               <span class="rej-score">вартість<b>5</b></span>
-              <span class="rej-score" style="background:var(--danger-soft);color:var(--danger)">Σ<b>7</b></span>
+              <span
+                class="rej-score"
+                style="background: var(--danger-soft); color: var(--danger)"
+                >Σ<b>7</b></span
+              >
             </div>
             <div class="rej-why">
-              <b>чому ні.</b> юзер ще не побачив цінність → bounce 50-70%. Прямо суперечить disciplined-helper копірайту.
+              <b>чому ні.</b> юзер ще не побачив цінність → bounce 50-70%. Прямо
+              суперечить disciplined-helper копірайту.
             </div>
           </article>
 
@@ -1031,15 +1473,23 @@
               <span class="rej-verdict yes">обрано</span>
             </div>
             <div class="rej-name">Soft sheet після першого запису</div>
-            <div class="rej-desc">Лист, не модал. Після <code>first_real_entry</code> + CelebrationModal. 4 сек затримка.</div>
+            <div class="rej-desc">
+              Лист, не модал. Після <code>first_real_entry</code> +
+              CelebrationModal. 4 сек затримка.
+            </div>
             <div class="rej-scores">
               <span class="rej-score">бренд<b>5</b></span>
               <span class="rej-score">proof<b>5</b></span>
               <span class="rej-score">вартість<b>4</b></span>
-              <span class="rej-score" style="background:var(--success-soft);color:var(--success)">Σ<b>14</b></span>
+              <span
+                class="rej-score"
+                style="background: var(--success-soft); color: var(--success)"
+                >Σ<b>14</b></span
+              >
             </div>
             <div class="rej-why">
-              <b>чому так.</b> одна точка enforcement · перетинає proof-moment · reversible (можна dismiss).
+              <b>чому так.</b> одна точка enforcement · перетинає proof-moment ·
+              reversible (можна dismiss).
             </div>
           </article>
 
@@ -1049,15 +1499,23 @@
               <span class="rej-verdict later">фаза 2</span>
             </div>
             <div class="rej-name">Limit-aware на 5+ AI-запитах</div>
-            <div class="rej-desc">Коли user перевищив free-quota AI-запитів за день — лист з оффером.</div>
+            <div class="rej-desc">
+              Коли user перевищив free-quota AI-запитів за день — лист з
+              оффером.
+            </div>
             <div class="rej-scores">
               <span class="rej-score">бренд<b>4</b></span>
               <span class="rej-score">proof<b>4</b></span>
               <span class="rej-score">вартість<b>2</b></span>
-              <span class="rej-score" style="background:var(--info-soft);color:var(--info)">Σ<b>10</b></span>
+              <span
+                class="rej-score"
+                style="background: var(--info-soft); color: var(--info)"
+                >Σ<b>10</b></span
+              >
             </div>
             <div class="rej-why">
-              <b>пізніше.</b> потрібен AI-quota tracker; resonance з power-users.
+              <b>пізніше.</b> потрібен AI-quota tracker; resonance з
+              power-users.
             </div>
           </article>
 
@@ -1067,15 +1525,22 @@
               <span class="rej-verdict later">фаза 2</span>
             </div>
             <div class="rej-name">Day-7 streak момент</div>
-            <div class="rej-desc">Святкування 7-денного стріку → пропозиція зберегти інерцію у Pro.</div>
+            <div class="rej-desc">
+              Святкування 7-денного стріку → пропозиція зберегти інерцію у Pro.
+            </div>
             <div class="rej-scores">
               <span class="rej-score">бренд<b>4</b></span>
               <span class="rej-score">proof<b>5</b></span>
               <span class="rej-score">вартість<b>3</b></span>
-              <span class="rej-score" style="background:var(--info-soft);color:var(--info)">Σ<b>12</b></span>
+              <span
+                class="rej-score"
+                style="background: var(--info-soft); color: var(--info)"
+                >Σ<b>12</b></span
+              >
             </div>
             <div class="rej-why">
-              <b>пізніше.</b> найвищий proof-of-fit з усіх; це мої «Рекомендую» зверху.
+              <b>пізніше.</b> найвищий proof-of-fit з усіх; це мої «Рекомендую»
+              зверху.
             </div>
           </article>
 
@@ -1085,15 +1550,23 @@
               <span class="rej-verdict no">відхилено</span>
             </div>
             <div class="rej-name">Гейти у модулях</div>
-            <div class="rej-desc">AI-інсайти заблоковано всередині Фізрука / графіки — у Фініка / тощо.</div>
+            <div class="rej-desc">
+              AI-інсайти заблоковано всередині Фізрука / графіки — у Фініка /
+              тощо.
+            </div>
             <div class="rej-scores">
               <span class="rej-score">бренд<b>3</b></span>
               <span class="rej-score">proof<b>3</b></span>
               <span class="rej-score">вартість<b>2</b></span>
-              <span class="rej-score" style="background:var(--danger-soft);color:var(--danger)">Σ<b>8</b></span>
+              <span
+                class="rej-score"
+                style="background: var(--danger-soft); color: var(--danger)"
+                >Σ<b>8</b></span
+              >
             </div>
             <div class="rej-why">
-              <b>чому ні.</b> 4× UX-поверхні · 4× воронки · фрагментація. Не для MVP.
+              <b>чому ні.</b> 4× UX-поверхні · 4× воронки · фрагментація. Не для
+              MVP.
             </div>
           </article>
         </div>
@@ -1104,12 +1577,16 @@
         <div class="section-head">
           <span class="sn">воронка</span>
           <h2>Як міряємо — 5 PostHog подій</h2>
-          <span class="event">ціль<strong> STRIPE_CHECKOUT_COMPLETED / PAYWALL_POST_FTUX_VIEWED ≥ 3%</strong></span>
+          <span class="event"
+            >ціль<strong>
+              STRIPE_CHECKOUT_COMPLETED / PAYWALL_POST_FTUX_VIEWED ≥ 3%</strong
+            ></span
+          >
         </div>
         <p class="section-intro">
           5 подій по дорозі від показу листа до завершеного checkout. Метрика —
-          частка тих, хто дійшов до оплати, до тих, кому лист показався.
-          Cohort — 30 днів від моменту як прапор перейшов у production.
+          частка тих, хто дійшов до оплати, до тих, кому лист показався. Cohort
+          — 30 днів від моменту як прапор перейшов у production.
         </p>
 
         <div class="funnel">
@@ -1156,7 +1633,9 @@
             </div>
             <div class="rule">
               <div class="label">Жорсткий стоп</div>
-              <div class="val">2 dismiss поспіль → лист вимикається назавжди</div>
+              <div class="val">
+                2 dismiss поспіль → лист вимикається назавжди
+              </div>
             </div>
             <div class="rule">
               <div class="label">Доступ</div>
@@ -1169,7 +1648,10 @@
       <!-- ═══════════════ FOOTER ═══════════════ -->
       <footer class="bot">
         <span>Sergeant · <strong>product/paywall</strong> · 2026-05-18</span>
-        <span>Джерело · <strong>docs/launch/product-os/paywall-ux-placement.md</strong></span>
+        <span
+          >Джерело ·
+          <strong>docs/launch/product-os/paywall-ux-placement.md</strong></span
+        >
         <span>Імплементація · <strong>PR-20 a/b/c/d · ~510 LOC</strong></span>
       </footer>
     </div>

@@ -78,11 +78,11 @@
 
 ## Integration Targets
 
-| Destination | Purpose | Priority |
-|-------------|---------|----------|
-| PostHog (EU) | product analytics, funnels, A/B exposure, person-properties | primary |
-| Sentry | error + perf monitoring (must share user_id with PostHog) | primary |
-| Grafana | infra metrics + n8n workflow snapshots (e.g. WF-60 growth funnel) | secondary |
+| Destination  | Purpose                                                           | Priority  |
+| ------------ | ----------------------------------------------------------------- | --------- |
+| PostHog (EU) | product analytics, funnels, A/B exposure, person-properties       | primary   |
+| Sentry       | error + perf monitoring (must share user_id with PostHog)         | primary   |
+| Grafana      | infra metrics + n8n workflow snapshots (e.g. WF-60 growth funnel) | secondary |
 
 No CDP. Direct integrations. PostHog handles routing; no Segment.
 

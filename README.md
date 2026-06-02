@@ -82,20 +82,20 @@ Non-app workspaces that support lint / build invariants. Not deployed.
 
 Packages are shared code reused across apps. Instead of copy-pasting between web and mobile, we put shared code in `packages/` and import from there.
 
-| Package                         | Purpose                                                      |
-| ------------------------------- | ------------------------------------------------------------ |
-| `@sergeant/shared`              | Shared business logic, Zod schemas, types — used by ALL apps |
-| `@sergeant/api-client`          | Type-safe HTTP client for talking to the server              |
-| `@sergeant/config`              | Shared configs (ESLint, TypeScript, etc.)                    |
-| `@sergeant/design-tokens`       | Design tokens, Tailwind preset, colors, typography           |
-| `@sergeant/insights`            | Cross-module analytics (pure functions over data)            |
-| `@sergeant/finyk-domain`        | Finance domain logic (calculations, amount formatting)       |
-| `@sergeant/fizruk-domain`       | Fitness domain logic (calories, load calculations)           |
-| `@sergeant/nutrition-domain`    | Nutrition domain logic                                       |
-| `@sergeant/routine-domain`      | Habits domain logic                                          |
-| `@sergeant/db-schema`           | Drizzle schemas, migrations, and sync helpers                |
+| Package                         | Purpose                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| `@sergeant/shared`              | Shared business logic, Zod schemas, types — used by ALL apps                    |
+| `@sergeant/api-client`          | Type-safe HTTP client for talking to the server                                 |
+| `@sergeant/config`              | Shared configs (ESLint, TypeScript, etc.)                                       |
+| `@sergeant/design-tokens`       | Design tokens, Tailwind preset, colors, typography                              |
+| `@sergeant/insights`            | Cross-module analytics (pure functions over data)                               |
+| `@sergeant/finyk-domain`        | Finance domain logic (calculations, amount formatting)                          |
+| `@sergeant/fizruk-domain`       | Fitness domain logic (calories, load calculations)                              |
+| `@sergeant/nutrition-domain`    | Nutrition domain logic                                                          |
+| `@sergeant/routine-domain`      | Habits domain logic                                                             |
+| `@sergeant/db-schema`           | Drizzle schemas, migrations, and sync helpers                                   |
 | `@sergeant/openclaw-plugin`     | OpenClaw Gateway tools/hooks plugin (Gateway-only — NOT consumed by web/mobile) |
-| `eslint-plugin-sergeant-design` | Custom ESLint rules for the design system                    |
+| `eslint-plugin-sergeant-design` | Custom ESLint rules for the design system                                       |
 
 Architecture overview lives in [docs/architecture/README.md](./docs/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).
 

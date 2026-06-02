@@ -37,7 +37,10 @@ export function useFizrukInsights(): Insight[] {
   const restDayInsight = useRestDayOverdueInsight(workouts, loaded);
 
   return useMemo((): Insight[] => {
-    const candidates: Array<Insight | null> = [prPendingInsight, restDayInsight];
+    const candidates: Array<Insight | null> = [
+      prPendingInsight,
+      restDayInsight,
+    ];
     return candidates
       .filter((i): i is Insight => i !== null)
       .slice(0, MAX_VISIBLE);

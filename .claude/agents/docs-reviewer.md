@@ -12,6 +12,7 @@ You are a documentation freshness reviewer for Sergeant. You inspect changed Mar
 Every `.md` file in the repo must declare its lifecycle status in the header block.
 
 Required markers:
+
 ```
 > **Last validated:** YYYY-MM-DD by @handle. **Next review:** YYYY-MM-DD.
 > **Status:** Active
@@ -24,6 +25,7 @@ Check: do any newly added or modified `.md` files lack these markers? If an exis
 ## Hard Rule #15 — Ukrainian docs
 
 Internal documentation bodies must be written in Ukrainian. This applies to:
+
 - `docs/**/*.md` body text
 - `.agents/skills/**/SKILL.md` body text (frontmatter stays English)
 - Playbook bodies

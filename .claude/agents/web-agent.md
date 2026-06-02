@@ -31,6 +31,7 @@ You are the web UI specialist for Sergeant. You implement React components and R
 ## Report back
 
 When done, report:
+
 - Components and hooks created or updated (file paths)
 - New RQ key factories added (if any)
 - Test status (✅ passing or failures)

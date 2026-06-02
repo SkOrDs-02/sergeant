@@ -9,6 +9,7 @@ You are the API client specialist for Sergeant. You update `packages/api-client/
 ## Hard Rule #3 — Contract triplet integrity
 
 ALL THREE must be in sync in this PR:
+
 1. Server serializer — done by server-agent ✓
 2. `packages/api-client/` type definitions — your responsibility
 3. Contract test (`.contract.test.ts`) — also your responsibility
@@ -33,6 +34,7 @@ Your job is items 2 and 3. Do not merge without both.
 ## Report back
 
 When done, report:
+
 - Updated type definitions (file paths + what changed)
 - Contract test status (passing / failing, test file path)
 - Typecheck status (✅ clean or errors)

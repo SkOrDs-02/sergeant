@@ -209,7 +209,11 @@ describe("pushSecurityEventToTelegram — Telegram send", () => {
 
   it("sends to correct Telegram URL and returns ok=true on 200", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
-    const result = await pushSecurityEventToTelegram(basePayload, env, fetchMock);
+    const result = await pushSecurityEventToTelegram(
+      basePayload,
+      env,
+      fetchMock,
+    );
 
     expect(result.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(
@@ -223,7 +227,10 @@ describe("pushSecurityEventToTelegram — Telegram send", () => {
     await pushSecurityEventToTelegram(basePayload, env, fetchMock);
 
     const callArgs = fetchMock.mock.calls[0] as [string, RequestInit];
-    const body = JSON.parse(callArgs[1].body as string) as Record<string, unknown>;
+    const body = JSON.parse(callArgs[1].body as string) as Record<
+      string,
+      unknown
+    >;
     expect(typeof body["text"]).toBe("string");
     expect(body["text"] as string).toContain("mono_webhook_bad_payload");
     expect(body["chat_id"]).toBe("chat123");
@@ -237,7 +244,10 @@ describe("pushSecurityEventToTelegram — Telegram send", () => {
       fetchMock,
     );
     const callArgs = fetchMock.mock.calls[0] as [string, RequestInit];
-    const body = JSON.parse(callArgs[1].body as string) as Record<string, unknown>;
+    const body = JSON.parse(callArgs[1].body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body["disable_notification"]).toBe(false);
   });
 
@@ -249,7 +259,10 @@ describe("pushSecurityEventToTelegram — Telegram send", () => {
       fetchMock,
     );
     const callArgs = fetchMock.mock.calls[0] as [string, RequestInit];
-    const body = JSON.parse(callArgs[1].body as string) as Record<string, unknown>;
+    const body = JSON.parse(callArgs[1].body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body["disable_notification"]).toBe(true);
   });
 
@@ -261,7 +274,10 @@ describe("pushSecurityEventToTelegram — Telegram send", () => {
     };
     await pushSecurityEventToTelegram(basePayload, envWithTopic, fetchMock);
     const callArgs = fetchMock.mock.calls[0] as [string, RequestInit];
-    const body = JSON.parse(callArgs[1].body as string) as Record<string, unknown>;
+    const body = JSON.parse(callArgs[1].body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body["message_thread_id"]).toBe(42);
   });
 
@@ -269,7 +285,10 @@ describe("pushSecurityEventToTelegram — Telegram send", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
     await pushSecurityEventToTelegram(basePayload, env, fetchMock);
     const callArgs = fetchMock.mock.calls[0] as [string, RequestInit];
-    const body = JSON.parse(callArgs[1].body as string) as Record<string, unknown>;
+    const body = JSON.parse(callArgs[1].body as string) as Record<
+      string,
+      unknown
+    >;
     expect(body["message_thread_id"]).toBeUndefined();
   });
 
@@ -279,7 +298,11 @@ describe("pushSecurityEventToTelegram — Telegram send", () => {
       status: 429,
       text: () => Promise.resolve("Too Many Requests"),
     });
-    const result = await pushSecurityEventToTelegram(basePayload, env, fetchMock);
+    const result = await pushSecurityEventToTelegram(
+      basePayload,
+      env,
+      fetchMock,
+    );
     expect(result.ok).toBe(false);
     expect(result.reason).toContain("Too Many Requests");
   });
@@ -288,7 +311,11 @@ describe("pushSecurityEventToTelegram — Telegram send", () => {
     const fetchMock = vi
       .fn()
       .mockRejectedValue(new Error("ENOTFOUND api.telegram.org"));
-    const result = await pushSecurityEventToTelegram(basePayload, env, fetchMock);
+    const result = await pushSecurityEventToTelegram(
+      basePayload,
+      env,
+      fetchMock,
+    );
     expect(result.ok).toBe(false);
     expect(result.reason).toContain("ENOTFOUND");
   });

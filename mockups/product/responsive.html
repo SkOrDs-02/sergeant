@@ -6,173 +6,770 @@
     <title>Sergeant · Планшетна і десктопна сторінки хабу</title>
     <link rel="stylesheet" href="../_shared/tokens.css" />
     <style>
-      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html,body { font-family: var(--font-sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; line-height: 1.5; }
-      a { color: inherit; text-decoration: none; }
-      code,.mono { font-family: var(--font-mono); }
-      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 32px 96px;
+      }
 
-      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
-      .crumb { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand); margin-bottom: 14px; display: flex; gap: 8px; align-items: center; }
-      .crumb a { color: var(--muted); }
-      .crumb .sep { color: var(--subtle); }
-      header.top h1 { font-size: clamp(36px, 5vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px; max-width: 920px; text-wrap: balance; }
-      header.top h1 em { font-family: "Lora", serif; font-style: italic; font-weight: 400; color: var(--muted); }
-      header.top .lede { font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6; }
+      header.top {
+        margin-bottom: 56px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
+      }
+      .crumb {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--brand);
+        margin-bottom: 14px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .crumb a {
+        color: var(--muted);
+      }
+      .crumb .sep {
+        color: var(--subtle);
+      }
+      header.top h1 {
+        font-size: clamp(36px, 5vw, 56px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        margin-bottom: 18px;
+        max-width: 920px;
+        text-wrap: balance;
+      }
+      header.top h1 em {
+        font-family: "Lora", serif;
+        font-style: italic;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      header.top .lede {
+        font-size: 17px;
+        color: var(--muted);
+        max-width: 740px;
+        line-height: 1.6;
+      }
 
-      section { margin-bottom: 80px; }
-      .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-      .section-head .sn { font-family: var(--font-mono); font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--brand); padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm); }
-      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
-      .section-intro { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 740px; margin-bottom: 28px; }
+      section {
+        margin-bottom: 80px;
+      }
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .section-head .sn {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--brand);
+        padding: 3px 9px;
+        background: var(--brand-soft);
+        border-radius: var(--r-sm);
+      }
+      .section-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.022em;
+      }
+      .section-intro {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 740px;
+        margin-bottom: 28px;
+      }
 
       /* Tablet frame */
       .tablet {
-        width: 760px; max-width: 100%;
+        width: 760px;
+        max-width: 100%;
         height: 540px;
         background: #1a1614;
         border: 10px solid #0a0a09;
         border-radius: 24px;
         margin: 0 auto;
-        position: relative; overflow: hidden;
+        position: relative;
+        overflow: hidden;
         color: #f5f0eb;
-        box-shadow: 0 16px 40px rgba(28,25,23,0.18);
+        box-shadow: 0 16px 40px rgba(28, 25, 23, 0.18);
       }
-      .tablet-screen { position: absolute; inset: 0; padding: 18px 22px; display: grid; grid-template-columns: 56px 1fr; gap: 18px; }
+      .tablet-screen {
+        position: absolute;
+        inset: 0;
+        padding: 18px 22px;
+        display: grid;
+        grid-template-columns: 56px 1fr;
+        gap: 18px;
+      }
 
       /* Tablet sidebar */
-      .t-side { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
-      .t-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--finyk-gradient); display: grid; place-items: center; color: white; font-weight: 800; margin-bottom: 12px; }
-      .t-nav { display: flex; flex-direction: column; gap: 4px; }
-      .t-nav-btn { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.04); display: grid; place-items: center; font-size: 16px; color: rgba(245,240,235,0.6); }
-      .t-nav-btn.active { background: rgba(16,185,129,0.18); color: var(--finyk); }
+      .t-side {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-top: 4px;
+      }
+      .t-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: var(--finyk-gradient);
+        display: grid;
+        place-items: center;
+        color: white;
+        font-weight: 800;
+        margin-bottom: 12px;
+      }
+      .t-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .t-nav-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.04);
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+        color: rgba(245, 240, 235, 0.6);
+      }
+      .t-nav-btn.active {
+        background: rgba(16, 185, 129, 0.18);
+        color: var(--finyk);
+      }
 
       /* Tablet main */
-      .t-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-      .t-top { display: flex; justify-content: space-between; align-items: center; }
-      .t-greet { font-size: 22px; font-weight: 800; letter-spacing: -0.018em; }
-      .t-greet small { display: block; font-size: 11px; font-weight: 400; color: rgba(245,240,235,0.55); margin-top: 2px; }
-      .t-fab-row { display: flex; gap: 6px; }
-      .t-pill { padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.06); color: rgba(245,240,235,0.85); }
-      .t-pill.primary { background: var(--finyk); color: #0a0a09; }
+      .t-main {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-width: 0;
+      }
+      .t-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .t-greet {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.018em;
+      }
+      .t-greet small {
+        display: block;
+        font-size: 11px;
+        font-weight: 400;
+        color: rgba(245, 240, 235, 0.55);
+        margin-top: 2px;
+      }
+      .t-fab-row {
+        display: flex;
+        gap: 6px;
+      }
+      .t-pill {
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(245, 240, 235, 0.85);
+      }
+      .t-pill.primary {
+        background: var(--finyk);
+        color: #0a0a09;
+      }
 
       /* Tablet bento */
-      .t-bento { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px; flex: 1; min-height: 0; }
-      .t-tile { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
-      .t-tile.finyk { grid-row: span 2; background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(4,120,87,0.04) 100%); border-color: rgba(16,185,129,0.2); }
-      .t-tile.fizruk { background: linear-gradient(135deg, rgba(34,211,238,0.08) 0%, transparent 100%); border-color: rgba(34,211,238,0.18); }
-      .t-tile.routine { background: linear-gradient(135deg, rgba(249,112,102,0.08) 0%, transparent 100%); border-color: rgba(249,112,102,0.18); }
-      .t-tile.nutrition { background: linear-gradient(135deg, rgba(146,204,23,0.08) 0%, transparent 100%); border-color: rgba(146,204,23,0.18); }
-      .t-tile.chat { grid-column: span 2; background: rgba(255,255,255,0.04); }
-      .t-mod { font-size: 9px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; }
-      .t-tile.finyk .t-mod { color: var(--finyk); }
-      .t-tile.fizruk .t-mod { color: var(--fizruk); }
-      .t-tile.routine .t-mod { color: var(--routine); }
-      .t-tile.nutrition .t-mod { color: var(--nutrition); }
-      .t-big { font-size: 28px; font-weight: 800; font-family: var(--font-mono); letter-spacing: -0.04em; line-height: 1; }
-      .t-tile.finyk .t-big { color: var(--finyk); }
-      .t-tile.fizruk .t-big { color: var(--fizruk); font-size: 22px; }
-      .t-tile.routine .t-big { color: var(--routine); font-size: 22px; }
-      .t-tile.nutrition .t-big { color: var(--nutrition); font-size: 22px; }
-      .t-sub { font-size: 10px; color: rgba(245,240,235,0.6); }
-      .t-tile.finyk .chart { flex: 1; background: linear-gradient(180deg, transparent 60%, rgba(16,185,129,0.18) 100%); border-radius: 6px; margin-top: 8px; position: relative; }
-      .t-tile.finyk .chart::before { content: ""; position: absolute; left: 0; right: 0; top: 30%; height: 1px; background: var(--finyk); clip-path: polygon(0 80%, 20% 60%, 40% 65%, 60% 30%, 80% 45%, 100% 20%); }
-      .t-list { display: flex; flex-direction: column; gap: 3px; font-size: 10px; }
-      .t-list-row { display: flex; justify-content: space-between; padding: 3px 0; color: rgba(245,240,235,0.75); }
+      .t-bento {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 10px;
+        flex: 1;
+        min-height: 0;
+      }
+      .t-tile {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 0;
+      }
+      .t-tile.finyk {
+        grid-row: span 2;
+        background: linear-gradient(
+          135deg,
+          rgba(16, 185, 129, 0.1) 0%,
+          rgba(4, 120, 87, 0.04) 100%
+        );
+        border-color: rgba(16, 185, 129, 0.2);
+      }
+      .t-tile.fizruk {
+        background: linear-gradient(
+          135deg,
+          rgba(34, 211, 238, 0.08) 0%,
+          transparent 100%
+        );
+        border-color: rgba(34, 211, 238, 0.18);
+      }
+      .t-tile.routine {
+        background: linear-gradient(
+          135deg,
+          rgba(249, 112, 102, 0.08) 0%,
+          transparent 100%
+        );
+        border-color: rgba(249, 112, 102, 0.18);
+      }
+      .t-tile.nutrition {
+        background: linear-gradient(
+          135deg,
+          rgba(146, 204, 23, 0.08) 0%,
+          transparent 100%
+        );
+        border-color: rgba(146, 204, 23, 0.18);
+      }
+      .t-tile.chat {
+        grid-column: span 2;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .t-mod {
+        font-size: 9px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-weight: 700;
+      }
+      .t-tile.finyk .t-mod {
+        color: var(--finyk);
+      }
+      .t-tile.fizruk .t-mod {
+        color: var(--fizruk);
+      }
+      .t-tile.routine .t-mod {
+        color: var(--routine);
+      }
+      .t-tile.nutrition .t-mod {
+        color: var(--nutrition);
+      }
+      .t-big {
+        font-size: 28px;
+        font-weight: 800;
+        font-family: var(--font-mono);
+        letter-spacing: -0.04em;
+        line-height: 1;
+      }
+      .t-tile.finyk .t-big {
+        color: var(--finyk);
+      }
+      .t-tile.fizruk .t-big {
+        color: var(--fizruk);
+        font-size: 22px;
+      }
+      .t-tile.routine .t-big {
+        color: var(--routine);
+        font-size: 22px;
+      }
+      .t-tile.nutrition .t-big {
+        color: var(--nutrition);
+        font-size: 22px;
+      }
+      .t-sub {
+        font-size: 10px;
+        color: rgba(245, 240, 235, 0.6);
+      }
+      .t-tile.finyk .chart {
+        flex: 1;
+        background: linear-gradient(
+          180deg,
+          transparent 60%,
+          rgba(16, 185, 129, 0.18) 100%
+        );
+        border-radius: 6px;
+        margin-top: 8px;
+        position: relative;
+      }
+      .t-tile.finyk .chart::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 30%;
+        height: 1px;
+        background: var(--finyk);
+        clip-path: polygon(0 80%, 20% 60%, 40% 65%, 60% 30%, 80% 45%, 100% 20%);
+      }
+      .t-list {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-size: 10px;
+      }
+      .t-list-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 3px 0;
+        color: rgba(245, 240, 235, 0.75);
+      }
 
-      .t-chat { display: flex; flex-direction: column; gap: 5px; flex: 1; }
-      .t-bub-u { align-self: flex-end; background: rgba(255,255,255,0.08); padding: 4px 8px; border-radius: 10px 10px 4px 10px; font-size: 9.5px; max-width: 75%; }
-      .t-bub-ai { align-self: flex-start; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.18); padding: 4px 8px; border-radius: 10px 10px 10px 4px; font-size: 9.5px; max-width: 75%; }
-      .t-bub-ai b { color: #f5f0eb; }
-      .t-input { background: rgba(255,255,255,0.04); border-radius: 999px; padding: 6px 12px; font-size: 10px; color: rgba(245,240,235,0.45); margin-top: auto; }
+      .t-chat {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        flex: 1;
+      }
+      .t-bub-u {
+        align-self: flex-end;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 4px 8px;
+        border-radius: 10px 10px 4px 10px;
+        font-size: 9.5px;
+        max-width: 75%;
+      }
+      .t-bub-ai {
+        align-self: flex-start;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.18);
+        padding: 4px 8px;
+        border-radius: 10px 10px 10px 4px;
+        font-size: 9.5px;
+        max-width: 75%;
+      }
+      .t-bub-ai b {
+        color: #f5f0eb;
+      }
+      .t-input {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 10px;
+        color: rgba(245, 240, 235, 0.45);
+        margin-top: auto;
+      }
 
       /* Desktop */
       .desktop {
-        width: 100%; max-width: 1200px;
+        width: 100%;
+        max-width: 1200px;
         margin: 0 auto;
-        background: #1a1614; color: #f5f0eb;
+        background: #1a1614;
+        color: #f5f0eb;
         border: 1px solid #0a0a09;
         border-radius: 12px;
-        position: relative; overflow: hidden;
-        box-shadow: 0 16px 40px rgba(28,25,23,0.18);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 16px 40px rgba(28, 25, 23, 0.18);
       }
-      .d-chrome { padding: 8px 14px; background: #0a0a09; display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: rgba(245,240,235,0.5); }
-      .d-traffic { display: flex; gap: 5px; }
-      .d-traffic span { width: 9px; height: 9px; border-radius: 50%; background: #ef4444; }
-      .d-traffic span:nth-child(2) { background: #fbbf24; }
-      .d-traffic span:nth-child(3) { background: #10b981; }
-      .d-url { flex: 1; text-align: center; }
-      .d-screen { padding: 22px 28px; display: grid; grid-template-columns: 220px 1fr 280px; gap: 22px; min-height: 520px; }
+      .d-chrome {
+        padding: 8px 14px;
+        background: #0a0a09;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: rgba(245, 240, 235, 0.5);
+      }
+      .d-traffic {
+        display: flex;
+        gap: 5px;
+      }
+      .d-traffic span {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #ef4444;
+      }
+      .d-traffic span:nth-child(2) {
+        background: #fbbf24;
+      }
+      .d-traffic span:nth-child(3) {
+        background: #10b981;
+      }
+      .d-url {
+        flex: 1;
+        text-align: center;
+      }
+      .d-screen {
+        padding: 22px 28px;
+        display: grid;
+        grid-template-columns: 220px 1fr 280px;
+        gap: 22px;
+        min-height: 520px;
+      }
 
       /* Desktop left rail — modules */
-      .d-rail { display: flex; flex-direction: column; gap: 6px; }
-      .d-rail h4 { font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.12em; color: rgba(245,240,235,0.45); margin-bottom: 4px; }
-      .d-rail-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; font-size: 12px; }
-      .d-rail-item .ic { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 11px; color: white; }
-      .d-rail-item.finyk .ic { background: var(--finyk); }
-      .d-rail-item.fizruk .ic { background: var(--fizruk); }
-      .d-rail-item.routine .ic { background: var(--routine); }
-      .d-rail-item.nutrition .ic { background: var(--nutrition); }
-      .d-rail-item.active { background: rgba(255,255,255,0.06); }
-      .d-rail-item .count { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: rgba(245,240,235,0.5); }
+      .d-rail {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .d-rail h4 {
+        font-size: 9.5px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: rgba(245, 240, 235, 0.45);
+        margin-bottom: 4px;
+      }
+      .d-rail-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+      }
+      .d-rail-item .ic {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        color: white;
+      }
+      .d-rail-item.finyk .ic {
+        background: var(--finyk);
+      }
+      .d-rail-item.fizruk .ic {
+        background: var(--fizruk);
+      }
+      .d-rail-item.routine .ic {
+        background: var(--routine);
+      }
+      .d-rail-item.nutrition .ic {
+        background: var(--nutrition);
+      }
+      .d-rail-item.active {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .d-rail-item .count {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: rgba(245, 240, 235, 0.5);
+      }
 
       /* Desktop center — content */
-      .d-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-      .d-h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.018em; }
-      .d-h1 small { display: block; font-size: 12px; font-weight: 400; color: rgba(245,240,235,0.55); margin-top: 2px; }
-      .d-hero { background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(4,120,87,0.04) 100%); border: 1px solid rgba(16,185,129,0.2); border-radius: 14px; padding: 18px 22px; }
-      .d-hero-mod { font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.12em; color: var(--finyk); margin-bottom: 6px; }
-      .d-hero-big { font-size: 40px; font-weight: 800; font-family: var(--font-mono); letter-spacing: -0.04em; color: var(--finyk); line-height: 1; }
-      .d-hero-sub { font-size: 12px; color: rgba(245,240,235,0.65); margin-top: 6px; }
-      .d-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-      .d-stat { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 12px; }
-      .d-stat .l { font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; color: rgba(245,240,235,0.5); margin-bottom: 3px; }
-      .d-stat .v { font-size: 16px; font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.02em; }
-      .d-table { background: rgba(255,255,255,0.04); border-radius: 10px; overflow: hidden; }
-      .d-table .row { display: grid; grid-template-columns: 1fr 80px 110px 60px; gap: 12px; padding: 8px 12px; font-size: 11.5px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04); }
-      .d-table .row:last-child { border-bottom: none; }
-      .d-table .row .l { display: flex; gap: 8px; align-items: center; }
-      .d-table .row .sw { width: 16px; height: 16px; border-radius: 4px; background: var(--finyk); }
-      .d-table .row .v { font-family: var(--font-mono); text-align: right; }
-      .d-table .row .cat { font-size: 9.5px; color: rgba(245,240,235,0.55); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; }
-      .d-table .row .when { font-size: 10px; color: rgba(245,240,235,0.4); }
+      .d-main {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-width: 0;
+      }
+      .d-h1 {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.018em;
+      }
+      .d-h1 small {
+        display: block;
+        font-size: 12px;
+        font-weight: 400;
+        color: rgba(245, 240, 235, 0.55);
+        margin-top: 2px;
+      }
+      .d-hero {
+        background: linear-gradient(
+          135deg,
+          rgba(16, 185, 129, 0.1) 0%,
+          rgba(4, 120, 87, 0.04) 100%
+        );
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        border-radius: 14px;
+        padding: 18px 22px;
+      }
+      .d-hero-mod {
+        font-size: 10px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--finyk);
+        margin-bottom: 6px;
+      }
+      .d-hero-big {
+        font-size: 40px;
+        font-weight: 800;
+        font-family: var(--font-mono);
+        letter-spacing: -0.04em;
+        color: var(--finyk);
+        line-height: 1;
+      }
+      .d-hero-sub {
+        font-size: 12px;
+        color: rgba(245, 240, 235, 0.65);
+        margin-top: 6px;
+      }
+      .d-stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .d-stat {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      .d-stat .l {
+        font-size: 9.5px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(245, 240, 235, 0.5);
+        margin-bottom: 3px;
+      }
+      .d-stat .v {
+        font-size: 16px;
+        font-family: var(--font-mono);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .d-table {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .d-table .row {
+        display: grid;
+        grid-template-columns: 1fr 80px 110px 60px;
+        gap: 12px;
+        padding: 8px 12px;
+        font-size: 11.5px;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      }
+      .d-table .row:last-child {
+        border-bottom: none;
+      }
+      .d-table .row .l {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .d-table .row .sw {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        background: var(--finyk);
+      }
+      .d-table .row .v {
+        font-family: var(--font-mono);
+        text-align: right;
+      }
+      .d-table .row .cat {
+        font-size: 9.5px;
+        color: rgba(245, 240, 235, 0.55);
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .d-table .row .when {
+        font-size: 10px;
+        color: rgba(245, 240, 235, 0.4);
+      }
 
       /* Desktop right — chat */
-      .d-chat { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
-      .d-chat-h { display: flex; align-items: center; gap: 8px; }
-      .d-chat-h .av { width: 22px; height: 22px; border-radius: 6px; background: rgba(16,185,129,0.18); display: grid; place-items: center; color: var(--finyk); font-size: 12px; }
-      .d-chat-h .nm { font-size: 11px; font-weight: 700; }
-      .d-chat-h .nm small { display: block; font-size: 8px; color: rgba(245,240,235,0.5); }
-      .d-msgs { display: flex; flex-direction: column; gap: 5px; flex: 1; min-height: 0; overflow: hidden; }
-      .d-msg-u { align-self: flex-end; background: rgba(255,255,255,0.08); padding: 6px 10px; border-radius: 12px 12px 4px 12px; font-size: 10.5px; max-width: 88%; }
-      .d-msg-ai { align-self: flex-start; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.16); padding: 6px 10px; border-radius: 12px 12px 12px 4px; font-size: 10.5px; max-width: 88%; line-height: 1.45; }
-      .d-msg-ai b { color: #f5f0eb; }
-      .d-chips { display: flex; gap: 3px; flex-wrap: wrap; align-self: flex-start; }
-      .d-chip { font-size: 8.5px; font-family: var(--font-mono); padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,0.05); color: rgba(245,240,235,0.6); display: inline-flex; gap: 3px; align-items: center; }
-      .d-chip .d { width: 5px; height: 5px; border-radius: 50%; background: var(--finyk); }
-      .d-input { background: rgba(255,255,255,0.05); border-radius: 999px; padding: 8px 14px; font-size: 11px; color: rgba(245,240,235,0.4); margin-top: auto; }
+      .d-chat {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .d-chat-h {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .d-chat-h .av {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: rgba(16, 185, 129, 0.18);
+        display: grid;
+        place-items: center;
+        color: var(--finyk);
+        font-size: 12px;
+      }
+      .d-chat-h .nm {
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .d-chat-h .nm small {
+        display: block;
+        font-size: 8px;
+        color: rgba(245, 240, 235, 0.5);
+      }
+      .d-msgs {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .d-msg-u {
+        align-self: flex-end;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 6px 10px;
+        border-radius: 12px 12px 4px 12px;
+        font-size: 10.5px;
+        max-width: 88%;
+      }
+      .d-msg-ai {
+        align-self: flex-start;
+        background: rgba(16, 185, 129, 0.08);
+        border: 1px solid rgba(16, 185, 129, 0.16);
+        padding: 6px 10px;
+        border-radius: 12px 12px 12px 4px;
+        font-size: 10.5px;
+        max-width: 88%;
+        line-height: 1.45;
+      }
+      .d-msg-ai b {
+        color: #f5f0eb;
+      }
+      .d-chips {
+        display: flex;
+        gap: 3px;
+        flex-wrap: wrap;
+        align-self: flex-start;
+      }
+      .d-chip {
+        font-size: 8.5px;
+        font-family: var(--font-mono);
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(245, 240, 235, 0.6);
+        display: inline-flex;
+        gap: 3px;
+        align-items: center;
+      }
+      .d-chip .d {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--finyk);
+      }
+      .d-input {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-size: 11px;
+        color: rgba(245, 240, 235, 0.4);
+        margin-top: auto;
+      }
 
-      .foot { margin-top: 22px; padding-top: 14px; border-top: 1px dashed var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--muted); line-height: 1.55; }
-      .foot b { color: var(--text); font-weight: 600; }
+      .foot {
+        margin-top: 22px;
+        padding-top: 14px;
+        border-top: 1px dashed var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .foot b {
+        color: var(--text);
+        font-weight: 600;
+      }
 
-      footer.bot { margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-      footer.bot strong { color: var(--text); }
+      footer.bot {
+        margin-top: 64px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      footer.bot strong {
+        color: var(--text);
+      }
 
-      @media (max-width: 1200px) { .desktop { transform: scale(0.95); transform-origin: top left; } }
-      @media (max-width: 980px) { .wrap { padding: 40px 22px 80px; } .tablet, .desktop { width: 100%; overflow-x: auto; } .desktop .d-screen { min-width: 1100px; } }
+      @media (max-width: 1200px) {
+        .desktop {
+          transform: scale(0.95);
+          transform-origin: top left;
+        }
+      }
+      @media (max-width: 980px) {
+        .wrap {
+          padding: 40px 22px 80px;
+        }
+        .tablet,
+        .desktop {
+          width: 100%;
+          overflow-x: auto;
+        }
+        .desktop .d-screen {
+          min-width: 1100px;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
       <header class="top">
-        <div class="crumb"><a href="../index.html">мокапи</a><span class="sep">/</span><a href="./">продукт</a><span class="sep">/</span><span>планшет та десктоп</span></div>
+        <div class="crumb">
+          <a href="../index.html">мокапи</a><span class="sep">/</span
+          ><a href="./">продукт</a><span class="sep">/</span
+          ><span>планшет та десктоп</span>
+        </div>
         <h1>Той самий хаб — <em>з горизонтальним простором</em></h1>
         <p class="lede">
-          Мобільний — bento 2×2 вертикально, чат окремим табом. Планшет —
-          ширше bento 3 колонки, чат знизу як 3-я смуга. Десктоп —
-          3-колонкова сітка: модулі ліворуч, контент посередині, чат
-          праворуч завжди видимий. Те саме що на мобілці, але без
-          навігаційних переходів.
+          Мобільний — bento 2×2 вертикально, чат окремим табом. Планшет — ширше
+          bento 3 колонки, чат знизу як 3-я смуга. Десктоп — 3-колонкова сітка:
+          модулі ліворуч, контент посередині, чат праворуч завжди видимий. Те
+          саме що на мобілці, але без навігаційних переходів.
         </p>
       </header>
 
@@ -183,8 +780,8 @@
           <h2>iPad / Android tablet · 1024px</h2>
         </div>
         <p class="section-intro">
-          Бокова навігація — вузька (іконки), bento 3×2 з виділенням
-          активного модуля. Чат внизу — 2 колонки шириною, не модальний.
+          Бокова навігація — вузька (іконки), bento 3×2 з виділенням активного
+          модуля. Чат внизу — 2 колонки шириною, не модальний.
         </p>
 
         <div class="tablet">
@@ -193,7 +790,15 @@
               <div class="t-logo">S</div>
               <div class="t-nav">
                 <div class="t-nav-btn">⌂</div>
-                <div class="t-nav-btn active" style="background:rgba(16,185,129,0.18);color:var(--finyk)">₴</div>
+                <div
+                  class="t-nav-btn active"
+                  style="
+                    background: rgba(16, 185, 129, 0.18);
+                    color: var(--finyk);
+                  "
+                >
+                  ₴
+                </div>
                 <div class="t-nav-btn">💪</div>
                 <div class="t-nav-btn">●</div>
                 <div class="t-nav-btn">🥗</div>
@@ -201,7 +806,9 @@
             </div>
             <div class="t-main">
               <div class="t-top">
-                <div class="t-greet">Сьогодні · пт<small>Олексій · 17 травня</small></div>
+                <div class="t-greet">
+                  Сьогодні · пт<small>Олексій · 17 травня</small>
+                </div>
                 <div class="t-fab-row">
                   <span class="t-pill">↗ Поділитись</span>
                   <span class="t-pill primary">+ Запис</span>
@@ -225,10 +832,12 @@
                   <div class="t-sub">3 з 5 звичок сьогодні</div>
                 </div>
                 <div class="t-tile chat">
-                  <div class="t-mod" style="color:var(--finyk)">Асистент</div>
+                  <div class="t-mod" style="color: var(--finyk)">Асистент</div>
                   <div class="t-chat">
                     <div class="t-bub-u">Чи був я у дефіциті?</div>
-                    <div class="t-bub-ai"><b>Так. 680 ккал</b> · їжа 1840 · трен. −420</div>
+                    <div class="t-bub-ai">
+                      <b>Так. 680 ккал</b> · їжа 1840 · трен. −420
+                    </div>
                   </div>
                   <div class="t-input">Запитай Sergeant…</div>
                 </div>
@@ -241,7 +850,10 @@
             </div>
           </div>
         </div>
-        <div class="foot"><b>конвенція планшета.</b> бокова навігація 56 px · bento 3 колонки · Фінік займає 2 рядки як «герой» · чат у тій самій сітці що й модулі</div>
+        <div class="foot">
+          <b>конвенція планшета.</b> бокова навігація 56 px · bento 3 колонки ·
+          Фінік займає 2 рядки як «герой» · чат у тій самій сітці що й модулі
+        </div>
       </section>
 
       <!-- DESKTOP -->
@@ -251,9 +863,9 @@
           <h2>Веб через Capacitor · 1440px</h2>
         </div>
         <p class="section-intro">
-          3 колонки: повна навігація з лічильниками ліворуч, основний
-          контент модуля посередині, чат завжди видимий праворуч. Без
-          табів-переходів — все на одному екрані.
+          3 колонки: повна навігація з лічильниками ліворуч, основний контент
+          модуля посередині, чат завжди видимий праворуч. Без табів-переходів —
+          все на одному екрані.
         </p>
 
         <div class="desktop">
@@ -264,38 +876,144 @@
           </div>
           <div class="d-screen">
             <div class="d-rail">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                <div style="width:28px;height:28px;border-radius:8px;background:var(--finyk-gradient);display:grid;place-items:center;color:white;font-weight:800;font-size:13px">S</div>
-                <span style="font-weight:800;font-size:13px">Sergeant</span>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  margin-bottom: 12px;
+                "
+              >
+                <div
+                  style="
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 8px;
+                    background: var(--finyk-gradient);
+                    display: grid;
+                    place-items: center;
+                    color: white;
+                    font-weight: 800;
+                    font-size: 13px;
+                  "
+                >
+                  S
+                </div>
+                <span style="font-weight: 800; font-size: 13px">Sergeant</span>
               </div>
               <h4>Модулі</h4>
-              <div class="d-rail-item finyk active"><span class="ic">₴</span>Фінік<span class="count">42</span></div>
-              <div class="d-rail-item fizruk"><span class="ic">💪</span>Фізрук<span class="count">7</span></div>
-              <div class="d-rail-item routine"><span class="ic">●</span>Рутина<span class="count">3/5</span></div>
-              <div class="d-rail-item nutrition"><span class="ic">🥗</span>Харчування<span class="count">1840</span></div>
-              <h4 style="margin-top:18px">Швидко</h4>
-              <div class="d-rail-item" style="background:transparent;font-size:11px;color:rgba(245,240,235,0.6)"><span class="ic" style="background:rgba(255,255,255,0.06);color:rgba(245,240,235,0.7)">+</span>Новий запис</div>
-              <div class="d-rail-item" style="background:transparent;font-size:11px;color:rgba(245,240,235,0.6)"><span class="ic" style="background:rgba(255,255,255,0.06);color:rgba(245,240,235,0.7)">⌗</span>Налаштування</div>
+              <div class="d-rail-item finyk active">
+                <span class="ic">₴</span>Фінік<span class="count">42</span>
+              </div>
+              <div class="d-rail-item fizruk">
+                <span class="ic">💪</span>Фізрук<span class="count">7</span>
+              </div>
+              <div class="d-rail-item routine">
+                <span class="ic">●</span>Рутина<span class="count">3/5</span>
+              </div>
+              <div class="d-rail-item nutrition">
+                <span class="ic">🥗</span>Харчування<span class="count"
+                  >1840</span
+                >
+              </div>
+              <h4 style="margin-top: 18px">Швидко</h4>
+              <div
+                class="d-rail-item"
+                style="
+                  background: transparent;
+                  font-size: 11px;
+                  color: rgba(245, 240, 235, 0.6);
+                "
+              >
+                <span
+                  class="ic"
+                  style="
+                    background: rgba(255, 255, 255, 0.06);
+                    color: rgba(245, 240, 235, 0.7);
+                  "
+                  >+</span
+                >Новий запис
+              </div>
+              <div
+                class="d-rail-item"
+                style="
+                  background: transparent;
+                  font-size: 11px;
+                  color: rgba(245, 240, 235, 0.6);
+                "
+              >
+                <span
+                  class="ic"
+                  style="
+                    background: rgba(255, 255, 255, 0.06);
+                    color: rgba(245, 240, 235, 0.7);
+                  "
+                  >⌗</span
+                >Налаштування
+              </div>
             </div>
 
             <div class="d-main">
-              <div class="d-h1">Фінік · травень<small>Олексій · 17 травня · пт</small></div>
+              <div class="d-h1">
+                Фінік · травень<small>Олексій · 17 травня · пт</small>
+              </div>
               <div class="d-hero">
                 <div class="d-hero-mod">Тиждень</div>
                 <div class="d-hero-big">₴2 814</div>
-                <div class="d-hero-sub">з ₴3 200 бюджету · −12% до минулого тижня · до зарплати ₴11 240</div>
+                <div class="d-hero-sub">
+                  з ₴3 200 бюджету · −12% до минулого тижня · до зарплати ₴11
+                  240
+                </div>
               </div>
               <div class="d-stats-row">
-                <div class="d-stat"><div class="l">сер. день</div><div class="v">₴402</div></div>
-                <div class="d-stat"><div class="l">найвища</div><div class="v">₴890</div></div>
-                <div class="d-stat"><div class="l">кафе</div><div class="v">₴487</div></div>
-                <div class="d-stat"><div class="l">транспорт</div><div class="v">₴380</div></div>
+                <div class="d-stat">
+                  <div class="l">сер. день</div>
+                  <div class="v">₴402</div>
+                </div>
+                <div class="d-stat">
+                  <div class="l">найвища</div>
+                  <div class="v">₴890</div>
+                </div>
+                <div class="d-stat">
+                  <div class="l">кафе</div>
+                  <div class="v">₴487</div>
+                </div>
+                <div class="d-stat">
+                  <div class="l">транспорт</div>
+                  <div class="v">₴380</div>
+                </div>
               </div>
               <div class="d-table">
-                <div class="row"><div class="l"><span class="sw"></span>Vino e Cucina</div><span class="cat">ресторан</span><span class="when">17 травня 19:34</span><span class="v">₴450</span></div>
-                <div class="row"><div class="l"><span class="sw" style="background:var(--routine)"></span>Сільпо</div><span class="cat">продукти</span><span class="when">17 травня 12:18</span><span class="v">₴890</span></div>
-                <div class="row"><div class="l"><span class="sw"></span>Aroma</div><span class="cat">кафе</span><span class="when">17 травня 09:14</span><span class="v">₴85</span></div>
-                <div class="row"><div class="l"><span class="sw" style="background:var(--fizruk)"></span>Uklon</div><span class="cat">транспорт</span><span class="when">16 травня 21:02</span><span class="v">₴128</span></div>
+                <div class="row">
+                  <div class="l"><span class="sw"></span>Vino e Cucina</div>
+                  <span class="cat">ресторан</span
+                  ><span class="when">17 травня 19:34</span
+                  ><span class="v">₴450</span>
+                </div>
+                <div class="row">
+                  <div class="l">
+                    <span class="sw" style="background: var(--routine)"></span
+                    >Сільпо
+                  </div>
+                  <span class="cat">продукти</span
+                  ><span class="when">17 травня 12:18</span
+                  ><span class="v">₴890</span>
+                </div>
+                <div class="row">
+                  <div class="l"><span class="sw"></span>Aroma</div>
+                  <span class="cat">кафе</span
+                  ><span class="when">17 травня 09:14</span
+                  ><span class="v">₴85</span>
+                </div>
+                <div class="row">
+                  <div class="l">
+                    <span class="sw" style="background: var(--fizruk)"></span
+                    >Uklon
+                  </div>
+                  <span class="cat">транспорт</span
+                  ><span class="when">16 травня 21:02</span
+                  ><span class="v">₴128</span>
+                </div>
               </div>
             </div>
 
@@ -306,21 +1024,37 @@
               </div>
               <div class="d-msgs">
                 <div class="d-msg-u">Скільки на каву за тиждень?</div>
-                <div class="d-msg-ai"><b>₴487</b> за 6 чашок. Це +34% до минулого тижня. Бюджет «кав'ярні» — лишилось <b>₴313</b>.</div>
-                <div class="d-chips"><span class="d-chip"><span class="d"></span>Фінік · 6 транз.</span></div>
+                <div class="d-msg-ai">
+                  <b>₴487</b> за 6 чашок. Це +34% до минулого тижня. Бюджет
+                  «кав'ярні» — лишилось <b>₴313</b>.
+                </div>
+                <div class="d-chips">
+                  <span class="d-chip"
+                    ><span class="d"></span>Фінік · 6 транз.</span
+                  >
+                </div>
                 <div class="d-msg-u">Додай каву ₴45 за сьогодні</div>
-                <div class="d-msg-ai">Додав <b>«Кава» · ₴45</b> · сьогодні 14:23.</div>
+                <div class="d-msg-ai">
+                  Додав <b>«Кава» · ₴45</b> · сьогодні 14:23.
+                </div>
               </div>
               <div class="d-input">Запитай чи запиши…</div>
             </div>
           </div>
         </div>
-        <div class="foot"><b>конвенція десктопа.</b> 3 колонки: 220 + flex + 280 · модулі з лічильниками · чат завжди видимий праворуч · повна таблиця транзакцій а не список</div>
+        <div class="foot">
+          <b>конвенція десктопа.</b> 3 колонки: 220 + flex + 280 · модулі з
+          лічильниками · чат завжди видимий праворуч · повна таблиця транзакцій
+          а не список
+        </div>
       </section>
 
       <footer class="bot">
         <span>Sergeant · <strong>product/responsive</strong> · 2026-05-18</span>
-        <span>Реплікація · <strong>1 файл на breakpoint · post-launch</strong></span>
+        <span
+          >Реплікація ·
+          <strong>1 файл на breakpoint · post-launch</strong></span
+        >
       </footer>
     </div>
   </body>

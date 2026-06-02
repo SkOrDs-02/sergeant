@@ -261,10 +261,7 @@ export function PresetStep({
               <Text className="text-sm font-bold text-fg" numberOfLines={1}>
                 {item.title}
               </Text>
-              <Text
-                className="mt-0.5 text-xs text-fg-muted"
-                numberOfLines={1}
-              >
+              <Text className="mt-0.5 text-xs text-fg-muted" numberOfLines={1}>
                 {item.desc}
               </Text>
             </View>

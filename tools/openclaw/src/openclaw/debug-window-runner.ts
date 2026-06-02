@@ -26,14 +26,19 @@ export interface DebugWindowEnableResponse {
 }
 
 export interface DebugWindowFetcher {
-  enable(input: {
-    durationMs: number;
-    requestedBy: string;
-  }): Promise<{ ok: boolean; status: number; data: DebugWindowEnableResponse | null }>;
+  enable(input: { durationMs: number; requestedBy: string }): Promise<{
+    ok: boolean;
+    status: number;
+    data: DebugWindowEnableResponse | null;
+  }>;
 
   disable(): Promise<{ ok: boolean; status: number }>;
 
-  status(): Promise<{ ok: boolean; status: number; data: DebugWindowStatusResponse | null }>;
+  status(): Promise<{
+    ok: boolean;
+    status: number;
+    data: DebugWindowStatusResponse | null;
+  }>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────

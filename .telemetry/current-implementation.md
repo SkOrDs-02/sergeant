@@ -12,8 +12,8 @@ Initialised lazily via `requestIdleCallback` in [`apps/web/src/core/observabilit
 ```typescript
 posthog.init(VITE_POSTHOG_KEY, {
   api_host: VITE_POSTHOG_HOST,
-  autocapture: false,         // disabled — custom tracker
-  capture_pageview: false,    // see PageviewTracker.tsx
+  autocapture: false, // disabled — custom tracker
+  capture_pageview: false, // see PageviewTracker.tsx
 });
 ```
 
@@ -29,11 +29,11 @@ posthog.init(VITE_POSTHOG_KEY, {
 
 ## Client vs Server
 
-| Source | Description |
-|--------|-------------|
-| **Frontend (web)** | Majority of events. Custom hooks, components, and shared util `firstRealEntry.ts` fire via `trackEvent`. |
-| **Frontend (mobile)** | Events fire via `apps/mobile/src/lib/analytics.ts` which forwards to PostHog HTTP transport + dual-write sink. |
-| **Backend** | Stripe webhook handler ([`apps/server/src/modules/billing/stripe.ts`](../apps/server/src/modules/billing/stripe.ts)) fires `SUBSCRIPTION_STARTED` / `_RENEWED` / `_CANCELED`. Other server-side captures use the shared `posthogCapture` helper. |
+| Source                | Description                                                                                                                                                                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Frontend (web)**    | Majority of events. Custom hooks, components, and shared util `firstRealEntry.ts` fire via `trackEvent`.                                                                                                                                         |
+| **Frontend (mobile)** | Events fire via `apps/mobile/src/lib/analytics.ts` which forwards to PostHog HTTP transport + dual-write sink.                                                                                                                                   |
+| **Backend**           | Stripe webhook handler ([`apps/server/src/modules/billing/stripe.ts`](../apps/server/src/modules/billing/stripe.ts)) fires `SUBSCRIPTION_STARTED` / `_RENEWED` / `_CANCELED`. Other server-side captures use the shared `posthogCapture` helper. |
 
 ## Call Routing
 
@@ -59,24 +59,24 @@ Event-name constants centralized in [`packages/shared/src/lib/analyticsEvents.ts
 
 ### Sentry coupling
 
-| Surface | `Sentry.setUser` | Notes |
-|---------|------------------|-------|
-| Web | not called | `beforeSend` in [`sentry.ts`](../apps/web/src/core/observability/sentry.ts) reduces user payload to `{ id }` only |
-| Mobile | not present | `@sentry/react-native` declared in `package.json`; no init file found |
-| Server | yes | [`apps/server/src/auth.ts:517`](../apps/server/src/auth.ts) — `Sentry.getCurrentScope?.().setUser({ id: user.id })` |
+| Surface | `Sentry.setUser` | Notes                                                                                                               |
+| ------- | ---------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Web     | not called       | `beforeSend` in [`sentry.ts`](../apps/web/src/core/observability/sentry.ts) reduces user payload to `{ id }` only   |
+| Mobile  | not present      | `@sentry/react-native` declared in `package.json`; no init file found                                               |
+| Server  | yes              | [`apps/server/src/auth.ts:517`](../apps/server/src/auth.ts) — `Sentry.getCurrentScope?.().setUser({ id: user.id })` |
 
 ## Environment Variables
 
-| Key | Surface | Purpose |
-|-----|---------|---------|
-| `VITE_POSTHOG_KEY` | web | project ingestion key |
-| `VITE_POSTHOG_HOST` | web | e.g. `https://eu.i.posthog.com` |
-| `EXPO_PUBLIC_POSTHOG_KEY` | mobile | project ingestion key |
-| `EXPO_PUBLIC_POSTHOG_HOST` | mobile | EU/US cluster URL |
-| `POSTHOG_PROJECT_API_KEY` | server | server-side capture (different from personal API key) |
-| `POSTHOG_API_KEY` | server | personal API key for GDPR delete-person endpoint |
-| `POSTHOG_HOST` | server | host URL for server capture |
-| Sentry equivalents | all | not enumerated here — see `sentry.ts` per platform |
+| Key                        | Surface | Purpose                                               |
+| -------------------------- | ------- | ----------------------------------------------------- |
+| `VITE_POSTHOG_KEY`         | web     | project ingestion key                                 |
+| `VITE_POSTHOG_HOST`        | web     | e.g. `https://eu.i.posthog.com`                       |
+| `EXPO_PUBLIC_POSTHOG_KEY`  | mobile  | project ingestion key                                 |
+| `EXPO_PUBLIC_POSTHOG_HOST` | mobile  | EU/US cluster URL                                     |
+| `POSTHOG_PROJECT_API_KEY`  | server  | server-side capture (different from personal API key) |
+| `POSTHOG_API_KEY`          | server  | personal API key for GDPR delete-person endpoint      |
+| `POSTHOG_HOST`             | server  | host URL for server capture                           |
+| Sentry equivalents         | all     | not enumerated here — see `sentry.ts` per platform    |
 
 ## Error Handling
 

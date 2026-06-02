@@ -37,7 +37,8 @@ try {
 const tool = payload.tool_name ?? "";
 if (!/^(Edit|Write|MultiEdit|NotebookEdit)$/.test(tool)) process.exit(0);
 
-const filePath = payload.tool_input?.file_path ?? payload.tool_input?.notebook_path ?? "";
+const filePath =
+  payload.tool_input?.file_path ?? payload.tool_input?.notebook_path ?? "";
 if (!filePath) process.exit(0);
 
 const normalized = filePath.replaceAll("\\", "/");

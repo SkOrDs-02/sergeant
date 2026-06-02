@@ -6,7 +6,8 @@
   margin: 0;
   padding: 0;
 }
-html, body {
+html,
+body {
   font-family: var(--font-sans);
   background: #1a1614;
   color: #f5f0eb;
@@ -17,14 +18,14 @@ html, body {
 
 /* --- Dark surface overrides --- */
 :root {
-  --bg-dark:          #1a1614;
-  --surface-dark:     #221e1b;
-  --surface-dark-2:   #2a2522;
-  --border-dark:      rgba(255, 255, 255, 0.08);
+  --bg-dark: #1a1614;
+  --surface-dark: #221e1b;
+  --surface-dark-2: #2a2522;
+  --border-dark: rgba(255, 255, 255, 0.08);
   --border-dark-soft: rgba(255, 255, 255, 0.04);
-  --text-dark:        #f5f0eb;
-  --muted-dark:       #a09890;
-  --subtle-dark:      #6b6560;
+  --text-dark: #f5f0eb;
+  --muted-dark: #a09890;
+  --subtle-dark: #6b6560;
 }
 
 /* --- Glass card surface --- */
@@ -69,7 +70,9 @@ html, body {
   border: 10px solid #0a0a09;
   border-radius: 54px;
   overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.06);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
   position: relative;
 }
 .phone-product-screen {
@@ -88,7 +91,7 @@ html, body {
   padding: 14px 24px 0;
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
   position: absolute;
   top: 0;
   left: 0;
@@ -112,7 +115,7 @@ html, body {
   right: 0;
   height: 90px;
   background: rgba(26, 22, 20, 0.92);
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   display: flex;

@@ -1,6 +1,6 @@
 # M9 — Mass-account abuse can scale per-user rate-limits linearly
 
-> **Last validated:** 2026-06-01 by @Skords-01. **Next review:** 2026-09-01.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Closed (2026-06-01)
 
 | Field          | Value                           |
@@ -43,10 +43,10 @@ Resolved in PR `fix(server): add secondary per-IP rate-limit bucket (M9)` on bra
 
 ### Default limits chosen
 
-| Bucket | Default | Env var | Rationale |
-|--------|---------|---------|-----------|
-| Per-user (primary) | per-route (e.g. 100 r/min global) | `RATE_LIMIT_MAX` | unchanged |
-| Per-IP (secondary, M9) | **200 r/min** | `RATE_LIMIT_IP_MAX` | 5 accounts × 40 r/min each comfortably fits; office/household NAT users unlikely to exceed 200 r/min collectively |
+| Bucket                 | Default                           | Env var             | Rationale                                                                                                         |
+| ---------------------- | --------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Per-user (primary)     | per-route (e.g. 100 r/min global) | `RATE_LIMIT_MAX`    | unchanged                                                                                                         |
+| Per-IP (secondary, M9) | **200 r/min**                     | `RATE_LIMIT_IP_MAX` | 5 accounts × 40 r/min each comfortably fits; office/household NAT users unlikely to exceed 200 r/min collectively |
 
 ### Migration
 

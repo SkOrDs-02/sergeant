@@ -20,24 +20,24 @@
   --brand-soft: #ecfdf5;
 
   /* --- Module accents (v2) --- */
-  --finyk:          #10b981;
-  --finyk-dark:     #047857;
-  --finyk-soft:     #ecfdf5;
+  --finyk: #10b981;
+  --finyk-dark: #047857;
+  --finyk-soft: #ecfdf5;
   --finyk-gradient: linear-gradient(135deg, #10b981 0%, #047857 100%);
 
-  --fizruk:          #0e7490;
-  --fizruk-dark:     #155e75;
-  --fizruk-soft:     #ecfeff;
+  --fizruk: #0e7490;
+  --fizruk-dark: #155e75;
+  --fizruk-soft: #ecfeff;
   --fizruk-gradient: linear-gradient(135deg, #22d3ee 0%, #0e7490 100%);
 
-  --routine:          #f97066;
-  --routine-dark:     #c23a3a;
-  --routine-soft:     #fff5f3;
+  --routine: #f97066;
+  --routine-dark: #c23a3a;
+  --routine-soft: #fff5f3;
   --routine-gradient: linear-gradient(135deg, #f97066 0%, #dc2626 100%);
 
-  --nutrition:          #92cc17;
-  --nutrition-dark:     #466212;
-  --nutrition-soft:     #f8fee7;
+  --nutrition: #92cc17;
+  --nutrition-dark: #466212;
+  --nutrition-soft: #f8fee7;
   --nutrition-gradient: linear-gradient(135deg, #92cc17 0%, #65a30d 100%);
 
   /* --- Status --- */
@@ -51,34 +51,34 @@
   --info-soft: #eff6ff;
 
   /* --- Semantic surfaces (light / cream) --- */
-  --bg:             #fdf9f3;
-  --surface:        #faf7f1;
-  --surface-muted:  #f5ead8;
+  --bg: #fdf9f3;
+  --surface: #faf7f1;
+  --surface-muted: #f5ead8;
   --surface-strong: #ebe4da;
-  --panel:          #ffffff;
-  --border:         #ebe4da;
-  --border-soft:    rgba(0, 0, 0, 0.06);
-  --border-strong:  #d0c8bc;
+  --panel: #ffffff;
+  --border: #ebe4da;
+  --border-soft: rgba(0, 0, 0, 0.06);
+  --border-strong: #d0c8bc;
 
   /* --- Text --- */
-  --text:    #1c1917;
+  --text: #1c1917;
   --text-strong: #0a0a09;
-  --muted:   #57534e;
-  --subtle:  #a8a29e;
+  --muted: #57534e;
+  --subtle: #a8a29e;
 
   /* --- Type scale (fluid, floor 12px) --- */
-  --text-display:  clamp(2rem, 5vw, 3.5rem);
+  --text-display: clamp(2rem, 5vw, 3.5rem);
   --text-headline: clamp(1.5rem, 3.5vw, 2.5rem);
   --text-title-lg: clamp(1.25rem, 2.5vw, 1.875rem);
-  --text-title:    clamp(1.125rem, 2vw, 1.5rem);
+  --text-title: clamp(1.125rem, 2vw, 1.5rem);
   --text-subtitle: clamp(1rem, 1.5vw, 1.25rem);
-  --text-body-lg:  1.125rem;
-  --text-body:     1rem;
-  --text-body-sm:  0.875rem;
-  --text-label:    0.875rem;
-  --text-caption:  0.75rem;
+  --text-body-lg: 1.125rem;
+  --text-body: 1rem;
+  --text-body-sm: 0.875rem;
+  --text-label: 0.875rem;
+  --text-caption: 0.75rem;
   --text-overline: 0.6875rem;
-  --text-code:     0.8125rem;
+  --text-code: 0.8125rem;
 
   /* --- Radii --- */
   --r-xs: 4px;
@@ -92,39 +92,39 @@
 
   /* --- Spacing extras (beyond 4px grid) --- */
   --sp-4_5: 18px;
-  --sp-13:  52px;
+  --sp-13: 52px;
 
   /* --- Elevation (box-shadow) --- */
   --shadow-e0: none;
   --shadow-e1: 0 1px 3px rgba(28, 25, 23, 0.04);
   --shadow-e2: 0 2px 8px rgba(28, 25, 23, 0.08);
-  --shadow-e3: 0 4px 16px rgba(28, 25, 23, 0.10);
+  --shadow-e3: 0 4px 16px rgba(28, 25, 23, 0.1);
   --shadow-e4: 0 8px 24px rgba(28, 25, 23, 0.14);
   --shadow-e5: 0 16px 48px rgba(28, 25, 23, 0.18);
 
   /* --- Glass surface (product dark bg) --- */
-  --glass-bg:     rgba(255, 255, 255, 0.06);
+  --glass-bg: rgba(255, 255, 255, 0.06);
   --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-blur:   blur(20px);
+  --glass-blur: blur(20px);
 
   /* --- Motion --- */
   --dur-instant: 75ms;
-  --dur-fast:    150ms;
-  --dur-base:    220ms;
-  --dur-slow:    320ms;
-  --dur-slower:  480ms;
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
+  --dur-slower: 480ms;
   --dur-slowest: 680ms;
-  --ease-standard:    cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-emphasized:  cubic-bezier(0.2, 0, 0, 1);
-  --ease-accelerate:  cubic-bezier(0.3, 0, 1, 1);
-  --ease-decelerate:  cubic-bezier(0, 0, 0, 1);
-  --ease-overshoot:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0, 1);
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* --- Z-index tiers --- */
-  --z-base:     0;
+  --z-base: 0;
   --z-dropdown: 50;
-  --z-sticky:   100;
-  --z-overlay:  150;
-  --z-modal:    200;
-  --z-toast:    300;
+  --z-sticky: 100;
+  --z-overlay: 150;
+  --z-modal: 200;
+  --z-toast: 300;
 }

@@ -5,7 +5,10 @@ import type { NutritionLog, PantryItem } from "@sergeant/nutrition-domain";
 import { toLocalISODate } from "@sergeant/shared";
 import { useNutritionQuickChips } from "./useNutritionQuickChips";
 
-function mkLog(daysAgo: number, meals: Array<Partial<{ name: string; kcal: number; amount_g: number }>>): NutritionLog {
+function mkLog(
+  daysAgo: number,
+  meals: Array<Partial<{ name: string; kcal: number; amount_g: number }>>,
+): NutritionLog {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
   const date = toLocalISODate(d);
