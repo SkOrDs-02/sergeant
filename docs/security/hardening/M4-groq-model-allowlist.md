@@ -1,6 +1,6 @@
 # M4 — `GROQ_TRANSCRIBE_MODEL` is env-injectable without an allowlist
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Closed (2026-05-04)
 
 | Field          | Value                                                  |
@@ -63,6 +63,24 @@ Delivered as part of the Sprint 3 M4 + M5 + M13 hardening batch.
 - `apps/server/src/modules/transcribe/transcribe.test.ts` — table-driven
   tests for default-when-unset, allowlisted alternative, empty string,
   and a hard rejection for `whisper-evil-experimental`.
+
+## Update (2026-06-02, HR-2 — env single-source consolidation)
+
+The duplicated code-side `ALLOWED_GROQ_MODELS` Set + `process.env` read in
+`transcribe.ts` is removed. Enforcement now lives **only** at the env SSOT:
+
+- `apps/server/src/env/env.ts` — `GROQ_TRANSCRIBE_MODEL` is
+  `z.preprocess("" → undefined, z.enum([...]).default("whisper-large-v3-turbo"))`.
+  Empty-string env still maps to the default; an unknown model fails the enum
+  → **boot fail-fast at env parse** (before the HTTP server starts).
+- `apps/server/src/modules/transcribe/transcribe.ts` — `resolveGroqModel()`
+  now just returns the validated `env.GROQ_TRANSCRIBE_MODEL` (last Groq
+  `process.env[…]` read dropped; env-single-source budget 89 → 88).
+- Allowlist semantics (default / empty / valid / hard-reject) moved to
+  `apps/server/src/env/groqTranscribeModel.test.ts`; `transcribe.test.ts`
+  keeps a routing smoke. The M4 security property (code-reviewed allowlist,
+  boot fail-fast) is preserved — the allowlist is still source-controlled,
+  just at the single `z.enum` definition instead of two places.
 
 ## Cross-references
 

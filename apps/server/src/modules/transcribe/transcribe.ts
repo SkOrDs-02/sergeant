@@ -4,42 +4,30 @@ import { parseQuery } from "../../http/validate.js";
 import { transcribeAudio, GroqTranscribeError } from "../../lib/groq.js";
 import { logger } from "../../obs/logger.js";
 import { assertTranscribeUsdCap, recordTranscribeUsdSpend } from "./usdCap.js";
+import { env } from "../../env/env.js";
 
 type WithGroqKey = Request & { groqKey?: string };
 
 /**
- * M4 — code-side allowlist for Groq Whisper models. Whoever owns Railway env
- * (or a leaked Railway token) cannot silently downgrade quality (cheaper
- * model) or upgrade cost (experimental model) without leaving a code-review
- * trail: any new model must be added to this Set in source.
+ * M4 — Groq Whisper model allowlist. Enforcement lives at the env
+ * single-source-of-truth: `GROQ_TRANSCRIBE_MODEL` is a `z.enum`
+ * (`whisper-large-v3-turbo` | `whisper-large-v3`) with a default in
+ * `apps/server/src/env/env.ts`. An unknown / experimental model fails the
+ * enum → boot fail-fast at env parse (before the HTTP server accepts
+ * traffic), so whoever owns Railway env (or a leaked token) cannot silently
+ * swap models without a code-review trail on the enum.
  *
- * Resolved once at module load (fail-fast on boot) — `assertStartupEnv`
- * surfaces the throw before the HTTP server starts accepting traffic.
- * See `docs/security/hardening/M4-groq-model-allowlist.md`.
+ * HR-2 (dead-code/hard-rules): this used to read `process.env` directly with
+ * a duplicated Set; it now reads the Zod-validated `env`, removing the last
+ * Groq `process.env[…]` read. See `docs/security/hardening/M4-groq-model-allowlist.md`.
  */
-const ALLOWED_GROQ_MODELS = new Set([
-  "whisper-large-v3-turbo",
-  "whisper-large-v3",
-]);
-const DEFAULT_GROQ_MODEL = "whisper-large-v3-turbo";
-
-function resolveGroqModel(): string {
-  const raw = process.env["GROQ_TRANSCRIBE_MODEL"];
-  const requested = raw && raw.length > 0 ? raw : DEFAULT_GROQ_MODEL;
-  if (!ALLOWED_GROQ_MODELS.has(requested)) {
-    throw new Error(
-      `Unsupported GROQ_TRANSCRIBE_MODEL: ${requested}. Allowed: ${[
-        ...ALLOWED_GROQ_MODELS,
-      ].join(", ")}`,
-    );
-  }
-  return requested;
+function resolveGroqModel(): "whisper-large-v3-turbo" | "whisper-large-v3" {
+  return env.GROQ_TRANSCRIBE_MODEL;
 }
 
 const GROQ_MODEL = resolveGroqModel();
 
 export const __testing = {
-  ALLOWED_GROQ_MODELS,
   resolveGroqModel,
 };
 

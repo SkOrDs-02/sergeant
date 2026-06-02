@@ -439,9 +439,16 @@ const envSchema = z.object({
    * fail-fast). Див.
    * `docs/security/hardening/M4-groq-model-allowlist.md`.
    */
-  GROQ_TRANSCRIBE_MODEL: z
-    .enum(["whisper-large-v3-turbo", "whisper-large-v3"])
-    .default("whisper-large-v3-turbo"),
+  GROQ_TRANSCRIBE_MODEL: z.preprocess(
+    // Treat empty-string env (`GROQ_TRANSCRIBE_MODEL=""`) as "unset" so the
+    // `.default()` applies — matches the legacy `process.env[…] || default`
+    // semantics that lived in transcribe.ts before HR-2. An unknown model
+    // still fails the enum → boot fail-fast at env parse (M4 allowlist).
+    (v) => (v === "" ? undefined : v),
+    z
+      .enum(["whisper-large-v3-turbo", "whisper-large-v3"])
+      .default("whisper-large-v3-turbo"),
+  ),
   /**
    * Killer-switch для AI-квоти: при `true` `assertAiQuota()` стає no-op і всі
    * AI-роути проходять без декременту лічильника `ai_usage_daily`. Призначений
