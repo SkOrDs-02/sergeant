@@ -7,6 +7,7 @@ import type { FizrukPage } from "../shell/fizrukRoute";
 // signature — keep the import even when TS doesn't track JSDoc refs.
 
 import { safeWriteLS } from "@shared/lib/storage/storage";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -25,6 +26,7 @@ import { StatusStrip } from "../components/dashboard/StatusStrip";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
 import { workoutDurationSec } from "@sergeant/fizruk-domain";
 import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
+import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import {
   computeDashboardKpis,
   getNextPlanSession,
@@ -93,7 +95,9 @@ export function Dashboard({
   const { entries: measurements } = useMeasurements();
 
   const [planConfirmOpen, setPlanConfirmOpen] = useState(false);
-  const [pendingPicks, setPendingPicks] = useState<unknown[] | null>(null);
+  const [pendingPicks, setPendingPicks] = useState<RawExerciseDef[] | null>(
+    null,
+  );
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(
     null,
   );
@@ -112,23 +116,18 @@ export function Dashboard({
   }, [workouts]);
 
   const greeting = useMemo(() => {
-    const hour = new Date().getHours();
+    const hour = getKyivDateParts().hour;
     if (hour < 12) return "Доброго ранку";
     if (hour < 18) return "Доброго дня";
     return "Доброго вечора";
   }, []);
 
   const startWorkoutFromPlan = (
-    picks: unknown[],
+    picks: RawExerciseDef[],
     templateId?: string | null,
   ) => {
     const w = createWorkout();
-    for (const ex of picks as Array<{
-      id: string;
-      primaryGroup?: string;
-      name?: { uk?: string; en?: string };
-      muscles?: { primary?: string[]; secondary?: string[] };
-    }>) {
+    for (const ex of picks) {
       const isCardio = ex.primaryGroup === "cardio";
       addItem(w.id, {
         exerciseId: ex.id,
@@ -146,18 +145,19 @@ export function Dashboard({
     safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
     try {
       sessionStorage.setItem("fizruk_workouts_mode", "log");
-    } catch {}
+    } catch {
+      /* non-fatal: workouts tab remains reachable */
+    }
     onNavigate("workouts");
   };
 
-  const tryStartPlan = (picks: unknown[], templateId?: string | null) => {
+  const tryStartPlan = (
+    picks: RawExerciseDef[],
+    templateId?: string | null,
+  ) => {
     if (!picks?.length) return;
     const risky = picks.some(
-      (ex) =>
-        recoveryConflictsForExercise(
-          ex as { muscles?: { primary?: string[]; secondary?: string[] } },
-          rec.by,
-        ).hasWarning,
+      (ex) => recoveryConflictsForExercise(ex, rec.by).hasWarning,
     );
     if (risky) {
       setPendingPicks(picks);
@@ -428,7 +428,7 @@ export function Dashboard({
                   {quickTemplates.map((tpl) => {
                     const picks = (tpl.exerciseIds || [])
                       .map((id) => exercises.find((e) => e.id === id))
-                      .filter(Boolean);
+                      .filter((e): e is RawExerciseDef => Boolean(e));
                     return (
                       <button
                         key={tpl.id}

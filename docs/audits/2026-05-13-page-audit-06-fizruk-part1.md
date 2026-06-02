@@ -24,7 +24,7 @@ Pure static review (`grep` / `read`) of the four Fizruk Part 1 pages plus their 
 **Lines:** file headers (top of each)
 
 **Description.**
-Hard Rule #10 (`lint-enforced-convention`) requires every file/doc to declare `> **Last validated:** YYYY-MM-DD by …` and `> **Status:**` (Active / Scaffolded / Deprecated / Archived). None of the ~13 scope files in this audit carry that header — neither the four route-shell pages nor the shell/router/header modules. Other audited surfaces in the repo (e.g. `docs/audits/2026-05-07-app-audit.md`) do declare the header, so the omission is a discipline drift rather than a missing convention.
+Hard Rule #10 (`lint-enforced-convention`) requires every file/doc to declare `> **Last validated:** YYYY-MM-DD by …` and `> **Status:**` (Active / Scaffolded / Deprecated / Archived). None of the ~13 scope files in this audit carry that header — neither the four route-shell pages nor the shell/router/header modules. Other audited surfaces in the repo (e.g. `docs/audits/archive/2026-05-07-app-audit.md`) do declare the header, so the omission is a discipline drift rather than a missing convention.
 
 **Why it matters.**
 The lifecycle marker is the fleet-wide "is this current?" signal. Without it, freshness lint (`pnpm lint:freshness` / `bump-last-validated`) can't differentiate "module under active maintenance" from "abandoned". Reviewers reading a Fizruk page have no way to know whether the assumptions (e.g. dual-write rollout, T4 lazy-by-default) are still in force.

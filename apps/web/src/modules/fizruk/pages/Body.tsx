@@ -17,26 +17,6 @@ import { ENERGY_LABELS, MOOD_LABELS, ScoreButton } from "./Body/ScoreButton";
 import { firstValidValue, lastValidValue } from "./Body/trendUtils";
 import { RecoveryFocusCard } from "../components/RecoveryFocusCard";
 
-/**
- * Trend cards on this page used to be always-expanded, which meant four
- * ~180px-tall charts stacked one after another — on mobile Safari that
- * pushed the useful summary + input form far off-screen. The user asked
- * for them to be collapsible, so each chart card is now wrapped in
- * `CollapsibleTrendCard`:
- *
- *  - Default: collapsed, showing only the title + a latest-value +
- *    delta teaser, so the page reads as a compact list at first load.
- *  - Tap/click the header to toggle. Per-card open state is persisted
- *    in localStorage under `fizruk:body:trend-open:<key>` so the user's
- *    choice survives reloads.
- *
- * The "Журнал" log section uses the same collapse pattern via
- * `JournalSection` (open by default; persisted under
- * `fizruk:body:journal-open`), and each entry inside is itself
- * collapsible via `JournalEntryCard` (closed by default — only the
- * date + a short metric summary are shown until tapped; persisted
- * under `fizruk:body:journal-entry-open:<id>`).
- */
 interface BodyProps {
   onOpenMeasurements?: () => void;
   /**
@@ -53,8 +33,7 @@ interface BodyProps {
  * але дозволяє пусті стрічки для не-заповнених метрик. Ціна порожнього
  * рядка в `weightKg`/`sleepHours` — `null` у persisted entry; саме тому
  * client-side валідація працює на string-полях, а конверсія в number
- * відбувається в `onSubmit`. Item #8 round-11 — уніфікація form-engine
- * під `useApiForm` (zod-резолвер + uniform `isSubmitting`/`reset`).
+ * відбувається в `onSubmit`.
  */
 const bodyFormSchema = z.object({
   weightKg: z
@@ -119,13 +98,6 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
     };
   }, []);
 
-  // Item #8 round-11: form-engine — `useApiForm` (zod + RHF + server-error
-  // mapping) замість локального `useState<BodyForm>`. Запис іде в
-  // localStorage, а не в API, але hook все одно дає uniform
-  // `isSubmitting`/`reset`/`formState.errors` patern, який знадобиться
-  // коли цей форм мігрує на серверний `dailyLog`-endpoint. `addEntry`
-  // synchronous — обертка `async` дає useApiForm змогу коректно
-  // прокачати `isSubmitting`-флаг навколо запису.
   const { register, submit, formState, watch, setValue, reset, isSubmitting } =
     useApiForm<BodyFormValues, void>({
       schema: bodyFormSchema,

@@ -1,7 +1,12 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { captureException } from "./observability/sentry";
 import { isChunkLoadError, reloadOnceForChunkError } from "./lib/chunkReload";
-import { CONFIRM_FLASH_MS } from "@shared/lib/ui/timeouts";
+import {
+  extractRequestId,
+  isServerLikeError,
+  copyRequestIdToClipboard,
+  makeCopyDoneCallback,
+} from "./observability/requestId";
 
 interface FallbackProps {
   error: Error;
@@ -16,27 +21,6 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   error: Error | null;
   copied: boolean;
-}
-
-/**
- * Витягуємо `requestId` з помилки, якщо помилка — `ApiError`-сумісна.
- * Не імпортуємо `ApiError` напряму, щоб не тягнути api-client у головний
- * бандл і зберегти duck-typing (помилки з SW/інших джерел теж можуть
- * мати `requestId`).
- */
-function extractRequestId(error: unknown): string | undefined {
-  if (error == null || typeof error !== "object") return undefined;
-  const id = (error as { requestId?: unknown }).requestId;
-  return typeof id === "string" && id.length > 0 ? id : undefined;
-}
-
-/** 5xx або network-kind ApiError — кейси, де requestId максимально цінний. */
-function isServerLikeError(error: unknown): boolean {
-  if (error == null || typeof error !== "object") return false;
-  const status = (error as { status?: unknown }).status;
-  if (typeof status === "number" && status >= 500 && status < 600) return true;
-  const kind = (error as { kind?: unknown }).kind;
-  return kind === "network" || kind === "parse";
 }
 
 /**
@@ -65,40 +49,8 @@ export class ErrorBoundary extends Component<
     this.copyRequestId = () => {
       const id = extractRequestId(this.state.error);
       if (!id) return;
-      const fallbackCopy = () => {
-        try {
-          const ta = document.createElement("textarea");
-          ta.value = id;
-          ta.style.position = "fixed";
-          ta.style.opacity = "0";
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          document.body.removeChild(ta);
-        } catch {
-          /* noop */
-        }
-      };
-      const finish = () => {
-        this.setState({ copied: true });
-        setTimeout(() => this.setState({ copied: false }), CONFIRM_FLASH_MS);
-      };
-      try {
-        if (
-          typeof navigator !== "undefined" &&
-          navigator.clipboard?.writeText
-        ) {
-          navigator.clipboard.writeText(id).then(finish, () => {
-            fallbackCopy();
-            finish();
-          });
-          return;
-        }
-      } catch {
-        /* fallthrough */
-      }
-      fallbackCopy();
-      finish();
+      const finish = makeCopyDoneCallback((update) => this.setState(update));
+      copyRequestIdToClipboard(id, finish);
     };
   }
 

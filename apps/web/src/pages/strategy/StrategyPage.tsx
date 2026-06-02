@@ -31,7 +31,7 @@
  * conversation flow для PR-35+ ще не готовий.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { strategicKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "../../shared/i18n/uk";
@@ -168,6 +168,20 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
   const [goalText, setGoalText] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Refs for the two form controls so we can move focus to the first
+  // invalid field when validation fails (WCAG 3.3.1 / audit F22).
+  const personaSelectRef = useRef<HTMLSelectElement>(null);
+  const goalTextRef = useRef<HTMLTextAreaElement>(null);
+
+  // Move focus to the goalText textarea when a validation error is set —
+  // it is the only field that can trigger `submitError` (empty text check).
+  // `personaSelectRef` is kept for future validations on that field.
+  useEffect(() => {
+    if (submitError !== null) {
+      goalTextRef.current?.focus();
+    }
+  }, [submitError]);
+
   const { data: goals = [], isLoading } = useQuery({
     queryKey: strategicKeys.goalsForWeek(weekStart),
     queryFn: () => fetchGoals(weekStart),
@@ -235,35 +249,50 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
           {messages.strategy.addGoal}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <label className="block">
-            <span className="text-sm">{messages.strategy.personaLabel}</span>
-            <select
-              value={persona}
-              onChange={(e) =>
-                setPersona(e.target.value as StrategicGoalPersona)
-              }
-              className="mt-1 block w-full rounded-md border px-3 py-2"
-            >
-              {STRATEGIC_GOAL_PERSONAS.map((p) => (
-                <option key={p} value={p}>
-                  {PERSONA_LABELS[p]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-sm">{messages.strategy.goalTextLabel}</span>
-            <textarea
-              value={goalText}
-              onChange={(e) => setGoalText(e.target.value)}
-              rows={3}
-              maxLength={2048}
-              className="mt-1 block w-full rounded-md border px-3 py-2"
-              placeholder={messages.strategy.goalTextPlaceholder}
-            />
-          </label>
+          <fieldset className="contents">
+            {/* sr-only legend: provides an accessible group name without
+                altering visual layout (fieldset uses `contents` display). */}
+            <legend className="sr-only">{messages.strategy.addGoal}</legend>
+            <label className="block">
+              <span className="text-sm">{messages.strategy.personaLabel}</span>
+              <select
+                ref={personaSelectRef}
+                value={persona}
+                onChange={(e) =>
+                  setPersona(e.target.value as StrategicGoalPersona)
+                }
+                className="mt-1 block w-full rounded-md border px-3 py-2"
+              >
+                {STRATEGIC_GOAL_PERSONAS.map((p) => (
+                  <option key={p} value={p}>
+                    {PERSONA_LABELS[p]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-sm">{messages.strategy.goalTextLabel}</span>
+              <textarea
+                ref={goalTextRef}
+                value={goalText}
+                onChange={(e) => setGoalText(e.target.value)}
+                rows={3}
+                maxLength={2048}
+                className="mt-1 block w-full rounded-md border px-3 py-2"
+                placeholder={messages.strategy.goalTextPlaceholder}
+                aria-describedby={
+                  submitError !== null ? "goal-text-error" : undefined
+                }
+                aria-invalid={submitError !== null ? true : undefined}
+              />
+            </label>
+          </fieldset>
           {submitError !== null && (
-            <p role="alert" className="text-sm text-danger-strong">
+            <p
+              id="goal-text-error"
+              role="alert"
+              className="text-sm text-danger-strong"
+            >
               {submitError}
             </p>
           )}

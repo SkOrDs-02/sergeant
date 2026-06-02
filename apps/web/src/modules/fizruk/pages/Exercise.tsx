@@ -77,7 +77,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
     let lastWorkoutBest1rm = 0;
     let priorBest1rm = 0;
 
-    if (history.length > 0) lastWorkoutId = history[0]!.workout?.id;
+    if (history.length > 0) lastWorkoutId = history[0]?.workout?.id ?? null;
 
     for (const { workout, item } of history) {
       if (item?.type !== "strength") continue;

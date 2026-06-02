@@ -16,7 +16,7 @@
   — section IDs `S2..S11` нижче зберігаються 1-в-1 із roast-документом.
 - **Споріднені аудити (P0/P1 контекст):**
   [`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md),
-  [`docs/audits/2026-05-07-app-audit.md`](../audits/2026-05-07-app-audit.md),
+  [`docs/audits/archive/2026-05-07-app-audit.md`](../audits/archive/2026-05-07-app-audit.md),
   [`docs/audits/2026-05-07-full-app-regression-ux-audit.md`](../audits/2026-05-07-full-app-regression-ux-audit.md),
   [`docs/audits/archive/2026-05-04-csp-disable-retrospective.md`](../audits/archive/2026-05-04-csp-disable-retrospective.md)
   (A1–A5 closed 2026-05-06).
@@ -129,6 +129,7 @@
 
 ### S3 — ESLint SRI-guard на сторонні `<script src>`
 
+- **Status:** ✅ Виконано — verified on main: реалізовано як standalone-гейт `scripts/lint-html-sri.mjs` + `scripts/__tests__/lint-html-sri.test.mjs` + `pnpm lint:html-sri` (у CI `ci.yml`). Перевіряє `apps/**/index.html` на third-party `<script src=https://…>` без `integrity`/`crossorigin`.
 - **Title:** `feat(eslint): require SRI integrity= on third-party <script src> in index.html`
 - **Scope:**
   - Нове правило `packages/eslint-plugin-sergeant-design/src/rules/sri-on-third-party-script.ts`
@@ -345,6 +346,7 @@
 
 ### S10 — `pii-handling.md` drift-guard lint
 
+- **Status:** ✅ Виконано — `scripts/lint-pii-handling-drift.mjs` + `pnpm lint:pii-handling-drift` (у `pnpm lint` aggregate), machine-readable `<!-- pii-keys-start -->` блок у `docs/security/pii-handling.md` (42 ключі), unit-тест `scripts/__tests__/lint-pii-handling-drift.test.mjs` (8 cases).
 - **Title:** `feat(governance): lint guard against pii-handling.md drift from @sergeant/shared/lib/pii.ts`
 - **Scope:**
   - Новий скрипт `scripts/lint-pii-handling-drift.mjs` — парсить

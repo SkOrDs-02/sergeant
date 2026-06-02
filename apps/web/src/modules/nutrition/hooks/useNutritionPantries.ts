@@ -266,6 +266,7 @@ export function useNutritionPantries({
     setItemEdit((s) => ({ ...s, open: false }));
   };
 
+  // AI-CONTEXT: deducts gramsConsumed from a mass-based pantry item (г/кг only); non-mass units are intentionally skipped to avoid unit-mismatch bugs
   const consumePantryItem = (name: string, gramsConsumed: number) => {
     const norm = normalizeFoodName(name);
     if (!norm) return;

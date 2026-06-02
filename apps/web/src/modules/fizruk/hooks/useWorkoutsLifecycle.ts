@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { logger } from "@shared/lib";
 import { safeRemoveLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { ACTIVE_WORKOUT_KEY, type Workout } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "./useFizrukRestSound";
@@ -56,7 +57,11 @@ export function useWorkoutsViewFromSession(
         setView("log");
         sessionStorage.removeItem(VIEW_FROM_SESSION_KEY);
       }
-    } catch {}
+    } catch (err) {
+      logger.warn("useWorkoutsViewFromSession: sessionStorage unavailable", {
+        err,
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only; setView identity is stable
   }, []);
 }

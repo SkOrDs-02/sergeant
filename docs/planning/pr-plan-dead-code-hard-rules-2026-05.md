@@ -105,6 +105,7 @@ Order: DC-1 (XS) → HR-1 (locks canonical test-pattern) → паралельн�
 
 ### DC-5 — `refactor(web): re-decompose AuthPage.tsx under Hard Rule #18 (OR delete 7 scaffolded helpers)`
 
+- **Status:** ✅ Виконано — verified on main: `apps/web/src/core/auth/AuthPage.tsx` = 187 LOC (було 693), Hard Rule #18 satisfied; decomposed helpers wired (LoginForm/RegisterForm/ForgotPasswordPanel/Google+AppleSignInButton/useForgotPassword/authSchemas/authFormPrimitives).
 - **Title:** `refactor(web): re-decompose AuthPage.tsx <600 LOC (re-wire 7 helpers) OR delete 637 LOC of scaffolded auth helpers`
 - **Scope-файли:**
   - `apps/web/src/core/auth/LoginForm.tsx` (133 LOC), `RegisterForm.tsx` (152 LOC), `ForgotPasswordPanel.tsx` (85 LOC), `GoogleSignInButton.tsx` (43 LOC), `authFormPrimitives.tsx` (99 LOC), `authSchemas.ts` (38 LOC), `useForgotPassword.ts` (87 LOC) — usn 7 helper-ів, зараз marked `@scaffolded`.
@@ -253,7 +254,7 @@ pnpm docs:check-links               # markdown internal links (HR-4 overlap)
 
 - [`docs/audits/2026-05-13-dead-code-hard-rules-roast.md`](../audits/2026-05-13-dead-code-hard-rules-roast.md) — джерело open items.
 - [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](../audits/2026-05-05-dead-code-and-stale-links-audit.md) — попередня dead-code прожарка (origin §3.2 і §3.4).
-- [`docs/audits/2026-05-07-app-audit.md`](../audits/2026-05-07-app-audit.md) — app-audit (web-blocker `db-schema/migrate` umbrella, mobile-shell §1.3).
+- [`docs/audits/archive/2026-05-07-app-audit.md`](../audits/archive/2026-05-07-app-audit.md) — app-audit (web-blocker `db-schema/migrate` umbrella, mobile-shell §1.3).
 - [`docs/governance/hard-rules.json`](../governance/hard-rules.json) — 22-rule registry; HR-4 додає 23-й rule.
 - [`docs/governance/rules/10-lifecycle-markers.md`](../governance/rules/10-lifecycle-markers.md) — canonical body для `@scaffolded` маркерів (use-case у DC-2).
 - [`docs/governance/rules/18-module-size-discipline-600.md`](../governance/rules/18-module-size-discipline-600.md) — Hard Rule #18 (DC-5 AuthPage decision).

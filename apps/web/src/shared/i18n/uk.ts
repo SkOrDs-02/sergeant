@@ -264,6 +264,8 @@ export const messages = {
       sectionFailed: "Ця секція впала, але інші частини модуля працюють.",
       moduleFailed: "Помилка в модулі",
       backToModulePicker: "До вибору модуля",
+      copyRequestId: "Копіювати",
+      copyRequestIdAria: "Скопіювати requestId",
     },
   },
 

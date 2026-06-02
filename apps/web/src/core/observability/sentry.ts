@@ -365,6 +365,28 @@ export async function initSentry() {
   // браузерних (native-specific баги: inset, кукі, keyboard resize тощо).
   mod.setTag("platform", getPlatform());
   mod.setTag("is_capacitor", String(isCapacitor()));
+  // Security audit S9: CSP mode tag — distinguishes report-only (staging /
+  // canary) from enforced policy (production). Lets Sentry searches like
+  // `cspMode:report-only` surface violations that wouldn't have been blocked
+  // in production yet. Additive; no behaviour change.
+  mod.setTag(
+    "cspMode",
+    ["1", "true"].includes(
+      String(import.meta.env["VITE_CSP_REPORT_ONLY"] ?? "").toLowerCase(),
+    )
+      ? "report-only"
+      : "enforce",
+  );
+  // Security audit S9: web-vitals collection tag — mirrors the guard in
+  // `webVitals.ts` (VITE_WEB_VITALS_ENDPOINT === "0" → disabled; Capacitor
+  // WebView → also disabled). Lets dashboards correlate RUM data gaps with
+  // Sentry error spikes when collection is toggled off. Additive.
+  mod.setTag(
+    "webVitalsEnabled",
+    String(
+      !isCapacitor() && import.meta.env["VITE_WEB_VITALS_ENDPOINT"] !== "0",
+    ),
+  );
 
   // Audit 2026-05-13 §F21: дренаж тегів, які виставили ранні споживачі
   // (наприклад `dualWriteTelemetry` під час boot) до завершення lazy-load.

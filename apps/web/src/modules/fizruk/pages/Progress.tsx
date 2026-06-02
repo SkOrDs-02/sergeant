@@ -58,7 +58,7 @@ export function Progress({ onNavigate }: ProgressProps) {
 
   const weightTrend = useMemo(() => {
     return [...(entries || [])]
-      .sort((a, b) => a.at.localeCompare(b.at))
+      .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
       .slice(-8)
       .map((e) => ({
         value:
@@ -74,7 +74,7 @@ export function Progress({ onNavigate }: ProgressProps) {
 
   const fatTrend = useMemo(() => {
     return [...(entries || [])]
-      .sort((a, b) => a.at.localeCompare(b.at))
+      .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
       .slice(-8)
       .map((e) => ({
         value:
@@ -226,11 +226,6 @@ export function Progress({ onNavigate }: ProgressProps) {
       }));
   }, [workouts]);
 
-  // Backup / CSV / "Скинути всі дані" controls used to live in this
-  // page's "Дані" card. They were duplicated by the hub-wide Settings
-  // screen (single source of truth for cross-module backup), so the
-  // page now focuses on analytics only — the user explicitly flagged
-  // the duplicated buttons as confusing on round-12.
   const [prFilter, setPrFilter] = useState("all");
 
   const hasAny = (workouts?.length || 0) > 0 || (entries?.length || 0) > 0;
@@ -491,6 +486,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                   <button
                     type="button"
                     onClick={() => setPrFilter("all")}
+                    aria-pressed={prFilter === "all"}
                     className={cn(
                       "shrink-0 px-3 h-7 rounded-full text-style-caption transition-colors border",
                       prFilter === "all"
@@ -505,6 +501,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                       key={g}
                       type="button"
                       onClick={() => setPrFilter(g === prFilter ? "all" : g)}
+                      aria-pressed={prFilter === g}
                       className={cn(
                         "shrink-0 px-3 h-7 rounded-full text-style-caption transition-colors border whitespace-nowrap",
                         prFilter === g
@@ -544,7 +541,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                       <button
                         key={p.id}
                         type="button"
-                        className="w-full text-left border border-line rounded-2xl p-3 bg-bg hover:bg-panelHi transition-colors"
+                        className="focus-ring w-full text-left border border-line rounded-2xl p-3 bg-bg hover:bg-panelHi transition-colors"
                         onClick={() => {
                           onNavigate(`exercise/${p.id}`);
                         }}

@@ -110,6 +110,7 @@ export function nutritionRoutePath(
  * caller can distinguish "no legacy hash to migrate" from "hash matched
  * but landed on the default tab".
  */
+// AI-CONTEXT: one-shot hash-compat shim — reads pre-path-router URLs (e.g. /nutrition#log) and rewrites them; new navigation must use path-based routes, not this function
 export function parseLegacyNutritionHash(): ParsedNutritionRoute | null {
   if (typeof window === "undefined") return null;
   const raw = (window.location.hash || "").replace(/^#/, "").trim();

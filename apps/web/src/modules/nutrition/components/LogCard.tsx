@@ -156,7 +156,7 @@ export function LogCard({
             illustration={<NutritionEmptyIllustration size={64} />}
             module="nutrition"
             title="Поки немає записів"
-            description="Додайте перший прийом їжі, щоб почати вести журнал."
+            description="Додай перший прийом їжі, щоб почати вести журнал."
           />
         ) : (
           <VirtualMealList

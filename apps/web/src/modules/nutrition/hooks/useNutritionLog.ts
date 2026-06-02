@@ -84,6 +84,7 @@ export function useNutritionLog() {
     setNutritionLog(cache.log);
   }, [sqliteCacheTick]);
 
+  // AI-CONTEXT: cleanup ref for pending thumbnail deletes — on unmount the undo window is gone, so timers are cancelled and thumbnails deleted immediately
   // Flush scheduled thumbnail deletes on unmount. The 6 s grace window
   // exists to allow `handleRestoreMeal` to cancel the delete, but that
   // handler only exists while the hook is alive — once we unmount the
