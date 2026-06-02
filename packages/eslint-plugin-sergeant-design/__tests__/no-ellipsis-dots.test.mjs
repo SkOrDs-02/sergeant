@@ -1,3 +1,10 @@
+/* eslint-disable sergeant-design/no-ellipsis-dots --
+   Test fixtures intentionally carry the raw 3-byte ASCII `...` sequence
+   that this rule autofixes. Without disabling, `lint-staged` runs
+   `eslint --fix` on commit and rewrites the fixtures into `…`,
+   silently breaking the suite. The rule logic is exercised through
+   the `Linter` instance below - disabling it on this file does not
+   weaken coverage. */
 /**
  * Unit tests for `sergeant-design/no-ellipsis-dots`.
  *
@@ -64,19 +71,19 @@ function lintAndFix(
 // suite suddenly goes red, check that the inputs are still 3 ASCII dots.
 describe("no-ellipsis-dots", () => {
   it("flags `…` inside a string Literal", () => {
-    const msgs = lint(`const s = "Loading…";`);
+    const msgs = lint(`const s = "Loading...";`);
     assert.equal(msgs.length, 1);
     assert.equal(msgs[0].ruleId, RULE_ID);
     assert.match(msgs[0].message, /U\+2026|typographic ellipsis|…/);
   });
 
   it("flags `…` inside a template literal cooked value", () => {
-    const msgs = lint("const s = `Loading… ${count}`;");
+    const msgs = lint("const s = `Loading... ${count}`;");
     assert.equal(msgs.length, 1);
   });
 
   it("flags `…` inside JSX text", () => {
-    const msgs = lint(`const el = <span>Loading…</span>;`);
+    const msgs = lint(`const el = <span>Loading...</span>;`);
     assert.equal(msgs.length, 1);
     // ESLint reports JSXText nodes — the location should still point at the
     // dots region.
@@ -97,32 +104,32 @@ describe("no-ellipsis-dots", () => {
     // `...rest` is an ASTNode, not a string literal — the rule scans
     // string values only and must not bleed into syntax.
     const msgs = lint(
-      `function f(…rest) { const arr = [1, 2, …rest]; return arr; }`,
+      `function f(...rest) { const arr = [1, 2, ...rest]; return arr; }`,
     );
     assert.equal(msgs.length, 0);
   });
 
   it("autofixes `Loading…` → `Loading…` inside a Literal", () => {
-    const { output, fixed } = lintAndFix(`const s = "Loading…";`);
+    const { output, fixed } = lintAndFix(`const s = "Loading...";`);
     assert.equal(fixed, true);
     assert.match(output, /const s = "Loading…";/);
   });
 
   it("autofixes `Loading…` → `Loading…` inside JSX text", () => {
-    const { output, fixed } = lintAndFix(`const el = <span>Loading…</span>;`);
+    const { output, fixed } = lintAndFix(`const el = <span>Loading...</span>;`);
     assert.equal(fixed, true);
     assert.match(output, /<span>Loading…<\/span>/);
   });
 
   it("autofixes `Loading…` → `Loading…` inside a template literal", () => {
-    const { output, fixed } = lintAndFix("const s = `Loading… ${n}`;");
+    const { output, fixed } = lintAndFix("const s = `Loading... ${n}`;");
     assert.equal(fixed, true);
     assert.match(output, /Loading…/);
   });
 
   it("autofixes multiple occurrences in a single literal", () => {
     const { output, fixed } = lintAndFix(
-      `const s = "Loading… and then… done.";`,
+      `const s = "Loading... and then... done.";`,
     );
     assert.equal(fixed, true);
     assert.match(output, /Loading… and then… done\./);
@@ -131,7 +138,7 @@ describe("no-ellipsis-dots", () => {
   it("does NOT autofix more than 3 consecutive dots (rule targets exactly the canonical 3-dot ellipsis pattern)", () => {
     // The regex `\.{3}` matches 3-or-more in default JS semantics; we
     // lock the observed behaviour (rewrite to `…` once per chunk).
-    const { output, fixed } = lintAndFix(`const s = "wait….";`);
+    const { output, fixed } = lintAndFix(`const s = "wait....";`);
     assert.equal(fixed, true);
     // Either 4 dots collapse to `…` (first 3) + `.`, or the whole chunk
     // collapses — both are typographic improvements; assert the dots
