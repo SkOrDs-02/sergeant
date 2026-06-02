@@ -2,7 +2,6 @@ import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { DataState } from "@shared/components/ui/DataState";
 import { WorkoutTemplatesSection } from "../components/WorkoutTemplatesSection";
-import { RestTimerOverlay } from "../components/workouts/RestTimerOverlay";
 import { WorkoutFinishSheets } from "../components/workouts/WorkoutFinishSheets";
 import { AddExerciseSheet } from "../components/workouts/AddExerciseSheet";
 import { ExerciseDetailSheet } from "../components/workouts/ExerciseDetailSheet";
@@ -193,11 +192,6 @@ export function Workouts({
             o.setView("templates");
           }}
           onConfirmExercises={o.handleQuickStartConfirm}
-        />
-
-        <RestTimerOverlay
-          restTimer={o.restTimer}
-          onCancel={() => o.setRestTimer(null)}
         />
 
         <WorkoutFinishSheets

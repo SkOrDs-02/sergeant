@@ -66,6 +66,8 @@ Either (a) render a parallel hidden list of muscles + status that AT users can t
 
 ### F3 — Rest-timer is destroyed on page navigation and never fires the end-cue [severity: high] [perspective: bug]
 
+> ✅ **Closed 2026-06-02** — rest-timer піднято з Workouts-сторінки на module-level `RestTimerProvider`, змонтований у `FizrukApp` над роутером. Провайдер володіє `restTimer`-станом, countdown-інтервалом (`useRestTimerCountdown`) і end-cue (`useFizrukRestSound`); `RestTimerOverlayConnected` рендериться раз на рівні FizrukApp. `useWorkoutsOrchestrator` тепер споживає `useRestTimer()` з контексту (той самий `restTimer`/`setRestTimer` API — call-sites не змінились), Workouts-сторінка більше не тримає власний `<RestTimerOverlay>`. Тепер звук/гаптика/оверлей спрацьовують навіть після переходу Огляд/Атлас під час відпочинку. Новий `RestTimerProvider.test.tsx` (9 тестів, серед них 2 на cross-route survival: оверлей лишається + cue стріляє після unmount Workouts). tsc 0, eslint clean, fizruk-suite 187 passing (+9).
+
 **Page:** Workouts
 **File:** `apps/web/src/modules/fizruk/hooks/useWorkoutsLifecycle.ts` (L69–L100) + `Workouts.tsx` (renders `RestTimerOverlay` only while mounted)
 **Lines:** `useRestTimerCountdown` L69–L100; orchestrator unmount path: `Workouts.tsx` L57–L213

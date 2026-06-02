@@ -6,8 +6,6 @@ import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useExerciseCatalog } from "./useExerciseCatalog";
-import { useFizrukRestSound } from "./useFizrukRestSound";
-import type { RestTimerState } from "./useFizrukRestSound";
 import { useRecovery } from "./useRecovery";
 import {
   useWorkoutTemplates,
@@ -17,10 +15,10 @@ import { useWorkouts } from "./useWorkouts";
 import {
   useActiveWorkoutIdPersistence,
   useLiveWorkoutTick,
-  useRestTimerCountdown,
   useStaleActiveWorkoutCleanup,
   useWorkoutsViewFromSession,
 } from "./useWorkoutsLifecycle";
+import { useRestTimer } from "../context/RestTimerContext";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
 import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import type { Workout, WorkoutGroup } from "@sergeant/fizruk-domain";
@@ -104,7 +102,7 @@ export function useWorkoutsOrchestrator() {
   const [addOpen, setAddOpen] = useState(false);
   const [view, setView] = useState<WorkoutsView>("home");
   const mode = view === "templates" || view === "home" ? "catalog" : view;
-  const [restTimer, setRestTimer] = useState<RestTimerState | null>(null);
+  const { restTimer, setRestTimer } = useRestTimer();
   const [activeWorkoutId, setActiveWorkoutId] = useState(() =>
     safeReadStringLS(ACTIVE_WORKOUT_KEY),
   );
@@ -149,8 +147,6 @@ export function useWorkoutsOrchestrator() {
   );
   useWorkoutsViewFromSession(setView);
 
-  const { markCompletedNaturally } = useFizrukRestSound(restTimer);
-  useRestTimerCountdown(restTimer, setRestTimer, markCompletedNaturally);
   useLiveWorkoutTick(activeWorkout, setNow);
 
   const addExerciseToActive = useCallback(

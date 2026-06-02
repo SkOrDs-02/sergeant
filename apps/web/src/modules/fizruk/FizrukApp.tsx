@@ -20,6 +20,8 @@ import { FIZRUK_NAV } from "./shell/fizrukNav";
 import { FizrukHeader } from "./shell/FizrukHeader";
 import { FizrukRouter } from "./shell/FizrukRouter";
 import { type FizrukPage } from "./shell/fizrukRoute";
+import { RestTimerProvider } from "./context/RestTimerProvider";
+import { RestTimerOverlayConnected } from "./components/workouts/RestTimerOverlayConnected";
 
 interface FizrukAppProps {
   onBackToHub?: () => void;
@@ -118,54 +120,63 @@ export default function FizrukApp({
   })();
 
   return (
-    <ModuleShell
-      module="fizruk"
-      header={
-        <FizrukHeader
-          page={page}
-          activeProgram={activeProgram}
-          onBackToHub={onBackToHub}
-          onContextualBack={() => navigate(contextualBackTarget)}
-          onOpenSettings={onOpenSettings}
-        />
-      }
-      banner={
-        <StorageErrorBanner
-          eventName={FIZRUK_WORKOUTS_STORAGE_ERROR}
-          formatMessage={(reason) =>
-            `Не вдалося зберегти тренування (${reason}). Можливо, браузер переповнив сховище — експортуй бекап або звільни місце.`
-          }
-        />
-      }
-      nav={
-        showBottomNav ? (
-          <ModuleBottomNav
-            items={FIZRUK_NAV}
-            activeId={page}
-            onChange={(id) => navigate(id)}
-            module="fizruk"
-          />
-        ) : null
-      }
-    >
-      <FizrukRouter
-        page={page}
-        exerciseId={exerciseId}
-        activeProgramId={activeProgramId}
-        activeProgram={activeProgram}
-        activateProgram={activateProgram}
-        deactivateProgram={deactivateProgram}
-        todaySession={todaySession}
-        onNavigate={(target) => navigate(target)}
-        onStartProgramWorkout={(session) => handleStartProgramWorkout(session)}
-        onOpenModule={onOpenModule}
-      />
+    <RestTimerProvider>
+      {/* Module-level rest-timer overlay — rendered above the router so it
+          survives navigation between Огляд / Атлас / Тренування while a
+          rest countdown is active (audit-06 F3). */}
+      <RestTimerOverlayConnected />
 
-      {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance.
-          Rendered inside ModuleShell children; AIPill is `fixed`
-          positioned so it escapes the surrounding flex column and
-          anchors to the viewport. */}
-      <AIPill module="fizruk" />
-    </ModuleShell>
+      <ModuleShell
+        module="fizruk"
+        header={
+          <FizrukHeader
+            page={page}
+            activeProgram={activeProgram}
+            onBackToHub={onBackToHub}
+            onContextualBack={() => navigate(contextualBackTarget)}
+            onOpenSettings={onOpenSettings}
+          />
+        }
+        banner={
+          <StorageErrorBanner
+            eventName={FIZRUK_WORKOUTS_STORAGE_ERROR}
+            formatMessage={(reason) =>
+              `Не вдалося зберегти тренування (${reason}). Можливо, браузер переповнив сховище — експортуй бекап або звільни місце.`
+            }
+          />
+        }
+        nav={
+          showBottomNav ? (
+            <ModuleBottomNav
+              items={FIZRUK_NAV}
+              activeId={page}
+              onChange={(id) => navigate(id)}
+              module="fizruk"
+            />
+          ) : null
+        }
+      >
+        <FizrukRouter
+          page={page}
+          exerciseId={exerciseId}
+          activeProgramId={activeProgramId}
+          activeProgram={activeProgram}
+          activateProgram={activateProgram}
+          deactivateProgram={deactivateProgram}
+          todaySession={todaySession}
+          onNavigate={(target) => navigate(target)}
+          onStartProgramWorkout={(session) =>
+            handleStartProgramWorkout(session)
+          }
+          onOpenModule={onOpenModule}
+        />
+
+        {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance.
+            Rendered inside ModuleShell children; AIPill is `fixed`
+            positioned so it escapes the surrounding flex column and
+            anchors to the viewport. */}
+        <AIPill module="fizruk" />
+      </ModuleShell>
+    </RestTimerProvider>
   );
 }
