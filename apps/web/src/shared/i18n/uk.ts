@@ -308,6 +308,12 @@ export const messages = {
     chatEmptySuggestionFizruk: "Як мої тренування?",
     chatEmptySuggestionNutrition: "Що я їв сьогодні?",
     chatEmptySuggestionRoutine: "Стан моїх звичок",
+
+    // HubReports per-domain cards (NutritionCard / RoutineCard) — shared
+    // inline labels for the lazy-loaded report charts.
+    reportNoData: "Немає даних",
+    reportChartAria: "Графік",
+    reportPrevious: "Минулий:",
   },
 
   onboarding: {
@@ -418,18 +424,25 @@ export const messages = {
   fizruk: {
     returnToActiveWorkout: "Повернутись до активного тренування",
     workoutRest: "Відпочинок",
+    // PrBadge weight-unit suffix on the Fizruk hero PR pill.
+    kgUnit: "кг",
   },
 
   nutrition: {
     fromPantry: "Зі складу",
     mealType: "Прийом їжі",
     templates: "Шаблони",
+    // HubReports NutritionCard
+    reportHeading: "Харчування (ккал/день)",
+    kcalUnit: "ккал",
   },
 
   routine: {
     dayReport: "Денний звіт",
     weekdays: "Дні тижня",
     archive: "Архів",
+    // HubReports RoutineCard
+    reportHeading: "Рутина (виконання звичок)",
     firstRun: {
       title: "Перша звичка — попередня",
       description:

@@ -5,6 +5,8 @@
 import { useMemo, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
+import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import {
@@ -40,7 +42,7 @@ function BarChart({
   if (!hasData) {
     return (
       <div className="h-24 flex items-center justify-center text-xs text-muted">
-        Немає даних
+        {messages.hub.reportNoData}
       </div>
     );
   }
@@ -53,18 +55,21 @@ function BarChart({
   const step = labelStep(dates.length);
 
   function formatLabel(dateStr: string) {
-    const d = new Date(dateStr + "T00:00:00");
+    // `dateStr` is a `YYYY-MM-DD` Kyiv day-key; read its calendar parts
+    // in Europe/Kyiv (kyivTime) rather than host-local `getDay/getDate`,
+    // so labels never drift on a roaming clock (domain-invariants spec).
+    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
     if (isWeek) {
       const dayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-      return dayNames[d.getDay()];
+      return dayNames[parts.weekday];
     }
-    return String(d.getDate());
+    return String(parts.day);
   }
 
   function formatTooltip(dateStr: string, value: number) {
-    const d = new Date(dateStr + "T00:00:00");
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
+    const day = String(parts.day).padStart(2, "0");
+    const month = String(parts.month).padStart(2, "0");
     return `${day}.${month}: ${value.toLocaleString("uk-UA")}${unit}`;
   }
 
@@ -76,7 +81,10 @@ function BarChart({
         </div>
       )}
       {selected === null && <div className="h-4 mb-1" />}
-      <div className="flex items-end gap-0.5 h-20" aria-label="Графік">
+      <div
+        className="flex items-end gap-0.5 h-20"
+        aria-label={messages.hub.reportChartAria}
+      >
         {vals.map((v, i) => {
           const pct = Math.max(0, Math.min(100, (v / max) * 100));
           const isToday = dates[i] === localDateKey();
@@ -184,7 +192,10 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
   );
 
   const { cur, prev, dates } = useMemo(() => {
-    const nutritionLog = safeReadLS("nutrition_log_v1", {}) as NutritionLog | null;
+    const nutritionLog = safeReadLS(
+      "nutrition_log_v1",
+      {},
+    ) as NutritionLog | null;
     const curRange = getPeriodRange(period, offset);
     const prevRange = getPeriodRange(period, offset - 1);
     const curDates = datesInRange(curRange.start, curRange.end);
@@ -223,12 +234,12 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
           size="xs"
           className="flex-1 min-w-0 text-muted truncate"
         >
-          Харчування (ккал/день)
+          {messages.nutrition.reportHeading}
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
             <span className="text-base font-bold text-text">
-              {formattedCurrent} ккал
+              {formattedCurrent} {messages.nutrition.kcalUnit}
             </span>
             <Delta cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
           </span>
@@ -255,17 +266,20 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
         <>
           <div className="flex items-baseline gap-2">
             <span className="text-style-hero text-text">
-              {formattedCurrent} ккал
+              {formattedCurrent} {messages.nutrition.kcalUnit}
             </span>
             <Delta cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
           </div>
-          <p className="text-xs text-muted">Минулий: {formattedPrev} ккал</p>
+          <p className="text-xs text-muted">
+            {messages.hub.reportPrevious} {formattedPrev}{" "}
+            {messages.nutrition.kcalUnit}
+          </p>
           <BarChart
             key={`${period}-${offset}`}
             data={cur.daily}
             dates={dates}
             colorClass="bg-chart-nutrition"
-            unit=" ккал"
+            unit={` ${messages.nutrition.kcalUnit}`}
           />
         </>
       )}
