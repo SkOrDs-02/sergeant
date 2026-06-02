@@ -1,7 +1,7 @@
 # OpenClaw Stage 4b — Live Debugging Handoff (2026-05-12)
 
 > **Last validated:** 2026-05-12 by Devin (update 14:55 UTC — Stage 4a/4b follow-ups merged). **Next review:** 2026-08-10.
-> **Status:** Resolved — Stage 4b **live у production** на `sergeant-openclaw-gateway` після merge PR #2471 (`api.on` migration) і Railway auto-deploy `3d4f9e1d` (14:03:50 UTC). Live smoke-test 2026-05-12 17:08–17:09 EEST підтвердив: `/metrics`, `/runway`, UA `Дай метрики` повертають canned Markdown ≤2 сек, без Opus loop. Деталі — § 11 нижче. Два operational artefacts після live verification резолвнуті фікс-форвардом: [PR #2473](https://github.com/Skords-01/Sergeant/pull/2473) (`/runway` HTTP 400 — `business_snapshot`/`ai_decisions` SQL у шорткатах → `openclaw_invocations`/`openclaw_decisions`; regression test) і [PR #2474](https://github.com/Skords-01/Sergeant/pull/2474) (audit-hook `event.userMessage` → `event.prompt` — `openclaw_invocations.user_message` колонка нарешті ловить реальний prompt замість sentinel `"(empty user message)"`). Root cause #4 (`api.registerHook` vs `api.on`) — справжня причина основного блокера Stage 4b; попередні root causes #1/#2/#3 — частково неправильні гіпотези (зберігаються нижче для історії).
+> **Status:** Archived
 
 ## 0. TL;DR (актуальна версія — 30 сек)
 

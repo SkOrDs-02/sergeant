@@ -1,7 +1,7 @@
 # Sprint 1 — Critical + найгірші High
 
 > **Last validated:** 2026-05-29. **Next review:** 2026-08-27.
-> **Status:** C1 mitigated (2026-05-29) — rotation shipped, Monobank header rollout dropped as infeasible (path-only `webHookUrl`). H1 Phase 2 resolved server-side via H3 (PR #1669); only the SessionsList UI follow-up remains. Closed: H2, C2 Phase 1, C1 Phase 1 (2026-05-04), H1 Phase 1 (2026-05-04).
+> **Status:** Closed
 
 **Тривалість:** 1–2 тижні (target close: 2026-05-17).
 **Сумарний effort:** ~2.5 person-days.

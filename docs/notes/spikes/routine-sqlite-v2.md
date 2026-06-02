@@ -1,8 +1,7 @@
 # SPIKE — Routine module on SQLite v2
 
 > **Last validated:** 2026-05-13. **Archived:** 2026-05-02.
-> **Status:** Completed & archived — SPIKE code removed, production files
-> promoted. See cleanup PR.
+> **Status:** Archived
 
 > **Owner:** @Skords-01 · **Created:** 2026-05-02 ·
 > **Roadmap reference:** [`docs/planning/storage-roadmap.md` PR #022](../../planning/storage-roadmap.md#stage-3--spike-на-routine) ·

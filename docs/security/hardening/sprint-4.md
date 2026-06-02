@@ -1,7 +1,7 @@
 # Sprint 4 — Low severity sweep and structural hardening
 
 > **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
-> **Status:** Planned
+> **Status:** Closed
 
 Sprint 4 closes the **Low-severity sweep** (L1–L14 — paper cuts, defence in
 depth, hygiene) and lands the **structural hardening track** (I3–I8 — SBOM,

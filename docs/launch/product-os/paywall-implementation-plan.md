@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-05-13 by @Skords-01.
 > **Next review:** 2026-08-11 (post-0010 phase 3 review).
-> **Status:** Superseded reference — оригінальний PR-20 gate doc; live revenue delivery тепер живе у [`docs/planning/pr-plan-revenue-2026-05.md`](../../planning/pr-plan-revenue-2026-05.md), FTUX placement — у [`paywall-ux-placement.md`](./paywall-ux-placement.md).
+> **Status:** Archived
 > **Owner:** @Skords-01 + Devin (planning session 2026-05-06).
 
 > Цей doc — **продовження** [`paywall-ux-placement.md`](./paywall-ux-placement.md) (PR-19 sketch). PR-19 закрив питання «де/коли/чому». Цей doc закриває «як саме реалізуємо», з якими залежностями, і **в якому порядку шипаємо**. Сам код PR-20 не пишеться у цьому PR — це планувальний gate-doc, що дозволяє наступному PR зайти у repo з мінімумом контексту.

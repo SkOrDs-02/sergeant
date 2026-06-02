@@ -1,7 +1,7 @@
 # SPIKE — OpenClaw Plugin PoC (Phase 0.5)
 
 > **Last validated:** 2026-05-12 by Devin. **Next review:** замінено новим SDK-reality spike (TBD — див. § Postmortem 2026-05-12 нижче).
-> **Status:** **Superseded by Stage 1 rewrite ([#2438](https://github.com/Skords-01/Sergeant/pull/2438))** — основні висновки (зокрема "🟢 GO for Phase 1", "SDK contract type-safely fits") **не справдились** на real `openclaw@2026.5.7` SDK при першому деплої на Railway. Файл лишається як історичний документ; чинна архітектура — `docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12.
+> **Status:** Archived
 > **Owner:** @Skords-01 · **Created:** 2026-05-10
 > **Roadmap reference:** [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../planning/openclaw-migration-plan.md)
 > **Time-box:** 1–2 days (per plan §510). **Branch:** `devin/1778445962-openclaw-poc-spike` (merged into `main` via PR [#2385](https://github.com/Skords-01/Sergeant/pull/2385); код перенесено у `packages/openclaw-plugin/src/legacy/` Stage 1 rewrite-ом).

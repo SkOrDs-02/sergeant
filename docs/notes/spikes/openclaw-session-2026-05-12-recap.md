@@ -1,7 +1,7 @@
 # OpenClaw Session Recap (2026-05-12, 18:00–19:00 UTC) — Stage 5b PR-4 `/okr` + Stage 5c Council
 
 > **Last validated:** 2026-05-12 by Devin. **Next review:** 2026-08-10 (or coincident with Stage 6a parity-harness reactivation, whichever sooner).
-> **Status:** Both PRs merged into `main`.
+> **Status:** Archived
 >
 > - Stage 5b PR-4 (`/okr`) — **merged** ([#2487](https://github.com/Skords-01/Sergeant/pull/2487), `5cc3c01a` → merge `73f7d81d`, 2026-05-12 ~18:18 UTC)
 > - Stage 5c (`/council`) — **merged** ([#2488](https://github.com/Skords-01/Sergeant/pull/2488), `578ed43f` → merge `01e8ff81`, 2026-05-12 ~18:50 UTC)

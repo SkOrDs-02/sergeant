@@ -1,7 +1,7 @@
 # OpenClaw Stage 5b — Strategic-Modes PR Split Session Recap (2026-05-12)
 
 > **Last validated:** 2026-05-12 by Devin. **Next review:** 2026-08-10 (or coincident with Stage 7 cutover, whichever sooner — see § 7).
-> **Status:** In progress.
+> **Status:** Archived
 >
 > - PR-1 (`/plan`) — **merged** ([#2482](https://github.com/Skords-01/Sergeant/pull/2482), `ae703ca0`, 2026-05-12 17:13 UTC)
 > - PR-2 (`/analyze`) — **PR open** ([#2483](https://github.com/Skords-01/Sergeant/pull/2483); rebased onto `main` after PR-1 merged so the diff is a clean delta against current `main`)
