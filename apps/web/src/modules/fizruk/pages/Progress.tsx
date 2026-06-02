@@ -26,6 +26,10 @@ function weekStartMs(d: number | string | Date) {
   return getKyivWeekStart(ts).getTime();
 }
 
+// F36: minimum bar width (%) so the smallest muscle-volume bar stays
+// visible and tap-able even when its value is a tiny fraction of the max.
+const MIN_BAR_WIDTH_PCT = 6;
+
 interface ProgressProps {
   /**
    * Path-based navigation injected by `FizrukRouter`. The PRs list at the
@@ -321,62 +325,67 @@ export function Progress({ onNavigate }: ProgressProps) {
         )}
 
         {/* Weight + fat cards */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card radius="lg">
-            <Stat
-              label="Вага"
-              value={
-                meas.latest?.["weightKg"] != null
-                  ? `${meas.latest["weightKg"]} кг`
-                  : "—"
-              }
-              sublabel={
-                meas.delta("weightKg") == null ? (
-                  "Немає порівняння"
-                ) : (
-                  <span
-                    className={cn(
-                      "font-semibold",
-                      meas.delta("weightKg")! > 0
-                        ? "text-warning"
-                        : "text-success",
-                    )}
-                  >
-                    {meas.delta("weightKg")! > 0 ? "+" : ""}
-                    {meas.delta("weightKg")!.toFixed(1)} кг
-                  </span>
-                )
-              }
-            />
-          </Card>
-          <Card radius="lg">
-            <Stat
-              label="% жиру"
-              value={
-                meas.latest?.["bodyFatPct"] != null
-                  ? `${meas.latest["bodyFatPct"]}%`
-                  : "—"
-              }
-              sublabel={
-                meas.delta("bodyFatPct") == null ? (
-                  "—"
-                ) : (
-                  <span
-                    className={cn(
-                      "font-semibold",
-                      meas.delta("bodyFatPct")! > 0
-                        ? "text-warning"
-                        : "text-success",
-                    )}
-                  >
-                    {meas.delta("bodyFatPct")! > 0 ? "+" : ""}
-                    {meas.delta("bodyFatPct")!.toFixed(1)}%
-                  </span>
-                )
-              }
-            />
-          </Card>
-        </div>
+        {(() => {
+          // F19: hoist per-render delta values to avoid calling meas.delta()
+          // 3–4 times per field in the same render (each call recomputes the
+          // arithmetic and the non-null assertions).
+          const weightDelta = meas.delta("weightKg");
+          const fatDelta = meas.delta("bodyFatPct");
+          return (
+            <div className="grid grid-cols-2 gap-3">
+              <Card radius="lg">
+                <Stat
+                  label="Вага"
+                  value={
+                    meas.latest?.["weightKg"] != null
+                      ? `${meas.latest["weightKg"]} кг`
+                      : "—"
+                  }
+                  sublabel={
+                    weightDelta == null ? (
+                      "Немає порівняння"
+                    ) : (
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          weightDelta > 0 ? "text-warning" : "text-success",
+                        )}
+                      >
+                        {weightDelta > 0 ? "+" : ""}
+                        {weightDelta.toFixed(1)} кг
+                      </span>
+                    )
+                  }
+                />
+              </Card>
+              <Card radius="lg">
+                <Stat
+                  label="% жиру"
+                  value={
+                    meas.latest?.["bodyFatPct"] != null
+                      ? `${meas.latest["bodyFatPct"]}%`
+                      : "—"
+                  }
+                  sublabel={
+                    fatDelta == null ? (
+                      "—"
+                    ) : (
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          fatDelta > 0 ? "text-warning" : "text-success",
+                        )}
+                      >
+                        {fatDelta > 0 ? "+" : ""}
+                        {fatDelta.toFixed(1)}%
+                      </span>
+                    )
+                  }
+                />
+              </Card>
+            </div>
+          );
+        })()}
 
         {/* Weight trend chart */}
         {weightTrend.filter((d) => d.value != null).length >= 2 && (
@@ -443,7 +452,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                     <div
                       className="h-full bg-success/70"
                       style={{
-                        width: `${Math.max(6, (m.value / weeklyByMuscle.max) * 100)}%`,
+                        width: `${Math.max(MIN_BAR_WIDTH_PCT, (m.value / weeklyByMuscle.max) * 100)}%`,
                       }}
                     />
                   </div>

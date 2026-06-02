@@ -16,6 +16,8 @@ import { JournalSection } from "./Body/JournalSection";
 import { ENERGY_LABELS, MOOD_LABELS, ScoreButton } from "./Body/ScoreButton";
 import { firstValidValue, lastValidValue } from "./Body/trendUtils";
 import { RecoveryFocusCard } from "../components/RecoveryFocusCard";
+import { safeRemoveLS } from "@shared/lib/storage/storage";
+import { JOURNAL_ENTRY_OPEN_PREFIX } from "./Body/storage";
 
 interface BodyProps {
   onOpenMeasurements?: () => void;
@@ -75,6 +77,10 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
     (id: string) => {
       const snapshot = entries.find((e) => e.id === id);
       if (!snapshot) return;
+      // F24: remove the per-entry localStorage key so it doesn't accumulate
+      // as an orphan after deletion (one key written by JournalEntryCard on
+      // every open/close toggle).
+      safeRemoveLS(JOURNAL_ENTRY_OPEN_PREFIX + id);
       deleteEntry(id);
       showUndoToast(toast, {
         msg: "Запис журналу видалено",

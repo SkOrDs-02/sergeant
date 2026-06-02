@@ -89,6 +89,8 @@ const todayDayIndex = (new Date().getDay() + 6) % 7;
 
 ### F3 — Measurements зберігає замір без жодних діапазон-валідацій (sensitive PII) [severity: high] [perspective: security]
 
+> **Closure note (2026-06-02, batch2 fb44675):** - [x] Виправлено. `MEASURE_FIELDS` розширено полями `min`/`max` для всіх 14 полів. `Measurements.tsx` будує `measurementSchema = z.object(...)` з цих bounds. У `onClick` перед `addEntry` виклик `measurementSchema.safeParse(parsedPayload)` — failure → `toast.warning(firstError)`, persist блокується. `<input min={f.min} max={f.max} type="number">` дає нативний browser hint. (done fb44675)
+
 **Page:** `Measurements`
 **File:** `apps/web/src/modules/fizruk/pages/Measurements.tsx`
 **Lines:** L162–L180
@@ -346,6 +348,8 @@ Hard Rule #11 (`no arbitrary hex in className`) сюди формально не
 
 ### F11 — Програма-buttons (Активувати / Розпочати / Зупинити / Деталі) без `focus-visible:`-індикатора [severity: medium] [perspective: a11y]
 
+> **Closure note (2026-06-02, batch2 fb44675):** - [x] Виправлено. Додано `focus-ring` utility-клас до всіх 4 типів raw `<button>` на activator-rib у `Programs.tsx` (Активувати, Розпочати сьогодні, Зупинити, Деталі). `focus-ring` вже містить `focus-visible:ring-accent/60` всередині. (done fb44675)
+
 **Page:** `Programs`
 **File:** `apps/web/src/modules/fizruk/pages/Programs.tsx`
 **Lines:** L128–L174
@@ -366,6 +370,8 @@ Keyboard / screen-reader users втрачають affordance, який саме 
 ---
 
 ### F12 — Measurements submit-button без `focus-visible:`-ring + emoji-icon без `aria-label` [severity: medium] [perspective: a11y]
+
+> **Closure note (2026-06-02, batch2 fb44675):** - [x] Частково виправлено (submit-button). Додано `focus-ring` до submit-кнопки "Зберегти замір" у `Measurements.tsx`. SVG `aria-hidden` і `<a aria-label>` залишаються відкритими (out-of-scope для цього batch). (done fb44675)
 
 **Page:** `Measurements`
 **File:** `apps/web/src/modules/fizruk/pages/Measurements.tsx`
@@ -536,6 +542,8 @@ useEffect(() => {
 
 ### F19 — `meas.delta(field)` викликається 3–4 рази у тому ж рендері без memoization [severity: medium] [perspective: perf]
 
+> **Closure note (2026-06-02, batch2 fb44675):** - [x] Виправлено. `weightDelta = meas.delta("weightKg")` і `fatDelta = meas.delta("bodyFatPct")` hoisted у локальні константи перед JSX. Кожен виклик тепер однократний, всі non-null `!`-assertion видалено. (done fb44675)
+
 **Page:** `Progress`
 **File:** `apps/web/src/modules/fizruk/pages/Progress.tsx`
 **Lines:** L333–L376
@@ -678,6 +686,8 @@ Rule #16 явно retired 9px. Цей фолбек обходить guard чер
 ---
 
 ### F24 — `JournalEntryCard` пише per-entry-id key у localStorage, без cleanup на delete [severity: medium] [perspective: bug]
+
+> **Closure note (2026-06-02, batch2 fb44675):** - [x] Виправлено. У `Body.tsx` `handleDeleteJournalEntry` тепер викликає `safeRemoveLS(JOURNAL_ENTRY_OPEN_PREFIX + id)` до `deleteEntry(id)`. Orphan-ключ очищується синхронно під час видалення entry. (done fb44675)
 
 **Page:** `Body` (sub: `Body/JournalEntryCard.tsx`, `Body/storage.ts`)
 **File:** `apps/web/src/modules/fizruk/pages/Body/JournalEntryCard.tsx`
@@ -1011,6 +1021,8 @@ className={cn("motion-safe:transition-transform", open ? "rotate-180" : "rotate-
 ---
 
 ### F36 — Progress page muscle-volume bars: `Math.max(6, ...)` magic number [severity: low] [perspective: code-quality]
+
+> **Closure note (2026-06-02, batch2 fb44675):** - [x] Виправлено. `const MIN_BAR_WIDTH_PCT = 6` з коментарем оголошено на module-scope у `Progress.tsx`; `Math.max(MIN_BAR_WIDTH_PCT, ...)` замінює inline `6`. (done fb44675)
 
 **Page:** `Progress`
 **File:** `apps/web/src/modules/fizruk/pages/Progress.tsx`

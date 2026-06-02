@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { z } from "zod";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -11,6 +12,21 @@ import { Card } from "@shared/components/ui/Card";
 import { Stat } from "@shared/components/ui/Stat";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+
+// F3: runtime range gate — mirrors <input min max> attributes so a
+// browser-bypass or programmatic submit cannot persist out-of-range PII.
+const measurementSchema = z.object(
+  Object.fromEntries(
+    MEASURE_FIELDS.map((f) => [
+      f.id,
+      z
+        .number()
+        .min(f.min, `${f.label}: мін ${f.min} ${f.unit}`)
+        .max(f.max, `${f.label}: макс ${f.max} ${f.unit}`)
+        .optional(),
+    ]),
+  ),
+);
 
 const inp =
   "input-focus-fizruk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text";
@@ -144,7 +160,11 @@ export function Measurements() {
                 </SectionHeading>
                 <input
                   className={inp}
+                  type="number"
                   inputMode="decimal"
+                  step="0.1"
+                  min={f.min}
+                  max={f.max}
                   placeholder="—"
                   value={form[f.id] ?? ""}
                   onChange={(e) =>
@@ -159,11 +179,13 @@ export function Measurements() {
           </div>
           <div className="mt-3">
             {(() => {
-              // Audit 09 F4: forbid saving a fully-empty form. The button stays
-              // visible (no surprise disappearance) but is disabled until at
-              // least one field has a parseable numeric value. We also strip
-              // entries that parse to NaN so a stray "abc" doesn't pollute the
-              // stored snapshot.
+              // F4: forbid saving a fully-empty form — button disabled until at
+              // least one field has a parseable numeric value. NaN inputs
+              // ("abc") are stripped before persisting so a stray entry cannot
+              // pollute the snapshot.
+              // F3: run the zod range schema and surface first error via toast
+              // so out-of-range PII (negative weight, 99 999 kg, etc.) can
+              // never reach the SQLite dual-write pipeline.
               const parsedPayload: Record<string, number> = {};
               for (const f of MEASURE_FIELDS) {
                 const v = (form[f.id] || "").trim();
@@ -177,9 +199,21 @@ export function Measurements() {
                   type="button"
                   disabled={!hasAnyValue}
                   aria-disabled={!hasAnyValue}
-                  className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                  className="focus-ring w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                   onClick={() => {
                     if (!hasAnyValue) return;
+                    const validation =
+                      measurementSchema.safeParse(parsedPayload);
+                    if (!validation.success) {
+                      const firstError =
+                        validation.error.issues[0]?.message ??
+                        "Невірне значення";
+                      // Use warning (not error) — the user simply needs to
+                      // fix the input; the form stays visible so no recovery
+                      // CTA is needed (toast-policy § warning = no mandatory action).
+                      toast.warning(firstError);
+                      return;
+                    }
                     addEntry(parsedPayload);
                     setForm(
                       Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),

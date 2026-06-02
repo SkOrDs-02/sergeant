@@ -34,22 +34,25 @@ function uid() {
   return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+// F3: min/max bounds guard against out-of-range PII writes (e.g. NaN,
+// negative weight, 99 999 kg). Browser `<input min max>` provides the UX
+// hint; the zod schema in Measurements.tsx enforces it at submit time.
 export const MEASURE_FIELDS = [
-  { id: "weightKg", label: "Вага", unit: "кг" },
-  { id: "bodyFatPct", label: "% жиру", unit: "%" },
-  { id: "neckCm", label: "Шия", unit: "см" },
-  { id: "chestCm", label: "Груди", unit: "см" },
-  { id: "waistCm", label: "Талія", unit: "см" },
-  { id: "hipsCm", label: "Стегна (обхват)", unit: "см" },
-  { id: "bicepLCm", label: "Біцепс (Л)", unit: "см" },
-  { id: "bicepRCm", label: "Біцепс (П)", unit: "см" },
-  { id: "forearmLCm", label: "Передпліччя (Л)", unit: "см" },
-  { id: "forearmRCm", label: "Передпліччя (П)", unit: "см" },
-  { id: "thighLCm", label: "Стегно (Л)", unit: "см" },
-  { id: "thighRCm", label: "Стегно (П)", unit: "см" },
-  { id: "calfLCm", label: "Литка (Л)", unit: "см" },
-  { id: "calfRCm", label: "Литка (П)", unit: "см" },
-];
+  { id: "weightKg", label: "Вага", unit: "кг", min: 20, max: 300 },
+  { id: "bodyFatPct", label: "% жиру", unit: "%", min: 2, max: 70 },
+  { id: "neckCm", label: "Шия", unit: "см", min: 20, max: 80 },
+  { id: "chestCm", label: "Груди", unit: "см", min: 40, max: 200 },
+  { id: "waistCm", label: "Талія", unit: "см", min: 30, max: 200 },
+  { id: "hipsCm", label: "Стегна (обхват)", unit: "см", min: 40, max: 200 },
+  { id: "bicepLCm", label: "Біцепс (Л)", unit: "см", min: 15, max: 80 },
+  { id: "bicepRCm", label: "Біцепс (П)", unit: "см", min: 15, max: 80 },
+  { id: "forearmLCm", label: "Передпліччя (Л)", unit: "см", min: 15, max: 60 },
+  { id: "forearmRCm", label: "Передпліччя (П)", unit: "см", min: 15, max: 60 },
+  { id: "thighLCm", label: "Стегно (Л)", unit: "см", min: 30, max: 120 },
+  { id: "thighRCm", label: "Стегно (П)", unit: "см", min: 30, max: 120 },
+  { id: "calfLCm", label: "Литка (Л)", unit: "см", min: 15, max: 80 },
+  { id: "calfRCm", label: "Литка (П)", unit: "см", min: 15, max: 80 },
+] as const;
 
 /**
  * Stage 8 PR #057f-tombstone: measurements are sourced from the
