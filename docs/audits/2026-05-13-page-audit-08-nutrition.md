@@ -311,6 +311,15 @@ Performance regression — typing у Add Meal sheet (через `setNutritionLog
 
 ### F12 — Page-level testing gap: 0 з 4 page-файлів покриті тестами [severity: medium] [perspective: test]
 
+> ✅ **Закрито 2026-06-02** — додано 4 нові тест-файли (33 тести разом), по одному на кожну сторінку:
+>
+> - `apps/web/src/modules/nutrition/pages/NutritionLogPage.test.tsx` — 6 тестів: рендер без краш-у; клік «Додати прийом їжі» → `setAddMealPhotoResult(null)` + `setAddMealSheetOpen(true)`; клік «Видалити» → `handleRemoveMeal` + undo-toast; undo-колбек усередині тосту → `handleRestoreMeal`; клік «Редагувати» → `setEditingMeal({ date, id, … })` + повторне відкриття sheet; перевірка стабільності повторних видалень.
+> - `apps/web/src/modules/nutrition/pages/NutritionPantryPage.test.tsx` — 9 тестів: рендер SubTabs; переключення між вкладками «Склад»/«Покупки»; клік на таб → `setPantrySubTab`; видалення наявного елемента → `removeItemAt` + undo-toast; undo → `upsertItem`; відображення/приховання scan-статусу; «Сканувати штрих-код» → `setPantryScanStatus("")` + `setPantryScannerOpen(true)`; порожній `pantryItems` → `removeItem(name)` замість `removeItemAt`.
+> - `apps/web/src/modules/nutrition/pages/NutritionStartPage.test.tsx` — 8 тестів: рендер NutritionDashboard + колапсибл-заголовок; «До щоденника» → `setActivePageAndHash("log")`; «До плану» → `setActivePageAndHash("menu")`; «Додати прийом їжі» → `setSelectedDate`, навігація, `scheduleTransient` + sheet-open; Pro-юзер → `analyzePhoto` викликається; Free-юзер → `requireAccess()` повертає false, `analyzePhoto` не викликається; `<details>` закритий за замовчуванням; `photoCardForceOpen=true` → `open` атрибут виставлено.
+> - `apps/web/src/modules/nutrition/pages/NutritionMenuPage.test.tsx` — 10 тестів: рендер SubTabs; план vs рецепти; клік на таб → `setMenuSubTab`; DataState skeleton при `isLoading=true`; «Оновити план» → `fetchDayPlan(null)`; «Регенерувати сніданок» → `fetchDayPlan("breakfast")`; «Додати до журналу» → `addMealFromPlan({ id, name, … })`.
+>
+> Усі 33 тести проходять (`vitest run src/modules/nutrition/pages`). TypeScript: 0 помилок. ESLint: чистий. Виробничий код не змінено.
+
 **Page:** Start, Pantry, Log, Menu
 **File:** `apps/web/src/modules/nutrition/pages/*`
 **Lines:** N/A
