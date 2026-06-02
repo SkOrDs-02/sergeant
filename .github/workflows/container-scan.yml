@@ -88,6 +88,10 @@ jobs:
       # `ignore-unfixed: true` — типовий шум від CVE без патчу не
       # блокує merge; такі випадки лишаються в SARIF-trend і
       # розглядаються в nightly-audit triage.
+      # `trivyignores: ./.trivyignore` — escape hatch для CRITICAL/HIGH
+      # CVE, чий fix залежить від upstream distroless rebuild (Google
+      # rebuilds щотижня-три). Кожен entry має `exp:YYYY-MM-DD` self-
+      # cleaning expiry; деталі — у самому `.trivyignore`.
       - name: Trivy image scan (SARIF + fail on CRITICAL/HIGH)
         id: trivy
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
@@ -97,6 +101,7 @@ jobs:
           output: trivy-image.sarif
           severity: "CRITICAL,HIGH"
           ignore-unfixed: true
+          trivyignores: ./.trivyignore
           vuln-type: "os,library"
           exit-code: "1"
 
