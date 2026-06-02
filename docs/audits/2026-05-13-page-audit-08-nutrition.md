@@ -182,7 +182,7 @@ Bulk-додати у JSDoc-prefix кожного публічного файлу
 
 ### F7 — RecipesCard.tsx 593 LoC — впритул до Hard Rule #18 ліміту [severity: medium] [perspective: rule]
 
-> ✅ **Закрито 2026-06-02** — `RecipesCard.tsx` розбито з 600 рядків до 233 рядків (orchestrator). Виділено 4 нових файли-сусіди: `RecipesCard.SavedSection.tsx` (217 рядків — секція «Мої рецепти»), `RecipesCard.Generator.tsx` (247 рядків — форма префів + список згенерованих рецептів), `RecipesCard.helpers.ts` (36 рядків — тип `RecipeLike` та хелпер `guessMealTypeIdNow`), `RecipesCard.ChevronIcon.tsx` (23 рядки — атом). Публічний інтерфейс `RecipesCard` та його пропси не змінилися. Додано `RecipesCard.test.tsx` з 24 тестами (характеризаційні + поведінкові), що закрили також F12 (0 component-tests до цього). Hard Rule #18 виконано: жоден з нових файлів не перевищує 250 рядків.
+> ✅ **Закрито 2026-06-02** — `RecipesCard.tsx` розбито з 600 рядків до 233 рядків (orchestrator). Виділено 4 нових файли-сусіди: `RecipesCard.SavedSection.tsx` (217 рядків — секція «Мої рецепти»), `RecipesCard.Generator.tsx` (247 рядків — форма префів + список згенерованих рецептів), `RecipesCard.helpers.ts` (36 рядків — тип `RecipeLike` та хелпер `guessMealTypeIdNow`), `RecipesCard.ChevronIcon.tsx` (23 рядки — атом). Публічний інтерфейс `RecipesCard` та його пропси не змінилися. Додано `RecipesCard.test.tsx` з 24 характеризаційними тестами (safety-net під split — перше покриття цього компонента). Зверни увагу: **F12 лишається open** — він про page-level тести 4 `Nutrition*Page` файлів, а не про цей компонент. Hard Rule #18 виконано: жоден з нових файлів не перевищує 250 рядків.
 
 **Page:** Menu (`recipes` sub-tab)
 **File:** `apps/web/src/modules/nutrition/components/RecipesCard.tsx`
