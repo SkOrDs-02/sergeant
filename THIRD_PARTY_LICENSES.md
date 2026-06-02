@@ -235,7 +235,7 @@
 - [@urql/core@5.2.0](https://formidable.com/open-source/urql/docs/) - MIT
 - [@urql/exchange-retry@1.3.2](https://formidable.com/open-source/urql/docs/) - MIT
 - [@vercel/analytics@2.0.1](https://github.com/vercel/analytics#readme) - MIT
-- [@xmldom/xmldom@0.9.10](https://github.com/xmldom/xmldom) - MIT
+- [@xmldom/xmldom@0.8.13](https://github.com/xmldom/xmldom) - MIT
 - [@zxing/browser@0.1.5](https://github.com/zxing-js/browser#readme) - MIT
 - [@zxing/library@0.21.3](https://zxing-js.github.io/library/) - MIT
 - [@zxing/text-encoding@0.9.0](https://github.com/inexorabletash/text-encoding) - (Unlicense OR Apache-2.0)
