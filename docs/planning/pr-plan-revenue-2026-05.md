@@ -54,6 +54,7 @@ Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS 
 
 ## PR-1 · XS quick-win: TrialBanner + pricing CTA copy
 
+- **Status:** ✅ Виконано — verified on main: `apps/web/src/core/billing/TrialBanner.tsx` (static layer) rendered під `trialing`, mounted у HubMainContent.
 - **Priority:** P0 (quick-win, окремий PR за вимогою прожарки)
 - **Size:** XS (½ дня)
 - **Owner:** `@Skords-01` (placeholder)
@@ -85,6 +86,7 @@ Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS 
 
 ## PR-2 · P0 · Customer Portal endpoint + Settings PlanSection
 
+- **Status:** ✅ Виконано — verified on main: `apps/server/src/routes/billing.ts:90 POST /api/billing/portal` + `apps/web/src/core/settings/PlanSection.tsx`.
 - **Priority:** P0 (funnel hard-fail — без self-serve cancel юзер шукає Stripe Dashboard support email).
 - **Size:** M (2–3 дні)
 - **Owner:** `@Skords-01` (placeholder)
@@ -127,6 +129,7 @@ Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS 
 
 ## PR-3 · P0 · Stripe env-schema validation + `?checkout=success` handler
 
+- **Status:** ✅ Виконано — verified on main: checkout-return handler `apps/web/src/core/PricingPage.tsx:188` (`?checkout=success|cancel`) + Stripe env-schema validation (`STRIPE_PRICE_ID_PRO_MONTHLY` у `stripe.ts` + `assertStartupEnv.test.ts`).
 - **Priority:** P0 (env-validation — silent failure mode у проді; checkout return — funnel hard-fail).
 - **Size:** S (1 день)
 - **Owner:** `@Skords-01` (placeholder)
@@ -170,6 +173,7 @@ Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS 
 
 ## PR-4 · P0 · Paywall integration points: AI chat + Mono auto-sync
 
+- **Status:** ✅ Частково — verified on main: AI-chat paywall wired (`apps/web/src/core/hub/HubChat.tsx:155 surface="ai_chat_limit"`); Mono auto-sync gate — лишається open (needs human).
 - **Priority:** P0 (без gate-ів free users бачать Pro-фічі без обмежень — ADR-0001 §1.6 + §1.7).
 - **Size:** M (2–3 дні)
 - **Owner:** `@Skords-01` (placeholder)
@@ -330,6 +334,7 @@ Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS 
 
 ## PR-9 · P1 · TrialBanner full version (countdown + lifecycle states)
 
+- **Status:** ✅ Виконано — verified on main: `apps/web/src/core/billing/TrialBanner.tsx` має повну логіку (countdown + daysLeft + lifecycle variants).
 - **Priority:** P1 (повний TrialBanner — після XS quick-win-у з PR-1).
 - **Size:** S (1 день)
 - **Owner:** `@Skords-01` (placeholder)
