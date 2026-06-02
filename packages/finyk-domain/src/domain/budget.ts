@@ -5,6 +5,8 @@
 import { getTxStatAmount, calcMonthlyNeeded } from "../utils";
 import type {
   Budget,
+  GoalBudget,
+  LimitBudget,
   RemainingBudget,
   Transaction,
   TxSplitsMap,
@@ -17,15 +19,22 @@ export const BUDGET_WARN_THRESHOLD = 0.8;
 export const BUDGET_ALERT_THRESHOLD = 0.6;
 
 // Лише бюджети типу ліміт / ціль — використовується і в Budgets, і в useBudget.
-export function getLimitBudgets(budgets: readonly Budget[] | null | undefined) {
+// Type-guard predicate-и звужують `Budget` union до конкретної гілки, тож
+// downstream-код читає `categoryId`/`limit`/`targetAmount` типобезпечно без
+// cast-ів (page-audit-05 F15).
+export function getLimitBudgets(
+  budgets: readonly Budget[] | null | undefined,
+): LimitBudget[] {
   return Array.isArray(budgets)
-    ? budgets.filter((b) => b?.type === "limit")
+    ? budgets.filter((b): b is LimitBudget => b?.type === "limit")
     : [];
 }
 
-export function getGoalBudgets(budgets: readonly Budget[] | null | undefined) {
+export function getGoalBudgets(
+  budgets: readonly Budget[] | null | undefined,
+): GoalBudget[] {
   return Array.isArray(budgets)
-    ? budgets.filter((b) => b?.type === "goal")
+    ? budgets.filter((b): b is GoalBudget => b?.type === "goal")
     : [];
 }
 
@@ -36,7 +45,7 @@ function rawPct(spent: number, limit: number) {
 }
 
 export function calculateRemainingBudget(
-  budget: Pick<Budget, "limit"> & Partial<Budget>,
+  budget: { limit?: number | undefined },
   spent: number,
 ): RemainingBudget {
   const limit = budget.limit || 0;
@@ -57,7 +66,7 @@ export function calculateSafeToSpendPerDay(
 // без додаткових обчислень (pctRaw → прогрес-бар, pctRounded → лейбл,
 // overLimit/warnLimit → кольорова градація).
 export function calculateLimitUsage(
-  budget: Pick<Budget, "limit"> & Partial<Budget>,
+  budget: { limit?: number | undefined },
   spent: number,
 ) {
   const limit = Number(budget?.limit) || 0;

@@ -127,9 +127,15 @@ describe("Domain API", () => {
 
   it("budget: default/get/save", () => {
     expect(getBudget()).toEqual([]);
-    saveBudget([{ id: "b1", limit: 100 }]);
+    const b1 = {
+      id: "b1",
+      type: "limit" as const,
+      categoryId: "food",
+      limit: 100,
+    };
+    saveBudget([b1]);
     flushPendingWrites();
-    expect(getBudget()).toEqual([{ id: "b1", limit: 100 }]);
+    expect(getBudget()).toEqual([b1]);
   });
 
   it("коректно обробляє биті дані у storage", () => {

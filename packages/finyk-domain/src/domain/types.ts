@@ -60,20 +60,38 @@ export interface Category {
 export type BudgetType = "limit" | "goal";
 
 /**
- * Конфіг одного бюджету (з finyk_budgets).
- * Схема тримається сумісною з існуючими сутностями у UI.
+ * Бюджет-ліміт — стеля витрат на одну категорію за місяць.
  */
-export interface Budget {
+export interface LimitBudget {
   id: string;
-  type?: BudgetType;
-  limit?: number;
-  categoryId?: string;
+  type: "limit";
+  categoryId: string;
+  limit: number;
+  /** Необов'язкова людино-читана назва (UI). */
   label?: string;
-  /** Для goal-бюджетів. */
-  target?: number;
-  current?: number;
-  [extra: string]: unknown;
 }
+
+/**
+ * Бюджет-ціль — накопичення до `targetAmount` (з опційним дедлайном).
+ * Поля віддзеркалюють те, що пише `AddBudgetForm` і читає `GoalBudgetCard`.
+ */
+export interface GoalBudget {
+  id: string;
+  type: "goal";
+  name: string;
+  emoji?: string;
+  targetAmount: number;
+  savedAmount: number;
+  targetDate?: string;
+  label?: string;
+}
+
+/**
+ * Конфіг одного бюджету (з finyk_budgets). Дискримінований union за `type`,
+ * тож goal-поля (`targetAmount`/`savedAmount`/…) звужуються типобезпечно
+ * замість читання через `(b as { … }).x` cast-и (page-audit-05 F15).
+ */
+export type Budget = LimitBudget | GoalBudget;
 
 /** План місячних доходів/витрат. */
 export interface MonthlyPlan {

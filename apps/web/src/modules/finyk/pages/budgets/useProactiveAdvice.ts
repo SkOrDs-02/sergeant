@@ -4,8 +4,13 @@ import {
   shouldShowProactiveAdvice,
   getCurrentMonthContext,
 } from "@sergeant/finyk-domain/domain/budget";
-import type { Budget, Category } from "@sergeant/finyk-domain/domain/types";
+import type {
+  Budget,
+  Category,
+  LimitBudget,
+} from "@sergeant/finyk-domain/domain/types";
 import { resolveExpenseCategoryMeta } from "../../utils";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
   fetchProactiveAdvice,
   loadProactiveAdviceFromLS,
@@ -15,7 +20,7 @@ import {
 } from "./budgetsLib";
 
 export interface UseProactiveAdviceParams {
-  limitBudgets: Budget[];
+  limitBudgets: LimitBudget[];
   calcSpent: (budget: Budget) => number;
   customCategories: Category[] | undefined;
   now: Date;
@@ -47,9 +52,11 @@ export function useProactiveAdvice({
   // categoryId)` so cached advice rolls over naturally at month boundaries.
   const proactiveItems = useMemo<ProactiveItem[]>(() => {
     if (limitBudgets.length === 0) return [];
-    const { daysLeft: daysRemaining, monthStart: ms } =
-      getCurrentMonthContext(now);
-    const monthKey = `${ms.getFullYear()}-${String(ms.getMonth() + 1).padStart(2, "0")}`;
+    const { daysLeft: daysRemaining } = getCurrentMonthContext(now);
+    // Key by the Kyiv civil month so advice rolls over on the same boundary
+    // for every user regardless of host timezone (domain-invariants spec).
+    const { year, month } = getKyivDateParts(now);
+    const monthKey = `${year}-${String(month).padStart(2, "0")}`;
     const items: ProactiveItem[] = [];
     for (const b of limitBudgets) {
       const limit = Number(b.limit) || 0;

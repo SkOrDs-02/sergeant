@@ -154,7 +154,7 @@ export function Budgets({
     (budget: Budget) =>
       calcCategorySpent(
         statTx,
-        budget.categoryId ?? "",
+        budget.type === "limit" ? budget.categoryId : "",
         txCategories,
         txSplits,
         customCategories,
