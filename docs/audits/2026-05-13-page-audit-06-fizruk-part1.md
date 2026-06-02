@@ -47,6 +47,8 @@ Add the marker as the first JSDoc-style block in each TS/TSX file, e.g.:
 
 ### F2 — Atlas page: `BodyAtlas` muscle highlighter is keyboard-inaccessible [severity: high] [perspective: a11y]
 
+> ✅ **Closed 2026-06-02** — `body-highlighter` будує SVG-полігони прямою DOM-маніпуляцією поза React (немає стабільного ref на полігон для tabIndex/onKeyDown), тож обрано підхід (a): паралельний `sr-only` `<ul aria-label="Список м'язів">` — по одній `<button>` на кожен м'яз поточного вигляду, `aria-label="<назва> — <статус>"`, `aria-pressed`, `onClick`+`onKeyDown` (Enter/Space), усі через спільний `setSelected` (single source of truth). Візуальний SVG `aria-hidden`, контейнер мапи `aria-label="Карта м'язів"`. Anterior/posterior toggle: `aria-label` + `min-h-[44px] min-w-[44px]` (+ pre-existing `aria-pressed`/`focus-visible:ring`). WCAG 2.1.1 + 4.1.2 виконано. Додано `BodyAtlas.test.tsx` (16 тестів: toggle-стан, keyboard-активація Enter/Space/click, aria-label зі статусом, view-switch). tsc/eslint clean.
+
 **Page:** Atlas
 **File:** `apps/web/src/modules/fizruk/components/BodyAtlas.tsx`
 **Lines:** L113–L142 (body-highlighter render block) + `pages/Atlas.tsx` L112–L118 (host card)
