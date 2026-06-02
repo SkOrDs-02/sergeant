@@ -64,6 +64,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-01 — `refactor(server): centralize push env reads through env.ts`
 
+- **Status:** ✅ Виконано — env reads were already centralized (push.ts / routes/push.ts read `env.*`, 6 fields in schema); this PR closed the last acceptance item: `assertStartupEnv()` now hard-fails in production when `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` are missing (warn-only outside prod), so a misconfigured push deploy surfaces at boot instead of silent `/api/push/*` 503. Tests: `assertStartupEnv.test.ts` 47/47 (incl. new VAPID describe block).
+
 **Surface**
 
 - `apps/server/src/modules/push/push.ts` — `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`, `PUSH_SEND_TARGET_LIMIT`, `PUSH_SEND_TARGET_WINDOW_MS`.
