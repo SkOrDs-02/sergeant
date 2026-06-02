@@ -304,7 +304,7 @@ export class OpenRouterProvider implements LLMProvider {
 
     const controller = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    if (opts.timeoutMs) {
+    if (opts.timeoutMs !== undefined) {
       timeoutId = setTimeout(() => controller.abort(), opts.timeoutMs);
       if (typeof (timeoutId as { unref?: () => void }).unref === "function") {
         (timeoutId as { unref: () => void }).unref();
