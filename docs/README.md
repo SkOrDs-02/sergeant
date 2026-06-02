@@ -1,6 +1,6 @@
 # Sergeant Documentation
 
-> **Last validated:** 2026-06-01 by @Skords-01. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Active
 
 Main documentation index for Sergeant.
@@ -53,11 +53,14 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | [`agents/`](./agents/README.md)               | Agent operating system, routing catalog, workflows                                    |
 | [`api/`](./api/README.md)                     | OpenAPI, API contracts, generated artifacts                                           |
 | [`architecture/`](./architecture/README.md)   | Repo map, runtime surfaces, platform architecture                                     |
+| [`copy/`](./copy/README.md)                   | UA-copy tone-of-voice rules; reference for every Cyrillic JSX literal                 |
 | [`deploy/`](./deploy/README.md)               | Deploy walkthroughs (Railway, Vercel, console, etc.)                                  |
 | [`design/`](./design/README.md)               | Design system, brand, accents, dark mode, UI patterns                                 |
+| [`development/`](./development/README.md)     | Local dev-loop how-tos (ESLint config, local Postgres, pre-commit timing)             |
 | [`governance/`](./governance/README.md)       | Hard rules registry, policy docs, feature-flag registry, link-check allowlist         |
 | [`i18n/`](./i18n/README.md)                   | i18n readiness foundation (UA-only today; lightweight scaffolding for future locales) |
 | [`integrations/`](./integrations/README.md)   | Third-party integrations (Monobank, Voyage, Renovate, …)                              |
+| [`marketing/`](./marketing/README.md)         | Pre-launch GTM execution plans (reference; reconciled against shipped landing)        |
 | [`mobile/`](./mobile/README.md)               | Expo/mobile strategy and migration docs                                               |
 | [`notes/`](./notes/README.md)                 | Design spikes and exploratory engineering notes                                       |
 | [`observability/`](./observability/README.md) | Alerts, SLOs, logs, engineering metrics                                               |
@@ -67,6 +70,8 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | [`runbooks/`](./runbooks/README.md)           | DR-grade operational runbooks (DB backup/restore, encryption key rotation, …)         |
 | [`security/`](./security/README.md)           | Security policy, access governance, recovery, and audit docs                          |
 | [`testing/`](./testing/README.md)             | Testing strategy meta-docs (mutation testing, layer matrix, threshold-is)             |
+| [`ui/`](./ui/README.md)                       | Cross-cutting UI behaviour policy (keyboard shortcuts registry, toast policy)         |
+| [`web/`](./web/README.md)                     | `apps/web` platform deep-dives (Service Worker update strategy)                       |
 
 ### Trackers (multi-PR series, registries, lifecycle-managed work)
 
