@@ -4,7 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // re-importing or relying on `process.env` (`env.ts` snapshots `process.env`
 // at module load and re-runs Zod validation, so direct env-var mutation
 // would not propagate).
-const mockEnv: Record<string, string> = {};
+//
+// `vi.mock` is hoisted to the top of the file by vitest's compiler, so the
+// factory closure must not reference local `const`s declared below it — they
+// would be in the TDZ at factory-evaluation time. `vi.hoisted` lifts the
+// shared `mockEnv` alongside the mock so the Proxy can read from it safely.
+const { mockEnv } = vi.hoisted(() => ({
+  mockEnv: {} as Record<string, string>,
+}));
 vi.mock("../../env/env.js", () => ({
   env: new Proxy(
     {},
