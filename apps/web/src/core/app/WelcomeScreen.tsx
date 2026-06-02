@@ -285,7 +285,19 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
   // overflow — зовнішній скролить і вертикально розкриває і верх
   // (логотип), і низ (auth-кнопка + «Згорнути»).
   return (
-    <div className="relative h-dvh overflow-y-auto overscroll-contain bg-mesh text-text page-enter">
+    // `<main>` (not `<div>`) — `/welcome` is a standalone landing route
+    // rendered outside `ActiveModuleView`, so without a `<main>` landmark
+    // here the page has no `main` AT region and the Critical-flow E2E
+    // suite's `await expect(page.locator("main")).toBeVisible()` after
+    // sign-up (which redirects to `/welcome` for fresh accounts) hits an
+    // element-not-found timeout. `id="main"` keeps the SkipLink target
+    // contract (`#main` + focusable) consistent with what `ActiveModule
+    // View` renders for the authenticated hub.
+    <main
+      id="main"
+      tabIndex={-1}
+      className="relative h-dvh overflow-y-auto overscroll-contain bg-mesh text-text page-enter outline-none"
+    >
       <PeekBackdrop />
       <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
         <div className="w-full max-w-md space-y-3">
@@ -300,6 +312,6 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
           />
         </div>
       </div>
-    </div>
+    </main>
   );
 }
