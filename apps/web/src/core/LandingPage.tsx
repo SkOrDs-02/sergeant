@@ -7,13 +7,14 @@ import { BrandLogo } from "./app/BrandLogo";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { PRICING_PATH, SIGN_IN_PATH, WELCOME_PATH } from "./app/appPaths";
 import { WaitlistForm } from "./pricing/WaitlistForm";
+import { useLocale } from "@shared/i18n/useLocale";
 
-// Phase 6.1 landing surface (initiative 0010, ADR-0051). Публічний `/`
-// для SEO/paid-acquisition: non-auth відвідувач бачить hero з UA-copy,
-// прямі CTA Увійти / Створити акаунт і лінк на `/pricing`. EN locale
-// (Phase 6.2) — окремий PR; тут залишаємо `locale: "uk"` хардкодом, щоб
-// `LANDING_VIEWED` payload відповідав canonical contract з
-// `packages/shared/src/lib/analyticsEvents.ts § Landing page`.
+// Phase 6.2 landing surface (initiative 0010, ADR-0051). Публічний `/`
+// для SEO/paid-acquisition: non-auth відвідувач бачить hero з copy у
+// локалі, що визначається через `useLocale()` (query param `?lang=`,
+// localStorage або DEFAULT_LOCALE="uk"). Analytics payloads
+// `LANDING_VIEWED` і `LANDING_EMAIL_CAPTURED` тепер несуть динамічний
+// `locale` відповідно до resolved locale, а не хардкоду.
 //
 // Інтеграція в shell — через `STANDALONE_ROUTES` (web-architecture-state
 // roast §1.2 typed registry). Гейт у `StandaloneRoutes.tsx` обмежує
@@ -28,26 +29,11 @@ interface FeatureBullet {
   readonly body: string;
 }
 
-// Trust-bullet-и для hero-секції. Тримаємо як readonly-масив (не масив
-// JSX), щоб layout-секція мапила без inline-літералів — легше
-// перевірити в тесті за `title`.
-const FEATURES: ReadonlyArray<FeatureBullet> = [
-  {
-    icon: "sparkles",
-    title: "AI-помічник у кишені",
-    body: "Чат, що знає твої фінанси, тренування, харчування і рутину — і пропонує наступний крок.",
-  },
-  {
-    icon: "cloud-off",
-    title: "Local-first за замовчуванням",
-    body: "Дані живуть на твоєму пристрої. Cloud sync — опціональний (Pro), не вмикається без твого підтвердження.",
-  },
-  {
-    icon: "check-circle",
-    title: "Без зайвих списань",
-    body: "Free-тір — назавжди. Pro — 7 днів тріал без картки, $7/міс або ₴-еквівалент для UA.",
-  },
-];
+// Icons for the three trust bullets — locale-invariant, ordered to match
+// uk.ts / en.ts feature key order: ai → localFirst → noHidden.
+const FEATURE_ICON_AI = "sparkles" as const;
+const FEATURE_ICON_LOCAL_FIRST = "cloud-off" as const;
+const FEATURE_ICON_NO_HIDDEN = "check-circle" as const;
 
 interface LandingPageProps {
   /**
@@ -60,19 +46,44 @@ interface LandingPageProps {
 
 export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
   const navigate = useNavigate();
+  const { locale, messages } = useLocale();
+  const t = messages.landing;
+
+  // Build the features array from catalog at render time — locale-aware and
+  // still array-mapped to avoid inline JSX literals. Titles used as React keys
+  // (stable within a locale; locale switch remounts the whole page anyway).
+  const features: ReadonlyArray<FeatureBullet> = [
+    {
+      icon: FEATURE_ICON_AI,
+      title: t.features.aiTitle,
+      body: t.features.aiBody,
+    },
+    {
+      icon: FEATURE_ICON_LOCAL_FIRST,
+      title: t.features.localFirstTitle,
+      body: t.features.localFirstBody,
+    },
+    {
+      icon: FEATURE_ICON_NO_HIDDEN,
+      title: t.features.noHiddenTitle,
+      body: t.features.noHiddenBody,
+    },
+  ];
 
   // `LANDING_VIEWED` стріляє один раз на маунт. Payload відповідає
   // canonical contract з `analyticsEvents.ts`: { path, locale, referrer? }.
   // `referrer` беремо з `document.referrer` (порожній рядок коли
   // користувач прийшов напряму), щоб PostHog міг розбити вхідний
   // трафік по джерелах (organic, paid, direct).
+  // `locale` is now dynamic — resolved from URL param / localStorage / default.
   useEffect(() => {
     const referrer = typeof document !== "undefined" ? document.referrer : "";
     trackEvent(ANALYTICS_EVENTS.LANDING_VIEWED, {
       path: "/",
-      locale: "uk",
+      locale,
       ...(referrer ? { referrer } : {}),
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function goToSignIn() {
@@ -108,29 +119,30 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
             variant="ghost"
             size="sm"
             onClick={goToSignIn}
-            aria-label="Увійти в обліковий запис"
+            aria-label={t.signInAria}
           >
-            Увійти
+            {t.signIn}
           </Button>
         </header>
 
         <section
           className="space-y-5 text-center pt-6"
-          aria-label="Hero — анонс Sergeant"
+          aria-label={t.heroAriaLabel}
         >
           {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- маркетинговий eyebrow над заголовком; такий самий патерн використовує PricingPage. */}
           <p className="text-xs uppercase tracking-wider text-brand-strong font-semibold">
-            Local-first · AI · Українською
+            {t.eyebrow}
           </p>
           <h2 className="text-style-hero sm:text-4xl text-text leading-tight">
-            Один помічник для фінансів, тренувань,
-            <br />
-            харчування і рутини.
+            {t.heroHeadline.split("\n").map((line, i, arr) => (
+              <span key={i}>
+                {line}
+                {i < arr.length - 1 && <br />}
+              </span>
+            ))}
           </h2>
           <p className="text-base text-muted max-w-2xl mx-auto">
-            Sergeant обʼєднує чотири модулі — Фінік, Фізрук, Харчування, Рутина
-            — в один AI-чат, що памʼятає твої цілі і пропонує наступний крок.
-            Без хмари за замовчуванням, з повним контролем над даними.
+            {t.heroSubcopy}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-center pt-2">
@@ -140,7 +152,7 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
               onClick={goToSignIn}
               data-testid="landing-register-cta"
             >
-              Створити акаунт
+              {t.registerCta}
             </Button>
             <Button
               variant="secondary"
@@ -148,7 +160,7 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
               onClick={goToSignIn}
               data-testid="landing-login-cta"
             >
-              Вже маю акаунт
+              {t.loginCta}
             </Button>
           </div>
           <button
@@ -161,15 +173,15 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
             )}
             data-testid="landing-skip-cta"
           >
-            Спробувати без облікового запису
+            {t.skipCta}
           </button>
         </section>
 
         <section
           className="grid grid-cols-1 md:grid-cols-3 gap-4"
-          aria-label="Чому Sergeant"
+          aria-label={t.featuresAriaLabel}
         >
-          {FEATURES.map((feature, idx) => (
+          {features.map((feature, idx) => (
             <article
               key={feature.title}
               className={cn(
@@ -199,16 +211,11 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
 
         <section
           className="rounded-3xl border border-line bg-panel p-6 sm:p-8 space-y-4"
-          aria-label="Підписатися на запуск Sergeant"
+          aria-label={t.waitlistAriaLabel}
         >
           <div className="max-w-2xl mx-auto text-center space-y-2">
-            <h2 className="text-style-hero text-text">
-              Лист, коли Pro буде готовий
-            </h2>
-            <p className="text-sm text-muted">
-              Залиш email для launch-апдейту. Це той самий список інтересу, але
-              тепер із attribution `source=landing`.
-            </p>
+            <h2 className="text-style-hero text-text">{t.waitlistHeadline}</h2>
+            <p className="text-sm text-muted">{t.waitlistSubcopy}</p>
           </div>
           <WaitlistForm
             source="landing"
@@ -217,7 +224,7 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
             onSuccess={() => {
               trackEvent(ANALYTICS_EVENTS.LANDING_EMAIL_CAPTURED, {
                 source: "hero",
-                locale: "uk",
+                locale,
               });
             }}
           />
@@ -225,12 +232,11 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
 
         <section
           className="rounded-3xl border border-line bg-panel p-6 sm:p-8 text-center space-y-3"
-          aria-label="Перехід до тарифів"
+          aria-label={t.pricingAriaLabel}
         >
-          <h2 className="text-style-hero text-text">Подивись на тарифи</h2>
+          <h2 className="text-style-hero text-text">{t.pricingHeadline}</h2>
           <p className="text-sm text-muted max-w-xl mx-auto">
-            Free назавжди для повсякденного використання. Pro відкриває
-            безлімітний AI-чат, авто-Mono sync і CloudSync між пристроями.
+            {t.pricingSubcopy}
           </p>
           <div className="pt-2 flex items-center justify-center">
             <Button
@@ -239,18 +245,14 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
               onClick={goToPricing}
               data-testid="landing-pricing-link"
             >
-              Дивитись тарифи
+              {t.pricingCta}
               <Icon name="chevron-right" size={16} className="ml-1" />
             </Button>
           </div>
         </section>
 
         <footer className="text-center text-xs text-muted space-y-1">
-          <p>
-            Sergeant — український проєкт. Без реклами, без перепродажу даних,
-            без темних патернів. Telegram-канал з оновленнями і публічний
-            changelog у репозиторії.
-          </p>
+          <p>{t.footerText}</p>
         </footer>
       </div>
     </div>

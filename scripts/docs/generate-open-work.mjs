@@ -61,6 +61,18 @@ const RE_H1 = /^#\s+(.+?)\s*$/m;
 // the line (statuses are often multi-clause, e.g.
 // «In progress (Phase 1 landed; Phase 2 pending coordination)»).
 const RE_STATUS = /^>\s*\*\*Status:\*\*\s*(.+?)\s*$/m;
+// `> **Agent-ready:**` line — Phase 2 (Initiative 0015) metadata header on
+// every active initiative. Captures the first token (`yes` / `needs-decision`
+// / `blocked`), tolerant of trailing prose / punctuation.
+const RE_AGENT_READY =
+  /^>\s*\*\*Agent-ready:\*\*\s*`?(yes|needs-decision|blocked)`?\b/im;
+// Source paths an initiative mentions (used to route to a specialist skill).
+// We harvest inline-code path-like tokens (`apps/server/...`, `tools/...`,
+// `docs/...`, `*.sql`, `*.tsx`) plus the title, so the heuristic mapping has
+// material to match globs/keywords against even when the file lists no
+// explicit `Файли` table.
+const RE_PATH_TOKEN =
+  /`([A-Za-z0-9_.@/-]+\/[A-Za-z0-9_.@/*-]+|[A-Za-z0-9_.@/-]+\.(?:tsx?|sql|mjs|json|yml|yaml))`/g;
 // PR mention: `#NNNN` with 3-5 digits, optionally wrapped in `[]()`
 // markdown link or preceded by `PR` / `pull/`. The 3-digit minimum filters
 // out enumerations like `#1`–`#5 у списку`; the 5-digit ceiling avoids
@@ -94,6 +106,10 @@ export const TRACKERS = [
       "Нумеровані multi-PR ініціативи з acceptance criteria. Source: [`docs/initiatives/`](./initiatives/README.md).",
     rootDir: "docs/initiatives",
     recursive: true,
+    // Phase 2 (Initiative 0015): surface agent-dispatch hints —
+    // `Agent-ready` status + suggested specialist `Skill` + best-fit
+    // `Playbook` columns, and sort rows so `agent-ready: yes` lands first.
+    enrich: true,
   },
   {
     id: "planning",
@@ -142,6 +158,9 @@ export const TRACKERS = [
       "Плани впровадження cross-cutting capabilities. Source: [`docs/superpowers/plans/`](./superpowers/README.md).",
     rootDir: "docs/superpowers/plans",
     recursive: true,
+    // Plans tables also carry suggested `Skill` + `Playbook` columns
+    // (no `Agent-ready` — that field lives only on numbered initiatives).
+    enrich: true,
   },
 ];
 
@@ -212,6 +231,131 @@ export function extractPRNumbers(content) {
 }
 
 /**
+ * Extract the `Agent-ready` value (`yes` / `needs-decision` / `blocked`)
+ * from the quote-block metadata header, or `null` if absent / invalid.
+ * Exported for tests.
+ */
+export function extractAgentReady(content) {
+  if (!content) return null;
+  const m = RE_AGENT_READY.exec(content);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/**
+ * Harvest path-like inline-code tokens from a document body. Returns a
+ * deduped array (e.g. `apps/server/src/routes/foo.ts`, `*.sql`,
+ * `apps/web/vite.config.ts`). Used to feed the skill-mapping heuristic.
+ */
+export function extractPathTokens(content) {
+  if (!content) return [];
+  const seen = new Set();
+  for (const m of content.matchAll(RE_PATH_TOKEN)) {
+    if (m[1]) seen.add(m[1]);
+  }
+  return [...seen];
+}
+
+// ── Skill / playbook heuristic mapping ───────────────────────────────────────
+
+/**
+ * Convert a glob (supporting `**`, `*`, and `?`) into a RegExp anchored to
+ * the full string. Intentionally small — the mapping globs are simple
+ * path patterns, not full minimatch.
+ */
+export function globToRegExp(glob) {
+  let re = "";
+  for (let i = 0; i < glob.length; i++) {
+    const c = glob[i];
+    if (c === "*") {
+      if (glob[i + 1] === "*") {
+        // `**` (optionally `**/`) matches any number of path segments.
+        i++;
+        if (glob[i + 1] === "/") i++;
+        re += "(?:.*/)?";
+      } else {
+        re += "[^/]*";
+      }
+    } else if (c === "?") {
+      re += "[^/]";
+    } else if (".+^${}()|[]\\".includes(c)) {
+      re += "\\" + c;
+    } else {
+      re += c;
+    }
+  }
+  return new RegExp("^" + re + "$", "i");
+}
+
+/** Does any glob in `globs` match any of `paths`? */
+export function matchAnyGlob(globs, paths) {
+  const compiled = globs.map(globToRegExp);
+  return paths.some((p) => compiled.some((re) => re.test(p)));
+}
+
+/** Does any keyword appear (case-insensitive substring) in `haystack`? */
+export function matchAnyKeyword(keywords, haystack) {
+  const lower = haystack.toLowerCase();
+  return keywords.some((k) => lower.includes(k.toLowerCase()));
+}
+
+/** How many of `paths` match at least one glob in `globs`? */
+export function countGlobMatches(globs, paths) {
+  if (!globs || !paths) return 0;
+  const compiled = globs.map(globToRegExp);
+  return paths.filter((p) => compiled.some((re) => re.test(p))).length;
+}
+
+/** How many of `keywords` appear in `haystack` (case-insensitive)? */
+export function countKeywordMatches(keywords, haystack) {
+  if (!keywords) return 0;
+  const lower = haystack.toLowerCase();
+  return keywords.filter((k) => lower.includes(k.toLowerCase())).length;
+}
+
+/**
+ * Apply a loaded skill-mapping table to a document's signals (paths +
+ * free-text). Returns `{ skill, playbook }`; either may be `null` when no
+ * rule matches (skill falls back to `mapping.fallbackSkill`).
+ *
+ * Skill selection is **score-based, not first-match**: an initiative body
+ * mentions many cross-surface paths (a frontend doc may reference one
+ * `tools/openclaw/...` path in passing), so first-match-wins routes on
+ * noise. Instead each rule scores `#path-glob-matches + #keyword-matches`
+ * and the highest score wins; rule order in the JSON breaks ties (so the
+ * more-specific surfaces listed first still win an even contest). A rule
+ * with zero matches never wins. Pure — exported for tests.
+ */
+export function applySkillMapping(mapping, { paths = [], text = "" } = {}) {
+  let skill = mapping.fallbackSkill ?? null;
+  let best = 0;
+  for (const rule of mapping.skillRules ?? []) {
+    const score =
+      countGlobMatches(rule.globs, paths) +
+      countKeywordMatches(rule.keywords, text);
+    // Strictly-greater keeps the earlier (more-specific) rule on ties.
+    if (score > best) {
+      best = score;
+      skill = rule.skill;
+    }
+  }
+  let playbook = null;
+  for (const rule of mapping.playbookRules ?? []) {
+    if (rule.keywords && matchAnyKeyword(rule.keywords, text)) {
+      playbook = rule.playbook;
+      break;
+    }
+  }
+  return { skill, playbook };
+}
+
+/** Load and parse `skill-mapping.json` (throws on malformed JSON). */
+export function loadSkillMapping(
+  path = resolve(__dirname, "skill-mapping.json"),
+) {
+  return JSON.parse(readFileSync(path, "utf8"));
+}
+
+/**
  * Should the file at `relPath` (relative to repo root) be excluded from
  * the open-work scan? Universally-excluded filenames (README, follow-ups,
  * open-work, _-prefix, archive/) live here.
@@ -279,6 +423,11 @@ export function parseDocument(absPath) {
     rawStatus,
     status: classifyStatus(rawStatus),
     prs: extractPRNumbers(content),
+    // Phase 2 (Initiative 0015) signals: the `Agent-ready` header value
+    // plus the raw material the skill-mapping heuristic routes on
+    // (harvested path tokens + title + status text).
+    agentReady: extractAgentReady(content),
+    paths: extractPathTokens(content),
   };
 }
 
@@ -288,6 +437,15 @@ export function parseDocument(absPath) {
  * is sorted by file path for deterministic output.
  */
 export function collectOpenWork(repoRoot = REPO_ROOT, trackers = TRACKERS) {
+  // Load the skill-mapping table once; tolerate its absence so the scan
+  // still works in stripped-down test fixtures (enriched columns just stay
+  // empty in that case).
+  let mapping = null;
+  try {
+    mapping = loadSkillMapping();
+  } catch {
+    mapping = { fallbackSkill: null, skillRules: [], playbookRules: [] };
+  }
   const result = [];
   for (const tracker of trackers) {
     const rootAbs = resolve(repoRoot, tracker.rootDir);
@@ -310,6 +468,22 @@ export function collectOpenWork(repoRoot = REPO_ROOT, trackers = TRACKERS) {
         relToRoot,
         outputRelPath,
       );
+      // Route to a specialist skill + playbook using the harvested path
+      // tokens and free-text (title + status). Only computed for enriched
+      // trackers — other sections never render these columns.
+      let skill = null;
+      let playbook = null;
+      if (tracker.enrich) {
+        // Keyword text is the title + status prose ONLY — deliberately NOT
+        // the harvested path blob, which would let unrelated cross-surface
+        // path references (e.g. a `tools/openclaw/...` mention in a frontend
+        // doc) misfire keyword rules. Glob rules match the harvested paths.
+        const text = `${doc.title} ${doc.rawStatus}`;
+        ({ skill, playbook } = applySkillMapping(mapping, {
+          paths: doc.paths,
+          text,
+        }));
+      }
       entries.push({
         relPath: relToRoot,
         // Path relative to the output file's directory (`docs/`), used to
@@ -318,11 +492,34 @@ export function collectOpenWork(repoRoot = REPO_ROOT, trackers = TRACKERS) {
         relToRootDir: relative(rootAbs, abs).split(sep).join("/"),
         ...doc,
         rawStatus: rewrittenStatus,
+        skill,
+        playbook,
       });
     }
+    if (tracker.enrich) sortByAgentReady(entries);
     result.push({ tracker, entries });
   }
   return result;
+}
+
+/**
+ * Stable in-place sort of initiative entries by agent-dispatch readiness:
+ * `yes` first, then `needs-decision`, then `blocked`, then anything without
+ * a valid `Agent-ready` value. Ties keep the original (path-sorted) order so
+ * output stays deterministic.
+ */
+export const AGENT_READY_ORDER = ["yes", "needs-decision", "blocked"];
+
+export function agentReadyRank(value) {
+  const idx = AGENT_READY_ORDER.indexOf(value);
+  return idx === -1 ? AGENT_READY_ORDER.length : idx;
+}
+
+export function sortByAgentReady(entries) {
+  entries.sort(
+    (a, b) => agentReadyRank(a.agentReady) - agentReadyRank(b.agentReady),
+  );
+  return entries;
 }
 
 // ── Markdown rendering ──────────────────────────────────────────────────────
@@ -407,12 +604,37 @@ export function formatPRLinks(prs, { maxShown = 10 } = {}) {
   return linked.join(" ");
 }
 
-/** Markdown table row for one entry. */
-function renderRow(entry) {
+/** Agent-ready value → coloured marker for the dashboard cell. */
+export function formatAgentReady(value) {
+  switch (value) {
+    case "yes":
+      return "🟢 yes";
+    case "needs-decision":
+      return "🟡 needs-decision";
+    case "blocked":
+      return "🔴 blocked";
+    default:
+      return "—";
+  }
+}
+
+/** Render `value` as an inline-code cell, or `—` when absent. */
+function codeCellOrDash(value) {
+  return value ? `\`${tableCell(value)}\`` : "—";
+}
+
+/**
+ * Markdown table row for one entry. When `enrich` is set the row carries
+ * three extra columns — `Agent-ready`, `Skill`, `Playbook` — so the row
+ * shape matches the enriched header in `renderOpenWork`.
+ */
+function renderRow(entry, { enrich = false } = {}) {
   const docLink = `[\`${entry.relToRootDir}\`](./${entry.linkPath})`;
   const statusCell = tableCell(truncateStatus(entry.rawStatus));
   const marker = entry.status === "unknown" ? " ❓" : "";
-  return `| ${docLink} | ${statusCell}${marker} | ${formatPRLinks(entry.prs)} |`;
+  const base = `| ${docLink} | ${statusCell}${marker} | ${formatPRLinks(entry.prs)} |`;
+  if (!enrich) return base;
+  return `${base} ${formatAgentReady(entry.agentReady)} | ${codeCellOrDash(entry.skill)} | ${codeCellOrDash(entry.playbook)} |`;
 }
 
 /** Today as YYYY-MM-DD in UTC (mirrors check-freshness.mjs). */
@@ -462,7 +684,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   );
   lines.push("");
   lines.push(
-    "**Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR.",
+    "**Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.",
   );
   lines.push("");
 
@@ -484,10 +706,19 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
       lines.push("");
       continue;
     }
-    lines.push("| Документ | Статус | PR-згадки |");
-    lines.push("| -------- | ------ | --------- |");
+    if (section.tracker.enrich) {
+      lines.push(
+        "| Документ | Статус | PR-згадки | Agent-ready | Skill | Playbook |",
+      );
+      lines.push(
+        "| -------- | ------ | --------- | ----------- | ----- | -------- |",
+      );
+    } else {
+      lines.push("| Документ | Статус | PR-згадки |");
+      lines.push("| -------- | ------ | --------- |");
+    }
     for (const entry of section.entries) {
-      lines.push(renderRow(entry));
+      lines.push(renderRow(entry, { enrich: section.tracker.enrich }));
     }
     lines.push("");
   }

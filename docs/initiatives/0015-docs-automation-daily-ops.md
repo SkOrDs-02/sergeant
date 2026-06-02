@@ -1,7 +1,8 @@
 # 0015 — Docs automation for daily ops
 
-> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
-> **Status:** In progress
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Status:** In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (daily cron 7-day stability + maintainer 5/7-day usage self-report) — passive validation, no code work. Not 90-day-gated; archival deferred until the observation window closes.
+> **Agent-ready:** yes
 
 ## TL;DR
 
@@ -90,10 +91,10 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 
 ### Phase 2
 
-- [ ] `open-work.md` має колонки `Skill` + `Playbook` для кожного item у Ініціативах і Plansах
-- [ ] Усі active initiatives мають `agent-ready` field
-- [ ] Items з `agent-ready: yes` сорtяться першими в open-work tables
-- [ ] CI gate `lint:initiative-agent-ready` блокує новий initiative без поля
+- [x] `open-work.md` має колонки `Skill` + `Playbook` для кожного item у Ініціативах і Plansах _(score-based skill mapping у `scripts/docs/skill-mapping.json` + `generate-open-work.mjs`; enriched-tracker рядки несуть `Agent-ready`/`Skill`/`Playbook` колонки)_
+- [x] Усі active initiatives мають `agent-ready` field _(5/5: 0003 `blocked`, 0006 `blocked`, 0010 `needs-decision`, 0015 `yes`, 0017 `blocked`)_
+- [x] Items з `agent-ready: yes` сорtяться першими в open-work tables _(`sortByAgentReady`: yes → needs-decision → blocked → unset)_
+- [x] CI gate `lint:initiative-agent-ready` блокує новий initiative без поля _(`scripts/docs/lint-initiative-agent-ready.mjs` + `pnpm lint:initiative-agent-ready`, wired у aggregate `lint`)_
 
 ## Ризики
 

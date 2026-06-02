@@ -2,6 +2,7 @@
 
 > **Last validated:** 2026-05-13 by @Skords-01 (Phase 6 audit refresh — Phase 2 PR placeholder resolved; Phase 6 bullets now carry explicit commit/PR refs; Phase 7 exit-criteria pointer added per Stage 13 PR #079). **Next review:** 2026-08-11.
 > **Status:** In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first)
+> **Agent-ready:** blocked
 > **Priority:** P0 (Sprint 1–2)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 weeks (rollout — 2 sprints, sunset v1 — третій спринт)
