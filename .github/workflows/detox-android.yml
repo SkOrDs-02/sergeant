@@ -197,6 +197,13 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_5
+          # Explicit AVD name aligned with `apps/mobile/.detoxrc.js:67`
+          # (`avdName: "Pixel_5_API_34"`). Without it the action defaults
+          # to `test`, and Detox's `AVDValidator._assertAVDMatch` fails
+          # with `Cannot boot Android Emulator with the name: 'Pixel_5
+          # _API_34'`. Same name has to be passed on both action calls
+          # (snapshot create + run) so the cached snapshot is reusable.
+          avd-name: Pixel_5_API_34
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
@@ -214,6 +221,7 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_5
+          avd-name: Pixel_5_API_34
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
