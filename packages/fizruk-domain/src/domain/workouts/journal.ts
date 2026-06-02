@@ -102,7 +102,9 @@ export function buildWorkoutJournalSections<W extends WorkoutForJournal>(
  * Total barbell tonnage (kg × reps, strength items only). Non-finite
  * / negative entries contribute `0`.
  */
-export function computeWorkoutTonnageKg(w: WorkoutSummaryInput | null | undefined): number {
+export function computeWorkoutTonnageKg(
+  w: WorkoutSummaryInput | null | undefined,
+): number {
   if (!w) return 0;
   let total = 0;
   for (const it of w.items || []) {
@@ -122,7 +124,9 @@ export function computeWorkoutTonnageKg(w: WorkoutSummaryInput | null | undefine
  * Total logged sets across strength items (non-zero reps OR weight
  * counted). Used by the journal row pill "N підходів".
  */
-export function computeWorkoutSetCount(w: WorkoutSummaryInput | null | undefined): number {
+export function computeWorkoutSetCount(
+  w: WorkoutSummaryInput | null | undefined,
+): number {
   if (!w) return 0;
   let n = 0;
   for (const it of w.items || []) {

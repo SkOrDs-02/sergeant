@@ -37,9 +37,7 @@ const VALIDATED_LINE = `- **Last validated:** ${LAST_VALIDATED} by ${VALIDATOR}.
 function backfillContent(content) {
   if (content.includes("Last validated:")) return null;
   const lines = content.split("\n");
-  const statusIdx = lines.findIndex((line) =>
-    /^- \*\*Status:\*\* /.test(line),
-  );
+  const statusIdx = lines.findIndex((line) => /^- \*\*Status:\*\* /.test(line));
   if (statusIdx === -1) return null;
   lines.splice(statusIdx + 1, 0, VALIDATED_LINE);
   return lines.join("\n");

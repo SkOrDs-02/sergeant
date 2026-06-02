@@ -19,6 +19,7 @@ GOOD: `balance: Number(row.balance)`
 ## Hard Rule #3 — API contract triplet
 
 When a server response shape changes, ALL THREE must move together in the same PR:
+
 1. Server serializer (`apps/server/src/**/serializer.ts`)
 2. `packages/api-client/` type definitions
 3. Contract test (`.contract.test.ts` or equivalent co-located with the route)
@@ -45,7 +46,9 @@ Check: do `packages/api-client/` types match the new server response? Does a con
 Structure your report under three headers:
 
 ### Hard Rule #1 Findings
+
 ### Hard Rule #3 Findings
+
 ### Hard Rule #4 Findings
 
 For each finding: file path, description of violation, severity (BLOCKER or WARNING).

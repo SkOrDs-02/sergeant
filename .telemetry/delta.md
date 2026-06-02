@@ -21,6 +21,7 @@ Math check: target events = 96. Current LIVE = 94. Delta: ADD (3) + KEEP_AS_IS (
 **Decision:** keep existing `object_verb_past_tense` snake_case (e.g. `expense_added`, `paywall_viewed`). Do **not** migrate to `object.action` dot-notation despite the skill's default recommendation.
 
 **Why:**
+
 - 94 LIVE events feeding production dashboards (WF-60 growth funnel, FTUX dashboards, dozens of saved PostHog insights, n8n cron snapshots in `ops/n8n-workflows/60-growth-funnel-snapshot.json`).
 - Rename = lose historical continuity in every chart that filters by event name. Migrations either drop history or maintain a permanent rename map.
 - The current style is internally consistent (always snake_case, always past tense, almost always object-first). Codify what exists; enforce on new events.
@@ -29,24 +30,24 @@ Math check: target events = 96. Current LIVE = 94. Delta: ADD (3) + KEEP_AS_IS (
 
 ## Add — 3 new events
 
-| Event | Category | Source | Why |
-|-------|----------|--------|-----|
-| `session_started` | lifecycle | frontend | No session-start signal today. App launches are inferred from first event in a session — fragile. PostHog session is auto-created from pageview, but mobile has no pageview equivalent. Explicit event with `{platform, cold_start}` simplifies MAU/DAU computation and lets us split iOS vs Android vs PWA cleanly. |
-| `screen_viewed` | navigation | frontend (mobile) | Mobile has no `PageviewTracker` equivalent. Sparse tracker (throttled once-per-route-per-session) gives screen-level engagement parity with web without inflating volume. |
-| `feature_flag_evaluated` | feature_flag | frontend | Non-experiment PostHog flags (kill switches, gradual rollouts) have no exposure signal. Throttled to once per `(flag, variant, session)` to avoid noise. |
+| Event                    | Category     | Source            | Why                                                                                                                                                                                                                                                                                                                  |
+| ------------------------ | ------------ | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session_started`        | lifecycle    | frontend          | No session-start signal today. App launches are inferred from first event in a session — fragile. PostHog session is auto-created from pageview, but mobile has no pageview equivalent. Explicit event with `{platform, cold_start}` simplifies MAU/DAU computation and lets us split iOS vs Android vs PWA cleanly. |
+| `screen_viewed`          | navigation   | frontend (mobile) | Mobile has no `PageviewTracker` equivalent. Sparse tracker (throttled once-per-route-per-session) gives screen-level engagement parity with web without inflating volume.                                                                                                                                            |
+| `feature_flag_evaluated` | feature_flag | frontend          | Non-experiment PostHog flags (kill switches, gradual rollouts) have no exposure signal. Throttled to once per `(flag, variant, session)` to avoid noise.                                                                                                                                                             |
 
 ## Remove — 1 event
 
-| Event | Why |
-|-------|-----|
+| Event                         | Why                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `onboarding_goal_first_shown` | Duplicates `experiment_exposed { experiment_id: "goal_first", variant }`. The audit flagged this; the goal-first A/B fires both events for the same exposure, double-counting exposure in any funnel that filters by either name. Drop in favor of the canonical exposure event. Keep `onboarding_goal_first_picked` — it's the outcome, not the exposure. |
 
 ## Rename — 2 events
 
-| Current Name | Target Name | Change |
-|--------------|-------------|--------|
-| `module_settings_opened_from_module` (`MODULE_SETTINGS_OPENED` constant value) | `module_settings_opened` | Drop `_from_module` suffix; encode the source via property `{ source: module_header | settings_root | deeplink }`. Current name leaks implementation (only fires from module header). Properties-over-events. |
-| `biometric_auth_failed_fallback_pin` (`BIOMETRIC_AUTH_FAILED_FALLBACK_PIN`) | `biometric_auth_failed` | Drop `_fallback_pin` suffix; encode fallback via property `{ fallback: pin | none }`. Lets us track biometric failures that don't fall back without inventing a sibling event. |
+| Current Name                                                                   | Target Name              | Change                                                                              |
+| ------------------------------------------------------------------------------ | ------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `module_settings_opened_from_module` (`MODULE_SETTINGS_OPENED` constant value) | `module_settings_opened` | Drop `_from_module` suffix; encode the source via property `{ source: module_header | settings_root                                                                                     | deeplink }`. Current name leaks implementation (only fires from module header). Properties-over-events. |
+| `biometric_auth_failed_fallback_pin` (`BIOMETRIC_AUTH_FAILED_FALLBACK_PIN`)    | `biometric_auth_failed`  | Drop `_fallback_pin` suffix; encode fallback via property `{ fallback: pin          | none }`. Lets us track biometric failures that don't fall back without inventing a sibling event. |
 
 **Migration approach for renames:** dual-write for one release cycle. The old PostHog event name continues to fire alongside the new one; once dashboards switch, old fire is removed. Document in `.telemetry/changelog.md` (created by `product-tracking-instrument-new-feature` skill on first invocation).
 
@@ -62,22 +63,22 @@ Currently: `vibe`, `plan`, `locale`, `signup_date` (4 traits).
 
 ### Add — on-change / on-signup traits (4)
 
-| Trait | Type | When set | Why |
-|-------|------|----------|-----|
-| `is_internal` | boolean | once (signup) | Gate. trackEvent wrapper skips capture when true unless debug flag set. Cleans up dashboards (current PostHog projects mix internal + real users). |
-| `signup_provider` | enum [apple, google, email] | once | Currently emitted as event property on `signup_provider_selected`. Promote to trait for permanent segmentation. |
-| `pwa_installed` | boolean | on_change | Promotes a one-shot funnel event to a permanent trait so any cohort can filter "PWA users" without re-deriving from event history. |
-| `app_lock_enabled` / `biometric_enabled` / `mono_connected` | boolean | on_change | Promote security/integration completion to traits for power-user segmentation. |
+| Trait                                                       | Type                        | When set      | Why                                                                                                                                                |
+| ----------------------------------------------------------- | --------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `is_internal`                                               | boolean                     | once (signup) | Gate. trackEvent wrapper skips capture when true unless debug flag set. Cleans up dashboards (current PostHog projects mix internal + real users). |
+| `signup_provider`                                           | enum [apple, google, email] | once          | Currently emitted as event property on `signup_provider_selected`. Promote to trait for permanent segmentation.                                    |
+| `pwa_installed`                                             | boolean                     | on_change     | Promotes a one-shot funnel event to a permanent trait so any cohort can filter "PWA users" without re-deriving from event history.                 |
+| `app_lock_enabled` / `biometric_enabled` / `mono_connected` | boolean                     | on_change     | Promote security/integration completion to traits for power-user segmentation.                                                                     |
 
 ### Add — scheduled snapshot traits (5)
 
-| Trait | Type | Cadence | Source |
-|-------|------|---------|--------|
-| `streak_current` | integer | daily | local `MAX(consecutive_days)` reconciled via CloudSync |
-| `streak_longest` | integer | daily | historical max |
-| `expenses_count_30d` | integer | daily | server query: `COUNT(expense) WHERE user_id=$1 AND created_at > now()-30d` |
-| `monthly_active_days` | integer | daily | `DISTINCT day` from analytics_event table or PostHog mirror |
-| `modules_active` | string_array | daily | `hub_first_action_completed_v1:<module>` KV flags |
+| Trait                 | Type         | Cadence | Source                                                                     |
+| --------------------- | ------------ | ------- | -------------------------------------------------------------------------- |
+| `streak_current`      | integer      | daily   | local `MAX(consecutive_days)` reconciled via CloudSync                     |
+| `streak_longest`      | integer      | daily   | historical max                                                             |
+| `expenses_count_30d`  | integer      | daily   | server query: `COUNT(expense) WHERE user_id=$1 AND created_at > now()-30d` |
+| `monthly_active_days` | integer      | daily   | `DISTINCT day` from analytics_event table or PostHog mirror                |
+| `modules_active`      | string_array | daily   | `hub_first_action_completed_v1:<module>` KV flags                          |
 
 **Implementation gate:** snapshot sync requires either (a) a server-side analytics-aggregate cron job or (b) PostHog data warehouse for the COUNT/DISTINCT queries. Stub the traits as "designed but not populated" in PostHog until one is in place. Don't block design on it — implementation phase decides which.
 
@@ -113,6 +114,7 @@ Call sites: [`AuthContext.tsx`](../apps/web/src/core/auth/AuthContext.tsx), [`An
 ### 3. Duplicate mobile identity bridges
 
 **Current:** Two bridges call `identifyPostHogUser` on `user.id` change:
+
 - [`apps/mobile/src/features/analytics/AnalyticsIdentityBridge.tsx`](../apps/mobile/src/features/analytics/AnalyticsIdentityBridge.tsx)
 - [`apps/mobile/src/observability/IdentityBridge.tsx`](../apps/mobile/src/observability/IdentityBridge.tsx)
 

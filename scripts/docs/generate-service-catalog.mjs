@@ -27,8 +27,8 @@
 // Exits 1 on `--check` diff, missing surface coverage in the markdown,
 // or I/O error.
 
-import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
-import { resolve, dirname, join, relative, sep } from "node:path";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { resolve, dirname, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -86,8 +86,7 @@ function ownerFor(workspaceRel, rules) {
       return { prefix: p, handle: r.handle };
     })
     .filter(
-      (r) =>
-        r.prefix && normalized.startsWith(r.prefix.replace(/\*$/, "")),
+      (r) => r.prefix && normalized.startsWith(r.prefix.replace(/\*$/, "")),
     )
     .sort((a, b) => b.prefix.length - a.prefix.length);
   return candidates[0]?.handle || null;
@@ -163,9 +162,7 @@ export function buildServiceCatalog() {
       workspace: "apps/server",
       deployTarget: "railway",
       deployArtifact: "Dockerfile.api",
-      railwayService: railwayServiceName(
-        resolve(REPO_ROOT, "railway.toml"),
-      ),
+      railwayService: railwayServiceName(resolve(REPO_ROOT, "railway.toml")),
       healthcheckPath: detectHealthcheckPath("apps/server"),
       owner: ownerFor("apps/server", owners),
     });

@@ -252,7 +252,10 @@ export function installE2EAuthMock(): boolean {
 
     // POST /api/nutrition/recommend-recipes — synthetic AI recipe so the
     // recipe-recommender E2E flow renders without a live Anthropic key.
-    if (method === "POST" && path.endsWith("/api/nutrition/recommend-recipes")) {
+    if (
+      method === "POST" &&
+      path.endsWith("/api/nutrition/recommend-recipes")
+    ) {
       return jsonResponse({
         recipes: [
           {

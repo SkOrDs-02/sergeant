@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -63,10 +63,10 @@ CI hard-rules ловляться різними механізмами. Стар
 
 Більше одного скіла одночасно тримати не треба — [`AGENTS.md`](../../AGENTS.md) описує routing-disсipline.
 
-
 ## 4.5. Нова інфраструктура (станом на травень 2026)
 
 **OpenClaw Gateway (ADR-0055):** Sergeant більше не має Grammy-based internal bot:
+
 - Railway service: `sergeant-openclaw-gateway` (Node 24-alpine, `Dockerfile.openclaw-gateway`)
 - Пакет-адаптер: `packages/openclaw-plugin/` (`@sergeant/openclaw-plugin`)
 - Config-as-code: `ops/openclaw/` копіюється в runtime при деплої; нова bot identity: `@OpenClaw_sergeant_v2_bot`

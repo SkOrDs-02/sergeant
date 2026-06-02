@@ -6,126 +6,498 @@
     <title>Sergeant · Крос-модульні підказки — anti-nag</title>
     <link rel="stylesheet" href="../../_shared/tokens.css" />
     <style>
-      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html,body { font-family: var(--font-sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; line-height: 1.5; }
-      a { color: inherit; text-decoration: none; }
-      code,.mono { font-family: var(--font-mono); }
-      .serif { font-family: var(--font-serif); }
-      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
-      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
-      .crumb { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand); margin-bottom: 14px; display: flex; gap: 8px; align-items: center; }
-      .crumb a { color: var(--muted); }
-      .crumb .sep { color: var(--subtle); }
-      header.top h1 { font-size: clamp(36px, 5vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px; max-width: 920px; text-wrap: balance; }
-      header.top h1 em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--muted); }
-      header.top .lede { font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6; }
-      .meta-row { margin-top: 24px; display: flex; gap: 28px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; }
-      .meta-row span strong { color: var(--text); font-weight: 600; margin-left: 6px; }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .serif {
+        font-family: var(--font-serif);
+      }
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 32px 96px;
+      }
+      header.top {
+        margin-bottom: 56px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
+      }
+      .crumb {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--brand);
+        margin-bottom: 14px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .crumb a {
+        color: var(--muted);
+      }
+      .crumb .sep {
+        color: var(--subtle);
+      }
+      header.top h1 {
+        font-size: clamp(36px, 5vw, 56px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        margin-bottom: 18px;
+        max-width: 920px;
+        text-wrap: balance;
+      }
+      header.top h1 em {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      header.top .lede {
+        font-size: 17px;
+        color: var(--muted);
+        max-width: 740px;
+        line-height: 1.6;
+      }
+      .meta-row {
+        margin-top: 24px;
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .meta-row span strong {
+        color: var(--text);
+        font-weight: 600;
+        margin-left: 6px;
+      }
 
-      section { margin-bottom: 64px; }
-      .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-      .section-head .sn { font-family: var(--font-mono); font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--brand); padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm); }
-      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
-      .section-head .event { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; }
-      .section-head .event strong { color: var(--text); }
-      .section-intro { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 740px; margin-bottom: 24px; }
+      section {
+        margin-bottom: 64px;
+      }
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .section-head .sn {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--brand);
+        padding: 3px 9px;
+        background: var(--brand-soft);
+        border-radius: var(--r-sm);
+      }
+      .section-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.022em;
+      }
+      .section-head .event {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .section-head .event strong {
+        color: var(--text);
+      }
+      .section-intro {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 740px;
+        margin-bottom: 24px;
+      }
 
-      .row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-      .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
-      .card .tag { font-family: var(--font-mono); font-weight: 800; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: var(--r-sm); display: inline-flex; gap: 6px; align-items: center; }
-      .card .title { font-size: 13px; font-weight: 800; }
+      .row3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 16px 18px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .card .tag {
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: var(--r-sm);
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .card .title {
+        font-size: 13px;
+        font-weight: 800;
+      }
 
       /* Phone */
-      .phone { width: 100%; max-width: 270px; margin: 0 auto; aspect-ratio: 9/19.5; background: #1a1614; border: 6px solid #0a0a09; border-radius: 34px; box-shadow: 0 12px 28px rgba(28,25,23,0.16); position: relative; overflow: hidden; color: #f5f0eb; }
-      .phone-island { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 32%; height: 16px; background: #0a0a09; border-radius: 999px; z-index: 5; }
-      .phone-screen { position: absolute; inset: 0; padding: 30px 0 0; display: flex; flex-direction: column; }
-      .phone-statusbar { display: flex; justify-content: space-between; font-size: 8px; font-weight: 700; color: rgba(245,240,235,0.7); font-family: var(--font-mono); margin-bottom: 8px; padding: 0 16px; }
+      .phone {
+        width: 100%;
+        max-width: 270px;
+        margin: 0 auto;
+        aspect-ratio: 9/19.5;
+        background: #1a1614;
+        border: 6px solid #0a0a09;
+        border-radius: 34px;
+        box-shadow: 0 12px 28px rgba(28, 25, 23, 0.16);
+        position: relative;
+        overflow: hidden;
+        color: #f5f0eb;
+      }
+      .phone-island {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 32%;
+        height: 16px;
+        background: #0a0a09;
+        border-radius: 999px;
+        z-index: 5;
+      }
+      .phone-screen {
+        position: absolute;
+        inset: 0;
+        padding: 30px 0 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .phone-statusbar {
+        display: flex;
+        justify-content: space-between;
+        font-size: 8px;
+        font-weight: 700;
+        color: rgba(245, 240, 235, 0.7);
+        font-family: var(--font-mono);
+        margin-bottom: 8px;
+        padding: 0 16px;
+      }
 
-      .scr-head { padding: 0 12px 8px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-      .scr-mod { font-size: 8.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; }
-      .scr-mod.finyk { color: var(--finyk); }
-      .scr-mod.fizruk { color: var(--fizruk); }
-      .scr-title { font-size: 12px; font-weight: 800; flex: 1; }
+      .scr-head {
+        padding: 0 12px 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .scr-mod {
+        font-size: 8.5px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-weight: 700;
+      }
+      .scr-mod.finyk {
+        color: var(--finyk);
+      }
+      .scr-mod.fizruk {
+        color: var(--fizruk);
+      }
+      .scr-title {
+        font-size: 12px;
+        font-weight: 800;
+        flex: 1;
+      }
 
-      .filled { flex: 1; padding: 8px 12px; display: flex; flex-direction: column; gap: 5px; }
-      .tx { background: rgba(255,255,255,0.04); border-radius: 7px; padding: 7px 9px; display: flex; justify-content: space-between; font-size: 9px; }
-      .tx .l { display: flex; align-items: center; gap: 6px; }
-      .tx .l .sw { width: 14px; height: 14px; border-radius: 4px; }
-      .tx.new { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); }
-      .tx.new .l .sw { background: var(--finyk); }
-      .tx .v { font-family: var(--font-mono); font-weight: 600; }
+      .filled {
+        flex: 1;
+        padding: 8px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .tx {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 7px;
+        padding: 7px 9px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+      }
+      .tx .l {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .tx .l .sw {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+      }
+      .tx.new {
+        background: rgba(16, 185, 129, 0.08);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+      }
+      .tx.new .l .sw {
+        background: var(--finyk);
+      }
+      .tx .v {
+        font-family: var(--font-mono);
+        font-weight: 600;
+      }
 
       /* Toast */
       .toast {
         position: absolute;
-        left: 8px; right: 8px;
+        left: 8px;
+        right: 8px;
         bottom: 14px;
         background: #221e1b;
-        border: 1px solid rgba(255,255,255,0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         padding: 9px 11px;
-        display: flex; gap: 8px; align-items: center;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
         z-index: 4;
       }
-      .toast .ic { width: 22px; height: 22px; border-radius: 6px; background: rgba(146,204,23,0.18); display: grid; place-items: center; color: var(--nutrition); flex-shrink: 0; font-size: 12px; }
-      .toast .msg { flex: 1; font-size: 9px; line-height: 1.35; }
-      .toast .msg b { color: #f5f0eb; }
-      .toast .cta { font-size: 9px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: rgba(146,204,23,0.18); color: var(--nutrition); flex-shrink: 0; }
-      .toast .x { color: rgba(245,240,235,0.4); font-size: 13px; padding: 0 2px; }
+      .toast .ic {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        background: rgba(146, 204, 23, 0.18);
+        display: grid;
+        place-items: center;
+        color: var(--nutrition);
+        flex-shrink: 0;
+        font-size: 12px;
+      }
+      .toast .msg {
+        flex: 1;
+        font-size: 9px;
+        line-height: 1.35;
+      }
+      .toast .msg b {
+        color: #f5f0eb;
+      }
+      .toast .cta {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(146, 204, 23, 0.18);
+        color: var(--nutrition);
+        flex-shrink: 0;
+      }
+      .toast .x {
+        color: rgba(245, 240, 235, 0.4);
+        font-size: 13px;
+        padding: 0 2px;
+      }
 
       /* fatigue counter */
-      .fatigue-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 10px; }
-      .fatigue-pip {
-        text-align: center; font-family: var(--font-mono); font-size: 9px;
-        padding: 5px; border-radius: 6px;
-        background: rgba(255,255,255,0.04);
-        color: rgba(245,240,235,0.5);
+      .fatigue-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px;
+        margin-top: 10px;
       }
-      .fatigue-pip.dismissed { background: rgba(192,58,58,0.12); color: var(--routine); }
-      .fatigue-pip.accepted { background: rgba(16,185,129,0.12); color: var(--finyk); }
+      .fatigue-pip {
+        text-align: center;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        padding: 5px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.04);
+        color: rgba(245, 240, 235, 0.5);
+      }
+      .fatigue-pip.dismissed {
+        background: rgba(192, 58, 58, 0.12);
+        color: var(--routine);
+      }
+      .fatigue-pip.accepted {
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--finyk);
+      }
 
       /* timeline */
-      .timeline { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 22px 26px; }
-      .timeline h3 { font-size: 16px; font-weight: 800; margin-bottom: 14px; letter-spacing: -0.01em; }
-      .timeline .row { display: grid; grid-template-columns: 90px 1fr; gap: 14px; padding: 10px 0; border-bottom: 1px dashed var(--border); align-items: baseline; }
-      .timeline .row:last-child { border-bottom: none; }
-      .timeline .when { font-family: var(--font-mono); font-size: 11px; color: var(--subtle); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
-      .timeline .what { font-size: 13.5px; color: var(--ink); line-height: 1.5; }
-      .timeline .what b { color: var(--text); }
-      .timeline .what code { font-size: 11.5px; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
-      .timeline .what .suppress { color: var(--routine); font-weight: 700; }
-      .timeline .what .accept { color: var(--success); font-weight: 700; }
+      .timeline {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 22px 26px;
+      }
+      .timeline h3 {
+        font-size: 16px;
+        font-weight: 800;
+        margin-bottom: 14px;
+        letter-spacing: -0.01em;
+      }
+      .timeline .row {
+        display: grid;
+        grid-template-columns: 90px 1fr;
+        gap: 14px;
+        padding: 10px 0;
+        border-bottom: 1px dashed var(--border);
+        align-items: baseline;
+      }
+      .timeline .row:last-child {
+        border-bottom: none;
+      }
+      .timeline .when {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .timeline .what {
+        font-size: 13.5px;
+        color: var(--ink);
+        line-height: 1.5;
+      }
+      .timeline .what b {
+        color: var(--text);
+      }
+      .timeline .what code {
+        font-size: 11.5px;
+        background: var(--surface);
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .timeline .what .suppress {
+        color: var(--routine);
+        font-weight: 700;
+      }
+      .timeline .what .accept {
+        color: var(--success);
+        font-weight: 700;
+      }
 
-      .foot { margin-top: 6px; padding-top: 12px; border-top: 1px dashed var(--border); font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); line-height: 1.5; }
-      .foot b { color: var(--text); font-weight: 600; }
-      .foot code { font-size: 10px; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
-      .foot dl { display: grid; gap: 4px; }
-      .foot dt { font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 9.5px; color: var(--subtle); }
+      .foot {
+        margin-top: 6px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border);
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .foot b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .foot code {
+        font-size: 10px;
+        background: var(--surface);
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .foot dl {
+        display: grid;
+        gap: 4px;
+      }
+      .foot dt {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 9.5px;
+        color: var(--subtle);
+      }
 
-      footer.bot { margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-      footer.bot strong { color: var(--text); }
+      footer.bot {
+        margin-top: 64px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      footer.bot strong {
+        color: var(--text);
+      }
 
-      @media (max-width: 980px) { .wrap { padding: 40px 22px 80px; } .row3 { grid-template-columns: 1fr; } .timeline .row { grid-template-columns: 1fr; } }
+      @media (max-width: 980px) {
+        .wrap {
+          padding: 40px 22px 80px;
+        }
+        .row3 {
+          grid-template-columns: 1fr;
+        }
+        .timeline .row {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
-
       <header class="top">
-        <div class="crumb"><a href="../../index.html">мокапи</a><span class="sep">/</span><a href="../">продукт</a><span class="sep">/</span><span>крос-модульні підказки</span></div>
-        <h1>Підказка з'являється раз. <em>Тричі сказав «ні» — мовчимо 2 тижні</em></h1>
+        <div class="crumb">
+          <a href="../../index.html">мокапи</a><span class="sep">/</span
+          ><a href="../">продукт</a><span class="sep">/</span
+          ><span>крос-модульні підказки</span>
+        </div>
+        <h1>
+          Підказка з'являється раз. <em>Тричі сказав «ні» — мовчимо 2 тижні</em>
+        </h1>
         <p class="lede">
           Sergeant — 4 модулі в одному дні. Коли користувач щойно записав
-          витрату в ресторані, є шанс що він зараз пам'ятає що з'їв. Цей
-          мокап показує патерн toast-підказки + механіку anti-nag з
+          витрату в ресторані, є шанс що він зараз пам'ятає що з'їв. Цей мокап
+          показує патерн toast-підказки + механіку anti-nag з
           <code>docs/design/cross-module-prompts.md</code>: лічильник
           dismiss-ів, snooze після прийняття, 14-денне вікно втоми.
         </p>
         <div class="meta-row">
           <span>Стан<strong>є у коді</strong></span>
           <span>Файл<strong>crossModulePrompt.ts</strong></span>
-          <span>Правила<strong>3 dismiss → 14 днів тиша · accept → 12 год snooze</strong></span>
+          <span
+            >Правила<strong
+              >3 dismiss → 14 днів тиша · accept → 12 год snooze</strong
+            ></span
+          >
         </div>
       </header>
 
@@ -138,26 +510,51 @@
         </div>
         <p class="section-intro">
           Підказка з'являється <strong>після</strong> того як основна дія
-          (зберегти витрату, завершити тренування) вже виконана. Не
-          блокатор — info-toast 6 сек, тап на «Додати →» веде у відповідний
-          модуль.
+          (зберегти витрату, завершити тренування) вже виконана. Не блокатор —
+          info-toast 6 сек, тап на «Додати →» веде у відповідний модуль.
         </p>
 
         <div class="row3">
           <div class="card">
-            <div style="display:flex;gap:8px;align-items:center">
-              <span class="tag" style="background:var(--finyk-soft);color:var(--finyk-dark)">finyk → nutrition</span>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <span
+                class="tag"
+                style="background: var(--finyk-soft); color: var(--finyk-dark)"
+                >finyk → nutrition</span
+              >
             </div>
             <div class="title">Ресторан → прийом їжі</div>
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●●</span></div>
-                <div class="scr-head"><span class="scr-mod finyk">Фінік</span><span class="scr-title">Витрати</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●●</span>
+                </div>
+                <div class="scr-head">
+                  <span class="scr-mod finyk">Фінік</span
+                  ><span class="scr-title">Витрати</span>
+                </div>
                 <div class="filled">
-                  <div class="tx"><div class="l"><span class="sw" style="background:var(--finyk)"></span><span>Продукти</span></div><span class="v">₴280</span></div>
-                  <div class="tx"><div class="l"><span class="sw" style="background:var(--finyk)"></span><span>Транспорт</span></div><span class="v">₴80</span></div>
-                  <div class="tx new"><div class="l"><span class="sw"></span><span>Ресторан · щойно</span></div><span class="v">₴450</span></div>
+                  <div class="tx">
+                    <div class="l">
+                      <span class="sw" style="background: var(--finyk)"></span
+                      ><span>Продукти</span>
+                    </div>
+                    <span class="v">₴280</span>
+                  </div>
+                  <div class="tx">
+                    <div class="l">
+                      <span class="sw" style="background: var(--finyk)"></span
+                      ><span>Транспорт</span>
+                    </div>
+                    <span class="v">₴80</span>
+                  </div>
+                  <div class="tx new">
+                    <div class="l">
+                      <span class="sw"></span><span>Ресторан · щойно</span>
+                    </div>
+                    <span class="v">₴450</span>
+                  </div>
                 </div>
                 <div class="toast">
                   <span class="ic">🥗</span>
@@ -169,28 +566,53 @@
             <div class="foot">
               <dl>
                 <dt>trigger</dt>
-                <dd>save витрати з категорією <code>restaurant</code> (MCC 5812/5813/5814)</dd>
+                <dd>
+                  save витрати з категорією <code>restaurant</code> (MCC
+                  5812/5813/5814)
+                </dd>
                 <dt>id</dt>
                 <dd><code>finyk-restaurant-to-meal</code></dd>
                 <dt>дія</dt>
-                <dd><code>openHubModuleWithAction("nutrition", "add_meal")</code></dd>
+                <dd>
+                  <code>openHubModuleWithAction("nutrition", "add_meal")</code>
+                </dd>
               </dl>
             </div>
           </div>
 
           <div class="card">
-            <div style="display:flex;gap:8px;align-items:center">
-              <span class="tag" style="background:var(--finyk-soft);color:var(--finyk-dark)">finyk → nutrition</span>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <span
+                class="tag"
+                style="background: var(--finyk-soft); color: var(--finyk-dark)"
+                >finyk → nutrition</span
+              >
             </div>
             <div class="title">Продукти → меню</div>
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●●</span></div>
-                <div class="scr-head"><span class="scr-mod finyk">Фінік</span><span class="scr-title">Витрати</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●●</span>
+                </div>
+                <div class="scr-head">
+                  <span class="scr-mod finyk">Фінік</span
+                  ><span class="scr-title">Витрати</span>
+                </div>
                 <div class="filled">
-                  <div class="tx"><div class="l"><span class="sw" style="background:var(--finyk)"></span><span>Кафе</span></div><span class="v">₴85</span></div>
-                  <div class="tx new"><div class="l"><span class="sw"></span><span>Продукти · щойно</span></div><span class="v">₴890</span></div>
+                  <div class="tx">
+                    <div class="l">
+                      <span class="sw" style="background: var(--finyk)"></span
+                      ><span>Кафе</span>
+                    </div>
+                    <span class="v">₴85</span>
+                  </div>
+                  <div class="tx new">
+                    <div class="l">
+                      <span class="sw"></span><span>Продукти · щойно</span>
+                    </div>
+                    <span class="v">₴890</span>
+                  </div>
                 </div>
                 <div class="toast">
                   <span class="ic">🥗</span>
@@ -212,26 +634,90 @@
           </div>
 
           <div class="card">
-            <div style="display:flex;gap:8px;align-items:center">
-              <span class="tag" style="background:var(--fizruk-soft);color:var(--fizruk-dark)">fizruk → nutrition</span>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <span
+                class="tag"
+                style="
+                  background: var(--fizruk-soft);
+                  color: var(--fizruk-dark);
+                "
+                >fizruk → nutrition</span
+              >
             </div>
             <div class="title">Тренування → білок</div>
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●●</span></div>
-                <div class="scr-head"><span class="scr-mod fizruk">Фізрук</span><span class="scr-title">Тренування</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●●</span>
+                </div>
+                <div class="scr-head">
+                  <span class="scr-mod fizruk">Фізрук</span
+                  ><span class="scr-title">Тренування</span>
+                </div>
                 <div class="filled">
-                  <div style="background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.18);border-radius:10px;padding:12px;text-align:center;margin-top:4px">
-                    <div style="font-family:var(--font-mono);font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:var(--fizruk);margin-bottom:4px">завершено</div>
-                    <div style="font-size:18px;font-weight:800;font-family:var(--font-mono);letter-spacing:-0.04em;color:var(--fizruk)">45 хв</div>
-                    <div style="font-size:8.5px;color:rgba(245,240,235,0.55);margin-top:2px">Push Day · ~420 ккал</div>
+                  <div
+                    style="
+                      background: rgba(34, 211, 238, 0.08);
+                      border: 1px solid rgba(34, 211, 238, 0.18);
+                      border-radius: 10px;
+                      padding: 12px;
+                      text-align: center;
+                      margin-top: 4px;
+                    "
+                  >
+                    <div
+                      style="
+                        font-family: var(--font-mono);
+                        font-size: 8px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.1em;
+                        color: var(--fizruk);
+                        margin-bottom: 4px;
+                      "
+                    >
+                      завершено
+                    </div>
+                    <div
+                      style="
+                        font-size: 18px;
+                        font-weight: 800;
+                        font-family: var(--font-mono);
+                        letter-spacing: -0.04em;
+                        color: var(--fizruk);
+                      "
+                    >
+                      45 хв
+                    </div>
+                    <div
+                      style="
+                        font-size: 8.5px;
+                        color: rgba(245, 240, 235, 0.55);
+                        margin-top: 2px;
+                      "
+                    >
+                      Push Day · ~420 ккал
+                    </div>
                   </div>
                 </div>
-                <div class="toast" style="bottom:60px">
-                  <span class="ic" style="background:rgba(34,211,238,0.18);color:var(--fizruk)">💪</span>
+                <div class="toast" style="bottom: 60px">
+                  <span
+                    class="ic"
+                    style="
+                      background: rgba(34, 211, 238, 0.18);
+                      color: var(--fizruk);
+                    "
+                    >💪</span
+                  >
                   <span class="msg">Додати білок після тренування?</span>
-                  <span class="cta" style="background:rgba(34,211,238,0.18);color:var(--fizruk)">Додати →</span>
+                  <span
+                    class="cta"
+                    style="
+                      background: rgba(34, 211, 238, 0.18);
+                      color: var(--fizruk);
+                    "
+                    >Додати →</span
+                  >
                 </div>
               </div>
             </div>
@@ -254,24 +740,77 @@
         <div class="section-head">
           <span class="sn">МЕХАНІКА</span>
           <h2>14-денне вікно втоми — за що мовчимо</h2>
-          <span class="event">константи<strong> MAX_DISMISSALS=3 · WINDOW=14d · SNOOZE=12h</strong></span>
+          <span class="event"
+            >константи<strong>
+              MAX_DISMISSALS=3 · WINDOW=14d · SNOOZE=12h</strong
+            ></span
+          >
         </div>
         <p class="section-intro">
-          Лічильник dismiss-ів rolling, не reset. Тричі сказав «ні» за 14
-          днів — мовчимо 2 тижні. Прийняв — лічильник скидається, snooze
-          12 годин (захист від петлі «додав витрату → відкрив meal →
-          повернувся → додав ще витрату»).
+          Лічильник dismiss-ів rolling, не reset. Тричі сказав «ні» за 14 днів —
+          мовчимо 2 тижні. Прийняв — лічильник скидається, snooze 12 годин
+          (захист від петлі «додав витрату → відкрив meal → повернувся → додав
+          ще витрату»).
         </p>
 
         <div class="timeline">
           <h3>Приклад · 18 днів життя одного prompt-у</h3>
-          <div class="row"><span class="when">день 1 · 14:30</span><span class="what">Користувач зберіг витрату в ресторані → <b>toast показано</b> → закрив (auto-timeout 6 сек). <code>dismissed[0] = T0</code></span></div>
-          <div class="row"><span class="when">день 4 · 19:12</span><span class="what">Ще одна витрата → <b>toast показано</b> → закрив (тап ×). <code>dismissed[1] = T0+3d</code></span></div>
-          <div class="row"><span class="when">день 9 · 13:45</span><span class="what">Знову ресторан → <b>toast показано</b> → закрив. <code>dismissed[2] = T0+8d</code> → <span class="suppress">3 dismiss-и за 14 днів → suppress!</span></span></div>
-          <div class="row"><span class="when">день 11 · 20:00</span><span class="what">Ще ресторан → <code>isCrossModulePromptSuppressed = true</code> → <b>toast не показано</b>. Користувач і не знає що ми хотіли запитати.</span></div>
-          <div class="row"><span class="when">день 23 · 14:30</span><span class="what">Ще ресторан → 14 днів від першого dismiss минуло → <code>dismissed[]</code> очищається → <b>toast показано знову</b>. Цього разу — <span class="accept">тап «Додати →»</span>. <code>lastAccepted = T0+22d</code>, snooze 12 год.</span></div>
-          <div class="row"><span class="when">день 23 · 20:00</span><span class="what">Ще ресторан того ж вечора → у snooze-вікні → <b>toast не показано</b>. Захист від петлі.</span></div>
-          <div class="row"><span class="when">день 24 · 08:00</span><span class="what">Сніданок у ресторані → snooze минув → <b>toast знову показано</b>. Лічильник з нуля — користувач явно сказав «ціню».</span></div>
+          <div class="row">
+            <span class="when">день 1 · 14:30</span
+            ><span class="what"
+              >Користувач зберіг витрату в ресторані → <b>toast показано</b> →
+              закрив (auto-timeout 6 сек). <code>dismissed[0] = T0</code></span
+            >
+          </div>
+          <div class="row">
+            <span class="when">день 4 · 19:12</span
+            ><span class="what"
+              >Ще одна витрата → <b>toast показано</b> → закрив (тап ×).
+              <code>dismissed[1] = T0+3d</code></span
+            >
+          </div>
+          <div class="row">
+            <span class="when">день 9 · 13:45</span
+            ><span class="what"
+              >Знову ресторан → <b>toast показано</b> → закрив.
+              <code>dismissed[2] = T0+8d</code> →
+              <span class="suppress"
+                >3 dismiss-и за 14 днів → suppress!</span
+              ></span
+            >
+          </div>
+          <div class="row">
+            <span class="when">день 11 · 20:00</span
+            ><span class="what"
+              >Ще ресторан → <code>isCrossModulePromptSuppressed = true</code> →
+              <b>toast не показано</b>. Користувач і не знає що ми хотіли
+              запитати.</span
+            >
+          </div>
+          <div class="row">
+            <span class="when">день 23 · 14:30</span
+            ><span class="what"
+              >Ще ресторан → 14 днів від першого dismiss минуло →
+              <code>dismissed[]</code> очищається → <b>toast показано знову</b>.
+              Цього разу — <span class="accept">тап «Додати →»</span>.
+              <code>lastAccepted = T0+22d</code>, snooze 12 год.</span
+            >
+          </div>
+          <div class="row">
+            <span class="when">день 23 · 20:00</span
+            ><span class="what"
+              >Ще ресторан того ж вечора → у snooze-вікні →
+              <b>toast не показано</b>. Захист від петлі.</span
+            >
+          </div>
+          <div class="row">
+            <span class="when">день 24 · 08:00</span
+            ><span class="what"
+              >Сніданок у ресторані → snooze минув →
+              <b>toast знову показано</b>. Лічильник з нуля — користувач явно
+              сказав «ціню».</span
+            >
+          </div>
         </div>
       </section>
 
@@ -283,26 +822,247 @@
           <span class="event">критерій<strong> 3 умови разом</strong></span>
         </div>
         <p class="section-intro">
-          Підказка з'являється тоді коли: (а) основна дія щойно завершилась,
-          (б) є логічний next-step в іншому модулі, (в) timing-вікно
-          короткий — хвилини, не години.
+          Підказка з'являється тоді коли: (а) основна дія щойно завершилась, (б)
+          є логічний next-step в іншому модулі, (в) timing-вікно короткий —
+          хвилини, не години.
         </p>
-        <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r-xl);overflow:hidden">
-          <table style="width:100%;border-collapse:collapse;font-size:13.5px">
+        <div
+          style="
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--r-xl);
+            overflow: hidden;
+          "
+        >
+          <table
+            style="width: 100%; border-collapse: collapse; font-size: 13.5px"
+          >
             <thead>
               <tr>
-                <th style="text-align:left;padding:14px 18px;background:var(--surface);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:var(--subtle);font-weight:600;border-bottom:1px solid var(--border)">ситуація</th>
-                <th style="text-align:center;padding:14px 18px;background:var(--surface);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:var(--subtle);font-weight:600;border-bottom:1px solid var(--border);width:90px">показ?</th>
-                <th style="text-align:left;padding:14px 18px;background:var(--surface);font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:var(--subtle);font-weight:600;border-bottom:1px solid var(--border)">чому</th>
+                <th
+                  style="
+                    text-align: left;
+                    padding: 14px 18px;
+                    background: var(--surface);
+                    font-family: var(--font-mono);
+                    font-size: 10px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.14em;
+                    color: var(--subtle);
+                    font-weight: 600;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  ситуація
+                </th>
+                <th
+                  style="
+                    text-align: center;
+                    padding: 14px 18px;
+                    background: var(--surface);
+                    font-family: var(--font-mono);
+                    font-size: 10px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.14em;
+                    color: var(--subtle);
+                    font-weight: 600;
+                    border-bottom: 1px solid var(--border);
+                    width: 90px;
+                  "
+                >
+                  показ?
+                </th>
+                <th
+                  style="
+                    text-align: left;
+                    padding: 14px 18px;
+                    background: var(--surface);
+                    font-family: var(--font-mono);
+                    font-size: 10px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.14em;
+                    color: var(--subtle);
+                    font-weight: 600;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  чому
+                </th>
               </tr>
             </thead>
             <tbody>
-              <tr><td style="padding:13px 18px;border-bottom:1px solid var(--border)">Витрата у ресторані (Фінік)</td><td style="text-align:center;padding:13px 18px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-weight:700;color:var(--success)">так</td><td style="padding:13px 18px;border-bottom:1px solid var(--border);color:var(--muted)">Сильний сигнал — їжа почалась</td></tr>
-              <tr><td style="padding:13px 18px;border-bottom:1px solid var(--border)">Витрата на продукти</td><td style="text-align:center;padding:13px 18px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-weight:700;color:var(--success)">так</td><td style="padding:13px 18px;border-bottom:1px solid var(--border);color:var(--muted)">Слабший але достатній сигнал</td></tr>
-              <tr><td style="padding:13px 18px;border-bottom:1px solid var(--border)">Завершення тренування</td><td style="text-align:center;padding:13px 18px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-weight:700;color:var(--success)">так</td><td style="padding:13px 18px;border-bottom:1px solid var(--border);color:var(--muted)">30-хвилинне вікно для білка</td></tr>
-              <tr><td style="padding:13px 18px;border-bottom:1px solid var(--border)">Витрата на бензин</td><td style="text-align:center;padding:13px 18px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-weight:700;color:var(--muted)">ні</td><td style="padding:13px 18px;border-bottom:1px solid var(--border);color:var(--muted)">Немає next-step в іншому модулі</td></tr>
-              <tr><td style="padding:13px 18px;border-bottom:1px solid var(--border)">Виконав звичку «вода»</td><td style="text-align:center;padding:13px 18px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-weight:700;color:var(--muted)">ні</td><td style="padding:13px 18px;border-bottom:1px solid var(--border);color:var(--muted)">Закінчена дія в одному модулі</td></tr>
-              <tr><td style="padding:13px 18px">Створив бюджет</td><td style="text-align:center;padding:13px 18px;font-family:var(--font-mono);font-weight:700;color:var(--muted)">ні</td><td style="padding:13px 18px;color:var(--muted)">Налаштування — не моментум</td></tr>
+              <tr>
+                <td
+                  style="
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  Витрата у ресторані (Фінік)
+                </td>
+                <td
+                  style="
+                    text-align: center;
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                    font-family: var(--font-mono);
+                    font-weight: 700;
+                    color: var(--success);
+                  "
+                >
+                  так
+                </td>
+                <td
+                  style="
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                    color: var(--muted);
+                  "
+                >
+                  Сильний сигнал — їжа почалась
+                </td>
+              </tr>
+              <tr>
+                <td
+                  style="
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  Витрата на продукти
+                </td>
+                <td
+                  style="
+                    text-align: center;
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                    font-family: var(--font-mono);
+                    font-weight: 700;
+                    color: var(--success);
+                  "
+                >
+                  так
+                </td>
+                <td
+                  style="
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                    color: var(--muted);
+                  "
+                >
+                  Слабший але достатній сигнал
+                </td>
+              </tr>
+              <tr>
+                <td
+                  style="
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  Завершення тренування
+                </td>
+                <td
+                  style="
+                    text-align: center;
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                    font-family: var(--font-mono);
+                    font-weight: 700;
+                    color: var(--success);
+                  "
+                >
+                  так
+                </td>
+                <td
+                  style="
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                    color: var(--muted);
+                  "
+                >
+                  30-хвилинне вікно для білка
+                </td>
+              </tr>
+              <tr>
+                <td
+                  style="
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  Витрата на бензин
+                </td>
+                <td
+                  style="
+                    text-align: center;
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                    font-family: var(--font-mono);
+                    font-weight: 700;
+                    color: var(--muted);
+                  "
+                >
+                  ні
+                </td>
+                <td
+                  style="
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                    color: var(--muted);
+                  "
+                >
+                  Немає next-step в іншому модулі
+                </td>
+              </tr>
+              <tr>
+                <td
+                  style="
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                  "
+                >
+                  Виконав звичку «вода»
+                </td>
+                <td
+                  style="
+                    text-align: center;
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                    font-family: var(--font-mono);
+                    font-weight: 700;
+                    color: var(--muted);
+                  "
+                >
+                  ні
+                </td>
+                <td
+                  style="
+                    padding: 13px 18px;
+                    border-bottom: 1px solid var(--border);
+                    color: var(--muted);
+                  "
+                >
+                  Закінчена дія в одному модулі
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 13px 18px">Створив бюджет</td>
+                <td
+                  style="
+                    text-align: center;
+                    padding: 13px 18px;
+                    font-family: var(--font-mono);
+                    font-weight: 700;
+                    color: var(--muted);
+                  "
+                >
+                  ні
+                </td>
+                <td style="padding: 13px 18px; color: var(--muted)">
+                  Налаштування — не моментум
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -310,7 +1070,9 @@
 
       <footer class="bot">
         <span>Sergeant · <strong>product/nudges</strong> · 2026-05-18</span>
-        <span>Джерело · <strong>docs/design/cross-module-prompts.md</strong></span>
+        <span
+          >Джерело · <strong>docs/design/cross-module-prompts.md</strong></span
+        >
         <span>Код · <strong>crossModulePrompt.ts (вже у проді)</strong></span>
       </footer>
     </div>

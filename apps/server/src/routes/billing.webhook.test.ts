@@ -115,9 +115,7 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
     const goodPayload = Buffer.from(
       JSON.stringify({ id: "evt_x", type: "ping" }),
     );
-    const tampered = Buffer.from(
-      JSON.stringify({ id: "evt_x", type: "evil" }),
-    );
+    const tampered = Buffer.from(JSON.stringify({ id: "evt_x", type: "evil" }));
     const nowSec = Math.floor(Date.now() / 1000);
 
     const res = await request(makeApp(pool))

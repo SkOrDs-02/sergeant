@@ -32,6 +32,7 @@ If migration-agent reported new `bigint` columns — coerce every one of them.
 ## Report back
 
 When done, report:
+
 - New or changed routes (HTTP method + path, e.g., `GET /api/billing/summary`)
 - Response shape (exact JSON structure) — api-client-agent needs this precisely
 - All `bigint` fields that are now coerced to `number`

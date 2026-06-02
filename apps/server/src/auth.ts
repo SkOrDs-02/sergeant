@@ -148,7 +148,9 @@ interface SocialProvidersConfig {
  * with Apple capability + Services ID + Return URL =
  * `${BETTER_AUTH_URL}/api/auth/callback/apple`.
  */
-async function getSocialProviders(): Promise<SocialProvidersConfig | undefined> {
+async function getSocialProviders(): Promise<
+  SocialProvidersConfig | undefined
+> {
   const config: SocialProvidersConfig = {};
 
   const googleClientId = process.env["GOOGLE_CLIENT_ID"];
@@ -209,8 +211,7 @@ async function getSocialProviders(): Promise<SocialProvidersConfig | undefined> 
   if (!process.env["APPLE_CLIENT_ID"]) appleMissing.push("APPLE_CLIENT_ID");
   if (!process.env["APPLE_TEAM_ID"]) appleMissing.push("APPLE_TEAM_ID");
   if (!process.env["APPLE_KEY_ID"]) appleMissing.push("APPLE_KEY_ID");
-  if (!process.env["APPLE_PRIVATE_KEY"])
-    appleMissing.push("APPLE_PRIVATE_KEY");
+  if (!process.env["APPLE_PRIVATE_KEY"]) appleMissing.push("APPLE_PRIVATE_KEY");
   logger.info({
     msg: "auth_social_providers_status",
     google_enabled: Boolean(config.google),

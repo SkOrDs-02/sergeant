@@ -29,9 +29,8 @@ function kyivISOWeekKey(): string {
   // good enough for dedup — does not need to be ISO-8601 perfect).
   const jan1 = new Date(Date.UTC(year, 0, 1));
   const dayOfYear =
-    Math.floor(
-      (Date.UTC(year, month - 1, day) - jan1.getTime()) / 86_400_000,
-    ) + 1;
+    Math.floor((Date.UTC(year, month - 1, day) - jan1.getTime()) / 86_400_000) +
+    1;
   const week = Math.ceil(dayOfYear / 7);
   return `${year}-W${String(week).padStart(2, "0")}`;
 }

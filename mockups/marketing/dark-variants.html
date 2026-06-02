@@ -6,26 +6,115 @@
     <title>Sergeant · Темні маркетинг-варіанти</title>
     <link rel="stylesheet" href="../_shared/tokens.css" />
     <style>
-      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html,body { font-family: var(--font-sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; line-height: 1.5; }
-      a { color: inherit; text-decoration: none; }
-      code,.mono { font-family: var(--font-mono); }
-      .serif { font-family: "Lora", serif; }
-      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .serif {
+        font-family: "Lora", serif;
+      }
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 32px 96px;
+      }
 
-      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
-      .crumb { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand); margin-bottom: 14px; display: flex; gap: 8px; align-items: center; }
-      .crumb a { color: var(--muted); }
-      .crumb .sep { color: var(--subtle); }
-      header.top h1 { font-size: clamp(36px, 5vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px; max-width: 920px; }
-      header.top h1 em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--muted); }
-      header.top .lede { font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6; }
+      header.top {
+        margin-bottom: 56px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
+      }
+      .crumb {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--brand);
+        margin-bottom: 14px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .crumb a {
+        color: var(--muted);
+      }
+      .crumb .sep {
+        color: var(--subtle);
+      }
+      header.top h1 {
+        font-size: clamp(36px, 5vw, 56px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        margin-bottom: 18px;
+        max-width: 920px;
+      }
+      header.top h1 em {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      header.top .lede {
+        font-size: 17px;
+        color: var(--muted);
+        max-width: 740px;
+        line-height: 1.6;
+      }
 
-      section { margin-bottom: 64px; }
-      .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-      .section-head .sn { font-family: var(--font-mono); font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--brand); padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm); }
-      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
-      .section-intro { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 740px; margin-bottom: 24px; }
+      section {
+        margin-bottom: 64px;
+      }
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .section-head .sn {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--brand);
+        padding: 3px 9px;
+        background: var(--brand-soft);
+        border-radius: var(--r-sm);
+      }
+      .section-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.022em;
+      }
+      .section-intro {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 740px;
+        margin-bottom: 24px;
+      }
 
       /* dark landing */
       .dark-landing {
@@ -40,106 +129,418 @@
       }
       .dark-landing::before {
         content: "";
-        position: absolute; inset: 0;
-        background: radial-gradient(circle at 20% 0%, rgba(16,185,129,0.18) 0%, transparent 50%);
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 20% 0%,
+          rgba(16, 185, 129, 0.18) 0%,
+          transparent 50%
+        );
         pointer-events: none;
       }
-      .dl-nav { display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; margin-bottom: 56px; }
-      .dl-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 15px; }
-      .dl-logo .mark { width: 30px; height: 30px; border-radius: 9px; background: var(--finyk-gradient); display: grid; place-items: center; color: white; font-weight: 800; font-size: 13px; }
-      .dl-nav-links { display: flex; gap: 24px; font-size: 13px; color: rgba(245,240,235,0.65); }
-      .dl-cta-pill { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; font-size: 13px; font-weight: 700; }
+      .dl-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+        margin-bottom: 56px;
+      }
+      .dl-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 15px;
+      }
+      .dl-logo .mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: var(--finyk-gradient);
+        display: grid;
+        place-items: center;
+        color: white;
+        font-weight: 800;
+        font-size: 13px;
+      }
+      .dl-nav-links {
+        display: flex;
+        gap: 24px;
+        font-size: 13px;
+        color: rgba(245, 240, 235, 0.65);
+      }
+      .dl-cta-pill {
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+      }
 
-      .dl-hero { position: relative; z-index: 1; }
-      .dl-kicker { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.18em; color: var(--finyk); margin-bottom: 16px; }
-      .dl-h1 { font-size: 56px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px; max-width: 720px; text-wrap: balance; }
-      .dl-h1 b { background: linear-gradient(120deg, var(--finyk) 0%, var(--fizruk) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-      .dl-sub { font-size: 17px; color: rgba(245,240,235,0.7); line-height: 1.55; max-width: 580px; margin-bottom: 28px; }
-      .dl-cta-row { display: flex; gap: 12px; margin-bottom: 32px; }
-      .dl-cta { padding: 13px 24px; border-radius: 12px; font-size: 14px; font-weight: 700; }
-      .dl-cta.primary { background: var(--finyk); color: #0a0a09; }
-      .dl-cta.ghost { background: transparent; border: 1px solid rgba(255,255,255,0.18); color: #f5f0eb; }
-      .dl-trust { display: flex; gap: 20px; font-family: var(--font-mono); font-size: 11px; color: rgba(245,240,235,0.45); }
-      .dl-trust span { display: inline-flex; align-items: center; gap: 5px; }
-      .dl-trust .ok { color: var(--finyk); }
+      .dl-hero {
+        position: relative;
+        z-index: 1;
+      }
+      .dl-kicker {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--finyk);
+        margin-bottom: 16px;
+      }
+      .dl-h1 {
+        font-size: 56px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        margin-bottom: 18px;
+        max-width: 720px;
+        text-wrap: balance;
+      }
+      .dl-h1 b {
+        background: linear-gradient(
+          120deg,
+          var(--finyk) 0%,
+          var(--fizruk) 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .dl-sub {
+        font-size: 17px;
+        color: rgba(245, 240, 235, 0.7);
+        line-height: 1.55;
+        max-width: 580px;
+        margin-bottom: 28px;
+      }
+      .dl-cta-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 32px;
+      }
+      .dl-cta {
+        padding: 13px 24px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .dl-cta.primary {
+        background: var(--finyk);
+        color: #0a0a09;
+      }
+      .dl-cta.ghost {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: #f5f0eb;
+      }
+      .dl-trust {
+        display: flex;
+        gap: 20px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: rgba(245, 240, 235, 0.45);
+      }
+      .dl-trust span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .dl-trust .ok {
+        color: var(--finyk);
+      }
 
-      .dl-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-top: 56px; position: relative; z-index: 1; }
-      .dl-tile { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 18px; }
-      .dl-tile .mod { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; margin-bottom: 8px; }
-      .dl-tile.finyk { background: linear-gradient(135deg, rgba(16,185,129,0.12) 0%, transparent 100%); border-color: rgba(16,185,129,0.22); }
-      .dl-tile.fizruk { background: linear-gradient(135deg, rgba(34,211,238,0.1) 0%, transparent 100%); border-color: rgba(34,211,238,0.22); }
-      .dl-tile.routine { background: linear-gradient(135deg, rgba(249,112,102,0.1) 0%, transparent 100%); border-color: rgba(249,112,102,0.22); }
-      .dl-tile.nutrition { background: linear-gradient(135deg, rgba(146,204,23,0.1) 0%, transparent 100%); border-color: rgba(146,204,23,0.22); }
-      .dl-tile.finyk .mod { color: var(--finyk); }
-      .dl-tile.fizruk .mod { color: var(--fizruk); }
-      .dl-tile.routine .mod { color: var(--routine); }
-      .dl-tile.nutrition .mod { color: var(--nutrition); }
-      .dl-tile h3 { font-size: 15px; font-weight: 800; letter-spacing: -0.005em; margin-bottom: 4px; }
-      .dl-tile p { font-size: 12.5px; color: rgba(245,240,235,0.6); line-height: 1.5; }
+      .dl-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        gap: 12px;
+        margin-top: 56px;
+        position: relative;
+        z-index: 1;
+      }
+      .dl-tile {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 18px;
+      }
+      .dl-tile .mod {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .dl-tile.finyk {
+        background: linear-gradient(
+          135deg,
+          rgba(16, 185, 129, 0.12) 0%,
+          transparent 100%
+        );
+        border-color: rgba(16, 185, 129, 0.22);
+      }
+      .dl-tile.fizruk {
+        background: linear-gradient(
+          135deg,
+          rgba(34, 211, 238, 0.1) 0%,
+          transparent 100%
+        );
+        border-color: rgba(34, 211, 238, 0.22);
+      }
+      .dl-tile.routine {
+        background: linear-gradient(
+          135deg,
+          rgba(249, 112, 102, 0.1) 0%,
+          transparent 100%
+        );
+        border-color: rgba(249, 112, 102, 0.22);
+      }
+      .dl-tile.nutrition {
+        background: linear-gradient(
+          135deg,
+          rgba(146, 204, 23, 0.1) 0%,
+          transparent 100%
+        );
+        border-color: rgba(146, 204, 23, 0.22);
+      }
+      .dl-tile.finyk .mod {
+        color: var(--finyk);
+      }
+      .dl-tile.fizruk .mod {
+        color: var(--fizruk);
+      }
+      .dl-tile.routine .mod {
+        color: var(--routine);
+      }
+      .dl-tile.nutrition .mod {
+        color: var(--nutrition);
+      }
+      .dl-tile h3 {
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: -0.005em;
+        margin-bottom: 4px;
+      }
+      .dl-tile p {
+        font-size: 12.5px;
+        color: rgba(245, 240, 235, 0.6);
+        line-height: 1.5;
+      }
 
       /* OG cards */
-      .og-row { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+      .og-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+      }
       .og-card {
         aspect-ratio: 1200 / 630;
-        background: #0a0a09; color: #f5f0eb;
-        border-radius: 12px; overflow: hidden;
+        background: #0a0a09;
+        color: #f5f0eb;
+        border-radius: 12px;
+        overflow: hidden;
         position: relative;
-        box-shadow: 0 12px 28px rgba(28,25,23,0.18);
+        box-shadow: 0 12px 28px rgba(28, 25, 23, 0.18);
       }
-      .og-card.light { background: #fdf9f3; color: #1c1917; }
-      .og-card .inner { padding: 32px 36px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
-      .og-card .top { display: flex; align-items: center; gap: 10px; }
-      .og-card .mark { width: 28px; height: 28px; border-radius: 8px; background: var(--finyk-gradient); display: grid; place-items: center; color: white; font-weight: 800; font-size: 13px; }
-      .og-card .brand { font-weight: 800; font-size: 14px; }
+      .og-card.light {
+        background: #fdf9f3;
+        color: #1c1917;
+      }
+      .og-card .inner {
+        padding: 32px 36px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .og-card .top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .og-card .mark {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--finyk-gradient);
+        display: grid;
+        place-items: center;
+        color: white;
+        font-weight: 800;
+        font-size: 13px;
+      }
+      .og-card .brand {
+        font-weight: 800;
+        font-size: 14px;
+      }
       .og-card.dark::before {
-        content: ""; position: absolute; inset: 0;
-        background: radial-gradient(circle at 100% 0%, rgba(16,185,129,0.18) 0%, transparent 50%);
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 100% 0%,
+          rgba(16, 185, 129, 0.18) 0%,
+          transparent 50%
+        );
         pointer-events: none;
       }
-      .og-card .mid { font-size: 36px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; max-width: 85%; }
-      .og-card .mid b { background: linear-gradient(120deg, var(--finyk) 0%, var(--fizruk) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-      .og-card.light .mid b { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
-      .og-card .bottom { display: flex; justify-content: space-between; align-items: flex-end; font-family: var(--font-mono); font-size: 12px; }
-      .og-card .bottom .url { color: rgba(245,240,235,0.5); }
-      .og-card.light .bottom .url { color: var(--muted); }
-      .og-card .modules-row { display: flex; gap: 6px; }
-      .og-card .m-pill { font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,0.08); }
-      .og-card.light .m-pill { background: rgba(0,0,0,0.06); color: var(--muted); }
+      .og-card .mid {
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1.05;
+        max-width: 85%;
+      }
+      .og-card .mid b {
+        background: linear-gradient(
+          120deg,
+          var(--finyk) 0%,
+          var(--fizruk) 100%
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .og-card.light .mid b {
+        background: var(--brand);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .og-card .bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      .og-card .bottom .url {
+        color: rgba(245, 240, 235, 0.5);
+      }
+      .og-card.light .bottom .url {
+        color: var(--muted);
+      }
+      .og-card .modules-row {
+        display: flex;
+        gap: 6px;
+      }
+      .og-card .m-pill {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .og-card.light .m-pill {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--muted);
+      }
 
-      .og-cap { font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; margin-top: 12px; text-align: center; }
+      .og-cap {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-top: 12px;
+        text-align: center;
+      }
 
-      .rules { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 22px 26px; margin-top: 32px; }
-      .rules h3 { font-size: 16px; font-weight: 800; margin-bottom: 12px; }
-      .rules ul { list-style: none; }
-      .rules li { padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 13.5px; color: var(--ink); }
-      .rules li:last-child { border-bottom: none; }
-      .rules li b { color: var(--text); font-weight: 700; }
-      .rules li code { font-family: var(--font-mono); font-size: 11.5px; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
+      .rules {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 22px 26px;
+        margin-top: 32px;
+      }
+      .rules h3 {
+        font-size: 16px;
+        font-weight: 800;
+        margin-bottom: 12px;
+      }
+      .rules ul {
+        list-style: none;
+      }
+      .rules li {
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--border);
+        font-size: 13.5px;
+        color: var(--ink);
+      }
+      .rules li:last-child {
+        border-bottom: none;
+      }
+      .rules li b {
+        color: var(--text);
+        font-weight: 700;
+      }
+      .rules li code {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        background: var(--surface);
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
 
-      footer.bot { margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-      footer.bot strong { color: var(--text); }
+      footer.bot {
+        margin-top: 64px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      footer.bot strong {
+        color: var(--text);
+      }
 
       @media (max-width: 980px) {
-        .wrap { padding: 40px 22px 80px; }
-        .dark-landing { padding: 32px 22px; }
-        .dl-h1 { font-size: 36px; }
-        .dl-grid { grid-template-columns: 1fr 1fr; }
-        .og-row { grid-template-columns: 1fr; }
-        .og-card .mid { font-size: 22px; }
+        .wrap {
+          padding: 40px 22px 80px;
+        }
+        .dark-landing {
+          padding: 32px 22px;
+        }
+        .dl-h1 {
+          font-size: 36px;
+        }
+        .dl-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .og-row {
+          grid-template-columns: 1fr;
+        }
+        .og-card .mid {
+          font-size: 22px;
+        }
       }
     </style>
   </head>
   <body>
     <div class="wrap">
       <header class="top">
-        <div class="crumb"><a href="../index.html">мокапи</a><span class="sep">/</span><a href="./">маркетинг</a><span class="sep">/</span><span>темні варіанти</span></div>
+        <div class="crumb">
+          <a href="../index.html">мокапи</a><span class="sep">/</span
+          ><a href="./">маркетинг</a><span class="sep">/</span
+          ><span>темні варіанти</span>
+        </div>
         <h1>Той самий бренд — <em>у темній шкірі</em></h1>
         <p class="lede">
-          Усі маркетинг-мокапи у кремі. Але preview-картки у Telegram і
-          темному режимі браузера підставляються у темному системному UI.
-          Тут — одна landing-секція + дві OG-картки (1200×630) у темній
-          шкірі. Усе те саме: токени з brandbook, але інверсія
-          світло/темно.
+          Усі маркетинг-мокапи у кремі. Але preview-картки у Telegram і темному
+          режимі браузера підставляються у темному системному UI. Тут — одна
+          landing-секція + дві OG-картки (1200×630) у темній шкірі. Усе те саме:
+          токени з brandbook, але інверсія світло/темно.
         </p>
       </header>
 
@@ -149,10 +550,10 @@
           <h2>Hero + 4-модульне bento · темна версія</h2>
         </div>
         <p class="section-intro">
-          Та сама структура що у <code>landing/directions/v2-bento-modular.html</code>,
-          але кольорова інверсія. Mesh-gradient з emerald + cyan;
-          приглушений ink-strong background; module-tiles з кольоровими
-          градієнтами замість заливок.
+          Та сама структура що у
+          <code>landing/directions/v2-bento-modular.html</code>, але кольорова
+          інверсія. Mesh-gradient з emerald + cyan; приглушений ink-strong
+          background; module-tiles з кольоровими градієнтами замість заливок.
         </p>
 
         <div class="dark-landing">
@@ -168,7 +569,11 @@
           <div class="dl-hero">
             <div class="dl-kicker">Local-first · AI · Українською</div>
             <h2 class="dl-h1">Менше хаосу. <b>Більше зробленого.</b></h2>
-            <p class="dl-sub">Один хаб для фінансів, тренувань, звичок і харчування. AI бачить весь твій день і пропонує наступний крок. Дані живуть на твоєму пристрої.</p>
+            <p class="dl-sub">
+              Один хаб для фінансів, тренувань, звичок і харчування. AI бачить
+              весь твій день і пропонує наступний крок. Дані живуть на твоєму
+              пристрої.
+            </p>
             <div class="dl-cta-row">
               <span class="dl-cta primary">Хочу в бету</span>
               <span class="dl-cta ghost">Подивитись приклад</span>
@@ -180,10 +585,26 @@
             </div>
           </div>
           <div class="dl-grid">
-            <div class="dl-tile finyk"><div class="mod">Фінік</div><h3>Гроші</h3><p>Mono sync, бюджети, борги. AI-категоризація.</p></div>
-            <div class="dl-tile fizruk"><div class="mod">Фізрук</div><h3>Тіло</h3><p>Тренування, біометрія, плани. PR-трекінг.</p></div>
-            <div class="dl-tile routine"><div class="mod">Рутина</div><h3>Звички</h3><p>Стріки, календар, ритуали ранку й вечора.</p></div>
-            <div class="dl-tile nutrition"><div class="mod">Харчув.</div><h3>Їжа</h3><p>Meal-логи, штрих-сканер, AI з фото.</p></div>
+            <div class="dl-tile finyk">
+              <div class="mod">Фінік</div>
+              <h3>Гроші</h3>
+              <p>Mono sync, бюджети, борги. AI-категоризація.</p>
+            </div>
+            <div class="dl-tile fizruk">
+              <div class="mod">Фізрук</div>
+              <h3>Тіло</h3>
+              <p>Тренування, біометрія, плани. PR-трекінг.</p>
+            </div>
+            <div class="dl-tile routine">
+              <div class="mod">Рутина</div>
+              <h3>Звички</h3>
+              <p>Стріки, календар, ритуали ранку й вечора.</p>
+            </div>
+            <div class="dl-tile nutrition">
+              <div class="mod">Харчув.</div>
+              <h3>Їжа</h3>
+              <p>Meal-логи, штрих-сканер, AI з фото.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -210,10 +631,18 @@
                 <div class="bottom">
                   <div class="url">sergeant.com.ua</div>
                   <div class="modules-row">
-                    <span class="m-pill" style="color:var(--finyk)">фінік</span>
-                    <span class="m-pill" style="color:var(--fizruk)">фізрук</span>
-                    <span class="m-pill" style="color:var(--routine)">рутина</span>
-                    <span class="m-pill" style="color:var(--nutrition)">харчув.</span>
+                    <span class="m-pill" style="color: var(--finyk)"
+                      >фінік</span
+                    >
+                    <span class="m-pill" style="color: var(--fizruk)"
+                      >фізрук</span
+                    >
+                    <span class="m-pill" style="color: var(--routine)"
+                      >рутина</span
+                    >
+                    <span class="m-pill" style="color: var(--nutrition)"
+                      >харчув.</span
+                    >
                   </div>
                 </div>
               </div>
@@ -231,33 +660,70 @@
                 <div class="bottom">
                   <div class="url">sergeant.com.ua</div>
                   <div class="modules-row">
-                    <span class="m-pill" style="color:var(--finyk)">фінік</span>
-                    <span class="m-pill" style="color:var(--fizruk-dark)">фізрук</span>
-                    <span class="m-pill" style="color:var(--routine-dark)">рутина</span>
-                    <span class="m-pill" style="color:var(--nutrition-dark)">харчув.</span>
+                    <span class="m-pill" style="color: var(--finyk)"
+                      >фінік</span
+                    >
+                    <span class="m-pill" style="color: var(--fizruk-dark)"
+                      >фізрук</span
+                    >
+                    <span class="m-pill" style="color: var(--routine-dark)"
+                      >рутина</span
+                    >
+                    <span class="m-pill" style="color: var(--nutrition-dark)"
+                      >харчув.</span
+                    >
                   </div>
                 </div>
               </div>
             </div>
-            <div class="og-cap">Світла · Facebook · LinkedIn · fallback · 1200×630</div>
+            <div class="og-cap">
+              Світла · Facebook · LinkedIn · fallback · 1200×630
+            </div>
           </div>
         </div>
 
         <div class="rules">
           <h3>Правила темного варіанту</h3>
           <ul>
-            <li><b>Інверсія тільки фон + текст.</b> Кольори модулів (<code>--finyk</code>, <code>--fizruk</code> тощо) однакові у світлі і темі — це бренд-сигнал.</li>
-            <li><b>Логотип на темному.</b> Той самий <code>--finyk-gradient</code> — на чорному виглядає яскравіше, працює без модифікацій.</li>
-            <li><b>Mesh-gradient.</b> Радіальний з лівого верхнього кута: <code>emerald 18% → transparent 50%</code>. Тонше ніж у світлому — інакше шум.</li>
-            <li><b>OG meta.</b> Серверний рендер з системним preference: <code>&lt;link rel="preload" as="image" media="(prefers-color-scheme: dark)" …&gt;</code>.</li>
-            <li><b>NOT темний застосунок.</b> Це маркетинг-превʼю. Сам продукт уже у темному режимі (handoff-package). Не плутати.</li>
+            <li>
+              <b>Інверсія тільки фон + текст.</b> Кольори модулів
+              (<code>--finyk</code>, <code>--fizruk</code> тощо) однакові у
+              світлі і темі — це бренд-сигнал.
+            </li>
+            <li>
+              <b>Логотип на темному.</b> Той самий
+              <code>--finyk-gradient</code> — на чорному виглядає яскравіше,
+              працює без модифікацій.
+            </li>
+            <li>
+              <b>Mesh-gradient.</b> Радіальний з лівого верхнього кута:
+              <code>emerald 18% → transparent 50%</code>. Тонше ніж у світлому —
+              інакше шум.
+            </li>
+            <li>
+              <b>OG meta.</b> Серверний рендер з системним preference:
+              <code
+                >&lt;link rel="preload" as="image" media="(prefers-color-scheme:
+                dark)" …&gt;</code
+              >.
+            </li>
+            <li>
+              <b>NOT темний застосунок.</b> Це маркетинг-превʼю. Сам продукт уже
+              у темному режимі (handoff-package). Не плутати.
+            </li>
           </ul>
         </div>
       </section>
 
       <footer class="bot">
-        <span>Sergeant · <strong>marketing/dark-variants</strong> · 2026-05-18</span>
-        <span>Реплікація · <strong>1 темний лендинг + 2 OG · post-launch</strong></span>
+        <span
+          >Sergeant · <strong>marketing/dark-variants</strong> ·
+          2026-05-18</span
+        >
+        <span
+          >Реплікація ·
+          <strong>1 темний лендинг + 2 OG · post-launch</strong></span
+        >
       </footer>
     </div>
   </body>

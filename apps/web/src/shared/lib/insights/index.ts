@@ -5,19 +5,11 @@
  * public surface focused. Introduced у PR-7a (2026-05 v2 redesign).
  */
 
-export type {
-  Insight,
-  InsightAction,
-  InsightId,
-  InsightShowOn,
-} from "./types";
+export type { Insight, InsightAction, InsightId, InsightShowOn } from "./types";
 
 export {
   useInsightDismissal,
   type UseInsightDismissalResult,
 } from "./useInsightDismissal";
 
-export {
-  useAllInsights,
-  type UseAllInsightsOptions,
-} from "./useAllInsights";
+export { useAllInsights, type UseAllInsightsOptions } from "./useAllInsights";

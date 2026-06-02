@@ -7,19 +7,38 @@
     <link rel="stylesheet" href="../../_shared/tokens.css" />
     <style>
       /* ─── reset ─── */
-      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html,body {
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
         font-family: var(--font-sans);
         background: var(--bg);
         color: var(--text);
         -webkit-font-smoothing: antialiased;
         line-height: 1.5;
       }
-      a { color: inherit; text-decoration: none; }
-      code,.mono { font-family: var(--font-mono); }
-      .serif { font-family: var(--font-serif); }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .serif {
+        font-family: var(--font-serif);
+      }
 
-      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 32px 96px;
+      }
 
       /* ─── header ─── */
       header.top {
@@ -39,8 +58,12 @@
         gap: 8px;
         align-items: center;
       }
-      .crumb a { color: var(--muted); }
-      .crumb .sep { color: var(--subtle); }
+      .crumb a {
+        color: var(--muted);
+      }
+      .crumb .sep {
+        color: var(--subtle);
+      }
       header.top h1 {
         font-size: clamp(36px, 5vw, 56px);
         font-weight: 800;
@@ -64,12 +87,20 @@
       }
       .meta-row {
         margin-top: 24px;
-        display: flex; gap: 28px; flex-wrap: wrap;
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
         font-family: var(--font-mono);
-        font-size: 11px; color: var(--subtle);
-        text-transform: uppercase; letter-spacing: 0.12em;
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
       }
-      .meta-row span strong { color: var(--text); font-weight: 600; margin-left: 6px; }
+      .meta-row span strong {
+        color: var(--text);
+        font-weight: 600;
+        margin-left: 6px;
+      }
 
       /* ─── legend ─── */
       .legend {
@@ -210,10 +241,18 @@
         border-radius: var(--r-xs);
         flex-shrink: 0;
       }
-      .module-dot.finyk { background: var(--finyk); }
-      .module-dot.fizruk { background: var(--fizruk); }
-      .module-dot.routine { background: var(--routine); }
-      .module-dot.nutrition { background: var(--nutrition); }
+      .module-dot.finyk {
+        background: var(--finyk);
+      }
+      .module-dot.fizruk {
+        background: var(--fizruk);
+      }
+      .module-dot.routine {
+        background: var(--routine);
+      }
+      .module-dot.nutrition {
+        background: var(--nutrition);
+      }
       .artboard-name {
         font-size: 13px;
         font-weight: 800;
@@ -239,7 +278,7 @@
         background: #1a1614;
         border: 6px solid #0a0a09;
         border-radius: 32px;
-        box-shadow: 0 12px 32px rgba(28,25,23,0.18);
+        box-shadow: 0 12px 32px rgba(28, 25, 23, 0.18);
         position: relative;
         overflow: hidden;
         color: #f5f0eb;
@@ -269,12 +308,14 @@
         align-items: center;
         font-size: 8px;
         font-weight: 700;
-        color: rgba(245,240,235,0.7);
+        color: rgba(245, 240, 235, 0.7);
         font-family: var(--font-mono);
         margin-bottom: 8px;
         padding: 0 4px;
       }
-      .phone-statusbar svg { display: inline-block; }
+      .phone-statusbar svg {
+        display: inline-block;
+      }
       .phone-content {
         flex: 1;
         display: flex;
@@ -284,11 +325,12 @@
       .phone-bottomnav {
         position: absolute;
         bottom: 0;
-        left: 0; right: 0;
+        left: 0;
+        right: 0;
         height: 48px;
-        background: rgba(10,10,9,0.7);
+        background: rgba(10, 10, 9, 0.7);
         backdrop-filter: blur(12px);
-        border-top: 1px solid rgba(255,255,255,0.06);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
         display: flex;
         justify-content: space-around;
         align-items: center;
@@ -297,17 +339,25 @@
         width: 4px;
         height: 4px;
         border-radius: 50%;
-        background: rgba(255,255,255,0.18);
+        background: rgba(255, 255, 255, 0.18);
       }
       .phone-bottomnav .nav-dot.active {
         width: 18px;
         height: 4px;
         border-radius: 2px;
       }
-      .phone-bottomnav.finyk .nav-dot.active { background: var(--finyk); }
-      .phone-bottomnav.fizruk .nav-dot.active { background: var(--fizruk); }
-      .phone-bottomnav.routine .nav-dot.active { background: var(--routine); }
-      .phone-bottomnav.nutrition .nav-dot.active { background: var(--nutrition); }
+      .phone-bottomnav.finyk .nav-dot.active {
+        background: var(--finyk);
+      }
+      .phone-bottomnav.fizruk .nav-dot.active {
+        background: var(--fizruk);
+      }
+      .phone-bottomnav.routine .nav-dot.active {
+        background: var(--routine);
+      }
+      .phone-bottomnav.nutrition .nav-dot.active {
+        background: var(--nutrition);
+      }
 
       /* ─── Tier 1 ModuleEmptyState content (inside phone) ─── */
       .module-header {
@@ -318,10 +368,18 @@
         letter-spacing: 0.14em;
         padding: 4px 4px 12px;
       }
-      .module-header.finyk { color: var(--finyk); }
-      .module-header.fizruk { color: var(--fizruk); }
-      .module-header.routine { color: var(--routine); }
-      .module-header.nutrition { color: var(--nutrition); }
+      .module-header.finyk {
+        color: var(--finyk);
+      }
+      .module-header.fizruk {
+        color: var(--fizruk);
+      }
+      .module-header.routine {
+        color: var(--routine);
+      }
+      .module-header.nutrition {
+        color: var(--nutrition);
+      }
 
       .empty-hero {
         flex: 1;
@@ -351,23 +409,30 @@
         animation: breathe 2.6s ease-in-out infinite;
       }
       @keyframes breathe {
-        0%,100% { transform: scale(1); opacity: 0.18; }
-        50% { transform: scale(1.08); opacity: 0.08; }
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.18;
+        }
+        50% {
+          transform: scale(1.08);
+          opacity: 0.08;
+        }
       }
       .empty-icon-bubble.finyk {
-        background: rgba(16,185,129,0.14);
+        background: rgba(16, 185, 129, 0.14);
         color: var(--finyk);
       }
       .empty-icon-bubble.fizruk {
-        background: rgba(34,211,238,0.14);
+        background: rgba(34, 211, 238, 0.14);
         color: var(--fizruk);
       }
       .empty-icon-bubble.routine {
-        background: rgba(249,112,102,0.14);
+        background: rgba(249, 112, 102, 0.14);
         color: var(--routine);
       }
       .empty-icon-bubble.nutrition {
-        background: rgba(146,204,23,0.14);
+        background: rgba(146, 204, 23, 0.14);
         color: var(--nutrition);
       }
       .empty-icon-bubble svg {
@@ -388,7 +453,7 @@
       }
       .empty-desc {
         font-size: 10px;
-        color: rgba(245,240,235,0.65);
+        color: rgba(245, 240, 235, 0.65);
         line-height: 1.45;
         max-width: 88%;
       }
@@ -396,17 +461,17 @@
         margin-top: 8px;
         width: 90%;
         padding: 7px 9px;
-        background: rgba(255,255,255,0.04);
-        border: 1px dashed rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px dashed rgba(255, 255, 255, 0.1);
         border-radius: var(--r-md);
         font-family: var(--font-mono);
         font-size: 8.5px;
-        color: rgba(245,240,235,0.55);
+        color: rgba(245, 240, 235, 0.55);
         text-align: left;
         line-height: 1.5;
       }
       .empty-example b {
-        color: rgba(245,240,235,0.85);
+        color: rgba(245, 240, 235, 0.85);
         font-weight: 600;
       }
       .empty-cta {
@@ -417,14 +482,22 @@
         border-radius: var(--r-full);
         color: #0a0a09;
       }
-      .empty-cta.finyk { background: var(--finyk); }
-      .empty-cta.fizruk { background: var(--fizruk); }
-      .empty-cta.routine { background: var(--routine); }
-      .empty-cta.nutrition { background: var(--nutrition); }
+      .empty-cta.finyk {
+        background: var(--finyk);
+      }
+      .empty-cta.fizruk {
+        background: var(--fizruk);
+      }
+      .empty-cta.routine {
+        background: var(--routine);
+      }
+      .empty-cta.nutrition {
+        background: var(--nutrition);
+      }
       .empty-hint {
         margin-top: 4px;
         font-size: 8.5px;
-        color: rgba(245,240,235,0.4);
+        color: rgba(245, 240, 235, 0.4);
         font-family: var(--font-mono);
         line-height: 1.4;
       }
@@ -443,7 +516,10 @@
         color: var(--text);
         font-weight: 600;
       }
-      .artboard-foot dl { display: grid; gap: 4px; }
+      .artboard-foot dl {
+        display: grid;
+        gap: 4px;
+      }
       .artboard-foot dt {
         font-weight: 700;
         text-transform: uppercase;
@@ -498,12 +574,12 @@
       }
       .phone-wide-head .meta {
         font-size: 11px;
-        color: rgba(245,240,235,0.5);
+        color: rgba(245, 240, 235, 0.5);
         font-family: var(--font-mono);
       }
       .filled-card {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: var(--r-lg);
         padding: 12px;
         margin-bottom: 10px;
@@ -513,15 +589,24 @@
         justify-content: space-between;
         align-items: center;
         padding: 6px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.04);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       }
-      .filled-card .row:last-child { border-bottom: none; }
-      .filled-card .row .l { display: flex; align-items: center; gap: 8px; }
+      .filled-card .row:last-child {
+        border-bottom: none;
+      }
+      .filled-card .row .l {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
       .filled-card .row .swatch {
-        width: 18px; height: 18px;
+        width: 18px;
+        height: 18px;
         border-radius: 6px;
       }
-      .filled-card .row .label { font-size: 12px; }
+      .filled-card .row .label {
+        font-size: 12px;
+      }
       .filled-card .row .val {
         font-family: var(--font-mono);
         font-size: 12px;
@@ -532,13 +617,15 @@
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        color: rgba(245,240,235,0.5);
+        color: rgba(245, 240, 235, 0.5);
         margin-bottom: 10px;
-        display: flex; justify-content: space-between; align-items: center;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
       .compact-empty {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.06);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: var(--r-lg);
         padding: 18px 14px;
         text-align: center;
@@ -548,13 +635,27 @@
         gap: 8px;
       }
       .compact-empty .icon-sm {
-        width: 32px; height: 32px;
+        width: 32px;
+        height: 32px;
         border-radius: var(--r-md);
-        display: grid; place-items: center;
+        display: grid;
+        place-items: center;
       }
-      .compact-empty.fizruk .icon-sm { background: rgba(34,211,238,0.14); color: var(--fizruk); }
-      .compact-empty.routine .icon-sm { background: rgba(249,112,102,0.14); color: var(--routine); }
-      .compact-empty .icon-sm svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; }
+      .compact-empty.fizruk .icon-sm {
+        background: rgba(34, 211, 238, 0.14);
+        color: var(--fizruk);
+      }
+      .compact-empty.routine .icon-sm {
+        background: rgba(249, 112, 102, 0.14);
+        color: var(--routine);
+      }
+      .compact-empty .icon-sm svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+      }
       .compact-empty .t {
         font-size: 12px;
         font-weight: 800;
@@ -562,7 +663,7 @@
       }
       .compact-empty .d {
         font-size: 10px;
-        color: rgba(245,240,235,0.5);
+        color: rgba(245, 240, 235, 0.5);
       }
       .anno {
         margin-top: 8px;
@@ -575,7 +676,10 @@
         color: var(--brand);
         border-radius: 0 var(--r-sm) var(--r-sm) 0;
       }
-      .anno b { color: var(--brand); font-weight: 700; }
+      .anno b {
+        color: var(--brand);
+        font-weight: 700;
+      }
 
       /* ─── Tier 3 inline-text snippets ─── */
       .tier3-row {
@@ -606,34 +710,38 @@
       .snippet-stage h5 {
         font-size: 11px;
         font-weight: 800;
-        color: rgba(245,240,235,0.55);
+        color: rgba(245, 240, 235, 0.55);
         text-transform: uppercase;
         letter-spacing: 0.1em;
         margin-bottom: 10px;
       }
       .snippet-stage .empty-line {
         font-size: 11px;
-        color: rgba(245,240,235,0.5);
+        color: rgba(245, 240, 235, 0.5);
       }
-      .snippet-stage .empty-line.centered { text-align: center; }
+      .snippet-stage .empty-line.centered {
+        text-align: center;
+      }
       .snippet-stage .legend-items {
         display: flex;
         gap: 8px;
         align-items: center;
         font-size: 9px;
         font-family: var(--font-mono);
-        color: rgba(245,240,235,0.4);
+        color: rgba(245, 240, 235, 0.4);
         flex-wrap: wrap;
       }
       .snippet-stage .legend-items .li-dot {
-        width: 6px; height: 6px; border-radius: 50%;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
       }
       .snippet-stage .stat-large {
         font-size: 24px;
         font-weight: 800;
         font-family: var(--font-mono);
         letter-spacing: -0.04em;
-        color: rgba(245,240,235,0.25);
+        color: rgba(245, 240, 235, 0.25);
       }
       .snippet-code {
         font-family: var(--font-mono);
@@ -644,8 +752,12 @@
         padding: 8px 10px;
         line-height: 1.55;
       }
-      .snippet-code .k { color: var(--brand); }
-      .snippet-code .s { color: var(--routine-dark); }
+      .snippet-code .k {
+        color: var(--brand);
+      }
+      .snippet-code .s {
+        color: var(--routine-dark);
+      }
 
       /* ─── error patterns ─── */
       .error-row {
@@ -659,9 +771,9 @@
       .error-banner {
         margin: 0 -14px 12px;
         padding: 8px 12px;
-        background: rgba(239,68,68,0.18);
-        border-top: 1px solid rgba(239,68,68,0.3);
-        border-bottom: 1px solid rgba(239,68,68,0.3);
+        background: rgba(239, 68, 68, 0.18);
+        border-top: 1px solid rgba(239, 68, 68, 0.3);
+        border-bottom: 1px solid rgba(239, 68, 68, 0.3);
         display: flex;
         align-items: center;
         gap: 8px;
@@ -669,17 +781,19 @@
         color: #fca5a5;
       }
       .error-banner.warn {
-        background: rgba(245,158,11,0.18);
-        border-color: rgba(245,158,11,0.3);
+        background: rgba(245, 158, 11, 0.18);
+        border-color: rgba(245, 158, 11, 0.3);
         color: #fcd34d;
       }
       .error-banner.offline {
-        background: rgba(255,255,255,0.06);
-        border-color: rgba(255,255,255,0.12);
-        color: rgba(245,240,235,0.7);
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.12);
+        color: rgba(245, 240, 235, 0.7);
       }
       .error-banner .dot {
-        width: 6px; height: 6px; border-radius: 50%;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
         background: currentColor;
         flex-shrink: 0;
       }
@@ -703,29 +817,46 @@
         padding: 0 12px;
       }
       .error-fullscreen .x-icon {
-        width: 48px; height: 48px;
+        width: 48px;
+        height: 48px;
         border-radius: var(--r-full);
-        background: rgba(245,158,11,0.16);
+        background: rgba(245, 158, 11, 0.16);
         color: #fbbf24;
-        display: grid; place-items: center;
+        display: grid;
+        place-items: center;
       }
-      .error-fullscreen .x-icon svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; fill: none; }
-      .error-fullscreen .et { font-size: 13px; font-weight: 800; color: #f5f0eb; }
-      .error-fullscreen .ed { font-size: 10px; color: rgba(245,240,235,0.6); line-height: 1.5; max-width: 90%; }
+      .error-fullscreen .x-icon svg {
+        width: 22px;
+        height: 22px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+      }
+      .error-fullscreen .et {
+        font-size: 13px;
+        font-weight: 800;
+        color: #f5f0eb;
+      }
+      .error-fullscreen .ed {
+        font-size: 10px;
+        color: rgba(245, 240, 235, 0.6);
+        line-height: 1.5;
+        max-width: 90%;
+      }
       .error-fullscreen .ec {
         margin-top: 6px;
         font-family: var(--font-mono);
         font-size: 10px;
         font-weight: 700;
         padding: 5px 12px;
-        border: 1px solid rgba(255,255,255,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: var(--r-full);
         color: #f5f0eb;
       }
       .error-fullscreen .ec-link {
         margin-top: 4px;
         font-size: 9px;
-        color: rgba(245,240,235,0.4);
+        color: rgba(245, 240, 235, 0.4);
         text-decoration: underline;
       }
       .filled-context {
@@ -735,17 +866,27 @@
         gap: 6px;
       }
       .filled-context .row {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.05);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 6px;
         padding: 6px 8px;
         display: flex;
         justify-content: space-between;
         font-size: 9px;
       }
-      .filled-context .row .l { display: flex; gap: 6px; align-items: center; }
-      .filled-context .row .swatch { width: 12px; height: 12px; border-radius: 3px; }
-      .filled-context .row .val { font-family: var(--font-mono); }
+      .filled-context .row .l {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .filled-context .row .swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+      }
+      .filled-context .row .val {
+        font-family: var(--font-mono);
+      }
 
       /* ─── zero-today phones (smaller, 4-up) ─── */
       .zero-row {
@@ -770,16 +911,24 @@
         line-height: 1;
       }
       .zero-stat .of {
-        color: rgba(245,240,235,0.3);
+        color: rgba(245, 240, 235, 0.3);
         font-weight: 500;
       }
-      .zero-stat.finyk { color: var(--finyk); }
-      .zero-stat.fizruk { color: var(--fizruk); }
-      .zero-stat.routine { color: var(--routine); }
-      .zero-stat.nutrition { color: var(--nutrition); }
+      .zero-stat.finyk {
+        color: var(--finyk);
+      }
+      .zero-stat.fizruk {
+        color: var(--fizruk);
+      }
+      .zero-stat.routine {
+        color: var(--routine);
+      }
+      .zero-stat.nutrition {
+        color: var(--nutrition);
+      }
       .zero-label {
         font-size: 10px;
-        color: rgba(245,240,235,0.65);
+        color: rgba(245, 240, 235, 0.65);
         line-height: 1.45;
         max-width: 90%;
         margin: 0 auto;
@@ -787,9 +936,9 @@
       .zero-hist {
         margin-top: 8px;
         padding-top: 10px;
-        border-top: 1px dashed rgba(255,255,255,0.1);
+        border-top: 1px dashed rgba(255, 255, 255, 0.1);
         font-size: 9px;
-        color: rgba(245,240,235,0.45);
+        color: rgba(245, 240, 235, 0.45);
         font-family: var(--font-mono);
       }
       .zero-soft-cta {
@@ -798,9 +947,9 @@
         font-weight: 600;
         padding: 5px 10px;
         border-radius: var(--r-full);
-        background: rgba(255,255,255,0.06);
-        color: rgba(245,240,235,0.85);
-        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(245, 240, 235, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.12);
         display: inline-flex;
         align-self: center;
       }
@@ -839,10 +988,19 @@
         height: 1px;
         background: #fbbf24;
       }
-      .anatomy-callout.r::before { order: 2; }
-      .anatomy-callout.r { right: -120px; }
-      .anatomy-callout.l { left: -100px; flex-direction: row-reverse; }
-      .anatomy-callout.l::before { content: ""; }
+      .anatomy-callout.r::before {
+        order: 2;
+      }
+      .anatomy-callout.r {
+        right: -120px;
+      }
+      .anatomy-callout.l {
+        left: -100px;
+        flex-direction: row-reverse;
+      }
+      .anatomy-callout.l::before {
+        content: "";
+      }
       .anatomy-callout .pos {
         background: #fbbf24;
         color: #1a1614;
@@ -858,21 +1016,27 @@
         margin-bottom: 6px;
       }
       .anatomy-spec p.intro {
-        color: rgba(245,240,235,0.6);
+        color: rgba(245, 240, 235, 0.6);
         font-size: 14px;
         line-height: 1.6;
         margin-bottom: 24px;
       }
-      .slot-list { display: flex; flex-direction: column; gap: 14px; }
+      .slot-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
       .slot {
         display: grid;
         grid-template-columns: 28px 90px 1fr;
         gap: 14px;
         align-items: baseline;
         padding-bottom: 14px;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       }
-      .slot:last-child { border-bottom: none; }
+      .slot:last-child {
+        border-bottom: none;
+      }
       .slot .pos {
         font-family: var(--font-mono);
         font-size: 11px;
@@ -892,14 +1056,14 @@
       .slot .desc {
         font-size: 13px;
         line-height: 1.5;
-        color: rgba(245,240,235,0.8);
+        color: rgba(245, 240, 235, 0.8);
       }
       .slot .desc small {
         display: block;
         margin-top: 4px;
         font-family: var(--font-mono);
         font-size: 11px;
-        color: rgba(245,240,235,0.45);
+        color: rgba(245, 240, 235, 0.45);
       }
 
       /* ─── do-dont ─── */
@@ -928,8 +1092,14 @@
         padding: 3px 8px;
         border-radius: var(--r-sm);
       }
-      .dd-card.do .verdict { background: var(--success-soft); color: var(--success); }
-      .dd-card.dont .verdict { background: var(--danger-soft); color: var(--danger); }
+      .dd-card.do .verdict {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+      .dd-card.dont .verdict {
+        background: var(--danger-soft);
+        color: var(--danger);
+      }
       .dd-card h4 {
         font-size: 15px;
         font-weight: 800;
@@ -951,10 +1121,21 @@
         color: var(--text);
         overflow-x: auto;
       }
-      .dd-card .code-block .k { color: var(--brand); }
-      .dd-card .code-block .s { color: #b45309; }
-      .dd-card .code-block .c { color: var(--subtle); font-style: italic; }
-      .dd-card .code-block .strike { color: var(--danger); text-decoration: line-through; opacity: 0.7; }
+      .dd-card .code-block .k {
+        color: var(--brand);
+      }
+      .dd-card .code-block .s {
+        color: #b45309;
+      }
+      .dd-card .code-block .c {
+        color: var(--subtle);
+        font-style: italic;
+      }
+      .dd-card .code-block .strike {
+        color: var(--danger);
+        text-decoration: line-through;
+        opacity: 0.7;
+      }
 
       /* ─── footer ─── */
       footer.bot {
@@ -971,26 +1152,36 @@
         gap: 16px;
         flex-wrap: wrap;
       }
-      footer.bot strong { color: var(--text); }
+      footer.bot strong {
+        color: var(--text);
+      }
 
       /* ─── responsive ─── */
       @media (max-width: 980px) {
-        .wrap { padding: 40px 22px 80px; }
+        .wrap {
+          padding: 40px 22px 80px;
+        }
         .legend-grid,
         .artboard-row,
         .zero-row,
         .error-row,
         .tier2-row,
         .tier3-row,
-        .dodont { grid-template-columns: 1fr; }
-        .anatomy { grid-template-columns: 1fr; gap: 32px; }
-        .anatomy-callout { display: none; }
+        .dodont {
+          grid-template-columns: 1fr;
+        }
+        .anatomy {
+          grid-template-columns: 1fr;
+          gap: 32px;
+        }
+        .anatomy-callout {
+          display: none;
+        }
       }
     </style>
   </head>
   <body>
     <div class="wrap">
-
       <!-- ═══════════════ HEADER ═══════════════ -->
       <header class="top">
         <div class="crumb">
@@ -1000,18 +1191,23 @@
           <span class="sep">/</span>
           <span>стани</span>
         </div>
-        <h1>Пустий, помилка, нуль на сьогодні — <em>усі стани коли даних ще немає</em></h1>
+        <h1>
+          Пустий, помилка, нуль на сьогодні —
+          <em>усі стани коли даних ще немає</em>
+        </h1>
         <p class="lede">
           Канонічна сторінка-довідник для 4 модулів. Рівні 1/2/3 з
           <code>docs/design/empty-states.md</code>, плюс типи помилок і стан
-          «сьогодні нуль» (історія є, на сьогодні ще пусто). Спирається на компонент
-          <code>&lt;ModuleEmptyState module="…" /&gt;</code> з
+          «сьогодні нуль» (історія є, на сьогодні ще пусто). Спирається на
+          компонент <code>&lt;ModuleEmptyState module="…" /&gt;</code> з
           <code>apps/web/src/shared/components/ui/EmptyState.tsx</code>.
         </p>
         <div class="meta-row">
           <span>Рівнів<strong>3</strong></span>
           <span>Модулів<strong>4</strong></span>
-          <span>Типів стану<strong>пустий · помилка · сьогодні нуль</strong></span>
+          <span
+            >Типів стану<strong>пустий · помилка · сьогодні нуль</strong></span
+          >
           <span>Джерело<strong>empty-states.md</strong></span>
         </div>
       </header>
@@ -1027,7 +1223,8 @@
             <span class="tier-num">Рівень 1</span>
             <h3>Повноекранний · hero</h3>
             <p>
-              Primary-поверхня модуля ще не має даних. <code>&lt;ModuleEmptyState&gt;</code>
+              Primary-поверхня модуля ще не має даних.
+              <code>&lt;ModuleEmptyState&gt;</code>
               з іконкою, title, hint, example-preview і CTA.
             </p>
             <div class="when">Перший запуск · 250+ px hero</div>
@@ -1039,16 +1236,20 @@
               Sub-card усередині заповненого екрана без items.
               <code>&lt;EmptyState compact&gt;</code>. Іконка 40px, py-8.
             </p>
-            <div class="when">120–180 px усередині картки · описовий, без дублювання дії</div>
+            <div class="when">
+              120–180 px усередині картки · описовий, без дублювання дії
+            </div>
           </div>
           <div class="legend-cell">
             <span class="tier-num">Рівень 3</span>
             <h3>Рядком (≤ 1 речення)</h3>
             <p>
-              Chart-легенди, mini-stats, sub-секції sheet-ів.
-              Один <code>text-xs text-muted</code> рядок.
+              Chart-легенди, mini-stats, sub-секції sheet-ів. Один
+              <code>text-xs text-muted</code> рядок.
             </p>
-            <div class="when">40–120 px дрібна картка · без іконки, без дії</div>
+            <div class="when">
+              40–120 px дрібна картка · без іконки, без дії
+            </div>
           </div>
         </div>
       </div>
@@ -1058,12 +1259,16 @@
         <div class="section-head">
           <span class="sn">01</span>
           <h2>Рівень 1 — повноекранний для першого запуску модуля</h2>
-          <span class="extra">4 точки входу · канонічний &lt;ModuleEmptyState&gt;</span>
+          <span class="extra"
+            >4 точки входу · канонічний &lt;ModuleEmptyState&gt;</span
+          >
         </div>
         <p class="section-intro">
-          Стан «користувач відкрив модуль уперше». Кожен <code>&lt;ModuleEmptyState&gt;</code>
-          має копію, іконку, підказку й прев'ю прикладу — налаштовані на свій модуль. Тон
-          оптимістичний, дієслово несе кнопка дії, заголовок описує стан.
+          Стан «користувач відкрив модуль уперше». Кожен
+          <code>&lt;ModuleEmptyState&gt;</code>
+          має копію, іконку, підказку й прев'ю прикладу — налаштовані на свій
+          модуль. Тон оптимістичний, дієслово несе кнопка дії, заголовок описує
+          стан.
         </p>
 
         <div class="artboard-row">
@@ -1077,21 +1282,32 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header finyk">Фінік · Гроші</div>
                   <div class="empty-hero">
                     <div class="empty-icon-bubble finyk">
-                      <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18"/><circle cx="16" cy="15" r="1.5" fill="currentColor"/></svg>
+                      <svg viewBox="0 0 24 24">
+                        <rect x="3" y="6" width="18" height="14" rx="3" />
+                        <path d="M3 10h18" />
+                        <circle cx="16" cy="15" r="1.5" fill="currentColor" />
+                      </svg>
                     </div>
                     <div class="empty-title">Поки немає транзакцій</div>
-                    <div class="empty-desc">Додай витрату вручну або підключи Monobank — далі все саме.</div>
+                    <div class="empty-desc">
+                      Додай витрату вручну або підключи Monobank — далі все
+                      саме.
+                    </div>
                     <div class="empty-example">
-                      Приклад: <b>Кава</b> · ₴45 · сьогодні<br/>
+                      Приклад: <b>Кава</b> · ₴45 · сьогодні<br />
                       <b>Продукти</b> · ₴380 · вчора
                     </div>
                     <a class="empty-cta finyk">+ Додати витрату</a>
-                    <div class="empty-hint">Порада: підключи Monobank — імпорт автоматичний.</div>
+                    <div class="empty-hint">
+                      Порада: підключи Monobank — імпорт автоматичний.
+                    </div>
                   </div>
                 </div>
                 <div class="phone-bottomnav finyk">
@@ -1109,7 +1325,9 @@
                 <dt>дія</dt>
                 <dd>+ Додати витрату → <code>openManualExpense()</code></dd>
                 <dt>підказка</dt>
-                <dd>Підказка про Monobank (глибоке посилання у потік підключення)</dd>
+                <dd>
+                  Підказка про Monobank (глибоке посилання у потік підключення)
+                </dd>
               </dl>
             </div>
           </div>
@@ -1124,21 +1342,36 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header fizruk">Фізрук · Тіло</div>
                   <div class="empty-hero">
                     <div class="empty-icon-bubble fizruk">
-                      <svg viewBox="0 0 24 24"><rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><rect x="6" y="7" width="3" height="10" rx="1"/><rect x="15" y="7" width="3" height="10" rx="1"/><path d="M9 12h6"/></svg>
+                      <svg viewBox="0 0 24 24">
+                        <rect x="2" y="9" width="3" height="6" rx="1" />
+                        <rect x="19" y="9" width="3" height="6" rx="1" />
+                        <rect x="6" y="7" width="3" height="10" rx="1" />
+                        <rect x="15" y="7" width="3" height="10" rx="1" />
+                        <path d="M9 12h6" />
+                      </svg>
                     </div>
-                    <div class="empty-title">Готовий до першого тренування?</div>
-                    <div class="empty-desc">Обери план з каталогу або імпровізуй — додай вправи вручну.</div>
+                    <div class="empty-title">
+                      Готовий до першого тренування?
+                    </div>
+                    <div class="empty-desc">
+                      Обери план з каталогу або імпровізуй — додай вправи
+                      вручну.
+                    </div>
                     <div class="empty-example">
-                      <b>Push · Pull · Legs</b> — класика<br/>
+                      <b>Push · Pull · Legs</b> — класика<br />
                       <b>Full-body 3×</b> — для початку
                     </div>
                     <a class="empty-cta fizruk">Обрати план</a>
-                    <div class="empty-hint">Порада: під біометрію з Apple Health підлаштуємо ваги.</div>
+                    <div class="empty-hint">
+                      Порада: під біометрію з Apple Health підлаштуємо ваги.
+                    </div>
                   </div>
                 </div>
                 <div class="phone-bottomnav fizruk">
@@ -1171,22 +1404,31 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header routine">Рутина · Звички</div>
                   <div class="empty-hero">
                     <div class="empty-icon-bubble routine">
-                      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                      <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="m8 12 3 3 5-6" />
+                      </svg>
                     </div>
                     <div class="empty-title">Поки немає звичок</div>
-                    <div class="empty-desc">Створи першу — стрік починається сьогодні.</div>
+                    <div class="empty-desc">
+                      Створи першу — стрік починається сьогодні.
+                    </div>
                     <div class="empty-example">
-                      💧 <b>Вода</b> · 8 склянок<br/>
-                      🧘 <b>Медитація</b> · 10 хв<br/>
+                      💧 <b>Вода</b> · 8 склянок<br />
+                      🧘 <b>Медитація</b> · 10 хв<br />
                       📚 <b>Читання</b> · 20 хв
                     </div>
                     <a class="empty-cta routine">+ Додати звичку</a>
-                    <div class="empty-hint">Порада: 1–3 звички спочатку — щоб не вигоріти.</div>
+                    <div class="empty-hint">
+                      Порада: 1–3 звички спочатку — щоб не вигоріти.
+                    </div>
                   </div>
                 </div>
                 <div class="phone-bottomnav routine">
@@ -1219,22 +1461,33 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header nutrition">Харчування · Їжа</div>
                   <div class="empty-hero">
                     <div class="empty-icon-bubble nutrition">
-                      <svg viewBox="0 0 24 24"><path d="M12 3c-3 0-5 2-5 5 0 1.5.5 3 1.5 4-2 1-3.5 3-3.5 5.5 0 2.5 2 4.5 5 4.5h4c3 0 5-2 5-4.5 0-2.5-1.5-4.5-3.5-5.5 1-1 1.5-2.5 1.5-4 0-3-2-5-5-5z"/><path d="M12 8v6"/></svg>
+                      <svg viewBox="0 0 24 24">
+                        <path
+                          d="M12 3c-3 0-5 2-5 5 0 1.5.5 3 1.5 4-2 1-3.5 3-3.5 5.5 0 2.5 2 4.5 5 4.5h4c3 0 5-2 5-4.5 0-2.5-1.5-4.5-3.5-5.5 1-1 1.5-2.5 1.5-4 0-3-2-5-5-5z"
+                        />
+                        <path d="M12 8v6" />
+                      </svg>
                     </div>
                     <div class="empty-title">Сьогодні ще нічого не їв</div>
-                    <div class="empty-desc">Скануй штрих-код, сфотографуй страву або введи вручну.</div>
+                    <div class="empty-desc">
+                      Скануй штрих-код, сфотографуй страву або введи вручну.
+                    </div>
                     <div class="empty-example">
-                      <b>📷 фото-сканер</b> — AI розпізнає<br/>
-                      <b>🔍 штрих-код</b> — з упаковки<br/>
+                      <b>📷 фото-сканер</b> — AI розпізнає<br />
+                      <b>🔍 штрих-код</b> — з упаковки<br />
                       <b>📝 вручну</b> — як ‹пів котлети›
                     </div>
                     <a class="empty-cta nutrition">+ Додати прийом</a>
-                    <div class="empty-hint">Ціль на день: 2100 ккал · 130г білка.</div>
+                    <div class="empty-hint">
+                      Ціль на день: 2100 ккал · 130г білка.
+                    </div>
                   </div>
                 </div>
                 <div class="phone-bottomnav nutrition">
@@ -1267,7 +1520,8 @@
           <span class="extra">під-картка у заповненому екрані · ~140 px</span>
         </div>
         <p class="section-intro">
-          Користувач уже у системі, екран має дані, але одна під-секція без записів.
+          Користувач уже у системі, екран має дані, але одна під-секція без
+          записів.
           <code>&lt;EmptyState compact&gt;</code> — описовий, без дублювання
           основної дії з екрана. Іконка 40 px, padding y-8.
         </p>
@@ -1286,25 +1540,60 @@
                 <span class="meta">9 планів</span>
               </div>
               <div class="filled-card">
-                <h5>Готові плани <span class="mono" style="color:rgba(245,240,235,0.4);font-weight:600">3</span></h5>
+                <h5>
+                  Готові плани
+                  <span
+                    class="mono"
+                    style="color: rgba(245, 240, 235, 0.4); font-weight: 600"
+                    >3</span
+                  >
+                </h5>
                 <div class="row">
-                  <div class="l"><span class="swatch" style="background:var(--fizruk)"></span><span class="label">Push · Pull · Legs</span></div>
+                  <div class="l">
+                    <span
+                      class="swatch"
+                      style="background: var(--fizruk)"
+                    ></span
+                    ><span class="label">Push · Pull · Legs</span>
+                  </div>
                   <span class="val">3×</span>
                 </div>
                 <div class="row">
-                  <div class="l"><span class="swatch" style="background:var(--fizruk)"></span><span class="label">Full-body</span></div>
+                  <div class="l">
+                    <span
+                      class="swatch"
+                      style="background: var(--fizruk)"
+                    ></span
+                    ><span class="label">Full-body</span>
+                  </div>
                   <span class="val">3×</span>
                 </div>
                 <div class="row">
-                  <div class="l"><span class="swatch" style="background:var(--fizruk)"></span><span class="label">Upper / Lower</span></div>
+                  <div class="l">
+                    <span
+                      class="swatch"
+                      style="background: var(--fizruk)"
+                    ></span
+                    ><span class="label">Upper / Lower</span>
+                  </div>
                   <span class="val">4×</span>
                 </div>
               </div>
-              <div class="filled-card" style="padding:0">
+              <div class="filled-card" style="padding: 0">
                 <h5 style="padding: 12px 14px 0">Збережені шаблони</h5>
-                <div class="compact-empty fizruk" style="border:none;background:transparent;padding:14px 14px 18px">
+                <div
+                  class="compact-empty fizruk"
+                  style="
+                    border: none;
+                    background: transparent;
+                    padding: 14px 14px 18px;
+                  "
+                >
                   <div class="icon-sm">
-                    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>
+                    <svg viewBox="0 0 24 24">
+                      <rect x="3" y="4" width="18" height="16" rx="2" />
+                      <path d="M3 9h18" />
+                    </svg>
                   </div>
                   <div class="t">Поки немає шаблонів</div>
                   <div class="d">Створи свій перший — кнопка вище.</div>
@@ -1312,7 +1601,8 @@
               </div>
             </div>
             <div class="anno">
-              <b>рівень 2 ✓</b> — під-картка пуста у заповненому каталозі. Дія не дублюється — «+ Створити» вже видно зверху.
+              <b>рівень 2 ✓</b> — під-картка пуста у заповненому каталозі. Дія
+              не дублюється — «+ Створити» вже видно зверху.
             </div>
           </div>
 
@@ -1329,25 +1619,59 @@
                 <span class="meta">3 / 5</span>
               </div>
               <div class="filled-card">
-                <h5>Ранок <span class="mono" style="color:rgba(245,240,235,0.4);font-weight:600">2 / 3</span></h5>
+                <h5>
+                  Ранок
+                  <span
+                    class="mono"
+                    style="color: rgba(245, 240, 235, 0.4); font-weight: 600"
+                    >2 / 3</span
+                  >
+                </h5>
                 <div class="row">
-                  <div class="l"><span class="swatch" style="background:var(--routine)"></span><span class="label">💧 Вода 8×</span></div>
+                  <div class="l">
+                    <span
+                      class="swatch"
+                      style="background: var(--routine)"
+                    ></span
+                    ><span class="label">💧 Вода 8×</span>
+                  </div>
                   <span class="val">5 / 8</span>
                 </div>
                 <div class="row">
-                  <div class="l"><span class="swatch" style="background:var(--routine)"></span><span class="label">🧘 Медитація</span></div>
+                  <div class="l">
+                    <span
+                      class="swatch"
+                      style="background: var(--routine)"
+                    ></span
+                    ><span class="label">🧘 Медитація</span>
+                  </div>
                   <span class="val">✓</span>
                 </div>
                 <div class="row">
-                  <div class="l"><span class="swatch" style="background:var(--routine)"></span><span class="label">📚 Читання</span></div>
+                  <div class="l">
+                    <span
+                      class="swatch"
+                      style="background: var(--routine)"
+                    ></span
+                    ><span class="label">📚 Читання</span>
+                  </div>
                   <span class="val">✓</span>
                 </div>
               </div>
-              <div class="filled-card" style="padding:0">
+              <div class="filled-card" style="padding: 0">
                 <h5 style="padding: 12px 14px 0">Вечір</h5>
-                <div class="compact-empty routine" style="border:none;background:transparent;padding:14px 14px 18px">
+                <div
+                  class="compact-empty routine"
+                  style="
+                    border: none;
+                    background: transparent;
+                    padding: 14px 14px 18px;
+                  "
+                >
                   <div class="icon-sm">
-                    <svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+                    <svg viewBox="0 0 24 24">
+                      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+                    </svg>
                   </div>
                   <div class="t">Звичок вечора немає</div>
                   <div class="d">Додай ритуал — наприклад, лягати о 22:30.</div>
@@ -1355,7 +1679,8 @@
               </div>
             </div>
             <div class="anno">
-              <b>рівень 2 ✓</b> — секція пуста всередині заповненого денного екрана. Опис суто описовий — контекст у користувача вже є.
+              <b>рівень 2 ✓</b> — секція пуста всередині заповненого денного
+              екрана. Опис суто описовий — контекст у користувача вже є.
             </div>
           </div>
         </div>
@@ -1369,8 +1694,8 @@
           <span class="extra">дрібні поверхні · 40–120 px</span>
         </div>
         <p class="section-intro">
-          Легенди графіків, дрібні картки, секції листів. Один приглушений рядок,
-          без іконки, без дії. Якщо треба більше — переходь у рівень 2.
+          Легенди графіків, дрібні картки, секції листів. Один приглушений
+          рядок, без іконки, без дії. Якщо треба більше — переходь у рівень 2.
         </p>
 
         <div class="tier3-row">
@@ -1381,19 +1706,25 @@
               <div class="empty-line">Поки що порожньо</div>
             </div>
             <div class="snippet-code">
-              <span class="k">text-xs</span> <span class="k">text-muted</span><br/>
+              <span class="k">text-xs</span> <span class="k">text-muted</span
+              ><br />
               <span class="s">"Поки що порожньо"</span>
             </div>
           </div>
           <div class="snippet">
             <div class="topic">Дрібна статистика</div>
-            <div class="snippet-stage" style="text-align:center; padding:18px 12px">
-              <h5 style="margin-bottom:6px">Сер. чек</h5>
+            <div
+              class="snippet-stage"
+              style="text-align: center; padding: 18px 12px"
+            >
+              <h5 style="margin-bottom: 6px">Сер. чек</h5>
               <div class="stat-large">—</div>
-              <div class="empty-line centered" style="margin-top:6px">Ще немає даних</div>
+              <div class="empty-line centered" style="margin-top: 6px">
+                Ще немає даних
+              </div>
             </div>
             <div class="snippet-code">
-              <span class="c">// дрібна картка 80px</span><br/>
+              <span class="c">// дрібна картка 80px</span><br />
               <span class="k">text-subtle</span>
               <span class="s">"Ще немає даних"</span>
             </div>
@@ -1401,12 +1732,20 @@
           <div class="snippet">
             <div class="topic">Секція листа</div>
             <div class="snippet-stage">
-              <h5 style="display:flex;justify-content:space-between"><span>Сьогоднішні шаблони</span><span class="mono" style="color:rgba(245,240,235,0.4)">0</span></h5>
+              <h5 style="display: flex; justify-content: space-between">
+                <span>Сьогоднішні шаблони</span
+                ><span class="mono" style="color: rgba(245, 240, 235, 0.4)"
+                  >0</span
+                >
+              </h5>
               <div class="empty-line">Поки немає шаблонів на сьогодні</div>
-              <div class="legend-items" style="margin-top:12px">
-                <span class="li-dot" style="background:var(--fizruk)"></span><span>сила</span>
-                <span class="li-dot" style="background:var(--routine)"></span><span>кардіо</span>
-                <span class="li-dot" style="background:var(--nutrition)"></span><span>гнучкість</span>
+              <div class="legend-items" style="margin-top: 12px">
+                <span class="li-dot" style="background: var(--fizruk)"></span
+                ><span>сила</span>
+                <span class="li-dot" style="background: var(--routine)"></span
+                ><span>кардіо</span>
+                <span class="li-dot" style="background: var(--nutrition)"></span
+                ><span>гнучкість</span>
               </div>
             </div>
             <div class="snippet-code">
@@ -1424,10 +1763,10 @@
           <span class="extra">3 перевикористовувані патерни</span>
         </div>
         <p class="section-intro">
-          Не порожнеча — щось пішло не так. Тон: чіткість важливіша за вибачення,
-          обовʼязково — дія для відновлення. Колір — попереджувальний (амбер), а не
-          небезпечний (червоний), бо це не destructive. Лише блокування дозволів у
-          критичному потоці — небезпечний.
+          Не порожнеча — щось пішло не так. Тон: чіткість важливіша за
+          вибачення, обовʼязково — дія для відновлення. Колір — попереджувальний
+          (амбер), а не небезпечний (червоний), бо це не destructive. Лише
+          блокування дозволів у критичному потоці — небезпечний.
         </p>
 
         <div class="error-row">
@@ -1441,19 +1780,57 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header finyk">Фінік</div>
                   <div class="error-banner warn">
                     <span class="dot"></span>
-                    <span style="flex:1">Monobank · востаннє 2г тому</span>
+                    <span style="flex: 1">Monobank · востаннє 2г тому</span>
                     <span class="retry">retry</span>
                   </div>
                   <div class="filled-context">
-                    <div class="row"><div class="l"><span class="swatch" style="background:var(--finyk)"></span><span>Кава</span></div><span class="val">₴45</span></div>
-                    <div class="row"><div class="l"><span class="swatch" style="background:var(--finyk)"></span><span>Продукти</span></div><span class="val">₴380</span></div>
-                    <div class="row"><div class="l"><span class="swatch" style="background:var(--finyk)"></span><span>Транспорт</span></div><span class="val">₴120</span></div>
-                    <div class="row"><div class="l"><span class="swatch" style="background:var(--finyk)"></span><span>Аптека</span></div><span class="val">₴285</span></div>
+                    <div class="row">
+                      <div class="l">
+                        <span
+                          class="swatch"
+                          style="background: var(--finyk)"
+                        ></span
+                        ><span>Кава</span>
+                      </div>
+                      <span class="val">₴45</span>
+                    </div>
+                    <div class="row">
+                      <div class="l">
+                        <span
+                          class="swatch"
+                          style="background: var(--finyk)"
+                        ></span
+                        ><span>Продукти</span>
+                      </div>
+                      <span class="val">₴380</span>
+                    </div>
+                    <div class="row">
+                      <div class="l">
+                        <span
+                          class="swatch"
+                          style="background: var(--finyk)"
+                        ></span
+                        ><span>Транспорт</span>
+                      </div>
+                      <span class="val">₴120</span>
+                    </div>
+                    <div class="row">
+                      <div class="l">
+                        <span
+                          class="swatch"
+                          style="background: var(--finyk)"
+                        ></span
+                        ><span>Аптека</span>
+                      </div>
+                      <span class="val">₴285</span>
+                    </div>
                   </div>
                 </div>
                 <div class="phone-bottomnav finyk">
@@ -1486,15 +1863,25 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header nutrition">Сканер</div>
                   <div class="error-fullscreen">
                     <div class="x-icon">
-                      <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><path d="M2 2l20 20"/></svg>
+                      <svg viewBox="0 0 24 24">
+                        <path
+                          d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+                        />
+                        <path d="M2 2l20 20" />
+                      </svg>
                     </div>
                     <div class="et">Камера недоступна</div>
-                    <div class="ed">Для штрих-сканера потрібен доступ до камери. Можна увімкнути в налаштуваннях.</div>
+                    <div class="ed">
+                      Для штрих-сканера потрібен доступ до камери. Можна
+                      увімкнути в налаштуваннях.
+                    </div>
                     <a class="ec">Відкрити налаштування</a>
                     <a class="ec-link">або вручну ввести страву</a>
                   </div>
@@ -1529,19 +1916,57 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span style="color:rgba(245,240,235,0.4)">⊘ offline</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span
+                  ><span style="color: rgba(245, 240, 235, 0.4)"
+                    >⊘ offline</span
+                  >
+                </div>
                 <div class="phone-content">
                   <div class="error-banner offline">
                     <span class="dot"></span>
-                    <span style="flex:1">Офлайн · дані живуть локально</span>
+                    <span style="flex: 1">Офлайн · дані живуть локально</span>
                   </div>
                   <div class="module-header fizruk">Фізрук</div>
                   <div class="filled-context">
-                    <div class="row"><div class="l"><span class="swatch" style="background:var(--fizruk)"></span><span>Push Day</span></div><span class="val">45 хв</span></div>
-                    <div class="row"><div class="l"><span class="swatch" style="background:var(--fizruk)"></span><span>Pull Day</span></div><span class="val">38 хв</span></div>
-                    <div class="row"><div class="l"><span class="swatch" style="background:var(--fizruk)"></span><span>Legs</span></div><span class="val">52 хв</span></div>
-                    <div class="row" style="opacity:0.55">
-                      <div class="l"><span class="swatch" style="background:rgba(255,255,255,0.2)"></span><span>Sync paused</span></div>
+                    <div class="row">
+                      <div class="l">
+                        <span
+                          class="swatch"
+                          style="background: var(--fizruk)"
+                        ></span
+                        ><span>Push Day</span>
+                      </div>
+                      <span class="val">45 хв</span>
+                    </div>
+                    <div class="row">
+                      <div class="l">
+                        <span
+                          class="swatch"
+                          style="background: var(--fizruk)"
+                        ></span
+                        ><span>Pull Day</span>
+                      </div>
+                      <span class="val">38 хв</span>
+                    </div>
+                    <div class="row">
+                      <div class="l">
+                        <span
+                          class="swatch"
+                          style="background: var(--fizruk)"
+                        ></span
+                        ><span>Legs</span>
+                      </div>
+                      <span class="val">52 хв</span>
+                    </div>
+                    <div class="row" style="opacity: 0.55">
+                      <div class="l">
+                        <span
+                          class="swatch"
+                          style="background: rgba(255, 255, 255, 0.2)"
+                        ></span
+                        ><span>Sync paused</span>
+                      </div>
                       <span class="val">↻</span>
                     </div>
                   </div>
@@ -1576,9 +2001,10 @@
           <span class="extra">4 модулі · тон фактичний, без drama</span>
         </div>
         <p class="section-intro">
-          Користувач тут не вперше. Копія фактична, не «вперед, починай». Великий
-          нуль-показник розповідає історію, мʼяка дія нижче (без терміновості).
-          У нижньому рядку — історичний контекст, щоб не виникло враження «все стерлось».
+          Користувач тут не вперше. Копія фактична, не «вперед, починай».
+          Великий нуль-показник розповідає історію, мʼяка дія нижче (без
+          терміновості). У нижньому рядку — історичний контекст, щоб не виникло
+          враження «все стерлось».
         </p>
 
         <div class="zero-row">
@@ -1592,18 +2018,25 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header finyk">Сьогодні · 17 травня</div>
                   <div class="zero-content">
                     <div class="zero-stat finyk">₴0</div>
-                    <div class="zero-label">Витрат немає · бюджет на день <span class="mono" style="color:#f5f0eb">₴800</span></div>
+                    <div class="zero-label">
+                      Витрат немає · бюджет на день
+                      <span class="mono" style="color: #f5f0eb">₴800</span>
+                    </div>
                     <a class="zero-soft-cta">+ Додати</a>
                     <div class="zero-hist">вчора ₴1 215 · 4 транзакції</div>
                   </div>
                 </div>
                 <div class="phone-bottomnav finyk">
-                  <span class="nav-dot active"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span>
+                  <span class="nav-dot active"></span
+                  ><span class="nav-dot"></span><span class="nav-dot"></span
+                  ><span class="nav-dot"></span>
                 </div>
               </div>
             </div>
@@ -1619,18 +2052,26 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header fizruk">День відпочинку</div>
                   <div class="zero-content">
-                    <div class="zero-stat fizruk">0<span class="of"> хв</span></div>
-                    <div class="zero-label">Запланований відпочинок · 3-й день циклу</div>
+                    <div class="zero-stat fizruk">
+                      0<span class="of"> хв</span>
+                    </div>
+                    <div class="zero-label">
+                      Запланований відпочинок · 3-й день циклу
+                    </div>
                     <a class="zero-soft-cta">Перенести план</a>
                     <div class="zero-hist">вчора 45 хв Push · PR ×2</div>
                   </div>
                 </div>
                 <div class="phone-bottomnav fizruk">
-                  <span class="nav-dot active"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span>
+                  <span class="nav-dot active"></span
+                  ><span class="nav-dot"></span><span class="nav-dot"></span
+                  ><span class="nav-dot"></span>
                 </div>
               </div>
             </div>
@@ -1646,18 +2087,27 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header routine">Сьогодні · 07:32</div>
                   <div class="zero-content">
-                    <div class="zero-stat routine">0<span class="of"> / 5</span></div>
-                    <div class="zero-label">5 звичок чекають · стрік <span class="mono" style="color:#f5f0eb">12 днів</span></div>
+                    <div class="zero-stat routine">
+                      0<span class="of"> / 5</span>
+                    </div>
+                    <div class="zero-label">
+                      5 звичок чекають · стрік
+                      <span class="mono" style="color: #f5f0eb">12 днів</span>
+                    </div>
                     <a class="zero-soft-cta">Перша — вода 💧</a>
                     <div class="zero-hist">вчора 5 / 5 · повний день</div>
                   </div>
                 </div>
                 <div class="phone-bottomnav routine">
-                  <span class="nav-dot active"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span>
+                  <span class="nav-dot active"></span
+                  ><span class="nav-dot"></span><span class="nav-dot"></span
+                  ><span class="nav-dot"></span>
                 </div>
               </div>
             </div>
@@ -1673,18 +2123,27 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header nutrition">До сніданку</div>
                   <div class="zero-content">
-                    <div class="zero-stat nutrition">0<span class="of"> / 2100</span></div>
-                    <div class="zero-label">ккал · білка <span class="mono" style="color:#f5f0eb">0 / 130 г</span></div>
+                    <div class="zero-stat nutrition">
+                      0<span class="of"> / 2100</span>
+                    </div>
+                    <div class="zero-label">
+                      ккал · білка
+                      <span class="mono" style="color: #f5f0eb">0 / 130 г</span>
+                    </div>
                     <a class="zero-soft-cta">Сніданок</a>
                     <div class="zero-hist">вчора 2080 ккал · 128 г білка</div>
                   </div>
                 </div>
                 <div class="phone-bottomnav nutrition">
-                  <span class="nav-dot active"></span><span class="nav-dot"></span><span class="nav-dot"></span><span class="nav-dot"></span>
+                  <span class="nav-dot active"></span
+                  ><span class="nav-dot"></span><span class="nav-dot"></span
+                  ><span class="nav-dot"></span>
                 </div>
               </div>
             </div>
@@ -1700,25 +2159,33 @@
           <span class="extra">специфікація для передачі у код</span>
         </div>
         <p class="section-intro">
-          Як читати компонент. 6 слотів, кожен має дефолт під свій модуль — overrides
-          приймає лише <code>onAction</code>. Якщо переписуєш копію зсередини коду —
-          це знак, що рівень обрано неправильно.
+          Як читати компонент. 6 слотів, кожен має дефолт під свій модуль —
+          overrides приймає лише <code>onAction</code>. Якщо переписуєш копію
+          зсередини коду — це знак, що рівень обрано неправильно.
         </p>
 
         <div class="anatomy">
           <div class="anatomy-phone">
-            <div class="phone" style="margin:0 auto;max-width:240px">
+            <div class="phone" style="margin: 0 auto; max-width: 240px">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●●</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●●</span>
+                </div>
                 <div class="phone-content">
                   <div class="module-header finyk">Фінік</div>
                   <div class="empty-hero">
                     <div class="empty-icon-bubble finyk">
-                      <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18"/><circle cx="16" cy="15" r="1.5" fill="currentColor"/></svg>
+                      <svg viewBox="0 0 24 24">
+                        <rect x="3" y="6" width="18" height="14" rx="3" />
+                        <path d="M3 10h18" />
+                        <circle cx="16" cy="15" r="1.5" fill="currentColor" />
+                      </svg>
                     </div>
                     <div class="empty-title">Поки немає транзакцій</div>
-                    <div class="empty-desc">Додай витрату вручну або підключи Monobank.</div>
+                    <div class="empty-desc">
+                      Додай витрату вручну або підключи Monobank.
+                    </div>
                     <div class="empty-example">Приклад: <b>Кава</b> · ₴45</div>
                     <a class="empty-cta finyk">+ Додати витрату</a>
                     <div class="empty-hint">Порада: підключи Monobank.</div>
@@ -1730,17 +2197,64 @@
           <div class="anatomy-spec">
             <h3>&lt;ModuleEmptyState module=… /&gt;</h3>
             <p class="intro">
-              Обгортка над <code>&lt;EmptyState&gt;</code>. Параметр module — копія, іконка,
-              підказка й прев'ю прикладу налаштовані на свій модуль. Імпорт:
+              Обгортка над <code>&lt;EmptyState&gt;</code>. Параметр module —
+              копія, іконка, підказка й прев'ю прикладу налаштовані на свій
+              модуль. Імпорт:
               <code>apps/web/src/shared/components/ui/EmptyState.tsx</code>.
             </p>
             <div class="slot-list">
-              <div class="slot"><span class="pos">1</span><span class="prop">icon</span><span class="desc">Іконка Lucide у пузирі з тонким фоном (rgba(акцент,0.14)) + м'яке дихання-сяйво.<small>56×56 · радіус lg · акцент свого модуля</small></span></div>
-              <div class="slot"><span class="pos">2</span><span class="prop">title</span><span class="desc">Стан, не інструкція. Українською, на «ти», 1 речення.<small>«Поки немає транзакцій», а не «Додай транзакцію»</small></span></div>
-              <div class="slot"><span class="pos">3</span><span class="prop">description</span><span class="desc">Одне речення. Дає контекст про дію нижче.<small>Не дубль заголовка. Без дієслова-CTA.</small></span></div>
-              <div class="slot"><span class="pos">4</span><span class="prop">example</span><span class="desc">Приклад-картка з типовим записом. Допомагає «побачити» який формат очікується.<small>1–3 рядки · моноширинна · пунктирна рамка</small></span></div>
-              <div class="slot"><span class="pos">5</span><span class="prop">action</span><span class="desc">Основна дія. Дієслово — на ній. Заливка кольором модуля, темний текст, повний радіус.<small>«+ Додати витрату» → onAction()</small></span></div>
-              <div class="slot"><span class="pos">6</span><span class="prop">hint</span><span class="desc">Корисна побіжна нотатка, не дубль опису. Моноширинний caption, приглушений.<small>«Порада: підключи Monobank — імпорт автоматичний.»</small></span></div>
+              <div class="slot">
+                <span class="pos">1</span><span class="prop">icon</span
+                ><span class="desc"
+                  >Іконка Lucide у пузирі з тонким фоном (rgba(акцент,0.14)) +
+                  м'яке дихання-сяйво.<small
+                    >56×56 · радіус lg · акцент свого модуля</small
+                  ></span
+                >
+              </div>
+              <div class="slot">
+                <span class="pos">2</span><span class="prop">title</span
+                ><span class="desc"
+                  >Стан, не інструкція. Українською, на «ти», 1 речення.<small
+                    >«Поки немає транзакцій», а не «Додай транзакцію»</small
+                  ></span
+                >
+              </div>
+              <div class="slot">
+                <span class="pos">3</span><span class="prop">description</span
+                ><span class="desc"
+                  >Одне речення. Дає контекст про дію нижче.<small
+                    >Не дубль заголовка. Без дієслова-CTA.</small
+                  ></span
+                >
+              </div>
+              <div class="slot">
+                <span class="pos">4</span><span class="prop">example</span
+                ><span class="desc"
+                  >Приклад-картка з типовим записом. Допомагає «побачити» який
+                  формат очікується.<small
+                    >1–3 рядки · моноширинна · пунктирна рамка</small
+                  ></span
+                >
+              </div>
+              <div class="slot">
+                <span class="pos">5</span><span class="prop">action</span
+                ><span class="desc"
+                  >Основна дія. Дієслово — на ній. Заливка кольором модуля,
+                  темний текст, повний радіус.<small
+                    >«+ Додати витрату» → onAction()</small
+                  ></span
+                >
+              </div>
+              <div class="slot">
+                <span class="pos">6</span><span class="prop">hint</span
+                ><span class="desc"
+                  >Корисна побіжна нотатка, не дубль опису. Моноширинний
+                  caption, приглушений.<small
+                    >«Порада: підключи Monobank — імпорт автоматичний.»</small
+                  ></span
+                >
+              </div>
             </div>
           </div>
         </div>
@@ -1763,12 +2277,18 @@
               переносять патерн з модуля-лендингу у сітку аналітики.
             </p>
             <div class="code-block">
-<span class="c">// ❌ дрібна картка 100px · рівень 1 всередині</span>
-&lt;<span class="k">div</span> className=<span class="s">"py-3 px-3 rounded-2xl"</span>&gt;
-  &lt;<span class="k">EmptyState</span>
-    <span class="strike">icon</span>={...}
-    <span class="strike">title</span>=<span class="s">"Ще немає улюблених страв"</span> /&gt;
-&lt;/<span class="k">div</span>&gt;</div>
+              <span class="c"
+                >// ❌ дрібна картка 100px · рівень 1 всередині</span
+              >
+              &lt;<span class="k">div</span> className=<span class="s"
+                >"py-3 px-3 rounded-2xl"</span
+              >&gt; &lt;<span class="k">EmptyState</span>
+              <span class="strike">icon</span>={...}
+              <span class="strike">title</span>=<span class="s"
+                >"Ще немає улюблених страв"</span
+              >
+              /&gt; &lt;/<span class="k">div</span>&gt;
+            </div>
           </div>
 
           <div class="dd-card do">
@@ -1779,13 +2299,19 @@
               Каже користувачу, що секція жива — просто пуста.
             </p>
             <div class="code-block">
-<span class="c">// ✅ рівень 3</span>
-&lt;<span class="k">div</span> className=<span class="s">"py-3 px-3 rounded-2xl"</span>&gt;
-  &lt;<span class="k">SectionHeading</span>&gt;Топ страв&lt;/<span class="k">SectionHeading</span>&gt;
-  &lt;<span class="k">div</span> className=<span class="s">"text-xs text-muted"</span>&gt;
-    Поки що порожньо
-  &lt;/<span class="k">div</span>&gt;
-&lt;/<span class="k">div</span>&gt;</div>
+              <span class="c">// ✅ рівень 3</span>
+              &lt;<span class="k">div</span> className=<span class="s"
+                >"py-3 px-3 rounded-2xl"</span
+              >&gt; &lt;<span class="k">SectionHeading</span>&gt;Топ
+              страв&lt;/<span class="k">SectionHeading</span>&gt; &lt;<span
+                class="k"
+                >div</span
+              >
+              className=<span class="s">"text-xs text-muted"</span>&gt; Поки що
+              порожньо &lt;/<span class="k">div</span>&gt; &lt;/<span class="k"
+                >div</span
+              >&gt;
+            </div>
           </div>
 
           <div class="dd-card dont">
@@ -1796,28 +2322,42 @@
               «Створити». Користувач тицяє рандомно — це візуальний шум.
             </p>
             <div class="code-block">
-<span class="c">// ❌ дубль дії</span>
-&lt;<span class="k">Button</span>&gt;+ Новий шаблон&lt;/<span class="k">Button</span>&gt;
-&lt;<span class="k">Card</span>&gt;
-  &lt;<span class="k">EmptyState</span> compact title=<span class="s">"Поки немає…"</span>
-    <span class="strike">action</span>={&lt;<span class="k">Button</span>&gt;Створити&lt;/<span class="k">Button</span>&gt;} /&gt;
-&lt;/<span class="k">Card</span>&gt;</div>
+              <span class="c">// ❌ дубль дії</span>
+              &lt;<span class="k">Button</span>&gt;+ Новий шаблон&lt;/<span
+                class="k"
+                >Button</span
+              >&gt; &lt;<span class="k">Card</span>&gt; &lt;<span class="k"
+                >EmptyState</span
+              >
+              compact title=<span class="s">"Поки немає…"</span>
+              <span class="strike">action</span>={&lt;<span class="k"
+                >Button</span
+              >&gt;Створити&lt;/<span class="k">Button</span>&gt;} /&gt;
+              &lt;/<span class="k">Card</span>&gt;
+            </div>
           </div>
 
           <div class="dd-card do">
             <div class="ddhead"><span class="verdict">do</span></div>
             <h4>Empty-state описує, primary-CTA діє</h4>
             <p>
-              Пустий стан рівня 2 — описовий. Опис вказує куди натискати — кнопка вже видно на екрані.
+              Пустий стан рівня 2 — описовий. Опис вказує куди натискати —
+              кнопка вже видно на екрані.
             </p>
             <div class="code-block">
-<span class="c">// ✅ опис + посилання на існуючу дію</span>
-&lt;<span class="k">Button</span>&gt;+ Новий шаблон&lt;/<span class="k">Button</span>&gt;
-&lt;<span class="k">Card</span>&gt;
-  &lt;<span class="k">EmptyState</span> compact
-    title=<span class="s">"Поки немає шаблонів"</span>
-    description=<span class="s">"Створи свій перший — кнопка вище."</span> /&gt;
-&lt;/<span class="k">Card</span>&gt;</div>
+              <span class="c">// ✅ опис + посилання на існуючу дію</span>
+              &lt;<span class="k">Button</span>&gt;+ Новий шаблон&lt;/<span
+                class="k"
+                >Button</span
+              >&gt; &lt;<span class="k">Card</span>&gt; &lt;<span class="k"
+                >EmptyState</span
+              >
+              compact title=<span class="s">"Поки немає шаблонів"</span>
+              description=<span class="s"
+                >"Створи свій перший — кнопка вище."</span
+              >
+              /&gt; &lt;/<span class="k">Card</span>&gt;
+            </div>
           </div>
         </div>
       </section>
@@ -1826,7 +2366,9 @@
       <footer class="bot">
         <span>Sergeant · <strong>продукт / стани</strong> · 2026-05-17</span>
         <span>Джерело · <strong>docs/design/empty-states.md</strong></span>
-        <span>Компонент · <strong>EmptyState.tsx + ModuleEmptyState</strong></span>
+        <span
+          >Компонент · <strong>EmptyState.tsx + ModuleEmptyState</strong></span
+        >
       </footer>
     </div>
   </body>

@@ -1,7 +1,8 @@
 <!-- AUTO-GENERATED: false — authored playbook -->
+
 # Playbook: Squad review — паралельний PR review через 4 lens-агентів
 
-> **Last validated:** 2026-05-16 by @Skords-01. **Next review:** 2026-08-14.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Active
 
 **Trigger:** PR торкається ≥3 governed surfaces одночасно: SQL migrations, server serializers, web UI, mobile UI, SKILL.md, або HubChat tool defs.
@@ -45,6 +46,7 @@ Give each teammate the PR diff. Ask each to send findings to the lead when done.
 ### Крок 4 — Synthesis
 
 Після отримання всіх 4 звітів:
+
 - Агрегуй за рівнем ризику: BLOCKER → WARNING → INFO
 - Якщо є BLOCKER — PR не мерджити
 - Поверни consolidated review comment

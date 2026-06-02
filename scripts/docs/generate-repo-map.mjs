@@ -173,7 +173,9 @@ function ownerFor(workspaceRel, rules) {
       const p = r.pattern.replace(/^\//, "").replace(/\*\*$/, "");
       return { prefix: p, handle: r.handle };
     })
-    .filter((r) => r.prefix && normalized.startsWith(r.prefix.replace(/\*$/, "")))
+    .filter(
+      (r) => r.prefix && normalized.startsWith(r.prefix.replace(/\*$/, "")),
+    )
     .sort((a, b) => b.prefix.length - a.prefix.length);
   return candidates[0]?.handle || null;
 }
@@ -253,10 +255,8 @@ export function findMissingMentions(repoMap, viewText) {
   for (const ws of repoMap.workspaces) {
     const nameQuoted = "`" + ws.name + "`";
     const pathQuoted = "`" + ws.path + "`";
-    const nameOk =
-      viewText.includes(nameQuoted) || viewText.includes(ws.name);
-    const pathOk =
-      viewText.includes(pathQuoted) || viewText.includes(ws.path);
+    const nameOk = viewText.includes(nameQuoted) || viewText.includes(ws.name);
+    const pathOk = viewText.includes(pathQuoted) || viewText.includes(ws.path);
     if (!nameOk && !pathOk) {
       errors.push(
         `workspace ${ws.name} (${ws.path}) is not mentioned in ${relPath(VIEW_MD)}`,

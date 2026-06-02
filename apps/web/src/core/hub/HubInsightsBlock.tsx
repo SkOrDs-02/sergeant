@@ -69,7 +69,10 @@ export function HubInsightsBlock({
     if (insight.action.type === "navigate") {
       navigate(insight.action.path);
     } else if (insight.action.type === "open-chat") {
-      emitHubBus("openChat", { message: insight.action.prompt, autoSend: false });
+      emitHubBus("openChat", {
+        message: insight.action.prompt,
+        autoSend: false,
+      });
     } else if (insight.action.type === "callback") {
       insight.action.fn();
     }

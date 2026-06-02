@@ -1,6 +1,6 @@
 # Module ownership map
 
-> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-30.
 > **Status:** Active
 
 > Per-path ownership, test stack, RQ keys factory, and conventions. Quick look-up before editing. Compact summary table lives in [`AGENTS.md § Module ownership map`](../../AGENTS.md#module-ownership-map); deep per-path table is here so Stack-pulse PR-04 secondary-column gate (`pnpm lint:codeowners`) and the per-module CODEOWNERS coverage stay close to one another.
@@ -28,17 +28,17 @@
 
 ## Packages
 
-| Path                                                  | Owner        | Secondary ¹             | Test stack | RQ keys factory | Notes                                                                                                                                                                  |
-| ----------------------------------------------------- | ------------ | ----------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/shared/**`                                  | `@Skords-01` | TBD (any-engineer)      | Vitest     | n/a             | Zod schemas, types, business logic. Used by all apps — change with care.                                                                                               |
-| `packages/api-client/**`                              | `@Skords-01` | TBD (backend-engineer)  | Vitest     | n/a             | HTTP clients + types. Must mirror `apps/server/src/modules/*` response shapes.                                                                                         |
-| `packages/insights/**`                                | `@Skords-01` | TBD (any-engineer)      | Vitest     | n/a             | Cross-module analytics. Pure functions over normalized data.                                                                                                           |
-| `packages/{finyk,fizruk,nutrition,routine}-domain/**` | `@Skords-01` | TBD (any-engineer)      | Vitest     | n/a             | Domain logic shared web ↔ mobile (e.g., kcal math, budget computations).                                                                                               |
-| `packages/db-schema/**`                               | `@Skords-01` | TBD (data-engineer)     | Vitest     | n/a             | Drizzle ORM schemas (Postgres + SQLite) and the migration runner used by `apps/server`. Schema changes pair with a new SQL migration in `apps/server/src/migrations/`. |
-| `packages/config/**`                                  | `@Skords-01` | TBD (any-engineer)      | n/a        | n/a             | Shared TypeScript/build config consumed by all workspaces.                                                                                                             |
-| `packages/design-tokens/**`                           | `@Skords-01` | TBD (frontend-engineer) | Vitest     | n/a             | Shared design tokens + Tailwind preset for web and mobile. Source of truth for color/spacing/typography.                                                               |
-| `packages/eslint-plugin-sergeant-design/**`           | `@Skords-01` | TBD (frontend-engineer) | `node --test` | n/a          | Custom ESLint rules enforcing the design system (opacity scale, `-strong` companion fills, etc.). Tests are `.mjs` files under `__tests__/`, run via `node --test`.    |
-| `packages/openclaw-plugin/**`                         | `@Skords-01` | TBD (backend-engineer)  | Vitest     | n/a             | Gateway-only plugin (NOT consumed by apps/web or apps/mobile). Used by the OpenClaw Gateway service.                                                                   |
+| Path                                                  | Owner        | Secondary ¹             | Test stack    | RQ keys factory | Notes                                                                                                                                                                  |
+| ----------------------------------------------------- | ------------ | ----------------------- | ------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/shared/**`                                  | `@Skords-01` | TBD (any-engineer)      | Vitest        | n/a             | Zod schemas, types, business logic. Used by all apps — change with care.                                                                                               |
+| `packages/api-client/**`                              | `@Skords-01` | TBD (backend-engineer)  | Vitest        | n/a             | HTTP clients + types. Must mirror `apps/server/src/modules/*` response shapes.                                                                                         |
+| `packages/insights/**`                                | `@Skords-01` | TBD (any-engineer)      | Vitest        | n/a             | Cross-module analytics. Pure functions over normalized data.                                                                                                           |
+| `packages/{finyk,fizruk,nutrition,routine}-domain/**` | `@Skords-01` | TBD (any-engineer)      | Vitest        | n/a             | Domain logic shared web ↔ mobile (e.g., kcal math, budget computations).                                                                                               |
+| `packages/db-schema/**`                               | `@Skords-01` | TBD (data-engineer)     | Vitest        | n/a             | Drizzle ORM schemas (Postgres + SQLite) and the migration runner used by `apps/server`. Schema changes pair with a new SQL migration in `apps/server/src/migrations/`. |
+| `packages/config/**`                                  | `@Skords-01` | TBD (any-engineer)      | n/a           | n/a             | Shared TypeScript/build config consumed by all workspaces.                                                                                                             |
+| `packages/design-tokens/**`                           | `@Skords-01` | TBD (frontend-engineer) | Vitest        | n/a             | Shared design tokens + Tailwind preset for web and mobile. Source of truth for color/spacing/typography.                                                               |
+| `packages/eslint-plugin-sergeant-design/**`           | `@Skords-01` | TBD (frontend-engineer) | `node --test` | n/a             | Custom ESLint rules enforcing the design system (opacity scale, `-strong` companion fills, etc.). Tests are `.mjs` files under `__tests__/`, run via `node --test`.    |
+| `packages/openclaw-plugin/**`                         | `@Skords-01` | TBD (backend-engineer)  | Vitest        | n/a             | Gateway-only plugin (NOT consumed by apps/web or apps/mobile). Used by the OpenClaw Gateway service.                                                                   |
 
 ## Ops surfaces
 

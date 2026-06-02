@@ -1,6 +1,6 @@
 # PR Ledger — canonical reverse PR ↔ doc index
 
-> **Last validated:** 2026-05-15 by @Skords-01. **Next review:** 2026-08-13.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Active
 
 Bidirectional companion to [`docs/open-work.md`](../open-work.md). Open-work scans canonical docs for `#NNNN` mentions (forward link: doc → PR). This ledger goes the other way: merged PRs → docs they touched.
@@ -40,11 +40,11 @@ Other doc directories (`docs/audits/`, `docs/architecture/`, `docs/launch/`, etc
 
 ## Manual operations
 
-| Need                                  | Command                                                                     |
-| ------------------------------------- | --------------------------------------------------------------------------- |
-| Refresh blocks after editing ledger   | `pnpm docs:gen-pr-backlinks`                                                |
-| Validate ledger ↔ blocks ↔ schema     | `pnpm docs:check-pr-ledger`                                                 |
-| Backfill a specific historical PR     | `node scripts/ci/update-pr-backlinks.mjs --pr <NUMBER>` (requires `gh` CLI) |
+| Need                                | Command                                                                     |
+| ----------------------------------- | --------------------------------------------------------------------------- |
+| Refresh blocks after editing ledger | `pnpm docs:gen-pr-backlinks`                                                |
+| Validate ledger ↔ blocks ↔ schema   | `pnpm docs:check-pr-ledger`                                                 |
+| Backfill a specific historical PR   | `node scripts/ci/update-pr-backlinks.mjs --pr <NUMBER>` (requires `gh` CLI) |
 
 ## Limitations
 

@@ -101,7 +101,10 @@ interface Workout {
 function parseWorkouts(raw: string | null): Workout[] {
   if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw) as Workout[] | { workouts?: Workout[] } | null;
+    const parsed = JSON.parse(raw) as
+      | Workout[]
+      | { workouts?: Workout[] }
+      | null;
     if (Array.isArray(parsed)) return parsed;
     if (parsed && Array.isArray(parsed.workouts)) return parsed.workouts;
   } catch {

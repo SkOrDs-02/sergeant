@@ -1,7 +1,8 @@
 <!-- AUTO-GENERATED: false — authored playbook -->
+
 # Playbook: Squad QA — паралельний QA по всіх surfaces
 
-> **Last validated:** 2026-05-16 by @Skords-01. **Next review:** 2026-08-14.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Active
 
 **Trigger:** Перед release, після великого рефактора, або коли потрібен per-surface звіт про стан тестів (не лише агрегований pass/fail).
@@ -39,6 +40,7 @@ All run independently. Report to the lead when done.
 ### Крок 4 — Synthesis
 
 Після отримання всіх 4 звітів:
+
 - Зведений статус: `🟢 All surfaces green` або `🔴 Failures in: [список]`
 - Per-surface таблиця: Tests / Typecheck / Failures
 - Деталі failures з файлом тесту і причиною

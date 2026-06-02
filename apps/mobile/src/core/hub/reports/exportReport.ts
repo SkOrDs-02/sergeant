@@ -45,7 +45,9 @@ function buildHtml({ title, subtitle }: ExportReportOptions): string {
 </html>`;
 }
 
-export async function exportReport(options: ExportReportOptions): Promise<void> {
+export async function exportReport(
+  options: ExportReportOptions,
+): Promise<void> {
   const html = buildHtml(options);
   const fileUri = `${FileSystem.cacheDirectory}sergeant-report.html`;
 

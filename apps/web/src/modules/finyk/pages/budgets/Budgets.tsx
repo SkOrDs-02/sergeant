@@ -242,7 +242,10 @@ export function Budgets({
   }, [focusLimitCategoryId, limitsOpen]);
   useEffect(() => {
     if (!highlightedCategoryId) return;
-    const t = setTimeout(() => setHighlightedCategoryId(null), HIGHLIGHT_CLEAR_MS);
+    const t = setTimeout(
+      () => setHighlightedCategoryId(null),
+      HIGHLIGHT_CLEAR_MS,
+    );
     return () => clearTimeout(t);
   }, [highlightedCategoryId]);
   const toggleGoals = useCallback(() => {

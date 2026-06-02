@@ -158,10 +158,7 @@ export function WelcomeModulePicker({
       <div
         role="group"
         aria-label={copy.gridAriaLabel}
-        className={cn(
-          "grid w-full gap-3",
-          "grid-cols-2 sm:grid-cols-4",
-        )}
+        className={cn("grid w-full gap-3", "grid-cols-2 sm:grid-cols-4")}
       >
         {ALL_MODULES.map((id) => {
           const v = MODULE_VISUALS[id];

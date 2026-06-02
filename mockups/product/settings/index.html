@@ -6,111 +6,571 @@
     <title>Sergeant · Налаштування — приватність, синхр., експорт</title>
     <link rel="stylesheet" href="../../_shared/tokens.css" />
     <style>
-      *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html,body { font-family: var(--font-sans); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; line-height: 1.5; }
-      a { color: inherit; text-decoration: none; }
-      code,.mono { font-family: var(--font-mono); }
-      .serif { font-family: var(--font-serif); }
-      .wrap { max-width: 1320px; margin: 0 auto; padding: 56px 32px 96px; }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+      }
+      .serif {
+        font-family: var(--font-serif);
+      }
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 32px 96px;
+      }
 
-      header.top { margin-bottom: 56px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
-      .crumb { font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--brand); margin-bottom: 14px; display: flex; gap: 8px; align-items: center; }
-      .crumb a { color: var(--muted); }
-      .crumb .sep { color: var(--subtle); }
-      header.top h1 { font-size: clamp(36px, 5vw, 56px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; margin-bottom: 18px; max-width: 920px; text-wrap: balance; }
-      header.top h1 em { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--muted); }
-      header.top .lede { font-size: 17px; color: var(--muted); max-width: 740px; line-height: 1.6; }
-      .meta-row { margin-top: 24px; display: flex; gap: 28px; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; }
-      .meta-row span strong { color: var(--text); font-weight: 600; margin-left: 6px; }
+      header.top {
+        margin-bottom: 56px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--border);
+      }
+      .crumb {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--brand);
+        margin-bottom: 14px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .crumb a {
+        color: var(--muted);
+      }
+      .crumb .sep {
+        color: var(--subtle);
+      }
+      header.top h1 {
+        font-size: clamp(36px, 5vw, 56px);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.02;
+        margin-bottom: 18px;
+        max-width: 920px;
+        text-wrap: balance;
+      }
+      header.top h1 em {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      header.top .lede {
+        font-size: 17px;
+        color: var(--muted);
+        max-width: 740px;
+        line-height: 1.6;
+      }
+      .meta-row {
+        margin-top: 24px;
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .meta-row span strong {
+        color: var(--text);
+        font-weight: 600;
+        margin-left: 6px;
+      }
 
-      .legend { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-xl); margin-bottom: 64px; overflow: hidden; }
-      .legend-head { padding: 18px 24px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; }
-      .legend-head h2 { font-size: 14px; font-weight: 800; letter-spacing: -0.005em; }
-      .legend-head .src { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
-      .legend-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); }
-      .legend-cell { background: var(--panel); padding: 22px 24px; }
-      .legend-cell .badge { font-family: var(--font-mono); font-weight: 800; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: var(--r-sm); display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-      .legend-cell .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-      .legend-cell.now .badge { color: var(--routine); background: var(--routine-soft); }
-      .legend-cell.plan .badge { color: var(--finyk-dark); background: var(--finyk-soft); }
-      .legend-cell.rec .badge { color: var(--fizruk-dark); background: var(--fizruk-soft); }
-      .legend-cell h3 { font-size: 16px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 6px; }
-      .legend-cell p { font-size: 13px; color: var(--muted); line-height: 1.55; }
-      .legend-cell .when { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.1em; }
+      .legend {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        margin-bottom: 64px;
+        overflow: hidden;
+      }
+      .legend-head {
+        padding: 18px 24px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .legend-head h2 {
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: -0.005em;
+      }
+      .legend-head .src {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .legend-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--border);
+      }
+      .legend-cell {
+        background: var(--panel);
+        padding: 22px 24px;
+      }
+      .legend-cell .badge {
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: var(--r-sm);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .legend-cell .badge .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .legend-cell.now .badge {
+        color: var(--routine);
+        background: var(--routine-soft);
+      }
+      .legend-cell.plan .badge {
+        color: var(--finyk-dark);
+        background: var(--finyk-soft);
+      }
+      .legend-cell.rec .badge {
+        color: var(--fizruk-dark);
+        background: var(--fizruk-soft);
+      }
+      .legend-cell h3 {
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        margin-bottom: 6px;
+      }
+      .legend-cell p {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .legend-cell .when {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
 
-      section { margin-bottom: 72px; }
-      .section-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-      .section-head .sn { font-family: var(--font-mono); font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--brand); padding: 3px 9px; background: var(--brand-soft); border-radius: var(--r-sm); }
-      .section-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.022em; }
-      .section-head .event { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; }
-      .section-head .event strong { color: var(--text); }
-      .section-intro { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 740px; margin-bottom: 24px; }
+      section {
+        margin-bottom: 72px;
+      }
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .section-head .sn {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--brand);
+        padding: 3px 9px;
+        background: var(--brand-soft);
+        border-radius: var(--r-sm);
+      }
+      .section-head h2 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.022em;
+      }
+      .section-head .event {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+      .section-head .event strong {
+        color: var(--text);
+      }
+      .section-intro {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 740px;
+        margin-bottom: 24px;
+      }
 
-      .state-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: start; }
-      .state-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; border-left-width: 3px; }
-      .state-card.now { border-left-color: var(--routine); }
-      .state-card.plan { border-left-color: var(--finyk-dark); }
-      .state-card.rec { border-left-color: var(--fizruk-dark); }
-      .state-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-      .state-tag { font-family: var(--font-mono); font-weight: 800; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: var(--r-sm); display: inline-flex; gap: 6px; align-items: center; }
-      .state-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-      .state-card.now .state-tag { color: var(--routine); background: var(--routine-soft); }
-      .state-card.plan .state-tag { color: var(--finyk-dark); background: var(--finyk-soft); }
-      .state-card.rec .state-tag { color: var(--fizruk-dark); background: var(--fizruk-soft); }
-      .state-title { font-size: 13px; font-weight: 800; letter-spacing: -0.005em; }
-      .state-ref { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--subtle); white-space: nowrap; }
+      .state-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+      .state-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        padding: 16px 18px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        border-left-width: 3px;
+      }
+      .state-card.now {
+        border-left-color: var(--routine);
+      }
+      .state-card.plan {
+        border-left-color: var(--finyk-dark);
+      }
+      .state-card.rec {
+        border-left-color: var(--fizruk-dark);
+      }
+      .state-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .state-tag {
+        font-family: var(--font-mono);
+        font-weight: 800;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: var(--r-sm);
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .state-tag .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .state-card.now .state-tag {
+        color: var(--routine);
+        background: var(--routine-soft);
+      }
+      .state-card.plan .state-tag {
+        color: var(--finyk-dark);
+        background: var(--finyk-soft);
+      }
+      .state-card.rec .state-tag {
+        color: var(--fizruk-dark);
+        background: var(--fizruk-soft);
+      }
+      .state-title {
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: -0.005em;
+      }
+      .state-ref {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--subtle);
+        white-space: nowrap;
+      }
 
-      .phone { width: 100%; max-width: 280px; margin: 0 auto; aspect-ratio: 9 / 19.5; background: #1a1614; border: 6px solid #0a0a09; border-radius: 34px; box-shadow: 0 12px 28px rgba(28,25,23,0.16); position: relative; overflow: hidden; color: #f5f0eb; }
-      .phone-island { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 32%; height: 16px; background: #0a0a09; border-radius: 999px; z-index: 5; }
-      .phone-screen { position: absolute; inset: 0; padding: 30px 0 0; display: flex; flex-direction: column; overflow: hidden; }
-      .phone-statusbar { display: flex; justify-content: space-between; font-size: 8px; font-weight: 700; color: rgba(245,240,235,0.7); font-family: var(--font-mono); margin-bottom: 8px; padding: 0 16px; }
+      .phone {
+        width: 100%;
+        max-width: 280px;
+        margin: 0 auto;
+        aspect-ratio: 9 / 19.5;
+        background: #1a1614;
+        border: 6px solid #0a0a09;
+        border-radius: 34px;
+        box-shadow: 0 12px 28px rgba(28, 25, 23, 0.16);
+        position: relative;
+        overflow: hidden;
+        color: #f5f0eb;
+      }
+      .phone-island {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 32%;
+        height: 16px;
+        background: #0a0a09;
+        border-radius: 999px;
+        z-index: 5;
+      }
+      .phone-screen {
+        position: absolute;
+        inset: 0;
+        padding: 30px 0 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .phone-statusbar {
+        display: flex;
+        justify-content: space-between;
+        font-size: 8px;
+        font-weight: 700;
+        color: rgba(245, 240, 235, 0.7);
+        font-family: var(--font-mono);
+        margin-bottom: 8px;
+        padding: 0 16px;
+      }
 
-      .scr-head { display: flex; align-items: center; gap: 8px; padding: 0 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-      .scr-back { font-size: 14px; color: rgba(245,240,235,0.7); }
-      .scr-title { font-size: 12px; font-weight: 800; flex: 1; }
-      .scr-body { flex: 1; overflow: hidden; padding: 8px 12px 0; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
-      .grp-title { font-size: 8.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.12em; color: rgba(245,240,235,0.4); margin: 4px 0 2px; padding: 0 2px; }
-      .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 9px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; font-size: 9.5px; }
-      .row .lbl { color: rgba(245,240,235,0.85); flex: 1; line-height: 1.35; }
-      .row .lbl b { color: #f5f0eb; font-weight: 700; }
-      .row .lbl small { display: block; font-size: 8px; color: rgba(245,240,235,0.5); margin-top: 2px; line-height: 1.4; }
-      .row .val { font-family: var(--font-mono); font-size: 9px; color: rgba(245,240,235,0.55); }
-      .row.danger { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.18); }
-      .row.danger .lbl { color: #fca5a5; }
-      .toggle { width: 26px; height: 14px; border-radius: 999px; background: rgba(255,255,255,0.1); position: relative; flex-shrink: 0; }
-      .toggle::after { content: ""; position: absolute; top: 1.5px; left: 1.5px; width: 11px; height: 11px; border-radius: 50%; background: white; }
-      .toggle.on { background: var(--finyk); }
-      .toggle.on::after { left: 13.5px; }
-      .toggle.warn { background: rgba(245,158,11,0.4); }
-      .toggle.warn::after { left: 13.5px; }
-      .chevron { color: rgba(245,240,235,0.4); font-size: 11px; flex-shrink: 0; }
-      .pill { font-family: var(--font-mono); font-size: 7.5px; padding: 2px 6px; border-radius: 999px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
-      .pill.ok { background: rgba(16,185,129,0.18); color: var(--finyk); }
-      .pill.warn { background: rgba(245,158,11,0.18); color: var(--warning); }
-      .pill.local { background: rgba(34,211,238,0.18); color: var(--fizruk); }
+      .scr-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .scr-back {
+        font-size: 14px;
+        color: rgba(245, 240, 235, 0.7);
+      }
+      .scr-title {
+        font-size: 12px;
+        font-weight: 800;
+        flex: 1;
+      }
+      .scr-body {
+        flex: 1;
+        overflow: hidden;
+        padding: 8px 12px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 0;
+      }
+      .grp-title {
+        font-size: 8.5px;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: rgba(245, 240, 235, 0.4);
+        margin: 4px 0 2px;
+        padding: 0 2px;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 9px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        font-size: 9.5px;
+      }
+      .row .lbl {
+        color: rgba(245, 240, 235, 0.85);
+        flex: 1;
+        line-height: 1.35;
+      }
+      .row .lbl b {
+        color: #f5f0eb;
+        font-weight: 700;
+      }
+      .row .lbl small {
+        display: block;
+        font-size: 8px;
+        color: rgba(245, 240, 235, 0.5);
+        margin-top: 2px;
+        line-height: 1.4;
+      }
+      .row .val {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        color: rgba(245, 240, 235, 0.55);
+      }
+      .row.danger {
+        background: rgba(239, 68, 68, 0.06);
+        border-color: rgba(239, 68, 68, 0.18);
+      }
+      .row.danger .lbl {
+        color: #fca5a5;
+      }
+      .toggle {
+        width: 26px;
+        height: 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
+        position: relative;
+        flex-shrink: 0;
+      }
+      .toggle::after {
+        content: "";
+        position: absolute;
+        top: 1.5px;
+        left: 1.5px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: white;
+      }
+      .toggle.on {
+        background: var(--finyk);
+      }
+      .toggle.on::after {
+        left: 13.5px;
+      }
+      .toggle.warn {
+        background: rgba(245, 158, 11, 0.4);
+      }
+      .toggle.warn::after {
+        left: 13.5px;
+      }
+      .chevron {
+        color: rgba(245, 240, 235, 0.4);
+        font-size: 11px;
+        flex-shrink: 0;
+      }
+      .pill {
+        font-family: var(--font-mono);
+        font-size: 7.5px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .pill.ok {
+        background: rgba(16, 185, 129, 0.18);
+        color: var(--finyk);
+      }
+      .pill.warn {
+        background: rgba(245, 158, 11, 0.18);
+        color: var(--warning);
+      }
+      .pill.local {
+        background: rgba(34, 211, 238, 0.18);
+        color: var(--fizruk);
+      }
 
-      .state-foot { margin-top: 6px; padding-top: 12px; border-top: 1px dashed var(--border); font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); line-height: 1.5; }
-      .state-foot b { color: var(--text); font-weight: 600; }
-      .state-foot code { font-size: 10px; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
-      .state-foot dl { display: grid; gap: 4px; }
-      .state-foot dt { font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 9.5px; color: var(--subtle); }
+      .state-foot {
+        margin-top: 6px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border);
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .state-foot b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .state-foot code {
+        font-size: 10px;
+        background: var(--surface);
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .state-foot dl {
+        display: grid;
+        gap: 4px;
+      }
+      .state-foot dt {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 9.5px;
+        color: var(--subtle);
+      }
 
-      .nothing { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; padding: 16px; opacity: 0.7; }
-      .nothing .glyph { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.06); display: grid; place-items: center; font-family: var(--font-mono); font-size: 16px; color: rgba(245,240,235,0.4); }
-      .nothing .t { font-size: 10px; color: rgba(245,240,235,0.5); line-height: 1.5; }
+      .nothing {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 8px;
+        padding: 16px;
+        opacity: 0.7;
+      }
+      .nothing .glyph {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+        display: grid;
+        place-items: center;
+        font-family: var(--font-mono);
+        font-size: 16px;
+        color: rgba(245, 240, 235, 0.4);
+      }
+      .nothing .t {
+        font-size: 10px;
+        color: rgba(245, 240, 235, 0.5);
+        line-height: 1.5;
+      }
 
-      footer.bot { margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.12em; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-      footer.bot strong { color: var(--text); }
+      footer.bot {
+        margin-top: 64px;
+        padding-top: 28px;
+        border-top: 1px solid var(--border);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      footer.bot strong {
+        color: var(--text);
+      }
 
       @media (max-width: 980px) {
-        .wrap { padding: 40px 22px 80px; }
-        .legend-grid, .state-row { grid-template-columns: 1fr; }
+        .wrap {
+          padding: 40px 22px 80px;
+        }
+        .legend-grid,
+        .state-row {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
     <div class="wrap">
-
       <header class="top">
         <div class="crumb">
           <a href="../../index.html">мокапи</a><span class="sep">/</span>
@@ -120,9 +580,9 @@
         <h1>Налаштування — <em>де живуть твої дані і хто їх бачить</em></h1>
         <p class="lede">
           Sergeant позиціонує себе як local-first: дані на пристрої, без cloud-у
-          за замовчуванням. Налаштування мають це <strong>показувати</strong>,
-          а не ховати у звичайному «Account». Окрема секція приватності
-          угорі — не наприкінці.
+          за замовчуванням. Налаштування мають це <strong>показувати</strong>, а
+          не ховати у звичайному «Account». Окрема секція приватності угорі — не
+          наприкінці.
         </p>
         <div class="meta-row">
           <span>Стан<strong>заплановано</strong></span>
@@ -134,36 +594,42 @@
       <div class="legend">
         <div class="legend-head">
           <h2>Три стани — як читати</h2>
-          <span class="src">та сама конвенція що й у onboarding / paywall / hubchat</span>
+          <span class="src"
+            >та сама конвенція що й у onboarding / paywall / hubchat</span
+          >
         </div>
         <div class="legend-grid">
           <div class="legend-cell now">
             <span class="badge"><span class="dot"></span>Зараз</span>
             <h3>Те, що вже у коді</h3>
             <p>
-              Налаштувань як окремого екрана немає. Підключення Monobank
-              живе у Фініку, інших дрібниць — нема. Це — припущення «зараз
-              нічого».
+              Налаштувань як окремого екрана немає. Підключення Monobank живе у
+              Фініку, інших дрібниць — нема. Це — припущення «зараз нічого».
             </p>
-            <div class="when">джерело: пошук <code>Settings</code> у apps/web/ не дав окремої сторінки</div>
+            <div class="when">
+              джерело: пошук <code>Settings</code> у apps/web/ не дав окремої
+              сторінки
+            </div>
           </div>
           <div class="legend-cell plan">
             <span class="badge"><span class="dot"></span>Планується</span>
             <h3>Те, що випливає з обіцянок бренду</h3>
             <p>
               Базова сторінка з 5 секціями: акаунт, приватність, синхр.,
-              сповіщення, дані. Приватність — друга секція, не остання.
-              Експорт усіх даних — одна кнопка.
+              сповіщення, дані. Приватність — друга секція, не остання. Експорт
+              усіх даних — одна кнопка.
             </p>
-            <div class="when">джерело: brandbook · «без cloud-у за замовчуванням»</div>
+            <div class="when">
+              джерело: brandbook · «без cloud-у за замовчуванням»
+            </div>
           </div>
           <div class="legend-cell rec">
             <span class="badge"><span class="dot"></span>Рекомендую</span>
             <h3>Доповнення поверх плану</h3>
             <p>
-              Приватність — <strong>перша</strong> секція. Окрема видима
-              картка статусу «що зараз знаємо про тебе» з лічильниками.
-              Кнопка «зробити локальне» поряд із кожним cloud-фічером.
+              Приватність — <strong>перша</strong> секція. Окрема видима картка
+              статусу «що зараз знаємо про тебе» з лічильниками. Кнопка «зробити
+              локальне» поряд із кожним cloud-фічером.
             </p>
             <div class="when">джерело: цей файл</div>
           </div>
@@ -184,7 +650,6 @@
         </p>
 
         <div class="state-row">
-
           <!-- now -->
           <div class="state-card now">
             <div class="state-head">
@@ -195,7 +660,9 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="scr-head">
                   <span class="scr-back">←</span>
                   <span class="scr-title">Налаштування</span>
@@ -203,7 +670,10 @@
                 <div class="scr-body">
                   <div class="nothing">
                     <div class="glyph">⚙</div>
-                    <div class="t"><b>Сторінки ще немає.</b><br/>Деякі тумблери розкидані<br/>усередині модулів.</div>
+                    <div class="t">
+                      <b>Сторінки ще немає.</b><br />Деякі тумблери розкидані<br />усередині
+                      модулів.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -211,9 +681,15 @@
             <div class="state-foot">
               <dl>
                 <dt>стан</dt>
-                <dd>немає окремого <code>/settings</code>; підключення Monobank — у Фініку, профіль — у акаунті</dd>
+                <dd>
+                  немає окремого <code>/settings</code>; підключення Monobank —
+                  у Фініку, профіль — у акаунті
+                </dd>
                 <dt>чому проблема</dt>
-                <dd>privacy-claim бренду без UI-відповідника · юзер не може швидко перевірити, що відбувається з даними</dd>
+                <dd>
+                  privacy-claim бренду без UI-відповідника · юзер не може швидко
+                  перевірити, що відбувається з даними
+                </dd>
               </dl>
             </div>
           </div>
@@ -228,32 +704,62 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="scr-head">
                   <span class="scr-back">←</span>
                   <span class="scr-title">Налаштування</span>
                 </div>
                 <div class="scr-body">
                   <div class="grp-title">Акаунт</div>
-                  <div class="row"><span class="lbl">Олексій<small>oleksii@example.com</small></span><span class="chevron">›</span></div>
+                  <div class="row">
+                    <span class="lbl"
+                      >Олексій<small>oleksii@example.com</small></span
+                    ><span class="chevron">›</span>
+                  </div>
                   <div class="grp-title">Приватність</div>
-                  <div class="row"><span class="lbl">Експорт усіх даних</span><span class="chevron">›</span></div>
-                  <div class="row"><span class="lbl">Видалити акаунт</span><span class="chevron">›</span></div>
-                  <div class="row"><span class="lbl">Аналітика й телеметрія</span><span class="toggle on"></span></div>
+                  <div class="row">
+                    <span class="lbl">Експорт усіх даних</span
+                    ><span class="chevron">›</span>
+                  </div>
+                  <div class="row">
+                    <span class="lbl">Видалити акаунт</span
+                    ><span class="chevron">›</span>
+                  </div>
+                  <div class="row">
+                    <span class="lbl">Аналітика й телеметрія</span
+                    ><span class="toggle on"></span>
+                  </div>
                   <div class="grp-title">Синхронізація</div>
-                  <div class="row"><span class="lbl">Хмарна синхр.</span><span class="toggle"></span></div>
-                  <div class="row"><span class="lbl">Monobank</span><span class="chevron">›</span></div>
+                  <div class="row">
+                    <span class="lbl">Хмарна синхр.</span
+                    ><span class="toggle"></span>
+                  </div>
+                  <div class="row">
+                    <span class="lbl">Monobank</span
+                    ><span class="chevron">›</span>
+                  </div>
                   <div class="grp-title">Сповіщення</div>
-                  <div class="row"><span class="lbl">Щоденні нагадування</span><span class="toggle on"></span></div>
+                  <div class="row">
+                    <span class="lbl">Щоденні нагадування</span
+                    ><span class="toggle on"></span>
+                  </div>
                 </div>
               </div>
             </div>
             <div class="state-foot">
               <dl>
                 <dt>план</dt>
-                <dd>5 секцій · приватність другою, не останньою · експорт як одна кнопка</dd>
+                <dd>
+                  5 секцій · приватність другою, не останньою · експорт як одна
+                  кнопка
+                </dd>
                 <dt>чому</dt>
-                <dd>користувач не має шукати, як видалити дані — це частина value-prop</dd>
+                <dd>
+                  користувач не має шукати, як видалити дані — це частина
+                  value-prop
+                </dd>
                 <dt>копія</dt>
                 <dd>«видалити акаунт» прямо, без «закрити обліковий запис»</dd>
               </dl>
@@ -270,45 +776,96 @@
             <div class="phone">
               <div class="phone-island"></div>
               <div class="phone-screen">
-                <div class="phone-statusbar"><span>9:41</span><span>●●● ▮▮▮</span></div>
+                <div class="phone-statusbar">
+                  <span>9:41</span><span>●●● ▮▮▮</span>
+                </div>
                 <div class="scr-head">
                   <span class="scr-back">←</span>
                   <span class="scr-title">Налаштування</span>
                 </div>
                 <div class="scr-body">
-                  <div style="background:rgba(34,211,238,0.06); border:1px solid rgba(34,211,238,0.18); border-radius:10px; padding:9px 10px; margin-bottom:4px">
-                    <div style="font-size:8px; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.12em; color:var(--fizruk); margin-bottom:5px">що ми знаємо</div>
-                    <div style="font-size:9px; color:rgba(245,240,235,0.85); line-height:1.5">
-                      <b>1 247</b> записів локально<br/>
-                      <b>0</b> у хмарі<br/>
+                  <div
+                    style="
+                      background: rgba(34, 211, 238, 0.06);
+                      border: 1px solid rgba(34, 211, 238, 0.18);
+                      border-radius: 10px;
+                      padding: 9px 10px;
+                      margin-bottom: 4px;
+                    "
+                  >
+                    <div
+                      style="
+                        font-size: 8px;
+                        font-family: var(--font-mono);
+                        text-transform: uppercase;
+                        letter-spacing: 0.12em;
+                        color: var(--fizruk);
+                        margin-bottom: 5px;
+                      "
+                    >
+                      що ми знаємо
+                    </div>
+                    <div
+                      style="
+                        font-size: 9px;
+                        color: rgba(245, 240, 235, 0.85);
+                        line-height: 1.5;
+                      "
+                    >
+                      <b>1 247</b> записів локально<br />
+                      <b>0</b> у хмарі<br />
                       <b>—</b> ділимось третім сторонам
                     </div>
-                    <div style="display:flex; gap:4px; margin-top:6px">
+                    <div style="display: flex; gap: 4px; margin-top: 6px">
                       <span class="pill local">локально</span>
                       <span class="pill ok">без cloud</span>
                     </div>
                   </div>
                   <div class="grp-title">Приватність</div>
-                  <div class="row"><span class="lbl"><b>Експорт</b><small>1 кнопка, всі модулі, JSON+CSV</small></span><span class="chevron">›</span></div>
-                  <div class="row"><span class="lbl">Аналітика<small>помагає робити кращим</small></span><span class="toggle warn"></span></div>
-                  <div class="row danger"><span class="lbl">Видалити все<small>незворотньо</small></span><span class="chevron">›</span></div>
+                  <div class="row">
+                    <span class="lbl"
+                      ><b>Експорт</b
+                      ><small>1 кнопка, всі модулі, JSON+CSV</small></span
+                    ><span class="chevron">›</span>
+                  </div>
+                  <div class="row">
+                    <span class="lbl"
+                      >Аналітика<small>помагає робити кращим</small></span
+                    ><span class="toggle warn"></span>
+                  </div>
+                  <div class="row danger">
+                    <span class="lbl"
+                      >Видалити все<small>незворотньо</small></span
+                    ><span class="chevron">›</span>
+                  </div>
                   <div class="grp-title">Синхронізація</div>
-                  <div class="row"><span class="lbl">Хмарна синхр.<small>Pro · зашифровано</small></span><span class="toggle"></span></div>
+                  <div class="row">
+                    <span class="lbl"
+                      >Хмарна синхр.<small>Pro · зашифровано</small></span
+                    ><span class="toggle"></span>
+                  </div>
                 </div>
               </div>
             </div>
             <div class="state-foot">
               <dl>
                 <dt>додаю</dt>
-                <dd>privacy-картка на самому верху з фактичними числами «що ми знаємо»</dd>
+                <dd>
+                  privacy-картка на самому верху з фактичними числами «що ми
+                  знаємо»
+                </dd>
                 <dt>чому</dt>
-                <dd>privacy-claim перетворюється з обіцянки на доказ за 2 секунди</dd>
+                <dd>
+                  privacy-claim перетворюється з обіцянки на доказ за 2 секунди
+                </dd>
                 <dt>ризик</dt>
-                <dd>якщо аналітика ON — поряд має бути pill «надсилається» · інакше виглядає двозначно</dd>
+                <dd>
+                  якщо аналітика ON — поряд має бути pill «надсилається» ·
+                  інакше виглядає двозначно
+                </dd>
               </dl>
             </div>
           </div>
-
         </div>
       </section>
 

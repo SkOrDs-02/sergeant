@@ -59,22 +59,23 @@
 
 ### Target state (після Phase 2.5 ModuleBottomNav v2 PR)
 
-|                       | `HubBottomNav` (v2, since PR-5)                    | `ModuleBottomNav` (v2, target)                       |
-| --------------------- | -------------------------------------------------- | ---------------------------------------------------- |
-| Items                 | 2-3 (Головна / Звіти? / Налаштування)              | 4 per module (finyk/fizruk/routine/nutrition)        |
-| Shell shape           | `mx-3 mb-3 rounded-r-2xl shadow-nav`               | `mx-3 mb-3 rounded-r-2xl shadow-nav` (identical)     |
-| Surface               | `bg-surface-strong-glass backdrop-blur-md`         | `bg-surface-strong-glass backdrop-blur-md` (identical) |
-| Active pill           | `bg-ink-strong` (brand-agnostic)                   | `bg-{module}-strong` (module-tinted — identity carrier) |
-| `safe-area-pb`        | ✓ (через wrapper `padding-bottom: calc(...)`)      | ✓                                                    |
-| `role="tablist"`      | ✓                                                  | ✓ (опційно; за замовчуванням nav)                    |
-| Висота                | 60 px / 64 px coarse                               | 60 px / 64 px coarse                                 |
-| FAB integration       | N/A                                                | Routine special-case: center FAB як sibling (z-index >, top: -22 above pill); інші модулі — N/A |
+|                  | `HubBottomNav` (v2, since PR-5)               | `ModuleBottomNav` (v2, target)                                                                  |
+| ---------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Items            | 2-3 (Головна / Звіти? / Налаштування)         | 4 per module (finyk/fizruk/routine/nutrition)                                                   |
+| Shell shape      | `mx-3 mb-3 rounded-r-2xl shadow-nav`          | `mx-3 mb-3 rounded-r-2xl shadow-nav` (identical)                                                |
+| Surface          | `bg-surface-strong-glass backdrop-blur-md`    | `bg-surface-strong-glass backdrop-blur-md` (identical)                                          |
+| Active pill      | `bg-ink-strong` (brand-agnostic)              | `bg-{module}-strong` (module-tinted — identity carrier)                                         |
+| `safe-area-pb`   | ✓ (через wrapper `padding-bottom: calc(...)`) | ✓                                                                                               |
+| `role="tablist"` | ✓                                             | ✓ (опційно; за замовчуванням nav)                                                               |
+| Висота           | 60 px / 64 px coarse                          | 60 px / 64 px coarse                                                                            |
+| FAB integration  | N/A                                           | Routine special-case: center FAB як sibling (z-index >, top: -22 above pill); інші модулі — N/A |
 
 > **Module identity transfer:** до Phase 2.5 module identity несе icon glow + top-pill gradient. Після Phase 2.5 — `bg-{module}-strong` pill background. Icon glow можна прибрати (redundant).
 
 ### Поточний state divergence (до Phase 2.5)
 
 `ModuleBottomNav` ще використовує v1 shape:
+
 - `bg-panel/95 motion-safe:backdrop-blur-xl border-t border-line` (flat panel)
 - Sliding top-pill 4px indicator + drop-shadow icon glow
 - Без `mx-3 mb-3 rounded-r-2xl shadow-nav`

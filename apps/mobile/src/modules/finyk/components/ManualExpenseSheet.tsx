@@ -59,7 +59,9 @@ const LEGACY_CATEGORY_UPGRADE: Record<string, ManualExpenseCategory> = {
   інше: "🏷 інше",
 };
 
-export function upgradeCategory(raw: string | undefined): ManualExpenseCategory {
+export function upgradeCategory(
+  raw: string | undefined,
+): ManualExpenseCategory {
   if (!raw) return DEFAULT_CATEGORY;
   if ((MANUAL_EXPENSE_CATEGORIES as readonly string[]).includes(raw)) {
     return raw as ManualExpenseCategory;

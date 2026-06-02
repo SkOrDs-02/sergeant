@@ -34,6 +34,7 @@ You are the mobile specialist for Sergeant. You implement Expo/React Native scre
 ## Report back
 
 When done, report:
+
 - Screens and components created (file paths)
 - Navigation changes (if any — tab bar additions, new routes)
 - Test status (unit tests only; Detox E2E requires a separate run)

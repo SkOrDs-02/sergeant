@@ -1,6 +1,6 @@
 # Telemetry rollout plan
 
-> **Last validated:** 2026-05-17 by @Skords-01. **Next review:** 2026-08-15.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Active
 
 > Канонічний план перебудови product-telemetry layer Sergeant. Згенеровано
@@ -65,16 +65,16 @@ Patterns + complete code templates — [`.telemetry/instrument.md`](../../.telem
 
 ## 3. Файли-артефакти у `.telemetry/`
 
-| Файл | Що містить | Skill що генерує |
-|------|-----------|------------------|
-| [`product.md`](../../.telemetry/product.md) | Product model: entities, value flows, B2C scope | `product-tracking-model-product` |
-| [`current-state.yaml`](../../.telemetry/current-state.yaml) | Інвентар 94 LIVE events, identity calls, traits | `product-tracking-audit-current-tracking` |
-| [`current-implementation.md`](../../.telemetry/current-implementation.md) | Як зараз працює wiring (init, routing, identity) | те саме |
-| [`audits/2026-05-17.md`](../../.telemetry/audits/2026-05-17.md) | Human-readable audit snapshot | те саме |
-| [`tracking-plan.yaml`](../../.telemetry/tracking-plan.yaml) | Цільовий план: 96 events, 12 traits, snapshot sync | `product-tracking-design-tracking-plan` |
-| [`delta.md`](../../.telemetry/delta.md) | Diff current → target з phased backlog | те саме |
-| [`instrument.md`](../../.telemetry/instrument.md) | PostHog-specific copy-paste код | `product-tracking-generate-implementation-guide` |
-| [`generated/`](../../.telemetry/generated/) | Draft файли для Phase 1 + MIGRATION.md | `product-tracking-implement-tracking` |
+| Файл                                                                      | Що містить                                         | Skill що генерує                                 |
+| ------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| [`product.md`](../../.telemetry/product.md)                               | Product model: entities, value flows, B2C scope    | `product-tracking-model-product`                 |
+| [`current-state.yaml`](../../.telemetry/current-state.yaml)               | Інвентар 94 LIVE events, identity calls, traits    | `product-tracking-audit-current-tracking`        |
+| [`current-implementation.md`](../../.telemetry/current-implementation.md) | Як зараз працює wiring (init, routing, identity)   | те саме                                          |
+| [`audits/2026-05-17.md`](../../.telemetry/audits/2026-05-17.md)           | Human-readable audit snapshot                      | те саме                                          |
+| [`tracking-plan.yaml`](../../.telemetry/tracking-plan.yaml)               | Цільовий план: 96 events, 12 traits, snapshot sync | `product-tracking-design-tracking-plan`          |
+| [`delta.md`](../../.telemetry/delta.md)                                   | Diff current → target з phased backlog             | те саме                                          |
+| [`instrument.md`](../../.telemetry/instrument.md)                         | PostHog-specific copy-paste код                    | `product-tracking-generate-implementation-guide` |
+| [`generated/`](../../.telemetry/generated/)                               | Draft файли для Phase 1 + MIGRATION.md             | `product-tracking-implement-tracking`            |
 
 Регенерація після зміни плану — повторний запуск відповідного skill з
 `/product-tracking-skills:<skill-name>`.
@@ -367,14 +367,14 @@ Critical path: **PR-1 → PR-4/5 → PR-6**. Остальні паралеліз
 
 ## 6. Часова шкала
 
-| Тиждень | Що мержиться | Стан |
-|---------|--------------|------|
-| W1 | PR-1, PR-2 | observability coupling + naming guard |
-| W2 | PR-3 (dual-write) | renames live, both names fire |
-| W3 | PR-4 | нові events (session/screen/flag) |
-| W4 | PR-5 | trait expansion |
-| W4-W5 | PR-6 | typed payloads (parallel з review) |
-| W5+2 | PR-7 | cleanup dual-write + drop deprecated event |
+| Тиждень | Що мержиться      | Стан                                       |
+| ------- | ----------------- | ------------------------------------------ |
+| W1      | PR-1, PR-2        | observability coupling + naming guard      |
+| W2      | PR-3 (dual-write) | renames live, both names fire              |
+| W3      | PR-4              | нові events (session/screen/flag)          |
+| W4      | PR-5              | trait expansion                            |
+| W4-W5   | PR-6              | typed payloads (parallel з review)         |
+| W5+2    | PR-7              | cleanup dual-write + drop deprecated event |
 
 Усього ~5 тижнів реального часу. Critical-path-only (PR-1 + PR-4 + PR-5) =
 ~2 тижні чистого ship time.
@@ -440,9 +440,9 @@ Latency: 1-3s після fire.
 **Debug режим у браузері:**
 
 ```js
-localStorage.setItem('ph_debug', '1');   // bypass is_internal gate (after PR-5)
-posthog.debug();                          // verbose SDK logs
-posthog.get_distinct_id();                // current distinct_id
+localStorage.setItem("ph_debug", "1"); // bypass is_internal gate (after PR-5)
+posthog.debug(); // verbose SDK logs
+posthog.get_distinct_id(); // current distinct_id
 ```
 
 ## 10. Owner + ескалація

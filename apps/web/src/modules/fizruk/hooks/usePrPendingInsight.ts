@@ -45,10 +45,7 @@ const PR_PROXIMITY_FACTOR = 0.95; // 5 % below
 function buildMaxWeightByExercise(
   workouts: readonly Workout[],
 ): Map<string, { maxWeightKg: number; nameUk: string | null }> {
-  const out = new Map<
-    string,
-    { maxWeightKg: number; nameUk: string | null }
-  >();
+  const out = new Map<string, { maxWeightKg: number; nameUk: string | null }>();
   for (const w of workouts) {
     if (!w.endedAt) continue; // skip in-progress
     for (const item of w.items ?? []) {
@@ -130,8 +127,7 @@ export function usePrPendingInsight({
       const exerciseName = pr.nameUk ?? item.exerciseId;
       // Suggest the next 2.5 kg increment above their current max as
       // the concrete PR target, capped at +5 kg to stay motivational.
-      const targetKg =
-        Math.round((pr.maxWeightKg + 2.5) * 10) / 10;
+      const targetKg = Math.round((pr.maxWeightKg + 2.5) * 10) / 10;
 
       return {
         id: "fizruk-pr-pending",
