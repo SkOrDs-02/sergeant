@@ -170,11 +170,13 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 
 ---
 
-### 2.5. Hub Settings & Reports tab cold-mount cost — 10+ s tab freeze
+### 2.5. ~~Hub Settings & Reports tab cold-mount cost — 10+ s tab freeze~~ — Виконано
 
-> 🚫 **Blocked-reason: data-gated** — Sprint 1/2 зашиплено; наступний крок (Sprint 3 stretch — Web Worker для aggregate) свідомо чекає ≥ 7 днів RUM-даних з прода (`hub_tab_switch_perf`), щоб рішення спиралося на реальні P50/P95, а не синтетику. Не брати, поки немає даних. Деталі — в [Initiative 0017](../initiatives/0017-hub-tabs-mount-perf.md).
-
-> **Status (2026-05-29): substantially mitigated — tracked by [Initiative 0017](../initiatives/0017-hub-tabs-mount-perf.md).** Sprint 1 (per-section `React.lazy` + Suspense у Settings; viewport-gated heavy queries у `FinykSection`, [#3102](https://github.com/Skords-01/Sergeant/pull/3102)) і Sprint 2 (HubReports → per-card lazy, `HubReports.tsx` 608 → **261 LOC**) зашиплено. Final RUM-перевірка цілей P50/P95 — у 0017. Цифри LOC нижче оновлено до фактичних.
+> **Closed 2026-06-02 — Initiative 0017 code-complete.** Sprint 0 ([#3043](https://github.com/Skords-01/Sergeant/pull/3043) — RUM instrumentation `hub_tab_switch_perf`), Sprint 1 ([#3102](https://github.com/Skords-01/Sergeant/pull/3102) — per-section `React.lazy` + `FinykSection` viewport gating), and Sprint 2 ([#3094](https://github.com/Skords-01/Sergeant/pull/3094) — HubReports per-card lazy, `HubReports.tsx` 608 → **261 LOC**) all merged. Sprint 3 (Web Worker for `aggregateReport`) explicitly **skipped** at the [Sprint 3 decision](../initiatives/0017-hub-tabs-mount-perf.md#sprint-3-decision-2026-06-01) — conditional on a post-merge 30-day RUM cut showing `aggregateReport` P95 > 50 ms; if the threshold trips, Sprint 3 re-opens as a discrete follow-up against the initiative rather than re-living here.
+>
+> Removed from the active watchlist because the engineering work is shipped. RUM-target verification (Settings P50 ≤ 2 s, Reports P50 ≤ 1.5 s, long-task P95 ≤ 5, main chunk −50 KB) continues to be tracked by Initiative 0017 — those are validation checkpoints, not unfinished mitigation work.
+>
+> Historical detail preserved below for the audit trail (root cause, guardrails, target metrics).
 
 **Симптом (2026-05-20 prod audit):** клік на bottom-nav таб `?tab=settings` або `?tab=reports` показує `PageLoader` skeleton на 10+ секунд на desktop (mid-range mobile estimate: 25+ с). Chunk download уже **не** проблема — `prefetchHubNavigationPages` без зовнішньої idle-обгортки ([PR #3043](https://github.com/Skords-01/Sergeant/pull/3043)) дає chunks за 31 ms (cache-hit). Затримка — у JS execution та initial mount cost.
 

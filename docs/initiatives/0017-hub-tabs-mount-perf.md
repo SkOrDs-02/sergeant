@@ -140,12 +140,20 @@
 
 **Skipped pending metrics review.** Sprint 3 (Web Worker for aggregation) was conditional on post-Sprint-2 PostHog `aggregateReport` P95 > 50 ms. Cut window for the decision opens after a 30-day rolling window on `hub_tab_switch_perf`. Recorded here as a Finalize decision so the initiative can mark code-complete and roll forward; if the next monthly RUM review shows P95 still > 50 ms, Sprint 3 reopens as a discrete follow-up against this initiative. Owner confirms cut at the next standup.
 
-### Outcome (2026-06-01, code-complete)
+### Outcome (2026-06-01, code-complete; 2026-06-02 tech-debt watchlist drained)
 
 - **Sprint 0 / 1 / 2 PRs:** all merged to main ([#3094](https://github.com/Skords-01/Sergeant/pull/3094) Sprint 2, [#3102](https://github.com/Skords-01/Sergeant/pull/3102) Finyk cross-module defer).
 - **Sprint 3:** conditional, skipped pending RUM review (see above).
-- **Bundle gate / tech-debt watchlist drain / Outcome with concrete RUM numbers** roll into the next `frontend.md` sweep — reserving numeric updates for when PostHog window cuts.
-- **Status transition:** flipped from "In progress" to "Code-complete, RUM review pending". Once Sprint 3 decision is signed off and metrics are pinned, the file will be archived as `_0017-hub-tabs-mount-perf.md`.
+- **Tech-debt watchlist drained (2026-06-02):** `docs/tech-debt/frontend.md §2.5` moved to `~~Hub Settings & Reports tab cold-mount cost~~ — Виконано` with a closing note pointing back to this initiative for RUM-target tracking. The engineering work is shipped; the §2.5 entry no longer reflects unfinished mitigation.
+- **Bundle gate / Outcome with concrete RUM numbers** still pending — both wait on the next 30-day RUM cut. Listed in `### Carry-over → successor` below so the agenda survives the file's eventual archival.
+- **Status transition:** "In progress — code-complete, RUM review pending". Once Sprint 3 decision is signed off and RUM metrics are pinned (target: next monthly review), the bundle gate update lands and the file is archived as `_0017-hub-tabs-mount-perf.md`.
+
+### Carry-over → successor
+
+- [ ] **2026-07-02 (≈ 30-day RUM cut):** confirm `hub_tab_switch_perf` Settings P50 ≤ 2 s + P95 ≤ 3 s, Reports P50 ≤ 1.5 s + P95 ≤ 3 s, long-task P95 ≤ 5. Owner pins numbers in this Outcome.
+- [ ] **2026-07-02 (≈ 30-day RUM cut):** confirm `aggregateReport` P95 ≤ 50 ms; if > 50 ms, re-open Sprint 3 (Web Worker for aggregate) as a discrete follow-up against this initiative.
+- [ ] **2026-07-02:** update `scripts/check-bundle-size.mjs` main-chunk budget to reflect post-Sprint-1/2 reality (target reduction −50 KB on `index-` budget; needs `pnpm build:web` + `dist/assets` measurement, deferred so the budget tightens against a stable post-launch baseline rather than the in-flight state).
+- [ ] **After RUM targets pinned:** rename file to `_0017-hub-tabs-mount-perf.md` (Status → Done) per [`docs/initiatives/README.md` Completed-prefix](./README.md#completed-prefix--nnnn-) and update the active-initiative row in `README.md`.
 
 ## Критерії DONE
 
@@ -157,7 +165,7 @@
 - [ ] Reports P50 tab-switch ≤ 1.5 s, P95 ≤ 3 s.
 - [ ] Long-task count P95 ≤ 5 per tab-switch.
 - [ ] Bundle gate updated, main chunk -50 KB.
-- [ ] [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) — entry для Settings/Reports mount cost закритий.
+- [x] [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) — entry для Settings/Reports mount cost закритий (§2.5 переведено у `~~Виконано~~` 2026-06-02; engineering work shipped, RUM-validation продовжується в цій ініціативі).
 
 ## Ризики та митиґація
 
