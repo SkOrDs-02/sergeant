@@ -1,6 +1,6 @@
 # ADR-0010: Mobile dual-track — Capacitor shell + Expo native
 
-- **Status:** accepted
+- **Status:** Superseded by ADR-0052
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Lifecycle:** historical dual-track record. The locked shell-sunset schedule below was superseded operationally by [ADR-0052](./0052-mobile-strategy-capacitor-primary.md), which keeps `apps/mobile-shell` primary until Expo/RN parity and a new accepted replacement decision.
 - **Date:** 2026-04-27

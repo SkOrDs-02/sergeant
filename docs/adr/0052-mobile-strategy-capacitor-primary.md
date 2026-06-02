@@ -4,7 +4,7 @@
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
-- **Supersedes:** —
+- **Supersedes:** ADR-0010
 - **Superseded sections (non-ADR):** sunset-direction sections in [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../initiatives/archive/_0002-mobile-platform-decision.md) (sunset schedule T₀/T₁/T₂ reference as "active outcome")
 - **Related:**
   - [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md)

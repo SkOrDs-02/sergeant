@@ -1,6 +1,6 @@
 # Encryption key rotation — runbook
 
-> **Last validated:** 2026-06-01 by @Skords-01. **Next review:** 2026-09-01.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Active
 
 > Закриває action item з [`docs/security/hardening/H4-encryption-key-rotation.md`](../security/hardening/H4-encryption-key-rotation.md).
@@ -106,8 +106,8 @@ Deploy. Очікуваний ефект: `assertStartupEnv` логує
 
 ### Крок 3 — verify ring on staging
 
-На staging (або через `apps/server/scripts/dev/eval-env.ts`, якщо є)
-викликати:
+На staging викликати вручну (наприклад, через `tsx` у shell-и сервісу або
+локальний `pnpm tsx`):
 
 ```ts
 import { parseKeyRing } from "../src/lib/keyRing.js";

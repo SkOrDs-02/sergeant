@@ -5,11 +5,12 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
+  - [ADR-0018](./0018-api-versioning-policy.md)
   - [`docs/architecture/api-v1.md`](../architecture/api-v1.md)
   - [`docs/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md`](../initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md)
   - [`docs/notes/spikes/2026-05-api-v1-usage.md`](../notes/spikes/2026-05-api-v1-usage.md)
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 
 ## Context
 
