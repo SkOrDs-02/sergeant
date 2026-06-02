@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-06-02
  * Status: Active
  */
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,6 +8,65 @@ import { cn } from "@shared/lib/ui/cn";
 import { THEME_HEX } from "@shared/lib/ui/themeHex";
 
 const STATUS_TO_FREQ: Record<string, number> = { yellow: 1, red: 2 };
+
+/** Human-readable Ukrainian labels for each body-highlighter muscle key. */
+const MUSCLE_LABELS: Record<string, string> = {
+  chest: "Грудні",
+  "upper-back": "Верхня спина",
+  "lower-back": "Нижня спина",
+  trapezius: "Трапеція",
+  biceps: "Біцепс",
+  triceps: "Трицепс",
+  forearm: "Передпліччя",
+  "front-deltoids": "Передні дельти",
+  "back-deltoids": "Задні дельти",
+  abs: "Прес",
+  obliques: "Косі м'язи",
+  quadriceps: "Квадрицепс",
+  hamstring: "Біцепс стегна",
+  calves: "Литки",
+  adductor: "Привідні",
+  abductors: "Відвідні",
+  gluteal: "Сідниці",
+  neck: "Шия",
+};
+
+/** Muscles visible on the anterior (front) view. */
+const ANTERIOR_MUSCLES = [
+  "chest",
+  "biceps",
+  "triceps",
+  "forearm",
+  "front-deltoids",
+  "abs",
+  "obliques",
+  "quadriceps",
+  "calves",
+  "adductor",
+  "abductors",
+  "neck",
+] as const;
+
+/** Muscles visible on the posterior (back) view. */
+const POSTERIOR_MUSCLES = [
+  "upper-back",
+  "lower-back",
+  "trapezius",
+  "triceps",
+  "forearm",
+  "back-deltoids",
+  "hamstring",
+  "calves",
+  "gluteal",
+  "neck",
+] as const;
+
+/** Ukrainian status label shown in aria-label strings. */
+const STATUS_LABELS: Record<string, string> = {
+  green: "готовий",
+  yellow: "відновлюється",
+  red: "уникати",
+};
 
 function buildDataFromStatuses(
   statusByMuscle: Record<string, string> | null | undefined,
@@ -83,6 +142,25 @@ export function BodyAtlas({
     };
   }, [view, data]);
 
+  /** Muscles relevant to the current view, in render order. */
+  const visibleMuscles =
+    view === "anterior" ? ANTERIOR_MUSCLES : POSTERIOR_MUSCLES;
+
+  function handleMuscleClick(muscle: string) {
+    const freq = STATUS_TO_FREQ[statusByMuscle?.[muscle] ?? ""] ?? undefined;
+    setSelected(freq !== undefined ? { muscle, frequency: freq } : { muscle });
+  }
+
+  function handleMuscleKeyDown(
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    muscle: string,
+  ) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleMuscleClick(muscle);
+    }
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
@@ -90,8 +168,9 @@ export function BodyAtlas({
           <button
             type="button"
             aria-pressed={view === "anterior"}
+            aria-label="Вигляд спереду"
             className={cn(
-              "text-xs px-3 min-h-[44px] rounded-full border transition-colors",
+              "text-xs px-3 min-h-[44px] min-w-[44px] rounded-full border transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/50",
               view === "anterior"
                 ? "bg-text text-bg border-text"
@@ -104,8 +183,9 @@ export function BodyAtlas({
           <button
             type="button"
             aria-pressed={view === "posterior"}
+            aria-label="Вигляд ззаду"
             className={cn(
-              "text-xs px-3 min-h-[44px] rounded-full border transition-colors",
+              "text-xs px-3 min-h-[44px] min-w-[44px] rounded-full border transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/50",
               view === "posterior"
                 ? "bg-text text-bg border-text"
@@ -131,12 +211,55 @@ export function BodyAtlas({
         )}
       </div>
 
-      <div className="bg-bg border border-line rounded-2xl p-3">
+      {/*
+       * Keyboard-accessible muscle map container.
+       *
+       * body-highlighter renders SVG polygons imperatively via DOM
+       * manipulation — they are pointer-only with no keyboard handling.
+       * The sr-only <ul> below is a parallel keyboard path: every muscle
+       * in the current view is Tab-reachable, activatable with Enter/Space,
+       * and announces its name + recovery status via aria-label.
+       *
+       * Both paths share `setSelected` as the single source of truth.
+       * The visual SVG is aria-hidden so screen-readers skip it and use
+       * the parallel list instead.
+       */}
+      <div
+        className="bg-bg border border-line rounded-2xl p-3"
+        aria-label="Карта м'язів"
+      >
+        {/* Visual SVG body map — pointer-only, hidden from AT */}
         <div
           ref={containerRef}
+          aria-hidden="true"
           className="w-full overflow-hidden"
           style={{ height, maxHeight: height }}
         />
+
+        {/* Parallel keyboard-accessible muscle list (sr-only, NOT display:none) */}
+        <ul className="sr-only" aria-label="Список м'язів">
+          {visibleMuscles.map((muscle) => {
+            const rawStatus = statusByMuscle?.[muscle] ?? "green";
+            const statusLabel =
+              STATUS_LABELS[rawStatus] ?? STATUS_LABELS["green"];
+            const muscleName = MUSCLE_LABELS[muscle] ?? muscle;
+            const isSelected = selected?.muscle === muscle;
+            return (
+              <li key={muscle}>
+                <button
+                  type="button"
+                  aria-label={`${muscleName} — ${statusLabel}`}
+                  aria-pressed={isSelected}
+                  className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/50"
+                  onClick={() => handleMuscleClick(muscle)}
+                  onKeyDown={(e) => handleMuscleKeyDown(e, muscle)}
+                >
+                  {muscleName}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </div>
 
       {selected && (
