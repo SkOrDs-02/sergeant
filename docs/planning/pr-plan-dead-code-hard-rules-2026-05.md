@@ -144,6 +144,7 @@ Order: DC-1 (XS) → HR-1 (locks canonical test-pattern) → паралельн�
 
 ### HR-2 — `refactor(server): env-single-source burn-down PR-B (requireGroqKey)`
 
+- **Status:** ✅ Виконано — `requireGroqKey` migrated earlier (#2914); HR-2 follow-up (this PR) dropped the **last** Groq `process.env` read — `transcribe.ts resolveGroqModel()` now reads validated `env.GROQ_TRANSCRIBE_MODEL`, M4 allowlist consolidated at env SSOT (`z.preprocess("" → undefined, z.enum().default())`), semantics moved to `apps/server/src/env/groqTranscribeModel.test.ts`. env-single-source budget 89 → 88; transcribe + env tests 20/20 green.
 - **Title:** `refactor(server): migrate requireGroqKey to env.X + voice/transcription test-refactor`
 - **Scope-файли:**
   - `apps/server/src/lib/ai/*.ts` — caller `requireGroqKey` (1 read `process.env.GROQ_API_KEY` → `env.GROQ_API_KEY`).
