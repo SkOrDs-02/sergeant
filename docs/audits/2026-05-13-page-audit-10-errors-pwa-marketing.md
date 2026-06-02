@@ -36,6 +36,22 @@
 
 ### F1 — Service Worker has no offline navigation fallback to `/offline` [severity: high] [perspective: ux]
 
+> ✅ **Closed 2026-06-02** (core fallback). `setupCacheRoutes()` in
+> `apps/web/src/sw/cache.ts` now registers a `setCatchHandler` that, on a
+> navigation request whose handler threw (offline + cache-miss), returns the
+> precached app shell via `matchPrecache` — so the SPA boots offline and
+> renders its own offline/empty states instead of the browser's native error.
+> The shell-resolution logic lives in `apps/web/src/sw/offlineFallback.ts`
+> (pure, workbox-free) with unit coverage in `offlineFallback.test.ts`. Blast
+> radius is the already-broken offline-miss path only: the success path and
+> non-navigation requests are untouched, and if no shell is precached we still
+> return the default error (no behaviour change vs before).
+>
+> **Deferred:** routing the dedicated `OfflinePage.tsx` surface (rather than
+> the generic app shell) needs a precached standalone `/offline.html` entry +
+> `vite-plugin-pwa` manifest wiring — tracked as a follow-up product decision,
+> not part of this low-risk core.
+
 **Page:** PWA / Service Worker
 **File:** `apps/web/src/sw/cache.ts`
 **Lines:** L28–L48

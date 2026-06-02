@@ -7,13 +7,22 @@
  * лишається коротким composition root-ом.
  */
 
-import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
-import { registerRoute, NavigationRoute } from "workbox-routing";
+import {
+  precacheAndRoute,
+  cleanupOutdatedCaches,
+  matchPrecache,
+} from "workbox-precaching";
+import {
+  registerRoute,
+  NavigationRoute,
+  setCatchHandler,
+} from "workbox-routing";
 import { NetworkFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { CACHE_NAMES } from "./version";
 import { shouldUseRuntimeCache } from "./cachePolicy";
+import { isNavigationRequest, resolveOfflineShell } from "./offlineFallback";
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
@@ -131,6 +140,20 @@ export function setupCacheRoutes(): void {
     }),
     "GET",
   );
+
+  // Offline navigation fallback (page-audit-10 F1). `setCatchHandler` only
+  // runs when a matched route's handler *throws* — i.e. the navigation
+  // NetworkFirst above already tried network (3s) and missed the cache while
+  // offline. The success path and every non-navigation request are untouched;
+  // if no shell is precached we return the default error (no behaviour change
+  // vs today), so the blast radius is exactly the already-broken offline-miss.
+  setCatchHandler(async ({ request }) => {
+    if (isNavigationRequest(request.mode)) {
+      const shell = await resolveOfflineShell((url) => matchPrecache(url));
+      if (shell) return shell;
+    }
+    return Response.error();
+  });
 }
 
 export async function cacheEntryCount(
