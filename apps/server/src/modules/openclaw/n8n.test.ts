@@ -9,6 +9,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // factory closure must not reference local `const`s declared below it — they
 // would be in the TDZ at factory-evaluation time. `vi.hoisted` lifts the
 // shared `mockEnv` alongside the mock so the Proxy can read from it safely.
+//
+// Return `undefined` (NOT empty string) for unset keys: `n8n.ts` transitively
+// imports `obs/logger.ts` which initializes pino with
+// `level: env.LOG_LEVEL ?? (isDev ? "debug" : "info")`. The `??` only falls
+// through on null/undefined, so an empty-string default would land as
+// `level: ""` and pino throws `default level: must be included in custom
+// levels` at module load — breaking every test before it can run. Returning
+// `undefined` lets the `??` fallback fire and pino picks a valid level.
 const { mockEnv } = vi.hoisted(() => ({
   mockEnv: {} as Record<string, string>,
 }));
@@ -17,7 +25,7 @@ vi.mock("../../env/env.js", () => ({
     {},
     {
       get(_target, prop: string) {
-        return mockEnv[prop] ?? "";
+        return mockEnv[prop];
       },
     },
   ),
