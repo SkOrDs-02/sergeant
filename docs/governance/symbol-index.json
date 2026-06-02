@@ -1772,7 +1772,7 @@
       "entryFile": "packages/nutrition-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 80,
+        "totalImporters": 83,
         "deadExports": 0
       },
       "exports": [
