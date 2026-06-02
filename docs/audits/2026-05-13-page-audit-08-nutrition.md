@@ -434,6 +434,8 @@ Empty-states в модулі мають різний tone:
 
 ### F17 — `arr[0] || makeDefaultPantry()` без явного guard на повернений тип [severity: low] [perspective: ts]
 
+> ✅ **Closed 2026-06-02** — `useNutritionPantries.ts` `activePantry` memo переписано на явний chain: `const active = arr.find(...)` → `const fallback = arr[0] ?? makeDefaultPantry()` → `return active ?? fallback`. `||` замінено на `??` (nullish), щоб майбутній falsy-able `Pantry.id` не ламав ланцюг; під `noUncheckedIndexedAccess` повернений тип лишається concrete `Pantry`. Typecheck 0, eslint clean, 3 hook-тести зелені.
+
 **Page:** Pantry (через `useNutritionPantries`)
 **File:** `apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts`
 **Lines:** 73
