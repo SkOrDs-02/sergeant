@@ -2,12 +2,35 @@ import express from "express";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getSessionUserMock } = vi.hoisted(() => ({
+const { getSessionUserMock, mockEnv } = vi.hoisted(() => ({
   getSessionUserMock: vi.fn(),
+  // Tests need to flip STRIPE_SECRET_KEY / STRIPE_PRICE_ID_PRO_MONTHLY at
+  // runtime, but `stripe.ts` reads them through `env.STRIPE_SECRET_KEY`
+  // (Zod-validated `env` module snapshot — frozen at module load). Mutating
+  // `process.env` in `beforeEach` would not propagate into that snapshot, so
+  // tests would always see `env.STRIPE_SECRET_KEY === undefined` and get
+  // 503 `BILLING_UNAVAILABLE` even when they explicitly set the key.
+  //
+  // Stub the `env` module with a Proxy backed by a hoisted `mockEnv` map —
+  // matches the n8n.test.ts pattern. `process.env` is still kept in sync
+  // so direct reads (`getAppBaseUrl()` in stripe.ts, anything else that
+  // bypasses the Zod env) see the same value.
+  mockEnv: {} as Record<string, string>,
 }));
 
 vi.mock("../auth.js", () => ({
   getSessionUser: getSessionUserMock,
+}));
+
+vi.mock("../env/env.js", () => ({
+  env: new Proxy(
+    {},
+    {
+      get(_target, prop: string) {
+        return mockEnv[prop] ?? undefined;
+      },
+    },
+  ),
 }));
 
 vi.mock("../http/rateLimit.js", async () => {
@@ -20,6 +43,16 @@ vi.mock("../http/rateLimit.js", async () => {
       next(),
   };
 });
+
+function setEnv(key: string, value: string): void {
+  mockEnv[key] = value;
+  process.env[key] = value;
+}
+
+function unsetEnv(key: string): void {
+  delete mockEnv[key];
+  delete process.env[key];
+}
 
 import { BillingPortalResponseSchema } from "@sergeant/shared";
 
@@ -52,11 +85,11 @@ describe("billing routes", () => {
       id: "user_1",
       email: "billing@example.com",
     });
-    delete process.env["STRIPE_SECRET_KEY"];
-    delete process.env["STRIPE_PRICE_ID_PLUS_MONTHLY"];
-    delete process.env["STRIPE_PRICE_ID_PRO_MONTHLY"];
-    delete process.env["STRIPE_WEBHOOK_SECRET"];
-    delete process.env["PUBLIC_WEB_BASE_URL"];
+    unsetEnv("STRIPE_SECRET_KEY");
+    unsetEnv("STRIPE_PRICE_ID_PLUS_MONTHLY");
+    unsetEnv("STRIPE_PRICE_ID_PRO_MONTHLY");
+    unsetEnv("STRIPE_WEBHOOK_SECRET");
+    unsetEnv("PUBLIC_WEB_BASE_URL");
     originalFetch = globalThis.fetch;
   });
 
@@ -125,8 +158,8 @@ describe("billing routes", () => {
   // We mock global `fetch` so the test never hits Stripe's network.
 
   it("creates a Customer Portal session and returns a redirect URL", async () => {
-    process.env["STRIPE_SECRET_KEY"] = "sk_test_123";
-    process.env["PUBLIC_WEB_BASE_URL"] = "https://app.example.com";
+    setEnv("STRIPE_SECRET_KEY", "sk_test_123");
+    setEnv("PUBLIC_WEB_BASE_URL", "https://app.example.com");
 
     const query = vi.fn().mockResolvedValue({
       rows: [{ provider_customer_id: "cus_xyz" }],
@@ -186,7 +219,7 @@ describe("billing routes", () => {
   });
 
   it("returns NO_BILLING_CUSTOMER when user has no Stripe customer record", async () => {
-    process.env["STRIPE_SECRET_KEY"] = "sk_test_123";
+    setEnv("STRIPE_SECRET_KEY", "sk_test_123");
     const query = vi.fn().mockResolvedValue({ rows: [] });
     const fetchMock: typeof fetch = vi.fn(async () => new Response(null));
     globalThis.fetch = fetchMock;
