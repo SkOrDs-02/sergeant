@@ -24,6 +24,16 @@ function signedHeader(timestampSeconds: number, rawBody: Buffer): string {
   return `t=${timestampSeconds},v1=${v1}`;
 }
 
+// supertest gotcha: `.send(Buffer)` with `Content-Type: application/json`
+// JSON-stringifies the Buffer (yielding `{"type":"Buffer","data":[...]}`)
+// instead of streaming raw bytes — the resulting HMAC sees the stringified
+// envelope, NOT the original payload, so signature verification fails for
+// every "happy path" / "valid sig + event-shape" case. Sending the UTF-8
+// string explicitly skips that serialization, so server-side `express.raw`
+// captures bytes byte-identical to `payload.toString("utf8")` and the
+// HMAC over those bytes matches `signedHeader()`. See the chronic
+// `stripe signature mismatch` red on this suite before this fix.
+
 function makePool(rowCount: number) {
   const query = vi.fn().mockResolvedValue({ rowCount, rows: [] });
   const client = { query, release: vi.fn() };
@@ -79,7 +89,7 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .post("/api/billing/stripe-webhook")
       .set("Content-Type", "application/json")
       .set("stripe-signature", signedHeader(nowSec, payload))
-      .send(payload);
+      .send(payload.toString("utf8"));
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, duplicate: false });
@@ -104,7 +114,7 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .post("/api/billing/stripe-webhook")
       .set("Content-Type", "application/json")
       .set("stripe-signature", signedHeader(nowSec, payload))
-      .send(payload);
+      .send(payload.toString("utf8"));
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, duplicate: true });
@@ -122,7 +132,7 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .post("/api/billing/stripe-webhook")
       .set("Content-Type", "application/json")
       .set("stripe-signature", signedHeader(nowSec, goodPayload))
-      .send(tampered);
+      .send(tampered.toString("utf8"));
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: "Invalid Stripe signature" });
@@ -136,7 +146,7 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
     const res = await request(makeApp(pool))
       .post("/api/billing/stripe-webhook")
       .set("Content-Type", "application/json")
-      .send(payload);
+      .send(payload.toString("utf8"));
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: "Invalid Stripe signature" });
@@ -152,7 +162,7 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .post("/api/billing/stripe-webhook")
       .set("Content-Type", "application/json")
       .set("stripe-signature", signedHeader(tenMinutesAgo, payload))
-      .send(payload);
+      .send(payload.toString("utf8"));
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: "Invalid Stripe signature" });
@@ -170,7 +180,7 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .post("/api/billing/stripe-webhook")
       .set("Content-Type", "application/json")
       .set("stripe-signature", signedHeader(nowSec, payload))
-      .send(payload);
+      .send(payload.toString("utf8"));
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: "Invalid Stripe event" });
@@ -188,7 +198,7 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .post("/api/billing/stripe-webhook")
       .set("Content-Type", "application/json")
       .set("stripe-signature", signedHeader(nowSec, payload))
-      .send(payload);
+      .send(payload.toString("utf8"));
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: "Invalid Stripe event" });
@@ -210,7 +220,7 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .post("/api/billing/stripe-webhook")
       .set("Content-Type", "application/json")
       .set("stripe-signature", signedHeader(nowSec, payload))
-      .send(payload);
+      .send(payload.toString("utf8"));
 
     expect(res.status).toBe(200);
     // Idempotency rows are still recorded, subscription branches skip.
