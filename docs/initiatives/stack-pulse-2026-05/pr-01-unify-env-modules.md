@@ -45,13 +45,13 @@
 
 ## Acceptance criteria (DoD)
 
-- [ ] Один файл `apps/server/src/env/index.ts` з Zod-schema, експортує `env: EnvSchema` і `assertStartupEnv()`.
-- [ ] `apps/server/src/env.ts` видалений; всі імпорти `from "../env"` / `from "./env"` оновлені.
-- [ ] `apps/server/src/env/betterAuthEnv.ts` видалений; логіка перенесена у головну схему через `.refine()`.
-- [ ] `pnpm typecheck` проходить.
-- [ ] `pnpm test` проходить (включно з `apps/server/src/env/__tests__/env.test.ts`).
-- [ ] `scripts/check-env-single-source.mjs` доданий і викликається у `ci.yml` `lint`-job.
-- [ ] Документ-маркер: `Last validated` оновлений у `00-overview.md` після merge.
+- [x] Один файл `apps/server/src/env/index.ts` з Zod-schema, експортує `env: EnvSchema` і `assertStartupEnv()`.
+- [x] `apps/server/src/env.ts` видалений; всі імпорти `from "../env"` / `from "./env"` оновлені.
+- [x] `apps/server/src/env/betterAuthEnv.ts` видалений; логіка перенесена у головну схему через `.refine()`.
+- [x] `pnpm typecheck` проходить.
+- [x] `pnpm test` проходить (включно з `apps/server/src/env/__tests__/env.test.ts`).
+- [x] `scripts/check-env-single-source.mjs` доданий і викликається у `ci.yml` `lint`-job.
+- [x] Документ-маркер: `Last validated` оновлений у `00-overview.md` після merge.
 
 ## Тести
 

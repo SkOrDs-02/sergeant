@@ -68,13 +68,13 @@ OpenClaw — Devin-кероваджувальник, що приймає Telegra
 
 ## Acceptance criteria (DoD)
 
-- [ ] GitHub App `Sergeant OpenClaw` створений з minimum permissions.
-- [ ] `apps/server/src/openclaw/auth.ts` обмінює App private-key на installation-token + caches його з expiry.
-- [ ] `OPENCLAW_GITHUB_PAT` і `Git_PAT` видалені з `env*.ts` (включно з PR-01 unify).
-- [ ] Якщо `OPENCLAW_GITHUB_APP_*` не встановлений у production → startup fails з clear error.
-- [ ] `docs/playbooks/rotate-openclaw-credentials.md` створений.
-- [ ] Branch protection rule на `main` явно включений (видно у `Settings → Branches`).
-- [ ] Hard rule зареєстрований у `docs/governance/hard-rules-registry.json` («No-PAT-in-production»).
+- [x] GitHub App `Sergeant OpenClaw` створений з minimum permissions.
+- [x] `apps/server/src/openclaw/auth.ts` обмінює App private-key на installation-token + caches його з expiry.
+- [x] `OPENCLAW_GITHUB_PAT` і `Git_PAT` видалені з `env*.ts` (включно з PR-01 unify).
+- [x] Якщо `OPENCLAW_GITHUB_APP_*` не встановлений у production → startup fails з clear error.
+- [x] `docs/playbooks/rotate-openclaw-credentials.md` створений.
+- [x] Branch protection rule на `main` явно включений (видно у `Settings → Branches`).
+- [x] Hard rule зареєстрований у `docs/governance/hard-rules-registry.json` («No-PAT-in-production»).
 
 ## Тести
 

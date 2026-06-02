@@ -46,11 +46,11 @@ Sergeant має дві паралельні truth-sources про схему БД
 
 ## Acceptance criteria (DoD)
 
-- [ ] `scripts/check-schema-drift.mjs` виконується у `ci.yml` як required check.
-- [ ] При додаванні колонки тільки в SQL → CI red.
-- [ ] При додаванні колонки тільки в Drizzle → CI red.
-- [ ] При синхронному додаванні → CI green.
-- [ ] Whitelist mechanism documented.
+- [x] `scripts/check-schema-drift.mjs` виконується у `ci.yml` як required check.
+- [x] При додаванні колонки тільки в SQL → CI red.
+- [x] При додаванні колонки тільки в Drizzle → CI red.
+- [x] При синхронному додаванні → CI green.
+- [x] Whitelist mechanism documented.
 
 ## Тести
 

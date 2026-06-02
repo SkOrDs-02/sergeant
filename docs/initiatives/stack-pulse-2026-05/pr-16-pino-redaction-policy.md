@@ -102,12 +102,12 @@ export const logger = pino({
 
 ## Acceptance criteria (DoD)
 
-- [ ] `apps/server/src/obs/logger.ts` має enforced `redact:` config з ≥15 paths.
-- [ ] Pino unit-test: `logger.info({ password: "x" })` → output має `[REDACTED]`, не `"x"`.
-- [ ] ESLint rule active + 0 warnings у server-tree.
-- [ ] `docs/security/logging-redaction-policy.md` описаний.
-- [ ] Hard rule зареєстрований.
-- [ ] Sentry `beforeSend` синхронізований.
+- [x] `apps/server/src/obs/logger.ts` має enforced `redact:` config з ≥15 paths.
+- [x] Pino unit-test: `logger.info({ password: "x" })` → output має `[REDACTED]`, не `"x"`.
+- [x] ESLint rule active + 0 warnings у server-tree.
+- [x] `docs/security/logging-redaction-policy.md` описаний.
+- [x] Hard rule зареєстрований.
+- [x] Sentry `beforeSend` синхронізований.
 
 ## Тести
 

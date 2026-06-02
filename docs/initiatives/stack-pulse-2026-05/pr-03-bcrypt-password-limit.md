@@ -69,7 +69,7 @@ await bcrypt.compare("x".repeat(72) + "DIFFERENT", a); // also true 😱
 - [ ] Better Auth schema (`apps/server/src/auth.ts`) приймає `passwordMaxLength: 72` явно (без читання env у multiple місцях).
 - [ ] Unit-тест: `password.length === 73` → API повертає `400 invalid_password`.
 - [ ] Unit-тест (regression): `bcrypt.hash("x".repeat(73))` і `bcrypt.hash("x".repeat(72)+"y")` мають дати **різні** результати при `verify` — тобто доводимо, що cap працює, а не покладаємося на bcrypt мовчки.
-- [ ] ADR-0042 створений зі статусом `Proposed`.
+- [x] ADR-0042 створений зі статусом `Proposed`.
 
 ## Тести
 

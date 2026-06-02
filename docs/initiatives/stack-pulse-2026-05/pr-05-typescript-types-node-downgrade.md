@@ -1,6 +1,6 @@
 # PR-05: `@types/node` downgrade до 20.x + ADR на TS 6 vs 5.x
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
 > **Status:** Closed — merged (ADR-0050, @types/node pinned to ^20.19.0, pnpm.overrides + renovate rule)
 
 |              |                                                             |
@@ -59,11 +59,11 @@
 
 ## Acceptance criteria (DoD)
 
-- [ ] `pnpm install` проходить без peer-dep warnings про `@types/node`.
-- [ ] `pnpm typecheck` (root + всі apps) проходить.
-- [ ] `pnpm test` проходить на CI з downgraded `@types/node`.
-- [ ] ADR-0043 створений зі статусом `Accepted` і явним fallback-планом.
-- [ ] `Renovate` правило: `@types/node` pinned до major-20 (нехай не оновлює до 21+ автоматично).
+- [x] `pnpm install` проходить без peer-dep warnings про `@types/node`.
+- [x] `pnpm typecheck` (root + всі apps) проходить.
+- [x] `pnpm test` проходить на CI з downgraded `@types/node`.
+- [x] ADR-0043 створений зі статусом `Accepted` і явним fallback-планом.
+- [x] `Renovate` правило: `@types/node` pinned до major-20 (нехай не оновлює до 21+ автоматично).
 
 ## Тести
 

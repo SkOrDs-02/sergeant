@@ -49,12 +49,12 @@ if (redis) {
 
 ## Acceptance criteria (DoD)
 
-- [ ] `apps/server/src/http/rateLimit.ts` приймає `failMode: 'open' | 'closed'` як параметр.
-- [ ] `app.use("/api/auth/*", rateLimitMiddleware({ failMode: 'closed' }))` явно у `routes/index.ts`.
-- [ ] Тест: симулюємо Redis-error → 503 на `/api/auth/sign-in`, не 200/429.
-- [ ] Тест: симулюємо Redis-error → fallback (200) на `/api/health` чи інших non-security routes.
-- [ ] Pino-метрика `rate_limit_redis_fallback_count` пишеться у логи.
-- [ ] `docs/security/rate-limit-failure-mode.md` створений з threat-моделлю.
+- [x] `apps/server/src/http/rateLimit.ts` приймає `failMode: 'open' | 'closed'` як параметр.
+- [x] `app.use("/api/auth/*", rateLimitMiddleware({ failMode: 'closed' }))` явно у `routes/index.ts`.
+- [x] Тест: симулюємо Redis-error → 503 на `/api/auth/sign-in`, не 200/429.
+- [x] Тест: симулюємо Redis-error → fallback (200) на `/api/health` чи інших non-security routes.
+- [x] Pino-метрика `rate_limit_redis_fallback_count` пишеться у логи.
+- [x] `docs/security/rate-limit-failure-mode.md` створений з threat-моделлю.
 
 ## Тести
 

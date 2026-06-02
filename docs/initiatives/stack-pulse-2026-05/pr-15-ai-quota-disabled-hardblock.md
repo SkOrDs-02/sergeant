@@ -57,11 +57,11 @@ env:
 
 ## Acceptance criteria (DoD)
 
-- [ ] Server fails at startup якщо production + `AI_QUOTA_DISABLED=true`.
+- [x] Server fails at startup якщо production + `AI_QUOTA_DISABLED=true`.
 - [ ] `cost_tracking` table існує (можливо вже є — якщо ні, ADR + migration).
 - [ ] Daily cap enforced незалежно від env-flag.
 - [ ] Sentry alert на denied-quota-by-cap → notify (Slack hook).
-- [ ] Тест: env `NODE_ENV=production` + `AI_QUOTA_DISABLED=true` → server stops.
+- [x] Тест: env `NODE_ENV=production` + `AI_QUOTA_DISABLED=true` → server stops.
 
 ## Тести
 
