@@ -332,6 +332,8 @@ export function todayLocalDateString() {
 
 ### F12 — `pendingPicks` typed as `unknown[]` then cast inside the handler [severity: medium] [perspective: ts]
 
+> ✅ **Closed 2026-06-02 (docs-drift reconciliation, verified-already-done)** — `Dashboard.tsx:98` уже `useState<RawExerciseDef[] | null>(...)` з `import type { RawExerciseDef } from "@sergeant/fizruk-domain/data"` (L29). Structural-cast у `startWorkoutFromPlan` прибрано — обидва handler-и приймають `picks: RawExerciseDef[]` (L126/L155). `unknown[]` не лишилось.
+
 **Page:** Dashboard
 **File:** `apps/web/src/modules/fizruk/pages/Dashboard.tsx`
 **Lines:** L81, L111–L116, L453
@@ -405,6 +407,8 @@ A keyboard / SR user landing on the select hears only the current value — they
 ---
 
 ### F15 — Workout catalog group accordion lacks `aria-expanded` / `aria-controls` [severity: medium] [perspective: a11y]
+
+> ✅ **Closed 2026-06-02 (docs-drift reconciliation, verified-already-done)** — `WorkoutCatalogSection.tsx:149–150` group-toggle тепер несе `aria-expanded={isOpen}` + `aria-controls={panelId}`, а панель отримала відповідний `id`. Screen-reader озвучує стан розгортання.
 
 **Page:** Workouts → catalog
 **File:** `apps/web/src/modules/fizruk/components/workouts/WorkoutCatalogSection.tsx`
@@ -651,6 +655,8 @@ const navigate = (next) => startTransition(() => actualNavigate(next));
 ---
 
 ### F27 — `useWorkoutsOrchestrator.executeTemplateStart` defines a `TemplateGroup` interface inside the callback body [severity: low] [perspective: rule] [perspective: ts]
+
+> ✅ **Closed 2026-06-02 (docs-drift reconciliation, verified-already-done)** — `interface TemplateGroup` піднято на module scope (`useWorkoutsOrchestrator.ts:40`), поза тілом `executeTemplateStart`; використовується як `(tpl.groups || []) as TemplateGroup[]` (L222). Більше не перевизначається в callback-у.
 
 **Page:** Workouts
 **File:** `apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.ts`
