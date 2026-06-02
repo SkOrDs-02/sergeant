@@ -345,6 +345,7 @@
 
 ### S10 — `pii-handling.md` drift-guard lint
 
+- **Status:** ✅ Виконано — `scripts/lint-pii-handling-drift.mjs` + `pnpm lint:pii-handling-drift` (у `pnpm lint` aggregate), machine-readable `<!-- pii-keys-start -->` блок у `docs/security/pii-handling.md` (42 ключі), unit-тест `scripts/__tests__/lint-pii-handling-drift.test.mjs` (8 cases).
 - **Title:** `feat(governance): lint guard against pii-handling.md drift from @sergeant/shared/lib/pii.ts`
 - **Scope:**
   - Новий скрипт `scripts/lint-pii-handling-drift.mjs` — парсить

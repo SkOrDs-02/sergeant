@@ -111,6 +111,16 @@ Sergeant поки **не збирає** `dob`, `address`, `geolocation` — як
 | `service` / `env` / `release`                    | `pinoOptions.base` |
 | `msg` / `err.message` / `err.code`/ `err.status` | event payload      |
 
+## Машино-читабельний дзеркальний список (auto-checked)
+
+<!-- pii-keys-start -->
+<!-- AUTO-CHECKED: цей блок має точно дзеркалити `REDACT_KEY_NAMES` із `packages/shared/src/lib/pii.ts`.
+     Дрейф ловить `pnpm lint:pii-handling-drift` (scripts/lint-pii-handling-drift.mjs). Оновлюй разом із source-списком. -->
+
+`password`, `newPassword`, `currentPassword`, `token`, `accessToken`, `refreshToken`, `idToken`, `sessionToken`, `apiKey`, `secret`, `clientSecret`, `privateKey`, `signature`, `dsn`, `connectionString`, `authorization`, `cookie`, `set-cookie`, `x-api-key`, `x-token`, `x-csrf-token`, `x-mono-webhook-secret`, `x-openclaw-webhook-secret`, `x-api-secret`, `x-internal-token`, `x-signature`, `x-webhook-signature`, `x-hmac-signature`, `otp`, `otpCode`, `verificationCode`, `verifyCode`, `magicLink`, `magicLinkToken`, `resetToken`, `passwordResetToken`, `pin`, `groqKey`, `anthropicKey`, `voyageKey`, `email`, `phone`
+
+<!-- pii-keys-end -->
+
 ## Як редакція влаштована
 
 ```

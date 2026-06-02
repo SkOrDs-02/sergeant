@@ -293,6 +293,7 @@
 
 ### D-4 · ESLint plugin fixture coverage expansion
 
+- **Status:** ✅ Виконано — verified on main: «D-4 expansion» BAD-case секції присутні у `packages/eslint-plugin-sergeant-design/__tests__/no-arbitrary-text-size.test.mjs` (typography 12px-floor) і `no-foreign-module-accent.test.mjs` (module-accent); `pnpm lint:plugins` зелений (48/48 у двох файлах). Імена правил: `no-arbitrary-text-size` / `no-foreign-module-accent` (картка посилалась на застарілі назви).
 - **Items covered:** P2-2 з прожарки (`packages/eslint-plugin-sergeant-design/src/rules/*` — `module-accent-containment` і `typography-scale-12px-floor` тонкі тести).
 - **Priority:** P2 · **Size:** M (~200 LoC fixtures) · **Owner:** `@Skords-01`
 - **Skill:** `sergeant-feature-delivery` (eslint-plugin surface).
