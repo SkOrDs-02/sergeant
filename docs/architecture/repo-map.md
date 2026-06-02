@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last validated:** 2026-05-29 by @Skords-01. **Next review:** 2026-08-27.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-27.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/governance/repo-map.auto.json`](../governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
@@ -15,7 +15,7 @@
 - **Monorepo:** Turborepo 2 — pipelines defined in [`turbo.json`](../../turbo.json). All apps run under `pnpm dev`, `pnpm build`, `pnpm test`, `pnpm lint`, `pnpm typecheck`.
 - **Pre-commit:** Husky 9 (`.husky/pre-commit` runs `lint-staged`; `.husky/commit-msg` runs `commitlint`). Pipeline matrix in [`CONTRIBUTING.md § Pre-commit hooks`](../../CONTRIBUTING.md#pre-commit-hooks). Hard Rule #7 forbids `--no-verify` skips.
 
-## Apps (`apps/`)
+## Apps (`apps/`) and `tools/openclaw`
 
 | App                 | Stack                                                                                                            | Purpose                                                                                                                                                                                                                   |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

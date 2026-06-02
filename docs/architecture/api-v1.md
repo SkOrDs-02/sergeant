@@ -1,6 +1,6 @@
 # API v1 + v2 — версіонування і контракт
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Коротка довідка, як влаштоване версіонування Sergeant-API, гарантії контракту і міграційна стратегія.
@@ -23,11 +23,11 @@
 
 Пакет `@sergeant/api-client` (який імпортує і web, і мобілка) переписує шляхи вигляду `/api/<rest>` на `${apiPrefix}<rest>` у середині `httpClient`:
 
-- За замовчуванням `apiPrefix === "/api/v1"`, тож виклик `apiClient.push.subscribe(...)` фактично йде у `/api/v1/push/subscribe`
+- За замовчуванням `apiPrefix === "/api/v1"`, тож виклик `apiClient.push.register(...)` фактично йде у `/api/v1/push/register` (метод `push.subscribe` — deprecated legacy-alias)
 - `/api/auth/*` виключено — Better Auth-плагіни зашиті під `basePath: "/api/auth"` (не можна змінити без форків)
 - Шляхи, що вже починаються з `apiPrefix` (напр. явний `/api/v1/foo`), — ідемпотентні, префікс двічі не додається
 - Escape hatch — передати `apiPrefix: "/api"` у `createApiClient(...)` повертає легасі-поведінку без змін в endpoint-обгортках
-- **Sync v2** endpoint-и (`/api/v2/sync/*`) не проходять через `apiVersionRewrite` і адресуються напряму — обгортки у `@sergeant/api-client` (`SyncEnginePushScheduler`, `SyncEngineFlushOnReconnect`) використовують абсолютні шляхи.
+- **Sync v2** endpoint-и (`/api/v2/sync/*`): `applyApiPrefix` перетворює `/api/v2/...` на `/api/v1/v2/...`, потім `apiVersionRewrite` на сервері зрізає `/v1` і шлях знову стає `/api/v2/...`. Кінцевий результат — правильний; обгортки у `@sergeant/api-client` (`SyncEnginePushScheduler`, `SyncEngineFlushOnReconnect`) передають шляхи `/api/v2/sync/*` у httpClient як зазвичай.
 
 Web прокидає `apiPrefix` через `getApiPrefix()` (div. `apps/web/src/shared/lib/api/apiUrl.ts`), щоб і прямі `fetch(apiUrl(...))`, і виклики через api-client одночасно перемикалися однією змінною `VITE_API_VERSION`.
 
@@ -51,20 +51,21 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (div. `apps/web/src
 | `/api/v1/chat`          | POST     | HubChat streaming (SSE) + tool-use                           |
 | `/api/v1/coach/memory`  | GET/POST | Coach memory store (recall + write)                          |
 | `/api/v1/coach/insight` | POST     | Coaching insight write                                       |
-| `/api/v1/weekly-digest` | GET/POST | Weekly digest (живе у `routes/weekly-digest.ts`, окремо від coach) |
+| `/api/v1/weekly-digest` | POST     | Weekly digest (живе у `routes/weekly-digest.ts`, окремо від coach) |
 | `/api/v1/mono/*`        | GET/POST | Monobank: connect, accounts, transactions, backfill          |
-| `/api/v1/ai-memory/*`   | GET/POST | AI memory ingest / recall / event-sync                       |
+| `/api/v1/ai-memory/*`   | POST     | AI memory ingest / recall / event-sync                       |
 | `/api/v1/push/send`     | POST     | Internal push send (service-to-service, X-Api-Secret header) |
-| `/api/v1/nutrition/*`   | GET/POST | Nutrition log, barcode, backup                               |
+| `/api/v1/nutrition/*`   | POST     | Nutrition log, backup та AI-endpoints (analyze-photo, day-plan, тощо) |
+| `/api/v1/barcode`       | GET      | Barcode lookup (Open Food Facts proxy)                       |
 | `/api/v1/transcribe`    | POST     | Audio → text (Groq Whisper). USD-cap per user/day            |
 | `/api/v1/billing/*`     | GET/POST | Stripe checkout, subscription status, webhooks               |
 | `/api/v1/waitlist`      | POST     | Waitlist sign-up                                             |
 
-### v2 endpoints (новий namespace, не через `apiVersionRewrite`)
+### v2 endpoints (новий namespace; проходять через `apiVersionRewrite` як `/api/v1/v2/...` → `/api/v2/...`)
 
 | Endpoint              | Method | Опис                                                             |
 | --------------------- | ------ | ---------------------------------------------------------------- |
-| `/api/v2/sync/push`   | POST   | Sync op-log batch push. Body: `{ops, device_id, cursor}`         |
+| `/api/v2/sync/push`   | POST   | Sync op-log batch push. Body: `{ops}`. Device ID передається заголовком `X-Origin-Device-Id`. |
 | `/api/v2/sync/pull`   | GET    | Pull remote ops. Query: `?since=<cursor>`                        |
 | `/api/v2/sync/stream` | GET    | SSE long-poll для realtime pull (PR #041). Окремий rate-limit.   |
 

@@ -1,6 +1,6 @@
 # 🏗️ Architecture
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.
@@ -13,19 +13,20 @@ System architecture and runtime surface inventory for Sergeant.
 
 | Document                                         | Purpose                                                                        | Last updated  |
 | ------------------------------------------------ | ------------------------------------------------------------------------------ | ------------- |
-| [`service-catalog.md`](./service-catalog.md)     | Runtime inventory: owners, targets, dependencies, healthchecks, rollback paths | 2026-05-06 ✅ |
-| [`platforms.md`](./platforms.md)                 | Web / RN mobile / Capacitor shell — статус, feature-parity матриця, роадмап    | 2026-05-06 ✅ |
-| [`hosting-evolution.md`](./hosting-evolution.md) | Hosting evolution, infra phases, migration triggers                            | 2026-04-27    |
+| [`service-catalog.md`](./service-catalog.md)     | Runtime inventory: owners, targets, dependencies, healthchecks, rollback paths | 2026-05-15 ✅ |
+| [`platforms.md`](./platforms.md)                 | Web / RN mobile / Capacitor shell — статус, feature-parity матриця, роадмап    | 2026-06-01 ✅ |
+| [`hosting-evolution.md`](./hosting-evolution.md) | Hosting evolution, infra phases, migration triggers                            | 2026-05-13 ✅ |
 
 ### Архітектурні діаграми та потоки
 
 | Document                                                             | Purpose                                                                    | Last updated  |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------- |
-| [`diagrams/`](./diagrams/README.md)                                  | C4 model (System → Containers → Components) + sequence flows (Mermaid)     | 2026-05-05 ✅ |
+| [`diagrams/`](./diagrams/README.md)                                  | C4 model (System → Containers → Components) + sequence flows (Mermaid)     | 2026-05-13 ✅ |
 | [`diagrams/c1-system-context.md`](./diagrams/c1-system-context.md)   | User ↔ Sergeant Web / Mobile / Shell ↔ external systems                    | 2026-05-05    |
 | [`diagrams/c2-containers.md`](./diagrams/c2-containers.md)           | Deployment topology: apps/web (Vercel), apps/server (Railway), apps/mobile | 2026-05-05    |
 | [`diagrams/c3-cloudsync.md`](./diagrams/c3-cloudsync.md)             | Internal CloudSync: dirtyMap → offlineQueue → sync → conflict resolution   | 2026-05-05    |
 | [`diagrams/c3-chat-tool-use.md`](./diagrams/c3-chat-tool-use.md)     | HubChat tool-use loop with Anthropic streaming                             | 2026-05-05    |
+| [`diagrams/c3-workspaces.md`](./diagrams/c3-workspaces.md)           | Workspace-level `@sergeant/*` import-edge dependency graph (auto-gen)      | 2026-06-01    |
 | [`diagrams/flow-signin.md`](./diagrams/flow-signin.md)               | Better Auth sign-in flow (email + password)                                | 2026-05-05    |
 | [`diagrams/flow-cloudsync.md`](./diagrams/flow-cloudsync.md)         | Push/pull sync between web ↔ `/api/sync` ↔ Postgres                        | 2026-05-05    |
 | [`diagrams/flow-chat-tool-use.md`](./diagrams/flow-chat-tool-use.md) | Runtime tool-use cycle within a chat session                               | 2026-05-05    |

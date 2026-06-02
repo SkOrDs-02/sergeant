@@ -1,6 +1,6 @@
 # C2 — Containers
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Деплоймент-топологія Sergeant. Кожен контейнер — окремий процес або deploy target.
@@ -115,7 +115,7 @@ flowchart TB
 
 - `User → Web/Mobile/Shell`: HTTPS (Vercel cert / app store).
 - `Web/Mobile → Server`: HTTPS through Vercel proxy → Railway internal HTTP. CSP заблокує усе нелисловане (див. `helmet` setup).
-- `n8n → Server`: same Railway VPC, але запит проходить публічний URL із **internal token** (`SERGEANT_INTERNAL_TOKEN`).
+- `n8n → Server`: same Railway VPC, але запит проходить публічний URL із **internal token** (`INTERNAL_API_KEY`).
 - `Server → Postgres / Redis`: Railway internal network, `*.railway.internal` DNS.
 
 ## Деталі деплоя

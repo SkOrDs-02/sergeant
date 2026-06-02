@@ -1,6 +1,6 @@
 # Web: навмисні винятки `react-hooks/exhaustive-deps`
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Документ фіксує **інваріанти** там, де ESLint `exhaustive-deps` вимкнено у критичних модулях (Finyk / Routine / Nutrition та спільні хуки). Мета — не «вимкнути правило», а зафіксувати контракт для рев’ю та рефакторингу.
@@ -11,7 +11,6 @@
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `usePwaAction.ts`         | У `useEffect` залежності лише `[action, onConsumed]`. Об’єкт `handlers` **навмисно** не в deps — він часто inline; тригер — рядок `action`.  |
 | `useLocalStorageState.ts` | Підписка на `storage` / re-read: залежність лише від **`key`**. `initialValue` — seed при mount; зміна після mount не повинна скидати state. |
-| `useHashRoute.ts`         | Перший `useEffect` — **mount-only** канонізація hash; подальші переходи через `navigate()`.                                                  |
 
 ## Finyk (`apps/web/src/modules/finyk/`)
 
@@ -26,21 +25,21 @@
 
 | Файл                                    | Інваріант                                                                                                                                                                                                                                |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `RoutineApp.tsx`                        | `buildHubCalendarEvents(routine, range, …)`: у deps додано **`finykCalendarTick`** окремим сигналом оновлення подій Фініка без зміни об’єкта `routine`. Решта похідних від `routine` намертно не дублюються в масиві — коментар у файлі. |
+| `useRoutineDerivedData.ts`              | `buildHubCalendarEvents(routine, range, …)`: у deps додано **`finykCalendarTick`** окремим сигналом оновлення подій Фініка без зміни об’єкта `routine`. Решта похідних від `routine` намертно не дублюються в масиві — коментар у файлі. |
 | `components/HabitQuickCreateDialog.tsx` | Див. коментар біля disable — стабільність submit-циклу.                                                                                                                                                                                  |
 
 ## Nutrition (`apps/web/src/modules/nutrition/`)
 
 | Файл                                     | Інваріант                                                                                                                                                                                                                                            |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NutritionApp.tsx`                       | PWA `add_meal` / `add_meal_photo`: залежності `[log, onPwaActionConsumed, pwaAction]`. **`photo`** (ref + helpers) навмисно не в deps — уникнути повторного programmatичного `click()` при кожному re-render; cleanup у effect скасовує rAF/timeout. |
+| `hooks/useNutritionPwaAction.ts`         | PWA `add_meal` / `add_meal_photo`: залежності `[log, onPwaActionConsumed, pwaAction]`. **`photo`** (ref + helpers) навмисно не в deps — уникнути повторного programmatичного `click()` при кожному re-render; cleanup у effect скасовує rAF/timeout. |
 | `components/meal-sheet/useFoodSearch.ts` | Див. коментар — debounce / query sync; не розширювати deps без тесту пошуку.                                                                                                                                                                         |
 
 ## Інші модулі (приклад)
 
 | Файл                        | Примітка                                                                                                  |
 | --------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `fizruk/pages/Workouts.tsx` | Залежності звужені до `id` / `endedAt` — повний об’єкт `workout` змінюється часто; див. коментар у файлі. |
+| `fizruk/hooks/useWorkoutsLifecycle.ts` | Залежності звужені до `id` / `endedAt` — повний об’єкт `workout` змінюється часто; див. коментар у файлі. |
 
 ---
 
