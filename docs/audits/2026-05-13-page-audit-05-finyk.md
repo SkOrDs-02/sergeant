@@ -728,6 +728,8 @@ area to ≥44 px (the global safety-net does this automatically without
 
 ### F13 — Filter pill list lacks tablist semantics [severity: medium] [perspective: a11y]
 
+> ✅ **Closed 2026-06-01** — `TransactionFilters` is now a WAI-ARIA **toolbar**: `role="toolbar"` + `aria-label` (`messages.finyk.transactionsFilterLabel`) + `aria-orientation="horizontal"`, a single Tab stop via **roving `tabindex`** (only the active pill is `tabindex={0}`, with a fallback to the first pill when the active filter isn't rendered), and ←/→/Home/End move focus between pills. Selection stays on `aria-pressed` (these pills filter one list in place — `role="toolbar"` is correct; `tablist` would falsely imply tab panels). Backed by `TransactionFilters.test.tsx` (6 cases: toolbar role, roving tabindex, fallback, arrow-wrap, Home/End, click→onChangeFilter).
+
 **Page:** `transactions`
 **File:** `apps/web/src/modules/finyk/pages/transactions/TransactionFilters.tsx`
 **Lines:** L40–L58

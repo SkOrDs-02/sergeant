@@ -437,6 +437,8 @@ export const messages = {
 
   finyk: {
     addLimitOrGoal: "+ Додати ліміт або ціль",
+    // Accessible name for the Transactions filter toolbar (page-audit-05 F13).
+    transactionsFilterLabel: "Фільтр транзакцій",
     // Mono webhook connect error wording (PR-32 ux-roast 2026-Q2 / C7).
     // 401 → токен реджектнутий, мережеві/інші — connectivity-проблема.
     monoConnectErrors: {
