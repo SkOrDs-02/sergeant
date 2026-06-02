@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # ADR-0030: Структура Telegram-каналів для n8n reporting
 
 - **Status:** Accepted

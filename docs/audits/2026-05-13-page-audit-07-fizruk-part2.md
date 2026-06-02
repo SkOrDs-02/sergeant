@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # Page Audit — Fizruk module Part 2 (Progress, Measurements, Programs, Body)
 
 > **Last validated:** 2026-05-13 by Devin (child session).

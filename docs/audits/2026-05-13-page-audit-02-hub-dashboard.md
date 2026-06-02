@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # Page Audit — Hub Dashboard, Modules Grid & App shell
 
 > **Last validated:** 2026-05-13 by Devin.

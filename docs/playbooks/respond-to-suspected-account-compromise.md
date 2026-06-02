@@ -1,11 +1,11 @@
 ---
 lang: en
-lang-reason: Superseded stub kept only as historical anchor (`Status: Deprecated`); body redirects to `access-governance.md § Suspected account compromise`. Translating a 308-style stub to UA adds no signal — the canonical playbook is what gets read. Tracked under initiative 0009 PR 1.2b.
+lang-reason: "Superseded stub kept only as historical anchor (`Status: Deprecated`); body redirects to `access-governance.md § Suspected account compromise`. Translating a 308-style stub to UA adds no signal — the canonical playbook is what gets read. Tracked under initiative 0009 PR 1.2b."
 ---
 
 # Playbook: Respond to Suspected Account Compromise
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-31.
 > **Status:** Deprecated
 
 > **Superseded by:** [access-governance.md § Suspected account compromise](./access-governance.md#4-suspected-account-compromise) — merged 2026-05-04 (initiative [0009](../initiatives/archive/_0009-agent-os-hardening.md) PR 2.4).
