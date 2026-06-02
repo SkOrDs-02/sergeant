@@ -21,7 +21,6 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execSync } from "node:child_process";
 import prettier from "prettier";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,22 +28,19 @@ const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 const REGISTRY_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules.json");
 const MATRIX_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules-matrix.md");
-const AUTHOR_MAP_PATH = resolve(__dirname, "author-map.json");
 
-/** Resolve git committer email → @handle via author-map (mirrors bump-last-validated logic). */
-function resolveAuthorHandle() {
-  try {
-    const { emailToHandle } = JSON.parse(readFileSync(AUTHOR_MAP_PATH, "utf8"));
-    const email = execSync("git config user.email", { encoding: "utf8" })
-      .trim()
-      .toLowerCase();
-    if (email in emailToHandle) return emailToHandle[email];
-    const local = email.split("@")[0].replace(/^[0-9]+\+/, "");
-    return local || "Skords-01";
-  } catch {
-    return "Skords-01";
-  }
-}
+// The "Last validated by …" handle for this auto-generated matrix is pinned
+// to the script identity rather than resolved from `git config user.email`.
+//
+// Why pinned: this file regenerates on every `hard-rules.json` change, so a
+// dynamic handle made the header flap between `@claude` (Claude Code runs),
+// `@Skords-01` (founder + Devin runs), and `@codex` (Codex runs). Each
+// regen written under a different identity then tripped the
+// `pnpm hard-rules:check` CI gate as "out of sync" until the next regen
+// happened to come from the same author — pointlessly red. Matches the
+// pinned convention used by sibling auto-gen scripts: `generate-today.mjs`
+// uses `by docs:gen-today`, `generate-open-work.mjs` uses `by @codex`,
+// `generate-initiative-followups.mjs` uses `by @Skords-01`.
 const RULES_DIR = resolve(REPO_ROOT, "docs/governance/rules");
 
 /**
@@ -253,7 +249,7 @@ export function renderMatrixRaw(
   lines.push("# Hard rules — enforcement matrix");
   lines.push("");
   lines.push(
-    `> **Last validated:** ${today} by @${resolveAuthorHandle()}. **Next review:** ${nextReviewISO}.`,
+    `> **Last validated:** ${today} by docs:hard-rules-generate. **Next review:** ${nextReviewISO}.`,
   );
   lines.push(`> **Status:** Active`);
   lines.push("");

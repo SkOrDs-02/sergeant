@@ -24,10 +24,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT_PATH = resolve(__dirname, "..", "bootstrap.mjs");
 const SCRIPT_SRC = readFileSync(SCRIPT_PATH, "utf-8");
 
-// Minimal fixture: a repo root with the script under scripts/ and a
-// minimal package.json + .nvmrc that mirror real values closely enough.
+// Default fixture `.nvmrc` uses the Node version currently running the test.
+// Without this, the test pins a hard-coded version (was "20.20.2") that
+// silently breaks whenever CI bumps Node — bootstrap.mjs checks `process
+// .versions.node` against `.nvmrc` and exits 1, which the happy-path test
+// reads as a real prerequisite failure. Tying the default to
+// `process.versions.node` keeps the "host has the right Node" assertion
+// tautologically true on every CI matrix while still letting individual
+// tests override with `buildFixture({ nvmrc: "99.0.0" })` to exercise the
+// mismatch path.
 function buildFixture({
-  nvmrc = "20.20.2",
+  nvmrc = process.versions.node,
   packageManager = "pnpm@9.15.1",
 } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "bootstrap-test-"));
