@@ -6,27 +6,37 @@ import {
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
+  safeReadStringSS,
+  safeWriteSS,
+  safeRemoveSS,
 } from "./storage";
+
+function installStoragePolyfill(): Storage {
+  const store = new Map<string, string>();
+  return {
+    getItem: (k) => (store.has(k) ? (store.get(k) as string) : null),
+    setItem: (k, v) => {
+      store.set(k, String(v));
+    },
+    removeItem: (k) => {
+      store.delete(k);
+    },
+    clear: () => store.clear(),
+    key: (i) => Array.from(store.keys())[i] ?? null,
+    get length() {
+      return store.size;
+    },
+  } as Storage;
+}
 
 // vitest is configured with environment: "node" so we need a minimal
 // localStorage polyfill for these tests.
 beforeAll(() => {
   if (typeof globalThis.localStorage === "undefined") {
-    const store = new Map();
-    globalThis.localStorage = {
-      getItem: (k) => (store.has(k) ? store.get(k) : null),
-      setItem: (k, v) => {
-        store.set(k, String(v));
-      },
-      removeItem: (k) => {
-        store.delete(k);
-      },
-      clear: () => store.clear(),
-      key: (i) => Array.from(store.keys())[i] ?? null,
-      get length() {
-        return store.size;
-      },
-    };
+    globalThis.localStorage = installStoragePolyfill();
+  }
+  if (typeof globalThis.sessionStorage === "undefined") {
+    globalThis.sessionStorage = installStoragePolyfill();
   }
 });
 
@@ -114,5 +124,50 @@ describe("shared storage helpers", () => {
       localStorage.setItem("ok", JSON.stringify(value));
       expect(safeReadLSValidated("ok", Schema, fallback)).toEqual(value);
     });
+  });
+});
+
+describe("sessionStorage helpers (SS)", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it("safeReadStringSS returns fallback when key is missing", () => {
+    expect(safeReadStringSS("missing")).toBeNull();
+    expect(safeReadStringSS("missing", "dflt")).toBe("dflt");
+  });
+
+  it("safeWriteSS persists a raw string round-trip", () => {
+    expect(safeWriteSS("mode", "log")).toBe(true);
+    expect(sessionStorage.getItem("mode")).toBe("log");
+    expect(safeReadStringSS("mode")).toBe("log");
+  });
+
+  it("safeRemoveSS clears the key and read falls back", () => {
+    safeWriteSS("mode", "templates");
+    expect(safeRemoveSS("mode")).toBe(true);
+    expect(safeReadStringSS("mode")).toBeNull();
+  });
+
+  it("never throws and reports false when sessionStorage access throws", () => {
+    const original = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "sessionStorage",
+    );
+    Object.defineProperty(globalThis, "sessionStorage", {
+      configurable: true,
+      get() {
+        throw new Error("SecurityError: storage disabled");
+      },
+    });
+    try {
+      expect(safeReadStringSS("k", "fb")).toBe("fb");
+      expect(safeWriteSS("k", "v")).toBe(false);
+      expect(safeRemoveSS("k")).toBe(false);
+    } finally {
+      if (original) {
+        Object.defineProperty(globalThis, "sessionStorage", original);
+      }
+    }
   });
 });

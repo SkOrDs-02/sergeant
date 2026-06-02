@@ -266,6 +266,8 @@ Expose CSS custom properties on `:root` (e.g. `--chart-strength`, `--chart-volum
 
 ### F10 — Direct `sessionStorage` access without a shared safe-wrapper [severity: medium] [perspective: rule] [perspective: bug]
 
+> ✅ **Closed 2026-06-02** — додано `safeReadStringSS` / `safeWriteSS` / `safeRemoveSS` у `@shared/lib/storage/storage.ts` (тонкі обгортки навколо `sessionStorage` з private-mode-Safari / disabled-storage / quota guard-ом, дзеркало `*LS`-API). Усі raw-сайти переведено: `useWorkoutsViewFromSession` (reader — inline `try/catch`+`logger.warn` прибрано), `useFizrukProgramStart`, `Dashboard.tsx` (3 write-сайти `fizruk_workouts_mode`). Failure-handling тепер централізований. Додано 4 unit-тести (round-trip + throwing-storage). Окремий `no-raw-session-storage` ESLint-rule свідомо НЕ додано в цьому PR — він має repo-wide blast radius (впав би на всіх наявних `sessionStorage`-сайтах поза fizruk) і потребує окремого burndown-sweep.
+
 **Page:** Dashboard + Workouts
 **File:** `pages/Dashboard.tsx` L311, L319; `hooks/useFizrukProgramStart.ts` L86; `hooks/useWorkoutsLifecycle.ts` L51, L54, L57
 **Lines:** see above
