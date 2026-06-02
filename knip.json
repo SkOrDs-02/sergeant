@@ -3,7 +3,17 @@
   "workspaces": {
     ".": {
       "entry": ["scripts/*.mjs"],
-      "project": ["scripts/**"]
+      "project": ["scripts/**"],
+      "ignoreDependencies": [
+        "@eslint/js",
+        "eslint-plugin-jsx-a11y",
+        "eslint-plugin-react",
+        "eslint-plugin-react-hooks",
+        "typescript-eslint",
+        "lint-staged",
+        "openapi-typescript",
+        "tsc-files"
+      ]
     },
     "apps/web": {
       "entry": ["src/sw.ts"],
@@ -45,9 +55,13 @@
       "entry": ["tokens.js", "tailwind-preset.js"],
       "project": ["**/*.js"]
     },
+    "packages/db-schema": {
+      "ignoreDependencies": ["drizzle-kit"]
+    },
     "packages/shared": {
       "entry": ["src/index.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["@stryker-mutator/vitest-runner"]
     }
   },
   "ignoreExportsUsedInFile": true

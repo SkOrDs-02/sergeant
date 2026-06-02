@@ -316,7 +316,7 @@
 
 ### S9 — Sentry init tags (`cspMode`, `outboxBootOutcome`, `webVitalsEnabled`)
 
-- **Title:** `chore(web-obs): tag Sentry init with cspMode, outbox boot outcome, webVitals flag`
+- **Status:** ✅ Виконано — verified on main: усі три сигнали є. `cspMode` + `webVitalsEnabled` — `setTag` в `apps/web/src/core/observability/sentry.ts` (init); outbox-boot-outcome — `apps/web/src/core/syncEngine/singleton.ts` виставляє `sentry.setSentryTag("outbox.boot.outcome", classifyOutboxBootOutcome(...))` (`fresh|already_present|repaired|failed`) у момент boot-у outbox (коли outcome відомий — коректніше за placeholder на init), з тестами (`outboxBoot.test.ts`, `sentry.test.ts`). Назва тегу namespaced `outbox.boot.outcome` замість літерального `outboxBootOutcome`.
 - **Scope:**
   - `apps/web/src/core/observability/sentry.ts:163` — після
     `setTag('platform', ...)` додати:

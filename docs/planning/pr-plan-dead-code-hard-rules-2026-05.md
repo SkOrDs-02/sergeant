@@ -67,7 +67,7 @@ Order: DC-1 (XS) → HR-1 (locks canonical test-pattern) → паралельн�
 
 ### DC-3 — `chore(deps): knip devDependency sweep (10 unused devDeps verified per-workspace)`
 
-- **Title:** `chore(deps): knip devDependency sweep — @stryker-mutator/*, eslint-plugin trio, openapi-typescript, tsc-files, drizzle-kit`
+- **Status:** ✅ Виконано — per-workspace verification of all 12 knip-flagged devDeps: only `apps/web` `@stryker-mutator/core` + `@stryker-mutator/vitest-runner` were genuinely unused (mutation testing is `packages/shared`-only via `mutation:utils`) → **deleted**. The other 10 are used-but-knip-blind (eslint-plugin trio + `@eslint/js` + `typescript-eslint` in `eslint.config.js`/`eslint.baseline.js`; `lint-staged` in Husky; `openapi-typescript`/`tsc-files` spawned by `scripts/`; `drizzle-kit` migrations; `@stryker-mutator/vitest-runner` in shared) → `knip.json ignoreDependencies` with rationale. `pnpm knip` now reports 0 unused devDependencies.
 - **Scope-файли:**
   - `package.json` (root) — verify і прибрати з `devDependencies` лише ті, що **не** використовуються a) `npm script`-ами, b) Husky/lint-staged config, c) ESLint flat-config, d) CI matrix.
   - `apps/web/package.json` — `eslint-plugin-jsx-a11y`, `eslint-plugin-react`, `eslint-plugin-react-hooks`, `typescript-eslint` — звірити з `apps/web/eslint.config.*`; перенести у root якщо resolved лише з root chain.
