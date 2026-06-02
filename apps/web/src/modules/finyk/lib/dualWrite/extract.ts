@@ -38,7 +38,7 @@ interface FinykIdLike {
 }
 
 function blobsFromArray(
-  arr: ReadonlyArray<FinykIdLike & Record<string, unknown>> | undefined,
+  arr: ReadonlyArray<FinykIdLike> | undefined,
 ): FinykBlobEntry[] {
   if (!Array.isArray(arr)) return [];
   const out: FinykBlobEntry[] = [];
@@ -165,9 +165,7 @@ export function extractFinykDualWriteState(
   return {
     hiddenAccounts: idsFromArray(slots.hiddenAccounts),
     hiddenTransactions: idsFromArray(slots.hiddenTxIds),
-    budgets: blobsFromArray(
-      slots.budgets as ReadonlyArray<FinykIdLike & Record<string, unknown>>,
-    ),
+    budgets: blobsFromArray(slots.budgets),
     subscriptions: blobsFromArray(
       slots.subscriptions as ReadonlyArray<
         FinykIdLike & Record<string, unknown>

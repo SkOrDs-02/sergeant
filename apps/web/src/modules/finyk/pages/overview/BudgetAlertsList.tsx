@@ -3,17 +3,13 @@ import { cn } from "@shared/lib/ui/cn";
 import { calcCategorySpent, resolveExpenseCategoryMeta } from "../../utils";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type {
+  LimitBudget,
   TxSplitsMap,
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
 
 interface BudgetAlertsListProps {
-  budgetAlerts: ReadonlyArray<{
-    id: string;
-    categoryId: string;
-    limit: number;
-    [extra: string]: unknown;
-  }>;
+  budgetAlerts: readonly LimitBudget[];
   statTx: readonly Transaction[];
   txCategories: Record<string, string | undefined>;
   txSplits: TxSplitsMap;

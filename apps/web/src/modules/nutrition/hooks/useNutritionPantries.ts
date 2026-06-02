@@ -69,9 +69,13 @@ export function useNutritionPantries({
 
   const activePantry = useMemo(() => {
     const arr = Array.isArray(pantries) ? pantries : [];
-    return (
-      arr.find((p) => p.id === activePantryId) || arr[0] || makeDefaultPantry()
-    );
+    // Explicit precedence so the fallback chain reads as intent, not a
+    // bug-magnet: active-by-id → first pantry → freshly-built default.
+    // `arr[0]` is `Pantry | undefined` under noUncheckedIndexedAccess, so the
+    // `??` keeps the return type a concrete `Pantry` (page-audit-08 F17).
+    const active = arr.find((p) => p.id === activePantryId);
+    const fallback = arr[0] ?? makeDefaultPantry();
+    return active ?? fallback;
   }, [pantries, activePantryId]);
 
   const pantryText = activePantry?.text || "";

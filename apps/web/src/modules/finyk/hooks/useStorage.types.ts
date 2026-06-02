@@ -4,6 +4,11 @@ import type {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 
+// Канонічний `Budget` — дискримінований union у домені (page-audit-05 F15).
+// Сторадж більше не тримає власну loose-копію з `[extra]: unknown`, щоб
+// `slots.budgets` звужувався типобезпечно для domain-селекторів.
+export type { Budget } from "@sergeant/finyk-domain/domain/types";
+
 export type Subscription = {
   id: string;
   name: string;
@@ -21,13 +26,6 @@ export type RecurringCandidate = {
   billingDay?: number;
   currency?: string;
   sampleTxIds?: string[];
-};
-
-export type Budget = {
-  id: string;
-  type?: "limit" | "goal";
-  categoryId?: string;
-  [extra: string]: unknown;
 };
 
 export type ManualAsset = {

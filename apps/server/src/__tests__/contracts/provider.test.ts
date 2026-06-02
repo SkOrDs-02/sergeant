@@ -15,25 +15,29 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Coverage:** the pact file has 10 consumer interactions (5 from
-// PR-42, 5 added by the persona-extend PR). Of those, 8 are
-// fully-verified here via supertest replay against `createApp()`:
+// **Coverage:** the pact file has 22 consumer interactions across 14
+// unique routes (10 baseline + 12 added by the sync-v2 / food-search
+// / parse-pantry extension PRs). Of those, 8 routes are fully-verified
+// here via supertest replay against `createApp()`:
 //
 //   - GET  /api/v1/me                       (hub persona)
 //   - GET  /api/v1/mono/accounts             (finyk persona, bigint coercion)
-//   - GET  /api/v1/mono/sync-state           (finyk persona, NEW)
-//   - GET  /api/v1/mono/transactions         (finyk persona, bigint coercion, NEW)
-//   - GET  /api/v1/coach/memory              (hub persona, NEW)
-//   - GET  /api/v1/barcode                   (nutrition persona, NEW)
+//   - GET  /api/v1/mono/sync-state           (finyk persona)
+//   - GET  /api/v1/mono/transactions         (finyk persona, bigint coercion)
+//   - GET  /api/v1/coach/memory              (hub persona)
+//   - GET  /api/v1/barcode                   (nutrition persona)
 //   - POST /api/v1/push/register             (fizruk persona, ios sibling)
-//   - POST /api/v1/nutrition/day-plan        (nutrition persona, Anthropic-stubbed, NEW)
+//   - POST /api/v1/nutrition/day-plan        (nutrition persona, Anthropic-stubbed)
 //
-// The remaining 2 (`/api/v1/chat`, `/api/v1/nutrition/analyze-photo`)
-// are covered by the consumer pact but skipped on the provider side
-// here because their handler chains require streaming or vision
-// Anthropic stubs that are already covered by dedicated tests in
-// `apps/server/src/modules/chat/*.test.ts` and
-// `apps/server/src/modules/nutrition/*.test.ts`. See
+// The remaining 6 routes (`/api/v1/chat`, `/api/v1/nutrition/analyze-photo`,
+// `/api/v1/food-search`, `/api/v1/v2/sync/pull`, `/api/v1/v2/sync/push`,
+// `/api/v1/nutrition/parse-pantry`) are covered by the consumer pact but
+// skipped on the provider side here because their handler chains require
+// streaming or vision Anthropic stubs, full v2 sync log fixtures, or
+// upstream/timeout simulation that are already covered by dedicated
+// tests in `apps/server/src/modules/chat/*.test.ts`,
+// `apps/server/src/modules/nutrition/*.test.ts`, and
+// `apps/server/src/modules/sync/*.test.ts`. See
 // `docs/architecture/api-contracts.md § Extending coverage`.
 
 import fs from "node:fs";
@@ -203,10 +207,10 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 10 expected consumer interactions", () => {
+  it("pact file has 22 expected consumer interactions across 14 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(10);
+    expect(pact.interactions).toHaveLength(22);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -220,6 +224,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "GET /api/v1/coach/memory",
       "GET /api/v1/barcode",
       "POST /api/v1/nutrition/day-plan",
+      // sync-v2 + food-search + parse-pantry extension (4)
+      "GET /api/v1/food-search",
+      "GET /api/v1/v2/sync/pull",
+      "POST /api/v1/v2/sync/push",
+      "POST /api/v1/nutrition/parse-pantry",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),

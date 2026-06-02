@@ -1,7 +1,11 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { logger } from "@shared/lib";
-import { safeRemoveLS, safeWriteLS } from "@shared/lib/storage/storage";
+import {
+  safeReadStringSS,
+  safeRemoveLS,
+  safeRemoveSS,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
 import { ACTIVE_WORKOUT_KEY, type Workout } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "./useFizrukRestSound";
 import type { WorkoutsView } from "../pages/Workouts.types";
@@ -48,19 +52,12 @@ export function useWorkoutsViewFromSession(
   setView: (v: WorkoutsView) => void,
 ): void {
   useEffect(() => {
-    try {
-      const m = sessionStorage.getItem(VIEW_FROM_SESSION_KEY);
-      if (m === "templates") {
-        setView("templates");
-        sessionStorage.removeItem(VIEW_FROM_SESSION_KEY);
-      } else if (m === "log") {
-        setView("log");
-        sessionStorage.removeItem(VIEW_FROM_SESSION_KEY);
-      }
-    } catch (err) {
-      logger.warn("useWorkoutsViewFromSession: sessionStorage unavailable", {
-        err,
-      });
+    // `safeReadStringSS`/`safeRemoveSS` centralise the private-mode-Safari /
+    // disabled-storage guard that used to live as an inline try/catch here.
+    const m = safeReadStringSS(VIEW_FROM_SESSION_KEY);
+    if (m === "templates" || m === "log") {
+      setView(m);
+      safeRemoveSS(VIEW_FROM_SESSION_KEY);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only; setView identity is stable
   }, []);

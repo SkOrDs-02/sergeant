@@ -257,3 +257,69 @@ export function safeRemoveLS(key: string): boolean {
 export function safeListLSKeys(): string[] {
   return webKVStore.listKeys();
 }
+
+// ─── sessionStorage helpers ────────────────────────────────────────────────
+// sessionStorage holds ephemeral, tab-scoped view-state — e.g. a one-shot
+// "open Workouts in log mode" hand-off flag between routes. It has no SQLite
+// overlay and no cross-tab story, so these wrappers stay deliberately thin:
+// they add the same private-mode-Safari / disabled-storage / quota safety net
+// the LS helpers give, and a single place to mock in tests, without the
+// KVStore machinery. Mirrors the `*LS` string API (page-audit-06 F10).
+
+function resolveSessionStorage(): Storage | null {
+  try {
+    const candidate = (globalThis as { sessionStorage?: Storage })
+      .sessionStorage;
+    return candidate ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read a raw string from sessionStorage. Returns `fallback` on
+ * missing/unavailable/throwing storage; never throws.
+ */
+export function safeReadStringSS(
+  key: string,
+  fallback: string | null = null,
+): string | null {
+  const ss = resolveSessionStorage();
+  if (!ss) return fallback;
+  try {
+    const raw = ss.getItem(key);
+    return raw === null ? fallback : raw;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Write a string to sessionStorage. Returns `false` when storage is
+ * unavailable or the write threw (quota / private mode); never throws.
+ */
+export function safeWriteSS(key: string, value: string): boolean {
+  const ss = resolveSessionStorage();
+  if (!ss) return false;
+  try {
+    ss.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Remove a key from sessionStorage. Best-effort; returns `false` only when
+ * storage is unavailable or the remove threw; never throws.
+ */
+export function safeRemoveSS(key: string): boolean {
+  const ss = resolveSessionStorage();
+  if (!ss) return false;
+  try {
+    ss.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}

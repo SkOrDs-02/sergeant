@@ -1,5 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 
+// Override the default `storageState` from `playwright.smoke.config.ts`
+// (pre-baked logged-in user). This file exercises the cold-start signup
+// → welcome wizard → hub-overview funnel, so it needs a fresh browser
+// context with no auth cookie.
+test.use({ storageState: { cookies: [], origins: [] } });
+
 /**
  * Happy-path founder-experience E2E:
  *

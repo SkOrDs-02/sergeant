@@ -14,8 +14,8 @@ import {
   resolveExpenseCategoryMeta,
 } from "@sergeant/finyk-domain";
 import type {
-  Budget,
   Category,
+  LimitBudget,
   Transaction,
   TxCategoriesMap,
   TxSplitsMap,
@@ -24,7 +24,7 @@ import type {
 import { cn } from "./cn";
 
 export interface BudgetAlertsListProps {
-  budgetAlerts: Budget[];
+  budgetAlerts: LimitBudget[];
   statTx: Transaction[];
   txCategories: TxCategoriesMap;
   txSplits: TxSplitsMap;
@@ -51,9 +51,7 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
           txSplits,
           customCategories,
         );
-        // Budget.limit є optional (нові бюджети без cap), тому coerce до 0
-        // — pct=0 відобразиться так само як "ще нічого не витрачено".
-        const limit = b.limit ?? 0;
+        const limit = b.limit;
         const pct = limit > 0 ? Math.round((s / limit) * 100) : 0;
         const over = pct >= 100;
         return (

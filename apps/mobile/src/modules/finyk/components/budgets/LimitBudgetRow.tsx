@@ -1,12 +1,12 @@
 import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import type { Budget } from "@sergeant/finyk-domain/domain";
+import type { LimitBudget } from "@sergeant/finyk-domain/domain";
 
 import { Sparkline } from "./Sparkline";
 
 export interface LimitBudgetRowProps {
-  budget: Budget;
+  budget: LimitBudget;
   categoryLabel: string;
   spent: number;
   pctRaw: number;

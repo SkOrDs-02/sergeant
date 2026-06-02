@@ -182,6 +182,8 @@ Bulk-додати у JSDoc-prefix кожного публічного файлу
 
 ### F7 — RecipesCard.tsx 593 LoC — впритул до Hard Rule #18 ліміту [severity: medium] [perspective: rule]
 
+> ✅ **Закрито 2026-06-02** — `RecipesCard.tsx` розбито з 600 рядків до 233 рядків (orchestrator). Виділено 4 нових файли-сусіди: `RecipesCard.SavedSection.tsx` (217 рядків — секція «Мої рецепти»), `RecipesCard.Generator.tsx` (247 рядків — форма префів + список згенерованих рецептів), `RecipesCard.helpers.ts` (36 рядків — тип `RecipeLike` та хелпер `guessMealTypeIdNow`), `RecipesCard.ChevronIcon.tsx` (23 рядки — атом). Публічний інтерфейс `RecipesCard` та його пропси не змінилися. Додано `RecipesCard.test.tsx` з 24 характеризаційними тестами (safety-net під split — перше покриття цього компонента). Зверни увагу: **F12 лишається open** — він про page-level тести 4 `Nutrition*Page` файлів, а не про цей компонент. Hard Rule #18 виконано: жоден з нових файлів не перевищує 250 рядків.
+
 **Page:** Menu (`recipes` sub-tab)
 **File:** `apps/web/src/modules/nutrition/components/RecipesCard.tsx`
 **Lines:** 1–593
@@ -309,6 +311,15 @@ Performance regression — typing у Add Meal sheet (через `setNutritionLog
 
 ### F12 — Page-level testing gap: 0 з 4 page-файлів покриті тестами [severity: medium] [perspective: test]
 
+> ✅ **Закрито 2026-06-02** — додано 4 нові тест-файли (33 тести разом), по одному на кожну сторінку:
+>
+> - `apps/web/src/modules/nutrition/pages/NutritionLogPage.test.tsx` — 6 тестів: рендер без краш-у; клік «Додати прийом їжі» → `setAddMealPhotoResult(null)` + `setAddMealSheetOpen(true)`; клік «Видалити» → `handleRemoveMeal` + undo-toast; undo-колбек усередині тосту → `handleRestoreMeal`; клік «Редагувати» → `setEditingMeal({ date, id, … })` + повторне відкриття sheet; перевірка стабільності повторних видалень.
+> - `apps/web/src/modules/nutrition/pages/NutritionPantryPage.test.tsx` — 9 тестів: рендер SubTabs; переключення між вкладками «Склад»/«Покупки»; клік на таб → `setPantrySubTab`; видалення наявного елемента → `removeItemAt` + undo-toast; undo → `upsertItem`; відображення/приховання scan-статусу; «Сканувати штрих-код» → `setPantryScanStatus("")` + `setPantryScannerOpen(true)`; порожній `pantryItems` → `removeItem(name)` замість `removeItemAt`.
+> - `apps/web/src/modules/nutrition/pages/NutritionStartPage.test.tsx` — 8 тестів: рендер NutritionDashboard + колапсибл-заголовок; «До щоденника» → `setActivePageAndHash("log")`; «До плану» → `setActivePageAndHash("menu")`; «Додати прийом їжі» → `setSelectedDate`, навігація, `scheduleTransient` + sheet-open; Pro-юзер → `analyzePhoto` викликається; Free-юзер → `requireAccess()` повертає false, `analyzePhoto` не викликається; `<details>` закритий за замовчуванням; `photoCardForceOpen=true` → `open` атрибут виставлено.
+> - `apps/web/src/modules/nutrition/pages/NutritionMenuPage.test.tsx` — 10 тестів: рендер SubTabs; план vs рецепти; клік на таб → `setMenuSubTab`; DataState skeleton при `isLoading=true`; «Оновити план» → `fetchDayPlan(null)`; «Регенерувати сніданок» → `fetchDayPlan("breakfast")`; «Додати до журналу» → `addMealFromPlan({ id, name, … })`.
+>
+> Усі 33 тести проходять (`vitest run src/modules/nutrition/pages`). TypeScript: 0 помилок. ESLint: чистий. Виробничий код не змінено.
+
 **Page:** Start, Pantry, Log, Menu
 **File:** `apps/web/src/modules/nutrition/pages/*`
 **Lines:** N/A
@@ -433,6 +444,8 @@ Empty-states в модулі мають різний tone:
 ---
 
 ### F17 — `arr[0] || makeDefaultPantry()` без явного guard на повернений тип [severity: low] [perspective: ts]
+
+> ✅ **Closed 2026-06-02** — `useNutritionPantries.ts` `activePantry` memo переписано на явний chain: `const active = arr.find(...)` → `const fallback = arr[0] ?? makeDefaultPantry()` → `return active ?? fallback`. `||` замінено на `??` (nullish), щоб майбутній falsy-able `Pantry.id` не ламав ланцюг; під `noUncheckedIndexedAccess` повернений тип лишається concrete `Pantry`. Typecheck 0, eslint clean, 3 hook-тести зелені.
 
 **Page:** Pantry (через `useNutritionPantries`)
 **File:** `apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts`

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 
-import type { Budget } from "@sergeant/finyk-domain/domain";
+import type { Budget, LimitBudget } from "@sergeant/finyk-domain/domain";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -10,7 +10,7 @@ import { Sheet } from "@/components/ui/Sheet";
 export interface LimitEditSheetProps {
   open: boolean;
   onClose: () => void;
-  budget: (Budget & { categoryId?: string }) | null;
+  budget: LimitBudget | null;
   categoryLabel: string;
   onSubmit: (next: Budget) => void;
   onDelete: (id: string) => void;

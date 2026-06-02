@@ -746,6 +746,8 @@ function AppInner() {
 
 ### F20 — `CrossModulePreview.tsx` `useEffect([])` пропускає `copy` reference [severity: low] [perspective: bug]
 
+> ✅ **Closed 2026-06-02 (docs-drift reconciliation, verified-already-done)** — `CrossModulePreview.tsx` тепер тримає `const hasFiredSeenEvent = useRef(false)` і `useEffect(() => { if (!copy || hasFiredSeenEvent.current) return; hasFiredSeenEvent.current = true; trackEvent(...) }, [copy])`. Залежність `[copy]` присутня, fired-once семантика явна через ref — саме рекомендований патерн. Mount-only `useEffect([])` прибрано.
+
 **Page:** Cross-module preview card (one-shot)
 **File:** `apps/web/src/core/hub/CrossModulePreview.tsx`
 **Lines:** L47–L55

@@ -6,7 +6,7 @@ import type { FizrukPage } from "../shell/fizrukRoute";
 // FizrukPage is referenced in the JSDoc above and in the onNavigate type
 // signature — keep the import even when TS doesn't track JSDoc refs.
 
-import { safeWriteLS } from "@shared/lib/storage/storage";
+import { safeWriteLS, safeWriteSS } from "@shared/lib/storage/storage";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
@@ -143,11 +143,8 @@ export function Dashboard({
     }
     if (templateId) markTemplateUsed(templateId);
     safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
-    try {
-      sessionStorage.setItem("fizruk_workouts_mode", "log");
-    } catch {
-      /* non-fatal: workouts tab remains reachable */
-    }
+    // non-fatal: workouts tab remains reachable in its default mode
+    safeWriteSS("fizruk_workouts_mode", "log");
     onNavigate("workouts");
   };
 
@@ -342,18 +339,12 @@ export function Dashboard({
     // sessionStorage (see `apps/web/src/modules/fizruk/pages/Workouts.tsx`).
     // When the hero CTA resumes an active session we want the user to
     // land directly on the log — one extra tap is a real UX regression
-    // otherwise.
-    try {
-      sessionStorage.setItem("fizruk_workouts_mode", "log");
-    } catch {
-      /* non-fatal: default view is still reachable */
-    }
+    // otherwise. non-fatal: default view is still reachable.
+    safeWriteSS("fizruk_workouts_mode", "log");
     onNavigate("workouts");
   };
   const openTemplates = () => {
-    try {
-      sessionStorage.setItem("fizruk_workouts_mode", "templates");
-    } catch {}
+    safeWriteSS("fizruk_workouts_mode", "templates");
     onNavigate("workouts");
   };
   const openPlan = () => {

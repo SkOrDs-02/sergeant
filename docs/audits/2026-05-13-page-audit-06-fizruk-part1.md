@@ -266,6 +266,8 @@ Expose CSS custom properties on `:root` (e.g. `--chart-strength`, `--chart-volum
 
 ### F10 — Direct `sessionStorage` access without a shared safe-wrapper [severity: medium] [perspective: rule] [perspective: bug]
 
+> ✅ **Closed 2026-06-02** — додано `safeReadStringSS` / `safeWriteSS` / `safeRemoveSS` у `@shared/lib/storage/storage.ts` (тонкі обгортки навколо `sessionStorage` з private-mode-Safari / disabled-storage / quota guard-ом, дзеркало `*LS`-API). Усі raw-сайти переведено: `useWorkoutsViewFromSession` (reader — inline `try/catch`+`logger.warn` прибрано), `useFizrukProgramStart`, `Dashboard.tsx` (3 write-сайти `fizruk_workouts_mode`). Failure-handling тепер централізований. Додано 4 unit-тести (round-trip + throwing-storage). Окремий `no-raw-session-storage` ESLint-rule свідомо НЕ додано в цьому PR — він має repo-wide blast radius (впав би на всіх наявних `sessionStorage`-сайтах поза fizruk) і потребує окремого burndown-sweep.
+
 **Page:** Dashboard + Workouts
 **File:** `pages/Dashboard.tsx` L311, L319; `hooks/useFizrukProgramStart.ts` L86; `hooks/useWorkoutsLifecycle.ts` L51, L54, L57
 **Lines:** see above
@@ -331,6 +333,8 @@ export function todayLocalDateString() {
 ---
 
 ### F12 — `pendingPicks` typed as `unknown[]` then cast inside the handler [severity: medium] [perspective: ts]
+
+> ✅ **Closed 2026-06-02 (docs-drift reconciliation, verified-already-done)** — `Dashboard.tsx:98` уже `useState<RawExerciseDef[] | null>(...)` з `import type { RawExerciseDef } from "@sergeant/fizruk-domain/data"` (L29). Structural-cast у `startWorkoutFromPlan` прибрано — обидва handler-и приймають `picks: RawExerciseDef[]` (L126/L155). `unknown[]` не лишилось.
 
 **Page:** Dashboard
 **File:** `apps/web/src/modules/fizruk/pages/Dashboard.tsx`
@@ -405,6 +409,8 @@ A keyboard / SR user landing on the select hears only the current value — they
 ---
 
 ### F15 — Workout catalog group accordion lacks `aria-expanded` / `aria-controls` [severity: medium] [perspective: a11y]
+
+> ✅ **Closed 2026-06-02 (docs-drift reconciliation, verified-already-done)** — `WorkoutCatalogSection.tsx:149–150` group-toggle тепер несе `aria-expanded={isOpen}` + `aria-controls={panelId}`, а панель отримала відповідний `id`. Screen-reader озвучує стан розгортання.
 
 **Page:** Workouts → catalog
 **File:** `apps/web/src/modules/fizruk/components/workouts/WorkoutCatalogSection.tsx`
@@ -651,6 +657,8 @@ const navigate = (next) => startTransition(() => actualNavigate(next));
 ---
 
 ### F27 — `useWorkoutsOrchestrator.executeTemplateStart` defines a `TemplateGroup` interface inside the callback body [severity: low] [perspective: rule] [perspective: ts]
+
+> ✅ **Closed 2026-06-02 (docs-drift reconciliation, verified-already-done)** — `interface TemplateGroup` піднято на module scope (`useWorkoutsOrchestrator.ts:40`), поза тілом `executeTemplateStart`; використовується як `(tpl.groups || []) as TemplateGroup[]` (L222). Більше не перевизначається в callback-у.
 
 **Page:** Workouts
 **File:** `apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.ts`

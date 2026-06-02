@@ -7,7 +7,7 @@ import {
   calculateGoalProgress,
   getGoalMonthlyLabel,
 } from "@sergeant/finyk-domain/domain/budget";
-import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import type { Budget, GoalBudget } from "@sergeant/finyk-domain/domain/types";
 import { GoalBudgetCard } from "../../components/budgets/GoalBudgetCard";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
@@ -15,7 +15,7 @@ import type { useToast } from "@shared/hooks/useToast";
 export interface BudgetsGoalsSectionProps {
   goalsOpen: boolean;
   toggleGoals: () => void;
-  goalBudgets: Budget[];
+  goalBudgets: GoalBudget[];
   budgets: Budget[];
   setBudgets: Dispatch<SetStateAction<Budget[]>>;
   editIdx: number | null;
@@ -102,31 +102,22 @@ export function BudgetsGoalsSection({
       )}
       {goalsOpen &&
         goalBudgets.map((b, i) => {
-          // Goal-specific fields live on the `[extra: string]: unknown`
-          // index of `Budget` (the canonical Budget shape captures
-          // limit-style fields). Read them through unknown casts so the
-          // card / progress helper get the concrete numeric/string
-          // values they require.
-          const targetAmount = Number(
-            (b as { targetAmount?: unknown }).targetAmount ?? 0,
-          );
-          const savedAmount = Number(
-            (b as { savedAmount?: unknown }).savedAmount ?? 0,
-          );
-          const targetDate = (b as { targetDate?: unknown }).targetDate;
+          // `b` is a `GoalBudget` (union narrowed by `getGoalBudgets`), so
+          // goal fields are read type-safely — no more `(b as { … }).x`
+          // unknown casts (page-audit-05 F15).
           const goalInput = {
-            targetAmount,
-            savedAmount,
-            targetDate: typeof targetDate === "string" ? targetDate : undefined,
+            targetAmount: b.targetAmount,
+            savedAmount: b.savedAmount,
+            targetDate: b.targetDate,
           };
           const cardBudget = {
             id: b.id,
-            type: b.type === "goal" ? ("goal" as const) : ("limit" as const),
-            emoji: (b as { emoji?: unknown }).emoji as string | undefined,
-            name: (b as { name?: unknown }).name as string | undefined,
-            targetAmount,
-            savedAmount,
-            targetDate: typeof targetDate === "string" ? targetDate : undefined,
+            type: "goal" as const,
+            emoji: b.emoji,
+            name: b.name,
+            targetAmount: b.targetAmount,
+            savedAmount: b.savedAmount,
+            targetDate: b.targetDate,
           };
           const progress = calculateGoalProgress(goalInput, now);
           const globalIdx = budgets.indexOf(b);
