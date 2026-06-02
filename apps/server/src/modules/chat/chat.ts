@@ -526,8 +526,12 @@ export default async function handler(
       // більше за 600 токенів, бо це часто структуровані пояснення з
       // markdown-форматуванням. Тримаємо нижче за tool-result cap, бо тут
       // зазвичай немає таблиць/брифінгів.
+      // Haiku: ~4× дешевший за Sonnet на першому турі ($1 vs $3 /1M input,
+      // $5 vs $15 /1M output); підтримує той самий tool-calling формат.
+      // Tool-result synthesis (другий тур) лишається на Sonnet — там важлива
+      // якість складних звітів.
       {
-        model: "claude-sonnet-4-6",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 1500,
         system: buildSystem(augmentedContext),
         tools: TOOLS_WITH_CACHE,

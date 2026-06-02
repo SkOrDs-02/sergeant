@@ -69,6 +69,13 @@ export const ANTHROPIC_PRICING_USD_PER_MTOK: Record<
     cacheWrite: 3.75,
     cacheRead: 0.3,
   },
+  // ── Haiku 4.5: $1 / $5 ────────────────────────────────────────────────
+  "claude-haiku-4": {
+    input: 1.0,
+    output: 5.0,
+    cacheWrite: 1.25,
+    cacheRead: 0.1,
+  },
   // ── Haiku 3.5: $0.80 / $4 ──────────────────────────────────────────────
   "claude-3-5-haiku": {
     input: 0.8,

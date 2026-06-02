@@ -1163,6 +1163,24 @@ const envSchema = z.object({
    * Set `0` щоб вимкнути hard-gate (тоді тільки soft).
    */
   VOYAGE_DAILY_BUDGET_USD_HARD: floatFromEnv(5),
+
+  // ── AI (OpenRouter) ─────────────────────────────────────────────────────
+  /**
+   * API key for openrouter.ai. Required when any of `LLM_PROVIDER`,
+   * `LLM_READONLY_PROVIDER`, or `LLM_DIGEST_PROVIDER` is set to `openrouter`.
+   * Without it those paths degrade to `StubProvider` (same behaviour as when
+   * the key is missing for Anthropic). Get a key at openrouter.ai/settings/keys.
+   */
+  OPENROUTER_API_KEY: stringWithDefault(""),
+  /**
+   * Optional model override for all OpenRouter calls. When set, replaces the
+   * model the call-site requests with this value (e.g. `google/gemini-flash-2.5:free`
+   * for digest, `moonshotai/kimi-k2.6:free` for classify). When empty the
+   * call-site's own model ID is forwarded as-is to OpenRouter — useful for
+   * routing Anthropic models through OpenRouter for resilience without changing
+   * model IDs. Free models available at openrouter.ai/models?order=pricing-asc.
+   */
+  OPENROUTER_MODEL: stringWithDefault(""),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -1210,6 +1228,17 @@ export function assertStartupEnv(): void {
   if (!env.ANTHROPIC_API_KEY) {
     warnings.push(
       "ANTHROPIC_API_KEY is not set — AI chat/coach/nutrition endpoints will return 500.",
+    );
+  }
+
+  const openrouterProviders = [
+    env.LLM_PROVIDER,
+    env.LLM_READONLY_PROVIDER,
+    env.LLM_DIGEST_PROVIDER,
+  ];
+  if (openrouterProviders.includes("openrouter") && !env.OPENROUTER_API_KEY) {
+    warnings.push(
+      "OPENROUTER_API_KEY is not set but LLM_*_PROVIDER=openrouter — those paths will degrade to StubProvider.",
     );
   }
 
