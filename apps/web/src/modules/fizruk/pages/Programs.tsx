@@ -7,6 +7,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { getKyivMondayIndex } from "@shared/lib/time/kyivTime";
+import { captureException } from "../../../core/observability/sentry";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import {
   BUILTIN_PROGRAMS,
@@ -108,7 +109,14 @@ export function Programs({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 mt-3">
+                  <div
+                    className="flex items-center gap-1.5 mt-3"
+                    role="img"
+                    aria-label={`Розклад програми ${prog.name}: ${prog.schedule
+                      .map((s: ProgramScheduleEntry) => DAY_LABELS[s.day - 1])
+                      .filter(Boolean)
+                      .join(", ")} — тренування, інші дні відпочинок`}
+                  >
                     {Array.from({ length: 7 }, (_, i) => {
                       const hasSession = prog.schedule.some(
                         (s: ProgramScheduleEntry) => s.day - 1 === i,
@@ -150,7 +158,19 @@ export function Programs({
                             onClick={() => {
                               const session =
                                 prog.sessions[todaySession.sessionKey];
-                              onStartWorkout(session!, prog);
+                              if (!session) {
+                                // Schedule references a sessionKey missing
+                                // from `sessions` — silent data drift in
+                                // BUILTIN_PROGRAMS. Don't crash the workout
+                                // screen with a non-null assertion (07 F6).
+                                captureException(
+                                  new Error(
+                                    `Fizruk program "${prog.id}" schedule references missing session "${todaySession.sessionKey}"`,
+                                  ),
+                                );
+                                return;
+                              }
+                              onStartWorkout(session, prog);
                             }}
                           >
                             Розпочати сьогодні

@@ -2,7 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
@@ -231,6 +231,16 @@ export function Progress({ onNavigate }: ProgressProps) {
   }, [workouts]);
 
   const [prFilter, setPrFilter] = useState("all");
+
+  // Reset the muscle-group filter when its group no longer exists — e.g. the
+  // user filtered by "chest", deleted all chest sets in Workouts, then came
+  // back to a stale filter that would otherwise show only an empty state
+  // (07 F18).
+  useEffect(() => {
+    if (prFilter !== "all" && !prs.some((p) => p.muscleGroup === prFilter)) {
+      setPrFilter("all");
+    }
+  }, [prFilter, prs]);
 
   const hasAny = (workouts?.length || 0) > 0 || (entries?.length || 0) > 0;
 
@@ -497,7 +507,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                     onClick={() => setPrFilter("all")}
                     aria-pressed={prFilter === "all"}
                     className={cn(
-                      "shrink-0 px-3 h-7 rounded-full text-style-caption transition-colors border",
+                      "shrink-0 px-3 min-h-[44px] rounded-full text-style-caption transition-colors border",
                       prFilter === "all"
                         ? "bg-fizruk-strong text-white border-fizruk-strong"
                         : "bg-panel border-line text-subtle hover:text-text",
@@ -512,7 +522,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                       onClick={() => setPrFilter(g === prFilter ? "all" : g)}
                       aria-pressed={prFilter === g}
                       className={cn(
-                        "shrink-0 px-3 h-7 rounded-full text-style-caption transition-colors border whitespace-nowrap",
+                        "shrink-0 px-3 min-h-[44px] rounded-full text-style-caption transition-colors border whitespace-nowrap",
                         prFilter === g
                           ? "bg-fizruk-strong text-white border-fizruk-strong"
                           : "bg-panel border-line text-subtle hover:text-text",
