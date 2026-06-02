@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
 import type { WorkoutItem } from "@sergeant/fizruk-domain/domain";
-import { safeWriteLS } from "@shared/lib/storage/storage";
+import { safeWriteLS, safeWriteSS } from "@shared/lib/storage/storage";
 
 interface Exercise {
   id: string;
@@ -89,12 +89,9 @@ export function useFizrukProgramStart({
         });
       }
       safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
-      try {
-        sessionStorage.setItem("fizruk_workouts_mode", "log");
-      } catch {
-        // best-effort session handoff; failure just means the Workouts
-        // page opens in its default mode.
-      }
+      // best-effort session handoff; failure just means the Workouts page
+      // opens in its default mode.
+      safeWriteSS("fizruk_workouts_mode", "log");
       navigate("workouts");
     },
     [workouts, createWorkout, addItem, exercises, navigate],
