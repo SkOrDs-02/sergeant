@@ -20,7 +20,7 @@
  *  8. CASCADE при видаленні user-row-у з `"user"` таблиці
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -432,4 +432,119 @@ describe("pgVectorStore integration", () => {
     },
     TIMEOUT_MS,
   );
+
+  it(
+    "PR-24 active-model filter: query не повертає рядки з іншою embedding_model",
+    async (ctx) => {
+      if (!dockerAvailable || !store || !pool) return ctx.skip();
+      await pool.query("TRUNCATE ai_memories");
+      await ensureUser("uMdl");
+
+      // Вставляємо два рядки вручну: один з активною моделлю (voyage-3.5-lite),
+      // другий — з синтетичною «old» моделлю (openai-3-large). Direct INSERT
+      // обходить store.upsert, щоб обійти embeddingMeta від META та вставити
+      // довільне значення embedding_model.
+      await pool.query(
+        `INSERT INTO ai_memories
+           (user_id, source, source_ref, content, embedding,
+            embedding_provider, embedding_model, embedding_version, metadata)
+         VALUES
+           ($1, 'chat', NULL, $2, $3::halfvec, 'voyage', 'voyage-3.5-lite',   '1', '{}'),
+           ($1, 'chat', NULL, $4, $5::halfvec, 'openai', 'openai-3-large',    '1', '{}')`,
+        [
+          "uMdl",
+          "active model content",
+          // Ідентичний вектор для обох — щоб distance-rank не впливав:
+          `[${Array.from(fakeVector(42)).join(",")}]`,
+          "other model content",
+          `[${Array.from(fakeVector(42)).join(",")}]`,
+        ],
+      );
+
+      // store.query використовує env.VOYAGE_EMBEDDING_MODEL = 'voyage-3.5-lite'
+      // → повинен повернути лише перший рядок.
+      const results = await store.query({
+        userId: "uMdl",
+        embedding: fakeVector(42),
+        topK: 10,
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0]!.content).toBe("active model content");
+      expect(results[0]!.embeddingMeta.model).toBe("voyage-3.5-lite");
+    },
+    TIMEOUT_MS,
+  );
+});
+
+// ── Unit-level SQL predicate assertion (завжди виконується, Docker не потрібен) ──
+//
+// Перевіряємо, що vectorStore.query будує WHERE з `embedding_model = $N`
+// і правильно передає env.VOYAGE_EMBEDDING_MODEL як bound-param. Це
+// гарантує, що фільтр буде присутній навіть без testcontainers-середовища.
+describe("pgVectorStore query SQL — active-model predicate (unit)", () => {
+  it("query SQL містить embedding_model = $N і передає VOYAGE_EMBEDDING_MODEL як параметр", async () => {
+    // Зберігаємо та встановлюємо env для ізоляції тесту.
+    const savedModel = process.env["VOYAGE_EMBEDDING_MODEL"];
+    process.env["VOYAGE_EMBEDDING_MODEL"] = "voyage-3.5-lite";
+
+    try {
+      // Будуємо mock-pool, що захоплює запити і повертає порожній result.
+      const capturedQueries: Array<{ text: string; values: unknown[] }> = [];
+      const mockClient = {
+        query: vi
+          .fn()
+          .mockImplementation(
+            (
+              textOrObj: string | { text: string; values?: unknown[] },
+              values?: unknown[],
+            ) => {
+              if (typeof textOrObj === "string") {
+                const isSelect = /^\s*SELECT/i.test(textOrObj);
+                if (isSelect) {
+                  capturedQueries.push({
+                    text: textOrObj,
+                    values: values ?? [],
+                  });
+                  return Promise.resolve({ rows: [] });
+                }
+                // BEGIN / COMMIT / SET LOCAL — no-op
+                return Promise.resolve({ rows: [] });
+              }
+              return Promise.resolve({ rows: [] });
+            },
+          ),
+        release: vi.fn(),
+      };
+      const mockPool = {
+        connect: vi.fn().mockResolvedValue(mockClient),
+      };
+
+      // Динамічний import потрібен щоб env-singleton підхопив нове значення.
+      const { createPgVectorStore } = await import("./vectorStore.js");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock pool не відповідає повному pg.Pool interface
+      const testStore = createPgVectorStore(mockPool as any);
+
+      await testStore.query({
+        userId: "u-unit",
+        embedding: fakeVector(1),
+        topK: 5,
+      });
+
+      expect(capturedQueries).toHaveLength(1);
+      const captured = capturedQueries[0]!;
+
+      // Перевіряємо наявність предиката в SQL.
+      expect(captured.text).toMatch(/embedding_model\s*=\s*\$\d+/);
+
+      // Перевіряємо, що значення активної моделі присутнє у bound-params.
+      expect(captured.values).toContain("voyage-3.5-lite");
+    } finally {
+      if (savedModel === undefined) {
+        delete process.env["VOYAGE_EMBEDDING_MODEL"];
+      } else {
+        process.env["VOYAGE_EMBEDDING_MODEL"] = savedModel;
+      }
+    }
+  });
 });
