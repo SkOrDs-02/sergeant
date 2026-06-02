@@ -13,14 +13,19 @@ import {
   stripStatusPrefix,
   classifyStatus,
   extractPRNumbers,
+  extractAgentReady,
   shouldSkipFile,
   collectOpenWork,
   truncateStatus,
   formatPRLinks,
+  formatAgentReady,
   renderOpenWork,
   rewriteRelativeLinks,
   totalOpen,
   addDays,
+  applySkillMapping,
+  agentReadyRank,
+  sortByAgentReady,
 } from "../generate-open-work.mjs";
 
 describe("stripStatusPrefix", () => {
@@ -467,5 +472,160 @@ describe("rewriteRelativeLinks", () => {
   it("handles null / undefined gracefully", () => {
     assert.equal(rewriteRelativeLinks(null, "a", "b"), null);
     assert.equal(rewriteRelativeLinks("text", null, "b"), "text");
+  });
+});
+
+// ── Phase 2 (Initiative 0015): agent-dispatch metadata ──────────────────────
+
+describe("extractAgentReady", () => {
+  it("reads the three allowed values from the quote-block header", () => {
+    assert.equal(extractAgentReady("> **Agent-ready:** yes"), "yes");
+    assert.equal(
+      extractAgentReady("> **Agent-ready:** needs-decision"),
+      "needs-decision",
+    );
+    assert.equal(extractAgentReady("> **Agent-ready:** blocked"), "blocked");
+  });
+
+  it("tolerates backticks and trailing prose", () => {
+    assert.equal(
+      extractAgentReady("> **Agent-ready:** `yes` — unblocked"),
+      "yes",
+    );
+  });
+
+  it("returns null when absent or invalid", () => {
+    assert.equal(extractAgentReady("> **Status:** Active"), null);
+    assert.equal(extractAgentReady("> **Agent-ready:** maybe"), null);
+    assert.equal(extractAgentReady(""), null);
+  });
+});
+
+describe("agentReadyRank / sortByAgentReady", () => {
+  it("ranks yes < needs-decision < blocked < unknown", () => {
+    assert.ok(agentReadyRank("yes") < agentReadyRank("needs-decision"));
+    assert.ok(agentReadyRank("needs-decision") < agentReadyRank("blocked"));
+    assert.ok(agentReadyRank("blocked") < agentReadyRank(null));
+  });
+
+  it("sorts entries yes → needs-decision → blocked, stable on ties", () => {
+    const entries = [
+      { id: "b1", agentReady: "blocked" },
+      { id: "y1", agentReady: "yes" },
+      { id: "n1", agentReady: "needs-decision" },
+      { id: "b2", agentReady: "blocked" },
+      { id: "x1", agentReady: null },
+    ];
+    sortByAgentReady(entries);
+    assert.deepEqual(
+      entries.map((e) => e.id),
+      ["y1", "n1", "b1", "b2", "x1"],
+    );
+  });
+});
+
+describe("formatAgentReady", () => {
+  it("maps each value to a coloured marker, others to em-dash", () => {
+    assert.equal(formatAgentReady("yes"), "🟢 yes");
+    assert.equal(formatAgentReady("needs-decision"), "🟡 needs-decision");
+    assert.equal(formatAgentReady("blocked"), "🔴 blocked");
+    assert.equal(formatAgentReady(null), "—");
+    assert.equal(formatAgentReady("whatever"), "—");
+  });
+});
+
+describe("applySkillMapping", () => {
+  const mapping = {
+    fallbackSkill: "sergeant-start-here",
+    skillRules: [
+      {
+        skill: "sergeant-data-and-migrations",
+        globs: ["**/*.sql"],
+        keywords: ["migration"],
+      },
+      {
+        skill: "sergeant-web-ui",
+        globs: ["apps/web/**", "**/*.tsx"],
+        keywords: ["frontend"],
+      },
+    ],
+    playbookRules: [
+      { playbook: "add-sql-migration.md", keywords: ["migration"] },
+      { playbook: "add-new-page-route.md", keywords: ["new page"] },
+    ],
+  };
+
+  it("falls back when nothing matches", () => {
+    assert.deepEqual(applySkillMapping(mapping, { paths: [], text: "" }), {
+      skill: "sergeant-start-here",
+      playbook: null,
+    });
+  });
+
+  it("picks the highest-scoring rule, not the first that matches", () => {
+    // One stray `.sql` mention vs many web paths → web wins on score.
+    const { skill } = applySkillMapping(mapping, {
+      paths: [
+        "apps/web/src/a.tsx",
+        "apps/web/src/b.tsx",
+        "apps/web/vite.config.ts",
+        "scripts/legacy.sql",
+      ],
+      text: "frontend routing",
+    });
+    assert.equal(skill, "sergeant-web-ui");
+  });
+
+  it("earlier (more-specific) rule wins on a score tie", () => {
+    const { skill } = applySkillMapping(mapping, {
+      paths: ["x.sql", "apps/web/a.tsx"],
+      text: "",
+    });
+    assert.equal(skill, "sergeant-data-and-migrations");
+  });
+
+  it("matches playbook by keyword", () => {
+    const { playbook } = applySkillMapping(mapping, {
+      paths: [],
+      text: "we need a new page route",
+    });
+    assert.equal(playbook, "add-new-page-route.md");
+  });
+});
+
+describe("renderOpenWork — enriched initiatives", () => {
+  it("renders the extra Agent-ready / Skill / Playbook columns", () => {
+    const sections = [
+      {
+        tracker: {
+          id: "initiatives",
+          title: "Ініціативи",
+          blurb: "",
+          enrich: true,
+        },
+        entries: [
+          {
+            relPath: "docs/initiatives/0001-x.md",
+            linkPath: "initiatives/0001-x.md",
+            relToRootDir: "0001-x.md",
+            title: "X",
+            rawStatus: "In progress",
+            status: "open",
+            prs: [],
+            agentReady: "yes",
+            skill: "sergeant-web-ui",
+            playbook: "add-new-page-route.md",
+          },
+        ],
+      },
+    ];
+    const md = renderOpenWork(sections, { today: "2026-05-13" });
+    assert.match(
+      md,
+      /\| Документ \| Статус \| PR-згадки \| Agent-ready \| Skill \| Playbook \|/,
+    );
+    assert.match(md, /🟢 yes/);
+    assert.match(md, /`sergeant-web-ui`/);
+    assert.match(md, /`add-new-page-route\.md`/);
   });
 });

@@ -1,0 +1,188 @@
+{
+  "$comment": "Heuristic routing table: maps file-path globs / surface keywords found in an initiative (paths, title, status text) to the canonical Sergeant specialist skill + best-fit playbook. Consumed by scripts/docs/generate-open-work.mjs to populate the `Skill` + `Playbook` columns in docs/open-work.md. NOT auto-generated — hand-edited; the routing logic is canonical per Initiative 0015 Phase 2 (PR-2.1). Rule order matters: the FIRST matching `skillRules` entry wins, so most-specific surfaces (hubchat, migrations, openclaw) are listed before broader ones (server, web).",
+  "fallbackSkill": "sergeant-start-here",
+  "skillRules": [
+    {
+      "skill": "sergeant-hubchat",
+      "globs": ["apps/server/src/hubchat/**"],
+      "keywords": ["hubchat", "hub chat", "assistant tool", "action card"]
+    },
+    {
+      "skill": "sergeant-openclaw",
+      "globs": ["tools/openclaw/**"],
+      "keywords": ["openclaw", "gateway", "console agent", "console-agent"]
+    },
+    {
+      "skill": "sergeant-data-and-migrations",
+      "globs": [
+        "apps/server/db/migrations/**",
+        "apps/server/src/migrations/**",
+        "**/*.sql"
+      ],
+      "keywords": [
+        "migration",
+        "міграц",
+        "sql schema",
+        "drizzle schema",
+        "postgres schema"
+      ]
+    },
+    {
+      "skill": "better-auth-best-practices",
+      "globs": ["**/auth.ts", "**/betterAuthEnv.ts"],
+      "keywords": [
+        "better auth",
+        "better-auth",
+        "auth.ts",
+        "sign-in",
+        "sign in"
+      ]
+    },
+    {
+      "skill": "sergeant-server-api",
+      "globs": ["apps/server/**"],
+      "keywords": [
+        "route handler",
+        "serializer",
+        "rest surface",
+        "api endpoint",
+        "endpoint",
+        "openapi"
+      ]
+    },
+    {
+      "skill": "sergeant-mobile-expo",
+      "globs": ["apps/mobile/**"],
+      "keywords": ["expo", "react native", "react-native", "mobile app", "eas"]
+    },
+    {
+      "skill": "sergeant-web-ui",
+      "globs": [
+        "apps/web/**",
+        "apps/web-shell/**",
+        "apps/web/vite.config.*",
+        "apps/web/eslint.config.js",
+        "apps/web/tsconfig*.json",
+        "**/*.tsx"
+      ],
+      "keywords": [
+        "web ui",
+        "frontend",
+        "routing",
+        "code-split",
+        "code split",
+        "bundle",
+        "react query",
+        "react-query",
+        "page route"
+      ]
+    },
+    {
+      "skill": "sergeant-writing-skills",
+      "globs": [".agents/skills/**/SKILL.md", "**/SKILL.md"],
+      "keywords": ["skill.md", "writing skill", "specialist skill"]
+    },
+    {
+      "skill": "docs",
+      "globs": ["docs/**", "scripts/docs/**", ".github/workflows/docs-*.yml"],
+      "keywords": ["docs automation", "open-work", "documentation", "freshness"]
+    }
+  ],
+  "playbookRules": [
+    {
+      "playbook": "add-sql-migration.md",
+      "keywords": [
+        "add migration",
+        "migration",
+        "міграц",
+        "sql schema",
+        "new table",
+        "new field",
+        "новий індекс"
+      ]
+    },
+    {
+      "playbook": "add-api-endpoint.md",
+      "keywords": [
+        "add endpoint",
+        "new endpoint",
+        "api endpoint",
+        "rest surface",
+        "new api"
+      ]
+    },
+    {
+      "playbook": "add-new-page-route.md",
+      "keywords": ["new page", "page route", "new route", "нова сторінка"]
+    },
+    {
+      "playbook": "add-react-query-hook.md",
+      "keywords": ["react query", "react-query", "usequery", "usemutation"]
+    },
+    {
+      "playbook": "add-feature-flag.md",
+      "keywords": ["feature flag", "feature-flag", "прапор"]
+    },
+    {
+      "playbook": "add-hard-rule.md",
+      "keywords": [
+        "add hard rule",
+        "hard rule",
+        "new convention",
+        "нова конвенц"
+      ]
+    },
+    {
+      "playbook": "add-hubchat-tool.md",
+      "keywords": ["hubchat tool", "assistant tool", "new tool", "action card"]
+    },
+    {
+      "playbook": "add-push-notification.md",
+      "keywords": ["push notification", "push", "сповіщення"]
+    },
+    {
+      "playbook": "add-onboarding-step.md",
+      "keywords": ["onboarding step", "ftux", "онбординг"]
+    },
+    {
+      "playbook": "port-web-screen-to-mobile.md",
+      "keywords": [
+        "port web",
+        "rn migration",
+        "react native migration",
+        "mobile screen"
+      ]
+    },
+    {
+      "playbook": "modify-console-agent.md",
+      "keywords": ["console agent", "console-agent", "telegram bot agent"]
+    },
+    {
+      "playbook": "bump-dep-safely.md",
+      "keywords": [
+        "bump dep",
+        "bump dependency",
+        "upgrade dep",
+        "renovate",
+        "sdk upgrade",
+        "sdk migration"
+      ]
+    },
+    {
+      "playbook": "enable-prompt-caching.md",
+      "keywords": ["prompt caching", "anthropic cost", "prompt cache"]
+    },
+    { "playbook": "release.md", "keywords": ["release", "реліз", "launch"] },
+    {
+      "playbook": "reconcile-doc-drift.md",
+      "keywords": [
+        "doc drift",
+        "documentation",
+        "docs automation",
+        "open-work",
+        "freshness",
+        "reconcile"
+      ]
+    }
+  ]
+}

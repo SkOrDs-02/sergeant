@@ -81,6 +81,64 @@ export const messagesEn: Partial<MessageCatalog> = {
     loadingWorkouts: "Loading workouts",
   },
 
+  // Initiative 0010 Phase 6.2 — Landing page (`/`). Full EN translation of the
+  // `landing` group so non-UA visitors see English copy end-to-end. Voice:
+  // 1st-person singular, friendly-not-corporate, concrete. Tier names
+  // ("Premium") capitalized per ADR-0051.
+  landing: {
+    // Header
+    signIn: "Sign in",
+    signInAria: "Sign in to your account",
+
+    // Hero section
+    heroAriaLabel: "Hero — introducing Sergeant",
+    eyebrow: "Local-first · AI · In your language",
+    heroHeadline:
+      "One assistant for finances, workouts,\nnutrition and routines.",
+    heroSubcopy:
+      "Sergeant combines four modules — Finyk, Fizruk, Nutrition, Routine" +
+      " — into one AI chat that remembers your goals and suggests the next step." +
+      " No cloud by default. Full control over your data.",
+    registerCta: "Create account",
+    loginCta: "I already have an account",
+    skipCta: "Try without an account",
+
+    // Features section
+    featuresAriaLabel: "Why Sergeant",
+    features: {
+      aiTitle: "AI assistant in your pocket",
+      aiBody:
+        "A chat that knows your finances, workouts, nutrition and routines — and suggests what to do next.",
+      localFirstTitle: "Local-first by default",
+      localFirstBody:
+        "Your data lives on your device. Cloud sync is optional (Premium) and never turns on without your confirmation.",
+      noHiddenTitle: "No surprise charges",
+      noHiddenBody:
+        "Free tier — forever. Premium — 7-day trial, no card required, $7/mo or UAH equivalent for UA.",
+    },
+
+    // Waitlist section
+    waitlistAriaLabel: "Subscribe to the Sergeant launch",
+    waitlistHeadline: "Get notified when Premium is ready",
+    waitlistSubcopy:
+      "Leave your email for a launch update. Same interest list," +
+      " now with `source=landing` attribution.",
+
+    // Pricing section
+    pricingAriaLabel: "View pricing",
+    pricingHeadline: "Check out the plans",
+    pricingSubcopy:
+      "Free forever for everyday use. Premium unlocks unlimited AI chat," +
+      " auto-Mono sync and cross-device CloudSync.",
+    pricingCta: "See plans",
+
+    // Footer
+    footerText:
+      "Sergeant is a Ukrainian project. No ads, no data reselling," +
+      " no dark patterns. Telegram channel for updates and a public" +
+      " changelog in the repo.",
+  },
+
   // Initiative 0010 Phase 6 — Pricing page (`/pricing`). Conversion-funnel
   // surface; EN translation is the gating reason a non-UA visitor can
   // self-checkout. Tier names ("Free", "Premium") are brand-stable across

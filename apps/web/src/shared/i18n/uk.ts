@@ -678,6 +678,64 @@ export const messages = {
     },
   },
 
+  // Initiative 0010 Phase 6 — Landing page (`/`). Publicly-visible marketing
+  // surface. All user-visible strings live here so EN can fully replace this
+  // group via the shallow-merge contract in `index.ts`. The FEATURES array in
+  // LandingPage.tsx is built from messages.landing.features at render-time.
+  landing: {
+    // Header
+    signIn: "Увійти",
+    signInAria: "Увійти в обліковий запис",
+
+    // Hero section
+    heroAriaLabel: "Hero — анонс Sergeant",
+    eyebrow: "Local-first · AI · Українською",
+    heroHeadline:
+      "Один помічник для фінансів, тренувань,\nхарчування і рутини.",
+    heroSubcopy:
+      "Sergeant обʼєднує чотири модулі — Фінік, Фізрук, Харчування, Рутина" +
+      " — в один AI-чат, що памʼятає твої цілі і пропонує наступний крок." +
+      " Без хмари за замовчуванням, з повним контролем над даними.",
+    registerCta: "Створити акаунт",
+    loginCta: "Вже маю акаунт",
+    skipCta: "Спробувати без облікового запису",
+
+    // Features section
+    featuresAriaLabel: "Чому Sergeant",
+    features: {
+      aiTitle: "AI-помічник у кишені",
+      aiBody:
+        "Чат, що знає твої фінанси, тренування, харчування і рутину — і пропонує наступний крок.",
+      localFirstTitle: "Local-first за замовчуванням",
+      localFirstBody:
+        "Дані живуть на твоєму пристрої. Cloud sync — опціональний (Pro), не вмикається без твого підтвердження.",
+      noHiddenTitle: "Без зайвих списань",
+      noHiddenBody:
+        "Free-тір — назавжди. Pro — 7 днів тріал без картки, $7/міс або ₴-еквівалент для UA.",
+    },
+
+    // Waitlist section
+    waitlistAriaLabel: "Підписатися на запуск Sergeant",
+    waitlistHeadline: "Лист, коли Pro буде готовий",
+    waitlistSubcopy:
+      "Залиш email для launch-апдейту. Це той самий список інтересу, але" +
+      " тепер із attribution `source=landing`.",
+
+    // Pricing section
+    pricingAriaLabel: "Перехід до тарифів",
+    pricingHeadline: "Подивись на тарифи",
+    pricingSubcopy:
+      "Free назавжди для повсякденного використання. Pro відкриває" +
+      " безлімітний AI-чат, авто-Mono sync і CloudSync між пристроями.",
+    pricingCta: "Дивитись тарифи",
+
+    // Footer
+    footerText:
+      "Sergeant — український проєкт. Без реклами, без перепродажу даних," +
+      " без темних патернів. Telegram-канал з оновленнями і публічний" +
+      " changelog у репозиторії.",
+  },
+
   // Initiative 0010 Phase 6 — Pricing page (`/pricing`). Conversion-funnel
   // surface; EN translation is launch-critical. All user-visible strings on
   // the page route through this group so they can be locale-switched per

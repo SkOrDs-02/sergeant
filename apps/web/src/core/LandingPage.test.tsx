@@ -3,9 +3,20 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
-const { navigateMock, trackEventMock } = vi.hoisted(() => ({
+// ---------------------------------------------------------------------------
+// Hoisted mocks — must be declared before any imports that depend on them.
+// ---------------------------------------------------------------------------
+
+const { navigateMock, trackEventMock, useLocaleMock } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
   trackEventMock: vi.fn(),
+  // Mutable ref that each test sets to the desired locale. The vi.mock factory
+  // below closes over this ref so that the hook returns whatever locale the
+  // current test has configured — without needing `vi.doMock` (which doesn't
+  // work on already-imported modules in vitest).
+  useLocaleMock: {
+    locale: "uk" as "uk" | "en",
+  },
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -47,8 +58,36 @@ vi.mock("./pricing/WaitlistForm", () => ({
   ),
 }));
 
+// Mock useLocale using a factory that reads from `useLocaleMock.locale` on
+// each render. `getMessages` is the real resolver (no mock needed for it).
+vi.mock("@shared/i18n/useLocale", async () => {
+  const { getMessages } =
+    await vi.importActual<typeof import("@shared/i18n/index")>(
+      "@shared/i18n/index",
+    );
+  return {
+    useLocale: () => {
+      const locale = useLocaleMock.locale;
+      return {
+        locale,
+        messages: getMessages(locale),
+        setLocale: vi.fn(),
+      };
+    },
+  };
+});
+
+// ---------------------------------------------------------------------------
+// Late imports — after vi.mock hoisting
+// ---------------------------------------------------------------------------
+
 import { LandingPage } from "./LandingPage";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { getMessages } from "@shared/i18n/index";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function renderLanding(
   overrides: { onContinueWithoutAccount?: () => void } = {},
@@ -60,10 +99,16 @@ function renderLanding(
   );
 }
 
-describe("LandingPage (initiative 0010 Phase 6.1, audit P1-3)", () => {
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe("LandingPage (initiative 0010 Phase 6.2 — dynamic locale)", () => {
   beforeEach(() => {
     navigateMock.mockClear();
     trackEventMock.mockClear();
+    // Reset locale to "uk" so each test starts from the default locale.
+    useLocaleMock.locale = "uk";
     // `document.referrer` is read-only by default; redefine it per test so the
     // happy-path assertion can verify both the empty (direct) and the
     // non-empty (paid-acquisition) shape of the LANDING_VIEWED payload.
@@ -74,12 +119,10 @@ describe("LandingPage (initiative 0010 Phase 6.1, audit P1-3)", () => {
   });
   afterEach(() => cleanup());
 
-  it("fires LANDING_VIEWED on mount and renders hero CTAs + pricing link (happy path)", () => {
+  it("fires LANDING_VIEWED on mount and renders hero CTAs + pricing link (happy path, default uk locale)", () => {
     renderLanding();
 
-    // Canonical PostHog event from `analyticsEvents.ts § Landing page`.
-    // `locale: "uk"` is hardcoded — EN locale arrives in Phase 6.2 in a
-    // separate PR per the audit scope contract.
+    // Default locale is "uk" — LANDING_VIEWED payload carries the resolved locale.
     expect(trackEventMock).toHaveBeenCalledTimes(1);
     expect(trackEventMock).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.LANDING_VIEWED,
@@ -108,7 +151,7 @@ describe("LandingPage (initiative 0010 Phase 6.1, audit P1-3)", () => {
     expect(navigateMock).toHaveBeenLastCalledWith("/pricing?source=landing");
   });
 
-  it("fires LANDING_EMAIL_CAPTURED after the landing email form succeeds", () => {
+  it("fires LANDING_EMAIL_CAPTURED after the landing email form succeeds (default uk locale)", () => {
     renderLanding();
 
     fireEvent.click(screen.getByTestId("landing-email-capture"));
@@ -162,5 +205,51 @@ describe("LandingPage (initiative 0010 Phase 6.1, audit P1-3)", () => {
     fireEvent.click(screen.getByTestId("landing-skip-cta"));
 
     expect(navigateMock).toHaveBeenLastCalledWith("/welcome");
+  });
+
+  // Phase 6.2 — EN locale tests. The `useLocaleMock.locale` ref is set to
+  // "en" before render; the vi.mock factory above reads it synchronously so
+  // the component sees EN messages on first render.
+  describe("EN locale (Phase 6.2)", () => {
+    beforeEach(() => {
+      useLocaleMock.locale = "en";
+    });
+
+    it("renders EN copy when useLocale returns 'en'", () => {
+      renderLanding();
+
+      const t = getMessages("en").landing;
+
+      // EN hero CTA labels must appear in the DOM.
+      expect(screen.getByTestId("landing-register-cta").textContent).toBe(
+        t.registerCta,
+      );
+      expect(screen.getByTestId("landing-login-cta").textContent).toBe(
+        t.loginCta,
+      );
+      expect(screen.getByTestId("landing-skip-cta").textContent).toBe(
+        t.skipCta,
+      );
+    });
+
+    it("fires LANDING_VIEWED with locale='en' when useLocale returns 'en'", () => {
+      renderLanding();
+
+      expect(trackEventMock).toHaveBeenCalledWith(
+        ANALYTICS_EVENTS.LANDING_VIEWED,
+        expect.objectContaining({ path: "/", locale: "en" }),
+      );
+    });
+
+    it("fires LANDING_EMAIL_CAPTURED with locale='en' after email form succeeds", () => {
+      renderLanding();
+
+      fireEvent.click(screen.getByTestId("landing-email-capture"));
+
+      expect(trackEventMock).toHaveBeenCalledWith(
+        ANALYTICS_EVENTS.LANDING_EMAIL_CAPTURED,
+        { source: "hero", locale: "en" },
+      );
+    });
   });
 });

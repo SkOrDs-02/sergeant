@@ -1,7 +1,8 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-06-01 by @Skords-01. **Next review:** 2026-08-30.
-> **Status:** In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2+6(partial) done; Apple Sign-In + PricingPage portal link landed 2026-05-24 (this branch). Pending: founder adds APPLE\_\* env vars in Railway/local, EN locale (6)
+> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Status:** In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2 done; Phase 6 incl. 6.2 EN-locale wiring (LandingPage `useLocale` + `landing` group) done. Pending: **founder-блокери only** — APPLE\_\* env vars in Railway/local + ФОП-реєстрація для live Stripe + rollout/decision metrics
+> **Agent-ready:** needs-decision
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)
@@ -309,7 +310,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 - [x] Mobile-strategy ADR-0052 із `Status: Accepted` (Capacitor primary, Expo paralleled, обидва підтримуються).
 - [x] `activation_v2` доступна: `evaluateActivationV2()` у `packages/insights/src/activation.ts` + PostHog wire у Phase 5.2.
 - [x] A/B тест goal-first vs `vibe_picks` реалізовано: `GoalFirstScreen.tsx` (49 рядків), `onboardingGoalFirst.ts` (50/50 PostHog experiment), events `ONBOARDING_GOAL_FIRST_SHOWN`/`ONBOARDING_GOAL_FIRST_PICKED`/`ONBOARDING_VIBE_PICKED`. Rollout + decision pending.
-- [~] Лендинг `LandingPage.tsx` (260 рядків) виконує маршрут `/` для неавторизованих users. **Sitemap/robots.txt — shipped** (`apps/web/public/sitemap.xml` + `apps/web/public/robots.txt`). i18n foundation теж є (`shared/i18n/en.ts` + `useLocale.ts` + resolver), але **сам LandingPage ще не зведено на `useLocale`** (hardcoded `uk`) — це лишається єдиним відкритим Phase 6 пунктом.
+- [x] Лендинг `LandingPage.tsx` виконує маршрут `/` для неавторизованих users. **Sitemap/robots.txt — shipped** (`apps/web/public/sitemap.xml` + `apps/web/public/robots.txt`). **Phase 6.2 done:** `LandingPage` зведено на `useLocale()` — повний `landing` message-group у `uk.ts`/`en.ts`, copy рендериться через `messages.landing.*`, `LANDING_VIEWED`/`LANDING_EMAIL_CAPTURED` payload-и несуть resolved `locale` (не hardcoded `uk`). Tests: 8 LandingPage + 27 i18n green, web typecheck clean.
 - [ ] Усі PR-и пройшли CI зелено + a11y axe-core + Lighthouse budget.
 - [x] Нові docs (ADR-0051, ADR-0052, initiative, mobile READMEs) мають freshness header + Status badge.
 - [x] `docs/launch/business/01-monetization-and-pricing.md` оновлено: §2.2/§2.3 Superseded by ADR-0051; pricing v3 зафіксовано.
@@ -504,6 +505,6 @@ Without env vars: сервер логує warn-free start (Apple branch silently
 
 ### Phase 6 (partial) — Landing page ✅ / EN locale + sitemap ❌ (2026-05-18)
 
-- `apps/web/src/core/LandingPage.tsx` — 260 рядків. Hero section, 3-feature grid, waitlist email capture (source=landing), pricing CTA. Fires `LANDING_VIEWED` + `LANDING_EMAIL_CAPTURED`. `locale: "uk"` hardcoded.
+- `apps/web/src/core/LandingPage.tsx` — Hero section, 3-feature grid, waitlist email capture (source=landing), pricing CTA. Fires `LANDING_VIEWED` + `LANDING_EMAIL_CAPTURED`. Copy через `useLocale()` + `messages.landing.*`; `locale` у payload — resolved (Phase 6.2).
 - Route `/`: authenticated users → Hub; non-auth → LandingPage (gated у `StandaloneRoutes.tsx`).
 - **Pending:** EN-локаль (uk.ts існує, i18n config відсутній); sitemap.xml + robots.txt (тільки security.txt у apps/web/public/); Customer Portal link у PricingPage для Pro users.
