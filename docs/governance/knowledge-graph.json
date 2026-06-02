@@ -1322,7 +1322,7 @@
       "type": "initiative",
       "title": "0010 — Revenue-first launch: ship paid, focus wedge",
       "path": "docs/initiatives/0010-revenue-first-launch.md",
-      "status": "In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2+6(partial) done; Apple Sign-In + PricingPage portal link landed 2026-05-24 (this branch). Pending: founder adds APPLE\\_\\* env vars in Railway/local, EN locale (6)",
+      "status": "In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2 done; Phase 6 incl. 6.2 EN-locale wiring (LandingPage `useLocale` + `landing` group) done. Pending: **founder-блокери only** — APPLE\\_\\* env vars in Railway/local + ФОП-реєстрація для live Stripe + rollout/decision metrics",
       "tier": "core",
       "meta": {
         "number": 10,
@@ -1335,7 +1335,7 @@
       "type": "initiative",
       "title": "0015 — Docs automation for daily ops",
       "path": "docs/initiatives/0015-docs-automation-daily-ops.md",
-      "status": "In progress",
+      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (daily cron 7-day stability + maintainer 5/7-day usage self-report) — passive validation, no code work. Not 90-day-gated; archival deferred until the observation window closes.",
       "tier": "core",
       "meta": {
         "number": 15

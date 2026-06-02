@@ -6,7 +6,7 @@
   "entryFile": "packages/nutrition-domain/src/index.ts",
   "stats": {
     "exportCount": 1,
-    "totalImporters": 77,
+    "totalImporters": 80,
     "deadExports": 0
   },
   "exports": [
