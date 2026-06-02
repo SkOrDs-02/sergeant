@@ -806,6 +806,8 @@ focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk/50`.
 
 ### F15 — `Budget` is not a discriminated union; goal fields read via `unknown` casts [severity: medium] [perspective: ts]
 
+> **Closure note (2026-06-02, finyk-budget-union):** - [x] Виправлено. `Budget` тепер `LimitBudget | GoalBudget` дискримінований union (`@sergeant/finyk-domain/domain/types`), index-signature `[extra]: unknown` прибрано. `getLimitBudgets`/`getGoalBudgets` стали type-guard-предикатами (`b is LimitBudget`/`GoalBudget`), тож усі `(b as { targetAmount? }).x` cast-и у `BudgetsGoalsSection` зникли — goal-поля читаються типобезпечно. Сторадж (`useStorage.types.ts`) і mobile (7 компонентів budgets) уніфіковано на той самий union; mobile дроп-нув старі `limit: 0` / `limit ?? 0` хаки на goal-бюджетах. Без юзерів міграція не потрібна. web+domain+mobile typecheck 0, finyk-domain 245 тестів зелені.
+
 **Page:** `budgets`
 **File:** `apps/web/src/modules/finyk/pages/budgets/BudgetsGoalsSection.tsx`
 **Lines:** L110–L130

@@ -7,7 +7,11 @@ import {
   calculateLimitUsage,
   shouldShowProactiveAdvice,
 } from "@sergeant/finyk-domain/domain/budget";
-import type { Budget, Category } from "@sergeant/finyk-domain/domain/types";
+import type {
+  Budget,
+  Category,
+  LimitBudget,
+} from "@sergeant/finyk-domain/domain/types";
 import { LimitBudgetCard } from "../../components/budgets/LimitBudgetCard";
 import { resolveExpenseCategoryMeta } from "../../utils";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -18,7 +22,7 @@ export interface BudgetsLimitsSectionProps {
   limitsOpen: boolean;
   toggleLimits: () => void;
   monthStart: Date;
-  limitBudgets: Budget[];
+  limitBudgets: LimitBudget[];
   budgets: Budget[];
   setBudgets: Dispatch<SetStateAction<Budget[]>>;
   editIdx: number | null;
@@ -158,10 +162,9 @@ export function BudgetsLimitsSection({
               <LimitBudgetCard
                 budget={{
                   id: b.id,
-                  type:
-                    b.type === "goal" ? ("goal" as const) : ("limit" as const),
+                  type: "limit" as const,
                   categoryId,
-                  limit: typeof b.limit === "number" ? b.limit : 0,
+                  limit: b.limit,
                 }}
                 categoryLabel={catLabel}
                 spent={usage.spent}

@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-import type { Budget } from "@sergeant/finyk-domain/domain";
+import type {
+  Budget,
+  GoalBudget,
+  LimitBudget,
+} from "@sergeant/finyk-domain/domain";
 import {
   validateGoalBudgetForm,
   validateLimitBudgetForm,
@@ -88,7 +92,16 @@ export function AddBudgetSheet({
         setError(res.error);
         return;
       }
-      onAdd({ ...(res.normalized as Budget), id: makeId() });
+      const limitBudget: LimitBudget = {
+        id: makeId(),
+        type: "limit",
+        categoryId: res.normalized.categoryId ?? form.categoryId,
+        limit: res.normalized.limit,
+        ...(res.normalized.label != null
+          ? { label: res.normalized.label as string }
+          : {}),
+      };
+      onAdd(limitBudget);
     } else {
       const res = validateGoalBudgetForm({
         name: form.name,
@@ -100,13 +113,10 @@ export function AddBudgetSheet({
         setError(res.error);
         return;
       }
-      // Budget union requires `limit: number`; goals don't use it
-      // semantically — store 0 as a structural placeholder.
-      const goalBudget: Budget = {
+      const goalBudget: GoalBudget = {
         id: makeId(),
         type: "goal",
-        limit: 0,
-        name: res.normalized.name,
+        name: res.normalized.name ?? form.name,
         targetAmount: res.normalized.targetAmount,
         savedAmount: res.normalized.savedAmount,
         ...(form.emoji ? { emoji: form.emoji } : {}),

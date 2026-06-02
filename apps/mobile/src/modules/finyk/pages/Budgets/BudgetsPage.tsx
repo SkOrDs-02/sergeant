@@ -27,6 +27,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   type Budget,
+  type LimitBudget,
   buildExpenseCategoryList,
   calcCategorySpent,
   calculateGoalProgress,
@@ -69,7 +70,7 @@ import { SubscriptionRow } from "@/modules/finyk/components/budgets/Subscription
 type BudgetsSheet =
   | { kind: "closed" }
   | { kind: "plan" }
-  | { kind: "limit"; budget: Budget }
+  | { kind: "limit"; budget: LimitBudget }
   | { kind: "goal"; budget: GoalBudget }
   | { kind: "add" }
   | { kind: "subscription"; subscription: Subscription | null };

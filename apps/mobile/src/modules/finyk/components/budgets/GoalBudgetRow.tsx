@@ -1,17 +1,12 @@
 import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import type { Budget } from "@sergeant/finyk-domain/domain";
+import type { GoalBudget } from "@sergeant/finyk-domain/domain";
 
 import { Sparkline } from "./Sparkline";
 
 export interface GoalBudgetRowProps {
-  budget: Budget & {
-    name?: string;
-    emoji?: string;
-    targetAmount?: number;
-    savedAmount?: number;
-  };
+  budget: GoalBudget;
   saved: number;
   pct: number;
   daysLeft: number | null;

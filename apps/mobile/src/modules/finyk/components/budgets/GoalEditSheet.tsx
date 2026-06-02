@@ -1,19 +1,13 @@
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 
-import type { Budget } from "@sergeant/finyk-domain/domain";
+import type { GoalBudget } from "@sergeant/finyk-domain/domain";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Sheet } from "@/components/ui/Sheet";
 
-export interface GoalBudget extends Budget {
-  name?: string;
-  emoji?: string;
-  targetAmount?: number;
-  savedAmount?: number;
-  targetDate?: string;
-}
+export type { GoalBudget };
 
 export interface GoalEditSheetProps {
   open: boolean;
