@@ -88,6 +88,7 @@
 
 ### S2 — ESLint `no-console-pii` rule
 
+- **Status:** ✅ Виконано — verified on main: rule `no-console-pii` у `packages/eslint-plugin-sergeant-design/index.js` + тести `packages/eslint-plugin-sergeant-design/__tests__/no-console-pii.test.mjs`.
 - **Title (commit):** `feat(eslint): add no-console-pii rule blocking PII in console.* calls`
 - **Scope:**
   - Нове правило у `packages/eslint-plugin-sergeant-design/src/rules/no-console-pii.ts`.
@@ -162,6 +163,7 @@
 
 ### S4 — Pino redact wildcard depth до 5 рівнів
 
+- **Status:** ✅ Виконано — verified on main: рекурсивний redactor у `apps/server/src/obs/logger.ts` + deep-nesting тести у `apps/server/src/obs/logger.test.ts`.
 - **Title:** `fix(server-obs): expand pino redact wildcards beyond depth 2`
 - **Scope:**
   - У `apps/server/src/obs/logger.ts:155-169` — або (i) розширити статичний
@@ -199,6 +201,7 @@
 
 ### S5 — OTel attribute denylist parity test
 
+- **Status:** ✅ Виконано — verified on main: тест `OTel PII denylist parity` у `apps/server/src/obs/tracing.test.ts:115` звіряє `OTEL_ATTRIBUTE_DENYLIST` проти `REDACT_KEY_NAMES`.
 - **Title:** `test(server-obs): assert OTel attribute denylist matches REDACT_KEY_NAMES`
 - **Scope:**
   - Новий тест `apps/server/src/obs/tracing.test.ts`.
@@ -227,6 +230,7 @@
 
 ### S6 — PBKDF2 ramp-up 200k → 600k + migration plan
 
+- **Status:** ✅ Виконано — verified on main: `apps/web/src/core/security/lockStorage.ts` — `LATEST_CRED_VERSION=2`, `ITERATIONS_BY_VERSION[2]=600_000`, versioned credential migration.
 - **Title:** `fix(web-security): bump lockStorage PBKDF2 iterations to 600k with versioned migration`
 - **Scope:**
   - `apps/web/src/core/security/lockStorage.ts:44` — `iterations: 200_000`
@@ -258,6 +262,7 @@
 
 ### S7 — Contract-test coverage для security-critical endpoints
 
+- **Status:** ✅ Виконано — verified on main: `apps/server/src/routes/{auth,csp-report,account-recovery}.contract.test.ts` усі присутні.
 - **Title:** `test(api): contract coverage for /api/auth/session, /api/account/recovery/*, /api/csp-report`
 - **Scope:**
   - Нові тести `apps/server/src/routes/auth.contract.test.ts`,
@@ -285,6 +290,7 @@
 
 ### S8 — Web-vitals / analytics PII guard
 
+- **Status:** ✅ Виконано — verified on main: `scrubPII` guard у `apps/web/src/core/observability/analytics.ts:105` + DEV-gated console.
 - **Title:** `fix(web-obs): gate analytics console.log behind DEBUG_ANALYTICS + containsPII check`
 - **Scope:**
   - `apps/web/src/core/observability/analytics.ts:56` — обернути
@@ -366,6 +372,7 @@
 
 ### S11 — CSP `<meta>` ↔ `vercel.json` parity test
 
+- **Status:** ✅ Виконано — verified on main: `apps/web/src/test/cspMonitoringAllowlist.test.ts` — directive parity `vercel.json` ↔ `index.html` meta.
 - **Title:** `test(web-security): full CSP directive parity between index.html meta and vercel.json header`
 - **Scope:**
   - Розширити `apps/web/src/test/cspMonitoringAllowlist.test.ts` — зараз
