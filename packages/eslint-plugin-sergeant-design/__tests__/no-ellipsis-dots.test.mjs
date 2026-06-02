@@ -57,6 +57,11 @@ function lintAndFix(
   );
 }
 
+// NOTE on the literal `...` in this file: the rule flags 3 ASCII dots in
+// strings/JSX text/template cookeds, so the inputs MUST stay as the
+// 3-byte `...` sequence (not the 1-codepoint `…` U+2026). Some editors
+// auto-correct `...` → `…` on save; if you reformat this file and the
+// suite suddenly goes red, check that the inputs are still 3 ASCII dots.
 describe("no-ellipsis-dots", () => {
   it("flags `…` inside a string Literal", () => {
     const msgs = lint(`const s = "Loading…";`);
