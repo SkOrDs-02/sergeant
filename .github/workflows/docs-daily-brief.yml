@@ -60,10 +60,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Regenerate open-work + today + trust badge
-        # `docs:gen-daily` is the orchestrator; runs open-work first because
-        # both today and trust-badge consume its data, then today (because
-        # trust-badge reads pickOverdueReview from it), then trust-badge.
+      - name: Regenerate all daily auto-gen artifacts
+        # `docs:gen-daily` orchestrates the full daily refresh:
+        #   1. open-work.md        — depends on tracker headers
+        #   2. today.md            — consumes open-work
+        #   3. trust badge         — reads pickOverdueReview from today
+        #   4. freshness dashboard — consumes tracker headers across all trackers
+        #   5. knowledge graph     — walks 17 workspaces' source
+        #   6. symbol index        — walks per-workspace exports
+        #   7. repo map            — workspace manifest snapshot
+        #   8. service catalog     — surfaces tag snapshot
+        #   9. architecture diagrams (c3-workspaces.md)
+        # Steps 1–4 are the original "light" artifacts (sub-second each).
+        # Steps 5–9 are heavier — they walk the code tree — but still finish
+        # in under a minute total on the runner. Centralising the refresh
+        # here closes the per-PR drift that was accumulating across both
+        # `docs/governance/*.{json,html,auto.json}` and
+        # `apps/*/symbols.json` because none of those generators were on
+        # the daily cron until now.
         run: pnpm docs:gen-daily
 
       - name: Open auto-merge PR with refreshed artifacts (if any drift)
@@ -77,7 +91,30 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet docs/open-work.md docs/today.md docs/README.md; then
+          # Drift check + commit cover ALL artifacts that `docs:gen-daily`
+          # writes — not just the original 3. The path list is intentionally
+          # explicit (rather than `git add -A`) so a runaway generator that
+          # writes outside its declared output cannot smuggle changes into
+          # the daily refresh PR.
+          REFRESH_PATHS=(
+            docs/open-work.md
+            docs/today.md
+            docs/README.md
+            docs/governance/freshness-dashboard.html
+            docs/governance/knowledge-graph.json
+            docs/governance/knowledge-graph.html
+            docs/governance/symbol-index.json
+            docs/governance/symbol-index.html
+            docs/governance/repo-map.auto.json
+            docs/governance/service-catalog.auto.json
+            docs/architecture/diagrams/c3-workspaces.md
+          )
+          # Per-workspace symbol-index snapshots — globbed because the
+          # workspace set evolves; one new workspace tomorrow should not
+          # silently fall out of the refresh.
+          mapfile -t SYMBOL_FILES < <(git ls-files '*/symbols.json')
+          REFRESH_PATHS+=("${SYMBOL_FILES[@]}")
+          if git diff --quiet -- "${REFRESH_PATHS[@]}"; then
             echo "no drift — nothing to commit"
             exit 0
           fi
@@ -86,7 +123,7 @@ jobs:
           # If a prior same-day run already opened the branch (e.g. manual
           # re-dispatch), reset it to the latest regen instead of failing.
           git checkout -B "$BRANCH"
-          git add docs/open-work.md docs/today.md docs/README.md
+          git add -- "${REFRESH_PATHS[@]}"
           git commit -m "chore(docs): daily brief refresh"
           git push --force-with-lease origin "$BRANCH"
           # Reuse existing PR for the same day if one is already open.
