@@ -88,6 +88,10 @@ jobs:
       # `ignore-unfixed: true` — типовий шум від CVE без патчу не
       # блокує merge; такі випадки лишаються в SARIF-trend і
       # розглядаються в nightly-audit triage.
+      # `trivyignores: ./.trivyignore` — escape hatch для CRITICAL/HIGH
+      # CVE, чий fix залежить від upstream distroless rebuild (Google
+      # rebuilds щотижня-три). Кожен entry має `exp:YYYY-MM-DD` self-
+      # cleaning expiry; деталі — у самому `.trivyignore`.
       - name: Trivy image scan (SARIF + fail on CRITICAL/HIGH)
         id: trivy
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
@@ -96,7 +100,18 @@ jobs:
           format: sarif
           output: trivy-image.sarif
           severity: "CRITICAL,HIGH"
+          # `limit-severities-for-sarif: true` makes the action apply
+          # `severity:` to BOTH the SARIF report and the exit-code count.
+          # Without it (the default), the action emits a SARIF with all
+          # severities and the underlying Trivy CLI still exits 1 whenever
+          # any vulnerability of any severity is found (10 MEDIUM/LOW libc6
+          # + qs/ws on the 2026-06-02 nightly), even though the workflow's
+          # intent is to gate on CRITICAL/HIGH only. Setting this to true
+          # aligns "what the SARIF says" with "what the job exit code
+          # represents".
+          limit-severities-for-sarif: true
           ignore-unfixed: true
+          trivyignores: ./.trivyignore
           vuln-type: "os,library"
           exit-code: "1"
 

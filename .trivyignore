@@ -1,0 +1,39 @@
+# Trivy vulnerability suppressions for `Dockerfile.api` / `Dockerfile.console`
+# runtime image (`gcr.io/distroless/nodejs20-debian12:nonroot`).
+#
+# Each entry MUST include:
+#   - An `exp:YYYY-MM-DD` expiry date (Trivy honours this; after the date the
+#     suppression silently turns into a no-op and the CVE re-fires).
+#   - A short reason explaining WHY the fix is not actionable in this repo
+#     right now (otherwise an audit reviewer cannot tell whether the entry is
+#     load-bearing or stale).
+#
+# Audit cadence: nightly container-scan workflow runs against latest distroless
+# digest. When upstream rebuilds the image with the patched libssl3 / etc.,
+# Trivy stops reporting these CVEs and the entries become harmless. The expiry
+# date is a self-cleaning safety net: if the rebuild slips by 30 days, the
+# entry expires, the CVE re-fires, and the container-scan job goes red again so
+# we re-evaluate.
+#
+# Do NOT add unfixed/MEDIUM/LOW entries here — the workflow already passes
+# `ignore-unfixed: true` and only gates on CRITICAL/HIGH. This file is the
+# CRITICAL/HIGH escape hatch for upstream-lag cases only.
+
+# --- libssl3 — pending distroless image rebuild ---
+#
+# Distroless Node.js 20 base image still ships libssl3 3.0.18-1~deb12u2 as of
+# the 2026-06-02 nightly scan. The Debian security tracker lists 3.0.19-1 as
+# the fixed version; the upstream rebuild lands on Google's release cadence
+# (typically 1–3 weeks after a libssl point release). We cannot apt-upgrade
+# inside distroless — no shell, no package manager (by design, see
+# `docs/security/hardening/L13-docker-platform-pin.md` and Dockerfile.api
+# header comment).
+#
+# Re-evaluate weekly via `docker pull gcr.io/distroless/nodejs20-debian12:nonroot`
+# + `trivy image`. When the rebuild lands, delete this block.
+
+CVE-2026-31789 exp:2026-07-02 # libssl3 CRITICAL — pending distroless rebuild (fixed: 3.0.19-1)
+CVE-2026-28387 exp:2026-07-02 # libssl3 HIGH — pending distroless rebuild (fixed: 3.0.19-1)
+CVE-2026-28388 exp:2026-07-02 # libssl3 HIGH — pending distroless rebuild (fixed: 3.0.19-1)
+CVE-2026-28389 exp:2026-07-02 # libssl3 HIGH — pending distroless rebuild (fixed: 3.0.19-1)
+CVE-2026-28390 exp:2026-07-02 # libssl3 HIGH — pending distroless rebuild (fixed: 3.0.19-1)
