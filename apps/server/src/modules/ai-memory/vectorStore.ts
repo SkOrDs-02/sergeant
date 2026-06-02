@@ -195,6 +195,23 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
           where += ` AND source = ANY($${params.length}::text[])`;
         }
 
+        // PR-24 (embedding-vendor-abstraction): фільтруємо за активною
+        // embedding-моделлю, щоб ANN-пошук не змішував вектори різних
+        // моделей. Сьогодні всі рядки — voyage-3.5-lite, тому фільтр
+        // behavior-neutral. Але при майбутньому перемиканні провайдера
+        // (подвійний запис → backfill → switch) без цього фільтру HNSW
+        // повернув би vectors з іншою basis-space, що ламає recall.
+        //
+        // Примітка для майбутнього: якщо потрібна справжня multi-model
+        // coexistence (запити до кількох моделей одночасно), варто
+        // розглянути partial index на (user_id, embedding) WHERE
+        // embedding_model = 'X' або `hnsw.iterative_scan` — щоб планувальник
+        // зміг використати HNSW-індекс для ORDER BY ... LIMIT навіть при
+        // наявності додаткового WHERE-предиката. Деталі — у
+        // docs/playbooks/embedding-provider-migration.md.
+        params.push(env.VOYAGE_EMBEDDING_MODEL);
+        where += ` AND embedding_model = $${params.length}`;
+
         const sql = `
           SELECT
             id,

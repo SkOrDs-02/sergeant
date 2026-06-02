@@ -1,7 +1,7 @@
 # PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in)
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Planned
+> **Status:** Groundwork done — abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера).
 
 |                    |                                                                                           |
 | ------------------ | ----------------------------------------------------------------------------------------- |
@@ -82,12 +82,12 @@ CREATE INDEX ai_memories_model_id_idx ON ai_memories (model_id);
 
 ## Acceptance criteria (DoD)
 
-- [ ] `packages/shared/src/ai/embeddings/provider.ts` interface + 3 adapters.
-- [ ] `apps/server/src/modules/ai-memory/embeddingRouter.ts` з env-based selection.
-- [ ] Migration `047_ai_memories_model_id.sql` merged.
-- [ ] Existing `vectorStore` queries добавляють `WHERE model_id = $current`.
-- [ ] `docs/playbooks/embedding-provider-migration.md` з step-by-step.
-- [ ] `apps/server/src/modules/ai-memory/__tests__/embeddingRouter.test.ts` — env-routing covered.
+- [x] ~~`packages/shared/src/ai/embeddings/provider.ts` interface + 3 adapters.~~ **Superseded:** `EmbeddingProvider` interface живе у `apps/server/src/modules/ai-memory/types.ts` + `createVoyageEmbeddingProvider` adapter (`embeddings.ts`) + test-fakes. OpenAI/Mock concrete adapters — deferred (speculative dead code без реального 2-го провайдера; будуються у PR-3 при switch-у).
+- [x] ~~`embeddingRouter.ts` з env-based selection.~~ **Superseded:** активна модель вибирається через `env.VOYAGE_EMBEDDING_MODEL`; multi-provider router — deferred до PR-3 (single provider сьогодні).
+- [x] ~~Migration `047_ai_memories_model_id.sql`.~~ **Superseded/redundant:** `ai_memories` вже має per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки (миграції вже на 074, не 047) — окрема `model_id` колонка не потрібна.
+- [x] Read-path фільтрує за активною моделлю — `vectorStore.query` додає `AND embedding_model = $current` (`env.VOYAGE_EMBEDDING_MODEL`). Behavior-neutral сьогодні (всі rows `voyage-3.5-lite`), закриває vector-mixing ризик при майбутньому switch-у.
+- [x] `docs/playbooks/embedding-provider-migration.md` — 5-step re-embed runbook на базі існуючих колонок/інтерфейсів (registered у INDEX + catalog; 3-way-sync green).
+- [x] Тест на read-path фільтр — `vectorStore.integration.test.ts`: integration (2 моделі → лише active повертається) + unit-level SQL-predicate assertion (Docker-free).
 
 ## Тести
 
