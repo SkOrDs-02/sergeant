@@ -1024,6 +1024,8 @@ setDayOverrides((prev) => {
 
 ### F19 — Asset/Debt/Receivable forms have no required-field validation [severity: medium] [perspective: ux]
 
+> **Closure note (2026-06-02, partial):** - [x] Currency `<select>` sub-point fixed — the 4 Asset-currency `<option>`s now carry explicit `value="UAH"/"USD"/"EUR"/"BTC"` so a future label localization can't silently corrupt the stored `currency` (it currently feeds `a.currency === "UAH"` filters in F17). The broader label/`aria`/zod validation migration for the four forms remains open (decision-gated on the `useApiForm`+zod rollout).
+
 **Page:** `assets`
 **File:** `apps/web/src/modules/finyk/pages/AssetsForm.tsx`
 **Lines:** L60–L92 (Subscription), L142–L166 (Receivable), L238–L260 (Asset), L354–L378 (Debt)

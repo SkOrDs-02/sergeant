@@ -270,10 +270,10 @@ export function AssetForm({
           value={newAsset.currency}
           onChange={(e) => onCurrencyChange(e.target.value)}
         >
-          <option>UAH</option>
-          <option>USD</option>
-          <option>EUR</option>
-          <option>BTC</option>
+          <option value="UAH">UAH</option>
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="BTC">BTC</option>
         </select>
         <div className="flex gap-2">
           <Button
