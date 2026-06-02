@@ -1,11 +1,11 @@
 ---
 lang: en
-lang-reason: Superseded stub kept only as historical anchor (`Status: Deprecated`); body redirects to `release.md § Expo`. Translating a 308-style stub to UA adds no signal — the canonical playbook is what gets read. Tracked under initiative 0009 PR 1.2b.
+lang-reason: "Superseded stub kept only as historical anchor (`Status: Deprecated`); body redirects to `release.md § Expo`. Translating a 308-style stub to UA adds no signal — the canonical playbook is what gets read. Tracked under initiative 0009 PR 1.2b."
 ---
 
 # Playbook: Release Expo Mobile
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-02 by @Skords-01. **Next review:** 2026-08-31.
 > **Status:** Deprecated
 
 > **Superseded by:** [release.md § Expo](./release.md#3-expo) — merged 2026-05-04 (initiative [0009](../initiatives/archive/_0009-agent-os-hardening.md) PR 2.3).

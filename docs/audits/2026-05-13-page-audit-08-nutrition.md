@@ -1,3 +1,7 @@
+---
+render_with_liquid: false
+---
+
 # Page Audit — Nutrition module — 4 pages (start/pantry/log/menu)
 
 > **Last validated:** 2026-05-13 by Devin.
