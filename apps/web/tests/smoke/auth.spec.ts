@@ -1,5 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 
+// This file targets the signup flow itself, so override the default
+// `storageState` from `playwright.smoke.config.ts` (which logs in a
+// pre-baked user) and start every test from a clean browser context.
+// Without this override, `goto("/sign-in")` would immediately redirect
+// to the authenticated hub and the assertions below would never run.
+test.use({ storageState: { cookies: [], origins: [] } });
+
 const SEEDED_LS: Record<string, string> = {
   hub_onboarding_done_v1: "1",
   hub_first_action_done_v1: "1",

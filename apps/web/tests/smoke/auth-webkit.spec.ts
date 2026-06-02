@@ -1,5 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
+// Override the default `storageState` from `playwright.smoke.config.ts`
+// (pre-baked logged-in user) — this file's whole point is to test
+// signup + cookie semantics from a fresh browser context.
+test.use({ storageState: { cookies: [], origins: [] } });
+
 /**
  * Webkit / mobile-safari authentication regression suite (PR-48).
  *

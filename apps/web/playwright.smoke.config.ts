@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { HUB_USER_AUTH_STATE } from "./tests/smoke/auth.setup";
 
 /**
  * Smoke E2E config (separate from the a11y lane).
@@ -7,6 +8,18 @@ import { defineConfig, devices } from "@playwright/test";
  *  - Postgres via docker-compose (root `docker-compose.yml`)
  *  - API server (`@sergeant/server`, :3000)
  *  - Web preview (`@sergeant/web`, :4173) built against VITE_API_BASE_URL=:3000
+ *
+ * Setup-project pattern: the `setup` project (`tests/smoke/auth.setup.ts`)
+ * runs once before any browser-engine project, signs up a Better Auth
+ * test user, and saves the post-signup browser state to
+ * `tests/smoke/.auth/hub-user.json`. The chromium/webkit/mobile-safari
+ * projects then inherit that state via `storageState`, so suites that
+ * visit `/` or `/?module=…` (e.g. `bottom-nav.spec.ts`) start from an
+ * authenticated session instead of being redirected to /sign-in.
+ *
+ * `auth.spec.ts` and `auth-webkit.spec.ts` are deliberately unaffected
+ * — they target the signup flow itself, so re-using a session would
+ * defeat the assertion.
  */
 export default defineConfig({
   testDir: "./tests/smoke",
@@ -27,16 +40,34 @@ export default defineConfig({
   // playwright install webkit`, тож chromium лишається default-project-ом для DX.
   projects: [
     {
+      // Runs `tests/smoke/auth.setup.ts` once before all browser-engine
+      // projects. Produces `tests/smoke/.auth/hub-user.json` (gitignored).
+      name: "setup",
+      testMatch: /.*\.setup\.ts/,
+    },
+    {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: HUB_USER_AUTH_STATE,
+      },
+      dependencies: ["setup"],
     },
     {
       name: "webkit",
-      use: { ...devices["Desktop Safari"] },
+      use: {
+        ...devices["Desktop Safari"],
+        storageState: HUB_USER_AUTH_STATE,
+      },
+      dependencies: ["setup"],
     },
     {
       name: "mobile-safari",
-      use: { ...devices["iPhone 14"] },
+      use: {
+        ...devices["iPhone 14"],
+        storageState: HUB_USER_AUTH_STATE,
+      },
+      dependencies: ["setup"],
     },
   ],
   webServer: process.env.PW_SKIP_WEBSERVER
