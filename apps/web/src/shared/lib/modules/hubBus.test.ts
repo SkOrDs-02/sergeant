@@ -49,6 +49,24 @@ describe("hubBus", () => {
     expect(searchHandler).not.toHaveBeenCalled();
   });
 
+  it("delivers void storageUpdated event to subscribers", () => {
+    const handler = vi.fn();
+    onHubBus("storageUpdated", handler);
+    emitHubBus("storageUpdated", undefined);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith(undefined);
+  });
+
+  it("storageUpdated does not crosstalk with openChat", () => {
+    const storageHandler = vi.fn();
+    const chatHandler = vi.fn();
+    onHubBus("storageUpdated", storageHandler);
+    onHubBus("openChat", chatHandler);
+    emitHubBus("storageUpdated", undefined);
+    expect(storageHandler).toHaveBeenCalledTimes(1);
+    expect(chatHandler).not.toHaveBeenCalled();
+  });
+
   it("a throwing handler does not break other handlers", () => {
     vi.useFakeTimers();
     const good = vi.fn();

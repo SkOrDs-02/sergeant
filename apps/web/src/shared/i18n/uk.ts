@@ -452,6 +452,8 @@ export const messages = {
   },
 
   finyk: {
+    // HubReports ExpensesCard
+    reportHeading: "Фінік (витрати)",
     addLimitOrGoal: "+ Додати ліміт або ціль",
     // Accessible name for the Transactions filter toolbar (page-audit-05 F13).
     transactionsFilterLabel: "Фільтр транзакцій",

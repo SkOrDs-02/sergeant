@@ -17,6 +17,7 @@ import {
   type Period,
   type RoutineState,
 } from "./hubReports.aggregation";
+import { useHubStorageBump } from "./useHubStorageBump";
 
 // ── Local sub-components ──────────────────────────────────────────────
 
@@ -191,6 +192,10 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
     { validate: (v): v is boolean => typeof v === "boolean" },
   );
 
+  // Re-aggregate when any module emits storageUpdated (same-tab) or when
+  // the native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const bump = useHubStorageBump();
+
   const { cur, prev, dates } = useMemo(() => {
     const routineState = safeReadLS(
       "hub_routine_v1",
@@ -205,7 +210,8 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
       prev: aggregateHabits(routineState, prevDates),
       dates: curDates,
     };
-  }, [period, offset]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
+  }, [period, offset, bump]);
 
   const formattedCurrent = cur.pct.toLocaleString("uk-UA");
   const formattedPrev = prev.pct.toLocaleString("uk-UA");

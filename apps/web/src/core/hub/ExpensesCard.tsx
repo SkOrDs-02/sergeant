@@ -3,10 +3,12 @@
  * Reads its own localStorage shard and aggregates independently.
  */
 import { useMemo, useState } from "react";
+import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { safeReadLS } from "@shared/lib/storage/storage";
+import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import {
   getFinykExcludedTxIdsFromStorage,
   getFinykTxSplitsFromStorage,
@@ -19,6 +21,7 @@ import {
   type Period,
   type SpendingInputs,
 } from "./hubReports.aggregation";
+import { useHubStorageBump } from "./useHubStorageBump";
 
 // ── Local sub-components ──────────────────────────────────────────────
 
@@ -44,7 +47,7 @@ function BarChart({
   if (!hasData) {
     return (
       <div className="h-24 flex items-center justify-center text-xs text-muted">
-        Немає даних
+        {messages.hub.reportNoData}
       </div>
     );
   }
@@ -57,18 +60,18 @@ function BarChart({
   const step = labelStep(dates.length);
 
   function formatLabel(dateStr: string) {
-    const d = new Date(dateStr + "T00:00:00");
+    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
     if (isWeek) {
       const dayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-      return dayNames[d.getDay()];
+      return dayNames[parts.weekday];
     }
-    return String(d.getDate());
+    return String(parts.day);
   }
 
   function formatTooltip(dateStr: string, value: number) {
-    const d = new Date(dateStr + "T00:00:00");
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
+    const day = String(parts.day).padStart(2, "0");
+    const month = String(parts.month).padStart(2, "0");
     return `${day}.${month}: ${value.toLocaleString("uk-UA")}${unit}`;
   }
 
@@ -80,7 +83,7 @@ function BarChart({
         </div>
       )}
       {selected === null && <div className="h-4 mb-1" />}
-      <div className="flex items-end gap-0.5 h-20" aria-label="Графік">
+      <div className="flex items-end gap-0.5 h-20" aria-label={messages.hub.reportChartAria}>
         {vals.map((v, i) => {
           const pct = Math.max(0, Math.min(100, (v / max) * 100));
           const isToday = dates[i] === localDateKey();
@@ -187,6 +190,10 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
     { validate: (v): v is boolean => typeof v === "boolean" },
   );
 
+  // Re-aggregate when any module emits storageUpdated (same-tab) or when
+  // the native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const bump = useHubStorageBump();
+
   const { cur, prev, dates } = useMemo(() => {
     const raw = safeReadLS("finyk_tx_cache", null) as
       | { txs?: unknown[] }
@@ -213,7 +220,8 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       prev: aggregateSpending(inputs, prevDates),
       dates: curDates,
     };
-  }, [period, offset]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
+  }, [period, offset, bump]);
 
   const formattedCurrent = cur.total.toLocaleString("uk-UA");
   const formattedPrev = prev.total.toLocaleString("uk-UA");
@@ -242,7 +250,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
           size="xs"
           className="flex-1 min-w-0 text-muted truncate"
         >
-          Фінік (витрати)
+          {messages.finyk.reportHeading}
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
@@ -278,7 +286,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
             </span>
             <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
           </div>
-          <p className="text-xs text-muted">Минулий: {formattedPrev} ₴</p>
+          <p className="text-xs text-muted">{messages.hub.reportPrevious} {formattedPrev} ₴</p>
           <BarChart
             key={`${period}-${offset}`}
             data={cur.daily}

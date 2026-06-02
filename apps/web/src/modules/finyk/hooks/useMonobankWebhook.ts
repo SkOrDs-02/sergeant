@@ -1,4 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { logger } from "@shared/lib";
 import {
@@ -158,12 +160,15 @@ export function useMonobankWebhook({
   }, [isConnected, accounts]);
 
   // === Current-month transactions ===
-  const now = new Date();
-  const fromDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  // Use Kyiv date parts so month boundaries are correct for users outside EET.
+  const { year: kyivYear, month: kyivMonth } = getKyivDateParts();
+  const fromDate = new Date(
+    `${kyivYear}-${String(kyivMonth).padStart(2, "0")}-01T00:00:00+03:00`,
+  ).toISOString();
+  const nextMonth = kyivMonth === 12 ? 1 : kyivMonth + 1;
+  const nextYear = kyivMonth === 12 ? kyivYear + 1 : kyivYear;
   const toDate = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    1,
+    `${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00+03:00`,
   ).toISOString();
   const txQueryKey = `${fromDate}|${toDate}`;
 
@@ -191,11 +196,14 @@ export function useMonobankWebhook({
   // recommendations, coach, hubChat) keep working unchanged. Was previously
   // owned by `useMonobankLegacy()`. We invalidate the Hub finyk preview
   // here too — same place the legacy hook used to fan-out.
+  // Also emits storageUpdated on the hub bus (F3/F10 fix) so Hub Reports
+  // re-aggregates in the same tab without waiting for a storage event.
   useEffect(() => {
     if (transactions.length === 0) return;
     const payload = { txs: transactions, timestamp: Date.now() };
     if (writeJSON(LEGACY_TX_CACHE_KEY, payload)) {
       queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
+      emitHubBus("storageUpdated", undefined);
     }
     if (transactions.length >= 3) {
       writeJSON(LEGACY_TX_CACHE_LAST_GOOD_KEY, payload);

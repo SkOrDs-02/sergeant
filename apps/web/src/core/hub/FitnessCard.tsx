@@ -9,6 +9,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
+import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import {
   aggregateWorkouts,
   getPeriodRange,
@@ -16,6 +17,7 @@ import {
   localDateKey,
   type Period,
 } from "./hubReports.aggregation";
+import { useHubStorageBump } from "./useHubStorageBump";
 
 // ── Local sub-components (shared pattern, duplicated per card to keep
 //    each card's chunk self-contained — no cross-card coupling) ───────
@@ -55,18 +57,18 @@ function BarChart({
   const step = labelStep(dates.length);
 
   function formatLabel(dateStr: string) {
-    const d = new Date(dateStr + "T00:00:00");
+    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
     if (isWeek) {
       const dayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-      return dayNames[d.getDay()];
+      return dayNames[parts.weekday];
     }
-    return String(d.getDate());
+    return String(parts.day);
   }
 
   function formatTooltip(dateStr: string, value: number) {
-    const d = new Date(dateStr + "T00:00:00");
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
+    const day = String(parts.day).padStart(2, "0");
+    const month = String(parts.month).padStart(2, "0");
     return `${day}.${month}: ${value.toLocaleString("uk-UA")}${unit}`;
   }
 
@@ -185,6 +187,10 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
     { validate: (v): v is boolean => typeof v === "boolean" },
   );
 
+  // Re-aggregate when any module emits storageUpdated (same-tab) or when
+  // the native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const bump = useHubStorageBump();
+
   const { cur, prev, dates } = useMemo(() => {
     // Intentional LS-backed hub preview read; key centralized to STORAGE_KEYS
     // via #3209. Full SQLite-overlay migration is separate storage-roadmap work.
@@ -199,7 +205,8 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
       prev: aggregateWorkouts(rawWorkouts, prevDates),
       dates: curDates,
     };
-  }, [period, offset]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
+  }, [period, offset, bump]);
 
   const formattedCurrent = cur.count.toLocaleString("uk-UA");
   const formattedPrev = prev.count.toLocaleString("uk-UA");

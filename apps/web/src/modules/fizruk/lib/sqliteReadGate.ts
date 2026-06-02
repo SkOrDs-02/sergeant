@@ -19,6 +19,7 @@
  */
 
 import { useSyncExternalStore } from "react";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 
 let cacheTick = 0;
 const listeners = new Set<() => void>();
@@ -44,7 +45,8 @@ export function useFizrukSqliteReadTick(): number {
 
 /**
  * Bumps the tick + notifies subscribers so consuming hooks re-render
- * with the latest `getCachedFizrukSqliteState()`.
+ * with the latest `getCachedFizrukSqliteState()`. Also notifies same-tab
+ * Hub consumers (F3/F10 fix) so Hub Reports re-aggregates immediately.
  */
 export function notifyFizrukSqliteCacheRefresh(): void {
   cacheTick += 1;
@@ -55,6 +57,9 @@ export function notifyFizrukSqliteCacheRefresh(): void {
       /* noop — listeners must never break notify */
     }
   }
+  // Notify same-tab Hub consumers so Hub Reports / Dashboard re-aggregate
+  // without waiting for a cross-tab storage event.
+  emitHubBus("storageUpdated", undefined);
 }
 
 /** Test-only escape hatch: clears subscribers + resets tick. */

@@ -40,6 +40,19 @@ export interface HubBusEvents {
   openChat: { message: string | null; autoSend?: boolean };
   /** Open the global Hub search overlay (⌘K equivalent). */
   openSearch: void;
+  /**
+   * A module (Routine, Fizruk, Nutrition, Finyk) persisted new data to its
+   * storage layer in the **same tab**. Hub consumers that aggregate
+   * cross-module data subscribe to this event alongside the native
+   * `window "storage"` event (which only fires for cross-tab writes) so
+   * their read memos re-run without waiting for a full page reload.
+   *
+   * Payload is `void` — the signal carries no data; consumers re-read
+   * from their own storage path on receipt. Emitted from each module's
+   * canonical save function (one emit per module, not scattered across
+   * call-sites) to keep the storm bounded.
+   */
+  storageUpdated: void;
 }
 
 type Handler<K extends keyof HubBusEvents> = (detail: HubBusEvents[K]) => void;

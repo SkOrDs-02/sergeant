@@ -42,6 +42,7 @@ import type {
   NutritionPantrySnapshot,
 } from "./dualWrite/diff.js";
 import { getCachedNutritionSqliteState } from "./sqliteReader.js";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 
 export {
   NUTRITION_ACTIVE_PANTRY_KEY,
@@ -180,6 +181,9 @@ export function persistNutritionLog(
     meals: extractMealSnapshots(normalizeNutritionLog(log ?? {})),
   };
   triggerNutritionDualWrite(prev, next);
+  // Notify same-tab Hub consumers (F3/F10 fix) so Hub Reports / Dashboard
+  // re-aggregate immediately without waiting for a cross-tab storage event.
+  emitHubBus("storageUpdated", undefined);
   return true;
 }
 

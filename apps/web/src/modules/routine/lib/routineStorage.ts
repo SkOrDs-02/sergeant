@@ -56,6 +56,7 @@ import {
   setCachedSqliteCompletions,
   setCachedSqliteRoutineState,
 } from "./sqliteReader.js";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 
 // Re-export key constants so web callers can keep their existing imports.
 export { ROUTINE_STORAGE_KEY, ROUTINE_EVENT, ROUTINE_STORAGE_ERROR };
@@ -66,6 +67,9 @@ export function emitRoutineStorage() {
   } catch {
     /* noop */
   }
+  // Notify same-tab Hub consumers (F3/F10 fix) so Hub Reports / Dashboard
+  // re-aggregate immediately without waiting for a cross-tab storage event.
+  emitHubBus("storageUpdated", undefined);
 }
 
 /**

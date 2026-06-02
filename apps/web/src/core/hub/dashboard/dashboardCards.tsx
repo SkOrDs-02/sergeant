@@ -18,6 +18,7 @@ import { ANALYTICS_EVENTS, trackEvent } from "../../observability/analytics";
 import { getWeekRange } from "../../insights/useWeeklyDigest";
 import { MODULE_CONFIGS, type ModuleId } from "./moduleConfigs";
 import { localStorageStore } from "./dashboardStore";
+import { useHubStorageBump } from "../useHubStorageBump";
 
 const STREAK_MILESTONES = [7, 14, 21, 30, 60, 90, 100, 365] as const;
 
@@ -121,6 +122,10 @@ export function TodaySummaryStrip({
  * the safe wrapper would otherwise yield null and silently hide the chip.
  */
 export function StreakIndicator() {
+  // Re-read when any module emits storageUpdated (same-tab) or when the
+  // native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const bump = useHubStorageBump();
+
   const streak = useMemo(() => {
     const readLegacy = (key: string): Record<string, unknown> | null => {
       const raw = safeReadStringLS(key, null);
@@ -150,7 +155,8 @@ export function StreakIndicator() {
       .sort((a, b) => b.days - a.days);
 
     return streaks[0]?.days ?? 0;
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
+  }, [bump]);
 
   // Detect streak-milestone crossings on the hub itself so the funnel
   // sees `streak_milestone_reached` from the dashboard render path. We
@@ -229,7 +235,12 @@ export function StaggerChild({
  * святкувати. Реальний engagement-маркер живе вище (StreakIndicator).
  */
 export function MotivationalFooter() {
-  const entryCount = useMemo(() => countRealEntries(localStorageStore), []);
+  // Re-count when any module emits storageUpdated (same-tab) or when the
+  // native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const bump = useHubStorageBump();
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
+  const entryCount = useMemo(() => countRealEntries(localStorageStore), [bump]);
 
   if (entryCount === 0) return null;
 
