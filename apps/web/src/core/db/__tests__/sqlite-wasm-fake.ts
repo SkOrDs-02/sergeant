@@ -61,6 +61,10 @@ class JsStorageDb extends FakeRows {
   constructor(_mode?: "local" | "session") {
     super();
   }
+
+  // Real `oo1.JsStorageDb` exposes this to drop the kvvfs slot wholesale;
+  // mirror it so `wipeSqliteDb()` on the kvvfs path is exercisable.
+  clearStorage = clearStorageMock;
 }
 
 class DB extends FakeRows {
@@ -69,14 +73,25 @@ class DB extends FakeRows {
   }
 }
 
+/** Filenames passed to `new OpfsSAHPoolDb(...)`, in order — lets tests
+ *  assert per-user DB naming (`sergeant-<userKey>.db`). */
+export const createdOpfsFilenames: string[] = [];
+/** `SAHPoolUtil.unlink` spy — lets tests assert wipe-on-logout deletes the
+ *  right per-user file. */
+export const opfsUnlinkMock = vi.fn((_name: string) => true);
+/** `JsStorageDb.clearStorage` spy — kvvfs-path wipe assertion. */
+export const clearStorageMock = vi.fn(() => undefined);
+
 class OpfsSAHPoolDb extends FakeRows {
-  constructor(_filename: string) {
+  constructor(filename: string) {
     super();
+    createdOpfsFilenames.push(filename);
   }
 }
 
 const installOpfsSAHPoolVfs = vi.fn(async () => ({
   OpfsSAHPoolDb,
+  unlink: opfsUnlinkMock,
   addCapacity: vi.fn(),
   exportFile: vi.fn(),
   getCapacity: vi.fn(),

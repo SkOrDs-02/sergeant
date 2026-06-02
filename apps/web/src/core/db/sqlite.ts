@@ -71,32 +71,145 @@ export interface SqliteDbHandle {
   close(): Promise<void>;
 }
 
+/**
+ * Per-user partition key folded into the OPFS DB filename so two accounts
+ * signing in on the same device never share one `sergeant.db`
+ * (page-audit-10 F17). Mirrors the Service-Worker cache partition
+ * (`swSetActiveUser`, Audit 03 / Decision #2 C): defaults to `anon` and is
+ * overwritten by {@link setSqliteUser} once `AuthContext` resolves the user.
+ *
+ * Note: only the OPFS-SAH VFS keys by filename. The `kvvfs` (localStorage)
+ * fallback uses one wholesale store and the in-memory VFS is ephemeral —
+ * for those two, {@link wipeSqliteDb} on logout is the isolation guarantee.
+ */
+const ANON_USER_KEY = "anon";
+
 let inFlight: Promise<SqliteDbHandle> | null = null;
+let inFlightKey: string | null = null;
 let resolved: SqliteDbHandle | null = null;
+let resolvedKey: string | null = null;
+/** The currently-open low-level DB, retained so {@link wipeSqliteDb} can
+ *  delete the right per-user persistent storage. */
+let currentOpen: OpenedDb | null = null;
+let activeUserKey = ANON_USER_KEY;
+
+/** Filesystem-safe partition key. User ids are cuid/uuid-ish; strip anything
+ *  that could escape the OPFS-SAH pool filename, and fall back to `anon`. */
+function sanitizeUserKey(userId: string | null | undefined): string {
+  if (!userId) return ANON_USER_KEY;
+  const safe = userId.replace(/[^a-zA-Z0-9_-]/g, "");
+  return safe.length > 0 ? safe : ANON_USER_KEY;
+}
 
 /**
- * Resolves a singleton {@link SqliteDbHandle}. Concurrent callers receive
- * the same in-flight promise so initialisation only happens once.
+ * Point the SQLite singleton at a given user's partition. Called by
+ * `AuthContext` on login (and reset to `anon` on logout). When the key
+ * actually changes we drop the cached singleton so the next
+ * {@link getSqliteDb} opens that user's own DB file, closing the previous
+ * handle in the background. Cheap + synchronous — safe to call from a render
+ * effect; it never loads the WASM module.
+ */
+export function setSqliteUser(userId: string | null | undefined): void {
+  const key = sanitizeUserKey(userId);
+  if (key === activeUserKey) return;
+  // Forensic trace of the storage-layer partition switch (page-audit-10 F17,
+  // rec #3). Redacted to anon/user — never the raw id — so we don't regress
+  // the "hash userId before logging" hardening (L10).
+  addSentryBreadcrumb({
+    category: "storage",
+    level: "info",
+    message: "sqlite: active user partition changed",
+    data: {
+      from: activeUserKey === ANON_USER_KEY ? "anon" : "user",
+      to: key === ANON_USER_KEY ? "anon" : "user",
+    },
+  });
+  activeUserKey = key;
+  const stale = resolved;
+  resolved = null;
+  resolvedKey = null;
+  inFlight = null;
+  inFlightKey = null;
+  currentOpen = null;
+  if (stale) {
+    void stale.close().catch((err) => {
+      logger.warn("[sqlite] closing stale per-user handle failed", err);
+    });
+  }
+}
+
+/**
+ * Tear down and DELETE the current user's persistent SQLite storage, then
+ * reset the singleton. Called from `AuthContext.logout` so user B never reads
+ * user A's rows on a shared device (page-audit-10 F17). Best-effort: storage
+ * removal failures are logged, not thrown, so logout always completes.
+ */
+export async function wipeSqliteDb(): Promise<void> {
+  // Snapshot + reset synchronously so any concurrent getSqliteDb() re-opens a
+  // fresh DB instead of reusing the one being wiped.
+  const open = currentOpen;
+  const stale = resolved;
+  resolved = null;
+  resolvedKey = null;
+  inFlight = null;
+  inFlightKey = null;
+  currentOpen = null;
+  if (stale) {
+    try {
+      await stale.close();
+    } catch (err) {
+      logger.warn("[sqlite] close during wipe failed", err);
+    }
+  }
+  if (open) {
+    try {
+      await open.wipe();
+    } catch (err) {
+      logger.warn("[sqlite] storage wipe failed", err);
+    }
+  }
+}
+
+/**
+ * Resolves a singleton {@link SqliteDbHandle} for the active user. Concurrent
+ * callers for the same user receive the same in-flight promise so
+ * initialisation only happens once.
  *
  * Throwing from init clears the cached promise so the next caller can
  * retry — otherwise a transient OPFS lock failure during boot would
  * permanently brick `getSqliteDb()` for the session.
  */
 export function getSqliteDb(): Promise<SqliteDbHandle> {
-  if (resolved) return Promise.resolve(resolved);
-  if (inFlight) return inFlight;
+  const key = activeUserKey;
+  if (resolved && resolvedKey === key) return Promise.resolve(resolved);
+  if (inFlight && inFlightKey === key) return inFlight;
 
-  inFlight = initSqliteDb().then(
-    (handle) => {
-      resolved = handle;
+  inFlightKey = key;
+  const pending = initSqliteDb(key).then(
+    ({ handle, open }) => {
+      // A user switch (setSqliteUser / wipeSqliteDb) may have landed while we
+      // were initialising. Only publish the handle if its key is still active;
+      // otherwise it's orphaned — close it so we don't leak an OPFS lock.
+      if (activeUserKey === key) {
+        resolved = handle;
+        resolvedKey = key;
+        currentOpen = open;
+      } else {
+        void handle.close().catch(() => {});
+      }
+      if (inFlight === pending) inFlight = null;
       return handle;
     },
     (err: unknown) => {
-      inFlight = null;
+      if (inFlight === pending) {
+        inFlight = null;
+        inFlightKey = null;
+      }
       throw err;
     },
   );
-  return inFlight;
+  inFlight = pending;
+  return pending;
 }
 
 /**
@@ -105,10 +218,16 @@ export function getSqliteDb(): Promise<SqliteDbHandle> {
  */
 export function __resetSqliteDbForTests(): void {
   inFlight = null;
+  inFlightKey = null;
   resolved = null;
+  resolvedKey = null;
+  currentOpen = null;
+  activeUserKey = ANON_USER_KEY;
 }
 
-async function initSqliteDb(): Promise<SqliteDbHandle> {
+async function initSqliteDb(
+  userKey: string,
+): Promise<{ handle: SqliteDbHandle; open: OpenedDb }> {
   const coi = warnIfNotCrossOriginIsolated();
 
   // Lazy-load the heavy WASM module so it's not in the initial bundle.
@@ -119,11 +238,11 @@ async function initSqliteDb(): Promise<SqliteDbHandle> {
   const sqlite3InitModule = await loadSqliteWasm();
   const sqlite3 = await sqlite3InitModule();
 
-  const driver = await openDb(sqlite3);
+  const driver = await openDb(sqlite3, userKey);
   const proxy = makeProxyDriver(driver.db);
   const drizzleDb = drizzle<SqliteSchema>(proxy, { schema: sqliteSchema });
 
-  return {
+  const handle: SqliteDbHandle = {
     drizzle: drizzleDb,
     migrationClient: () => makeMigrationClient(driver.db),
     vfs: driver.vfs,
@@ -132,6 +251,7 @@ async function initSqliteDb(): Promise<SqliteDbHandle> {
       driver.db.close();
     },
   };
+  return { handle, open: driver };
 }
 
 /**
@@ -214,9 +334,16 @@ async function loadSqliteWasm(): Promise<SqliteWasmModule["default"]> {
 interface OpenedDb {
   readonly db: Sqlite3Database;
   readonly vfs: SqliteVfs;
+  /** Name of the underlying store (OPFS filename / kvvfs slot / `:memory:`). */
+  readonly dbName: string;
+  /** Removes this DB's persistent storage. Call only after {@link close}. */
+  wipe(): Promise<void>;
 }
 
-async function openDb(sqlite3: Sqlite3Static): Promise<OpenedDb> {
+async function openDb(
+  sqlite3: Sqlite3Static,
+  userKey: string,
+): Promise<OpenedDb> {
   // 1) Persistent: OPFS SyncAccessHandle Pool VFS — main-thread friendly,
   //    does not need COOP/COEP. Skip on environments without OPFS at all
   //    (jsdom, very old Safari) so we don't wait on a timeout.
@@ -225,7 +352,17 @@ async function openDb(sqlite3: Sqlite3Static): Promise<OpenedDb> {
       const pool = await sqlite3.installOpfsSAHPoolVfs({
         directory: "/sergeant/sqlite",
       });
-      return { db: new pool.OpfsSAHPoolDb("sergeant.db"), vfs: "opfs-sahpool" };
+      // Per-user filename so two accounts on one device never share a DB
+      // (page-audit-10 F17).
+      const dbName = `sergeant-${userKey}.db`;
+      return {
+        db: new pool.OpfsSAHPoolDb(dbName),
+        vfs: "opfs-sahpool",
+        dbName,
+        async wipe() {
+          pool.unlink(dbName);
+        },
+      };
     } catch (err) {
       logger.warn("[sqlite] OPFS-SAH Pool VFS unavailable, falling back", err);
       addSentryBreadcrumb({
@@ -241,10 +378,20 @@ async function openDb(sqlite3: Sqlite3Static): Promise<OpenedDb> {
   //    browsers (Safari < 17 / iOS < 16.4). Worker-only contexts have no
   //    `localStorage`, so guard accordingly. The roadmap calls this slot
   //    "IDB-VFS"; sqlite-wasm doesn't ship a real IDB-backed VFS yet, so
-  //    kvvfs is the closest persistent fallback.
+  //    kvvfs is the closest persistent fallback. kvvfs is a single wholesale
+  //    store (no per-user filename), so cross-user isolation here relies on
+  //    `wipe()` clearing it on logout rather than on the filename key.
   if (hasLocalStorage()) {
     try {
-      return { db: new sqlite3.oo1.JsStorageDb("local"), vfs: "kvvfs" };
+      const db = new sqlite3.oo1.JsStorageDb("local");
+      return {
+        db,
+        vfs: "kvvfs",
+        dbName: "local",
+        async wipe() {
+          db.clearStorage();
+        },
+      };
     } catch (err) {
       logger.warn("[sqlite] kvvfs (localStorage) unavailable", err);
       addSentryBreadcrumb({
@@ -257,12 +404,17 @@ async function openDb(sqlite3: Sqlite3Static): Promise<OpenedDb> {
   }
 
   // 3) Last resort — non-persistent. The DB still works, callers just
-  //    lose data on reload.
+  //    lose data on reload. Nothing to wipe — it never touches disk.
   logger.warn(
     "[sqlite] No persistent VFS available; using in-memory database. " +
       "Data will not survive a reload.",
   );
-  return { db: new sqlite3.oo1.DB(":memory:", "ct"), vfs: "memory" };
+  return {
+    db: new sqlite3.oo1.DB(":memory:", "ct"),
+    vfs: "memory",
+    dbName: ":memory:",
+    wipe: async () => {},
+  };
 }
 
 function hasOpfsSupport(): boolean {

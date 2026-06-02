@@ -503,6 +503,8 @@ Also rotate / clear on logout in `useAppLock` mount when `auth.userId !== persis
 
 ### F17 — `sqlite.ts` opens a single per-origin DB without per-user partitioning [severity: medium] [perspective: bug]
 
+> **Closure note (2026-06-02, sqlite-per-user-isolation):** - [x] Виправлено всі 3 пункти. (1) OPFS-SAH файл тепер `sergeant-${userKey}.db` (`setSqliteUser` фолдить userId у filename, sanitize до `[A-Za-z0-9_-]`, дефолт `anon` — дзеркалить SW-cache partition зі swSetActiveUser). (2) `wipeSqliteDb()` викликається з `AuthContext.logout` — закриває handle + `pool.unlink(dbName)` (OPFS) / `db.clearStorage()` (kvvfs) + скидає singleton. (3) redacted Sentry breadcrumb (anon/user, без raw id — поважає L10) на зміні партиції. Lazy-контракт збережено (dynamic `import("../db/sqlite")` у AuthContext; `sqlite.lazy.test.ts` зелений). Новий `sqlite.peruser.test.ts` (6 кейсів). kvvfs/memory не keyable за filename — для них ізоляція тримається на wipe-on-logout (задокументовано в коді).
+
 **Page:** DB / SQLite
 **File:** `apps/web/src/core/db/sqlite.ts`
 **Lines:** L74–L99 (singleton), L182–L235 (DB open)

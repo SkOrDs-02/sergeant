@@ -337,6 +337,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (err) {
       logger.warn("[auth.logout] swSetActiveUser(null) failed", err);
     }
+    // Audit 10 / F17: delete the just-signed-out user's local SQLite DB so
+    // user B never reads user A's rows on a shared device, then reset the
+    // partition to `anon` for any post-logout anonymous usage. Dynamic import
+    // keeps the sqlite-wasm chunk lazy (see `sqlite.lazy.test.ts`).
+    try {
+      const sqliteMod = await import("../db/sqlite");
+      await sqliteMod.wipeSqliteDb();
+      sqliteMod.setSqliteUser(null);
+    } catch (err) {
+      logger.warn("[auth.logout] sqlite wipe/reset failed", err);
+    }
     await invalidateMe();
   }, [invalidateMe]);
 
@@ -367,6 +378,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       void swSetActiveUser(currentId).catch((err) =>
         logger.warn("[auth.identify] swSetActiveUser failed", err),
       );
+      // Audit 10 / F17: point the lazy SQLite singleton at this user's
+      // partition so the OPFS DB file becomes `sergeant-<id>.db`. Dynamic
+      // import keeps `core/db/sqlite` (and its ~700 KB WASM chunk) out of the
+      // eager bundle — see `sqlite.lazy.test.ts`.
+      void import("../db/sqlite")
+        .then((m) => m.setSqliteUser(currentId))
+        .catch((err) =>
+          logger.warn("[auth.identify] setSqliteUser failed", err),
+        );
     } else if (!currentId && prevId) {
       resetPostHog();
       lastIdentifiedUserIdRef.current = null;
