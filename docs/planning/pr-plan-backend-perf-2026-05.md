@@ -353,6 +353,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-09 — `refactor(server): migrate validateBody→parseBody (batch 1 — nutrition)`
 
+- **Status:** ✅ Виконано — verified on main: 0 `validateBody`/`validateQuery` hits у `apps/server/src/modules/nutrition/` (усі handler-и на `parseBody`).
+
 > **Rollout 2026-05-15 (3 sub-PR-и):**
 >
 > - **Phase 1 pilot ✅ merged (#2917):** 2 файли — `analyze-photo.ts`, `refine-photo.ts`. Розширило існуючий ApiError schema/emission drift на 2 nutrition routes; знято в prerequisite-фіксі.
@@ -411,6 +413,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 ---
 
 ## PR-10 — `refactor(server): migrate validateBody→parseBody (batch 2 — sync/chat/internal/решта)`
+
+- **Status:** ✅ Виконано — verified on main: 0 `validateBody`/`validateQuery` hits у `modules/sync`, `modules/chat`, `routes/internal` (усі на `parseBody`).
 
 > **Rollout 2026-05-15 (split 2a + 2b):**
 >

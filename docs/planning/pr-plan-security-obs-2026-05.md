@@ -129,6 +129,7 @@
 
 ### S3 — ESLint SRI-guard на сторонні `<script src>`
 
+- **Status:** ✅ Виконано — verified on main: реалізовано як standalone-гейт `scripts/lint-html-sri.mjs` + `scripts/__tests__/lint-html-sri.test.mjs` + `pnpm lint:html-sri` (у CI `ci.yml`). Перевіряє `apps/**/index.html` на third-party `<script src=https://…>` без `integrity`/`crossorigin`.
 - **Title:** `feat(eslint): require SRI integrity= on third-party <script src> in index.html`
 - **Scope:**
   - Нове правило `packages/eslint-plugin-sergeant-design/src/rules/sri-on-third-party-script.ts`

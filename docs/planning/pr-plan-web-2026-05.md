@@ -117,6 +117,7 @@
 
 ### A6 — `refactor(web): chatActions handlers — drop direct localStorage writes`
 
+- **Status:** ✅ Виконано — verified on main: 0 прямих `localStorage.setItem/removeItem` у production chatActions handler-ах (`fizrukActions`/`routineActions`/`nutritionActions`/`crossActions`); усі повертають `ChatActionResult`/`ChatActionUndoableResult`.
 - **Surface:** `apps/web/src/core/lib/chatActions/fizrukActions/*` (deep-rooted local-first state); решта `chatActions/*Actions.ts` handler-ів з прямими `@shared/storage` writes; `docs/architecture/state-write-paths.md § Anti-patterns`.
 - **Acceptance:**
   - кожен handler пише через `apiClient` (або, переходно, через явний `apiClient`-mediated SQLite path), не напряму у localStorage.
@@ -205,6 +206,7 @@
 
 ### E4 — `feat(web): mapApiErrorToUserCopy + rollout in core/profile/*`
 
+- **Status:** ✅ Виконано — verified on main: `apps/web/src/shared/lib/api/mapApiErrorToUserCopy.ts` (+ test) rolled out у profile — PersonalInfoSection/SessionsSection/DangerZoneSection/ChangePasswordSection (8 callsites).
 - **Surface:**
   - `apps/web/src/shared/lib/api/mapApiErrorToUserCopy.ts` (новий — мапа `error.code` → UA-copy).
   - `apps/web/src/core/profile/PersonalInfoSection.tsx:50,72,94,...` (10 callsite-ів).
@@ -222,6 +224,7 @@
 
 ### E5 — `fix(web): pull-to-refresh disabled while cloud pull pending`
 
+- **Status:** ✅ Виконано — verified on main: `apps/web/src/shared/hooks/useCloudPullPending.ts` (+ test) wired у RoutineTimeline / NutritionApp / finyk TransactionList (`enabled={!cloudPullPending}`).
 - **Surface:**
   - `apps/web/src/shared/components/ui/PullToRefresh.tsx` (`disabled` prop уже існує).
   - `apps/web/src/core/cloudSync/hook/useCloudPullPending.ts` (новий hook).

@@ -101,6 +101,7 @@
 
 ### T-1 · Server AI-tool unit suites (nutrition × 7 + openclaw + weekly-digest)
 
+- **Status:** ✅ Виконано — verified on main: `apps/server/src/modules/nutrition/` має 9 \*.test.ts (barcode, day-hint, day-plan, food-search, parse-pantry, photoMagicByte, recommend-recipes, shopping-list, week-plan).
 - **Items covered:** P1-2 з прожарки (`apps/server/src/modules/nutrition/{barcode-search,food-search,parse-pantry,log-meal,recall-meals,update-meal,delete-meal}.ts` + `apps/server/src/modules/openclaw/tools/*` + `apps/server/src/modules/digest/weekly-digest.ts` — coverage 0–15%). Відповідає Wave B (T09–T12) у `docs/testing/2026-05-05-tests-pr-plan.md`.
 - **Priority:** P1 · **Size:** L (~350 LoC tests + ~10 fixture файлів) · **Owner:** `@Skords-01`
 - **Skill:** `sergeant-server-api`.
@@ -244,6 +245,7 @@
 
 ### D-1 · Pre-commit timing instrumentation (`scripts/timing-precommit.mjs`)
 
+- **Status:** ✅ Виконано — verified on main: `scripts/pre-commit-timing.mjs` + `scripts/pre-commit-timings-report.mjs`, `.husky/pre-commit` викликає wrapper, лог `.husky/.pre-commit-timings.log` (gitignored) активний.
 - **Items covered:** P1-5 з прожарки.
 - **Priority:** P1 · **Size:** M (~150 LoC + 1 hook update) · **Owner:** `@Skords-01`
 - **Skill:** `sergeant-deploy-and-observability`.
