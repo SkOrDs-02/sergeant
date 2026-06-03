@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-02",
+  "generated_at": "2026-06-03",
   "summary": {
     "packages": 17,
     "totalExports": 288,
@@ -1459,7 +1459,7 @@
     {
       "name": "@sergeant/db-schema",
       "path": "packages/db-schema",
-      "entryFile": "packages/db-schema/src/index.ts",
+      "entryFile": "packages/db-schema/dist/index.d.ts",
       "stats": {
         "exportCount": 1,
         "totalImporters": 0,
@@ -1984,7 +1984,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 319,
+        "totalImporters": 320,
         "deadExports": 0
       },
       "exports": [
