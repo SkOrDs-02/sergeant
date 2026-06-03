@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-06-02)</title>
+    <title>Sergeant — Knowledge Graph (2026-06-03)</title>
     <style>
       body {
         font-family:
@@ -97,7 +97,7 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-06-02 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-06-03 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
@@ -105,13 +105,13 @@
       <span class="chip chip-audit">audit: <b>29</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>47</b></span>
-      <span class="chip chip-playbook">playbook: <b>57</b></span>
+      <span class="chip chip-playbook">playbook: <b>58</b></span>
       <span class="chip chip-pr">pr: <b>195</b></span>
       <span class="chip chip-skill">skill: <b>22</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (232 core)</summary>
+      <summary>Nodes (233 core)</summary>
       <table>
         <thead>
           <tr>
@@ -2205,7 +2205,20 @@
                 lock-in)</a
               >
             </td>
-            <td>Planned</td>
+            <td>
+              Active — groundwork done; abstraction вже в коді (2026-05-13 план
+              передував поточній архітектурі). `EmbeddingProvider`/`VectorStore`
+              vendor-agnostic інтерфейси (`types.ts`) +
+              `createVoyageEmbeddingProvider` factory + per-row
+              `embedding_provider`/`embedding_model`/`embedding_version` колонки
+              вже існували; цей прохід додав active-model read-filter у
+              `vectorStore.query` +
+              `docs/playbooks/embedding-provider-migration.md`. **Лишилось —
+              лише живий vendor-switch (rollout PR-3), genuinely trigger-gated**
+              на voyage regression / pricing / outage. `047_model_id` міграція
+              та env-router/OpenAI-adapter — superseded (redundant / speculative
+              dead code до реального тригера).
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -2740,6 +2753,17 @@
             <td>
               <a href="../../docs/playbooks/deploy-config-change.md"
                 >Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:embedding-provider-migration</code></td>
+            <td>
+              <a href="../../docs/playbooks/embedding-provider-migration.md"
+                >Embedding Provider Migration</a
               >
             </td>
             <td>Active</td>

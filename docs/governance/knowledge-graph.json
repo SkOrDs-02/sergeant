@@ -1,13 +1,13 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-02",
+  "generated_at": "2026-06-03",
   "counts": {
     "adr": 58,
     "audit": 29,
     "hard-rule": 26,
     "initiative": 47,
-    "playbook": 57,
+    "playbook": 58,
     "pr": 195,
     "skill": 22
   },
@@ -1593,7 +1593,7 @@
       "type": "initiative",
       "title": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in)",
       "path": "docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md",
-      "status": "Planned",
+      "status": "Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера).",
       "tier": "core",
       "meta": {}
     },
@@ -1890,6 +1890,15 @@
       "type": "playbook",
       "title": "Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)",
       "path": "docs/playbooks/deploy-config-change.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:embedding-provider-migration",
+      "type": "playbook",
+      "title": "Embedding Provider Migration",
+      "path": "docs/playbooks/embedding-provider-migration.md",
       "status": "Active",
       "tier": "core",
       "meta": {}

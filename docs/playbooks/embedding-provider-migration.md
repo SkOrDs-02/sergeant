@@ -1,6 +1,6 @@
 # Playbook: Embedding Provider Migration
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-09-01.
+> **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-09-01.
 > **Status:** Active
 
 **Trigger:** «Перемкнути embedding-провайдер або модель» / «Змінити embedding vendor» / «re-embed ai_memories на нову модель» / виявлено нову embedding-модель з кращою якістю або меншою вартістю.
@@ -24,6 +24,15 @@
 `vectorStore.query` фільтрує результати за `embedding_model = $N`, де `$N = env.VOYAGE_EMBEDDING_MODEL`. Це active-model read-filter з PR-24 (`docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md`). Він гарантує, що ANN-пошук не змішує вектори різних моделей у HNSW-просторі, що зламало б recall.
 
 Провайдер-фабрики живуть у `embeddings.ts` (`createVoyageEmbeddingProvider`). Vendor-агностичний інтерфейс — `EmbeddingProvider` у `types.ts`.
+
+---
+
+## When not to use this playbook
+
+- **Лише змінюється `embedding_version` (та сама модель, той самий vendor)** — це не міграція провайдера; онови version-константу й re-embed точково без зміни read-filter / dual-write танцю.
+- **Змінюється тільки розмірність HALFVEC у схемі** без зміни моделі — це surface міграції БД, йди в [add-sql-migration.md](./add-sql-migration.md).
+- **Розвідка/benchmark якості кандидата-провайдера** без рішення мігрувати — це дослідницька задача, не виконуй кроки 2–5 (dual-write/backfill коштує реальних $).
+- **Vendor-switch ще не затригерився** (немає regression / pricing-стрибка / outage на поточній моделі) — PR-24 свідомо тримає це trigger-gated; не запускай міграцію «про запас».
 
 ---
 
@@ -75,13 +84,14 @@ SELECT embedding_model, COUNT(*) FROM ai_memories GROUP BY 1;
 
 Backfill — окремий one-off скрипт (не міграція), який:
 
-1. Читає рядки зі старою моделлю порціями (наприклад, по 100):
+1. Читає рядки зі старою моделлю порціями (наприклад, по 100) — **keyset-пагінація** по `id` (НЕ `OFFSET`: `OFFSET` змушує сканувати всі пропущені рядки щопорції, що деградує на великій таблиці):
    ```sql
    SELECT id, content FROM ai_memories
    WHERE embedding_model = 'voyage-3.5-lite'
      AND deleted_at IS NULL
+     AND id > $last_id          -- 0 на старті; далі — останній оброблений id
    ORDER BY id
-   LIMIT 100 OFFSET $cursor
+   LIMIT 100
    ```
 2. Викликає новий `EmbeddingProvider.embedBatch(texts, { criticality: 'non-critical' })`.
 3. Оновлює кожен рядок:
@@ -93,9 +103,14 @@ Backfill — окремий one-off скрипт (не міграція), яки
        embedding_version = $new_version
    WHERE id = $id
    ```
-4. Зберігає `cursor` (наприклад, останній `id`) для resumability — перезапуск без дублювання.
+4. Зберігає останній оброблений `id` (`$last_id`) для keyset-resumability — наступна порція стартує з `id > $last_id`, перезапуск без дублювання.
 
-**Rate-limiting:** Voyage API має добовий soft-budget (`VOYAGE_DAILY_BUDGET_USD_SOFT`). Використовуй `criticality: 'non-critical'` та лови `VoyageSoftBudgetExceededError` — при ній зупини backfill і запусти знову наступного дня. Між батчами — `sleep(200ms)` щоб не спамити API.
+**Rate-limiting (provider-залежно):** механізм залежить від того, який провайдер ти backfill-иш — backfill використовує **новий** provider, не обов'язково Voyage.
+
+- **Якщо новий provider — Voyage:** добовий soft-budget `VOYAGE_DAILY_BUDGET_USD_SOFT`; передавай `criticality: 'non-critical'` і лови `VoyageSoftBudgetExceededError` — при ній зупини backfill і продовжи наступного дня (keyset-cursor робить це безпечним).
+- **Якщо provider інший (OpenAI тощо):** застосуй його власний rate-limit/budget guard — backoff на `429`/`RateLimitError` + окремий daily-cost ліміт. Загальний інваріант той самий: `criticality: 'non-critical'`, зупинка при перевищенні budget, resume з cursor-а.
+
+Між батчами — `sleep(200ms)` (або відповідно до rate-ліміту провайдера), щоб не спамити API.
 
 **Resumability:** зберігай `cursor` у окремому рядку `key-value` таблиці або файлі стану. Скрипт при старті читає cursor і продовжує з нього.
 
