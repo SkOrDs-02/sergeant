@@ -1,9 +1,10 @@
 # Session 2026-05-15 — revenue, paywall, security, mutation
 
-> **Last validated:** 2026-05-15 by Codex.
-> **Status:** Active session note.
-> **Scope:** Implementation follow-up from the top-7 priority PR selection across
-> revenue, FTUX, security/observability, and testing/devx plans.
+> **Last validated:** 2026-06-02 by @claude. **Next review:** ніколи (read-only архів).
+> **Status:** Archived (read-only).
+> **Created:** 2026-05-15.
+> **Source:** Implementation session нота — top-7 priority PR selection across revenue, FTUX, security/observability, and testing/devx plans. Жила як `docs/planning/session-2026-05-15-revenue-security-testing.md`.
+> **Purpose:** Снапшот однієї implementation-сесії 2026-05-15. Усе перелічене у «Shipped» / «Follow-Up Top 5» вже зашиплено на `main`; «Next PR Cards» влилися у живі плани (`pr-plan-revenue-2026-05.md`, тощо). Ефемерна session-нота — архівуємо після споживання, щоб не плутати з активним трекером. Архівація через `sergeant-planning-batch` workflow 2026-06-02.
 
 ## Shipped In This Session
 
@@ -34,12 +35,12 @@ uses the same criteria as the previous selection: P-level, revenue launch impact
 security exposure, dependency unblocking, and effort-to-impact.
 
 1. **Revenue PR-5: Activation v2 web-side capture**
-   - Source: [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md#pr-5--p1--activation-v2-web-side-capture)
+   - Source: [`pr-plan-revenue-2026-05.md`](../pr-plan-revenue-2026-05.md#pr-5--p1--activation-v2-web-side-capture)
    - Why next: PR-4 makes paywall surfaces real; now the product needs
      `ACTIVATION_V2_HIT` capture to correlate activation with paid conversion.
 
 2. **FTUX PR-C: cold-start outcome-card behind FF**
-   - Source: [`pr-plan-ftux-2026-05.md`](./archive/pr-plan-ftux-2026-05.md#pr-c--feathub-cold-start-outcome-card-behind-ff-pr-09--p1-1)
+   - Source: [`pr-plan-ftux-2026-05.md`](./pr-plan-ftux-2026-05.md#pr-c--feathub-cold-start-outcome-card-behind-ff-pr-09--p1-1)
    - Why next: PR-B is no longer a blocker, so the highest-conversion FTUX card can
      replace goal-less progress copy with outcome-oriented first-action guidance.
 
@@ -54,7 +55,7 @@ security exposure, dependency unblocking, and effort-to-impact.
      analytics path and prevents web-vitals/debug logging from becoming a leak.
 
 5. **Revenue PR-6: landing page scaffold + email capture**
-   - Source: [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md#pr-6--p1--landing-page-scaffold-phase-61--email-capture)
+   - Source: [`pr-plan-revenue-2026-05.md`](../pr-plan-revenue-2026-05.md#pr-6--p1--landing-page-scaffold-phase-61--email-capture)
    - Why next: after checkout, portal, paywall, and activation measurement, the
      public acquisition loop needs `/` plus email capture to make launch traffic
      measurable.

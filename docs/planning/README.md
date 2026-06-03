@@ -1,6 +1,6 @@
 # Планування
 
-> **Last validated:** 2026-06-02 by @claude (додано вказівник на `execute-planning-batch` workflow; fast-forward архівація `pr-plan-docs-hygiene-2026-05.md` — усі картки ✅, gate-и живі на `main`). **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-02 by @claude (planning-folder review: fast-forward архівація `pr-plan-security-obs-2026-05.md` — усі картки S2–S11 ✅ verified on main — та ефемерної `session-2026-05-15-revenue-security-testing.md`; drift-fix статусу `storage-roadmap.md` Stage 13 `4/9`→`9/9`. Раніше того ж дня: вказівник на `execute-planning-batch` workflow + fast-forward архівація `pr-plan-docs-hygiene-2026-05.md`). **Next review:** 2026-08-31.
 > **Status:** Active
 
 Активні roadmap-и, дослідницькі плани і decision-rationale документи розвитку Sergeant.
@@ -13,25 +13,24 @@
 
 ### Зведені роадмапи
 
-| Документ                                                       | Скоуп                                                                                                          | Статус                    |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| [`pr-plan-2026-05.md`](./pr-plan-2026-05.md)                   | Зведений PR-план 30/60/90/180 днів зі зрізу автоматизації / n8n / Telegram / OpenClaw / AI-як-інфра (48 PR-ів) | Active                    |
-| [`sprint-roadmap-q2q3-2026.md`](./sprint-roadmap-q2q3-2026.md) | Єдиний спринтовий трекер платформи: продуктові фічі + технічний борг Q2–Q3 2026                                | Active                    |
-| [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md)       | План спринтів 9–10: продовження performance / reliability / product-surface робіт                              | Active                    |
-| [`dev-stack-roadmap.md`](./dev-stack-roadmap.md)               | Технічний roadmap стеку (інструменти, інтеграції, практики, CI/CD, security, performance)                      | Active (живий журнал)     |
-| [`storage-roadmap.md`](./storage-roadmap.md)                   | Storage & Sync roadmap до production-ready (SQLite + op-log)                                                   | Active (Stage 13 cleanup) |
-| [`openclaw-migration-plan.md`](./openclaw-migration-plan.md)   | Stage-by-stage OpenClaw migration / gateway cutover / legacy deletion tracker                                  | Active                    |
-| [`openclaw-user-guide.md`](./openclaw-user-guide.md)           | Операційний user guide для OpenClaw / Telegram control-plane                                                   | Active                    |
+| Документ                                                       | Скоуп                                                                                                          | Статус                                                 |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [`pr-plan-2026-05.md`](./pr-plan-2026-05.md)                   | Зведений PR-план 30/60/90/180 днів зі зрізу автоматизації / n8n / Telegram / OpenClaw / AI-як-інфра (48 PR-ів) | Active                                                 |
+| [`sprint-roadmap-q2q3-2026.md`](./sprint-roadmap-q2q3-2026.md) | Єдиний спринтовий трекер платформи: продуктові фічі + технічний борг Q2–Q3 2026                                | Active                                                 |
+| [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md)       | План спринтів 9–10: продовження performance / reliability / product-surface робіт                              | Active                                                 |
+| [`dev-stack-roadmap.md`](./dev-stack-roadmap.md)               | Технічний roadmap стеку (інструменти, інтеграції, практики, CI/CD, security, performance)                      | Active (живий журнал)                                  |
+| [`storage-roadmap.md`](./storage-roadmap.md)                   | Storage & Sync roadmap до production-ready (SQLite + op-log)                                                   | Active (Stage 13 complete 9/9; Redis #045 opt-in tail) |
+| [`openclaw-migration-plan.md`](./openclaw-migration-plan.md)   | Stage-by-stage OpenClaw migration / gateway cutover / legacy deletion tracker                                  | Active                                                 |
+| [`openclaw-user-guide.md`](./openclaw-user-guide.md)           | Операційний user guide для OpenClaw / Telegram control-plane                                                   | Active                                                 |
 
 ### PR-плани з прожарок 2026-05-13
 
-| Документ                                                                               | Скоуп                                                                              | Статус |
-| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------ |
-| [`pr-plan-backend-perf-2026-05.md`](./pr-plan-backend-perf-2026-05.md)                 | Backend/performance PR-картки: validation, observability, env, pool/latency        | Active |
-| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план                                           | Active |
-| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план                                           | Active |
-| [`pr-plan-security-obs-2026-05.md`](./pr-plan-security-obs-2026-05.md)                 | Security & observability PR-план: CSP, secrets, Sentry/OTel/web-vitals, audit logs | Active |
-| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план                               | Active |
+| Документ                                                                               | Скоуп                                                                       | Статус |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------ |
+| [`pr-plan-backend-perf-2026-05.md`](./pr-plan-backend-perf-2026-05.md)                 | Backend/performance PR-картки: validation, observability, env, pool/latency | Active |
+| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план                                    | Active |
+| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план                                    | Active |
+| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план                        | Active |
 
 ### Дослідження, міграції, рішення
 
@@ -48,14 +47,16 @@
 
 [`archive/`](./archive/) — read-only документи, для яких роботу повністю завершено або які зберігаються лише як історичний reference (щоб майбутні агенти не повертались до вже закритого рішення).
 
-| Архів                                                                                              | Чому архів                                                                                                                                                              |
-| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`archive/dev-stack-roadmap.md`](./archive/dev-stack-roadmap.md)                                   | Хроніка early-spring 2026 «інфра-спринтів» (PR #714–#743), винесена з живого роадмапу.                                                                                  |
-| [`archive/orm-drizzle-vs-kysely.md`](./archive/orm-drizzle-vs-kysely.md)                           | Міграція Kysely → Drizzle виконана 2026-05-03; зберігаємо rationale, щоб майбутні агенти не пропонували повернутися до Kysely.                                          |
-| [`archive/pr-plan-ftux-2026-05.md`](./archive/pr-plan-ftux-2026-05.md)                             | Closed execution-план FTUX-прожарки 2026-05-13; canonical статуси — у `docs/launch/product-os/ftux-master-tracker.md`.                                                  |
-| [`archive/pr-plan-mobile-reliability-2026-05.md`](./archive/pr-plan-mobile-reliability-2026-05.md) | Closed execution-план mobile-reliability прожарки; canonical статуси — у `docs/tech-debt/mobile.md`.                                                                    |
-| [`archive/mobile-e2e-testing.md`](./archive/mobile-e2e-testing.md)                                 | Detox-vs-Maestro decision-record; superseded — Detox adopted. Зберігаємо, щоб не реоцінювати Maestro.                                                                   |
-| [`archive/pr-plan-docs-hygiene-2026-05.md`](./archive/pr-plan-docs-hygiene-2026-05.md)             | Closed execution-план doc-hygiene прожарки 2026-05-13; усі QW+PR-01…09 ✅, запроваджені gate-и живі на `main`. Fast-forward архівація 2026-06-02 (90-day gate skipped). |
+| Архів                                                                                                                | Чому архів                                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`archive/dev-stack-roadmap.md`](./archive/dev-stack-roadmap.md)                                                     | Хроніка early-spring 2026 «інфра-спринтів» (PR #714–#743), винесена з живого роадмапу.                                                                                                                                                                                |
+| [`archive/orm-drizzle-vs-kysely.md`](./archive/orm-drizzle-vs-kysely.md)                                             | Міграція Kysely → Drizzle виконана 2026-05-03; зберігаємо rationale, щоб майбутні агенти не пропонували повернутися до Kysely.                                                                                                                                        |
+| [`archive/pr-plan-ftux-2026-05.md`](./archive/pr-plan-ftux-2026-05.md)                                               | Closed execution-план FTUX-прожарки 2026-05-13; canonical статуси — у `docs/launch/product-os/ftux-master-tracker.md`.                                                                                                                                                |
+| [`archive/pr-plan-mobile-reliability-2026-05.md`](./archive/pr-plan-mobile-reliability-2026-05.md)                   | Closed execution-план mobile-reliability прожарки; canonical статуси — у `docs/tech-debt/mobile.md`.                                                                                                                                                                  |
+| [`archive/mobile-e2e-testing.md`](./archive/mobile-e2e-testing.md)                                                   | Detox-vs-Maestro decision-record; superseded — Detox adopted. Зберігаємо, щоб не реоцінювати Maestro.                                                                                                                                                                 |
+| [`archive/pr-plan-docs-hygiene-2026-05.md`](./archive/pr-plan-docs-hygiene-2026-05.md)                               | Closed execution-план doc-hygiene прожарки 2026-05-13; усі QW+PR-01…09 ✅, запроваджені gate-и живі на `main`. Fast-forward архівація 2026-06-02 (90-day gate skipped).                                                                                               |
+| [`archive/pr-plan-security-obs-2026-05.md`](./archive/pr-plan-security-obs-2026-05.md)                               | Closed execution-план security/observability прожарки 2026-05-13; усі картки S2–S11 ✅ Виконано, verified on main (gate-и `no-console-pii`, `lint:html-sri`, `lint:pii-handling-drift` + parity-тести живі). Fast-forward архівація 2026-06-02 (90-day gate skipped). |
+| [`archive/session-2026-05-15-revenue-security-testing.md`](./archive/session-2026-05-15-revenue-security-testing.md) | Closed session-нота 2026-05-15 (revenue/paywall/security/mutation); усе shipped на `main`, «Next PR Cards» влилися у живі плани. Ефемерна нота — заархівована після споживання 2026-06-02.                                                                            |
 
 ## Переїхали в інші розділи
 

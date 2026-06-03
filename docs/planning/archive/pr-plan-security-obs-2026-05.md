@@ -1,10 +1,13 @@
 # PR-план — Security & Observability follow-up з roast 2026-05-13
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
-> **Status:** Active
+> **Last validated:** 2026-06-02 by @claude. **Next review:** ніколи (read-only архів).
+> **Status:** Archived (read-only).
+> **Created:** 2026-05-13.
+> **Source:** [`docs/audits/2026-05-13-security-observability-roast.md`](../../audits/2026-05-13-security-observability-roast.md) — прожарка, з якої цей execution-план виник. Жив як `docs/planning/pr-plan-security-obs-2026-05.md` до fast-forward архівації.
+> **Purpose:** Closed execution-план security/observability прожарки 2026-05-13. Усі картки **S2–S11 ✅ Виконано, verified on main** (no-console-pii ESLint rule, SRI-guard `lint:html-sri`, Pino recursive redact depth, OTel denylist parity test, PBKDF2 600k ramp-up + migration, security-endpoint contract tests, web-vitals/analytics PII guard, Sentry init tags, `pii-handling.md` drift-guard, CSP meta ↔ vercel.json parity). Fast-forward архівація (90-day gate skipped за standing-дозволом founder-а) через `sergeant-planning-batch` workflow 2026-06-02.
 
 > **Скоуп:** виключно відкриті пункти **S2–S11** з
-> [`docs/audits/2026-05-13-security-observability-roast.md`](../audits/2026-05-13-security-observability-roast.md).
+> [`docs/audits/2026-05-13-security-observability-roast.md`](../../audits/2026-05-13-security-observability-roast.md).
 > S1 (Web Sentry PII scrub parity) вже закритий у тому ж PR, що ландив сам
 > roast — не плануємо повторно. План розрахований на 1 квартал
 > (sprint-by-sprint, не на квартальний biggie-release).
@@ -12,41 +15,41 @@
 ## Cross-refs
 
 - **Audit / джерело пунктів:**
-  [`docs/audits/2026-05-13-security-observability-roast.md`](../audits/2026-05-13-security-observability-roast.md)
+  [`docs/audits/2026-05-13-security-observability-roast.md`](../../audits/2026-05-13-security-observability-roast.md)
   — section IDs `S2..S11` нижче зберігаються 1-в-1 із roast-документом.
 - **Споріднені аудити (P0/P1 контекст):**
-  [`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md),
-  [`docs/audits/archive/2026-05-07-app-audit.md`](../audits/archive/2026-05-07-app-audit.md),
-  [`docs/audits/2026-05-07-full-app-regression-ux-audit.md`](../audits/2026-05-07-full-app-regression-ux-audit.md),
-  [`docs/audits/archive/2026-05-04-csp-disable-retrospective.md`](../audits/archive/2026-05-04-csp-disable-retrospective.md)
+  [`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md),
+  [`docs/audits/archive/2026-05-07-app-audit.md`](../../audits/archive/2026-05-07-app-audit.md),
+  [`docs/audits/2026-05-07-full-app-regression-ux-audit.md`](../../audits/2026-05-07-full-app-regression-ux-audit.md),
+  [`docs/audits/archive/2026-05-04-csp-disable-retrospective.md`](../../audits/archive/2026-05-04-csp-disable-retrospective.md)
   (A1–A5 closed 2026-05-06).
 - **Security policy / canonical:**
-  [`docs/security/pii-handling.md`](../security/pii-handling.md),
-  [`docs/security/logging-redaction-policy.md`](../security/logging-redaction-policy.md),
-  [`docs/security/threat-model.md`](../security/threat-model.md),
-  [`docs/security/vulnerability-sla.md`](../security/vulnerability-sla.md),
-  [`docs/security/audit-exceptions.md`](../security/audit-exceptions.md).
+  [`docs/security/pii-handling.md`](../../security/pii-handling.md),
+  [`docs/security/logging-redaction-policy.md`](../../security/logging-redaction-policy.md),
+  [`docs/security/threat-model.md`](../../security/threat-model.md),
+  [`docs/security/vulnerability-sla.md`](../../security/vulnerability-sla.md),
+  [`docs/security/audit-exceptions.md`](../../security/audit-exceptions.md).
 - **Observability runbooks / dashboards:**
-  [`docs/observability/metrics.md`](../observability/metrics.md) (Prometheus
+  [`docs/observability/metrics.md`](../../observability/metrics.md) (Prometheus
   довідник, single source of truth для `apps/server/src/obs/metrics.ts`),
-  [`docs/observability/runbook.md`](../observability/runbook.md) (алерт-runbook),
-  [`docs/observability/sentry-sampling.md`](../observability/sentry-sampling.md),
-  [`docs/observability/csp-monitoring.md`](../observability/csp-monitoring.md),
-  [`docs/observability/frontend.md`](../observability/frontend.md),
-  [`docs/observability/log-retention.md`](../observability/log-retention.md),
-  [`docs/observability/SLO.md`](../observability/SLO.md).
+  [`docs/observability/runbook.md`](../../observability/runbook.md) (алерт-runbook),
+  [`docs/observability/sentry-sampling.md`](../../observability/sentry-sampling.md),
+  [`docs/observability/csp-monitoring.md`](../../observability/csp-monitoring.md),
+  [`docs/observability/frontend.md`](../../observability/frontend.md),
+  [`docs/observability/log-retention.md`](../../observability/log-retention.md),
+  [`docs/observability/SLO.md`](../../observability/SLO.md).
 - **Runbooks (operations-side):**
-  [`docs/runbooks/operations-runbook.md`](../runbooks/operations-runbook.md),
-  [`docs/runbooks/encryption-key-rotation.md`](../runbooks/encryption-key-rotation.md),
-  [`docs/runbooks/database-backup-restore.md`](../runbooks/database-backup-restore.md).
+  [`docs/runbooks/operations-runbook.md`](../../runbooks/operations-runbook.md),
+  [`docs/runbooks/encryption-key-rotation.md`](../../runbooks/encryption-key-rotation.md),
+  [`docs/runbooks/database-backup-restore.md`](../../runbooks/database-backup-restore.md).
 - **ADR-and-Hard-Rules baseline:**
-  [`docs/adr/0015-observability-stack.md`](../adr/0015-observability-stack.md)
+  [`docs/adr/0015-observability-stack.md`](../../adr/0015-observability-stack.md)
   (Pino + Prometheus + Sentry — три незалежні шари; жоден PR нижче не змінює
   цей розклад),
-  [`AGENTS.md`](../../AGENTS.md) Hard Rules #20 (no OpenClaw PATs у проді),
+  [`AGENTS.md`](../../../AGENTS.md) Hard Rules #20 (no OpenClaw PATs у проді),
   #21 (Pino redaction enforced), #22 (Skill body security scan).
 - **Сусідній план для секвенсингу:**
-  [`docs/planning/pr-plan-2026-05.md`](./pr-plan-2026-05.md) — 48-PR
+  [`docs/planning/pr-plan-2026-05.md`](../pr-plan-2026-05.md) — 48-PR
   revenue/ops план. Дублів немає; security/obs тут не перетинається з
   revenue-track-ом.
 
@@ -57,13 +60,13 @@
 - **Effort:** S = ≤ 0.5 day end-to-end (PR + review), M = 1–2 days, L = > 2 days
   (зазвичай із multi-file refactor або новим depandency).
 - **Threat-model impact:** мапиться на колонки STRIDE з
-  [`docs/security/threat-model.md`](../security/threat-model.md) — S(poofing),
+  [`docs/security/threat-model.md`](../../security/threat-model.md) — S(poofing),
   T(ampering), R(epudiation), I(nformation disclosure), D(enial of service),
   E(levation of privilege).
 - **Owner — placeholder:** `TBD (<role>)` — поки delegation не зафіксована
   у `CODEOWNERS`, ставимо роль. Real GitHub handles мають з'явитися до
   моменту відкриття відповідного PR (інакше `pnpm lint:codeowners` фейлить
-  — див. [AGENTS.md § Module ownership map](../../AGENTS.md#module-ownership-map)).
+  — див. [AGENTS.md § Module ownership map](../../../AGENTS.md#module-ownership-map)).
 
 ## Зведена таблиця
 
@@ -112,13 +115,13 @@
     або auto-fix, або `// eslint-disable-next-line` з audit-exception-у
     у `docs/security/audit-exceptions.md`).
   - Документ-стаб у
-    [`docs/security/logging-redaction-policy.md`](../security/logging-redaction-policy.md)
+    [`docs/security/logging-redaction-policy.md`](../../security/logging-redaction-policy.md)
     оновлено посиланням на правило.
 - **Threat-model impact (STRIDE):** **I** — закриває канал
   «Information disclosure через DevTools screen-share + Sentry `console`-breadcrumb +
   Logpipe-екстеншни». Це той самий threat-vector, що STRIDE-row
   _Information disclosure → mobile/web log buffers_ (див.
-  [`threat-model.md`](../security/threat-model.md) розділ web-app).
+  [`threat-model.md`](../../security/threat-model.md) розділ web-app).
 - **Effort:** M (1 day — правило + тести + автограф у CONTRIBUTING).
 - **P:** **P0** (audit §6.5 — carry-over з 2026-05-03, прострочено понад
   10 днів; найближчий sprint).
@@ -140,7 +143,7 @@
   - Тестова фікстура: `apps/web/index.html` + штучний bad-case.
   - Документ-стаб у новому
     `docs/security/hardening/sri-on-third-party-scripts.md` (cross-link із
-    [`docs/security/threat-model.md`](../security/threat-model.md) `T`-row).
+    [`docs/security/threat-model.md`](../../security/threat-model.md) `T`-row).
 - **Acceptance:**
   - `pnpm lint` фейлить штучний `<script src="https://cdn.example.com/x.js">`
     без `integrity=`.
@@ -153,7 +156,7 @@
   `https://js.sentry-cdn.com`. Без SRI компроміс будь-якого з цих CDN-ів =
   одношаговий XSS у frontend, що bypass-ить наш CSP report-only/enforce
   pipeline. Закриває STRIDE-row _Tampering → CDN supply-chain_ у
-  [`docs/security/threat-model.md`](../security/threat-model.md).
+  [`docs/security/threat-model.md`](../../security/threat-model.md).
 - **Effort:** L (parse5 + правило + 2 fixture-файли + перевірка
   cross-app-у `apps/console/index.html` / `apps/mobile-shell/`).
 - **P:** **P1** (CSP allowlist + поточна відсутність статичних third-party
@@ -178,21 +181,21 @@
     `logger.info({ a: { b: { c: { password: 'secret-xyz' } } } })` → у
     stringify-output не зустрічається substring `'secret-xyz'`.
   - Sync-перевірка з
-    [`docs/security/pii-handling.md`](../security/pii-handling.md):
+    [`docs/security/pii-handling.md`](../../security/pii-handling.md):
     канонічний список ключів живе тільки у
     `packages/shared/src/lib/pii.ts`.
 - **Acceptance:**
   - Тест із 5-рівневим nesting проходить.
   - Bench (якщо рекурсивний підхід) — < 5% regression на
     `apps/server/src/obs/__bench__/redact.bench.ts` (створити, якщо не існує).
-  - Hard rule [#21 — Pino redaction policy enforced](../../AGENTS.md#21-pino-redaction-policy-enforced)
+  - Hard rule [#21 — Pino redaction policy enforced](../../../AGENTS.md#21-pino-redaction-policy-enforced)
     лишається пройденим (`pnpm lint:redaction-policy`, якщо такий є — або
     еквівалентний gate).
 - **Threat-model impact:** **I, R** — закриває channel
   «Loki access-logs ловлять `req.body.nested.user.password`-валуй із 3+
   глибини». STRIDE _Information disclosure → server logs_ і
   _Repudiation → audit trail з PII_ у
-  [`threat-model.md`](../security/threat-model.md).
+  [`threat-model.md`](../../security/threat-model.md).
 - **Effort:** M.
 - **P:** **P1**.
 - **Dependencies:** має ландитися перед S5 (бо OTel parity-test опирається
@@ -242,9 +245,9 @@
   - Snapshot-тест у `apps/web/src/core/security/lockStorage.test.ts` —
     `iterations === 600_000`.
   - Документ-стаб у `docs/security/hardening/` (нова картка) +
-    оновлення [`docs/security/pii-handling.md`](../security/pii-handling.md)
+    оновлення [`docs/security/pii-handling.md`](../../security/pii-handling.md)
     cross-ref-ом, якщо існує розділ про lockStorage; інакше — у
-    [`docs/security/access-policy.md`](../security/access-policy.md).
+    [`docs/security/access-policy.md`](../../security/access-policy.md).
 - **Acceptance:**
   - Snapshot-test passes (`iterations === 600_000`).
   - Migration-path-тест: існуючий IDB record (`version: 1`) → unlock →
@@ -278,7 +281,7 @@
   - Кожен endpoint має один contract-тест із happy-path-response-shape-ом.
   - Розширення payload-у на сервері без оновлення `api-client` → тест
     фейлить (negative-case fixture).
-  - [Hard rule #3 — API contract](../../AGENTS.md#hard-rules-do-not-break)
+  - [Hard rule #3 — API contract](../../../AGENTS.md#hard-rules-do-not-break)
     залишається пройденим (`pnpm lint:codeowners` + contract-suite зелені).
 - **Threat-model impact:** **T, R** — STRIDE _Tampering → response-shape
   drift на security-critical endpoint-ах_ (auth session, password
@@ -326,7 +329,7 @@
       на моменті init — `'pending' | 'ok' | 'failed'`);
     - `setTag('webVitalsEnabled', String(webVitalsEnabled))`.
   - Документ-стаб у
-    [`docs/observability/sentry-sampling.md`](../observability/sentry-sampling.md)
+    [`docs/observability/sentry-sampling.md`](../../observability/sentry-sampling.md)
     додає рядок про нові теги (вони не змінюють sampling, але впливають
     на пошук).
 - **Acceptance:**
@@ -350,7 +353,7 @@
 - **Title:** `feat(governance): lint guard against pii-handling.md drift from @sergeant/shared/lib/pii.ts`
 - **Scope:**
   - Новий скрипт `scripts/lint-pii-handling-drift.mjs` — парсить
-    [`docs/security/pii-handling.md`](../security/pii-handling.md) для списку
+    [`docs/security/pii-handling.md`](../../security/pii-handling.md) для списку
     «redacted keys», порівнює з `REDACT_KEY_NAMES` із
     `packages/shared/src/lib/pii.ts`. Якщо різниця — fail.
   - Реєстрація у `package.json` під `lint:pii-handling-drift` і у
@@ -385,7 +388,7 @@
   - Normalizing helper — `parseCsp(header) → Map<directive, Set<source>>`
     у `apps/web/src/test/helpers/parseCsp.ts`.
   - Документ-апдейт у
-    [`docs/observability/csp-monitoring.md`](../observability/csp-monitoring.md)
+    [`docs/observability/csp-monitoring.md`](../../observability/csp-monitoring.md)
     — додати рядок «parity test є частиною CI-gate-у».
 - **Acceptance:**
   - Test passes на main.
@@ -407,7 +410,7 @@
 > **Принцип:** P0 (S2) — у найближчий sprint. P1 (S3–S8) — упродовж
 > кварталу. P2 (S9–S11) — у наступному кварталі або як «filler»-PR-и
 > між revenue-track-карткою з
-> [`docs/planning/pr-plan-2026-05.md`](./pr-plan-2026-05.md).
+> [`docs/planning/pr-plan-2026-05.md`](../pr-plan-2026-05.md).
 
 ### Sprint 1 (current, 14 днів)
 
@@ -450,7 +453,7 @@ S9, S10, S11 — незалежні backlog
 > tracker, цей файл, security-channel у Telegram), але **не** мають
 > зʼявлятися у публічних PR-описах на GitHub до моменту, поки відповідний
 > fix не зальотний на main + не пройде 30-day vulnerability-SLA
-> ([`docs/security/vulnerability-sla.md`](../security/vulnerability-sla.md)).
+> ([`docs/security/vulnerability-sla.md`](../../security/vulnerability-sla.md)).
 > Це не «security through obscurity», це baseline-розумна затримка, щоб
 > не давати атакувальнику готовий exploitable map.
 
@@ -496,7 +499,7 @@ S9, S10, S11 — незалежні backlog
 - **Загальне правило:** якщо опис змін допоможе атакувальникові швидше
   знайти **активний** атак-vector — переноситимо details у internal
   Security-Advisory (GitHub Security Advisories: див.
-  [`SECURITY.md`](../../SECURITY.md)) і в PR описі залишаємо тільки
+  [`SECURITY.md`](../../../SECURITY.md)) і в PR описі залишаємо тільки
   reference-номер.
 
 ---
@@ -510,5 +513,5 @@ S9, S10, S11 — незалежні backlog
   delegation зафіксована — `TBD (<role>)` замінити на real handle у
   цьому файлі і в `CODEOWNERS` (Hard Rule про порожні Secondary).
 - Окремий S-rang не пропонується для архіву CSP-disable retrospective
-  ([`archive/2026-05-04-csp-disable-retrospective.md`](../audits/archive/2026-05-04-csp-disable-retrospective.md)) —
+  ([`archive/2026-05-04-csp-disable-retrospective.md`](../../audits/archive/2026-05-04-csp-disable-retrospective.md)) —
   A1–A5 closed 2026-05-06; план перепокривати закриті пункти не має.
