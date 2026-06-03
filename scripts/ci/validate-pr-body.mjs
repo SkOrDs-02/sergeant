@@ -59,6 +59,22 @@ export const SECTIONS_REQUIRING_ALL_TICKED = ["Hard Rule #15"];
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
 /**
+ * Automated PRs (the daily-brief docs cron, dependabot, etc.) are opened by a
+ * GitHub App actor whose login ends in `[bot]`. Those PRs carry machine-written
+ * bodies that legitimately don't follow the human feature-PR template (no
+ * Governing Skill / Playbook / Hard Rule #15) — holding them to it would block
+ * the cron's auto-merge forever. Exempt them, but keep the job running so the
+ * required status check still reports success.
+ *
+ * Bot logins can't be impersonated by humans (they're GitHub App actors), so
+ * this is a safe gate to relax.
+ */
+export function isAutomatedAuthor(author) {
+  if (!author) return false;
+  return /\[bot\]$/i.test(author.trim());
+}
+
+/**
  * Split a markdown body into H2 sections.
  * Returns [{ heading: string, body: string }] for every `## ...` heading.
  * The text before the first H2 is emitted as `{ heading: null, body }`.
@@ -205,6 +221,17 @@ async function fetchBodyFromApi() {
 }
 
 async function main() {
+  // Automated PRs (daily-brief cron, dependabot) skip the human template —
+  // they're exempt by author, not by body shape. Pass early so the required
+  // check still reports success and the cron's auto-merge can proceed.
+  const author = process.env.PR_AUTHOR || "";
+  if (isAutomatedAuthor(author)) {
+    console.log(
+      `✅PR opened by automated actor "${author}" — exempt from human template validation.`,
+    );
+    process.exit(0);
+  }
+
   let body = loadBody();
 
   // Surface what we actually received so CI failures are debuggable

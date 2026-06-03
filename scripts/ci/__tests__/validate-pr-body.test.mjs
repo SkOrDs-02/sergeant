@@ -10,6 +10,7 @@ import {
   splitSections,
   countCheckboxes,
   validate,
+  isAutomatedAuthor,
   REQUIRED_SECTIONS,
   SECTIONS_REQUIRING_ALL_TICKED,
 } from "../validate-pr-body.mjs";
@@ -182,5 +183,25 @@ describe("validate", () => {
     const r = validate(body);
     assert.equal(r.ok, false);
     assert.match(r.errors.join("\n"), /Summary/);
+  });
+});
+
+describe("isAutomatedAuthor", () => {
+  it("exempts GitHub App actors whose login ends in [bot]", () => {
+    assert.equal(isAutomatedAuthor("github-actions[bot]"), true);
+    assert.equal(isAutomatedAuthor("dependabot[bot]"), true);
+    assert.equal(isAutomatedAuthor("github-actions[bot]  "), true);
+  });
+
+  it("does not exempt human authors", () => {
+    assert.equal(isAutomatedAuthor("Skords-01"), false);
+    assert.equal(isAutomatedAuthor("some-bot"), false); // no [bot] suffix
+    assert.equal(isAutomatedAuthor("botanist"), false);
+  });
+
+  it("is falsy-safe", () => {
+    assert.equal(isAutomatedAuthor(""), false);
+    assert.equal(isAutomatedAuthor(undefined), false);
+    assert.equal(isAutomatedAuthor(null), false);
   });
 });

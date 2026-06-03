@@ -262,6 +262,9 @@ jobs:
           # Fallback when the webhook payload's body field races ahead of
           # GitHub's storage (observed on freshly-opened PRs).
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Automated PRs (daily-brief cron, dependabot) are exempt from the
+          # human feature-PR template — see isAutomatedAuthor() in the script.
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/ci/validate-pr-body.mjs
 
