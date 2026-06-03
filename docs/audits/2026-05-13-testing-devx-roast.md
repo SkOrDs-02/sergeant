@@ -37,13 +37,14 @@
 - **Why:** Two-phase migrations (Hard Rule #4, `docs/governance/rules/04-sql-migrations-sequential-two-phase.md`) гарантовано тільки для прямого `DROP` через `ALLOW_DROP:` escape hatch. Якщо `up.sql` не використовує `DROP`, але потрібен ручний rollback (`ALTER TABLE … ADD COLUMN`, `DELETE FROM …`, тощо), порожній `.down.sql` — silent regression risk при release-incident.
 - **Дія:** ✅ **Change** `scripts/lint-migrations.mjs:284` — додано `isEmptyDownMigration()` + `hasNoRollbackEscapeHatch()`; новий чек фейлить будь-який **новий або змінений** `.down.sql` з пустим тілом. Escape-hatch: `-- NO_ROLLBACK: <reason> (due: YYYY-MM-DD)`. Pre-existing empty down-файли не ретроактивно тригериться — gate працює тільки на touched files. ✅ **Change** `plop-templates/migration/down.sql.hbs` — додано explicit instruction-block у генерований файл. ✅ **Change** `docs/governance/rules/04-sql-migrations-sequential-two-phase.md:41` — задокументовано escape-hatch.
 
-### P0-2. Mutation testing — config існує, але CI gate відсутній
+### P0-2. Mutation testing — config існує, але CI gate відсутній ✅ Closed
 
 - **Файли:**
   - `stryker.conf.json` — конфіг знайдено в репо, але `.github/workflows/ci.yml` його не запускає; ні required, ні weekly artifact.
   - `docs/testing/2026-05-05-tests-pr-plan.md:159-194` — Wave E (T23–T27) детально розписав scope: `packages/shared/src/utils/macros.ts`, `packages/shared/src/utils/date.ts`, `apps/server/src/lib/normalizers/*`, `apps/server/src/modules/finyk/finyk.service.ts`. Landing PR — null.
 - **Why:** Без mutation testing coverage % бреше — line-coverage 60% з 90% dead branches проходить без червоного. Усі AI-tool handlers + normalizers (де баги дорогі — обчислення кількості калорій, нормалізація barcode-апстрімів) живуть без mutation gate.
 - **Дія:** **Add** weekly cron-workflow `.github/workflows/mutation-testing.yml` що запускає Stryker на whitelisted set і публікує `--reporters json,html` як artifact. PR-required tier — `mutation-tier-1` (utils/macros + utils/date) з 70% mutation score. Розгорнути у наступних роастах — занадто великий обсяг для одного PR.
+- **Status:** ✅ Closed 2026-06-03 — `.github/workflows/mutation-testing.yml` live (weekly cron `23 4 * * 1`, `shared-utils` tier-1 через `pnpm --filter @sergeant/shared mutation:utils`, артефакт `shared-utils-mutation-report` з retention 30d). PR-required tier-1 floor залишається наступним інкрементом.
 
 ## P1 — high-impact gaps з готовим планом
 
@@ -151,7 +152,7 @@
 
 - **Прожарка #6 follow-up — Server AI-tools (P1-2):** 7 tool-handler unit suites + producer-side barcode contract (~15 файлів).
 - **Прожарка #6 follow-up — E2E expansion (P1-3 + P1-4):** Web smoke × 5 modules + Detox × 6 spec (~15 файлів).
-- **Прожарка #6 follow-up — Mutation testing (P0-2):** Stryker weekly workflow + tier-1 floor (`utils/macros` + `utils/date`).
+- ~~**Прожарка #6 follow-up — Mutation testing (P0-2):** Stryker weekly workflow + tier-1 floor (`utils/macros` + `utils/date`).~~ ✅ Closed 2026-06-03 — `.github/workflows/mutation-testing.yml` live (weekly cron). Залишок поза P0: розширити tier-1 floor на `utils/macros` + `utils/date` як PR-required gate.
 - **Прожарка #6 follow-up — Coverage drift (P1-6):** Web vitest threshold step-up до lines ≥ 50% + module test suites.
 
 Усі P2 пункти можна закрити інкрементально через звичайний PR-флоу — вони не блокуючі.

@@ -8,6 +8,7 @@
  */
 import { useState, useMemo, useCallback, lazy, Suspense } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Button } from "@shared/components/ui/Button";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { exportToPDF } from "@shared/lib/ui/export";
@@ -98,7 +99,16 @@ export function HubReports() {
   const label = formatPeriodLabel(period, offset);
   const isCurrentPeriod = offset === 0;
 
-  const insights = useMemo(() => generateInsights(), []);
+  // F7 — surface the active period in each insight title so the context is
+  // clear regardless of where the period selector sits on screen. Done in the
+  // presentation layer to keep the localStorage-reading engine side-effect-free.
+  const insights = useMemo(() => {
+    const periodLabel = period === "week" ? "за тиждень" : "за місяць";
+    return generateInsights().map((ins) => ({
+      ...ins,
+      title: `${ins.title} (${periodLabel})`,
+    }));
+  }, [period]);
 
   // Phase 7 D2 — cross-module PDF export is Premium. Free users see
   // the button but tapping it opens the paywall instead of generating
@@ -143,11 +153,13 @@ export function HubReports() {
         </div>
 
         <div className="flex items-center gap-1">
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
             onClick={() => setOffset((o) => o - 1)}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
             aria-label="Попередній"
+            className="focus-visible:ring-2"
           >
             <svg
               width="16"
@@ -162,16 +174,18 @@ export function HubReports() {
             >
               <path d="M15 18l-6-6 6-6" />
             </svg>
-          </button>
+          </Button>
           <span className="text-xs text-muted min-w-[90px] text-center">
             {label}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
             onClick={() => setOffset((o) => Math.min(0, o + 1))}
             disabled={isCurrentPeriod}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors disabled:opacity-30"
             aria-label="Наступний"
+            className="focus-visible:ring-2"
           >
             <svg
               width="16"
@@ -186,7 +200,7 @@ export function HubReports() {
             >
               <path d="M9 18l6-6-6-6" />
             </svg>
-          </button>
+          </Button>
         </div>
       </div>
 

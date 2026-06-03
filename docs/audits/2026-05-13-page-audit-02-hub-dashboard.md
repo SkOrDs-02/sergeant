@@ -149,6 +149,8 @@ Writers (Fizruk-save, Nutrition-meal-add, Routine-toggle, Finyk-tx-save) уже 
 
 ### F4 — Prev/Next period кнопки нижче 44×44 (WCAG 2.5.5) [severity: high] [perspective: a11y]
 
+> ✅ **Closed 2026-06-03 (audits-runner execute):** Prev/next кнопки переведено на `Button` primitive (`variant="ghost" size="sm" iconOnly`), що авто-застосовує `pointer-coarse:min-h-[44px]/min-w-[44px]`, плюс `focus-visible:ring-2`; `aria-label` («Попередній»/«Наступний») і `disabled`-логіка збережені — `HubReports.tsx:144-193`. Regression-assertions у `HubReports.test.tsx` (F4 aria-label/touch-target).
+
 **Page:** Hub Reports
 **File:** `apps/web/src/core/hub/HubReports.tsx`
 **Lines:** L400–L440 (period-nav)
@@ -261,6 +263,8 @@ const data = useMemo(
 ---
 
 ### F7 — Insights-секція у HubReports ігнорує `period`/`offset` [severity: medium] [perspective: ux]
+
+> ✅ **Closed 2026-06-03 (audits-runner execute):** Активний `period` тепер відображається у кожному insight-title (суфікс «(за тиждень)» / «(за місяць)») — мапінг у presentation-шарі `HubReports.tsx:102-111`, щоб side-effect-free `generateInsights()` engine не чіпати (інакше re-lint legacy-файлу впирається у pre-existing `prefer-kyiv-time` warnings). `offset` навмисно не вплітається в insight-копію — insights крос-модульні, не per-range. Тести — `HubReports.test.tsx` (F7 week→month suffix).
 
 **Page:** Hub Reports
 **File:** `apps/web/src/core/hub/HubReports.tsx`
@@ -853,6 +857,8 @@ const count = items.length;
 ### F23 — Тести: `HubReports.tsx` має тільки aggregation-тести; UI рендер без coverage [severity: medium] [perspective: test]
 
 > 🟡 **Partially closed 2026-05-31** — додано render-smoke `apps/web/src/core/hub/HubReports.test.tsx`, який мокає 4 lazy domain cards + WeeklyDigestCard + billing/useFeatureGate, рендерить компонент із порожнім localStorage і перевіряє, що empty-insights копія «Збери більше даних для інсайтів» з'являється. Повне UI-coverage (period nav, export, paywall flow) лишається open.
+>
+> ✅ **Closed 2026-06-03 (audits-runner execute):** `HubReports.test.tsx` розширено UI-render assertions — F4 (nav aria-labels/touch-target), F7 (period-suffix week→month), F23-c (period-range header змінюється при зміні offset). Разом 10 тестів зелені.
 
 **Page:** Hub Reports
 **File:** missing `apps/web/src/core/hub/HubReports.test.tsx`
