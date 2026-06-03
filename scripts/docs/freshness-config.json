@@ -11,6 +11,7 @@
     "docs/playbooks/investigate-alert.md": 60,
     "docs/playbooks/pre-merge-migration-checklist.md": 60,
     "docs/playbooks/rotate-secrets.md": 60,
+    "docs/governance/audit-freeze-2026-05-05.md": 180,
     "docs/audits/2026-04-26-sergeant-audit-devin.md": 180,
     "docs/audits/2026-04-28-sergeant-comprehensive-audit.md": 180,
     "docs/audits/2026-05-03-readme-gap-analysis.md": 180,

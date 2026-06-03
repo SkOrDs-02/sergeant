@@ -1,6 +1,6 @@
 # Governance
 
-> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-08-12.
+> **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-09-01.
 > **Status:** Active
 
 Governance in Sergeant is intentionally split between human-readable policy and machine-readable enforcement.
@@ -16,7 +16,7 @@ Governance in Sergeant is intentionally split between human-readable policy and 
 - [security-incident-policy.md](./security-incident-policy.md) - access compromise classification and first-response policy.
 - [policy-review.md](./policy-review.md) and [doc-freshness.md](./doc-freshness.md) - cadence and review process.
 - [freshness-dashboard.html](./freshness-dashboard.html) - generated dashboard for tracked `Last validated` / `Next review` headers.
-- [audit-freeze-2026-05-05.md](./audit-freeze-2026-05-05.md) - active 4-week freeze on new audit/initiative/playbook/ADR files (until 2026-06-02).
+- [audit-freeze-2026-05-05.md](./audit-freeze-2026-05-05.md) - completed 4-week freeze on new audit/initiative/playbook/ADR files (2026-05-05 → 2026-06-02, `Status: Closed`). The enforcing `audit-freeze.yml` workflow and the PR-template section were retired 2026-06-03.
 - [feature-flags.md](./feature-flags.md) - operational registry of release toggles, experiments, kill switches (human-readable; code in `apps/{web,mobile}/src/core/lib/featureFlags.ts` is executable source of truth).
 - [external-link-allowlist.json](./external-link-allowlist.json) - machine-readable allowlist for `pnpm docs:check-links` (immutable ADRs, anti-bot hosts, localhost-only references). Each entry needs a non-trivial `reason`; loader rejects empty/short reasons.
 

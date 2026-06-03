@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-09-01.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
@@ -126,3 +126,11 @@ Use when the trigger is «виконай N тасків з планінгу» / 
 6. **Apply + regenerate (serial).** Flip completed cards' `Status` to `✅ Виконано` with PR/commit evidence; regenerate `pnpm docs:gen-daily`.
 7. **Fast-forward archive (conditional).** Only when work drove a doc to fully complete (follow-ups closed, no open `- [ ]`): move it to `docs/planning/archive/` immediately, skipping the 90-day gate per standing founder approval (`docs/initiatives/README.md`). Apply archive frontmatter, fix inbound links. If nothing qualifies, archival is a deliberate no-op.
 8. **Verify (serial).** `docs:check-open-work`, `docs:check-today`, `docs:check-freshness-single-marker`, `docs:check-freshness-cadence`, `docs:check-links`, `lint:archive-move-depth` (if archived). Land the whole batch as **one PR** on the batch branch.
+
+## 13. Single-Surface Specialist Playbooks
+
+Не кожен сценарій потребує decision-tree з кількома скілами. Для трьох поширених single-surface задач канонічний порядок виконання живе прямо в playbook — завантаж governing skill, тоді виконуй playbook як recipe:
+
+- **Write or debug a Playwright E2E test** → skill `sergeant-e2e-testing`, recipe [`docs/playbooks/write-e2e-test.md`](../playbooks/write-e2e-test.md). seedFTUX, web-first assertions, прогін проти `vite preview`, trace-дебаг.
+- **Change an auth flow (Better Auth)** → skill `better-auth-best-practices`, recipe [`docs/playbooks/change-auth-flow.md`](../playbooks/change-auth-flow.md). Вузький обсяг, сервер+клієнт в одній зміні, верифікація кукі на парі Vercel ↔ Railway. Якщо це governance привілейованого доступу — натомість `access-governance.md`.
+- **Author or edit a SKILL.md** → skill `sergeant-writing-skills`, recipe [`docs/playbooks/author-skill.md`](../playbooks/author-skill.md). RED → GREEN → REFACTOR для інструкцій, далі `pnpm lint:skills && pnpm skills:lock` + рядок у `agent-skills-catalog.md`.

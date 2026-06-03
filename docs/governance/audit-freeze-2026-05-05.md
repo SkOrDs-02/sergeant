@@ -1,6 +1,6 @@
 # Audit-freeze 2026-05-05 → 2026-06-02
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-11-30.
 > **Status:** Closed
 
 > **Що це.** Тимчасова заморозка створення нових audit/initiative/governance документів. Працює як **process-level rate-limiter** на час, поки `main` повертає в баланс **product velocity ↔ docs velocity**.
@@ -8,6 +8,8 @@
 > **Контекст.** На 2026-05-05 в репо: 12 активних `docs/initiatives/`, 12 audit-документів у `docs/audits/`, 334 markdown-файли в `docs/`. AGENTS.md — 839 рядків. За попередні 2 тижні створено 5 нових audit-доків і 2 нові ініціативи (`0011-foundation-adoption`, `0012-perfect-strictness`). Водночас з 15 P0/P1 пунктів FTUX-roast (2026-05-03) частина все ще **open у коді**. Розрив між «закрите в плані» і «закрите для користувача».
 
 > **Мета freeze-у.** Дати product-cycle 4 тижні майже-без-нової-документації, щоб PR-flow зосередився на shippable code. Через 4 тижні — review: чи дійсно стало тісно (extend), чи навпаки темп пришвидшився (release).
+
+> **Retired 2026-06-03 (release).** Freeze-вікно завершилося 2026-06-02. Гейт знято: видалено `.github/workflows/audit-freeze.yml` (мав внутрішній date-guard і після дедлайну вже був no-op) і прибрано секцію `## Audit-freeze` з `.github/PULL_REQUEST_TEMPLATE.md`. Цей файл лишається як історичний запис рішення й результатів огляду нижче.
 
 ---
 
