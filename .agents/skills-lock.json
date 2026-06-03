@@ -4,7 +4,7 @@
     "better-auth-best-practices": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "ca6d9747eabae6cdae8deb16e407ad7a5999eeaabc9077f6ccd3b6c430015c35"
+      "computedHash": "665f2baff83781628f5ba452d9c1ba04d6ba6de2e0f0228adafb3f959e9bacc9"
     },
     "sergeant-bugfix-and-regression": {
       "source": "local",
@@ -64,7 +64,7 @@
     "sergeant-writing-skills": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "abb9cefe7b53cee6a2548f7c95216d7f4a1df9e9f9b7bd6922e40a7b26c068f0"
+      "computedHash": "92fbe53e655aa465e1c44f087902b604f7752681ff36704a8bb136ff6814a0dc"
     },
     "sergeant-openclaw": {
       "source": "local",
@@ -79,7 +79,7 @@
     "sergeant-e2e-testing": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "0fbebb860a243a2811895ab9f1ed065ec1a17977cc6a93f95591b11e4d76873a"
+      "computedHash": "700ff89721e00800f1536eb3fb4bd0b384df007c5f14ac1a79912535e5c11a07"
     },
     "sergeant-tech-debt": {
       "source": "local",

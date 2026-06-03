@@ -33,6 +33,9 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Full QA across all surfaces in parallel        | [`run-squad-qa.md`](./run-squad-qa.md)                                   | `sergeant-qa-squad`                                     | Human + agent |
 | Validate idea / decision from multiple angles  | [`run-council.md`](./run-council.md)                                     | `sergeant-council`                                      | Human + agent |
 | Execute a batch of planning tasks (parallel)   | [`execute-planning-batch.md`](./execute-planning-batch.md)               | `sergeant-planning-batch`                               | Human + agent |
+| Write or debug a Playwright E2E test           | [`write-e2e-test.md`](./write-e2e-test.md)                               | `sergeant-e2e-testing`                                  | Human + agent |
+| Change an auth flow (Better Auth)              | [`change-auth-flow.md`](./change-auth-flow.md)                           | `better-auth-best-practices`                            | Human + agent |
+| Author or edit a SKILL.md                      | [`author-skill.md`](./author-skill.md)                                   | `sergeant-writing-skills`                               | Human + agent |
 
 ## Повний inventory
 

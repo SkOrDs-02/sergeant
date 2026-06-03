@@ -105,13 +105,13 @@
       <span class="chip chip-audit">audit: <b>29</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>47</b></span>
-      <span class="chip chip-playbook">playbook: <b>58</b></span>
+      <span class="chip chip-playbook">playbook: <b>61</b></span>
       <span class="chip chip-pr">pr: <b>195</b></span>
       <span class="chip chip-skill">skill: <b>22</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (233 core)</summary>
+      <summary>Nodes (236 core)</summary>
       <table>
         <thead>
           <tr>
@@ -2683,10 +2683,32 @@
           </tr>
           <tr>
             <td>playbook</td>
+            <td><code>playbook:author-skill</code></td>
+            <td>
+              <a href="../../docs/playbooks/author-skill.md"
+                >Author or Edit a SKILL.md</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
             <td><code>playbook:bump-dep-safely</code></td>
             <td>
               <a href="../../docs/playbooks/bump-dep-safely.md"
                 >Bump Dependency Safely</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:change-auth-flow</code></td>
+            <td>
+              <a href="../../docs/playbooks/change-auth-flow.md"
+                >Change an Auth Flow (Better Auth)</a
               >
             </td>
             <td>Active</td>
@@ -3109,6 +3131,17 @@
           </tr>
           <tr>
             <td>playbook</td>
+            <td><code>playbook:write-e2e-test</code></td>
+            <td>
+              <a href="../../docs/playbooks/write-e2e-test.md"
+                >Write or Debug a Playwright E2E Test</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
             <td><code>playbook:write-postmortem</code></td>
             <td>
               <a href="../../docs/playbooks/write-postmortem.md"
@@ -3478,7 +3511,7 @@
     </details>
 
     <details>
-      <summary>Edges (425 total, first 500 core-to-core)</summary>
+      <summary>Edges (427 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -4149,6 +4182,16 @@
             <td><code>playbook:add-react-query-hook</code></td>
             <td>references</td>
             <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:author-skill</code></td>
+            <td>references</td>
+            <td><code>hard-rule:22</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:change-auth-flow</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
           </tr>
           <tr>
             <td><code>playbook:cleanup-dead-code</code></td>

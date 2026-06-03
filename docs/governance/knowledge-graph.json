@@ -7,7 +7,7 @@
     "audit": 29,
     "hard-rule": 26,
     "initiative": 47,
-    "playbook": 58,
+    "playbook": 61,
     "pr": 195,
     "skill": 22
   },
@@ -1832,10 +1832,28 @@
       "meta": {}
     },
     {
+      "id": "playbook:author-skill",
+      "type": "playbook",
+      "title": "Author or Edit a SKILL.md",
+      "path": "docs/playbooks/author-skill.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
       "id": "playbook:bump-dep-safely",
       "type": "playbook",
       "title": "Bump Dependency Safely",
       "path": "docs/playbooks/bump-dep-safely.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:change-auth-flow",
+      "type": "playbook",
+      "title": "Change an Auth Flow (Better Auth)",
+      "path": "docs/playbooks/change-auth-flow.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2241,6 +2259,15 @@
       "type": "playbook",
       "title": "Tune System Prompt",
       "path": "docs/playbooks/tune-system-prompt.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:write-e2e-test",
+      "type": "playbook",
+      "title": "Write or Debug a Playwright E2E Test",
+      "path": "docs/playbooks/write-e2e-test.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -6280,6 +6307,16 @@
       "from": "playbook:add-react-query-hook",
       "to": "pr:729",
       "type": "touched-by"
+    },
+    {
+      "from": "playbook:author-skill",
+      "to": "hard-rule:22",
+      "type": "references"
+    },
+    {
+      "from": "playbook:change-auth-flow",
+      "to": "hard-rule:4",
+      "type": "references"
     },
     {
       "from": "playbook:cleanup-dead-code",
