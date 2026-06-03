@@ -1,13 +1,30 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import {
   SubscriptionForm,
   AssetForm,
   DebtForm,
   ReceivableForm,
 } from "./AssetsForm";
-import { createRef } from "react";
+import { createRef, type ReactNode } from "react";
+
+// AssetForm uses `useFeatureGate("multi-currency")` (Phase 7 D2) which calls
+// react-query via usePlan; renders of it need a QueryClientProvider. It also
+// renders <PaywallModal>, which calls useNavigate() and therefore needs a
+// Router in context.
+function withQueryClient(ui: ReactNode) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return (
+    <QueryClientProvider client={client}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>
+  );
+}
 
 describe("SubscriptionForm", () => {
   it("renders inputs and buttons", () => {
@@ -126,14 +143,16 @@ describe("SubscriptionForm", () => {
 describe("AssetForm", () => {
   it("renders the form title and currency select", () => {
     render(
-      <AssetForm
-        newAsset={{ name: "", amount: "", currency: "UAH", emoji: "" }}
-        setNewAsset={vi.fn()}
-        setManualAssets={vi.fn()}
-        setShowAssetForm={vi.fn()}
-        assetFormRef={createRef()}
-        assetNameInputRef={createRef()}
-      />,
+      withQueryClient(
+        <AssetForm
+          newAsset={{ name: "", amount: "", currency: "UAH", emoji: "" }}
+          setNewAsset={vi.fn()}
+          setManualAssets={vi.fn()}
+          setShowAssetForm={vi.fn()}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+        />,
+      ),
     );
     expect(screen.getByText("Новий актив")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Сума")).toBeInTheDocument();
@@ -146,14 +165,16 @@ describe("AssetForm", () => {
 
     // -1000 — must NOT be committed
     const { container: c1, unmount: u1 } = render(
-      <AssetForm
-        newAsset={{ ...base, amount: "-1000" }}
-        setNewAsset={vi.fn()}
-        setManualAssets={setManualAssets}
-        setShowAssetForm={setShowAssetForm}
-        assetFormRef={createRef()}
-        assetNameInputRef={createRef()}
-      />,
+      withQueryClient(
+        <AssetForm
+          newAsset={{ ...base, amount: "-1000" }}
+          setNewAsset={vi.fn()}
+          setManualAssets={setManualAssets}
+          setShowAssetForm={setShowAssetForm}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+        />,
+      ),
     );
     fireEvent.click(
       within(c1)
@@ -165,14 +186,16 @@ describe("AssetForm", () => {
 
     // 0 — must NOT be committed (asset of "0" is meaningless)
     const { container: c2, unmount: u2 } = render(
-      <AssetForm
-        newAsset={{ ...base, amount: "0" }}
-        setNewAsset={vi.fn()}
-        setManualAssets={setManualAssets}
-        setShowAssetForm={setShowAssetForm}
-        assetFormRef={createRef()}
-        assetNameInputRef={createRef()}
-      />,
+      withQueryClient(
+        <AssetForm
+          newAsset={{ ...base, amount: "0" }}
+          setNewAsset={vi.fn()}
+          setManualAssets={setManualAssets}
+          setShowAssetForm={setShowAssetForm}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+        />,
+      ),
     );
     fireEvent.click(
       within(c2)
@@ -184,14 +207,16 @@ describe("AssetForm", () => {
 
     // 1500 — happy path
     const { container: c3 } = render(
-      <AssetForm
-        newAsset={{ ...base, amount: "1500" }}
-        setNewAsset={vi.fn()}
-        setManualAssets={setManualAssets}
-        setShowAssetForm={setShowAssetForm}
-        assetFormRef={createRef()}
-        assetNameInputRef={createRef()}
-      />,
+      withQueryClient(
+        <AssetForm
+          newAsset={{ ...base, amount: "1500" }}
+          setNewAsset={vi.fn()}
+          setManualAssets={setManualAssets}
+          setShowAssetForm={setShowAssetForm}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+        />,
+      ),
     );
     fireEvent.click(
       within(c3)

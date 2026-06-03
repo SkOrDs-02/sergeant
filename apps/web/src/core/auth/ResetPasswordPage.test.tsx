@@ -75,11 +75,14 @@ afterEach(() => {
 });
 
 describe("ResetPasswordPage — UX polish", () => {
-  it("autoFocus-ить перше required-поле (новий пароль) при mount-і", () => {
+  it("фокусує заголовок сторінки при mount-і (heading-focus a11y pattern, F25)", () => {
     renderAt("/reset-password?token=abc");
 
-    const password = screen.getByLabelText("Новий пароль") as HTMLInputElement;
-    expect(document.activeElement).toBe(password);
+    // Heading-focus pattern (див. `ResetPasswordPage.tsx`): на mount-і фокус
+    // йде на `<h2 tabindex="-1">`, щоб SR-користувач почув контекст сторінки
+    // перед першим інпутом. Замінює старий `autoFocus` на полі пароля.
+    const heading = screen.getByRole("heading", { name: "Новий пароль" });
+    expect(document.activeElement).toBe(heading);
   });
 
   it("password і confirm мають autoComplete=new-password", () => {

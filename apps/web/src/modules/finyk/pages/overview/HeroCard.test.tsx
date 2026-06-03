@@ -40,7 +40,18 @@ describe("HeroCard", () => {
   it("renders networth, breakdown row and big day-budget number", () => {
     render(<HeroCard {...baseProps} />);
     expect(screen.getByText("Нетворс")).toBeInTheDocument();
-    expect(screen.getByText("−89 158 ₴")).toBeInTheDocument();
+    // The networth is split across nodes: a leading "−" text node sibling to
+    // the CounterReveal span ("89 158 ₴"). Match the wrapper by textContent.
+    // Intl.NumberFormat("uk-UA") groups thousands with a non-breaking space
+    // (U+00A0), so normalise whitespace before comparing to a plain-space
+    // literal — the function matcher bypasses RTL's default normaliser.
+    expect(
+      screen.getByText(
+        (_, el) =>
+          el?.textContent?.replace(/\s/g, " ") === "−89 158 ₴" &&
+          el.tagName === "P",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText(/На картках/)).toBeInTheDocument();
     expect(screen.getByText("+255 ₴")).toBeInTheDocument();
     expect(screen.getByText("−89 413 ₴")).toBeInTheDocument();
@@ -89,7 +100,15 @@ describe("HeroCard", () => {
 
   it("renders negative networth in danger color", () => {
     const { container } = render(<HeroCard {...baseProps} />);
-    const networthEl = screen.getByText("−89 158 ₴");
+    // The danger color lives on the <p> wrapper; the "−" sign and the
+    // CounterReveal span ("89 158 ₴") together form the full text.
+    // uk-UA groups thousands with a non-breaking space (U+00A0), so normalise
+    // whitespace before comparing to a plain-space literal.
+    const networthEl = screen.getByText(
+      (_, el) =>
+        el?.textContent?.replace(/\s/g, " ") === "−89 158 ₴" &&
+        el.tagName === "P",
+    );
     expect(networthEl.className).toMatch(/text-danger/);
     // sanity: the negative networth lives inside the card root
     expect(container.firstChild).toContainElement(networthEl);

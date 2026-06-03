@@ -110,7 +110,7 @@ export function DailyNudge({
           size="xs"
           iconOnly
           onClick={handleDismiss}
-          aria-label="Сховати щоденну пораду"
+          aria-label="Закрити"
           className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
         >
           <Icon name="close" size={14} />

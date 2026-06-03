@@ -291,7 +291,7 @@ function renderDashboard({
   onOpenModule?: (module: string) => void;
   onShowAuth?: () => void;
 } = {}) {
-  render(
+  const result = render(
     <MemoryRouter>
       <ToastProvider>
         <HubDashboard
@@ -302,7 +302,7 @@ function renderDashboard({
       </ToastProvider>
     </MemoryRouter>,
   );
-  return { onOpenModule, onShowAuth };
+  return { ...result, onOpenModule, onShowAuth };
 }
 
 function rec(overrides: Partial<TestRec>): TestRec {
@@ -450,9 +450,7 @@ describe("HubDashboard", () => {
 
   it("marks inactive modules and persists the hide-inactive toggle", () => {
     localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk"]));
-    const { container } = render(
-      <HubDashboard user={null} onOpenModule={vi.fn()} onShowAuth={vi.fn()} />,
-    );
+    const { container } = renderDashboard();
 
     expect(container.querySelectorAll('[data-inactive="true"]')).toHaveLength(
       3,

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import {
   ONBOARDING_HERO_COPY_EXPERIMENT,
+  ONBOARDING_GOAL_FIRST_EXPERIMENT,
   overrideVariant,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
@@ -99,6 +100,11 @@ describe("OnboardingWizard — tour mode (read-only replay)", () => {
     // outcome arm explicitly so this test asserts what it claims to —
     // that the CTA copy is wired up — instead of relying on a 100% lock.
     overrideVariant(webKVStore, ONBOARDING_HERO_COPY_EXPERIMENT.id, "outcome");
+    // Also pin the goal-first arm to `control`: the `goal_first` arm swaps in
+    // `GoalFirstScreen` (no hero CTA), so leaving it on its 50/50 random
+    // assignment made this test fail ~half the time. Pinning both experiments
+    // keeps the assertion about the hero CTA copy deterministic.
+    overrideVariant(webKVStore, ONBOARDING_GOAL_FIRST_EXPERIMENT.id, "control");
     render(<OnboardingWizard onDone={() => {}} />);
     expect(
       screen.getByRole("button", { name: /Розпочати/i }),

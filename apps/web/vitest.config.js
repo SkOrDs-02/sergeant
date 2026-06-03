@@ -7,6 +7,15 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "node",
+    // CI runners are intermittently throttled (the whole pipeline has been
+    // observed running 1.5–3× slower than its p95 — every job, not just this
+    // one). At that pace the heavy jsdom + react-test-renderer suites flake on
+    // vitest's default 5s testTimeout / 10s hookTimeout even though they pass
+    // comfortably at normal speed (verified: full suite green locally incl.
+    // CI=true). Raise the ceilings so slow-runner timing alone can't fail an
+    // otherwise-green run; genuine hangs still trip the higher bound.
+    testTimeout: 20000,
+    hookTimeout: 30000,
     include: ["src/**/*.test.{js,jsx,ts,tsx}", "server/**/*.test.{js,ts}"],
     passWithNoTests: false,
     setupFiles: ["src/test/setup.ts"],

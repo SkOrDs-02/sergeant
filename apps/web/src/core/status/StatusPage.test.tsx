@@ -120,7 +120,9 @@ describe("StatusPage", () => {
     const n8nRow = screen.getByTestId("status-row-n8n");
     expect(n8nRow.getAttribute("data-status")).toBe("degraded");
     const lastIncident = screen.getByTestId("status-last-incident");
-    expect(lastIncident.textContent).toContain("n8n workflows");
+    // The incident line renders the localized component name (the whole
+    // status page is Ukrainian), not the raw English API `label`.
+    expect(lastIncident.textContent).toContain("n8n-воркфлоу");
   });
 
   it("paints overall down when at least one component is down", async () => {
@@ -165,9 +167,14 @@ describe("StatusPage", () => {
     await waitFor(() =>
       expect(screen.getByTestId("status-error")).toBeTruthy(),
     );
-    expect(screen.getByTestId("status-error").textContent).toContain(
-      "Failed to fetch",
+    // Audit F10: anonymous visitors must NOT see the raw `err.message`
+    // (it can leak target URL / CORS-preflight / DNS hints). The card shows
+    // a friendly localized fallback instead of "Failed to fetch".
+    const errorCard = screen.getByTestId("status-error");
+    expect(errorCard.textContent).toContain(
+      "Не вдалося завантажити статус сервісу.",
     );
+    expect(errorCard.textContent).not.toContain("Failed to fetch");
   });
 
   it("retries on button click after an error", async () => {

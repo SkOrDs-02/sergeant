@@ -73,27 +73,69 @@ describe("PullToRefresh", () => {
     expect(onRefresh).not.toHaveBeenCalled();
   });
 
-  it("does not attach touch listeners when enabled={false} (disabled blocks trigger)", () => {
+  it("does not attach touch listeners to the scroll element when enabled={false} (disabled blocks trigger)", () => {
     // When enabled=false the underlying usePullToRefresh hook skips the
     // useEffect that registers touch listeners. Assert that none of the
-    // three gesture event types are added to the inner scroll element —
+    // three gesture event types are added to the *inner scroll element* —
     // which is the contract that prevents onRefresh from being called
     // during a cloud-pull pending state.
+    //
+    // NOTE: we must scope the assertion to the scroll element itself.
+    // React 18 registers its own delegated touchstart/touchmove/touchend
+    // listeners on its root container <div> regardless of `enabled`, so a
+    // global spy on HTMLDivElement.prototype would always see those three
+    // event types. The contract under test is specifically the hook's
+    // gesture listeners on the scroll container, so we filter calls by the
+    // element they were invoked on (the spy's `this`).
+    const touchTypes = ["touchstart", "touchmove", "touchend"];
     const addSpy = vi.spyOn(HTMLDivElement.prototype, "addEventListener");
 
     const onRefresh = vi.fn();
-    render(
+    const { container } = render(
       <PullToRefresh onRefresh={onRefresh} enabled={false}>
         <p>x</p>
       </PullToRefresh>,
     );
 
-    const touchTypes = ["touchstart", "touchmove", "touchend"];
+    const scrollEl =
+      container.querySelector<HTMLDivElement>(".overflow-y-auto");
+    expect(scrollEl).toBeTruthy();
+
+    // mock.instances[i] is the `this` value (the element) for calls[i].
     const attached = touchTypes.filter((t) =>
-      addSpy.mock.calls.some(([type]) => type === t),
+      addSpy.mock.calls.some(
+        ([type], i) => type === t && addSpy.mock.instances[i] === scrollEl,
+      ),
     );
     expect(attached).toHaveLength(0);
     expect(onRefresh).not.toHaveBeenCalled();
+
+    addSpy.mockRestore();
+  });
+
+  it("attaches the touch listeners to the scroll element when enabled (gesture is wired)", () => {
+    // Counterpart to the disabled case above: proves the previous test is
+    // a meaningful guard rather than vacuously passing — when enabled, the
+    // hook DOES register all three gesture listeners on the scroll element.
+    const touchTypes = ["touchstart", "touchmove", "touchend"];
+    const addSpy = vi.spyOn(HTMLDivElement.prototype, "addEventListener");
+
+    const { container } = render(
+      <PullToRefresh onRefresh={() => {}} enabled>
+        <p>x</p>
+      </PullToRefresh>,
+    );
+
+    const scrollEl =
+      container.querySelector<HTMLDivElement>(".overflow-y-auto");
+    expect(scrollEl).toBeTruthy();
+
+    const attached = touchTypes.filter((t) =>
+      addSpy.mock.calls.some(
+        ([type], i) => type === t && addSpy.mock.instances[i] === scrollEl,
+      ),
+    );
+    expect(attached).toEqual(touchTypes);
 
     addSpy.mockRestore();
   });
