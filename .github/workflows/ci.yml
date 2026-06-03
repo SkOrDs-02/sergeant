@@ -537,7 +537,15 @@ jobs:
           echo "Both servers ready."
 
       - name: Run critical-flow E2E suite
-        run: pnpm --filter @sergeant/web exec playwright test -c playwright.smoke.config.ts --grep @critical
+        # Scope to chromium only: this job installs just chromium
+        # (`playwright install … chromium` above), while the smoke config also
+        # declares webkit + mobile-safari projects. Without --project those
+        # engines run too and fail with "Executable doesn't exist …/webkit-*"
+        # on any Playwright-browser cache miss. webkit/mobile-safari coverage
+        # lives in extended-e2e.yml (nightly + `extended-e2e` label), per the
+        # note in playwright.smoke.config.ts. chromium depends on `setup`, so
+        # the auth-state project still runs automatically.
+        run: pnpm --filter @sergeant/web exec playwright test -c playwright.smoke.config.ts --project=chromium --grep @critical
         env:
           CI: "true"
           PW_SKIP_WEBSERVER: "1"
