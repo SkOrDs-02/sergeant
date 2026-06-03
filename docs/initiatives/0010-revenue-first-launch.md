@@ -1,6 +1,6 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-09-01.
 > **Status:** In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2 done; Phase 6 incl. 6.2 EN-locale wiring (LandingPage `useLocale` + `landing` group) done. Pending: **founder-блокери only** — APPLE\_\* env vars in Railway/local + ФОП-реєстрація для live Stripe + rollout/decision metrics
 > **Agent-ready:** needs-decision
 > **Priority:** P0 (Sprint 1–4)
@@ -508,3 +508,17 @@ Without env vars: сервер логує warn-free start (Apple branch silently
 - `apps/web/src/core/LandingPage.tsx` — Hero section, 3-feature grid, waitlist email capture (source=landing), pricing CTA. Fires `LANDING_VIEWED` + `LANDING_EMAIL_CAPTURED`. Copy через `useLocale()` + `messages.landing.*`; `locale` у payload — resolved (Phase 6.2).
 - Route `/`: authenticated users → Hub; non-auth → LandingPage (gated у `StandaloneRoutes.tsx`).
 - **Pending:** EN-локаль (uk.ts існує, i18n config відсутній); sitemap.xml + robots.txt (тільки security.txt у apps/web/public/); Customer Portal link у PricingPage для Pro users.
+
+### PR-8 — LiqPay multi-provider scaffold ✅ (2026-06-03)
+
+Закриває `P1-5` (LiqPay placeholder) у [`docs/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md). **Scaffold-only — жодного live-платежу.**
+
+- `apps/server/src/modules/billing/provider.ts` — `BillingProvider` interface (checkout / portal / status / webhook verify+process) + `getProviderForCountry({ country, liqpayEnabled })` resolver. Правило: UA + `LIQPAY_ENABLED` → `liqpay`; інакше → `stripe`.
+- `apps/server/src/modules/billing/liqpay.ts` — `liqpayProvider` stub реалізує `BillingProvider`; кожен метод кидає `NotImplementedError` (async-методи через rejected Promise). `verifyWebhookSignature` — sync throw.
+- `apps/server/src/migrations/075_subscriptions_provider_liqpay.sql` (+ `.down.sql`) — CHECK `subscriptions_provider_check` тепер допускає `'liqpay'`. Two-phase safe: 0 production rows з `provider='liqpay'` до Phase 7.
+- `apps/server/src/env/env.ts` — `LIQPAY_ENABLED` feature-flag (`boolFromEnv(false)`). Default off → resolver у проді завжди повертає `stripe`, поведінка білінгу не змінюється.
+- `apps/server/src/modules/billing/index.ts` — barrel re-exports нових symbols.
+- ADR-0001 §ADR-1.1 — amendment: «LiqPay placeholder Phase 2 / live Phase 7».
+- Tests: `provider.test.ts` (5), `liqpay.test.ts` (6) — 11 green; повний billing-модуль 41 green; `pnpm lint:migrations` + eslint + server typecheck clean.
+
+**Наступний крок (Phase 7, поза цією ініціативою):** live LiqPay — `data`/`signature` підпис (base64/SHA1), server-callback webhook, рекурентні платежі через `subscribe`, cancel-flow + UI; адаптація `stripe.ts` під `BillingProvider`; LiqPay merchant-акаунт (ФОП).

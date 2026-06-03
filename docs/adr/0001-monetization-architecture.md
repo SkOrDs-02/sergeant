@@ -21,7 +21,7 @@
 
 | #    | Тема                          | Decision (коротко)                                                                                                |
 | ---- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 1.1  | Payment provider              | Stripe primary; LiqPay — Phase 2 (поза MVP)                                                                       |
+| 1.1  | Payment provider              | Stripe primary; LiqPay — placeholder Phase 2, live Phase 7 (поза MVP)                                             |
 | 1.2  | Schema design                 | Single-row-per-user `subscriptions`; audit trail у follow-up `subscription_events`                                |
 | 1.3  | Plan-cache TTL + invalidation | RQ `staleTime: 60s`; server LRU `ttl: 300s` + Postgres NOTIFY → SSE                                               |
 | 1.4  | Grandfather policy            | **Withdrawn** — немає legacy-юзерів на момент launch                                                              |
@@ -86,6 +86,8 @@ Sergeant стартує в Україні. Для українських юзе�
 ### Decision
 
 **Stripe — primary provider.** LiqPay — Phase 2 (після MVP) як вторинний для українських юзерів, які не хочуть платити Stripe-комісію в EUR/USD.
+
+> **Amendment 2026-06-03 (0010 PR-8).** Уточнення таймлайну: LiqPay розбито на **placeholder Phase 2** і **live Phase 7**. Phase 2 (цей PR) додає multi-provider scaffold — `BillingProvider` контракт (`apps/server/src/modules/billing/provider.ts`), `getProviderForCountry()` resolver (UA + `LIQPAY_ENABLED` → `liqpay`, інакше `stripe`), LiqPay stub (`liqpay.ts`, усі методи кидають `NotImplementedError`) і CHECK-міграцію `075_subscriptions_provider_liqpay.sql` (`provider` тепер допускає `'liqpay'`). Жодного live-платежу — `LIQPAY_ENABLED` default `false`, resolver у проді завжди повертає `stripe`. **Live LiqPay (data/signature підпис, server-callback webhook, рекурентні платежі через `subscribe`, cancel-flow) — Phase 7.**
 
 ### Consequences
 

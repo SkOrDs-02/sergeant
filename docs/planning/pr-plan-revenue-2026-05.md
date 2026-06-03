@@ -303,6 +303,7 @@ Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS 
 
 ## PR-8 · P1 · LiqPay gateway placeholder + multi-provider abstraction
 
+- **Status:** ✅ Виконано (scaffold) — `apps/server/src/modules/billing/provider.ts` (`BillingProvider` + `getProviderForCountry`), `liqpay.ts` (stub, усі методи кидають `NotImplementedError`), migration `075_subscriptions_provider_liqpay.sql` (`provider` CHECK допускає `'liqpay'`), env-flag `LIQPAY_ENABLED` (default off), ADR-0001 §ADR-1.1 amendment (placeholder Phase 2 / live Phase 7). Live LiqPay — Phase 7.
 - **Priority:** P1 (UA-local payment-gateway parity з Stripe — найбільший friction-buster для UA paying users без USD-карти).
 - **Size:** M (3–4 дні, skeleton; реальна live-integration — окремий PR post-launch).
 - **Owner:** `@Skords-01` (placeholder)

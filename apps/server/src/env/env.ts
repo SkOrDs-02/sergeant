@@ -753,6 +753,16 @@ const envSchema = z.object({
     )
     .optional(),
 
+  // ── LiqPay billing (0010 PR-8 scaffold) ─────────────────────────────
+  /**
+   * Feature-flag для LiqPay як другого payment-provider-а (UA-ринок).
+   * Default `false` — scaffold-only до Phase 7. Коли `true`,
+   * `getProviderForCountry({ country: "UA" })` повертає `liqpay` замість
+   * `stripe`. Поки live LiqPay не реалізовано, вмикати лише у dev для
+   * тестування resolver-а — production checkout кине NotImplementedError.
+   */
+  LIQPAY_ENABLED: boolFromEnv(false),
+
   // ── Nutrition backups ──────────────────────────────────────────────
   /**
    * Серверний секрет для HMAC-SHA256, що формує ім'я файлу
