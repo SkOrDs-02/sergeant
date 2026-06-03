@@ -10,3 +10,6 @@ export * from "./accountRecovery";
 export * from "./food-search";
 export * from "./parse-pantry";
 export * from "./sync-v2";
+export * from "./chat";
+export * from "./finyk-cashflow";
+export * from "./nutrition-log";
