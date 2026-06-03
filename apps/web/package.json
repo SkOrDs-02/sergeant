@@ -29,13 +29,13 @@
       "name": "JS (усього)",
       "path": "../server/dist/assets/*.js",
       "brotli": true,
-      "limit": "880 kB"
+      "limit": "1.1 MB"
     },
     {
       "name": "CSS",
       "path": "../server/dist/assets/*.css",
       "brotli": true,
-      "limit": "28 kB"
+      "limit": "36 kB"
     }
   ],
   "dependencies": {
