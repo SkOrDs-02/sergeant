@@ -210,7 +210,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
       prev: aggregateKcal(nutritionLog, prevDates),
       dates: curDates,
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
   }, [period, offset, bump]);
 
   const formattedCurrent = cur.avg.toLocaleString("uk-UA");

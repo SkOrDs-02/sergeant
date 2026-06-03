@@ -63,16 +63,21 @@ jobs:
       - name: Regenerate all daily auto-gen artifacts
         # `docs:gen-daily` orchestrates the full daily refresh:
         #   1. open-work.md        — depends on tracker headers
-        #   2. today.md            — consumes open-work
-        #   3. trust badge         — reads pickOverdueReview from today
-        #   4. freshness dashboard — consumes tracker headers across all trackers
-        #   5. knowledge graph     — walks 17 workspaces' source
-        #   6. symbol index        — walks per-workspace exports
-        #   7. repo map            — workspace manifest snapshot
-        #   8. service catalog     — surfaces tag snapshot
-        #   9. architecture diagrams (c3-workspaces.md)
-        # Steps 1–4 are the original "light" artifacts (sub-second each).
-        # Steps 5–9 are heavier — they walk the code tree — but still finish
+        #   2. follow-ups.md       — carry-over follow-ups across initiatives
+        #   3. today.md            — consumes open-work
+        #   4. trust badge         — reads pickOverdueReview from today
+        #   5. hard-rules matrix   — date-stamped; re-stamps Last validated
+        #   6. freshness dashboard — consumes tracker headers across all trackers
+        #   7. knowledge graph     — walks 17 workspaces' source
+        #   8. symbol index        — walks per-workspace exports
+        #   9. repo map            — workspace manifest snapshot
+        #  10. service catalog     — surfaces tag snapshot
+        #  11. architecture diagrams (c3-workspaces.md)
+        # follow-ups + hard-rules are sequenced before the freshness dashboard
+        # so the dashboard reflects their refreshed Last-validated dates in the
+        # same run (they were previously off-cron and drifted every new day).
+        # Steps 1–6 are the original "light" artifacts (sub-second each).
+        # Steps 7–11 are heavier — they walk the code tree — but still finish
         # in under a minute total on the runner. Centralising the refresh
         # here closes the per-PR drift that was accumulating across both
         # `docs/governance/*.{json,html,auto.json}` and
@@ -98,8 +103,10 @@ jobs:
           # the daily refresh PR.
           REFRESH_PATHS=(
             docs/open-work.md
+            docs/initiatives/follow-ups.md
             docs/today.md
             docs/README.md
+            docs/governance/hard-rules-matrix.md
             docs/governance/freshness-dashboard.html
             docs/governance/knowledge-graph.json
             docs/governance/knowledge-graph.html

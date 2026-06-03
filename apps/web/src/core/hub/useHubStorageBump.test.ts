@@ -64,7 +64,9 @@ describe("useHubStorageBump", () => {
     expect(result.current).toBe(0);
 
     act(() => {
-      window.dispatchEvent(new StorageEvent("storage", { key: "fizruk_workouts_v1" }));
+      window.dispatchEvent(
+        new StorageEvent("storage", { key: "fizruk_workouts_v1" }),
+      );
     });
 
     expect(result.current).toBe(1);

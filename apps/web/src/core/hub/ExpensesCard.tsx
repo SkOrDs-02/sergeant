@@ -83,7 +83,10 @@ function BarChart({
         </div>
       )}
       {selected === null && <div className="h-4 mb-1" />}
-      <div className="flex items-end gap-0.5 h-20" aria-label={messages.hub.reportChartAria}>
+      <div
+        className="flex items-end gap-0.5 h-20"
+        aria-label={messages.hub.reportChartAria}
+      >
         {vals.map((v, i) => {
           const pct = Math.max(0, Math.min(100, (v / max) * 100));
           const isToday = dates[i] === localDateKey();
@@ -220,7 +223,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       prev: aggregateSpending(inputs, prevDates),
       dates: curDates,
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
   }, [period, offset, bump]);
 
   const formattedCurrent = cur.total.toLocaleString("uk-UA");
@@ -286,7 +289,9 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
             </span>
             <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
           </div>
-          <p className="text-xs text-muted">{messages.hub.reportPrevious} {formattedPrev} ₴</p>
+          <p className="text-xs text-muted">
+            {messages.hub.reportPrevious} {formattedPrev} ₴
+          </p>
           <BarChart
             key={`${period}-${offset}`}
             data={cur.daily}

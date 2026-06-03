@@ -205,7 +205,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
       prev: aggregateWorkouts(rawWorkouts, prevDates),
       dates: curDates,
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
   }, [period, offset, bump]);
 
   const formattedCurrent = cur.count.toLocaleString("uk-UA");

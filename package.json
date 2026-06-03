@@ -94,7 +94,7 @@
     "docs:check-wip-limits": "node scripts/docs/check-wip-limits.mjs",
     "docs:gen-trust-badge": "node scripts/docs/generate-trust-badge.mjs",
     "docs:check-trust-badge": "node scripts/docs/generate-trust-badge.mjs --check",
-    "docs:gen-daily": "pnpm docs:gen-open-work && pnpm docs:gen-today && pnpm docs:gen-trust-badge && pnpm docs:freshness-dashboard && pnpm docs:gen-graph && pnpm docs:gen-symbols && pnpm docs:gen-repo-map && pnpm docs:gen-service-catalog && pnpm docs:gen-architecture-diagrams",
+    "docs:gen-daily": "pnpm docs:gen-open-work && pnpm docs:gen-initiative-followups && pnpm docs:gen-today && pnpm docs:gen-trust-badge && pnpm hard-rules:generate && pnpm docs:freshness-dashboard && pnpm docs:gen-graph && pnpm docs:gen-symbols && pnpm docs:gen-repo-map && pnpm docs:gen-service-catalog && pnpm docs:gen-architecture-diagrams",
     "changelog:cut": "node scripts/changelog/cut-release.mjs",
     "docs:gen-graph": "node scripts/docs/generate-knowledge-graph.mjs",
     "docs:check-graph": "node scripts/docs/generate-knowledge-graph.mjs --check",

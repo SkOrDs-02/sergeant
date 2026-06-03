@@ -210,7 +210,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
       prev: aggregateHabits(routineState, prevDates),
       dates: curDates,
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
   }, [period, offset, bump]);
 
   const formattedCurrent = cur.pct.toLocaleString("uk-UA");

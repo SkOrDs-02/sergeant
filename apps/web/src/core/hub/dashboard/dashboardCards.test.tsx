@@ -65,9 +65,7 @@ describe("MotivationalFooter — same-tab storage refresh (F10)", () => {
       emitHubBus("storageUpdated", undefined);
     });
 
-    expect(
-      screen.getByText("Вже 2 записів — продовжуй!"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Вже 2 записів — продовжуй!")).toBeInTheDocument();
   });
 
   it("re-counts after native window storage event fires (cross-tab path)", () => {
@@ -93,9 +91,7 @@ describe("MotivationalFooter — same-tab storage refresh (F10)", () => {
       );
     });
 
-    expect(
-      screen.getByText("Вже 2 записів — продовжуй!"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Вже 2 записів — продовжуй!")).toBeInTheDocument();
   });
 });
 

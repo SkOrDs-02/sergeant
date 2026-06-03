@@ -155,7 +155,7 @@ export function StreakIndicator() {
       .sort((a, b) => b.days - a.days);
 
     return streaks[0]?.days ?? 0;
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
   }, [bump]);
 
   // Detect streak-milestone crossings on the hub itself so the funnel
