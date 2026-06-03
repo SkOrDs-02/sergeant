@@ -90,6 +90,17 @@
   ],
   "playbookRules": [
     {
+      "playbook": "embedding-provider-migration.md",
+      "keywords": [
+        "embedding",
+        "embedding-vendor",
+        "embedding provider",
+        "re-embed",
+        "voyage",
+        "vector vendor"
+      ]
+    },
+    {
       "playbook": "add-sql-migration.md",
       "keywords": [
         "add migration",
