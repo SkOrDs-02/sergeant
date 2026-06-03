@@ -861,7 +861,7 @@
       "type": "audit",
       "title": "Sergeant — Security & Observability прожарка (2026-05-13)",
       "path": "docs/audits/2026-05-13-security-observability-roast.md",
-      "status": "Active",
+      "status": "Closed — усі 11 пунктів (S1–S11) закриті. Документ зберігається як історичний рекорд.",
       "tier": "core",
       "meta": {}
     },

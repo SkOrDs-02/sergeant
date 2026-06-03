@@ -1,6 +1,6 @@
 # Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin (child session). **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-03 (audits-runner closeout — P0-2 closed; prev 2026-05-13 by Devin child session). **Next review:** 2026-08-11.
 > **Status:** Active
 > **Cross-refs:**
 > [`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](./2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — попередня deep-dive прожарка (web, секції §7 Testing pyramid + §8 DevX) ·

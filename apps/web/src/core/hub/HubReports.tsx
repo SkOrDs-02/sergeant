@@ -159,7 +159,6 @@ export function HubReports() {
             iconOnly
             onClick={() => setOffset((o) => o - 1)}
             aria-label="Попередній"
-            className="focus-visible:ring-2"
           >
             <svg
               width="16"
@@ -185,7 +184,6 @@ export function HubReports() {
             onClick={() => setOffset((o) => Math.min(0, o + 1))}
             disabled={isCurrentPeriod}
             aria-label="Наступний"
-            className="focus-visible:ring-2"
           >
             <svg
               width="16"
