@@ -16,6 +16,14 @@ export default defineConfig({
     // otherwise-green run; genuine hangs still trip the higher bound.
     testTimeout: 20000,
     hookTimeout: 30000,
+    // CI memory guard: the heavy jsdom + react-test-renderer suite (316 files)
+    // spikes peak memory, and on throttled/memory-constrained CI runners the
+    // default worker count gets OOM-killed mid-run — vitest then exits 1 with
+    // no "Test Files …" summary (a process crash, not an assertion failure),
+    // which the raised timeouts above can't help. Cap worker concurrency in CI
+    // to bound peak memory; local dev keeps full parallelism (undefined = auto).
+    maxWorkers: process.env.CI ? 2 : undefined,
+    minWorkers: process.env.CI ? 1 : undefined,
     include: ["src/**/*.test.{js,jsx,ts,tsx}", "server/**/*.test.{js,ts}"],
     passWithNoTests: false,
     setupFiles: ["src/test/setup.ts"],
