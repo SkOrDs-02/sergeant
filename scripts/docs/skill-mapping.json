@@ -92,9 +92,9 @@
     {
       "playbook": "embedding-provider-migration.md",
       "keywords": [
-        "embedding",
         "embedding-vendor",
         "embedding provider",
+        "embedding model switch",
         "re-embed",
         "voyage",
         "vector vendor"
