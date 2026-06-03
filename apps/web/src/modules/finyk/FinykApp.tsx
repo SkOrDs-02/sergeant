@@ -102,8 +102,6 @@ export default function App({
     if (firstRunFinyk) setFirstRunFinykSurface(true);
   }, [firstRunFinyk]);
   const firstRunFinykActive = firstRunFinykSurface && page === "budgets";
-  const [tokenInput, setTokenInput] = useState("");
-  const [showToken, setShowToken] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   // Stage 13 PR #074 — `showBalance` тепер живе в storage slot bundle
   // (`useFinykStorageSlots`) з SQLite-overlay (`finyk_prefs.show_balance`)
@@ -638,20 +636,15 @@ export default function App({
             aria-label="Підключення Monobank"
           >
             <FinykLoginScreen
-              tokenInput={tokenInput}
-              onTokenInputChange={setTokenInput}
-              showToken={showToken}
-              onToggleShowToken={() => setShowToken((v) => !v)}
               authError={authError}
               error={error}
               connecting={connecting}
-              onConnect={() => connect(tokenInput.trim())}
+              onConnect={(token) => connect(token)}
               onContinueWithoutBank={() => {
                 enableFinykManualOnly();
                 setManualOnly(true);
                 setShowLoginOverlay(false);
               }}
-              toast={toast}
               onBackToHub={() => setShowLoginOverlay(false)}
               backLabel="Назад"
             />

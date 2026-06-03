@@ -1,13 +1,15 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-06-03
  * Status: Active
  */
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
+import { useApiForm } from "@shared/forms/useApiForm";
 import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
 import { cn } from "@shared/lib/ui/cn";
 import {
@@ -17,6 +19,27 @@ import {
 } from "../auth/authClient";
 import { assertAvatarFile, compressAvatar } from "./avatar";
 import type { ProfileUser } from "./types";
+
+// ── Zod schemas ────────────────────────────────────────────────────────────
+
+const nameSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Введіть ім'я")
+    .max(80, "Максимум 80 символів"),
+});
+type NameValues = z.infer<typeof nameSchema>;
+
+const emailSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Введіть email")
+    .email("Некоректний email")
+    .max(254, "Email задовгий"),
+});
+type EmailValues = z.infer<typeof emailSchema>;
 
 interface PersonalInfoSectionProps {
   user: ProfileUser;
@@ -31,40 +54,57 @@ export function PersonalInfoSection({
 }: PersonalInfoSectionProps) {
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [name, setName] = useState(user.name ?? "");
-  const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [confirmRemoveAvatar, setConfirmRemoveAvatar] = useState(false);
   const [sendingVerification, setSendingVerification] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
-  const [newEmail, setNewEmail] = useState("");
-  const [savingEmail, setSavingEmail] = useState(false);
-  const dirty = name.trim() !== (user.name ?? "");
 
-  useEffect(() => {
-    setName(user.name ?? "");
-  }, [user.name]);
-
-  const handleSave = async () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setSaving(true);
-    try {
-      const res = await updateUser({ name: trimmed });
+  // ── Name form ─────────────────────────────────────────────────────────────
+  const nameForm = useApiForm<NameValues>({
+    schema: nameSchema,
+    defaultValues: { name: user.name ?? "" },
+    onSubmit: async (values) => {
+      const res = await updateUser({ name: values.name });
       if (res.error) {
-        toast.error(
+        throw new Error(
           mapApiErrorToUserCopy(res.error, "Не вдалося оновити ім'я"),
         );
-        return;
       }
+    },
+    onSuccess: async () => {
       toast.success("Ім'я оновлено");
       await onRefresh();
-    } catch {
-      toast.error("Не вдалося оновити ім'я");
-    } finally {
-      setSaving(false);
-    }
-  };
+    },
+  });
+
+  // Keep the form in sync if the server value changes (e.g. after onRefresh).
+  useEffect(() => {
+    nameForm.reset({ name: user.name ?? "" });
+    // nameForm.reset is stable (RHF guarantee); intentionally omit nameForm
+    // from deps to avoid an infinite loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.name]);
+
+  // ── Email form ────────────────────────────────────────────────────────────
+  const emailForm = useApiForm<EmailValues>({
+    schema: emailSchema,
+    defaultValues: { email: user.email ?? "" },
+    onSubmit: async (values) => {
+      const res = await changeEmail({ newEmail: values.email });
+      if (res.error) {
+        throw new Error(
+          mapApiErrorToUserCopy(res.error, "Не вдалося змінити email"),
+        );
+      }
+    },
+    onSuccess: async () => {
+      toast.success("Лист підтвердження нового email надіслано");
+      setEditingEmail(false);
+      await onRefresh();
+    },
+  });
+
+  // ── Non-form actions (avatar, verification) ───────────────────────────────
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,29 +173,6 @@ export function PersonalInfoSection({
       toast.error("Не вдалося надіслати лист підтвердження");
     } finally {
       setSendingVerification(false);
-    }
-  };
-
-  const handleChangeEmail = async () => {
-    const trimmed = newEmail.trim();
-    if (!trimmed) return;
-    setSavingEmail(true);
-    try {
-      const res = await changeEmail({ newEmail: trimmed });
-      if (res.error) {
-        toast.error(
-          mapApiErrorToUserCopy(res.error, "Не вдалося змінити email"),
-        );
-        return;
-      }
-      toast.success("Лист підтвердження нового email надіслано");
-      setEditingEmail(false);
-      setNewEmail("");
-      await onRefresh();
-    } catch {
-      toast.error("Не вдалося змінити email");
-    } finally {
-      setSavingEmail(false);
     }
   };
 
@@ -305,26 +322,36 @@ export function PersonalInfoSection({
             <Input
               id="profile-name"
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && dirty && !saving && online)
-                  handleSave();
-              }}
               placeholder="Твоє ім'я"
               autoComplete="name"
               className="flex-1"
+              disabled={nameForm.isSubmitting || !online}
+              aria-invalid={!!nameForm.formState.errors.name}
+              {...nameForm.register("name")}
             />
             <Button
               variant="primary"
               size="sm"
-              disabled={!dirty || saving || !online}
-              loading={saving}
-              onClick={handleSave}
+              type="button"
+              disabled={
+                !nameForm.formState.isDirty || nameForm.isSubmitting || !online
+              }
+              loading={nameForm.isSubmitting}
+              onClick={nameForm.submit}
             >
               Зберегти
             </Button>
           </div>
+          {nameForm.formState.errors.name && (
+            <p className="text-xs text-danger-strong" role="alert">
+              {nameForm.formState.errors.name.message}
+            </p>
+          )}
+          {nameForm.serverError && (
+            <p className="text-xs text-danger-strong" role="alert">
+              {nameForm.serverError}
+            </p>
+          )}
         </div>
 
         {/* Email row */}
@@ -343,8 +370,8 @@ export function PersonalInfoSection({
                 size="xs"
                 disabled={!online}
                 onClick={() => {
+                  emailForm.reset({ email: user.email ?? "" });
                   setEditingEmail(true);
-                  setNewEmail(user.email ?? "");
                 }}
               >
                 Змінити
@@ -356,37 +383,49 @@ export function PersonalInfoSection({
                 <Input
                   id="profile-email"
                   type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="Новий email"
                   autoComplete="email"
                   className="flex-1"
+                  disabled={emailForm.isSubmitting || !online}
+                  aria-invalid={!!emailForm.formState.errors.email}
+                  {...emailForm.register("email")}
                 />
                 <Button
                   variant="primary"
                   size="sm"
+                  type="button"
                   disabled={
-                    !newEmail.trim() ||
-                    newEmail.trim() === user.email ||
-                    savingEmail ||
+                    emailForm.watch("email")?.trim() === user.email ||
+                    emailForm.isSubmitting ||
                     !online
                   }
-                  loading={savingEmail}
-                  onClick={handleChangeEmail}
+                  loading={emailForm.isSubmitting}
+                  onClick={emailForm.submit}
                 >
                   Зберегти
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
+                  type="button"
                   onClick={() => {
                     setEditingEmail(false);
-                    setNewEmail("");
+                    emailForm.reset({ email: user.email ?? "" });
                   }}
                 >
                   Скасувати
                 </Button>
               </div>
+              {emailForm.formState.errors.email && (
+                <p className="text-xs text-danger-strong" role="alert">
+                  {emailForm.formState.errors.email.message}
+                </p>
+              )}
+              {emailForm.serverError && (
+                <p className="text-xs text-danger-strong" role="alert">
+                  {emailForm.serverError}
+                </p>
+              )}
               <p className="text-xs text-muted">
                 На новий email надійде лист для підтвердження.
               </p>

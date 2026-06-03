@@ -1123,5 +1123,91 @@ export default [
   // `hubChatContext.ts` in #2517 (0013 round-2). New leakers tracked in
   // `docs/initiatives/0013-module-decomposition-round-2.md` and
   // `docs/tech-debt/frontend.md § 4`.
+
+  // Theme 5 (consolidated audit 2026-05-13): `no-raw-storage-key` — warn-level
+  // gate for raw localStorage key string literals passed to storage helpers.
+  // Use `STORAGE_KEYS.<NAME>` from `@sergeant/shared` instead. The rule is
+  // `warn` because ~50 existing call-sites remain (chatActions, onboarding,
+  // recommendations, weeklyDigest, dailyFinykSummary); they are tracked in
+  // the burn-down documented in the audit. Promoted to `error` when the
+  // count reaches zero. See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 5.
+  // Files that legitimately use raw key strings (migration helpers, seed/cleanup
+  // demo data, the registry itself, searchCache internal cache key) are exempt
+  // inside the rule implementation.
+  {
+    files: [
+      "apps/web/src/**/*.{ts,tsx}",
+      "apps/mobile/src/**/*.{ts,tsx}",
+      "apps/mobile/app/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-raw-storage-key": "warn",
+    },
+  },
+
+  // Theme 2 (consolidated audit 2026-05-13): `no-small-button-touch-target` —
+  // warn-level gate for raw `<button>` elements with height/size classes below
+  // 44px without a touch-target compensator. WCAG 2.5.5 requires ≥ 44×44px.
+  // Use the `Button` primitive (auto-applies `pointer-coarse:min-h-[44px]`) or
+  // add `min-h-[44px] min-w-[44px]` manually. The rule is `warn` because some
+  // call-sites are data-cell contexts (calendar cells, chart bars) where 44px
+  // would break layout. Burn-down: 2026-Q3.
+  // See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 2.
+  {
+    files: [
+      "apps/web/src/**/*.{ts,tsx}",
+      "apps/mobile/src/**/*.{ts,tsx}",
+      "apps/mobile/app/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/web/src/**/*.stories.{ts,tsx}",
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-small-button-touch-target": "warn",
+    },
+  },
+
+  // Theme 6 (consolidated audit 2026-05-13): `@typescript-eslint/no-non-null-assertion`
+  // — warn-level gate for `!` non-null assertions that bypass `noUncheckedIndexedAccess`.
+  // The fizruk module (Dashboard/Atlas/Workouts/Exercise/Progress/Programs) had the most
+  // documented violations (F15 adaptiveSort.ts, F18 hubReports, Measurements.tsx:268,
+  // ExerciseProgressChart.tsx:57, WeeklyVolumeChart.tsx:79, WorkoutTemplatesSection.tsx:491).
+  // Severity `warn` because ~96 existing production assertions remain; the
+  // ones in fizruk are fixed below. Promoted to `error` when count reaches zero.
+  // Burn-down: 2026-Q3. See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 6.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/web/src/**/*.stories.{ts,tsx}",
+    ],
+    rules: {
+      "@typescript-eslint/no-non-null-assertion": "warn",
+    },
+  },
+
+  // The ESLint plugin's own test fixtures contain raw storage key literals and
+  // small-button class strings — disable both new rules on the plugin itself.
+  {
+    files: ["packages/eslint-plugin-sergeant-design/**/*.{js,mjs}"],
+    rules: {
+      "sergeant-design/no-raw-storage-key": "off",
+      "sergeant-design/no-small-button-touch-target": "off",
+    },
+  },
+
   eslintConfigPrettier,
 ];

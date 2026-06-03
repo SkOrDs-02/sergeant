@@ -67,7 +67,6 @@
   "apps/web/src/core/onboarding/FirstActionSheet.tsx",
   "apps/web/src/core/onboarding/OnboardingProgress.tsx",
   "apps/web/src/core/onboarding/OnboardingWizard.tsx",
-  "apps/web/src/core/onboarding/PermissionsPrompt.tsx",
   "apps/web/src/core/onboarding/ReEngagementCard.tsx",
   "apps/web/src/core/pricing/WaitlistForm.tsx",
   "apps/web/src/core/profile/ChangePasswordSection.tsx",

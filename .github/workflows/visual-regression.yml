@@ -126,6 +126,23 @@ jobs:
           timeout 60 bash -c 'until curl -sf http://127.0.0.1:4173 >/dev/null 2>&1; do sleep 2; done'
           echo "Both servers ready."
 
+      # Route matrix (audit 2026-05-13-testing-devx-roast.md §P2-3 closeout):
+      # `tests/a11y/ds-visual-qa.spec.ts` covers welcome / auth / hub /
+      # hub-pre-ftux and the module shells finyk / fizruk / routine /
+      # nutrition (via `ALL_FTUX_MODULES`) plus the dedicated `/chat`
+      # (hub-chat) surface and the finyk/nutrition first-run variants.
+      # Each surface is shot across the full viewport matrix, with the
+      # desktop floor (desktop-1280 + desktop-1440) always included — so
+      # the §P2-3 "desktop viewport floor" requirement holds for every
+      # route. `/fizruk`, `/routine` and `/hub-chat` are therefore already
+      # baselined here.
+      #
+      # Still outstanding: the `/settings` hub surface. It is reached as a
+      # BottomNav tab inside the hub (`HubBottomNav` → "Налаштування"),
+      # not a standalone `?module=`/path route, so adding it means a new
+      # `SURFACES` entry + a tab-click seed step in the spec under
+      # `tests/a11y/` — outside this workflow file. Tracked as the
+      # remaining §P2-3 follow-up (see open-work "Argos snapshot strategy").
       - name: Run visual regression screenshots
         run: pnpm --filter @sergeant/web test:visual
         env:

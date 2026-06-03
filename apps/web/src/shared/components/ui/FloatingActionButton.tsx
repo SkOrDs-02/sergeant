@@ -9,6 +9,8 @@ import {
 import { cn } from "../../lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
 import { hapticTap } from "../../lib/adapters/haptic";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 
 /**
  * Sergeant Design System -- FloatingActionButton (FAB)
@@ -127,9 +129,22 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   const [isOpen, setIsOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const lastScrollY = useRef(0);
+  // outerRef wraps the whole FAB (button + expanded items) for positioning
+  const outerRef = useRef<HTMLDivElement>(null);
+  // menuRef is the expanded action list; focus trap lives here so Tab
+  // cycles through action items only, and Escape closes the popover.
   const menuRef = useRef<HTMLDivElement>(null);
 
   const hasActions = actions && actions.length > 0;
+
+  // Focus trap: cycles Tab through action items; Escape closes.
+  // Only active when the action list is expanded.
+  useDialogFocusTrap(isOpen && !!hasActions, menuRef, {
+    onEscape: () => setIsOpen(false),
+  });
+
+  // Body scroll lock while the full-screen backdrop is visible.
+  useBodyScrollLock(isOpen && !!hasActions);
 
   // Scroll-to-hide behavior
   useEffect(() => {
@@ -153,25 +168,20 @@ export const FloatingActionButton = memo(function FloatingActionButton({
     return () => window.removeEventListener("scroll", handleScroll);
   }, [hideOnScroll]);
 
-  // Close on outside click
+  // Close on outside click (pointer events outside the outer FAB container).
+  // Escape is now handled by useDialogFocusTrap above.
   useEffect(() => {
     if (!isOpen) return;
 
     const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (outerRef.current && !outerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
 
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false);
-    };
-
     document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleEscape);
     return () => {
       document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen]);
 
@@ -210,7 +220,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
 
   return (
     <div
-      ref={menuRef}
+      ref={outerRef}
       className={cn(
         positionClasses[position],
         "z-50 flex flex-col-reverse items-center gap-3",
@@ -265,8 +275,12 @@ export const FloatingActionButton = memo(function FloatingActionButton({
             aria-hidden="true"
           />
 
-          {/* Action buttons */}
-          <div className="flex flex-col items-center gap-2" role="menu">
+          {/* Action buttons — focus trap root */}
+          <div
+            ref={menuRef}
+            className="flex flex-col items-center gap-2"
+            role="menu"
+          >
             {actions.map((action, index) => (
               <button
                 key={action.id}

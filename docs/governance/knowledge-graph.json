@@ -8,7 +8,7 @@
     "hard-rule": 26,
     "initiative": 47,
     "playbook": 61,
-    "pr": 195,
+    "pr": 197,
     "skill": 22
   },
   "nodes": [
@@ -897,7 +897,7 @@
       "type": "audit",
       "title": "Deep audit — state of repo (2026-05-15)",
       "path": "docs/audits/2026-05-15-deep-audit-state-of-repo.md",
-      "status": "Active",
+      "status": "Active — 0 truly-outstanding items (усі D1–D4 закрито станом на 2026-06-03; файл лишається не заархівованим для крос-посилань).",
       "tier": "core",
       "meta": {}
     },
@@ -3922,6 +3922,16 @@
       }
     },
     {
+      "id": "pr:57",
+      "type": "pr",
+      "title": "PR #57",
+      "tier": "extended",
+      "meta": {
+        "number": 57,
+        "url": "https://github.com/Skords-01/Sergeant/pull/57"
+      }
+    },
+    {
       "id": "pr:6",
       "type": "pr",
       "title": "PR #6",
@@ -3979,6 +3989,16 @@
       "meta": {
         "number": 708,
         "url": "https://github.com/Skords-01/Sergeant/pull/708"
+      }
+    },
+    {
+      "id": "pr:716",
+      "type": "pr",
+      "title": "PR #716",
+      "tier": "extended",
+      "meta": {
+        "number": 716,
+        "url": "https://github.com/Skords-01/Sergeant/pull/716"
       }
     },
     {
@@ -5274,6 +5294,11 @@
       "type": "touched-by"
     },
     {
+      "from": "audit:2026-05-13-page-audit-01-auth-onboarding",
+      "to": "pr:716",
+      "type": "touched-by"
+    },
+    {
       "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
       "to": "hard-rule:11",
       "type": "references"
@@ -5720,6 +5745,11 @@
     },
     {
       "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
       "to": "hard-rule:2",
       "type": "references"
     },
@@ -5745,6 +5775,36 @@
     },
     {
       "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:2104",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:2108",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:2541",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:2545",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:2551",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:2570",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
       "to": "pr:2607",
       "type": "touched-by"
     },
@@ -5761,6 +5821,11 @@
     {
       "from": "audit:2026-05-13-web-architecture-state-roast",
       "to": "pr:54",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-web-architecture-state-roast",
+      "to": "pr:57",
       "type": "touched-by"
     },
     {

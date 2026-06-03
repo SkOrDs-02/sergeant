@@ -1,6 +1,6 @@
 # Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13)
 
-> **Last validated:** 2026-05-13 by Devin (child session — P1.2 closed: `.github/workflows/lighthouse-ci.yml` shipped). **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-03 (гілка `claude/audits-task-count-un3kj` — P1.1 + P1.3 закриті: knip deps sweep + unused-exports surface). **Next review:** 2026-08-11.
 > **Status:** Active
 
 > **Скоуп:** knip-результати, unused exports / deps, lifecycle-маркери (Hard
@@ -112,9 +112,22 @@ pnpm docs:check-links --strict-external
 
 ## P1 — Outstanding (Tracked у `2026-05-13-dead-code-hard-rules-roast.md`)
 
-### P1.1 — `pnpm knip` ще ловить 4 Unused dependencies + 10 Unused devDependencies + 38 Unlisted
+### P1.1 — unused deps sweep — ✅ Closed (2026-06-03)
 
-> **2026-05-14 update:** `idb-keyval` видалено з `apps/web`. Перелік нижче лишається historical baseline для прожарки; `@fontsource-variable/dm-sans` виявився live import-ом у `apps/web/src/index.css`, а `@sergeant/shared` уже відсутній у `packages/openclaw-plugin/package.json`.
+> **2026-06-03 закриття** (гілка `claude/audits-task-count-un3kj`, Wave 2a/2b): на момент закриття `pnpm knip` (knip 6.12.0) репортує **0 Unused dependencies + 0 Unused devDependencies** — сам dependency-level sweep вже відпрацьований попередніми хвилями (`idb-keyval` видалено 2026-05-14, fontsource-шрифти підтверджені як live imports, `@sergeant/shared` зник з `packages/openclaw-plugin`). Залишкова робота P1.1 була у `knip.json`: прибрати stale/redundant `ignoreDependencies`/`entry`, які маскували реальні findings, і задокументувати справжні false-positive-и.
+>
+> **Зроблено у `knip.json` (Configuration hints 11 → 4):**
+>
+> - **`sucrase`** (apps/mobile `ignoreDependencies`) — прибрано: knip 6 тепер бачить `require("sucrase/register/ts")` у `apps/mobile/app.config.ts:15` як used → ignore був redundant.
+> - **`drizzle-kit`** (packages/db-schema) — прибрано весь блок `ignoreDependencies`: `drizzle-kit` навіть не оголошений у `packages/db-schema/package.json` (ні deps, ні devDeps), тобто ignore вказував на dangling dep. Жодного `drizzle.config`/import у пакеті немає (єдина згадка — рядок-літерал у `scripts/docs/generate-repo-map.mjs`).
+> - **Redundant `entry`-патерни** — прибрано (matched workspace-default entries, тому redundant; перевірено, що `Unused files` не зросло — лишилось 26): `apps/mobile-shell/capacitor.config.ts`, `packages/shared/src/index.ts`, `packages/design-tokens/{tokens.js,tailwind-preset.js}`.
+> - **`metro.config.js`** (apps/mobile `ignore`) — прибрано (redundant поряд з `"metro": false`).
+> - **`@capacitor/ios`** (apps/mobile-shell) — **KEEP** як documented false-positive: пакет споживається Capacitor-CLI (`cap add/sync/open ios` через `add:ios`/`build:ios`/`open:ios` скрипти), а не JS-import-ом; `ios/` native-проєкту ще нема (на відміну від `android/`), тому knip його не бачить. Version-locked з рештою `@capacitor/*` (7.6.2) для iOS-readiness. Додано JSONC-коментар у `knip.json` з обґрунтуванням (knip 6 парсить JSONC — перевірено, gate зелений).
+> - **KEPT (досі load-bearing, knip НЕ позначив як redundant):** root eslint-плагіни + `lint-staged`/`openapi-typescript`/`tsc-files`; apps/web fontsource-шрифти; apps/server `pino-pretty`; apps/mobile `@babel/preset-typescript`/`@config-plugins/detox`; packages/shared `@stryker-mutator/vitest-runner`.
+>
+> **Verification:** `pnpm knip` → 0 unused deps/devDeps, Configuration hints 11 → 4 (решта 4 — інформативні «N unused files» нотатки, не config-redundancy). Жодного пакета з `package.json` не видалено (бо реальних unused-deps уже не лишилось); правки винятково у `knip.json`.
+
+> **2026-05-14 update (historical):** `idb-keyval` видалено з `apps/web`. Перелік нижче лишається historical baseline для прожарки; `@fontsource-variable/dm-sans` виявився live import-ом у `apps/web/src/index.css`, а `@sergeant/shared` уже відсутній у `packages/openclaw-plugin/package.json`.
 
 ```
 Unused dependencies (4)
@@ -155,9 +168,35 @@ Unlisted dependencies (38)
 
 **Outstanding follow-up (поза скоупом цього item):** baseline tightening — собрати ≥ 2 PR-runs у `temporary-public-storage`, потім підняти LCP `warn` → `error` на 3000 ms (acceptance criterion #2 у sprint-roadmap T5). Branch-protection flip на `required` — manual в settings після tightening PR-а.
 
-### P1.3 — 77 unused exports + 51 duplicate exports (з 2026-05-05 audit)
+### P1.3 — unused exports + duplicate exports — ✅ Closed (partial-with-residual, 2026-06-03)
 
-Перенесено з [`2026-05-05-dead-code-and-stale-links-audit.md` § 3.2 і 3.4](./2026-05-05-dead-code-and-stale-links-audit.md). Не закрите в цьому PR, бо torcouches > 30 файлів і потребує per-export verification (deep-import callers). Рекомендую розбити на 3-4 PR за поверхнями: `apps/web/shared`, `apps/web/modules/*`, `packages/*`.
+Перенесено з [`2026-05-05-dead-code-and-stale-links-audit.md` § 3.2 і 3.4](./2026-05-05-dead-code-and-stale-links-audit.md).
+
+> **2026-06-03 закриття** (гілка `claude/audits-task-count-un3kj`, Wave 2a/2b). «77 + 51» з 2026-05-05 — stale. Поточний `pnpm knip` (knip 6.12.0) baseline цієї сесії: **94 unused exports + 14 unused exported types + 72 duplicate exports**.
+>
+> **Метод:** per-symbol verification — кожен кандидат проганявся repo-wide `grep -w` по `apps/**`, `packages/**`, `tools/**`, `scripts/**` (включно з `*.test.*`, barrel-ами, dynamic-string-ами), щоб відрізнити справжній dead-code від knip false-positive. Видаляли **тільки** export-и з рівно 0 зовнішніх референсів, БЕЗ future-intent JSDoc, БЕЗ paired-setter usage і НЕ test/scaffolded surface.
+>
+> **Видалено (4 unused exports у `apps/web`, кожен 0-ref repo-wide):**
+>
+> | Symbol               | Файл                                    | Чому safe                                                                                         |
+> | -------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------- |
+> | `isModulePrefetched` | `core/lib/useRoutePrefetch.ts`          | Internal prefetch-util, 0 callers (sibling `isPagePrefetched` лишається used).                    |
+> | `removeKey`          | `core/onboarding/seedDemoData/utils.ts` | Unused storage-helper; прибрано також осиротілий import `safeRemoveLS`.                           |
+> | `getDebugEnabled`    | `sw/debug.ts`                           | Read-getter без consumer-ів; `debugEnabled` далі читається у `setDebugEnabled`/`buildSwSnapshot`. |
+> | `getActiveUserKey`   | `sw/cache.ts`                           | Read-getter без consumer-ів; `activeUserKey` далі читається у `userPartitionPlugin`.              |
+>
+> **Verification:** `pnpm --filter @sergeant/web typecheck` (incl. `tsconfig.sw.json`) ✓; `pnpm --filter @sergeant/web lint` → 0 errors. `pnpm knip` Unused exports **94 → 90**.
+>
+> **Свідомо KEPT як knip false-positives (residual carried forward, ~86 exports + 14 types + 72 duplicates):**
+>
+> - **Duplicate exports (72)** — майже всі — патерн `Name|default` для React-компонентів (`apps/mobile/**`, `apps/web/core/**`). [2026-05-05 § 3.4](./2026-05-05-dead-code-and-stale-links-audit.md) прямо рекомендує НЕ чіпати: `default`-half очікується `React.lazy()`/Expo-Router/hub-registry lazy-import-ами. Видалення зламало б code-split chunk-boundaries.
+> - **Test-only helpers** — `__reset*ForTests` (×~13: ai-memory, tracing, posthog, finyk/fizruk/nutrition/routine dualWrite+sqliteRead boots, serverBuildIdBus), `__test__`/`__testing`/`_internals`/`__PLAN_SECTION_PORTAL_UNAVAILABLE`, `classifyDispatchOutcome` (JSDoc: «Direct-side callback (for tests)»). Свідома test-surface; видалення — окреме per-package рішення (як радить 2026-05-05 § 3.3 п.1).
+> - **Documented future/migration scaffolds** — `markWebhookEventProcessed`/`markWebhookEventFailed` («Викликається caller-ом після retry» — webhook retry-consumer ще не wired), `countWaitlistByTierDrizzle` (Drizzle-migration smoke-test, стане canonical), `SliderTicks` («Reserved for future composition»), `useHubBus` (документований public React-subscription API hub-bus-у).
+> - **ALS/обсервабіліті sibling-family API** — `setTraceId` (поряд з used `setUserId`/`setRequestModule`), `getTracingConfig` (поряд з `__resetTracingForTests`).
+> - **Design-system / barrel public surface** — `Card*` sub-компоненти, `Animated*`, `Skeleton*`, `KeyboardAccessory`+chip-консти, `useHaptic`, `useScrollHeader` тощо: живуть під `@shared/*` barrel-ами, які ще мають `@scaffolded` (per 2026-05-05 § 3.3 п.2 — зникнуть автоматично, коли barrel «прокинеться»).
+> - **`packages/openclaw-plugin` legacy/parity surface** — `canned-templates` (`renderTemplate` + 5 `*_TEMPLATE`), `legacy/index.ts default`, `sortedAllow`/`sortedDeny`, types (`CheapRouterClass`, `ApprovalRecorder`, `ParityLayer`): package public/legacy/parity surface — не чіпаємо без parity-smoke (риск false-positive через deep-import з тестів).
+>
+> **Outstanding:** ~86 unused exports + 14 types + 72 duplicates лишаються як свідомо-kept false-positives. Справжній burn-down цих — це не «видали по списку», а (а) розбудити `@shared` barrel-и (перевести deep-import callers → barrel), і (б) per-package рішення по test-reset-helpers. Виношу у наступну прожарку як watchlist, не як red-gate (knip не в `pnpm lint`).
 
 ### P1.4 — process.env budget burn-down (Hard Rule violation, ratchet-baseline restored)
 
@@ -214,7 +253,9 @@ Discovered post-rebase: 7 unused auth helpers у `apps/web/src/core/auth/` (`Log
 - **P1.2** — `.github/workflows/lighthouse-ci.yml` додано (child Devin session, 2026-05-13). `Lighthouse CI` тепер реальний CI-крок: pull_request на `master` + workflow_dispatch, артефакт `lighthouse-reports` з retention 14 днів. Tightening LCP → `error` 3000 ms залишається baseline-gathered follow-up у T5.
 - **P1.6** — AuthPage re-decomposition: re-wire-нув AuthPage на 7 існуючих siblings, портнув polished UX з PR #2586 в siblings, скинув `@scaffolded` markers. AuthPage.tsx 693 → 149 LOC (Hard Rule #18 compliant). Див. § P1.6 вище.
 
-**Outstanding (≈4 items, виношу у наступну прожарку):** P1.1 (knip deps sweep), P1.3 (77 unused exports + 51 duplicates), P1.4 (Phase 2 env burn-down — 4 PR-и з паралельним test-refactor), P1.5 (mobile-shell unused exports).
+**Outstanding (≈4 items, виношу у наступну прожарку):** ~~P1.1 (knip deps sweep)~~ ✅ closed 2026-06-03, ~~P1.3 (77 unused exports + 51 duplicates)~~ ✅ closed partial-with-residual 2026-06-03 (94 → 90 unused exports; ~86 + 14 types + 72 duplicates свідомо kept як false-positives — див. § P1.3), P1.4 (Phase 2 env burn-down — 4 PR-и з паралельним test-refactor), P1.5 (mobile-shell unused exports).
+
+**Follow-up 2026-06-03 — `claude/audits-task-count-un3kj` (Wave 2a/2b):** P1.1 + P1.3 закриті. `knip.json` cleanup (Configuration hints 11 → 4: прибрано stale `sucrase`/`drizzle-kit` ignores, redundant entry-патерни, `metro.config.js` ignore; задокументовано `@capacitor/ios` як CLI-consumed false-positive). 4 справді-мертвих unused exports видалено у `apps/web` (`isModulePrefetched`, `removeKey`, `getDebugEnabled`, `getActiveUserKey`); knip Unused exports 94 → 90. Решта unused-exports/types/duplicates — свідомо kept false-positives (test-helpers, lazy default-exports, scaffolded barrel surface). Verification: `pnpm -w typecheck` ✓, `pnpm --filter @sergeant/web build` ✓, `pnpm lint` 0 errors. NB: `pnpm dead-code:files` лишається red на 5 unmarked files (`scripts/claude-hooks/*.mjs`, `apps/web/src/modules/finyk/index.ts` без `@scaffolded` на відміну від sibling-модулів, `shared/lib/api/internalFetch.ts`, `shared/lib/insights/index.ts`) — pre-existing Hard Rule #10 drift, поза скоупом P1.1/P1.3 і не у `pnpm lint`; виношу у lifecycle-markers follow-up.
 
 ## Follow-up 2026-05-16 — `claude/identify-critical-issues-3IgIx` (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933))
 
@@ -239,7 +280,7 @@ Discovered post-rebase: 7 unused auth helpers у `apps/web/src/core/auth/` (`Log
 pnpm dead-code:files                                       # ✓ No unmarked unused files
 pnpm docs:check-links                                      # ✓ All markdown links resolve
 pnpm docs:check-links --strict-external                    # ✓ All markdown links resolve
-pnpm knip                                                  # ↓ Configuration hints 21 → 5; Unused files 18 (all marked); Unused deps unchanged (tracked P1.1)
+pnpm knip                                                  # 2026-06-03: 0 unused deps; Configuration hints 11 → 4; Unused exports 94 → 90 (P1.1+P1.3)
 pnpm format:check && pnpm lint && pnpm typecheck && pnpm test  # = pnpm check (full pre-PR matrix)
 ```
 

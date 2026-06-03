@@ -31,17 +31,18 @@
     "apps/mobile": {
       "entry": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
       "project": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
-      "ignore": ["metro.config.js"],
       "metro": false,
       "ignoreDependencies": [
-        "sucrase",
         "@babel/preset-typescript",
         "@config-plugins/detox"
       ]
     },
     "apps/mobile-shell": {
-      "entry": ["capacitor.config.ts"],
       "project": ["src/**/*.{ts,tsx}"],
+      // @capacitor/ios is consumed by the Capacitor CLI (`cap add/sync/open ios`,
+      // see add:ios/build:ios/open:ios scripts), not via JS imports, and there is
+      // no ios/ native project yet — so knip cannot see it. Kept for iOS-readiness
+      // (version-locked with the other @capacitor/* deps). Knip false-positive.
       "ignoreDependencies": ["@capacitor/ios"]
     },
     "packages/api-client": {
@@ -52,14 +53,9 @@
       "project": ["**/*"]
     },
     "packages/design-tokens": {
-      "entry": ["tokens.js", "tailwind-preset.js"],
       "project": ["**/*.js"]
     },
-    "packages/db-schema": {
-      "ignoreDependencies": ["drizzle-kit"]
-    },
     "packages/shared": {
-      "entry": ["src/index.ts"],
       "project": ["src/**/*.ts"],
       "ignoreDependencies": ["@stryker-mutator/vitest-runner"]
     }

@@ -4762,6 +4762,323 @@ const sriOnThirdPartyScript = {
   },
 };
 
+// ─── no-raw-storage-key ──────────────────────────────────────────────────────
+//
+// Theme 5 (consolidated audit 2026-05-13): raw localStorage key string literals
+// (e.g. `"finyk_tx_cache"`, `"hub_routine_v1"`) scattered across the codebase
+// drift from the canonical `STORAGE_KEYS` registry in
+// `packages/shared/src/lib/storageKeys.ts`. When a key is renamed/deprecated
+// in the registry, inline literals silently keep reading the stale key.
+//
+// The rule fires on string literals (and template literals with no expressions)
+// passed as the first argument to any of the storage helper functions:
+//   - `safeReadLS`, `safeWriteLS`, `safeReadStringLS`, `safeWriteStringLS`,
+//     `safeRemoveLS`, `safeParseLS`, `useLocalStorageState`,
+//     `readLS`, `lsSet`, `lsGet`, `ls`, `readAllData`.
+//
+// Known literal values come from the STORAGE_KEYS registry. The allowlist covers
+// legitimate string-only callsites (e.g. cache keys that are not storage reads,
+// migration helpers, legacy read-one-shot helpers). Severity: `warn` — the
+// burndown list is large; wire error only after the sweep is complete.
+//
+// Burn-down target: 2026-Q3. See audit docs/audits/2026-05-13-consolidated-page-audit.md § Theme 5.
+
+const RAW_STORAGE_KEY_LITERALS = new Set([
+  // Core 4 module data keys
+  "finyk_tx_cache",
+  "hub_routine_v1",
+  "nutrition_log_v1",
+  "fizruk_workouts_v1",
+  // Finyk family
+  "finyk_tx_cache_last_good",
+  "finyk_info_cache",
+  "finyk_show_balance_v1",
+  "finyk_hidden",
+  "finyk_hidden_txs",
+  "finyk_excluded_stat_txs",
+  "finyk_budgets",
+  "finyk_subs",
+  "finyk_assets",
+  "finyk_debts",
+  "finyk_recv",
+  "finyk_monthly_plan",
+  "finyk_tx_cats",
+  "finyk_tx_splits",
+  "finyk_mono_debt_linked",
+  "finyk_networth_history",
+  "finyk_custom_cats_v1",
+  "finyk_manual_expenses_v1",
+  "finyk_tx_filters_v1",
+  "finyk_tx_day_collapse_v1",
+  // Fizruk family
+  "fizruk_exercises_v1",
+  "fizruk_custom_exercises_v1",
+  "fizruk_workout_templates_v1",
+  "fizruk-storage-monthly-plan",
+  "fizruk_monthly_plan_v1",
+  "fizruk_plan_template_v1",
+  "fizruk_wellbeing_v1",
+  "fizruk_measurements_v1",
+  "fizruk_selected_template_id_v1",
+  "fizruk_active_workout_id_v1",
+  "fizruk_active_program_id_v1",
+  "fizruk_daily_log_v1",
+  "fizruk_rest_settings_v1",
+  // Nutrition family
+  "nutrition_pantries_v1",
+  "nutrition_active_pantry_v1",
+  "nutrition_prefs_v1",
+  "nutrition_recipe_book_v1",
+  // Hub family
+  "hub_dark_mode_v1",
+  "hub_last_module",
+  "hub_routine_main_tab_v1",
+  "hub_nutrition_main_tab_v1",
+  "hub_onboarding_done_v1",
+  "hub_dashboard_order_v1",
+  "hub_prefs_v1",
+  "hub_user_profile_v1",
+  "hub_biometrics_v1",
+  "hub_dashboard_density_v1",
+  "hub_weekly_digest_monday_auto_v1",
+]);
+
+const RAW_STORAGE_HELPER_NAMES = new Set([
+  "safeReadLS",
+  "safeWriteLS",
+  "safeReadStringLS",
+  "safeWriteStringLS",
+  "safeRemoveLS",
+  "safeParseLS",
+  "useLocalStorageState",
+  "readLS",
+  "lsSet",
+  "lsGet",
+  "ls",
+]);
+
+const NO_RAW_STORAGE_KEY_MESSAGE =
+  "Raw localStorage key literal '{{key}}' — use `STORAGE_KEYS.<NAME>` from `@sergeant/shared` instead. " +
+  "Inline string literals drift from the registry when keys are renamed/deprecated. " +
+  "See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 5. " +
+  "Burn-down: 2026-Q3.";
+
+function extractStringValue(node) {
+  if (!node) return null;
+  if (node.type === "Literal" && typeof node.value === "string") {
+    return node.value;
+  }
+  if (
+    node.type === "TemplateLiteral" &&
+    node.expressions.length === 0 &&
+    node.quasis.length === 1
+  ) {
+    const cooked = node.quasis[0].value && node.quasis[0].value.cooked;
+    return typeof cooked === "string" ? cooked : null;
+  }
+  return null;
+}
+
+const noRawStorageKey = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Forbid raw localStorage key string literals in storage helper calls — use STORAGE_KEYS.* from @sergeant/shared.",
+    },
+    schema: [],
+    messages: { rawKey: NO_RAW_STORAGE_KEY_MESSAGE },
+  },
+  create(context) {
+    const filename = (
+      context.filename ??
+      context.getFilename?.() ??
+      ""
+    ).replace(/\\/g, "/");
+    // Exempt: the registry itself, test files, stories, migration/seed helpers.
+    if (
+      /storageKeys\.(ts|js)/.test(filename) ||
+      /storageManager\.(ts|js)/.test(filename) ||
+      /residualImport\.(ts|js)/.test(filename) ||
+      /seedDemoData/.test(filename) ||
+      /cleanupDemoData/.test(filename) ||
+      /presetApply/.test(filename) ||
+      /\.test\.(ts|tsx|js|jsx)$/.test(filename) ||
+      /(^|\/)__tests__\//.test(filename) ||
+      /\.stories\.(ts|tsx|js|jsx)$/.test(filename) ||
+      /searchCache\.(ts|js)/.test(filename)
+    ) {
+      return {};
+    }
+    return {
+      CallExpression(node) {
+        const callee = node.callee;
+        let name = null;
+        if (callee.type === "Identifier") {
+          name = callee.name;
+        } else if (
+          callee.type === "MemberExpression" &&
+          !callee.computed &&
+          callee.property.type === "Identifier"
+        ) {
+          name = callee.property.name;
+        }
+        if (!name || !RAW_STORAGE_HELPER_NAMES.has(name)) return;
+        const firstArg = node.arguments[0];
+        const value = extractStringValue(firstArg);
+        if (value !== null && RAW_STORAGE_KEY_LITERALS.has(value)) {
+          context.report({
+            node: firstArg,
+            messageId: "rawKey",
+            data: { key: value },
+          });
+        }
+      },
+    };
+  },
+};
+
+// ─── no-small-button-touch-target ────────────────────────────────────────────
+//
+// Theme 2 (consolidated audit 2026-05-13 / WCAG 2.5.5): inline `<button>`
+// elements that explicitly declare a height/width below the 44px floor via
+// Tailwind utilities (h-6 = 24px, h-8 = 32px, h-10 = 40px, etc.) without a
+// compensating `min-h-[44px]` / `min-w-[44px]` / `touch-target` / `pointer-coarse`
+// class. The `Button` primitive (`@shared/components/ui/Button`) auto-applies
+// the safety-net via `pointer-coarse:min-h-[44px]`; prefer it for icon-only /
+// xs / sm variants.
+//
+// Severity: `warn` — many call-sites are data-cell contexts (calendar cells,
+// chart bars) where 44px would break layout. Each is manually auditable.
+// Burn-down: 2026-Q3. See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 2.
+
+// Tailwind height utilities that resolve to < 44px (h-1 = 4px … h-10 = 40px).
+// h-11 = 44px is the floor and is therefore NOT listed.
+const SMALL_HEIGHT_CLASSES = new Set([
+  "h-1",
+  "h-2",
+  "h-3",
+  "h-4",
+  "h-5",
+  "h-6",
+  "h-7",
+  "h-8",
+  "h-9",
+  "h-10",
+  "size-1",
+  "size-2",
+  "size-3",
+  "size-4",
+  "size-5",
+  "size-6",
+  "size-7",
+  "size-8",
+  "size-9",
+  "size-10",
+]);
+
+const TOUCH_TARGET_COMPENSATORS = [
+  "min-h-[44px]",
+  "min-w-[44px]",
+  "touch-target",
+  "pointer-coarse",
+];
+
+const NO_SMALL_BUTTON_TOUCH_TARGET_MESSAGE =
+  "Raw `<button>` element has height/size class '{{cls}}' (< 44px) without a touch-target compensator " +
+  "(`min-h-[44px]`, `min-w-[44px]`, `touch-target`, or `pointer-coarse:…`). " +
+  "WCAG 2.5.5 requires ≥ 44×44px hit area on coarse-pointer devices. " +
+  "Use the `Button` primitive (auto-applies `pointer-coarse:min-h-[44px]`) or add `min-h-[44px] min-w-[44px]` manually. " +
+  "See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 2.";
+
+function extractClassNameString(node) {
+  // className="..." → Literal
+  if (node.type === "Literal" && typeof node.value === "string") {
+    return node.value;
+  }
+  // className={cn("...", ...)} → ignore (dynamic, too complex)
+  return null;
+}
+
+function hasSmallHeightClass(classStr) {
+  const classes = classStr.split(/\s+/);
+  for (const cls of classes) {
+    if (SMALL_HEIGHT_CLASSES.has(cls)) return cls;
+  }
+  return null;
+}
+
+function hasTouchTargetCompensator(classStr) {
+  return TOUCH_TARGET_COMPENSATORS.some((c) => classStr.includes(c));
+}
+
+const noSmallButtonTouchTarget = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Warn when a raw `<button>` JSX element has a sub-44px height class without a touch-target compensator.",
+    },
+    schema: [],
+    messages: { small: NO_SMALL_BUTTON_TOUCH_TARGET_MESSAGE },
+  },
+  create(context) {
+    const filename = (
+      context.filename ??
+      context.getFilename?.() ??
+      ""
+    ).replace(/\\/g, "/");
+    // Only applies to web app and mobile UI code.
+    if (
+      !/apps\/(web|mobile)\/src\//.test(filename) &&
+      !/apps\/mobile\/app\//.test(filename)
+    ) {
+      return {};
+    }
+    if (
+      /\.test\.(ts|tsx|js|jsx)$/.test(filename) ||
+      /(^|\/)__tests__\//.test(filename) ||
+      /\.stories\.(ts|tsx|js|jsx)$/.test(filename)
+    ) {
+      return {};
+    }
+    return {
+      JSXOpeningElement(node) {
+        // Only raw <button> elements (not Button component).
+        const name = node.name;
+        if (!name || name.type !== "JSXIdentifier" || name.name !== "button") {
+          return;
+        }
+        // Look for className attribute.
+        for (const attr of node.attributes) {
+          if (
+            attr.type !== "JSXAttribute" ||
+            !attr.name ||
+            attr.name.name !== "className"
+          ) {
+            continue;
+          }
+          // JSXAttribute value can be a Literal or JSXExpressionContainer.
+          let classStr = null;
+          if (attr.value && attr.value.type === "Literal") {
+            classStr = extractClassNameString(attr.value);
+          }
+          if (!classStr) return; // dynamic className — skip
+          const offendingCls = hasSmallHeightClass(classStr);
+          if (!offendingCls) return;
+          if (hasTouchTargetCompensator(classStr)) return;
+          context.report({
+            node,
+            messageId: "small",
+            data: { cls: offendingCls },
+          });
+          return;
+        }
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -4800,6 +5117,8 @@ const plugin = {
     "no-bare-fixed-inset-modal": noBareFixedInsetModal,
     "prefer-parse-body-over-validate-body": preferParseBodyOverValidateBody,
     "sri-on-third-party-script": sriOnThirdPartyScript,
+    "no-raw-storage-key": noRawStorageKey,
+    "no-small-button-touch-target": noSmallButtonTouchTarget,
   },
 };
 
@@ -4845,6 +5164,12 @@ export {
   isCrossOriginScriptSrc,
   validateSriScriptAttrs,
   lintHtmlForSri,
+  RAW_STORAGE_KEY_LITERALS,
+  RAW_STORAGE_HELPER_NAMES,
+  NO_RAW_STORAGE_KEY_MESSAGE,
+  NO_SMALL_BUTTON_TOUCH_TARGET_MESSAGE,
+  SMALL_HEIGHT_CLASSES,
+  TOUCH_TARGET_COMPENSATORS,
 };
 
 export default plugin;

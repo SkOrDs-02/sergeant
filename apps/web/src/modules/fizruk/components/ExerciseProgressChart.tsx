@@ -54,7 +54,12 @@ export function ExerciseProgressChart({
     .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
     .join(" ");
 
-  const areaD = `${lineD} L ${mapped[mapped.length - 1]!.x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${mapped[0]!.x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`;
+  const lastMapped = mapped[mapped.length - 1];
+  const firstMapped = mapped[0];
+  const areaD =
+    lastMapped && firstMapped
+      ? `${lineD} L ${lastMapped.x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${firstMapped.x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`
+      : lineD;
 
   const gradId = `prog_${label.replace(/\s/g, "_")}`;
 

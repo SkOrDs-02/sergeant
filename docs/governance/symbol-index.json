@@ -3,8 +3,8 @@
   "generated_at": "2026-06-03",
   "summary": {
     "packages": 17,
-    "totalExports": 288,
-    "totalDeadExports": 189
+    "totalExports": 294,
+    "totalDeadExports": 195
   },
   "packages": [
     {
@@ -1459,7 +1459,7 @@
     {
       "name": "@sergeant/db-schema",
       "path": "packages/db-schema",
-      "entryFile": "packages/db-schema/src/index.ts",
+      "entryFile": "packages/db-schema/dist/index.d.ts",
       "stats": {
         "exportCount": 1,
         "totalImporters": 0,
@@ -2013,9 +2013,9 @@
       "path": "packages/eslint-plugin-sergeant-design",
       "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
       "stats": {
-        "exportCount": 42,
+        "exportCount": 48,
         "totalImporters": 0,
-        "deadExports": 41
+        "deadExports": 47
       },
       "exports": [
         {
@@ -2260,6 +2260,42 @@
         },
         {
           "name": "lintHtmlForSri",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RAW_STORAGE_KEY_LITERALS",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RAW_STORAGE_HELPER_NAMES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_RAW_STORAGE_KEY_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "NO_SMALL_BUTTON_TOUCH_TARGET_MESSAGE",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "SMALL_HEIGHT_CLASSES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "TOUCH_TARGET_COMPENSATORS",
           "kind": "re-export",
           "usedBy": [],
           "usageCount": 0

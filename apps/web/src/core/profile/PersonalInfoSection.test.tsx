@@ -104,7 +104,12 @@ describe("PersonalInfoSection — name save", () => {
     });
   });
 
-  it("error path: updateUser returns { error } → error toast, no success", async () => {
+  it("error path: updateUser returns { error } → inline error message, no success toast", async () => {
+    // After the useApiForm migration (F7, 2026-06-03), server errors from
+    // updateUser are thrown as Error objects inside onSubmit. useApiForm
+    // catches them and surfaces the message via `serverError` (rendered
+    // inline in the form), not via toast.error. This matches the UX pattern
+    // used by LoginForm and WaitlistForm.
     updateUserMock.mockResolvedValue({
       error: { code: "BAD", message: "nope" },
     });
@@ -118,8 +123,9 @@ describe("PersonalInfoSection — name save", () => {
     await waitFor(() => {
       expect(updateUserMock).toHaveBeenCalled();
     });
+    // Error surfaces inline (mapApiErrorToUserCopy fallback for unknown code).
     await waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toBeTruthy();
     });
     expect(toastSuccessMock).not.toHaveBeenCalled();
   });

@@ -22,7 +22,7 @@ render_with_liquid: false
 
 ### F1 — `HubReports` дублює хардкоднуті ключі замість `STORAGE_KEYS` [severity: high] [perspective: rule]
 
-> 🟡 **Closed partially 2026-05-31** — після split-out `HubReports` оригінального блоку немає. Залишковий літерал `"fizruk_workouts_v1"` у `apps/web/src/core/hub/FitnessCard.tsx:188` замінено на `STORAGE_KEYS.FIZRUK_WORKOUTS`. Решта (ExpensesCard `finyk_tx_cache`, RoutineCard `hub_routine_v1`, NutritionCard `nutrition_log_v1`, `search/searchSources.ts`, `useFinykHubPreview.ts`) лишається open — потрібен окремий sweep + lint-правило.
+> **Lint gate landed 2026-06-03 (audits-runner execute):** ESLint rule `sergeant-design/no-raw-storage-key` (`warn`) now covers all remaining raw-string offenders. The 4 suppressed literals (`finyk_tx_cache` in `ExpensesCard.tsx:201`, `hub_routine_v1` in `RoutineCard.tsx:201`, `nutrition_log_v1` in `NutritionCard.tsx:201`, 4 keys in `search/searchSources.ts`) cannot be replaced with `STORAGE_KEYS.*` today because the hub-layer hits the `no-restricted-syntax` retirement guard (`STORAGE_KEYS.FINYK_*`/`FIZRUK_*`/`NUTRITION_*`/`ROUTINE` are blocked outside module wrappers). Each site carries an `eslint-disable-next-line sergeant-design/no-raw-storage-key` comment as a documented exception; removing the guard exemption is prerequisite for the next sweep. `FitnessCard.tsx` (closed 2026-05-31) and `useFinykHubPreview.ts` remain for a follow-up sweep.
 
 **Page:** Hub Reports
 **File:** `apps/web/src/core/hub/HubReports.tsx`

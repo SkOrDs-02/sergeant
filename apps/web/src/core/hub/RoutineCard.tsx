@@ -78,6 +78,7 @@ function BarChart({
     <div>
       {selected !== null && (
         <div className="text-style-caption text-center text-text mb-1 h-4">
+          {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
           {formatTooltip(dates[selected]!, vals[selected]!)}
         </div>
       )}
@@ -198,6 +199,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
 
   const { cur, prev, dates } = useMemo(() => {
     const routineState = safeReadLS(
+      // eslint-disable-next-line sergeant-design/no-raw-storage-key
       "hub_routine_v1",
       null,
     ) as RoutineState | null;

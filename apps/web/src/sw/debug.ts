@@ -15,10 +15,6 @@ import { loadNotifiedKeys, notifiedKeys } from "./notifiedKeys";
 
 let debugEnabled = false;
 
-export function getDebugEnabled(): boolean {
-  return debugEnabled;
-}
-
 export function setDebugEnabled(next: boolean): void {
   debugEnabled = next;
   if (debugEnabled && import.meta.env?.DEV) {

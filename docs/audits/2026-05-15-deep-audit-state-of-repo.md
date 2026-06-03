@@ -1,7 +1,7 @@
 # Deep audit — state of repo (2026-05-15)
 
-> **Last validated:** 2026-05-15 by Claude Opus 4.7 (external session — closeout snapshot for second-pass executor; D1/D3/D4 та planning-card-и оновлено посиланнями на конкретні merged/open PR-и). **Next review:** 2026-08-13.
-> **Status:** Active
+> **Last validated:** 2026-06-03 by Claude Opus 4.8 (drift-closeout — D1 #2872 + D4 #2874 merged до main, підтверджено proof-файлами; outstanding 4→0). **Next review:** 2026-08-13.
+> **Status:** Active — 0 truly-outstanding items (усі D1–D4 закрито станом на 2026-06-03; файл лишається не заархівованим для крос-посилань).
 
 > **Скоуп:** зовнішній двопрохідний аудит на запит власника (повний repo: документи, мертвий код, архітектура, ризики). Цей файл — synthesis-запис стану на 2026-05-15, який крос-валідує знахідки з активною серією прожарок 2026-05-13 і підтверджує, що **переважна більшість виявлених P0/P1 пунктів уже закрита** в існуючому процесі планування. Outstanding-list — короткий, focused.
 
@@ -25,7 +25,7 @@
 - **`syncEngineFlushOnReconnect` / `recoverDeadLetter`** — активні в production через `apps/web/src/core/syncEngine/syncEngineWriter.ts` + `apps/mobile/src/core/syncEngine/syncEngineWriter.ts` (fallback factory via `deps.createReconnect ?? createSyncEngineFlushOnReconnect`) і `singleton.ts:121` callsite-и в обох runtimes. Початкова гіпотеза «декларовано, не wired» — спростована.
 - **ADR-0004 status drift** (start-of-pass гіпотеза) — false positive: рядок 3 уже містить `**Status:** superseded by [ADR-0047]`.
 
-**Реальний outstanding — 4 пункти**, перераховані у §[Truly outstanding](#truly-outstanding) нижче. Жоден не є P0; найбільший — observability hygiene гачок для freshness header на старіших ADR.
+**Реальний outstanding — 0 пунктів** (станом на 2026-06-03; усі D1–D4 закрито). На момент synthesis-проходу (2026-05-15) було 4 пункти, перерахованих у §[Truly outstanding](#truly-outstanding) нижче — жоден не P0; усі вже закриті (D1/D2/D4 merged PR-ами, D3 local diff verified).
 
 ## State of repo (2026-05-15)
 
@@ -68,37 +68,37 @@
 
 ## Раніше виявлені «гарячі точки» — closure-таблиця
 
-| Гіпотеза з першого проходу                                                     | Реальність                         | Доказ                                                                                                                                                                             |
-| ------------------------------------------------------------------------------ | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Stage 5 sync wiring incomplete (P0)                                            | **Closed**                         | CloudSync engine #1929–#1941 + sync v2 op-log. `flushOnReconnect`/`recoverDeadLetter` мають реальні production callsite-и в обох runtimes.                                        |
-| Stripe bootstrap docs missing (P0)                                             | **Closed**                         | revenue P0-7 (`apps/server/src/env/env.ts` schema validation) shipped; price_id ad-hoc gap закрито.                                                                               |
-| Stripe webhook без e2e (P1)                                                    | **Partially open**                 | unit-тести + 3 lifecycle-евенти. Наскрізний e2e з фейковим signature → DB insert → role update — все ж warrant. Лишається у backlog testing-devx плану (див. nuance D1).          |
-| `billing.test.ts` pre-existing failures (P1)                                   | **Не верифіковано**                | Згадка в моєму early-pass-і не підтверджена прямим запуском. Потребує одиничного перевірочного коміту перед закриттям.                                                            |
-| Lighthouse LCP `warn`→`error` 3000 ms (P1)                                     | **Tracked**                        | sprint-roadmap T5; перший pass (warn-only) shipped `cb459c08`; tightening — baseline-gathered follow-up.                                                                          |
-| 40 ADR без `Last validated` (P1)                                               | **Partially valid**                | freshness-gate захищає tracked docs; для ADR `Last validated` є opt-in. Hardening hygiene — D4.                                                                                   |
-| `core/cloudSync/index.ts` orphan exports (P1)                                  | **Closed**                         | `@scaffolded` маркер (dead-code roast P0.1); `useSyncStatus` ще ходить deep-path-ом, барель свідомо тримається.                                                                   |
-| 12 TBD CODEOWNERS (P0)                                                         | **Closed (рішення прийнято)**      | Bus-factor PR-04 свідомо допускає `TBD(role)` як placeholder; replace-on-hire.                                                                                                    |
-| ADR-0004 Status drift (P0-4)                                                   | **False positive**                 | Рядок 3 уже містить `superseded by ADR-0047`.                                                                                                                                     |
-| README hero asset placeholder (P2)                                             | **Tracked**                        | PR-02b відомий; landing/hero серія планується.                                                                                                                                    |
-| Monobank webhook deprecation у CONTRIBUTING (P2)                               | **Cosmetic**                       | Згадка в README. Якщо команда вирішить — short paragraph у CONTRIBUTING.                                                                                                          |
-| `OptimizedImage`, `PullToRefreshIndicator`, `shared/lib/log` як dead-code (P2) | **Closed**                         | Усі під `@scaffolded` маркером з `@nextStep` JSDoc.                                                                                                                               |
-| AI Memory silent no-op при відсутньому `VOYAGE_API_KEY` (P2)                   | **By-design**                      | `AI_MEMORY_ENABLED=false` за замовчуванням — master-switch. Activation runbook вимагає key. Fail-loud guard — D3.                                                                 |
-| `audit-exception` процес (P2)                                                  | **Closed**                         | [`docs/security/audit-exceptions.md`](../security/audit-exceptions.md) існує; SLA + nightly-audit у тому ж розділі.                                                               |
-| Visual-regression pgvector fallback (P2)                                       | **Tracked в pr-plan-testing-devx** | див. [planning/pr-plan-testing-devx-2026-05.md](../planning/pr-plan-testing-devx-2026-05.md).                                                                                     |
-| Stryker removal decision-record (P2)                                           | **Closed**                         | Already covered: `docs/testing/README.md:12`, `2026-05-05-tests-review.md:40`, ADR-0020:235 містять explicit decision. Підтверджено second-pass executor 2026-05-15 — див. D2 ✅. |
-| Admin seed-скрипт (P2)                                                         | **By-design (Better Auth)**        | Перша адмін-учетка створюється через web-форму + manual DB-update. Якщо команда хоче формалізувати — окремий PR.                                                                  |
+| Гіпотеза з першого проходу                                                     | Реальність                         | Доказ                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------ | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stage 5 sync wiring incomplete (P0)                                            | **Closed**                         | CloudSync engine #1929–#1941 + sync v2 op-log. `flushOnReconnect`/`recoverDeadLetter` мають реальні production callsite-и в обох runtimes.                                                                |
+| Stripe bootstrap docs missing (P0)                                             | **Closed**                         | revenue P0-7 (`apps/server/src/env/env.ts` schema validation) shipped; price_id ad-hoc gap закрито.                                                                                                       |
+| Stripe webhook без e2e (P1)                                                    | **Closed**                         | PR [#2872](https://github.com/Skords-01/Sergeant/pull/2872) merged 2026-06-03 — `apps/server/src/routes/billing.webhook.test.ts` (8 сценаріїв: фейковий signature → DB insert → role update). Див. D1 ✅. |
+| `billing.test.ts` pre-existing failures (P1)                                   | **Не верифіковано**                | Згадка в моєму early-pass-і не підтверджена прямим запуском. Потребує одиничного перевірочного коміту перед закриттям.                                                                                    |
+| Lighthouse LCP `warn`→`error` 3000 ms (P1)                                     | **Tracked**                        | sprint-roadmap T5; перший pass (warn-only) shipped `cb459c08`; tightening — baseline-gathered follow-up.                                                                                                  |
+| 40 ADR без `Last validated` (P1)                                               | **Closed**                         | PR [#2874](https://github.com/Skords-01/Sergeant/pull/2874) merged 2026-06-03 — `scripts/docs/backfill-adr-freshness.mjs` backfill-нув усі ADR; 59/59 мають `Last validated`. Див. D4 ✅.                 |
+| `core/cloudSync/index.ts` orphan exports (P1)                                  | **Closed**                         | `@scaffolded` маркер (dead-code roast P0.1); `useSyncStatus` ще ходить deep-path-ом, барель свідомо тримається.                                                                                           |
+| 12 TBD CODEOWNERS (P0)                                                         | **Closed (рішення прийнято)**      | Bus-factor PR-04 свідомо допускає `TBD(role)` як placeholder; replace-on-hire.                                                                                                                            |
+| ADR-0004 Status drift (P0-4)                                                   | **False positive**                 | Рядок 3 уже містить `superseded by ADR-0047`.                                                                                                                                                             |
+| README hero asset placeholder (P2)                                             | **Tracked**                        | PR-02b відомий; landing/hero серія планується.                                                                                                                                                            |
+| Monobank webhook deprecation у CONTRIBUTING (P2)                               | **Cosmetic**                       | Згадка в README. Якщо команда вирішить — short paragraph у CONTRIBUTING.                                                                                                                                  |
+| `OptimizedImage`, `PullToRefreshIndicator`, `shared/lib/log` як dead-code (P2) | **Closed**                         | Усі під `@scaffolded` маркером з `@nextStep` JSDoc.                                                                                                                                                       |
+| AI Memory silent no-op при відсутньому `VOYAGE_API_KEY` (P2)                   | **By-design**                      | `AI_MEMORY_ENABLED=false` за замовчуванням — master-switch. Activation runbook вимагає key. Fail-loud guard — D3.                                                                                         |
+| `audit-exception` процес (P2)                                                  | **Closed**                         | [`docs/security/audit-exceptions.md`](../security/audit-exceptions.md) існує; SLA + nightly-audit у тому ж розділі.                                                                                       |
+| Visual-regression pgvector fallback (P2)                                       | **Tracked в pr-plan-testing-devx** | див. [planning/pr-plan-testing-devx-2026-05.md](../planning/pr-plan-testing-devx-2026-05.md).                                                                                                             |
+| Stryker removal decision-record (P2)                                           | **Closed**                         | Already covered: `docs/testing/README.md:12`, `2026-05-05-tests-review.md:40`, ADR-0020:235 містять explicit decision. Підтверджено second-pass executor 2026-05-15 — див. D2 ✅.                         |
+| Admin seed-скрипт (P2)                                                         | **By-design (Better Auth)**        | Перша адмін-учетка створюється через web-форму + manual DB-update. Якщо команда хоче формалізувати — окремий PR.                                                                                          |
 
 ## Truly outstanding
 
-Три пункти **не покриті** активною планувальною системою (D2 закрите). Жоден не P0; усі — observability/hygiene клас.
+**Outstanding count: 0** (станом на 2026-06-03). Усі чотири пункти (D1–D4) закрито: D1 (PR #2872 merged), D2 (PR #2933 merged), D3 (local diff verified 2026-05-17), D4 (PR #2874 merged). Жоден не був P0; усі — observability/hygiene клас. Картки лишаються нижче як історичний record зі стабільними ID для крос-посилань.
 
-### D1 — Stripe webhook e2e (P2)
+### D1 — Stripe webhook e2e (P2) ✅ Closed
 
-**Що:** наскрізний integration test з фейковим Stripe webhook signature → DB insert → user role update. Поточне покриття: 3 unit-тести на lifecycle (`subscription_started`/`renewed`/`canceled`) + checkout/portal endpoints. **Gap:** немає тесту, який ловить регресію signature-validation flow.
+**Status:** Closed 2026-06-03 (drift — PR [#2872](https://github.com/Skords-01/Sergeant/pull/2872) merged до main). Route-level supertest присутній: `apps/server/src/routes/billing.webhook.test.ts` існує і містить 8 сценаріїв (фейковий signature → DB insert → role update + регресія signature-validation flow). Gap закрито.
 
-**Чому P2, не P1:** Stripe SDK сам відповідає за signature-validation; наша частина — handler-logic, який покрито unit-тестами. Наскрізний e2e — додаткова страховка для revenue-critical path.
+**Original concern:** наскрізний integration test з фейковим Stripe webhook signature → DB insert → user role update. Поточне покриття на момент аудиту: 3 unit-тести на lifecycle (`subscription_started`/`renewed`/`canceled`) + checkout/portal endpoints. Не вистачало тесту, який ловить регресію signature-validation flow.
 
-**Suggested home:** [`docs/planning/pr-plan-testing-devx-2026-05.md`](../planning/pr-plan-testing-devx-2026-05.md) як новий card-item або follow-up до revenue PR-серії.
+**Suggested home (historical):** [`docs/planning/pr-plan-testing-devx-2026-05.md`](../planning/pr-plan-testing-devx-2026-05.md) — реалізовано як route-level supertest.
 
 ### D2 — Stryker removal decision-record (P2) ✅ Closed
 
@@ -122,13 +122,13 @@
 
 **Suggested home:** початково таргетувалось у `pr-plan-security-obs-2026-05.md`, але той план закрито й заархівовано ([`docs/planning/archive/pr-plan-security-obs-2026-05.md`](../planning/archive/pr-plan-security-obs-2026-05.md), усі S2–S11 ✅). Нову S-size card заводити в активному [`docs/planning/pr-plan-backend-perf-2026-05.md`](../planning/pr-plan-backend-perf-2026-05.md) (env-validation / observability track).
 
-### D4 — ADR freshness header hygiene (P2)
+### D4 — ADR freshness header hygiene (P2) ✅ Closed
 
-**Що:** ~40 ADR (з 53) не мають явного `Last validated:` маркера. Freshness-gate захищає tracked docs (initiatives, launch, governance, tech-debt, app AGENTS.md) — там покриття 100%. Для ADR `Last validated` — opt-in.
+**Status:** Closed 2026-06-03 (drift — PR [#2874](https://github.com/Skords-01/Sergeant/pull/2874) merged до main). Codemod `scripts/docs/backfill-adr-freshness.mjs` присутній і всі ADR-документи у `docs/adr/` тепер мають `Last validated:` маркер (підтверджено: 59/59 ADR `.md` з header-ом). Hygiene-gap закрито.
 
-**Чому P2:** ADR за природою — frozen records рішення на момент Х. Drift-ризик низький (рішення або в силі, або superseded — у будь-якому випадку statement у заголовку). Але **hygiene-сигнал** для зовнішніх читачів був би плюсом.
+**Original concern:** ~40 ADR (з 53) не мали явного `Last validated:` маркера. Freshness-gate захищає tracked docs (initiatives, launch, governance, tech-debt, app AGENTS.md) — там покриття 100%; для ADR `Last validated` був opt-in.
 
-**Suggested home:** docs-hygiene наступний прохід (D4 — масовий додаток `Last validated: <дата прийняття>` у топ-секцію кожного ADR без header-а).
+**Resolution:** масовий backfill `Last validated:` у топ-секцію кожного ADR без header-а через `scripts/docs/backfill-adr-freshness.mjs` (вставка після `- **Status:**` рядка). Подальших дій не потрібно.
 
 ## Strengths (для onboarding)
 
@@ -169,22 +169,24 @@ pnpm docs:check-links
 
 Окремий runner (Claude Opus 4.7) пройшов по open-tracker-ах паралельно з synthesis-аудитом і відкрив пакет PR-ів, що закривають конкретні pr-plan-card-и + cleanup-items з §[Truly outstanding](#truly-outstanding):
 
-| Tracker                                                                  | Scope                                                                                                              | PR                                                                                  |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| `pr-plan-mobile-reliability-2026-05.md` PR-02 — M4 finyk × 2             | drop `as unknown as` у `CategoryChartSection.tsx` + `TransactionsPage.tsx`, 2 allowlist rows                       | merged via [#2877](https://github.com/Skords-01/Sergeant/pull/2877)                 |
-| `pr-plan-mobile-reliability-2026-05.md` PR-03 — M3 fizruk × 4            | journal selectors widened (`WorkoutSummaryInput`/`WorkoutForJournal`), `lib/toDomain.ts` adapter, 4 allowlist rows | open [#2891](https://github.com/Skords-01/Sergeant/pull/2891)                       |
-| `pr-plan-ftux-2026-05.md` PR-A — celebration_shown payload               | додано `tipVariant` + `ctaLabel` keys у PostHog event + 2 vitest scenarios                                         | open [#2892](https://github.com/Skords-01/Sergeant/pull/2892)                       |
-| `pr-plan-mobile-reliability-2026-05.md` PR-10 — shell-tax `--trend`      | 30/60/90d quarterly table + initiative 0002 recount row                                                            | open [#2893](https://github.com/Skords-01/Sergeant/pull/2893)                       |
-| README hero placeholder                                                  | neutralized `PR-02b` posthumous reference                                                                          | open [#2894](https://github.com/Skords-01/Sergeant/pull/2894)                       |
-| `pr-plan-backend-perf-2026-05.md` PR-12 — audit stubs                    | `2026-08-XX-sync-engine-roast.md` + `2026-08-XX-openclaw-internal-roast.md` + index                                | open [#2895](https://github.com/Skords-01/Sergeant/pull/2895)                       |
-| §[Truly outstanding](#truly-outstanding) D1 — Stripe webhook e2e         | route-level supertest + 8 scenarios                                                                                | open ([#2872](https://github.com/Skords-01/Sergeant/pull/2872) — попередній прохід) |
-| §[Truly outstanding](#truly-outstanding) D3 — `VOYAGE_API_KEY` fail-loud | startup guard + 7 tests у `assertStartupEnv`                                                                       | closed (local diff; verified 2026-05-17)                                            |
-| §[Truly outstanding](#truly-outstanding) D4 — ADR freshness backfill     | codemod + 43 ADR з `Last validated` markers                                                                        | open ([#2874](https://github.com/Skords-01/Sergeant/pull/2874) — попередній прохід) |
+| Tracker                                                                  | Scope                                                                                                              | PR                                                                                   |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `pr-plan-mobile-reliability-2026-05.md` PR-02 — M4 finyk × 2             | drop `as unknown as` у `CategoryChartSection.tsx` + `TransactionsPage.tsx`, 2 allowlist rows                       | merged via [#2877](https://github.com/Skords-01/Sergeant/pull/2877)                  |
+| `pr-plan-mobile-reliability-2026-05.md` PR-03 — M3 fizruk × 4            | journal selectors widened (`WorkoutSummaryInput`/`WorkoutForJournal`), `lib/toDomain.ts` adapter, 4 allowlist rows | open [#2891](https://github.com/Skords-01/Sergeant/pull/2891)                        |
+| `pr-plan-ftux-2026-05.md` PR-A — celebration_shown payload               | додано `tipVariant` + `ctaLabel` keys у PostHog event + 2 vitest scenarios                                         | open [#2892](https://github.com/Skords-01/Sergeant/pull/2892)                        |
+| `pr-plan-mobile-reliability-2026-05.md` PR-10 — shell-tax `--trend`      | 30/60/90d quarterly table + initiative 0002 recount row                                                            | open [#2893](https://github.com/Skords-01/Sergeant/pull/2893)                        |
+| README hero placeholder                                                  | neutralized `PR-02b` posthumous reference                                                                          | open [#2894](https://github.com/Skords-01/Sergeant/pull/2894)                        |
+| `pr-plan-backend-perf-2026-05.md` PR-12 — audit stubs                    | `2026-08-XX-sync-engine-roast.md` + `2026-08-XX-openclaw-internal-roast.md` + index                                | open [#2895](https://github.com/Skords-01/Sergeant/pull/2895)                        |
+| §[Truly outstanding](#truly-outstanding) D1 — Stripe webhook e2e         | route-level supertest + 8 scenarios                                                                                | merged ([#2872](https://github.com/Skords-01/Sergeant/pull/2872); closed 2026-06-03) |
+| §[Truly outstanding](#truly-outstanding) D3 — `VOYAGE_API_KEY` fail-loud | startup guard + 7 tests у `assertStartupEnv`                                                                       | closed (local diff; verified 2026-05-17)                                             |
+| §[Truly outstanding](#truly-outstanding) D4 — ADR freshness backfill     | codemod + усі ADR з `Last validated` markers                                                                       | merged ([#2874](https://github.com/Skords-01/Sergeant/pull/2874); closed 2026-06-03) |
 
-**Що залишається у §[Truly outstanding](#truly-outstanding):**
+**Що залишається у §[Truly outstanding](#truly-outstanding):** нічого — **0 outstanding** станом на 2026-06-03.
 
-- D2 (Stryker removal decision-record) — ✅ Closed 2026-05-16 у branch `claude/identify-critical-issues-3IgIx` (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)). Drop з outstanding-list виконано.
-- D1/D4 — PR-и open; чекають merge. D3 лишається закритим локальним diff-ом; перебудувати таблицю на наступному циклі.
+- D2 (Stryker removal decision-record) — ✅ Closed 2026-05-16 у branch `claude/identify-critical-issues-3IgIx` (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)).
+- D1 (Stripe webhook e2e) — ✅ Closed 2026-06-03: PR [#2872](https://github.com/Skords-01/Sergeant/pull/2872) merged; `apps/server/src/routes/billing.webhook.test.ts` (8 сценаріїв) у main.
+- D4 (ADR freshness backfill) — ✅ Closed 2026-06-03: PR [#2874](https://github.com/Skords-01/Sergeant/pull/2874) merged; `scripts/docs/backfill-adr-freshness.mjs` у main, усі ADR мають `Last validated`.
+- D3 (`VOYAGE_API_KEY` fail-loud) — ✅ Closed (local diff, verified 2026-05-17).
 
 **Cleanup item (synthesis non-tracked):** CONTRIBUTING.md Monobank fallback note — **false positive** (README не позначає Monobank webhook як deprecated; CONTRIBUTING.md не має згадок взагалі — нема чого додавати).
 

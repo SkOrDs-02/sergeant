@@ -61,14 +61,26 @@ export default defineConfig({
         //   surfaces, not in `sw/**` itself. SW is now treated as
         //   e2e-only territory (covered by `tests/a11y/sw-smoke.spec.ts`).
         //
+        // - 2026-06-03 (audit `2026-05-13-testing-devx-roast.md` §P1-6
+        //   closeout): landed module unit suites for the thin
+        //   finyk/fizruk/nutrition slices the drift log called out —
+        //   `finyk/lib/__tests__/upcomingSchedule`,
+        //   `fizruk/lib/__tests__/exerciseProgress`,
+        //   `nutrition/lib/__tests__/nutritionStats` (pure date / stats /
+        //   progress aggregation helpers). Net coverage only moves up, so
+        //   ratchet the floors a modest +1pp toward the audit target
+        //   (lines ≥ 50 long-term): 39 / 32 / 29 / 38. Headroom kept so a
+        //   throttled CI run can't dip under; raise again as the next
+        //   module slices land.
+        //
         // Floors set ~2pp below current actuals — same pattern as
         // `apps/server/vitest.config.ts`. Raise per sprint as the idb /
         // shared-lib-ui tests land (see docs/testing/2026-05-05-tests-
         // pr-plan.md → PR-T03 / PR-T04).
-        lines: 38,
-        branches: 31,
-        functions: 28,
-        statements: 37,
+        lines: 39,
+        branches: 32,
+        functions: 29,
+        statements: 38,
       },
     },
   },

@@ -78,6 +78,7 @@ function BarChart({
     <div>
       {selected !== null && (
         <div className="text-style-caption text-center text-text mb-1 h-4">
+          {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
           {formatTooltip(dates[selected]!, vals[selected]!)}
         </div>
       )}
@@ -198,6 +199,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
 
   const { cur, prev, dates } = useMemo(() => {
     const nutritionLog = safeReadLS(
+      // eslint-disable-next-line sergeant-design/no-raw-storage-key
       "nutrition_log_v1",
       {},
     ) as NutritionLog | null;

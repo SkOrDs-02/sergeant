@@ -1,6 +1,7 @@
 import { useId, useRef, type CSSProperties, type ReactNode } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useSwipeToDismiss } from "@shared/hooks/useSwipeToDismiss";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -33,6 +34,7 @@ export function ModuleSettingsDrawer({
   const titleId = useId();
 
   useDialogFocusTrap(open, panelRef, { onEscape: onClose });
+  useBodyScrollLock(open);
 
   // Right-side drawers dismiss with a rightward swipe — opposite of
   // bottom sheets but the same useSwipeToDismiss primitive. We bind

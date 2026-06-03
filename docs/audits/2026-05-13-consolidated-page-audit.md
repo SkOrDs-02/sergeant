@@ -63,10 +63,12 @@ Eight high-severity findings ride on the same root cause: derived day/week keys 
 
 ### Theme 2 — Touch targets below 44×44 px (WCAG 2.5.5 / Apple HIG)
 
+> **CI gate landed 2026-06-03 (audits-runner execute):** ESLint rule `sergeant-design/no-small-button-touch-target` added to `packages/eslint-plugin-sergeant-design/index.js` and enabled as `warn` in `eslint.config.js` for `apps/web/src/**` and `apps/mobile/src/**`. Rule flags any raw `<button>` with `h-1..h-10` / `size-1..size-10` classes that lacks a compensator (`min-h-[44px]`, `min-w-[44px]`, `touch-target`, `pointer-coarse:min-h-[44px]`). 13 unit tests pass. Per-finding status: 02 F4 closed (prev/next buttons migrated to `Button` primitive in a prior sprint). Remaining individual findings (01 F8, 03 F6, 05 F5, 08 F4, 06 Atlas) still open — rule will surface them in lint output as warnings for incremental burn-down.
+
 Six high-severity findings + ~12 medium ones describe inline `<button>` elements with 24–32 px hit areas across FTUX, hub-chat drawer, analytics nav, pantry rows.
 
 - 01 F8 (touch-target collapse on 5 FTUX surfaces — DailyNudge / DemoModeBanner / SoftAuthPromptCard / ReEngagementCard / FirstRunHintBanner).
-- 02 F4 (period prev/next nav).
+- 02 F4 (period prev/next nav). ✅ Closed 2026-06-03.
 - 03 F6 (HubChatHistoryDrawer close/delete).
 - 05 F5 (Finyk analytics month-nav).
 - 08 F4 (Nutrition pantry ItemRow delete).
@@ -89,6 +91,8 @@ Twelve high-severity findings around invented tokens (`text-error` is dropped si
 
 ### Theme 4 — Hard Rule #10 (lifecycle markers) systemically missing
 
+> **CI gate landed 2026-06-03 (audits-runner execute):** Created `scripts/docs/check-lifecycle-markers.mjs` — scans `apps/web/src/**/*.{ts,tsx}` (excluding test/story/generated/i18n files) for `@status`, `Status:`, `Last validated:`, `**Last validated:**`, or `**Status:**` markers. Added `lint:lifecycle-markers` npm script to `package.json`. Added non-blocking CI step in `.github/workflows/ci.yml` (`continue-on-error: true`). Gate is advisory (non-blocking) until marker coverage reaches a threshold suitable for `--fail-on-violations`. Bulk marker migration deferred — too many files for a single sweep; to be done per-PR as files are touched.
+
 Every audit scope reports the same finding: the vast majority of files have no `> **Last validated:**` / `> **Status:**` header. The lint exists (`scripts/check-lifecycle-markers.mjs`) but is not on the pre-commit/PR-gate matrix.
 
 - 06 F1, 08 F6 explicitly call it out as scope-wide; the other 7 audits list per-file occurrences.
@@ -97,12 +101,16 @@ Every audit scope reports the same finding: the vast majority of files have no `
 
 ### Theme 5 — Hard Rule #2 (RQ keys via factories) — multiple inline `queryKey: [...]` and raw localStorage strings
 
+> **Lint gate landed 2026-06-03 (audits-runner execute):** ESLint rule `sergeant-design/no-raw-storage-key` added to `packages/eslint-plugin-sergeant-design/index.js` and enabled as `warn` for `apps/web/src/**` and `apps/mobile/src/**`. Rule flags raw LS key string literals in storage helper calls. 16 unit tests pass. Inline `queryKey: [...]` is already blocked at `error` level by `rq-keys-only-from-factory` (pre-existing rule). Remaining raw key literals in hub/core files (`ExpensesCard.tsx`, `RoutineCard.tsx`, `NutritionCard.tsx`, `search/searchSources.ts`) suppressed with `eslint-disable-next-line` because replacing them with `STORAGE_KEYS.*` triggers retirement guards (`no-restricted-syntax`) in hub-layer files — documented as architectural constraint; these four suppressions are the burn-down tracker.
+
 - 02 F1: HubReports duplicates hardcoded LS keys (`fizruk_workouts_v1`, `finyk_tx_cache`, `hub_routine_v1`, `nutrition_log_v1`) instead of `STORAGE_KEYS`; same duplication exists in `useFinykHubPreview.ts:20`.
 - 05 (several medium findings): inline `queryKey: ["finyk", "transactions"]` instead of `finykKeys.transactions()`.
 
 **Fix:** ESLint custom rule `sergeant-design/no-inline-query-key` + `no-raw-storage-key`; codemod that swaps known string literals to `STORAGE_KEYS.*` and `xKeys.*()` calls.
 
 ### Theme 6 — `noUncheckedIndexedAccess` bypassed via non-null assertions (Hard Rule #19)
+
+> **Lint gate + partial fix landed 2026-06-03 (audits-runner execute):** ESLint rule `@typescript-eslint/no-non-null-assertion` enabled as `warn` for `apps/web/src/**` (96 production violations exist — too many to zero out in one pass; `error` will be set once count reaches 0). Four documented Fizruk offenders fixed: `ExerciseProgressChart.tsx` (2 non-null assertions on `mapped[]` replaced with safe guards), `WeeklyVolumeChart.tsx` (2 non-null assertions on `points[]` replaced), `WorkoutTemplatesSection.tsx` (`snapshot.template!.name!` → `snapshot.template?.name ?? ""`), `Measurements.tsx` (`deltas[f.id]!.toFixed(1)` → IIFE with null check).
 
 - 06 F4 (Fizruk Part 1): `history[0]!.workout?.id`, `new Date(y!, mo! - 1, …)`, `next[idx]!`.
 - 07 F6 (Fizruk Part 2): Program startSession uses `sessionKey!` on a possibly-missing key.

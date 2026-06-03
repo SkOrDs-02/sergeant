@@ -1,20 +1,24 @@
+import { useState } from "react";
+import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
-import type { ToastApi } from "@shared/hooks/useToast";
+import { useApiForm } from "@shared/forms/useApiForm";
 import { messages } from "@shared/i18n/uk";
 
+const tokenSchema = z.object({
+  token: z.string().trim().min(1, "Введіть токен Monobank API"),
+});
+type TokenValues = z.infer<typeof tokenSchema>;
+
 export interface FinykLoginScreenProps {
-  tokenInput: string;
-  onTokenInputChange: (value: string) => void;
-  showToken: boolean;
-  onToggleShowToken: () => void;
+  showToken?: boolean;
   authError: string | null;
   error: string | null;
   connecting: boolean;
-  onConnect: () => void;
+  /** Called with the trimmed validated token when the form is submitted. */
+  onConnect: (token: string) => void;
   onContinueWithoutBank: () => void;
-  toast: ToastApi;
   onBackToHub?: () => void;
   /** Override the back-button label. Defaults to "Назад до хабу" (top-level use). */
   backLabel?: string;
@@ -29,21 +33,44 @@ export interface FinykLoginScreenProps {
  * server-side via the Monobank webhook flow — there is no longer a
  * "remember on this device" checkbox because tokens are never persisted in
  * the browser after the legacy polling cleanup.
+ *
+ * F7 (2026-06-03): migrated from manual `tokenInput` / `onTokenInputChange`
+ * prop-drilling to `useApiForm` (zod resolver). `onConnect` now receives the
+ * validated token string; callers no longer need to track the input value.
  */
 export function FinykLoginScreen({
-  tokenInput,
-  onTokenInputChange,
-  showToken,
-  onToggleShowToken,
   authError,
   error,
   connecting,
   onConnect,
   onContinueWithoutBank,
-  toast,
   onBackToHub,
   backLabel = "Назад до хабу",
 }: FinykLoginScreenProps) {
+  const [showTokenVisible, setShowTokenVisible] = useState(false);
+
+  const {
+    register,
+    submit,
+    watch,
+    setValue,
+    formState,
+    isSubmitting,
+    serverError,
+  } = useApiForm<TokenValues>({
+    schema: tokenSchema,
+    defaultValues: { token: "" },
+    onSubmit: async (values) => {
+      // Pass the validated + trimmed token up to the parent. The parent
+      // calls `connect(token)` which is async; we do not await it here so
+      // the parent's `connecting` prop drives the loading state below.
+      onConnect(values.token);
+    },
+    formOptions: { mode: "onTouched" },
+  });
+
+  const tokenValue = watch("token") ?? "";
+
   return (
     <div className="min-h-dvh flex items-center justify-center p-5 bg-bg safe-area-pt-pb">
       <div className="w-full max-w-sm">
@@ -80,7 +107,9 @@ export function FinykLoginScreen({
           </p>
         </div>
 
-        <div
+        <form
+          onSubmit={submit}
+          noValidate
           className={cn(
             "bg-panel/95 backdrop-blur-xl border rounded-3xl p-6 shadow-float",
             "border-line dark:border-line",
@@ -99,12 +128,14 @@ export function FinykLoginScreen({
             <Input
               id="finyk-mono-token"
               className="pr-20"
-              type={showToken ? "text" : "password"}
+              type={showTokenVisible ? "text" : "password"}
               placeholder="Вставте токен Mono API"
-              value={tokenInput}
-              onChange={(e) => onTokenInputChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onConnect()}
               autoComplete="off"
+              aria-invalid={!!formState.errors.token}
+              aria-describedby={
+                formState.errors.token ? "finyk-token-error" : undefined
+              }
+              {...register("token")}
             />
             <Button
               type="button"
@@ -115,11 +146,17 @@ export function FinykLoginScreen({
               title="Вставити з буфера"
               onClick={async () => {
                 try {
-                  onTokenInputChange(
-                    (await navigator.clipboard.readText()).trim(),
-                  );
+                  const text = (await navigator.clipboard.readText()).trim();
+                  // Use RHF setValue so the form's internal state + validation
+                  // are updated alongside the DOM input value.
+                  setValue("token", text, {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  });
                 } catch {
-                  toast.error("Не вдалось прочитати буфер обміну");
+                  // Clipboard read can fail on permissions or in test envs.
+                  // The user can still paste manually.
                 }
               }}
             >
@@ -143,10 +180,12 @@ export function FinykLoginScreen({
               size="sm"
               variant="ghost"
               className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 border-0"
-              aria-label={showToken ? "Приховати токен" : "Показати токен"}
-              onClick={onToggleShowToken}
+              aria-label={
+                showTokenVisible ? "Приховати токен" : "Показати токен"
+              }
+              onClick={() => setShowTokenVisible((v) => !v)}
             >
-              {showToken ? (
+              {showTokenVisible ? (
                 <svg
                   width="16"
                   height="16"
@@ -180,6 +219,16 @@ export function FinykLoginScreen({
             </Button>
           </div>
 
+          {formState.errors.token && (
+            <p
+              id="finyk-token-error"
+              className="mt-1.5 text-xs text-danger-strong"
+              role="alert"
+            >
+              {formState.errors.token.message}
+            </p>
+          )}
+
           <p className="text-xs text-subtle mt-2">
             Токен відправляється на сервер і не зберігається у браузері.
           </p>
@@ -195,14 +244,18 @@ export function FinykLoginScreen({
               </p>
             </div>
           )}
-          {error && !authError && (
-            <p className="mt-3 text-sm text-danger bg-danger/10 rounded-xl px-3 py-2">
-              {error}
+          {/* Server-level error (from useApiForm) or parent-provided error */}
+          {(serverError || (error && !authError)) && (
+            <p
+              className="mt-3 text-sm text-danger bg-danger/10 rounded-xl px-3 py-2"
+              role="alert"
+            >
+              {serverError ?? error}
             </p>
           )}
 
           <Button
-            type="button"
+            type="submit"
             className={cn(
               "mt-4 w-full h-12 min-h-[48px] text-base border-0",
               "bg-linear-to-r from-brand-600 to-brand-700",
@@ -212,10 +265,9 @@ export function FinykLoginScreen({
               "transition-[background-color,box-shadow,opacity,transform] duration-200",
               "active:scale-[0.98]",
             )}
-            onClick={onConnect}
-            disabled={connecting || !tokenInput.trim()}
+            disabled={connecting || isSubmitting || !tokenValue.trim()}
           >
-            {connecting
+            {connecting || isSubmitting
               ? messages.loadingActions.connecting
               : "Підключити Monobank"}
           </Button>
@@ -267,7 +319,7 @@ export function FinykLoginScreen({
             </svg>
             Токен зберігається лише у твоєму браузері
           </p>
-        </div>
+        </form>
       </div>
     </div>
   );

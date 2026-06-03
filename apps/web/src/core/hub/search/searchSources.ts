@@ -28,6 +28,7 @@ interface FinykSub {
 function searchFinyk(tokens: string[]): Hit[] {
   const results: Hit[] = [];
 
+  // eslint-disable-next-line sergeant-design/no-raw-storage-key
   const txList = safeParseLS<FinykTx[]>("finyk_tx_cache", []);
   if (Array.isArray(txList)) {
     for (const tx of txList) {
@@ -53,6 +54,7 @@ function searchFinyk(tokens: string[]): Hit[] {
     }
   }
 
+  // eslint-disable-next-line sergeant-design/no-raw-storage-key
   const subs = safeParseLS<FinykSub[]>("finyk_subs", []);
   if (Array.isArray(subs)) {
     for (const s of subs) {
@@ -135,6 +137,7 @@ function searchFizruk(tokens: string[]): Hit[] {
   }
 
   const workouts = parseFizrukWorkouts(
+    // eslint-disable-next-line sergeant-design/no-raw-storage-key
     safeReadStringLS("fizruk_workouts_v1", null),
   );
   for (const w of workouts) {
@@ -176,6 +179,7 @@ function searchFizruk(tokens: string[]): Hit[] {
   }
 
   const exercises = parseFizrukCustomExercises(
+    // eslint-disable-next-line sergeant-design/no-raw-storage-key
     safeReadStringLS("fizruk_custom_exercises_v1", null),
   );
   for (const e of exercises) {
@@ -216,6 +220,7 @@ interface RoutineState {
 
 function searchRoutine(tokens: string[]): Hit[] {
   const results: Hit[] = [];
+  // eslint-disable-next-line sergeant-design/no-raw-storage-key
   const state = safeParseLS<RoutineState | null>("hub_routine_v1", null);
   if (!state) return results;
 
@@ -260,6 +265,7 @@ type NutritionLog = Record<string, NutritionDayLog>;
 function searchNutrition(tokens: string[]): Hit[] {
   const results: Hit[] = [];
   const seen = new Set<string>();
+  // eslint-disable-next-line sergeant-design/no-raw-storage-key
   const log = safeParseLS<NutritionLog>("nutrition_log_v1", {});
   const dates = Object.keys(log).sort().reverse();
 

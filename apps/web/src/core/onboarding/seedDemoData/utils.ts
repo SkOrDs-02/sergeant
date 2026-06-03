@@ -1,4 +1,5 @@
-import { safeWriteLS, safeRemoveLS } from "@shared/lib/storage/storage";
+/* eslint-disable sergeant-design/prefer-kyiv-time -- demo-seed date helpers (dateKey/daysAgo) intentionally use host-local dates to match nutrition/routine local persistence; not domain day-boundary logic. */
+import { safeWriteLS } from "@shared/lib/storage/storage";
 
 export function writeJSON(key: string, value: unknown): void {
   safeWriteLS(key, value);
@@ -6,10 +7,6 @@ export function writeJSON(key: string, value: unknown): void {
 
 export function writeRaw(key: string, value: string): void {
   safeWriteLS(key, value);
-}
-
-export function removeKey(key: string): void {
-  safeRemoveLS(key);
 }
 
 export function toISO(d: Date): string {

@@ -49,10 +49,6 @@ export function setActiveUserKey(key: string | null): void {
   activeUserKey = key && key.length > 0 ? key : "anon";
 }
 
-export function getActiveUserKey(): string {
-  return activeUserKey;
-}
-
 const PARTITION_PARAM = "__u";
 
 /**

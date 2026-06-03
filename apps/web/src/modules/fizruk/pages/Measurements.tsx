@@ -257,17 +257,20 @@ export function Measurements() {
                       : "—"}{" "}
                     {f.unit}
                   </div>
-                  {deltas[f.id] != null && (
-                    <div
-                      className={cn(
-                        "text-style-caption mt-1",
-                        deltas[f.id]! > 0 ? "text-warning" : "text-success",
-                      )}
-                    >
-                      {deltas[f.id]! > 0 ? "+" : ""}
-                      {deltas[f.id]!.toFixed(1)} {f.unit}
-                    </div>
-                  )}
+                  {(() => {
+                    const delta = deltas[f.id];
+                    return delta != null ? (
+                      <div
+                        className={cn(
+                          "text-style-caption mt-1",
+                          delta > 0 ? "text-warning" : "text-success",
+                        )}
+                      >
+                        {delta > 0 ? "+" : ""}
+                        {delta.toFixed(1)} {f.unit}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               ))}
             </div>

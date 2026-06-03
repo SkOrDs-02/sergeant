@@ -79,6 +79,7 @@ function BarChart({
     <div>
       {selected !== null && (
         <div className="text-style-caption text-center text-text mb-1 h-4">
+          {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
           {formatTooltip(dates[selected]!, vals[selected]!)}
         </div>
       )}
@@ -198,6 +199,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   const bump = useHubStorageBump();
 
   const { cur, prev, dates } = useMemo(() => {
+    // eslint-disable-next-line sergeant-design/no-raw-storage-key
     const raw = safeReadLS("finyk_tx_cache", null) as
       | { txs?: unknown[] }
       | unknown[]

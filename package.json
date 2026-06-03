@@ -36,6 +36,7 @@
     "ops:n8n:validate": "node scripts/n8n/validate-n8n-workflows.mjs",
     "n8n:import": "node scripts/n8n/n8n-workflows.mjs import",
     "n8n:export": "node scripts/n8n/n8n-workflows.mjs export",
+    "lint:lifecycle-markers": "node scripts/docs/check-lifecycle-markers.mjs",
     "lint:tech-debt-freshness": "node scripts/check-tech-debt-freshness.mjs",
     "lint:initiative-status-sync": "node scripts/check-initiative-status-sync.mjs",
     "lint:initiative-agent-ready": "node scripts/docs/lint-initiative-agent-ready.mjs",

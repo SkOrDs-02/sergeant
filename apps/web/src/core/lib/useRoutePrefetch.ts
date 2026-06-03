@@ -243,13 +243,6 @@ export function getPagePrefetchProps(page: PageKey) {
   };
 }
 
-/**
- * Check if a chunk is already prefetched
- */
-export function isModulePrefetched(module: ModuleKey): boolean {
-  return prefetchedChunks.has(`module:${module}`);
-}
-
 export function isPagePrefetched(page: PageKey): boolean {
   return prefetchedChunks.has(`page:${page}`);
 }
