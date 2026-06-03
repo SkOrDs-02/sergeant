@@ -1,6 +1,10 @@
 import { test as setup, expect } from "@playwright/test";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+// Re-exported for backward compatibility with any importer that referenced
+// it here; the canonical home is `./authState` (side-effect-free, so the
+// Playwright config can import the path without loading this test file).
+import { HUB_USER_AUTH_STATE } from "./authState";
+
+export { HUB_USER_AUTH_STATE };
 
 /**
  * Playwright setup project — signs up a single Better Auth test user once
@@ -21,9 +25,6 @@ import { fileURLToPath } from "node:url";
  * `auth.spec.ts` is unchanged — it still does its own per-test signup
  * because the assertion target IS the signup flow, not the hub.
  */
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-export const HUB_USER_AUTH_STATE = join(__dirname, ".auth/hub-user.json");
 
 setup("authenticate hub user", async ({ page }) => {
   // Deterministic email per run (CI artifact persistence is bounded; we

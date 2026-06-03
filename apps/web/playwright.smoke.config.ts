@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { HUB_USER_AUTH_STATE } from "./tests/smoke/auth.setup";
+import { HUB_USER_AUTH_STATE } from "./tests/smoke/authState";
 
 /**
  * Smoke E2E config (separate from the a11y lane).
@@ -17,19 +17,57 @@ import { HUB_USER_AUTH_STATE } from "./tests/smoke/auth.setup";
  * visit `/` or `/?module=…` (e.g. `bottom-nav.spec.ts`) start from an
  * authenticated session instead of being redirected to /sign-in.
  *
+ * The auth-state path lives in the side-effect-free `tests/smoke/authState.ts`
+ * (NOT `auth.setup.ts`): this config imports the constant, and a config must
+ * never import a module that calls `test()`/`setup()` at load time.
+ *
  * `auth.spec.ts` and `auth-webkit.spec.ts` are deliberately unaffected
  * — they target the signup flow itself, so re-using a session would
  * defeat the assertion.
+ *
+ * Note: env vars are read via bracket notation (`process.env["CI"]`) to
+ * satisfy `noPropertyAccessFromIndexSignature`/`exactOptionalPropertyTypes`
+ * when this config is type-checked in isolation (pre-commit staged-typecheck).
  */
+const isCI = !!process.env["CI"];
+
+const webServer = process.env["PW_SKIP_WEBSERVER"]
+  ? undefined
+  : {
+      // Keep `@sergeant/server dev` in background and
+      // leave `web preview` in foreground for Playwright to manage.
+      command: "node ./tests/smoke/start-smoke-webserver.mjs",
+      url: "http://127.0.0.1:4173",
+      reuseExistingServer: !isCI,
+      timeout: 240_000,
+      stdout: "pipe" as const,
+      stderr: "pipe" as const,
+      env: {
+        ...process.env,
+        DATABASE_URL:
+          process.env["DATABASE_URL"] ||
+          "postgresql://hub:hub@127.0.0.1:5432/hub",
+        BETTER_AUTH_SECRET:
+          process.env["BETTER_AUTH_SECRET"] ||
+          // 32+ chars, deterministic but non-production.
+          "smoke_test_better_auth_secret_32_chars_min",
+        AI_QUOTA_DISABLED: process.env["AI_QUOTA_DISABLED"] || "1",
+        VITE_API_BASE_URL:
+          process.env["VITE_API_BASE_URL"] || "http://127.0.0.1:3000",
+        ALLOWED_ORIGINS:
+          process.env["ALLOWED_ORIGINS"] || "http://127.0.0.1:4173",
+      },
+    };
+
 export default defineConfig({
   testDir: "./tests/smoke",
   fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  forbidOnly: isCI,
+  retries: isCI ? 1 : 0,
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: process.env.PW_BASE_URL || "http://127.0.0.1:4173",
+    baseURL: process.env["PW_BASE_URL"] || "http://127.0.0.1:4173",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
@@ -70,31 +108,5 @@ export default defineConfig({
       dependencies: ["setup"],
     },
   ],
-  webServer: process.env.PW_SKIP_WEBSERVER
-    ? undefined
-    : {
-        // Keep `@sergeant/server dev` in background and
-        // leave `web preview` in foreground for Playwright to manage.
-        command: "node ./tests/smoke/start-smoke-webserver.mjs",
-        url: "http://127.0.0.1:4173",
-        reuseExistingServer: !process.env.CI,
-        timeout: 240_000,
-        stdout: "pipe",
-        stderr: "pipe",
-        env: {
-          ...process.env,
-          DATABASE_URL:
-            process.env.DATABASE_URL ||
-            "postgresql://hub:hub@127.0.0.1:5432/hub",
-          BETTER_AUTH_SECRET:
-            process.env.BETTER_AUTH_SECRET ||
-            // 32+ chars, deterministic but non-production.
-            "smoke_test_better_auth_secret_32_chars_min",
-          AI_QUOTA_DISABLED: process.env.AI_QUOTA_DISABLED || "1",
-          VITE_API_BASE_URL:
-            process.env.VITE_API_BASE_URL || "http://127.0.0.1:3000",
-          ALLOWED_ORIGINS:
-            process.env.ALLOWED_ORIGINS || "http://127.0.0.1:4173",
-        },
-      },
+  ...(webServer ? { webServer } : {}),
 });
