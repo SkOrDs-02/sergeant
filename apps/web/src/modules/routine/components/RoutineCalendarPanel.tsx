@@ -267,7 +267,7 @@ export function RoutineCalendarPanel({
           aria-pressed={tagFilter === null}
           onClick={() => setTagFilter(null)}
           className={cn(
-            "text-style-caption px-2.5 py-1.5 rounded-full border",
+            "text-style-caption px-2.5 py-1.5 rounded-full border min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             tagFilter === null ? C.chipOn : C.chipOff,
           )}
         >
@@ -281,7 +281,7 @@ export function RoutineCalendarPanel({
               setTagFilter((f) => (f === "__fizruk" ? null : "__fizruk"))
             }
             className={cn(
-              "text-style-caption px-2.5 py-1.5 rounded-full border",
+              "text-style-caption px-2.5 py-1.5 rounded-full border min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               tagFilter === "__fizruk"
                 ? "border-info/50 bg-info/10 text-text"
                 : C.chipOff,
@@ -298,7 +298,7 @@ export function RoutineCalendarPanel({
               setTagFilter((f) => (f === "__finyk_sub" ? null : "__finyk_sub"))
             }
             className={cn(
-              "text-style-caption px-2.5 py-1.5 rounded-full border max-w-[200px] truncate",
+              "text-style-caption px-2.5 py-1.5 rounded-full border max-w-[200px] truncate min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               tagFilter === "__finyk_sub"
                 ? "border-success/40 bg-success/10 text-text"
                 : C.chipOff,
@@ -314,7 +314,7 @@ export function RoutineCalendarPanel({
             aria-pressed={tagFilter === name}
             onClick={() => setTagFilter((f) => (f === name ? null : name))}
             className={cn(
-              "text-style-caption px-2.5 py-1.5 rounded-full border max-w-[160px] truncate",
+              "text-style-caption px-2.5 py-1.5 rounded-full border max-w-[160px] truncate min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               tagFilter === name ? C.chipOn : C.chipOff,
             )}
           >

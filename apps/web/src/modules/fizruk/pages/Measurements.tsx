@@ -31,6 +31,13 @@ const measurementSchema = z.object(
 const inp =
   "input-focus-fizruk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text";
 
+// Field-caption styling for the measurements grid. This is a genuine form
+// <label> (htmlFor/id bound below), not a narrative eyebrow, so the
+// uppercase + tracking combo is intentional here.
+const lbl =
+  // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- genuine form <label> field caption, not a narrative eyebrow
+  "px-1 block text-xs uppercase tracking-wider font-bold text-fizruk-strong dark:text-fizruk/70";
+
 export function Measurements() {
   const { entries, addEntry, deleteEntry, restoreEntry } = useMeasurements();
   const toast = useToast();
@@ -75,9 +82,7 @@ export function Measurements() {
         })
       : "—";
     const filledLatest = latest
-      ? MEASURE_FIELDS.filter(
-          (f) => latest[f.id] != null && latest[f.id] !== "",
-        ).length
+      ? MEASURE_FIELDS.filter((f) => latest[f.id] != null).length
       : 0;
     return { total, latestAt, filledLatest };
   }, [entries, latest]);
@@ -150,15 +155,12 @@ export function Measurements() {
           <div className="grid grid-cols-2 gap-2">
             {MEASURE_FIELDS.map((f) => (
               <div key={f.id} className="space-y-1">
-                <SectionHeading
-                  as="div"
-                  size="xs"
-                  variant="fizruk"
-                  className="px-1"
-                >
+                {/* WCAG 1.3.1: explicit label association via htmlFor/id. */}
+                <label htmlFor={`measure-input-${f.id}`} className={lbl}>
                   {f.label} · {f.unit}
-                </SectionHeading>
+                </label>
                 <input
+                  id={`measure-input-${f.id}`}
                   className={inp}
                   type="number"
                   inputMode="decimal"
@@ -304,7 +306,7 @@ export function Measurements() {
                 </button>
               </div>
               <div className="text-xs text-subtle mt-1">
-                {MEASURE_FIELDS.filter((f) => e[f.id] != null && e[f.id] !== "")
+                {MEASURE_FIELDS.filter((f) => e[f.id] != null)
                   .slice(0, 4)
                   .map(
                     (f) =>

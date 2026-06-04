@@ -73,9 +73,20 @@ export function HubChatBody({
       ref={chatRef}
       onScroll={handleScroll}
       className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 min-h-0"
+      aria-busy={loading}
       aria-live="polite"
       aria-relevant="additions"
     >
+      {/* Visually-hidden live region for streaming status — announced to
+          screen readers without disrupting the message list region above. */}
+      <span
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {loading ? "Асистент відповідає…" : ""}
+      </span>
       {isEmpty && <ChatEmpty onPickSuggestion={onPickSuggestion} />}
       {messages.map((m) => (
         <ChatMessage key={m.id} message={m} onSpeak={onSpeak} />

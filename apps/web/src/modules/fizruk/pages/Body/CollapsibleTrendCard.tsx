@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
@@ -23,16 +23,29 @@ export function CollapsibleTrendCard({
   ariaLabel: string;
   children: ReactNode;
 }) {
+  const fullKey = TREND_STORAGE_PREFIX + storageKey;
   const [open, setOpen] = useState<boolean>(() => readTrendOpen(storageKey));
   const contentId = `trend-card-content-${storageKey}`;
+
+  // Sync open-state across tabs via the `storage` event. When the same key is
+  // written in another tab the browser fires `storage` in all other tabs, so
+  // we update our local state to match without a round-trip through the server.
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key !== fullKey) return;
+      setOpen(e.newValue === "1");
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, [fullKey]);
 
   const toggle = useCallback(() => {
     setOpen((prev) => {
       const next = !prev;
-      safeWriteLS(TREND_STORAGE_PREFIX + storageKey, next ? "1" : "0");
+      safeWriteLS(fullKey, next ? "1" : "0");
       return next;
     });
-  }, [storageKey]);
+  }, [fullKey]);
 
   const deltaClass =
     delta == null || delta === 0

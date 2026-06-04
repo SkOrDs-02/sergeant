@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { cn } from "@shared/lib/ui/cn";
@@ -23,6 +23,17 @@ export function JournalSection({
     readPersistedOpen(JOURNAL_OPEN_STORAGE_KEY, true),
   );
   const contentId = "fizruk-body-journal-content";
+
+  // Sync open-state across tabs via the `storage` event so both tabs
+  // reflect the same collapsed/expanded state without a page reload.
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key !== JOURNAL_OPEN_STORAGE_KEY) return;
+      setOpen(e.newValue === "1");
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
 
   const toggle = useCallback(() => {
     setOpen((prev) => {

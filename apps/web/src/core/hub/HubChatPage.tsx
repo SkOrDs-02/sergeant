@@ -7,6 +7,11 @@ import {
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { PageLoader } from "../app/PageLoader";
 import { lazyDefault } from "../lib/lazyImport";
+import {
+  safeReadStringSS,
+  safeWriteSS,
+  safeRemoveSS,
+} from "@shared/lib/storage/storage";
 
 const HubChat = lazyDefault(() => import("./HubChat"));
 
@@ -54,25 +59,14 @@ export function HubChatPage() {
     if (navigationType !== "PUSH") {
       return;
     }
-    try {
-      window.sessionStorage.setItem(IN_APP_ENTRY_FLAG, "1");
-    } catch {
-      // sessionStorage can throw in private mode / sandboxed iframes;
-      // worst case we just fall back to `navigate('/')` on close.
-    }
+    // safeWriteSS never throws; swallows private-mode / quota errors.
+    safeWriteSS(IN_APP_ENTRY_FLAG, "1");
   }, [navigationType]);
 
   const handleClose = useCallback(() => {
-    let cameFromInApp = false;
-    try {
-      cameFromInApp = window.sessionStorage.getItem(IN_APP_ENTRY_FLAG) === "1";
-      if (cameFromInApp) {
-        window.sessionStorage.removeItem(IN_APP_ENTRY_FLAG);
-      }
-    } catch {
-      cameFromInApp = false;
-    }
+    const cameFromInApp = safeReadStringSS(IN_APP_ENTRY_FLAG) === "1";
     if (cameFromInApp) {
+      safeRemoveSS(IN_APP_ENTRY_FLAG);
       navigate(-1);
       return;
     }

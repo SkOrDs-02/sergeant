@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { AssistantMessageBody } from "@shared/components/AssistantMessageBody";
 import { cn } from "@shared/lib/ui/cn";
 import type { InlineAiState } from "./useInlineAiRail";
 
@@ -50,10 +51,16 @@ export function InlineAiRail({
   // Pull the answer block into the focus ring once it lands so screen
   // readers announce it without the user having to navigate back. We
   // only auto-focus on success/error; loading/aborted are transient.
+  // Guard: only focus when the relatedTarget (the previously-focused element)
+  // is still inside the rail — prevents stealing focus from the search input
+  // or other elements outside the rail when the answer arrives.
   const answerRef = useRef<HTMLDivElement | null>(null);
+  const focusWithinRef = useRef(false);
   useEffect(() => {
     if (state.status === "success" || state.status === "error") {
-      answerRef.current?.focus({ preventScroll: false });
+      if (focusWithinRef.current) {
+        answerRef.current?.focus({ preventScroll: false });
+      }
     }
   }, [state.status]);
 
@@ -66,6 +73,19 @@ export function InlineAiRail({
       className="px-3 sm:px-4 pt-2"
       role="region"
       aria-label="Inline-відповідь асистента"
+      onFocusCapture={() => {
+        focusWithinRef.current = true;
+      }}
+      onBlurCapture={(e) => {
+        // `relatedTarget` is the element receiving focus next.
+        // If it is still inside this rail we stay "focus-within"; if it
+        // has left the rail (or is null, meaning focus left the page) we
+        // clear the flag so the next answer-arrival does not steal focus.
+        const rail = e.currentTarget;
+        if (!rail.contains(e.relatedTarget as Node | null)) {
+          focusWithinRef.current = false;
+        }
+      }}
     >
       <Card
         variant="default"
@@ -135,12 +155,9 @@ export function InlineAiRail({
 
         {state.status === "success" && (
           <>
-            <p
-              className="text-sm text-text whitespace-pre-wrap leading-relaxed"
-              aria-live="polite"
-            >
-              {state.answer}
-            </p>
+            <div aria-live="polite">
+              <AssistantMessageBody text={state.answer} />
+            </div>
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <button
                 type="button"

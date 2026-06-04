@@ -22,14 +22,25 @@ vi.mock("../../lib/anthropic.js", () => ({
   ),
 }));
 
+vi.mock("../../obs/logger.js", () => ({
+  logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },
+}));
+
 import _pool from "../../db.js";
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import { coachInsight, coachMemoryGet, coachMemoryPost } from "./coach.js";
 import { MAX_BLOB_SIZE } from "./coach.js";
 import { ExternalServiceError } from "../../obs/errors.js";
+import { logger as _logger } from "../../obs/logger.js";
 
 const pool = _pool as unknown as { query: Mock };
 const anthropicMessages = _anthropicMessages as unknown as Mock;
+const logger = _logger as unknown as {
+  warn: Mock;
+  info: Mock;
+  error: Mock;
+  debug: Mock;
+};
 
 interface TestRes {
   statusCode: number;
@@ -293,6 +304,60 @@ describe("coachMemoryPost — mergeMemory logic (PR F)", () => {
       (d) => d.weekKey,
     );
     expect(keys[0]).toBe("2026-W01");
+  });
+});
+
+describe("coachMemoryGet — parseMemory raw-fallback warn", () => {
+  it("логує warn коли DB-рядок містить невалідний JSON рядок", async () => {
+    // Симулюємо рядок, що не є валідним JSON — наприклад, corrupted JSONB
+    // або рядок з правильним форматом, але без лапок навколо ключів.
+    pool.query.mockResolvedValueOnce({
+      rows: [{ data: "{ не валідний JSON {{" }],
+    });
+    const res = makeRes();
+    await coachMemoryGet(asReq({ user: { id: "user_warn" } }), res);
+
+    // Handler не впаде — повертає raw-значення як CoachMemory (fail-safe).
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({ ok: true });
+
+    // Warn-лог спрацював один раз.
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ msg: "coach_memory_parse_fallback" }),
+    );
+  });
+
+  it("не логує warn коли DB-рядок є валідним JSON рядком", async () => {
+    const memory = {
+      weeklyDigests: [],
+      lastInsightDate: null,
+      lastInsightText: null,
+    };
+    pool.query.mockResolvedValueOnce({
+      rows: [{ data: JSON.stringify(memory) }],
+    });
+    const res = makeRes();
+    await coachMemoryGet(asReq({ user: { id: "user_ok" } }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it("не логує warn коли data вже є об'єктом (JSONB автопарс pg-клієнта)", async () => {
+    const memory = {
+      weeklyDigests: [],
+      lastInsightDate: null,
+      lastInsightText: null,
+    };
+    pool.query.mockResolvedValueOnce({
+      rows: [{ data: memory }], // pg вже розпарсив JSONB у об'єкт
+    });
+    const res = makeRes();
+    await coachMemoryGet(asReq({ user: { id: "user_obj" } }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 });
 

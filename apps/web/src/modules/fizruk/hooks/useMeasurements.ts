@@ -27,6 +27,25 @@ export type MeasurementFieldId =
 export interface MeasurementEntry {
   id: string;
   at: string;
+  // Canonical measurement fields — all optional (a single entry may record
+  // only a subset of measurements).
+  weightKg?: number;
+  bodyFatPct?: number;
+  neckCm?: number;
+  chestCm?: number;
+  waistCm?: number;
+  hipsCm?: number;
+  bicepLCm?: number;
+  bicepRCm?: number;
+  forearmLCm?: number;
+  forearmRCm?: number;
+  thighLCm?: number;
+  thighRCm?: number;
+  calfLCm?: number;
+  calfRCm?: number;
+  // Index signature retained for structural compatibility with
+  // @sergeant/fizruk-domain MeasurementEntry (which the dual-write pipeline
+  // and sqlite reader rely on) and to allow runtime field access via f.id.
   [field: string]: number | string | undefined;
 }
 
@@ -94,8 +113,19 @@ export function useMeasurements() {
 
   const addEntry = useCallback(
     (entry: Partial<MeasurementEntry>): MeasurementEntry => {
+      // F3: strip any field whose value is NaN or outside the declared
+      // min/max bounds, so the dual-write pipeline can never receive
+      // out-of-range PII even when called programmatically.
+      const sanitised: Partial<MeasurementEntry> = {};
+      for (const f of MEASURE_FIELDS) {
+        const raw = entry[f.id as MeasurementFieldId];
+        if (raw == null) continue;
+        const n = typeof raw === "number" ? raw : Number(raw);
+        if (!Number.isFinite(n) || n < f.min || n > f.max) continue;
+        (sanitised as Record<string, number>)[f.id] = n;
+      }
       const e: MeasurementEntry = {
-        ...entry,
+        ...sanitised,
         id: uid(),
         at: new Date().toISOString(),
       };

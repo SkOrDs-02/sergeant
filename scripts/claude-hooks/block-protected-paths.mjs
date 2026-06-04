@@ -1,4 +1,17 @@
 #!/usr/bin/env node
+/**
+ * @scaffolded
+ * @owner @Skords-01
+ * @nextStep Add `scripts/claude-hooks/*.mjs` to knip's `entry` globs so the
+ *           settings.json-invoked hooks count as real entry points, then
+ *           delete this tag. See AGENTS.md → Hard Rule #10.
+ *
+ * Intentional zero-*importer* — this hook is invoked as a subprocess by
+ * `.claude/settings.json` (PreToolUse → `node scripts/claude-hooks/
+ * block-protected-paths.mjs`), never `import`ed, so knip reports no
+ * consumers. Do NOT delete as part of dead-code cleanup — see Hard
+ * Rule #10 in AGENTS.md.
+ */
 // PreToolUse hook: block Edit/Write/MultiEdit on protected files.
 // Reads JSON from stdin per Claude Code hooks API.
 // Exit 2 + stderr → block tool call and surface message to Claude.

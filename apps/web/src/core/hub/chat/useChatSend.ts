@@ -521,10 +521,18 @@ export function useChatSend({
   }, []);
   sendRef.current = send;
 
+  // Fired-once guard: prevents re-sending when the user navigates back
+  // to a route that still has `?q=` in the URL (e.g. via the browser
+  // Back button). Without this, every re-mount (strict-mode double-mount
+  // included) would fire a fresh send for the same query.
+  const initialSentRef = useRef(false);
+
   // Initial-message handling — kick off the very first send if
   // `autoSendInitial`, otherwise prefill the input.
   useEffect(() => {
     if (!initialMessage) return;
+    if (initialSentRef.current) return;
+    initialSentRef.current = true;
     if (autoSendInitial) {
       sendRef.current?.(initialMessage);
     } else {

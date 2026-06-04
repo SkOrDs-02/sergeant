@@ -33,6 +33,15 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
 
   return (
     <main className="min-h-svh flex items-center justify-center bg-bg px-6">
+      {/* aria-live region announces the server error to screen readers */}
+      <p
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        Помилка сервера. Щось пішло не так — спробуй оновити сторінку.
+      </p>
       <EmptyState
         size="lg"
         variant="danger"

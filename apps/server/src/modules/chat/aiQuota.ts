@@ -3,7 +3,11 @@ import { getSessionUser } from "../../auth.js";
 import pool from "../../db.js";
 import { getIp } from "../../http/rateLimit.js";
 import { logger } from "../../obs/logger.js";
-import { aiQuotaBlocksTotal, aiQuotaFailOpenTotal } from "../../obs/metrics.js";
+import {
+  aiQuotaBlocksTotal,
+  aiQuotaFailOpenTotal,
+  aiCostConsumedTotal,
+} from "../../obs/metrics.js";
 import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
 import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
@@ -244,7 +248,7 @@ export async function assertAiQuota(
 
   if (limit === 0) {
     try {
-      aiQuotaBlocksTotal.inc({ reason: "disabled" });
+      aiQuotaBlocksTotal.inc({ reason: "disabled", cost: "1" });
     } catch {
       /* ignore */
     }
@@ -282,7 +286,7 @@ export async function assertAiQuota(
     aiQuotaCircuitBreaker.recordSuccess();
     if (!result.ok) {
       try {
-        aiQuotaBlocksTotal.inc({ reason: "limit" });
+        aiQuotaBlocksTotal.inc({ reason: "limit", cost: String(cost) });
       } catch {
         /* ignore */
       }
@@ -292,6 +296,15 @@ export async function assertAiQuota(
         limit: result.limit,
       });
       return false;
+    }
+    try {
+      const subjectType = sessionUser ? "user" : "anon";
+      aiCostConsumedTotal.inc(
+        { subject_type: subjectType, bucket_type: "default" },
+        cost,
+      );
+    } catch {
+      /* ignore */
     }
     attachRefund(req, { subject, day, bucket: DEFAULT_BUCKET, cost });
     setRemainingHeader(res, String(result.remaining));
@@ -347,7 +360,10 @@ export async function consumeToolQuota(
   }
   if (limit === 0) {
     try {
-      aiQuotaBlocksTotal.inc({ reason: "tool_disabled" });
+      aiQuotaBlocksTotal.inc({
+        reason: "tool_disabled",
+        cost: String(toolCost()),
+      });
     } catch {
       /* ignore */
     }
@@ -385,11 +401,24 @@ export async function consumeToolQuota(
     aiQuotaCircuitBreaker.recordSuccess();
     if (!result.ok) {
       try {
-        aiQuotaBlocksTotal.inc({ reason: "tool_limit" });
+        aiQuotaBlocksTotal.inc({
+          reason: "tool_limit",
+          cost: String(toolCost()),
+        });
       } catch {
         /* ignore */
       }
       return { ...result, reason: "limit" };
+    }
+    try {
+      const sessionUser2 = await safeSessionUser(req);
+      const subjectType2 = sessionUser2 ? "user" : "anon";
+      aiCostConsumedTotal.inc(
+        { subject_type: subjectType2, bucket_type: "tool" },
+        toolCost(),
+      );
+    } catch {
+      /* ignore */
     }
     return result;
   } catch (e) {
@@ -437,7 +466,7 @@ function logQuotaStoreUnavailable(reason: string, e?: unknown): void {
 
 function rejectCircuitOpen(res: Response): boolean {
   try {
-    aiQuotaBlocksTotal.inc({ reason: "circuit_open" });
+    aiQuotaBlocksTotal.inc({ reason: "circuit_open", cost: "0" });
   } catch {
     /* ignore */
   }

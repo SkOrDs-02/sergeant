@@ -310,7 +310,35 @@ export const chatPromptInjectionAttemptTotal = new client.Counter({
 export const aiQuotaBlocksTotal = new client.Counter({
   name: "ai_quota_blocks_total",
   help: "AI quota refusals",
-  labelNames: ["reason"], // limit|disabled
+  // reason: limit|disabled|tool_disabled|tool_limit|circuit_open
+  // cost:   numeric cost that was attempted (stringified for label cardinality;
+  //         values are bounded by the small set of configured tool costs —
+  //         typically "1" for default-bucket, "3" for tool-use).
+  labelNames: ["reason", "cost"],
+  registers: [register],
+});
+
+/**
+ * Accumulates the total AI-quota cost units consumed by accepted requests,
+ * split by subject_type (user|anon) and bucket_type (default|tool).
+ *
+ * Counterpart to `aiQuotaBlocksTotal` for the accept-path: together they give
+ * a full picture of quota pressure.
+ *
+ *   rate(ai_cost_consumed_total{subject_type="user"}[5m]) → user burn-rate
+ *   rate(ai_cost_consumed_total{bucket_type="tool"}[5m])  → tool-use cost rate
+ *
+ * `subject_type`:
+ *   - `user` — authenticated session (subject key starts with `u:`)
+ *   - `anon` — anonymous/IP-keyed caller (subject key starts with `ip:`)
+ * `bucket_type`:
+ *   - `default` — plain chat / coach / nutrition requests (cost = 1)
+ *   - `tool`    — per-tool-use bucket (cost = toolCost(), typically 3)
+ */
+export const aiCostConsumedTotal = new client.Counter({
+  name: "ai_cost_consumed_total",
+  help: "Total AI quota cost units consumed by accepted requests, by subject type and bucket type",
+  labelNames: ["subject_type", "bucket_type"], // subject_type=user|anon; bucket_type=default|tool
   registers: [register],
 });
 

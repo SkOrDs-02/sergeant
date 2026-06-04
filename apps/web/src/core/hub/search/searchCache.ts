@@ -13,6 +13,50 @@ const parseCache = new Map<
   { raw: string | null; parserId: string; value: unknown }
 >();
 
+// ─── Scoring LRU cache ────────────────────────────────────────────────────────
+// `performSearch` runs on every debounced keystroke. Even with the parse cache
+// above, `scoreMatch` + array allocation still fires for every candidate on
+// every call. An LRU keyed by `query+snapshot` (where snapshot is a cheap
+// comma-joined string of the raw storage values for all scored sources) lets
+// us return the full result set instantly when the user tabs back to the same
+// query or hits the same prefix again within the same session.
+// Capacity is 16 — enough to cover the ~5 distinct query prefixes a user
+// tries before settling on a result, with room for a couple of re-visits.
+
+const SCORE_LRU_MAX = 16;
+
+class ScoreLru {
+  private readonly map = new Map<string, { hits: unknown; inserted: number }>();
+  private counter = 0;
+
+  get(key: string): unknown | undefined {
+    const entry = this.map.get(key);
+    if (!entry) return undefined;
+    // Bump recency so eviction is truly least-recently-USED, not FIFO.
+    entry.inserted = ++this.counter;
+    this.map.set(key, entry);
+    return entry.hits;
+  }
+
+  set(key: string, hits: unknown): void {
+    if (this.map.size >= SCORE_LRU_MAX && !this.map.has(key)) {
+      // Evict the oldest entry (smallest `inserted` counter).
+      let oldestKey: string | undefined;
+      let oldestInserted = Infinity;
+      for (const [k, v] of this.map) {
+        if (v.inserted < oldestInserted) {
+          oldestInserted = v.inserted;
+          oldestKey = k;
+        }
+      }
+      if (oldestKey !== undefined) this.map.delete(oldestKey);
+    }
+    this.map.set(key, { hits, inserted: ++this.counter });
+  }
+}
+
+export const scoreLru = new ScoreLru();
+
 export function cachedParse<T>(
   cacheKey: string,
   parserId: string,

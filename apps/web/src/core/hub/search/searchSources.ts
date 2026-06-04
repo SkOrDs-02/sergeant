@@ -7,6 +7,7 @@ import {
   parseFizrukCustomExercises,
   parseFizrukWorkouts,
   safeParseLS,
+  scoreLru,
 } from "./searchCache";
 import { searchAssistantTools, searchSettings } from "./searchSettings";
 import { type Hit, localDateKey, pushScored } from "./searchTypes";
@@ -298,18 +299,51 @@ function searchNutrition(tokens: string[]): Hit[] {
   return results.sort((a, b) => b._score - a._score).slice(0, 10);
 }
 
+/**
+ * Build a cheap snapshot key that changes whenever the user's stored data
+ * changes. We concatenate the raw string lengths (not full strings — avoids
+ * hashing MBs of JSON) for the four scored sources. A length change always
+ * means a content change; same-length edits (e.g. rename a habit) are rare
+ * enough that a stale hit for one keystroke is acceptable.
+ */
+function storageSnapshot(): string {
+  const keys = [
+    "finyk_tx_cache",
+    "finyk_subs",
+    "fizruk_workouts_v1",
+    "fizruk_custom_exercises_v1",
+    "hub_routine_v1",
+    "nutrition_log_v1",
+  ];
+  return keys
+    .map((k) => {
+      const v = safeReadStringLS(k);
+      // Length + head/tail slices: catches same-length edits (e.g. renaming a
+      // habit to another same-length name) that a bare length check would miss.
+      return v === null ? "0" : `${v.length}:${v.slice(0, 24)}:${v.slice(-24)}`;
+    })
+    .join(",");
+}
+
 export function performSearch(query: string): Hit[] {
   const tokens = tokenize(query);
   // Empty query: launcher landing — only the four quick-add Actions so the
   // palette doubles as a Spotlight-style command bar (no FAB lookup needed).
   if (tokens.length === 0) return searchActions(tokens);
+
+  // LRU(16) hit: same query + same storage snapshot → return cached results.
+  const snapshot = storageSnapshot();
+  const lruKey = `${query}\x00${snapshot}`;
+  const cached = scoreLru.get(lruKey);
+  if (cached !== undefined) return cached as Hit[];
+
   // Order matters for the rendered groups (see `flat`/`grouped` below).
   // Actions surface first so command-style queries («витрата», «trening»)
   // land on a do-it row before stale data; module hits follow because the
   // user may be chasing concrete records; settings + AI capabilities are
   // the «what can I do?» tail; AI handoff sits at the very end as the
   // graceful-degradation fallback when nothing structured matched.
-  return [
+  const results: Hit[] = [
     ...searchActions(tokens),
     ...searchFinyk(tokens),
     ...searchFizruk(tokens),
@@ -319,4 +353,6 @@ export function performSearch(query: string): Hit[] {
     ...searchAssistantTools(tokens),
     ...searchAiHandoff(query),
   ];
+  scoreLru.set(lruKey, results);
+  return results;
 }

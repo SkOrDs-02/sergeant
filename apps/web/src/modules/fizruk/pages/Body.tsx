@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import { z } from "zod";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Label } from "@shared/components/ui/FormField";
@@ -18,6 +25,7 @@ import { firstValidValue, lastValidValue } from "./Body/trendUtils";
 import { RecoveryFocusCard } from "../components/RecoveryFocusCard";
 import { safeRemoveLS } from "@shared/lib/storage/storage";
 import { JOURNAL_ENTRY_OPEN_PREFIX } from "./Body/storage";
+import { statusColors, chartSeries, chartPalette } from "@shared/charts";
 
 interface BodyProps {
   onOpenMeasurements?: () => void;
@@ -136,6 +144,58 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
   const weightError = formState.errors.weightKg?.message;
   const sleepError = formState.errors.sleepHours?.message;
   const noteError = formState.errors.note?.message;
+
+  /**
+   * Arrow-key navigation for radiogroup score buttons (WCAG 2.1 §4.1.2 /
+   * ARIA authoring practices — roving tabIndex pattern).
+   * ArrowRight / ArrowDown → next value (wraps from 5 → 1).
+   * ArrowLeft / ArrowUp   → prev value (wraps from 1 → 5).
+   * Home → 1, End → 5.
+   * Clicking the same selected value deselects it (toggle to null).
+   */
+  const makeScoreKeyHandler = useCallback(
+    (
+      current: number | null,
+      setter: (v: number | null) => void,
+      groupRef: React.RefObject<HTMLDivElement | null>,
+    ) =>
+      (e: KeyboardEvent<HTMLDivElement>) => {
+        const VALUES = [1, 2, 3, 4, 5] as const;
+        let next: number | null = null;
+        const cur = current ?? 0;
+        const idx = VALUES.indexOf(cur as (typeof VALUES)[number]);
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+          e.preventDefault();
+          next = VALUES[(idx + 1) % VALUES.length] ?? 1;
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          next = VALUES[(idx - 1 + VALUES.length) % VALUES.length] ?? 5;
+        } else if (e.key === "Home") {
+          e.preventDefault();
+          next = 1;
+        } else if (e.key === "End") {
+          e.preventDefault();
+          next = 5;
+        }
+        if (next !== null) {
+          setter(next);
+          // Move DOM focus to the newly selected button so screen readers
+          // announce it and the roving tabIndex stays coherent.
+          const buttons =
+            groupRef.current?.querySelectorAll<HTMLButtonElement>(
+              '[role="radio"]',
+            );
+          if (buttons) {
+            const target = buttons[next - 1];
+            target?.focus();
+          }
+        }
+      },
+    [],
+  );
+
+  const energyGroupRef = useRef<HTMLDivElement | null>(null);
+  const moodGroupRef = useRef<HTMLDivElement | null>(null);
 
   const weightData = useMemo(() => {
     const recent = recentWith("weightKg", 30);
@@ -321,16 +381,26 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
                 Рівень енергії
               </SectionHeading>
               <div
+                ref={energyGroupRef}
                 className="flex gap-1.5"
-                role="group"
+                role="radiogroup"
+                tabIndex={-1}
                 aria-label="Рівень енергії"
+                onKeyDown={makeScoreKeyHandler(
+                  energyLevel,
+                  (v) => setValue("energyLevel", v, { shouldDirty: true }),
+                  energyGroupRef,
+                )}
               >
                 {[1, 2, 3, 4, 5].map((v) => (
                   <ScoreButton
                     key={v}
                     value={v}
-                    label={ENERGY_LABELS[v]!}
+                    label={ENERGY_LABELS[v] ?? ""}
                     selected={energyLevel === v}
+                    tabbable={
+                      energyLevel === v || (energyLevel == null && v === 1)
+                    }
                     onClick={(val: number) =>
                       setValue(
                         "energyLevel",
@@ -352,13 +422,25 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               >
                 Настрій
               </SectionHeading>
-              <div className="flex gap-1.5" role="group" aria-label="Настрій">
+              <div
+                ref={moodGroupRef}
+                className="flex gap-1.5"
+                role="radiogroup"
+                tabIndex={-1}
+                aria-label="Настрій"
+                onKeyDown={makeScoreKeyHandler(
+                  moodScore,
+                  (v) => setValue("moodScore", v, { shouldDirty: true }),
+                  moodGroupRef,
+                )}
+              >
                 {[1, 2, 3, 4, 5].map((v) => (
                   <ScoreButton
                     key={v}
                     value={v}
-                    label={MOOD_LABELS[v]!}
+                    label={MOOD_LABELS[v] ?? ""}
                     selected={moodScore === v}
+                    tabbable={moodScore === v || (moodScore == null && v === 1)}
                     onClick={(val: number) =>
                       setValue("moodScore", moodScore === val ? null : val, {
                         shouldDirty: true,
@@ -421,7 +503,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               ariaLabel: "Динаміка ваги",
               data: weightData,
               unit: "кг",
-              color: "rgb(22 163 74)",
+              color: statusColors.success,
               metricLabel: "вагу",
             },
             {
@@ -430,7 +512,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               ariaLabel: "Динаміка сну",
               data: sleepData,
               unit: "год",
-              color: "rgb(99 102 241)",
+              color: chartSeries.fizruk.primary as string,
               metricLabel: "сон",
             },
             {
@@ -439,7 +521,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               ariaLabel: "Динаміка енергії",
               data: energyData,
               unit: "/5",
-              color: "rgb(245 158 11)",
+              color: statusColors.warning,
               metricLabel: "рівень енергії",
             },
             {
@@ -448,7 +530,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               ariaLabel: "Динаміка настрою",
               data: moodData,
               unit: "/5",
-              color: "rgb(236 72 153)",
+              color: chartPalette[8] as string,
               metricLabel: "настрій",
             },
           ] as const

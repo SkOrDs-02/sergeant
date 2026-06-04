@@ -11,6 +11,7 @@ import {
   CoachMemoryPostSchema,
 } from "../../http/schemas.js";
 import { ExternalServiceError } from "../../obs/errors.js";
+import { logger } from "../../obs/logger.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -64,6 +65,14 @@ async function getMemory(userId: string): Promise<CoachMemory | null> {
   try {
     return (typeof raw === "string" ? JSON.parse(raw) : raw) as CoachMemory;
   } catch {
+    // JSON.parse threw — the DB row is stored in a non-standard format (may
+    // happen if the blob was written by an older version). Returning the raw
+    // value is a safe-ish fallback but the in-memory shape may be incomplete.
+    // Log at warn so the on-call can investigate unexpected fallback spikes.
+    logger.warn({
+      msg: "coach_memory_parse_fallback",
+      detail: "JSON.parse failed for coach_memory.data; using raw DB value",
+    });
     return raw as CoachMemory;
   }
 }

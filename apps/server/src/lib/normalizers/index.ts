@@ -34,3 +34,5 @@ export {
   type UPCitemdbResponse,
   type NormalizedUPCitemdbBarcode,
 } from "./upcitemdb.js";
+
+export { UK_TO_EN, translateFirstToken } from "./uk-to-en.js";

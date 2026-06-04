@@ -280,4 +280,95 @@ describe("no-foreign-module-accent", () => {
     assert.equal(messages.length, 1);
     assert.match(messages[0].message, /text-routine-strong/);
   });
+
+  // ─────────────────────────────────────────────────────────────────
+  // Shape-variant BAD fixtures (regex-contract hardening). Each case
+  // is a foreign accent in a fizruk (or mobile-routine) file — the rule
+  // must emit exactly the asserted `messages.length`. These pin the
+  // less-obvious token shapes the thinner cases above don't cover:
+  // two-segment shades, opacity-only suffixes, gradient/SVG utilities,
+  // and multi-quasi template literals.
+  // ─────────────────────────────────────────────────────────────────
+
+  it("flags a two-segment shade (`bg-routine-soft-border`)", () => {
+    // The shade group accepts up to TWO `-segments`
+    // (`(-[a-z0-9]+(?:-[a-z0-9]+)?)?`), so a compound token like
+    // `bg-routine-soft-border` must match as a single foreign hit —
+    // not slip through because of the extra hyphen.
+    const messages = lint(
+      `const c = "bg-routine-soft-border p-2";`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /bg-routine-soft-border/);
+  });
+
+  it("flags an opacity-only suffix on a bare module (`bg-routine/40`)", () => {
+    // No shade, just an `/<opacity>` suffix. The `(\/\d{1,3})?` group
+    // must attach to the bare `bg-routine` and the whole token must be
+    // reported (a common shape for translucent module fills).
+    const messages = lint(
+      `const c = "bg-routine/40 backdrop-blur";`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /bg-routine\/40/);
+  });
+
+  it("flags a shade + opacity suffix together (`text-routine-strong/15`)", () => {
+    // Shade *and* opacity stacked. Both optional groups must compose so
+    // the full `text-routine-strong/15` token is the reported match.
+    const messages = lint(
+      `const c = "text-routine-strong/15 underline";`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /text-routine-strong\/15/);
+  });
+
+  it("flags gradient-stop utilities (`from-`/`via-`/`to-`)", () => {
+    // The accent-utility set covers gradient stops, so a foreign-module
+    // gradient (`from-routine via-nutrition to-finyk`) inside a fizruk
+    // file must surface all three stops.
+    const messages = lint(
+      `const c = "bg-gradient-to-r from-routine via-nutrition to-finyk";`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 3);
+  });
+
+  it("flags SVG/text color utilities (`fill-`/`stroke-`/`decoration-`)", () => {
+    // `fill`, `stroke`, and `decoration` are color-aware utilities too.
+    // An icon or underline painted with a foreign accent is the same
+    // brand bug as a foreign `bg-` — confirm all three fire.
+    const messages = lint(
+      `const c = "fill-routine stroke-nutrition decoration-finyk";`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 3);
+  });
+
+  it("flags foreign accents split across multiple template-literal quasis", () => {
+    // A multi-interpolation className: each static chunk is its own
+    // TemplateElement node. The rule visits every quasi, so two foreign
+    // accents living in two different chunks must both be reported.
+    const messages = lint(
+      "const c = `ring-routine ${size} ${state} bg-nutrition-surface`;",
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 2);
+  });
+
+  it("flags a foreign accent with shade + opacity in an Expo Router file", () => {
+    // Combine the mobile `app/modules/<X>/**` surface with the
+    // shade+opacity shape — exercises path detection and the regex
+    // suffix groups in one fixture.
+    const messages = lint(
+      `const c = "bg-finyk-surface/30 rounded-2xl";`,
+      MOBILE_APP_ROUTINE_FILE,
+    );
+    assert.equal(messages.length, 1);
+    assert.match(messages[0].message, /bg-finyk-surface\/30/);
+    assert.match(messages[0].message, /routine/);
+  });
 });

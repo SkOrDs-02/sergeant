@@ -1,4 +1,17 @@
 #!/usr/bin/env node
+/**
+ * @scaffolded
+ * @owner @Skords-01
+ * @nextStep Add `scripts/claude-hooks/*.mjs` to knip's `entry` globs so the
+ *           settings.json-invoked hooks count as real entry points, then
+ *           delete this tag. See AGENTS.md → Hard Rule #10.
+ *
+ * Intentional zero-*importer* — this hook is invoked as a subprocess by
+ * `.claude/settings.json` (PreToolUse → `node scripts/claude-hooks/
+ * guard-heavy-commands.mjs`), never `import`ed, so knip reports no
+ * consumers. Do NOT delete as part of dead-code cleanup — see Hard
+ * Rule #10 in AGENTS.md.
+ */
 // PreToolUse hook for Bash: warn before heavy pnpm commands on slow hardware.
 // Aligns with CLAUDE.md "Local execution policy".
 // Exit 2 → block with reason. Set SERGEANT_HEAVY_OK=1 to override.

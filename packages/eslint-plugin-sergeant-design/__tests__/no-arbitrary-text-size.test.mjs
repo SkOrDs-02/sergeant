@@ -271,4 +271,81 @@ describe("no-arbitrary-text-size", () => {
     );
     assert.equal(msgs.length, 0);
   });
+
+  // ─────────────────────────────────────────────────────────────────
+  // Shape-variant BAD fixtures (regex-contract hardening). Each case
+  // below is a BAD fixture in a non-exempt module file — the rule must
+  // emit exactly the asserted count. These pin the unit/precision and
+  // call-site shapes the thinner cases above don't cover: the `em`
+  // unit, three-digit px, decimal rem, JSX attributes with two distinct
+  // sizes, and multi-quasi template literals.
+  // ─────────────────────────────────────────────────────────────────
+
+  it("flags `text-[2em]` (em unit)", () => {
+    // The earlier `text-[1em]` case uses an integer; confirm the `em`
+    // branch of the `(?:px|rem|em)` alternation also fires here so a
+    // future unit-list edit can't silently drop `em`.
+    const msgs = lint(`const c = "text-[2em] leading-none";`);
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[2em\]/);
+  });
+
+  it("flags `text-[100px]` (three-digit px)", () => {
+    // `\d+` is unbounded, so an oversized hero literal must still be
+    // caught — guards against a future `\d{1,2}` tightening regression.
+    const msgs = lint(`const c = "text-[100px] font-black tracking-tight";`);
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[100px\]/);
+  });
+
+  it("flags `text-[0.875rem]` (leading-zero decimal rem)", () => {
+    // The `(?:\.\d+)?` group must accept a sub-1 decimal so the common
+    // “14px-as-rem” hack (`0.875rem`) is still flagged.
+    const msgs = lint(`const c = "text-[0.875rem] tabular-nums";`);
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[0\.875rem\]/);
+  });
+
+  it("flags two distinct sizes inside one JSX `className` attribute", () => {
+    // A responsive pair landed directly on JSX. Both sizes differ, so
+    // the per-literal de-dup must still report each one (2 total).
+    const msgs = lint(
+      `export function Hd() { return <h1 className="text-[28px] sm:text-[32px]" />; }`,
+    );
+    assert.equal(msgs.length, 2);
+    const joined = msgs.map((m) => m.message).join(" | ");
+    assert.match(joined, /text-\[28px\]/);
+    assert.match(joined, /text-\[32px\]/);
+  });
+
+  it("flags sizes split across multiple template-literal quasis", () => {
+    // Two static chunks separated by an interpolation are two distinct
+    // TemplateElement nodes; the rule reports each quasi's hit, so a
+    // size in each chunk yields 2 messages.
+    const msgs = lint("const c = `text-[11px] ${gap} text-[13px] ${rest}`;");
+    assert.equal(msgs.length, 2);
+    const joined = msgs.map((m) => m.message).join(" | ");
+    assert.match(joined, /text-\[11px\]/);
+    assert.match(joined, /text-\[13px\]/);
+  });
+
+  it("flags only the in-unit size when mixed with out-of-scope units", () => {
+    // `text-[2vh]` and `text-[50%]` use units outside the rule's
+    // `px|rem|em` contract and must be ignored; only the `text-[12px]`
+    // in the same literal is reported. Pins the unit allow-list.
+    const msgs = lint(`const c = "text-[2vh] text-[12px] text-[50%]";`);
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[12px\]/);
+  });
+
+  it("flags `text-[14px]` inside a `cn(…)` custom-utility wrapper", () => {
+    // `cn` is the in-repo Tailwind merge helper (alongside `clsx`).
+    // Confirm an arbitrary size buried a few args deep in `cn` is still
+    // walked as a plain Literal.
+    const msgs = lint(
+      `const c = cn("px-3", compact && "text-[14px]", "mt-1");`,
+    );
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[14px\]/);
+  });
 });

@@ -777,6 +777,129 @@ describe("weekly-digest handler · memory ingest hook", () => {
   });
 });
 
+/**
+ * Prompt/response fixture — репрезентативна пара вхідний-prompt / LLM-відповідь.
+ * Слугує регресійним anchor-ом: якщо `extractJsonObject` або `WeeklyDigestReportSchema`
+ * зміниться і зламає цей fixture — тест впаде до того, як зміна потрапить у прод.
+ *
+ * Fixture взятий з реального логу production-сесії (2026-05-14, anonymized).
+ */
+const AI_RESPONSE_FIXTURE = `Ось аналіз тижня:
+\`\`\`json
+{
+  "finyk": {
+    "summary": "Витрати 3 200 грн при надходженнях 8 000 грн — профіцит.",
+    "comment": "Найбільша стаття — продукти (1 200 грн). Витрати в межах норми.",
+    "recommendations": ["Переглянь підписки", "Збережи профіцит у запасний фонд"]
+  },
+  "fizruk": {
+    "summary": "4 тренування за тиждень, загальний об'єм 6 500 кг.",
+    "comment": "Прогрес стабільний. Відновлення достатнє.",
+    "recommendations": ["Додай мобільну розминку", "Зафіксуй рекорди Squat"]
+  },
+  "nutrition": null,
+  "routine": null,
+  "overallRecommendations": ["Продовжуй поточний темп"]
+}
+\`\`\`
+`;
+
+describe("weekly-digest handler · prompt/response fixture (contract lock)", () => {
+  it("fixture AI_RESPONSE_FIXTURE парситься у валідний WeeklyDigestReport через extractJsonObject + schema", async () => {
+    const { handler } = buildHandler(okResult(AI_RESPONSE_FIXTURE));
+    const req = asReq({
+      anthropicKey: "k",
+      body: {
+        weekRange: "2026-W20",
+        finyk: { totalSpent: 3200, totalIncome: 8000, txCount: 24 },
+        fizruk: { workoutsCount: 4, totalVolume: 6500 },
+      },
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      report: {
+        finyk: {
+          summary: string;
+          comment: string;
+          recommendations: string[];
+        } | null;
+        fizruk: {
+          summary: string;
+          comment: string;
+          recommendations: string[];
+        } | null;
+        nutrition: null;
+        routine: null;
+        overallRecommendations: string[];
+      };
+      generatedAt: string;
+    };
+    expect(body.report.finyk).not.toBeNull();
+    expect(body.report.finyk!.summary).toContain("профіцит");
+    expect(body.report.finyk!.recommendations).toHaveLength(2);
+    expect(body.report.fizruk).not.toBeNull();
+    expect(body.report.fizruk!.summary).toContain("4 тренування");
+    expect(body.report.nutrition).toBeNull();
+    expect(body.report.routine).toBeNull();
+    expect(body.report.overallRecommendations).toEqual([
+      "Продовжуй поточний темп",
+    ]);
+    expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("fixture з prefixed text (без fence) — extractJsonObject знаходить і парсить JSON", async () => {
+    // Перевіряємо шлях без markdown-обгортки: Anthropic може відповісти чистим JSON
+    // після текстового вступу, і handler повинен його витягнути.
+    const noFenceResponse = `Звіт готовий. ${JSON.stringify({
+      finyk: {
+        summary: "Витрати 1 000 грн.",
+        comment: "Все ок.",
+        recommendations: [],
+      },
+      fizruk: null,
+      nutrition: null,
+      routine: null,
+      overallRecommendations: [],
+    })} Дякую.`;
+
+    const { handler } = buildHandler(okResult(noFenceResponse));
+    const req = asReq({
+      anthropicKey: "k",
+      body: { finyk: { totalSpent: 1000, totalIncome: 2000, txCount: 5 } },
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as { report: { finyk: { summary: string } | null } };
+    expect(body.report.finyk!.summary).toBe("Витрати 1 000 грн.");
+  });
+
+  it("fixture з unicode та кирилицею у рядках не ламає JSON-парсер", async () => {
+    const unicodeReport = {
+      ...validReport,
+      finyk: {
+        summary: "Суперечливі витрати: «кафе» — 800 грн. 🚀 OK.",
+        comment: 'Дані "з лапками" та \\\\зворотні скосі\\\\ збережені.',
+        recommendations: ["Спробуй — не зупиняйся"],
+      },
+    };
+    const { handler } = buildHandler(okResult(JSON.stringify(unicodeReport)));
+    const req = asReq({
+      anthropicKey: "k",
+      body: { finyk: { totalSpent: 800, totalIncome: 3000, txCount: 8 } },
+    });
+    const res = makeRes();
+    await handler(req, res);
+    expect(res.statusCode).toBe(200);
+    const body = res.body as { report: { finyk: { summary: string } | null } };
+    expect(body.report.finyk!.summary).toContain("кафе");
+  });
+});
+
 describe("buildTemplateReport (PR-25)", () => {
   it("повертає null для відсутніх секцій", () => {
     const r = buildTemplateReport({});

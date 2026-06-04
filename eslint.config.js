@@ -136,6 +136,25 @@ export default [
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
+  // §9-mobile @typescript-eslint/no-explicit-any → warn for apps/mobile/src/**
+  // Mirror of the web §9 guardrail above, tuned to `warn` (not `error`)
+  // because the mobile source has one by-design `any` alias that already
+  // carries an inline disable:
+  //   • `core/hub/search/searchCache.ts:55` — `LooseRecord = Record<string, any>`
+  //     (legacy LS shape parser; eslint-disable-next-line present).
+  // New `any` in mobile production code surfaces immediately in CI lint
+  // output. Promote to "error" once the burn-down reaches zero. See
+  // `docs/tech-debt/mobile.md` §no-explicit-any.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
   {
     files: ["apps/web/**/*.{ts,tsx,js,jsx}"],
     rules: {
