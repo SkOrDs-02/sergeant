@@ -206,3 +206,45 @@ export function getKyivWeekStart(input?: Date | number): Date {
 export function getKyivMondayIndex(input?: Date | number): number {
   return (getKyivDateParts(input).weekday + 6) % 7;
 }
+
+/**
+ * Monday-anchored week start as `YYYY-MM-DD` string (Kyiv local).
+ *
+ * Equivalent to `getKyivDayKey(getKyivWeekStart(input))` — exposed as a
+ * named helper so callers that only need the string key do not have to
+ * compose two functions. The returned value matches the `weekStart` shape
+ * used by the strategic-goals API (`StrategyPage`, WF-26 cron).
+ *
+ * @example
+ *   getKyivWeekStartKey(); // → "2026-06-02" (Monday of current week)
+ */
+export function getKyivWeekStartKey(input?: Date | number): string {
+  return getKyivDayKey(getKyivWeekStart(input));
+}
+
+/**
+ * Format an ISO instant as a long human-readable date in Kyiv local time
+ * using the given locale (default `"uk-UA"`). Returns `null` for `null`,
+ * `undefined`, or unparseable input.
+ *
+ * Suitable for billing dates ("1 червня 2026 р.") and other display-only
+ * contexts where the exact Kyiv civil date must be shown regardless of the
+ * user's device timezone.
+ *
+ * @example
+ *   formatKyivLongDate("2026-06-01T10:00:00Z"); // → "1 червня 2026 р."
+ */
+export function formatKyivLongDate(
+  iso: string | null | undefined,
+  locale = "uk-UA",
+): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: KYIV_TZ,
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}

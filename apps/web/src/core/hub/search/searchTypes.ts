@@ -63,7 +63,9 @@ export function pushScored(
  * source. Domain timezone is fixed (Sergeant ships Ukraine-only for the
  * launch window) — host TZ would scatter day-grouped results across the
  * boundary when the user roams (consolidated page-audit § Theme 1 — 03 F8).
+ *
+ * Thin wrapper around `getKyivDayKey` — prefer that directly in new code.
  */
-export function localDateKey(d: Date | number = new Date()): string {
+export function localDateKey(d?: Date | number): string {
   return getKyivDayKey(d);
 }

@@ -6,6 +6,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { billingApi } from "@shared/api";
 import { usePlan } from "../billing/usePlan";
 import { SettingsGroup } from "./SettingsPrimitives";
+import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
 
 /**
  * Підписка та план — секція Settings (audit P1-6,
@@ -28,18 +29,6 @@ import { SettingsGroup } from "./SettingsPrimitives";
 const BILLING_PORTAL_UNAVAILABLE =
   "Stripe Portal тимчасово недоступний. Спробуй ще раз за хвилину.";
 
-function formatKyivDate(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return null;
-  return new Intl.DateTimeFormat("uk-UA", {
-    timeZone: "Europe/Kyiv",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
-}
-
 export function PlanSection() {
   const navigate = useNavigate();
   const { isPro, isLoading, subscription } = usePlan();
@@ -47,7 +36,7 @@ export function PlanSection() {
   const [portalError, setPortalError] = useState("");
 
   const status = subscription?.status ?? null;
-  const periodEnd = formatKyivDate(subscription?.currentPeriodEnd);
+  const periodEnd = formatKyivLongDate(subscription?.currentPeriodEnd);
   const planLabel = isPro ? "Pro" : "Free";
 
   async function handleManage() {

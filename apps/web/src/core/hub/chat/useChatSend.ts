@@ -7,6 +7,7 @@ import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
   CONTEXT_TTL_MS,
   cancelIdle,
@@ -42,19 +43,10 @@ function isAutoTtsEnabled(): boolean {
   return safeReadLS<boolean>(AUTO_TTS_ENABLED_KEY) === true;
 }
 
-function kyivDayKey(date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Kyiv",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-}
-
 type DailyChatCounter = { day: string; count: number };
 
 function readDailyChatCount(): DailyChatCounter {
-  const today = kyivDayKey();
+  const today = getKyivDayKey();
   const parsed = safeReadLS<DailyChatCounter>(DAILY_CHAT_COUNT_KEY);
   if (parsed?.day === today && typeof parsed.count === "number") {
     return { day: today, count: Math.max(0, parsed.count) };

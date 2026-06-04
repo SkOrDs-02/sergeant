@@ -1209,5 +1209,65 @@ export default [
     },
   },
 
+  // Theme 1 (consolidated audit 2026-05-13) — `new Date()` guard.
+  //
+  // `new Date()` with zero arguments returns the current instant anchored to
+  // the host clock. In domain modules (finyk, fizruk, routine, hub-chat, search)
+  // any "today" / "this week" derivation must flow through `getKyivDateParts()`,
+  // `getKyivDayKey()`, or `getKyivWeekStart()` from
+  // `apps/web/src/shared/lib/time/kyivTime.ts` so day boundaries stay anchored
+  // to Europe/Kyiv per the domain-invariants spec (docs/architecture/
+  // domain-invariants.md § timezone).
+  //
+  // `new Date(someValue)` (1+ arguments) is NOT banned — constructing a Date
+  // from a known ISO string or timestamp is a UTC-safe operation that does not
+  // bake in the host timezone.
+  //
+  // Severity: `warn` — ramps to `error` once the burn-down sweep in the
+  // companion tracker (docs/audits/2026-05-13-consolidated-page-audit.md
+  // § Theme 1) closes. Test files and the canonical `kyivTime.ts` are exempt.
+  //
+  // New call-sites added in the scoped paths that genuinely need "current
+  // UTC instant" (e.g. an `updatedAt: new Date().toISOString()` timestamp
+  // record) should add an inline `eslint-disable-next-line` with a WHY
+  // comment so the intent is explicit in review.
+  {
+    files: [
+      "apps/web/src/modules/finyk/**/*.{ts,tsx}",
+      "apps/web/src/modules/fizruk/**/*.{ts,tsx}",
+      "apps/web/src/modules/routine/**/*.{ts,tsx}",
+      "apps/web/src/core/hub/chat/**/*.{ts,tsx}",
+      "apps/web/src/core/hub/search/**/*.{ts,tsx}",
+      "apps/web/src/core/app/HubHeader.tsx",
+      "apps/web/src/core/settings/PlanSection.tsx",
+      "apps/web/src/pages/strategy/StrategyPage.tsx",
+    ],
+    ignores: [
+      // Tests use vi.setSystemTime / explicit Date literals — legitimate.
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      // The canonical Kyiv-time helper is the single place allowed to call
+      // new Date() freely — every other file in the scoped paths must route
+      // through its exports.
+      "apps/web/src/shared/lib/time/kyivTime.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+          message:
+            "Bare `new Date()` is forbidden in domain modules — it returns the " +
+            "host-local instant. Use `getKyivDateParts()`, `getKyivDayKey()`, or " +
+            "`getKyivWeekStart()` from `@shared/lib/time/kyivTime` so day " +
+            "boundaries stay anchored to Europe/Kyiv. If you genuinely need a " +
+            "UTC-anchored wall-clock instant (e.g. `updatedAt` timestamp), add " +
+            "an `eslint-disable-next-line no-restricted-syntax` with a WHY comment. " +
+            "See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 1.",
+        },
+      ],
+    },
+  },
+
   eslintConfigPrettier,
 ];
