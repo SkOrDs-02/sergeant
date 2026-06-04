@@ -58,7 +58,16 @@ interface ConsumeQuotaReturn {
  * Денна AI-квота. Зберігається в `ai_usage_daily` як лічильник по (subject, day,
  * bucket). Є два типи bucket-ів: `default` — звичайний chat/coach/digest/nutrition
  * (cost=1), `tool:<name>` — окремий tool-use виклик (cost = AI_QUOTA_TOOL_COST,
- * default 3). tool-ліміти задаються JSON-ом через AI_QUOTA_TOOL_LIMITS.
+ * default 3 — див. `toolCost`).
+ *
+ * Cost vs. limit — два незалежні важелі (детальніше в docstring-ах `toolCost`
+ * і `toolLimit`):
+ *   - ВАРТІСТЬ tool-call (вага в одиницях квоти): глобальна, env
+ *     `AI_QUOTA_TOOL_COST` (default `DEFAULT_TOOL_COST=3`). Per-tool override
+ *     вартості зараз НЕМАЄ.
+ *   - ДЕННИЙ ЛІМІТ tool-call: per-tool override через JSON-мапу env
+ *     `AI_QUOTA_TOOL_LIMITS` `{"tool":maxPerDay}`; tool-и поза мапою беруть
+ *     `AI_QUOTA_TOOL_DEFAULT_LIMIT`, інакше — unlimited.
  *
  * Інкремент — атомарний UPSERT з умовою `request_count + cost <= limit` на
  * ON CONFLICT DO UPDATE. Raceʼу між паралельними запитами немає: у Postgres
@@ -136,14 +145,45 @@ async function userDailyLimit(userId: string): Promise<number | null> {
   return planLimits(plan).aiRequestsPerDay;
 }
 
+/**
+ * Вартість (вага) одного tool-use виклику в одиницях квоти.
+ *
+ * Це ГЛОБАЛЬНА (per-tool-name-agnostic) вага: усі tool-и коштують однаково.
+ * За замовчуванням `DEFAULT_TOOL_COST` (3) — один tool-call "важить" як три
+ * звичайні chat-повідомлення (`default`-bucket, cost=1). Override —
+ * через env `AI_QUOTA_TOOL_COST` (невід'ємне ціле; биті/від'ємні значення
+ * ігноруються `parseLimit`-ом і падають на дефолт).
+ *
+ * NB: вартість і ліміт — це ДВА різні важелі. `AI_QUOTA_TOOL_COST` керує тим,
+ * НАСКІЛЬКИ дорогий кожен виклик; `toolLimit()` (через `AI_QUOTA_TOOL_LIMITS`)
+ * керує тим, СКІЛЬКИ дозволено на день. У `consumeQuota` вони зустрічаються
+ * як `request_count + cost <= limit`. Наразі немає per-tool override саме
+ * ВАРТОСТІ — лише per-tool override ЛІМІТУ (див. `toolLimit`).
+ */
 function toolCost(): number {
   return parseLimit("AI_QUOTA_TOOL_COST", DEFAULT_TOOL_COST);
 }
 
 /**
- * Парсить AI_QUOTA_TOOL_LIMITS як JSON {"tool_name": maxPerDay, ...}.
- * Повертає ліміт для конкретного tool-а, або null (unlimited). На битому
- * JSON-і — null + лог-попередження (advisory-фіча не повинна блокувати запити).
+ * Per-tool денний ліміт викликів (override-механізм).
+ *
+ * Парсить env `AI_QUOTA_TOOL_LIMITS` як JSON-мапу `{"tool_name": maxPerDay}`.
+ * Повертає ліміт (у одиницях квоти, не в кількості викликів) для конкретного
+ * tool-а, або `null` (unlimited).
+ *
+ * Precedence (від найвищого до найнижчого):
+ *   1. `AI_QUOTA_TOOL_LIMITS[toolName]` — явний per-tool ліміт із JSON-мапи,
+ *      якщо ключ присутній і значення — валідне невід'ємне число.
+ *   2. `AI_QUOTA_TOOL_DEFAULT_LIMIT` — fallback для tool-ів, яких немає в мапі
+ *      (а також коли `AI_QUOTA_TOOL_LIMITS` взагалі не задано).
+ *   3. `null` (unlimited) — якщо й дефолтний ліміт не задано.
+ *
+ * Зверни увагу: ліміт виражений у ОДИНИЦЯХ КВОТИ, тому реальна кількість
+ * дозволених викликів = `floor(limit / toolCost())`. Напр. limit=30, cost=3 →
+ * 10 викликів tool-а на день.
+ *
+ * Битий JSON → fallback на default-ліміт + лог-попередження (advisory-фіча не
+ * повинна блокувати запити; fail-open узгоджений із рештою модуля).
  */
 function toolLimit(toolName: string): number | null {
   const raw = process.env["AI_QUOTA_TOOL_LIMITS"];
@@ -275,6 +315,21 @@ export async function assertAiQuota(
  *
  * Повертає `{ok, remaining, limit, reason?}`. `reason` — `"disabled" | "limit"
  * | "store_unavailable"` — для телеметрії.
+ *
+ * Cost-override механізм (вартість і ліміт — два незалежні важелі):
+ *   - ВАРТІСТЬ виклику = `toolCost()` (env `AI_QUOTA_TOOL_COST`, default
+ *     `DEFAULT_TOOL_COST=3`) — глобальна для всіх tool-ів, per-tool override
+ *     вартості НЕМАЄ.
+ *   - ДЕННИЙ ЛІМІТ = `toolLimit(toolName)` — per-tool override через JSON-мапу
+ *     env `AI_QUOTA_TOOL_LIMITS`, з precedence
+ *     `AI_QUOTA_TOOL_LIMITS[toolName]` → `AI_QUOTA_TOOL_DEFAULT_LIMIT` → `null`
+ *     (unlimited). Деталі — у docstring-ах `toolCost` / `toolLimit`.
+ *   - Гейт: bucket `tool:<name>` блокується коли
+ *     `request_count + toolCost() > toolLimit(toolName)` (атомарно в
+ *     `consumeQuota`). Реальна кількість дозволених викликів =
+ *     `floor(limit / cost)` (напр. limit=30, cost=3 → 10 викликів/день).
+ *   - `limit == null` (unlimited) і `isAiQuotaDisabled()` — раннє повернення
+ *     `ok=true` без жодного інкременту.
  *
  * @param {import("express").Request} req
  * @param {string} toolName
