@@ -162,7 +162,10 @@ export type {
 export { parseFizrukWorkouts } from "./ui/parseFizrukWorkouts";
 
 export { perfEnd, perfMark } from "./ui/perf";
-export type { PerfMark } from "./ui/perf";
+// `PerfMark` type was removed from the public barrel in DC-4
+// (dead-code/hard-rules-2026-05) — 0 external consumers found by per-symbol
+// grep. Source file `./ui/perf.ts` remains on disk (knip follow-up DC-4b
+// will sweep if `pnpm knip` confirms).
 
 export { THEME_HEX } from "./ui/themeHex";
 

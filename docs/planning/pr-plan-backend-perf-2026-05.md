@@ -1,9 +1,9 @@
 # PR-план: Backend & Performance follow-up (з прожарки 2026-05-13)
 
-> **Last validated:** 2026-06-01 by server-agent. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-04 by Kilo planner (drift reconcile: 12/12 PR-ів confirmed shipped — див. header note). **Next review:** 2026-08-11.
 > **Status:** Active
 
-> **Оновлено 2026-06-01 (drift reconcile).** Кілька PR-ів цього плану вже **shipped** у коді (звірено sweep-ом): **PR-03** — umbrella `./migrate` export прибрано (`grep '@sergeant/db-schema/migrate"'` → 0); **PR-05** — bounded `pool.end()` drain з AbortController є (`lib/poolShutdown.ts:endPoolWithAbortTimeout`, wired `index.ts`); **PR-09 + PR-10** — `validateBody`/`validateQuery` → `parseBody` міграція завершена (`grep validateBody apps/server/src` excl. `http/`/tests → 0). Перевір цей блок перед тим, як брати їх у роботу.
+> **Оновлено 2026-06-04 (drift reconcile).** Підтверджено shipped у коді: **PR-01** — `env.VAPID_*` centralized + `assertStartupEnv()` production hard-fail (`env/env.ts:486-529, 1338-1346`); **PR-02** — `process.env` DI default прибрано у `obs/tracing.ts` (`grep` → 0); **PR-03** — umbrella `./migrate` export прибрано (`grep '@sergeant/db-schema/migrate"'` → 0); **PR-04** — `metrics.md §6` має 7 `app_build_info` join PromQL; **PR-05** — bounded `pool.end()` через `lib/poolShutdown.ts:endPoolWithAbortTimeout` (env-var `POOL_DRAIN_TIMEOUT_MS` hard-coded як `SHUTDOWN_GRACE_MS / 2` — minor drift, follow-up issue); **PR-06** — `BackendHealthP95High` alert + recording rule + SLO §2.1 + runbook; **PR-07** — broad `match: "/api/internal/"` rule з `rate: 1.0` у `sentry.ts:47-52` + positive test; **PR-08** — `metrics.md §Відкриті питання` cleanup (з minor drift-line 493 — fixed 2026-06-04); **PR-09 + PR-10** — `validateBody`/`validateQuery` → `parseBody` міграція завершена (`grep validateBody apps/server/src` excl. `http/`/tests → 0); **PR-11** — `sergeant-design/prefer-parse-body-over-validate-body` ESLint rule (warn); **PR-12** — обидва audit-stub файли + README реєстрація. **Усі 12 PR-ів done.** Plan is candidate for fast-forward archive — see `§ Sequencing` lifecycle.
 
 PR-розкладка по решті open / Partial / Follow-up / Backlog items із прожарки
 [`docs/audits/archive/2026-05-13-backend-performance-roast.md`](../audits/archive/2026-05-13-backend-performance-roast.md).
@@ -506,6 +506,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 ---
 
 ## PR-12 — `chore(audits): scope syncV2.ts + routes/internal/openclaw.ts deep-roasts`
+
+- **Status:** ✅ Виконано — обидва stub-файли створено (51 + 53 рядки, ≤ 100 критерій ✓), повний frontmatter (`Last validated`, `Next review: 2026-08-11`, `Status: Draft`, `Owner: TBD (backend-engineer)`), `docs/audits/README.md:66-67` реєструє обидва. Real deep-roast сесії — окремий 3-month cycle, серпень 2026 (наступний backend-roast window).
 
 **Surface**
 
