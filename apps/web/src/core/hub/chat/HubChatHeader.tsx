@@ -151,7 +151,7 @@ export function HubChatHeader({
           <button
             type="button"
             onClick={onClearChat}
-            className="h-9 px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong dark:text-brand border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="h-9 min-h-[44px] min-w-[44px] px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong dark:text-brand border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             aria-label="Нова бесіда"
           >
             <Icon name="plus" size={14} />
@@ -161,7 +161,7 @@ export function HubChatHeader({
         <button
           type="button"
           onClick={onClose}
-          className="w-9 h-9 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
+          className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
           aria-label="Закрити асистента"
         >
           <Icon name="close" size={16} />
