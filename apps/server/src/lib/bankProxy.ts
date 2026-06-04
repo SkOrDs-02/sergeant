@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { logger } from "../obs/logger.js";
 import { recordExternalHttp } from "./externalHttp.js";
 import { ExternalServiceError } from "../obs/errors.js";
-import { sleep } from "./timing.js";
+import { elapsedMs, sleep } from "./timing.js";
 
 /**
  * Спільний transport-шар для банківських upstream-проксі (Monobank, PrivatBank).
@@ -273,7 +273,7 @@ export async function bankProxyFetch(
         continue;
       }
 
-      const ms = Number(process.hrtime.bigint() - start) / 1e6;
+      const ms = elapsedMs(start);
       if (response.ok) {
         onBreakerSuccess(upstream);
         recordExternalHttp(upstream, "ok", ms);
@@ -313,7 +313,7 @@ export async function bankProxyFetch(
       if (attempt < maxAttempts - 1) {
         continue;
       }
-      const ms = Number(process.hrtime.bigint() - start) / 1e6;
+      const ms = elapsedMs(start);
       onBreakerFailure(upstream);
       recordExternalHttp(upstream, isAbortError(e) ? "timeout" : "error", ms);
       const err = (e && typeof e === "object" ? e : {}) as {

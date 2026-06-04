@@ -23,6 +23,7 @@
 
 import type { Pool } from "pg";
 import { serializeError } from "../obs/logger.js";
+import { elapsedMs } from "./timing.js";
 
 export type EndPoolResult =
   | { ok: true; reason: "ended" }
@@ -87,7 +88,7 @@ export async function endPoolWithAbortTimeout(
     }
   }
 
-  const startedAt = Date.now();
+  const startedAt = process.hrtime.bigint();
 
   try {
     const endPromise: Promise<EndPoolResult> = Promise.resolve()
@@ -104,7 +105,7 @@ export async function endPoolWithAbortTimeout(
         resolve({
           ok: false,
           reason: "aborted",
-          abortedAfterMs: Date.now() - startedAt,
+          abortedAfterMs: elapsedMs(startedAt),
         });
       };
       if (controller.signal.aborted) {

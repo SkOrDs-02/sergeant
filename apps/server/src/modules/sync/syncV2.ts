@@ -18,6 +18,7 @@ import {
   syncPayloadBytes,
 } from "../../obs/metrics.js";
 import { notifySyncV2OpsApplied, type SyncV2StreamOp } from "./syncV2Stream.js";
+import { elapsedMs } from "../../lib/timing.js";
 
 /**
  * v2 op-log sync — Stage 2 / PR #021 із `docs/planning/storage-roadmap.md`.
@@ -308,10 +309,6 @@ function readOriginDeviceId(req: Request): string | null {
   if (typeof raw !== "string") return null;
   const trimmed = raw.trim().slice(0, 64);
   return trimmed.length > 0 ? trimmed : null;
-}
-
-function elapsedMs(start: bigint): number {
-  return Number(process.hrtime.bigint() - start) / 1e6;
 }
 
 /**

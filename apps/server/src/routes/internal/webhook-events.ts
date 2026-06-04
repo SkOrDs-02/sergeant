@@ -47,6 +47,7 @@ import {
   UnknownWorkflowError,
   type ReplayableEvent,
 } from "../../modules/webhooks/replayWebhookEvent.js";
+import { elapsedMs } from "../../lib/timing.js";
 
 /**
  * Map error → Prometheus `outcome` label. Cardinality-bound enum
@@ -212,7 +213,7 @@ export function createWebhookEventsInternalRouter({
       const outcomes: ReplayOutcome[] = [];
       let successes = 0;
       for (const event of candidates) {
-        const startedAt = Date.now();
+        const startedAt = process.hrtime.bigint();
         let observedOutcome = "ok";
         try {
           const out = await replayWebhookEvent(pool, {
@@ -268,7 +269,7 @@ export function createWebhookEventsInternalRouter({
           });
           n8nWebhookReplayDurationMs.observe(
             { workflow_id: workflowId, outcome: observedOutcome },
-            Date.now() - startedAt,
+            elapsedMs(startedAt),
           );
         }
       }

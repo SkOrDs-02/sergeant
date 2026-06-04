@@ -32,6 +32,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
+import { elapsedMs } from "../../lib/timing.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -572,7 +573,7 @@ export async function refreshBusinessSnapshot(
     ([id, meta]) => ({ id, meta }),
   );
 
-  const startedAt = Date.now();
+  const startedAt = process.hrtime.bigint();
   const results: RefreshBusinessSnapshotResult[] = await Promise.all(
     targets.map(async ({ id, meta }) => {
       try {
@@ -606,7 +607,7 @@ export async function refreshBusinessSnapshot(
     triggered,
     failed,
     notConfigured,
-    durationMs: Date.now() - startedAt,
+    durationMs: elapsedMs(startedAt),
     results,
   };
 }

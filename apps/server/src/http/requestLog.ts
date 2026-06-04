@@ -8,6 +8,7 @@ import {
   httpRequestsTotal,
   statusClass,
 } from "../obs/metrics.js";
+import { elapsedMs } from "../lib/timing.js";
 
 /**
  * Один JSON-рядок на відповідь + емісія HTTP-RED метрик.
@@ -38,7 +39,7 @@ export function requestLogMiddleware(
 
   res.on("finish", () => {
     httpInFlight.dec({ method: req.method });
-    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+    const ms = elapsedMs(start);
     const routePath = req.route?.path;
     const basePath = typeof req.baseUrl === "string" ? req.baseUrl : "";
     // Fallback на `unknown` (не сирий URL) щоб не роздувати cardinality Prometheus

@@ -23,6 +23,7 @@ import {
 } from "./obs/metrics.js";
 import { emitSecurityEvent } from "./obs/securityEvents.js";
 import { hashUserId } from "./lib/userIdHash.js";
+import { elapsedMs } from "./lib/timing.js";
 
 /**
  * Короткий fingerprint email-у для логів. Той самий патерн (sha256 → 12 hex),
@@ -653,7 +654,7 @@ export async function getSessionUser(
     outcome = "error";
     throw e;
   } finally {
-    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+    const ms = elapsedMs(start);
     try {
       authSessionLookupDurationMs.observe({ outcome }, ms);
       authAttemptsTotal.inc({ op: "session_check", outcome });

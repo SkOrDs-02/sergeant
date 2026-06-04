@@ -13,6 +13,7 @@ import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { categorizeMcc } from "./mccCategories.js";
 import { webhookSecretHash } from "./crypto.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
+import { elapsedMs } from "../../lib/timing.js";
 
 /**
  * POST /api/mono/webhook/:secret? — public Monobank delivery endpoint.
@@ -436,7 +437,7 @@ export async function webhookHandler(
     } catch {
       /* ignore secondary rollback failure — original error matters more */
     }
-    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+    const ms = elapsedMs(start);
     monoWebhookReceivedTotal.inc({ status: "error" });
     monoWebhookDurationMs.observe({ status: "error" }, ms);
     logger.error({ msg: "mono_webhook_error", err });
@@ -445,7 +446,7 @@ export async function webhookHandler(
     client.release();
   }
 
-  const ms = Number(process.hrtime.bigint() - start) / 1e6;
+  const ms = elapsedMs(start);
   if (autocreated)
     monoWebhookReceivedTotal.inc({ status: "account_autocreated" });
   monoWebhookReceivedTotal.inc({ status: "ok" });

@@ -1,5 +1,6 @@
 import pool from "../../db.js";
 import { logger } from "../../obs/logger.js";
+import { elapsedMs } from "../../lib/timing.js";
 
 /**
  * Інфраструктурний шар для AI-quota circuit-breaker (PR-03 → PR-04 → PR-05).
@@ -90,7 +91,7 @@ export interface DbHealthProbeResult {
 export async function dbHealthProbe(
   timeoutMs: number = DEFAULT_PROBE_TIMEOUT_MS,
 ): Promise<DbHealthProbeResult> {
-  const start = Date.now();
+  const start = process.hrtime.bigint();
   let timer: NodeJS.Timeout | undefined;
 
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -105,12 +106,12 @@ export async function dbHealthProbe(
 
   try {
     await Promise.race([pool.query("SELECT 1"), timeoutPromise]);
-    return { ok: true, latencyMs: Date.now() - start };
+    return { ok: true, latencyMs: elapsedMs(start) };
   } catch (e: unknown) {
     const err = e as { message?: string; code?: string } | undefined;
     const result: DbHealthProbeResult = {
       ok: false,
-      latencyMs: Date.now() - start,
+      latencyMs: elapsedMs(start),
       message: err?.message || String(e),
     };
     if (err?.code) result.code = err.code;
