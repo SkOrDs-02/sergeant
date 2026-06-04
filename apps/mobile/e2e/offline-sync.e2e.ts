@@ -109,9 +109,7 @@ describe("Офлайн / Синк — збереження в черзі та в
     //    rather than testIDs — match by label prefix.
     //    Once `sync-status-offline` testID is wired, replace this with:
     //    `await waitForVisibleById("sync-status-offline");`
-    await waitFor(
-      element(by.label(/^Офлайн/)).atIndex(0),
-    )
+    await waitFor(element(by.label(/^Офлайн/)).atIndex(0))
       .toBeVisible()
       .withTimeout(DEFAULT_WAIT_MS);
 

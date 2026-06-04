@@ -50,7 +50,8 @@ disableAutoSignIn();
 // A fresh unique email for the sign-up test. Using a timestamp keeps it
 // deterministic enough for the mock interceptor (which accepts any email).
 const SIGN_UP_EMAIL = `detox-signup-${Date.now()}@sergeant.test`;
-const SIGN_UP_PASSWORD = "detox-signup-pass-2026";
+// Static non-secret fixture for the mock auth interceptor (accepts any value).
+const SIGN_UP_PASSWORD = "detox-signup-pass-2026"; // gitleaks:allow
 const SIGN_UP_NAME = "Detox User";
 
 describe("Аутентифікація — sign-up / error / forgot-password", () => {

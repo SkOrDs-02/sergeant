@@ -48,7 +48,9 @@ vi.mock("../ai-memory/bootstrap.js", () => ({
 
 // ─── Mock repoAllowlist so readGithub/getGithubReleases use test repo ──────
 vi.mock("./repoAllowlist.js", () => ({
-  assertOpenClawRepoAllowed: vi.fn((repo?: string) => repo ?? "Skords-01/Sergeant"),
+  assertOpenClawRepoAllowed: vi.fn(
+    (repo?: string) => repo ?? "Skords-01/Sergeant",
+  ),
 }));
 
 import {
@@ -113,7 +115,10 @@ afterEach(() => {
 });
 
 function installFetch(
-  impl: (url: string, init: RequestInit | undefined) => Response | Promise<Response>,
+  impl: (
+    url: string,
+    init: RequestInit | undefined,
+  ) => Response | Promise<Response>,
 ) {
   globalThis.fetch = vi.fn(
     async (input: string | URL | Request, init?: RequestInit) => {
@@ -485,7 +490,9 @@ describe("recordDecision", () => {
   });
 
   it("повертає prUrl=null з prError коли GitHub auth відсутній (null)", async () => {
-    // getOpenclawGithubAuth returns null (default mock)
+    // Force no-auth explicitly — the mock is not reset between tests, so a
+    // prior happy-path mockResolvedValue would otherwise leak in here.
+    vi.mocked(getOpenclawGithubAuth).mockResolvedValue(null);
     const pool = makeFakePool([{ id: "7" }]);
 
     const result = await recordDecision(pool, baseInput);

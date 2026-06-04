@@ -93,7 +93,9 @@ function CalendarGridImpl({
 
         const forecast = recoveryForecast[key] ?? null;
         const dotClass = recoveryDotClass(forecast?.status);
-        const recoveryLabel = forecast ? `. ${describeDayRecovery(forecast)}` : "";
+        const recoveryLabel = forecast
+          ? `. ${describeDayRecovery(forecast)}`
+          : "";
         const a11yLabel = `День ${day}${recoveryLabel}`;
 
         return (

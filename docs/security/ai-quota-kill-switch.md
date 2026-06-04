@@ -1,6 +1,6 @@
 # AI quota kill-switch policy
 
-> **Last validated:** 2026-06-04 by @Skords-01. **Next review:** 2026-09-02.
+> **Last validated:** 2026-06-04 by @claude. **Next review:** 2026-09-02.
 > **Status:** Active
 
 ## TL;DR
@@ -152,10 +152,10 @@ set in production`) — fires the moment the misconfig hits.
 
 ### Два незалежні важелі
 
-| Важіль          | Що задає                          | Env                                      | Default                  | Per-tool? |
-| --------------- | --------------------------------- | ---------------------------------------- | ------------------------ | --------- |
-| **Cost** (вага) | НАСКІЛЬКИ дорогий один tool-виклик | `AI_QUOTA_TOOL_COST`                     | `3` (`DEFAULT_TOOL_COST`) | Ні (глобально) |
-| **Limit**       | СКІЛЬКИ одиниць квоти на день      | `AI_QUOTA_TOOL_LIMITS` (JSON-мапа)        | див. precedence нижче    | Так        |
+| Важіль          | Що задає                           | Env                                | Default                   | Per-tool?      |
+| --------------- | ---------------------------------- | ---------------------------------- | ------------------------- | -------------- |
+| **Cost** (вага) | НАСКІЛЬКИ дорогий один tool-виклик | `AI_QUOTA_TOOL_COST`               | `3` (`DEFAULT_TOOL_COST`) | Ні (глобально) |
+| **Limit**       | СКІЛЬКИ одиниць квоти на день      | `AI_QUOTA_TOOL_LIMITS` (JSON-мапа) | див. precedence нижче     | Так            |
 
 Гейт спрацьовує атомарно в `consumeQuota`:
 `request_count + toolCost() > toolLimit(name)` → блок. Тому реальна кількість

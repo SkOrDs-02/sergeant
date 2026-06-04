@@ -1,9 +1,6 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
-import type {
-  FizrukItemSnapshot,
-  FizrukWorkoutSnapshot,
-} from "./diff";
+import type { FizrukItemSnapshot, FizrukWorkoutSnapshot } from "./diff";
 
 // -----------------------------------------------------------------------
 // Workout upsert / soft-delete (includes items, sets, and child cleanup)

@@ -31,12 +31,7 @@
  */
 import { by, element, waitFor } from "detox";
 
-import {
-  DEFAULT_WAIT_MS,
-  byId,
-  tapWhenVisible,
-  waitForVisibleById,
-} from "./helpers";
+import { DEFAULT_WAIT_MS, tapWhenVisible, waitForVisibleById } from "./helpers";
 import { disableAutoSignIn, signIn, signOut } from "./_helpers/auth";
 
 disableAutoSignIn();

@@ -3,11 +3,18 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type { FizrukDualWriteOp } from "./diff";
 
 import { setActiveWorkout } from "./activeWorkout";
-import { upsertCustomExercise, softDeleteCustomExercise } from "./customExercises";
+import {
+  upsertCustomExercise,
+  softDeleteCustomExercise,
+} from "./customExercises";
 import { upsertDailyLog, softDeleteDailyLog } from "./dailyLog";
 import { upsertMeasurement, softDeleteMeasurement } from "./measurements";
 import { setPrograms, setPlanTemplate } from "./programs";
-import { setMonthlyPlan, upsertWorkoutTemplate, softDeleteWorkoutTemplate } from "./templates";
+import {
+  setMonthlyPlan,
+  upsertWorkoutTemplate,
+  softDeleteWorkoutTemplate,
+} from "./templates";
 import { upsertWellbeing, softDeleteWellbeing } from "./wellbeing";
 import { upsertWorkout, softDeleteWorkout } from "./workouts";
 

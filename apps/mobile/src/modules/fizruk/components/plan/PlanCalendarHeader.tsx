@@ -67,7 +67,9 @@ function PlanCalendarHeaderImpl({
       <View className="flex-row mb-1">
         {WEEKDAYS.map((w) => (
           <View key={w} className="w-[14.2857%] items-center">
-            <Text className="text-[10px] font-semibold text-fg-subtle">{w}</Text>
+            <Text className="text-[10px] font-semibold text-fg-subtle">
+              {w}
+            </Text>
           </View>
         ))}
       </View>

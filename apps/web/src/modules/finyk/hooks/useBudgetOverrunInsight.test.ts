@@ -8,7 +8,10 @@
  */
 import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
-import type { Transaction, LimitBudget } from "@sergeant/finyk-domain/domain/types";
+import type {
+  Transaction,
+  LimitBudget,
+} from "@sergeant/finyk-domain/domain/types";
 import {
   useBudgetOverrunInsight,
   OVERRUN_THRESHOLD,
@@ -94,13 +97,15 @@ describe("useBudgetOverrunInsight", () => {
     expect(result.current!.id).toBe("finyk-budget-overrun-food");
     expect(result.current!.module).toBe("finyk");
     expect(result.current!.title).toContain("20%");
-    expect(result.current!.action.type).toBe("navigate");
-    expect(result.current!.action.path).toContain("food");
+    expect(result.current!.action).toMatchObject({
+      type: "navigate",
+      path: expect.stringContaining("food"),
+    });
   });
 
   it("selects the worst offender when multiple budgets are overrun", () => {
     // food: 150% overrun; transport: 120% overrun — food should win.
-    const txFood = mkTx("t1", -150_000);    // 1500 UAH on food (limit 1000)
+    const txFood = mkTx("t1", -150_000); // 1500 UAH on food (limit 1000)
     const txTransport = mkTx("t2", -240_000); // 2400 UAH on transport (limit 2000)
 
     const { result } = renderHook(() =>

@@ -167,9 +167,7 @@ function DaySheetImpl({
             accessibilityLabel="Без плану"
             onPress={() => onApply(null)}
             className={`px-3 py-3 rounded-xl border ${
-              !templateId
-                ? "border-emerald-500 bg-emerald-50"
-                : "border-line"
+              !templateId ? "border-emerald-500 bg-emerald-50" : "border-line"
             }`}
           >
             <Text className="text-sm text-fg">Без плану (вихідний)</Text>

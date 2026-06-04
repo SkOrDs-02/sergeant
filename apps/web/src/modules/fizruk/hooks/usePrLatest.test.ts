@@ -90,11 +90,9 @@ describe("usePrLatest", () => {
 
   it("returns the PR from a completed workout within the 30-day window", () => {
     // Workout ended 1 day ago (Kyiv 2026-06-03).
-    const w = mkWorkout(
-      "w1",
-      "2026-06-03T10:00:00Z",
-      [mkStrengthItem("bench", "Жим лежачи", 100)],
-    );
+    const w = mkWorkout("w1", "2026-06-03T10:00:00Z", [
+      mkStrengthItem("bench", "Жим лежачи", 100),
+    ]);
     const { result } = renderHook(() =>
       usePrLatest({ workouts: [w], loaded: true }),
     );
@@ -107,11 +105,9 @@ describe("usePrLatest", () => {
   it("returns null when the only PR is older than 30 days", () => {
     // Workout ended 31 days ago — outside the window.
     const oldDate = new Date(FIXED_NOW.getTime() - 31 * 24 * 60 * 60 * 1000);
-    const w = mkWorkout(
-      "w1",
-      oldDate.toISOString(),
-      [mkStrengthItem("squat", "Присідання", 80)],
-    );
+    const w = mkWorkout("w1", oldDate.toISOString(), [
+      mkStrengthItem("squat", "Присідання", 80),
+    ]);
     const { result } = renderHook(() =>
       usePrLatest({ workouts: [w], loaded: true }),
     );
@@ -120,16 +116,12 @@ describe("usePrLatest", () => {
 
   it("picks the most-recent PR when multiple exercises have records", () => {
     // bench PR set 2 days ago; squat PR set 1 day ago → squat should win.
-    const wBench = mkWorkout(
-      "w1",
-      "2026-06-02T10:00:00Z",
-      [mkStrengthItem("bench", "Жим лежачи", 120)],
-    );
-    const wSquat = mkWorkout(
-      "w2",
-      "2026-06-03T10:00:00Z",
-      [mkStrengthItem("squat", "Присідання", 90)],
-    );
+    const wBench = mkWorkout("w1", "2026-06-02T10:00:00Z", [
+      mkStrengthItem("bench", "Жим лежачи", 120),
+    ]);
+    const wSquat = mkWorkout("w2", "2026-06-03T10:00:00Z", [
+      mkStrengthItem("squat", "Присідання", 90),
+    ]);
     const { result } = renderHook(() =>
       usePrLatest({ workouts: [wBench, wSquat], loaded: true }),
     );
@@ -141,16 +133,12 @@ describe("usePrLatest", () => {
   it("tracks the first-ever time a weight was achieved as the PR date", () => {
     // Two sessions with the same exercise: older one has higher weight.
     // The hook should report the older session's weight as the PR.
-    const wOld = mkWorkout(
-      "w1",
-      "2026-05-20T10:00:00Z",
-      [mkStrengthItem("bench", "Жим лежачи", 130)],
-    );
-    const wNew = mkWorkout(
-      "w2",
-      "2026-06-03T10:00:00Z",
-      [mkStrengthItem("bench", "Жим лежачи", 110)],
-    );
+    const wOld = mkWorkout("w1", "2026-05-20T10:00:00Z", [
+      mkStrengthItem("bench", "Жим лежачи", 130),
+    ]);
+    const wNew = mkWorkout("w2", "2026-06-03T10:00:00Z", [
+      mkStrengthItem("bench", "Жим лежачи", 110),
+    ]);
     const { result } = renderHook(() =>
       usePrLatest({ workouts: [wNew, wOld], loaded: true }),
     );
