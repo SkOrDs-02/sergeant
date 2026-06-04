@@ -44,7 +44,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
@@ -53,14 +53,12 @@ import {
   aggregatePlannedByDate,
   computeRecoveryForecast,
   dateKeyFromYMD,
-  describeDayRecovery,
   monthCursorFromDate,
   monthGrid,
   monthIsEmpty,
   shiftMonthCursor,
   todayDateKey,
   type DayRecoveryForecast,
-  type DayRecoveryStatus,
   type MonthCursor,
   type PlannedWorkoutLike,
 } from "@sergeant/fizruk-domain/domain/plan/index";
@@ -80,8 +78,9 @@ import { fizrukRouteFor } from "../shell/fizrukRoute";
 import { useMonthlyPlan } from "../hooks/useMonthlyPlan";
 import { useWellbeing, type WellbeingEntry } from "../hooks/useWellbeing";
 import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
-
-const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"] as const;
+import { PlanCalendarHeader } from "../components/plan/PlanCalendarHeader";
+import { CalendarGrid } from "../components/plan/CalendarGrid";
+import { DaySheet } from "../components/plan/DaySheet";
 
 /** Narrow the raw MMKV payload into `PlannedWorkoutLike[]`. */
 function readWorkouts(): PlannedWorkoutLike[] {
@@ -149,39 +148,6 @@ function formatSheetTitle(key: string): string {
     });
   } catch {
     return key;
-  }
-}
-
-/**
- * Tailwind background colour for a day's recovery dot. Gray for
- * `fresh` (no recent load), green for `ready`, red for `overworked`.
- * `unknown` falls back to transparent so cells outside the forecast
- * render without a dot at all.
- */
-function recoveryDotClass(
-  status: DayRecoveryStatus | null | undefined,
-): string {
-  switch (status) {
-    case "overworked":
-      return "bg-red-500";
-    case "ready":
-      return "bg-emerald-500";
-    case "fresh":
-      return "bg-line";
-    default:
-      return "";
-  }
-}
-
-function formatTime(startedAt: string | null | undefined): string | null {
-  if (!startedAt) return null;
-  try {
-    return new Date(startedAt).toLocaleTimeString("uk-UA", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return null;
   }
 }
 
@@ -341,6 +307,11 @@ export function PlanCalendar({
 
   const closeSheet = useCallback(() => setSheet(null), []);
 
+  const templateSummary =
+    days && Object.keys(days).length > 0
+      ? `${Object.keys(days).length} днів із шаблоном`
+      : "Ще немає призначених шаблонів";
+
   return (
     <SafeAreaView className="flex-1 bg-cream-50" edges={["bottom"]}>
       <ScrollView
@@ -355,123 +326,25 @@ export function PlanCalendar({
         </View>
 
         <Card radius="lg" padding="md">
-          <View className="flex-row items-center justify-between gap-2 mb-3">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Попередній місяць"
-              onPress={() => go(-1)}
-              className="w-10 h-10 rounded-xl border border-line items-center justify-center"
-            >
-              <Text className="text-lg text-fg">‹</Text>
-            </Pressable>
-            <Text className="text-base font-bold text-fg capitalize">
-              {monthTitle}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Наступний місяць"
-              onPress={() => go(1)}
-              className="w-10 h-10 rounded-xl border border-line items-center justify-center"
-            >
-              <Text className="text-lg text-fg">›</Text>
-            </Pressable>
-          </View>
+          <PlanCalendarHeader
+            monthTitle={monthTitle}
+            templateSummary={templateSummary}
+            onPrevMonth={() => go(-1)}
+            onNextMonth={() => go(1)}
+            onGoToday={goToday}
+          />
 
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-[11px] text-fg-muted">
-              {days && Object.keys(days).length > 0
-                ? `${Object.keys(days).length} днів із шаблоном`
-                : "Ще немає призначених шаблонів"}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Перейти до поточного місяця"
-              onPress={goToday}
-              className="px-2 py-1 rounded-lg active:opacity-60"
-            >
-              <Text className="text-xs font-semibold text-teal-700">
-                Сьогодні
-              </Text>
-            </Pressable>
-          </View>
-
-          <View className="flex-row mb-1">
-            {WEEKDAYS.map((w) => (
-              <View key={w} className="w-[14.2857%] items-center">
-                <Text className="text-[10px] font-semibold text-fg-subtle">
-                  {w}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <View className="flex-row flex-wrap">
-            {cells.map((day, i) => {
-              if (day == null) {
-                return (
-                  <View key={`e-${i}`} className="w-[14.2857%] p-0.5">
-                    <View className="min-h-[52px] rounded-xl bg-panelHi/40" />
-                  </View>
-                );
-              }
-              const key = dateKeyFromYMD(cursor.y, cursor.m, day);
-              const tid = days[key]?.templateId;
-              const tpl = tid
-                ? (templates.find((t) => t.id === tid) ?? null)
-                : null;
-              const planned = plannedByDate[key] ?? [];
-              const isToday = key === todayKey;
-              const hasPlan = planned.length > 0;
-
-              const borderClass = isToday
-                ? "border-emerald-500 bg-emerald-50"
-                : hasPlan
-                  ? "border-emerald-400/60 bg-emerald-50/60"
-                  : "border-line bg-panelHi/40";
-
-              const forecast = recoveryForecast[key] ?? null;
-              const dotClass = recoveryDotClass(forecast?.status);
-              const recoveryLabel = forecast
-                ? `. ${describeDayRecovery(forecast)}`
-                : "";
-              const a11yLabel = `День ${day}${recoveryLabel}`;
-
-              return (
-                <View key={key} className="w-[14.2857%] p-0.5">
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={a11yLabel}
-                    testID={`plan-day-${key}`}
-                    onPress={() => openDay(day)}
-                    className={`min-h-[52px] rounded-xl border ${borderClass} p-1 items-center active:opacity-70`}
-                  >
-                    <View className="flex-row items-center gap-1">
-                      <Text className="text-xs font-bold text-fg">{day}</Text>
-                      {forecast ? (
-                        <View
-                          testID={`plan-day-${key}-recovery-${forecast.status}`}
-                          className={`w-1.5 h-1.5 rounded-full ${dotClass}`}
-                        />
-                      ) : null}
-                    </View>
-                    {tpl ? (
-                      <Text
-                        numberOfLines={1}
-                        className="text-[9px] text-fg-muted leading-tight mt-0.5"
-                      >
-                        {tpl.name}
-                      </Text>
-                    ) : null}
-                    {hasPlan ? (
-                      <Text className="text-[9px] text-emerald-700 font-bold leading-tight mt-0.5">
-                        {planned.length > 1 ? `🏋 ×${planned.length}` : "🏋"}
-                      </Text>
-                    ) : null}
-                  </Pressable>
-                </View>
-              );
-            })}
-          </View>
+          <CalendarGrid
+            year={cursor.y}
+            month={cursor.m}
+            cells={cells}
+            todayKey={todayKey}
+            days={days}
+            templates={templates}
+            plannedByDate={plannedByDate}
+            recoveryForecast={recoveryForecast}
+            onDayPress={openDay}
+          />
 
           <Text className="text-[11px] text-fg-muted mt-3">
             Натисни день, щоб призначити або зняти шаблон.
@@ -517,141 +390,13 @@ export function PlanCalendar({
         }
       >
         {sheet ? (
-          <View className="gap-3">
-            {sheetForecast ? (
-              <View
-                testID={`plan-recovery-summary-${sheetForecast.status}`}
-                accessibilityLabel={describeDayRecovery(sheetForecast)}
-                className={`rounded-xl border px-3 py-2 ${
-                  sheetForecast.status === "overworked"
-                    ? "border-red-200 bg-red-50"
-                    : sheetForecast.status === "ready"
-                      ? "border-emerald-200 bg-emerald-50"
-                      : "border-line bg-bg"
-                }`}
-              >
-                <View className="flex-row items-center gap-2 mb-1">
-                  <View
-                    className={`w-2 h-2 rounded-full ${recoveryDotClass(
-                      sheetForecast.status,
-                    )}`}
-                  />
-                  <Text className="text-xs font-bold text-fg">
-                    {sheetForecast.status === "overworked"
-                      ? "Відновлення: перевантаження"
-                      : sheetForecast.status === "ready"
-                        ? "Відновлення: готовий"
-                        : "Відновлення: без недавніх тренувань"}
-                  </Text>
-                </View>
-                {sheetForecast.overworkedMuscles.length > 0 ? (
-                  <Text className="text-xs text-fg-muted leading-snug">
-                    Перевантажені:{" "}
-                    {sheetForecast.overworkedMuscles
-                      .map((m) => m.label)
-                      .join(", ")}
-                  </Text>
-                ) : null}
-                {sheetForecast.recoveredMuscles.length > 0 ? (
-                  <Text className="text-xs text-fg-muted leading-snug">
-                    Відновлені:{" "}
-                    {sheetForecast.recoveredMuscles
-                      .map((m) => m.label)
-                      .join(", ")}
-                  </Text>
-                ) : null}
-              </View>
-            ) : null}
-
-            {sheet.planned.length > 0 ? (
-              <View>
-                <Text className="text-xs font-bold text-emerald-700 mb-2">
-                  🏋 Заплановані тренування
-                </Text>
-                <View className="gap-2">
-                  {sheet.planned.map((w) => {
-                    const time = formatTime(
-                      typeof w.startedAt === "string" ? w.startedAt : null,
-                    );
-                    const itemNames = Array.isArray(w.items)
-                      ? w.items
-                          .map((it) => {
-                            const rec = it as {
-                              nameUk?: unknown;
-                              name?: unknown;
-                            };
-                            if (typeof rec.nameUk === "string")
-                              return rec.nameUk;
-                            if (typeof rec.name === "string") return rec.name;
-                            return null;
-                          })
-                          .filter((x): x is string => !!x)
-                      : [];
-                    return (
-                      <View
-                        key={w.id}
-                        className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2"
-                      >
-                        <Text className="text-sm font-semibold text-fg">
-                          {time ? (
-                            <Text className="text-emerald-700">{time} </Text>
-                          ) : null}
-                          {typeof w.note === "string" && w.note
-                            ? w.note
-                            : "Тренування"}
-                        </Text>
-                        {itemNames.length > 0 ? (
-                          <Text className="text-xs text-fg-muted mt-0.5">
-                            {itemNames.join(" · ")}
-                          </Text>
-                        ) : null}
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : null}
-
-            <View>
-              <Text className="text-xs text-fg-muted mb-2">
-                Шаблон тренування
-              </Text>
-              <View className="gap-2">
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Без плану"
-                  onPress={() => applySheet(null)}
-                  className={`px-3 py-3 rounded-xl border ${
-                    !sheet.templateId
-                      ? "border-emerald-500 bg-emerald-50"
-                      : "border-line"
-                  }`}
-                >
-                  <Text className="text-sm text-fg">Без плану (вихідний)</Text>
-                </Pressable>
-                {templates.map((t) => (
-                  <Pressable
-                    key={t.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={t.name}
-                    onPress={() => applySheet(t.id)}
-                    className={`px-3 py-3 rounded-xl border ${
-                      sheet.templateId === t.id
-                        ? "border-emerald-500 bg-emerald-50"
-                        : "border-line"
-                    }`}
-                  >
-                    <Text className="text-sm text-fg">{t.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-              {templates.length === 0 ? (
-                <Text className="text-xs text-fg-muted mt-2">
-                  Спочатку створи шаблон у «Тренування → Шаблони».
-                </Text>
-              ) : null}
-            </View>
-          </View>
+          <DaySheet
+            templateId={sheet.templateId}
+            planned={sheet.planned}
+            forecast={sheetForecast ?? null}
+            templates={templates}
+            onApply={applySheet}
+          />
         ) : null}
       </Sheet>
     </SafeAreaView>
