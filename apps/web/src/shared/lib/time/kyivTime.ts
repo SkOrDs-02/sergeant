@@ -216,7 +216,7 @@ export function getKyivMondayIndex(input?: Date | number): number {
  * used by the strategic-goals API (`StrategyPage`, WF-26 cron).
  *
  * @example
- *   getKyivWeekStartKey(); // → "2026-06-02" (Monday of current week)
+ *   getKyivWeekStartKey(); // → "2026-06-01" (Monday of current week)
  */
 export function getKyivWeekStartKey(input?: Date | number): string {
   return getKyivDayKey(getKyivWeekStart(input));

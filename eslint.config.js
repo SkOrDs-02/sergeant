@@ -1265,6 +1265,21 @@ export default [
             "an `eslint-disable-next-line no-restricted-syntax` with a WHY comment. " +
             "See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 1.",
         },
+        // Inherit the legacy palette selectors from the top-level block so this
+        // scoped override doesn't accidentally drop them — flat-config merges
+        // rules by replacement per rule key (last matching block wins).
+        {
+          selector:
+            "Literal[value=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
+          message:
+            "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
+        },
+        {
+          selector:
+            "TemplateElement[value.raw=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
+          message:
+            "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
+        },
       ],
     },
   },
