@@ -2,7 +2,7 @@ import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { nutritionApi } from "@shared/api";
-import { toLocalISODate } from "@sergeant/shared";
+import { toLocalISODate, generatePrefixedId } from "@sergeant/shared";
 import type {
   NutritionDayMeal,
   NutritionDayPlan as ApiNutritionDayPlan,
@@ -181,7 +181,7 @@ function adaptShoppingCategories(
   return categories.map((cat, catIdx) => ({
     name: String(cat.name ?? ""),
     items: (Array.isArray(cat.items) ? cat.items : []).map((it, itIdx) => ({
-      id: `sl_${catIdx}_${itIdx}_${Math.random().toString(36).slice(2, 8)}`,
+      id: `sl_${catIdx}_${itIdx}_${generatePrefixedId("sl")}`,
       name: String(it.name ?? ""),
       quantity: String(it.quantity ?? ""),
       note: String(it.note ?? ""),

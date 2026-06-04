@@ -77,11 +77,12 @@ export function Dashboard({
   onStartProgramWorkout,
   onNavigate,
 }: DashboardProps) {
-  const today = new Date().toLocaleDateString("uk-UA", {
+  const today = new Intl.DateTimeFormat("uk-UA", {
     weekday: "long",
     day: "numeric",
     month: "long",
-  });
+    timeZone: "Europe/Kyiv",
+  }).format(new Date());
   const rec = useRecovery();
   const {
     workouts,

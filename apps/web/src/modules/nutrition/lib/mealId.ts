@@ -8,6 +8,8 @@
  * give 16^8 = 4.3B random tails — ~70x lower collision rate than the old
  * 5-char base36 tail (36^5 = 60M), uniform across all call sites.
  */
+import { generatePrefixedId } from "@sergeant/shared";
+
 export function newMealId(): string {
-  return `meal_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  return generatePrefixedId("meal");
 }

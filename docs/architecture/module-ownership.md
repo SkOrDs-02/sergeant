@@ -7,6 +7,8 @@
 
 ¹ **Secondary** is the bus-factor backup reviewer. Real GitHub handles like `@alice` are preferred, but during the rollout we use placeholders such as `TBD (frontend-engineer)`. Empty cells are rejected by `pnpm lint:codeowners` (PR-04 contract).
 
+> **AI-CONTEXT:** All `Secondary` columns currently read `TBD (<role>`) — known bus-factor gap (Stack-pulse PR-04). Until real GitHub handles are assigned, every path has exactly one reviewer. Spawn a reconciliation task from the recurring docs-drift workflow to assign handles, starting with highest-velocity paths (`apps/web/src/core/**`, `apps/web/src/modules/finyk/**`, `apps/server/src/modules/**`).
+
 ## Apps
 
 | Path                                   | Owner        | Secondary ¹             | Test stack                              | RQ keys factory                                  | Notes                                                                                                                                                           |

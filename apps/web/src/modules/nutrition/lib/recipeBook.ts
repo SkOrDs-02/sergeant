@@ -4,6 +4,7 @@ import {
   migrateLegacyDbOnce,
   openSergeantDb,
 } from "../../../shared/lib/idb/sergeantDb";
+import { generatePrefixedId } from "@sergeant/shared";
 
 /**
  * Pre-PR-#010 saved recipes lived in a dedicated `hub_nutrition_recipe_book`
@@ -85,7 +86,7 @@ export function normalizeRecipeForSave(r: unknown): SavedRecipe {
   const id =
     raw["id"] && String(raw["id"]).trim()
       ? String(raw["id"]).trim()
-      : `rcp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      : generatePrefixedId("rcp");
   return {
     id,
     title,

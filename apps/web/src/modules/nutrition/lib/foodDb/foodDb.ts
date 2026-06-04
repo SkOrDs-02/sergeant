@@ -5,6 +5,7 @@ import {
   migrateLegacyDbOnce,
   openSergeantDb,
 } from "../../../../shared/lib/idb/sergeantDb";
+import { generatePrefixedId } from "@sergeant/shared";
 
 /**
  * Lazy-loader для 1600+ seed-продуктів. Статичний import затягував весь
@@ -143,7 +144,7 @@ export function makeFoodProduct(partial: unknown): FoodProduct {
   const id =
     p.id && String(p.id).trim()
       ? String(p.id).trim()
-      : `food_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      : generatePrefixedId("food");
   const norm = normText([name, brand].filter(Boolean).join(" "));
   const defaultGrams = p.defaultGrams != null ? clamp0(p.defaultGrams) : 100;
   return {
