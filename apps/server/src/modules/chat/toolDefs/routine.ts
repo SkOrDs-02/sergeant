@@ -5,6 +5,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     name: "mark_habit_done",
     description:
       "Відмітити звичку як виконану на сьогодні (або на вказану дату). ID звички беріть з блоку [Рутина сьогодні].",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -25,6 +26,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     name: "create_habit",
     description:
       "Створити нову звичку в модулі Рутина. Використовуй коли користувач просить додати / завести / почати нову звичку (напр. 'додай звичку пити воду', 'заведи пробіжку щопонеділка').",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -173,6 +175,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     name: "set_habit_schedule",
     description:
       "Виставити точні дні тижня для звички (recurrence='weekly'). Передавай дні англ. ('mon','tue','wed','thu','fri','sat','sun') або укр. коротко ('пн','вт','ср','чт','пт','сб','нд'). Регістр і порядок не важливі. Приклад: 'тренування пн/ср/пт' → days=['mon','wed','fri'].",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -191,6 +194,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     name: "pause_habit",
     description:
       "Тимчасово поставити звичку на паузу (або зняти з паузи). Не видаляє і не архівує — звичка зберігає історію виконань. Ідемпотентно: повторний виклик з тим самим прапором — no-op.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {

@@ -18,6 +18,7 @@ import { generateInsights } from "../lib/insightsEngine";
 import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
 import { PaywallModal, useFeatureGate } from "../billing";
 import { getPeriodRange, type Period } from "./hubReports.aggregation";
+import ChunkErrorBoundary from "./ChunkErrorBoundary";
 
 // ── Lazy card chunks ──────────────────────────────────────────────────
 
@@ -213,18 +214,26 @@ export function HubReports() {
       {period === "week" && <WeeklyDigestCard />}
 
       <div className="grid grid-cols-1 gap-3">
-        <Suspense fallback={<CardSkeleton />}>
-          <FitnessCard period={period} offset={offset} />
-        </Suspense>
-        <Suspense fallback={<CardSkeleton />}>
-          <ExpensesCard period={period} offset={offset} />
-        </Suspense>
-        <Suspense fallback={<CardSkeleton />}>
-          <RoutineCard period={period} offset={offset} />
-        </Suspense>
-        <Suspense fallback={<CardSkeleton />}>
-          <NutritionCard period={period} offset={offset} />
-        </Suspense>
+        <ChunkErrorBoundary minH={56}>
+          <Suspense fallback={<CardSkeleton />}>
+            <FitnessCard period={period} offset={offset} />
+          </Suspense>
+        </ChunkErrorBoundary>
+        <ChunkErrorBoundary minH={56}>
+          <Suspense fallback={<CardSkeleton />}>
+            <ExpensesCard period={period} offset={offset} />
+          </Suspense>
+        </ChunkErrorBoundary>
+        <ChunkErrorBoundary minH={56}>
+          <Suspense fallback={<CardSkeleton />}>
+            <RoutineCard period={period} offset={offset} />
+          </Suspense>
+        </ChunkErrorBoundary>
+        <ChunkErrorBoundary minH={56}>
+          <Suspense fallback={<CardSkeleton />}>
+            <NutritionCard period={period} offset={offset} />
+          </Suspense>
+        </ChunkErrorBoundary>
       </div>
 
       {insights.length >= 1 ? (

@@ -5,6 +5,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
     name: "plan_workout",
     description:
       "Створити (запланувати) тренування у Фізруку на сьогодні або вказану дату/час. Можна додати список вправ із підходами/повтореннями/вагою.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -44,6 +45,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
     name: "log_set",
     description:
       "Додати підхід (set) до тренування у Фізрук. Використовуй коли користувач каже 'я зробив X повторень Y кг жиму/присіду' тощо. Якщо зараз є активне тренування — додає підхід до відповідної вправи; інакше — створює нове тренування на сьогодні й додає туди.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -68,6 +70,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
     name: "start_workout",
     description:
       "Розпочати нове тренування зараз (або з вказаного часу). Зберігає як активне у Фізруку, щоб наступні log_set підходи записувались у нього. Якщо вже є активне — лише повідомляє про нього (ідемпотентно).",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -169,6 +172,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
     name: "log_weight",
     description:
       "Записати поточну вагу (кг) у щоденний журнал Фізрука. Аналог log_wellbeing, але лише з вагою — швидкий шлях для прокидання ваги.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {

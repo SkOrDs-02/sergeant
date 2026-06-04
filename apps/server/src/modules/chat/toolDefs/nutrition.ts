@@ -5,6 +5,7 @@ export const NUTRITION_TOOLS: AnthropicTool[] = [
     name: "log_water",
     description:
       "Додати випиту воду в журнал Харчування. Використовуй коли користувач каже 'я випив X мл/склянку води'. Одна склянка ≈ 250 мл.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -24,6 +25,7 @@ export const NUTRITION_TOOLS: AnthropicTool[] = [
     name: "log_meal",
     description:
       "Записати прийом їжі в щоденник харчування на сьогодні. Використовуй коли користувач каже що з'їв щось і хоче записати.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -116,6 +118,7 @@ export const NUTRITION_TOOLS: AnthropicTool[] = [
     name: "set_daily_plan",
     description:
       "Задати/оновити щоденні цілі Харчування: ккал, білок, жири, вуглеводи, ціль по воді (мл). Можна передавати лише ті поля, які змінюються.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -131,6 +134,7 @@ export const NUTRITION_TOOLS: AnthropicTool[] = [
     name: "suggest_meal",
     description:
       "Порадити їжу на основі того що залишилось від денної цілі по макронутрієнтах. Наприклад: 'Що з'їсти щоб добити білок?'",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {

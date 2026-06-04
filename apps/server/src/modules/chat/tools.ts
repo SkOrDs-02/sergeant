@@ -40,6 +40,55 @@ export const TOOLS: AnthropicTool[] = [
   ...MEMORY_TOOLS,
 ];
 
+/**
+ * Validate tool registry at startup:
+ * - Tool names are unique
+ * - Strict tools ≤ 20 (Anthropic limit)
+ * - Required fields exist (name, description, input_schema)
+ */
+function validateToolRegistry(tools: AnthropicTool[]): void {
+  const names = new Set<string>();
+  let strictCount = 0;
+
+  for (const tool of tools) {
+    // Check required fields
+    if (!tool.name) {
+      throw new Error("Tool missing name");
+    }
+    if (!tool.description) {
+      throw new Error(`Tool ${tool.name} missing description`);
+    }
+    if (!tool.input_schema || typeof tool.input_schema !== "object") {
+      throw new Error(`Tool ${tool.name} missing input_schema`);
+    }
+
+    // Check uniqueness
+    if (names.has(tool.name)) {
+      throw new Error(`Duplicate tool name: ${tool.name}`);
+    }
+    names.add(tool.name);
+
+    // Count strict tools
+    if (tool.strict) {
+      strictCount++;
+    }
+  }
+
+  if (strictCount > 20) {
+    throw new Error(
+      `Too many strict tools (${strictCount}). Anthropic API limit is 20. ` +
+        "Remove strict:true from some tools or implement tool subset strategy.",
+    );
+  }
+
+  console.log(
+    `[chat/tools] Registry validated: ${tools.length} tools, ${strictCount} strict`,
+  );
+}
+
+// Run validation on module load
+validateToolRegistry(TOOLS);
+
 export {
   SYSTEM_PREFIX,
   SYSTEM_PROMPT_VERSION,

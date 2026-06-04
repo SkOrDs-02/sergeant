@@ -13,6 +13,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tabs } from "@shared/components/ui/Tabs";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
+import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import { SectionSkeleton } from "../settings/SettingsPrimitives";
 import { AIDigestSection } from "../settings/AIDigestSection";
 import { AssistantCatalogueSection } from "../settings/AssistantCatalogueSection";
@@ -435,16 +436,18 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
               className="scroll-mt-32"
             >
               {s.lazy ? (
-                <Suspense
-                  fallback={
-                    <SectionSkeleton
-                      minH={s.lazy.minH}
-                      ariaLabel={`Завантажую ${s.title}`}
-                    />
-                  }
-                >
-                  {s.render()}
-                </Suspense>
+                <ChunkErrorBoundary minH={s.lazy.minH}>
+                  <Suspense
+                    fallback={
+                      <SectionSkeleton
+                        minH={s.lazy.minH}
+                        ariaLabel={`Завантажую ${s.title}`}
+                      />
+                    }
+                  >
+                    {s.render()}
+                  </Suspense>
+                </ChunkErrorBoundary>
               ) : (
                 s.render()
               )}

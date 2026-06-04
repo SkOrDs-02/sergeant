@@ -1,0 +1,28 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "skills": {
+    "paths": ["./.agents/skills"]
+  },
+  "permission": {
+    "read": "allow",
+    "bash": "allow",
+    "edit": {
+      "apps/**": "allow",
+      "packages/**": "allow",
+      "tools/**": "allow",
+      "docs/**": "allow",
+      "scripts/**": "allow",
+      "ops/**": "allow",
+      ".github/**": "allow",
+      ".husky/**": "allow",
+      "*": "ask"
+    },
+    "glob": "allow",
+    "grep": "allow",
+    "webfetch": "allow",
+    "task": "allow",
+    "question": "allow",
+    "todowrite": "allow",
+    "todoread": "allow"
+  }
+}

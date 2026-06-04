@@ -6,6 +6,10 @@
 // невідомий мапперу — повертаємо `null`, і UI лишає текстовий fallback.
 
 import type { ChatAction } from "./chatActions/types";
+import { moduleFor } from "./hubChatActionCardsHelpers";
+import { iconFor } from "./hubChatActionCardsHelpers";
+import { titleFor } from "./hubChatActionCardsHelpers";
+import { summaryFor } from "./hubChatActionCardsSummary";
 
 export type ChatActionCardModule =
   | "finyk"
@@ -40,27 +44,85 @@ const RISKY_TOOLS: ReadonlySet<string> = new Set([
   "forget",
   "archive_habit",
   "import_monobank_range",
+  "delete_workout",
 ]);
 
 /**
- * Сабсет tool names, для яких v1 малює картку.
- * Перший набір зі спеки §3.
+ * Розширений сабсет tool names, для яких v1 малює картку.
+ * Ціль: покрити всі tools з action cards.
  */
 const KNOWN_TOOLS: ReadonlySet<string> = new Set([
+  // Finyk
   "create_transaction",
   "find_transaction",
   "batch_categorize",
-  "log_meal",
-  "log_water",
-  "start_workout",
-  "log_set",
+  "change_category",
+  "delete_transaction",
+  "hide_transaction",
+  "set_budget_limit",
+  "set_monthly_plan",
+  "create_debt",
+  "create_receivable",
+  "update_budget",
+  "mark_debt_paid",
+  "add_asset",
+  "split_transaction",
+  "recurring_expense",
+  "export_report",
+  // Routine
   "mark_habit_done",
   "create_habit",
+  "create_reminder",
+  "complete_habit_for_date",
+  "archive_habit",
+  "add_calendar_event",
+  "edit_habit",
   "set_habit_schedule",
   "pause_habit",
+  "reorder_habits",
+  "habit_stats",
+  // Nutrition
+  "log_water",
+  "log_meal",
+  "add_recipe",
+  "add_to_shopping_list",
+  "consume_from_pantry",
+  "set_daily_plan",
+  "suggest_meal",
+  "copy_meal_from_date",
+  "plan_meals_for_day",
+  // Fizruk
+  "start_workout",
+  "log_set",
+  "plan_workout",
+  "finish_workout",
+  "log_measurement",
+  "log_wellbeing",
+  "log_weight",
+  "suggest_workout",
+  "copy_workout",
+  "compare_progress",
+  // Cross-module
   "morning_briefing",
   "weekly_summary",
   "compare_weeks",
+  "set_goal",
+  "spending_trend",
+  "weight_chart",
+  "category_breakdown",
+  "detect_anomalies",
+  "habit_trend",
+  // Utility
+  "calculate_1rm",
+  "convert_units",
+  "save_note",
+  "list_notes",
+  "export_module_data",
+  // Memory
+  "remember",
+  "forget",
+  "my_profile",
+  "recall_memory",
 ]);
 
 interface CardInput {
@@ -85,221 +147,6 @@ function deriveStatus(
 ): ChatActionCardStatus {
   if (explicitFailed) return "failed";
   return FAILURE_RE.test(result) ? "failed" : "completed";
-}
-
-function moduleFor(name: string): ChatActionCardModule {
-  if (
-    name === "create_transaction" ||
-    name === "find_transaction" ||
-    name === "batch_categorize" ||
-    name === "delete_transaction" ||
-    name === "hide_transaction" ||
-    name === "import_monobank_range"
-  ) {
-    return "finyk";
-  }
-  if (name === "log_meal" || name === "log_water") return "nutrition";
-  if (name === "start_workout" || name === "log_set") return "fizruk";
-  if (
-    name === "mark_habit_done" ||
-    name === "create_habit" ||
-    name === "archive_habit" ||
-    name === "set_habit_schedule" ||
-    name === "pause_habit"
-  ) {
-    return "routine";
-  }
-  return "hub";
-}
-
-function iconFor(name: string): string | undefined {
-  switch (name) {
-    case "create_transaction":
-    case "find_transaction":
-    case "batch_categorize":
-      return "credit-card";
-    case "log_meal":
-      return "utensils";
-    case "log_water":
-      return "utensils";
-    case "start_workout":
-    case "log_set":
-      return "dumbbell";
-    case "mark_habit_done":
-    case "create_habit":
-      return "check";
-    case "set_habit_schedule":
-      return "calendar";
-    case "pause_habit":
-      return "pause-circle";
-    case "morning_briefing":
-      return "sun";
-    case "weekly_summary":
-      return "bar-chart";
-    case "compare_weeks":
-      return "bar-chart";
-    default:
-      return undefined;
-  }
-}
-
-function titleFor(name: string, status: ChatActionCardStatus): string {
-  const failedSuffix = status === "failed" ? " — не вийшло" : "";
-  switch (name) {
-    case "create_transaction":
-      return `Транзакцію записано${failedSuffix}`;
-    case "find_transaction":
-      return `Транзакції знайдено${failedSuffix}`;
-    case "batch_categorize":
-      return `Категорії оновлено${failedSuffix}`;
-    case "log_meal":
-      return `Прийом їжі залоговано${failedSuffix}`;
-    case "log_water":
-      return `Воду залоговано${failedSuffix}`;
-    case "start_workout":
-      return `Тренування стартувало${failedSuffix}`;
-    case "log_set":
-      return `Підхід записано${failedSuffix}`;
-    case "mark_habit_done":
-      return `Звичка виконана${failedSuffix}`;
-    case "create_habit":
-      return `Звичку створено${failedSuffix}`;
-    case "set_habit_schedule":
-      return `Розклад звички оновлено${failedSuffix}`;
-    case "pause_habit":
-      return `Стан паузи звички оновлено${failedSuffix}`;
-    case "morning_briefing":
-      return `Ранковий брифінг${failedSuffix}`;
-    case "weekly_summary":
-      return `Тижневий підсумок${failedSuffix}`;
-    case "compare_weeks":
-      return `Порівняння тижнів${failedSuffix}`;
-    default:
-      return name;
-  }
-}
-
-/**
- * Дуже коротке summary під картку: пробуємо витягти з input ключові поля,
- * інакше fallback на скорочений `result`.
- */
-function summaryFor(
-  name: string,
-  input: Record<string, unknown>,
-  result: string,
-): string {
-  const truncate = (s: string, max = 120): string =>
-    s.length > max ? `${s.slice(0, max - 1)}…` : s;
-
-  const stringField = (key: string): string | undefined => {
-    const v = input[key];
-    return typeof v === "string" && v.trim() ? v.trim() : undefined;
-  };
-  const numberField = (key: string): number | undefined => {
-    const v = input[key];
-    if (typeof v === "number" && Number.isFinite(v)) return v;
-    if (typeof v === "string" && v.trim() && !Number.isNaN(Number(v))) {
-      return Number(v);
-    }
-    return undefined;
-  };
-
-  switch (name) {
-    case "create_transaction": {
-      const amount = numberField("amount");
-      const desc = stringField("description") || stringField("category_id");
-      const parts: string[] = [];
-      if (amount !== undefined) parts.push(`${amount} ₴`);
-      if (desc) parts.push(desc);
-      if (parts.length) return parts.join(" · ");
-      break;
-    }
-    case "find_transaction": {
-      const query = stringField("query");
-      const amount = numberField("amount");
-      const parts: string[] = [];
-      if (query) parts.push(query);
-      if (amount !== undefined) parts.push(`${amount} ₴`);
-      if (parts.length) return parts.join(" · ");
-      break;
-    }
-    case "batch_categorize": {
-      const pattern = stringField("pattern");
-      const category = stringField("category_id");
-      const parts: string[] = [];
-      if (pattern) parts.push(pattern);
-      if (category) parts.push(`→ ${category}`);
-      if (parts.length) return parts.join(" ");
-      break;
-    }
-    case "log_meal": {
-      const meal = stringField("meal_type");
-      const desc = stringField("description") || stringField("name");
-      const kcal = numberField("calories");
-      const parts: string[] = [];
-      if (meal) parts.push(meal);
-      if (desc) parts.push(desc);
-      if (kcal !== undefined) parts.push(`${kcal} ккал`);
-      if (parts.length) return parts.join(" · ");
-      break;
-    }
-    case "log_water": {
-      const ml = numberField("amount_ml") ?? numberField("amount");
-      if (ml !== undefined) return `${ml} мл`;
-      break;
-    }
-    case "log_set": {
-      const exercise = stringField("exercise") || stringField("name");
-      const weight = numberField("weight_kg") ?? numberField("weight");
-      const reps = numberField("reps");
-      const parts: string[] = [];
-      if (exercise) parts.push(exercise);
-      if (weight !== undefined) parts.push(`${weight} кг`);
-      if (reps !== undefined) parts.push(`${reps} повт.`);
-      if (parts.length) return parts.join(" · ");
-      break;
-    }
-    case "mark_habit_done":
-    case "create_habit": {
-      const habit = stringField("habit_id") || stringField("name");
-      if (habit) return habit;
-      break;
-    }
-    case "set_habit_schedule": {
-      const days = (input["days"] as unknown) ?? null;
-      if (Array.isArray(days) && days.length > 0) {
-        return days
-          .map((d) => (typeof d === "string" ? d.trim() : ""))
-          .filter((d) => d.length > 0)
-          .join(", ");
-      }
-      break;
-    }
-    case "pause_habit": {
-      const habit = stringField("habit_id");
-      const paused = input["paused"];
-      const state = paused === false ? "знято з паузи" : "на паузі";
-      if (habit) return `${habit} · ${state}`;
-      return state;
-    }
-    case "start_workout": {
-      const program = stringField("program_id") || stringField("name");
-      if (program) return program;
-      break;
-    }
-    case "compare_weeks": {
-      const weekA = stringField("week_a");
-      const weekB = stringField("week_b");
-      if (weekA && weekB) return `${weekA} vs ${weekB}`;
-      if (weekA) return `${weekA} vs попередній`;
-      if (weekB) return `поточний vs ${weekB}`;
-      return "поточний vs попередній";
-    }
-    default:
-      break;
-  }
-
-  return truncate(result);
 }
 
 /**

@@ -5,6 +5,7 @@ export const CROSS_MODULE_TOOLS: AnthropicTool[] = [
     name: "morning_briefing",
     description:
       "Ранковий брифінг по всіх модулях: заплановані тренування, звички на сьогодні, бюджет, калорії. Відповідає структурованим текстом.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {},
@@ -14,6 +15,7 @@ export const CROSS_MODULE_TOOLS: AnthropicTool[] = [
     name: "weekly_summary",
     description:
       "Тижневий підсумок по всіх модулях: фінанси, тренування, звички, харчування. Повертає текстовий звіт.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -29,6 +31,7 @@ export const CROSS_MODULE_TOOLS: AnthropicTool[] = [
     name: "set_goal",
     description:
       "Встановити комплексну ціль через модулі. Наприклад: 'Хочу схуднути на 5 кг' — ШІ автоматично ставить цілі по калоріях + тренуваннях + відстежуванню ваги.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -140,6 +143,7 @@ export const CROSS_MODULE_TOOLS: AnthropicTool[] = [
     name: "compare_weeks",
     description:
       "Порівняти два тижні по всіх модулях: витрати, вага, виконання звичок, калорії. Викликай коли користувач каже 'порівняй цей тиждень з минулим' або 'як я провів тиждень порівняно з попереднім'.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
