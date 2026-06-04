@@ -36,6 +36,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { strategicKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "../../shared/i18n/uk";
 import { internalFetch } from "@shared/lib/api/internalFetch";
+import { getKyivWeekStartKey } from "@shared/lib/time/kyivTime";
 
 /** Канонічний catalog персон (mirror з `apps/server/src/lib/strategicGoals.ts`). */
 const STRATEGIC_GOAL_PERSONAS = [
@@ -69,30 +70,6 @@ interface CreateResponse {
   ok: boolean;
   goal?: StrategicGoal;
   error?: string;
-}
-
-/** Понеділок ISO-тижня (Kyiv local), формат `YYYY-MM-DD`. */
-export function kyivMondayISO(now: Date = new Date()): string {
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Kyiv",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    weekday: "short",
-  });
-  const parts = fmt.formatToParts(now);
-  const year = Number(parts.find((p) => p.type === "year")?.value);
-  const month = Number(parts.find((p) => p.type === "month")?.value);
-  const day = Number(parts.find((p) => p.type === "day")?.value);
-  const weekday = parts.find((p) => p.type === "weekday")?.value ?? "Mon";
-
-  // Map weekday short ("Mon"/"Tue"/.../"Sun") → daysSinceMonday.
-  const order = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const daysSinceMonday = Math.max(0, order.indexOf(weekday));
-
-  const utcDay = new Date(Date.UTC(year, month - 1, day));
-  utcDay.setUTCDate(utcDay.getUTCDate() - daysSinceMonday);
-  return utcDay.toISOString().slice(0, 10);
 }
 
 const PERSONA_LABELS: Record<StrategicGoalPersona, string> = {
@@ -162,7 +139,7 @@ interface StrategyPageProps {
  * status-controls, weekly carry-over UI).
  */
 export function StrategyPage({ founderUserId }: StrategyPageProps) {
-  const weekStart = useMemo(() => kyivMondayISO(), []);
+  const weekStart = useMemo(() => getKyivWeekStartKey(), []);
   const queryClient = useQueryClient();
   const [persona, setPersona] = useState<StrategicGoalPersona>("finyk");
   const [goalText, setGoalText] = useState("");

@@ -2,7 +2,7 @@ import webpush, { WebPushError } from "web-push";
 import type { PushSubscription } from "web-push";
 import { logger } from "../obs/logger.js";
 import { recordExternalHttp } from "./externalHttp.js";
-import { sleep } from "./timing.js";
+import { elapsedMs, sleep } from "./timing.js";
 
 /**
  * Transport-шар для `webpush.sendNotification`. Додає:
@@ -197,10 +197,9 @@ export async function sendWebPush(
   const timeoutMs = options.timeoutMs ?? state.timeoutMs;
   const origin = originOf(subscription.endpoint);
   const start = process.hrtime.bigint();
-  const elapsed = (): number => Number(process.hrtime.bigint() - start) / 1e6;
 
   if (isBreakerOpen(origin)) {
-    const ms = elapsed();
+    const ms = elapsedMs(start);
     recordExternalHttp("push", "circuit_open", ms);
     return {
       outcome: "circuit_open",
@@ -225,7 +224,7 @@ export async function sendWebPush(
         controller,
       );
       // 2xx — успіх.
-      const ms = elapsed();
+      const ms = elapsedMs(start);
       onBreakerSuccess(origin);
       recordExternalHttp("push", "ok", ms);
       return {
@@ -250,7 +249,7 @@ export async function sendWebPush(
   }
 
   // Фіналізуємо outcome для не-успіху.
-  const ms = elapsed();
+  const ms = elapsedMs(start);
   const timedOut = isAbortError(lastError);
   const message =
     lastError instanceof Error

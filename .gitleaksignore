@@ -18,3 +18,13 @@
 # replaced the snippet with `$SERVICE_ID` placeholders so future commits
 # don't carry the pattern.
 fcd3c267e1ef00467d1de18d64bbc5b2adb2fba2:docs/deploy/monorepo-deploy-filtering.md:generic-api-key:134
+
+# apps/mobile/e2e/auth-flows.e2e.ts (commit 18a6dcab) introduced a static
+# Detox sign-up fixture password constant (`SIGN_UP_PASSWORD`). It is a
+# non-secret test value fed to the mock auth interceptor (which accepts any
+# value) — not a credential. The current HEAD already carries an inline
+# `// gitleaks:allow` on that line; this fingerprint suppresses the historical
+# introducing commit, which the inline marker cannot retroactively cover.
+# (The literal value is intentionally not repeated here so this ignore comment
+# does not itself trip the generic-api-key heuristic.)
+18a6dcab46540257ecbeb9fa623aca520203b29f:apps/mobile/e2e/auth-flows.e2e.ts:generic-api-key:53

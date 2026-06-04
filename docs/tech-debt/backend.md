@@ -274,6 +274,8 @@ Webhook-based server-side integration added in PR2. Key components:
 ### Per-tool limits
 
 > ✅ **Shipped 2026-06-01.** Core per-tool limits implemented in `apps/server/src/modules/chat/aiQuota.ts` — `toolCost()` (`DEFAULT_TOOL_COST=3`), `toolLimit()` reads `AI_QUOTA_TOOL_LIMITS` JSON, `consumeToolQuota()` uses dedicated `tool:<name>` buckets (`TOOL_BUCKET_PREFIX`). Env shape differs from the original sketch below (`AI_QUOTA_TOOL_LIMITS` JSON map instead of a single `AI_DAILY_TOOL_LIMIT`). **Only open item:** the metrics-label split below (`aiQuotaBlocksTotal` is still labelled by `reason` only in `obs/metrics.ts`).
+>
+> 📘 **Документація (2026-06-04).** Cost-формула, override через `AI_QUOTA_TOOL_COST` / `AI_QUOTA_TOOL_LIMITS` і precedence задокументовані в docstring-ах `toolCost()` / `toolLimit()` / `consumeToolQuota()` + runbook-секція "Runbook: per-tool cost-override механізм" у [`docs/security/ai-quota-kill-switch.md`](../security/ai-quota-kill-switch.md).
 
 - ~~Додати `AI_DAILY_TOOL_LIMIT` (fallback = 0.5 × `AI_DAILY_USER_LIMIT`).~~ Shipped as `AI_QUOTA_TOOL_LIMITS` JSON map.
 - ~~Ендпоінти з `toolUse: true` … `assertAiQuota(req, res, { cost: … })`.~~ Shipped via `consumeToolQuota()`.

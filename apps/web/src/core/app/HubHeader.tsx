@@ -11,6 +11,7 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { BrandLogo } from "./BrandLogo";
 import { messages } from "@shared/i18n/uk";
 import type { User } from "@sergeant/shared";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 
 // WCAG 2.5.5 AAA «Target Size (Enhanced)» рекомендує ≥44×44 пкс для hit-areas;
 // Material 3 / iOS HIG — 48 dp / 44 pt як thumb-comfort бейзлайн. На мобільному
@@ -33,7 +34,9 @@ const GREETINGS: Record<string, string> = {
 };
 
 function getTimeOfDay(): keyof typeof GREETINGS {
-  const h = new Date().getHours();
+  // Use Kyiv-local hour so greeting stays consistent for users abroad —
+  // domain invariant: Europe/Kyiv is the anchor clock (audit Theme 1).
+  const { hour: h } = getKyivDateParts();
   if (h >= 5 && h < 12) return "morning";
   if (h >= 12 && h < 17) return "afternoon";
   if (h >= 17 && h < 22) return "evening";
@@ -41,14 +44,25 @@ function getTimeOfDay(): keyof typeof GREETINGS {
 }
 
 function formatUkrainianDate(): string {
-  const now = new Date();
+  // Show the Kyiv-local calendar date so the header reads correctly on
+  // devices in a different timezone (audit Theme 1 — Europe/Kyiv anchor).
+  const { year, month, day } = getKyivDateParts();
   try {
-    const weekday = now.toLocaleDateString("uk-UA", { weekday: "long" });
-    const rest = now.toLocaleDateString("uk-UA", {
+    // Reconstruct a UTC instant at Kyiv midday so Intl formats the right
+    // calendar date regardless of the host timezone.
+    // `new Date(Date.UTC(...))` is a UTC-safe instant construction —
+    // no host-local offset is involved here.
+    const inst = new Date(Date.UTC(year, month - 1, day, 9, 0, 0));
+    const weekdayStr = inst.toLocaleDateString("uk-UA", {
+      weekday: "long",
+      timeZone: "Europe/Kyiv",
+    });
+    const rest = inst.toLocaleDateString("uk-UA", {
       day: "numeric",
       month: "long",
+      timeZone: "Europe/Kyiv",
     });
-    return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${rest}`;
+    return `${weekdayStr.charAt(0).toUpperCase()}${weekdayStr.slice(1)}, ${rest}`;
   } catch {
     return "";
   }

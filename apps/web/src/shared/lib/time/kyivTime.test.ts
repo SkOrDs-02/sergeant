@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatKyivLongDate,
   getKyivDayKey,
   getKyivDateParts,
   getKyivMondayIndex,
   getKyivShortStamp,
   getKyivWeekStart,
+  getKyivWeekStartKey,
   isSameKyivDay,
   parseKyivDate,
 } from "./kyivTime";
@@ -158,6 +160,36 @@ describe("kyivTime", () => {
       // 2026-05-16 10:30 UTC + 3h = 13:30 Kyiv
       const sample = new Date("2026-05-16T10:30:00Z");
       expect(getKyivShortStamp(sample)).toBe("2026-05-16 13:30");
+    });
+  });
+
+  describe("getKyivWeekStartKey", () => {
+    it("returns Monday of the week as YYYY-MM-DD string", () => {
+      // 2026-05-16 (Saturday) → week start is 2026-05-11 (Monday)
+      const sat = new Date("2026-05-16T12:00:00Z");
+      expect(getKyivWeekStartKey(sat)).toBe("2026-05-11");
+    });
+
+    it("is equivalent to getKyivDayKey(getKyivWeekStart(input))", () => {
+      const ts = new Date("2026-05-20T09:00:00Z"); // Wednesday
+      expect(getKyivWeekStartKey(ts)).toBe(getKyivDayKey(getKyivWeekStart(ts)));
+    });
+  });
+
+  describe("formatKyivLongDate", () => {
+    it("formats an ISO instant in Kyiv local date (uk-UA)", () => {
+      // 2026-06-01 10:00 UTC → 2026-06-01 13:00 Kyiv → "1 червня 2026 р."
+      const result = formatKyivLongDate("2026-06-01T10:00:00Z");
+      expect(result).toMatch(/1\s+червня\s+2026/);
+    });
+
+    it("returns null for null/undefined input", () => {
+      expect(formatKyivLongDate(null)).toBeNull();
+      expect(formatKyivLongDate(undefined)).toBeNull();
+    });
+
+    it("returns null for an unparseable string", () => {
+      expect(formatKyivLongDate("not-a-date")).toBeNull();
     });
   });
 });

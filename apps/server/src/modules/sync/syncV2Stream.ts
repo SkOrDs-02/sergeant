@@ -9,6 +9,7 @@ import {
   syncOperationsTotal,
   syncStreamConnectionsActive,
 } from "../../obs/metrics.js";
+import { elapsedMs } from "../../lib/timing.js";
 
 /**
  * Stage 5 / PR #041 із `docs/planning/storage-roadmap.md` — real-time pull
@@ -186,10 +187,6 @@ function readLastEventId(req: Request): number | null {
   const n = Number(raw.trim());
   if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) return null;
   return n;
-}
-
-function elapsedMs(start: bigint): number {
-  return Number(process.hrtime.bigint() - start) / 1e6;
 }
 
 /**

@@ -147,7 +147,7 @@ export function usePrLatest({
     if (!loaded) return null;
     if (!workouts.length) return null;
 
-    const today = getKyivDayKey(new Date());
+    const today = getKyivDayKey();
     const candidates = collectPrSets(workouts);
     if (candidates.length === 0) return null;
 

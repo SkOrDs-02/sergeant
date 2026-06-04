@@ -12,7 +12,7 @@ import {
   dbSlowPoolConnectsTotal,
   dbSlowQueriesTotal,
 } from "./obs/metrics.js";
-import { sleep } from "./lib/timing.js";
+import { elapsedMs, sleep } from "./lib/timing.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -161,7 +161,7 @@ const instrumentedConnect = ((...args: Parameters<PoolConnect>) => {
     typeof (result as Promise<PoolClient>).finally === "function"
   ) {
     return (result as Promise<PoolClient>).finally(() => {
-      const ms = Number(process.hrtime.bigint() - start) / 1e6;
+      const ms = elapsedMs(start);
       try {
         dbPoolAcquireDurationSeconds.observe(ms / 1000);
       } catch {
@@ -242,7 +242,7 @@ export async function query<R extends QueryResultRow = QueryResultRow>(
         sqlText,
         values as unknown[] | undefined,
       );
-      const ms = Number(process.hrtime.bigint() - start) / 1e6;
+      const ms = elapsedMs(start);
 
       try {
         dbQueryDurationMs.observe({ op }, ms);

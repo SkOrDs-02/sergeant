@@ -10,7 +10,7 @@ import {
 import { aiSpan, type AiSpanResultMeta } from "../obs/spans.js";
 import { estimateAnthropicCostUsd, pickAnthropicPricing } from "./aiPricing.js";
 import { recordAnthropicUsageToDb } from "./anthropicUsageStore.js";
-import { sleep } from "./timing.js";
+import { elapsedMs, sleep } from "./timing.js";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
@@ -435,7 +435,7 @@ async function anthropicMessagesStreamInner(
     });
   } catch (e: unknown) {
     clearTimeout(t);
-    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+    const ms = elapsedMs(start);
     recordOutcome(isAbortError(e) ? "timeout" : "error", {
       model,
       endpoint,
@@ -446,7 +446,7 @@ async function anthropicMessagesStreamInner(
 
   if (!response.ok) {
     clearTimeout(t);
-    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+    const ms = elapsedMs(start);
     recordOutcome(response.status === 429 ? "rate_limited" : "error", {
       model,
       endpoint,
@@ -460,7 +460,7 @@ async function anthropicMessagesStreamInner(
     if (settled) return;
     settled = true;
     clearTimeout(t);
-    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+    const ms = elapsedMs(start);
     recordOutcome(outcome, { model, endpoint, ms });
   };
 

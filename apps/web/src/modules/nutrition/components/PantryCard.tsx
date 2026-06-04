@@ -54,12 +54,12 @@ function ItemRow({
   busy,
 }: ItemRowProps) {
   return (
-    <div className="flex items-center gap-2 py-2 first:pt-1 group">
+    <div className="flex items-center gap-2 first:pt-1 group min-h-[44px]">
       <button
         type="button"
         onClick={() => editItemAt(idx)}
         disabled={busy}
-        className="flex-1 min-w-0 flex items-baseline gap-1.5 text-left"
+        className="flex-1 min-w-0 flex items-baseline gap-1.5 text-left min-h-[44px]"
         aria-label={`Редагувати ${item?.name || "продукт"}`}
       >
         <span className="text-style-label text-text truncate">
@@ -114,7 +114,7 @@ function CategorySection({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-between w-full gap-2 px-3 py-2"
+        className="flex items-center justify-between w-full gap-2 px-3 py-2 min-h-[44px]"
         aria-expanded={open}
       >
         <span className="flex items-center gap-2 min-w-0">
@@ -189,7 +189,7 @@ function InventoryCard({
           userToggledRef.current = true;
           setMainOpen((v) => !v);
         }}
-        className="flex items-center justify-between w-full gap-2"
+        className="flex items-center justify-between w-full gap-2 min-h-[44px]"
         aria-expanded={mainOpen}
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -270,7 +270,7 @@ export function PantryCard({
                   type="button"
                   onClick={onScanBarcode}
                   disabled={busy}
-                  className="w-8 h-8 rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50 flex items-center justify-center text-base"
+                  className="w-8 h-8 min-h-[44px] min-w-[44px] rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50 flex items-center justify-center text-base"
                   aria-label="Сканувати штрих-код"
                 >
                   📷
@@ -284,7 +284,7 @@ export function PantryCard({
                   type="button"
                   onClick={() => setMode(m.id)}
                   className={cn(
-                    "px-3 py-1.5 rounded-xl text-style-caption transition-colors",
+                    "px-3 py-1.5 min-h-[44px] rounded-xl text-style-caption transition-colors",
                     mode === m.id
                       ? "bg-nutrition-strong text-white shadow-sm"
                       : "text-subtle hover:text-text",
