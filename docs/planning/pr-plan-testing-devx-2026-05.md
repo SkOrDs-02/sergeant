@@ -206,6 +206,7 @@
 
 ### T-7 · Web coverage drift — module **tests** для finyk / fizruk / nutrition
 
+- **Status:** ⏳ **PARTIAL — PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363) (wave-1 delegation fan-out).** Додано module unit suites для тонких зрізів finyk/fizruk/nutrition (`apps/web/src/modules/{finyk/lib,fizruk/lib,nutrition/lib}/__tests__/*.test.ts` — pure date/stats/progress helpers; P1-6 closeout) + thresholds bumped +1pp (lines 38→39 / branches 31→32 / fns 28→29 / statements 37→38). **Outstanding:** per-module selector (`xKeys.*()`) + wallet/scenario (component+hook+MSW) тести, щоб дотягнути 9-файловий floor картки і ratchet до lines ≥ 45.
 - **Items covered:** P1-6 з прожарки (`apps/web/vitest.config.js:38` — lines 38 / branches 31 / functions 28 / statements 37, ниже пре-крашу 60+%).
 - **Priority:** P1 · **Size:** L (~600 LoC у 9 файлах) · **Owner:** `@Skords-01`
 - **Skill:** `sergeant-feature-delivery` + `sergeant-web-ui` для RTL компонент-тестів.

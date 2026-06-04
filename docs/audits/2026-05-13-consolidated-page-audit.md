@@ -46,33 +46,37 @@ The service worker uses a single `Cache` namespace for `/api/*` GET responses ke
 
 The 50 high-severity findings cluster into 7 dominant themes — fix these and ~40 % of medium-severity findings collapse along with them.
 
-### Theme 1 — Timezone correctness (Domain invariant: Europe/Kyiv)
+### Theme 1 — Timezone correctness (Domain invariant: Europe/Kyiv) ✅ DONE
+
+> **✅ DONE — PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363) (wave-1 delegation fan-out).** Day/week-key derivation централізовано в `apps/web/src/shared/lib/time/kyivTime.ts` (`getKyivDayKey`, `getKyivDateParts`, `isSameKyivDay` та компаньйони), а custom ESLint guard у `packages/eslint-plugin-sergeant-design/index.js` (wired у `eslint.config.js` для `apps/web/src/**`) забороняє host-local `Date` getters / `new Date()` / `Date.now()` поза самим хелпером. Усі 8 high-severity сайтів нижче маршрутизовано через хелпери.
 
 Eight high-severity findings ride on the same root cause: derived day/week keys use **host device time** instead of Kyiv local time.
 
-- 03 F1: `hubChatSessions.deriveSessionTitle` formats with host TZ.
-- 03 F2: `HubChatHistoryDrawer.formatStamp` uses host time for "today" detection.
-- 03 F8: `searchTypes.localDateKey` & `searchSources` produce non-Kyiv day keys.
-- 05 F6: `now = new Date()` at module-load freezes Finyk's "current month".
-- 07 F1: Fizruk Progress page reckons week boundary in local TZ.
-- 07 F2: Fizruk Programs computes `todayDayIndex` in local TZ.
-- 09 F3: Routine `setHours(12, 0, 0, 0)` derives day keys in local device time.
-- 09 F6: Routine deep-link `?routineDay=…` validates format only, not the calendar date.
+- ✅ 03 F1: `hubChatSessions.deriveSessionTitle` formats with host TZ. → routed through `kyivTime` (#3363).
+- ✅ 03 F2: `HubChatHistoryDrawer.formatStamp` uses host time for "today" detection. → `isSameKyivDay` (#3363).
+- ✅ 03 F8: `searchTypes.localDateKey` & `searchSources` produce non-Kyiv day keys. → `getKyivDayKey` (#3363).
+- ✅ 05 F6: `now = new Date()` at module-load freezes Finyk's "current month". → Kyiv-anchored parts (#3363).
+- ✅ 07 F1: Fizruk Progress page reckons week boundary in local TZ. → Kyiv week-start helper (#3363).
+- ✅ 07 F2: Fizruk Programs computes `todayDayIndex` in local TZ. → Kyiv-anchored (#3363).
+- ✅ 09 F3: Routine `setHours(12, 0, 0, 0)` derives day keys in local device time. → `getKyivDayKey` (#3363).
+- ✅ 09 F6: Routine deep-link `?routineDay=…` validates format only, not the calendar date. → Kyiv-validated (#3363).
 
 **Fix:** centralise `getKyivDayKey()`, `getKyivWeekStart()`, `parseKyivDate()` in `apps/web/src/shared/lib/time/kyivTime.ts`; ESLint custom rule that bans direct `new Date()` / `Date.now()` constructions outside this module; replace all 8 sites.
 
 ### Theme 2 — Touch targets below 44×44 px (WCAG 2.5.5 / Apple HIG)
 
-> **CI gate landed 2026-06-03 (audits-runner execute):** ESLint rule `sergeant-design/no-small-button-touch-target` added to `packages/eslint-plugin-sergeant-design/index.js` and enabled as `warn` in `eslint.config.js` for `apps/web/src/**` and `apps/mobile/src/**`. Rule flags any raw `<button>` with `h-1..h-10` / `size-1..size-10` classes that lacks a compensator (`min-h-[44px]`, `min-w-[44px]`, `touch-target`, `pointer-coarse:min-h-[44px]`). 13 unit tests pass. Per-finding status: 02 F4 closed (prev/next buttons migrated to `Button` primitive in a prior sprint). Remaining individual findings (01 F8, 03 F6, 05 F5, 08 F4, 06 Atlas) still open — rule will surface them in lint output as warnings for incremental burn-down.
+> **CI gate landed 2026-06-03 (audits-runner execute):** ESLint rule `sergeant-design/no-small-button-touch-target` added to `packages/eslint-plugin-sergeant-design/index.js` and enabled as `warn` in `eslint.config.js` for `apps/web/src/**` and `apps/mobile/src/**`. Rule flags any raw `<button>` with `h-1..h-10` / `size-1..size-10` classes that lacks a compensator (`min-h-[44px]`, `min-w-[44px]`, `touch-target`, `pointer-coarse:min-h-[44px]`). 13 unit tests pass. Per-finding status: 02 F4 closed (prev/next buttons migrated to `Button` primitive in a prior sprint).
+>
+> **✅ DONE — PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363) (wave-1 delegation fan-out):** дві high-severity поверхні приведено до ≥44×44 px — `HubChatHeader.tsx` (03 F6 — close/delete + action-кнопки тепер `min-h-[44px] min-w-[44px]`) і `PantryCard.tsx` (08 F4 — pantry ItemRow delete + rows `min-h-[44px]`). **Залишок усе ще open** (rule surfaces them as warnings для incremental burn-down): 01 F8 (5 FTUX surfaces), 05 F5 (Finyk analytics month-nav), 06 Atlas (anterior/posterior toggle).
 
 Six high-severity findings + ~12 medium ones describe inline `<button>` elements with 24–32 px hit areas across FTUX, hub-chat drawer, analytics nav, pantry rows.
 
-- 01 F8 (touch-target collapse on 5 FTUX surfaces — DailyNudge / DemoModeBanner / SoftAuthPromptCard / ReEngagementCard / FirstRunHintBanner).
+- 01 F8 (touch-target collapse on 5 FTUX surfaces — DailyNudge / DemoModeBanner / SoftAuthPromptCard / ReEngagementCard / FirstRunHintBanner). _Still open._
 - 02 F4 (period prev/next nav). ✅ Closed 2026-06-03.
-- 03 F6 (HubChatHistoryDrawer close/delete).
-- 05 F5 (Finyk analytics month-nav).
-- 08 F4 (Nutrition pantry ItemRow delete).
-- 06 (Atlas anterior/posterior toggle).
+- 03 F6 (HubChatHistoryDrawer close/delete). ✅ Closed — `HubChatHeader.tsx` ≥44px (#3363).
+- 05 F5 (Finyk analytics month-nav). _Still open._
+- 08 F4 (Nutrition pantry ItemRow delete). ✅ Closed — `PantryCard.tsx` ≥44px (#3363).
+- 06 (Atlas anterior/posterior toggle). _Still open._
 
 **Fix:** make the global `Button` primitive the _only_ way to render touch targets in non-data-cell contexts; add a code-mod that converts inline `<button class="w-6 h-6 …">` to `<Button variant="ghost" iconSize="sm">`; an ESLint custom rule that flags inline `<button>` with explicit `w-*` / `h-*` below the floor.
 

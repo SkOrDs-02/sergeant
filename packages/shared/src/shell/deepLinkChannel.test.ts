@@ -17,6 +17,23 @@ import {
  *   6. Помилка в одному handler-і не вбиває delivery решті.
  */
 
+/**
+ * `BroadcastChannel` доставляє повідомлення асинхронно через event loop.
+ * Один `setTimeout(0)` достатній на простої машині, але під навантаженням
+ * CI (overloaded runner) макротаска може не встигнути flush-нутись у відведений
+ * tick — це робило round-trip тест flaky. Поллимо предикат із коротким кроком
+ * до спрацювання або таймауту замість фіксованого одиничного очікування.
+ */
+async function waitFor(
+  predicate: () => boolean,
+  timeoutMs = 2000,
+): Promise<void> {
+  const start = Date.now();
+  while (!predicate() && Date.now() - start < timeoutMs) {
+    await new Promise((r) => setTimeout(r, 5));
+  }
+}
+
 describe("isDeepLinkMessage", () => {
   it("accepts valid message shape", () => {
     expect(
@@ -85,8 +102,8 @@ describe("createDeepLinkChannel — BroadcastChannel present", () => {
     expect(ok).toBe(true);
 
     // BroadcastChannel dispatches asynchronously through the event loop;
-    // give it one microtask + macrotask to flush.
-    await new Promise((r) => setTimeout(r, 0));
+    // poll until the message lands (robust under CI load — see waitFor).
+    await waitFor(() => received.length > 0);
 
     expect(received).toEqual([
       { url: "/finyk/transactions/42", source: "shell" },
@@ -132,7 +149,7 @@ describe("createDeepLinkChannel — BroadcastChannel present", () => {
     const unsub = receiver.subscribe(handler);
 
     sender.post({ url: "/chat", source: "shell" });
-    await new Promise((r) => setTimeout(r, 0));
+    await waitFor(() => handler.mock.calls.length > 0);
     expect(handler).toHaveBeenCalledTimes(1);
 
     unsub();
@@ -156,7 +173,10 @@ describe("createDeepLinkChannel — BroadcastChannel present", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     sender.post({ url: "/welcome", source: "shell" });
-    await new Promise((r) => setTimeout(r, 0));
+    await waitFor(
+      () =>
+        goodHandler.mock.calls.length > 0 && badHandler.mock.calls.length > 0,
+    );
 
     expect(goodHandler).toHaveBeenCalledTimes(1);
     expect(badHandler).toHaveBeenCalledTimes(1);

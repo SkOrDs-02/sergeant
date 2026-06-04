@@ -1,6 +1,6 @@
 # Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13)
 
-> **Last validated:** 2026-06-03 (audits-runner closeout — P1-2 / P1-3 / P1-6 / P2-3 closed, outstanding=0 for assigned scope; earlier 2026-06-03 — P0-2 closed; prev 2026-05-13 by Devin child session). **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-04 (wave-1 #3363 — P1-2 залишок openclaw/weekly-digest закрито, P1-4 Detox specs авторовано ⏳ PARTIAL; prev 2026-06-03 audits-runner closeout — P1-2 / P1-3 / P1-6 / P2-3 closed, outstanding=0 for assigned scope; earlier 2026-06-03 — P0-2 closed; prev 2026-05-13 by Devin child session). **Next review:** 2026-08-11.
 > **Status:** Active
 > **Cross-refs:**
 > [`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](./2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — попередня deep-dive прожарка (web, секції §7 Testing pyramid + §8 DevX) ·
@@ -65,6 +65,7 @@
 - **Why:** AI-tool handlers викликаються Anthropic-ом через streaming chat — production-bug означає silent llm-tool-failure, ловиться тільки через ad-hoc logs. `#2012` (`docs/testing/2026-05-05-tests-pr-plan.md:117`) додав Anthropic mock-harness — unblock для T09–T12. Юніти ще не написані.
 - **Дія:** **Add** `apps/server/src/modules/nutrition/__tests__/*.test.ts` × 7 (use mock-harness from `apps/server/src/test-utils/anthropic-mock.ts`). Floor: кожен tool — 1 happy-path + 1 input-validation reject + 1 schema-mismatch reject. Розгорнути у наступних роастах через scope (7 файлів × ~50 LOC tests = 350 LOC + ~10 fixture файлів).
 - **Status:** ✅ Closed 2026-06-03 (UA). Інвентар nutrition-хендлерів показав, що `barcode`/`food-search` йдуть в OFF/USDA upstream (не Anthropic) і вже мали повне fetch-based покриття (`barcode.test.ts` 22 кейси, `food-search.test.ts` 30 кейсів), а `parse-pantry` — повне Anthropic-mock покриття (`parse-pantry.test.ts`). Реальні **uncovered Anthropic-invocation** хендлери — `analyze-photo.ts` та `refine-photo.ts` (vision → Anthropic, без dedicated тесту; magic-byte reject-шлях уже покривав `photoMagicByte.test.ts`, але happy/JSON-parse/error-шлях — ні). Додано `analyze-photo.test.ts` (7) + `refine-photo.test.ts` (6) через спільний harness `test/__mocks__/anthropic.ts` (`createAnthropicMockHandle` + `anthropicResponses.text`), у стилі `parse-pantry.test.ts`: happy-path + canonical payload (model/vision-block/endpoint) + embedded-JSON extract + locale default + no-JSON fallback + ValidationError(skip-Anthropic) + ExternalServiceError(non-ok). Перевірка: `pnpm --filter @sergeant/server test -- --run src/modules/nutrition` → **109 passed (11 files)** (було 96/9).
+  - **✅ Залишок закрито — PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363) (wave-1 delegation fan-out).** Раніше outstanding поза цим проходом — **openclaw tool handlers** і **weekly-digest** unit coverage — додано: `apps/server/src/modules/openclaw/tools.test.ts` (+ `tools-ops.test.ts`, `write-tools.test.ts` тощо — guard-rails / allowed-tool list / PAT-redaction) і `apps/server/src/modules/digest/weekly-digest.test.ts` (pure-aggregation). P1-2 повністю закрито.
 
 ### P1-3. Web smoke E2E — лише 4 спеки ✅ Closed
 
@@ -73,11 +74,12 @@
 - **Дія:** **Add** 5 нових spec файлів (по 1 happy-path per module). Розгорнути у наступних роастах — Playwright suites потребують стабу для Better Auth сесії та deterministic seed-data, що окремий ефорт.
 - **Status:** ✅ Closed 2026-06-03 (UA). Додано 5 module-level smoke specs у `apps/web/tests/smoke/` (де живуть існуючі `auth.spec.ts` / `bottom-nav.spec.ts` / `dashboard-health.spec.ts`, не `apps/web/e2e/`): `finyk-smoke.spec.ts`, `nutrition-smoke.spec.ts`, `fizruk-smoke.spec.ts`, `routine-smoke.spec.ts` — direct-link `/?module=<id>` + assert `ModuleHeader` title (ФІНІК/ХАРЧУВАННЯ/ФІЗРУК/РУТИНА) видно та hub `<nav>` зник (shell змонтовано) + жодного uncaught `pageerror`; `hub-chat-smoke.spec.ts` — deep-link `/chat` (`HubChatPage`) + assert `role=region`/`#hub-chat-title` (`HubChat.tsx`). Усі позначені `@critical` (per-PR smoke lane `playwright.smoke.config.ts --grep @critical`), мінімальні/детерміновані (seed localStorage через `addInitScript`, mount + key-element assert), повторюють seed-pattern існуючих specs. Перевірка: `pnpm --filter @sergeant/web typecheck` зелений. Прогон у браузері потребує повного smoke-webserver + Better-Auth `auth.setup.ts` storageState (CI lane), локально не ганяв.
 
-### P1-4. Mobile Detox suite — лише 4 спеки
+### P1-4. Mobile Detox suite — лише 4 спеки ⏳ PARTIAL
 
 - **Файли:** `apps/mobile/e2e/{finyk.e2e.ts,routine.e2e.ts,hub.e2e.ts}` + одна shared utils. Plan-T18–T22: `auth.e2e.ts`, `nutrition.e2e.ts` (2 спеки — barcode-scan + manual-log), `fizruk.e2e.ts`, `deep-link.e2e.ts`, `offline-sync.e2e.ts`.
 - **Why:** Detox runner налагоджено (PR #2215 закрив heap-OOM з Jest 30), але coverage для critical-path mobile-only flows (deep-link від `sergeant://` URL, offline-sync round-trip) — нуль. Реліз iOS/Android тримається тільки на ручному QA.
 - **Дія:** **Add** 6 нових e2e файлів. Розгорнути у наступних роастах через scope (mobile Detox setup має high-friction iteration cycle — кожен файл = run-on-simulator + flake risk).
+- **Status:** ⏳ **PARTIAL — PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363) (wave-1 delegation fan-out).** Detox E2E спеки **авторовані** для auth / nutrition / fizruk / deep-link / offline-sync (`apps/mobile/e2e/{auth-flows,nutrition-full,nutrition-water-barcode,fizruk-full,fizruk-measurements,deep-link,offline-sync}.e2e.ts`). **Лишається open:** частина app-source `testID`-ів ще не пророблена у компонентах — спеки не green end-to-end на симуляторі, поки selector-и не дотягнуть. Тримаємо пункт відкритим саме з цією нотаткою.
 
 ### P1-5. Pre-commit timing не вимірюється ✅ Closed
 
@@ -158,8 +160,8 @@
 
 Залишається ~25 пунктів в `docs/testing/2026-05-05-tests-pr-plan.md`. Рекомендований розподіл на наступні прожарки:
 
-- ~~**Прожарка #6 follow-up — Server AI-tools (P1-2):** 7 tool-handler unit suites + producer-side barcode contract.~~ ✅ Closed 2026-06-03 (UA) — nutrition Anthropic-invocation покриття замкнено (`analyze-photo.test.ts` + `refine-photo.test.ts`; barcode/food-search/parse-pantry уже покриті). Залишок поза цього аудиту: `openclaw/tools/*` + `digest/weekly-digest` unit suites; producer-side barcode contract.
-- **Прожарка #6 follow-up — E2E expansion (P1-4):** ✅ P1-3 (Web smoke × 5 modules) closed 2026-06-03. Outstanding: Detox × 6 spec (mobile, ~6 файлів).
+- ~~**Прожарка #6 follow-up — Server AI-tools (P1-2):** 7 tool-handler unit suites + producer-side barcode contract.~~ ✅ Closed — nutrition Anthropic-invocation покриття замкнено 2026-06-03 (UA), а `openclaw/tools/*` + `digest/weekly-digest` unit suites додано у PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363). Залишок поза P1-2: producer-side barcode contract.
+- **Прожарка #6 follow-up — E2E expansion (P1-4):** ✅ P1-3 (Web smoke × 5 modules) closed 2026-06-03. ⏳ P1-4 Detox — спеки (auth/nutrition/fizruk/deep-link/offline-sync) авторовані у PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363); **open** на wiring app-source `testID`-ів (не green end-to-end на симуляторі).
 - ~~**Прожарка #6 follow-up — Mutation testing (P0-2):** Stryker weekly workflow + tier-1 floor (`utils/macros` + `utils/date`).~~ ✅ Closed 2026-06-03 — `.github/workflows/mutation-testing.yml` live (weekly cron). Залишок поза P0: розширити tier-1 floor на `utils/macros` + `utils/date` як PR-required gate.
 - ~~**Прожарка #6 follow-up — Coverage drift (P1-6):** Web vitest threshold step-up до lines ≥ 50% + module test suites.~~ ✅ Closed 2026-06-03 (UA) — module suites landed, thresholds +1pp (lines 39). Залишок: продовжити ratchet до lines ≥ 50 у наступних спринтах.
 

@@ -196,7 +196,7 @@
 
 ### G. Дублювання логіки (cross-cutting)
 
-- `elapsedMs(start)` → винести в спільний util (зараз повторюється в 4+ файлах `apps/server/src`).
+- ~~`elapsedMs(start)`~~ → **DONE (PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363)).** ✅ Винесено в спільний util `apps/server/src/lib/timing.ts:elapsedMs` (~13 call-sites мігровано на shared helper; решта `apps/server/src` модулів уже імпортують його замість локального дубля).
 - ~~`pantry items → prompt string`~~ → **DONE 2026-04-28**:
   `apps/server/src/lib/pantryFormat.ts` + `pantryFormat.test.ts`.
 - OFF/USDA normalizers → уніфікувати між `modules/nutrition/barcode.ts` і `modules/nutrition/food-search.ts` (shared shapes у `apps/server/src/lib/normalizers/{off,usda,upcitemdb}.ts` з `index.ts` re-export-ами).
@@ -275,7 +275,7 @@ Webhook-based server-side integration added in PR2. Key components:
 
 > ✅ **Shipped 2026-06-01.** Core per-tool limits implemented in `apps/server/src/modules/chat/aiQuota.ts` — `toolCost()` (`DEFAULT_TOOL_COST=3`), `toolLimit()` reads `AI_QUOTA_TOOL_LIMITS` JSON, `consumeToolQuota()` uses dedicated `tool:<name>` buckets (`TOOL_BUCKET_PREFIX`). Env shape differs from the original sketch below (`AI_QUOTA_TOOL_LIMITS` JSON map instead of a single `AI_DAILY_TOOL_LIMIT`). **Only open item:** the metrics-label split below (`aiQuotaBlocksTotal` is still labelled by `reason` only in `obs/metrics.ts`).
 >
-> 📘 **Документація (2026-06-04).** Cost-формула, override через `AI_QUOTA_TOOL_COST` / `AI_QUOTA_TOOL_LIMITS` і precedence задокументовані в docstring-ах `toolCost()` / `toolLimit()` / `consumeToolQuota()` + runbook-секція "Runbook: per-tool cost-override механізм" у [`docs/security/ai-quota-kill-switch.md`](../security/ai-quota-kill-switch.md).
+> 📘 **Документація (2026-06-04, ✅ PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363)).** Cost-формула, override через `AI_QUOTA_TOOL_COST` / `AI_QUOTA_TOOL_LIMITS` і precedence задокументовані в docstring-ах `toolCost()` / `toolLimit()` / `consumeToolQuota()` + runbook-секція "Runbook: per-tool cost-override механізм" у [`docs/security/ai-quota-kill-switch.md`](../security/ai-quota-kill-switch.md). Doc-entry `AI_QUOTA_TOOL_LIMITS` cost-override — resolved (лишається тільки metrics-label split, § нижче).
 
 - ~~Додати `AI_DAILY_TOOL_LIMIT` (fallback = 0.5 × `AI_DAILY_USER_LIMIT`).~~ Shipped as `AI_QUOTA_TOOL_LIMITS` JSON map.
 - ~~Ендпоінти з `toolUse: true` … `assertAiQuota(req, res, { cost: … })`.~~ Shipped via `consumeToolQuota()`.

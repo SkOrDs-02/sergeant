@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  afterAll,
+  vi,
+} from "vitest";
 import request from "supertest";
 
 /**
@@ -148,6 +156,11 @@ describe("GET /health/workers — happy path (no Redis, mono queue empty)", () =
 });
 
 describe("GET /health/workers — degraded paths", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
   it("returns 503 + queueDepth=null when Postgres rejects mono-enrichment query", async () => {
     queryMock.mockRejectedValue(new Error("ECONNREFUSED 127.0.0.1:5432"));
     const app = createApp();
@@ -162,10 +175,16 @@ describe("GET /health/workers — degraded paths", () => {
   });
 
   it("reflects MONO_ENRICHMENT_WORKER_ENABLED + ANTHROPIC_API_KEY env flags", async () => {
-    process.env["MONO_ENRICHMENT_WORKER_ENABLED"] = "true";
-    process.env["ANTHROPIC_API_KEY"] = "sk-ant-test";
+    // HR-3: env.ANTHROPIC_API_KEY is read from the Zod-validated env singleton
+    // (fixed at module-eval time), so we must use the canonical vi.stubEnv +
+    // vi.resetModules() + dynamic import() pattern — plain process.env mutation
+    // after the module was already loaded is a no-op for the guard.
+    vi.stubEnv("MONO_ENRICHMENT_WORKER_ENABLED", "true");
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test");
     queryMock.mockResolvedValue({ rows: [] });
-    const app = createApp();
+    vi.resetModules();
+    const { createApp: freshCreateApp } = await import("../app.js");
+    const app = freshCreateApp();
     const res = await request(app).get("/health/workers");
     expect(res.status).toBe(200);
     expect(res.body.workers.monoEnrichment.enabled).toBe(true);
@@ -173,8 +192,8 @@ describe("GET /health/workers — degraded paths", () => {
 
   it("reports monoEnrichment.enabled=false when API key missing", async () => {
     process.env["MONO_ENRICHMENT_WORKER_ENABLED"] = "true";
-    // ANTHROPIC_API_KEY absent → env-flag must collapse to false (matches
-    // the index.ts conditional that decides whether to start the worker).
+    // env.ANTHROPIC_API_KEY defaults to "" (stringWithDefault("") in env schema)
+    // when the key is absent at module-eval time — no re-import needed here.
     queryMock.mockResolvedValue({ rows: [] });
     const app = createApp();
     const res = await request(app).get("/health/workers");

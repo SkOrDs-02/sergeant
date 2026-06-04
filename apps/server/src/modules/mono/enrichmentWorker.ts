@@ -374,13 +374,17 @@ export interface MonoEnrichmentWorkerStatus {
 export async function getMonoEnrichmentWorkerStatus(
   pool: Pool,
 ): Promise<MonoEnrichmentWorkerStatus> {
-  // Читаємо process.env напряму (не закешований `env`-snapshot), щоб health-
-  // endpoint відображав фактичний стан process-у — Railway теоретично може
-  // підмінити vars через `set` без рестарту, та й тести легше пишуться без
-  // module-reset танців.
+  // `MONO_ENRICHMENT_WORKER_ENABLED` читаємо з `process.env` напряму (не
+  // закешований `env`-snapshot), щоб health-endpoint відображав фактичний стан
+  // process-у — Railway теоретично може підмінити цей toggle через `set` без
+  // рестарту. Міграція цього flag-а на env-single-source — Phase-2 ціль.
+  // `ANTHROPIC_API_KEY`, навпаки, вже мігровано на env-single-source
+  // (`env.ANTHROPIC_API_KEY`, обчислюється на module-load) згідно з HR-3 /
+  // canonical pattern із `coach.route.test.ts` та `requireAnthropicKey.ts`;
+  // ключ задається на старті process-у, тож runtime-reflection тут не потрібна.
   const flagRaw = process.env["MONO_ENRICHMENT_WORKER_ENABLED"]?.toLowerCase();
   const flagOn = flagRaw === "true" || flagRaw === "1";
-  const apiKeyPresent = Boolean(process.env["ANTHROPIC_API_KEY"]);
+  const apiKeyPresent = Boolean(env.ANTHROPIC_API_KEY);
   const enabled = flagOn && apiKeyPresent;
   const intervalMs = env.MONO_ENRICHMENT_INTERVAL_MS;
   try {

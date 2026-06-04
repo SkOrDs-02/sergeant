@@ -8,7 +8,7 @@
     "hard-rule": 26,
     "initiative": 47,
     "playbook": 61,
-    "pr": 197,
+    "pr": 198,
     "skill": 22
   },
   "nodes": [
@@ -3772,6 +3772,16 @@
       }
     },
     {
+      "id": "pr:3363",
+      "type": "pr",
+      "title": "PR #3363",
+      "tier": "extended",
+      "meta": {
+        "number": 3363,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3363"
+      }
+    },
+    {
       "id": "pr:34",
       "type": "pr",
       "title": "PR #34",
@@ -5174,6 +5184,11 @@
       "type": "touched-by"
     },
     {
+      "from": "audit:2026-05-13-consolidated-page-audit",
+      "to": "pr:3363",
+      "type": "touched-by"
+    },
+    {
       "from": "audit:2026-05-13-dead-code-hard-rules-roast",
       "to": "hard-rule:10",
       "type": "references"
@@ -5736,6 +5751,11 @@
     {
       "from": "audit:2026-05-13-testing-devx-roast",
       "to": "pr:2218",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-13-testing-devx-roast",
+      "to": "pr:3363",
       "type": "touched-by"
     },
     {
