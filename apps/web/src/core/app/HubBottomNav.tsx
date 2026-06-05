@@ -20,14 +20,15 @@ import { messages } from "@shared/i18n/uk";
  *
  * Canonical shape:
  * - 60 px height (64 px on coarse-pointer devices).
- * - Floating pill: `mx-3 mb-[calc(env(safe-area-inset-bottom)+0.5rem)]
- *   rounded-3xl border border-line bg-panel shadow-lg`. Inset + rounded
- *   so it reads as a distinct panel "lying on" the page background
- *   (which shows through the surrounding gap) instead of an edge-to-edge
- *   bar — an edge-to-edge bar made the bottom safe-area read as dead
- *   space / a black strip (navbar-dead-space, 2026-05-28 → floating-pill
- *   direction, matching the surrounding AIPill / FAB offsets that always
- *   assumed a floating nav).
+ * - Browser: floating pill via `bottom-nav-shell` utility — `mx-3`,
+ *   `mb-[calc(env(safe-area-inset-bottom)+0.5rem)]`, `rounded-3xl`.
+ *   Inset + rounded so it reads as a distinct panel "lying on" the
+ *   page background.
+ * - PWA standalone: `bottom-nav-shell` docks the nav edge-to-edge
+ *   against the screen bottom — no horizontal margins, flat bottom,
+ *   rounded only at the top. The panel background fills the safe-area
+ *   strip so there's no page-coloured dead space below the labels
+ *   (user report 2026-06-05 / bottom-nav-gap).
  * - Active indicator: a rounded outline (`rounded-2xl border
  *   border-ink-strong/25`) framing the active tab — outline only, no
  *   fill. Module-agnostic by design.
@@ -263,8 +264,7 @@ export function HubBottomNav({
       aria-label={messages.nav.hubSections}
       className={cn(
         "shrink-0 relative z-30",
-        "mx-3 mb-[calc(env(safe-area-inset-bottom)_+_0.5rem)]",
-        "rounded-3xl border border-line bg-panel shadow-lg",
+        "bottom-nav-shell border border-line bg-panel shadow-lg",
       )}
     >
       <div

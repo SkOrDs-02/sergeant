@@ -21,7 +21,7 @@ describe("ModuleBottomNav", () => {
     cleanup();
   });
 
-  it("renders as a floating pill — inset, rounded, framed", () => {
+it("renders as a bottom-nav-shell — inset, rounded, framed", () => {
     render(
       <ModuleBottomNav
         items={items}
@@ -35,8 +35,7 @@ describe("ModuleBottomNav", () => {
     const nav = screen.getByRole("navigation", { name: "Module sections" });
     const statsTab = screen.getByRole("button", { name: "Stats" });
 
-    expect(nav.className).toContain("mx-3");
-    expect(nav.className).toContain("rounded-3xl");
+    expect(nav.className).toContain("bottom-nav-shell");
     expect(nav.className).toContain("bg-panel");
     expect(nav.className).toContain("border");
     expect(statsTab.className).toContain("justify-end");
