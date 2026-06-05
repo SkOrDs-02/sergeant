@@ -8,7 +8,7 @@
  */
 
 export function getSentryDsn(): string | undefined {
-  return process.env.EXPO_PUBLIC_SENTRY_DSN;
+  return process.env.EXPO_PUBLIC_SENTRY_DSN || undefined;
 }
 
 export function getSentryRelease(): string | undefined {

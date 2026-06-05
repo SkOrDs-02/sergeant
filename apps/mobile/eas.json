@@ -8,6 +8,9 @@
       "developmentClient": true,
       "distribution": "internal",
       "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "development"
+      },
       "ios": {
         "resourceClass": "m-medium",
         "simulator": true
@@ -19,6 +22,9 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "preview"
+      },
       "ios": {
         "resourceClass": "m-medium",
         "simulator": true
@@ -31,6 +37,9 @@
       "distribution": "store",
       "channel": "production",
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SENTRY_ENVIRONMENT": "production"
+      },
       "ios": {
         "resourceClass": "m-medium"
       },
