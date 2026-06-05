@@ -413,6 +413,31 @@
   height: calc(60px + env(safe-area-inset-bottom, 0px));
 }
 
+@utility bottom-nav-shell {
+  /* ── Browser mode: floating pill ────────────────────────────────────
+     Inset from screen edges so the page background shows through the
+     surround gap — reads as a distinct panel "lying on" the mesh surface.
+     The bottom margin clears the home indicator / browser chrome. */
+  margin-left: 0.75rem;
+  margin-right: 0.75rem;
+  margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  border-radius: 1.5rem; /* rounded-3xl */
+
+  /* ── PWA standalone: edge-to-edge dock ──────────────────────────────
+     No horizontal insets, no bottom gap, rounded only at the top so the
+     nav panel sits flush against the screen bottom. The panel background
+     (bg-panel) extends into the safe-area strip, filling what would
+     otherwise be page-coloured dead space below the labels
+     (user report 2026-06-05 / bottom-nav-gap). */
+  @media (display-mode: standalone) {
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 0;
+    border-radius: 1.5rem 1.5rem 0 0; /* rounded-t-3xl */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
 @utility no-scrollbar {
   /* ═══════════════════════════════════════════════════════════════════════
      SCROLLBAR UTILITIES

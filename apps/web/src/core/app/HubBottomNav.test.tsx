@@ -92,18 +92,16 @@ describe("HubBottomNav", () => {
     expect(onChange).toHaveBeenCalledWith("settings");
   });
 
-  it("renders as a floating pill — inset, rounded, framed", () => {
+  it("renders as a bottom-nav-shell — inset, rounded, framed", () => {
     renderNav({});
     const nav = screen.getByRole("navigation");
     const settingsTab = screen.getByRole("tab", { name: /Налаштування/ });
 
-    // Floating-pill shape (navbar-dead-space → floating-pill direction):
-    // inset from the edges + rounded + a panel surface with a border, so
-    // it reads as a distinct panel with the page background continuing
-    // around it. We assert on the className because jsdom doesn't compute
-    // styles from arbitrary / at-rule declarations.
-    expect(nav.className).toContain("mx-3");
-    expect(nav.className).toContain("rounded-3xl");
+    // bottom-nav-shell utility (utilities.css) handles floating-pill
+    // layout in browser mode and edge-to-edge dock in PWA standalone.
+    // The styles are applied via CSS (not Tailwind classes), so we
+    // assert the utility class name and the co-applied surface classes.
+    expect(nav.className).toContain("bottom-nav-shell");
     expect(nav.className).toContain("bg-panel");
     expect(nav.className).toContain("border");
     expect(settingsTab.className).toContain("justify-end");
