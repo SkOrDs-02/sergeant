@@ -283,7 +283,7 @@ export async function webhookHandler(
   // `xmax` is 0, on the UPDATE branch of ON CONFLICT it is the txid of the
   // updating transaction (non-zero). We use this to fire push notifications
   // only on first delivery and stay silent on retries — Monobank can re-send
-  // the same statement item if our 200 response is lost. See AI-DANGER below.
+  // the same statement item if our 200 response is lost.
   // Server-side MCC → category resolution. Returns NULL for MCC 0 / null /
   // unknown — caller stays NULL and the user can override via UI.
   // ON CONFLICT branch refreshes `category_slug` only when the user has not

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-05
+ * Status: Active
+ */
 export const FIZRUK_PAGES = [
   "dashboard",
   "atlas",

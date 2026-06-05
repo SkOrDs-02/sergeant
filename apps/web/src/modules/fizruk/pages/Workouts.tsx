@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-05
+ * Status: Active
+ */
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { DataState } from "@shared/components/ui/DataState";

@@ -22,11 +22,11 @@
 ## TL;DR — топ-7 болів (свіжий зріз 2026-05-13)
 
 1. **Error-toast у тупику.** ~16 файлів роблять `toast.error("...")` без `action` — користувач у дед-енді ([§ F1](#f1-toasterror-без-action--p0-fixed)). FIX-у-цьому-PR.
-2. **Modal a11y vs «псевдо-модалки».** ~17 використань `fixed inset-0` поза `<Modal>` / `<Sheet>` — кожен такий новий dialog мусить вручну робити `aria-modal`, focus-trap, scroll-lock ([§ F2](#f2-modal-a11y-псевдо-діалоги-в-апі-fixed-inset-0--p1)). Не у цьому PR.
-3. **Keyboard-shortcuts роадмеп розклеєний.** Модалка `?` каже про `Cmd+S`, `Cmd+Z`, `Cmd+/`, `G H..N` chord — handler-ів немає, користувач відчуває «фейк-promise» ([§ F3](#f3-keyboard-shortcuts-handler-und-coverage--p1-doc-fixed)). DOC FIX-у-цьому-PR.
+2. **Modal a11y vs «псевдо-модалки».** ~17 використань `fixed inset-0` поза `<Modal>` / `<Sheet>` — кожен такий новий dialog мусить вручну робити `aria-modal`, focus-trap, scroll-lock ([§ F2](#f2-modal-a11y-псевдо-діалоги-в-api-fixed-inset-0--p1-part-1-fixed-part-ii-outstanding)). Не у цьому PR.
+3. **Keyboard-shortcuts роадмеп розклеєний.** Модалка `?` каже про `Cmd+S`, `Cmd+Z`, `Cmd+/`, `G H..N` chord — handler-ів немає, користувач відчуває «фейк-promise» ([§ F3](#f3-keyboard-shortcuts--handler-und-coverage--p1-doc-fixed)). DOC FIX-у-цьому-PR.
 4. **PWA service-worker `prompt-on-update` під час стрімінгу AI.** Toast «Доступне нове оновлення» з кнопкою «Reload» з'являється посеред чату → reload розриває streamingResponse → loss-of-context ([§ F4](#f4-pwa-defer-update-prompt-during-streaming--p1)). Не у цьому PR.
-5. **`toast.error(error.message)` без human-mapping.** Сирі error.message інколи протікають у UI (`TypeError: Cannot read property 'data' of undefined`) — лякає, не допомагає ([§ F5](#f5-toasterrorerrormessage-у-кількох-callsite-ах--p2-fixed)). FIX-у-цьому-PR.
-6. **PTR під час активної синхронізації.** `<PullToRefresh>` дозволяє повторно тригерити `requestCloudPull` поки попередня не завершилася → race + дубльовані toast-фейли ([§ F6](#f6-pull-to-refresh-під-час-активного-sync--p2)). Не у цьому PR.
+5. **`toast.error(error.message)` без human-mapping.** Сирі error.message інколи протікають у UI (`TypeError: Cannot read property 'data' of undefined`) — лякає, не допомагає ([§ F5](#f5-toasterrorerrormessage-без-human-mapping--p2-fixed)). FIX-у-цьому-PR.
+6. **PTR під час активної синхронізації.** `<PullToRefresh>` дозволяє повторно тригерити `requestCloudPull` поки попередня не завершилася → race + дубльовані toast-фейли ([§ F6](#f6-pull-to-refresh-під-час-активного-sync--p2--closed-in-2743)). Не у цьому PR.
 7. **`useApiForm` rollout: ~10 форм усе ще на manual `useState`.** Foundation `useApiForm` (zod resolver) є в `apps/web/src/shared/forms/`, але високого-traffic форми (PersonalInfoSection, MemoryBankSection) поки що на manual setState ([§ F7](#f7-useapiform-rollout-burndown--p2)). Не у цьому PR.
 
 ## Outstanding-items working-list (P0/P1/P2)
@@ -122,16 +122,7 @@ Typecheck: ✅ clean. ESLint: ✅ 0 errors. Shared-tests: ✅ 666/666 passed.
 
 ✅ Closed in [#TBD-F5](https://github.com/Skords-01/Sergeant/pulls?q=is%3Apr+map+api+error+user+copy) — додано `apps/web/src/shared/lib/api/mapApiErrorToUserCopy.ts` + 13 unit-тестів (5 Better-Auth codes, unknown fallback, status fallback, null/undefined); 9 callsite-ів у `apps/web/src/core/profile/*` (`PersonalInfoSection`, `DangerZoneSection`, `SessionsSection`, `ChangePasswordSection`) переведені на `mapApiErrorToUserCopy(res.error, fallback)`.
 
-**Сирий error.message протікає у UI:**
-
-- `apps/web/src/core/profile/PersonalInfoSection.tsx:50,72,94,...` — `toast.error(res.error.message ?? "Не вдалося оновити ім'я")` — `??` fallback ОК, але `res.error.message` сам по собі — це backend-string (наприклад `validation_error: name too long`), не український UX-string.
-- `apps/web/src/core/profile/DangerZoneSection.tsx:36` — той самий патерн.
-- `apps/web/src/core/profile/SessionsSection.tsx:75` — те саме.
-
-**Дії (не в цьому PR):**
-
-- **Add** `mapApiErrorToUserCopy(error)` — централізована функція в `apps/web/src/shared/lib/api/` що мапить `error.code` → UA-copy.
-- **Change** 5-7 callsite-ів у `core/profile/*` — використовувати `mapApiErrorToUserCopy(res.error)` замість прямого `.message`.
+**Резолюція:** усі callsite-и у `apps/web/src/core/profile/*` (`PersonalInfoSection`, `DangerZoneSection`, `SessionsSection`, `ChangePasswordSection`) переведені на `mapApiErrorToUserCopy(res.error, fallback)` — сирий `error.message` більше не протікає у UI. Деталі — у summary вище.
 
 ### F6: Pull-to-refresh під час активного sync — P2 ✅ Closed in #2743
 

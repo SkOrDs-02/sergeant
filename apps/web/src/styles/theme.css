@@ -46,7 +46,7 @@
     --safe-area-right: env(safe-area-inset-right, 0px);
   }
 
-  /* Sergeant v2 redesign (PR-#XXXX, 2026-05-18) — REMOVED the legacy
+  /* Sergeant v2 redesign — REMOVED the legacy
      `body { padding-top: var(--safe-area-top); padding-bottom: var(...) }`
      rule. `viewport-fit=cover` on the `<meta name="viewport">` is what
      actually makes `env(safe-area-inset-*)` return non-zero on iOS —

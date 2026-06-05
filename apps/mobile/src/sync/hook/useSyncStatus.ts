@@ -1,12 +1,6 @@
 /**
  * Lightweight read-only hook that feeds `SyncStatusIndicator`.
  *
- * Pre-PR-#052c this hook читало live v1 state — `dirtyModules` map, the
- * MMKV-backed `offlineQueue`, NetInfo-driven online flag — і пушило
- * refresh-events через v1 emitter. Усе те дерево пішло разом із
- * engine-ом у PR #052c (cloudSync v1 cleanup mirror того, що web
- * зробив у PR #052b).
- *
  * Now that the mobile sync v2 writer-runtime is wired into
  * `apps/mobile/app/_layout.tsx` (`bootSyncEngineWriter`), the hook
  * bridges the runtime's `getStatus()` reader (counts of `pending` /

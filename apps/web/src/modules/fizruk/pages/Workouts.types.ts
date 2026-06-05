@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-05
+ * Status: Active
+ */
 import type {
   WorkoutFinishSummary,
   WorkoutItem,

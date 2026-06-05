@@ -33,6 +33,13 @@ export type DailyLogNumericField =
   | "energyLevel"
   | "moodScore";
 
+// AI-DANGER: local id generation for daily-log entries. The `dl_` prefix
+// and time+random shape are relied on by the dual-write/cloud-sync pipeline
+// to dedupe LWW merges across devices. Do NOT swap to a bare `Date.now()`
+// (collision-prone under rapid entry) or change the prefix without auditing
+// the sync de-dupe path. (The same shape is duplicated in
+// WorkoutTemplatesSection.tsx, useWorkoutTemplates.ts and activeWorkoutLib.ts —
+// keep them in lockstep if this changes.)
 function uid() {
   return `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }

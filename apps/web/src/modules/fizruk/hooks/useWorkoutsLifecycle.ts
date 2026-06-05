@@ -75,6 +75,11 @@ export function useRestTimerCountdown(
 ): void {
   useEffect(() => {
     if (!restTimer || restTimer.remaining <= 0) return;
+    // AI-DANGER: rest-timer countdown. The functional updater, the
+    // `<= 1` boundary (fires `markCompletedNaturally` on the final tick,
+    // not at 0), and the `clearInterval` cleanup are load-bearing. Changing
+    // the boundary or dropping the cleanup double-fires the end-cue or
+    // leaks intervals across navigation. Verify against RestTimerProvider.
     const id = setInterval(() => {
       setRestTimer((r) => {
         if (!r || r.remaining <= 1) {

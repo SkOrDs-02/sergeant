@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-05
+ * Status: Active
+ */
 import type { ModuleBottomNavItem } from "@shared/components/ui/ModuleBottomNav";
 import type { FizrukPage } from "./fizrukRoute";
 

@@ -1,6 +1,4 @@
 /**
- * Status: Active.
- *
  * In-memory FIFO buffer для unknown-MCC tx-ів, які `lookupMccCategory()`
  * не зміг резолвити детерміністично. Буфер дренують hourly-batch worker-и
  * (PR-18 з pr-plan-2026-05, WF-06 mono optimization): замість per-row

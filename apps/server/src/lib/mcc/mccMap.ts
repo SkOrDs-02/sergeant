@@ -1,6 +1,4 @@
 /**
- * Status: Active.
- *
  * Rule-based MCC → AI-Category mapping (ISO 18245 top-100).
  *
  * Background: PR-17 з WF-06 mono optimization. До цього кожна Monobank-tx

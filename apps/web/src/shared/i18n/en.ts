@@ -28,7 +28,7 @@
  * Checkout locale is handled separately by `stripe.ts` (initiated session
  * locale) — this catalog only covers our own UI copy.
  *
- * Roadmap: see `docs/i18n/readiness.md` (TODO: create) for the per-surface
+ * Roadmap: see `docs/i18n/readiness.md` for the per-surface
  * migration sequence. PaywallModal callers + their direct copy props are the
  * first PR; PricingPage TIERS const is the second; PlanSection + TrialBanner
  * the third.

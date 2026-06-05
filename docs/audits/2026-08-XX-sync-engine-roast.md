@@ -9,7 +9,7 @@
 
 ## TL;DR
 
-`apps/server/src/modules/sync/syncV2.ts` — **3031 рядок**, найбільший single-file у репо. Файл обслуговує всі sync-engine paths (push, pull, op-log, idempotency, dead-letter). Розмір сам по собі не is-bad-news, але:
+`apps/server/src/modules/sync/syncV2.ts` — **3099 рядок**, найбільший single-file у репо. Файл обслуговує всі sync-engine paths (push, pull, op-log, idempotency, dead-letter). Розмір сам по собі не is-bad-news, але:
 
 - При >3 kLOC chunkability per-handler ставиться питанням, чи можна окремо тестувати idempotency-key hot path і retry-semantics без перенавантажування fixture-bootstrap.
 - Atomic-transaction boundaries (одна `BEGIN`-у-handler чи декілька) досі не задокументовано — а це визначає, чи може half-committed batch виникнути при connection drop.
@@ -38,12 +38,12 @@
 - **LOC profile** — `git log -L :handler:syncV2.ts` для кожного route handler; шукати handlers >300 LOC (chunkability candidates).
 - **Transaction boundary trace** — `rg "BEGIN|COMMIT|ROLLBACK" apps/server/src/modules/sync/syncV2.ts` + ASCII диаграма per-handler.
 - **Idempotency-key telemetry** — Grafana panel `sync_idempotency_size` (потрібен як precondition; додати у `metrics.md §6` якщо відсутній).
-- **Retry simulation** — `apps/server/tests/syncV2.integration.test.ts` — додати ACID-стрес-кейс із artificial connection drop. Testcontainers Postgres має це підтримувати через `pg-connection-pool` тюнинг.
+- **Retry simulation** — `apps/server/src/modules/sync/syncV2.integration.test.ts` — додати ACID-стрес-кейс із artificial connection drop. Testcontainers Postgres має це підтримувати через `pg-connection-pool` тюнинг.
 - **Mobile co-evolution** — звірити з `apps/mobile/src/core/syncEngine/singleton.ts` (recovery wiring); `packages/db-schema/src/sqlite/syncOpOutboxRecover.ts` (DLQ row shape).
 
 ## Cross-refs
 
-- **Code:** [`apps/server/src/modules/sync/syncV2.ts`](../../apps/server/src/modules/sync/syncV2.ts) (3031 LOC).
+- **Code:** [`apps/server/src/modules/sync/syncV2.ts`](../../apps/server/src/modules/sync/syncV2.ts) (3099 LOC).
 - **ADR:** [`docs/adr/0047-cloudsync-v1-410-gone.md`](../adr/0047-cloudsync-v1-410-gone.md) (sunset Amendment 2026-04-27).
 - **Initiative:** [`docs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md`](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md) (Phases 1-6 done; Phase 7 wiring closed 2026-05-15).
 - **Storage roadmap:** [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md) (Stage 8/9 dual-write — взаємозалежність зі sync-conflict-resolution).

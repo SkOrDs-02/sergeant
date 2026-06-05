@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-05
+ * Status: Active
+ */
 import { useMemo } from "react";
 import { BodyAtlas } from "../components/BodyAtlas";
 import { useRecovery } from "../hooks/useRecovery";

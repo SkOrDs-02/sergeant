@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-05
+ * Status: Active
+ */
 import type { Workout } from "@sergeant/fizruk-domain";
 import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
@@ -124,5 +128,9 @@ export function formatActiveDuration(
  * (page-audit-06 F11). Name kept for call-site stability.
  */
 export function todayLocalDateString(): string {
+  // AI-DANGER: day boundary is Europe/Kyiv, not the device clock or UTC.
+  // Must stay routed through `getKyivDayKey()`. Swapping to
+  // `new Date().toISOString().slice(0,10)` or `toLocaleDateString` silently
+  // shifts the date for late-evening / non-Kyiv hosts and breaks streaks.
   return getKyivDayKey();
 }

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-05
+ * Status: Active
+ */
 import { useEffect } from "react";
 import { ModuleShell, StorageErrorBanner } from "@shared/components/layout";
 import { AIPill } from "@shared/components/ui/AIPill";

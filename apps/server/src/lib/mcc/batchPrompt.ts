@@ -1,6 +1,4 @@
 /**
- * Status: Active.
- *
  * Pure prompt-building + response-parsing для batch-категоризації
  * unknown-MCC tx-ів (PR-18 з pr-plan-2026-05, WF-06 mono optimization).
  *

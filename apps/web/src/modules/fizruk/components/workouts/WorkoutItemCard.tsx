@@ -363,6 +363,13 @@ export function WorkoutItemCard({
                 // which the parser handles too — but digits are easier to
                 // confirm visually when the user replays the transcript.
                 promptHint="Вправа з вагою та повтореннями: жим штанги 80 кг 8 разів, присідання 100 кг 5 повторень."
+                // AI-DANGER: voice (Whisper) set-commit path. The all-null
+                // guard, the optimistic `updateItem` append, and the auto
+                // rest-timer start are tightly coupled. Removing the guard
+                // injects 0×0 sets that the cloud-sync queue silently
+                // persists; starting the rest timer on an ended/grouped
+                // workout is wrong. Re-verify the parser contract in
+                // speechParsers.ts before touching any of these.
                 onResult={(transcript) => {
                   const parsed = parseWorkoutSetSpeech(transcript);
                   // Refuse to add an empty set: parser returns a truthy

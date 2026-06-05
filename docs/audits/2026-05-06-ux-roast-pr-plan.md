@@ -15,7 +15,7 @@
 > **Update 2026-05-06 (housekeeping):** після перегляду стану main викреслено два пункти, бо їх фундамент уже відсутній:
 >
 > - **PR-13** «Module-context у sync-error toast [A15]» — cloudSync v1 engine tree dropped у Stage 7 ([#2046](https://github.com/Skords-01/Sergeant/pull/2046), `core/cloudSync/index.ts` тепер експортує лише `useSyncStatus`). `useSyncErrorToast.ts`, модульні `useCloudSync.ts` та supporting plumbing видалені — PR-13 ні до чого прив'язати.
-> - **PR-37** «Прибрати dark-mode дубль у Settings [R3]» — дубля більше немає: `DarkModeToggle` хостить рівно одна точка (`apps/web/src/core/app/HubHeader.tsx`), у `apps/web/src/core/settings/*` жоден файл не імпортує `useDarkMode` / `DarkModeToggle`.
+> - **PR-37** «Прибрати dark-mode дубль у Settings [R3]» — дубля більше немає: `DarkModeToggle` та хук `useDarkMode` повністю прибрані (retired у PR #2660 на користь 4-режимної теми `useTheme` / `useDemoCommands`). У `apps/web/src/core/settings/*` жоден файл не імпортує тему-toggle.
 
 **Конвенції:**
 
@@ -821,9 +821,9 @@
 
 **Status:** Закрито без реалізації — дубля немає. Поточний стан main:
 
-- `DarkModeToggle` хостить **рівно одна точка** — `apps/web/src/core/app/HubHeader.tsx` (1 використання).
-- У `apps/web/src/core/settings/*` (включно з `DashboardSection.tsx`, який план хотів зачепити) **жоден файл не імпортує** `useDarkMode` чи `DarkModeToggle`. Перевірено `grep -r "useDarkMode\|DarkModeToggle" apps/web/src/core/settings/`.
-- Сам `useDarkMode` хук живе у `apps/web/src/shared/hooks/useDarkMode.ts` як shared-utility, але споживає його тільки одна UI-точка.
+- `DarkModeToggle` **відсутній** будь-де в `apps/web/src` — компонент прибрано. Перевірено `grep -r "DarkModeToggle" apps/web/src/` (0 збігів).
+- У `apps/web/src/core/settings/*` (включно з `DashboardSection.tsx`, який план хотів зачепити) **жоден файл не імпортує** тему-toggle.
+- Хук `useDarkMode` теж прибрано (retired у PR #2660 на користь 4-режимної теми). Файл `apps/web/src/shared/hooks/useDarkMode.ts` більше не існує; його роль перейшла до `useTheme.ts` (класи на `<html>`) та `useDemoCommands.ts`. Згадки `useDarkMode` лишились лише як історичні коментарі/JSDoc.
 
 **Original Scope:** план хотів tri-state «light / dark / system» у Settings + toggle 2-state у header. Якщо цей tri-state у майбутньому захочеться — треба нову прожарку (R-пункт), бо контекст і tone-of-voice 2026-Q2 цей напрямок не покривають як standalone-need.
 

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-05
+ * Status: Active
+ */
 import { Suspense } from "react";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
