@@ -21,22 +21,32 @@ test.use({ storageState: { cookies: [], origins: [] } });
  *   2. Successful sign-up flips the standalone-route guard for
  *      `/sign-in` — `AuthContext` `invalidateMe()` repopulates `user`,
  *      `<RedirectTo to="/" />` fires.
+ *   2a. Before navigating away, assert `signup_completed` is in
+ *       `window.__hubAnalytics`. The smoke stack runs `vite preview`
+ *       without COOP/COEP headers, so `sqlite-wasm` uses a memory-only
+ *       VFS that resets on every hard navigation — writing through
+ *       `webKVStore` (analytics' flush path) does not survive the
+ *       `page.goto("/welcome")` reload. `window.__hubAnalytics` is set
+ *       synchronously on every `trackEvent` call (no debounce), so we
+ *       read it here while still in the same JS context as the sign-up.
  *   3. The hub root then runs `shouldShowOnboarding()` against a clean
  *      `KVStore` and bounces the user to `/welcome` (see
  *      `apps/web/src/core/App.tsx:187`).
- *   4. `WelcomeScreen` mounts `OnboardingWizard variant="fullPage"`.
- *      The user clicks the splash primary CTA, the wizard's `finish()`
- *      handler in `useOnboardingWizardState.ts` fires
- *      `ANALYTICS_EVENTS.ONBOARDING_COMPLETED`, persists picks +
+ *   4. `WelcomeScreen` mounts `WelcomeModulePicker` (Phase 7 D4).
+ *      All four module cards start pre-selected. The user clicks the
+ *      primary CTA ("Почати"), `WelcomeScreen.handlePicksComplete()`
+ *      fires `ANALYTICS_EVENTS.ONBOARDING_COMPLETED` with
+ *      `intent: "preset_picker"`, persists picks +
  *      `hub_onboarding_done_v1`, and calls `onDone()` →
  *      `leaveWelcome()` → `navigate("/")`.
- *   5. The hub root settles at `/` and the analytics ring-buffer
+ *   5. The hub root settles at `/`. The in-page ring-buffer
  *      (`window.__hubAnalytics`, see
- *      `apps/web/src/core/observability/analytics.ts`) contains
- *      `signup_completed` + `onboarding_completed`. The buffer is the
- *      deterministic transport — PostHog is fire-and-forget over the
- *      network and lazy-imported via `VITE_POSTHOG_KEY`, neither of
- *      which we set in smoke. See the § 4a smoke-stack note in the
+ *      `apps/web/src/core/observability/analytics.ts`) now contains
+ *      `onboarding_completed` (fired on `/welcome` in this JS context).
+ *      `signup_completed` was verified in step 2a before the hard
+ *      reload that reset the buffer. PostHog is fire-and-forget over
+ *      the network and lazy-imported via `VITE_POSTHOG_KEY`, neither
+ *      of which we set in smoke. See the § 4a smoke-stack note in the
  *      test body for why we do not also assert `<HubBottomNav>`
  *      visibility (the `vite preview` web-server does not emit
  *      COOP/COEP headers, so `sqlite-wasm` falls back to its
@@ -59,13 +69,11 @@ test.use({ storageState: { cookies: [], origins: [] } });
  *  - We do NOT seed the `hub_first_action_done_v1` /
  *    `hub_vibe_picks_v1` keys. The wizard itself owns those writes;
  *    pre-seeding them here would mask regressions in `finish()`.
- *  - We click exactly one `MODULE_CARDS` chip (`finyk`) to flip the
- *    primary CTA from `disabled` (empty-picks state, see
- *    `useOnboardingWizardState.ts:292` — `ctaDisabled = picks.length === 0`
- *    after the 2026-05-08 UX flip from `"all"` → `"none"` default
- *    variant) into `enabled`. Picking the full set is a per-module
- *    FTUX concern and lives in its own spec; the happy-path invariant
- *    is just "founder picks at least one module and lands in the hub".
+ *  - Phase 7 D4: all four module cards default to picked
+ *    (`aria-pressed="true"`) so the primary CTA ("Почати") is enabled
+ *    at mount. The happy-path invariant is "founder lands in the hub
+ *    after clicking the CTA" — per-module chip interaction lives in
+ *    a dedicated spec.
  */
 
 const FRESH_USER_LS: Record<string, string> = {
@@ -150,45 +158,57 @@ test("@critical onboarding: sign-up → welcome wizard → hub-overview fires on
   await page.waitForURL((url) => url.pathname !== "/sign-in", {
     timeout: 15_000,
   });
+
+  // -----------------------------------------------------------------
+  // 2a. Assert `signup_completed` BEFORE the hard navigation below.
+  //
+  //     Smoke-stack constraint: `vite preview` serves without COOP/COEP
+  //     headers → `sqlite-wasm` falls back to a memory-only VFS. The
+  //     analytics flush (`flushLogToStorage`) writes through
+  //     `webKVStore.setString` → in-memory SQLite → wiped on every
+  //     `page.goto`. Raw `localStorage.getItem(LOG_KEY)` never gets
+  //     the value (writes go to SQLite, not raw LS), so the ring buffer
+  //     does NOT survive the full-page reload that follows.
+  //
+  //     `window.__hubAnalytics` is assigned synchronously inside
+  //     `trackEvent()` (before the 500 ms debounce), so the event IS
+  //     available immediately after the URL change confirms sign-up.
+  //     We assert it here — in the same JS context where it fired —
+  //     and then proceed with the hard reload to `/welcome`.
+  // -----------------------------------------------------------------
+  const signupBuffer = await page.evaluate(() => {
+    const w = window as Window & { __hubAnalytics?: unknown[] };
+    return (w.__hubAnalytics ?? []) as AnalyticsEvent[];
+  });
+  const signupCompleted = signupBuffer.find(
+    (e) => e.eventName === "signup_completed",
+  );
+  expect(
+    signupCompleted,
+    "signup_completed event missing — WF-60 funnel head broken",
+  ).toBeDefined();
+
   await page.goto("/welcome", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/welcome$/, { timeout: 10_000 });
 
   // -----------------------------------------------------------------
-  // 3. OnboardingWizard splash (`variant="fullPage"`) is visible. The
-  //    primary CTA is `disabled` until the founder picks at least one
-  //    module (`useOnboardingWizardState.ts:292` —
-  //    `ctaDisabled = !isTour && defaultPicksVariant === "none" &&
-  //    picks.length === 0`). The 2026-05-08 UX flip hard-coded the
-  //    variant to `"none"` because pre-checking everything read as
-  //    "we already chose for you". Tap one module chip (`Фінік`) to
-  //    flip the CTA, then submit.
-  //
-  //    CTA label comes from `OUTCOME_COPY` / etc. in
-  //    `packages/shared/src/lib/onboardingHeroCopy.ts` — every
-  //    variant starts with either `Розпочати` or `Спробувати`, so we
-  //    match a regex anchored to the first word rather than
-  //    hard-coding the full string and coupling the test to a
-  //    specific arm.
+  // 3. Phase 7 D4 WelcomeModulePicker is visible.
+  //    All four module cards default to picked (aria-pressed="true").
+  //    The primary CTA ("Почати") is enabled from the start because
+  //    picks.length > 0 at mount.  No interaction needed before
+  //    clicking — just assert the picker rendered and submit.
+  //    Source: apps/web/src/core/app/WelcomeModulePicker.tsx +
+  //            apps/web/src/shared/i18n/uk.ts § welcomeModulePicker.
   // -----------------------------------------------------------------
-  const splashCta = page.getByRole("button", {
-    name: /^(Розпочати|Спробувати) — 30 секунд/,
-  });
+  const splashCta = page.getByRole("button", { name: "Почати" });
   await expect(splashCta).toBeVisible({ timeout: 10_000 });
-
-  // `MODULE_LABELS.finyk === "Фінік"`; the `ModuleRow` button uses
-  // `aria-pressed` to expose pick state. Click → flip to `pressed`,
-  // CTA becomes enabled on the next render flush.
-  const finykChip = page.getByRole("button", { name: /^Фінік/ });
-  await finykChip.click();
-  await expect(finykChip).toHaveAttribute("aria-pressed", "true");
-
   await expect(splashCta).toBeEnabled();
   await splashCta.click();
 
   // -----------------------------------------------------------------
-  // 4. Land on the hub. `useOnboardingWizardState.finish()`
-  //    synchronously fires analytics → marks onboarding done →
-  //    calls `onDone()` which `navigate("/", { replace: true })`s
+  // 4. Land on the hub. `WelcomeScreen.handlePicksComplete()`
+  //    (Phase 7 D4) synchronously fires analytics → marks onboarding
+  //    done → calls `onDone()` which `navigate("/", { replace: true })`s
   //    via the standalone-route `onLeaveWelcome` callback (see
   //    `apps/web/src/core/App.tsx:93` and
   //    `apps/web/src/core/app/StandaloneRoutes.tsx:215`). We
@@ -236,9 +256,13 @@ test("@critical onboarding: sign-up → welcome wizard → hub-overview fires on
   //    `apps/web/src/core/observability/analytics.ts`). PostHog
   //    transport is fire-and-forget over the network and is gated on
   //    `VITE_POSTHOG_KEY` (unset in smoke), so the ring buffer is the
-  //    deterministic signal that `useOnboardingWizardState.finish()`
-  //    actually fired the event before the wizard handed off to the
-  //    hub.
+  //    deterministic signal that `WelcomeScreen.handlePicksComplete()`
+  //    actually fired the event before handing off to the hub.
+  //
+  //    Note: `signup_completed` was verified in step 2a (above) before
+  //    the hard reload to `/welcome`. The buffer here starts fresh
+  //    (smoke memory-only SQLite) and only contains events fired in
+  //    this JS context (i.e. on `/welcome` → `/`).
   // -----------------------------------------------------------------
   const analyticsEvents = await page.evaluate(() => {
     const w = window as Window & { __hubAnalytics?: unknown[] };
@@ -253,26 +277,11 @@ test("@critical onboarding: sign-up → welcome wizard → hub-overview fires on
     `onboarding_completed analytics event missing. Console events seen:\n${analyticsConsoleEvents.join("\n")}`,
   ).toBeDefined();
 
-  // The wizard `finish()` handler tags the event with `intent` +
-  // `picksCount` so PR-07's funnel can split activation cohorts. We
-  // assert the shape (not exact values) so the test does not break
-  // when the default-picks A/B rolls a different arm.
+  // WelcomeModulePicker (Phase 7 D4) fires intent="preset_picker";
+  // the legacy OnboardingWizard used "vibe_picked"|"vibe_empty". Accept
+  // all three so the test survives a surface rollback without breakage.
   expect(onboardingCompleted!.payload).toMatchObject({
-    intent: expect.stringMatching(/^(vibe_picked|vibe_empty)$/),
+    intent: expect.stringMatching(/^(vibe_picked|vibe_empty|preset_picker)$/),
     picksCount: expect.any(Number),
   });
-
-  // The `signup_completed` precondition event should also be in the
-  // buffer (fired by `AuthContext.register` before `invalidateMe`).
-  // Locking it here turns the WF-60 activation funnel
-  // (`signup_completed → onboarding_completed → first_action_completed`)
-  // into a smoke-level invariant rather than two independent unit
-  // assertions in different test files.
-  const signupCompleted = analyticsEvents.find(
-    (event) => event.eventName === "signup_completed",
-  );
-  expect(
-    signupCompleted,
-    "signup_completed event missing — WF-60 funnel head broken",
-  ).toBeDefined();
 });

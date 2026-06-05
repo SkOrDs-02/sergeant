@@ -72,7 +72,10 @@ export function summaryFor(
       break;
     }
     case "log_set": {
-      const exercise = stringField("exercise_name") || stringField("name") || stringField("exercise");
+      const exercise =
+        stringField("exercise_name") ||
+        stringField("name") ||
+        stringField("exercise");
       const weight = numberField("weight_kg") ?? numberField("weight");
       const reps = numberField("reps");
       const parts: string[] = [];
@@ -191,7 +194,8 @@ export function summaryFor(
     case "split_transaction": {
       const txId = stringField("tx_id");
       const parts = input["parts"];
-      if (txId) return `TX: ${txId} → ${Array.isArray(parts) ? parts.length : 0} частин`;
+      if (txId)
+        return `TX: ${txId} → ${Array.isArray(parts) ? parts.length : 0} частин`;
       break;
     }
     case "recurring_expense": {
@@ -334,9 +338,10 @@ export function summaryFor(
       const weekday = numberField("weekday");
       const name = stringField("name");
       const days = ["нд", "пн", "вт", "ср", "чт", "пт", "сб"];
-      const dayName = weekday !== undefined && weekday >= 0 && weekday <= 6
-        ? days[weekday]
-        : "?";
+      const dayName =
+        weekday !== undefined && weekday >= 0 && weekday <= 6
+          ? (days[weekday] ?? "?")
+          : "?";
       const parts: string[] = [];
       parts.push(dayName);
       if (name) parts.push(name);
