@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR) — реєстр рішень
 
-> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-06 by @claude (bulk-bump artifact corrected — file was content-modified 2026-06-05 adding ADR-0062 row; date was still showing the 2026-05-13 batch-bump). **Next review:** 2026-09-06.
 > **Status:** Active
 
 > Архітектурні рішення Sergeant. Кожен ADR фіксує **рішення з контекстом і альтернативами**, щоб через рік не довелось гадати «чому ми тут зробили так, а не інакше».

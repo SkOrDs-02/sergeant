@@ -1,6 +1,6 @@
 # Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)
 
-> **Last validated:** 2026-05-15 by Claude Opus 4.7 (external session — pr-plan-backend-perf PR-12 scoping stub). **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-06 by @claude (audit-closeout pass — added per-handler transaction-boundary diagrams and DLQ TTL note from direct code trace). **Next review:** 2026-09-06.
 > **Status:** Draft
 
 > **Owner:** TBD (backend-engineer)
@@ -40,6 +40,72 @@
 - **Idempotency-key telemetry** — Grafana panel `sync_idempotency_size` (потрібен як precondition; додати у `metrics.md §6` якщо відсутній).
 - **Retry simulation** — `apps/server/src/modules/sync/syncV2.integration.test.ts` — додати ACID-стрес-кейс із artificial connection drop. Testcontainers Postgres має це підтримувати через `pg-connection-pool` тюнинг.
 - **Mobile co-evolution** — звірити з `apps/mobile/src/core/syncEngine/singleton.ts` (recovery wiring); `packages/db-schema/src/sqlite/syncOpOutboxRecover.ts` (DLQ row shape).
+
+## Transaction-boundary trace (2026-06-06 code read)
+
+Traced from `apps/server/src/modules/sync/syncV2.ts` (475 LOC as of this pass).
+Note: the file has been substantially refactored from the 3099-LOC version mentioned in the TL;DR below — domain `applySync` functions have been extracted into per-domain sub-modules (`routine/applySync.ts`, `fizruk/applySync.ts`, `nutrition/applySync.ts`, `finyk/applySync.ts`), reducing `syncV2.ts` itself to ~475 LOC. The transaction model is unchanged.
+
+### Handler: `syncV2Push` (POST /api/v2/sync/push)
+
+```
+pool.connect()
+│
+├─ client.query("BEGIN")
+│   │
+│   └─ for each op in ops[]:
+│       │
+│       ├─ SELECT sync_op_log WHERE idempotency_key     [idempotency check — read inside tx]
+│       │   └─ if duplicate → skip, continue
+│       │
+│       ├─ validate: clock_skew / op_not_supported / table_not_allowed
+│       │
+│       ├─ client.query("SAVEPOINT op_apply")           [per-op nested savepoint]
+│       │   └─ applyFn(client, op, userId, clientTs)    [domain apply — inside savepoint]
+│       │       └─ on throw:
+│       │           client.query("ROLLBACK TO SAVEPOINT op_apply")  → status="rejected"
+│       ├─ client.query("RELEASE SAVEPOINT op_apply")   [idempotent after rollback]
+│       │
+│       └─ INSERT INTO sync_op_log (status, reject_reason, ...)    [always — records outcome]
+│
+├─ client.query("COMMIT")   ← success path: all op-log inserts + applied rows committed atomically
+│
+└─ on outer throw:
+    client.query("ROLLBACK")   ← whole batch rolled back (nothing persisted)
+│
+client.release()   [finally block — always executed]
+```
+
+**Key properties:**
+- One `BEGIN`/`COMMIT` wraps the entire batch — all ops in a single push request are committed atomically or not at all.
+- Per-op failures use `SAVEPOINT` so a single rejected op does not poison the whole transaction; the op-log INSERT still records the rejection.
+- `client.release()` is in a `finally` block — connection is never leaked even on outer exception.
+- Connection drop mid-batch → outer `ROLLBACK` fires (or connection pool detects broken connection); no half-committed batch can reach the DB. The idempotency check on retry ensures re-push is safe.
+
+### Handler: `syncV2Pull` (GET /api/v2/sync/pull)
+
+```
+pool.query(...)   [direct pool — no explicit BEGIN/COMMIT]
+│
+└─ SELECT sync_op_log
+   WHERE user_id = $1 AND id > $2 AND status = 'applied'
+   AND origin_device_id IS DISTINCT FROM $3
+   ORDER BY id ASC LIMIT $4
+```
+
+**Key properties:**
+- Read-only SELECT; no transaction wrapper needed (auto-commit, snapshot isolation from Postgres default).
+- No `pool.connect()` / `client.release()` — `pool.query()` acquires and releases a connection automatically.
+- Cursor-based pagination (`id > since`, returns `next_cursor`).
+
+### DLQ-row TTL note
+
+The dead-letter queue (DLQ) is **client-side only** (SQLite `sync_op_outbox` table, status `'dead_letter'`). Key findings from code trace:
+
+- **No TTL**: `dead_letter` rows are **never automatically purged**. `purgeSyncOpOutboxForUser()` (`packages/db-schema/src/sqlite/syncOpOutboxPurge.ts`) deletes only `status='pending'` rows on logout; terminal rows (`rejected`, `dead_letter`, `quarantined`) are intentionally preserved for forensic value.
+- **Recovery**: `recoverDeadLetter({ all: true })` (`packages/db-schema/src/sqlite/syncOpOutboxRecover.ts`) moves `dead_letter` → `pending` and re-queues. Both `apps/web` and `apps/mobile` singleton call this on reconnect (`syncEngineWriter.ts:176` / `syncEngineWriter.ts:185`).
+- **Implication**: On a device that never reconnects cleanly, the DLQ can grow unbounded. A TTL-based cleanup job (e.g., purge `dead_letter` rows older than N days) is not implemented. This is a **future audit item** — risk is low for typical mobile churn but warrants a Grafana panel tracking dead-letter bucket size.
+- **Server-side**: `sync_op_log` (server Postgres) has no DLQ concept; server-side rejections are recorded inline (status `'rejected'`). No server-side TTL purge exists in `syncV2.ts` — retention-job referenced as comment in `apps/server/src/modules/sync/audit.ts:152` but not implemented in this module.
 
 ## Cross-refs
 

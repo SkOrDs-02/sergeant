@@ -1,7 +1,7 @@
 # Deep audit — state of repo (2026-05-15)
 
-> **Last validated:** 2026-06-03 by Claude Opus 4.8 (drift-closeout — D1 #2872 + D4 #2874 merged до main, підтверджено proof-файлами; outstanding 4→0). **Next review:** 2026-08-13.
-> **Status:** Active — 0 truly-outstanding items (усі D1–D4 закрито станом на 2026-06-03; файл лишається не заархівованим для крос-посилань).
+> **Last validated:** 2026-06-06 by @claude (audit-closeout pass — 0 outstanding confirmed (D1–D4 all closed); status flipped to Archived). **Next review:** 2026-09-06.
+> **Status:** Archived — усі D1–D4 закрито станом на 2026-06-03; файл заархівовано 2026-06-06 після підтвердження 0 outstanding; лишається для крос-посилань як historical record.
 
 > **Скоуп:** зовнішній двопрохідний аудит на запит власника (повний repo: документи, мертвий код, архітектура, ризики). Цей файл — synthesis-запис стану на 2026-05-15, який крос-валідує знахідки з активною серією прожарок 2026-05-13 і підтверджує, що **переважна більшість виявлених P0/P1 пунктів уже закрита** в існуючому процесі планування. Outstanding-list — короткий, focused.
 

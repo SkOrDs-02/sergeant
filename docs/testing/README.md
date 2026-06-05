@@ -1,6 +1,6 @@
 # Testing
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-06 by @claude (bulk-bump artifact corrected — file was content-modified 2026-06-02 adding Property-based testing row; date was still showing the 2026-05-13 batch-bump). **Next review:** 2026-09-06.
 > **Status:** Active
 
 Meta-документація на тестову стратегію Sergeant — правила, threshold-и, як додавати

@@ -1,7 +1,7 @@
 # Прожарка #2/10: Web Frontend Ergonomics
 
-> **Last validated:** 2026-05-13 by Devin (child session) — додано landing `sergeant-design/no-bare-fixed-inset-modal` rule (warn-only, F2 part-1). **Next review:** 2026-08-11.
-> **Status:** Active
+> **Last validated:** 2026-06-06 by @claude (audit-closeout pass — F1–F7 all DONE verified in progress table; keyboard-handler wire-up deferred to separate shortcuts-rollout roast as explicitly stated in §F3; status flipped to Closed). **Next review:** 2026-09-06.
+> **Status:** Closed — усі F1–F7 завершені станом на 2026-06-03. Keyboard-handler wire-up (`Cmd+/`, `G H..N`) виокремлено в окрему прожарку shortcuts-rollout (out of scope цього документа).
 > **Скоуп:** Web UI ergonomics — форми, accessibility, control-flow, error-boundaries, loading states, empty states, мікро-копірайт.
 
 **Code-area фокус:** `apps/web/src/**`, `packages/eslint-plugin-sergeant-design/**`.
