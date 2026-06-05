@@ -251,15 +251,18 @@ describe("TOOLS (агрегований Anthropic-payload — post-incident inva
     }
   });
 
-  // Strict mode тимчасово знятий — Anthropic ліміт 20 strict tools на запит,
-  // а в нас 66. Інваріант: жоден tool НЕ повинен мати strict, поки не буде
-  // селективної активації. Це guard від випадкового реверту інциденту.
-  it("жоден tool не має strict-режиму (Anthropic 20-tool cap)", () => {
-    for (const tool of TOOLS) {
-      expect(
-        tool.strict,
-        `tool "${tool.name}" не повинен мати strict до селективної активації`,
-      ).not.toBe(true);
-    }
+  // Strict mode селективно активований (incident 2026-05-16 + per-tool opt-in):
+  // Anthropic ліміт — 20 strict tools на запит. Інваріант перенесено з "жоден
+  // strict" на "≤20 strict" після реалізації per-tool селективної активації
+  // (high-value tools у toolDefs/*.ts). Дзеркалить runtime-валідацію
+  // `validateToolRegistry` у tools.ts — guard від реверту інциденту (66 strict → 400).
+  it("не більше 20 tools мають strict-режим (Anthropic 20-tool cap)", () => {
+    const strictTools = TOOLS.filter((tool) => tool.strict === true);
+    expect(
+      strictTools.length,
+      `strict tools (${strictTools.length}): ${strictTools
+        .map((t) => t.name)
+        .join(", ")}`,
+    ).toBeLessThanOrEqual(20);
   });
 });
