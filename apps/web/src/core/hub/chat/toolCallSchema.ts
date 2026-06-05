@@ -166,6 +166,99 @@ const RememberInputSchema = z.object({
 });
 
 /**
+ * Audit `2026-05-13-consolidated-page-audit.md` C1 (severity: critical,
+ * perspective: security).
+ *
+ * The envelope firewall above only proves a tool call is *shaped* like
+ * `{id, name, input}` — it does not prove the `name` is one this client
+ * knows how to dispatch. `executeActions` routes by `name` and its
+ * `ChatAction` union ends in a wide-open `{ name: string; ... }` fallback,
+ * so a prompt-injected model reply could name an arbitrary tool and have it
+ * dispatched with the user's full Better Auth cookie context.
+ *
+ * This is the **name allow-list**: every dispatchable tool name, mirrored
+ * from the `ChatAction` discriminated union in `core/lib/chatActions/types.ts`
+ * (and the `ASYNC_CHAT_ACTION_NAMES` set in `serverActions.ts`). A tool call
+ * whose `name` is not in this set is rejected — the whole batch is dropped,
+ * the caller logs the offending name and falls back to plain-text rendering.
+ * Keep this in sync when adding a new tool to the union.
+ */
+export const KNOWN_TOOL_NAMES: ReadonlySet<string> = new Set([
+  // finyk
+  "change_category",
+  "find_transaction",
+  "batch_categorize",
+  "create_debt",
+  "create_receivable",
+  "hide_transaction",
+  "set_budget_limit",
+  "set_monthly_plan",
+  "create_transaction",
+  "delete_transaction",
+  "update_budget",
+  "mark_debt_paid",
+  "add_asset",
+  "import_monobank_range",
+  "split_transaction",
+  "recurring_expense",
+  "export_report",
+  // fizruk
+  "plan_workout",
+  "log_set",
+  "start_workout",
+  "finish_workout",
+  "log_measurement",
+  "add_program_day",
+  "log_wellbeing",
+  "log_weight",
+  "suggest_workout",
+  "copy_workout",
+  "compare_progress",
+  "calculate_1rm",
+  // routine
+  "mark_habit_done",
+  "create_habit",
+  "create_reminder",
+  "complete_habit_for_date",
+  "archive_habit",
+  "add_calendar_event",
+  "edit_habit",
+  "reorder_habits",
+  "habit_stats",
+  "set_habit_schedule",
+  "pause_habit",
+  "habit_trend",
+  // nutrition
+  "log_meal",
+  "log_water",
+  "add_recipe",
+  "add_to_shopping_list",
+  "consume_from_pantry",
+  "set_daily_plan",
+  "suggest_meal",
+  "copy_meal_from_date",
+  "plan_meals_for_day",
+  // cross
+  "morning_briefing",
+  "weekly_summary",
+  "set_goal",
+  "spending_trend",
+  "weight_chart",
+  "category_breakdown",
+  "detect_anomalies",
+  "compare_weeks",
+  "convert_units",
+  "save_note",
+  "list_notes",
+  "export_module_data",
+  "remember",
+  "forget",
+  "my_profile",
+  // async (server-side) — ASYNC_CHAT_ACTION_NAMES in serverActions.ts
+  "recall_memory",
+]);
+
+/**
  * Map of tool names to their strict input schema.
  * Tools absent from this map are treated as read-only and pass through
  * after the structural firewall (envelope-level check) succeeds.
@@ -210,8 +303,21 @@ export function parseToolCalls(
     return { ok: false, issues };
   }
 
-  // Step 2: per-tool strict input validation for known mutators.
+  // Step 2: name allow-list — reject any tool the client cannot dispatch.
+  // A valid envelope is not enough: the name must be one we know, or a
+  // prompt-injected reply could invoke an arbitrary action. Unknown names
+  // fail the whole batch (caller logs them and falls back to plain text).
   const allIssues: string[] = [];
+  for (const tc of parsed.data) {
+    if (!KNOWN_TOOL_NAMES.has(tc.name)) {
+      allIssues.push(`${tc.name}: unknown tool (not in allow-list)`);
+    }
+  }
+  if (allIssues.length > 0) {
+    return { ok: false, issues: allIssues };
+  }
+
+  // Step 3: per-tool strict input validation for known mutators.
   for (const tc of parsed.data) {
     const schema = MUTATOR_INPUT_SCHEMAS[tc.name];
     if (!schema) continue; // read-only tool — envelope check is sufficient
