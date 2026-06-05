@@ -17,9 +17,9 @@
  *
  * Differences from web (intentional — see PR body):
  * - Telemetry: web forwards to `captureException` from `./sentry.js`
- *   (a lazy bridge to `@sentry/react`). Mobile uses plain
- *   `console.error` — `@sentry/react-native` is deliberately **not**
- *   added yet; observability lands in Phase 10+.
+ *   (a lazy bridge to `@sentry/react`). Mobile forwards to
+ *   `captureError` from `@/lib/observability` (lazy bridge to
+ *   `@sentry/react-native`; no-op when DSN is unset).
  * - Default fallback: web leaves `Fallback || null` when no prop is
  *   supplied; mobile renders a shared `Card` + `Button` card with the
  *   same Ukrainian strings the web host screens use

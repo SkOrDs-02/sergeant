@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last validated:** 2026-05-14 by @Skords-01. **Next review:** 2026-08-12.
+> **Last validated:** 2026-06-05 by @claude. **Next review:** 2026-09-03.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -573,7 +573,15 @@ GitHub PAT з `contents:write` для opening PR-ів з decision markdown у `d
 
 ### `EXPO_PUBLIC_SENTRY_DSN` _(optional)_
 
-Публічний Sentry DSN для RN-клієнта. Інлайниться у бандл на build-time (префікс `EXPO_PUBLIC_` → доступно в `process.env`). Optional — без нього `initObservability()` виконує no-op і жодних подій у Sentry не відправляється. Дивись [`apps/mobile/src/lib/observability.ts`](../../apps/mobile/src/lib/observability.ts).
+Публічний Sentry DSN для RN-клієнта. Інлайниться у бандл на build-time (префікс `EXPO_PUBLIC_` → доступно в `process.env`). Optional — без нього `initObservability()` виконує no-op і жодних подій у Sentry не відправляється. Парний до `VITE_SENTRY_DSN` (web) і `SENTRY_DSN` (server). Дивись [`apps/mobile/src/lib/observability.ts`](../../apps/mobile/src/lib/observability.ts).
+
+### `EXPO_PUBLIC_SENTRY_RELEASE` _(optional)_
+
+Ідентифікатор білду / релізу для прив'язки краш-репортів до конкретної версії у Sentry UI. Зазвичай встановлюється EAS-білд-пайплайном (наприклад `1.0.0+42` або Git SHA). Якщо не задано — Sentry-плагін `@sentry/react-native/expo` інжектує власний хеш нативного білду. Парний до `VITE_SENTRY_RELEASE` (web).
+
+### `EXPO_PUBLIC_SENTRY_ENVIRONMENT` _(optional)_
+
+Sentry environment-тег для сегментації подій між `development`, `staging` і `production`. Default: `"production"`. Парний до `VITE_SENTRY_ENVIRONMENT` (web) та `SENTRY_ENVIRONMENT` (server).
 
 ### `EXPO_PUBLIC_POSTHOG_KEY`, `EXPO_PUBLIC_POSTHOG_HOST` _(optional)_
 
