@@ -24,7 +24,7 @@
 | 15  | Read governance before coding; update docs alongside code; internal docs in Ukrainian | [`15-governance-and-doc-language.md`](./15-governance-and-doc-language.md)                       |
 | 16  | Typography scale — semantic styles + 12px floor                                       | [`16-typography-scale-12px-floor.md`](./16-typography-scale-12px-floor.md)                       |
 | 17  | Animation budget — max 2 concurrent, 3 tiers                                          | [`17-animation-budget.md`](./17-animation-budget.md)                                             |
-| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX                              | [`18-module-size-discipline-600.md`](./18-module-size-discipline-600.md)                         |
+| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS                             | [`18-module-size-discipline-600.md`](./18-module-size-discipline-600.md)                         |
 | 19  | Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo      | [`19-strict-mode-flag-canonical.md`](./19-strict-mode-flag-canonical.md)                         |
 | 20  | No OpenClaw PATs in production                                                        | [`20-no-openclaw-pats-in-production.md`](./20-no-openclaw-pats-in-production.md)                 |
 | 21  | Pino redaction policy enforced                                                        | [`21-pino-redaction-policy.md`](./21-pino-redaction-policy.md)                                   |

@@ -1060,14 +1060,14 @@
     {
       "id": "hard-rule:18",
       "type": "hard-rule",
-      "title": "Module-size discipline — `max-lines: 600` for web TS/TSX",
+      "title": "Module-size discipline — `max-lines: 600`",
       "path": "docs/governance/hard-rules.json#18",
       "tier": "core",
       "meta": {
         "number": 18,
         "severity": "blocker",
         "category": "active-initiative",
-        "scope": ["apps/web/src/**"]
+        "scope": ["apps/web/src/**", "apps/server/src/**"]
       }
     },
     {
