@@ -64,7 +64,10 @@ export function PersonalInfoSection({
     schema: nameSchema,
     defaultValues: { name: user.name ?? "" },
     onSubmit: async (values) => {
-      const res = await updateUser({ name: values.name });
+      const res = await updateUser({ name: values.name }).catch(() => {
+        toast.error("Не вдалося оновити ім'я");
+        throw new Error("Не вдалося оновити ім'я");
+      });
       if (res.error) {
         throw new Error(
           mapApiErrorToUserCopy(res.error, "Не вдалося оновити ім'я"),
@@ -176,7 +179,7 @@ export function PersonalInfoSection({
     }
   };
 
-  const initial = (user.name || user.email || "?")[0]!.toUpperCase();
+  const initial = (user.name || user.email || "?").charAt(0).toUpperCase();
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
