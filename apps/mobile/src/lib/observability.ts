@@ -18,7 +18,11 @@ import {
   redactSensitiveQueryParams,
 } from "@sergeant/shared";
 
-import { getSentryDsn } from "./observability/env";
+import {
+  getSentryDsn,
+  getSentryEnvironment,
+  getSentryRelease,
+} from "./observability/env";
 
 /**
  * Minimal structural subset of `Sentry.ErrorEvent` so the
@@ -124,6 +128,14 @@ export function initObservability(): void {
   }
   Sentry.init({
     dsn,
+    // Release + environment mirror the web pattern so crash groups and
+    // performance data are attributed to the correct build in the Sentry
+    // UI. `EXPO_PUBLIC_SENTRY_RELEASE` is set by EAS build pipelines;
+    // omitting it falls back to Sentry's own native build-time injection
+    // (via the `@sentry/react-native/expo` config plugin). Mirrors
+    // `release: import.meta.env["VITE_SENTRY_RELEASE"]` in the web SDK.
+    release: getSentryRelease(),
+    environment: getSentryEnvironment(),
     enableAutoSessionTracking: true,
     // 5% of transactions — enough for p95/p99 latency visibility without
     // significant overhead. Bump to 0.1 if mobile APM data is sparse in prod.
