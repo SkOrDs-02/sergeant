@@ -229,6 +229,13 @@ export interface BootstrapKvStoreOptions {
   readonly broadcastChannel?: BroadcastChannelLike | null;
   readonly now?: () => number;
   readonly onError?: (stage: string, error: unknown) => void;
+  /**
+   * Override the `localStorage` object used for the LS→warm-cache seed
+   * step. Pass `null` to disable seeding (e.g. in unit tests that
+   * assert an exact warm-cache size against an empty SQLite DB).
+   * Defaults to `globalThis.localStorage`.
+   */
+  readonly localStorage?: Storage | null;
 }
 
 /**
@@ -320,6 +327,36 @@ export async function bootstrapKvStore(
       sqlite: null,
       loaded: false,
     };
+  }
+
+  // Seed warm cache from localStorage for any keys absent from SQLite.
+  // This covers two scenarios without re-introducing the full LS→SQLite
+  // DB write migration (removed in PR #064):
+  //   1. Smoke/E2E tests (vite preview, no COOP/COEP → SQLite is
+  //      memory-only) where `addInitScript` seeds LS before page load.
+  //   2. Edge-case users whose SQLite DB is empty but LS still has data
+  //      (e.g. after a failed migration run).
+  // We only populate the in-memory warm cache — no SQLite DB writes here.
+  // Pass `opts.localStorage = null` to disable (e.g. in unit tests).
+  const lsOverride = opts.localStorage;
+  const lsToSeed =
+    lsOverride !== undefined
+      ? lsOverride
+      : ((globalThis as { localStorage?: Storage }).localStorage ?? null);
+  if (lsToSeed !== null) {
+    try {
+      for (let i = 0; i < lsToSeed.length; i++) {
+        const key = lsToSeed.key(i);
+        if (key !== null && !kvStoreBoot.warmCache.has(key)) {
+          const value = lsToSeed.getItem(key);
+          if (value !== null) {
+            kvStoreBoot.warmCache.set(key, value);
+          }
+        }
+      }
+    } catch {
+      /* localStorage enumeration unavailable — skip */
+    }
   }
 
   const sqliteClient = makeSqliteKvStoreClient(handle);

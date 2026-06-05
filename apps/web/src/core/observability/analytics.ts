@@ -140,12 +140,10 @@ export function trackEvent(
       console.log("[analytics]", event);
     }
     appendEvent(event);
-    if (import.meta.env.DEV) {
-      const analyticsWindow = window as Window & {
-        __hubAnalytics?: unknown[];
-      };
-      analyticsWindow.__hubAnalytics = memoryLog;
-    }
+    const analyticsWindow = window as Window & {
+      __hubAnalytics?: unknown[];
+    };
+    analyticsWindow.__hubAnalytics = memoryLog;
   } catch {}
   // Окремий try/catch — `trackEvent` контракт каже "ніколи не кидає"
   // (див. шапку файлу). `capturePostHogEvent` сам по собі захищений

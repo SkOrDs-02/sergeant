@@ -76,6 +76,10 @@ describe("bootstrapKvStore — cold boot against empty kv_store", () => {
   it("flips loaded = true and leaves the warm cache empty on a fresh db", async () => {
     const result = await bootstrapKvStore({
       broadcastChannel: null,
+      // Disable the LS→warm-cache seed so this test can assert "empty
+      // SQLite DB → empty warm cache" without the JSDOM environment's
+      // pre-populated localStorage inflating the size.
+      localStorage: null,
     });
     expect(result.loaded).toBe(true);
     expect(kvStoreBoot.loaded).toBe(true);
