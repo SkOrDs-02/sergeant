@@ -19,6 +19,8 @@ jest.mock("@sentry/react-native", () => ({
 jest.mock("./observability/env", () => ({
   __esModule: true,
   getSentryDsn: jest.fn(),
+  getSentryRelease: jest.fn(),
+  getSentryEnvironment: jest.fn(),
 }));
 
 import * as Sentry from "@sentry/react-native";

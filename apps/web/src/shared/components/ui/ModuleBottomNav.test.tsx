@@ -21,7 +21,7 @@ describe("ModuleBottomNav", () => {
     cleanup();
   });
 
-it("renders as a bottom-nav-shell — inset, rounded, framed", () => {
+  it("renders as a bottom-nav-shell — inset, rounded, framed", () => {
     render(
       <ModuleBottomNav
         items={items}

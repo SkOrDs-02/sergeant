@@ -192,10 +192,7 @@ export function iconFor(name: string): string | undefined {
   }
 }
 
-export function titleFor(
-  name: string,
-  status: "completed" | "failed",
-): string {
+export function titleFor(name: string, status: "completed" | "failed"): string {
   const failedSuffix = status === "failed" ? " — не вийшло" : "";
   switch (name) {
     // Finyk

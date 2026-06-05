@@ -18,7 +18,7 @@ Real-world `kilo.json` from one of our projects contains a `ghp_…` PAT. This c
 - the project's own **Hard Rule #20** ("no PATs in prod"),
 - basic secret-handling hygiene. The config is per-user, but it's still on disk in plaintext and would be picked up by any backup / sync tool.
 
-Even though `kilo.json` is gitignored, the *global* `~/.config/kilo/kilo.json` is sync-able (dotfile repos, iCloud, OneDrive), and the **principle of least surprise** says secrets shouldn't live next to non-secret config.
+Even though `kilo.json` is gitignored, the _global_ `~/.config/kilo/kilo.json` is sync-able (dotfile repos, iCloud, OneDrive), and the **principle of least surprise** says secrets shouldn't live next to non-secret config.
 
 ## Proposal
 
@@ -32,20 +32,20 @@ Allow **secret references** alongside literal strings in `mcp.<name>.environment
       "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
       "environment": {
         "GITHUB_API_URL": "https://api.github.com",
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "{{keyring:kilo/mcp/github}}"
-      }
-    }
-  }
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "{{keyring:kilo/mcp/github}}",
+      },
+    },
+  },
 }
 ```
 
 ### Resolvers
 
-| Syntax | Resolver | Use case |
-| --- | --- | --- |
-| `{{env:VAR}}` | process env of the Kilo CLI | CI runners, dev shells |
-| `{{keyring:service/account}}` | OS keyring (Windows Credential Manager / macOS Keychain / Linux Secret Service) | Interactive desktop sessions |
-| `{{file:/abs/path}}` | read from file | Docker `/run/secrets/`, vault sidecars |
+| Syntax                        | Resolver                                                                        | Use case                               |
+| ----------------------------- | ------------------------------------------------------------------------------- | -------------------------------------- |
+| `{{env:VAR}}`                 | process env of the Kilo CLI                                                     | CI runners, dev shells                 |
+| `{{keyring:service/account}}` | OS keyring (Windows Credential Manager / macOS Keychain / Linux Secret Service) | Interactive desktop sessions           |
+| `{{file:/abs/path}}`          | read from file                                                                  | Docker `/run/secrets/`, vault sidecars |
 
 ### Resolution rules
 

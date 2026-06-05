@@ -543,6 +543,9 @@ importers:
       '@sergeant/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@sergeant/db-schema':
+        specifier: workspace:*
+        version: link:../../packages/db-schema
       '@sergeant/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
@@ -664,9 +667,6 @@ importers:
       '@sergeant/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@sergeant/db-schema':
-        specifier: workspace:^
-        version: link:../../packages/db-schema
       '@size-limit/file':
         specifier: ^12.1.0
         version: 12.1.0(size-limit@12.1.0(jiti@2.7.0))
@@ -21084,7 +21084,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.5(@opentelemetry/api@1.9.1)(@types/node@20.19.41)(@vitest/coverage-v8@4.1.5)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.14.3(@types/node@20.19.41)(typescript@6.0.3))(vite@8.0.10(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))
+      vitest: 4.1.5(@opentelemetry/api@1.9.1)(@types/node@20.19.41)(@vitest/coverage-v8@4.1.5)(jsdom@29.1.1(@noble/hashes@2.2.0))(msw@2.14.3(@types/node@20.19.41)(typescript@6.0.3))(vite@8.0.10(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
 
   '@vitest/expect@3.2.4':
     dependencies:
