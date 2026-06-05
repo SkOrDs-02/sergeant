@@ -181,8 +181,15 @@ function useElapsedSec(startedAtIso: string): number {
     const id = setInterval(() => {
       setSec(diffSecFromNow(startedAtIso));
     }, 1000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        setSec(diffSecFromNow(startedAtIso));
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [startedAtIso]);
   return sec;
