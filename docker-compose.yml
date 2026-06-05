@@ -27,7 +27,7 @@ services:
     # How to bump: see docs/development/local-postgres-setup.md § "Bumping the SHA".
     # Renovate (renovate.json `pgvector pinDigests`) auto-PR's the new digest
     # on a monthly cadence; manually verify migration tests pass on the bump-PR.
-    image: pgvector/pgvector:pg17@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+    image: pgvector/pgvector:pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
     container_name: hub-postgres
     restart: unless-stopped
     environment:

@@ -53,7 +53,7 @@ jobs:
       # required by migration 025_ai_memories_pgvector.sql (plain
       # postgres:17-alpine breaks `db:migrate:dev` at boot).
       postgres:
-        image: pgvector/pgvector:pg17@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        image: pgvector/pgvector:pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
         env:
           POSTGRES_USER: hub
           POSTGRES_PASSWORD: hub

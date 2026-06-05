@@ -537,7 +537,7 @@ jobs:
       # (manifest-list digest, multi-arch).
       # TODO: Replace SHA with actual digest after: docker pull pgvector/pgvector:pg17 && docker inspect pgvector/pgvector:pg17 --format '{{index .RepoDigests 0}}'
       postgres:
-        image: pgvector/pgvector:pg17@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        image: pgvector/pgvector:pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
         env:
           POSTGRES_USER: hub
           POSTGRES_PASSWORD: hub
@@ -724,7 +724,7 @@ jobs:
       # pgvector, and SHA-pinning matches docker-compose.yml so local +
       # CI drills run against an identical binary.
       postgres:
-        image: pgvector/pgvector:pg17@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        image: pgvector/pgvector:pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
         env:
           POSTGRES_USER: hub
           POSTGRES_PASSWORD: hub

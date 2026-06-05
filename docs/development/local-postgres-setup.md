@@ -25,7 +25,7 @@ pnpm db:down       # docker compose down (зберігає volume)
 `docker-compose.yml` пінить:
 
 ```yaml
-image: pgvector/pgvector:pg17@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+image: pgvector/pgvector:pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
 ```
 
 **Getting the digest:** Run the following after pulling the image:
