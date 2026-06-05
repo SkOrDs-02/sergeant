@@ -54,7 +54,7 @@ jobs:
       # postgres:17-alpine does not ship the extension and breaks
       # `db:migrate:dev` at boot. SHA-pinned (manifest-list digest).
       postgres:
-        image: pgvector/pgvector:pg17@sha256:TODO_REPLACE_WITH_ACTUAL_DIGEST
+        image: pgvector/pgvector:pg17@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
         env:
           POSTGRES_USER: hub
           POSTGRES_PASSWORD: hub

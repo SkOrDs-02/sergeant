@@ -25,7 +25,14 @@ pnpm db:down       # docker compose down (зберігає volume)
 `docker-compose.yml` пінить:
 
 ```yaml
-image: pgvector/pgvector:pg17@sha256:TODO_REPLACE_WITH_ACTUAL_DIGEST
+image: pgvector/pgvector:pg17@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+```
+
+**Getting the digest:** Run the following after pulling the image:
+
+```bash
+docker pull pgvector/pgvector:pg17
+docker inspect pgvector/pgvector:pg17 --format '{{index .RepoDigests 0}}'
 ```
 
 Floating-теги (`:pg16`, `:latest`) автомутують upstream-вміст без notice, що
