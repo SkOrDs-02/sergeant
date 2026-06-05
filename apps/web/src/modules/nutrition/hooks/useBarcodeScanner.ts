@@ -196,12 +196,22 @@ export function useWebScanner({
     if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
+  // Keep the caller's `onDetected` in a ref so `handleDetected` (and the
+  // camera-session effect that depends on it) stay referentially stable even
+  // when the consumer passes an inline callback. Without this the effect
+  // re-subscribes on every parent render, tearing down and re-opening the
+  // MediaStream — visible flicker plus repeated permission prompts.
+  const onDetectedRef = useRef(onDetected);
+  useEffect(() => {
+    onDetectedRef.current = onDetected;
+  }, [onDetected]);
+
   const handleDetected = useCallback(
     (result: BarcodeResult) => {
       stopAll();
-      onDetected(result);
+      onDetectedRef.current(result);
     },
-    [stopAll, onDetected],
+    [stopAll],
   );
 
   useEffect(() => {

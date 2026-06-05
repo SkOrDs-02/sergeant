@@ -27,7 +27,8 @@ import {
   type NutritionLog,
   type PantryItem,
 } from "@sergeant/nutrition-domain";
-import { addDaysISODate, toLocalISODate } from "../lib/nutritionStorage";
+import { addDaysISODate } from "../lib/nutritionStorage";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 export interface QuickChipMacros {
   kcal: number;
@@ -88,7 +89,7 @@ function aggregateRecentMeals(
   log: NutritionLog,
   windowDays: number,
 ): Map<string, Aggregate> {
-  const today = toLocalISODate(new Date());
+  const today = getKyivDayKey();
   const cutoff = addDaysISODate(today, -windowDays);
   const out = new Map<string, Aggregate>();
 

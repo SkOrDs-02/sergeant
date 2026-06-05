@@ -116,8 +116,14 @@ export function formatActiveDuration(
   if (!Number.isFinite(start) || !Number.isFinite(end) || end < start)
     return null;
   const sec = Math.floor((end - start) / 1000);
-  const mm = String(Math.floor(sec / 60)).padStart(2, "0");
+  const totalMin = Math.floor(sec / 60);
   const ss = String(sec % 60).padStart(2, "0");
+  if (totalMin >= 60) {
+    const hh = Math.floor(totalMin / 60);
+    const mm = String(totalMin % 60).padStart(2, "0");
+    return `${hh}:${mm}:${ss}`;
+  }
+  const mm = String(totalMin).padStart(2, "0");
   return `${mm}:${ss}`;
 }
 

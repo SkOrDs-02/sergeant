@@ -29,9 +29,10 @@ export function VirtualMealList({
   onRemoveMeal,
   onEditMeal,
 }: VirtualMealListProps) {
-  const activeTypes = MEAL_ORDER.filter(
-    (t: MealTypeId) => groups[t]?.length,
-  ) as MealTypeId[];
+  const activeTypes = useMemo(
+    () => MEAL_ORDER.filter((t: MealTypeId) => groups[t]?.length) as MealTypeId[],
+    [groups],
+  );
   const flatItems = useMemo<MealListItem[]>(() => {
     const items: MealListItem[] = [];
     for (const type of activeTypes) {

@@ -26,17 +26,17 @@ import {
   getDayMacros,
   getDaySummary,
   getMacrosForDateRange,
-  toLocalISODate,
   type MacrosRow,
 } from "../lib/nutritionStorage";
 import { WaterTrackerCard } from "./WaterTrackerCard";
 import { useToast } from "@shared/hooks/useToast";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 type WeekRow = MacrosRow;
 
 function todayISO(): string {
-  return toLocalISODate(new Date());
+  return getKyivDayKey();
 }
 
 /**

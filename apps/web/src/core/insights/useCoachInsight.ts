@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { coachApi, isApiError } from "@shared/api";
 import { coachKeys } from "@shared/lib/api/queryKeys";
@@ -309,19 +309,21 @@ export function useCoachInsight(): UseCoachInsightResult {
     },
   });
 
-  if (
-    typeof query.data === "string" &&
-    query.data.length > 0 &&
-    !query.isFetching
-  ) {
-    const cached = safeReadLS<{ date?: string; text?: string } | null>(
-      CACHE_KEY,
-      null,
-    );
-    if (cached?.date !== todayKey || cached?.text !== query.data) {
-      safeWriteLS(CACHE_KEY, { date: todayKey, text: query.data });
+  useEffect(() => {
+    if (
+      typeof query.data === "string" &&
+      query.data.length > 0 &&
+      !query.isFetching
+    ) {
+      const cached = safeReadLS<{ date?: string; text?: string } | null>(
+        CACHE_KEY,
+        null,
+      );
+      if (cached?.date !== todayKey || cached?.text !== query.data) {
+        safeWriteLS(CACHE_KEY, { date: todayKey, text: query.data });
+      }
     }
-  }
+  }, [query.data, query.isFetching, todayKey]);
 
   const { refetch } = query;
 

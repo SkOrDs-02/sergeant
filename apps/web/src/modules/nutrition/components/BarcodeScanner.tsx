@@ -93,19 +93,27 @@ function WebBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-130 flex items-end">
+    <div className="fixed inset-0 z-130 flex items-end" role="presentation">
       <button
         type="button"
         className="absolute inset-0 bg-black/70"
         aria-label="Закрити сканер"
         onClick={handleClose}
       />
-      <div className="relative w-full bg-panel rounded-t-3xl border-t border-line shadow-soft">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="barcode-scanner-title"
+        className="relative w-full bg-panel rounded-t-3xl border-t border-line shadow-soft"
+      >
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-line rounded-full" aria-hidden />
         </div>
         <div className="px-4 pb-2 flex items-center justify-between">
-          <div className="text-sm font-extrabold text-text">
+          <div
+            id="barcode-scanner-title"
+            className="text-sm font-extrabold text-text"
+          >
             Сканер штрих-коду
           </div>
           <button

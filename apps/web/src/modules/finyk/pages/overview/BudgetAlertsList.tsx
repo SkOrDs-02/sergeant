@@ -40,7 +40,7 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
           txSplits,
           customCategories,
         );
-        const pct = Math.round((s / b.limit) * 100);
+        const pct = b.limit > 0 ? Math.round((s / b.limit) * 100) : 0;
         return (
           <div
             key={i}

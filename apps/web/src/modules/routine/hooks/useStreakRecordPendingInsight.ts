@@ -22,7 +22,6 @@ export function useStreakRecordPendingInsight(
 
   const currentStreak = useMemo(
     () => maxActiveStreak(routine.habits, routine.completions, todayKey),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [routine.habits, routine.completions, todayKey],
   );
 

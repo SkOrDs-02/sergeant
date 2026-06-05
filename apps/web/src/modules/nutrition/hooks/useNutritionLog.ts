@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
   NUTRITION_LOG_KEY,
   loadNutritionLog,
@@ -13,7 +14,6 @@ import {
   mergeNutritionLogs,
   normalizeNutritionLog,
   trimLogOldestDays,
-  toLocalISODate,
   type Meal,
   type NutritionDay,
   type NutritionLog,
@@ -54,7 +54,7 @@ export function useNutritionLog() {
     loadNutritionLog(NUTRITION_LOG_KEY),
   );
   const [selectedDate, setSelectedDate] = useState<string>(() =>
-    toLocalISODate(new Date()),
+    getKyivDayKey(),
   );
   const [addMealSheetOpen, setAddMealSheetOpen] = useState(false);
   const [addMealPhotoResult, setAddMealPhotoResult] = useState<unknown>(null);
