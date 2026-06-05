@@ -49,12 +49,12 @@ jobs:
           - browser: mobile-safari
             grep: "@auth"
     services:
-      # pgvector/pgvector:pg16 — Postgres 16 + the `vector` extension
+      # pgvector/pgvector:pg17 — Postgres 17 + the `vector` extension
       # required by migration 025_ai_memories_pgvector.sql. Plain
-      # postgres:16-alpine does not ship the extension and breaks
+      # postgres:17-alpine does not ship the extension and breaks
       # `db:migrate:dev` at boot. SHA-pinned (manifest-list digest).
       postgres:
-        image: pgvector/pgvector:pg16@sha256:7d400e340efb42f4d8c9c12c6427adb253f726881a9985d2a471bf0eed824dff
+        image: pgvector/pgvector:pg17@sha256:TODO_REPLACE_WITH_ACTUAL_DIGEST
         env:
           POSTGRES_USER: hub
           POSTGRES_PASSWORD: hub

@@ -15,8 +15,8 @@
 --
 -- ─── Ключові технічні рішення ────────────────────────────────────────────
 --
--- 1. EXTENSION vector — pgvector ≥0.7 (Railway Postgres 16 з custom image
---    Railway `vector`-template; у local dev — `pgvector/pgvector:pg16`).
+-- 1. EXTENSION vector — pgvector ≥0.7 (Railway Postgres 17 з custom image
+--    Railway `vector`-template; у local dev — `pgvector/pgvector:pg17`).
 --    Обережно: extension namespace глобальний, тому ні в одному migration
 --    раніше його не вмикаємо.
 --

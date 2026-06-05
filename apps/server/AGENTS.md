@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-Node 20 + Express + PostgreSQL 16 (`pg`) + Better Auth (cookie + bearer) + Anthropic Claude (tool-use, streaming) + Voyage embeddings (AI memory). Деплой: Railway via [`Dockerfile.api`](../../Dockerfile.api). Тести: Vitest unit + Testcontainers (real Postgres) інтеграційні.
+Node 20 + Express + PostgreSQL 17 (`pg`) + Better Auth (cookie + bearer) + Anthropic Claude (tool-use, streaming) + Voyage embeddings (AI memory). Деплой: Railway via [`Dockerfile.api`](../../Dockerfile.api). Тести: Vitest unit + Testcontainers (real Postgres) інтеграційні.
 
 ## Quick commands
 

@@ -1,11 +1,11 @@
 # Local Postgres setup
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-05 by @Skords-01. **Next review:** 2026-09-01.
 > **Status:** Active
 
 Локальний Postgres для розробки запускається через `docker-compose.yml` у
-корені репо. Використовується image `pgvector/pgvector:pg16` —
-**SHA-pinned** до того ж digest, що й у CI (`.github/workflows/{ci,
+корені репо. Використовується image `pgvector/pgvector:pg17` —
+**SHA-pinned** до того же digest, що й у CI (`.github/workflows/{ci,
 extended-e2e, visual-regression, db-backup-verify}.yml`).
 
 ## Запуск
@@ -20,12 +20,12 @@ pnpm db:down       # docker compose down (зберігає volume)
 `DATABASE_URL` у `.env`: `postgresql://hub:hub@localhost:5432/hub` (credentials
 тільки для локальної розробки — не плутати з production).
 
-## Чому SHA-pin (`@sha256:…`) замість тегу `:pg16`
+## Чому SHA-pin (`@sha256:…`) замість тегу `:pg17`
 
 `docker-compose.yml` пінить:
 
 ```yaml
-image: pgvector/pgvector:pg16@sha256:7d400e340efb42f4d8c9c12c6427adb253f726881a9985d2a471bf0eed824dff
+image: pgvector/pgvector:pg17@sha256:TODO_REPLACE_WITH_ACTUAL_DIGEST
 ```
 
 Floating-теги (`:pg16`, `:latest`) автомутують upstream-вміст без notice, що
@@ -65,15 +65,15 @@ changes у `vector` extension; merge виключно після:
 
 ```bash
 # 1. Pull latest tag і отримай digest:
-docker pull pgvector/pgvector:pg16
-docker inspect pgvector/pgvector:pg16 --format '{{index .RepoDigests 0}}'
+docker pull pgvector/pgvector:pg17
+docker inspect pgvector/pgvector:pg17 --format '{{index .RepoDigests 0}}'
 # → pgvector/pgvector@sha256:<new-digest>
 
 # 2. Оновіть 5 місць (SHA має ідеально матчити в усіх):
 #    - docker-compose.yml (services.postgres.image)
-#    - .github/workflows/ci.yml (services.postgres.image, ~line 410)
+#    - .github/workflows/ci.yml (services.postgres.image, ~line 465)
 #    - .github/workflows/extended-e2e.yml (~line 57)
-#    - .github/workflows/visual-regression.yml (~line 40)
+#    - .github/workflows/visual-regression.yml (~line 56)
 #    - .github/workflows/db-backup-verify.yml (~line 34)
 
 # 3. Smoke-test:
