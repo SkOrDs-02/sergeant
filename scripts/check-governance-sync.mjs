@@ -155,7 +155,8 @@ function checkStatusBadges() {
   let missing = 0;
 
   for (const file of mdFiles) {
-    const relPath = relative(ROOT, file);
+    // Normalize to forward slashes for consistent path matching
+    const relPath = relative(ROOT, file).replace(/\\/g, "/");
 
     // Skip ADRs — they use their own Status format
     if (relPath.startsWith("docs/adr/") && !relPath.endsWith("README.md")) {
@@ -210,7 +211,7 @@ function checkDanglingRefs() {
   const mdFiles = findMdFiles(ROOT);
   // Only check docs/ folder and root .md files
   const docsFiles = mdFiles.filter((f) => {
-    const rel = relative(ROOT, f);
+    const rel = relative(ROOT, f).replace(/\\/g, "/");
     return (
       rel.startsWith("docs/") ||
       [
@@ -350,7 +351,8 @@ function checkDanglingRefs() {
   const danglingByFile = new Map(); // relPath -> { aspirational: bool, refs: [] }
 
   for (const file of docsFiles) {
-    const relPath = relative(ROOT, file);
+    // Normalize to forward slashes for consistent path matching
+    const relPath = relative(ROOT, file).replace(/\\/g, "/");
     const content = readFileSync(file, "utf-8");
 
     // Check if this is a "proposed" ADR (future refs are OK)

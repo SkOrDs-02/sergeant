@@ -268,7 +268,8 @@ export function gatherMarkers({
 } = {}) {
   const findings = [];
   for (const file of walk(rootDir)) {
-    const rel = relative(rootDir, file);
+    // Normalize to forward slashes for consistent matching
+    const rel = relative(rootDir, file).replace(/\\/g, "/");
     if (SKIP_FILES.has(rel)) continue;
     if (SKIP_FILE_PREFIXES.some((p) => rel.startsWith(p))) continue;
 
