@@ -4,6 +4,7 @@
 <!-- Next review: 2026-09-03 -->
 
 > **Last validated:** 2026-06-05 by @claude. **Next review:** 2026-09-03.
+> **Status:** Active
 
 # Ротація Production Secrets
 
