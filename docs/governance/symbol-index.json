@@ -1788,7 +1788,7 @@
     {
       "name": "@sergeant/openclaw",
       "path": "tools/openclaw",
-      "entryFile": "tools/openclaw/src/index.ts",
+      "entryFile": "tools/openclaw/dist/index.js",
       "stats": {
         "exportCount": 1,
         "totalImporters": 0,
@@ -1798,7 +1798,6 @@
         {
           "name": "HELP_TEXT",
           "kind": "re-export",
-          "fromFile": "./help-text.js",
           "usedBy": [],
           "usageCount": 0
         }
