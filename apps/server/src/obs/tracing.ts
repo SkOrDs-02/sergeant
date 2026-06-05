@@ -1,4 +1,12 @@
 /**
+ * STATUS: DORMANT — OTEL_EXPORTER_OTLP_ENDPOINT is not set in production.
+ * Sentry (`apps/server/src/obs/sentry.ts`) is the active live tracer.
+ * This module is a clean no-op when the endpoint env var is unset (see the
+ * `startTracing` guard: `if (!config.enabled) return { sdk: null, … }`).
+ * Do NOT delete — infra may enable OTLP at any time by setting the env var.
+ * When enabling, set SENTRY_TRACES_SAMPLE_RATE=0 to avoid paying twice for
+ * server-side latency sampling (Sentry performance + OTel would both capture).
+ *
  * OpenTelemetry bootstrap — Phase 2 з ініціативи 0004 (server observability).
  *
  * Контракт:

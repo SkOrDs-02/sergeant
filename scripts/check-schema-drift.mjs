@@ -307,15 +307,19 @@ function parseSqlMigrations(dir) {
   return merged;
 }
 
-// ─── Drizzle TS parser: depth-tracking for pgTable bodies ────────────────────
+// ─── Drizzle TS parser: depth-tracking for pgTable / sqliteTable bodies ──────
 
 /**
- * Extract pgTable column-object bodies using brace depth-tracking.
- * Returns [ { tableName, body } ]
+ * Generic depth-tracking extractor for `fnName('tableName', { ... })` patterns.
+ * Used for both pgTable and sqliteTable bodies.
  */
-function extractPgTableBodies(content) {
+function extractDrizzleTableBodies(content, fnName) {
   const results = [];
-  const headerRe = /pgTable\(\s*['"`](\w+)['"`]\s*,\s*\{/g;
+  const escaped = fnName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const headerRe = new RegExp(
+    `${escaped}\\(\\s*['"\`](\\w+)['"\`]\\s*,\\s*\\{`,
+    "g",
+  );
   for (const hm of content.matchAll(headerRe)) {
     const tableName = hm[1].toLowerCase();
     let start = hm.index + hm[0].length;
@@ -329,6 +333,14 @@ function extractPgTableBodies(content) {
     results.push({ tableName, body: content.slice(start, i - 1) });
   }
   return results;
+}
+
+/**
+ * Extract pgTable column-object bodies using brace depth-tracking.
+ * Returns [ { tableName, body } ]
+ */
+function extractPgTableBodies(content) {
+  return extractDrizzleTableBodies(content, "pgTable");
 }
 
 /**
@@ -378,6 +390,53 @@ function parseDrizzleSchemas(dir) {
   return merged;
 }
 
+/**
+ * Parse a Drizzle SQLite TS file → Map<tableName, Set<sqlColumnName>>
+ * Same column-extraction logic as parseDrizzleFile, but targets sqliteTable.
+ */
+function parseSqliteDrizzleFile(content) {
+  const tables = new Map();
+  for (const { tableName, body } of extractDrizzleTableBodies(
+    content,
+    "sqliteTable",
+  )) {
+    if (!tables.has(tableName)) tables.set(tableName, new Set());
+    const colRe = /^\s*(\w+)\s*:\s*\w+\(\s*(?:['"`](\w+)['"`])?/gm;
+    for (const cm of body.matchAll(colRe)) {
+      const jsKey = cm[1];
+      if (
+        ["primaryKey", "index", "uniqueIndex", "foreignKey", "check"].includes(
+          jsKey,
+        )
+      )
+        continue;
+      const sqlCol = cm[2] ? cm[2].toLowerCase() : jsKey.toLowerCase();
+      tables.get(tableName).add(sqlCol);
+    }
+  }
+  return tables;
+}
+
+function parseSqliteDrizzleSchemas(dir) {
+  const merged = new Map();
+  let files;
+  try {
+    files = readdirSync(dir).filter(
+      (f) => f.endsWith(".ts") && !f.startsWith("index"),
+    );
+  } catch {
+    return merged;
+  }
+  for (const f of files) {
+    const content = readFileSync(join(dir, f), "utf8");
+    for (const [tbl, cols] of parseSqliteDrizzleFile(content)) {
+      if (!merged.has(tbl)) merged.set(tbl, new Set());
+      for (const c of cols) merged.get(tbl).add(c);
+    }
+  }
+  return merged;
+}
+
 // ─── Whitelist lookup ─────────────────────────────────────────────────────────
 
 function isWhitelisted(table, column) {
@@ -386,10 +445,165 @@ function isWhitelisted(table, column) {
   );
 }
 
+// ─── PG ↔ SQLite cross-whitelist ─────────────────────────────────────────────
+//
+// Known intentional column differences between the PG and SQLite Drizzle
+// schemas for tables that appear in BOTH dialects.  Omit `column` to skip
+// the entire table from the cross-check (e.g. tables only in one dialect
+// are already skipped automatically because the check only runs on tables
+// present in both schemas).
+//
+// Note: tables that exist ONLY in PG (auth, coach_memory, sync_op_log) or
+// ONLY in SQLite (kv_store, sync_op_outbox*, finyk_mono_*) are fine — the
+// cross-check only iterates tables present in BOTH schemas, so purely
+// dialect-specific tables are never flagged here.
+// Intentional JSONB→TEXT column-rename pattern:
+// PG stores these as native JSONB with short SQL names (e.g. `excluded_stat_tx_ids`).
+// SQLite stores the same value as a TEXT blob, with a `_json` suffix so readers know
+// the value is a JSON string (e.g. `excluded_stat_tx_ids_json`).
+// The cross-check sees these as two different columns because the SQL names differ.
+// This is a documented design choice — sync ops know the name mapping; no sync bug.
+// Review: whenever a new JSONB column lands in a PG schema that also has a SQLite
+// mirror, ensure the SQLite counterpart uses the same `<name>_json` convention and
+// add both sides here.
+const PG_SQLITE_CROSS_WHITELIST = [
+  // finyk_prefs — JSONB array columns renamed to *_json in SQLite
+  {
+    table: "finyk_prefs",
+    column: "excluded_stat_tx_ids",
+    reason: "PG JSONB name; SQLite counterpart is excluded_stat_tx_ids_json",
+  },
+  {
+    table: "finyk_prefs",
+    column: "excluded_stat_tx_ids_json",
+    reason: "SQLite TEXT name; PG counterpart is excluded_stat_tx_ids (JSONB)",
+  },
+  {
+    table: "finyk_prefs",
+    column: "dismissed_recurring",
+    reason: "PG JSONB name; SQLite counterpart is dismissed_recurring_json",
+  },
+  {
+    table: "finyk_prefs",
+    column: "dismissed_recurring_json",
+    reason: "SQLite TEXT name; PG counterpart is dismissed_recurring (JSONB)",
+  },
+  // fizruk tables — `data` JSONB in PG → `data_json` TEXT in SQLite
+  {
+    table: "fizruk_monthly_plan",
+    column: "data",
+    reason: "PG JSONB name; SQLite counterpart is data_json",
+  },
+  {
+    table: "fizruk_monthly_plan",
+    column: "data_json",
+    reason: "SQLite TEXT name; PG counterpart is data (JSONB)",
+  },
+  {
+    table: "fizruk_plan_templates",
+    column: "data",
+    reason: "PG JSONB name; SQLite counterpart is data_json",
+  },
+  {
+    table: "fizruk_plan_templates",
+    column: "data_json",
+    reason: "SQLite TEXT name; PG counterpart is data (JSONB)",
+  },
+  {
+    table: "fizruk_workout_templates",
+    column: "exercise_ids",
+    reason: "PG JSONB/text[] name; SQLite counterpart is exercise_ids_json",
+  },
+  {
+    table: "fizruk_workout_templates",
+    column: "exercise_ids_json",
+    reason: "SQLite TEXT name; PG counterpart is exercise_ids",
+  },
+  {
+    table: "fizruk_workout_templates",
+    column: "groups",
+    reason: "PG JSONB name; SQLite counterpart is groups_json",
+  },
+  {
+    table: "fizruk_workout_templates",
+    column: "groups_json",
+    reason: "SQLite TEXT name; PG counterpart is groups (JSONB)",
+  },
+  // nutrition_shopping_list — `data` JSONB in PG → `data_json` TEXT in SQLite
+  {
+    table: "nutrition_shopping_list",
+    column: "data",
+    reason: "PG JSONB name; SQLite counterpart is data_json",
+  },
+  {
+    table: "nutrition_shopping_list",
+    column: "data_json",
+    reason: "SQLite TEXT name; PG counterpart is data (JSONB)",
+  },
+  // routine tables — JSONB array columns renamed to *_json in SQLite
+  {
+    table: "routine_habits",
+    column: "tag_ids",
+    reason: "PG JSONB/text[] name; SQLite counterpart is tag_ids_json",
+  },
+  {
+    table: "routine_habits",
+    column: "tag_ids_json",
+    reason: "SQLite TEXT name; PG counterpart is tag_ids",
+  },
+  {
+    table: "routine_habits",
+    column: "reminder_times",
+    reason: "PG JSONB/text[] name; SQLite counterpart is reminder_times_json",
+  },
+  {
+    table: "routine_habits",
+    column: "reminder_times_json",
+    reason: "SQLite TEXT name; PG counterpart is reminder_times",
+  },
+  {
+    table: "routine_habits",
+    column: "weekdays",
+    reason: "PG JSONB/integer[] name; SQLite counterpart is weekdays_json",
+  },
+  {
+    table: "routine_habits",
+    column: "weekdays_json",
+    reason: "SQLite TEXT name; PG counterpart is weekdays",
+  },
+  {
+    table: "routine_prefs",
+    column: "data",
+    reason: "PG JSONB name; SQLite counterpart is data_json",
+  },
+  {
+    table: "routine_prefs",
+    column: "data_json",
+    reason: "SQLite TEXT name; PG counterpart is data (JSONB)",
+  },
+  {
+    table: "routine_habit_order",
+    column: "order",
+    reason: "PG JSONB/text[] name; SQLite counterpart is order_json",
+  },
+  {
+    table: "routine_habit_order",
+    column: "order_json",
+    reason: "SQLite TEXT name; PG counterpart is order",
+  },
+];
+
+function isCrossWhitelisted(table, column) {
+  return PG_SQLITE_CROSS_WHITELIST.some(
+    (e) => e.table === table && (e.column === undefined || e.column === column),
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const SQL_DIR = resolve(ROOT, "apps/server/src/migrations");
 const DRIZZLE_DIR = resolve(ROOT, "packages/db-schema/src/pg");
+const SQLITE_DRIZZLE_DIR = resolve(ROOT, "packages/db-schema/src/sqlite");
 
 const sqlSchema = parseSqlMigrations(SQL_DIR);
 const drizzleSchema = parseDrizzleSchemas(DRIZZLE_DIR);
@@ -430,6 +644,45 @@ for (const [tbl, drizzleCols] of drizzleSchema) {
         table: tbl,
         column: col,
         message: `Column "${tbl}.${col}" is in SQL migrations but not in Drizzle schema`,
+      });
+    }
+  }
+}
+
+// ─── PG ↔ SQLite Drizzle cross-check ─────────────────────────────────────────
+//
+// For tables defined in BOTH the PG and SQLite Drizzle schemas, column names
+// (SQL names, not JS keys) must match.  Type differences (TIMESTAMPTZ → TEXT,
+// UUID → TEXT, BOOLEAN → INTEGER, JSONB → TEXT) are expected and not checked.
+// Tables that appear only in one dialect are intentionally skipped.
+const sqliteSchema = parseSqliteDrizzleSchemas(SQLITE_DRIZZLE_DIR);
+
+for (const [tbl, pgCols] of drizzleSchema) {
+  if (!sqliteSchema.has(tbl)) continue; // PG-only table — expected, skip
+  if (isCrossWhitelisted(tbl)) continue;
+
+  const sqliteCols = sqliteSchema.get(tbl);
+
+  for (const col of pgCols) {
+    if (isCrossWhitelisted(tbl, col)) continue;
+    if (!sqliteCols.has(col)) {
+      issues.push({
+        kind: "col-pg-not-in-sqlite",
+        table: tbl,
+        column: col,
+        message: `Column "${tbl}.${col}" is in PG Drizzle schema but not in SQLite Drizzle schema`,
+      });
+    }
+  }
+
+  for (const col of sqliteCols) {
+    if (isCrossWhitelisted(tbl, col)) continue;
+    if (!pgCols.has(col)) {
+      issues.push({
+        kind: "col-sqlite-not-in-pg",
+        table: tbl,
+        column: col,
+        message: `Column "${tbl}.${col}" is in SQLite Drizzle schema but not in PG Drizzle schema`,
       });
     }
   }
