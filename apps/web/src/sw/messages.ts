@@ -102,13 +102,14 @@ export function handleSwMessage(event: ExtendableMessageEvent): void {
   }
 
   if (type === "SW_SET_USER") {
-    // Audit 03 / Decision #2 (C): per-user cache partition. The opaque
-    // Better Auth user id (or `null` on logout) varies the cache key via
-    // `cacheKeyWillBeUsed` in `./cache`. No reply — main thread treats
-    // this as fire-and-forget.
+    // Audit 03 / Decision #2 (C) + consolidated C2: per-user cache partition.
+    // The opaque Better Auth user id (or `null` on logout) is hashed and used
+    // to vary the cache key via `cacheKeyWillBeUsed` in `./cache`. No reply —
+    // main thread treats this as fire-and-forget — but `waitUntil` keeps the
+    // SW alive until the async hash + key update completes.
     const userKey =
       (data as { userKey?: string | null } | undefined)?.userKey ?? null;
-    setActiveUserKey(userKey);
+    event.waitUntil(setActiveUserKey(userKey));
     return;
   }
 

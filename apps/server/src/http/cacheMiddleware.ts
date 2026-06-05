@@ -7,7 +7,13 @@ interface CacheOptions {
   maxAgeSeconds?: number;
 }
 
+// `private` is listed first so shared caches (CDNs, corporate proxies) drop
+// the response before the `no-store`/`no-cache` directives even apply. Audit
+// `2026-05-13-consolidated-page-audit.md` C2: `/api/*` responses are
+// user-specific, so they must never land in a shared cache on a multi-user
+// device or edge.
 const DEFAULT_NO_STORE = {
+  private: true,
   "no-store": true,
   "no-cache": true,
   "must-revalidate": true,
@@ -57,7 +63,7 @@ function buildCacheControl(options: CacheOptions): string {
       ].join(", ");
 
     default:
-      return "no-store, no-cache, must-revalidate";
+      return "private, no-store, no-cache, must-revalidate";
   }
 }
 

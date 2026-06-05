@@ -29,14 +29,20 @@ declare const self: ServiceWorkerGlobalScope & {
 };
 
 /**
- * Audit 03 / Decision #2 (C): module-scope active-user partition.
+ * Audit 03 / Decision #2 (C) + `2026-05-13-consolidated-page-audit.md` C2:
+ * module-scope active-user cache partition.
  *
- * Holds the opaque Better Auth user id posted from the main thread via
- * `SW_SET_USER`. The `cacheKeyWillBeUsed` plugin below appends it to the
- * Request URL (`__u=<userKey>`) so user A's cache entries never resolve
- * user B's reads. Resets to `"anon"` on SW restart — main thread re-posts
- * on next mount, and `signOut → CLEAR_SW_CACHES` already wipes the caches
- * as the security boundary.
+ * Holds a **hashed** identifier derived from the opaque Better Auth user id
+ * posted from the main thread via `SW_SET_USER`. The `cacheKeyWillBeUsed`
+ * plugin below appends it to the Request URL (`__u=<hash>`) so user A's cache
+ * entries never resolve user B's reads. Resets to `"anon"` on SW restart —
+ * main thread re-posts on next mount, and `signOut → CLEAR_SW_CACHES` already
+ * wipes the caches as the security boundary.
+ *
+ * Why hashed and not the raw id: the partition value is written into cache-key
+ * URLs (and surfaces in any cache-inspection / debug snapshot). Hashing keeps
+ * the raw account identifier out of those keys — a stable, collision-resistant
+ * SHA-256 prefix is enough to isolate users without leaking the id itself.
  *
  * Why a query param and not a per-user cacheName: cache.delete() under
  * `clearAppCaches` already walks every cache name; an unbounded set of
@@ -45,8 +51,39 @@ declare const self: ServiceWorkerGlobalScope & {
  */
 let activeUserKey = "anon";
 
-export function setActiveUserKey(key: string | null): void {
-  activeUserKey = key && key.length > 0 ? key : "anon";
+const PARTITION_HASH_LEN = 32; // 128 bits of SHA-256 hex — collision-safe here
+
+/**
+ * SHA-256 → truncated lowercase hex. Uses Web Crypto, available in the SW
+ * global scope. Falls back to `"anon"` if hashing throws (no crypto / bad
+ * input) so a failure degrades to the shared-anon partition rather than
+ * leaking the raw id.
+ */
+async function hashUserKey(raw: string): Promise<string> {
+  try {
+    const bytes = new TextEncoder().encode(raw);
+    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    const hex = Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return hex.slice(0, PARTITION_HASH_LEN);
+  } catch {
+    return "anon";
+  }
+}
+
+/**
+ * Store the hashed partition for the active user. Async because hashing goes
+ * through Web Crypto; the message handler wraps the returned promise in
+ * `event.waitUntil` so the SW stays alive until the key is updated. Anonymous
+ * / empty input resets to the shared `"anon"` partition synchronously.
+ */
+export async function setActiveUserKey(key: string | null): Promise<void> {
+  if (!key || key.length === 0) {
+    activeUserKey = "anon";
+    return;
+  }
+  activeUserKey = await hashUserKey(key);
 }
 
 const PARTITION_PARAM = "__u";

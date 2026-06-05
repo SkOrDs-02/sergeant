@@ -21,7 +21,7 @@ describe("cacheMiddleware", () => {
       cachingMiddleware()(req, res, mockNext);
       expect(res.setHeader).toHaveBeenCalledWith(
         "Cache-Control",
-        "no-store, no-cache, must-revalidate",
+        "private, no-store, no-cache, must-revalidate",
       );
     });
 
