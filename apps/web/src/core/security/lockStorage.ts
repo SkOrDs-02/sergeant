@@ -30,6 +30,7 @@ const ITERATIONS_BY_VERSION: Record<CredVersion, number> = {
 };
 
 export const CURRENT_PBKDF2_ITERATIONS =
+  // Safe default per OWASP 2023 recommendations
   ITERATIONS_BY_VERSION[LATEST_CRED_VERSION];
 
 /**

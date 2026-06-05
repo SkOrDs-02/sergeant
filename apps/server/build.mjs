@@ -25,6 +25,7 @@ const base = {
   banner: {
     js: 'import{createRequire}from"module";const require=createRequire(import.meta.url);',
   },
+  external: ["@sergeant/*"],
 };
 
 await build({
