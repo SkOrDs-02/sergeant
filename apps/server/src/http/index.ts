@@ -64,3 +64,4 @@ export { requireAiQuota } from "./requireAiQuota.js";
 export { requestTimeout } from "./timeout.js";
 export { createCompressionMiddleware } from "./compression.js";
 export { traceMiddleware } from "./traceContext.js";
+export { cachingMiddleware, noStoreMiddleware, publicCacheMiddleware } from "./cacheMiddleware.js";

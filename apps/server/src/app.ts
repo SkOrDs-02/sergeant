@@ -12,6 +12,7 @@ import { applyBodySizePolicy } from "./http/bodySizePolicy.js";
 import {
   apiCorsMiddleware,
   apiHelmetMiddleware,
+  cachingMiddleware,
   createCompressionMiddleware,
   errorHandler,
   requestIdMiddleware,
@@ -146,6 +147,12 @@ export function createApp({
   // Global CORS for the whole /api surface. Individual handlers may re-set
   // headers (e.g. to widen allow-headers) — `setCorsHeaders` is idempotent.
   app.use("/api", apiCorsMiddleware());
+
+  // HTTP caching headers for API responses.
+  // API endpoints carry user-specific or frequently-changing data, so we use
+  // "no-store" policy to prevent caching by browsers or proxies.
+  // Static assets served by the frontend middleware can use public caching.
+  app.use("/api", cachingMiddleware({ policy: "no-store" }));
 
   // M10 — CSRF guard для state-changing запитів на `/api/*`.
   // Браузер не дасть cross-origin сторінці поставити non-simple header
