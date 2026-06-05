@@ -47,7 +47,7 @@
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Stage 1: builder — full dev deps + pnpm build
-FROM --platform=linux/amd64 node:20.20.2-alpine AS builder
+FROM --platform=linux/amd64 node:22.16.0-alpine AS builder
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
@@ -89,7 +89,7 @@ RUN pnpm build
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Stage 2: deps — production-only node_modules + CVE-cleanup (potrebuje shell)
-FROM --platform=linux/amd64 node:20.20.2-alpine AS deps
+FROM --platform=linux/amd64 node:22.16.0-alpine AS deps
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
@@ -140,7 +140,7 @@ RUN find node_modules -maxdepth 3 -type d \
 # `preDeployCommand` через `/bin/sh -c "..."`; без нього release-stage
 # міграцій падає мовчки ще до того, як `node dist-server/migrate.js`
 # встигне щось вивести.
-FROM --platform=linux/amd64 gcr.io/distroless/nodejs20-debian12:nonroot AS runtime
+FROM --platform=linux/amd64 gcr.io/distroless/nodejs22-debian13:nonroot AS runtime
 WORKDIR /app
 
 # Запікаємо static busybox як `/bin/sh`. ВАЖЛИВО взяти його саме з

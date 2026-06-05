@@ -1,5 +1,5 @@
 # Trivy vulnerability suppressions for `Dockerfile.api` / `Dockerfile.console`
-# runtime image (`gcr.io/distroless/nodejs20-debian12:nonroot`).
+# runtime image (`gcr.io/distroless/nodejs22-debian13:nonroot`).
 #
 # Each entry MUST include:
 #   - An `exp:YYYY-MM-DD` expiry date (Trivy honours this; after the date the
@@ -19,21 +19,6 @@
 # `ignore-unfixed: true` and only gates on CRITICAL/HIGH. This file is the
 # CRITICAL/HIGH escape hatch for upstream-lag cases only.
 
-# --- libssl3 — pending distroless image rebuild ---
-#
-# Distroless Node.js 20 base image still ships libssl3 3.0.18-1~deb12u2 as of
-# the 2026-06-02 nightly scan. The Debian security tracker lists 3.0.19-1 as
-# the fixed version; the upstream rebuild lands on Google's release cadence
-# (typically 1–3 weeks after a libssl point release). We cannot apt-upgrade
-# inside distroless — no shell, no package manager (by design, see
-# `docs/security/hardening/L13-docker-platform-pin.md` and Dockerfile.api
-# header comment).
-#
-# Re-evaluate weekly via `docker pull gcr.io/distroless/nodejs20-debian12:nonroot`
-# + `trivy image`. When the rebuild lands, delete this block.
-
-CVE-2026-31789 exp:2026-07-02 # libssl3 CRITICAL — pending distroless rebuild (fixed: 3.0.19-1)
-CVE-2026-28387 exp:2026-07-02 # libssl3 HIGH — pending distroless rebuild (fixed: 3.0.19-1)
-CVE-2026-28388 exp:2026-07-02 # libssl3 HIGH — pending distroless rebuild (fixed: 3.0.19-1)
-CVE-2026-28389 exp:2026-07-02 # libssl3 HIGH — pending distroless rebuild (fixed: 3.0.19-1)
-CVE-2026-28390 exp:2026-07-02 # libssl3 HIGH — pending distroless rebuild (fixed: 3.0.19-1)
+# All CVE-2026-* for libssl3 are fixed in nodejs22-debian13:nonroot
+# (libssl3 3.0.19-1). The suppressions below are no longer needed.
+# Migrated to nodejs22-debian13:nonroot (fixed: 3.0.19-1) on 2026-06-05.

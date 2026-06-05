@@ -39,9 +39,9 @@
   },
   "packageRules": [
     {
-      "description": "Pin @types/node to Node 20 LTS major — production runtime is Node 20 (Volta). Node 21+ types describe APIs that don't exist at runtime. See ADR-0050 and pnpm.overrides.",
+      "description": "Pin @types/node to Node 22 LTS major — production runtime is Node 22 (Volta). Node 23+ types describe APIs that don't exist at runtime. See ADR-0050 and pnpm.overrides.",
       "matchPackageNames": ["@types/node"],
-      "allowedVersions": "<21",
+      "allowedVersions": "<23",
       "groupName": "type definitions"
     },
     {
