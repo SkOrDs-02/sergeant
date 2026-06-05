@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-06-05",
   "package": "@sergeant/openclaw",
-  "entryFile": "tools/openclaw/dist/index.js",
+  "entryFile": "tools/openclaw/src/index.ts",
   "stats": {
     "exportCount": 1,
     "totalImporters": 0,
@@ -13,6 +13,7 @@
     {
       "name": "HELP_TEXT",
       "kind": "re-export",
+      "fromFile": "./help-text.js",
       "usedBy": [],
       "usageCount": 0
     }
