@@ -328,16 +328,6 @@ describe("assertStartupEnv — STRIPE_PRICE_ID_PRO_MONTHLY (P0-7)", () => {
     ).rejects.toThrow(/STRIPE_PRICE_ID_PRO_MONTHLY/);
   });
 
-  it("throws on module import when STRIPE_PRICE_ID_PLUS_MONTHLY is malformed", async () => {
-    await expect(
-      loadAssertStartupEnv({
-        ...PRICE_BASELINE,
-        STRIPE_PRICE_ID_PRO_MONTHLY: "price_1AbCdEf123",
-        STRIPE_PRICE_ID_PLUS_MONTHLY: "free",
-      }),
-    ).rejects.toThrow(/STRIPE_PRICE_ID_PLUS_MONTHLY/);
-  });
-
   it("does NOT throw in production when STRIPE_PRICE_ID_PRO_MONTHLY is a valid price_* value", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...PRICE_BASELINE,

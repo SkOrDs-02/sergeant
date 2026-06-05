@@ -1,6 +1,6 @@
 # pnpm Overrides Rationale
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-05 by @claude. **Next review:** 2026-09-03.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
@@ -136,6 +136,22 @@ by ADR-0050.
 `ajv >=8.18.0`, або ajv 6.x вийде з tree (потребує заміни ESLint).
 
 **Last reviewed:** 2026-05-13
+
+---
+
+## `protobufjs@>=8.0.0 <8.0.2` → `>=8.0.2`
+
+**Why:** `protobufjs@8.0.0` and `8.0.1` contain GHSA-h755-8qp9-cq85 — prototype pollution via
+crafted `.proto` payload. Several transitive deps in the tree (gRPC tooling, mobile E2E scaffold)
+pull `protobufjs@8.0.0`. The selector-form override bumps only the vulnerable 8.x sub-range to
+`>=8.0.2` without touching any `<8.0.0` copies that have a distinct API.
+
+**Drop when:** All transitive consumers declare `protobufjs >=8.0.2` in their own `package.json`,
+or the advisory is retracted.
+
+**Owner:** @Skords-01
+
+**Last reviewed:** 2026-06-05
 
 ---
 

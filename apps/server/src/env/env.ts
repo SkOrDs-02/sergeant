@@ -739,20 +739,6 @@ const envSchema = z.object({
       "STRIPE_PRICE_ID_PRO_MONTHLY must match Stripe `price_*` format",
     )
     .optional(),
-  /**
-   * Stripe Price ID for the (currently unused) Plus tier. Kept in the
-   * schema so the dead `getPriceId("plus")` path validates the
-   * format if anyone wires it back up; absence is non-fatal because
-   * the ADR-0051 pricing v3 is single-tier (Pro only).
-   */
-  STRIPE_PRICE_ID_PLUS_MONTHLY: z
-    .string()
-    .regex(
-      /^price_[A-Za-z0-9]+$/,
-      "STRIPE_PRICE_ID_PLUS_MONTHLY must match Stripe `price_*` format",
-    )
-    .optional(),
-
   // ── LiqPay billing (0010 PR-8 scaffold) ─────────────────────────────
   /**
    * Feature-flag для LiqPay як другого payment-provider-а (UA-ринок).

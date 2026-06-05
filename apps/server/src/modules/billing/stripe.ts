@@ -150,7 +150,7 @@ async function captureLifecycle(
   const subscriptionId = getStripeObjectString(object, "id");
   const status = getStripeObjectString(object, "status");
   const pricing = extractSubscriptionPricing(object);
-  const plan = normalizePlan(metadata["plan"]);
+  const plan = normalizePlan();
   const properties: Record<string, unknown> = {
     plan,
     cadence: pricing.cadence,
@@ -273,14 +273,8 @@ function getStripeSecretKey(): string {
   return key;
 }
 
-function getPriceId(_plan: BillingPlan): string {
-  // Pricing v3 (ADR-0051): Stripe sells Pro only — the legacy 'plus' tier was
-  // removed, so every checkout maps to the Pro price regardless of the
-  // requested plan (consistent with `normalizePlan` always returning "pro").
-  // FOLLOW-UP: narrow `BillingPlanSchema` to `["pro"]` and drop
-  // `STRIPE_PRICE_ID_PLUS_MONTHLY` once the api-client contract can be
-  // regenerated together (Hard Rule #3 triplet).
-  //
+function getPriceId(): string {
+  // Pricing v3 (ADR-0051): Stripe sells Pro only.
   // P0-7 (docs/audits/2026-05-13-revenue-monetization-roast.md): read from the
   // Zod-validated `env` so the `price_*` format is checked up-front and
   // `assertStartupEnv` can refuse to boot when billing is wired but the price
@@ -350,7 +344,7 @@ async function createStripeCheckoutSession({
     cancel_url: `${baseUrl}/pricing?checkout=cancel`,
     client_reference_id: user.id,
     customer_email: user.email ?? "",
-    "line_items[0][price]": getPriceId(plan),
+    "line_items[0][price]": getPriceId(),
     "line_items[0][quantity]": "1",
     "metadata[user_id]": user.id,
     "metadata[plan]": plan,
@@ -518,8 +512,7 @@ function unixSecondsToDate(value: unknown): Date | null {
     : null;
 }
 
-function normalizePlan(_raw: unknown): BillingPlan {
-  // Pricing v3 (ADR-0051): Stripe sells Pro only; no 'plus' tier
+function normalizePlan(): BillingPlan {
   return "pro";
 }
 
@@ -563,7 +556,7 @@ async function upsertCheckoutCompleted(
        updated_at = NOW()`,
     [
       userId,
-      normalizePlan(metadata["plan"]),
+      normalizePlan(),
       getStripeObjectString(object, "customer"),
       getStripeObjectString(object, "subscription"),
     ],
@@ -599,7 +592,7 @@ async function upsertSubscriptionEvent(
        updated_at = NOW()`,
     [
       userId,
-      normalizePlan(metadata["plan"]),
+      normalizePlan(),
       subscriptionStatus,
       getStripeObjectString(object, "customer"),
       subscriptionId,
