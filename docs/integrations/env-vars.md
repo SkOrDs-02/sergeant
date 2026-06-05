@@ -419,7 +419,7 @@ Base URL Railway-API, який [`apps/web/middleware.ts`](../../apps/web/middlew
 
 ## 13.5. OpenTelemetry traces (server-side OTLP) _(optional, currently dormant)_
 
-> **Стан:** Dormant — жоден з `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` не заданий у production. Активний live tracer — **Sentry** (`apps/server/src/obs/sentry.ts`). Код `tracing.ts` повністю написаний і готовий до ввімкнення; він є clean no-op поки endpoint не задано (SDK не реєструється, `aiSpan`/`dbSpan` — прозорі callback-обгортки без overhead). Щоб увімкнути OTel: задай `OTEL_EXPORTER_OTLP_ENDPOINT` на Railway і виставь `SENTRY_TRACES_SAMPLE_RATE=0` щоб уникнути подвійного server-side latency sampling.
+> **Стан:** Dormant — жоден з `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` не заданий у production. Активний live tracer — **Sentry** (`apps/server/src/sentry.ts`). Код `tracing.ts` повністю написаний і готовий до ввімкнення; він є clean no-op поки endpoint не задано (SDK не реєструється, `aiSpan`/`dbSpan` — прозорі callback-обгортки без overhead). Щоб увімкнути OTel: задай `OTEL_EXPORTER_OTLP_ENDPOINT` на Railway і виставь `SENTRY_TRACES_SAMPLE_RATE=0` щоб уникнути подвійного server-side latency sampling.
 
 Деталі: [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md), runbook [`observability/runbook.md` § «OpenTelemetry traces»](../observability/runbook.md).
 

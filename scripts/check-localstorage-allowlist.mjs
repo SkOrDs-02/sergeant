@@ -33,7 +33,7 @@ import { dirname, resolve } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
 
-const ESLINT_CONFIG_PATH = resolve(REPO_ROOT, "eslint.config.js");
+const ESLINT_CONFIG_PATH = resolve(REPO_ROOT, "eslint.web.js");
 const BUDGET_PATH = resolve(
   REPO_ROOT,
   ".tech-debt/localstorage-allowlist-budget.json",

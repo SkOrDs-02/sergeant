@@ -38,6 +38,7 @@ const IGNORE_DIRS = new Set([
   ".git",
   ".turbo",
   "dist",
+  "dist-server",
   "build",
   "coverage",
   ".next",

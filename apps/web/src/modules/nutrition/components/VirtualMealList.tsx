@@ -30,7 +30,8 @@ export function VirtualMealList({
   onEditMeal,
 }: VirtualMealListProps) {
   const activeTypes = useMemo(
-    () => MEAL_ORDER.filter((t: MealTypeId) => groups[t]?.length) as MealTypeId[],
+    () =>
+      MEAL_ORDER.filter((t: MealTypeId) => groups[t]?.length) as MealTypeId[],
     [groups],
   );
   const flatItems = useMemo<MealListItem[]>(() => {

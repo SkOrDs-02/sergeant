@@ -31,11 +31,11 @@ This conflicts with:
 
 Extend the MCP `environment` field to accept **secret references** alongside literal strings. Three resolvers, pluggable:
 
-| Syntax                              | Resolver                | Use case                                |
-| ----------------------------------- | ----------------------- | --------------------------------------- |
-| `"{{env:HOME_VAR}}"`                | process env of Kilo CLI | CI runners, dev shells                  |
-| `"{{keyring:service/account}}"`     | OS keyring (Windows Credential Manager / macOS Keychain / Secret Service) | Interactive desktop sessions |
-| `"{{file:/absolute/path}}"`         | read from file          | Docker `/run/secrets/`, vault sidecars  |
+| Syntax                          | Resolver                                                                  | Use case                               |
+| ------------------------------- | ------------------------------------------------------------------------- | -------------------------------------- |
+| `"{{env:HOME_VAR}}"`            | process env of Kilo CLI                                                   | CI runners, dev shells                 |
+| `"{{keyring:service/account}}"` | OS keyring (Windows Credential Manager / macOS Keychain / Secret Service) | Interactive desktop sessions           |
+| `"{{file:/absolute/path}}"`     | read from file                                                            | Docker `/run/secrets/`, vault sidecars |
 
 ### Schema sketch
 
@@ -49,10 +49,10 @@ Extend the MCP `environment` field to accept **secret references** alongside lit
         // hybrid: literal strings still work for non-secret config
         "GITHUB_API_URL": "https://api.github.com",
         // secret reference: resolved at MCP spawn time
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "{{keyring:kilo/mcp/github}}"
-      }
-    }
-  }
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "{{keyring:kilo/mcp/github}}",
+      },
+    },
+  },
 }
 ```
 
@@ -119,7 +119,7 @@ Devs already do this for the CLI itself, but:
 
 ## Issue body (paste-ready)
 
-```markdown
+````markdown
 ## Summary
 
 Kilo's local MCP config stores secrets as plain strings. Add support for
@@ -144,8 +144,10 @@ Allow secret references alongside literal strings:
   "GITHUB_PERSONAL_ACCESS_TOKEN": "{{keyring:kilo/mcp/github}}"
 }
 ```
+````
 
 Resolvers:
+
 - `{{env:VAR}}` — read from parent process env
 - `{{keyring:service/account}}` — OS keyring (Windows Credential Manager,
   macOS Keychain, Linux Secret Service)
@@ -179,4 +181,7 @@ Full proposal with schema sketch, resolution rules, and migration plan:
 - [ ] `kilo mcp secret set / rotate / unset` CLI works.
 - [ ] `kilo doctor` warns on literal PAT-shaped values.
 - [ ] Backwards compatible: existing `kilo.json` files keep working.
+
+```
+
 ```

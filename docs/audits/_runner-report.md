@@ -1,4 +1,5 @@
 <!-- AUTO-GENERATED -->
+
 # Audit runner report
 
 > **Last validated:** 2026-06-04 by audit-triage routine. **Next review:** 2026-09-02.

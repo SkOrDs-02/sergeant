@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-06-04 by @kilo. **Next review:** 2026-09-01.
+> **Last validated:** 2026-06-05 by @claude. **Next review:** 2026-09-03.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
@@ -12,24 +12,25 @@ This repo is driven by the **Kilo Code** extension. Use the extension's primitiv
 - **Repo state.** This session runs inside an **Agent Manager worktree** at `E:\.claude\Sergeant\.kilo\worktrees\ring-slope`; the main checkout is `E:\.claude\Sergeant\`. Stay inside the worktree unless the user explicitly asks to leave it. Worktrees share the same on-disk repo (git worktree), so edits land in the worktree branch only.
 - **Skills.** Load via the `skill` tool — do **not** Read SKILL.md files manually. The catalog of repo-owned skills is in `docs/agents/agent-skills-catalog.md`; user-installed global skills are listed in the `<available_skills>` block of the system prompt. Use the `find-skills` skill when a task might match a non-obvious skill.
 - **Custom agents.** `E:\.claude\Sergeant\.kilo\agent\sergeant-*.md` defines 12 repo-owned specialists (web-ui, server-api, mobile, data-and-migrations, deploy, openclaw, hubchat, e2e-testing, security-audit, bugfix, tech-debt, review-and-merge). Launch them with the `task` tool by name. Global specialists live at `C:\Users\dmytr\.config\kilo\agents\` (code-reviewer, code-skeptic, docs-specialist — the docs-specialist is restricted to `*.md` only, see its `permission` block). The same task tool accepts generic `subagent_type: general` / `explore` for ad-hoc work.
-- **Routing sergeant-* agents (decision tree).** Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
+- **Routing sergeant-\* agents (decision tree).** Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
 
-  | Signal in the task                                                                 | Load                              |
-  | ---------------------------------------------------------------------------------- | --------------------------------- |
-  | Touches `apps/web/**`, RQ keys, design tokens, a11y                                | `sergeant-web-ui`                 |
-  | Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI                | `sergeant-server-api`             |
-  | Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS                      | `sergeant-mobile`                 |
-  | Touches `db-schema/`, migrations, drill-down, index audit                          | `sergeant-data-and-migrations`    |
-  | Railway / Vercel / Sentry / Alertmanager / CI workflow change                      | `sergeant-deploy`                 |
-  | OpenClaw gateway / plugin / PAT lifecycle                                          | `sergeant-openclaw`               |
-  | HubChat module / HubChat reset / HubChat E2E                                       | `sergeant-hubchat`                |
-  | Writing or running E2E (Playwright/Vitest browser)                                 | `sergeant-e2e-testing`            |
-  | Security review, vuln triage, secret scan, dependency CVE                          | `sergeant-security-audit`         |
-  | Regression, hotfix, "this used to work"                                             | `sergeant-bugfix`                 |
-  | Refactor, dead code, Knip baseline, eslint baseline reduction                      | `sergeant-tech-debt`              |
-  | PR review, squash-merge, release-cut, changelog                                    | `sergeant-review-and-merge`       |
+  | Signal in the task                                                  | Load                           |
+  | ------------------------------------------------------------------- | ------------------------------ |
+  | Touches `apps/web/**`, RQ keys, design tokens, a11y                 | `sergeant-web-ui`              |
+  | Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI | `sergeant-server-api`          |
+  | Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS       | `sergeant-mobile`              |
+  | Touches `db-schema/`, migrations, drill-down, index audit           | `sergeant-data-and-migrations` |
+  | Railway / Vercel / Sentry / Alertmanager / CI workflow change       | `sergeant-deploy`              |
+  | OpenClaw gateway / plugin / PAT lifecycle                           | `sergeant-openclaw`            |
+  | HubChat module / HubChat reset / HubChat E2E                        | `sergeant-hubchat`             |
+  | Writing or running E2E (Playwright/Vitest browser)                  | `sergeant-e2e-testing`         |
+  | Security review, vuln triage, secret scan, dependency CVE           | `sergeant-security-audit`      |
+  | Regression, hotfix, "this used to work"                             | `sergeant-bugfix`              |
+  | Refactor, dead code, Knip baseline, eslint baseline reduction       | `sergeant-tech-debt`           |
+  | PR review, squash-merge, release-cut, changelog                     | `sergeant-review-and-merge`    |
 
   If two surfaces overlap (e.g. web + e2e), load the **owner** first; ask the other only when blocked. Full catalog: [`docs/agents/agent-skills-catalog.md`](./docs/agents/agent-skills-catalog.md).
+
 - **Custom slash commands.** Defined in `E:\.claude\Sergeant\.kilo\command\*.md` (10 commands: `/check`, `/format`, `/lint`, `/typecheck-test`, `/build`, `/dev-server`, `/dev-web`, `/migrate`, `/test`, `/install`). Commands are short YAML front-matter + body — read the file to know the exact prompt. Prefer `/check` (runs `pnpm check`) over manually chaining `pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build`.
 - **Kilo-specific tools to use, not ignore.**
   - `kilo_local_recall` — search/read past Kilo sessions in this project (including sibling worktrees) before re-deriving context. **Do this first** for "didn't we already do X?" questions.

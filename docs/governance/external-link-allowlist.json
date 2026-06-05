@@ -105,6 +105,14 @@
     {
       "pattern": "^https?://n8n-production-09ac\\.up\\.railway\\.app(/.*)?$",
       "reason": "Founder's self-hosted n8n instance on Railway (cited in docs/runbooks/operations-runbook.md as the workflow editor UI). Railway PaaS routes 404 when the deploy slug is paused, asleep, or scaled-to-zero between cron ticks — the URL is correct for the owner (dmytro.skords@gmail.com) and behind Railway-managed Postgres auth."
+    },
+    {
+      "pattern": "^https?://eur-lex\\.europa\\.eu(/.*)?$",
+      "reason": "EU legislative portal (cited in docs/launch/business/04-launch-readiness.md as the Cookie Directive reference). eur-lex.europa.eu aborts connections from CI runner User-Agents with 'This operation was aborted'; the pages render correctly in browsers. Legislative URLs are permanent and citation-stable."
+    },
+    {
+      "pattern": "^https?://docs\\.railway\\.app/reference/security$",
+      "reason": "Cited in docs/security/secret-rotation.md as a Railway security reference. Railway reorganized their docs tree and this path now returns 404; the citation is preserved as a historical reference to Railway's security practices at the time of writing."
     }
   ]
 }
