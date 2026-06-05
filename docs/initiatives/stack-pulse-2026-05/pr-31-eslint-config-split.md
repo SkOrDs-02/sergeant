@@ -1,7 +1,7 @@
 # PR-31: ESLint config 1073 рядки → split per-app
 
 > **Last validated:** 2026-06-01 by Skords-01. **Next review:** 2026-09-01.
-> **Status:** Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. Per-surface extracts (apps/web, apps/server, apps/mobile, apps/mobile-shell, tools/openclaw, packages/\*\*) tracked separately — diff-gate тепер flips на будь-який accidental config drift; extraction PR запускає `--update` після того як intent verified review-ером.
+> **Status:** Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/development/eslint-config.md` § Phase 2b).
 
 |                    |                                                             |
 | ------------------ | ----------------------------------------------------------- |
@@ -82,11 +82,11 @@ Per-app lint runs паралельно (Turbo).
 
 ## Acceptance criteria (DoD)
 
-- [ ] Root `eslint.config.js` < 300 рядків.
-- [ ] Кожен app/package має власний `eslint.config.js`.
-- [ ] `pnpm lint` все ще зелений на all PR-target files.
-- [ ] CI час `pnpm lint` зменшено (target: <30s через Turbo parallelism).
-- [ ] `docs/development/eslint-config.md` з diagram + onboarding.
+- [x] Root `eslint.config.js` < 300 рядків. **Phase 2a: 1128 → 37 рядків.**
+- [~] Кожен app/package має власний `eslint.config.js`. **Phase 2a: per-surface МОДУЛІ (`eslint.<surface>.js`), root їх композує.** Справжні standalone `apps/<x>/eslint.config.js` (per-package Turbo discovery) — Phase 2b.
+- [x] `pnpm lint` все ще зелений на all PR-target files. **Byte-neutral (гард `lint:eslint-config-diff` — усі 8 fixtures match; eslint smoke на server-файлі чистий) → поведінка не змінилась.**
+- [ ] CI час `pnpm lint` зменшено (target: <30s через Turbo parallelism). **Phase 2b — root-composes ще не дає per-package parallelism.**
+- [x] `docs/development/eslint-config.md` з diagram + onboarding. **Оновлено: структура post-2a + 2b roadmap.**
 
 ## Тести
 
@@ -113,6 +113,41 @@ Per-app lint runs паралельно (Turbo).
 - `tools/openclaw/eslint.config.js` — new
 - `turbo.json` — додати lint task
 - `docs/development/eslint-config.md` — new
+
+## Implementation notes (2026-06-05 — pre-exec recon)
+
+Перед стартом Phase 2 прочитано весь поточний `eslint.config.js` (1128 рядків). Знахідки, які треба врахувати виконавцю — інакше extraction наосліп дає **червоний diff-gate + недолінчені пакети**:
+
+### 1. ~10 з ~28 блоків — cross-surface
+
+Ці блоки мають `files:` на 2+ поверхні й **не можуть жити в одному per-app конфізі**:
+
+| Блок                                                             | Поверхні                               |
+| ---------------------------------------------------------------- | -------------------------------------- |
+| `import/extensions`                                              | web + openclaw + mobile + mobile-shell |
+| `no-finyk-token-in-storage`                                      | web + mobile + server                  |
+| security (SAST: `detect-eval`, `detect-non-literal-*`)           | server + openclaw                      |
+| `no-anthropic-key-in-logs`, `no-console-pii`, `no-strict-bypass` | server + web                           |
+| routine / fizruk / nutrition / finyk cloud-sync retirement       | web + mobile                           |
+
+Наслідок — **дилема, яку оригінальний spec не вирішує**: cross-surface правила або (а) дублюються в кожен app-конфіг → drift-ризик (Risk-таблиця цього ж файлу), або (б) лишаються в root → root **не влізе в <300 LOC** (DoD #1). Реалістично: тримати cross-surface у root і прийняти root ~350-400 LOC, або винести їх у спільний `eslint.cross-surface.js`-модуль, який імпортують і root, і per-app конфіги.
+
+### 2. Execution-model: per-package `eslint .` + gate з кореня
+
+- Кожен пакет лінтиться `eslint .` **зі свого cwd** (`apps/web/package.json` тощо). ESLint v9 (дефолт) резолвить конфіг від cwd вгору. Сьогодні per-app конфігів нема → всі ходять у root. Щойно з'явиться `apps/web/eslint.config.js`, він **shadow-ить** root для `turbo run lint` → має бути **self-sufficient** (baseline + cross-surface, які стосуються web + web-only), інакше web недолінчений.
+- `scripts/eslint-print-config-diff.mjs` ганяє `eslint --print-config <fixture>` **з `REPO_ROOT`** (v9-дефолт → завжди бачить лише root config). Тож після виносу single-surface блоків у per-app конфіги gate з кореня бачить їх як **зниклі** → червоний. Щоб gate резолвив per-app конфіги, треба або модифікувати скрипт (cd у cwd кожного пакета перед `--print-config`), або ввімкнути `unstable_config_lookup_from_file`. Це **частина scope Phase 2**, не окремий PR.
+
+### 3. Snapshot-артефакти генеруються лише з робочим eslint
+
+`scripts/__fixtures__/eslint-print-config/*.json` створюються через `pnpm lint:eslint-config-diff -- --update`. CI — **checker, не generator**: він порівнює і падає, але не оновлює. Тож Phase 2 **не можна завершити на exFAT-only машині** (eslint там не резолвиться — `eslint-scope`/`@sergeant` symlinks відсутні). Виконувати в середовищі з робочим eslint (CI runner або NTFS-клон): зробити extraction → `--update` → закомітити snapshot-и разом з кодом у тому ж PR.
+
+### Рекомендований порядок (для виконавця в робочому env)
+
+1. Винести cross-surface блоки у `eslint.cross-surface.js` (імпортують root + per-app).
+2. Створити per-app `eslint.config.js` (self-sufficient: `...baseline` + `...crossSurfaceForX` + X-only), глоби **package-relative**.
+3. Модифікувати diff-gate, щоб резолвив per-app конфіги (cd per surface).
+4. `pnpm lint:eslint-config-diff -- --update` → перевірити, що diff кожного snapshot-а — лише очікувані зміни (а не зниклі правила).
+5. `pnpm lint` зелений per-package → root <300 LOC.
 
 ## Refs
 

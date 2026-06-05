@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-04",
+  "generated_at": "2026-06-05",
   "counts": {
-    "adr": 58,
+    "adr": 59,
     "audit": 29,
     "hard-rule": 26,
     "initiative": 47,
     "playbook": 61,
-    "pr": 198,
+    "pr": 199,
     "skill": 22
   },
   "nodes": [
@@ -656,6 +656,17 @@
       "meta": {
         "number": 61,
         "last_validated": "2026-06-01"
+      }
+    },
+    {
+      "id": "adr:0062",
+      "type": "adr",
+      "title": "ADR-0062: OpenAPI spec source-of-truth — code-first (Zod → OpenAPI)",
+      "path": "docs/adr/0062-openapi-source-of-truth.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 62
       }
     },
     {
@@ -1584,7 +1595,7 @@
       "type": "initiative",
       "title": "PR-23: OpenAPI spec contract-tested vs runtime",
       "path": "docs/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md",
-      "status": "Active — Phase 1 (generation + freshness gate) shipped; ADR-0056 + contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.",
+      "status": "Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.",
       "tier": "core",
       "meta": {}
     },
@@ -1656,7 +1667,7 @@
       "type": "initiative",
       "title": "PR-31: ESLint config 1073 рядки → split per-app",
       "path": "docs/initiatives/stack-pulse-2026-05/pr-31-eslint-config-split.md",
-      "status": "Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. Per-surface extracts (apps/web, apps/server, apps/mobile, apps/mobile-shell, tools/openclaw, packages/\\*\\*) tracked separately — diff-gate тепер flips на будь-який accidental config drift; extraction PR запускає `--update` після того як intent verified review-ером.",
+      "status": "Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/development/eslint-config.md` § Phase 2b).",
       "tier": "core",
       "meta": {}
     },
@@ -3372,6 +3383,16 @@
       }
     },
     {
+      "id": "pr:2660",
+      "type": "pr",
+      "title": "PR #2660",
+      "tier": "extended",
+      "meta": {
+        "number": 2660,
+        "url": "https://github.com/Skords-01/Sergeant/pull/2660"
+      }
+    },
+    {
       "id": "pr:2726",
       "type": "pr",
       "title": "PR #2726",
@@ -5061,6 +5082,11 @@
     {
       "from": "audit:2026-05-06-ux-roast-pr-plan",
       "to": "pr:2187",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-05-06-ux-roast-pr-plan",
+      "to": "pr:2660",
       "type": "touched-by"
     },
     {

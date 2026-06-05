@@ -36,7 +36,7 @@
 ### 2. `feature_flags` table
 
 ```sql
--- apps/server/src/migrations/045_feature_flags.sql
+-- apps/server/src/migrations/NNN_feature_flags.sql  (NNN = наступний вільний слот на момент impl; 045 зайнято coach_memory_table, max міграція вже 074+ — точний номер бере executor per sequential-numbering gate)
 CREATE TABLE feature_flags (
   key            TEXT PRIMARY KEY,
   value          JSONB NOT NULL,
@@ -85,7 +85,7 @@ In-memory cache з 60-сек TTL + invalidation broadcast через `pg_notify(
 
 ## Acceptance criteria (DoD)
 
-- [ ] Migration `045_feature_flags.sql` (CREATE TABLE) merged.
+- [ ] Migration `NNN_feature_flags.sql` (CREATE TABLE) merged.
 - [ ] `packages/feature-flags` workspace з `PgFlagStore` + `InMemoryFlagStore` (для тестів) + `EnvFallbackFlagStore`.
 - [ ] `apps/server/src/env/env.ts` має explicit `FEATURE_FLAGS_BACKEND` enum (`db` | `env`); default `env` на 0% rollout, потім flip → `db`.
 - [ ] `pg_notify` listener в `apps/server/src/index.ts` invalidates cache на `feature_flag_changed`.
@@ -117,7 +117,7 @@ In-memory cache з 60-сек TTL + invalidation broadcast через `pg_notify(
 ## Touchpoints (file:line)
 
 - `apps/server/src/env/env.ts:1-811` — bootstrap-only vs feature-toggle classification
-- `apps/server/src/migrations/` — new `045_feature_flags.sql`
+- `apps/server/src/migrations/` — new `NNN_feature_flags.sql`
 - `apps/server/src/index.ts` — pg_notify listener wiring
 - `packages/feature-flags/` — new workspace
 - `tools/openclaw/src/agents/ops/` — /flag command

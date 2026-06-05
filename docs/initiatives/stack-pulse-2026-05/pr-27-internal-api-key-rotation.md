@@ -35,7 +35,7 @@ Risk:
 ### 1. `internal_api_keys` table
 
 ```sql
--- apps/server/src/migrations/048_internal_api_keys.sql
+-- apps/server/src/migrations/NNN_internal_api_keys.sql  (NNN = наступний вільний слот на момент impl; 048 зайнято tg_topic_archive, max міграція вже 074+ — точний номер бере executor per sequential-numbering gate)
 CREATE TABLE internal_api_keys (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   key_hash        TEXT NOT NULL UNIQUE,        -- bcrypt(actual_key)
@@ -96,7 +96,7 @@ Single env-var `INTERNAL_API_KEY` lишається валідним bootstrap-k
 
 ## Acceptance criteria (DoD)
 
-- [ ] Migration `048_internal_api_keys.sql` merged.
+- [ ] Migration `NNN_internal_api_keys.sql` merged.
 - [ ] `apps/server/src/http/requireInternalApiKey.ts` (rename middleware) працює з DB-lookup + bcrypt.
 - [ ] All `apps/server/src/routes/internal/*` consume new middleware.
 - [ ] `tools/openclaw` має `/internal-key` group commands з role-check `ops`.
@@ -133,7 +133,7 @@ Single env-var `INTERNAL_API_KEY` lишається валідним bootstrap-k
 - `apps/server/src/routes/internal/mono.ts`
 - `apps/server/src/routes/internal/openclaw.ts`
 - `apps/server/src/routes/internal/alerts.ts`
-- `apps/server/src/migrations/048_internal_api_keys.sql` — new
+- `apps/server/src/migrations/NNN_internal_api_keys.sql` — new
 - `apps/server/src/env/env.ts` — INTERNAL_API_KEY lишається 30d (bootstrap)
 - `tools/openclaw/src/agents/ops/internalKey.ts` — new commands
 - `ops/n8n-workflows/03-sentry-alert-routing.json` — update header to use new key

@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-06-04)</title>
+    <title>Sergeant — Knowledge Graph (2026-06-05)</title>
     <style>
       body {
         font-family:
@@ -97,21 +97,21 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-06-04 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-06-05 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
-      <span class="chip chip-adr">adr: <b>58</b></span>
+      <span class="chip chip-adr">adr: <b>59</b></span>
       <span class="chip chip-audit">audit: <b>29</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>47</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
-      <span class="chip chip-pr">pr: <b>198</b></span>
+      <span class="chip chip-pr">pr: <b>199</b></span>
       <span class="chip chip-skill">skill: <b>22</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (236 core)</summary>
+      <summary>Nodes (237 core)</summary>
       <table>
         <thead>
           <tr>
@@ -807,6 +807,18 @@
             </td>
             <td>Active</td>
             <td>number=61 · last_validated=2026-06-01</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0062</code></td>
+            <td>
+              <a href="../../docs/adr/0062-openapi-source-of-truth.md"
+                >ADR-0062: OpenAPI spec source-of-truth — code-first (Zod →
+                OpenAPI)</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=62</td>
           </tr>
           <tr>
             <td>audit</td>
@@ -2189,11 +2201,13 @@
               >
             </td>
             <td>
-              Active — Phase 1 (generation + freshness gate) shipped; ADR-0056 +
-              contract roundtrip tests (`tests/contract/`) + Schemathesis
-              property-based testing deferred. Phase 1 закриває drift-detection
-              use-case (spec ↔ runtime Zod); roundtrip/property-based testing
-              активуються коли з'явиться перший contract-bug у production.
+              Active — Phase 1 (generation + freshness gate) shipped +
+              [ADR-0062](../../adr/0062-openapi-source-of-truth.md)
+              source-of-truth написаний (2026-06-05); contract roundtrip tests
+              (`tests/contract/`) + Schemathesis property-based testing
+              лишаються deferred. Phase 1 закриває drift-detection use-case
+              (spec ↔ runtime Zod); roundtrip/property-based testing активуються
+              коли з'явиться перший contract-bug у production.
             </td>
             <td></td>
           </tr>
@@ -2375,11 +2389,18 @@
               files). **Phase 2 scaffolding** (2026-06-01):
               `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під
               `scripts/__fixtures__/eslint-print-config/` + `pnpm
-              lint:eslint-config-diff` gate. Per-surface extracts (apps/web,
-              apps/server, apps/mobile, apps/mobile-shell, tools/openclaw,
-              packages/\*\*) tracked separately — diff-gate тепер flips на
-              будь-який accidental config drift; extraction PR запускає
-              `--update` після того як intent verified review-ером.
+              lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):**
+              per-surface extraction завершено — surface блоки винесені у
+              `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` /
+              `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` /
+              `eslint.cross-surface.js`; root composition manifest 1128 → 37
+              рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8
+              fixtures match, нуль зміни снапшотів. **Phase 2b deferred:**
+              справжні per-package standalone `apps/&lt;x&gt;/eslint.config.js`
+              + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни
+              resolution-model + diff-gate cd-per-package + re-baseline
+              снапшотів у CI-env (див. § Implementation notes +
+              `docs/development/eslint-config.md` § Phase 2b).
             </td>
             <td></td>
           </tr>
@@ -3517,7 +3538,7 @@
     </details>
 
     <details>
-      <summary>Edges (438 total, first 500 core-to-core)</summary>
+      <summary>Edges (439 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
