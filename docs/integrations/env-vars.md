@@ -283,6 +283,20 @@ Operator-toggle для n8n WF-30 [`30-ai-memory-daily-digest.json`](../../ops/n8
 
 Bearer-токен для захисту `/metrics` (Prometheus scrape endpoint). Якщо не заданий — `/metrics` вимкнений. Для Grafana Agent / Railway scraper: `Authorization: Bearer <METRICS_TOKEN>`.
 
+### `GRAFANA_CLOUD_LOKI_URL`, `GRAFANA_CLOUD_LOKI_USERNAME`, `GRAFANA_CLOUD_LOKI_TOKEN` _(optional)_
+
+Grafana Cloud Loki log sink. Коли всі три задані — pino-логи надсилаються **паралельно** у Railway stdout (існуюча поведінка) і у Loki через `pino-loki` worker-transport. Якщо будь-яка з трьох відсутня — Loki-транспорт не ініціалізується (clean no-op, prod не крашиться).
+
+| Змінна                        | Формат                              | Опис                                                                                                                   |
+| ----------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `GRAFANA_CLOUD_LOKI_URL`      | `https://logs-prod-025.grafana.net` | Базовий host Loki-інстансу (без `/loki/api/v1/push` — додається автоматично).                                          |
+| `GRAFANA_CLOUD_LOKI_USERNAME` | числовий рядок, напр. `123456`      | Loki instance id (basic auth username). З Grafana Cloud → Connections → Data sources → Loki → Details.                 |
+| `GRAFANA_CLOUD_LOKI_TOKEN`    | `glc_…`                             | Grafana Cloud API token (basic auth password). Генерувати: Grafana UI → Administration → Service accounts → Add token. |
+
+**Labels:** `job=sergeant-api`, `env=<NODE_ENV>`, `service=sergeant-api`.
+
+**Безпека:** credentials передаються виключно через `basicAuth` і ніколи не вбудовуються у URL. Pino `formatters.log` (`redactKeysRecursively`) та `redact.paths` виконуються у main thread до передачі рекорду у transport-worker — Loki отримує вже редаговані JSON-рядки (PII та секрети відсутні).
+
 ---
 
 ## 8. HTTP / runtime tuning

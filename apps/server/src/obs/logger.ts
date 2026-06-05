@@ -4,6 +4,7 @@ import { REDACT_KEY_NAMES } from "@sergeant/shared";
 import { env } from "../env/env.js";
 import { hashUserId } from "../lib/userIdHash.js";
 import { als } from "./requestContext.js";
+import { buildLokiTarget, resolveLokiConfig } from "./lokiTransport.js";
 
 /**
  * Єдиний JSON-логер для сервера. Railway, Sentry, Grafana Loki — всі
@@ -202,6 +203,21 @@ export const redactPaths = [
 
 const usePretty = env.LOG_PRETTY === "1";
 
+// Resolve Loki config once at module load. Returns null when any of the three
+// env vars is missing — clean no-op, no crash in production without Loki.
+const lokiConfig = resolveLokiConfig({
+  lokiUrl: env.GRAFANA_CLOUD_LOKI_URL || undefined,
+  username: env.GRAFANA_CLOUD_LOKI_USERNAME,
+  token: env.GRAFANA_CLOUD_LOKI_TOKEN,
+  nodeEnv: env.NODE_ENV,
+});
+
+// Core pino options. Transport is handled separately so we can combine
+// pino-pretty / pino/file (stdout) + pino-loki in a single multi-target
+// transport while keeping formatters.log (redaction) in the main thread.
+// Redaction contract: formatters.log (redactKeysRecursively) + redact.paths
+// both run in the main thread BEFORE the serialised record reaches any
+// transport worker — Loki receives already-redacted NDJSON.
 const pinoOptions: LoggerOptions = {
   level: baseLevel,
   base: {
@@ -253,17 +269,37 @@ const pinoOptions: LoggerOptions = {
     if (ctx.module) out["module"] = ctx.module;
     return out;
   },
-  ...(usePretty
-    ? {
-        transport: {
-          target: "pino-pretty",
-          options: { colorize: true, translateTime: "SYS:HH:MM:ss.l" },
-        },
-      }
-    : {}),
 };
 
-export const logger: Logger = pino(pinoOptions);
+// Build multi-target transport when pretty-printing or Loki is enabled.
+// When both are disabled (default prod with no Loki env), returns undefined
+// and pino writes JSON directly to stdout — preserving existing behaviour.
+function buildTransport(): ReturnType<typeof pino.transport> | undefined {
+  const targets: pino.TransportTargetOptions[] = [];
+
+  if (usePretty) {
+    targets.push({
+      target: "pino-pretty",
+      options: { colorize: true, translateTime: "SYS:HH:MM:ss.l" },
+    });
+  } else if (lokiConfig) {
+    // Explicit stdout target required when Loki is added so logs continue
+    // flowing to Railway stdout alongside the Loki sink.
+    targets.push({ target: "pino/file", options: { destination: 1 } });
+  }
+
+  if (lokiConfig) {
+    targets.push(buildLokiTarget(lokiConfig));
+  }
+
+  if (targets.length === 0) return undefined;
+  return pino.transport({ targets });
+}
+
+const pinoTransport = buildTransport();
+export const logger: Logger = pinoTransport
+  ? pino(pinoOptions, pinoTransport)
+  : pino(pinoOptions);
 
 // Sync pino's runtime level with the debug-window state every 5 seconds.
 // Pino supports `logger.level = newLevel` at runtime without restart.

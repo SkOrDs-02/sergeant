@@ -570,6 +570,20 @@ const envSchema = z.object({
   /** Bearer token для захисту `GET /metrics`. */
   METRICS_TOKEN: z.string().optional(),
 
+  // ── Grafana Cloud / Loki log sink ──────────────────────────────────
+  /**
+   * Base URL Grafana Cloud Loki-інстансу
+   * (e.g. `https://logs-prod-025.grafana.net`).
+   * Без нього Loki-транспорт не ініціалізується (clean no-op).
+   * Всі три `GRAFANA_CLOUD_LOKI_*` мають бути задані разом — часткова
+   * конфігурація ігнорується без помилки.
+   */
+  GRAFANA_CLOUD_LOKI_URL: optionalUrl(),
+  /** Числовий Loki instance id (username для basic auth). */
+  GRAFANA_CLOUD_LOKI_USERNAME: z.string().optional(),
+  /** Grafana Cloud API token (`glc_…`); basic auth password. */
+  GRAFANA_CLOUD_LOKI_TOKEN: z.string().optional(),
+
   // ── OpenTelemetry (Phase 2 з ініціативи 0004) ──────────────────────
   /**
    * OTLP/HTTP collector endpoint (e.g. `https://api.honeycomb.io:443/v1/traces`,
