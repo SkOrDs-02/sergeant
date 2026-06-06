@@ -587,12 +587,14 @@ export const ROUTINE_MIGRATIONS_TABLE = "__migrations";
  * `apps/{web,mobile}/src/modules/routine/lib/sqliteSpike/` can carry
  * on importing the original symbol; new consumers should import
  * `ROUTINE_CLIENT_MIGRATIONS` directly.
+ * @removeBy 2026-09-01
  */
 export const ROUTINE_SPIKE_CLIENT_MIGRATIONS = ROUTINE_CLIENT_MIGRATIONS;
 
 /**
  * @deprecated Stage-3 SPIKE alias for {@link ROUTINE_MIGRATIONS_TABLE}.
  * Kept for the same reason as {@link ROUTINE_SPIKE_CLIENT_MIGRATIONS}.
+ * @removeBy 2026-09-01
  */
 export const ROUTINE_SPIKE_MIGRATIONS_TABLE = ROUTINE_MIGRATIONS_TABLE;
 

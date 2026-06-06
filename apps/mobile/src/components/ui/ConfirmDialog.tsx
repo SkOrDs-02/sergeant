@@ -58,7 +58,10 @@ export interface ConfirmDialogProps {
   description?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
-  /** @deprecated Use variant="destructive" instead */
+  /**
+   * @deprecated Use variant="destructive" instead
+   * @removeBy 2026-09-01
+   */
   danger?: boolean;
   /** Visual variant of the dialog */
   variant?: ConfirmDialogVariant;

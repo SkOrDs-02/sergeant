@@ -66,3 +66,8 @@ artifacts/
 
 # Claude Code agent worktrees (temporary, auto-cleaned)
 .claude/worktrees/
+
+# Local analysis artifacts & sibling worktree (do not commit)
+/knip-report.txt
+/lint-report.txt
+/..wt-0017-s2-reports/

@@ -54,6 +54,7 @@ export interface SettingsGroupProps {
   /**
    * @deprecated Use `icon` instead. Kept for call-site back-compat;
    * when both are provided `icon` wins.
+   * @removeBy 2026-09-01
    */
   emoji?: string;
   /** Module accent for the icon badge. Requires `icon` to be set. */

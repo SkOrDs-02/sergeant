@@ -2,6 +2,8 @@
 // @deprecated  One-shot historical codemod (already applied — see
 // `scripts/codemods/README.md` catalog). Preserved here for forensics +
 // re-run on old branches; not part of the active CI / lint workflow.
+// @removeBy 2026-09-01 — review during next quarterly cleanup; if no
+// re-run use-case remains, delete the script + its catalog entry.
 //
 // Codemod: remove `.js` / `.jsx` extensions from relative and path-aliased
 // imports inside `.ts` / `.tsx` files under `apps/web/src`. External

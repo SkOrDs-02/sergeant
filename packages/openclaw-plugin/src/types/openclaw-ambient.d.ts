@@ -234,6 +234,7 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
    * short-circuit blocking; use `before_model_resolve` / `before_prompt_build`
    * for prompt mutation. Stage 4a audit hook still reads this event but
    * needs migration to `session_start` or `agent_turn_prepare`.
+   * @removeBy 2026-09-01
    */
   export interface PluginHookBeforeAgentStartEvent {
     prompt?: string;

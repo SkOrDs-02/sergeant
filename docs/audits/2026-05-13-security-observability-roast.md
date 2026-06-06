@@ -1,7 +1,7 @@
 # Sergeant — Security & Observability прожарка (2026-05-13)
 
-> **Last validated:** 2026-06-03 (S9 closeout — Sentry init tags `cspMode`/`outboxBootOutcome`/`webVitalsEnabled`, verified sentry.ts:398/404/411). **Next review:** 2026-08-11.
-> **Status:** Closed — усі 11 пунктів (S1–S11) закриті. Документ зберігається як історичний рекорд.
+> **Last validated:** 2026-06-05 by Skords-01 (all S1–S11 follow-ups resolved in code — verified on disk). **Next review:** 2026-09-03.
+> **Status:** Closed
 
 > **Cross-refs:**
 > [`2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](./2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — головне джерело попередніх P0/P1 рекомендацій (CSP, Pino redact, Sentry, contract-тести) ·
@@ -46,7 +46,7 @@
 - ~~**S3** (P1) — SRI ESLint-guard на `<script src="https://...">` без `integrity=`.~~ ✅ Closed у follow-up PR `chore(web): add HTML SRI linter (audit § S3)` — реалізовано як `scripts/lint-html-sri.mjs` + `pnpm lint:html-sri` + CI step у `check` job (custom parse5-based script замість ESLint-правила, бо ESLint не парсить HTML natively).
 - **S4** (P1) — Pino redact-paths wildcard generator до 5 рівнів. Потребує тестового матриксу + узгодження з `docs/security/pii-handling.md`.
 - **S5** (P1) — OTel attribute denylist parity test (`apps/server/src/obs/tracing.ts` ↔ `@sergeant/shared/lib/pii.ts`).
-- ~~**S7** (P2) — Sentry init tags: `cspMode`, `outboxBootOutcome` initial value, `webVitalsEnabled`.~~ ✅ Closed 2026-06-03 — verified sentry.ts:398/404/411 (див. §S9).
+- **S7** (P2) — Sentry init tags: `cspMode`, `outboxBootOutcome` initial value, `webVitalsEnabled`.
 - **S8** (P2) — Contract-тест coverage поширити з `/api/me` на `/api/auth/session`, `/api/account/recovery/*`, `/api/csp-report`.
 
 ## P0 — потрібно закрити в найближчий спринт
@@ -113,9 +113,8 @@
 
 ## P2 — закрити у наступних аудитах
 
-### S9 — Sentry init tags (cspMode, outboxBootOutcome initial) ✅ Closed
+### S9 — Sentry init tags (cspMode, outboxBootOutcome initial)
 
-- **Status:** ✅ Closed 2026-06-03 — verified `apps/web/src/core/observability/sentry.ts:398` (`setTag("cspMode", cspReportOnly ? "report-only" : "enforce")`, читає `import.meta.env.VITE_CSP_REPORT_ONLY`), `:404` (`setTag("outboxBootOutcome", "pending")` sentinel, перезаписується `singleton.ts` після boot sync-engine), `:411` (`setTag("webVitalsEnabled", ...)` дзеркалить guard у `initWebVitals`).
 - **Change:** `apps/web/src/core/observability/sentry.ts:163` — після `setTag('platform', ...)` додати `setTag('cspMode', cspReportOnly ? 'report-only' : 'enforce')` (читати з `import.meta.env.VITE_CSP_REPORT_ONLY`).
 - **Why:** Sentry search `cspMode:enforce AND directive:script-src` дозволяє за хвилину побачити, чи CSP-tightening регресував. Без тегу — треба фільтрувати руками.
 

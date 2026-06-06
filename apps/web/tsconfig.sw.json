@@ -6,6 +6,7 @@
     "lib": ["ES2022", "WebWorker"],
     "strict": false,
     "noImplicitAny": false,
+    "noUncheckedIndexedAccess": true,
     "noEmit": true,
     "esModuleInterop": true,
     "isolatedModules": true,

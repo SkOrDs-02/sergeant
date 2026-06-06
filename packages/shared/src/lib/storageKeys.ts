@@ -25,7 +25,10 @@ export const STORAGE_KEYS = {
   // ─── Hub ──────────────────────────────────────────────────────────────
   DARK_MODE: "hub_dark_mode_v1",
   LAST_MODULE: "hub_last_module",
-  /** @deprecated Stage 8 PR #057r-tombstone — use SQLite `routine_*` tables via `loadRoutineState()`. */
+  /**
+   * @deprecated Stage 8 PR #057r-tombstone — use SQLite `routine_*` tables via `loadRoutineState()`.
+   * @removeBy 2026-09-01
+   */
   ROUTINE: "hub_routine_v1",
   ROUTINE_MAIN_TAB: "hub_routine_main_tab_v1",
   NUTRITION_MAIN_TAB: "hub_nutrition_main_tab_v1",
@@ -96,37 +99,83 @@ export const STORAGE_KEYS = {
    * `useFinykStorageSlots.ts`); dual-write pipeline writes до
    * `finyk_prefs.show_balance` — production callsite-ів `setItem` для
    * `finyk_show_balance_v1` більше нема.
+   * @removeBy 2026-09-01
    */
   FINYK_SHOW_BALANCE: "finyk_show_balance_v1",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_hidden_accounts`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_hidden_accounts`.
+   * @removeBy 2026-09-01
+   */
   FINYK_HIDDEN: "finyk_hidden",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_hidden_transactions`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_hidden_transactions`.
+   * @removeBy 2026-09-01
+   */
   FINYK_HIDDEN_TXS: "finyk_hidden_txs",
-  /** @deprecated Stage 13 PR #075 — use SQLite `finyk_prefs.excluded_stat_tx_ids_json`. */
+  /**
+   * @deprecated Stage 13 PR #075 — use SQLite `finyk_prefs.excluded_stat_tx_ids_json`.
+   * @removeBy 2026-09-01
+   */
   FINYK_EXCLUDED_STAT_TXS: "finyk_excluded_stat_txs",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_budgets`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_budgets`.
+   * @removeBy 2026-09-01
+   */
   FINYK_BUDGETS: "finyk_budgets",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_subscriptions`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_subscriptions`.
+   * @removeBy 2026-09-01
+   */
   FINYK_SUBS: "finyk_subs",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_assets`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_assets`.
+   * @removeBy 2026-09-01
+   */
   FINYK_ASSETS: "finyk_assets",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_debts`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_debts`.
+   * @removeBy 2026-09-01
+   */
   FINYK_DEBTS: "finyk_debts",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_receivables`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_receivables`.
+   * @removeBy 2026-09-01
+   */
   FINYK_RECV: "finyk_recv",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_prefs.monthly_plan_json`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_prefs.monthly_plan_json`.
+   * @removeBy 2026-09-01
+   */
   FINYK_MONTHLY_PLAN: "finyk_monthly_plan",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_tx_categories`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_tx_categories`.
+   * @removeBy 2026-09-01
+   */
   FINYK_TX_CATS: "finyk_tx_cats",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_tx_splits`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_tx_splits`.
+   * @removeBy 2026-09-01
+   */
   FINYK_TX_SPLITS: "finyk_tx_splits",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_mono_debt_links`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_mono_debt_links`.
+   * @removeBy 2026-09-01
+   */
   FINYK_MONO_DEBT_LINKED: "finyk_mono_debt_linked",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_networth_history`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_networth_history`.
+   * @removeBy 2026-09-01
+   */
   FINYK_NETWORTH_HISTORY: "finyk_networth_history",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_custom_categories`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_custom_categories`.
+   * @removeBy 2026-09-01
+   */
   FINYK_CUSTOM_CATS: "finyk_custom_cats_v1",
-  /** @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_manual_expenses`. */
+  /**
+   * @deprecated Stage 8 PR #057k-tombstone — use SQLite `finyk_manual_expenses`.
+   * @removeBy 2026-09-01
+   */
   FINYK_MANUAL_EXPENSES: "finyk_manual_expenses_v1",
   FINYK_TX_FILTERS: "finyk_tx_filters_v1",
   // Per-day collapse state for the Transactions screen. Map of
@@ -137,26 +186,50 @@ export const STORAGE_KEYS = {
   FINYK_TX_DAY_COLLAPSE: "finyk_tx_day_collapse_v1",
 
   // ─── Fizruk ───────────────────────────────────────────────────────────
-  /** @deprecated Stage 8 PR #057f-tombstone — use SQLite `fizruk_workouts`. */
+  /**
+   * @deprecated Stage 8 PR #057f-tombstone — use SQLite `fizruk_workouts`.
+   * @removeBy 2026-09-01
+   */
   FIZRUK_WORKOUTS: "fizruk_workouts_v1",
   FIZRUK_EXERCISES: "fizruk_exercises_v1",
-  /** @deprecated Stage 8 PR #057f-tombstone — use SQLite `fizruk_custom_exercises`. */
+  /**
+   * @deprecated Stage 8 PR #057f-tombstone — use SQLite `fizruk_custom_exercises`.
+   * @removeBy 2026-09-01
+   */
   FIZRUK_CUSTOM_EXERCISES: "fizruk_custom_exercises_v1",
-  /** @deprecated Stage 12 PR #057f-tombstone-mobile-stage12 — use SQLite `fizruk_workout_templates`. */
+  /**
+   * @deprecated Stage 12 PR #057f-tombstone-mobile-stage12 — use SQLite `fizruk_workout_templates`.
+   * @removeBy 2026-09-01
+   */
   FIZRUK_TEMPLATES: "fizruk_workout_templates_v1",
   FIZRUK_PLAN: "fizruk-storage-monthly-plan",
   FIZRUK_MONTHLY_PLAN: "fizruk_monthly_plan_v1",
-  /** @deprecated Stage 12.5 PR #057f2-tombstone-mobile-stage12-5 — use SQLite `fizruk_plan_templates`. */
+  /**
+   * @deprecated Stage 12.5 PR #057f2-tombstone-mobile-stage12-5 — use SQLite `fizruk_plan_templates`.
+   * @removeBy 2026-09-01
+   */
   FIZRUK_PLAN_TEMPLATE: "fizruk_plan_template_v1",
-  /** @deprecated Stage 12.5 PR #057f2-tombstone-mobile-stage12-5 — use SQLite `fizruk_wellbeing`. */
+  /**
+   * @deprecated Stage 12.5 PR #057f2-tombstone-mobile-stage12-5 — use SQLite `fizruk_wellbeing`.
+   * @removeBy 2026-09-01
+   */
   FIZRUK_WELLBEING: "fizruk_wellbeing_v1",
-  /** @deprecated Stage 8 PR #057f-tombstone — use SQLite `fizruk_measurements`. */
+  /**
+   * @deprecated Stage 8 PR #057f-tombstone — use SQLite `fizruk_measurements`.
+   * @removeBy 2026-09-01
+   */
   FIZRUK_MEASUREMENTS: "fizruk_measurements_v1",
   FIZRUK_SELECTED_TEMPLATE: "fizruk_selected_template_id_v1",
   FIZRUK_ACTIVE_WORKOUT: "fizruk_active_workout_id_v1",
-  /** @deprecated Stage 12.5 PR #057f2-tombstone-mobile-stage12-5 — use SQLite `fizruk_programs`. */
+  /**
+   * @deprecated Stage 12.5 PR #057f2-tombstone-mobile-stage12-5 — use SQLite `fizruk_programs`.
+   * @removeBy 2026-09-01
+   */
   FIZRUK_ACTIVE_PROGRAM: "fizruk_active_program_id_v1",
-  /** @deprecated Stage 12 PR #057f-tombstone-mobile-stage12 — use SQLite `fizruk_daily_log`. */
+  /**
+   * @deprecated Stage 12 PR #057f-tombstone-mobile-stage12 — use SQLite `fizruk_daily_log`.
+   * @removeBy 2026-09-01
+   */
   FIZRUK_DAILY_LOG: "fizruk_daily_log_v1",
   FIZRUK_REST_SETTINGS: "fizruk_rest_settings_v1",
 
@@ -170,13 +243,25 @@ export const STORAGE_KEYS = {
   // deleted) so legacy cross-module reads / fixtures still resolve to
   // the same string literals. **Do NOT add new reads/writes against
   // these keys.**
-  /** @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_meals`. */
+  /**
+   * @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_meals`.
+   * @removeBy 2026-09-01
+   */
   NUTRITION_LOG: "nutrition_log_v1",
-  /** @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_pantries` / `nutrition_pantry_items`. */
+  /**
+   * @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_pantries` / `nutrition_pantry_items`.
+   * @removeBy 2026-09-01
+   */
   NUTRITION_PANTRIES: "nutrition_pantries_v1",
-  /** @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_prefs.active_pantry_id`. */
+  /**
+   * @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_prefs.active_pantry_id`.
+   * @removeBy 2026-09-01
+   */
   NUTRITION_ACTIVE_PANTRY: "nutrition_active_pantry_v1",
-  /** @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_prefs`. */
+  /**
+   * @deprecated Stage 8 PR #057n-tombstone — use SQLite `nutrition_prefs`.
+   * @removeBy 2026-09-01
+   */
   NUTRITION_PREFS: "nutrition_prefs_v1",
   /**
    * Локальна книга збережених рецептів (mobile MMKV; web — IndexedDB).
@@ -185,6 +270,7 @@ export const STORAGE_KEYS = {
    * `nutrition_recipes` IndexedDB store inside `sergeant-db` and uses
    * its own dual-write/residual-import path.
    * @deprecated Stage 13 PR #073 — use SQLite `nutrition_recipes`.
+   * @removeBy 2026-09-01
    */
   NUTRITION_SAVED_RECIPES: "nutrition_recipe_book_v1",
 

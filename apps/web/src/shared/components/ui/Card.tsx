@@ -77,6 +77,7 @@ export type CardProminence =
  * @deprecated Prefer the orthogonal `module` + `prominence` props.
  * The string union is kept for back-compat with existing call-sites
  * and is internally mapped to the new API.
+ * @removeBy 2026-09-01
  */
 export type CardVariant =
   | "default"
@@ -264,6 +265,7 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
    * @deprecated Prefer `module` + `prominence`. Kept for back-compat
    * with existing call-sites; module-style variants are mapped to the
    * new API internally.
+   * @removeBy 2026-09-01
    */
   variant?: CardVariant | undefined;
   module?: CardModule | undefined;
