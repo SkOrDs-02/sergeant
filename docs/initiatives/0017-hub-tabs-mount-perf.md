@@ -1,6 +1,6 @@
 # 0017 — Hub Settings & Reports mount perf
 
-> **Last validated:** 2026-05-29. **Next review:** 2026-08-27.
+> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-08-27.
 > **Status:** In progress — code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worker) explicitly skipped pending next 30-day RUM cut on `aggregateReport` P95 > 50 ms — re-opens as a discrete follow-up only if the threshold trips. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.
 > **Agent-ready:** blocked
 > **Priority:** P1 (Sprint 1 candidate after [0016](./archive/_0016-changelog-release-cut.md))
@@ -152,8 +152,40 @@
 
 - [ ] **2026-07-02 (≈ 30-day RUM cut):** confirm `hub_tab_switch_perf` Settings P50 ≤ 2 s + P95 ≤ 3 s, Reports P50 ≤ 1.5 s + P95 ≤ 3 s, long-task P95 ≤ 5. Owner pins numbers in this Outcome.
 - [ ] **2026-07-02 (≈ 30-day RUM cut):** confirm `aggregateReport` P95 ≤ 50 ms; if > 50 ms, re-open Sprint 3 (Web Worker for aggregate) as a discrete follow-up against this initiative.
-- [ ] **2026-07-02:** update `scripts/check-bundle-size.mjs` main-chunk budget to reflect post-Sprint-1/2 reality (target reduction −50 KB on `index-` budget; needs `pnpm build:web` + `dist/assets` measurement, deferred so the budget tightens against a stable post-launch baseline rather than the in-flight state).
+- [x] **ASSESSED & DEFERRED (2026-06-06):** tighten `scripts/check-bundle-size.mjs` `index-` budget to ~30 KB — **not actionable at current reality.** See § Bundle-size findings 2026-06-06 below. The script is informational; the 80 KB budget line is left as-is rather than set to a false target.
 - [ ] **After RUM targets pinned:** rename file to `_0017-hub-tabs-mount-perf.md` (Status → Done) per [`docs/initiatives/README.md` Completed-prefix](./README.md#completed-prefix--nnnn-) and update the active-initiative row in `README.md`.
+
+### Bundle-size findings 2026-06-06
+
+**Context:** the Carry-over item above called for tightening the `index-` budget in `scripts/check-bundle-size.mjs` once a stable post-Sprint-1/2 baseline was available. CI measurement on main (post-baseline-fix, "Vite build smoke") provided that baseline. Active index-dieting was also explored via two PRs. Results recorded here for the record.
+
+**Measured baseline — web entry `index-*.js`:**
+
+- Raw: **679.9 KB**
+- Gzip: **193.99 KB**
+
+The initiative assumed "~30 KB index after Sprint 1+2 split". That assumption was wrong. The real index is ~194 KB gzip — approximately 2.4× over the script's own 80 KB `index-` budget line. `scripts/check-bundle-size.mjs` estimates gzip as `raw × ratio` and is effectively informational; it is **not a blocking CI gate**.
+
+**Lever results (CI-measured):**
+
+| Lever | PR | Status | Index delta |
+|---|---|---|---|
+| WhatsNewModal lazy | [#3399](https://github.com/Skords-01/Sergeant/pull/3399) | CLOSED | **0 KB** — no measurable win |
+| CommandPalette + KeyboardShortcutsModal structural UI extract | [#3403](https://github.com/Skords-01/Sergeant/pull/3403) | OPEN | index 193.99 → **191.64 KB gzip (−2.35 KB)**; new lazy chunks: CommandPaletteUI 2.61 KB gzip, KeyboardShortcutsModalUI 1.56 KB gzip |
+
+**Diagnosis:** the 194 KB index is dominated by `uk.ts` (47 KB raw, eager — every eager UI surface imports the full locale catalog) plus the eager hub app-shell. Small overlay/modal components are not the bottleneck. Static import-analysis overestimated overlay levers by ~3–4×.
+
+**Remaining levers and disposition:**
+
+- **`uk.ts` locale split** — ~8–12 KB gzip potential, but requires i18n lazy-loading infrastructure (split catalog + per-group loader + Suspense) and risks a flash of untranslated strings (risk: MED-HIGH). Deferred — poor ROI/risk ratio; needs a human-ratified "first-paint-critical keys" curation before implementation.
+- **Route-level lazy** — DEAD END. Blocked by the React Router 7 location-context bug tracked in initiative [0006](./0006-frontend-routing-and-code-split.md) Phase 5.
+- **Real further reduction** = fix the RR7 blocker (separate initiative) or implement the i18n refactor above.
+
+**Net outcome:** bundle-shrink push delivered **~2.35 KB gzip** (PR #3403). Active index-dieting stopped here as low-ROI. 191.64 KB initial JS accepted for now.
+
+**Script action:** `scripts/check-bundle-size.mjs` `index-` budget left at its current value (80 KB). Tightening it to 30 KB would encode a false target given the measured reality; the script remains informational until the i18n or RR7 work lands and the index meaningfully moves.
+
+---
 
 ## Критерії DONE
 
