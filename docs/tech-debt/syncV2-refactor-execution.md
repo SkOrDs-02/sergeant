@@ -1,6 +1,9 @@
 ﻿<!-- AUTO-GENERATED -->
 # syncV2.ts Refactoring Plan — Stage 2: Apply Functions Extraction
 
+> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-09-06.
+> **Status:** Active
+
 ## Ціль 
 Розділити 3096-рядковий файл на модулі ≤600 рядків.
 

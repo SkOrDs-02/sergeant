@@ -1,10 +1,12 @@
 # ADR-0062: syncV2 Module Decomposition Strategy
 
-**Дата:** 2026-06-03  
-**Статус:** Accepted  
-**Автор:** @claude  
-**Категорія:** Architecture Refactoring  
-**Hard Rule:** #18 (Module-size discipline — max-lines: 600)
+- **Status:** Accepted
+- **Date:** 2026-06-03
+- **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-09-06.
+- **Author:** @claude
+- **Category:** Architecture Refactoring
+- **Supersedes:** —
+- **Hard Rule:** #18 (Module-size discipline — max-lines: 600)
 
 ## Контекст
 
