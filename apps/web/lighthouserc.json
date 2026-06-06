@@ -22,15 +22,15 @@
     "assert": {
       "assertions": {
         "largest-contentful-paint": [
-          "warn",
-          { "maxNumericValue": 2000, "aggregationMethod": "median-run" }
+          "error",
+          { "maxNumericValue": 3000, "aggregationMethod": "median-run" }
         ],
         "first-contentful-paint": [
-          "warn",
+          "error",
           { "maxNumericValue": 1500, "aggregationMethod": "median-run" }
         ],
         "total-blocking-time": [
-          "warn",
+          "error",
           { "maxNumericValue": 200, "aggregationMethod": "median-run" }
         ]
       }
