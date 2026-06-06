@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import type { Request, Response } from "express";
 import { cachingMiddleware, noStoreMiddleware, publicCacheMiddleware } from "./cacheMiddleware";
 
@@ -6,9 +6,9 @@ describe("cacheMiddleware", () => {
   const createMockRes = (): Response => {
     const headers: Record<string, string> = {};
     return {
-      setHeader: (name: string, value: string) => {
+      setHeader: vi.fn((name: string, value: string) => {
         headers[name] = value;
-      },
+      }),
     } as unknown as Response;
   };
 
