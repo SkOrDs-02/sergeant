@@ -15,6 +15,14 @@ export const baseVitestConfig = {
   test: {
     environment: "node",
     passWithNoTests: true,
+    // Flaky-test quarantine (item #20): retry once on CI only. A genuinely
+    // green test never retries; a test that flips green on the second run is
+    // surfaced by vitest's "flaky" annotation in the run summary so it can be
+    // triaged and added to the quarantine list (see docs/testing/README.md →
+    // "Flaky-test quarantine"). Local runs keep retry: 0 so flakes are not
+    // silently masked while writing tests. Configs that hand-roll their own
+    // `test` block (apps/web, apps/server) set the same value inline.
+    retry: process.env.CI ? 1 : 0,
   },
 };
 
