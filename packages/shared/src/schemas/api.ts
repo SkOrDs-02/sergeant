@@ -37,6 +37,58 @@ export type User = z.infer<typeof UserSchema>;
 export const MeResponseSchema = z.object({ user: UserSchema });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
 
+// ────────────────────── Data rights / /api/me/* ──────────────────────
+export const UserPreferencesSchema = z.object({
+  analytics: z.boolean(),
+  aiMemory: z.boolean(),
+  pushNotifications: z.boolean(),
+  updatedAt: z.string().datetime({ offset: true }).nullable(),
+});
+export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
+
+export const UserPreferencesPatchSchema = z
+  .object({
+    analytics: z.boolean().optional(),
+    aiMemory: z.boolean().optional(),
+    pushNotifications: z.boolean().optional(),
+  })
+  .strict();
+export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;
+
+const ExportRecordSchema = z.record(z.string(), z.unknown());
+
+export const MeExportResponseSchema = z.object({
+  generatedAt: z.string().datetime({ offset: true }),
+  user: UserSchema,
+  preferences: UserPreferencesSchema,
+  data: z.object({
+    moduleData: z.array(ExportRecordSchema),
+    mono: z.object({
+      connection: ExportRecordSchema.nullable(),
+      accounts: z.array(ExportRecordSchema),
+      transactions: z.array(ExportRecordSchema),
+    }),
+    billing: z.object({
+      subscriptions: z.array(ExportRecordSchema),
+    }),
+    push: z.object({
+      webSubscriptions: z.array(ExportRecordSchema),
+      devices: z.array(ExportRecordSchema),
+    }),
+    ai: z.object({
+      usageDaily: z.array(ExportRecordSchema),
+      memories: z.array(ExportRecordSchema),
+    }),
+  }),
+});
+export type MeExportResponse = z.infer<typeof MeExportResponseSchema>;
+
+export const MeDeleteResponseSchema = z.object({
+  ok: z.literal(true),
+  deletedAt: z.string().datetime({ offset: true }),
+});
+export type MeDeleteResponse = z.infer<typeof MeDeleteResponseSchema>;
+
 /** Модерація: чат-повідомлення. */
 export const ChatMessage = z.object({
   role: z.enum(["user", "assistant"]),

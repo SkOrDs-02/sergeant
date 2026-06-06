@@ -189,6 +189,131 @@ describe("/api/v1/me — cookie і bearer резолвляться однако�
   });
 });
 
+describe("/api/v1/me data rights", () => {
+  const user = {
+    id: "user_rights",
+    email: "rights@example.com",
+    name: "Rights User",
+    image: null,
+    emailVerified: true,
+  };
+
+  it("GET /api/v1/me/preferences без auth → 401", async () => {
+    const app = createApp();
+    const res = await request(app).get("/api/v1/me/preferences");
+    expect(res.status).toBe(401);
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("GET /api/v1/me/preferences повертає defaults, якщо row ще нема", async () => {
+    getSessionUserMock.mockResolvedValueOnce(user);
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    const app = createApp();
+    const res = await request(app)
+      .get("/api/v1/me/preferences")
+      .set("Authorization", "Bearer x");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      analytics: true,
+      aiMemory: true,
+      pushNotifications: false,
+      updatedAt: null,
+    });
+  });
+
+  it("PATCH /api/v1/me/preferences валідовує partial patch", async () => {
+    getSessionUserMock.mockResolvedValueOnce(user);
+    queryMock
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            analytics: false,
+            ai_memory: true,
+            push_notifications: false,
+            updated_at: new Date("2026-06-06T10:05:00.000Z"),
+          },
+        ],
+      });
+    const app = createApp();
+    const res = await request(app)
+      .patch("/api/v1/me/preferences")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer x")
+      .send({ analytics: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      analytics: false,
+      aiMemory: true,
+      pushNotifications: false,
+      updatedAt: "2026-06-06T10:05:00.000Z",
+    });
+    const [sql, params] = queryMock.mock.calls[1]!;
+    expect(String(sql)).toMatch(/INSERT INTO user_preferences/);
+    expect(params).toEqual([user.id, false, true, false]);
+  });
+
+  it("PATCH /api/v1/me/preferences відхиляє невідомий shape", async () => {
+    getSessionUserMock.mockResolvedValueOnce(user);
+    const app = createApp();
+    const res = await request(app)
+      .patch("/api/v1/me/preferences")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer x")
+      .send({ analytics: "yes" });
+
+    expect(res.status).toBe(400);
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("GET /api/v1/me/export не вибирає raw secrets/tokens", async () => {
+    getSessionUserMock.mockResolvedValueOnce(user);
+    queryMock.mockResolvedValue({ rows: [] });
+    const app = createApp();
+    const res = await request(app)
+      .get("/api/v1/me/export")
+      .set("Authorization", "Bearer x");
+
+    expect(res.status).toBe(200);
+    expect(res.body.user).toMatchObject({ id: user.id, email: user.email });
+    expect(res.body.data).toMatchObject({
+      mono: { connection: null, accounts: [], transactions: [] },
+      billing: { subscriptions: [] },
+      push: { webSubscriptions: [], devices: [] },
+      ai: { usageDaily: [], memories: [] },
+    });
+    const sql = queryMock.mock.calls.map((call) => String(call[0])).join("\n");
+    expect(sql).not.toMatch(/token_ciphertext|webhook_secret|token_hash/);
+  });
+
+  it("DELETE /api/v1/me запускає deletion transaction", async () => {
+    getSessionUserMock.mockResolvedValueOnce(user);
+    const client = {
+      query: vi.fn().mockResolvedValue({ rows: [], rowCount: 1 }),
+      release: vi.fn(),
+    };
+    mockPool.connect.mockResolvedValueOnce(client);
+    const app = createApp();
+    const res = await request(app)
+      .delete("/api/v1/me")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer x");
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(client.query.mock.calls.map((call) => String(call[0]))).toEqual([
+      "BEGIN",
+      expect.stringMatching(/UPDATE subscriptions/),
+      expect.stringMatching(/UPDATE ai_memories/),
+      expect.stringMatching(/DELETE FROM "user"/),
+      "COMMIT",
+    ]);
+    expect(client.release).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("POST /api/v1/push/register", () => {
   const user = { id: "user_abc" };
 

@@ -90,6 +90,13 @@ describe("renderStandaloneRoute()", () => {
     expect(callRoute("/finykfoo")).not.toBeNull();
     expect(callRoute("/nutritionish")).not.toBeNull();
   });
+
+  it("renders public legal pages without auth", () => {
+    expect(callRoute("/legal/privacy")).not.toBeNull();
+    expect(callRoute("/legal/terms")).not.toBeNull();
+    expect(callRoute("/legal/cookies")).not.toBeNull();
+    expect(callRoute("/legal/offer")).not.toBeNull();
+  });
 });
 
 describe("STANDALONE_ROUTE_PATHS ↔ KNOWN_PATHS exhaustiveness (Web deep-dive §1.2)", () => {

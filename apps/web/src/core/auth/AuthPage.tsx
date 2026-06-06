@@ -12,6 +12,7 @@ import { GoogleSignInButton } from "./GoogleSignInButton";
 import { AppleSignInButton } from "./AppleSignInButton";
 import { useForgotPassword } from "./useForgotPassword";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
+import { LegalLinks } from "../legal/LegalLinks";
 
 interface AuthPageProps {
   onContinueWithoutAccount?: () => void;
@@ -180,6 +181,8 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               </p>
             </div>
           )}
+
+          <LegalLinks compact className="mt-5" />
         </div>
       </MeshBackground>
     </>

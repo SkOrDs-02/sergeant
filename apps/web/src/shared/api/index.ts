@@ -48,6 +48,7 @@ export const monoWebhookApi = apiClient.monoWebhook;
 export const privatApi = apiClient.privat;
 export const waitlistApi = apiClient.waitlist;
 export const billingApi = apiClient.billing;
+export const meApi = apiClient.me;
 export const weeklyDigestApi = apiClient.weeklyDigest;
 export const transcribeApi = apiClient.transcribe;
 export const webVitalsApi = apiClient.webVitals;
@@ -118,7 +119,11 @@ export type {
   QueryValue,
   RequestOptions,
   TokenProvider,
+  MeDeleteResponse,
+  MeExportResponse,
   WeeklyDigestPayload,
   WeeklyDigestReport,
   WeeklyDigestResponse,
+  UserPreferences,
+  UserPreferencesPatch,
 } from "@sergeant/api-client";
