@@ -159,3 +159,9 @@ export * from "./contract-fixtures";
 // BroadcastChannel-based cross-context navigation для mobile-shell → web;
 // з null-channel fallback для старих WebView без BroadcastChannel-у.
 export * from "./shell/deepLinkChannel";
+
+// Origin-agnostic Sentry release tag (`sergeant@<short-sha>`) — single source
+// of truth shared across server / web / mobile SDKs so one deploy maps to one
+// Sentry release regardless of origin. See PR-25 in
+// `docs/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md` (R3).
+export * from "./observability/release";

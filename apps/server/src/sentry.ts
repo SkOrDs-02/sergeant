@@ -4,6 +4,7 @@ import {
   scrubPII as sharedScrubPII,
   scrubPIIString,
   redactSensitiveQueryParams,
+  formatRelease,
 } from "@sergeant/shared";
 import { als } from "./obs/requestContext.js";
 import { redactSensitiveUrl } from "./obs/sensitiveUrl.js";
@@ -351,7 +352,12 @@ export const SENTRY_DENY_URLS: readonly (string | RegExp)[] = [
 // імпортується ПЕРШИМ — завдяки depth-first evaluation ESM-імпортів тіло
 // `sentry.js` виконається до того, як станеться `import express`.
 if (dsn) {
-  const release = resolveSentryRelease();
+  // Unify the runtime release tag to the origin-agnostic `sergeant@<short-sha>`
+  // form (`@sergeant/shared` SSOT) so one deploy maps to one Sentry release
+  // across server / web / mobile SDKs. `resolveSentryRelease()` stays the bare
+  // SHA resolver (its cascade is unit-tested directly); `formatRelease` wraps
+  // it for the actual SDK init. See PR-25 (`stack-pulse-2026-05`).
+  const release = formatRelease(resolveSentryRelease());
   Sentry.init({
     dsn,
     environment:

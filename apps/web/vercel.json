@@ -94,6 +94,14 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "fizruk.vercel.app" }],
+      "destination": "https://sergeant.vercel.app/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!api/|\\.well-known/).*)",
