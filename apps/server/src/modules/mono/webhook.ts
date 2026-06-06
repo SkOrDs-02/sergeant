@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import type { QueryResult } from "pg";
 import { z } from "zod";
 import { pool, query } from "../../db.js";
-import { logger } from "../../obs/logger.js";
+import { logger, serializeError } from "../../obs/logger.js";
 import {
   monoWebhookReceivedTotal,
   monoWebhookDurationMs,
@@ -440,7 +440,13 @@ export async function webhookHandler(
     const ms = elapsedMs(start);
     monoWebhookReceivedTotal.inc({ status: "error" });
     monoWebhookDurationMs.observe({ status: "error" }, ms);
-    logger.error({ msg: "mono_webhook_error", err });
+    // serializeError strips pg-error fields (detail/where/internalQuery/table)
+    // that inline raw row values — transaction description, counterName,
+    // counterIban — which the key-name redactor cannot catch by field name.
+    logger.error({
+      msg: "mono_webhook_error",
+      err: serializeError(err, { includeStack: true }),
+    });
     throw err;
   } finally {
     client.release();

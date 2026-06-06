@@ -119,6 +119,20 @@ export interface SectionHeadingProps extends HTMLAttributes<HTMLElement> {
   as?: ElementType;
   /** Optional right-aligned slot for actions/links. */
   action?: ReactNode;
+  /**
+   * Optional small DS eyebrow label rendered above the main heading. This
+   * pairs a compact uppercase kicker with a larger title in one primitive
+   * so call-sites stop hand-rolling the raw `uppercase tracking-* text-*`
+   * combo (the `no-eyebrow-drift` pattern) for hero / card kickers. The
+   * eyebrow uses the `2xs` size tokens; tone/tag/id are tunable below.
+   */
+  eyebrow?: ReactNode;
+  /** Colour variant for the `eyebrow` slot. Defaults to `subtle`. */
+  eyebrowTone?: SectionHeadingVariant;
+  /** Semantic tag for the `eyebrow` slot. Defaults to `p`. */
+  eyebrowAs?: ElementType;
+  /** `id` for the `eyebrow` slot — wire it to `aria-labelledby` on a group. */
+  eyebrowId?: string;
   children?: ReactNode;
   /** When `as="button"`, allow specifying the button type. */
   type?: "button" | "submit" | "reset";
@@ -133,6 +147,10 @@ export function SectionHeading({
   weight,
   as: Component = "h3",
   action,
+  eyebrow,
+  eyebrowTone = "subtle",
+  eyebrowAs: EyebrowComponent = "p",
+  eyebrowId,
   children,
   ...props
 }: SectionHeadingProps) {
@@ -144,13 +162,41 @@ export function SectionHeading({
     variants[resolvedVariant],
   );
 
+  const eyebrowNode =
+    eyebrow != null ? (
+      <EyebrowComponent
+        id={eyebrowId}
+        className={cn(
+          sizeTokens["2xs"],
+          weightTokens[defaultWeightForSize["2xs"]],
+          variants[eyebrowTone],
+        )}
+      >
+        {eyebrow}
+      </EyebrowComponent>
+    ) : null;
+
   if (action) {
     return (
       <div className={cn("flex items-center justify-between gap-3", className)}>
+        <div>
+          {eyebrowNode}
+          <Component className={base} {...props}>
+            {children}
+          </Component>
+        </div>
+        <div className="shrink-0">{action}</div>
+      </div>
+    );
+  }
+
+  if (eyebrowNode) {
+    return (
+      <div className={className}>
+        {eyebrowNode}
         <Component className={base} {...props}>
           {children}
         </Component>
-        <div className="shrink-0">{action}</div>
       </div>
     );
   }

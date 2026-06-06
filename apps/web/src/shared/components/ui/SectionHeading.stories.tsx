@@ -90,3 +90,18 @@ export const SemiboldFinyk: Story = {
     children: "Категорії витрат",
   },
 };
+
+/**
+ * `eyebrow`-slot — компактний kicker над великим заголовком в одному
+ * примітиві. Замінює ручний `uppercase tracking-* text-*` патерн на
+ * hero / card kicker-ах. `eyebrowTone` / `eyebrowAs` / `eyebrowId`
+ * тюнять колір / тег / id (для `aria-labelledby`).
+ */
+export const WithEyebrow: Story = {
+  args: {
+    size: "lg",
+    eyebrow: "Sergeant",
+    eyebrowTone: "accent",
+    children: "Один помічник для всіх звичок",
+  },
+};

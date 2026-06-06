@@ -20,6 +20,9 @@ vi.mock("../../obs/logger.js", () => ({
     warn: vi.fn(),
     error: vi.fn(),
   },
+  serializeError: vi.fn((err: unknown) => ({
+    message: err instanceof Error ? err.message : String(err),
+  })),
 }));
 
 vi.mock("../../obs/metrics.js", () => ({

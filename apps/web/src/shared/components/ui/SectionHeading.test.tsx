@@ -108,4 +108,58 @@ describe("SectionHeading", () => {
     expect(norm.querySelector("h3")!.className).toContain("font-normal");
     expect(norm.querySelector("h3")!.className).not.toContain("font-bold");
   });
+
+  it("no `eyebrow` keeps the bare heading (no wrapper div)", () => {
+    const { container } = render(<SectionHeading>Розділ</SectionHeading>);
+    expect(container.firstElementChild!.tagName).toBe("H3");
+  });
+
+  it("`eyebrow` renders a compact 2xs kicker above the heading", () => {
+    const { container, getByText } = render(
+      <SectionHeading eyebrow="Маркетинг">Заголовок</SectionHeading>,
+    );
+    const wrapper = container.firstElementChild!;
+    expect(wrapper.tagName).toBe("DIV");
+    const kicker = getByText("Маркетинг");
+    expect(kicker.tagName).toBe("P");
+    expect(kicker.className).toContain("text-style-caption");
+    expect(kicker.className).toContain("uppercase");
+    expect(kicker.className).toContain("text-subtle");
+    // Eyebrow precedes the heading in DOM order.
+    expect(wrapper.firstElementChild).toBe(kicker);
+    expect(getByText("Заголовок").tagName).toBe("H3");
+  });
+
+  it("`eyebrowTone` / `eyebrowAs` / `eyebrowId` tune the kicker", () => {
+    const { getByText } = render(
+      <SectionHeading
+        eyebrow="Фінік"
+        eyebrowTone="finyk"
+        eyebrowAs="span"
+        eyebrowId="cat-label"
+      >
+        Категорія
+      </SectionHeading>,
+    );
+    const kicker = getByText("Фінік");
+    expect(kicker.tagName).toBe("SPAN");
+    expect(kicker.id).toBe("cat-label");
+    expect(kicker.className).toContain("text-finyk-strong");
+  });
+
+  it("`eyebrow` composes with the `action` slot", () => {
+    const { container, getByText } = render(
+      <SectionHeading
+        eyebrow="Звіт"
+        action={<button type="button">Більше</button>}
+      >
+        Заголовок
+      </SectionHeading>,
+    );
+    const wrapper = container.firstElementChild!;
+    expect(wrapper.className).toContain("justify-between");
+    expect(getByText("Звіт").tagName).toBe("P");
+    expect(getByText("Більше").tagName).toBe("BUTTON");
+    expect(getByText("Заголовок").tagName).toBe("H3");
+  });
 });
