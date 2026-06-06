@@ -101,17 +101,17 @@
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
-      <span class="chip chip-adr">adr: <b>60</b></span>
+      <span class="chip chip-adr">adr: <b>61</b></span>
       <span class="chip chip-audit">audit: <b>17</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>47</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
-      <span class="chip chip-pr">pr: <b>161</b></span>
-      <span class="chip chip-skill">skill: <b>31</b></span>
+      <span class="chip chip-pr">pr: <b>163</b></span>
+      <span class="chip chip-skill">skill: <b>33</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (235 core)</summary>
+      <summary>Nodes (238 core)</summary>
       <table>
         <thead>
           <tr>
@@ -824,12 +824,24 @@
             <td>adr</td>
             <td><code>adr:0063</code></td>
             <td>
-              <a href="../../docs/adr/0063-syncv2-modular-refactor.md"
-                >0063-syncv2-modular-refactor</a
+              <a href="../../docs/adr/0063-expo-sdk-53-upgrade.md"
+                >ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight
+                compatibility</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=63 · last_validated=2026-06-06</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0064</code></td>
+            <td>
+              <a href="../../docs/adr/0064-syncv2-modular-refactor.md"
+                >0064-syncv2-modular-refactor</a
               >
             </td>
             <td>accepted</td>
-            <td>number=63</td>
+            <td>number=64</td>
           </tr>
           <tr>
             <td>audit</td>
@@ -1023,10 +1035,10 @@
             <td>
               <a href="../../docs/audits/2026-08-XX-openclaw-internal-roast.md"
                 >OpenClaw Internal Routes Deep Roast —
-                `apps/server/src/routes/internal/openclaw.ts` (stub)</a
+                `apps/server/src/routes/internal/openclaw.ts`</a
               >
             </td>
-            <td>Draft</td>
+            <td>Active</td>
             <td></td>
           </tr>
           <tr>
@@ -1485,10 +1497,13 @@
               In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle
               Beta) shipped: skill+playbook columns + `agent-ready` field on all
               initiatives + `lint:initiative-agent-ready` gate. Remaining =
-              Phase 1 **observational acceptance only** (daily cron 7-day
-              stability + maintainer 5/7-day usage self-report) — passive
-              validation, no code work. Not 90-day-gated; archival deferred
-              until the observation window closes.
+              Phase 1 **observational acceptance only**. **Observation window
+              2026-06-03 → 2026-06-09 (7 consecutive cron days); progress 3/7**
+              — daily-brief cron confirmed green 06-03 / 06-04 / 06-05; 06-06 →
+              06-09 still pending, and the maintainer 5/7-day usage self-report
+              is not yet recorded. Stays In progress until both signals close;
+              do NOT flip to Done before 2026-06-09. Not 90-day-gated; archival
+              deferred until the observation window closes.
             </td>
             <td>number=15</td>
           </tr>
@@ -3157,6 +3172,39 @@
           </tr>
           <tr>
             <td>skill</td>
+            <td><code>skill:sergeant-backend-api</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-backend-api/SKILL.md"
+                >sergeant-backend-api</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Backend API patterns for Sergeant — REST/GraphQL
+              design, Clean Architecture, Hexagonal patterns, CQRS, event
+              sourcing, Temporal workflows, saga orchestration. Covers service
+              boundaries, testing, security, performance. UA: бекенд, API,
+              архітектура, мікросервіси.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-backend-architecture</code></td>
+            <td>
+              <a
+                href="../../.agents/skills/sergeant-backend-architecture/SKILL.md"
+                >sergeant-backend-architecture</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Backend architecture patterns — Clean Architecture,
+              Hexagonal, CQRS, Event Sourcing, Temporal, Saga, microservices.
+              UA: архітектура бекенду, мікросервіси, event sourcing.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
             <td><code>skill:sergeant-bugfix-and-regression</code></td>
             <td>
               <a
@@ -3533,7 +3581,7 @@
     </details>
 
     <details>
-      <summary>Edges (371 total, first 500 core-to-core)</summary>
+      <summary>Edges (373 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -3654,7 +3702,7 @@
             <td><code>initiative:0010</code></td>
           </tr>
           <tr>
-            <td><code>adr:0063</code></td>
+            <td><code>adr:0064</code></td>
             <td>references</td>
             <td><code>hard-rule:18</code></td>
           </tr>

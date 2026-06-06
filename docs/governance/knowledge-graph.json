@@ -3,13 +3,13 @@
   "version": 1,
   "generated_at": "2026-06-06",
   "counts": {
-    "adr": 60,
+    "adr": 61,
     "audit": 17,
     "hard-rule": 26,
     "initiative": 47,
     "playbook": 61,
-    "pr": 161,
-    "skill": 31
+    "pr": 163,
+    "skill": 33
   },
   "nodes": [
     {
@@ -672,12 +672,24 @@
     {
       "id": "adr:0063",
       "type": "adr",
-      "title": "0063-syncv2-modular-refactor",
-      "path": "docs/adr/0063-syncv2-modular-refactor.md",
+      "title": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility",
+      "path": "docs/adr/0063-expo-sdk-53-upgrade.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 63,
+        "last_validated": "2026-06-06"
+      }
+    },
+    {
+      "id": "adr:0064",
+      "type": "adr",
+      "title": "0064-syncv2-modular-refactor",
+      "path": "docs/adr/0064-syncv2-modular-refactor.md",
       "status": "accepted",
       "tier": "core",
       "meta": {
-        "number": 63
+        "number": 64
       }
     },
     {
@@ -818,9 +830,9 @@
     {
       "id": "audit:2026-08-XX-openclaw-internal-roast",
       "type": "audit",
-      "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts` (stub)",
+      "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`",
       "path": "docs/audits/2026-08-XX-openclaw-internal-roast.md",
-      "status": "Draft",
+      "status": "Active",
       "tier": "core",
       "meta": {}
     },
@@ -1249,7 +1261,7 @@
       "type": "initiative",
       "title": "0015 — Docs automation for daily ops",
       "path": "docs/initiatives/0015-docs-automation-daily-ops.md",
-      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (daily cron 7-day stability + maintainer 5/7-day usage self-report) — passive validation, no code work. Not 90-day-gated; archival deferred until the observation window closes.",
+      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **Observation window 2026-06-03 → 2026-06-09 (7 consecutive cron days); progress 3/7** — daily-brief cron confirmed green 06-03 / 06-04 / 06-05; 06-06 → 06-09 still pending, and the maintainer 5/7-day usage self-report is not yet recorded. Stays In progress until both signals close; do NOT flip to Done before 2026-06-09. Not 90-day-gated; archival deferred until the observation window closes.",
       "tier": "core",
       "meta": {
         "number": 15
@@ -3346,6 +3358,16 @@
       }
     },
     {
+      "id": "pr:3399",
+      "type": "pr",
+      "title": "PR #3399",
+      "tier": "extended",
+      "meta": {
+        "number": 3399,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3399"
+      }
+    },
+    {
       "id": "pr:34",
       "type": "pr",
       "title": "PR #34",
@@ -3353,6 +3375,16 @@
       "meta": {
         "number": 34,
         "url": "https://github.com/Skords-01/Sergeant/pull/34"
+      }
+    },
+    {
+      "id": "pr:3403",
+      "type": "pr",
+      "title": "PR #3403",
+      "tier": "extended",
+      "meta": {
+        "number": 3403,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3403"
       }
     },
     {
@@ -3883,6 +3915,26 @@
       "tier": "core",
       "meta": {
         "description": "Implement saga patterns for distributed transactions and cross-aggregate workflows. Use this skill when implementing distributed transactions across microservices where 2PC is unavailable, designing compensating actions for failed order workflows that span inventory, payment, and shipping services, building event-driven saga coordinators for travel booking systems that must roll back hotel, flight, and car rental reservations atomically, or debugging stuck saga states in production where compensation steps never complete."
+      }
+    },
+    {
+      "id": "skill:sergeant-backend-api",
+      "type": "skill",
+      "title": "sergeant-backend-api",
+      "path": ".agents/skills/sergeant-backend-api/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Backend API patterns for Sergeant — REST/GraphQL design, Clean Architecture, Hexagonal patterns, CQRS, event sourcing, Temporal workflows, saga orchestration. Covers service boundaries, testing, security, performance. UA: бекенд, API, архітектура, мікросервіси."
+      }
+    },
+    {
+      "id": "skill:sergeant-backend-architecture",
+      "type": "skill",
+      "title": "sergeant-backend-architecture",
+      "path": ".agents/skills/sergeant-backend-architecture/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Backend architecture patterns — Clean Architecture, Hexagonal, CQRS, Event Sourcing, Temporal, Saga, microservices. UA: архітектура бекенду, мікросервіси, event sourcing."
       }
     },
     {
@@ -4518,7 +4570,7 @@
       "type": "touched-by"
     },
     {
-      "from": "adr:0063",
+      "from": "adr:0064",
       "to": "hard-rule:18",
       "type": "references"
     },
@@ -5385,6 +5437,16 @@
     {
       "from": "initiative:0017",
       "to": "pr:3102",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0017",
+      "to": "pr:3399",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0017",
+      "to": "pr:3403",
       "type": "touched-by"
     },
     {
