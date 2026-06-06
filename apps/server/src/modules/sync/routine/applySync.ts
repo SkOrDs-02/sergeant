@@ -240,7 +240,3 @@ export async function applyRoutineStreaks(
   );
   return { status: "applied" };
 }
-
-// Re-export the constant here for ergonomic call-site: the apply-fn
-// uses INCREMENT_DELTA_MAX_ABS without an extra import line.
-import { INCREMENT_DELTA_MAX_ABS } from "../syncV2-core.js";
