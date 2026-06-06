@@ -1,4 +1,4 @@
-import { type CSSProperties } from "react";
+import { Suspense, type CSSProperties } from "react";
 import { type User } from "@sergeant/shared";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import { KeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
@@ -14,10 +14,23 @@ import { HintsOrchestrator } from "../hints/HintsOrchestrator";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
 import { shouldShowOnboarding } from "../onboarding/onboardingGate";
-import { WhatsNewModal, useWhatsNew } from "../whatsNew";
+import { useWhatsNew } from "../whatsNew";
+import { lazyImport } from "../lib/lazyImport";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
 import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
+
+// `<WhatsNewModal />` is a returning-user-only overlay gated on the
+// enabled/seen flag from `useWhatsNew` — it never renders on cold start
+// and stays hidden until the 2.5s timer flips `open`. Lazy-loading its
+// body (which pulls in `Modal` + the uk i18n messages) keeps it out of
+// the hub entry chunk; the lightweight `useWhatsNew` gate stays eager so
+// the open-state wiring is unchanged. `lazyImport` adds the canonical
+// stale-chunk recovery contract (see core/lib/lazyImport.ts).
+const WhatsNewModal = lazyImport(
+  () => import("../whatsNew/WhatsNewModal"),
+  "WhatsNewModal",
+);
 
 export interface HubHomeViewProps {
   ui: HubUIState;
@@ -151,12 +164,14 @@ export function HubHomeView(props: HubHomeViewProps) {
         onOpenModule={openModule}
       />
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={onCloseShortcuts} />
-      <WhatsNewModal
-        open={whatsNew.open}
-        release={whatsNew.release}
-        onClose={whatsNew.onClose}
-        onCtaClick={whatsNew.onCtaClick}
-      />
+      <Suspense fallback={null}>
+        <WhatsNewModal
+          open={whatsNew.open}
+          release={whatsNew.release}
+          onClose={whatsNew.onClose}
+          onCtaClick={whatsNew.onCtaClick}
+        />
+      </Suspense>
 
       {/* Sergeant v2 redesign (2026-05, PR-7b) — persistent AI-assistant
           pill replaces the previous sparkle FAB. Shown only on the
