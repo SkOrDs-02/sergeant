@@ -7,6 +7,10 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     exclude: ["src/**/*.integration.test.ts", "src/**/*.e2e.test.ts"],
     passWithNoTests: true,
+    // Flaky-test quarantine (item #20): retry once on CI only — mirrors
+    // baseVitestConfig in packages/config/vitest.base.js. See
+    // docs/testing/README.md → "Flaky-test quarantine".
+    retry: process.env.CI ? 1 : 0,
     // Coverage instrumentation + dynamic `await import("./module.js")` inside
     // tests (e.g. push.test.ts re-imports push.ts per case to pick up env
     // changes) can blow past the 5s default under turbo concurrency. Lift to

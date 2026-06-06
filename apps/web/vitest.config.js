@@ -26,6 +26,13 @@ export default defineConfig({
     minWorkers: process.env.CI ? 1 : undefined,
     include: ["src/**/*.test.{js,jsx,ts,tsx}", "server/**/*.test.{js,ts}"],
     passWithNoTests: false,
+    // Flaky-test quarantine (item #20): retry once on CI only — mirrors
+    // baseVitestConfig in packages/config/vitest.base.js. The heavy jsdom +
+    // react-test-renderer suites are the main flake source on throttled
+    // runners; a single retry absorbs transient timing flips while genuine
+    // failures still go red (both attempts must pass once for a stable test).
+    // See docs/testing/README.md → "Flaky-test quarantine".
+    retry: process.env.CI ? 1 : 0,
     setupFiles: ["src/test/setup.ts"],
     coverage: {
       ...baseCoverageConfig,
