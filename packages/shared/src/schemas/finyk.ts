@@ -35,3 +35,28 @@ export const BudgetSchema = z
 export const BudgetsSchema = z.array(BudgetSchema);
 
 export type BudgetParsed = z.infer<typeof BudgetSchema>;
+
+// Тіло `POST /api/v1/finyk/manual-expenses` — ручна (не-Mono) витрата.
+//
+// Money-інваріант (Hard Rule #1): `amount` приходить у КОПІЙКАХ як `number`
+// (minor units, завжди додатнє ціле). На рівні persistence ми конвертуємо у
+// гривні, бо канонічна `ManualExpense`-форма у localStorage
+// (`finyk_manual_expenses_v1`) історично зберігає `amount` у гривнях — щоб
+// downstream client-міграція з `safeWriteLS` читала однаковий blob.
+//
+// `date` — Europe/Kyiv day boundary (домен-інваріант), формат `YYYY-MM-DD`.
+// Якщо не передано — handler підставляє Kyiv-«сьогодні». UTC-«сьогодні»
+// мовчки ламає streak/денні агрегації на межі доби.
+export const ManualExpenseCreateSchema = z
+  .object({
+    amount: z.number().int().positive(),
+    category: z.string().min(1).max(120),
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Дата має бути у форматі YYYY-MM-DD")
+      .optional(),
+    note: z.string().max(500).optional(),
+  })
+  .strict();
+
+export type ManualExpenseCreate = z.infer<typeof ManualExpenseCreateSchema>;

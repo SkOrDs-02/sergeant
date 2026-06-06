@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { BudgetSchema, BudgetsSchema } from "./finyk";
+import {
+  BudgetSchema,
+  BudgetsSchema,
+  ManualExpenseCreateSchema,
+} from "./finyk";
 
 describe("BudgetSchema", () => {
   it("приймає limit-бюджет з валідним числовим limit", () => {
@@ -53,5 +57,42 @@ describe("BudgetSchema", () => {
     ]);
     expect(r.success).toBe(true);
     if (r.success) expect(r.data).toHaveLength(2);
+  });
+});
+
+describe("ManualExpenseCreateSchema", () => {
+  it("приймає мінімальне тіло (amount у копійках + category)", () => {
+    const r = ManualExpenseCreateSchema.safeParse({
+      amount: 20000,
+      category: "food",
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.amount).toBe(20000);
+      expect(r.data.date).toBeUndefined();
+      expect(r.data.note).toBeUndefined();
+    }
+  });
+
+  it("приймає date (YYYY-MM-DD) і note", () => {
+    const r = ManualExpenseCreateSchema.safeParse({
+      amount: 5000,
+      category: "transport",
+      date: "2026-06-06",
+      note: "метро",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it.each([
+    ["нуль", { amount: 0, category: "food" }],
+    ["відʼємний", { amount: -100, category: "food" }],
+    ["float (копійки мають бути цілими)", { amount: 199.5, category: "food" }],
+    ["без category", { amount: 1000 }],
+    ["порожня category", { amount: 1000, category: "" }],
+    ["битий формат date", { amount: 1000, category: "food", date: "06.06.2026" }],
+    ["зайве поле (strict)", { amount: 1000, category: "food", userId: "u1" }],
+  ])("відхиляє невалідне тіло (%s)", (_label, body) => {
+    expect(ManualExpenseCreateSchema.safeParse(body).success).toBe(false);
   });
 });

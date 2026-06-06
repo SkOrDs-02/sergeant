@@ -11,6 +11,7 @@ import { createChatRouter } from "./chat.js";
 import { createCoachRouter } from "./coach.js";
 import { createCspReportRouter } from "./csp-report.js";
 import { createEmailUnsubscribeRouter } from "./email-unsubscribe.js";
+import { createFinykRouter } from "./finyk.js";
 import { createFoodSearchRouter } from "./food-search.js";
 import { createHealthRouter } from "./health.js";
 import { createMeRouter } from "./me.js";
@@ -48,6 +49,7 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createBanksRouter());
   app.use(createBarcodeRouter());
   app.use(createNutritionRouter());
+  app.use(createFinykRouter());
   app.use(createWeeklyDigestRouter());
   app.use(createCoachRouter());
   app.use(createFoodSearchRouter());
