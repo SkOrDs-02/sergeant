@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR) — реєстр рішень
 
-> **Last validated:** 2026-06-06 by @claude (bulk-bump artifact corrected — file was content-modified 2026-06-05 adding ADR-0062 row; date was still showing the 2026-05-13 batch-bump). **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-06 by @Skords-01 (added ADR-0063 row — Expo SDK-53 pre-flight; bumped next-ADR note 0063 → 0064). **Next review:** 2026-09-06.
 > **Status:** Active
 
 > Архітектурні рішення Sergeant. Кожен ADR фіксує **рішення з контекстом і альтернативами**, щоб через рік не довелось гадати «чому ми тут зробили так, а не інакше».
@@ -129,8 +129,9 @@ pnpm gen:adr
 | 0060 | Architecture diagrams — automation scope (workspace graph only) | proposed | 2026-05-15 | Phase 4 ініціативи 0014 ships single auto-gen `c3-workspaces.md` із symbol-index → workspace dependency Mermaid graph. Existing C3 narrative діаграми (`c3-cloudsync`, `c3-chat-tool-use`) untouched; C4 skipped per [diagrams/README.md](../architecture/diagrams/README.md) policy. Closes [Initiative 0014 Phase 4](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md).                                                           |
 | 0061 | PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)     | proposed | 2026-05-15 | Phase 5 ініціативи 0014 — bidirectional PR↔doc лінкінг. Hybrid: `docs/pr-ledger/index.json` (canonical machine-readable registry) + `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->` блок (top-5 latest) у тілі canonical docs (ADR / initiative / playbook / hard-rule). Post-merge workflow відкриває follow-up PR замість push-на-main (HR #6). Closes [Initiative 0014 Phase 5](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md). |
 | 0062 | OpenAPI spec source-of-truth — code-first (Zod → OpenAPI)       | accepted | 2026-06-05 | Code-first контракт: `buildOpenApiDocument()` (`packages/shared/src/openapi/index.ts`) читає Zod зі `@sergeant/shared/schemas/api` → генерує `docs/api/openapi.json` (3.1.0) + `packages/api-client/src/generated/openapi.d.ts`; freshness gates `api:check-openapi*` у CI роблять spec-drift impossible. Формалізує вже-реалізований stack-pulse PR-23 Phase 1 (під вільним `0062`, бо `0056` — sealed gap).                                   |
+| 0063 | Expo SDK 52 → 53 upgrade — pre-flight compatibility             | accepted | 2026-06-06 | Pre-flight gate для stack-pulse PR-22: native-dep compatibility matrix (`expo-notifications`/`expo-secure-store`/`expo-network`/...→ SDK-53 min versions), RN 0.76 → 0.77 breaking-change checklist, `@expo/cli` patch drop/rebase plan, TS-pin implications (ADR-0050). Рішення: **KEEP `newArchEnabled: true`** (`app.config.ts:170`) як accepted risk, verified через Detox suite. ADR-only, без SDK-bump. |
 
-> **Note on next ADR:** наступний номер — **`0063`** (`0029`, `0040` і `0056` лишаються gap-ами).
+> **Note on next ADR:** наступний номер — **`0064`** (`0029`, `0040` і `0056` лишаються gap-ами).
 
 > **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+.
 
@@ -138,7 +139,7 @@ pnpm gen:adr
 
 > **Note on 0039 reuse:** Номер `0039` спочатку було зарезервовано (gap) під ADR-кандидат «OpenClaw proactive cron-rituals» — імплементацію не стартували; коли Wave 2 пишеться, номер береться наступний вільний (не `0039`). 2026-05-04 номер реусався під [ADR-0039 Anthropic prompt-cache breakpoint policy](./0039-anthropic-prompt-cache-policy.md) (закриття Initiative 0005); `0039` прибрано з `KNOWN_NUMBERING_GAPS`.
 
-> **Note on missing 0040:** Номер `0040` згадувався у коментарях коду (`tools/openclaw/src/openclaw/alerts-format.ts`) і roadmap §3.6 («strategic mode — `/plan` / `/analyze` / `/okr`») як планований ADR для Wave-3 HTML-mode broadcast formatting. Рішення зафіксовано **inline** у Wave-3 PR-ах (#1473 / #1480 / #1503 / #1508) — окремий ADR-файл не дійшов. `0040` лишається **відомим gap** і whitelisted у `KNOWN_NUMBERING_GAPS`. (Канонічне «наступний вільний номер» — рядок «Note on next ADR» вище, зараз **`0063`**; `pnpm gen:adr` обчислює `max + 1` через `nextAdrNumber()` у `plopfile.mjs`, тож автоматично пропустить пусті номери.)
+> **Note on missing 0040:** Номер `0040` згадувався у коментарях коду (`tools/openclaw/src/openclaw/alerts-format.ts`) і roadmap §3.6 («strategic mode — `/plan` / `/analyze` / `/okr`») як планований ADR для Wave-3 HTML-mode broadcast formatting. Рішення зафіксовано **inline** у Wave-3 PR-ах (#1473 / #1480 / #1503 / #1508) — окремий ADR-файл не дійшов. `0040` лишається **відомим gap** і whitelisted у `KNOWN_NUMBERING_GAPS`. (Канонічне «наступний вільний номер» — рядок «Note on next ADR» вище, зараз **`0064`** (після того як `0063` зайняв Expo SDK-53 pre-flight ADR); `pnpm gen:adr` обчислює `max + 1` через `nextAdrNumber()` у `plopfile.mjs`, тож автоматично пропустить пусті номери.)
 
 > **Note on missing 0056:** Номер `0056` зарезервувала «Note on next ADR»-шапка цього файлу як «наступний вільний». Наступний-таки merged ADR (`cfb20ecb feat(console): upgrade @anthropic-ai/sdk 0.36.3 → 0.95.x`, commit 2026-05-11) назвав себе одразу `0057` без переходу через `0056`. ADR-и не нумеруються заднім числом — `0056` лишається **відомим gap** і whitelisted у `KNOWN_NUMBERING_GAPS` у `scripts/docs/check-adr-graph.mjs`.
 
