@@ -1,7 +1,7 @@
 # Sergeant — doc-hygiene аудит (2026-05-02)
 
 > **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-09-01.
-> **Status:** Active
+> **Status:** Archived
 
 > Аудит виконано 2026-05-02 проти `main @ b7c629dd`. Стиль: прохід зверху-вниз, без правок коду. Фікси (ADR-0029-gap rule, audit lifecycle, agent file unification) реалізовані у PR `docs(hygiene): close audit findings — ADR gap rule, audits lifecycle, agent files`.
 
@@ -18,7 +18,7 @@
 
 ### Що добре
 
-- `apps/{web, server, mobile, mobile-shell, console}` + `packages/{shared, api-client, config, db-schema, design-tokens, finyk-domain, fizruk-domain, nutrition-domain, routine-domain, insights, eslint-plugin-sergeant-design}` — чисте розділення runtime-сервіси vs shared logic, точно як описано в [`docs/adr/0024-monorepo-apps-packages-split.md`](../adr/0024-monorepo-apps-packages-split.md).
+- `apps/{web, server, mobile, mobile-shell, console}` + `packages/{shared, api-client, config, db-schema, design-tokens, finyk-domain, fizruk-domain, nutrition-domain, routine-domain, insights, eslint-plugin-sergeant-design}` — чисте розділення runtime-сервіси vs shared logic, точно як описано в [`docs/adr/0024-monorepo-apps-packages-split.md`](../../adr/0024-monorepo-apps-packages-split.md).
 - `pnpm-workspace.yaml` лаконічний (`apps/*` + `packages/*`), `turbo.json` мінімалістичний, всі package-name прив'язані до `@sergeant/*`-namespace окрім `eslint-plugin-sergeant-design` (за конвенцією ESLint).
 - `.agents/skills/` (12 SKILL.md) + `docs/agents/agent-skills-catalog.md` мають deprecated→replacement-таблицю — добре читається.
 
@@ -73,7 +73,7 @@
 
 Diff показав 4 різниці, всі формальні (заголовок секції, browser smoke vs verification commands, список «канонічних посилань»).
 
-**Розв'язано (цей PR):** обидва файли переведено у thin-pointer-формат. Кожен починається з `> See [AGENTS.md](./AGENTS.md) — single source of truth.`, тримає лише 4–5 agent-specific bullets (Claude → skill catalog priority; Devin → playbook taxonomy + browser smoke). Загальна політика тепер живе виключно в `AGENTS.md`.
+**Розв'язано (цей PR):** обидва файли переведено у thin-pointer-формат. Кожен починається з `> See [AGENTS.md](../AGENTS.md) — single source of truth.`, тримає лише 4–5 agent-specific bullets (Claude → skill catalog priority; Devin → playbook taxonomy + browser smoke). Загальна політика тепер живе виключно в `AGENTS.md`.
 
 ### 2.4 Документація без freshness-header
 
@@ -121,7 +121,7 @@ Knip-команда `dead-code:files` (по правилам `knip.json` + scaff
 - (a) Перенести у `scripts/codemods/` з README.md в директорії.
 - (b) Видалити, якщо codemod вже виконано (треба перевірити `frontend.md`).
 
-> **Виконано (PR follow-up до цього аудиту):** обрано опцію (a). Codemod перенесено в [`scripts/codemods/strip-js-extensions/script.mjs`](../../scripts/codemods/strip-js-extensions/script.mjs); додано директорійний README та каталог [`scripts/codemods/README.md`](../../scripts/codemods/README.md), який описує конвенцію для майбутніх codemod-ів.
+> **Виконано (PR follow-up до цього аудиту):** обрано опцію (a). Codemod перенесено в [`scripts/codemods/strip-js-extensions/script.mjs`](../../../scripts/codemods/strip-js-extensions/script.mjs); додано директорійний README та каталог [`scripts/codemods/README.md`](../../../scripts/codemods/README.md), який описує конвенцію для майбутніх codemod-ів.
 
 `scripts/vitest.mjs` — wrapper навколо vitest, який strip-ить `--max-old-space-size` з NODE_OPTIONS. Теж не пов'язано з `package.json` scripts напряму.
 
@@ -168,15 +168,15 @@ Knip-команда `dead-code:files` (по правилам `knip.json` + scaff
 
 ### Medium (1–3 год) — не в скоупі цього PR
 
-5. ~~**Розбити `AGENTS.md`** + завести canonical full-text Hard Rules source~~ ✅ **Closed / non-actionable (2026-06-03):** семантичний gap уже закрито — canonical full-text Hard Rules source **існує**, але не як один монолітний `hard-rules.md`, а як **per-rule canonical bodies** у [`docs/governance/rules/`](../governance/rules/README.md) (по одному файлу на правило: повна проза + scope + enforced-by + BAD/GOOD приклади, напр. [`10-lifecycle-markers.md`](../governance/rules/10-lifecycle-markers.md)). Архітектура single-source тепер три-рівнева й узгоджена:
-   - **`docs/governance/rules/*.md`** — authoritative full text (26 rule + `kyiv-time-helpers.md`), index у [`rules/README.md`](../governance/rules/README.md).
+5. ~~**Розбити `AGENTS.md`** + завести canonical full-text Hard Rules source~~ ✅ **Closed / non-actionable (2026-06-03):** семантичний gap уже закрито — canonical full-text Hard Rules source **існує**, але не як один монолітний `hard-rules.md`, а як **per-rule canonical bodies** у [`docs/governance/rules/`](../../governance/rules/README.md) (по одному файлу на правило: повна проза + scope + enforced-by + BAD/GOOD приклади, напр. [`10-lifecycle-markers.md`](../../governance/rules/10-lifecycle-markers.md)). Архітектура single-source тепер три-рівнева й узгоджена:
+   - **`docs/governance/rules/*.md`** — authoritative full text (26 rule + `kyiv-time-helpers.md`), index у [`rules/README.md`](../../governance/rules/README.md).
    - **`AGENTS.md § Hard rules`** — компактна таблиця (number + 1-line summary + category + лінк на per-rule файл), а не дубльований full text.
    - **`docs/governance/hard-rules-matrix.md`** (+ `hard-rules.json`) — auto-generated machine index; кожен рядок лінкує на відповідний `rules/NN-*.md`.
    - 3-way sync (AGENTS.md ↔ JSON ↔ per-rule files) enforced через `pnpm lint:hard-rules-registry`; матриця регенерується `pnpm hard-rules:generate`.
 
    Тобто рекомендований «single full-text source» реалізовано (краще, ніж один файл — per-rule файли + index), а матриця/AGENTS.md уже на нього посилаються. Створювати окремий `docs/governance/hard-rules.md` означало б **дублювати** контент, у якого вже є single source — тому окремої дії не потрібно. Залишковий «AGENTS.md ще довгий» — це cosmetic-refactor, не doc-hygiene gap, і трекається окремо (initiative `0009-agent-os-hardening`, Phase 3.1).
 
-6. ~~**`2026-04-28-ux-ui-audit.md` дати** — канонізувати під єдиний freshness-header (зараз 3 параметри в шапці).~~ ✅ Closed / non-actionable (2026-06-03): drift уже розв'язано. Файл переїхав у [`docs/audits/archive/2026-04-28-ux-ui-audit.md`](./archive/2026-04-28-ux-ui-audit.md), його шапка тепер має єдиний канонічний `> **Last validated:** 2026-05-13` freshness-header + `Status: Closed` + явно позначений `> **Initial audit date:** 2026-04-28 (історичний)`. Три «конкуруючі» дати канонізовано в один freshness-header плюс explicitly-labeled historical date — окремої дії не потрібно.
+6. ~~**`2026-04-28-ux-ui-audit.md` дати** — канонізувати під єдиний freshness-header (зараз 3 параметри в шапці).~~ ✅ Closed / non-actionable (2026-06-03): drift уже розв'язано. Файл переїхав у [`docs/audits/archive/2026-04-28-ux-ui-audit.md`](./2026-04-28-ux-ui-audit.md), його шапка тепер має єдиний канонічний `> **Last validated:** 2026-05-13` freshness-header + `Status: Closed` + явно позначений `> **Initial audit date:** 2026-04-28 (історичний)`. Три «конкуруючі» дати канонізовано в один freshness-header плюс explicitly-labeled historical date — окремої дії не потрібно.
 
 ### Larger (≥3 год) — не в скоупі цього PR
 

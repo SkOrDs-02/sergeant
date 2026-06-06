@@ -1,5 +1,8 @@
 # Детальний план декомпозиції syncV2.ts
 
+> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-09-06.
+> **Status:** Active
+
 ## Поточний стан
 - **Файл:** `apps/server/src/modules/sync/syncV2.ts`
 - **Розмір:** 3100 LOC (порушує Hard Rule #18: max-lines 600)

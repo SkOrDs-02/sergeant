@@ -9,8 +9,8 @@ PR-план виконавчих кроків, що закриває outstanding
 
 ## Cross-refs
 
-- **Source roast (поточна):** [`docs/audits/2026-05-13-revenue-monetization-roast.md`](../audits/2026-05-13-revenue-monetization-roast.md) — viewer-facing inventory P0/P1/P2 з 6 closed-у-PR і 16 outstanding-items.
-- **Source roast (попередня, baseline):** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/2026-05-04-revenue-and-marketing-roast.md) — «56 k LOC docs / 0 paying users», wedge-позиціонування, owner-decisions (pricing v3, Apple+Google+Email auth, activation v2, no OpenClaw freeze).
+- **Source roast (поточна):** [`docs/audits/2026-05-13-revenue-monetization-roast.md`](../audits/archive/2026-05-13-revenue-monetization-roast.md) — viewer-facing inventory P0/P1/P2 з 6 closed-у-PR і 16 outstanding-items.
+- **Source roast (попередня, baseline):** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md) — «56 k LOC docs / 0 paying users», wedge-позиціонування, owner-decisions (pricing v3, Apple+Google+Email auth, activation v2, no OpenClaw freeze).
 - **Initiative tracker:** [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md) — 6-фазний план; Phase 0–5.1 done, Phase 2/3 active.
 - **ADR-0001:** [`docs/adr/0001-monetization-architecture.md`](../adr/0001-monetization-architecture.md) — 16 архітектурних рішень (Stripe primary, single-row-per-user `subscriptions`, RQ `staleTime: 60s`, idempotency keys, webhook retention, dunning, proration, observability/SLO).
 - **ADR-0051:** [`docs/adr/0051-pricing-v3-single-tier.md`](../adr/0051-pricing-v3-single-tier.md) — Free + Pro, $7/міс або $49/рік, ₴ UA-only на старті, 7-day trial без картки.
@@ -29,7 +29,7 @@ PR-план виконавчих кроків, що закриває outstanding
 
 ## TL;DR
 
-10 PR-карток (1 XS quick-win + 4 P0 + 4 P1 + 2 P2), які закривають **усі outstanding P0/P1-items** з [`2026-05-13-revenue-monetization-roast.md`](../audits/2026-05-13-revenue-monetization-roast.md) і **bridge-items** з [`2026-05-04-revenue-and-marketing-roast.md`](../audits/2026-05-04-revenue-and-marketing-roast.md), які лишилися як `[OPEN]` після owner-decisions. P0 — funnel hard-fails (Customer Portal, env-validation, paywall-gates, `?checkout=success`). P1 — funnel quality (activation v2 capture, landing, EN locale, LiqPay placeholder, TrialBanner full). P2 — post-launch polish (Revenue dashboards, annual billing toggle).
+10 PR-карток (1 XS quick-win + 4 P0 + 4 P1 + 2 P2), які закривають **усі outstanding P0/P1-items** з [`2026-05-13-revenue-monetization-roast.md`](../audits/archive/2026-05-13-revenue-monetization-roast.md) і **bridge-items** з [`2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md), які лишилися як `[OPEN]` після owner-decisions. P0 — funnel hard-fails (Customer Portal, env-validation, paywall-gates, `?checkout=success`). P1 — funnel quality (activation v2 capture, landing, EN locale, LiqPay placeholder, TrialBanner full). P2 — post-launch polish (Revenue dashboards, annual billing toggle).
 
 Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS PR-1):
 
@@ -400,7 +400,7 @@ Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS 
 
 ## PR-карти, що НЕ увійшли (свідомо відкладено)
 
-- **P0-1 ... P0-5, P1-1** з [`2026-05-13-revenue-monetization-roast.md`](../audits/2026-05-13-revenue-monetization-roast.md) — `usePlan`, `PaywallModal`, `billingKeys`, webhook `renewed/canceled`, analytics-events Phase 4–6. **Done у попередньому PR** (див. §Прогрес виконання у прожарці).
+- **P0-1 ... P0-5, P1-1** з [`2026-05-13-revenue-monetization-roast.md`](../audits/archive/2026-05-13-revenue-monetization-roast.md) — `usePlan`, `PaywallModal`, `billingKeys`, webhook `renewed/canceled`, analytics-events Phase 4–6. **Done у попередньому PR** (див. §Прогрес виконання у прожарці).
 - **P2-1** (GTM hero copy A/B test) — залежить від PR-6 (landing) + PR-7 (EN locale). Відкладено до Phase 7.
 - **P2-3** (Subscription change proration) — out-of-scope до моменту, коли є яким змінювати (single Pro tier у MVP). Відкладено до multi-tier launch (post-Phase 7).
 - **P2-4** (Invoice PDF + email) — Stripe сам генерує PDF + email. Net-new infra оверкіл для перших 50 paying. Відкладено до 200+.
@@ -553,4 +553,4 @@ Crit-path = PR-1 → PR-3 → PR-2 → PR-4 → PR-6 (15–20 working days до 
 - [ ] Якщо changed API shape — server-серіалізатор + `api-client` + contract-test у одному commit (Hard Rule #3).
 - [ ] PostHog events задокументовано у `packages/shared/src/lib/analyticsEvents.ts` + payload contract.
 - [ ] PR description лінкує impact-цифру (real або placeholder з МDE).
-- [ ] Cross-ref у [`2026-05-13-revenue-monetization-roast.md`](../audits/2026-05-13-revenue-monetization-roast.md) status-table оновлено.
+- [ ] Cross-ref у [`2026-05-13-revenue-monetization-roast.md`](../audits/archive/2026-05-13-revenue-monetization-roast.md) status-table оновлено.

@@ -84,4 +84,4 @@
 
 - [`docs/initiatives/0010-revenue-first-launch.md` § Phase 1.1](../initiatives/0010-revenue-first-launch.md)
 - [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md)
-- [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/2026-05-04-revenue-and-marketing-roast.md)
+- [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md)

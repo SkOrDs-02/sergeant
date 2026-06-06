@@ -182,7 +182,7 @@ allowlist на 1 файл (`useSyncedStorage.ts` сам), 0 інших пору�
 
 > **2026-05-13 sync (P2.2b, #2780):** `apps/mobile/src/modules/routine/pages/Calendar.tsx` (628 LOC)
 > decomposed into a 13-file `pages/Calendar/` folder per the
-> [`2026-05-13 mobile audit`](../audits/2026-05-13-mobile-reliability-ux-roast.md#p22--two-new-600-loc-offenders-dualwritediffts-633-routinepagescalendartsx-628):
+> [`2026-05-13 mobile audit`](../audits/archive/2026-05-13-mobile-reliability-ux-roast.md#p22--two-new-600-loc-offenders-dualwritediffts-633-routinepagescalendartsx-628):
 > `index.tsx` orchestrator (183 LOC), `DayCell.tsx`, `WeekHeader.tsx`,
 > `MonthGridView.tsx`, `MonthHeader.tsx`, `TimeModeSegmented.tsx`,
 > `StatsPill.tsx`, `EventRow.tsx`, `GroupedEventList.tsx`,

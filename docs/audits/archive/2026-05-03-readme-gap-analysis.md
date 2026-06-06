@@ -1,7 +1,7 @@
 # Аналіз README: чого не вистачає та повний гайд по проєкту
 
 > **Last validated:** 2026-05-31 by audits-runner workflow. **Next review:** 2026-08-29.
-> **Status:** Closed (historical record — all 15 checklist items now de-facto covered in current `README.md`; жоден gap не залишився open)
+> **Status:** Archived — all 15 checklist items now de-facto covered in current `README.md`; жоден gap не залишився open)
 
 > **Closure note (2026-05-31, audits-runner triage):** Re-read `README.md` HEAD проти 15-пунктного gap-checklist цього документа — усі пункти покриті через quickstart, Core commands, troubleshooting, Tech stack секції, що виросли з моменту цього аудиту. Документ зберігається як історичний рекорд того, як виглядав gap станом на 2026-05-03. Outstanding items: жодних.
 
@@ -222,7 +222,7 @@ pnpm test:a11y
 ```markdown
 ## License
 
-MIT — див. [LICENSE](./LICENSE).
+MIT — див. [LICENSE](../LICENSE).
 ```
 
 ### 1.14. Feature Flags
@@ -583,7 +583,7 @@ HubChat — це чат-інтерфейс, де ти спілкуєшся з Cl
 - [ ] Секція **"License"**
 - [ ] Посилання на **Feature Flags**, **Observability**, **Roadmap**
 
-> **2026-05-16 closure note (historical snapshot).** Усі 15 пунктів цього чек-листа де-факто покриті у поточному `README.md`. Бокси залишаються `[ ]` свідомо — `2026-05-03-readme-gap-analysis.md` трактується як історичний знімок (status snapshot станом на 2026-05-03), не live tracker. Поточний live-стан і per-section покриття трекаються через лічильник у [`docs/audits/README.md`](./README.md) (рядок `2026-05-03-readme-gap-analysis.md` → `15/15 ¹` / `0 outstanding`).
+> **2026-05-16 closure note (historical snapshot).** Усі 15 пунктів цього чек-листа де-факто покриті у поточному `README.md`. Бокси залишаються `[ ]` свідомо — `2026-05-03-readme-gap-analysis.md` трактується як історичний знімок (status snapshot станом на 2026-05-03), не live tracker. Поточний live-стан і per-section покриття трекаються через лічильник у [`docs/audits/README.md`](../README.md) (рядок `2026-05-03-readme-gap-analysis.md` → `15/15 ¹` / `0 outstanding`).
 >
 > **Per-item mapping до `README.md`:**
 >

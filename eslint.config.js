@@ -673,7 +673,6 @@ export default [
       ],
     },
   },
-  },
   // SAST guardrail — `eslint-plugin-security` taint-flow heuristics on
   // production server + console code. Closes the M11 audit gap from
   // `docs/security/hardening/M11-eslint-plugin-security.md`: SQL
@@ -1280,6 +1279,5 @@ export default [
     },
   },
 
->>>>>>> 2321ddc4d (chore: extend Hard Rule #18 max-lines: 600 to server side)
   eslintConfigPrettier,
 ];

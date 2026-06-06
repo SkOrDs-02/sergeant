@@ -7,13 +7,13 @@
 
 ## Cross-refs (active planning surface)
 
-- **Sprint tracker:** [`docs/planning/sprint-roadmap-q2q3-2026.md`](../planning/sprint-roadmap-q2q3-2026.md) — Спринти 5–8, T1–T7 + O1–O9; T5 (Lighthouse warn→error) tighten — baseline-gathered follow-up.
+- **Sprint tracker:** [`docs/planning/sprint-roadmap-q2q3-2026.md`](../../planning/sprint-roadmap-q2q3-2026.md) — Спринти 5–8, T1–T7 + O1–O9; T5 (Lighthouse warn→error) tighten — baseline-gathered follow-up.
 - **Revenue:** [`2026-05-13-revenue-monetization-roast.md`](./2026-05-13-revenue-monetization-roast.md) — P0-1..P0-7 (включно зі **Stripe price_id env-config + validation, P0-7**) усі **Done у PR**. Outstanding — P1-2 activation v2 capture, P1-4 EN locale, P2 polish.
-- **Dead-code + Hard Rules:** [`2026-05-13-dead-code-hard-rules-roast.md`](./2026-05-13-dead-code-hard-rules-roast.md) — P0.1 (11 unmarked unused files → `@scaffolded`/delete), P0.2 (53 broken markdown links → 0), P1.2 (Lighthouse CI workflow shipped, `cb459c08`). 18 файлів живуть під свідомим `@scaffolded` маркером.
+- **Dead-code + Hard Rules:** [`2026-05-13-dead-code-hard-rules-roast.md`](../2026-05-13-dead-code-hard-rules-roast.md) — P0.1 (11 unmarked unused files → `@scaffolded`/delete), P0.2 (53 broken markdown links → 0), P1.2 (Lighthouse CI workflow shipped, `cb459c08`). 18 файлів живуть під свідомим `@scaffolded` маркером.
 - **Doc hygiene:** [`2026-05-13-documentation-hygiene-roast.md`](./2026-05-13-documentation-hygiene-roast.md) — 7 пунктів закриті у відповідному PR, включно з archive-move depth fix.
-- **Storage / sync v2:** [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md), [`docs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md`](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md), [`docs/adr/0047-cloudsync-v1-410-gone.md`](../adr/0047-cloudsync-v1-410-gone.md). CloudSync engine закрито (#1929–#1941); v1 410-Gone від 2026-05-06; engine-tree видалено PR #052b/#052c.
-- **Security:** [`docs/security/audit-exceptions.md`](../security/audit-exceptions.md), [`vulnerability-sla.md`](../security/vulnerability-sla.md), [`nightly-audit.md`](../security/nightly-audit.md), [`docs/security/hardening/`](../security/hardening/).
-- **Governance:** [`docs/governance/hard-rules.json`](../governance/hard-rules.json) (23 правила, усі enforced), [`hard-rules-matrix.md`](../governance/hard-rules-matrix.md), `pnpm lint:governance-sync`, `pnpm lint:codeowners`, `pnpm lint:hard-rules-registry`, freshness-dashboard.
+- **Storage / sync v2:** [`docs/planning/storage-roadmap.md`](../../planning/storage-roadmap.md), [`docs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md`](../../initiatives/0003-sync-v2-rollout-and-v1-sunset.md), [`docs/adr/0047-cloudsync-v1-410-gone.md`](../../adr/0047-cloudsync-v1-410-gone.md). CloudSync engine закрито (#1929–#1941); v1 410-Gone від 2026-05-06; engine-tree видалено PR #052b/#052c.
+- **Security:** [`docs/security/audit-exceptions.md`](../../security/audit-exceptions.md), [`vulnerability-sla.md`](../../security/vulnerability-sla.md), [`nightly-audit.md`](../../security/nightly-audit.md), [`docs/security/hardening/`](../../security/hardening).
+- **Governance:** [`docs/governance/hard-rules.json`](../../governance/hard-rules.json) (23 правила, усі enforced), [`hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), `pnpm lint:governance-sync`, `pnpm lint:codeowners`, `pnpm lint:hard-rules-registry`, freshness-dashboard.
 
 ## TL;DR
 
@@ -21,7 +21,7 @@
 
 - **8 з 8 початково помічених P0 — або Done, або уже трекуються офіційно** (revenue P0-7 = Stripe env; T5 Lighthouse tightening = baseline-gathered; CloudSync engine wiring = shipped #1929–#1941).
 - **CODEOWNERS Secondary placeholders** — не bug; це **свідомий контракт bus-factor PR-04** (`/.github/CODEOWNERS:5–7`): «Secondary owners are placeholders ... Replace with real engineers when hired. @Skords-01 remains final-approver for all paths until delegation is complete.» — лінт enforce-ить покриття, не приховує проблему.
-- **Кандидати на dead-code** (`shared/lib/log/index.ts`, cloudSync barrel, профайл barrel, billing barrel) — усі під `@scaffolded` JSDoc маркером (Hard Rule #10, [dead-code roast §P0.1](./2026-05-13-dead-code-hard-rules-roast.md)). `pnpm dead-code:files` зелений.
+- **Кандидати на dead-code** (`shared/lib/log/index.ts`, cloudSync barrel, профайл barrel, billing barrel) — усі під `@scaffolded` JSDoc маркером (Hard Rule #10, [dead-code roast §P0.1](../2026-05-13-dead-code-hard-rules-roast.md)). `pnpm dead-code:files` зелений.
 - **`syncEngineFlushOnReconnect` / `recoverDeadLetter`** — активні в production через `apps/web/src/core/syncEngine/syncEngineWriter.ts` + `apps/mobile/src/core/syncEngine/syncEngineWriter.ts` (fallback factory via `deps.createReconnect ?? createSyncEngineFlushOnReconnect`) і `singleton.ts:121` callsite-и в обох runtimes. Початкова гіпотеза «декларовано, не wired» — спростована.
 - **ADR-0004 status drift** (start-of-pass гіпотеза) — false positive: рядок 3 уже містить `**Status:** superseded by [ADR-0047]`.
 
@@ -59,12 +59,12 @@
 | `usePlan`, `PaywallModal`, `billingKeys` factory (Hard Rule #2)          | ✅ shipped.                                                                                                                                   |
 | Sentry (web + mobile + server), OpenTelemetry, Pino redaction (Rule #21) | ✅ shipped.                                                                                                                                   |
 | OpenClaw Phases 1+1.5+2.5+3+4                                            | ✅ shipped (Phase 3 closed 2026-05-13). Gateway migration Stage 1–7 done, legacy deletion 2026-06-09.                                         |
-| AI Memory activation runbook                                             | ✅ [`docs/launch/tech/ai-memory-activation.md`](../launch/tech/ai-memory-activation.md).                                                      |
+| AI Memory activation runbook                                             | ✅ [`docs/launch/tech/ai-memory-activation.md`](../../launch/tech/ai-memory-activation.md).                                                   |
 
 ### Test stack
 
 - Vitest (units), Playwright (e2e), Testcontainers (server integration), MSW (network mocking).
-- Mutation testing (Stryker) — видалено разом з CloudSync v1 sunset (#052b); explicit decision-record присутній у [`docs/testing/README.md:12`](../testing/README.md), [`2026-05-05-tests-review.md:40`](../testing/2026-05-05-tests-review.md) і ADR-0020:235. Закрите (див. §[Truly outstanding](#truly-outstanding) item D2 ✅).
+- Mutation testing (Stryker) — видалено разом з CloudSync v1 sunset (#052b); explicit decision-record присутній у [`docs/testing/README.md:12`](../../testing/README.md), [`2026-05-05-tests-review.md:40`](../../testing/2026-05-05-tests-review.md) і ADR-0020:235. Закрите (див. §[Truly outstanding](#truly-outstanding) item D2 ✅).
 
 ## Раніше виявлені «гарячі точки» — closure-таблиця
 
@@ -83,8 +83,8 @@
 | Monobank webhook deprecation у CONTRIBUTING (P2)                               | **Cosmetic**                       | Згадка в README. Якщо команда вирішить — short paragraph у CONTRIBUTING.                                                                                                                                  |
 | `OptimizedImage`, `PullToRefreshIndicator`, `shared/lib/log` як dead-code (P2) | **Closed**                         | Усі під `@scaffolded` маркером з `@nextStep` JSDoc.                                                                                                                                                       |
 | AI Memory silent no-op при відсутньому `VOYAGE_API_KEY` (P2)                   | **By-design**                      | `AI_MEMORY_ENABLED=false` за замовчуванням — master-switch. Activation runbook вимагає key. Fail-loud guard — D3.                                                                                         |
-| `audit-exception` процес (P2)                                                  | **Closed**                         | [`docs/security/audit-exceptions.md`](../security/audit-exceptions.md) існує; SLA + nightly-audit у тому ж розділі.                                                                                       |
-| Visual-regression pgvector fallback (P2)                                       | **Tracked в pr-plan-testing-devx** | див. [planning/pr-plan-testing-devx-2026-05.md](../planning/pr-plan-testing-devx-2026-05.md).                                                                                                             |
+| `audit-exception` процес (P2)                                                  | **Closed**                         | [`docs/security/audit-exceptions.md`](../../security/audit-exceptions.md) існує; SLA + nightly-audit у тому ж розділі.                                                                                    |
+| Visual-regression pgvector fallback (P2)                                       | **Tracked в pr-plan-testing-devx** | див. [planning/pr-plan-testing-devx-2026-05.md](../../planning/pr-plan-testing-devx-2026-05.md).                                                                                                          |
 | Stryker removal decision-record (P2)                                           | **Closed**                         | Already covered: `docs/testing/README.md:12`, `2026-05-05-tests-review.md:40`, ADR-0020:235 містять explicit decision. Підтверджено second-pass executor 2026-05-15 — див. D2 ✅.                         |
 | Admin seed-скрипт (P2)                                                         | **By-design (Better Auth)**        | Перша адмін-учетка створюється через web-форму + manual DB-update. Якщо команда хоче формалізувати — окремий PR.                                                                                          |
 
@@ -98,7 +98,7 @@
 
 **Original concern:** наскрізний integration test з фейковим Stripe webhook signature → DB insert → user role update. Поточне покриття на момент аудиту: 3 unit-тести на lifecycle (`subscription_started`/`renewed`/`canceled`) + checkout/portal endpoints. Не вистачало тесту, який ловить регресію signature-validation flow.
 
-**Suggested home (historical):** [`docs/planning/pr-plan-testing-devx-2026-05.md`](../planning/pr-plan-testing-devx-2026-05.md) — реалізовано як route-level supertest.
+**Suggested home (historical):** [`docs/planning/pr-plan-testing-devx-2026-05.md`](../../planning/pr-plan-testing-devx-2026-05.md) — реалізовано як route-level supertest.
 
 ### D2 — Stryker removal decision-record (P2) ✅ Closed
 
@@ -108,8 +108,8 @@
 
 **Resolution:** Explicit decision вже зафіксовано у трьох канонічних місцях:
 
-- [`docs/testing/README.md:12`](../testing/README.md) — короткий decision-record у каноні testing.
-- [`docs/testing/2026-05-05-tests-review.md:40`](../testing/2026-05-05-tests-review.md) — historical context у tests-review.
+- [`docs/testing/README.md:12`](../../testing/README.md) — короткий decision-record у каноні testing.
+- [`docs/testing/2026-05-05-tests-review.md:40`](../../testing/2026-05-05-tests-review.md) — historical context у tests-review.
 - ADR-0020:235 — formal decision у ADR.
 
 Жодних подальших дій не потрібно.
@@ -120,7 +120,7 @@
 
 **Чому P2:** master-switch у false, активація — manual за runbook-ом, де key явно named. Ризик низький, але обернений — за день можна додати fail-loud assertion при boot, коли обидві умови виконані.
 
-**Suggested home:** початково таргетувалось у `pr-plan-security-obs-2026-05.md`, але той план закрито й заархівовано ([`docs/planning/archive/pr-plan-security-obs-2026-05.md`](../planning/archive/pr-plan-security-obs-2026-05.md), усі S2–S11 ✅). Нову S-size card заводити в активному [`docs/planning/pr-plan-backend-perf-2026-05.md`](../planning/pr-plan-backend-perf-2026-05.md) (env-validation / observability track).
+**Suggested home:** початково таргетувалось у `pr-plan-security-obs-2026-05.md`, але той план закрито й заархівовано ([`docs/planning/archive/pr-plan-security-obs-2026-05.md`](../../planning/archive/pr-plan-security-obs-2026-05.md), усі S2–S11 ✅). Нову S-size card заводити в активному [`docs/planning/pr-plan-backend-perf-2026-05.md`](../../planning/pr-plan-backend-perf-2026-05.md) (env-validation / observability track).
 
 ### D4 — ADR freshness header hygiene (P2) ✅ Closed
 
@@ -140,7 +140,7 @@
 4. **CODEOWNERS bus-factor контракт** — лінт enforce-ить існування Secondary, але дозволяє `TBD(role)` як свідомий placeholder. Це чесніше за «прибрати поле» або «поставити випадкову людину».
 5. **`@scaffolded`/`@deprecated`/`@experimental` JSDoc маркери** — Hard Rule #10 + `scripts/knip-respects-scaffolded.mjs`. Замість «видалити vs залишити» — третій варіант з контекстом і `@nextStep`.
 6. **AI markers (`AI-NOTE`/`AI-CONTEXT`/`AI-DANGER`/`AI-GENERATED`/`AI-LEGACY`)** — формалізовані коментарі-помітки + `pnpm lint:ai-legacy` + weekly idempotent GitHub issue від `.github/workflows/ai-legacy-scan.yml`.
-7. **Conventional Commits з explicit scope enum** — commitlint enforce-ить, що `feat(web):`/`fix(server):` мають конкретний scope з [списку 24 значень](../../commitlint.config.js). Це робить git log читабельним.
+7. **Conventional Commits з explicit scope enum** — commitlint enforce-ить, що `feat(web):`/`fix(server):` мають конкретний scope з [списку 24 значень](../../../commitlint.config.js). Це робить git log читабельним.
 
 ## Risks not addressed by current planning
 

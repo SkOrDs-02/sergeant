@@ -16,7 +16,7 @@
 > consumed by Pino (server logs), `Sentry.beforeSend` on every surface
 > (server / web / mobile / OpenClaw) and the OTel attribute denylist.
 > Adding a new redacted field means editing **one** file. Audit
-> [`docs/audits/2026-05-13-security-observability-roast.md`](../audits/2026-05-13-security-observability-roast.md) §P0-S1..S5
+> [`docs/audits/2026-05-13-security-observability-roast.md`](../audits/archive/2026-05-13-security-observability-roast.md) §P0-S1..S5
 > captures the rationale.
 
 > **Machine-readable mirror.** The list below is the documentation copy of

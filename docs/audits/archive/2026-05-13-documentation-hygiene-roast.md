@@ -1,7 +1,7 @@
 # Doc-hygiene roast — 2026-05-13
 
 > **Last validated:** 2026-05-31 by audits-runner workflow. **Next review:** 2026-08-29.
-> **Status:** Closed (historical record — усі 53 broken links + 3 stale claims пофікшено у Devin PR; P0/P1/P2 закриті)
+> **Status:** Archived — усі 53 broken links + 3 stale claims пофікшено у Devin PR; P0/P1/P2 закриті)
 >
 > **Closure note (2026-05-31, audits-runner triage):** TL;DR пункти 1–3 явно позначені «Fixed у цьому PR» — посилання резолвляться, `lighthouse-ci.yml` claims оновлено, archive-move regression закрита. Поточний `pnpm lint:docs` проходить чисто. Outstanding items: жодних. Документ зберігається як історичний рекорд.
 >
@@ -9,8 +9,8 @@
 > [`2026-05-02-doc-hygiene-audit.md`](./2026-05-02-doc-hygiene-audit.md) — попередній doc-hygiene прохід ·
 > [`2026-05-03-readme-gap-analysis.md`](./2026-05-03-readme-gap-analysis.md) — gap-analysis README ·
 > [`2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md) — попередній прохід по dead-links (закрив 14, лишилось 53 нових через archive-move) ·
-> [`archive/2026-05-11-docs-audit-summary.md`](./archive/2026-05-11-docs-audit-summary.md) — summary 2026-05-11 ·
-> [`docs/governance/doc-freshness.md`](../governance/doc-freshness.md) — система freshness-маркерів.
+> [`archive/2026-05-11-docs-audit-summary.md`](./2026-05-11-docs-audit-summary.md) — summary 2026-05-11 ·
+> [`docs/governance/doc-freshness.md`](../../governance/doc-freshness.md) — система freshness-маркерів.
 
 ## TL;DR
 
@@ -30,15 +30,15 @@
 
 **Action: Change** — оновлені relative paths:
 
-| File:line                                                                        | Action                                                                                                                                                      |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/audits/archive/2026-04-26-sergeant-audit-devin.md:391`                     | `../adr/0002-tool-lifecycle.md` → `../../adr/0002-tool-lifecycle.md`                                                                                        |
-| `docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md:4,10`            | `./2026-04-28-implementation-roadmap.md` → `../2026-04-28-implementation-roadmap.md`                                                                        |
-| `docs/audits/archive/2026-04-28-ux-ui-audit.md:4,11,22`                          | `./2026-04-28-ux-improvement-plan.md` → `../2026-04-28-ux-improvement-plan.md`                                                                              |
-| `docs/audits/archive/2026-04-28-ux-ui-audit.md:24`                               | `../design/design-system.md` → `../../design/design-system.md`                                                                                              |
-| `docs/audits/archive/2026-05-03-ftux-onboarding-roast.md` (×16, including `:32`) | `../launch/`, `../design/`, `../observability/`, `../../apps/`, `./<peer>` — всі +1 рівень `../` ([sed batch](../../scripts/docs/check-markdown-links.mjs)) |
-| `docs/audits/archive/2026-05-04-csp-disable-retrospective.md` (×14)              | `../initiatives/`, `../security/`, `../governance/`, `../playbooks/`, `../tech-debt/` — всі +1 рівень `../`                                                 |
-| `docs/audits/archive/2026-05-11-docs-audit-summary.md:60-66`                     | `../adr/0035-...`, `../adr/0039-...`, `../adr/0046-...`, `../initiatives/archive/2026-08-02-...` — +1 рівень `../`                                          |
+| File:line                                                                        | Action                                                                                                                                                         |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/audits/archive/2026-04-26-sergeant-audit-devin.md:391`                     | `../adr/0002-tool-lifecycle.md` → `../../adr/0002-tool-lifecycle.md`                                                                                           |
+| `docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md:4,10`            | `./2026-04-28-implementation-roadmap.md` → `../2026-04-28-implementation-roadmap.md`                                                                           |
+| `docs/audits/archive/2026-04-28-ux-ui-audit.md:4,11,22`                          | `./2026-04-28-ux-improvement-plan.md` → `../2026-04-28-ux-improvement-plan.md`                                                                                 |
+| `docs/audits/archive/2026-04-28-ux-ui-audit.md:24`                               | `../design/design-system.md` → `../../design/design-system.md`                                                                                                 |
+| `docs/audits/archive/2026-05-03-ftux-onboarding-roast.md` (×16, including `:32`) | `../launch/`, `../design/`, `../observability/`, `../../apps/`, `./<peer>` — всі +1 рівень `../` ([sed batch](../../../scripts/docs/check-markdown-links.mjs)) |
+| `docs/audits/archive/2026-05-04-csp-disable-retrospective.md` (×14)              | `../initiatives/`, `../security/`, `../governance/`, `../playbooks/`, `../tech-debt/` — всі +1 рівень `../`                                                    |
+| `docs/audits/archive/2026-05-11-docs-audit-summary.md:60-66`                     | `../adr/0035-...`, `../adr/0039-...`, `../adr/0046-...`, `../initiatives/archive/2026-08-02-...` — +1 рівень `../`                                             |
 
 **Verification:** `pnpm docs:check-links` тепер `✅ All markdown links resolve.`
 
@@ -61,16 +61,16 @@
 
 **Root cause:** `f5caf1ee chore(web): remove unused useHashRoute hook + tests + exports` (2026-05-13) видалив `apps/web/src/shared/hooks/useHashRoute.ts`. `docs/initiatives/0006-frontend-routing-and-code-split.md:119,160` рапортує файл як «still active for fizruk + routine», що неправда — fizruk має `useFizrukRoute.ts`, routine має `useRoutineRoute.ts`.
 
-**Action: Change** ([`docs/initiatives/0006-frontend-routing-and-code-split.md`](../initiatives/0006-frontend-routing-and-code-split.md)):
+**Action: Change** ([`docs/initiatives/0006-frontend-routing-and-code-split.md`](../../initiatives/0006-frontend-routing-and-code-split.md)):
 
 - `line 119` — статус прогрес-бара `[ ] Прогрес: 2/4` → `[x] 4/4: ... shared usage closed in f5caf1ee`
 - `line 160` — посилання на видалений файл → strikethrough + посилання на per-module hooks
 
 ### P0-4. Tech-debt freshness guard coverage gap ✓
 
-**Root cause:** [`scripts/check-tech-debt-freshness.mjs:31-34`](../../scripts/check-tech-debt-freshness.mjs) `DEFAULT_FILES` містив лише `frontend.md` + `mobile.md`. `backend.md` мав ручний freshness header (`Last validated: 2026-05-11`), але без auto-check.
+**Root cause:** [`scripts/check-tech-debt-freshness.mjs:31-34`](../../../scripts/check-tech-debt-freshness.mjs) `DEFAULT_FILES` містив лише `frontend.md` + `mobile.md`. `backend.md` мав ручний freshness header (`Last validated: 2026-05-11`), але без auto-check.
 
-**Action: Change** ([`scripts/check-tech-debt-freshness.mjs`](../../scripts/check-tech-debt-freshness.mjs)):
+**Action: Change** ([`scripts/check-tech-debt-freshness.mjs`](../../../scripts/check-tech-debt-freshness.mjs)):
 
 - Додано `docs/tech-debt/backend.md` у `DEFAULT_FILES`
 - Розширено marker grammar: тепер також парсить `> **Last validated:** YYYY-MM-DD …` (canonical freshness-format у всьому репо), а не лише історичні `> **Оновлено …**` / `> **Last reviewed: …**`
@@ -108,11 +108,11 @@
 
 ### P2-1. Codemod catalog enforcement gap
 
-✅ Closed via `local diff`: [`scripts/check-kvstore-deep-imports.mjs`](../../scripts/check-kvstore-deep-imports.mjs) guards against new app-layer `kvStore` deep imports, `package.json` wires it through `lint:kvstore-deep-imports` and the top-level `lint`, and [`scripts/__tests__/check-kvstore-deep-imports.test.mjs`](../../scripts/__tests__/check-kvstore-deep-imports.test.mjs) now covers both detection and lint wiring.
+✅ Closed via `local diff`: [`scripts/check-kvstore-deep-imports.mjs`](../../../scripts/check-kvstore-deep-imports.mjs) guards against new app-layer `kvStore` deep imports, `package.json` wires it through `lint:kvstore-deep-imports` and the top-level `lint`, and [`scripts/__tests__/check-kvstore-deep-imports.test.mjs`](../../../scripts/__tests__/check-kvstore-deep-imports.test.mjs) now covers both detection and lint wiring.
 
 ### P2-2. Knip respects-scaffolded edge case
 
-✅ Closed (already covered): [`scripts/knip-respects-scaffolded.mjs`](../../scripts/knip-respects-scaffolded.mjs) `MARKER_RE` уже фільтрує `@scaffolded`, `@deprecated` і `@experimental`.
+✅ Closed (already covered): [`scripts/knip-respects-scaffolded.mjs`](../../../scripts/knip-respects-scaffolded.mjs) `MARKER_RE` уже фільтрує `@scaffolded`, `@deprecated` і `@experimental`.
 
 ## Прогрес виконання (в цьому PR)
 

@@ -77,6 +77,7 @@ client.release()   [finally block — always executed]
 ```
 
 **Key properties:**
+
 - One `BEGIN`/`COMMIT` wraps the entire batch — all ops in a single push request are committed atomically or not at all.
 - Per-op failures use `SAVEPOINT` so a single rejected op does not poison the whole transaction; the op-log INSERT still records the rejection.
 - `client.release()` is in a `finally` block — connection is never leaked even on outer exception.
@@ -94,6 +95,7 @@ pool.query(...)   [direct pool — no explicit BEGIN/COMMIT]
 ```
 
 **Key properties:**
+
 - Read-only SELECT; no transaction wrapper needed (auto-commit, snapshot isolation from Postgres default).
 - No `pool.connect()` / `client.release()` — `pool.query()` acquires and releases a connection automatically.
 - Cursor-based pagination (`id > since`, returns `next_cursor`).
@@ -114,4 +116,4 @@ The dead-letter queue (DLQ) is **client-side only** (SQLite `sync_op_outbox` tab
 - **Initiative:** [`docs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md`](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md) (Phases 1-6 done; Phase 7 wiring closed 2026-05-15).
 - **Storage roadmap:** [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md) (Stage 8/9 dual-write — взаємозалежність зі sync-conflict-resolution).
 - **PR plan:** [`docs/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/pr-plan-backend-perf-2026-05.md).
-- **Synthesis:** [`docs/audits/2026-05-15-deep-audit-state-of-repo.md`](./2026-05-15-deep-audit-state-of-repo.md) (state-of-repo snapshot — D1-D4 trackers).
+- **Synthesis:** [`docs/audits/2026-05-15-deep-audit-state-of-repo.md`](./archive/2026-05-15-deep-audit-state-of-repo.md) (state-of-repo snapshot — D1-D4 trackers).

@@ -1,19 +1,19 @@
 # Sergeant — dead-code & stale-links аудит (2026-05-05)
 
 > **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
-> **Status:** Closed (superseded by newer dead-code and docs-hygiene trackers)
+> **Status:** Archived
 
 > Аудит виконано 2026-05-05 проти `main @ f6bc64aa` як прохід по «застарілих чи мертвих елементах» репо. Скоуп — те, що автоматичні гарди (`pnpm dead-code:files`, `pnpm knip`, `pnpm docs:check-links`, `pnpm lint:tech-debt-freshness`, `pnpm lint:ai-legacy`, `pnpm docs:check-freshness-coverage`) знаходять зараз. Усі fix-able findings закриті у супровідному PR — цей файл лишається як historical record + дашборд для outstanding hints.
 >
-> **Canonical active owners:** Knip/dead-code follow-ups now live in [`2026-05-13-dead-code-hard-rules-roast.md`](./2026-05-13-dead-code-hard-rules-roast.md); docs-link/freshness follow-ups live in [`2026-05-13-documentation-hygiene-roast.md`](./2026-05-13-documentation-hygiene-roast.md). Do not add new open work here.
+> **Canonical active owners:** Knip/dead-code follow-ups now live in [`2026-05-13-dead-code-hard-rules-roast.md`](../2026-05-13-dead-code-hard-rules-roast.md); docs-link/freshness follow-ups live in [`2026-05-13-documentation-hygiene-roast.md`](./2026-05-13-documentation-hygiene-roast.md). Do not add new open work here.
 
 ## TL;DR
 
-- **Жодного справжнього мертвого файлу.** Усі 13 «unused files» з `pnpm knip` мають lifecycle-маркер (`@scaffolded` для barrel-ів, чекаючих consumer-ів; `@deprecated` для re-export-ів, які чекають на завершення міграції; `@deprecated` для одноразових кодомодів у `scripts/codemods/`). Гард `pnpm dead-code:files` (через [`scripts/knip-respects-scaffolded.mjs`](../../scripts/knip-respects-scaffolded.mjs)) тепер passes.
+- **Жодного справжнього мертвого файлу.** Усі 13 «unused files» з `pnpm knip` мають lifecycle-маркер (`@scaffolded` для barrel-ів, чекаючих consumer-ів; `@deprecated` для re-export-ів, які чекають на завершення міграції; `@deprecated` для одноразових кодомодів у `scripts/codemods/`). Гард `pnpm dead-code:files` (через [`scripts/knip-respects-scaffolded.mjs`](../../../scripts/knip-respects-scaffolded.mjs)) тепер passes.
 - **Doc-drift навколо paths.** `pnpm docs:check-links` знайшов **14 broken internal links** у 5 документах — усі через рефактори, що переїхали (vercel.json → `apps/web/vercel.json`, apps/server/src/middleware/ → `apps/server/src/http/`, docs/design-system/ → `docs/design/`, apps/web/src/components/VoiceMicButton.tsx → `apps/web/src/shared/components/ui/VoiceMicButton.tsx`, scripts/bundle-size-guard.ts → `scripts/check-bundle-size.mjs`, useHashRouter.ts переніс у Finyk-модуль, vite.config.js живе під apps/web/). Усе виправлено.
 - **Один умисний placeholder.** `docs/launch/product-os/sprint-retros/s6-cleanup-batch.md` згадується як «буде створений по завершенню» — конвертовано з markdown-link у code-mention, щоб не ламати лінкер.
 - **2 unmarked barrel-и:** `apps/server/src/modules/ai-memory/index.ts` і `apps/web/src/shared/forms/index.ts` — обидва задумані як public surface, але consumer-и поки що ходять deep-import-ами. Додано `@scaffolded` маркер з `@nextStep` per AGENTS.md → Hard Rule #10.
-- **2 codemod-и без lifecycle marker:** `scripts/codemods/strip-js-extensions/script.mjs` (раніше) і ~~scripts/codemods/syncedKV/script.mjs~~ (доданий PR #008; видалений у PR #053a-cleanup). Обидва промарковані `// @deprecated`, каталог [`scripts/codemods/README.md`](../../scripts/codemods/README.md) розширено `syncedKV` рядком.
+- **2 codemod-и без lifecycle marker:** `scripts/codemods/strip-js-extensions/script.mjs` (раніше) і ~~scripts/codemods/syncedKV/script.mjs~~ (доданий PR #008; видалений у PR #053a-cleanup). Обидва промарковані `// @deprecated`, каталог [`scripts/codemods/README.md`](../../../scripts/codemods/README.md) розширено `syncedKV` рядком.
 - **Outstanding (для майбутніх PR-ів):** `pnpm knip` повідомляє про **3 unused dependencies** + **4 unused devDependencies** + **77 unused exports** + **51 duplicate exports** (named-export + `default`). Все **видиме**, але fix-and-verify виходить за межі цього аудиту — зведено в § 3.
 
 ---
@@ -32,7 +32,7 @@
 | `docs/initiatives/archive/_0008-platform-hardening.md`    | `../../apps/server/src/__tests__/`               | `../../apps/server/src/http/` + іменовані `rateLimit*.test.ts` | `__tests__/` стало per-module (`http/`, `migrations/__tests__/`).   |
 | `docs/initiatives/archive/_0008-platform-hardening.md`    | `../../apps/server/src/middleware/`              | `../../apps/server/src/http/`                                  | Middleware рефакторнули у `http/`.                                  |
 | `docs/integrations/env-vars.md`                           | ../../apps/web/src/components/VoiceMicButton.tsx | `../../apps/web/src/shared/components/ui/VoiceMicButton.tsx`   | Перенесено в `shared/components/ui/` (за конвенцією).               |
-| `docs/launch/product-os/ftux-sprint-plan.md`              | `[…s6-cleanup-batch.md](./sprint-retros/...)`    | code-reference (link removed)                                  | Файл «буде створений по завершенню» — link-checker не вгадає.       |
+| `docs/launch/product-os/ftux-sprint-plan.md`              | `[…s6-cleanup-batch.md](../sprint-retros/...)`   | code-reference (link removed)                                  | Файл «буде створений по завершенню» — link-checker не вгадає.       |
 
 `pnpm docs:check-links` тепер `✅All markdown links resolve.` (12 external 404 / aborted — non-fatal, поза scope цього аудиту).
 
@@ -49,7 +49,7 @@
 
 ### 1.3 Codemod catalog → дописано
 
-[`scripts/codemods/README.md`](../../scripts/codemods/README.md) тепер каталогізує обидва історичні кодомоди (`strip-js-extensions/`, `syncedKV/`) з колонками «Запущено / Що робив / Long-term enforcement». Freshness-маркер бампнуто на 2026-05-05.
+[`scripts/codemods/README.md`](../../../scripts/codemods/README.md) тепер каталогізує обидва історичні кодомоди (`strip-js-extensions/`, `syncedKV/`) з колонками «Запущено / Що робив / Long-term enforcement». Freshness-маркер бампнуто на 2026-05-05.
 
 ---
 
@@ -165,14 +165,14 @@ pnpm docs:check-freshness-coverage # ✅All tracked markdown files have a freshn
 pnpm knip --reporter=json | tee dist/knip-snapshot-$(date +%F).json
 ```
 
-Виходить single-line JSON, який потім порівнюється поміж snapshot-ами — це і є основний механізм трекати «чи зростає кількість unused-export-ів за час». Існуючий гард [`scripts/knip-respects-scaffolded.mjs`](../../scripts/knip-respects-scaffolded.mjs) парсить цей JSON і відфільтровує файли з lifecycle-маркерами.
+Виходить single-line JSON, який потім порівнюється поміж snapshot-ами — це і є основний механізм трекати «чи зростає кількість unused-export-ів за час». Існуючий гард [`scripts/knip-respects-scaffolded.mjs`](../../../scripts/knip-respects-scaffolded.mjs) парсить цей JSON і відфільтровує файли з lifecycle-маркерами.
 
 ---
 
 ## Зв'язки
 
 - [`docs/audits/2026-05-02-doc-hygiene-audit.md`](./2026-05-02-doc-hygiene-audit.md) — попередній doc-hygiene прохід (звідки розпочаті `scripts/codemods/` каталог + thin-pointer формат `CLAUDE.md`/`DEVIN.md`).
-- [`AGENTS.md` → Hard Rule #10](../../AGENTS.md) — лайфциклові маркери (`@scaffolded` / `@deprecated` / `@experimental`) як умова для dead-code:files гарду.
-- [`scripts/codemods/README.md`](../../scripts/codemods/README.md) — каталог одноразових міграційних скриптів.
-- [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) — outstanding tech-debt по `apps/web`, на яке посилаються initiatives 0006/0007.
-- [`do./2026-05-03-web-deep-dive/02-architecture-and-state.md`](./2026-05-03-web-deep-dive/02-architecture-and-state.md) — джерело `@scaffolded` маркерів для `useApiForm` барелу та storage-roadmap PR-ів.
+- [`AGENTS.md` → Hard Rule #10](../../../AGENTS.md) — лайфциклові маркери (`@scaffolded` / `@deprecated` / `@experimental`) як умова для dead-code:files гарду.
+- [`scripts/codemods/README.md`](../../../scripts/codemods/README.md) — каталог одноразових міграційних скриптів.
+- [`docs/tech-debt/frontend.md`](../../tech-debt/frontend.md) — outstanding tech-debt по `apps/web`, на яке посилаються initiatives 0006/0007.
+- [`do./2026-05-03-web-deep-dive/02-architecture-and-state.md`](../2026-05-03-web-deep-dive/02-architecture-and-state.md) — джерело `@scaffolded` маркерів для `useApiForm` барелу та storage-roadmap PR-ів.

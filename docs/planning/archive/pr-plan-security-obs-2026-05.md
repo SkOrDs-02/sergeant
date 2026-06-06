@@ -3,11 +3,11 @@
 > **Last validated:** 2026-06-02 by @claude. **Next review:** ніколи (read-only архів).
 > **Status:** Archived (read-only).
 > **Created:** 2026-05-13.
-> **Source:** [`docs/audits/2026-05-13-security-observability-roast.md`](../../audits/2026-05-13-security-observability-roast.md) — прожарка, з якої цей execution-план виник. Жив як `docs/planning/pr-plan-security-obs-2026-05.md` до fast-forward архівації.
+> **Source:** [`docs/audits/2026-05-13-security-observability-roast.md`](../../audits/archive/2026-05-13-security-observability-roast.md) — прожарка, з якої цей execution-план виник. Жив як `docs/planning/pr-plan-security-obs-2026-05.md` до fast-forward архівації.
 > **Purpose:** Closed execution-план security/observability прожарки 2026-05-13. Усі картки **S2–S11 ✅ Виконано, verified on main** (no-console-pii ESLint rule, SRI-guard `lint:html-sri`, Pino recursive redact depth, OTel denylist parity test, PBKDF2 600k ramp-up + migration, security-endpoint contract tests, web-vitals/analytics PII guard, Sentry init tags, `pii-handling.md` drift-guard, CSP meta ↔ vercel.json parity). Fast-forward архівація (90-day gate skipped за standing-дозволом founder-а) через `sergeant-planning-batch` workflow 2026-06-02.
 
 > **Скоуп:** виключно відкриті пункти **S2–S11** з
-> [`docs/audits/2026-05-13-security-observability-roast.md`](../../audits/2026-05-13-security-observability-roast.md).
+> [`docs/audits/2026-05-13-security-observability-roast.md`](../../audits/archive/2026-05-13-security-observability-roast.md).
 > S1 (Web Sentry PII scrub parity) вже закритий у тому ж PR, що ландив сам
 > roast — не плануємо повторно. План розрахований на 1 квартал
 > (sprint-by-sprint, не на квартальний biggie-release).
@@ -15,12 +15,12 @@
 ## Cross-refs
 
 - **Audit / джерело пунктів:**
-  [`docs/audits/2026-05-13-security-observability-roast.md`](../../audits/2026-05-13-security-observability-roast.md)
+  [`docs/audits/2026-05-13-security-observability-roast.md`](../../audits/archive/2026-05-13-security-observability-roast.md)
   — section IDs `S2..S11` нижче зберігаються 1-в-1 із roast-документом.
 - **Споріднені аудити (P0/P1 контекст):**
   [`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md),
   [`docs/audits/archive/2026-05-07-app-audit.md`](../../audits/archive/2026-05-07-app-audit.md),
-  [`docs/audits/2026-05-07-full-app-regression-ux-audit.md`](../../audits/2026-05-07-full-app-regression-ux-audit.md),
+  [`docs/audits/2026-05-07-full-app-regression-ux-audit.md`](../../audits/archive/2026-05-07-full-app-regression-ux-audit.md),
   [`docs/audits/archive/2026-05-04-csp-disable-retrospective.md`](../../audits/archive/2026-05-04-csp-disable-retrospective.md)
   (A1–A5 closed 2026-05-06).
 - **Security policy / canonical:**
