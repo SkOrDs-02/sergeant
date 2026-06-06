@@ -3,6 +3,7 @@
   "skills": {
     "paths": ["./.agents/skills"]
   },
+  "instructions": ["./AGENTS.md", "./CLAUDE.md"],
   "permission": {
     "read": "allow",
     "bash": "allow",
@@ -23,6 +24,14 @@
     "task": "allow",
     "question": "allow",
     "todowrite": "allow",
-    "todoread": "allow"
+    "todoread": "allow",
+    "skill": "allow",
+    "background_process": "allow",
+    "agent_manager": "allow",
+    "kilo_local_recall": "allow"
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true
   }
 }
