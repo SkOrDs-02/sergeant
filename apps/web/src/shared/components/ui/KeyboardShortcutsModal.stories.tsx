@@ -1,9 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import {
-  KeyboardShortcutsModal,
-  ShortcutRegistryProvider,
-} from "./KeyboardShortcutsModal";
+import { ShortcutRegistryProvider } from "./KeyboardShortcutsModal";
+import { KeyboardShortcutsModal } from "./KeyboardShortcutsModalUI";
 import { Button } from "./Button";
 
 /**

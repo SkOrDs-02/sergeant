@@ -50,13 +50,16 @@ export type {
 } from "./EmptyState";
 
 export {
-  KeyboardShortcutsModal,
   useKeyboardShortcutsModal,
   ShortcutRegistryProvider,
   ShortcutRegistryContext,
   useRegisterShortcuts,
 } from "./KeyboardShortcutsModal";
 export type { KeyboardShortcut } from "./KeyboardShortcutsModal";
+// The heavy modal body lives in its own module so it can be lazy-loaded
+// at the render sites (initiative 0017). Re-exported here as a
+// tree-shakeable binding — pulled into a chunk only when actually used.
+export { KeyboardShortcutsModal } from "./KeyboardShortcutsModalUI";
 
 export {
   AnimatedNumber,

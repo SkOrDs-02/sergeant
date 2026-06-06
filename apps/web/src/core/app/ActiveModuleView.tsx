@@ -1,9 +1,9 @@
+import { Suspense } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
-import { KeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
-import { lazyDefault } from "../lib/lazyImport";
+import { lazyDefault, lazyImport } from "../lib/lazyImport";
 import ModuleErrorBoundary from "../ModuleErrorBoundary";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
 import { HubModals } from "./HubModals";
@@ -24,6 +24,13 @@ const NutritionApp = lazyDefault(
 // та ModuleErrorBoundary уже огортають цей слот).
 const RoutineApp = lazyDefault(
   () => import("../../modules/routine/RoutineApp"),
+);
+// The shortcuts modal body is heavy (portal + focus-trap + key grid) and
+// only renders on the `?` hotkey, so it ships as its own chunk and loads
+// on first open instead of inflating the entry bundle (initiative 0017).
+const KeyboardShortcutsModal = lazyImport(
+  () => import("@shared/components/ui/KeyboardShortcutsModalUI"),
+  "KeyboardShortcutsModal",
 );
 
 export interface ActiveModuleViewProps {
@@ -142,7 +149,14 @@ export function ActiveModuleView(props: ActiveModuleViewProps) {
         onCloseSearch={ui.closeSearch}
         onOpenModule={openModule}
       />
-      <KeyboardShortcutsModal open={shortcutsOpen} onClose={onCloseShortcuts} />
+      {shortcutsOpen && (
+        <Suspense fallback={null}>
+          <KeyboardShortcutsModal
+            open={shortcutsOpen}
+            onClose={onCloseShortcuts}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
