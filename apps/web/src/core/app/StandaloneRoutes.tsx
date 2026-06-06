@@ -7,6 +7,10 @@ import {
   ASSISTANT_PATH,
   CHAT_PATH,
   DESIGN_PATH,
+  LEGAL_COOKIES_PATH,
+  LEGAL_OFFER_PATH,
+  LEGAL_PRIVACY_PATH,
+  LEGAL_TERMS_PATH,
   PRICING_PATH,
   STATUS_PATH,
   PROFILE_PATH,
@@ -43,6 +47,7 @@ const AssistantCataloguePage = lazyImport(
 );
 const PricingPage = lazyImport(() => import("../PricingPage"), "PricingPage");
 const LandingPage = lazyImport(() => import("../LandingPage"), "LandingPage");
+const LegalPage = lazyImport(() => import("../legal/LegalPage"), "LegalPage");
 const StatusPage = lazyImport(
   () => import("../status/StatusPage"),
   "StatusPage",
@@ -206,6 +211,22 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
       <Suspense fallback={<PageLoader />}>
         <div className="page-enter">
           <PricingPage />
+        </div>
+      </Suspense>
+    ),
+  }),
+
+  defineStandaloneRoute({
+    paths: [
+      LEGAL_PRIVACY_PATH,
+      LEGAL_TERMS_PATH,
+      LEGAL_COOKIES_PATH,
+      LEGAL_OFFER_PATH,
+    ],
+    render: ({ pathname }) => (
+      <Suspense fallback={<PageLoader />}>
+        <div className="page-enter">
+          <LegalPage pathname={pathname} />
         </div>
       </Suspense>
     ),

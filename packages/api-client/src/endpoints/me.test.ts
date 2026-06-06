@@ -108,4 +108,85 @@ describe("createMeEndpoints", () => {
     const init = firstCall(fetchMock)[1] as RequestInit;
     expect(init.signal).toBe(ctrl.signal);
   });
+
+  it("GET /api/me/preferences повертає consent preferences", async () => {
+    const fetchMock = mockFetchOnce({
+      analytics: true,
+      aiMemory: false,
+      pushNotifications: true,
+      updatedAt: "2026-06-06T10:00:00.000Z",
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.getPreferences()).resolves.toEqual({
+      analytics: true,
+      aiMemory: false,
+      pushNotifications: true,
+      updatedAt: "2026-06-06T10:00:00.000Z",
+    });
+    const url = firstCall(fetchMock)[0] as string;
+    expect(url).toContain("/api/v1/me/preferences");
+  });
+
+  it("PATCH /api/me/preferences валідовує partial patch", async () => {
+    const fetchMock = mockFetchOnce({
+      analytics: false,
+      aiMemory: true,
+      pushNotifications: false,
+      updatedAt: "2026-06-06T10:05:00.000Z",
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await me.updatePreferences({ analytics: false });
+
+    const init = firstCall(fetchMock)[1] as RequestInit;
+    expect(init.method).toBe("PATCH");
+    expect(init.body).toBe(JSON.stringify({ analytics: false }));
+  });
+
+  it("GET /api/me/export повертає privacy export без client-side трансформацій", async () => {
+    const payload = {
+      generatedAt: "2026-06-06T10:10:00.000Z",
+      user: {
+        id: "user-123",
+        email: "test@example.com",
+        name: null,
+        image: null,
+        emailVerified: true,
+        createdAt: "2026-01-15T08:30:00.000Z",
+      },
+      preferences: {
+        analytics: true,
+        aiMemory: true,
+        pushNotifications: false,
+        updatedAt: null,
+      },
+      data: {
+        moduleData: [],
+        mono: { connection: null, accounts: [], transactions: [] },
+        billing: { subscriptions: [] },
+        push: { webSubscriptions: [], devices: [] },
+        ai: { usageDaily: [], memories: [] },
+      },
+    };
+    mockFetchOnce(payload);
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.exportData()).resolves.toEqual(payload);
+  });
+
+  it("DELETE /api/me повертає deletion acknowledgement", async () => {
+    const fetchMock = mockFetchOnce({
+      ok: true,
+      deletedAt: "2026-06-06T10:15:00.000Z",
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.deleteAccount()).resolves.toEqual({
+      ok: true,
+      deletedAt: "2026-06-06T10:15:00.000Z",
+    });
+    const init = firstCall(fetchMock)[1] as RequestInit;
+    expect(init.method).toBe("DELETE");
+  });
 });

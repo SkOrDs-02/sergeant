@@ -38,6 +38,10 @@ export const RESET_PASSWORD_PATH = "/reset-password";
 export const PROFILE_PATH = "/profile";
 export const DESIGN_PATH = "/design";
 export const PRICING_PATH = "/pricing";
+export const LEGAL_PRIVACY_PATH = "/legal/privacy";
+export const LEGAL_TERMS_PATH = "/legal/terms";
+export const LEGAL_COOKIES_PATH = "/legal/cookies";
+export const LEGAL_OFFER_PATH = "/legal/offer";
 
 // Anonymous public status page (`/status`). Renders the per-component
 // view from `/api/status`. No auth — same intent as `/pricing` (public

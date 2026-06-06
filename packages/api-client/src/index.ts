@@ -26,9 +26,13 @@ export type {
 // Endpoint factories and their response shapes
 export {
   createMeEndpoints,
+  type MeDeleteResponse,
   type MeEndpoints,
+  type MeExportResponse,
   type MeResponse,
   type User,
+  type UserPreferences,
+  type UserPreferencesPatch,
 } from "./endpoints/me";
 
 export {

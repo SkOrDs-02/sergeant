@@ -15,6 +15,7 @@ import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { captureException } from "./observability/sentry";
 import { usePlan } from "./billing/usePlan";
 import { WaitlistForm } from "./pricing/WaitlistForm";
+import { LegalLinks } from "./legal/LegalLinks";
 
 /**
  * Phase 7 D3 — Pricing tiers (one paid tier).
@@ -467,6 +468,7 @@ export function PricingPage() {
 
           <footer className="text-center text-style-caption text-muted space-y-1">
             <p>{t.footer}</p>
+            <LegalLinks compact />
           </footer>
         </div>
       </div>

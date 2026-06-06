@@ -7,6 +7,7 @@ import { BrandLogo } from "./app/BrandLogo";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { PRICING_PATH, SIGN_IN_PATH, WELCOME_PATH } from "./app/appPaths";
 import { WaitlistForm } from "./pricing/WaitlistForm";
+import { LegalLinks } from "./legal/LegalLinks";
 import { useLocale } from "@shared/i18n/useLocale";
 
 // Phase 6.2 landing surface (initiative 0010, ADR-0051). Публічний `/`
@@ -253,6 +254,7 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
 
         <footer className="text-center text-xs text-muted space-y-1">
           <p>{t.footerText}</p>
+          <LegalLinks compact />
         </footer>
       </div>
     </div>
