@@ -1,7 +1,7 @@
 # 🛠️ Технічний план покращення UI/UX
 
 > **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
-> **Status:** Archived — консолідовано у [`docs/launch/product-os/ftux-master-tracker.md`](../../launch/product-os/ftux-master-tracker.md) (P1-4, прожарка [`2026-05-13-ftux-onboarding-roast.md`](../2026-05-13-ftux-onboarding-roast.md) § P1-4)
+> **Status:** Archived — консолідовано у [`docs/launch/product-os/ftux-master-tracker.md`](../../launch/product-os/ftux-master-tracker.md) (P1-4, прожарка [`2026-05-13-ftux-onboarding-roast.md`](./2026-05-13-ftux-onboarding-roast.md) § P1-4)
 
 **Базується на:** 2026-04-28-ux-ui-audit.md  
 **Автор:** v0 AI  

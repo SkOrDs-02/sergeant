@@ -6,7 +6,7 @@
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)
-> **Sources:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/2026-05-04-revenue-and-marketing-roast.md), [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md), [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md), [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md), [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md)
+> **Sources:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md), [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md), [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md), [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md), [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md)
 > **Canonical delivery owner:** [`docs/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md). This initiative stays as decision frame/reference, not the live PR tracker.
 
 ## TL;DR
@@ -382,7 +382,7 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 
 ## Посилання
 
-- **Аудит-сорс:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/2026-05-04-revenue-and-marketing-roast.md).
+- **Аудит-сорс:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md).
 - **Поточна pricing-модель (буде оновлена):** [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md).
 - **GTM (буде звужений):** [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md).
 - **Технічний skeleton білінгу:** [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md).
@@ -439,7 +439,7 @@ Billing backend реалізовано поза plan-документом; ко�
 
 - `apps/web/src/core/billing/TrialBanner.tsx` (new) — читає `usePlan()`, рендерить інлайн-банер для `subscription.status === 'trialing'` коли `daysLeft ≤ 7`; ≤ 1 день → sticky-варіант з акцентом. CTA → `/pricing?source=trial_banner`. A11y `role="status"` + `aria-live="polite"`. Touch-target 44×44 через `<Button size="sm">`. Mounted у `HubMainContent` banner stack за існуючим `!inFtuxSession`-гейтом.
 - Тести: `apps/web/src/core/billing/TrialBanner.test.tsx` (8 тестів — loading / free / active / >7d / 3d inline / 1d sticky / 0d past-due / CTA navigation).
-- Закриває audit-item `P1-9` у [`docs/audits/2026-05-13-revenue-monetization-roast.md`](../audits/2026-05-13-revenue-monetization-roast.md).
+- Закриває audit-item `P1-9` у [`docs/audits/2026-05-13-revenue-monetization-roast.md`](../audits/archive/2026-05-13-revenue-monetization-roast.md).
 
 **Наступний крок:** `POST /api/billing/portal` (Phase 3.1) → `usePlan()` + `PaywallModal` (Phase 4.1) → real `/pricing` з portal link (Phase 4.2).
 

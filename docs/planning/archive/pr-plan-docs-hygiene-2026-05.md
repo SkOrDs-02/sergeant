@@ -3,12 +3,12 @@
 > **Last validated:** 2026-06-02 by @claude. **Next review:** ніколи (read-only архів).
 > **Status:** Archived (read-only).
 > **Created:** 2026-05-13.
-> **Source:** [`docs/audits/2026-05-13-documentation-hygiene-roast.md`](../../audits/2026-05-13-documentation-hygiene-roast.md) — прожарка, з якої цей execution-план виник. Жив як `docs/planning/pr-plan-docs-hygiene-2026-05.md` до fast-forward архівації.
+> **Source:** [`docs/audits/2026-05-13-documentation-hygiene-roast.md`](../../audits/archive/2026-05-13-documentation-hygiene-roast.md) — прожарка, з якої цей execution-план виник. Жив як `docs/planning/pr-plan-docs-hygiene-2026-05.md` до fast-forward архівації.
 > **Purpose:** Closed execution-план doc-hygiene прожарки 2026-05-13. Усі картки (QW + PR-01…PR-09) ✅ Виконано; кожен запроваджений ними gate (`docs:check-freshness-single-marker`, `docs:check-freshness-cadence`, `docs:check-playbook-3way-sync`, `lint:agents-family-sync`, `lint:kvstore-deep-imports`, `lint:archive-move-depth`, expanded discoverability ROUTES, freshness-dashboard) живий і зелений на `main`. Fast-forward архівація (90-day gate skipped за рішенням founder-а) через `sergeant-planning-batch` workflow 2026-06-02.
 > **Cross-refs:**
-> [`docs/audits/2026-05-13-documentation-hygiene-roast.md`](../../audits/2026-05-13-documentation-hygiene-roast.md) — джерело відкритих items (P1/P2) ·
-> [`docs/audits/2026-05-02-doc-hygiene-audit.md`](../../audits/2026-05-02-doc-hygiene-audit.md) — попередній прохід doc-hygiene ·
-> [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](../../audits/2026-05-05-dead-code-and-stale-links-audit.md) — dead-links / dead-code roast ·
+> [`docs/audits/2026-05-13-documentation-hygiene-roast.md`](../../audits/archive/2026-05-13-documentation-hygiene-roast.md) — джерело відкритих items (P1/P2) ·
+> [`docs/audits/2026-05-02-doc-hygiene-audit.md`](../../audits/archive/2026-05-02-doc-hygiene-audit.md) — попередній прохід doc-hygiene ·
+> [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](../../audits/archive/2026-05-05-dead-code-and-stale-links-audit.md) — dead-links / dead-code roast ·
 > [`docs/governance/README.md`](../../governance/README.md) — sources of truth + CI gates ·
 > [`docs/governance/doc-freshness.md`](../../governance/doc-freshness.md) — freshness-marker grammar ·
 > [`docs/governance/audit-freeze-2026-05-05.md`](../../governance/audit-freeze-2026-05-05.md) — активна 4-тижнева заморозка (до 2026-06-02) ·

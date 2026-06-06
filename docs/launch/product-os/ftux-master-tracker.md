@@ -54,7 +54,7 @@
 >
 > **Paywall placement decided 2026-05-06:** post-first-real-entry sheet (soft, FF-gated, 14d Pro trial без payment method). Sketch + telemetry contract + 3 copy variants (α/β/γ) + acceptance criteria for PR-20 — у [`paywall-ux-placement.md`](./paywall-ux-placement.md). PR-19 landed; PR-20 чекає 0010 Stripe scaffold.
 >
-> **Roast #1/10 — 2026-05-13 progress (parent-driven, freeze override):** 3 carryover items закрито у `2026-05-13-ftux-onboarding-roast` PR — (1) **B-11 §2.9** generic «Що далі» tip → module-aware `nextStepTip` у [`FIRST_ENTRY_CELEBRATIONS`](../../../packages/shared/src/lib/onboardingCelebrations.ts); (2) **P2-15 §4** generic «Продовжити» CTA → module-aware `primaryCtaLabel`; (3) **M-10** FTUX SLO відсутні → declarative [`docs/observability/ftux-slo.yml`](../../observability/ftux-slo.yml). Audit guards у [`onboardingCelebrations.test.ts`](../../../packages/shared/src/lib/onboardingCelebrations.test.ts) блокують regression. Roast doc: [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../../audits/2026-05-13-ftux-onboarding-roast.md).
+> **Roast #1/10 — 2026-05-13 progress (parent-driven, freeze override):** 3 carryover items закрито у `2026-05-13-ftux-onboarding-roast` PR — (1) **B-11 §2.9** generic «Що далі» tip → module-aware `nextStepTip` у [`FIRST_ENTRY_CELEBRATIONS`](../../../packages/shared/src/lib/onboardingCelebrations.ts); (2) **P2-15 §4** generic «Продовжити» CTA → module-aware `primaryCtaLabel`; (3) **M-10** FTUX SLO відсутні → declarative [`docs/observability/ftux-slo.yml`](../../observability/ftux-slo.yml). Audit guards у [`onboardingCelebrations.test.ts`](../../../packages/shared/src/lib/onboardingCelebrations.test.ts) блокують regression. Roast doc: [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../../audits/archive/2026-05-13-ftux-onboarding-roast.md).
 
 **Стан 2026-05-05:**
 
@@ -500,7 +500,7 @@ slos:
 
 ### 8.5. UX-roast 2026-05-06 — P0/P1/P2
 
-> Джерело: [`docs/audits/2026-05-06-ux-roast.md`](../../audits/2026-05-06-ux-roast.md). Виконавчий план: [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../../audits/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../adr/0054-ux-roast-2026-q2.md).
+> Джерело: [`docs/audits/2026-05-06-ux-roast.md`](../../audits/archive/2026-05-06-ux-roast.md). Виконавчий план: [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../../audits/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../adr/0054-ux-roast-2026-q2.md).
 >
 > Статус станом на 2026-05-07: **15/41 змерджено**, 2 obsolete (PR-13, PR-37). Головний блокер Sprint 1: PR-0 (telemetry, S) — не стартував.
 

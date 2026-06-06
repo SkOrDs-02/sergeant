@@ -1,15 +1,15 @@
 # Sergeant — Security & Observability прожарка (2026-05-13)
 
 > **Last validated:** 2026-06-05 by Skords-01 (all S1–S11 follow-ups resolved in code — verified on disk). **Next review:** 2026-09-03.
-> **Status:** Closed
+> **Status:** Archived
 
 > **Cross-refs:**
-> [`2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](./2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — головне джерело попередніх P0/P1 рекомендацій (CSP, Pino redact, Sentry, contract-тести) ·
-> [`archive/2026-05-04-csp-disable-retrospective.md`](./archive/2026-05-04-csp-disable-retrospective.md) — постмортем `CSP_DISABLE`-killswitch (A1–A5 closed 2026-05-06) ·
-> [`2026-05-07-app-audit.md`](./archive/2026-05-07-app-audit.md) — повний аудит зі security-related блокерами ·
+> [`2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — головне джерело попередніх P0/P1 рекомендацій (CSP, Pino redact, Sentry, contract-тести) ·
+> [`archive/2026-05-04-csp-disable-retrospective.md`](./2026-05-04-csp-disable-retrospective.md) — постмортем `CSP_DISABLE`-killswitch (A1–A5 closed 2026-05-06) ·
+> [`2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — повний аудит зі security-related блокерами ·
 > [`2026-05-07-full-app-regression-ux-audit.md`](./2026-05-07-full-app-regression-ux-audit.md) — регресійний UX-аудит (CSRF, CORS traceparent, CSP dev, Vercel Analytics bypass) ·
-> [`docs/governance/rules/15-governance-and-doc-language.md`](../governance/rules/15-governance-and-doc-language.md) — Hard Rule #15 (читати governance перед кодом, UA-docs, freshness).
-> **CSP canonical owner:** remaining CSP rollout/parity work lives in [`docs/security/hardening/C2-frontend-csp.md`](../security/hardening/C2-frontend-csp.md); CSP mentions here are source evidence / broader security context.
+> [`docs/governance/rules/15-governance-and-doc-language.md`](../../governance/rules/15-governance-and-doc-language.md) — Hard Rule #15 (читати governance перед кодом, UA-docs, freshness).
+> **CSP canonical owner:** remaining CSP rollout/parity work lives in [`docs/security/hardening/C2-frontend-csp.md`](../../security/hardening/C2-frontend-csp.md); CSP mentions here are source evidence / broader security context.
 
 **Скоуп:** CSP, secrets-handling, Sentry, OpenTelemetry, web-vitals, audit-logs, auth-flow (Better Auth). Cross-app поверхня.
 

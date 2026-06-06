@@ -1,16 +1,16 @@
 # FTUX onboarding roast — Day 0-7 (2026-05-13)
 
 > **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
-> **Status:** Closed (source audit; execution/status moved to FTUX master tracker)
+> **Status:** Archived
 > Прожарка #1/10 серії «10 прожарок», запущеної 2026-05-13. Скоуп — `apps/web/src/core/onboarding/**`, `apps/web/src/core/app/WelcomeScreen.tsx`, FTUX hero, peek backdrop, first-run sheets, CelebrationModal та перші 7 днів у хабі. Перспектива — продуктовий UX-аудит очима нового користувача, який дає продукту 30-60 секунд перш ніж піти.
 >
 > **Cross-refs:**
-> [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](./archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (frozen reference) ·
-> [`docs/audits/archive/2026-04-28-ux-improvement-plan.md`](./archive/2026-04-28-ux-improvement-plan.md) — попередній технічний UX-план ·
+> [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](./2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (frozen reference) ·
+> [`docs/audits/archive/2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — попередній технічний UX-план ·
 > [`docs/audits/2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md) — post-onboarding UX-прожарка (day 0-7) ·
-> [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](./2026-05-06-ux-roast-pr-plan.md) — виконавчий план UX-прожарки ·
-> [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) — поточний SSOT FTUX-стану ·
-> [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md) — frozen sprint-плани.
+> [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../2026-05-06-ux-roast-pr-plan.md) — виконавчий план UX-прожарки ·
+> [`docs/launch/product-os/ftux-master-tracker.md`](../../launch/product-os/ftux-master-tracker.md) — поточний SSOT FTUX-стану ·
+> [`docs/launch/product-os/ftux-sprint-plan.md`](../../launch/product-os/ftux-sprint-plan.md) — frozen sprint-плани.
 >
 > **Audit-freeze note (2026-05-13).** Master tracker §1 декларує freeze
 > на нові `docs/audits/` файли до 2026-06-02. Цей документ створено за
@@ -59,7 +59,7 @@ events працюють, dashboards задокументовані, retention-co
 
 ### P0-1. CelebrationModal — generic «Що далі» tip (B-11) — ✅ Закрито у цьому PR
 
-- **Файл:** [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) (post-rename; pre-PR path was `CelebrationModal.tsx`), [`packages/shared/src/lib/onboardingCelebrations.ts`](../../packages/shared/src/lib/onboardingCelebrations.ts) (canonical copy).
+- **Файл:** [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) (post-rename; pre-PR path was `CelebrationModal.tsx`), [`packages/shared/src/lib/onboardingCelebrations.ts`](../../../packages/shared/src/lib/onboardingCelebrations.ts) (canonical copy).
 - **Проблема:** після первого реального запису користувач бачив один
   рядок «Продовжуй додавати записи. Після кількох днів отримаєш перші
   інсайти та персональні поради.» — ідентичний для finyk / fizruk /
@@ -71,11 +71,11 @@ events працюють, dashboards задокументовані, retention-co
   - fizruk → «Заплануй наступне тренування — і ритм утвердиться за два-три тижні.»
   - routine → «Завтра я нагадаю про звичку — два дні підряд і мозок підхопить.»
   - nutrition → «Залогуй обід чи вечерю — побачиш баланс БЖВ за день.»
-- **Acceptance:** audit-guard у [`packages/shared/src/lib/onboardingCelebrations.test.ts`](../../packages/shared/src/lib/onboardingCelebrations.test.ts) блокує повернення до generic copy («продовжуй додавати записи», «кількох днів отримаєш»).
+- **Acceptance:** audit-guard у [`packages/shared/src/lib/onboardingCelebrations.test.ts`](../../../packages/shared/src/lib/onboardingCelebrations.test.ts) блокує повернення до generic copy («продовжуй додавати записи», «кількох днів отримаєш»).
 
 ### P0-2. CelebrationModal — generic «Продовжити» CTA (P2-15) — ✅ Закрито у цьому PR
 
-- **Файл:** [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) (post-rename; pre-PR path was `CelebrationModal.tsx`).
+- **Файл:** [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) (post-rename; pre-PR path was `CelebrationModal.tsx`).
 - **Проблема:** primary CTA повертав «Продовжити» — generic word, що
   ігнорує модуль, який щойно flipped first-real-entry. Audit P2-15 §4
   у 2026-05-03 roast: «крім «продовжити» — обіцяти **наступну дію**
@@ -91,7 +91,7 @@ events працюють, dashboards задокументовані, retention-co
 
 ### P0-3. FTUX SLO declarative contract (M-10) — ✅ Закрито у цьому PR
 
-- **Файл:** новий [`docs/observability/ftux-slo.yml`](../observability/ftux-slo.yml).
+- **Файл:** новий [`docs/observability/ftux-slo.yml`](../../observability/ftux-slo.yml).
 - **Проблема:** FTUX-метрики жили у `posthog-ftux-dashboards.md` як
   таблиця saved insights, але **немає declarative-контракту**, що
   перевіряється у CI / alerting. Master-tracker §6.3 (M-10) тримає
@@ -107,7 +107,7 @@ events працюють, dashboards задокументовані, retention-co
 
 ### P1-1. OnboardingProgress на дашборді — value-misalignment (#9 з 2026-05-03 roast)
 
-- **Файл:** [`apps/web/src/core/onboarding/OnboardingProgress.tsx`](../../apps/web/src/core/onboarding/OnboardingProgress.tsx) + [`apps/web/src/core/hub/HubHeroBlock.tsx:122`](../../apps/web/src/core/hub/HubHeroBlock.tsx).
+- **Файл:** [`apps/web/src/core/onboarding/OnboardingProgress.tsx`](../../../apps/web/src/core/onboarding/OnboardingProgress.tsx) + [`apps/web/src/core/hub/HubHeroBlock.tsx:122`](../../../apps/web/src/core/hub/HubHeroBlock.tsx).
 - **Проблема:** progress bar показує «2/4 розділів активовано» — це
   **obsoleteness-метрика**, не value. Користувач, що відкрив Sergeant
   заради finyk, бачить «50%» і вважає, що до 100% треба заповнити
@@ -135,7 +135,7 @@ events працюють, dashboards задокументовані, retention-co
 
 ### P1-3. OnboardingWizard a11y regression від PR #2599 (decompose) — ✅ Закрито в #2781
 
-- **Файли:** [`apps/web/src/core/onboarding/OnboardingWizard.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.tsx), [`apps/web/src/core/onboarding/useOnboardingWizardState.ts`](../../apps/web/src/core/onboarding/useOnboardingWizardState.ts), [`apps/web/src/core/onboarding/OnboardingWizard.ux.test.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.ux.test.tsx).
+- **Файли:** [`apps/web/src/core/onboarding/OnboardingWizard.tsx`](../../../apps/web/src/core/onboarding/OnboardingWizard.tsx), [`apps/web/src/core/onboarding/useOnboardingWizardState.ts`](../../../apps/web/src/core/onboarding/useOnboardingWizardState.ts), [`apps/web/src/core/onboarding/OnboardingWizard.ux.test.tsx`](../../../apps/web/src/core/onboarding/OnboardingWizard.ux.test.tsx).
 - **Проблема:** decomposition (PR #2599, "691 → <600 LOC under max-lines budget") відкотив три UX-гарантії, що покривались `OnboardingWizard.ux.test.tsx`:
   1. **WCAG 2.4.3 focus management:** splash heading більше не отримує фокус при mount → AT-користувач не чує новий контекст. Очікувалось `document.activeElement === <h2>`, фактично — `<body>`.
   2. **Escape soft-pause:** `onDismiss` prop повністю видалений; Escape більше не закриває wizard у real-mode і не дзеркалить `tour_replay` intent у tour-mode.

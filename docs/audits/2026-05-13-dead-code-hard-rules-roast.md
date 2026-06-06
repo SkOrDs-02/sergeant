@@ -11,7 +11,7 @@
 >
 > **Cross-refs (попередні прожарки цієї теми):**
 >
-> - [`2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md) — перша системна dead-code прожарка (knip + docs:check-links). 5/5 P0/P1 закриті; outstanding був §3 (unused deps + 77 unused exports + 51 duplicate exports).
+> - [`2026-05-05-dead-code-and-stale-links-audit.md`](./archive/2026-05-05-dead-code-and-stale-links-audit.md) — перша системна dead-code прожарка (knip + docs:check-links). 5/5 P0/P1 закриті; outstanding був §3 (unused deps + 77 unused exports + 51 duplicate exports).
 > - [`2026-05-07-app-audit.md`](./archive/2026-05-07-app-audit.md) — повний app-audit, включно з web-boot BLOCKER (`db-schema/migrate` umbrella) та hard-rule violations (process.env budget 120 > 119, namespace boundaries, latent imports).
 > - [`docs/governance/hard-rules.json`](../governance/hard-rules.json) + [`hard-rules-matrix.md`](../governance/hard-rules-matrix.md) — 22 правил (8 blocker-invariant, 12 lint-enforced-convention, 2 active-initiative).
 
@@ -55,7 +55,7 @@ pnpm dead-code:files
 
 ### P0.2 — 53 broken internal markdown-links (`docs:check-links` gate red)
 
-`scripts/docs/check-markdown-links.mjs` (введений у [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md)) ловить будь-який `[text](path)`-link, де файл не існує. Між 2026-05-05 і 2026-05-13 зламалось **53 internal links**:
+`scripts/docs/check-markdown-links.mjs` (введений у [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./archive/2026-05-05-dead-code-and-stale-links-audit.md)) ловить будь-який `[text](path)`-link, де файл не існує. Між 2026-05-05 і 2026-05-13 зламалось **53 internal links**:
 
 #### 49 archive-move depth-drift (`docs/audits/archive/**`)
 
@@ -170,7 +170,7 @@ Unlisted dependencies (38)
 
 ### P1.3 — unused exports + duplicate exports — ✅ Closed (partial-with-residual, 2026-06-03)
 
-Перенесено з [`2026-05-05-dead-code-and-stale-links-audit.md` § 3.2 і 3.4](./2026-05-05-dead-code-and-stale-links-audit.md).
+Перенесено з [`2026-05-05-dead-code-and-stale-links-audit.md` § 3.2 і 3.4](./archive/2026-05-05-dead-code-and-stale-links-audit.md).
 
 > **2026-06-03 закриття** (гілка `claude/audits-task-count-un3kj`, Wave 2a/2b). «77 + 51» з 2026-05-05 — stale. Поточний `pnpm knip` (knip 6.12.0) baseline цієї сесії: **94 unused exports + 14 unused exported types + 72 duplicate exports**.
 >
@@ -189,7 +189,7 @@ Unlisted dependencies (38)
 >
 > **Свідомо KEPT як knip false-positives (residual carried forward, ~86 exports + 14 types + 72 duplicates):**
 >
-> - **Duplicate exports (72)** — майже всі — патерн `Name|default` для React-компонентів (`apps/mobile/**`, `apps/web/core/**`). [2026-05-05 § 3.4](./2026-05-05-dead-code-and-stale-links-audit.md) прямо рекомендує НЕ чіпати: `default`-half очікується `React.lazy()`/Expo-Router/hub-registry lazy-import-ами. Видалення зламало б code-split chunk-boundaries.
+> - **Duplicate exports (72)** — майже всі — патерн `Name|default` для React-компонентів (`apps/mobile/**`, `apps/web/core/**`). [2026-05-05 § 3.4](./archive/2026-05-05-dead-code-and-stale-links-audit.md) прямо рекомендує НЕ чіпати: `default`-half очікується `React.lazy()`/Expo-Router/hub-registry lazy-import-ами. Видалення зламало б code-split chunk-boundaries.
 > - **Test-only helpers** — `__reset*ForTests` (×~13: ai-memory, tracing, posthog, finyk/fizruk/nutrition/routine dualWrite+sqliteRead boots, serverBuildIdBus), `__test__`/`__testing`/`_internals`/`__PLAN_SECTION_PORTAL_UNAVAILABLE`, `classifyDispatchOutcome` (JSDoc: «Direct-side callback (for tests)»). Свідома test-surface; видалення — окреме per-package рішення (як радить 2026-05-05 § 3.3 п.1).
 > - **Documented future/migration scaffolds** — `markWebhookEventProcessed`/`markWebhookEventFailed` («Викликається caller-ом після retry» — webhook retry-consumer ще не wired), `countWaitlistByTierDrizzle` (Drizzle-migration smoke-test, стане canonical), `SliderTicks` («Reserved for future composition»), `useHubBus` (документований public React-subscription API hub-bus-у).
 > - **ALS/обсервабіліті sibling-family API** — `setTraceId` (поряд з used `setUserId`/`setRequestModule`), `getTracingConfig` (поряд з `__resetTracingForTests`).
@@ -286,7 +286,7 @@ pnpm format:check && pnpm lint && pnpm typecheck && pnpm test  # = pnpm check (f
 
 ## Cross-references
 
-- [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md) — попередня dead-code прожарка.
+- [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./archive/2026-05-05-dead-code-and-stale-links-audit.md) — попередня dead-code прожарка.
 - [`docs/audits/archive/2026-05-07-app-audit.md`](./archive/2026-05-07-app-audit.md) — повний app-audit (web-blocker, mobile tests, hard-rule violations).
 - [`docs/governance/hard-rules.json`](../governance/hard-rules.json) — 22-rule registry (Hard Rule #10 — lifecycle markers).
 - [`docs/governance/rules/10-lifecycle-markers.md`](../governance/rules/10-lifecycle-markers.md) — canonical body для маркерів.

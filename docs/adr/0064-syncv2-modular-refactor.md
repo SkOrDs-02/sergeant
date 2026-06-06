@@ -1,14 +1,13 @@
-﻿# ADR-0062: syncV2.ts модульний рефакторинг
+﻿# ADR-0064: syncV2.ts модульний рефакторинг
 
-Date: 2026-06-05
-
-## Status
-
-Proposed → Accepted → Implemented
+- **Status:** accepted
+- **Date:** 2026-06-05
+- **Supersedes:** —
 
 ## Context
 
 syncV2.ts важить 2 912 рядки (4.9× межа Hard Rule #18 за 600 рядків). Це критичний файл:
+
 - містить apply-логіку для 22 таблиць (routine, fizruk, nutrition, finyk)
 - має ~0% покриття тестами
 - 8 ESLint suppressions (`eslint-disable no-restricted-syntax`) для SQL-вставок
@@ -35,6 +34,7 @@ apps/server/src/modules/sync/
 ```
 
 **Ключові правила:**
+
 1. OP_LOG_TABLE_REGISTRY залишається в syncV2-types.ts, але посилається на apply-функції з модулів
 2. Shared helpers винесені в syncV2-core.ts
 3. Кожен модуль відповідає за свою apply-логіку
@@ -43,12 +43,14 @@ apps/server/src/modules/sync/
 ## Consequences
 
 ### Позитивні
+
 - Жоден файл не перевищує 600 рядків
 - Легший доступ до модуля-специфічної логіки
 - Можливість тестувати окремі модуля
 - Легше розширювати новими таблицями
 
 ### Від'їднені
+
 - Наразі треба 3-5 днів на рефакторинг
 - Тимчасова регресія під час міграції
 - Потрібні нові тести (0% → 80%+ для syncV2)
@@ -57,10 +59,10 @@ apps/server/src/modules/sync/
 
 1. **Stage 1:** syncV2-types.ts (типи + константи) — **DONE** (файл створений)
 2. **Stage 2:** syncV2-core.ts (shared helpers)
-3. **Stage 3:** routine/applySync.ts (виділити applyRoutine*)
-4. **Stage 4:** fizruk/applySync.ts (виділити 5 applyFizruk*)
-5. **Stage 5:** nutrition/applySync.ts (виділити 5 applyNutrition*)
-6. **Stage 6:** finyk/applySync.ts (виділити 14 applyFinyk*)
+3. **Stage 3:** routine/applySync.ts (виділити applyRoutine\*)
+4. **Stage 4:** fizruk/applySync.ts (виділити 5 applyFizruk\*)
+5. **Stage 5:** nutrition/applySync.ts (виділити 5 applyNutrition\*)
+6. **Stage 6:** finyk/applySync.ts (виділити 14 applyFinyk\*)
 7. **Stage 7:** syncV2.ts (handlers + registry)
 8. **Stage 8:** syncV2.test.ts (написати тести)
 

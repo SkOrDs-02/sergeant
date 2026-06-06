@@ -17,7 +17,7 @@
 ## Cross-refs
 
 - [`docs/audits/2026-05-13-web-architecture-state-roast.md`](../audits/2026-05-13-web-architecture-state-roast.md) — прожарка #3/10 (architecture + state).
-- [`docs/audits/2026-05-13-web-frontend-ergonomics-roast.md`](../audits/2026-05-13-web-frontend-ergonomics-roast.md) — прожарка #2/10 (frontend ergonomics).
+- [`docs/audits/2026-05-13-web-frontend-ergonomics-roast.md`](../audits/archive/2026-05-13-web-frontend-ergonomics-roast.md) — прожарка #2/10 (frontend ergonomics).
 - [`docs/architecture/repo-map.md`](../architecture/repo-map.md) — per-app stack matrix, `apps/web` runtime: Vite 8 + React 18 + TanStack Query + Tailwind 4 + size-limit gate.
 - [`docs/governance/rules/18-module-size-discipline-600.md`](../governance/rules/18-module-size-discipline-600.md) — Hard Rule #18 (`max-lines: 600` для `apps/web/src/**`); декомпозиція 0013 Sprint 2 (A4 нижче) — це burndown цього правила.
 - [`docs/initiatives/0006-frontend-routing-and-code-split.md`](../initiatives/0006-frontend-routing-and-code-split.md) — react-router migration, Phase 3-5 закриваються картами A1–A3.
@@ -151,7 +151,7 @@
 
 ## Frontend ergonomics (cards E1–E7)
 
-Закривають outstanding-items з [`2026-05-13-web-frontend-ergonomics-roast.md`](../audits/2026-05-13-web-frontend-ergonomics-roast.md) — F2, F4, F5, F6, F7 + handler wire-up з F3.
+Закривають outstanding-items з [`2026-05-13-web-frontend-ergonomics-roast.md`](../audits/archive/2026-05-13-web-frontend-ergonomics-roast.md) — F2, F4, F5, F6, F7 + handler wire-up з F3.
 
 ### E1 — `feat(eslint): sergeant-design/no-bare-fixed-inset-modal rule`
 
