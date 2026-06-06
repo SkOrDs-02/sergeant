@@ -79,6 +79,7 @@ export default function SignUpScreen() {
         </Text>
 
         <Input
+          testID="auth-sign-up-name"
           placeholder="Твоє ім'я"
           value={name}
           onChangeText={setName}
@@ -87,6 +88,7 @@ export default function SignUpScreen() {
           size="lg"
         />
         <Input
+          testID="auth-sign-up-email"
           type="email"
           placeholder="ваш@email.com"
           value={email}
@@ -96,6 +98,7 @@ export default function SignUpScreen() {
 
         <View>
           <Input
+            testID="auth-sign-up-password"
             type="password"
             placeholder="Придумай надійний пароль"
             value={password}
@@ -108,6 +111,7 @@ export default function SignUpScreen() {
         {error ? <Text className="text-danger text-xs">{error}</Text> : null}
 
         <Button
+          testID="auth-sign-up-submit"
           variant="primary"
           size="lg"
           loading={loading}

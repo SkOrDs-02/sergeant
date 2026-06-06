@@ -53,7 +53,10 @@ export default function ForgotPasswordScreen() {
         className="flex-1 bg-bg dark:bg-cream-950"
         edges={["bottom"]}
       >
-        <View className="flex-1 px-6 justify-center items-center gap-4">
+        <View
+          testID="auth-forgot-success"
+          className="flex-1 px-6 justify-center items-center gap-4"
+        >
           <View className="w-20 h-20 items-center justify-center rounded-3xl bg-brand/15 dark:bg-brand/25 mb-2">
             <Mail size={40} color={colors.accent} strokeWidth={1.5} />
           </View>
@@ -111,6 +114,7 @@ export default function ForgotPasswordScreen() {
 
         {/* Email Input */}
         <Input
+          testID="auth-forgot-email"
           type="email"
           placeholder="ваш@email.com"
           value={email}
@@ -126,6 +130,7 @@ export default function ForgotPasswordScreen() {
 
         {/* Submit Button */}
         <Button
+          testID="auth-forgot-submit"
           variant="primary"
           size="lg"
           loading={loading}
