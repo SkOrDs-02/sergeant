@@ -63,6 +63,13 @@ export {
 } from "./syncOpOutboxRepair.js";
 export { purgeSyncOpOutboxForUser } from "./syncOpOutboxPurge.js";
 export {
+  purgeStaleTerminalOutbox,
+  SYNC_OP_OUTBOX_STALE_TTL_DAYS,
+  SYNC_OP_OUTBOX_TERMINAL_STATUSES,
+  type PurgeStaleTerminalOutboxOptions,
+  type PurgeStaleTerminalOutboxResult,
+} from "./syncOpOutboxPurgeStale.js";
+export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
   ROUTINE_SPIKE_CLIENT_MIGRATIONS,
