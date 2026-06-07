@@ -20,6 +20,13 @@ import globals from "globals";
 import security from "eslint-plugin-security";
 import eslintConfigPrettier from "eslint-config-prettier";
 import { baseline } from "./eslint.baseline.js";
+import { webBlocks } from "./eslint.web.js";
+import { serverBlocks } from "./eslint.server.js";
+import { mobileBlocks } from "./eslint.mobile.js";
+import { shellBlocks } from "./eslint.shell.js";
+import { openclawBlocks } from "./eslint.openclaw.js";
+import { packageBlocks } from "./eslint.packages.js";
+import { crossSurfaceBlocks } from "./eslint.cross-surface.js";
 
 // Root still carries legacy web-rule blocks while PR-31 phase 2 extraction is
 // being reconciled. Keep these allowlists available here so ESLint config
@@ -41,35 +48,6 @@ const toastErrorActionAllowlist = JSON.parse(
   ),
 );
 
-const bareFixedInsetModalAllowlist = JSON.parse(
-  readFileSync(
-    new URL(
-      "./apps/web/eslint.bare-fixed-inset-modal-allowlist.json",
-      import.meta.url,
-    ),
-    "utf8",
-  ),
-);
-
-// These allowlists are defined in eslint.web.js for the webBlocks export, but
-// the duplicate web block below (introduced by a botched merge of 023fd88 onto
-// c2eed3c's extraction) also needs them. Loading them here keeps the file
-// parseable until the duplicate block is removed in a follow-up cleanup.
-const i18nAllowlist = JSON.parse(
-  readFileSync(
-    new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),
-    "utf8",
-  ),
-);
-const toastErrorActionAllowlist = JSON.parse(
-  readFileSync(
-    new URL(
-      "./apps/web/eslint.toast-error-action-allowlist.json",
-      import.meta.url,
-    ),
-    "utf8",
-  ),
-);
 const bareFixedInsetModalAllowlist = JSON.parse(
   readFileSync(
     new URL(

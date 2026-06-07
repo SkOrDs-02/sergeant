@@ -2,8 +2,10 @@
  * Integrity invariant: every schedule sessionKey in BUILTIN_PROGRAMS
  * must exist in the corresponding program's sessions map.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { BUILTIN_PROGRAMS } from "../index.js";
+import type { TrainingProgramDef } from "../domain/programs/index.js";
+import { getDefaultRestSec, getTodaySession } from "./trainingPrograms.js";
 
 describe("BUILTIN_PROGRAMS integrity", () => {
   it("exports at least 4 programs", () => {
@@ -88,5 +90,39 @@ describe("BUILTIN_PROGRAMS integrity", () => {
     expect(ss).toBeDefined();
     expect(ss!.sessions["ss_a"]).toBeDefined();
     expect(ss!.sessions["ss_b"]).toBeDefined();
+  });
+
+  it("legacy getTodaySession returns today's schedule slot or null", () => {
+    const program: TrainingProgramDef = {
+      id: "test",
+      name: "Test",
+      description: "Test",
+      days: 1,
+      durationWeeks: 4,
+      schedule: [{ day: 1, sessionKey: "a", name: "A" }],
+      sessions: {
+        a: {
+          name: "A",
+          exerciseIds: ["bench"],
+          progressionKg: 2.5,
+          defaultRestSec: 90,
+        },
+      },
+    };
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 0, 5, 12, 0, 0, 0));
+    expect(getTodaySession(program)).toEqual(program.schedule[0]);
+    expect(getTodaySession(null)).toBeNull();
+    vi.setSystemTime(new Date(2026, 0, 6, 12, 0, 0, 0));
+    expect(getTodaySession(program)).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it("legacy getDefaultRestSec maps known muscle groups", () => {
+    expect(getDefaultRestSec(null)).toBe(90);
+    expect(getDefaultRestSec("chest")).toBe(90);
+    expect(getDefaultRestSec("biceps")).toBe(60);
+    expect(getDefaultRestSec("cardio")).toBe(30);
   });
 });
