@@ -21,7 +21,10 @@
  *
  * @see docs/planning/storage-roadmap.md (Stage 5 mobile writer wiring)
  */
-import { resolveOriginDeviceId } from "@sergeant/shared";
+import {
+  resolveOriginDeviceId,
+  sweepStaleTerminalOutbox,
+} from "@sergeant/shared";
 import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
 
 import { mobileKVStore } from "@/lib/storage";
@@ -100,6 +103,23 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   ]);
 
   const client = await getSqliteMigrationClient();
+
+  // Boot-time retention sweep — mirrors the web singleton. Drops
+  // terminal `sync_op_outbox` rows older than the TTL window so the
+  // client DLQ cannot grow unbounded
+  // (docs/audits/2026-08-XX-sync-engine-roast.md). Best-effort:
+  // `sweepStaleTerminalOutbox` swallows purge errors and emits a
+  // `sync_op_outbox.retention` breadcrumb on a non-zero purge.
+  await sweepStaleTerminalOutbox({
+    purge: () =>
+      dbSchema.purgeStaleTerminalOutbox(client, {
+        olderThanDays: dbSchema.SYNC_OP_OUTBOX_STALE_TTL_DAYS,
+      }),
+    addBreadcrumb: observability.addSentryBreadcrumb,
+    captureException: (error, context) =>
+      observability.captureError(error, context),
+  });
+
   const eventTarget = netInfoBridge.createNetInfoEventTarget(
     netInfoModule.default,
   );

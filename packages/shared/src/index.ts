@@ -46,6 +46,11 @@ export * from "./storage/kv";
 // `docs/planning/storage-roadmap.md`.
 export * from "./sync/modules";
 
+// Boot-time TTL sweep orchestration for the client-side `sync_op_outbox`
+// dead-letter buckets. Called once at boot by the web/mobile sync-engine
+// singletons; pairs with `purgeStaleTerminalOutbox` in @sergeant/db-schema.
+export * from "./sync/outboxRetention";
+
 // Onboarding "vibe picks" state + FTUX time-to-value helpers.
 export * from "./lib/vibePicks";
 

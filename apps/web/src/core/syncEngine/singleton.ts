@@ -1,4 +1,7 @@
-import { resolveOriginDeviceId } from "@sergeant/shared";
+import {
+  resolveOriginDeviceId,
+  sweepStaleTerminalOutbox,
+} from "@sergeant/shared";
 import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
 
 import { webKVStore } from "@shared/lib/storage/storage";
@@ -177,6 +180,27 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     sentry.setSentryTag("outbox.boot.legacy_seen", String(hadLegacy));
     throw err;
   }
+
+  // Boot-time retention sweep: drop terminal `sync_op_outbox` rows
+  // (dead_letter / rejected / quarantined) older than the TTL window so
+  // the client DLQ cannot grow unbounded on a device that never
+  // reconnects cleanly (docs/audits/2026-08-XX-sync-engine-roast.md).
+  // Best-effort — `sweepStaleTerminalOutbox` swallows purge errors so a
+  // maintenance failure never blocks the writer boot; a non-zero purge
+  // emits a `sync_op_outbox.retention` breadcrumb for the Grafana
+  // counter (same pattern as the quarantine breadcrumb below).
+  await sweepStaleTerminalOutbox({
+    purge: () =>
+      dbSchema.purgeStaleTerminalOutbox(client, {
+        olderThanDays: dbSchema.SYNC_OP_OUTBOX_STALE_TTL_DAYS,
+      }),
+    addBreadcrumb: sentry.addSentryBreadcrumb,
+    captureException: (error, context) =>
+      sentry.captureException(
+        error,
+        context !== undefined ? { extra: context } : undefined,
+      ),
+  });
 
   // Per-tick userId resolver. The runtime itself is user-agnostic; the
   // drain wrapper closes over `authClient.getSession()` to scope reads
