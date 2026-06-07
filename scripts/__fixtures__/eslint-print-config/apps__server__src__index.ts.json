@@ -1933,6 +1933,7 @@
     "sergeant-design/no-low-contrast-text-on-fill": [2],
     "sergeant-design/no-raw-req-in-pino-log": [2],
     "sergeant-design/no-strict-bypass": [2],
+    "sergeant-design/prefer-parse-body-over-validate-body": [1],
     "sergeant-design/valid-tailwind-opacity": [2],
     "space-after-function-name": [0],
     "space-after-keywords": [0],
