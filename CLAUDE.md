@@ -17,7 +17,7 @@
 
 ## Claude Code native equivalents
 
-§ «Agent harnesses & routing» в AGENTS.md tool-agnostic, але підрозділ «Harness config lives outside the repo» згадує Kilo-примітиви. Бери їх нативні еквіваленти Claude Code:
+§ «Agent harnesses & routing» в AGENTS.md повністю нейтральний — Kilo-примітиви там НЕ згадуються (вони живуть лише в `~/.config/kilo/rules.md`). Якщо натрапиш на них у legacy-PR чи Kilo-доках, ось нативні еквіваленти Claude Code:
 
 - `skill`→`Skill` (SKILL.md можна й через `Read`); Kilo `task` + agent-defs→`Agent`+`~/.claude/agents/*`, `Task*` для teams; `agent_manager`→`EnterWorktree`.
 - `kilo_local_recall`→auto-memory+`Explore`; Kilo MCP (context7/github/memory)→`ToolSearch` (`.mcp.json`); Kilo commands→`pnpm check` або `.claude/commands/*`.
