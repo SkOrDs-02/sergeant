@@ -341,7 +341,9 @@ function TxRowImpl({
             <div
               className={cn(
                 "text-style-label tabular-nums",
-                tx.amount > 0 ? "text-success" : "text-text",
+                tx.amount > 0
+                  ? "text-success-strong dark:text-success"
+                  : "text-text",
               )}
             >
               {hideAmount ? "••••" : fmtAmt(tx.amount, CURRENCY.UAH)}
