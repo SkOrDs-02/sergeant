@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-06-07",
   "counts": {
-    "adr": 61,
+    "adr": 62,
     "audit": 17,
     "hard-rule": 26,
     "initiative": 47,
@@ -573,7 +573,7 @@
       "tier": "core",
       "meta": {
         "number": 53,
-        "last_validated": "2026-06-02"
+        "last_validated": "2026-06-07"
       }
     },
     {
@@ -690,6 +690,17 @@
       "tier": "core",
       "meta": {
         "number": 64
+      }
+    },
+    {
+      "id": "adr:0065",
+      "type": "adr",
+      "title": "ADR-0065: sync_op_log retention/архівація + multi-instance fan-out (план PR-050)",
+      "path": "docs/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md",
+      "status": "Proposed <!-- Proposed | Accepted | Deprecated | Superseded by ADR-NNNN -->",
+      "tier": "core",
+      "meta": {
+        "number": 65
       }
     },
     {
@@ -1235,7 +1246,7 @@
       "type": "initiative",
       "title": "0006 — Frontend routing migration + route-based code-split",
       "path": "docs/initiatives/0006-frontend-routing-and-code-split.md",
-      "status": "In progress — Phases 1–4 done; Phase 5 blocked on a React Router 7 location-context bug for its last items — per-route lazy-chunk entries + native RR7 router-level `loader`s need a shared `RootLayout` + `<Outlet />` (див. `router.tsx`). Shipped 2026-05-24: per-route bundle budgets, manualChunks audit («no changes»), ESLint `no-hash-router-in-modules` at `error`, prefetch route-loaders. manualChunks cleanup + bundle-gate per-route tuning — закрито. Also pending (unblocked): Playwright e2e for hash-compat.",
+      "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. Pending: typecheck on clean worktree (exFAT install issues), Playwright e2e for hash-compat, manualChunks cleanup.",
       "tier": "core",
       "meta": {
         "number": 6,
@@ -1248,7 +1259,7 @@
       "type": "initiative",
       "title": "0010 — Revenue-first launch: ship paid, focus wedge",
       "path": "docs/initiatives/0010-revenue-first-launch.md",
-      "status": "In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2 done; Phase 6 incl. 6.2 EN-locale wiring (LandingPage `useLocale` + `landing` group) done. Pending: **founder-блокери only** — APPLE\\_\\* env vars in Railway/local + ФОП-реєстрація для live Stripe + rollout/decision metrics",
+      "status": "In progress",
       "tier": "core",
       "meta": {
         "number": 10,
@@ -3864,7 +3875,7 @@
       "path": ".agents/skills/architecture-patterns/SKILL.md",
       "tier": "core",
       "meta": {
-        "description": "Implement proven backend architecture patterns including Clean Architecture, Hexagonal Architecture, and Domain-Driven Design. Use when designing clean architecture for a new microservice, when refactoring a monolith to use bounded contexts, when implementing hexagonal or onion architecture patterns, or when debugging dependency cycles between application layers."
+        "description": "Implement proven backend architecture patterns including Clean Architecture, Hexagonal Architecture, and Domain-Driven Design. Use when designing clean architecture for a new microservice, when refactoring a monolith to"
       }
     },
     {
@@ -3924,7 +3935,7 @@
       "path": ".agents/skills/saga-orchestration/SKILL.md",
       "tier": "core",
       "meta": {
-        "description": "Implement saga patterns for distributed transactions and cross-aggregate workflows. Use this skill when implementing distributed transactions across microservices where 2PC is unavailable, designing compensating actions for failed order workflows that span inventory, payment, and shipping services, building event-driven saga coordinators for travel booking systems that must roll back hotel, flight, and car rental reservations atomically, or debugging stuck saga states in production where compensation steps never complete."
+        "description": "Implement saga patterns for distributed transactions and cross-aggregate workflows. Use this skill when implementing distributed transactions across microservices where 2PC is unavailable, designing compensating actions"
       }
     },
     {
@@ -3934,7 +3945,7 @@
       "path": ".agents/skills/sergeant-backend-api/SKILL.md",
       "tier": "core",
       "meta": {
-        "description": "Backend API patterns for Sergeant — REST/GraphQL design, Clean Architecture, Hexagonal patterns, CQRS, event sourcing, Temporal workflows, saga orchestration. Covers service boundaries, testing, security, performance. UA: бекенд, API, архітектура, мікросервіси."
+        "description": "Backend API patterns for Sergeant — REST/GraphQL design, Clean Architecture, Hexagonal patterns, CQRS, event sourcing, Temporal workflows, saga orchestration. Covers service boundaries, testing, security, performance"
       }
     },
     {
@@ -4164,7 +4175,7 @@
       "path": ".agents/skills/temporal-python-testing/SKILL.md",
       "tier": "core",
       "meta": {
-        "description": "Test Temporal workflows with pytest, time-skipping, and mocking strategies. Covers unit testing, integration testing, replay testing, and local development setup. Use when implementing Temporal workflow tests or debugging test failures."
+        "description": "Test Temporal workflows with pytest, time-skipping, and mocking strategies. Covers unit testing, integration testing, replay testing, and local development setup. Use when implementing Temporal workflow tests or"
       }
     },
     {
@@ -4174,7 +4185,7 @@
       "path": ".agents/skills/workflow-orchestration-patterns/SKILL.md",
       "tier": "core",
       "meta": {
-        "description": "Design durable workflows with Temporal for distributed systems. Covers workflow vs activity separation, saga patterns, state management, and determinism constraints. Use when building long-running processes, distributed transactions, or microservice orchestration."
+        "description": "Design durable workflows with Temporal for distributed systems. Covers workflow vs activity separation, saga patterns, state management, and determinism constraints. Use when building long-running processes, distributed"
       }
     }
   ],
@@ -4582,6 +4593,11 @@
     {
       "from": "adr:0064",
       "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "adr:0065",
+      "to": "hard-rule:4",
       "type": "references"
     },
     {

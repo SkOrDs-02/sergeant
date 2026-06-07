@@ -39,9 +39,11 @@ import { elapsedMs } from "../../lib/timing.js";
  *     proxy-idle-таймаутів (Vercel/Cloudflare/nginx default).
  *
  * Single-process замітка: емітер in-memory; multi-instance деплоймент
- * у майбутньому потребуватиме PG `LISTEN/NOTIFY` чи Redis pub/sub
- * (TODO у roadmap PR #050). Railway-сетап Sergeant-а зараз single-instance,
- * тому fan-out тривіальний; cross-process — наступний шар.
+ * у майбутньому потребуватиме cross-process fan-out. Рішення зафіксовано
+ * в `docs/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md`
+ * (PG `LISTEN/NOTIFY` обрано над Redis; реалізація gated на реальний
+ * multi-instance тригер — roadmap PR #050). Railway-сетап Sergeant-а зараз
+ * single-instance, тому fan-out тривіальний; cross-process — наступний шар.
  *
  * `X-Origin-Device-Id` (опціональний header) виключає ops із тим самим
  * device-id, симетрично з `/pull` — клієнт не реплеїть власні writes.
