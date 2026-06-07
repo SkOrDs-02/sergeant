@@ -1,7 +1,12 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
 > **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-09-01.
-> **Status:** In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2 done; Phase 6 incl. 6.2 EN-locale wiring (LandingPage `useLocale` + `landing` group) done. Pending: **founder-блокери only** — APPLE\_\* env vars in Railway/local + ФОП-реєстрація для live Stripe + rollout/decision metrics
+> **Status:** In progress
+> **✅ Completed:** Phases 0, 1, 2, 3, 4.1, 4.2, 4.3, 5.1, 5.2, 6 (including 6.2 EN-locale wiring)
+> **⏳ Pending (founder-блокери only):**
+>   - APPLE\_\* env vars in Railway/local
+>   - ФОП-реєстрація для live Stripe
+>   - Rollout/decision metrics
 > **Agent-ready:** needs-decision
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`

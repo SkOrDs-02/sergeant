@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import {
   normalizeFinykBackup,
@@ -39,6 +39,7 @@ export function useFinykBackupSync(
   toast: BackupToast | undefined,
 ) {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     budgets,
     setBudgets,
@@ -160,12 +161,12 @@ export function useFinykBackupSync(
       dr: dismissedRecurring,
     };
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
-    return `${window.location.origin}${window.location.pathname}?sync=${encoded}`;
+    return `${window.location.origin}${location.pathname}?sync=${encoded}`;
   };
 
   const loadFromUrl = () => {
     try {
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(location.search);
       const encoded = params.get("sync");
       if (!encoded) return false;
       const raw = JSON.parse(decodeURIComponent(atob(encoded)));
@@ -175,10 +176,10 @@ export function useFinykBackupSync(
       // `history.replaceState` — інакше data-router `createBrowserRouter`
       // не дізнається про зміну search-string-у і `useLocation()`
       // консьюмери лишаться зі застарілим URL у пам'яті.
-      navigate(
-        { pathname: window.location.pathname, search: "", hash: "" },
-        { replace: true },
-      );
+        navigate(
+          { pathname: location.pathname, search: "", hash: "" },
+          { replace: true },
+        );
       return true;
     } catch (err) {
       reportSilentError("load sync from url", err);

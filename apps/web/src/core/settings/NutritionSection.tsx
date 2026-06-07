@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import {
@@ -132,21 +133,19 @@ export function NutritionSection() {
     });
   }, [patchPrefs]);
 
+  const navigate = useNavigate();
+
   const openPantryManager = useCallback(() => {
     // Hub routes the Nutrition module via the module picker; the pantry
     // manager itself is a sheet that opens from within the module. From
     // the settings page we send the user to the Nutrition → Комора tab;
     // they can tap «Керування» once there.
-    try {
-      window.location.hash = "#pantry";
-    } catch {
-      /* noop */
-    }
+    navigate("/nutrition/pantry");
     // Best-effort reload of freshly persisted pantry list so the UI
     // reflects any rename/add the user does through the manager.
     setPantries(loadPantries());
     setActivePantryId(loadActivePantryId());
-  }, []);
+  }, [navigate]);
 
   return (
     <SettingsGroup title="Харчування" emoji="🥗">

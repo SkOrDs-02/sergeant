@@ -103,9 +103,8 @@ const GROUPS = [
   },
 ] as const;
 
-function readSettingsSectionHash() {
-  if (typeof window === "undefined") return null;
-  const raw = window.location.hash.replace(/^#/, "");
+function readSettingsSectionHash(hash: string): string | null {
+  const raw = hash.replace(/^#/, "");
   if (!raw.startsWith("settings-")) return null;
   return raw.replace(/^settings-/, "");
 }
@@ -124,10 +123,9 @@ function groupForSection(sectionId: string | null) {
  * resolution chain (hash → "general"). Kept in module scope so the SSR
  * guard and validation stay co-located with `GROUPS`.
  */
-function readSettingsGroupParam(): string | null {
-  if (typeof window === "undefined") return null;
+function readSettingsGroupParam(search: string): string | null {
   try {
-    const raw = new URLSearchParams(window.location.search).get("group");
+    const raw = new URLSearchParams(search).get("group");
     if (!raw) return null;
     if (GROUPS.some((group) => group.id === raw)) return raw;
   } catch {
@@ -181,11 +179,11 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
 
   // Resolution order on mount: explicit `?group=…` wins (shareable
   // deep-links) → hash-section's parent group (existing legacy path
-  // from Bento `Налаштування` deep-links) → "general" default.
+  // from Bento «Налаштування» deep-links) → "general" default.
   const [tab, setTabRaw] = useState<string>(() => {
-    const fromQuery = readSettingsGroupParam();
+    const fromQuery = readSettingsGroupParam(location.search);
     if (fromQuery) return fromQuery;
-    const sectionId = readSettingsSectionHash();
+    const sectionId = readSettingsSectionHash(location.hash);
     return groupForSection(sectionId)?.id ?? "general";
   });
   const setTab = useCallback(
@@ -198,7 +196,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
   const [query, setQuery] = useState("");
   const refs = useRef<Record<string, HTMLDivElement | null>>({});
   const [hashSectionId, setHashSectionId] = useState<string | null>(
-    readSettingsSectionHash,
+    readSettingsSectionHash(location.hash),
   );
 
   // Sections with the keywords a user might type to find them. The labels
@@ -323,7 +321,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
 
   useEffect(() => {
     const syncHash = () => {
-      const sectionId = readSettingsSectionHash();
+      const sectionId = readSettingsSectionHash(window.location.hash);
       if (!sectionId) return;
       const group = groupForSection(sectionId);
       if (!group) return;
