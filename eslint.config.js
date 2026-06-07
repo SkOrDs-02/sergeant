@@ -14,6 +14,9 @@
 // fully-resolved `eslint --print-config` output per surface and fails on any
 // drift — this extraction is a behavioural no-op verified against it. See
 // `docs/development/eslint-config.md` for the split rationale and roadmap.
+import { readFileSync } from "node:fs";
+import globals from "globals";
+import security from "eslint-plugin-security";
 import eslintConfigPrettier from "eslint-config-prettier";
 import { baseline } from "./eslint.baseline.js";
 import { webBlocks } from "./eslint.web.js";
@@ -24,9 +27,45 @@ import { openclawBlocks } from "./eslint.openclaw.js";
 import { packageBlocks } from "./eslint.packages.js";
 import { crossSurfaceBlocks } from "./eslint.cross-surface.js";
 
+// These allowlists are defined in eslint.web.js for the webBlocks export, but
+// the duplicate web block below (introduced by a botched merge of 023fd88 onto
+// c2eed3c's extraction) also needs them. Loading them here keeps the file
+// parseable until the duplicate block is removed in a follow-up cleanup.
+const i18nAllowlist = JSON.parse(
+  readFileSync(
+    new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),
+    "utf8",
+  ),
+);
+const toastErrorActionAllowlist = JSON.parse(
+  readFileSync(
+    new URL(
+      "./apps/web/eslint.toast-error-action-allowlist.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+const bareFixedInsetModalAllowlist = JSON.parse(
+  readFileSync(
+    new URL(
+      "./apps/web/eslint.bare-fixed-inset-modal-allowlist.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+
 export default [
   ...baseline,
-// PR-31 phase 1 — block moved to `./eslint.baseline.js` (shared
+  ...webBlocks,
+  ...serverBlocks,
+  ...mobileBlocks,
+  ...shellBlocks,
+  ...openclawBlocks,
+  ...packageBlocks,
+  ...crossSurfaceBlocks,
+  // PR-31 phase 1 — block moved to `./eslint.baseline.js` (shared
   // global block + TS-only `no-unused-vars`). The deleted block here
   // looked like the next ~150 lines that started with:
   //   { files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"], languageOptions: { globals: { …browser, …node } }, ... }
@@ -641,7 +680,7 @@ export default [
       ],
     },
   },
-// Server bigint→string guardrail — the `pg` driver returns `int8` /
+  // Server bigint→string guardrail — the `pg` driver returns `int8` /
   // `bigint` columns as JavaScript strings; every `.rows.map(…)` that
   // constructs a response object must wrap numeric-looking columns in
   // `Number(…)`. See AGENTS.md hard rule #1 and issue #708.

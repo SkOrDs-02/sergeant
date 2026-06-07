@@ -403,7 +403,8 @@ export async function backfillHandler(
           err instanceof Error ? err.message : "Unknown backfill error";
         scheduleProgressCleanup(userId);
       }
-    })();
+    }
+  })();
 }
 
 /**

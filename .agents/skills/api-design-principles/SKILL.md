@@ -1,4 +1,5 @@
 ---
+lang: en
 name: api-design-principles
 description: Master REST and GraphQL API design principles to build intuitive, scalable, and maintainable APIs that delight developers. Use when designing new APIs, reviewing API specifications, or establishing API design standards.
 ---
@@ -108,3 +109,4 @@ Detailed pattern documentation lives in `references/details.md`. Read that file 
 - **Poor Documentation**: Undocumented APIs frustrate developers
 - **Ignoring HTTP Semantics**: POST for idempotent operations breaks expectations
 - **Tight Coupling**: API structure shouldn't mirror database schema
+See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.

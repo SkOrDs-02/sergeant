@@ -1,6 +1,6 @@
 ---
 name: sergeant-backend-api
-description: Backend API patterns for Sergeant — REST/GraphQL design, Clean Architecture, Hexagonal patterns, CQRS, event sourcing, Temporal workflows, saga orchestration. Covers service boundaries, testing, security, performance. UA: бекенд, API, архітектура, мікросервіси.
+description: Backend API patterns for Sergeant — REST/GraphQL design, Clean Architecture, Hexagonal patterns, CQRS, event sourcing, Temporal workflows, saga orchestration. Covers service boundaries, testing, security, performance
 lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.)
 ---
@@ -74,3 +74,4 @@ Sergeant вже має:
 - Events version from day one
 - Idempotent activities для Temporal
 - Use `workflow.now()` не `datetime.now()` в workflows
+See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.
