@@ -25,8 +25,12 @@ import {
  *   інструкції; пара з server-side обгорткою у `wrapAndScanToolResults`.
  *   Cache-prefix bytes змінилися — очікуємо короткочасний сплеск
  *   `cache_creation_input_tokens > 0` після релізу.
+ * v9 (2026-06-07): talk-to-your-data PR1 — у Фінанси-bullet додано read-only
+ *   query-tools (query_transactions, aggregate_spending, compare_periods) з
+ *   `QUERY_FINYK_TOOLS`. Реджистр лишається джерелом істини; bullet
+ *   регенерується автоматично. Чергова cache-prefix invalidation.
  */
-export const SYSTEM_PROMPT_VERSION = "v8";
+export const SYSTEM_PROMPT_VERSION = "v9";
 
 // AI-CONTEXT: модульний label у промпті відрізняється від `CAPABILITY_MODULE_META.title`,
 // бо UI показує "Фінік", а промпту історично подавали "Фінанси" (тон-нейтральніше для
