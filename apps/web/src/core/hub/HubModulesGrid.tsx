@@ -65,7 +65,7 @@ function FtuxModulesHint() {
         onClick={() => setDismissed(true)}
         aria-label="Сховати підказку"
         className={cn(
-          "shrink-0 -mr-1 -mt-0.5 w-6 h-6 inline-flex items-center justify-center rounded-md",
+          "shrink-0 -mr-1 -mt-0.5 w-6 h-6 touch-target inline-flex items-center justify-center rounded-md",
           "text-muted hover:text-text hover:bg-panelHi transition-colors",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
         )}
@@ -139,7 +139,7 @@ export function HubModulesGrid({
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
             editMode
               ? "bg-primary text-bg px-2.5 py-1"
-              : "text-muted hover:text-text hover:bg-panelHi w-7 h-7",
+              : "text-muted hover:text-text hover:bg-panelHi w-7 h-7 touch-target",
           )}
         >
           <Icon

@@ -137,7 +137,7 @@ export function HubHeader({
                 onClick={onOpenPrivacy}
                 aria-label={messages.privacy.chip}
                 className={cn(
-                  "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full",
+                  "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full touch-target",
                   "bg-brand-soft text-brand-strong border border-brand-soft-border",
                   "text-style-caption font-semibold",
                   "hover:bg-brand-soft-hover transition-colors",

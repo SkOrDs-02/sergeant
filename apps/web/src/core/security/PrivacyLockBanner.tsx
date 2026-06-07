@@ -44,7 +44,7 @@ export function PrivacyLockBanner() {
             type="button"
             onClick={() => setDismissed(true)}
             aria-label={messages.actions.close}
-            className="p-1.5 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+            className="p-1.5 rounded-xl touch-target text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           >
             <Icon name="x" size={14} aria-hidden />
           </button>

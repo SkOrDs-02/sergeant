@@ -37,6 +37,7 @@ import {
 const SEARCH_DEBOUNCE_MS = 80;
 
 export function CommandPaletteUI() {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- CommandPaletteUI is always rendered inside CommandPalette provider
   const ctx = useContext(CommandPaletteContext)!;
   const { open, closePalette, recents, markRecent, revision } = ctx;
   const titleId = useId();

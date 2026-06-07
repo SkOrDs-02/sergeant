@@ -1,4 +1,5 @@
 ---
+lang: en
 name: microservices-patterns
 description: Design microservices architectures with service boundaries, event-driven communication, and resilience patterns. Use when building distributed systems, decomposing monoliths, or implementing microservices.
 ---
@@ -87,3 +88,4 @@ Master microservices architecture patterns including service boundaries, inter-s
 ## Detailed patterns and worked examples
 
 Detailed pattern documentation lives in `references/details.md`. Read that file when the navigation tier above is insufficient.
+See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.

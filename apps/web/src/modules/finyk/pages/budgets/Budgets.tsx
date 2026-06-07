@@ -144,6 +144,7 @@ export function Budgets({
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
 
+  // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getCurrentMonthContext
   const now = useMemo(() => new Date(), []);
   const { monthStart } = getCurrentMonthContext(now);
   const expenseCategoryList = useMemo(
@@ -326,6 +327,7 @@ export function Budgets({
     daysLeft: daysLeft2,
   } = getMonthlyPlanUsage(
     { planIncome, planExpense, totalFact: totalExpenseFact },
+    // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getMonthlyPlanUsage
     new Date(),
   );
 
@@ -342,6 +344,7 @@ export function Budgets({
     >
       {() => (
         <div className="flex-1 overflow-y-auto">
+          <h1 className="sr-only">Бюджети</h1>
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
             {/* Сума підписок + Наступний платіж з тих самих даних, що й на
             сторінці Активи — без пасив-з-дедлайном тайлу (у Плануванні

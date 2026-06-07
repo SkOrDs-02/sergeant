@@ -1,6 +1,6 @@
 # Claude in Sergeant
 
-> **Last validated:** 2026-06-06 by @claude. **Next review:** 2026-09-04.
+> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
 > **Status:** Active
 
 > **Single source of truth → [AGENTS.md](./AGENTS.md).** Тонкий wrapper; repo policy приходить нижче через `@import` — не дублюй її тут.
@@ -10,19 +10,19 @@
 ## Startup flow
 
 1. Прочитай [AGENTS.md](./AGENTS.md). Claude Code: вже в контексті через `@import` вище — не витрачай tool-call на повторне читання.
-2. Завантаж `.agents/skills/sergeant-start-here/SKILL.md`, далі рівно один specialist skill для основної поверхні зміни.
-3. Routing surface→skill: таблиця в § «Kilo Code» нижче (mapping tool-agnostic, валідний і для тебе).
+2. Завантаж `.agents/skills/sergeant-start-here/SKILL.md` через **`Read`**, далі рівно один specialist skill для основної поверхні зміни. **Sergeant-скіли НЕ в реєстрі Claude `Skill` tool** — вони живуть у `.agents/skills/`, який Claude не сканує. Ім'я скіла `X` з routing-таблиці резолвиться у `Read .agents/skills/X/SKILL.md` (НЕ `Skill(X)` — це дасть «not found»).
+3. Routing surface→skill: таблиця в § «Agent harnesses & routing» нижче (mapping tool-agnostic, валідний і для тебе).
 4. Є playbook під задачу в [docs/playbooks/](./docs/playbooks/README.md)? Виконуй як canonical recipe.
 5. Перший раз у репо? Пройди [docs/agents/onboarding.md](./docs/agents/onboarding.md).
 
-## Claude Code ≠ Kilo Code
+## Claude Code native equivalents
 
-§ «Kilo Code: extension operating model» в AGENTS.md написана для Kilo-розширення — **ігноруй її примітиви**, бери нативні еквіваленти:
+§ «Agent harnesses & routing» в AGENTS.md повністю нейтральний — Kilo-примітиви там НЕ згадуються (вони живуть лише в `~/.config/kilo/rules.md`). Якщо натрапиш на них у legacy-PR чи Kilo-доках, ось нативні еквіваленти Claude Code:
 
-- `skill`→`Skill` (SKILL.md можна й через `Read`); `task`/`.kilo/agent/*`→`Agent`+`.claude/agents/*` (18 subagents), `Task*` для teams; `agent_manager`→`EnterWorktree`.
-- `kilo_local_recall`→auto-memory+`Explore`; kilo.json MCP→`ToolSearch` (`.mcp.json`); `.kilo/command/*`→`pnpm check` або `.claude/commands/*`.
+- Kilo `skill` → **`Read .agents/skills/<name>/SKILL.md`** (Claude `Skill` tool індексує лише plugin / `~/.claude/skills` скіли — Sergeant-скілів там НЕМА, тому Read, не `Skill`); Kilo `task` + agent-defs→`Agent`+`~/.claude/agents/*`, `Task*` для teams; `agent_manager`→`EnterWorktree`.
+- `kilo_local_recall`→auto-memory+`Explore`; Kilo MCP (context7/github/memory)→`ToolSearch` (`.mcp.json`); Kilo commands→`pnpm check` або `.claude/commands/*`.
 
-Валідні для тебе в тій секції: routing-таблиця surface→skill і список hard rules / invariants нижче по AGENTS.md.
+Спільне для всіх харнесів і валідне для тебе: routing-таблиця surface→skill і список hard rules / invariants нижче по AGENTS.md. Конфіг Kilo живе глобально в `~/.config/kilo/`, не в репо — у репо більше немає `.kilo/`.
 
 ## Sub-tree CLAUDE.md
 

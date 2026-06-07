@@ -25,8 +25,7 @@
     "docs/open-work.md",
     "scripts/__tests__/fixtures/**",
     ".telemetry/**",
-    "mockups/**",
-    ".kilo/**"
+    "mockups/**"
   ],
   "explicitInclude": [],
   "explicitExclude": [

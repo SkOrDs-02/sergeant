@@ -54,13 +54,11 @@ export type {
   ToastType,
 } from "./useToast";
 
-// `useWebVisualKeyboardInset`, `useScrollHeader`, and `useFormattedCountUp`
-// were removed from the public barrel in DC-4 (dead-code/hard-rules-2026-05)
-// — 0 external consumers found by per-symbol grep. Source files remain on
-// disk (knip follow-up DC-4b will sweep them if `pnpm knip` confirms).
-//   - `useWebVisualKeyboardInset` is still importable via deep path
-//     `@shared/hooks/useVisualKeyboardInset` for the `main.tsx` side-effect
-//     registration; do not re-introduce to barrel until a real consumer appears.
+// `useWebVisualKeyboardInset` was removed from the public barrel in DC-4
+// (dead-code/hard-rules-2026-05) — 0 external barrel consumers found by
+// per-symbol grep. It remains importable via deep path
+// `@shared/hooks/useVisualKeyboardInset` for the `main.tsx` side-effect
+// registration; do not re-introduce to the barrel until a real consumer appears.
 
 export { usePullToRefresh } from "./usePullToRefresh";
 export type {
@@ -78,11 +76,6 @@ export type {
 export { useBodyScrollLock } from "./useBodyScrollLock";
 
 export { useFocusTrap } from "./useFocusTrap";
-
-// `useCountUp` and `useFormattedCountUp` were removed from the public barrel
-// in DC-4 (dead-code/hard-rules-2026-05) — 0 external consumers found by
-// per-symbol grep. Source file `useCountUp.ts` remains on disk (knip
-// follow-up DC-4b will sweep if `pnpm knip` confirms).
 
 export { useHaptic } from "./useHaptic";
 export type { UseHapticReturn } from "./useHaptic";

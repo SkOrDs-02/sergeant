@@ -1,50 +1,50 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-06-05 by @claude. **Next review:** 2026-09-03.
+> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
 
-## Kilo Code: extension operating model
+## Agent harnesses & routing
 
-This repo is driven by the **Kilo Code** extension. Use the extension's primitives — don't reinvent them.
+Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, Devin, Cursor — drives this repo through the same shared primitives: harness-neutral skills in `.agents/skills/`, this `AGENTS.md` as the policy source of truth, and the surface→specialist routing table below. **Harness-specific config (models, permissions, MCP wiring, custom agents, commands) lives outside the checkout**, in each tool's own global config directory — the repo itself carries no tool config.
 
-- **Repo state.** This session runs inside an **Agent Manager worktree** at `E:\.claude\Sergeant\.kilo\worktrees\ring-slope`; the main checkout is `E:\.claude\Sergeant\`. Stay inside the worktree unless the user explicitly asks to leave it. Worktrees share the same on-disk repo (git worktree), so edits land in the worktree branch only.
-- **Skills.** Load via the `skill` tool — do **not** Read SKILL.md files manually. The catalog of repo-owned skills is in `docs/agents/agent-skills-catalog.md`; user-installed global skills are listed in the `<available_skills>` block of the system prompt. Use the `find-skills` skill when a task might match a non-obvious skill.
-- **Custom agents.** `E:\.claude\Sergeant\.kilo\agent\sergeant-*.md` defines 12 repo-owned specialists (web-ui, server-api, mobile, data-and-migrations, deploy, openclaw, hubchat, e2e-testing, security-audit, bugfix, tech-debt, review-and-merge). Launch them with the `task` tool by name. Global specialists live at `C:\Users\dmytr\.config\kilo\agents\` (code-reviewer, code-skeptic, docs-specialist — the docs-specialist is restricted to `*.md` only, see its `permission` block). The same task tool accepts generic `subagent_type: general` / `explore` for ad-hoc work.
-- **Routing sergeant-\* agents (decision tree).** Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
+- **Source of truth.** For all project / policy / hard-rules questions, this file (`AGENTS.md`) wins. `CLAUDE.md` and `DEVIN.md` are thin wrappers that add only runtime/tool notes and must not duplicate policy.
+- **Skills.** Load the skill for the touched surface — start with `.agents/skills/sergeant-start-here/SKILL.md`, then exactly one specialist. Catalog: `docs/agents/agent-skills-catalog.md`. Skills are plain SKILL.md files; each harness loads them through its own skill loader — prefer that loader over reading SKILL.md by hand when one exists.
+- **Specialists.** 12 Sergeant specialists own the routing below (web-ui, server-api, mobile, data-and-migrations, deploy, openclaw, hubchat, e2e-testing, security-audit, bugfix, tech-debt, review-and-merge). Each harness ships its own agent definitions in its global config; the surface→specialist mapping is what they all share.
 
-  | Signal in the task                                                  | Load                           |
-  | ------------------------------------------------------------------- | ------------------------------ |
-  | Touches `apps/web/**`, RQ keys, design tokens, a11y                 | `sergeant-web-ui`              |
-  | Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI | `sergeant-server-api`          |
-  | Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS       | `sergeant-mobile`              |
-  | Touches `db-schema/`, migrations, drill-down, index audit           | `sergeant-data-and-migrations` |
-  | Railway / Vercel / Sentry / Alertmanager / CI workflow change       | `sergeant-deploy`              |
-  | OpenClaw gateway / plugin / PAT lifecycle                           | `sergeant-openclaw`            |
-  | HubChat module / HubChat reset / HubChat E2E                        | `sergeant-hubchat`             |
-  | Writing or running E2E (Playwright/Vitest browser)                  | `sergeant-e2e-testing`         |
-  | Security review, vuln triage, secret scan, dependency CVE           | `sergeant-security-audit`      |
-  | Regression, hotfix, "this used to work"                             | `sergeant-bugfix`              |
-  | Refactor, dead code, Knip baseline, eslint baseline reduction       | `sergeant-tech-debt`           |
-  | PR review, squash-merge, release-cut, changelog                     | `sergeant-review-and-merge`    |
+**Routing (surface → specialist).** Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
 
-  If two surfaces overlap (e.g. web + e2e), load the **owner** first; ask the other only when blocked. Full catalog: [`docs/agents/agent-skills-catalog.md`](./docs/agents/agent-skills-catalog.md).
+| Signal in the task                                                  | Load                           |
+| ------------------------------------------------------------------- | ------------------------------ |
+| Touches `apps/web/**`, RQ keys, design tokens, a11y                 | `sergeant-web-ui`              |
+| Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI | `sergeant-server-api`          |
+| Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS       | `sergeant-mobile`              |
+| Touches `db-schema/`, migrations, drill-down, index audit           | `sergeant-data-and-migrations` |
+| Railway / Vercel / Sentry / Alertmanager / CI workflow change       | `sergeant-deploy`              |
+| OpenClaw gateway / plugin / PAT lifecycle                           | `sergeant-openclaw`            |
+| HubChat module / HubChat reset / HubChat E2E                        | `sergeant-hubchat`             |
+| Writing or running E2E (Playwright/Vitest browser)                  | `sergeant-e2e-testing`         |
+| Security review, vuln triage, secret scan, dependency CVE           | `sergeant-security-audit`      |
+| Regression, hotfix, "this used to work"                             | `sergeant-bugfix`              |
+| Refactor, dead code, Knip baseline, eslint baseline reduction       | `sergeant-tech-debt`           |
+| PR review, squash-merge, release-cut, changelog                     | `sergeant-review-and-merge`    |
 
-- **Custom slash commands.** Defined in `E:\.claude\Sergeant\.kilo\command\*.md` (10 commands: `/check`, `/format`, `/lint`, `/typecheck-test`, `/build`, `/dev-server`, `/dev-web`, `/migrate`, `/test`, `/install`). Commands are short YAML front-matter + body — read the file to know the exact prompt. Prefer `/check` (runs `pnpm check`) over manually chaining `pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build`.
-- **Kilo-specific tools to use, not ignore.**
-  - `kilo_local_recall` — search/read past Kilo sessions in this project (including sibling worktrees) before re-deriving context. **Do this first** for "didn't we already do X?" questions.
-  - `agent_manager` (mode `worktree` | `local`) — spawn isolated Agent Manager worktrees for parallel/independent tasks; mode `versions` only when comparing alternate solutions to the same task.
-  - `context7_resolve-library-id` + `context7_query-docs` — look up third-party library docs (React, TanStack Query, Drizzle, Vite, Better Auth, etc.) instead of guessing from memory.
-  - `github_*` — PR/issue/repo/CI operations. Prefer these over ad-hoc `gh` shells.
-  - `memory_*` (knowledge graph) — store durable cross-session facts (e.g. "test user X has N Monobank accounts") so future agents in this project inherit them. Use `memory_search_nodes` first to avoid duplicates.
-  - `webfetch` — only when a URL is clearly needed for the task; do not generate URLs.
-  - `background_process` — long-running dev servers / watchers. Never `&` or `Start-Process` from `bash` for those.
-  - `skill` — load a skill; do **not** read SKILL.md directly.
-- **MCPs wired in `C:\Users\dmytr\.config\kilo\kilo.json`:** `context7` (library docs), `github` (PAT-scoped, see SECURITY below), `memory` (project knowledge graph).
-- **SECURITY.** `github` MCP carries a PAT in `C:\Users\dmytr\.config\kilo\kilo.json` — treat as a secret. Never echo it, never commit it, never log it. Hard Rule #20 also forbids OpenClaw PATs in production.
-- **Local config (this project):** `kilo.json` (worktree-local override), `.kilo/command/`, `.kilo/agent/`. Global: `C:\Users\dmytr\.config\kilo\`. Questions about Kilo internals → use the `kilo-config` skill.
-- **For all project / policy / hard-rules questions, this file (`AGENTS.md`) is the source of truth.** `CLAUDE.md` and `DEVIN.md` add only runtime/tool notes and must not duplicate policy.
+If two surfaces overlap (e.g. web + e2e), load the **owner** first; ask the other only when blocked. Full catalog: [`docs/agents/agent-skills-catalog.md`](./docs/agents/agent-skills-catalog.md).
+
+### Harness config lives outside the repo
+
+No harness stores tool config in the checkout — the repo carries no `.kilo/`, no tool-specific agent files, nothing. Every harness is an **equal peer**: it reads `AGENTS.md` + `.agents/skills/` from the repo for shared policy, then keeps its own models, permissions, MCP wiring, custom agents and commands in its own global config home. **None of them is "the" driver of this repo.**
+
+| Harness     | Config home (global, outside the repo)                      | Tool-specific wrapper      |
+| ----------- | ----------------------------------------------------------- | -------------------------- |
+| Claude Code | `~/.claude/` (+ repo `.claude/` for tool-managed worktrees) | [`CLAUDE.md`](./CLAUDE.md) |
+| Kilo Code   | `~/.config/kilo/` (`agents/`, `command/`, `rules.md`, MCP)  | `~/.config/kilo/rules.md`  |
+| Devin       | Devin workspace settings                                    | [`DEVIN.md`](./DEVIN.md)   |
+
+Harness-specific primitives — session recall, worktree/branch managers, MCP tool names, dev-server runners — live in that harness's **own wrapper**, never in this file. **If you are reading `AGENTS.md` and see a tool you don't have, it is not yours — use your own harness's equivalent.**
+
+> **SECURITY.** A harness that wires a `github` (or any) MCP with a Personal Access Token keeps that token in its **own** global config (e.g. `~/.config/kilo/kilo.json`), outside git. Treat such tokens as secrets — never echo, commit, or log them. Hard Rule #20 also forbids OpenClaw PATs in production.
 
 ## Agent operating system (project)
 
@@ -118,7 +118,7 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 | 9   | Saturated brand fills behind `text-white` must use the `-strong` companion            | `lint-enforced-convention` | [`09-saturated-brand-fills-strong-companion.md`](./docs/governance/rules/09-saturated-brand-fills-strong-companion.md) |
 | 10  | Lifecycle markers — every file/doc declares its status                                | `lint-enforced-convention` | [`10-lifecycle-markers.md`](./docs/governance/rules/10-lifecycle-markers.md)                                           |
 | 15  | Read governance before coding; update docs alongside code; internal docs in Ukrainian | `lint-enforced-convention` | [`15-governance-and-doc-language.md`](./docs/governance/rules/15-governance-and-doc-language.md)                       |
-| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS | `active-initiative`        | [`18-module-size-discipline-600.md`](./docs/governance/rules/18-module-size-discipline-600.md)                         |
+| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS             | `active-initiative`        | [`18-module-size-discipline-600.md`](./docs/governance/rules/18-module-size-discipline-600.md)                         |
 | 19  | Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo      | `active-initiative`        | [`19-strict-mode-flag-canonical.md`](./docs/governance/rules/19-strict-mode-flag-canonical.md)                         |
 | 20  | No OpenClaw PATs in production                                                        | `blocker-invariant`        | [`20-no-openclaw-pats-in-production.md`](./docs/governance/rules/20-no-openclaw-pats-in-production.md)                 |
 | 21  | Pino redaction policy enforced                                                        | `blocker-invariant`        | [`21-pino-redaction-policy.md`](./docs/governance/rules/21-pino-redaction-policy.md)                                   |

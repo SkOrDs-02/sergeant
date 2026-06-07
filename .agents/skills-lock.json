@@ -110,6 +110,61 @@
       "source": "local",
       "sourceType": "local",
       "computedHash": "6c3512e55d0b5559adb63d2fe605969640bbf6584830e7713e7911b2949e02da"
+    },
+    "api-design-principles": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "bf8aa6a6697b281103f1e88995543962537e521978d9bc9312ee85fd45cb3601"
+    },
+    "architecture-patterns": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "da4627f3fcbde1b9312af5b3389aeaa1a0be4e2a549b4d6502dfd86da6f4afce"
+    },
+    "cqrs-implementation": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "e1dfe54ad5317e72f4f6f0b3b639fce7f326de6da863c03ad7e23173d26b85d4"
+    },
+    "event-store-design": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "c9778205a410d2e7922a984731ae3ef3d9ba3d3afbca77d8b774e7ba9b0e732f"
+    },
+    "microservices-patterns": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "4331b2ce842b8fa891099e7ee14963b5c772858c95cc87c4a5aa8ba83fadd505"
+    },
+    "projection-patterns": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "79d365e9624ae08754f421d993c17775ffdc61902ac6923ea09ca207b229eb10"
+    },
+    "saga-orchestration": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "f9d30bd775175e71cee7e83bdc2ce95fffdfad8d8f58d7ff15d2330d8679a982"
+    },
+    "sergeant-backend-api": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "fd505511c1c1768f0b439115e0e4e692915022a6cf81ebd2e04ad956f9fdf9a5"
+    },
+    "sergeant-backend-architecture": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "e242cdb9ba33b2c311a1958f94c93e330ec833bc0f8028b1aeb51e2c64bc1aa4"
+    },
+    "temporal-python-testing": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "5bbed3f9147dbabf5d7e852297a2b5c61a119d9c0b6d35bc4b4aa6306fbe77fb"
+    },
+    "workflow-orchestration-patterns": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "577725e8b7465f5428c40aa220e85d6e119db2fb64f38f01200b2c092b54f02a"
     }
   }
 }

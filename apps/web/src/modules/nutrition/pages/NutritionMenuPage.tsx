@@ -81,6 +81,7 @@ export function NutritionMenuPage({
   return (
     <SectionErrorBoundary key="page-menu" title="Не вдалось показати «Меню»">
       <>
+        <h1 className="sr-only">Меню</h1>
         <SubTabs
           value={menuSubTab}
           onChange={(id) => setMenuSubTab(id as MenuSubTab)}
