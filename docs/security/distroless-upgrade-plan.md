@@ -1,4 +1,5 @@
-<!-- AUTO-GENERATED: edit generator in .kilo/scripts/regen-distroless-upgrade-plan.mjs if it ever exists; otherwise hand-edit. -->
+<!-- AUTO-GENERATED: no generator exists; hand-edit this file directly. -->
+
 # Distroless base-image upgrade plan — libssl3 CVE cluster (expires 2026-07-02)
 
 > **Last validated:** 2026-06-05 by @Skords-01 (Container Security Engineer review).
@@ -7,15 +8,15 @@
 
 ## TL;DR
 
-| Item                                                                                   | Value                                                                                                                                            |
-| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Suppressed CVEs                                                                        | `CVE-2026-31789` (CRITICAL) + `CVE-2026-28387/88/89/90` (HIGH) for libssl3 in distroless base                                                   |
-| Affected Dockerfiles                                                                   | `Dockerfile.api:143` і `Dockerfile.console:92`                                                                                                   |
-| Base image tag (поточний)                                                              | `gcr.io/distroless/nodejs20-debian12:nonroot`                                                                                                    |
-| Expiry (original → extended)                                                           | `2026-07-02` → `2026-12-31` (6 months)                                                                                                           |
-| Дія                                                                                    | `.trivyignore` expiry extended; Dockerfiles НЕ змінені (див. § "Чому не патчимо FROM"); план upgrade-у на нову major-версію distroless             |
-| Owner                                                                                  | @Skords-01 (platform / devops per `docs/tech-debt/technical-assessment-2026-06-05.md` AP-03)                                                    |
-| Пов'язані артефакти                                                                    | `.trivyignore`, `Dockerfile.api`, `Dockerfile.console`, `docs/ops/docker-image-policy.md`, `docs/tech-debt/priority-1-executive.md` AP-03         |
+| Item                         | Value                                                                                                                                     |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Suppressed CVEs              | `CVE-2026-31789` (CRITICAL) + `CVE-2026-28387/88/89/90` (HIGH) for libssl3 in distroless base                                             |
+| Affected Dockerfiles         | `Dockerfile.api:143` і `Dockerfile.console:92`                                                                                            |
+| Base image tag (поточний)    | `gcr.io/distroless/nodejs20-debian12:nonroot`                                                                                             |
+| Expiry (original → extended) | `2026-07-02` → `2026-12-31` (6 months)                                                                                                    |
+| Дія                          | `.trivyignore` expiry extended; Dockerfiles НЕ змінені (див. § "Чому не патчимо FROM"); план upgrade-у на нову major-версію distroless    |
+| Owner                        | @Skords-01 (platform / devops per `docs/tech-debt/technical-assessment-2026-06-05.md` AP-03)                                              |
+| Пов'язані артефакти          | `.trivyignore`, `Dockerfile.api`, `Dockerfile.console`, `docs/ops/docker-image-policy.md`, `docs/tech-debt/priority-1-executive.md` AP-03 |
 
 ## Чому не можна просто `docker pull` і пофіксити тут і зараз
 
@@ -129,8 +130,8 @@ debian13.
 4. Видалити всі 5 CVE-записів з `.trivyignore` (libssl3 у debian13 вже
    на mainline Debian security track; Trivy не повинен flag-ати).
 5. Smoke-test: локальний `docker buildx build --platform linux/amd64 -f
-   Dockerfile.api -t hub-api:test .` + `docker run hub-api:test node -e
-   "console.log(process.versions)"` + integration-test Railway preDeploy
+Dockerfile.api -t hub-api:test .` + `docker run hub-api:test node -e
+"console.log(process.versions)"` + integration-test Railway preDeploy
    (`node dist-server/migrate.js`).
 6. CI-гейт для `Dockerfile.console` — окремий follow-up PR (вже
    затреканий у PR-30 follow-up TODO).
@@ -161,25 +162,25 @@ alpine ≠ debian).
 ## Що зроблено в цьому PR-і (2026-06-05)
 
 - [x] `.trivyignore`: 5 expiry-даних `2026-07-02` → `2026-12-31` (6-місячне
-  подовження, per `§ If you cannot determine the latest tag safely` інструкції
-  Container Security Engineer).
+      подовження, per `§ If you cannot determine the latest tag safely` інструкції
+      Container Security Engineer).
 - [x] Створено цей документ (`docs/security/distroless-upgrade-plan.md`).
 - [x] НЕ змінено жодного `FROM` рядка в `Dockerfile.api` / `Dockerfile.console`
-  — див. § "Чому не можна просто sed s/nodejs20/nodejs22/g".
+      — див. § "Чому не можна просто sed s/nodejs20/nodejs22/g".
 - [x] НЕ видалено `.trivyignore` entries — Docker відсутній на робочій хості,
-  тож Trivy-scan неможливий (Hard Rule #7 «Pre-commit hooks via Husky — do not
-  skip» + Hard Rule #15 «update docs alongside code»).
+      тож Trivy-scan неможливий (Hard Rule #7 «Pre-commit hooks via Husky — do not
+      skip» + Hard Rule #15 «update docs alongside code»).
 
 ## Що НЕ зроблено (навмисно)
 
 - [ ] `Dockerfile.api:143` / `Dockerfile.console:92` `FROM` — потребує
-  Варіант A або B + Docker-верифікація.
+      Варіант A або B + Docker-верифікація.
 - [ ] `.trivyignore` entries — лишаються до локального / CI-проходження
-  Trivy-scan-у з новою базою.
+      Trivy-scan-у з новою базою.
 - [ ] CI-гейт для `Dockerfile.console` — окремий PR (PR-30 follow-up).
 - [ ] Renovate-правило для distroless — нинішній `renovate.json` не має
-  customManager-а для `gcr.io/distroless/*`. Додати в follow-up, коли
-  виберемо цільову базу.
+      customManager-а для `gcr.io/distroless/*`. Додати в follow-up, коли
+      виберемо цільову базу.
 
 ## Verification (коли Docker стане доступним)
 
@@ -231,7 +232,7 @@ upgrade`).
 ## GitHub issue summary (для створення вручну)
 
 > **Title:** `[SECURITY] Migrate distroless base from deprecated
-> nodejs20-debian12 to nodejs22-debian13 (5 libssl3 CVE suppressions) `
+nodejs20-debian12 to nodejs22-debian13 (5 libssl3 CVE suppressions) `
 >
 > **Labels:** `security`, `infra-pin`, `dependencies`, `tech-debt`
 >
@@ -264,23 +265,23 @@ upgrade`).
 >
 > - [ ] Bump Volta `node: 20.20.2 → 22.x.x` (latest Node 22 LTS).
 > - [ ] Оновити `Dockerfile.api:50` і `Dockerfile.console:30`:
->   `node:20.20.2-alpine` → `node:22.x-alpine`.
+>       `node:20.20.2-alpine` → `node:22.x-alpine`.
 > - [ ] Оновити `Dockerfile.api:143` і `Dockerfile.console:92`:
->   `gcr.io/distroless/nodejs20-debian12:nonroot` →
->   `gcr.io/distroless/nodejs22-debian13:nonroot`.
+>       `gcr.io/distroless/nodejs20-debian12:nonroot` →
+>       `gcr.io/distroless/nodejs22-debian13:nonroot`.
 > - [ ] Підняти `renovate.json:44` `allowedVersions: "<21"` →
->   `allowedVersions: "<23"`.
+>       `allowedVersions: "<23"`.
 > - [ ] `pnpm install --frozen-lockfile` + `pnpm test` на Node 22;
->   виправити compatibility-якщо-є.
+>       виправити compatibility-якщо-є.
 > - [ ] Smoke-test: `docker buildx build --platform linux/amd64 -f
->   Dockerfile.api` + Railway preDeploy migration (`node
->   dist-server/migrate.js`).
+Dockerfile.api` + Railway preDeploy migration (`node
+dist-server/migrate.js`).
 > - [ ] Trivy-scan (CI gate `.github/workflows/container-scan.yml`)
->   повертає 0 hit-ів для 5 CVE → видалити `.trivyignore` entries.
+>       повертає 0 hit-ів для 5 CVE → видалити `.trivyignore` entries.
 > - [ ] Окремий follow-up: додати Trivy CI gate для `Dockerfile.console`
->   (PR-30 follow-up TODO).
+>       (PR-30 follow-up TODO).
 > - [ ] Окремий follow-up: додати Renovate customManager для
->   `gcr.io/distroless/*` з monthly cadence + cosign verify.
+>       `gcr.io/distroless/*` з monthly cadence + cosign verify.
 >
 > ## Risk
 >
