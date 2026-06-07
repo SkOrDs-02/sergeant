@@ -1,4 +1,5 @@
 ---
+lang: en
 name: event-store-design
 description: Design and implement event stores for event-sourced systems. Use when building event sourcing infrastructure, choosing event store technologies, or implementing event persistence patterns.
 ---
@@ -78,3 +79,4 @@ Full template library and detailed worked examples live in `references/details.m
 - **Don't store large payloads** - Keep events small
 - **Don't skip optimistic concurrency** - Prevents data corruption
 - **Don't ignore backpressure** - Handle slow consumers
+See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.

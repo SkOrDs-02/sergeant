@@ -2158,7 +2158,7 @@ and packages/db-schema/src/sqlite/syncOpRetry.ts / syncOpOutboxPurge.ts / syncOp
  
  > **Owner:** TBD (backend-engineer)
 @@ -50,3 +50,107 @@
- - **Synthesis:** [`docs/audits/2026-05-15-deep-audit-state-of-repo.md`](./2026-05-15-deep-audit-state-of-repo.md) (state-of-repo snapshot — D1-D4 trackers).
+ - **Synthesis:** [`docs/audits/2026-05-15-deep-audit-state-of-repo.md`](../docs/audits/archive/2026-05-15-deep-audit-state-of-repo.md) (state-of-repo snapshot — D1-D4 trackers).
 +
 +---
 +
@@ -2597,7 +2597,7 @@ and packages/db-schema/src/sqlite/syncOpRetry.ts / syncOpOutboxPurge.ts / syncOp
 +> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-09-06.
 +> **Status:** Scaffolded — describes the dual-key DB-backed design from PR-27. The `internal_api_keys` table, `requireInternalApiKey` middleware, and `/internal-key` CLI commands are **not yet merged**. Until PR-27 lands, the current auth mechanism is the single `INTERNAL_API_KEY` env-var bearer described in [§ Legacy env-var](#legacy-env-var-pre-pr-27).
 +> **Owner:** ops + server.
-+> **Related:** [`api-internal-hmac.md`](./api-internal-hmac.md), [`secret-ownership-register.md`](./secret-ownership-register.md), [`docs/playbooks/rotate-secrets.md`](../playbooks/rotate-secrets.md), [`docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md).
++> **Related:** [`api-internal-hmac.md`](../docs/security/api-internal-hmac.md), [`secret-ownership-register.md`](../docs/security/secret-ownership-register.md), [`docs/playbooks/rotate-secrets.md`](../docs/playbooks/rotate-secrets.md), [`docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md).
 +
 +---
 +
@@ -2615,7 +2615,7 @@ and packages/db-schema/src/sqlite/syncOpRetry.ts / syncOpOutboxPurge.ts / syncOp
 +
 +Auth is layered:
 +1. **Bearer token** — `Authorization: Bearer <key>` checked via constant-time compare.
-+2. **HMAC-SHA256** — optional `X-Signature` + `X-Timestamp` (see [`api-internal-hmac.md`](./api-internal-hmac.md)).
++2. **HMAC-SHA256** — optional `X-Signature` + `X-Timestamp` (see [`api-internal-hmac.md`](../docs/security/api-internal-hmac.md)).
 +3. **IP allowlist** — loopback + Railway internal CIDR (`requireInternalIp` middleware, M14).
 +
 +---
@@ -2828,11 +2828,11 @@ and packages/db-schema/src/sqlite/syncOpRetry.ts / syncOpOutboxPurge.ts / syncOp
 +
 +## See also
 +
-+- Initiative doc: [`docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md)
-+- HMAC signing layer: [`docs/security/api-internal-hmac.md`](./api-internal-hmac.md)
-+- Bearer guard implementation: [`apps/server/src/routes/internal/index.ts`](../../apps/server/src/routes/internal/index.ts)
-+- Secret ownership register: [`docs/security/secret-ownership-register.md`](./secret-ownership-register.md)
-+- Rotate-secrets playbook: [`docs/playbooks/rotate-secrets.md`](../playbooks/rotate-secrets.md)
++- Initiative doc: [`docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md)
++- HMAC signing layer: [`docs/security/api-internal-hmac.md`](../docs/security/api-internal-hmac.md)
++- Bearer guard implementation: [`apps/server/src/routes/internal/index.ts`](../apps/server/src/routes/internal/index.ts)
++- Secret ownership register: [`docs/security/secret-ownership-register.md`](../docs/security/secret-ownership-register.md)
++- Rotate-secrets playbook: [`docs/playbooks/rotate-secrets.md`](../docs/playbooks/rotate-secrets.md)
 ```
 
 ---
@@ -2844,7 +2844,7 @@ In the `## Register` table, append this row after the last active row (before th
 ```diff
 -| n8n integration credentials | Founder | n8n runtime, vendor consoles | workflow automations, webhook relays | Quarterly review, immediate on compromise | Validate workflow health after rotation | Automation misuse or external service abuse | active | ongoing | 2026-05-01 |
 +| n8n integration credentials | Founder | n8n runtime, vendor consoles | workflow automations, webhook relays | Quarterly review, immediate on compromise | Validate workflow health after rotation | Automation misuse or external service abuse | active | ongoing | 2026-05-01 |
-+| `INTERNAL_API_KEY` (internal M2M bearer) | Founder | Railway prod env (`sergeant-server`); post-PR-27: `internal_api_keys` DB table | `tools/openclaw`, n8n WF-03/15/18/22/103–106 | 90-day TTL per key (post-PR-27); rotate immediately on leak; see [`docs/security/internal-api-keys.md`](./internal-api-keys.md) | Dual-key 24h overlap: new key coexists with old; revoke old after consumer migrated. Pre-PR-27: all consumers break simultaneously — coordinate redeploys. | Internal endpoint impersonation; ability to forge Monobank webhook events, OpenClaw callbacks, and alert posts | active | ongoing | 2026-06-06 |
++| `INTERNAL_API_KEY` (internal M2M bearer) | Founder | Railway prod env (`sergeant-server`); post-PR-27: `internal_api_keys` DB table | `tools/openclaw`, n8n WF-03/15/18/22/103–106 | 90-day TTL per key (post-PR-27); rotate immediately on leak; see [`docs/security/internal-api-keys.md`](../docs/security/internal-api-keys.md) | Dual-key 24h overlap: new key coexists with old; revoke old after consumer migrated. Pre-PR-27: all consumers break simultaneously — coordinate redeploys. | Internal endpoint impersonation; ability to forge Monobank webhook events, OpenClaw callbacks, and alert posts | active | ongoing | 2026-06-06 |
 ```
 ````
 
@@ -2944,8 +2944,8 @@ After the window closes and both criteria are met, the header becomes:
 And in docs/initiatives/README.md, the row in the active table moves to "Нещодавно завершені":
 
 ```diff
--| 0015 | [Docs automation for daily ops](./0015-docs-automation-daily-ops.md) | P2 | `@Skords-01` | 2026-05-31 | In progress — ...
-+| 0015 | [Docs automation for daily ops](./_0015-docs-automation-daily-ops.md) | P2 | `@Skords-01` | 2026-06-09 | Done — cron 7-day stability confirmed; maintainer self-report confirmed. Renamed → `_0015-docs-automation-daily-ops.md`.
+-| 0015 | [Docs automation for daily ops](../docs/initiatives/0015-docs-automation-daily-ops.md) | P2 | `@Skords-01` | 2026-05-31 | In progress — ...
++| 0015 | [Docs automation for daily ops](../docs/initiatives/0015-docs-automation-daily-ops.md) | P2 | `@Skords-01` | 2026-06-09 | Done — cron 7-day stability confirmed; maintainer self-report confirmed. Renamed → `_0015-docs-automation-daily-ops.md`.
 ```
 ````
 
@@ -3160,10 +3160,10 @@ Full set of changed lines (for manual verification):
 +++ b/docs/audits/README.md
 
 @@ active-table (remove this row):
--| [`2026-05-15-deep-audit-state-of-repo.md`](./2026-05-15-deep-audit-state-of-repo.md) | Synthesis-аудит зовнішнім проходом — крос-валідація P0/P1 закриттів, 4 hygiene-outstanding | Active | n/a (synthesis) | 0 ⁴ | self (§Truly outstanding D1, D4 — D2/D3 closed) |
+-| [`2026-05-15-deep-audit-state-of-repo.md`](../docs/audits/archive/2026-05-15-deep-audit-state-of-repo.md) | Synthesis-аудит зовнішнім проходом — крос-валідація P0/P1 закриттів, 4 hygiene-outstanding | Active | n/a (synthesis) | 0 ⁴ | self (§Truly outstanding D1, D4 — D2/D3 closed) |
 
 @@ archive section (add as new row, immediately before the 2026-08-XX Draft rows, i.e. between the revenue-roast row and the sync-engine-roast row):
-+| [`archive/2026-05-15-deep-audit-state-of-repo.md`](./archive/2026-05-15-deep-audit-state-of-repo.md) | Synthesis-аудит зовнішнім проходом — крос-валідація P0/P1 закриттів, 4 hygiene-outstanding (completed-and-frozen 2026-06-06; D1-D4 all closed 2026-06-03) | Archived | n/a (synthesis) | 0 | self |
++| [`archive/2026-05-15-deep-audit-state-of-repo.md`](../docs/audits/archive/2026-05-15-deep-audit-state-of-repo.md) | Synthesis-аудит зовнішнім проходом — крос-валідація P0/P1 закриттів, 4 hygiene-outstanding (completed-and-frozen 2026-06-06; D1-D4 all closed 2026-06-03) | Archived | n/a (synthesis) | 0 | self |
 
 Note: the row belongs in the archive table block (alongside the other Archived rows), not in the active table. The archive table already exists at lines 69–79.
 
@@ -3184,8 +3184,8 @@ Note: the row belongs in the archive table block (alongside the other Archived r
 +++ b/docs/audits/2026-08-XX-sync-engine-roast.md
 @@ -49,4 +49,4 @@
  - **PR plan:** [`docs/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/pr-plan-backend-perf-2026-05.md).
--- **Synthesis:** [`docs/audits/2026-05-15-deep-audit-state-of-repo.md`](./2026-05-15-deep-audit-state-of-repo.md) (state-of-repo snapshot — D1-D4 trackers).
-+- **Synthesis:** [`docs/audits/archive/2026-05-15-deep-audit-state-of-repo.md`](./archive/2026-05-15-deep-audit-state-of-repo.md) (state-of-repo snapshot — D1-D4 trackers; Archived 2026-06-06).
+-- **Synthesis:** [`docs/audits/2026-05-15-deep-audit-state-of-repo.md`](../docs/audits/archive/2026-05-15-deep-audit-state-of-repo.md) (state-of-repo snapshot — D1-D4 trackers).
++- **Synthesis:** [`docs/audits/archive/2026-05-15-deep-audit-state-of-repo.md`](../docs/audits/archive/2026-05-15-deep-audit-state-of-repo.md) (state-of-repo snapshot — D1-D4 trackers; Archived 2026-06-06).
 
 
 === 6. docs/open-work.md — regenerated automatically ===
