@@ -1,6 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   completionRateForRange,
+  habitCompletionRate,
+  maxActiveStreak,
   maxStreakAllTime,
   streakForHabit,
 } from "./streaks.js";
@@ -33,6 +35,22 @@ describe("routine-domain/streaks", () => {
     expect(streakForHabit(h, undefined, "2026-01-10")).toBe(0);
   });
 
+  it("streakForHabit skips unscheduled days when counting backwards", () => {
+    const h: Habit = {
+      ...dailyHabit("weekly"),
+      recurrence: "weekly",
+      weekdays: [0, 2, 4],
+    };
+
+    expect(
+      streakForHabit(
+        h,
+        ["2026-01-05", "2026-01-07", "2026-01-09"],
+        "2026-01-09",
+      ),
+    ).toBe(3);
+  });
+
   it("maxStreakAllTime finds best streak", () => {
     const h = dailyHabit("h");
     const completions = [
@@ -43,6 +61,10 @@ describe("routine-domain/streaks", () => {
       "2026-01-06",
     ];
     expect(maxStreakAllTime(h, completions)).toBe(3);
+  });
+
+  it("maxStreakAllTime returns 0 for empty completion history", () => {
+    expect(maxStreakAllTime(dailyHabit("h"), undefined)).toBe(0);
   });
 
   it("maxStreakAllTime keeps historical completions after schedule narrowing", () => {
@@ -111,5 +133,40 @@ describe("routine-domain/streaks", () => {
     expect(r.scheduled).toBe(0);
     expect(r.completed).toBe(0);
     expect(r.rate).toBe(0);
+  });
+
+  it("maxActiveStreak ignores archived habits", () => {
+    const active = dailyHabit("active");
+    const archived = { ...dailyHabit("archived"), archived: true };
+
+    expect(
+      maxActiveStreak(
+        [active, archived],
+        {
+          active: ["2026-01-09", "2026-01-10"],
+          archived: ["2026-01-08", "2026-01-09", "2026-01-10"],
+        },
+        "2026-01-10",
+      ),
+    ).toBe(2);
+  });
+
+  it("habitCompletionRate calculates a rolling range ending today", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 0, 10, 9, 0, 0, 0));
+
+    const r = habitCompletionRate(
+      dailyHabit("h"),
+      ["2026-01-08", "2026-01-10"],
+      3,
+    );
+
+    expect(r).toEqual({
+      scheduled: 3,
+      completed: 2,
+      rate: 2 / 3,
+    });
+
+    vi.useRealTimers();
   });
 });
