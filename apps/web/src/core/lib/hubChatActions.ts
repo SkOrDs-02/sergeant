@@ -1,4 +1,5 @@
 import { handleFinykAction } from "./chatActions/finykActions";
+import { handleQueryFinykAction } from "./chatActions/queryFinykActions";
 import { handleFizrukAction } from "./chatActions/fizrukActions";
 import { handleRoutineAction } from "./chatActions/routineActions";
 import { handleNutritionAction } from "./chatActions/nutritionActions";
@@ -33,6 +34,7 @@ function dispatch(action: ChatAction): ExecutedAction {
   try {
     return (
       normalize(handleFinykAction(action)) ??
+      normalize(handleQueryFinykAction(action)) ??
       normalize(handleFizrukAction(action)) ??
       normalize(handleRoutineAction(action)) ??
       normalize(handleNutritionAction(action)) ??
