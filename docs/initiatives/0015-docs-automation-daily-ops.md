@@ -1,6 +1,6 @@
 # 0015 — Docs automation for daily ops
 
-> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-06-09.
+> **Last validated:** 2026-06-07 by Codex (docs link-gate stability follow-up documented). **Next review:** 2026-06-09.
 > **Status:** In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **Observation window 2026-06-03 → 2026-06-09 (7 consecutive cron days); progress 3/7** — daily-brief cron confirmed green 06-03 / 06-04 / 06-05; 06-06 → 06-09 still pending, and the maintainer 5/7-day usage self-report is not yet recorded. Stays In progress until both signals close; do NOT flip to Done before 2026-06-09. Not 90-day-gated; archival deferred until the observation window closes.
 > **Agent-ready:** yes
 
@@ -80,6 +80,8 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 **Передумова Phase 2:** **2 тижні daily usage `today.md`** з Phase 1, щоб мапінг initiative→skill будувати на реальних patterns, а не на здогадках.
 
 ## Критерії DONE
+
+> **Gate health note 2026-06-07:** PR [#3418](https://github.com/Skords-01/Sergeant/pull/3418) стабілізує `docs:check-links` для daily-ops/doc automation роботи: checker більше не читає markdown-посилання всередині nested fenced blocks як реальні лінки, а `--skip-file` працює з Windows backslash paths. Це не змінює observational acceptance нижче, але зменшує ризик фальшивого red CI для `today.md` / `open-work.md` follow-up PR-ів.
 
 ### Phase 1
 

@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-06-01 by @Skords-01 (Phase 6b `exactOptionalPropertyTypes` + Phase 6d `noPropertyAccessFromIndexSignature` flipped to ✅ Done for `apps/web`). **Next review:** 2026-08-29.
+> **Last validated:** 2026-06-07 by Codex (web helper coverage follow-up documented). **Next review:** 2026-08-29.
 > **Status:** Active
 
 > **Оновлено 2026-06-01.** §7 follow-up виконано: ESLint-правило `no-console: error` додано до `apps/web/src/**` (виключення — `*.test.*`, `__tests__/`, `*.stories.*`); три documented call-sites (`perf.ts`, `sw/debug.ts`, `analytics.ts`) отримали `eslint-disable-next-line no-console` з обґрунтуванням; `logger.ts` — disable для canonical transport; ще 5 call-сайтів (`CommandPalette.tsx`, `serverBuildIdBus.ts`, `StatusPage.tsx`, `useDemoCommands.ts` ×2) мігровані на `logger`. §9 follow-up виконано: `@typescript-eslint/no-explicit-any` підвищено до `error` для `apps/web/src/modules/**` і `apps/web/src/core/**` (виключення — тести та stories); три by-design сайти вже мали `eslint-disable-next-line` з обґрунтуваннями — без змін. §6 follow-up виконано: додано `HubReports.test.tsx` (6 тестів — render smoke, empty-state, всі чотири lazy card stubs, WeeklyDigest week/month режим, period navigation, PDF export); `useCoachInsight.test.ts` (6 тестів — success, error, LS cache read/write, refresh, memory failure non-fatal); `useWeeklyDigest.test.ts` (14 тестів — `aggregateFizruk` ×3, `aggregateNutrition` ×2, `aggregateRoutine` ×3, `getWeekRange` ×1, hook ×5); cloud-sync v2 engine — покриття вже забезпечено `syncEngineWriter.test.ts` / `singleton.test.ts` / `outboxBoot.test.ts` / `useSyncStatus.test.tsx`.
@@ -437,6 +437,14 @@ quick actions, callback routing, weekly digest footer).
 - `useWeeklyDigest.test.ts` (14 тестів): `aggregateFizruk` (flat array / wrapped shape / порожні вправи), `aggregateNutrition` (базова агрегація / нуль даних), `aggregateRoutine` (звички з completion / без / нуль), `getWeekRange` (ISO week boundary), hook (початковий стан, успіх, помилка, refetch, мутація).
 
 Cloud-sync v2 engine (`syncEngineWriter`, `singleton`, `outboxBoot`, `useSyncStatus`) вже мав достатнє покриття у відповідних `*.test.ts/tsx` файлах — нові тести не потрібні.
+
+**Зроблено 2026-06-07 (Testing/DevX T-7 helper follow-up):** PR [#3413](https://github.com/Skords-01/Sergeant/pull/3413) додав focused coverage для helper-only поверхонь, які не потребували UI/MSW сценарію:
+
+- `activeWorkoutLib.test.ts`: active-workout id extraction, `datetime-local` conversion і cardio pace/speed calculations.
+- `requestId.test.ts`: stable sync request ids для deterministic retry/debug paths.
+- `finykSubscriptionCalendar.test.ts`: storage fallback, primary-vs-last-good transaction cache selection і persisted subscription event generation.
+
+Це не піднімає web coverage floor саме по собі, але прибирає дешеві pure-helper прогалини перед наступним T-7 кроком: selectors + wallet/scenario component/hook suites.
 
 ~~**Fix:** додати тести на reports aggregation (`HubReports.tsx` UI),
 залишок recommendation engine (`useCoachInsight`, `useWeeklyDigest`),
