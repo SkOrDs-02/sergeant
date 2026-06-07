@@ -205,7 +205,7 @@
       "type": "adr",
       "title": "ADR-0018: API versioning policy (`/api/v1`)",
       "path": "docs/adr/0018-api-versioning-policy.md",
-      "status": "accepted",
+      "status": "Superseded by [ADR-0053](./0053-api-versioning-policy.md)",
       "tier": "core",
       "meta": {
         "number": 18

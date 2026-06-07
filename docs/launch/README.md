@@ -61,6 +61,9 @@ docs/launch/
 | Як підключати бета-тестерів через TestFlight / Play?              | [phases/02 — Capacitor launch](./phases/02-capacitor-launch.md)                                   |
 | Чи варто запускати окремо Native Expo (apps/mobile)?              | [phases/03 — Native Expo launch](./phases/03-native-expo-launch.md)                               |
 | Як виправляти FTUX-онбординг (історичний sprint plan)?            | [ftux-sprint-plan](./product-os/ftux-sprint-plan.md) _(frozen)_                                   |
+| Як активувати AI-memory: pgvector, Voyage, recall (ADR-0028)?     | [ai-memory-activation](./tech/ai-memory-activation.md)                                            |
+| S1 ретро — чесний value-prop, поточний стан спринту?              | [sprint-retros/s1-honest-valueprop](./product-os/sprint-retros/s1-honest-valueprop.md)            |
+| S3 ретро — reward у правильний момент, поточний стан спринту?     | [sprint-retros/s3-reward-moments](./product-os/sprint-retros/s3-reward-moments.md)                |
 | Як реалізувати paywall технічно (DB schema, webhook, plan-cache)? | [06 — Архітектура](./business/06-monetization-architecture.md#5-уточнена-розбивка-pr-10-шт)       |
 | Що може піти не так у monetization rollout?                       | [06 — Risk register](./business/06-monetization-architecture.md#7-risk-register)                  |
 

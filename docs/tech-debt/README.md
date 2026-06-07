@@ -1,15 +1,20 @@
 # Технічний борг
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
 > **Status:** Active
 
 Living-реєстри технічного боргу.
 
-| Документ                       | Опис                                                                  |
-| ------------------------------ | --------------------------------------------------------------------- |
-| [`frontend.md`](./frontend.md) | Фронтенд tech-debt (`apps/web`)                                       |
-| [`backend.md`](./backend.md)   | Бекенд tech-debt (`apps/server` + migrations)                         |
-| [`mobile.md`](./mobile.md)     | Mobile tech-debt (`apps/mobile` Expo + `apps/mobile-shell` Capacitor) |
+| Документ                                                                     | Опис                                                                                      |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [`frontend.md`](./frontend.md)                                               | Фронтенд tech-debt (`apps/web`)                                                           |
+| [`backend.md`](./backend.md)                                                 | Бекенд tech-debt (`apps/server` + migrations)                                             |
+| [`mobile.md`](./mobile.md)                                                   | Mobile tech-debt (`apps/mobile` Expo + `apps/mobile-shell` Capacitor)                     |
+| [`priority-1-executive.md`](./priority-1-executive.md)                       | Зведення P1-спринту (критичний борг): статус виконання та відповідальні                   |
+| [`syncV2-engineering-ticket.md`](./syncV2-engineering-ticket.md)             | Інженерний тікет: аналіз та план поділу `syncV2.ts` на модулі                             |
+| [`syncV2-refactor-plan.md`](./syncV2-refactor-plan.md)                       | План рефакторингу `syncV2.ts` — Stage 2: витягання apply-функцій                          |
+| [`syncV2-refactor-execution.md`](./syncV2-refactor-execution.md)             | Виконання рефакторингу `syncV2.ts` (авто-генерований звіт прогресу)                       |
+| [`technical-assessment-2026-06-05.md`](./technical-assessment-2026-06-05.md) | Технічний аудит монорепо 2026-06-05: 8 підагентів, повний обсяг (4 аплікації, 12 пакетів) |
 
 Кожен файл має CI freshness-gate ([`scripts/check-tech-debt-freshness.mjs`](../../scripts/check-tech-debt-freshness.mjs))
 з порогом 60 днів. Маркер `> **Оновлено YYYY-MM-DD.**` у заголовку

@@ -71,3 +71,7 @@ artifacts/
 /knip-report.txt
 /lint-report.txt
 /..wt-0017-s2-reports/
+
+# Auto-generated planning-run scratch (read-only multi-agent backlog plan);
+# regenerated on demand, never hand-edited — must not be tracked.
+plans/agent-fanout-plan-*.md
