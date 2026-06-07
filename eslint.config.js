@@ -4,29 +4,56 @@
 // were extracted into per-surface modules so this root file stays a thin
 // composition manifest. The shared baseline (ignores + recommended configs +
 // the global plugin/settings/rules block) lives in `./eslint.baseline.js`;
-// each `eslint.<surface>.js` exports an array of that surface's `files:`-
-// scoped blocks. They are spread back in below.
+// each `eslint.<surface>.js` will own a surface-specific `files:` block once
+// the phase-2 composition cutover lands. Until that reconciliation completes,
+// the legacy surface blocks below remain in this root manifest.
 //
 // ESLint flat-config merges `rules` by array order (later wins for a given
 // file+rule). The composition order preserves the original resolution: the
-// baseline first, then the surface blocks, then `eslintConfigPrettier` last
+// baseline first, then the legacy surface blocks, then `eslintConfigPrettier` last
 // to disable formatting rules. `pnpm lint:eslint-config-diff` snapshots the
 // fully-resolved `eslint --print-config` output per surface and fails on any
 // drift — this extraction is a behavioural no-op verified against it. See
 // `docs/development/eslint-config.md` for the split rationale and roadmap.
+import { readFileSync } from "node:fs";
+import globals from "globals";
+import security from "eslint-plugin-security";
 import eslintConfigPrettier from "eslint-config-prettier";
 import { baseline } from "./eslint.baseline.js";
-import { webBlocks } from "./eslint.web.js";
-import { serverBlocks } from "./eslint.server.js";
-import { mobileBlocks } from "./eslint.mobile.js";
-import { shellBlocks } from "./eslint.shell.js";
-import { openclawBlocks } from "./eslint.openclaw.js";
-import { packageBlocks } from "./eslint.packages.js";
-import { crossSurfaceBlocks } from "./eslint.cross-surface.js";
+
+// Root still carries legacy web-rule blocks while PR-31 phase 2 extraction is
+// being reconciled. Keep these allowlists available here so ESLint config
+// import and lint-staged can evaluate the remaining root block.
+const i18nAllowlist = JSON.parse(
+  readFileSync(
+    new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),
+    "utf8",
+  ),
+);
+
+const toastErrorActionAllowlist = JSON.parse(
+  readFileSync(
+    new URL(
+      "./apps/web/eslint.toast-error-action-allowlist.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+
+const bareFixedInsetModalAllowlist = JSON.parse(
+  readFileSync(
+    new URL(
+      "./apps/web/eslint.bare-fixed-inset-modal-allowlist.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
 
 export default [
   ...baseline,
-// PR-31 phase 1 — block moved to `./eslint.baseline.js` (shared
+  // PR-31 phase 1 — block moved to `./eslint.baseline.js` (shared
   // global block + TS-only `no-unused-vars`). The deleted block here
   // looked like the next ~150 lines that started with:
   //   { files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"], languageOptions: { globals: { …browser, …node } }, ... }
@@ -641,7 +668,7 @@ export default [
       ],
     },
   },
-// Server bigint→string guardrail — the `pg` driver returns `int8` /
+  // Server bigint→string guardrail — the `pg` driver returns `int8` /
   // `bigint` columns as JavaScript strings; every `.rows.map(…)` that
   // constructs a response object must wrap numeric-looking columns in
   // `Number(…)`. See AGENTS.md hard rule #1 and issue #708.

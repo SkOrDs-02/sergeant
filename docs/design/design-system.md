@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-05-18 by @Skords-01. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
 > **Status:** Active (v2 redesign foundation merged 2026-05; backlog of per-page polish — див. [`redesign-v2/backlog.md`](./redesign-v2/backlog.md))
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -1333,18 +1333,6 @@ const { state, PullIndicator } = usePullToRefresh({
 ---
 
 ## 13. Нові хуки (2026-04)
-
-### useScrollHeader
-
-Progressive header behavior — shrink/hide on scroll.
-
-```tsx
-const { isHidden, isShrunk, hasBlur } = useScrollHeader({
-  shrinkThreshold: 40,
-  hideThreshold: 120,
-  minDelta: 8,
-});
-```
 
 ### useFocusTrap
 
