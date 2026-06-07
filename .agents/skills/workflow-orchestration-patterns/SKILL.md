@@ -1,6 +1,7 @@
 ---
+lang: en
 name: workflow-orchestration-patterns
-description: Design durable workflows with Temporal for distributed systems. Covers workflow vs activity separation, saga patterns, state management, and determinism constraints. Use when building long-running processes, distributed transactions, or microservice orchestration.
+description: Design durable workflows with Temporal for distributed systems. Covers workflow vs activity separation, saga patterns, state management, and determinism constraints. Use when building long-running processes, distributed
 ---
 
 # Workflow Orchestration Patterns
@@ -96,3 +97,4 @@ Detailed pattern documentation lives in `references/details.md`. Read that file 
 3. Idempotency is critical for activities
 4. State preservation is automatic
 5. Design for failure and recovery
+See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.

@@ -1,6 +1,7 @@
 ---
+lang: en
 name: architecture-patterns
-description: Implement proven backend architecture patterns including Clean Architecture, Hexagonal Architecture, and Domain-Driven Design. Use when designing clean architecture for a new microservice, when refactoring a monolith to use bounded contexts, when implementing hexagonal or onion architecture patterns, or when debugging dependency cycles between application layers.
+description: Implement proven backend architecture patterns including Clean Architecture, Hexagonal Architecture, and Domain-Driven Design. Use when designing clean architecture for a new microservice, when refactoring a monolith to
 ---
 
 # Architecture Patterns
@@ -162,3 +163,4 @@ For detailed DDD bounded context mapping, full multi-service project trees, Anti
 - `cqrs-implementation` — Use Clean Architecture as the structural foundation for CQRS command/query separation
 - `saga-orchestration` — Sagas require well-defined aggregate boundaries, which DDD tactical patterns provide
 - `event-store-design` — Domain events produced by aggregates feed directly into an event store
+See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.

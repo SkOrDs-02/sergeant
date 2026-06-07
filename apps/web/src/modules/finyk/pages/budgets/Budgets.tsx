@@ -144,6 +144,7 @@ export function Budgets({
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
 
+  // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getCurrentMonthContext
   const now = useMemo(() => new Date(), []);
   const { monthStart } = getCurrentMonthContext(now);
   const expenseCategoryList = useMemo(
@@ -326,6 +327,7 @@ export function Budgets({
     daysLeft: daysLeft2,
   } = getMonthlyPlanUsage(
     { planIncome, planExpense, totalFact: totalExpenseFact },
+    // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getMonthlyPlanUsage
     new Date(),
   );
 

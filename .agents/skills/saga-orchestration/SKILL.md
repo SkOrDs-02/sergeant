@@ -1,6 +1,7 @@
 ---
+lang: en
 name: saga-orchestration
-description: Implement saga patterns for distributed transactions and cross-aggregate workflows. Use this skill when implementing distributed transactions across microservices where 2PC is unavailable, designing compensating actions for failed order workflows that span inventory, payment, and shipping services, building event-driven saga coordinators for travel booking systems that must roll back hotel, flight, and car rental reservations atomically, or debugging stuck saga states in production where compensation steps never complete.
+description: Implement saga patterns for distributed transactions and cross-aggregate workflows. Use this skill when implementing distributed transactions across microservices where 2PC is unavailable, designing compensating actions
 ---
 
 # Saga Orchestration
@@ -115,3 +116,4 @@ The `references/` directory contains production-grade implementations not needed
 - `cqrs-implementation` — Pair sagas with CQRS for read-model updates after each step completes
 - `event-store-design` — Store saga events in an event store for full audit trail and replay capability
 - `workflow-orchestration-patterns` — Higher-level workflow engines (Temporal, Conductor) that build on saga concepts
+See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.

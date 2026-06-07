@@ -51,8 +51,44 @@ const bareFixedInsetModalAllowlist = JSON.parse(
   ),
 );
 
+// These allowlists are defined in eslint.web.js for the webBlocks export, but
+// the duplicate web block below (introduced by a botched merge of 023fd88 onto
+// c2eed3c's extraction) also needs them. Loading them here keeps the file
+// parseable until the duplicate block is removed in a follow-up cleanup.
+const i18nAllowlist = JSON.parse(
+  readFileSync(
+    new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),
+    "utf8",
+  ),
+);
+const toastErrorActionAllowlist = JSON.parse(
+  readFileSync(
+    new URL(
+      "./apps/web/eslint.toast-error-action-allowlist.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+const bareFixedInsetModalAllowlist = JSON.parse(
+  readFileSync(
+    new URL(
+      "./apps/web/eslint.bare-fixed-inset-modal-allowlist.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+
 export default [
   ...baseline,
+  ...webBlocks,
+  ...serverBlocks,
+  ...mobileBlocks,
+  ...shellBlocks,
+  ...openclawBlocks,
+  ...packageBlocks,
+  ...crossSurfaceBlocks,
   // PR-31 phase 1 — block moved to `./eslint.baseline.js` (shared
   // global block + TS-only `no-unused-vars`). The deleted block here
   // looked like the next ~150 lines that started with:

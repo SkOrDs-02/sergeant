@@ -1,4 +1,5 @@
 ---
+lang: en
 name: projection-patterns
 description: Build read models and projections from event streams. Use when implementing CQRS read sides, building materialized views, or optimizing query performance in event-sourced systems.
 ---
@@ -60,3 +61,4 @@ Full template library and detailed worked examples live in `references/details.m
 - **Don't skip error handling** - Log and alert on failures
 - **Don't ignore ordering** - Events must be processed in order
 - **Don't over-normalize** - Denormalize for query patterns
+See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.

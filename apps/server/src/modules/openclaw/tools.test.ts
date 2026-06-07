@@ -57,7 +57,17 @@ describe("extractSqlTables", () => {
  */
 function makeFakePool(): { pool: Pool; calls: string[] } {
   const calls: string[] = [];
+  const client = {
+    async query(text: string) {
+      calls.push(text);
+      return { rows: [], rowCount: 0 };
+    },
+    release() {},
+  };
   const pool = {
+    async connect() {
+      return client;
+    },
     async query(text: string) {
       calls.push(text);
       return { rows: [], rowCount: 0 };
@@ -65,6 +75,19 @@ function makeFakePool(): { pool: Pool; calls: string[] } {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any as Pool;
   return { pool, calls };
+}
+
+/**
+ * Дістає wrapped data-query, який queryAppDb реально виконав (пропускає
+ * BEGIN / SET LOCAL / COMMIT транзакційні statement-и). Кидає, якщо запит
+ * не дійшов до виконання — щоб тест не «зеленів» на pre-DB-rejection.
+ */
+function executedSql(calls: string[]): string {
+  const q = calls.find((c) => c.includes("__openclaw_q"));
+  if (!q) {
+    throw new Error(`no data query executed; calls=${JSON.stringify(calls)}`);
+  }
+  return q;
 }
 
 describe("queryAppDb security boundaries", () => {
@@ -140,9 +163,10 @@ describe("queryAppDb security boundaries", () => {
       sql: "SELECT id FROM users",
     });
     expect(result.tablesUsed).toEqual(["users"]);
-    expect(calls).toHaveLength(1);
-    expect(calls[0]).toContain("FROM (SELECT id FROM users)");
-    expect(calls[0]).toContain("LIMIT 200");
+    const executed = executedSql(calls);
+    expect(executed).toContain("FROM (SELECT id FROM users)");
+    expect(executed).toContain("LIMIT 200");
+    expect(calls).toContain("BEGIN READ ONLY");
   });
 
   it("admits a multi-table allowlisted JOIN", async () => {
@@ -151,7 +175,7 @@ describe("queryAppDb security boundaries", () => {
       sql: "SELECT u.id FROM users u JOIN mono_transaction m ON u.id = m.user_id",
     });
     expect(result.tablesUsed.sort()).toEqual(["mono_transaction", "users"]);
-    expect(calls).toHaveLength(1);
+    expect(executedSql(calls)).toContain("JOIN mono_transaction");
   });
 
   it("rejects allowlist-stale 'subscriptions' table", async () => {
@@ -228,7 +252,7 @@ describe("queryAppDb security boundaries", () => {
       sql: "SELECT id FROM n8n_failure_events",
     });
     expect(result.tablesUsed).toEqual(["n8n_failure_events"]);
-    expect(calls).toHaveLength(1);
+    expect(executedSql(calls)).toContain("n8n_failure_events");
   });
 
   it("admits the corrected `routine_entries` and `routine_streaks` tables", async () => {
@@ -240,7 +264,7 @@ describe("queryAppDb security boundaries", () => {
       "routine_entries",
       "routine_streaks",
     ]);
-    expect(calls).toHaveLength(1);
+    expect(executedSql(calls)).toContain("routine_entries");
   });
 
   it("clamps LIMIT to <=1000", async () => {
@@ -249,13 +273,13 @@ describe("queryAppDb security boundaries", () => {
       sql: "SELECT id FROM users",
       limit: 1_000_000,
     });
-    expect(calls[0]).toContain("LIMIT 1000");
+    expect(executedSql(calls)).toContain("LIMIT 1000");
   });
 
   it("uses default LIMIT=200 when unspecified", async () => {
     const { pool, calls } = makeFakePool();
     await queryAppDb(pool, { sql: "SELECT id FROM users" });
-    expect(calls[0]).toContain("LIMIT 200");
+    expect(executedSql(calls)).toContain("LIMIT 200");
   });
 
   it("rejects WITH (CTE) queries (Phase 1 — CTE alias detected as table)", async () => {
@@ -270,6 +294,58 @@ describe("queryAppDb security boundaries", () => {
       }),
     ).rejects.toBeInstanceOf(OpenClawAllowlistError);
     expect(calls).toHaveLength(0);
+  });
+
+  it("runs allowlisted queries inside a READ ONLY transaction with a tight statement timeout", async () => {
+    const { pool, calls } = makeFakePool();
+    await queryAppDb(pool, { sql: "SELECT id FROM users" });
+    expect(calls).toContain("BEGIN READ ONLY");
+    expect(
+      calls.some((c) => /SET LOCAL statement_timeout = \d+/i.test(c)),
+    ).toBe(true);
+    expect(calls.some((c) => /^(COMMIT|ROLLBACK)$/i.test(c))).toBe(true);
+  });
+
+  it("rejects pg_read_file() — no-FROM system function bypasses table allowlist", async () => {
+    const { pool, calls } = makeFakePool();
+    await expect(
+      queryAppDb(pool, { sql: "SELECT pg_read_file('/etc/passwd')" }),
+    ).rejects.toBeInstanceOf(OpenClawAllowlistError);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("rejects pg_sleep() — DoS via no-FROM function", async () => {
+    const { pool, calls } = makeFakePool();
+    await expect(
+      queryAppDb(pool, { sql: "SELECT pg_sleep(10)" }),
+    ).rejects.toBeInstanceOf(OpenClawAllowlistError);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("rejects lo_import() — file read via large objects", async () => {
+    const { pool, calls } = makeFakePool();
+    await expect(
+      queryAppDb(pool, { sql: "SELECT lo_import('/etc/passwd')" }),
+    ).rejects.toBeInstanceOf(OpenClawAllowlistError);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("rejects dblink() — out-of-band / SSRF", async () => {
+    const { pool, calls } = makeFakePool();
+    await expect(
+      queryAppDb(pool, {
+        sql: "SELECT * FROM dblink('host=evil', 'SELECT 1') AS t(x int)",
+      }),
+    ).rejects.toBeInstanceOf(OpenClawAllowlistError);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("does not false-positive on a forbidden function name inside a string literal", async () => {
+    const { pool } = makeFakePool();
+    const result = await queryAppDb(pool, {
+      sql: "SELECT id FROM users WHERE id = 'pg_sleep(9)'",
+    });
+    expect(result.tablesUsed).toEqual(["users"]);
   });
 });
 

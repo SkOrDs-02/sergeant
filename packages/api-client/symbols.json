@@ -1,11 +1,11 @@
 {
   "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-05",
+  "generated_at": "2026-06-07",
   "package": "@sergeant/api-client",
   "entryFile": "packages/api-client/src/index.ts",
   "stats": {
-    "exportCount": 190,
+    "exportCount": 194,
     "totalImporters": 38,
     "deadExports": 102
   },
@@ -184,11 +184,25 @@
       "usageCount": 1
     },
     {
+      "name": "MeDeleteResponse",
+      "kind": "re-export",
+      "fromFile": "./endpoints/me",
+      "usedBy": ["apps/web/src/shared/api/index.ts"],
+      "usageCount": 1
+    },
+    {
       "name": "MeEndpoints",
       "kind": "re-export",
       "fromFile": "./endpoints/me",
       "usedBy": [],
       "usageCount": 0
+    },
+    {
+      "name": "MeExportResponse",
+      "kind": "re-export",
+      "fromFile": "./endpoints/me",
+      "usedBy": ["apps/web/src/shared/api/index.ts"],
+      "usageCount": 1
     },
     {
       "name": "MeResponse",
@@ -203,6 +217,20 @@
       "fromFile": "./endpoints/me",
       "usedBy": [],
       "usageCount": 0
+    },
+    {
+      "name": "UserPreferences",
+      "kind": "re-export",
+      "fromFile": "./endpoints/me",
+      "usedBy": ["apps/web/src/shared/api/index.ts"],
+      "usageCount": 1
+    },
+    {
+      "name": "UserPreferencesPatch",
+      "kind": "re-export",
+      "fromFile": "./endpoints/me",
+      "usedBy": ["apps/web/src/shared/api/index.ts"],
+      "usageCount": 1
     },
     {
       "name": "createSyncV2Endpoints",

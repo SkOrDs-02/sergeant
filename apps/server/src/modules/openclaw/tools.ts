@@ -295,6 +295,39 @@ export class OpenClawNotFoundError extends Error {
   }
 }
 
+/**
+ * Денилист небезпечних SQL-функцій, яких table-allowlist структурно не
+ * ловить: вони не мають FROM-таблиці, тож `extractSqlTables` їх не бачить
+ * (`SELECT pg_read_file('/etc/passwd')`). Покриває файловий доступ
+ * (`pg_read_file`, `pg_ls_dir`, `lo_import`…), out-of-band/SSRF (`dblink`),
+ * DoS/адмін (`pg_sleep`, `pg_terminate_backend`, `set_config`). Матчиться на
+ * stripped-SQL (без коментів і string-literals), тому `'pg_sleep'` у тексті
+ * не дає false-positive. COPY свідомо не тут — він не починається з
+ * SELECT/WITH, тож його ловить `isWriteSql` раніше.
+ */
+const FORBIDDEN_SQL_FUNCTION_RE =
+  /\b(pg_read_file|pg_read_binary_file|pg_stat_file|pg_ls_dir|pg_ls_logdir|pg_ls_waldir|pg_ls_tmpdir|pg_ls_archive_statusdir|lo_import|lo_export|lo_get|lo_put|dblink|dblink_connect|dblink_exec|pg_sleep|pg_sleep_for|pg_sleep_until|pg_terminate_backend|pg_cancel_backend|pg_reload_conf|set_config)\s*\(/i;
+
+function assertNoForbiddenSqlConstructs(sql: string): void {
+  const stripped = sql
+    .replace(/--[^\n]*/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/'(?:[^']|'')*'/g, "");
+  const match = FORBIDDEN_SQL_FUNCTION_RE.exec(stripped);
+  if (match) {
+    throw new OpenClawAllowlistError(
+      `query_app_db: forbidden SQL construct: ${match[1]}`,
+    );
+  }
+}
+
+/**
+ * Per-query timeout для LLM-driven read-queries. Тримаємо тісніше за
+ * глобальний пуловий `PG_STATEMENT_TIMEOUT_MS` (db.ts) — cofounder-запити
+ * мають бути швидкими, а tight-cap рубає `pg_sleep`/runaway DoS.
+ */
+const QUERY_APP_DB_STATEMENT_TIMEOUT_MS = 5_000;
+
 export async function queryAppDb(
   pool: Pool,
   input: QueryAppDbInput,
@@ -307,6 +340,7 @@ export async function queryAppDb(
       "query_app_db: only SELECT / WITH queries are allowed",
     );
   }
+  assertNoForbiddenSqlConstructs(input.sql);
 
   const tables = extractSqlTables(input.sql);
   const forbidden = tables.filter((t) => !QUERY_APP_DB_TABLE_ALLOWLIST.has(t));
@@ -321,21 +355,55 @@ export async function queryAppDb(
   // забув його. Дві LIMIT-и не псують план — Postgres приймає.
   const wrapped = `SELECT * FROM (${input.sql}) AS __openclaw_q LIMIT ${limit}`;
 
+  // READ ONLY транзакція — engine-level гарантія: навіть якщо guard-и щось
+  // пропустять (напр. DML усередині CTE — `WITH x AS (DELETE … RETURNING *)
+  // SELECT 1`, де final-SELECT без FROM проходить table-allowlist), Postgres
+  // відхилить будь-який запис кодом 25006. `SET LOCAL statement_timeout`
+  // кепить runaway/`pg_sleep` DoS тісніше за глобальний пуловий timeout.
+  const client = await pool.connect();
   let result: QueryResult<Record<string, unknown>>;
   try {
-    result = await pool.query(wrapped, input.params ? [...input.params] : []);
+    await client.query("BEGIN READ ONLY");
+    // eslint-disable-next-line no-restricted-syntax -- statement_timeout не приймає bind-параметри ($1); інтерполюється лише довірена числова константа, не user-input
+    await client.query(
+      `SET LOCAL statement_timeout = ${QUERY_APP_DB_STATEMENT_TIMEOUT_MS}`,
+    );
+    result = await client.query(wrapped, input.params ? [...input.params] : []);
+    await client.query("COMMIT");
   } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      /* з'єднання могло вже впасти — release у finally однаково спрацює */
+    }
+    if (isPgReadOnlyError(err)) {
+      throw new OpenClawAllowlistError(
+        "query_app_db: write operations are not permitted",
+      );
+    }
     if (isPgSchemaError(err)) {
       const message = err instanceof Error ? err.message : String(err);
       throw new OpenClawSchemaError(`query_app_db: ${message}`);
     }
     throw err;
+  } finally {
+    client.release();
   }
   return {
     rowCount: result.rowCount ?? result.rows.length,
     rows: result.rows,
     tablesUsed: tables,
   };
+}
+
+/** Postgres SQLSTATE 25006 — спроба запису у READ ONLY транзакції. */
+function isPgReadOnlyError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code: unknown }).code === "25006"
+  );
 }
 
 function isPgSchemaError(err: unknown): boolean {
