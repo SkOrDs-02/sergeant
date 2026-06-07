@@ -342,6 +342,7 @@ export function Budgets({
     >
       {() => (
         <div className="flex-1 overflow-y-auto">
+          <h1 className="sr-only">Бюджети</h1>
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
             {/* Сума підписок + Наступний платіж з тих самих даних, що й на
             сторінці Активи — без пасив-з-дедлайном тайлу (у Плануванні

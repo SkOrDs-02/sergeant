@@ -257,7 +257,7 @@ function DropdownSwitcher({
         aria-label={`Тема: ${fullLabel}`}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          "inline-flex items-center gap-2 h-10 px-3 rounded-2xl border border-line bg-panel text-style-label text-text hover:bg-panelHi transition-colors motion-reduce:transition-none",
+          "inline-flex items-center gap-2 h-10 px-3 rounded-2xl touch-target border border-line bg-panel text-style-label text-text hover:bg-panelHi transition-colors motion-reduce:transition-none",
           FOCUS_RING,
         )}
       >

@@ -346,6 +346,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
 
   return (
     <div className="flex flex-col gap-4 pt-3 pb-6">
+      <h1 className="sr-only">Налаштування</h1>
       {/* Search and tabs header. Container uses the soft glass tint so the
           inputs sitting on top can use a stronger surface and visually
           "lift" off the header. Previously the input + tabs used

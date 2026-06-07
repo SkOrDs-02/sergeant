@@ -261,7 +261,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
         type="button"
         onClick={() => dismiss(toast.id)}
         className={cn(
-          "shrink-0 opacity-70 hover:opacity-100 transition-opacity",
+          "shrink-0 opacity-70 hover:opacity-100 transition-opacity touch-target",
           "outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent rounded-md",
         )}
         aria-label={messages.actions.close}
