@@ -82,6 +82,13 @@ const bareFixedInsetModalAllowlist = JSON.parse(
 
 export default [
   ...baseline,
+  ...webBlocks,
+  ...serverBlocks,
+  ...mobileBlocks,
+  ...shellBlocks,
+  ...openclawBlocks,
+  ...packageBlocks,
+  ...crossSurfaceBlocks,
   // PR-31 phase 1 — block moved to `./eslint.baseline.js` (shared
   // global block + TS-only `no-unused-vars`). The deleted block here
   // looked like the next ~150 lines that started with:
