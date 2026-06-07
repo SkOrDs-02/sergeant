@@ -10,7 +10,7 @@
 Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, Devin, Cursor — drives this repo through the same shared primitives: harness-neutral skills in `.agents/skills/`, this `AGENTS.md` as the policy source of truth, and the surface→specialist routing table below. **Harness-specific config (models, permissions, MCP wiring, custom agents, commands) lives outside the checkout**, in each tool's own global config directory — the repo itself carries no tool config.
 
 - **Source of truth.** For all project / policy / hard-rules questions, this file (`AGENTS.md`) wins. `CLAUDE.md` and `DEVIN.md` are thin wrappers that add only runtime/tool notes and must not duplicate policy.
-- **Skills.** Load the skill for the touched surface — start with `.agents/skills/sergeant-start-here/SKILL.md`, then exactly one specialist. Catalog: `docs/agents/agent-skills-catalog.md`. Skills are plain SKILL.md files; each harness loads them its own way (Claude Code via the `Skill` tool, Kilo via its `skill` tool). Prefer the harness's loader over reading SKILL.md by hand when one exists.
+- **Skills.** Load the skill for the touched surface — start with `.agents/skills/sergeant-start-here/SKILL.md`, then exactly one specialist. Catalog: `docs/agents/agent-skills-catalog.md`. Skills are plain SKILL.md files; each harness loads them through its own skill loader — prefer that loader over reading SKILL.md by hand when one exists.
 - **Specialists.** 12 Sergeant specialists own the routing below (web-ui, server-api, mobile, data-and-migrations, deploy, openclaw, hubchat, e2e-testing, security-audit, bugfix, tech-debt, review-and-merge). Each harness ships its own agent definitions in its global config; the surface→specialist mapping is what they all share.
 
 **Routing (surface → specialist).** Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
@@ -34,12 +34,17 @@ If two surfaces overlap (e.g. web + e2e), load the **owner** first; ask the othe
 
 ### Harness config lives outside the repo
 
-Each agent tool keeps its models, permissions, MCP servers, custom agents and commands in **its own global config directory**, never in the checkout. The repo no longer carries a `.kilo/` (or any tool-config) directory.
+No harness stores tool config in the checkout — the repo carries no `.kilo/`, no tool-specific agent files, nothing. Every harness is an **equal peer**: it reads `AGENTS.md` + `.agents/skills/` from the repo for shared policy, then keeps its own models, permissions, MCP wiring, custom agents and commands in its own global config home. **None of them is "the" driver of this repo.**
 
-- **Kilo Code** → `C:\Users\dmytr\.config\kilo\` (Windows global). Holds `kilo.jsonc` (models + permissions), `kilo.json` (MCP: `context7`, `github`, `memory`), `agents/` (incl. the 12 `sergeant-*` specialists), `command/`, and `rules.md`. Kilo treats this checkout as an ordinary working tree — it reads `AGENTS.md` and `.agents/skills/` from the repo, but its own config stays global. Kilo-only primitives, when you drive the repo with Kilo: `kilo_local_recall` (recall past sessions before re-deriving context), `agent_manager` (isolated worktrees for parallel tasks), `background_process` (dev servers — never `&` / `Start-Process`), `context7_*` / `github_*` / `memory_*` MCP tools.
-- **Claude Code** → `~/.claude/` (global) + the repo's `.claude/` for worktrees and agents the tool manages itself. Native equivalents are mapped in `CLAUDE.md`.
+| Harness     | Config home (global, outside the repo)                      | Tool-specific wrapper      |
+| ----------- | ----------------------------------------------------------- | -------------------------- |
+| Claude Code | `~/.claude/` (+ repo `.claude/` for tool-managed worktrees) | [`CLAUDE.md`](./CLAUDE.md) |
+| Kilo Code   | `~/.config/kilo/` (`agents/`, `command/`, `rules.md`, MCP)  | `~/.config/kilo/rules.md`  |
+| Devin       | Devin workspace settings                                    | [`DEVIN.md`](./DEVIN.md)   |
 
-> **SECURITY.** The Kilo `github` MCP stores a PAT in `~/.config/kilo/kilo.json` (outside git). Treat it as a secret: never echo, commit, or log it. Hard Rule #20 also forbids OpenClaw PATs in production.
+Harness-specific primitives — session recall, worktree/branch managers, MCP tool names, dev-server runners — live in that harness's **own wrapper**, never in this file. **If you are reading `AGENTS.md` and see a tool you don't have, it is not yours — use your own harness's equivalent.**
+
+> **SECURITY.** A harness that wires a `github` (or any) MCP with a Personal Access Token keeps that token in its **own** global config (e.g. `~/.config/kilo/kilo.json`), outside git. Treat such tokens as secrets — never echo, commit, or log them. Hard Rule #20 also forbids OpenClaw PATs in production.
 
 ## Agent operating system (project)
 

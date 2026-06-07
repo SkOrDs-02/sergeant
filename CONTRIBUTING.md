@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last validated:** 2026-05-14 by @codex. **Next review:** 2026-08-12.
+> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/playbooks/README.md](./docs/playbooks/README.md).
@@ -50,6 +50,15 @@ pnpm update -r
 Якщо `pnpm install` (без `--frozen-lockfile`) залишив `git diff pnpm-lock.yaml` непустим, а ти не додавав/оновлював deps свідомо — значить, drift. Скинь зміни (`git checkout -- pnpm-lock.yaml`) і перерозберись, чому твоє локальне дерево не сходиться з lockfile (типово — нова версія `pnpm` сама, або забутий `pnpm install --frozen-lockfile` після `git pull`).
 
 Кожен override у `pnpm.overrides` (root `package.json`) трекається окремо — `pnpm lint:pnpm-overrides` падає, якщо range уже не resolves до одного major-а ([L1](./docs/security/hardening/L1-uuid-override.md)).
+
+### Worktrees: тримай на тому ж томі, що й pnpm store
+
+Для паралельної роботи над кількома гілками зручно піднімати git-worktree (`git worktree add <path> -b <branch>`). Розміщуй worktree на **тому ж файловому томі, що й твій pnpm store** (`pnpm config get store-dir`) — тоді `pnpm install` усередині worktree робить **hardlink** зі store замість повної копії дерева залежностей, тобто near-zero додаткового диску на кожен worktree.
+
+Hardlink працює лише в межах **одного тому** й лише на ФС, що його підтримує:
+
+- **NTFS / APFS / ext4** — hardlink ок; worktree та store на одному такому томі шерять файли.
+- **exFAT hardlink не підтримує** — worktree на exFAT-томі завжди **full-copy** (сотні МБ–ГБ на кожен install, повільно, забиває диск). Якщо твоя основна тека на exFAT, винеси і store, і worktree на сусідній NTFS/APFS/ext4-том — store і worktree мусять бути на одному томі, інакше pnpm все одно копіює.
 
 Запуск локально:
 

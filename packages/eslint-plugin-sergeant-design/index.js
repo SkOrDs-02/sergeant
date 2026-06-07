@@ -3216,6 +3216,11 @@ const DEFAULT_REQUIRE_STORIES_ALLOWLIST = new Set([
   "apps/web/src/shared/components/ui/CelebrationModal.tsx",
   "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
   "apps/web/src/shared/components/ui/VoiceMicButton.tsx",
+  // Lazy-chunk UI body split-outs (initiative 0017 bundle-size) — not
+  // standalone public components; they're dynamically imported by their
+  // sibling provider/hook module and share that module's stories.
+  "apps/web/src/shared/components/ui/CommandPaletteUI.tsx",
+  "apps/web/src/shared/components/ui/KeyboardShortcutsModalUI.tsx",
 ]);
 
 const REQUIRE_STORIES_TEST_RE = /(?:\.test|\.spec)\.tsx?$|(?:^|\/)__tests__\//;

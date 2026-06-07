@@ -1,6 +1,6 @@
 # Initiative follow-ups
 
-> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-09-04.
+> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-initiative-followups`. -->
@@ -11,12 +11,11 @@
 
 ## One-shot
 
-| Due                        | Initiative                            | Item                                                                                                                                                                                                                                                                                                 |
-| -------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `2026-07-02`               | [0017](./0017-hub-tabs-mount-perf.md) | confirm `hub_tab_switch_perf` Settings P50 ≤ 2 s + P95 ≤ 3 s, Reports P50 ≤ 1.5 s + P95 ≤ 3 s, long-task P95 ≤ 5. Owner pins numbers in this Outcome.                                                                                                                                                |
-| `2026-07-02`               | [0017](./0017-hub-tabs-mount-perf.md) | confirm `aggregateReport` P95 ≤ 50 ms; if > 50 ms, re-open Sprint 3 (Web Worker for aggregate) as a discrete follow-up against this initiative.                                                                                                                                                      |
-| `2026-07-02`               | [0017](./0017-hub-tabs-mount-perf.md) | update `scripts/check-bundle-size.mjs` main-chunk budget to reflect post-Sprint-1/2 reality (target reduction −50 KB on `index-` budget; needs `pnpm build:web` + `dist/assets` measurement, deferred so the budget tightens against a stable post-launch baseline rather than the in-flight state). |
-| _After RUM targets pinned_ | [0017](./0017-hub-tabs-mount-perf.md) | rename file to `_0017-hub-tabs-mount-perf.md` (Status → Done) per [`docs/initiatives/README.md` Completed-prefix](./README.md#completed-prefix--nnnn-) and update the active-initiative row in `README.md`.                                                                                          |
+| Due                        | Initiative                            | Item                                                                                                                                                                                                        |
+| -------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `2026-07-02`               | [0017](./0017-hub-tabs-mount-perf.md) | confirm `hub_tab_switch_perf` Settings P50 ≤ 2 s + P95 ≤ 3 s, Reports P50 ≤ 1.5 s + P95 ≤ 3 s, long-task P95 ≤ 5. Owner pins numbers in this Outcome.                                                       |
+| `2026-07-02`               | [0017](./0017-hub-tabs-mount-perf.md) | confirm `aggregateReport` P95 ≤ 50 ms; if > 50 ms, re-open Sprint 3 (Web Worker for aggregate) as a discrete follow-up against this initiative.                                                             |
+| _After RUM targets pinned_ | [0017](./0017-hub-tabs-mount-perf.md) | rename file to `_0017-hub-tabs-mount-perf.md` (Status → Done) per [`docs/initiatives/README.md` Completed-prefix](./README.md#completed-prefix--nnnn-) and update the active-initiative row in `README.md`. |
 
 Колонка `Due` — ISO-дата для дат-driven items (`⚠ overdue` на минулі), курсивом — trigger-based phrase (`Після baseline-week`, `When …`), `—` = unscheduled (TBD).
 
