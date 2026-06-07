@@ -21,7 +21,9 @@
 export type { AnthropicTool } from "./toolDefs/types.js";
 
 import { FINYK_TOOLS } from "./toolDefs/finyk.js";
+import { QUERY_FINYK_TOOLS } from "./toolDefs/queryFinyk.js";
 import { FIZRUK_TOOLS } from "./toolDefs/fizruk.js";
+import { QUERY_FIZRUK_TOOLS } from "./toolDefs/queryFizruk.js";
 import { ROUTINE_TOOLS } from "./toolDefs/routine.js";
 import { NUTRITION_TOOLS } from "./toolDefs/nutrition.js";
 import { CROSS_MODULE_TOOLS } from "./toolDefs/crossModule.js";
@@ -32,8 +34,10 @@ import type { AnthropicTool } from "./toolDefs/types.js";
 
 export const TOOLS: AnthropicTool[] = [
   ...FINYK_TOOLS,
+  ...QUERY_FINYK_TOOLS,
   ...ROUTINE_TOOLS,
   ...FIZRUK_TOOLS,
+  ...QUERY_FIZRUK_TOOLS,
   ...NUTRITION_TOOLS,
   ...CROSS_MODULE_TOOLS,
   ...UTILITY_TOOLS,
