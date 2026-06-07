@@ -119,7 +119,7 @@ export const CAPABILITY_MODULE_META: Record<
 // AI-NOTE: counts in section comments below match `ASSISTANT_CAPABILITIES`.
 // Update them when adding/removing entries; tests assert per-module totals.
 export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
-  // ───── Фінік (18) ─────────────────────────────────────────────────────
+  // ───── Фінік (21) ─────────────────────────────────────────────────────
   {
     id: "create_transaction",
     module: "finyk",
@@ -357,6 +357,63 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Зроби звіт за: ",
     requiresInput: true,
     requiresOnline: true,
+  },
+  {
+    id: "query_transactions",
+    module: "finyk",
+    label: "Запит по транзакціях",
+    shortLabel: "Запит",
+    icon: "search",
+    description:
+      "Вибірка транзакцій за текстом, категорією, сумою, типом чи датою з підсумком. Read-only — нічого не змінює.",
+    examples: [
+      "покажи всі покупки в АТБ більше 200 грн",
+      "скільки транзакцій на каву за квітень",
+      "усі доходи за травень",
+    ],
+    prompt: "Знайди по транзакціях: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "read-only вибірка",
+    keywords: ["query", "запит", "вибірка", "data", "транзакції"],
+  },
+  {
+    id: "aggregate_spending",
+    module: "finyk",
+    label: "Агрегувати витрати",
+    shortLabel: "Агрегація",
+    icon: "pie-chart",
+    description:
+      "Сума витрат або доходів за період з групуванням по категоріях, днях, тижнях, місяцях чи мерчантах.",
+    examples: [
+      "скільки я витратив на транспорт за квартал",
+      "розбий витрати по категоріях за травень",
+      "витрати по тижнях за останній місяць",
+    ],
+    prompt: "Агрегуй витрати: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "сума по групах",
+    keywords: ["aggregate", "сума", "групування", "category", "merchant"],
+  },
+  {
+    id: "compare_periods",
+    module: "finyk",
+    label: "Порівняти періоди",
+    shortLabel: "Періоди",
+    icon: "bar-chart",
+    description:
+      "Порівняти два довільні періоди за витратами, доходом або кількістю транзакцій — з абсолютною і відсотковою різницею.",
+    examples: [
+      "порівняй витрати березня і квітня",
+      "наскільки більше я витратив цього місяця",
+      "дохід за минулий квартал проти позаминулого",
+    ],
+    prompt: "Порівняй періоди: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "2 періоди",
+    keywords: ["compare", "порівняння", "період", "різниця"],
   },
 
   // ───── Фізрук (11) ────────────────────────────────────────────────────
