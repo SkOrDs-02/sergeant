@@ -416,7 +416,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     keywords: ["compare", "порівняння", "період", "різниця"],
   },
 
-  // ───── Фізрук (11) ────────────────────────────────────────────────────
+  // ───── Фізрук (14) ────────────────────────────────────────────────────
   {
     id: "start_workout",
     module: "fizruk",
@@ -544,6 +544,63 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Порівняй прогрес: ",
     requiresInput: true,
     requiresOnline: true,
+  },
+  {
+    id: "query_workouts",
+    module: "fizruk",
+    label: "Запит по тренуваннях",
+    shortLabel: "Тренування",
+    icon: "list",
+    description:
+      "Вибірка завершених тренувань за період з опційним фільтром за вправою чи м'язом. Read-only — з кількістю й сумарним об'ємом.",
+    examples: [
+      "покажи мої тренування за останній тиждень",
+      "скільки разів я робив присідання за місяць",
+      "тренування на спину за 2 тижні",
+    ],
+    prompt: "Знайди тренування: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "read-only список",
+    keywords: ["query", "workout", "тренування", "вибірка"],
+  },
+  {
+    id: "exercise_progress",
+    module: "fizruk",
+    label: "Динаміка вправи",
+    shortLabel: "Динаміка",
+    icon: "trending-up",
+    description:
+      "Зміна показників у конкретній вправі (вага, об'єм, повтори) за період — від першої до останньої сесії плюс найкращі результати.",
+    examples: [
+      "як змінилась моя жим лежачи за місяць",
+      "динаміка присідань за 3 місяці",
+      "прогрес станової за квартал",
+    ],
+    prompt: "Динаміка вправи: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "динаміка вправи",
+    keywords: ["progress", "динаміка", "вага", "об'єм"],
+  },
+  {
+    id: "training_stats",
+    module: "fizruk",
+    label: "Статистика тренувань",
+    shortLabel: "Статистика",
+    icon: "bar-chart-2",
+    description:
+      "Агрегована статистика за період: частота на тиждень, улюблені вправи, розподіл по м'язових групах.",
+    examples: [
+      "які м'язи я треную найчастіше",
+      "статистика тренувань за місяць",
+      "як часто я тренуюсь",
+    ],
+    prompt: "Статистика тренувань: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "частота+м'язи",
+    keywords: ["stats", "статистика", "частота", "м'язи"],
   },
 
   // ───── Рутина (12) ─────────────────────────────────────────────────────
