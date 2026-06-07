@@ -53,6 +53,24 @@ interface BackfillProgress {
 
 const progressByUser = new Map<string, BackfillProgress>();
 
+// ──────────────────────────────────────────────────────────
+// TTL cleanup — prevent memory leak from completed/failed entries.
+// ──────────────────────────────────────────────────────────
+const PROGRESS_TTL_MS = 5 * 60 * 1000; // 5 min
+
+function scheduleProgressCleanup(userId: string): void {
+  const p = progressByUser.get(userId);
+  if (!p || !p.completedAt) return;
+  const completedAtMs = p.completedAt.getTime();
+  const delay = Math.max(0, PROGRESS_TTL_MS - (Date.now() - completedAtMs));
+  setTimeout(() => {
+    const current = progressByUser.get(userId);
+    if (current && current.completedAt?.getTime() === completedAtMs) {
+      progressByUser.delete(userId);
+    }
+  }, delay).unref();
+}
+
 function emptyProgress(): BackfillProgress {
   return {
     status: "idle",
@@ -372,6 +390,7 @@ export async function backfillHandler(
         done.status = "completed";
         done.completedAt = new Date();
         done.currentAccountId = null;
+        scheduleProgressCleanup(userId);
       }
     } catch (err) {
       logger.error({ msg: "mono_backfill_failed", userId, err });
@@ -382,9 +401,9 @@ export async function backfillHandler(
         failed.currentAccountId = null;
         failed.lastError =
           err instanceof Error ? err.message : "Unknown backfill error";
+        scheduleProgressCleanup(userId);
       }
-    }
-  })();
+    })();
 }
 
 /**

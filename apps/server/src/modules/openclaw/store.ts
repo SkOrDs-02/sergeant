@@ -193,10 +193,9 @@ export async function insertDecision(
       JSON.stringify(input.metadata ?? {}),
     ],
   );
-  const decisionRow = result.rows[0];
-  if (!decisionRow)
+  if (result.rows.length === 0)
     throw new Error("insertDecision: INSERT RETURNING returned no rows");
-  return Number(decisionRow.id);
+  return Number(result.rows[0]!.id);
 }
 
 /**
