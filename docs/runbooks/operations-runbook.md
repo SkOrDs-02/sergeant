@@ -66,7 +66,7 @@ Surface-і та їх deploy targets:
 
 - `apps/web` → Vercel — [`docs/deploy/vercel.md`](../deploy/vercel.md)
 - `apps/server` → Railway service `sergeant-server-api` — Railway Buildpacks, auto-deploy з `main`
-- `tools/openclaw` (OpenClaw_sergeant_bot) → Railway service `sergeant-openclaw` (раніше `sergeant-hubchat` per ADR-0032 / Pain P10) — [`docs/deploy/console.md`](../deploy/console.md)
+- `tools/openclaw` (OpenClaw_sergeant_bot) → Railway service `sergeant-openclaw` (раніше `sergeant-hubchat` per ADR-0032 / Pain P10) — [`docs/deploy/openclaw.md`](../deploy/openclaw.md)
 - `apps/mobile` → Expo / TestFlight — [`docs/playbooks/release-expo-mobile.md`](../playbooks/release-expo-mobile.md)
 - `apps/mobile-shell` → App Store / Play Store wrap — [`docs/playbooks/release-mobile-shell.md`](../playbooks/release-mobile-shell.md)
 - n8n workflows → self-hosted у Railway (project `grateful-nurturing`) — git source-of-truth у [`ops/n8n-workflows/`](../../ops/n8n-workflows/)

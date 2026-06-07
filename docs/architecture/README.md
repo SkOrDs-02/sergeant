@@ -1,6 +1,6 @@
 # 🏗️ Architecture
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.
@@ -34,14 +34,21 @@ System architecture and runtime surface inventory for Sergeant.
 
 ### API, модулі, дані
 
-| Document                                                             | Purpose                                                                    | Last updated |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------ |
-| [`api-v1.md`](./api-v1.md)                                           | REST API v1 contract overview, versioning strategy                         | 2026-04-28   |
-| [`module-structure.md`](./module-structure.md)                       | Canonical layout of `apps/{web,mobile}/src/modules/<domain>/` + deviations | 2026-05-03   |
-| [`frontend-overview.md`](./frontend-overview.md)                     | React 18 + Vite frontend architecture                                      | 2026-05-05   |
-| [`data-exchange-storage-audit.md`](./data-exchange-storage-audit.md) | Current data exchange, storage, weak points, and roadmap                   | 2026-05-03   |
-| [`apps-status-matrix.md`](./apps-status-matrix.md)                   | Status matrix for apps and packages (active/stabilize/migration/legacy)    | 2026-05-04   |
-| [`apps-web-exhaustive-deps.md`](./apps-web-exhaustive-deps.md)       | Web hooks dependency guidance                                              | 2026-05-03   |
+| Document                                                             | Purpose                                                                                            | Last updated |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------ |
+| [`api-v1.md`](./api-v1.md)                                           | REST API v1 contract overview, versioning strategy                                                 | 2026-04-28   |
+| [`api-contracts.md`](./api-contracts.md)                             | Pact-based runtime consumer-driven contract testing: `api-client ↔ server` (доповнює Hard Rule #3) | 2026-06-02   |
+| [`module-structure.md`](./module-structure.md)                       | Canonical layout of `apps/{web,mobile}/src/modules/<domain>/` + deviations                         | 2026-05-03   |
+| [`module-ownership.md`](./module-ownership.md)                       | Per-path ownership, test-стек, RQ-фабрика та конвенції; детальна таблиця до AGENTS.md              | 2026-06-02   |
+| [`repo-map.md`](./repo-map.md)                                       | Повна матриця apps + packages: стек, призначення, деплой-вихід; compact summary — в AGENTS.md      | 2026-06-02   |
+| [`domain-invariants.md`](./domain-invariants.md)                     | Глибокий розбір інваріантів (час/гроші/ID); compact pointer — в AGENTS.md                          | 2026-06-02   |
+| [`state-write-paths.md`](./state-write-paths.md)                     | Дві writer-доріжки web-стану (`useMutation` vs HubChat tool-call) і де живуть інваріанти           | 2026-06-02   |
+| [`ai-memory.md`](./ai-memory.md)                                     | Серверний episodic-memory store (`ai_memories`, migration 025): ingestion, recall, backfill        | 2026-06-02   |
+| [`rag-eval.md`](./rag-eval.md)                                       | RAG eval pipeline: golden-set, P@1/MRR, weekly quality gate та auto-disable (PR-20/PR-22)          | 2026-06-02   |
+| [`frontend-overview.md`](./frontend-overview.md)                     | React 18 + Vite frontend architecture                                                              | 2026-05-05   |
+| [`data-exchange-storage-audit.md`](./data-exchange-storage-audit.md) | Current data exchange, storage, weak points, and roadmap                                           | 2026-05-03   |
+| [`apps-status-matrix.md`](./apps-status-matrix.md)                   | Status matrix for apps and packages (active/stabilize/migration/legacy)                            | 2026-05-04   |
+| [`apps-web-exhaustive-deps.md`](./apps-web-exhaustive-deps.md)       | Web hooks dependency guidance                                                                      | 2026-05-03   |
 
 ---
 

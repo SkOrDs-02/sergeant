@@ -1,6 +1,6 @@
 # Monorepo deploy filtering — Vercel ignoreCommand + Railway watchPatterns
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
 > **Status:** Active
 
 Sergeant ships three production surfaces from one `main` branch:
@@ -122,13 +122,13 @@ patches/**
 
 Rationale:
 
-- `tools/openclaw/package.json` only depends on `@sergeant/config`. Keep this list narrower than `Sergeant`'s on purpose — long-poll grammy bots are sensitive to needless restarts (per [`./console.md`](./console.md) §Build / runtime, the service is `restartPolicyType=ON_FAILURE` for exactly this reason).
+- `tools/openclaw/package.json` only depends on `@sergeant/config`. Keep this list narrower than `Sergeant`'s on purpose — long-poll grammy bots are sensitive to needless restarts (per [`./openclaw.md`](./openclaw.md) §Build / runtime, the service is `restartPolicyType=ON_FAILURE` for exactly this reason).
 - `railway.console.toml` is the config-as-code file; `Dockerfile.console` is the build input.
 
 ### Read / update via GraphQL
 
 Set the following environment variables (look up the IDs in the
-[`./console.md`](./console.md) §«Project / environment» section and in the
+[`./openclaw.md`](./openclaw.md) §«Project / environment» section and in the
 service-IDs noted in the per-service subsections above):
 
 ```text
@@ -199,7 +199,7 @@ real changes — when in doubt, widen the pattern set.
 ## Related
 
 - [`./vercel.md`](./vercel.md) — Vercel project settings + headers contract
-- [`./console.md`](./console.md) — `sergeant-openclaw` deploy walkthrough
+- [`./openclaw.md`](./openclaw.md) — `sergeant-openclaw` deploy walkthrough
 - [`../integrations/railway-vercel.md`](../integrations/railway-vercel.md) — platform setup
 - [`../adr/0009-hosting-split-railway-vercel.md`](../adr/0009-hosting-split-railway-vercel.md) — why Railway + Vercel
 - [`../playbooks/hotfix-prod-regression.md`](../playbooks/hotfix-prod-regression.md) — emergency rollback

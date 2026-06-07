@@ -10,7 +10,7 @@
   - [ADR-0032 — Console consolidated into OpenClaw](./0032-console-consolidated-into-openclaw.md) — `tools/openclaw` is OpenClaw's home process.
   - [ADR-0036 — OpenClaw write-tools with approval](./0036-openclaw-write-tools-with-approval.md) — inline-keyboard approval flow whose latency we're reducing.
   - [`docs/launch/tech/openclaw-roadmap.md` §3.5](../launch/tech/openclaw-roadmap.md) — pain "approval-кнопки 2-3 с".
-  - [`docs/deploy/console.md`](../deploy/console.md) — Railway env vars + healthcheck.
+  - [`docs/deploy/openclaw.md`](../deploy/openclaw.md) — Railway env vars + healthcheck.
 
 ---
 
@@ -80,14 +80,14 @@ Long-poll path is byte-for-byte identical to before, plus a defensive `deleteWeb
 ### 4. Rollout / backout
 
 - Merge with flag default-off → no production behaviour change.
-- Set Railway env vars on `sergeant-openclaw` service (renamed from `sergeant-hubchat` per ADR-0032 / Pain P10; per `docs/deploy/console.md`).
+- Set Railway env vars on `sergeant-openclaw` service (renamed from `sergeant-hubchat` per ADR-0032 / Pain P10; per `docs/deploy/openclaw.md`).
 - Redeploy → `setWebhook` runs once → bot delivers via webhook.
 - Verify approval-button p95 latency in PostHog / manual smoke (<500 ms).
 - **Backout:** unset `OPENCLAW_USE_WEBHOOK` and redeploy. `unregisterOpenClawWebhook` runs idempotently and bot is back on long-poll. Healthcheck path must also be reverted from `/healthz` to the `pgrep` command, otherwise the long-poll container fails healthcheck and Railway kills it.
 
 ### 5. Production rollout (2026-05-03 21:26 UTC)
 
-Activated on Railway service `sergeant-openclaw` (project `humorous-eagerness`, environment `production`; service was renamed from `sergeant-hubchat` per ADR-0032 / Pain P10 — see `docs/deploy/console.md` rename runbook):
+Activated on Railway service `sergeant-openclaw` (project `humorous-eagerness`, environment `production`; service was renamed from `sergeant-hubchat` per ADR-0032 / Pain P10 — see `docs/deploy/openclaw.md` rename runbook):
 
 - `serviceDomainCreate` → `sergeant-openclaw-production.up.railway.app:8080` (no domain previously since long-poll did not need one; original domain at activation time was `sergeant-hubchat-production.up.railway.app`).
 - `variableUpsert × 3` → `OPENCLAW_USE_WEBHOOK=true`, `OPENCLAW_WEBHOOK_URL=https://sergeant-openclaw-production.up.railway.app/webhook/openclaw`, `OPENCLAW_WEBHOOK_SECRET=<48-char hex>`.
@@ -149,7 +149,7 @@ First activation hit a one-time race:
 
 - Vitest suites in `tools/openclaw/src/openclaw/webhook.test.ts` (HTTP server end-to-end: 401 on missing/wrong secret, 200 + dispatch on valid, `/healthz`, 404).
 - Vitest suites in `tools/openclaw/src/openclaw/bootstrap.test.ts` (validation guards, `setWebhook` / `deleteWebhook` arguments, fail-closed flag parsing).
-- `docs/deploy/console.md` lists all required env vars and the new `GET /healthz` Railway healthcheck.
+- `docs/deploy/openclaw.md` lists all required env vars and the new `GET /healthz` Railway healthcheck.
 - governance-sync CI keeps this ADR linked from `docs/launch/tech/openclaw-roadmap.md` §3.5.
 
 ## Links
