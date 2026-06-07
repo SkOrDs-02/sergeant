@@ -25,7 +25,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useToast } from "@shared/hooks/useToast";
@@ -111,6 +111,7 @@ export function useRoutineAppState({
   onPwaActionConsumed,
   onOpenModule,
 }: UseRoutineAppStateParams): RoutineAppStateBundle {
+  const location = useLocation();
   const toast = useToast();
   useSqliteReadBoot();
   useRoutineDualWriteBoot();
@@ -180,9 +181,9 @@ export function useRoutineAppState({
     if (restoredFromPersistRef.current) return;
     restoredFromPersistRef.current = true;
     if (typeof window === "undefined") return;
-    const pathTail = window.location.pathname.replace(/^\/routine\/?/, "");
+    const pathTail = location.pathname.replace(/^\/routine\/?/, "");
     if (pathTail !== "") return;
-    if (window.location.hash) return;
+    if (location.hash) return;
     if (persistedTab === "calendar") return;
     route.navigate(persistedTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -255,7 +256,7 @@ export function useRoutineAppState({
 
   useEffect(() => {
     try {
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(location.search);
       const q = params.get("routineDay");
       // Validate the calendar date itself, not just the regex shape, so
       // `?routineDay=2026-02-30` is rejected (consolidated page-audit
@@ -274,9 +275,9 @@ export function useRoutineAppState({
         const qs = params.toString();
         navigate(
           {
-            pathname: window.location.pathname,
+            pathname: location.pathname,
             search: qs ? `?${qs}` : "",
-            hash: window.location.hash,
+            hash: location.hash,
           },
           { replace: true },
         );

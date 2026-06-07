@@ -1,80 +1,72 @@
 import { createBrowserRouter } from "react-router-dom";
-import App from "../App";
+import { RootLayout } from "./RootLayout";
 
 /**
  * Root router config for `apps/web` (initiative 0006 — frontend routing).
  *
- * Phase 1 (Phase 1 commit): мігровано з `<BrowserRouter>` на data-router API
- * (`createBrowserRouter` + `<RouterProvider />`). Один catch-all маршрут
- * `path: "*"` матчить кожен path → `<App />` стає mount-ом для всього,
- * як і було при `<BrowserRouter>`. Поточний `App.tsx` містить вбудовану FSM
- * (`useHubNavigation` + `?module=<id>` + hash), яка обробляє legacy URL.
+ * Phase 5: `RootLayout + Outlet` pattern — fixes the React Router 7
+ * location-context propagation bug. Each child route renders a DIFFERENT
+ * component, so React Router properly unmounts/mounts on navigation
+ * and `useLocation()` always returns the current pathname.
  *
- * Phase 2 history (revisited 2026-05-16): попередня версія цього файлу
- * додавала окремі lazy routes для кожного модуля
- * (`/nutrition/*`, `/finyk/*`, `/fizruk/*`, `/routine/*`) перед catch-all-ом.
- * Кожен з них резолвив через `lazy()` до `{Component: App}` — тобто рендерив
- * РІВНО ТОЙ САМИЙ `<App />` компонент, як і catch-all. Це створювало
- * непомітну, але руйнівну патологію у React Router 7-му:
+ * Architecture:
+ *   RootLayout (providers + shared state + global effects + <Outlet />)
+ *    ├── /finyk/*    → FinykRoute   (lazy chunk)
+ *    ├── /fizruk/*   → FizrukRoute  (lazy chunk)
+ *    ├── /nutrition/* → NutritionRoute (lazy chunk)
+ *    ├── /routine/*  → RoutineRoute (lazy chunk)
+ *    └── *           → HubPage      (hub home + standalone routes + 404)
  *
- *   • При in-app `navigate("/sign-in")` з module-pathname (`/fizruk`,
- *     `/finyk/transactions` тощо) router міняв matched route з module-id (2)
- *     на catch-all-id (4). Component той самий → React reconciler reuse-ить
- *     `<App />` instance. Але route-level lazy-resolve у попередньому маршруті
- *     встиг конвертувати `{Component: App}` у внутрішній `element: <App />`
- *     (підтверджено через `router.state.matches[0].route` —
- *     `hasComponent: false, hasLazy: false, hasElement: true`). Через цей
- *     mixed-shape match-обʼєкт **`location`-context оновлюється у data-router-і,
- *     але не propagate-иться у дереві під element-only routes** — `useLocation()`
- *     у будь-якого consumer-а (`StandaloneRoutes`, `useHubNavigation`,
- *     `useFizrukRoute`, `useFinykRoute`, `HubBottomNav` через `onChange`)
- *     повертає stale pathname. URL у адресній стрічці змінюється, контент
- *     залишається старим. Сторінки модулів і `/sign-in` тоді «не відкриваються».
+ * Module routes are matched first (React Router 7 trie resolver gives
+ * priority to specific paths). The catch-all `*` handles everything
+ * else: `/`, `/sign-in`, `/welcome`, `/pricing`, `/design`, `/chat`,
+ * `/status`, unknown paths → 404.
  *
- *   • Code-splitting через ці lazy-обгортки нічого не давав — справжній
- *     модульний chunk-split іде через `lazyDefault(() => import(
- *     "../../modules/<id>/<X>App"))` у `ActiveModuleView.tsx`. Дублююча
- *     route-level lazy-layer-а додавала тільки race-condition без виграшу.
- *
- * Тому повертаємо до Phase-1 shape — один catch-all → `<App />` для будь-якого
- * pathname. `useHubNavigation` усе ще читає pathname і коректно встановлює
- * `activeModule` для `/fizruk[/...]`, `/finyk[/...]` etc. (його логіка
- * `parsePathnameModule` не змінюється — модульні URL-и працюють як раніше,
- * просто без зайвої route-level lazy-обгортки). `StandaloneRoutes` так само
- * матчить `/sign-in`, `/welcome`, `/pricing` тощо.
- *
- * Phase 5 (cleanup, перенесено) — після того як провайдери будуть підняті
- * у спільний parent-route (`element: <RootLayout />` з `<Outlet />`),
- * модульні маршрути можуть повернутися як справжні nested routes з
- * `<Outlet>`-композицією. Поки що цього робити не варто — той самий
- * `<App />` має лишатися mount-ом для авторизованого і неавторизованого
- * стану (sign-in, welcome, app), і RouterProvider-у достатньо одного entry.
- *
- * Auth contract: немає guard-компонента на рівні роутера — це навмисно.
- * Підняти `<AuthProvider>` вище за router і обгорнути всі маршрути в один
- * `<ProtectedRoute>` зараз неможливо: той самий `<App />` є mount-ом для
- * авторизованого і неавторизованого стану (sign-in, welcome, app). Тому
- * захист реалізований на рівні компонент: кожна сторінка, яка рендерить
- * чутливий UI, зобов'язана викликати `const { status } = useAuth()` і
- * повернути редирект/заглушку при `status !== "authenticated"`.
- * Джерело правди: `apps/web/src/core/auth/AuthContext.tsx`.
- *
- * `Component: App` (а не `element: <App />`) — продовження mixed-shape фіксу,
- * описаного вище. Live-перевірка preview-деплою collapse-route фіксу
- * показала, що сам по собі catch-all з `element: <App />` все одно лишає
- * route-match у form `{ hasComponent: false, hasElement: true, hasLazy: false }`.
- * Через `<App />` як готовий JSX-vnode, створений ОДИН РАЗ at module load,
- * React reconciler reuse-ить його identity, а location-context subscription
- * залишається на тому самому fiber-вузлі — `useLocation()` усередині `App`
- * віддає stale pathname на in-app `navigate()`. `Component: App` змушує
- * React Router рендерити `<App />` як component, тобто **створювати свіжий
- * JSX-element при кожному match** із актуальним RouterContext. Це закриває
- * частину bug-у, яку collapse-route фікс пропустив (підтверджено DOM-side
- * fiber probe: URL міняється, але hub view не unmount-ить без цього фіксу).
+ * Auth contract: auth guard lives at component level (each page checks
+ * `useAuth().status`), not at router level. See `AuthContext.tsx`.
  */
 export const router = createBrowserRouter([
   {
-    path: "*",
-    Component: App,
+    path: "/",
+    element: <RootLayout />,
+    children: [
+      // Per-module lazy routes — each renders a DIFFERENT component,
+      // fixing the mixed-shape match-object bug (see Phase 2 history above).
+      {
+        path: "finyk/*",
+        lazy: () =>
+          import("../../modules/finyk/route").then((m) => ({
+            Component: m.Component,
+          })),
+      },
+      {
+        path: "fizruk/*",
+        lazy: () =>
+          import("../../modules/fizruk/route").then((m) => ({
+            Component: m.Component,
+          })),
+      },
+      {
+        path: "nutrition/*",
+        lazy: () =>
+          import("../../modules/nutrition/route").then((m) => ({
+            Component: m.Component,
+          })),
+      },
+      {
+        path: "routine/*",
+        lazy: () =>
+          import("../../modules/routine/route").then((m) => ({
+            Component: m.Component,
+          })),
+      },
+      // Catch-all: hub home + standalone routes + 404.
+      // Uses `Component` (not `element`) to force fresh JSX per match.
+      {
+        path: "*",
+        lazy: () =>
+          import("./HubPage").then((m) => ({ Component: m.HubPage })),
+      },
+    ],
   },
 ]);
