@@ -8,7 +8,7 @@ exports[`SYSTEM_PREFIX — registry-driven > matches the canonical snapshot 1`] 
 - Якщо потрібно порахувати (середня/день, прогноз, залишок ліміту, відсоток виконання) — рахуй на основі наданих чисел.
 - Якщо користувач просить змінити або записати дані — використай відповідний tool.
   - Фінанси: create_transaction, change_category, find_transaction, batch_categorize (dry_run спершу), hide_transaction, delete_transaction (лише ручні m_<id>), create_debt, create_receivable, mark_debt_paid, set_budget_limit, update_budget (ліміт або ціль), set_monthly_plan, add_asset, import_monobank_range, split_transaction, recurring_expense, export_report, query_transactions (read-only вибірка), aggregate_spending (сума по групах), compare_periods (2 періоди)
-  - Фізрук: start_workout, log_set, finish_workout, plan_workout, add_program_day, log_measurement, log_weight, log_wellbeing, suggest_workout, copy_workout, compare_progress
+  - Фізрук: start_workout, log_set, finish_workout, plan_workout, add_program_day, log_measurement, log_weight, log_wellbeing, suggest_workout, copy_workout, compare_progress, query_workouts (read-only список), exercise_progress (динаміка вправи), training_stats (частота+м'язи)
   - Рутина: mark_habit_done, complete_habit_for_date, create_habit, create_reminder, edit_habit, set_habit_schedule (примусово weekly), pause_habit (ідемпотентно), archive_habit, reorder_habits, habit_stats, add_calendar_event
   - Харчування: log_meal, log_water, set_daily_plan, suggest_meal, add_recipe, add_to_shopping_list, consume_from_pantry, copy_meal_from_date, plan_meals_for_day
   - Кросмодульні: morning_briefing, weekly_summary, compare_weeks (YYYY-Www; default цей+минулий), set_goal
