@@ -116,14 +116,23 @@ const STATUS_TREAT_AS_OK = new Set([429, 415, 999]);
 export function extractLinks(content) {
   const out = [];
   const lines = content.split(/\r?\n/);
-  let inFence = false;
+  let fence = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (/^\s*```/.test(line)) {
-      inFence = !inFence;
+    const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      const marker = fenceMatch[1];
+      const markerChar = marker[0];
+      if (!fence) {
+        fence = { markerChar, length: marker.length };
+        continue;
+      }
+      if (markerChar === fence.markerChar && marker.length >= fence.length) {
+        fence = null;
+      }
       continue;
     }
-    if (inFence) continue;
+    if (fence) continue;
 
     // Strip inline code spans so we don't pick up `[stuff](./x)` literals.
     const stripped = line.replace(/`[^`]*`/g, (m) => " ".repeat(m.length));
@@ -167,7 +176,8 @@ export function classifyTarget(target) {
 
 /** Is this markdown file skipped entirely by the checker? */
 export function shouldSkipFile(relPath) {
-  return SKIP_FILE_PATTERNS.some((re) => re.test(relPath));
+  const normalized = relPath.replace(/\\/g, "/");
+  return SKIP_FILE_PATTERNS.some((re) => re.test(normalized));
 }
 
 /** Resolve an internal link target to an absolute filesystem path. */

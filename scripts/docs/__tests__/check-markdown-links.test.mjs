@@ -7,7 +7,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative, resolve } from "node:path";
 
 import {
   extractLinks,
@@ -42,6 +42,24 @@ describe("extractLinks", () => {
     assert.deepEqual(
       links.map((l) => l.target),
       ["./a.md", "./c.md"],
+    );
+  });
+
+  it("ignores shorter nested fences inside longer fenced blocks", () => {
+    const c = [
+      "Outside: [a](./a.md)",
+      "````",
+      "```diff",
+      "+Inside: [b](./b.md)",
+      "```",
+      "Still inside: [c](./c.md)",
+      "````",
+      "Outside again: [d](./d.md)",
+    ].join("\n");
+    const links = extractLinks(c);
+    assert.deepEqual(
+      links.map((l) => l.target),
+      ["./a.md", "./d.md"],
     );
   });
 
@@ -100,6 +118,10 @@ describe("shouldSkipFile", () => {
     assert.equal(shouldSkipFile(".agents/skills/foo/AGENTS.md"), true);
   });
 
+  it("skips .agents\\skills\\** on Windows-style relative paths", () => {
+    assert.equal(shouldSkipFile(".agents\\skills\\foo\\AGENTS.md"), true);
+  });
+
   it("skips _TEMPLATE-*.md files", () => {
     assert.equal(
       shouldSkipFile("docs/playbooks/_TEMPLATE-decision-tree.md"),
@@ -115,22 +137,33 @@ describe("shouldSkipFile", () => {
 
 describe("resolveInternal", () => {
   it("resolves relative target from the source file's directory", () => {
+    const repo = resolve(tmpdir(), "repo-mdlinks");
     const abs = resolveInternal(
-      "/repo/docs/playbooks/add-foo.md",
+      join(repo, "docs", "playbooks", "add-foo.md"),
       "./bar.md",
-      "/repo",
+      repo,
     );
-    assert.equal(abs, "/repo/docs/playbooks/bar.md");
+    assert.equal(abs, join(repo, "docs", "playbooks", "bar.md"));
   });
 
   it("strips the anchor before resolving", () => {
-    const abs = resolveInternal("/repo/docs/a.md", "./b.md#section", "/repo");
-    assert.equal(abs, "/repo/docs/b.md");
+    const repo = resolve(tmpdir(), "repo-mdlinks");
+    const abs = resolveInternal(
+      join(repo, "docs", "a.md"),
+      "./b.md#section",
+      repo,
+    );
+    assert.equal(abs, join(repo, "docs", "b.md"));
   });
 
   it("resolves absolute-style paths against the repo root", () => {
-    const abs = resolveInternal("/repo/docs/deep/a.md", "/README.md", "/repo");
-    assert.equal(abs, "/repo/README.md");
+    const repo = resolve(tmpdir(), "repo-mdlinks");
+    const abs = resolveInternal(
+      join(repo, "docs", "deep", "a.md"),
+      "/README.md",
+      repo,
+    );
+    assert.equal(abs, join(repo, "README.md"));
   });
 });
 
@@ -145,7 +178,9 @@ describe("walkMarkdown", () => {
       writeFileSync(join(dir, "node_modules/foo/ignored.md"), "# ignored");
       writeFileSync(join(dir, "not-md.txt"), "nope");
       const files = walkMarkdown(dir);
-      const rels = files.map((f) => f.replace(dir + "/", "")).sort();
+      const rels = files
+        .map((f) => relative(dir, f).replace(/\\/g, "/"))
+        .sort();
       assert.deepEqual(rels, ["a.md", "sub/b.md"]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
