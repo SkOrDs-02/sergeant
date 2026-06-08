@@ -10,7 +10,7 @@
   - [`apps/server/src/migrations/003_baseline_schema.sql`](../../apps/server/src/migrations/003_baseline_schema.sql) — таблиці з `ON DELETE CASCADE` на `user(id)`.
   - [`apps/server/src/migrations/007_module_data_user_fk.sql`](../../apps/server/src/migrations/007_module_data_user_fk.sql) — FK на `module_data.user_id`.
   - [`apps/server/src/migrations/008_mono_integration.sql`](../../apps/server/src/migrations/008_mono_integration.sql) — Mono FK з cascade.
-  - [`docs/launch/business/04-launch-readiness.md`](../launch/business/04-launch-readiness.md#14-gdpr--data-rights) — § 1.4 GDPR / Data rights.
+  - [`docs/01-product/launch/business/04-launch-readiness.md`](../01-product/launch/business/04-launch-readiness.md#14-gdpr--data-rights) — § 1.4 GDPR / Data rights.
   - [`docs/adr/0017-better-auth-choice-and-session-model.md`](./0017-better-auth-choice-and-session-model.md) — auth-stack rationale.
 
 ---
@@ -138,7 +138,7 @@ async function hardDeleteExpiredUsers() {
 - Юзер може restore через support впродовж 30 днів. Логування
   `account_deleted` event у Sentry показує rate "regret-deletion".
 - Compliance: 30 днів — стандартний deadline у Privacy Policy
-  (TBD `docs/launch/legal/privacy-policy.md`). Узгоджено з ст. 8 ЗУ
+  (TBD `docs/01-product/launch/legal/privacy-policy.md`). Узгоджено з ст. 8 ЗУ
   «Про захист персональних даних» ("упродовж розумного терміну").
 - Email-анонімізація на soft-delete-моменті закриває edge-case "юзер
   створив новий акаунт з тим самим email до 30 днів" — Better Auth

@@ -1,9 +1,9 @@
 # FTUX / Onboarding PR-план (з прожарки 2026-05-13)
 
 > **Last validated:** 2026-05-19 by @codex. **Next review:** ніколи (read-only архів).
-> **Status:** Archived (read-only) — closed; canonical status lives in `docs/launch/product-os/ftux-master-tracker.md`.
+> **Status:** Archived (read-only) — closed; canonical status lives in `docs/01-product/launch/product-os/ftux-master-tracker.md`.
 
-> **Призначення.** Виконавчий план PR-ів за відкритими пунктами FTUX-прожарки [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../../audits/archive/2026-05-13-ftux-onboarding-roast.md). Дзеркалить open-items із цієї прожарки у конкретні PR-картки з acceptance, conversion-метриками, розміром (S/M/L), пріоритетом (P1/P2/P3), залежностями та owner-плейсхолдером. **Не** замінює SSOT — `docs/launch/product-os/ftux-master-tracker.md` (master tracker) лишається істиною про статуси; цей файл — execution playbook на наступні 2–4 тижні.
+> **Призначення.** Виконавчий план PR-ів за відкритими пунктами FTUX-прожарки [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../../audits/archive/2026-05-13-ftux-onboarding-roast.md). Дзеркалить open-items із цієї прожарки у конкретні PR-картки з acceptance, conversion-метриками, розміром (S/M/L), пріоритетом (P1/P2/P3), залежностями та owner-плейсхолдером. **Не** замінює SSOT — `docs/01-product/launch/product-os/ftux-master-tracker.md` (master tracker) лишається істиною про статуси; цей файл — execution playbook на наступні 2–4 тижні.
 >
 > **Що НЕ покрито тут.** Закриті у roast-PR пункти (B-11 `nextStepTip`, P2-15 `primaryCtaLabel`, M-10 `ftux-slo.yml`) — лишаються тільки як history-кросс-реф. PR-08 (cleanup .replit + archive stale audits, P1-4 у roast) — already landed [commit 92dd45b2](https://github.com/Skords-01/Sergeant/commit/92dd45b2). Paywall (PR-19/PR-20), What's new modal (PR-18), SQLite migration — окремі ініціативи, поза скоупом цієї прожарки (явно exclude-нуто у §«Що НЕ покрито цією прожаркою» roast-а).
 
@@ -16,7 +16,7 @@
 - [`docs/audits/2026-05-06-ux-roast.md`](../../audits/archive/2026-05-06-ux-roast.md) — пост-onboarding UX-прожарка (Day 0-7).
 - [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна FTUX-прожарка (frozen).
 
-**Master tracker:** [`docs/launch/product-os/ftux-master-tracker.md`](../../launch/product-os/ftux-master-tracker.md) — sprint registry, PR-09..PR-21, decisions log.
+**Master tracker:** [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../../01-product/launch/product-os/ftux-master-tracker.md) — sprint registry, PR-09..PR-21, decisions log.
 
 **Surfaces в `apps/web` (за user-journey):**
 
@@ -303,7 +303,7 @@ gantt
 
 ## Що НЕ покрито цим планом
 
-- **Paywall (PR-19/PR-20)** — окрема ініціатива у [`docs/launch/product-os/paywall-implementation-plan.md`](../../launch/product-os/paywall-implementation-plan.md). PR-20 чекає Stripe scaffold (0010 phase 3 — `usePlan()` RQ-hook).
+- **Paywall (PR-19/PR-20)** — окрема ініціатива у [`docs/01-product/launch/product-os/paywall-implementation-plan.md`](../../01-product/launch/product-os/paywall-implementation-plan.md). PR-20 чекає Stripe scaffold (0010 phase 3 — `usePlan()` RQ-hook).
 - **What's new modal (PR-18)** — in-flight, окремий surface.
 - **SQLite migration (Stage 8/9)** — поза скоупом per parent prompt і audit `§ Що НЕ покрито`.
 - **Goal-first wizard A/B (PR-13 / S5.1)** — у master tracker Wave 2, але прив'язано до результатів PR-11 cohort-analysis. Не дублюємо тут.

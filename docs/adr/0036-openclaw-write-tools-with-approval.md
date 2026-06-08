@@ -12,7 +12,7 @@
   - [ADR-0032 — Console consolidated into OpenClaw](./0032-console-consolidated-into-openclaw.md)
   - [ADR-0033 — OpenClaw multi-personas + `/council`](./0033-openclaw-multi-personas-and-council.md)
   - [ADR-0037 — OpenClaw write-audit persistence (Phase 4.5)](./0037-openclaw-write-audit-persistence.md) — closes the audit-trail debt from §4 below.
-  - [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) — Phase 4 section.
+  - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../01-product/launch/tech/openclaw-roadmap.md) — Phase 4 section.
 
 ---
 
@@ -164,7 +164,7 @@ Persona-tool-filter (ADR-0033) extend-нутий per-tool:
 - **Approvals в-пам'яті — крихкі до рестарту.** Console restart посеред `pending` approval-у → founder reissue-ить request. **Mitigation:** OK для single-founder-flow. ADR-0037 (Phase 4.5) переносить approval-history (вже-resolved transitions) у DB, але самі pending approvals лишаються in-memory — DB-перенос pending-state-у потребує і-pending-row + restart-policy, що деferred у Phase 5 (multi-operator).
 - **Telegram inline-keyboard — UI-debt.** Кнопки після 10 min "тухнуть" — founder натискає → answer-callback "expired". У теорії можна edit-ити message щоб прибрати кнопки після TTL. **Mitigation:** TTL-edit deferred — мала проблема, founder клікне без feedback-у і отримає friendly error.
 - **No batch-approve.** 3 write-tool-call-и у одному turn-і → 3 окремі inline-keyboard-карти. Founder клацає 3 рази. **Mitigation:** прийнято свідомо — кожна дія — explicit consent. Якщо 3 кнопки стане annoy-ом, Phase 4.5 додасть "Approve all" мета-кнопку.
-- **Allowlist drift.** GitHub-PR на `docs/strategy/` тільки — а раптом founder захоче `docs/launch/`? Доведеться оновлювати server-allowlist + redeploy. **Mitigation:** intentional friction; allowlist — explicit decision-point.
+- **Allowlist drift.** GitHub-PR на `docs/strategy/` тільки — а раптом founder захоче `docs/01-product/launch/`? Доведеться оновлювати server-allowlist + redeploy. **Mitigation:** intentional friction; allowlist — explicit decision-point.
 
 ### Re-evaluation triggers
 

@@ -54,16 +54,16 @@ Verified against codebase on 2026-05-17. Update when files move.
 
 ## Plans (for «after-plan» + new screens)
 
-| Topic               | Plan doc                                                                                                   |
-| ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| FTUX onboarding     | `docs/launch/product-os/ftux-master-tracker.md` · `docs/launch/product-os/ftux-sprint-plan.md`             |
-| Paywall             | `docs/launch/product-os/paywall-implementation-plan.md` · `docs/launch/product-os/paywall-ux-placement.md` |
-| Empty states        | `docs/05-design/design/empty-states.md`                                                                    |
-| Telegram UX         | `docs/launch/tech/telegram-improvements-roadmap.md`                                                        |
-| Push schema         | Search `apps/` for push notification schema — not found in docs as of 2026-05-17                           |
-| Cross-module nudges | `docs/05-design/design/cross-module-prompts.md`                                                            |
-| Undo pattern        | `docs/05-design/design/undo-pattern.md`                                                                    |
-| Unified bottom-nav  | `docs/05-design/design/unified-bottom-nav.md`                                                              |
+| Topic               | Plan doc                                                                                                                         |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| FTUX onboarding     | `docs/01-product/launch/product-os/ftux-master-tracker.md` · `docs/01-product/launch/product-os/ftux-sprint-plan.md`             |
+| Paywall             | `docs/01-product/launch/product-os/paywall-implementation-plan.md` · `docs/01-product/launch/product-os/paywall-ux-placement.md` |
+| Empty states        | `docs/05-design/design/empty-states.md`                                                                                          |
+| Telegram UX         | `docs/01-product/launch/tech/telegram-improvements-roadmap.md`                                                                   |
+| Push schema         | Search `apps/` for push notification schema — not found in docs as of 2026-05-17                                                 |
+| Cross-module nudges | `docs/05-design/design/cross-module-prompts.md`                                                                                  |
+| Undo pattern        | `docs/05-design/design/undo-pattern.md`                                                                                          |
+| Unified bottom-nav  | `docs/05-design/design/unified-bottom-nav.md`                                                                                    |
 
 ## Mockup shared CSS
 

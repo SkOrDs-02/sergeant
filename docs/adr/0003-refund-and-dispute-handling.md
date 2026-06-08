@@ -7,8 +7,8 @@
 - **Supersedes:** —
 - **Related:**
   - [`docs/adr/0001-monetization-architecture.md`](./0001-monetization-architecture.md) — ADR-1.1 (Stripe primary), ADR-1.8 (webhook event-id retention), ADR-1.11 (cancel-at-period-end).
-  - [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md) — тіри і ціни (Pro ₴99/міс, ₴799/рік).
-  - [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md) — risk register #8 («нічого про refund / proration»).
+  - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../01-product/launch/business/01-monetization-and-pricing.md) — тіри і ціни (Pro ₴99/міс, ₴799/рік).
+  - [`docs/01-product/launch/business/06-monetization-architecture.md`](../01-product/launch/business/06-monetization-architecture.md) — risk register #8 («нічого про refund / proration»).
 
 ---
 
@@ -108,13 +108,13 @@ await pool.query(
 - Anti-fraud за замовчуванням: founder бачить контекст (як давно юзер,
   чи юзер реально використовує продукт, чи це boilerplate-скарга з
   email +1).
-- Refund policy документ один — той, що в `docs/launch/legal/refund.md`
+- Refund policy документ один — той, що в `docs/01-product/launch/legal/refund.md`
   (TBD; писати разом з Privacy Policy).
 
 **Негативні:**
 
 - 24h SLA на support — хто його закриває коли founder спить? Документуємо
-  у `docs/launch/business/05-operations-and-automation.md` як "support manual,
+  у `docs/01-product/launch/business/05-operations-and-automation.md` як "support manual,
   best-effort 24h"; не SLA-обіцянка.
 - Юзер після refund-у залишається Pro до кінця оплаченого періоду — це
   trade-off на користь simplicity.
@@ -275,7 +275,7 @@ accepted.
   нараховує credit (через `customer.subscription.updated`) — це reflect-имо у
   `subscriptions` row, не дублюємо логіку.
 - **In-app refund button.** Phase 2+. Бачимо потребу при refund-rate > 2%/місяць.
-- **Refund policy document.** Окремий артефакт у `docs/launch/legal/refund.md`
+- **Refund policy document.** Окремий артефакт у `docs/01-product/launch/legal/refund.md`
   (TBD), писати разом з Privacy Policy і Terms of Service. Цей ADR описує
   технічний flow, не legal text.
 - **Multi-currency refund-ів.** UAH only на MVP (ADR-1.9). USD/EUR refund-flow

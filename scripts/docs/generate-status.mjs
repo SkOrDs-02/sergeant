@@ -280,7 +280,7 @@ function render({ focus, shipped, inflight, priority }) {
     "| **Старт** | [`agents/`](./agents/README.md), [`playbooks/`](./playbooks/README.md) | онбординг, routing, рецепти |",
   );
   lines.push(
-    "| **Продукт** | [`launch/`](./launch/README.md), [`marketing/`](./marketing/README.md), [`copy/`](./copy/README.md) | GTM, монетизація, FTUX |",
+    "| **Продукт** | [`launch/`](./01-product/launch/README.md), [`marketing/`](./01-product/marketing/README.md), [`copy/`](./01-product/copy/README.md) | GTM, монетизація, FTUX |",
   );
   lines.push(
     "| **Інженерія** | [`architecture/`](./architecture/README.md), [`api/`](./api/README.md), [`web/`](./web/README.md), [`mobile/`](./mobile/README.md), [`testing/`](./testing/README.md), [`integrations/`](./integrations/README.md) | як влаштовано і як білдити |",

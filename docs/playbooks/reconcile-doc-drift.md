@@ -128,7 +128,7 @@ grep -E '"<NNNN>"' docs/pr-ledger/index.json
 
 ```bash
 # Усі unchecked-чекбокси у трекерах
-grep -rn '^\s*-\s*\[ \]' docs/initiatives docs/planning docs/launch docs/audits docs/security/hardening
+grep -rn '^\s*-\s*\[ \]' docs/initiatives docs/planning docs/01-product/launch docs/audits docs/security/hardening
 ```
 
 Для підозрілого пункту звір реальність: `git log --oneline --all --grep="<ключове слово фічі>"` або grep символу/файла, який пункт обіцяв. Якщо робота є в `main` — пункт треба позначити `- [x]` у [§4](#4-актуалізувати-reconcile).

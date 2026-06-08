@@ -49,7 +49,7 @@ Sticky topbar з jumps та пошуком. 4 кластери з карткам
 ### M-3 · Первинне знайомство — `mockups/product/onboarding/index.html`
 
 6 кроків × 3 стани (Зараз / Планується / Рекомендую). Джерело —
-`docs/launch/product-os/ftux-master-tracker.md`. Воронка з 8 PostHog
+`docs/01-product/launch/product-os/ftux-master-tracker.md`. Воронка з 8 PostHog
 подій + 3 SLO (≥30% активація, ≤90с TTV, ≥25% D1).
 
 ### M-4 · Платний доступ — `mockups/product/paywall/index.html`
@@ -57,7 +57,7 @@ Sticky topbar з jumps та пошуком. 4 кластери з карткам
 Sheet після першого запису (4 сек після CelebrationModal). 3 варіанти
 копії α/β/γ. Матриця 5 кандидатів розміщення з оцінками (B обрано,
 A/E відхилено, C/D — фаза 2). Воронка 5 PostHog подій. Джерело —
-`docs/launch/product-os/paywall-ux-placement.md`.
+`docs/01-product/launch/product-os/paywall-ux-placement.md`.
 
 ### M-5 · HubChat — `mockups/product/hubchat/index.html`
 
@@ -105,7 +105,7 @@ A/E відхилено, C/D — фаза 2). Воронка 5 PostHog подій
 
 | Звідки                                                     | Куди                                                  | Статус                            |
 | ---------------------------------------------------------- | ----------------------------------------------------- | --------------------------------- |
-| `docs/launch/landing-mockups/mockup-NN-*.html`             | `mockups/landing/campaigns/<slug>.html`               | ✅                                |
+| `docs/01-product/launch/landing-mockups/mockup-NN-*.html`  | `mockups/landing/campaigns/<slug>.html`               | ✅                                |
 | `mockups/landing/v*.html`                                  | `mockups/landing/directions/v*.html`                  | ✅                                |
 | `docs/05-design/design/redesign-v2/handoff-package/*.html` | `mockups/product/{module}/*.html`                     | ✅                                |
 | `mockups/shared.css`                                       | `mockups/_shared/{tokens,marketing,product}.css`      | ✅                                |
@@ -122,7 +122,7 @@ A/E відхилено, C/D — фаза 2). Воронка 5 PostHog подій
 1. **Відкрий портал:** `mockups/index.html`. Дивись на картки зі статусом
    «заплановано» — вони з пунктирним штрихуванням.
 2. **Спершу — найвищий пріоритет.** Картки з номером 2 «високо».
-3. **Знайди план у `docs/launch/product-os/` або `docs/05-design/design/`** — у картці
+3. **Знайди план у `docs/01-product/launch/product-os/` або `docs/05-design/design/`** — у картці
    на порталі є посилання на джерело-план.
 4. **Намалюй мокап** за тією ж конвенцією — 3 стани (Зараз / Планується /
    Рекомендую) для продуктових екранів. Збережи у `mockups/product/<slug>/index.html`.

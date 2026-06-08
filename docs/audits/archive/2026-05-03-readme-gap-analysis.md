@@ -513,7 +513,7 @@ HubChat — це чат-інтерфейс, де ти спілкуєшся з Cl
 | `docs/05-design/design/`            | Дизайн-система: BRANDBOOK, кольори, акценти модулів       |
 | `docs/governance/`                  | Hard rules, review checklist, релізна політика            |
 | `docs/integrations/`                | Monobank, Railway, Vercel, Renovate, Voyage               |
-| `docs/launch/`                      | Монетизація, GTM, launch readiness                        |
+| `docs/01-product/launch/`           | Монетизація, GTM, launch readiness                        |
 | `docs/mobile/`                      | Capacitor, deep links, React Native міграція              |
 | `docs/03-operations/observability/` | SLO, дашборди, метрики, runbook                           |
 | `docs/planning/`                    | Roadmaps, AI improvements, dev stack roadmap              |

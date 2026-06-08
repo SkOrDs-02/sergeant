@@ -16,7 +16,7 @@
 //    Aspirational / planning / tracker doc trees describe planned, historical,
 //    or target-state file structures whose refs naturally drift as code lands
 //    or is decomposed. Their dangling refs are reported as WARNINGS only:
-//      - docs/launch/                          (launch plans)
+//      - docs/01-product/launch/                          (launch plans)
 //      - docs/planning/                        (sprint plans)
 //      - docs/audits/*-deep-dive/              (deep-dive recommendations)
 //      - docs/integrations/*-roadmap.md        (integration roadmaps)
@@ -238,7 +238,7 @@ function checkDanglingRefs() {
   // Aspirational/roadmap doc trees: dangling refs describe planned/future
   // implementation, not current code. Report as warnings, not errors.
   function isAspirational(relPath) {
-    if (relPath.startsWith("docs/launch/")) return true;
+    if (relPath.startsWith("docs/01-product/launch/")) return true;
     if (relPath.startsWith("docs/planning/")) return true;
     // Deep-dive directories under `docs/audits/*-deep-dive/` (formerly
     // `docs/diagnostics/`, merged 2026-05-05) describe recommendations —
@@ -339,7 +339,7 @@ function checkDanglingRefs() {
     // semantics as `docs/initiatives/` — status badge + PR-link table is
     // the source of truth, inline file refs are descriptive.
     if (relPath.startsWith("docs/tech-debt/")) return true;
-    if (relPath.startsWith("docs/marketing/")) return true;
+    if (relPath.startsWith("docs/01-product/marketing/")) return true;
     if (relPath.startsWith("docs/03-operations/observability/")) return true;
     if (relPath.startsWith("docs/05-design/design/redesign-v2/")) return true;
     return false;

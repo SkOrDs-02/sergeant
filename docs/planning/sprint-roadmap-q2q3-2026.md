@@ -5,8 +5,8 @@
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.
 > Джерела: [`docs/audits/archive/2026-04-28-implementation-roadmap.md`](../audits/archive/2026-04-28-implementation-roadmap.md),
-> [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md),
-> [`docs/launch/tech/telegram-improvements-roadmap.md`](../launch/tech/telegram-improvements-roadmap.md).
+> [`docs/01-product/launch/tech/openclaw-roadmap.md`](../01-product/launch/tech/openclaw-roadmap.md),
+> [`docs/01-product/launch/tech/telegram-improvements-roadmap.md`](../01-product/launch/tech/telegram-improvements-roadmap.md).
 
 ---
 
@@ -41,7 +41,7 @@
 
 ### 1.2. Продуктові задачі (відкриті)
 
-Повний контекст — у [`openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) та [`telegram-improvements-roadmap.md`](../launch/tech/telegram-improvements-roadmap.md).
+Повний контекст — у [`openclaw-roadmap.md`](../01-product/launch/tech/openclaw-roadmap.md) та [`telegram-improvements-roadmap.md`](../01-product/launch/tech/telegram-improvements-roadmap.md).
 
 | ID  | Задача                                                        | Джерело                | Wave  | Effort | Статус                                                                                                                                                                                                                                                                                                                              |
 | --- | ------------------------------------------------------------- | ---------------------- | ----- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -113,7 +113,7 @@
 - [ ] Failover — якщо ritual не вдався → пост у `⚙️ Контрол-план` через alert-bot
 - [ ] LLM cost ~$0.10 на ritual (в межах `OPENCLAW_DAILY_USD_BUDGET=$5`)
 
-**Пов'язане:** [openclaw-roadmap §Phase 2](../launch/tech/openclaw-roadmap.md), [ADR-0033](../adr/0033-openclaw-multi-personas-and-council.md) + [ADR-0055](../adr/0055-openclaw-external-gateway.md)
+**Пов'язане:** [openclaw-roadmap §Phase 2](../01-product/launch/tech/openclaw-roadmap.md), [ADR-0033](../adr/0033-openclaw-multi-personas-and-council.md) + [ADR-0055](../adr/0055-openclaw-external-gateway.md)
 
 ---
 
@@ -183,7 +183,7 @@
 
 - **Friday 18:00 Kyiv:** тиждень в цифрах vs. попередній + closed PRs + 2-3 priorities на наступний тиждень.
 - **1-го числа місяця 09:00 Kyiv:** OKR progress з `docs/strategy/` + risks/blockers + recalibration suggestion.
-- Broadcast у `📊 Дайджести` topic (per [ADR-0031 §6 resolved decision](../launch/tech/openclaw-roadmap.md)).
+- Broadcast у `📊 Дайджести` topic (per [ADR-0031 §6 resolved decision](../01-product/launch/tech/openclaw-roadmap.md)).
 
 **Acceptance:**
 
@@ -199,7 +199,7 @@
 - Hardcoded OKRs: `apps/server/src/modules/openclaw/monthly-okr/okrs.ts` (3 quarters: foundation-Q2-2026, reliability-Q2-2026, growth-Q3-2026). Treat as interim while PR-34 strategic_goals DB-table is in flight.
 - Тести: weekly-review 21 unit tests (template + builder); monthly-okr 21 unit tests.
 
-**Пов'язане:** [openclaw-roadmap §Phase 2](../launch/tech/openclaw-roadmap.md), ADR-0039, PR-26 (morning briefing reference), PR-23 LLMProvider, PR-25 StubProvider fallback pattern
+**Пов'язане:** [openclaw-roadmap §Phase 2](../01-product/launch/tech/openclaw-roadmap.md), ADR-0039, PR-26 (morning briefing reference), PR-23 LLMProvider, PR-25 StubProvider fallback pattern
 
 ---
 
@@ -295,7 +295,7 @@ apps/web/src/core/hub/
 - [x] Sentry breadcrumb `[openclaw] webhook recovered after race` при retry-успіху
 - [ ] Smoke: long-poll → webhook → long-poll → webhook redeploy без ручного curl-у
 
-**Пов'язане:** [ADR-0041 §5](../adr/0041-openclaw-telegram-webhook.md), [tg-improvements §3.5.1](../launch/tech/telegram-improvements-roadmap.md)
+**Пов'язане:** [ADR-0041 §5](../adr/0041-openclaw-telegram-webhook.md), [tg-improvements §3.5.1](../01-product/launch/tech/telegram-improvements-roadmap.md)
 
 ---
 

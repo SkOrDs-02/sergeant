@@ -1,18 +1,19 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-09-01.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** In progress
 > **✅ Completed:** Phases 0, 1, 2, 3, 4.1, 4.2, 4.3, 5.1, 5.2, 6 (including 6.2 EN-locale wiring)
 > **⏳ Pending (founder-блокери only):**
->   - APPLE\_\* env vars in Railway/local
->   - ФОП-реєстрація для live Stripe
->   - Rollout/decision metrics
-> **Agent-ready:** needs-decision
-> **Priority:** P0 (Sprint 1–4)
-> **Owner:** `@Skords-01`
-> **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)
-> **Sources:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md), [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md), [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md), [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md), [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md)
-> **Canonical delivery owner:** [`docs/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md). This initiative stays as decision frame/reference, not the live PR tracker.
+>
+> - APPLE\_\* env vars in Railway/local
+> - ФОП-реєстрація для live Stripe
+> - Rollout/decision metrics
+>   **Agent-ready:** needs-decision
+>   **Priority:** P0 (Sprint 1–4)
+>   **Owner:** `@Skords-01`
+>   **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)
+>   **Sources:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md), [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../01-product/launch/business/01-monetization-and-pricing.md), [`docs/01-product/launch/business/02-go-to-market.md`](../01-product/launch/business/02-go-to-market.md), [`docs/01-product/launch/business/06-monetization-architecture.md`](../01-product/launch/business/06-monetization-architecture.md), [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md)
+>   **Canonical delivery owner:** [`docs/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md). This initiative stays as decision frame/reference, not the live PR tracker.
 
 ## TL;DR
 
@@ -23,7 +24,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 - **Ризик зволікання — death by 1000 docs.** За останні 90 днів злито 3 479 комітів і написано 56 466 рядків docs; жоден з них не приніс ₴1 виручки.
 - **Конкуренти живі і ростуть.** personalEverything, LifeShift 360, Phaseo вже у проді з тим самим «all-in-one» value-prop. Кожен тиждень без launch — це CAC, який доведеться платити, щоб відіграти share.
 - **Pricing-модель v1 економічно нежиттєздатна.** ₴99/міс при ≈$5/користувача API costs (Anthropic) = негативна gross margin на Pro tier. Це треба виправити **до** першого Stripe-чека, не після.
-- **Технічний skeleton монетизації** [(`docs/launch/business/06-monetization-architecture.md`)](../launch/business/06-monetization-architecture.md) розписаний на 691 рядок без жодного рядка `subscriptions` SQL у `apps/server/src/migrations/`. Час перейти від v2-плану до коду.
+- **Технічний skeleton монетизації** [(`docs/01-product/launch/business/06-monetization-architecture.md`)](../01-product/launch/business/06-monetization-architecture.md) розписаний на 691 рядок без жодного рядка `subscriptions` SQL у `apps/server/src/migrations/`. Час перейти від v2-плану до коду.
 - **High-friction signup.** Email + password + verify email — це 4 кроки, що дають ~30–50% drop-off на signup-екрані (industry baseline). Apple + Google sign-in (через Better Auth) знизять friction до ≤10%.
 - **OpenClaw і `tools/openclaw` лишаються активними паралельно** до фази 6 — owner ухвалив, що NOT freeze. Просто не блокують revenue track. Mobile: Capacitor залишається primary до завершення Expo-нативки; обидва стеки підтримуються паралельно (рішення зафіксовано в ADR-0052 — фаза 1.2).
 
@@ -77,7 +78,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 #### PR 1.1 `docs-adr-pricing-v3` (scope: `docs`)
 
 - [`docs/adr/0051-pricing-v3-single-tier.md`](../adr/0051-pricing-v3-single-tier.md) — ADR про перехід на 2-тірну модель: **Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial безкоштовний без прив'язки картки.**
-- Оновити `docs/launch/business/01-monetization-and-pricing.md` — додати «Update 2026-05-XX: pricing v3 затверджено» зі статусом «Superseded by ADR-0051» на застарілих секціях (Plus tier, Lifetime ₴2999, pay-per-feature).
+- Оновити `docs/01-product/launch/business/01-monetization-and-pricing.md` — додати «Update 2026-05-XX: pricing v3 затверджено» зі статусом «Superseded by ADR-0051» на застарілих секціях (Plus tier, Lifetime ₴2999, pay-per-feature).
 - Додати freshness-update header.
 
 **Залежить від:** Фаза 0.
@@ -270,7 +271,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
   - **Variant B (test):** goal-first single-screen wizard: «Яку фінансову мету хочете досягти?» (3 варіанти: «Зекономити ₴X», «Стати фінансово грамотним», «Контролювати витрати») → одразу Mono OAuth + 5 categorize → dashboard.
 - Перенести fitness/nutrition/routine модулі в «cross-sell» картки на dashboard (для обох variants).
 - PostHog події: `ACTIVATION_V2_HIT`, `ONBOARDING_GOAL_PICKED`, `ONBOARDING_VIBE_PICKED` з dimension `variant`.
-- Carry-over від [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md) S5.
+- Carry-over від [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../01-product/launch/product-os/ftux-sprint-plan.md) S5.
 - **Decision rule (через 2 тижні після rollout):** залишити variant з вищим `activation_v2` rate. Втрачений variant видалити окремим cleanup-PR.
 
 **Залежить від:** PR 5.1.
@@ -318,7 +319,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 - [x] Лендинг `LandingPage.tsx` виконує маршрут `/` для неавторизованих users. **Sitemap/robots.txt — shipped** (`apps/web/public/sitemap.xml` + `apps/web/public/robots.txt`). **Phase 6.2 done:** `LandingPage` зведено на `useLocale()` — повний `landing` message-group у `uk.ts`/`en.ts`, copy рендериться через `messages.landing.*`, `LANDING_VIEWED`/`LANDING_EMAIL_CAPTURED` payload-и несуть resolved `locale` (не hardcoded `uk`). Tests: 8 LandingPage + 27 i18n green, web typecheck clean.
 - [ ] Усі PR-и пройшли CI зелено + a11y axe-core + Lighthouse budget.
 - [x] Нові docs (ADR-0051, ADR-0052, initiative, mobile READMEs) мають freshness header + Status badge.
-- [x] `docs/launch/business/01-monetization-and-pricing.md` оновлено: §2.2/§2.3 Superseded by ADR-0051; pricing v3 зафіксовано.
+- [x] `docs/01-product/launch/business/01-monetization-and-pricing.md` оновлено: §2.2/§2.3 Superseded by ADR-0051; pricing v3 зафіксовано.
 - [x] Ankle-PR `chore-console-move-to-tools` змерджено (`apps/console/` → `tools/openclaw/`).
 
 ## Метрики успіху (вимірюються через 30 днів після фази 6)
@@ -388,13 +389,13 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 ## Посилання
 
 - **Аудит-сорс:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md).
-- **Поточна pricing-модель (буде оновлена):** [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md).
-- **GTM (буде звужений):** [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md).
-- **Технічний skeleton білінгу:** [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md).
-- **FTUX carry-over:** [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md), [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md).
+- **Поточна pricing-модель (буде оновлена):** [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../01-product/launch/business/01-monetization-and-pricing.md).
+- **GTM (буде звужений):** [`docs/01-product/launch/business/02-go-to-market.md`](../01-product/launch/business/02-go-to-market.md).
+- **Технічний skeleton білінгу:** [`docs/01-product/launch/business/06-monetization-architecture.md`](../01-product/launch/business/06-monetization-architecture.md).
+- **FTUX carry-over:** [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md), [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../01-product/launch/product-os/ftux-sprint-plan.md).
 - **Mobile picks:** [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](./archive/_0002-mobile-platform-decision.md).
 - **Better Auth playbook:** [`.agents/skills/better-auth-best-practices/SKILL.md`](../../.agents/skills/better-auth-best-practices/SKILL.md).
-- **OpenClaw roadmap (active parallel, not in scope):** [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md).
+- **OpenClaw roadmap (active parallel, not in scope):** [`docs/01-product/launch/tech/openclaw-roadmap.md`](../01-product/launch/tech/openclaw-roadmap.md).
 - **Releases register (буде заповнюватись по PR):** TBD.
 
 ---
@@ -409,7 +410,7 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 
 - **ADR-0051** ([`docs/adr/0051-pricing-v3-single-tier.md`](../adr/0051-pricing-v3-single-tier.md)) — `Status: Accepted`. Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial 7 днів без картки. Plus tier / Lifetime / pay-per-feature — out of scope MVP.
 - **ADR-0052** ([`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../adr/0052-mobile-strategy-capacitor-primary.md)) — `Status: Accepted`. Capacitor primary до Expo feature parity; обидва стеки паралельно; sunset T₀/T₁/T₂ — не active commitments. Тригер наступного ADR: ≥18/22 рядків матриці `docs/architecture/platforms.md` = ✅.
-- `docs/launch/business/01-monetization-and-pricing.md` — Update header: §2.2 і §2.3 позначено «Superseded by ADR-0051».
+- `docs/01-product/launch/business/01-monetization-and-pricing.md` — Update header: §2.2 і §2.3 позначено «Superseded by ADR-0051».
 - `docs/initiatives/archive/_0002-mobile-platform-decision.md` — owner decision note, ADR-0052 supersedes sunset-direction.
 - `apps/mobile/README.md`, `apps/mobile-shell/README.md` — freshness headers + посилання на ADR-0052.
 - **`packages/insights/src/activation.ts`** — `evaluateActivationV2()` pure function (Phase 5.1). Умови: Mono ≥1 + ≥5 categorized txn + ≥1 budget ≤72h від signup. 10 unit-тестів, 80/80 passed.

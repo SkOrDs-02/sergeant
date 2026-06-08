@@ -43,7 +43,7 @@ Phases 3, 5, 6 у `execution-plan.md` мають zero acceptance criteria. Як�
 5 поверхонь з production-fidelity мокапами у `mockups/product/` без phase-owner у v2 plan. Reject'нуто як wave 2 scope. Wire після v2 close coordinated cycle. **Не дублювати** — якщо беретесь за один з цих surfaces, спочатку прочитайте відповідний `mockups/product/<name>/index.html`.
 
 - [ ] **`mockups/product/nudges/`** — anti-nag cross-module toast system з fatigue-pip counter. Найбільш elaborated novel surface. Refs: `docs/05-design/design/cross-module-prompts.md`.
-- [ ] **`mockups/product/push/`** — push notification lock-screen templates (streak reminder / AI nudge / paywall re-engagement / weekly digest). Refs: `docs/launch/tech/telegram-improvements-roadmap.md`.
+- [ ] **`mockups/product/push/`** — push notification lock-screen templates (streak reminder / AI nudge / paywall re-engagement / weekly digest). Refs: `docs/01-product/launch/tech/telegram-improvements-roadmap.md`.
 - [ ] **`mockups/product/states/`** — empty/error/zero-data system, 5 surfaces (4 modules + hub). Refs: `docs/05-design/design/empty-states.md`.
 - [ ] **`mockups/product/responsive.html`** — tablet/desktop hub layout (sidebar nav + bento grid). Жодна phase не торкається tablet/desktop breakpoints.
 - [ ] **`mockups/product/details-pattern.html`** — deep-screen nav pattern (transaction detail, workout detail, meal detail). Absent з module mockups.

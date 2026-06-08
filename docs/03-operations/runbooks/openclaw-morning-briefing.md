@@ -7,7 +7,7 @@ Operational runbook для morning-briefing-у:
 
 - **PR-26** ([`docs/planning/pr-plan-2026-05.md`](../../planning/pr-plan-2026-05.md))
   — 5 hardcoded секцій (Stripe / PostHog / GitHub PR-черга / n8n / Sentry).
-- **O1 / Phase 2.A** у [`docs/launch/tech/openclaw-roadmap.md`](../../launch/tech/openclaw-roadmap.md)
+- **O1 / Phase 2.A** у [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/tech/openclaw-roadmap.md)
   — LLM-секція «🎯 Пропозиції на сьогодні» (3 next-actions
   від cofounder-а на основі ранкових метрик) над холодними блоками.
 

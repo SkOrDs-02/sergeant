@@ -1,6 +1,6 @@
 # Hardening pen-test sweep — 2026-05 (H5/H6/H8/H9)
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Reference
 
 | Field        | Value                                                                                                                                                                                  |
@@ -228,7 +228,7 @@ curl -i \
 
 - Legacy users with `email_verified=false` still exist in the prod DB.
   Switching the global flag to `true` would lock them out. The mitigation
-  plan is documented at `docs/launch/email-verification-sweep.md` (created
+  plan is documented at `docs/01-product/launch/email-verification-sweep.md` (created
   in PR 3.4 of this initiative; link added once that PR lands).
 - Password-change while signed in is currently routed through Better Auth
   internals; when a dedicated `/api/auth/password` route lands, drop
@@ -488,12 +488,12 @@ this initiative adds a real-Postgres e2e to close that gap.
       used a staging Postgres). Owner: `@Skords-01`. Target: pre-launch
       `2026-Q3` window (post-0010 launch).
 - [ ] Pair this transcript with an external pen-tester engagement before
-      the public launch — see `docs/launch/launch-readiness.md` for the
+      the public launch — see `docs/01-product/launch/launch-readiness.md` for the
       gate checklist.
 - [ ] PR 3.2 (programmatic `requireSession()` introspection) closes the
       H8-coverage gap that this manual sweep can only spot-check.
 - [ ] PR 3.3 (real-audio e2e for transcribe) closes the H9 mock-test gap.
-- [ ] PR 3.4 (`docs/launch/email-verification-sweep.md` — added by that PR)
+- [ ] PR 3.4 (`docs/01-product/launch/email-verification-sweep.md` — added by that PR)
       closes the H6 legacy-user residual risk before the global flag flips
       to `true`.
 

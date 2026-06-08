@@ -23,7 +23,7 @@ Main documentation index for Sergeant.
 | **Що мені робити сьогодні?**            | [`today.md`](./today.md) — auto-brief: top-7 actionable items (`Phase X next` / `blocked`), прострочений review, WIP load. Regen `pnpm docs:gen-today`. **Daily ритуал — відкрий вранці.** |
 | **Що НЕ доробленого по всіх trackers?** | [`open-work.md`](./open-work.md) — auto-rollup усіх `Status: Active / Draft / In progress / Phase *` документів з 7 trackers. Regen `pnpm docs:gen-open-work`; drift gate в CI.            |
 | **Чи документи свіжі?**                 | [`governance/freshness-dashboard.html`](./governance/freshness-dashboard.html) — `Last validated` / `Next review` по всьому tracked-set.                                                   |
-| **Що шипнули у whats-new?**             | [`whats-new/`](./whats-new/README.md) — markdown side; canonical source = `apps/web/src/core/whatsNew/releases.ts` (drift caught by `releases.test.ts`).                                   |
+| **Що шипнули у whats-new?**             | [`whats-new/`](./01-product/whats-new/README.md) — markdown side; canonical source = `apps/web/src/core/whatsNew/releases.ts` (drift caught by `releases.test.ts`).                        |
 
 > Чому довіряти: `open-work.md` парсить `> **Status:**` headers (Rule #10) програмно — будь-який drift падає в CI через `pnpm docs:check-open-work`. Якщо документ показується тут зі статусом `Active`, значить його джерело справді у такому стані.
 
@@ -54,14 +54,14 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | [`agents/`](./agents/README.md)                             | Agent operating system, routing catalog, workflows                                    |
 | [`api/`](./api/README.md)                                   | OpenAPI, API contracts, generated artifacts                                           |
 | [`architecture/`](./architecture/README.md)                 | Repo map, runtime surfaces, platform architecture                                     |
-| [`copy/`](./copy/README.md)                                 | UA-copy tone-of-voice rules; reference for every Cyrillic JSX literal                 |
+| [`copy/`](./01-product/copy/README.md)                      | UA-copy tone-of-voice rules; reference for every Cyrillic JSX literal                 |
 | [`deploy/`](./03-operations/deploy/README.md)               | Deploy walkthroughs (Railway, Vercel, console, etc.)                                  |
 | [`design/`](./05-design/design/README.md)                   | Design system, brand, accents, dark mode, UI patterns                                 |
 | [`development/`](./development/README.md)                   | Local dev-loop how-tos (ESLint config, local Postgres, pre-commit timing)             |
 | [`governance/`](./governance/README.md)                     | Hard rules registry, policy docs, feature-flag registry, link-check allowlist         |
 | [`i18n/`](./05-design/i18n/README.md)                       | i18n readiness foundation (UA-only today; lightweight scaffolding for future locales) |
 | [`integrations/`](./integrations/README.md)                 | Third-party integrations (Monobank, Voyage, Renovate, …)                              |
-| [`marketing/`](./marketing/README.md)                       | Pre-launch GTM execution plans (reference; reconciled against shipped landing)        |
+| [`marketing/`](./01-product/marketing/README.md)            | Pre-launch GTM execution plans (reference; reconciled against shipped landing)        |
 | [`mobile/`](./mobile/README.md)                             | Expo/mobile strategy and migration docs                                               |
 | [`notes/`](./notes/README.md)                               | Design spikes and exploratory engineering notes                                       |
 | [`observability/`](./03-operations/observability/README.md) | Alerts, SLOs, logs, engineering metrics                                               |
@@ -81,7 +81,7 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | [`open-work.md`](./open-work.md)                        | **Автогенерований єдиний дашборд** активних документів з усіх 7 tracker-ів (Rule #10 sweep)               |
 | [`audits/`](./audits/README.md)                         | Code, architecture, UX audits with `Active → Closed → Archived` lifecycle and freshness gate              |
 | [`initiatives/`](./initiatives/README.md)               | Numbered multi-PR initiatives with acceptance criteria, progress tables, and 90-day stabilization window  |
-| [`launch/`](./launch/README.md)                         | Go-to-market, monetization, ops, and product-OS roadmaps (FTUX master tracker + sprint plans)             |
+| [`launch/`](./01-product/launch/README.md)              | Go-to-market, monetization, ops, and product-OS roadmaps (FTUX master tracker + sprint plans)             |
 | [`planning/`](./planning/README.md)                     | Active roadmaps, infra plans, staged improvements                                                         |
 | [`security/hardening/`](./security/hardening/README.md) | Living security hardening backlog (per-finding cards + sprint plans)                                      |
 | [`superpowers/`](./superpowers/README.md)               | High-leverage one-page guides for cross-cutting capabilities (active implementation plans under `plans/`) |
@@ -89,12 +89,12 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 
 ### Archive (read-only / superseded)
 
-| Path                                                                    | What                                                                            |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| [`audits/archive/`](./audits/archive)                                   | Audits past their stabilization window; superseded historical scans             |
-| [`initiatives/archive/`](./initiatives/archive)                         | Initiatives 90+ days past `Closed` without regressions                          |
-| [`launch/product-os/sprint-retros/`](./launch/product-os/sprint-retros) | Per-sprint launch retrospectives (frozen after sprint closes)                   |
-| [`planning/archive/`](./planning/archive)                               | Historical roadmap journals (e.g. `dev-stack-roadmap` session log from 2026-04) |
+| Path                                                                               | What                                                                            |
+| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [`audits/archive/`](./audits/archive)                                              | Audits past their stabilization window; superseded historical scans             |
+| [`initiatives/archive/`](./initiatives/archive)                                    | Initiatives 90+ days past `Closed` without regressions                          |
+| [`launch/product-os/sprint-retros/`](./01-product/launch/product-os/sprint-retros) | Per-sprint launch retrospectives (frozen after sprint closes)                   |
+| [`planning/archive/`](./planning/archive)                                          | Historical roadmap journals (e.g. `dev-stack-roadmap` session log from 2026-04) |
 
 ## Adding new docs
 

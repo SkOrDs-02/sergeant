@@ -950,4 +950,4 @@ Test coverage gap для одного з найскладніших компон
 
 - **Чому це exception:** аудит замовлений батьківським session-ом (`https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40`) як частина systematic page-by-page audit-пасу — серія child-сесій, кожна по своєму scope.
 - **Чому не може почекати до 2026-06-02:** parent-сесія координує merging audit-findings у master-tracker одразу після завершення усіх child-ів; затримка зруйнує паралельний pipeline і витратить duplicate-work-у.
-- **Куди буде інтегровано після freeze:** P0/P1 findings потраплять у `docs/launch/product-os/ftux-master-tracker.md` (status registry); решта стане до follow-up PR-ів через `[freeze-exception]` шлях.
+- **Куди буде інтегровано після freeze:** P0/P1 findings потраплять у `docs/01-product/launch/product-os/ftux-master-tracker.md` (status registry); решта стане до follow-up PR-ів через `[freeze-exception]` шлях.

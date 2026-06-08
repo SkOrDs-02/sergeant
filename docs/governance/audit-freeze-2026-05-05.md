@@ -36,9 +36,9 @@
 1. **Edit existing audit-doc-ів** з оновленнями статусів (`Last validated:` bump, status table refresh, нові P-items в існуючих P0/P1/P2 секціях).
 2. **Errata-блоки** як inline-коментарі в існуючих audit-доках (з посиланням на нову інформацію).
 3. **Status registry update-и** в master tracker-ах:
-   - [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) — FTUX SSOT.
+   - [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../01-product/launch/product-os/ftux-master-tracker.md) — FTUX SSOT.
    - Інші master-tracker-и якщо з'являться post-freeze.
-4. **Post-mortem-и** завершених PR-серій у `docs/launch/product-os/sprint-retros/` (1 page max).
+4. **Post-mortem-и** завершених PR-серій у `docs/01-product/launch/product-os/sprint-retros/` (1 page max).
 5. **Decisions log** — нові entries у §7 master tracker-у.
 6. **Consolidation-PR-и** — об'єднання 2+ існуючих доків в 1 (як [PR #1934 — FTUX consolidation](https://github.com/Skords-01/Sergeant/pull/1934)).
 7. **Архівація** stale audit-tracker-ів з `docs/audits/` → `docs/audits/archive/`.
@@ -113,7 +113,7 @@ Override — не sin, це signaling механізм. Якщо за 4 тижн
 
 ## Зв'язок з PR-планом 2026-05-05
 
-Цей файл — **PR-01** з 22-PR плану ([master tracker §3](../launch/product-os/ftux-master-tracker.md#3-pr-план)). Freeze-period (4 тижні) перетинається з Хвилями 1-2 з PR-плану:
+Цей файл — **PR-01** з 22-PR плану ([master tracker §3](../01-product/launch/product-os/ftux-master-tracker.md#3-pr-план)). Freeze-period (4 тижні) перетинається з Хвилями 1-2 з PR-плану:
 
 - **Week 1:** 8 PR (PR-00 ... PR-08).
 - **Week 2-3:** 6 PR (PR-09 ... PR-14).
@@ -121,7 +121,7 @@ Override — не sin, це signaling механізм. Якщо за 4 тижн
 
 Жоден з цих 18 PR-ів **не створює** нових файлів за заборонений pathspec, окрім:
 
-- **PR-19 (paywall sketch doc)** — `docs/launch/paywall-ux-placement.md` — це **launch-doc**, не audit/initiative/playbook/ADR, тому freeze-clean.
+- **PR-19 (paywall sketch doc)** — `docs/01-product/launch/paywall-ux-placement.md` — це **launch-doc**, не audit/initiative/playbook/ADR, тому freeze-clean.
 - **PR-22 (agents quick-reference)** — `docs/agents/quick-reference.md` — agents-folder, теж freeze-clean.
 
 ---
@@ -131,7 +131,7 @@ Override — не sin, це signaling механізм. Якщо за 4 тижн
 **Pathspec обрано як «продукт-докі без mandatory CI-gate»**:
 
 - `docs/audits/`, `docs/initiatives/`, `docs/playbooks/`, `docs/adr/` — це місця, куди легко додати «ще один аудит» / «ще одна ініціатива», і де темп зростання випередив темп viability.
-- `docs/launch/`, `docs/03-operations/observability/`, `docs/integrations/`, `docs/architecture/`, `docs/05-design/design/`, `docs/agents/`, **не** заморожуються — це функціональна документація, що часто синкається з shipped code.
+- `docs/01-product/launch/`, `docs/03-operations/observability/`, `docs/integrations/`, `docs/architecture/`, `docs/05-design/design/`, `docs/agents/`, **не** заморожуються — це функціональна документація, що часто синкається з shipped code.
 - `*-deep-dive/` піджанр в `docs/audits/` (раніше — окремий `docs/diagnostics/`) **не** заморожується — deep-dives створюються per-incident / на запит, не за роадмапом.
 - `AGENTS.md` під обмеженням «розширення без enforcement» — це найбільший read-tax файл.
 
@@ -155,7 +155,7 @@ Override — не sin, це signaling механізм. Якщо за 4 тижн
 
 Під час freeze:
 
-- Питання щодо freeze-rule → review-comment у PR-1 (цей PR) або у [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) §1 TL;DR.
+- Питання щодо freeze-rule → review-comment у PR-1 (цей PR) або у [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../01-product/launch/product-os/ftux-master-tracker.md) §1 TL;DR.
 - Override-сценарії → див. секцію [Override path](#override-path).
 - Бачив новий audit-файл, що пробився без override? → tag @Skords-01 у PR (або в issue).
 

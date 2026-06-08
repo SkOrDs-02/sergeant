@@ -9,8 +9,8 @@
 > [`docs/audits/archive/2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — попередній технічний UX-план ·
 > [`docs/audits/2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md) — post-onboarding UX-прожарка (day 0-7) ·
 > [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../2026-05-06-ux-roast-pr-plan.md) — виконавчий план UX-прожарки ·
-> [`docs/launch/product-os/ftux-master-tracker.md`](../../launch/product-os/ftux-master-tracker.md) — поточний SSOT FTUX-стану ·
-> [`docs/launch/product-os/ftux-sprint-plan.md`](../../launch/product-os/ftux-sprint-plan.md) — frozen sprint-плани.
+> [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../../01-product/launch/product-os/ftux-master-tracker.md) — поточний SSOT FTUX-стану ·
+> [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../01-product/launch/product-os/ftux-sprint-plan.md) — frozen sprint-плани.
 >
 > **Audit-freeze note (2026-05-13).** Master tracker §1 декларує freeze
 > на нові `docs/audits/` файли до 2026-06-02. Цей документ створено за
@@ -241,7 +241,7 @@ mobile parity у P1-2, і кілька Sprint 6 carryover items, що чекаю
 retention loop без email drip** все ще робить D2-D7 gap слабкою
 ланкою.
 
-> **Що далі:** master tracker `docs/launch/product-os/ftux-master-tracker.md`
+> **Що далі:** master tracker `docs/01-product/launch/product-os/ftux-master-tracker.md`
 > залишається SSOT — туди вливаються status updates з цього PR. Наступну
 > прожарку (Прожарка #2/10) запускати тільки після того, як master tracker
 > закриє ще ≥3 з open-карти (target — PR-09 + PR-13 + PR-15).

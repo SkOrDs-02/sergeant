@@ -1,6 +1,6 @@
 # Changelog
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Усі помітні зміни проєкту документуються тут.
@@ -227,7 +227,7 @@ OTEL_* | SENTRY_RELEASE | RAILWAY_GIT_COMMIT_SHA | VERCEL_GIT_COMMIT_SHA
   rollout) / #15 (`noUncheckedIndexedAccess` per app) існував лише
   narrative-ом у §11.5 burndown-таблиці [`docs/audits/2026-05-03-web-deep-dive/00-overview.md`](docs/audits/2026-05-03-web-deep-dive/00-overview.md),
   без розпису по AC/LOC/Deps на конкретні PR-и — як це зроблено для
-  Sprint 6 cleanup batch у [`docs/launch/product-os/ftux-sprint-plan.md` §7a](docs/launch/product-os/ftux-sprint-plan.md).
+  Sprint 6 cleanup batch у [`docs/01-product/launch/product-os/ftux-sprint-plan.md` §7a](docs/01-product/launch/product-os/ftux-sprint-plan.md).
   Виправлено: README hardening backlog отримав три нові рядки у closed-
   list table (chronological order, з посиланням на PR #1784 і
   «batched M10 + M14 + M19»); створено новий sprint-doc

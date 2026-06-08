@@ -20,11 +20,11 @@
     },
     {
       "pattern": "^https?://firstpagesage\\.com/reports/saas-conversion-rate-benchmarks/",
-      "reason": "Cited as a SaaS conversion benchmark source in docs/launch/business/01-monetization-and-pricing.md; First Page Sage rotates report URLs per quarter, the citation pins the report+year (2021–2025) which is the auditable claim."
+      "reason": "Cited as a SaaS conversion benchmark source in docs/01-product/launch/business/01-monetization-and-pricing.md; First Page Sage rotates report URLs per quarter, the citation pins the report+year (2021–2025) which is the auditable claim."
     },
     {
       "pattern": "^https?://appalize\\.com/reports/retention-2026/",
-      "reason": "Cited as a mobile retention benchmark in docs/launch/business/01-monetization-and-pricing.md; the report+year is the auditable claim, not the live URL — host has had stability issues throughout 2026."
+      "reason": "Cited as a mobile retention benchmark in docs/01-product/launch/business/01-monetization-and-pricing.md; the report+year is the auditable claim, not the live URL — host has had stability issues throughout 2026."
     },
     {
       "pattern": "^https?://(www\\.)?producthunt\\.com/(directory/upcoming|coming-soon)",
@@ -40,7 +40,7 @@
     },
     {
       "pattern": "^https?://claude\\.ai(/.*)?$",
-      "reason": "claude.ai gates project pages behind login and returns 403 to anonymous HEAD/GET; cited in docs/launch/business/05-operations-and-automation.md as a Claude Projects reference, the link is correct for authenticated users."
+      "reason": "claude.ai gates project pages behind login and returns 403 to anonymous HEAD/GET; cited in docs/01-product/launch/business/05-operations-and-automation.md as a Claude Projects reference, the link is correct for authenticated users."
     },
     {
       "pattern": "^https?://(www\\.)?better-auth\\.com/docs/concepts/email-and-password",
@@ -100,7 +100,7 @@
     },
     {
       "pattern": "^https?://cabinet\\.tax\\.gov\\.ua(/.*)?$",
-      "reason": "cabinet.tax.gov.ua (Ukrainian tax office cabinet) returns 503 to non-browser User-Agents and has intermittent uptime issues. Cited in docs/launch/business/04-launch-readiness.md as the canonical tax-cabinet portal; page loads correctly in browsers."
+      "reason": "cabinet.tax.gov.ua (Ukrainian tax office cabinet) returns 503 to non-browser User-Agents and has intermittent uptime issues. Cited in docs/01-product/launch/business/04-launch-readiness.md as the canonical tax-cabinet portal; page loads correctly in browsers."
     },
     {
       "pattern": "^https?://n8n-production-09ac\\.up\\.railway\\.app(/.*)?$",
@@ -108,7 +108,7 @@
     },
     {
       "pattern": "^https?://eur-lex\\.europa\\.eu(/.*)?$",
-      "reason": "EU legislative portal (cited in docs/launch/business/04-launch-readiness.md as the Cookie Directive reference). eur-lex.europa.eu aborts connections from CI runner User-Agents with 'This operation was aborted'; the pages render correctly in browsers. Legislative URLs are permanent and citation-stable."
+      "reason": "EU legislative portal (cited in docs/01-product/launch/business/04-launch-readiness.md as the Cookie Directive reference). eur-lex.europa.eu aborts connections from CI runner User-Agents with 'This operation was aborted'; the pages render correctly in browsers. Legislative URLs are permanent and citation-stable."
     },
     {
       "pattern": "^https?://docs\\.railway\\.app/reference/security$",

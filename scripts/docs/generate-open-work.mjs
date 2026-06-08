@@ -14,7 +14,7 @@
 // Trackers (in display order; configured via `TRACKERS` below):
 //   1. Initiatives                — docs/initiatives/ (+ stack-pulse-2026-05/)
 //   2. Planning                   — docs/planning/
-//   3. Launch                     — docs/launch/business/ + tech/ + product-os/
+//   3. Launch                     — docs/01-product/launch/business/ + tech/ + product-os/
 //   4. Audits                     — docs/audits/
 //   5. Security hardening         — docs/security/hardening/
 //   6. Tech debt                  — docs/tech-debt/
@@ -123,8 +123,8 @@ export const TRACKERS = [
     id: "launch",
     title: "Launch / запуск",
     blurb:
-      "GTM, монетизація, FTUX delivery і product-surface roadmap-и. Source: [`docs/launch/`](./launch/README.md).",
-    rootDir: "docs/launch",
+      "GTM, монетизація, FTUX delivery і product-surface roadmap-и. Source: [`docs/01-product/launch/`](./01-product/launch/README.md).",
+    rootDir: "docs/01-product/launch",
     recursive: true,
   },
   {
@@ -551,7 +551,7 @@ export function truncateStatus(status, maxLen = 180) {
  *
  * This avoids broken-link CI errors in `docs/open-work.md` for status
  * fields that contain relative links like `[ftux-master-tracker §3.4](./ftux-master-tracker.md#…)`
- * — the source doc lived under `docs/launch/product-os/` but the
+ * — the source doc lived under `docs/01-product/launch/product-os/` but the
  * dashboard lives at `docs/`, so `./ftux-master-tracker.md` no longer
  * resolves.
  */

@@ -198,7 +198,7 @@ ORDER BY day, cadence
 
 **Targets:**
 
-- New-MRR run-rate: ≥$50/місяць aggregated over trailing 7 days (P2 below; baseline tracked in [`docs/launch/business/01-monetization-and-pricing.md`](../../launch/business/01-monetization-and-pricing.md)).
+- New-MRR run-rate: ≥$50/місяць aggregated over trailing 7 days (P2 below; baseline tracked in [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md)).
 - `subscription_started` ZEROES: якщо new subs = 0 over 7 days while signups/day average > 10 → Stripe webhook regression. P1.
 
 ### 3.6 Cohort retention — D1 / D7 / D30
@@ -302,6 +302,6 @@ PostHog → **Alerts** (subscriptions, Telegram-mirror через n8n WF-16 → 
 ## 7. Open questions / TODOs
 
 - **Auto-import.** Manifest у `ops/posthog/dashboards/founder-pulse.json` — portable shape. Зараз — manual import via PostHog UI. Auto-import (CLI або n8n) — окремий PR під [PR-11 з pr-plan-2026-05](../../planning/pr-plan-2026-05.md) (WF-16 розширення або новий планований скрипт `scripts/posthog/import-dashboard` (`.mjs`)).
-- **Mobile parity.** Поки `apps/mobile` не пише в PostHog (планується в [`ftux-sprint-plan.md` §2 S0.3](../../launch/product-os/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень)), усі панелі представляють **web-only** користувачів. Super-property `platform` уже зареєстрована, тож insights почнуть segmenting cleanly щойно mobile приземлиться без правок dashboard.
+- **Mobile parity.** Поки `apps/mobile` не пише в PostHog (планується в [`ftux-sprint-plan.md` §2 S0.3](../../01-product/launch/product-os/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень)), усі панелі представляють **web-only** користувачів. Super-property `platform` уже зареєстрована, тож insights почнуть segmenting cleanly щойно mobile приземлиться без правок dashboard.
 - **MRR з renewals/cancellations.** Поки [`stripe.ts`](../../../apps/server/src/modules/billing/stripe.ts) не fire-ить `SUBSCRIPTION_CANCELED` / `SUBSCRIPTION_RENEWED` (TODO у PR-09), §3.5 показує **new-MRR contribution**, не cumulative active-MRR. Коли події приземляться — додати §3.6.5 cumulative-MRR панель і апдейтити targets.
 - **A/B testing.** Sprint 5 (goal-first wizard з `ftux-sprint-plan.md`) вводить feature flags. Коли це лендиться — додати §3.8 insight, що breaks down §3.2 by активним variant.

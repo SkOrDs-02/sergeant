@@ -21,7 +21,7 @@
 > per package/app)**.
 >
 > Цей документ — те саме, що §7a Sprint 6 cleanup batch у
-> [`docs/launch/product-os/ftux-sprint-plan.md`](../../launch/product-os/ftux-sprint-plan.md):
+> [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../01-product/launch/product-os/ftux-sprint-plan.md):
 > прогавлені моменти, які раніше жили лише narrative-ом у §11.5
 > overview-таблиці, без розпису по PR-ах. Дванадцять round-N follow-up
 > PR-ів виконувались ad-hoc, без єдиного sprint-доку, тож reviewer не
@@ -191,4 +191,4 @@ contract-schema), R13.6 — паралельно. R13.1–R13.4 — парале
 - [`./02-architecture-and-state.md` §1.0 / §2.2](./02-architecture-and-state.md) — Items #15 / #6.
 - [`docs/05-design/i18n/readiness.md`](../../05-design/i18n/readiness.md) — Item #18 organic roadmap.
 - `docs/testing/mutation.md` — Item #17 organic roadmap (файл видалений у PR #052b разом з cloudSync v1 Stryker infra; mutation testing для retired cloudSync engine більше не релевантний).
-- [`docs/launch/product-os/ftux-sprint-plan.md` §7a](../../launch/product-os/ftux-sprint-plan.md) — еталонний pattern «Sprint cleanup batch».
+- [`docs/01-product/launch/product-os/ftux-sprint-plan.md` §7a](../../01-product/launch/product-os/ftux-sprint-plan.md) — еталонний pattern «Sprint cleanup batch».

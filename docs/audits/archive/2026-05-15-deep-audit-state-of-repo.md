@@ -59,7 +59,7 @@
 | `usePlan`, `PaywallModal`, `billingKeys` factory (Hard Rule #2)          | ✅ shipped.                                                                                                                                   |
 | Sentry (web + mobile + server), OpenTelemetry, Pino redaction (Rule #21) | ✅ shipped.                                                                                                                                   |
 | OpenClaw Phases 1+1.5+2.5+3+4                                            | ✅ shipped (Phase 3 closed 2026-05-13). Gateway migration Stage 1–7 done, legacy deletion 2026-06-09.                                         |
-| AI Memory activation runbook                                             | ✅ [`docs/launch/tech/ai-memory-activation.md`](../../launch/tech/ai-memory-activation.md).                                                   |
+| AI Memory activation runbook                                             | ✅ [`docs/01-product/launch/tech/ai-memory-activation.md`](../../01-product/launch/tech/ai-memory-activation.md).                             |
 
 ### Test stack
 

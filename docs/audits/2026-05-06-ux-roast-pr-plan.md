@@ -6,7 +6,7 @@
 > **Cross-refs:**
 > [`2026-05-06-ux-roast.md`](./archive/2026-05-06-ux-roast.md) — джерельна прожарка (P0/P1/P2 + add/change/remove) ·
 > [`2026-04-28-ux-improvement-plan.md`](./archive/2026-04-28-ux-improvement-plan.md) — попередній UX execution tracker ·
-> [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) — sprint registry онбордингу.
+> [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../01-product/launch/product-os/ftux-master-tracker.md) — sprint registry онбордингу.
 
 **Контекст:** виходимо з документа [`2026-05-06-ux-roast.md`](./archive/2026-05-06-ux-roast.md). Жоден пункт не упущено: усі **17 add (A1–A17)**, **16 change (C1–C16)** та **6 remove (R1–R6)** з §14 покриті. Додатково — пункти з §7 (perf), §11 (privacy), §12 (mobile) і §15 (pricing). Загальна виконавча шкала — **41 PR** у 3 спринтах + 1 enabling-PR (PR-0). Початково було 43; PR-13 і PR-37 закриті як obsolete-by-drift після Stage 7 storage cleanup і dark-mode toggle consolidation (див. розділи нижче).
 
@@ -78,7 +78,7 @@
 
 ### PR-0 · Telemetry & ADR foundation
 
-> **Closure note (2026-05-31, audits-runner triage):** Shipped via prior catalog work. Усі 9 PR-0 events живуть у [`packages/shared/src/lib/analyticsEvents.ts:273-302`](../../packages/shared/src/lib/analyticsEvents.ts): `APP_LOCK_SETUP_STARTED`, `APP_LOCK_SETUP_COMPLETED`, `APP_LOCK_UNLOCK_SUCCESS`, `APP_LOCK_UNLOCK_FAILED`, `BIOMETRIC_SETUP_COMPLETED`, `MODULE_SETTINGS_OPENED`, `MODULE_LANDING_TAB_CLICKED`, `ERROR_BOUNDARY_REQUEST_ID_COPIED`, `PERMISSIONS_SETTINGS_OPENED`. ADR розписаний як [ADR-0054](../adr/0054-ux-roast-2026-q2.md). Master-tracker entry [flipped to Closed in this PR](../launch/product-os/ftux-master-tracker.md). **Анблок 11 downstream PR-ів** (PR-1a/1b, PR-2, PR-3, PR-6, PR-7, PR-8, PR-14, PR-16, PR-22, PR-42, PR-X4).
+> **Closure note (2026-05-31, audits-runner triage):** Shipped via prior catalog work. Усі 9 PR-0 events живуть у [`packages/shared/src/lib/analyticsEvents.ts:273-302`](../../packages/shared/src/lib/analyticsEvents.ts): `APP_LOCK_SETUP_STARTED`, `APP_LOCK_SETUP_COMPLETED`, `APP_LOCK_UNLOCK_SUCCESS`, `APP_LOCK_UNLOCK_FAILED`, `BIOMETRIC_SETUP_COMPLETED`, `MODULE_SETTINGS_OPENED`, `MODULE_LANDING_TAB_CLICKED`, `ERROR_BOUNDARY_REQUEST_ID_COPIED`, `PERMISSIONS_SETTINGS_OPENED`. ADR розписаний як [ADR-0054](../adr/0054-ux-roast-2026-q2.md). Master-tracker entry [flipped to Closed in this PR](../01-product/launch/product-os/ftux-master-tracker.md). **Анблок 11 downstream PR-ів** (PR-1a/1b, PR-2, PR-3, PR-6, PR-7, PR-8, PR-14, PR-16, PR-22, PR-42, PR-X4).
 
 **Why first:** §18 (Як міряти ефект) вимагає PostHog-events, які зараз або відсутні, або непослідовні. Без них ми не помітимо, чи P0-зміни щось дали.
 **Scope:**
@@ -90,7 +90,7 @@
   - `error_boundary_request_id_copied`, `error_boundary_retried` (для PR-14)
   - `permissions_settings_opened`, `permission_status_changed` (для PR-7)
 - `docs/adr/00NN-ux-roast-2026-Q2.md` — фіксація рішень з §1–§13 прожарки.
-- `docs/launch/product-os/ftux-master-tracker.md` — нова секція «UX-roast P0/P1/P2».
+- `docs/01-product/launch/product-os/ftux-master-tracker.md` — нова секція «UX-roast P0/P1/P2».
   **Files:** `apps/web/src/core/observability/analytics.ts`, `docs/adr/00NN-…md`, tracker.
   **Acceptance:** events видно в PostHog dev-проєкті, ADR прийнятий PR-review.
   **Size:** S
@@ -936,11 +936,11 @@
 
 ### PR-X3 · Content-style guide
 
-> **Closure note (2026-05-31, audits-runner triage):** Shipped. [`docs/copy/style-guide.uk.md`](../copy/style-guide.uk.md) створено з 10 секціями (Hard rules, Voice, Errors, Buttons, Empty states, Toasts, Заборонені слова, Числа/дати, Headings/microcopy, How-to-update). Лінк у [`AGENTS.md § See also`](../../AGENTS.md#see-also). Файл базується на патернах з `apps/web/src/shared/i18n/uk.ts` (PR-30 round-17 1st-person-singular рефакторінг).
+> **Closure note (2026-05-31, audits-runner triage):** Shipped. [`docs/01-product/copy/style-guide.uk.md`](../01-product/copy/style-guide.uk.md) створено з 10 секціями (Hard rules, Voice, Errors, Buttons, Empty states, Toasts, Заборонені слова, Числа/дати, Headings/microcopy, How-to-update). Лінк у [`AGENTS.md § See also`](../../AGENTS.md#see-also). Файл базується на патернах з `apps/web/src/shared/i18n/uk.ts` (PR-30 round-17 1st-person-singular рефакторінг).
 
 **Scope:**
 
-- `docs/copy/style-guide.uk.md` — фінальні правила tone-of-voice (1-а особа однини, «ти», без «Зачекайте» / «Виходимо»).
+- `docs/01-product/copy/style-guide.uk.md` — фінальні правила tone-of-voice (1-а особа однини, «ти», без «Зачекайте» / «Виходимо»).
 - Лінк у `AGENTS.md`.
   **Files:**
 - new doc
@@ -954,9 +954,9 @@
 **Scope:**
 
 - PostHog dashboard: activation, time-to-first-value, drop-off, app-lock opt-in, settings-discovery.
-- Закомітити dashboard-as-code (jsonl) в `docs/launch/posthog/ftux-uxroast.jsonl`.
+- Закомітити dashboard-as-code (jsonl) в `docs/01-product/launch/posthog/ftux-uxroast.jsonl`.
   **Files:**
-- `docs/launch/posthog/ftux-uxroast.jsonl`
+- `docs/01-product/launch/posthog/ftux-uxroast.jsonl`
   **Acceptance:**
 - Dashboard видно у PostHog, у readme є посилання.
   **Size:** S

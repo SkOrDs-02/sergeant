@@ -7,7 +7,7 @@
 # Declarative SLO contract for the First-Time User Experience funnel.
 # This file is the source of truth that the PostHog dashboards
 # (`docs/03-operations/observability/posthog-ftux-dashboards.md`) and Sentry alerts
-# read off. Closes PR-14 from `docs/launch/product-os/ftux-master-tracker.md`.
+# read off. Closes PR-14 from `docs/01-product/launch/product-os/ftux-master-tracker.md`.
 #
 # Metrics are computed in PostHog from the canonical FTUX event set
 # emitted across `apps/web/src/core/onboarding/`,

@@ -1,6 +1,6 @@
 # Revenue, Monetization & Marketing Roast (2026-05-13)
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Archived
 >
 > _Update 2026-05-13: P1-9 closed — `apps/web/src/core/billing/TrialBanner.tsx` scaffolded + mounted in `HubMainContent` banner stack._
@@ -12,7 +12,7 @@
 - Ініціатива: [`docs/initiatives/0010-revenue-first-launch.md`](../../initiatives/0010-revenue-first-launch.md) — 6-фазний plan Phase 0–5.1 done; Phase 2/3 active.
 - ADR-0051: [`docs/adr/0051-pricing-v3-single-tier.md`](../../adr/0051-pricing-v3-single-tier.md) — Free + Pro ($7/мес), ₴ для UA, 7-day trial.
 - ADR-0052: [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor primary, Expo parallel.
-- Бізнес-стратегія: [`docs/launch/business/01-monetization-and-pricing.md`](../../launch/business/01-monetization-and-pricing.md), [`02-go-to-market.md`](../../launch/business/02-go-to-market.md), [`06-monetization-architecture.md`](../../launch/business/06-monetization-architecture.md).
+- Бізнес-стратегія: [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md), [`02-go-to-market.md`](../../01-product/launch/business/02-go-to-market.md), [`06-monetization-architecture.md`](../../01-product/launch/business/06-monetization-architecture.md).
 
 ## TL;DR
 

@@ -1,6 +1,6 @@
 # PR Ledger — canonical reverse PR ↔ doc index
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Bidirectional companion to [`docs/open-work.md`](../open-work.md). Open-work scans canonical docs for `#NNNN` mentions (forward link: doc → PR). This ledger goes the other way: merged PRs → docs they touched.
@@ -28,7 +28,7 @@ Only these path patterns get backlinks:
 - `docs/playbooks/*.md` (excluding `INDEX.md`, `README.md`, `_TEMPLATE-*`)
 - `docs/governance/rules/*.md` (excluding `README.md`)
 
-Other doc directories (`docs/audits/`, `docs/architecture/`, `docs/launch/`, etc.) intentionally don't receive backlinks — they're either snapshot-natured (audits) or already covered by drift-detectors (auto-generated).
+Other doc directories (`docs/audits/`, `docs/architecture/`, `docs/01-product/launch/`, etc.) intentionally don't receive backlinks — they're either snapshot-natured (audits) or already covered by drift-detectors (auto-generated).
 
 ## CI gate
 

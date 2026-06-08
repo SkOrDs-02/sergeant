@@ -2280,7 +2280,7 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   `docs/testing/README.md` (line 14 → tombstone-нота),
   `docs/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md` (lines 12, 35, 193).
 - Markdown link checker → 0 internal-link errors на trie цих файлів
-  (broken EXTERNAL link `https://instatus.com/` у `docs/launch/business/04-launch-readiness.md:313` — pre-existing на main, не в скоупі storage migration, owner: Dev).
+  (broken EXTERNAL link `https://instatus.com/` у `docs/01-product/launch/business/04-launch-readiness.md:313` — pre-existing на main, не в скоупі storage migration, owner: Dev).
 
 #### **PR #054x — `docs(docs): add ADR-0049 row to ADR README index (Hard Rule #15 fix)`** ✅ LANDED
 

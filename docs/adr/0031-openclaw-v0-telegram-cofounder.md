@@ -9,8 +9,8 @@
   - [ADR-0027 — OpenClaw / Console / MCP policy](./0027-openclaw-console-mcp-policy.md) — security policy (allowlist, fail-closed, read-only by default).
   - [ADR-0028 — pgvector AI memory](./0028-pgvector-ai-memory.md) — vector store backend.
   - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md) — supergroup + topics layout.
-  - [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) — phasing + scope.
-  - [`docs/launch/business/05-operations-and-automation.md`](../launch/business/05-operations-and-automation.md) — operations architecture.
+  - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../01-product/launch/tech/openclaw-roadmap.md) — phasing + scope.
+  - [`docs/01-product/launch/business/05-operations-and-automation.md`](../01-product/launch/business/05-operations-and-automation.md) — operations architecture.
 
 ---
 
@@ -86,7 +86,7 @@ nutrition | routine | journal | digest`).
 
 5. **Strategy-docs ownership — завжди suggest-PR.**
    - OpenClaw ніколи не commit-ить напряму у `docs/strategy/`,
-     `docs/launch/`, або `docs/adr/`.
+     `docs/01-product/launch/`, або `docs/adr/`.
    - У v0 єдиний write-tool — `record_decision`. Все інше тільки read.
    - Phase 4 може додати inline-button approval flow для авто-commit
      після founder-pressed "Approve", але це окремий ADR (потенційно
@@ -140,15 +140,15 @@ nutrition | routine | journal | digest`).
 
 ### Tools (read-only crew + одне обмежене write)
 
-| Tool                          | Direction      | Backend                   | Notes                                                                 |
-| ----------------------------- | -------------- | ------------------------- | --------------------------------------------------------------------- |
-| `recall_memory`               | read           | pgvector via internal API | hardcode `source='cofounder'`                                         |
-| `read_strategy_docs`          | read           | filesystem (server-side)  | path-allowlist (`docs/strategy/`, `docs/launch/`, `docs/adr/`)        |
-| `read_github`                 | read           | GitHub REST               | `Git_PAT`, recent PRs / open issues / commits                         |
-| `query_app_db`                | read           | Postgres readonly         | parameterized SELECT only, table-allowlist                            |
-| `read_workflow_logs`          | read           | n8n REST                  | `n8n_API`, `/executions` endpoint                                     |
-| `read_telegram_topic_history` | read           | Telegram Bot API          | limited capability (Bot API не дає історію) — у v0 stub з clear error |
-| `record_decision`             | write (narrow) | Postgres + GitHub PR      | INSERT + open PR з markdown                                           |
+| Tool                          | Direction      | Backend                   | Notes                                                                     |
+| ----------------------------- | -------------- | ------------------------- | ------------------------------------------------------------------------- |
+| `recall_memory`               | read           | pgvector via internal API | hardcode `source='cofounder'`                                             |
+| `read_strategy_docs`          | read           | filesystem (server-side)  | path-allowlist (`docs/strategy/`, `docs/01-product/launch/`, `docs/adr/`) |
+| `read_github`                 | read           | GitHub REST               | `Git_PAT`, recent PRs / open issues / commits                             |
+| `query_app_db`                | read           | Postgres readonly         | parameterized SELECT only, table-allowlist                                |
+| `read_workflow_logs`          | read           | n8n REST                  | `n8n_API`, `/executions` endpoint                                         |
+| `read_telegram_topic_history` | read           | Telegram Bot API          | limited capability (Bot API не дає історію) — у v0 stub з clear error     |
+| `record_decision`             | write (narrow) | Postgres + GitHub PR      | INSERT + open PR з markdown                                               |
 
 ### Dispatcher compatibility
 
@@ -323,7 +323,7 @@ Forbidden tables: `auth_*`, `ai_usage_daily`, `ai_memories`,
       першого DM до бота).
 - [ ] Tests: allowlist (DM-only, founder-only), `query_app_db` table
       allowlist, budget cap, recall namespace isolation.
-- [ ] Update `docs/launch/tech/openclaw-roadmap.md` §4.3 → Resolved decisions
+- [ ] Update `docs/01-product/launch/tech/openclaw-roadmap.md` §4.3 → Resolved decisions
       (link до цього ADR).
 - [ ] Update `tools/openclaw/README.md` — другий bot.
 - [ ] CHANGELOG entry.
@@ -333,4 +333,4 @@ Forbidden tables: `auth_*`, `ai_usage_daily`, `ai_memories`,
 - [ADR-0027 — OpenClaw / Console / MCP policy](./0027-openclaw-console-mcp-policy.md)
 - [ADR-0028 — pgvector AI memory](./0028-pgvector-ai-memory.md)
 - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md)
-- [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md)
+- [`docs/01-product/launch/tech/openclaw-roadmap.md`](../01-product/launch/tech/openclaw-roadmap.md)
