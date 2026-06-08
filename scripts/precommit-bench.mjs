@@ -2,7 +2,7 @@
 // scripts/precommit-bench.mjs
 //
 // Mock pre-commit runner — D-1 follow-up (P1-5 from
-// `docs/audits/2026-05-13-testing-devx-roast.md`). Generates a synthetic
+// `docs/90-work/audits/2026-05-13-testing-devx-roast.md`). Generates a synthetic
 // staged-files workload and runs the real pre-commit stages against it
 // without touching git, so a contributor can profile the pipeline without
 // having to manufacture a real commit.

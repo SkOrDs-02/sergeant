@@ -44,7 +44,7 @@
     "sergeant-review-and-merge": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "00c80687288eb1eb1c68282b1cc5c8e8aad1e514364a14cf0801a0ec657862db"
+      "computedHash": "98dad4f4810b780200ebd116cbe27d7c94c14c659004641a058fb5529ae277bc"
     },
     "sergeant-server-api": {
       "source": "local",
@@ -54,7 +54,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "2cee60eb2969cbb528778f7d9acf583bc7fcf1e0c36e927f2895177109627a1e"
+      "computedHash": "2ceb51429bbf8030ac61a19b4749403db31af12b2d85b2ce9e66f067fe971c37"
     },
     "sergeant-web-ui": {
       "source": "local",
@@ -109,7 +109,7 @@
     "sergeant-planning-batch": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "f15483cd20077c9012128042f69f9cb0ae0038cb3ce6b9e37cccdc857c1acfd4"
+      "computedHash": "92aefc00f3aeaf8ad4b5db94a429ff5adb45ff4f163a9f51d75da40ac2a430b2"
     },
     "api-design-principles": {
       "source": "local",

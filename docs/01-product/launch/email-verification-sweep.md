@@ -5,7 +5,7 @@
 
 | Field          | Value                                                                                                                                                           |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Initiative     | [`0011`](../../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) Phase 3 PR 3.4                                                          |
+| Initiative     | [`0011`](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) Phase 3 PR 3.4                                                  |
 | Closes         | H6 residual risk: "Legacy users with `email_verified=false` still exist in the prod DB. Switching the global flag to `true` would lock them out."               |
 | Cards          | [H6](../../security/hardening/H6-email-verification.md), [I8](../../security/hardening/I8-periodic-external-pentest.md) (engagement preparation)                |
 | Decision shape | Decision-document — outlines three options, recommends one. Implementation lives in a successor mini-initiative gated on 0010-revenue-first-launch Stripe-MVP.  |
@@ -43,7 +43,7 @@ Residual risk, що фіксували pen-test sweep 2026-05-06 ([§ H6 — Res
 | Legacy users (`email_verified=false` на 2026-05-04 момент) | **Не виміряно** — потребує `SELECT COUNT(*) FROM "user" WHERE "emailVerified" = false` на prod read-replica. Tracked як Phase 0 нижче.     |
 | `VerifyEmailGate` UI banner                                | Не існує. Згаданий у H6 § Deferred як «коли лендить — drop `requireVerifiedEmail()` на похідні route-и».                                   |
 | Reminder-email cadence                                     | Не існує. Лише `sendOnSignUp` один лист. Resend → `auth-mail` BullMQ queue вже піднята, є інфраструктура для додаткових емейлів.           |
-| `REQUIRE_EMAIL_VERIFICATION` в prod (Railway)              | `false` (підтверджено A1 audit 2026-05-06 — `docs/audits/archive/2026-05-04-csp-disable-retrospective.md` § Resolution log)                |
+| `REQUIRE_EMAIL_VERIFICATION` в prod (Railway)              | `false` (підтверджено A1 audit 2026-05-06 — `docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md` § Resolution log)        |
 
 ## Threat model recap
 
@@ -141,7 +141,7 @@ Cons:
 
 ## Implementation plan (післяласунчевий, мікро-ініціатива)
 
-> Цей doc — не implementation plan, це decision-doc. Implementation відкриється окремою мікро-ініціативою (`0011a-email-verification-sweep.md` або incorporated у [`0010-revenue-first-launch`](../../initiatives/0010-revenue-first-launch.md) Phase 4 post-launch hardening, рішення — за `@Skords-01`).
+> Цей doc — не implementation plan, це decision-doc. Implementation відкриється окремою мікро-ініціативою (`0011a-email-verification-sweep.md` або incorporated у [`0010-revenue-first-launch`](../../90-work/initiatives/0010-revenue-first-launch.md) Phase 4 post-launch hardening, рішення — за `@Skords-01`).
 
 | Фаза | Скоуп                                                        | Surface(s)                                        | Effort | Gate                                                              |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------- | ------ | ----------------------------------------------------------------- |
@@ -188,7 +188,7 @@ ETA повного циклу: ~6 робочих днів implementation + 14+ �
 - Pen-test sweep transcript (2026-05): [`docs/security/pen-tests/2026-05-hardening-sweep.md`](../../security/pen-tests/2026-05-hardening-sweep.md)
 - Pen-test playbook: [`docs/00-start/playbooks/security-pen-test-checklist.md`](../../00-start/playbooks/security-pen-test-checklist.md)
 - Better Auth wiring: [`apps/server/src/auth.ts`](../../../apps/server/src/auth.ts)
-- Initiative 0011: [`docs/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md)
-- Initiative 0010 (revenue-first launch, sets the launch-window): [`docs/initiatives/0010-revenue-first-launch.md`](../../initiatives/0010-revenue-first-launch.md)
+- Initiative 0011: [`docs/90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md)
+- Initiative 0010 (revenue-first launch, sets the launch-window): [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../90-work/initiatives/0010-revenue-first-launch.md)
 - Deploy-config-change playbook (для Phase E env flip): [`docs/00-start/playbooks/deploy-config-change.md`](../../00-start/playbooks/deploy-config-change.md)
 - Launch readiness checklist (sweep — evidence для readiness gate): [`docs/01-product/launch/business/04-launch-readiness.md`](./business/04-launch-readiness.md)

@@ -1,7 +1,7 @@
 // scripts/__tests__/lint-html-sri.test.mjs
 //
 // Unit tests для SRI-gate-у з `scripts/lint-html-sri.mjs` (audit § S3,
-// `docs/audits/2026-05-13-security-observability-roast.md`).
+// `docs/90-work/audits/2026-05-13-security-observability-roast.md`).
 //
 // Run: node --test scripts/__tests__/lint-html-sri.test.mjs
 

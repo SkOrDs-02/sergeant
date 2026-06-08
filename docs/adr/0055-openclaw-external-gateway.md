@@ -11,7 +11,7 @@
   - [ADR-0027 — OpenClaw / Console / MCP policy](./0027-openclaw-console-mcp-policy.md) — security policy (allowlist, fail-closed).
   - [ADR-0033 — OpenClaw multi-personas and council](./0033-openclaw-multi-personas-and-council.md)
   - [ADR-0037 — OpenClaw write-audit persistence](./0037-openclaw-write-audit-persistence.md) — server-side write-audit (remains Active).
-  - [`docs/planning/openclaw-migration-plan.md`](../planning/openclaw-migration-plan.md) — full 18 Locked decisions + PR-A…PR-F tracker.
+  - [`docs/90-work/planning/openclaw-migration-plan.md`](../90-work/planning/openclaw-migration-plan.md) — full 18 Locked decisions + PR-A…PR-F tracker.
 
 ---
 
@@ -87,4 +87,4 @@ The single-stage Docker image is possible because `openclaw.plugin.json` sets `"
 - [#2382](https://github.com/Skords-01/Sergeant/pull/2382) PR-A — migration plan v3.1 + 18 locked decisions.
 - [#2385](https://github.com/Skords-01/Sergeant/pull/2385) PR-B — Phase 0.5 PoC spike.
 - [#2419](https://github.com/Skords-01/Sergeant/pull/2419) PR review/fix — morning-digest skill, cheap-router externalisation, rollback section update.
-- [`docs/planning/openclaw-migration-plan.md`](../planning/openclaw-migration-plan.md) — full plan with locked decisions and PR tracker.
+- [`docs/90-work/planning/openclaw-migration-plan.md`](../90-work/planning/openclaw-migration-plan.md) — full plan with locked decisions and PR tracker.

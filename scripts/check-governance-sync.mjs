@@ -17,11 +17,11 @@
 //    or target-state file structures whose refs naturally drift as code lands
 //    or is decomposed. Their dangling refs are reported as WARNINGS only:
 //      - docs/01-product/launch/                          (launch plans)
-//      - docs/planning/                        (sprint plans)
-//      - docs/audits/*-deep-dive/              (deep-dive recommendations)
+//      - docs/90-work/planning/                        (sprint plans)
+//      - docs/90-work/audits/*-deep-dive/              (deep-dive recommendations)
 //      - docs/02-engineering/integrations/*-roadmap.md        (integration roadmaps)
-//      - docs/audits/*-implementation-roadmap.md (audit roadmaps)
-//      - docs/initiatives/                     (multi-phase initiative trackers)
+//      - docs/90-work/audits/*-implementation-roadmap.md (audit roadmaps)
+//      - docs/90-work/initiatives/                     (multi-phase initiative trackers)
 //      - docs/security/hardening/              (PR-bound hardening cards)
 //      - docs/03-operations/runbooks/                        (operations runbooks; refs may
 //                                               describe target scripts)
@@ -239,21 +239,21 @@ function checkDanglingRefs() {
   // implementation, not current code. Report as warnings, not errors.
   function isAspirational(relPath) {
     if (relPath.startsWith("docs/01-product/launch/")) return true;
-    if (relPath.startsWith("docs/planning/")) return true;
-    // Deep-dive directories under `docs/audits/*-deep-dive/` (formerly
+    if (relPath.startsWith("docs/90-work/planning/")) return true;
+    // Deep-dive directories under `docs/90-work/audits/*-deep-dive/` (formerly
     // `docs/diagnostics/`, merged 2026-05-05) describe recommendations —
     // refs to suggested-but-not-yet-created files (`scripts/<new>.mjs`,
     // `apps/web/tests/integration/<new>.test.ts`, etc.) are part of the
     // recommendation surface, not Hard Rule #15 violations. Deep-dives
-    // graduate into trackers in `docs/audits/*-implementation-roadmap.md` /
-    // `docs/tech-debt/` once accepted.
-    if (/^docs\/audits\/[^/]+-deep-dive\//.test(relPath)) return true;
-    // `docs/initiatives/` track multi-phase work; refs may describe
+    // graduate into trackers in `docs/90-work/audits/*-implementation-roadmap.md` /
+    // `docs/90-work/tech-debt/` once accepted.
+    if (/^docs\/90-work\/audits\/[^/]+-deep-dive\//.test(relPath)) return true;
+    // `docs/90-work/initiatives/` track multi-phase work; refs may describe
     // pre-decomposition structure (e.g., `agent.ts` before being split),
     // upcoming-phase target files, or historical "before" state. The
     // initiative status badge + PR-link table is the source of truth for
     // shipped state, not inline file refs.
-    if (relPath.startsWith("docs/initiatives/")) return true;
+    if (relPath.startsWith("docs/90-work/initiatives/")) return true;
     // `docs/security/hardening/` are PR-bound hardening cards — they
     // describe the target file layout for each card. The card's status
     // badge and "PRs landed" section is the truth; inline path refs are
@@ -290,7 +290,7 @@ function checkDanglingRefs() {
     if (relPath.startsWith("docs/02-engineering/notes/spikes/")) return true;
     // `docs/02-engineering/testing/<date>-tests-pr-plan.md` and
     // `docs/02-engineering/testing/<date>-tests-review.md` are dated test-PR plans and
-    // analyses — same shape as `docs/planning/`: refs describe upcoming
+    // analyses — same shape as `docs/90-work/planning/`: refs describe upcoming
     // test files (`apps/server/src/.../foo.test.ts`,
     // `apps/web/tests/smoke/<flow>.spec.ts`) that the PRs they plan will
     // create. The README + mutation.md in the same directory describe
@@ -307,40 +307,46 @@ function checkDanglingRefs() {
     )
       return true;
     if (
-      relPath.startsWith("docs/audits/") &&
+      relPath.startsWith("docs/90-work/audits/") &&
       relPath.endsWith("-implementation-roadmap.md")
     )
       return true;
-    // `docs/audits/<date>-<slug>-pr-plan.md` are PR-by-PR plans attached to
+    // `docs/90-work/audits/<date>-<slug>-pr-plan.md` are PR-by-PR plans attached to
     // a `<date>-<slug>.md` audit. Refs describe target file layouts for PRs
     // that have not landed yet (e.g. `apps/web/src/core/security/AppLock.tsx`
     // before PR-1a). The plan's PR-link / status table is the source of
     // truth for shipped work; concrete refs are part of the roadmap surface.
-    if (relPath.startsWith("docs/audits/") && relPath.endsWith("-pr-plan.md"))
+    if (
+      relPath.startsWith("docs/90-work/audits/") &&
+      relPath.endsWith("-pr-plan.md")
+    )
       return true;
-    // `docs/audits/<date>-<slug>-roast.md` are themed audit reports that
+    // `docs/90-work/audits/<date>-<slug>-roast.md` are themed audit reports that
     // identify gaps and recommend remediations. Refs include target file
     // layouts the audit recommends creating (e.g. new ESLint rule paths,
     // new test files, refactor targets) — these become real once follow-up
     // PRs land. Treat as planned, same shape as `*-pr-plan.md`.
-    if (relPath.startsWith("docs/audits/") && relPath.endsWith("-roast.md"))
+    if (
+      relPath.startsWith("docs/90-work/audits/") &&
+      relPath.endsWith("-roast.md")
+    )
       return true;
-    // `docs/audits/<date>-page-audit-*.md` and `*-consolidated-page-audit.md`
+    // `docs/90-work/audits/<date>-page-audit-*.md` and `*-consolidated-page-audit.md`
     // are dated static-analysis audit reports — same shape as `-roast.md`.
     // Refs describe code state at audit time; renames/decompositions after
     // the audit shouldn't fail CI on historical diagnostic notes.
     if (
-      relPath.startsWith("docs/audits/") &&
+      relPath.startsWith("docs/90-work/audits/") &&
       /(?:^|\/)\d{4}-\d{2}-\d{2}-(consolidated-)?page-audit-?/.test(relPath)
     )
       return true;
-    // `docs/audits/README.md` is the audit index — refs may point at
+    // `docs/90-work/audits/README.md` is the audit index — refs may point at
     // historical audit subjects.
-    if (relPath === "docs/audits/README.md") return true;
+    if (relPath === "docs/90-work/audits/README.md") return true;
     // Tracker-shaped surfaces (planning, multi-phase rollout). Same
-    // semantics as `docs/initiatives/` — status badge + PR-link table is
+    // semantics as `docs/90-work/initiatives/` — status badge + PR-link table is
     // the source of truth, inline file refs are descriptive.
-    if (relPath.startsWith("docs/tech-debt/")) return true;
+    if (relPath.startsWith("docs/90-work/tech-debt/")) return true;
     if (relPath.startsWith("docs/01-product/marketing/")) return true;
     if (relPath.startsWith("docs/03-operations/observability/")) return true;
     if (relPath.startsWith("docs/05-design/design/redesign-v2/")) return true;

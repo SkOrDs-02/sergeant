@@ -159,7 +159,7 @@ Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys
 
 ## Performance budgets
 
-CI gates fail on regression. Numbers come from `apps/web/package.json` → `"size-limit"` and the `Bundle size guard` workflow ([#740](https://github.com/Skords-01/Sergeant/pull/740)). Lighthouse CI runs on every `pull_request` to `main` (+ `workflow_dispatch`) via [`.github/workflows/lighthouse-ci.yml`](./.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) using [`apps/web/lighthouserc.json`](./apps/web/lighthouserc.json); локальний прогон — `pnpm --filter @sergeant/web lighthouse`. First pass is `warn`-only; tightening LCP → `error` 3000 ms tracked у [T5 у тех-боргу](./docs/planning/sprint-roadmap-q2q3-2026.md).
+CI gates fail on regression. Numbers come from `apps/web/package.json` → `"size-limit"` and the `Bundle size guard` workflow ([#740](https://github.com/Skords-01/Sergeant/pull/740)). Lighthouse CI runs on every `pull_request` to `main` (+ `workflow_dispatch`) via [`.github/workflows/lighthouse-ci.yml`](./.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) using [`apps/web/lighthouserc.json`](./apps/web/lighthouserc.json); локальний прогон — `pnpm --filter @sergeant/web lighthouse`. First pass is `warn`-only; tightening LCP → `error` 3000 ms tracked у [T5 у тех-боргу](./docs/90-work/planning/sprint-roadmap-q2q3-2026.md).
 
 | Metric                                      | Budget                                                                   | Where enforced                                                                                                                                                                |
 | ------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -196,7 +196,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 ## Verification before PR
 
-`pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test`, which fans both pipelines out in parallel — see [D-3 у pr-plan-testing-devx-2026-05.md](./docs/planning/pr-plan-testing-devx-2026-05.md)). When changing UI: attach a screenshot. When bumping deps or shipping a heavy import: `pnpm licenses:check` + `pnpm --filter @sergeant/web size` (both blocking). Full CI matrix + non-blocking workflows: [`docs/governance/release-policy.md`](./docs/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/governance/external-link-allowlist.json`](./docs/governance/external-link-allowlist.json).
+`pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test`, which fans both pipelines out in parallel — see [D-3 у pr-plan-testing-devx-2026-05.md](./docs/90-work/planning/pr-plan-testing-devx-2026-05.md)). When changing UI: attach a screenshot. When bumping deps or shipping a heavy import: `pnpm licenses:check` + `pnpm --filter @sergeant/web size` (both blocking). Full CI matrix + non-blocking workflows: [`docs/governance/release-policy.md`](./docs/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/governance/external-link-allowlist.json`](./docs/governance/external-link-allowlist.json).
 
 ## Deployment & test users
 
@@ -214,4 +214,4 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 - [`docs/governance/rules/`](docs/governance/rules/) — per-rule canonical bodies with BAD/GOOD examples.
 - [`docs/governance/freshness-dashboard.html`](docs/governance/freshness-dashboard.html) — generated `Last validated` / `Next review` dashboard for tracked docs.
 - [`docs/security/audit-exceptions.md`](docs/security/audit-exceptions.md) — tracked vulnerabilities with no available fix.
-- [`docs/tech-debt/frontend.md`](docs/tech-debt/frontend.md), [`docs/tech-debt/backend.md`](docs/tech-debt/backend.md).
+- [`docs/90-work/tech-debt/frontend.md`](docs/90-work/tech-debt/frontend.md), [`docs/90-work/tech-debt/backend.md`](docs/90-work/tech-debt/backend.md).

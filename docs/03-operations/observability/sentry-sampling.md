@@ -7,7 +7,7 @@
 > (`SENTRY_SAMPLING_RULES`). Source of truth for **web** rules:
 > `apps/web/src/core/observability/sentry.ts` (`pickWebTracesSampleRate`).
 >
-> Refs: `docs/initiatives/stack-pulse-2026-05/pr-12-sentry-traces-sampler.md`
+> Refs: `docs/90-work/initiatives/stack-pulse-2026-05/pr-12-sentry-traces-sampler.md`
 > (H6 — High severity).
 
 ## Why dynamic sampling
@@ -56,7 +56,7 @@ PR and update this table accordingly.
 **Baseline before PR-07 (Sentry dashboard, last 7 days):** The project-level Sentry
 performance dashboard should be consulted before merge to confirm that `/api/internal/*`
 span volume over the past 7 days is within quota at 1.0× — see the Risks section of the
-PR-07 card in `docs/planning/pr-plan-backend-perf-2026-05.md`. If risk is confirmed,
+PR-07 card in `docs/90-work/planning/pr-plan-backend-perf-2026-05.md`. If risk is confirmed,
 use `0.5` with a note to revisit on upgrade.
 
 ### Order matters

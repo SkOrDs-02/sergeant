@@ -21,7 +21,7 @@
 - `embedding_model` — конкретна модель (наприклад, `"voyage-3.5-lite"`).
 - `embedding_version` — внутрішня semver-версія схеми (наприклад, `"1"`).
 
-`vectorStore.query` фільтрує результати за `embedding_model = $N`, де `$N = env.VOYAGE_EMBEDDING_MODEL`. Це active-model read-filter з PR-24 (`docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md`). Він гарантує, що ANN-пошук не змішує вектори різних моделей у HNSW-просторі, що зламало б recall.
+`vectorStore.query` фільтрує результати за `embedding_model = $N`, де `$N = env.VOYAGE_EMBEDDING_MODEL`. Це active-model read-filter з PR-24 (`docs/90-work/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md`). Він гарантує, що ANN-пошук не змішує вектори різних моделей у HNSW-просторі, що зламало б recall.
 
 Провайдер-фабрики живуть у `embeddings.ts` (`createVoyageEmbeddingProvider`). Vendor-агностичний інтерфейс — `EmbeddingProvider` у `types.ts`.
 

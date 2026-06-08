@@ -8,7 +8,7 @@ lang-reason: "Superseded stub kept only as historical anchor (`Status: Deprecate
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Deprecated
 
-> **Superseded by:** [release.md § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor) — merged 2026-05-04 (initiative [0009](../../initiatives/archive/_0009-agent-os-hardening.md) PR 2.3).
+> **Superseded by:** [release.md § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor) — merged 2026-05-04 (initiative [0009](../../90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 2.3).
 
 **Trigger:** historical anchor — open [release.md § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor) instead.
 

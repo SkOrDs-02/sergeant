@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by @Skords-01 / Devin (PR-30). **Next review:** 2026-08-11.
 > **Status:** Active
 
-Політика для runtime container-image-ів Sergeant: Hub API (`Dockerfile.api`) і Console / OpenClaw (`Dockerfile.console`). Описує rationale за distroless multi-stage build (PR-30 — `docs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`), CVE-бюджет, healthcheck-семантику, і rollout-послідовність.
+Політика для runtime container-image-ів Sergeant: Hub API (`Dockerfile.api`) і Console / OpenClaw (`Dockerfile.console`). Описує rationale за distroless multi-stage build (PR-30 — `docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`), CVE-бюджет, healthcheck-семантику, і rollout-послідовність.
 
 ## TL;DR
 
@@ -150,6 +150,6 @@ Native-binding deps (наприклад `sharp`) — НЕ у поточному 
 - [`Dockerfile.api`](../../../Dockerfile.api) — Hub API multi-stage build.
 - [`Dockerfile.console`](../../../Dockerfile.console) — Console / OpenClaw multi-stage build.
 - [`.github/workflows/container-scan.yml`](../../../.github/workflows/container-scan.yml) — Trivy CI gate.
-- [`docs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`](../../initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md) — PR-30 design doc.
+- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md) — PR-30 design doc.
 - [`docs/security/hardening/L13-docker-platform-pin.md`](../../security/hardening/L13-docker-platform-pin.md) — `--platform=linux/amd64` pin policy.
 - [Distroless images](https://github.com/GoogleContainerTools/distroless) — upstream README.

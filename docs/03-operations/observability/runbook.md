@@ -235,13 +235,13 @@ session-check чекає слот.
 
 # Platform hardening — operational FAQ
 
-> Ці секції додані разом з [Initiative 0008](../../initiatives/archive/_0008-platform-hardening.md). Це не алерт-runbook-и (вони вище), а оперативні how-to для повторюваних situations які виникли разом з новою інфраструктурою (probes, rate-limit headers, Renovate, SBOM).
+> Ці секції додані разом з [Initiative 0008](../../90-work/initiatives/archive/_0008-platform-hardening.md). Це не алерт-runbook-и (вони вище), а оперативні how-to для повторюваних situations які виникли разом з новою інфраструктурою (probes, rate-limit headers, Renovate, SBOM).
 
 ## Як інтерпретувати 429-алерт у Grafana
 
 Алерт `AuthRateLimitSpike` (вище) показує загальний rate. Для **глибшого** аналізу:
 
-1. **Подивись `RateLimit-*` headers** на response-zі. З [Initiative 0008 Phase 2](../../initiatives/archive/_0008-platform-hardening.md) сервер emit-ить:
+1. **Подивись `RateLimit-*` headers** на response-zі. З [Initiative 0008 Phase 2](../../90-work/initiatives/archive/_0008-platform-hardening.md) сервер emit-ить:
    - `RateLimit-Limit` — конфігурований ліміт (з `apps/server/src/config/rateLimit.ts`).
    - `RateLimit-Remaining` — скільки запитів лишилось у поточному вікні.
    - `RateLimit-Reset` — секунд до скидання вікна.
@@ -260,7 +260,7 @@ session-check чекає слот.
 
 ## Що робити, якщо `/health/readiness` FAIL у production
 
-З [Initiative 0008 Phase 1](../../initiatives/archive/_0008-platform-hardening.md) Sergeant exposед три probes:
+З [Initiative 0008 Phase 1](../../90-work/initiatives/archive/_0008-platform-hardening.md) Sergeant exposед три probes:
 
 - `/health/liveness` — process alive (event-loop responsive). Должен бути 200 завжди, поки Node-процес не повис.
 - `/health/readiness` — `pg.ping()` + `redis.ping()` обидва ОК. 200/503.
@@ -469,7 +469,7 @@ Per [ADR-0044](../../adr/0044-renovate-vs-dependabot.md), Renovate — primary t
 
 ## Що таке SBOM і де його шукати на release
 
-SBOM (Software Bill of Materials) — це machine-readable список **всіх** runtime-залежностей релізу, з версіями і integrity-хешами. З [Initiative 0008 Phase 4](../../initiatives/archive/_0008-platform-hardening.md) на кожен release ми генеруємо два формати:
+SBOM (Software Bill of Materials) — це machine-readable список **всіх** runtime-залежностей релізу, з версіями і integrity-хешами. З [Initiative 0008 Phase 4](../../90-work/initiatives/archive/_0008-platform-hardening.md) на кожен release ми генеруємо два формати:
 
 - **SPDX-JSON** (`sergeant-<tag>.spdx.json`) — NTIA-compliant, стандарт індустрії, читається `trivy sbom`, `grype`, `syft`.
 - **CycloneDX-JSON** (`sergeant-<tag>.cdx.json`) — OWASP-стандарт, читається OWASP-Dependency-Track, JFrog Xray.
@@ -527,7 +527,7 @@ architecture/rag-eval.md`](../../02-engineering/architecture/rag-eval.md).
 
 **Що горить**: weekly eval зафіксував `recall@4` < `kill_threshold`
 (default `0.4`). Це **decision-point Day 60** з
-[`pr-plan-2026-05.md`](../../planning/pr-plan-2026-05.md) — RAG потрібно
+[`pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md) — RAG потрібно
 вимкнути до того, як це впливає на користувачів.
 
 **Рівень**: critical — RAG injection у chat може повертати irrelevant
@@ -644,7 +644,7 @@ treat kill-switch як advisory (env-flag залишається authoritative).
 
 ## OpenTelemetry traces (server-side OTLP)
 
-**Звідки:** [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md) shipped 2026-05-05 (initiative [0004 Phase 2 + 4](../../initiatives/archive/_0004-server-observability.md)). Server `apps/server/src/obs/{tracing,spans,sampler}.ts` — NodeSDK + auto-instrumentation для `http`, `express`, `pg`, `redis`, `undici`. Web `packages/api-client/src/httpClient.ts` додає `traceparent` header у кожний fetch.
+**Звідки:** [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md) shipped 2026-05-05 (initiative [0004 Phase 2 + 4](../../90-work/initiatives/archive/_0004-server-observability.md)). Server `apps/server/src/obs/{tracing,spans,sampler}.ts` — NodeSDK + auto-instrumentation для `http`, `express`, `pg`, `redis`, `undici`. Web `packages/api-client/src/httpClient.ts` додає `traceparent` header у кожний fetch.
 
 ### Ввімкнення
 

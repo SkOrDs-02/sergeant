@@ -38,7 +38,7 @@
 | 0    | Скафолд `apps/mobile`                    | ✅ Done        | [#401](https://github.com/Skords-01/Sergeant/pull/401)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 1    | UI-основа (NativeWind + MMKV + UI-8)     | ✅ Done        | [#403](https://github.com/Skords-01/Sergeant/pull/403)–[#427](https://github.com/Skords-01/Sergeant/pull/427)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | 2    | Hub-ядро                                 | ✅ Done        | [#480](https://github.com/Skords-01/Sergeant/pull/480), [#482](https://github.com/Skords-01/Sergeant/pull/482), [#483](https://github.com/Skords-01/Sergeant/pull/483), HubSearch ([`apps/mobile/src/core/hub/search/`](../../../apps/mobile/src/core/hub/search) + route `/hub-search`), HubChat ([`apps/mobile/src/core/hub/HubChat.tsx`](../../../apps/mobile/src/core/hub/HubChat.tsx) + route `/hub-chat`), HubReports (route `/hub-reports`), оновлений OnboardingWizard. Залишок: voice у HubChat-композері — in review (онбординг ≥ web; пост-onboarding PresetSheet FTUX — окремий backlog) |
-| 3    | CloudSync v1 → Sync v2 (op-log + outbox) | 🔵 In progress | v1 client cut-over ([#2010](https://github.com/Skords-01/Sergeant/pull/2010)) + mobile engine drop ([`20793ad`](https://github.com/Skords-01/Sergeant/commit/20793adb)) + сервер `module_data` / v1 handlers видалено ([`75dcdd5`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c)). Mobile writer-wiring трекає [plan 2026-05-06](../../superpowers/plans/2026-05-06-sync-engine-writer-wiring.md). Деталі — Q13 + storage-roadmap Stage 5–7                                                                                                                                                 |
+| 3    | CloudSync v1 → Sync v2 (op-log + outbox) | 🔵 In progress | v1 client cut-over ([#2010](https://github.com/Skords-01/Sergeant/pull/2010)) + mobile engine drop ([`20793ad`](https://github.com/Skords-01/Sergeant/commit/20793adb)) + сервер `module_data` / v1 handlers видалено ([`75dcdd5`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c)). Mobile writer-wiring трекає [plan 2026-05-06](../../90-work/superpowers/plans/2026-05-06-sync-engine-writer-wiring.md). Деталі — Q13 + storage-roadmap Stage 5–7                                                                                                                                         |
 | 4    | Модуль Фінік + Detox E2E                 | 🔵 In progress | усі 5 сторінок портовано, Detox iOS зелений; Android CI follow-up                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 5    | Модуль Рутина                            | 🔵 In progress | весь функціонал портовано; чекає stabilization на real device                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | 6    | Модуль Фізрук                            | ✅ Done        | усі основні сторінки + `WorkoutTemplates` drawer портовано (§ 5.3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -206,7 +206,7 @@ NativeWind + RN-core. Поверх — додаткові примітиви в 
     `useSyncStatus` бридж-ить `runtime.getStatus()` (pending / rejected /
     dead_letter counts) на існуючий `SyncStatusIndicator`/`SyncStatusOverlay`.
     Документація патерну й web-counterpart-у —
-    [`docs/superpowers/plans/2026-05-06-sync-engine-writer-wiring.md`](../../superpowers/plans/2026-05-06-sync-engine-writer-wiring.md)
+    [`docs/90-work/superpowers/plans/2026-05-06-sync-engine-writer-wiring.md`](../../90-work/superpowers/plans/2026-05-06-sync-engine-writer-wiring.md)
   - storage-roadmap §Stage 5. ESLint `sergeant-design/no-raw-tracked-storage`
     залишається активним guard-ом проти повернення raw
     `enqueueChange`-патернів.
@@ -341,7 +341,7 @@ sergeant/
    `expo-sqlite`). Для модулів routine/fizruk/nutrition/finyk SQLite
    уже cut-over для read-path за фіче-флагом
    `feature.<m>.sqlite_v2.read_sqlite` (Q11/Q12/Q13). Деталі — §6,
-   первинний source-of-truth — [`docs/planning/storage-roadmap.md`](../../planning/storage-roadmap.md).
+   первинний source-of-truth — [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/storage-roadmap.md).
 
 ## 4. Фазований план
 
@@ -886,7 +886,7 @@ foodDb export / import, UI). Жодних змін у публічному API `
 > Закриті рішення — так, ці питання колись були відкритими. Якщо треба
 > переглянути — окремий PR з мотивацією у «Нотатки». Q11–Q14 додано
 > після того як storage-roadmap і `apps/mobile-shell` стали окремими
-> треками; повний контекст — у [`docs/planning/storage-roadmap.md`](../../planning/storage-roadmap.md).
+> треками; повний контекст — у [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/storage-roadmap.md).
 
 - **Q1. Доля `apps/web` після міграції.** ✅ **(a) — залишаємо PWA + mobile паралельно.**
   Сайт продовжує розвиватись як окремий продуктивний клієнт для
@@ -946,7 +946,7 @@ foodDb export / import, UI). Жодних змін у публічному API `
   через `useSyncEngine` writer-loop. На сервері — `/v2/sync/{push,pull}`
   - SSE real-time. Старий CloudSync v1 (`apps/web/src/core/cloudSync/`)
     вже видалений на web; mobile поступово перевозиться на той самий
-    writer-wiring (план у `docs/superpowers/plans/2026-05-06-sync-engine-writer-wiring.md`).
+    writer-wiring (план у `docs/90-work/superpowers/plans/2026-05-06-sync-engine-writer-wiring.md`).
 - **Q14. `apps/mobile-shell` (Capacitor wrapper над web) — паралельний реліз-шлях?** 🟡 **Open.**
   Workspace `apps/mobile-shell` обгортає `apps/web` через Capacitor 7 на
   Android + iOS, має 4 active CI workflows

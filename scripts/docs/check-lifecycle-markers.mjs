@@ -26,7 +26,7 @@
 //   node scripts/docs/check-lifecycle-markers.mjs --fail-on-violations  # CI gate
 //   node scripts/docs/check-lifecycle-markers.mjs --json       # machine-readable
 //
-// See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 4.
+// See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 4.
 // Burn-down target: 2026-Q3. See docs/governance/rules/10-lifecycle-markers.md.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";

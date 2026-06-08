@@ -16,7 +16,7 @@
 > consumed by Pino (server logs), `Sentry.beforeSend` on every surface
 > (server / web / mobile / OpenClaw) and the OTel attribute denylist.
 > Adding a new redacted field means editing **one** file. Audit
-> [`docs/audits/2026-05-13-security-observability-roast.md`](../audits/archive/2026-05-13-security-observability-roast.md) §P0-S1..S5
+> [`docs/90-work/audits/2026-05-13-security-observability-roast.md`](../90-work/audits/archive/2026-05-13-security-observability-roast.md) §P0-S1..S5
 > captures the rationale.
 
 > **Machine-readable mirror.** The list below is the documentation copy of
@@ -307,7 +307,7 @@ railway logs --service sergeant-api | grep '"email"\|"password"'
 
 ## Cross-references
 
-- [`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) §6.5 (origin)
+- [`docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) §6.5 (origin)
 - [`docs/security/hardening/M3-pino-redact-paths.md`](./hardening/M3-pino-redact-paths.md) (round 14 closure)
 - [`docs/security/hardening/L10-user-id-hash-in-logs.md`](./hardening/L10-user-id-hash-in-logs.md) (userId hashing)
 - [`docs/security/hardening/C1-mono-webhook-secret-in-url.md`](./hardening/C1-mono-webhook-secret-in-url.md) (URL redaction)

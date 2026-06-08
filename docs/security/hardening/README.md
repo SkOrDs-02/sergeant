@@ -5,13 +5,13 @@
 
 Беклог посилення безпеки (security hardening) — структурований список знахідок із внутрішнього security-review від 2026-05-03. Кожна знахідка живе у власному файлі-картці (`<id>-<slug>.md`), згрупована у спринти за пріоритетом усунення.
 
-Це **не** аудит у класичному сенсі (як файли у `docs/audits/`) — це **робочий беклог**: кожна картка має `Status` (`Open` / `In progress` / `Closed`), власника та точку виправлення. Закрита картка лишається як historical record і не видаляється.
+Це **не** аудит у класичному сенсі (як файли у `docs/90-work/audits/`) — це **робочий беклог**: кожна картка має `Status` (`Open` / `In progress` / `Closed`), власника та точку виправлення. Закрита картка лишається як historical record і не видаляється.
 
 ## Чому це не «audit»
 
 | Папка                                    | Призначення                                                                                                  |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `docs/audits/`                           | Snapshot-аудити в момент часу (UX, doc-hygiene, comprehensive). Закриваються одним «implementation-roadmap». |
+| `docs/90-work/audits/`                   | Snapshot-аудити в момент часу (UX, doc-hygiene, comprehensive). Закриваються одним «implementation-roadmap». |
 | `docs/security/hardening/` (**цей док**) | Living беклог security-знахідок. Одна знахідка = одна картка. Картки переходять `Open → Closed` поступово.   |
 | `docs/security/`                         | Канонічні security-політики (access policy, vulnerability SLA, disaster recovery). Не беклог.                |
 
@@ -112,7 +112,7 @@
 - [docs/security/vulnerability-sla.md](../vulnerability-sla.md) — SLA на реакцію + дедлайн усунення.
 - [docs/security/audit-exceptions.md](../audit-exceptions.md) — затверджені винятки з security findings.
 - [docs/governance/security-incident-policy.md](../../governance/security-incident-policy.md) — incident-policy.
-- [docs/audits/](../../audits) — snapshot-аудити (НЕ ці картки).
+- [docs/90-work/audits/](../../90-work/audits) — snapshot-аудити (НЕ ці картки).
 
 ## Як працювати з цим беклогом
 

@@ -719,7 +719,7 @@
       "id": "audit:2026-05-06-ux-roast-pr-plan",
       "type": "audit",
       "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
-      "path": "docs/audits/2026-05-06-ux-roast-pr-plan.md",
+      "path": "docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -728,7 +728,7 @@
       "id": "audit:2026-05-13-consolidated-page-audit",
       "type": "audit",
       "title": "Consolidated Page Audit — 2026-05-13",
-      "path": "docs/audits/2026-05-13-consolidated-page-audit.md",
+      "path": "docs/90-work/audits/2026-05-13-consolidated-page-audit.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -737,7 +737,7 @@
       "id": "audit:2026-05-13-dead-code-hard-rules-roast",
       "type": "audit",
       "title": "Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13)",
-      "path": "docs/audits/2026-05-13-dead-code-hard-rules-roast.md",
+      "path": "docs/90-work/audits/2026-05-13-dead-code-hard-rules-roast.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -746,7 +746,7 @@
       "id": "audit:2026-05-13-page-audit-01-auth-onboarding",
       "type": "audit",
       "title": "Page Audit — Auth & Onboarding pages",
-      "path": "docs/audits/2026-05-13-page-audit-01-auth-onboarding.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-01-auth-onboarding.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -755,7 +755,7 @@
       "id": "audit:2026-05-13-page-audit-02-hub-dashboard",
       "type": "audit",
       "title": "Page Audit — Hub Dashboard, Modules Grid & App shell",
-      "path": "docs/audits/2026-05-13-page-audit-02-hub-dashboard.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-02-hub-dashboard.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -764,7 +764,7 @@
       "id": "audit:2026-05-13-page-audit-03-hub-chat-search",
       "type": "audit",
       "title": "Page Audit — Hub Chat, Search & Backup panel",
-      "path": "docs/audits/2026-05-13-page-audit-03-hub-chat-search.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -773,7 +773,7 @@
       "id": "audit:2026-05-13-page-audit-05-finyk",
       "type": "audit",
       "title": "Page Audit — Finyk module — 5 pages (overview/transactions/budgets/analytics/assets)",
-      "path": "docs/audits/2026-05-13-page-audit-05-finyk.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-05-finyk.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -782,7 +782,7 @@
       "id": "audit:2026-05-13-page-audit-06-fizruk-part1",
       "type": "audit",
       "title": "Page Audit — Fizruk module Part 1 (Dashboard, Atlas, Workouts, Exercise)",
-      "path": "docs/audits/2026-05-13-page-audit-06-fizruk-part1.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-06-fizruk-part1.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -791,7 +791,7 @@
       "id": "audit:2026-05-13-page-audit-07-fizruk-part2",
       "type": "audit",
       "title": "Page Audit — Fizruk module Part 2 (Progress, Measurements, Programs, Body)",
-      "path": "docs/audits/2026-05-13-page-audit-07-fizruk-part2.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-07-fizruk-part2.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -800,7 +800,7 @@
       "id": "audit:2026-05-13-page-audit-08-nutrition",
       "type": "audit",
       "title": "Page Audit — Nutrition module — 4 pages (start/pantry/log/menu)",
-      "path": "docs/audits/2026-05-13-page-audit-08-nutrition.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-08-nutrition.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -809,7 +809,7 @@
       "id": "audit:2026-05-13-page-audit-09-routine-strategy",
       "type": "audit",
       "title": "Page Audit — Routine module + Strategy page",
-      "path": "docs/audits/2026-05-13-page-audit-09-routine-strategy.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -818,7 +818,7 @@
       "id": "audit:2026-05-13-page-audit-10-errors-pwa-marketing",
       "type": "audit",
       "title": "Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing",
-      "path": "docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -827,7 +827,7 @@
       "id": "audit:2026-05-13-testing-devx-roast",
       "type": "audit",
       "title": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13)",
-      "path": "docs/audits/2026-05-13-testing-devx-roast.md",
+      "path": "docs/90-work/audits/2026-05-13-testing-devx-roast.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -836,7 +836,7 @@
       "id": "audit:2026-05-13-web-architecture-state-roast",
       "type": "audit",
       "title": "Web Architecture & State Roast — 2026-05-13 (Прожарка #3/10)",
-      "path": "docs/audits/2026-05-13-web-architecture-state-roast.md",
+      "path": "docs/90-work/audits/2026-05-13-web-architecture-state-roast.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -845,7 +845,7 @@
       "id": "audit:2026-05-25-hubsettings-cls-chunk-load",
       "type": "audit",
       "title": "HubSettings lazy boundaries — CLS + chunk-load follow-up",
-      "path": "docs/audits/2026-05-25-hubsettings-cls-chunk-load.md",
+      "path": "docs/90-work/audits/2026-05-25-hubsettings-cls-chunk-load.md",
       "status": "Open",
       "tier": "core",
       "meta": {}
@@ -854,7 +854,7 @@
       "id": "audit:2026-08-XX-openclaw-internal-roast",
       "type": "audit",
       "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`",
-      "path": "docs/audits/2026-08-XX-openclaw-internal-roast.md",
+      "path": "docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -863,7 +863,7 @@
       "id": "audit:2026-08-XX-sync-engine-roast",
       "type": "audit",
       "title": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)",
-      "path": "docs/audits/2026-08-XX-sync-engine-roast.md",
+      "path": "docs/90-work/audits/2026-08-XX-sync-engine-roast.md",
       "status": "Draft",
       "tier": "core",
       "meta": {}
@@ -1122,7 +1122,7 @@
           "docs/governance/symbol-index.html",
           "docs/02-engineering/architecture/diagrams/c3-workspaces.md",
           "docs/open-work.md",
-          "docs/initiatives/follow-ups.md",
+          "docs/90-work/initiatives/follow-ups.md",
           "docs/00-start/playbooks/INDEX.md"
         ]
       }
@@ -1139,7 +1139,7 @@
         "category": "lint-enforced-convention",
         "scope": [
           "docs/adr/*.md",
-          "docs/initiatives/*.md",
+          "docs/90-work/initiatives/*.md",
           "docs/00-start/playbooks/*.md",
           "docs/governance/rules/*.md"
         ]
@@ -1244,7 +1244,7 @@
       "id": "initiative:0003",
       "type": "initiative",
       "title": "0003 — Sync v2 rollout & v1 sunset",
-      "path": "docs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
+      "path": "docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
       "status": "In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first)",
       "tier": "core",
       "meta": {
@@ -1257,7 +1257,7 @@
       "id": "initiative:0006",
       "type": "initiative",
       "title": "0006 — Frontend routing migration + route-based code-split",
-      "path": "docs/initiatives/0006-frontend-routing-and-code-split.md",
+      "path": "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md",
       "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. Pending: typecheck on clean worktree (exFAT install issues), Playwright e2e for hash-compat, manualChunks cleanup.",
       "tier": "core",
       "meta": {
@@ -1270,7 +1270,7 @@
       "id": "initiative:0010",
       "type": "initiative",
       "title": "0010 — Revenue-first launch: ship paid, focus wedge",
-      "path": "docs/initiatives/0010-revenue-first-launch.md",
+      "path": "docs/90-work/initiatives/0010-revenue-first-launch.md",
       "status": "In progress",
       "tier": "core",
       "meta": {
@@ -1283,7 +1283,7 @@
       "id": "initiative:0015",
       "type": "initiative",
       "title": "0015 — Docs automation for daily ops",
-      "path": "docs/initiatives/0015-docs-automation-daily-ops.md",
+      "path": "docs/90-work/initiatives/0015-docs-automation-daily-ops.md",
       "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **Observation window 2026-06-03 → 2026-06-09 (7 consecutive cron days); progress 3/7** — daily-brief cron confirmed green 06-03 / 06-04 / 06-05; 06-06 → 06-09 still pending, and the maintainer 5/7-day usage self-report is not yet recorded. Stays In progress until both signals close; do NOT flip to Done before 2026-06-09. Not 90-day-gated; archival deferred until the observation window closes.",
       "tier": "core",
       "meta": {
@@ -1294,7 +1294,7 @@
       "id": "initiative:0017",
       "type": "initiative",
       "title": "0017 — Hub Settings & Reports mount perf",
-      "path": "docs/initiatives/0017-hub-tabs-mount-perf.md",
+      "path": "docs/90-work/initiatives/0017-hub-tabs-mount-perf.md",
       "status": "In progress — code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worker) explicitly skipped pending next 30-day RUM cut on `aggregateReport` P95 > 50 ms — re-opens as a discrete follow-up only if the threshold trips. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.",
       "tier": "core",
       "meta": {
@@ -1307,7 +1307,7 @@
       "id": "initiative:0018",
       "type": "initiative",
       "title": "0018 — Agent semantic retrieval (agent:find)",
-      "path": "docs/initiatives/0018-agent-semantic-retrieval.md",
+      "path": "docs/90-work/initiatives/0018-agent-semantic-retrieval.md",
       "status": "Proposed — чекає на founder-погодження ADR-0066 перед стартом Phase 1.",
       "tier": "core",
       "meta": {
@@ -1318,7 +1318,7 @@
       "id": "initiative:follow-ups",
       "type": "initiative",
       "title": "Initiative follow-ups",
-      "path": "docs/initiatives/follow-ups.md",
+      "path": "docs/90-work/initiatives/follow-ups.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1327,7 +1327,7 @@
       "id": "initiative:stack-pulse-2026-05/00-overview",
       "type": "initiative",
       "title": "Overview — stack pulse 2026-05",
-      "path": "docs/initiatives/stack-pulse-2026-05/00-overview.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/00-overview.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1336,7 +1336,7 @@
       "id": "initiative:stack-pulse-2026-05/01-session-log-2026-05-03",
       "type": "initiative",
       "title": "Session log — 2026-05-03 stack-pulse follow-through",
-      "path": "docs/initiatives/stack-pulse-2026-05/01-session-log-2026-05-03.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/01-session-log-2026-05-03.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1345,7 +1345,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-01-unify-env-modules",
       "type": "initiative",
       "title": "PR-01: Уніфікувати env-модулі сервера",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md",
       "status": "Closed — merged ([#2122](https://github.com/Skords-01/Sergeant/pull/2122)). `apps/server/src/env.ts` зведено до 19-рядкового re-export shim над `apps/server/src/env/env.ts` (єдиний Zod-schema джерело правди + `assertStartupEnv()`); CI-guard `scripts/check-env-single-source.mjs` блокує `process.env`-доступ поза дозволеним списком. `env/betterAuthEnv.ts` лишено навмисно — викликається з auth lifecycle до повного startup.",
       "tier": "core",
       "meta": {}
@@ -1354,7 +1354,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-02-rate-limit-fail-closed",
       "type": "initiative",
       "title": "PR-02: Rate-limit fail-closed на `/api/auth/*`",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-02-rate-limit-fail-closed.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-02-rate-limit-fail-closed.md",
       "status": "Closed — merged [#1552](https://github.com/Skords-01/Sergeant/pull/1552)",
       "tier": "core",
       "meta": {}
@@ -1363,7 +1363,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-03-bcrypt-password-limit",
       "type": "initiative",
       "title": "PR-03: password length policy — scrypt premise correction",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md",
       "status": "Closed — merged [#1550](https://github.com/Skords-01/Sergeant/pull/1550)",
       "tier": "core",
       "meta": {}
@@ -1372,8 +1372,8 @@
       "id": "initiative:stack-pulse-2026-05/pr-04-bus-factor-secondary-owners",
       "type": "initiative",
       "title": "PR-04: Secondary owners + knowledge-transfer plan",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-04-bus-factor-secondary-owners.md",
-      "status": "Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/00-start/playbooks/operational-continuity.md`](../../00-start/playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-04-bus-factor-secondary-owners.md",
+      "status": "Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/00-start/playbooks/operational-continuity.md`](../../../00-start/playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).",
       "tier": "core",
       "meta": {}
     },
@@ -1381,7 +1381,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-05-typescript-types-node-downgrade",
       "type": "initiative",
       "title": "PR-05: `@types/node` downgrade до 20.x + ADR на TS 6 vs 5.x",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md",
       "status": "Closed — merged (ADR-0050, @types/node pinned to ^20.19.0, pnpm.overrides + renovate rule)",
       "tier": "core",
       "meta": {}
@@ -1390,8 +1390,8 @@
       "id": "initiative:stack-pulse-2026-05/pr-06-openclaw-github-app",
       "type": "initiative",
       "title": "PR-06: OpenClaw → GitHub App, прибрати `Git_PAT` fallback",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md",
-      "status": "Closed — Phase 1 (GitHub App auth-flow) merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2 (default flip + PAT removal + Hard Rule #20) has landed and is tracked by [Hard Rule #20](../../governance/rules/20-no-openclaw-pats-in-production.md).",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md",
+      "status": "Closed — Phase 1 (GitHub App auth-flow) merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2 (default flip + PAT removal + Hard Rule #20) has landed and is tracked by [Hard Rule #20](../../../governance/rules/20-no-openclaw-pats-in-production.md).",
       "tier": "core",
       "meta": {}
     },
@@ -1399,7 +1399,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-07-body-size-declarative-policy",
       "type": "initiative",
       "title": "PR-07: Declarative body-size policy",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-07-body-size-declarative-policy.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-07-body-size-declarative-policy.md",
       "status": "Closed — merged [#2081](https://github.com/Skords-01/Sergeant/pull/2081)",
       "tier": "core",
       "meta": {}
@@ -1408,8 +1408,8 @@
       "id": "initiative:stack-pulse-2026-05/pr-08-api-versioning-consolidation",
       "type": "initiative",
       "title": "PR-08: API versioning consolidation (видалити v1-rewrite-shim)",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md",
-      "status": "Closed — research done, decision = keep mirror (див. [ADR-0053](../../adr/0053-api-versioning-policy.md) + [spike](../../02-engineering/notes/spikes/2026-05-api-v1-usage.md))",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md",
+      "status": "Closed — research done, decision = keep mirror (див. [ADR-0053](../../../adr/0053-api-versioning-policy.md) + [spike](../../../02-engineering/notes/spikes/2026-05-api-v1-usage.md))",
       "tier": "core",
       "meta": {}
     },
@@ -1417,8 +1417,8 @@
       "id": "initiative:stack-pulse-2026-05/pr-09-apns-library-adr",
       "type": "initiative",
       "title": "PR-09: `@parse/node-apn` review (ADR-only)",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-09-apns-library-adr.md",
-      "status": "Closed — ADR-0048 merged ([`docs/adr/0048-apns-provider-library.md`](../../adr/0048-apns-provider-library.md))",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-09-apns-library-adr.md",
+      "status": "Closed — ADR-0048 merged ([`docs/adr/0048-apns-provider-library.md`](../../../adr/0048-apns-provider-library.md))",
       "tier": "core",
       "meta": {}
     },
@@ -1426,7 +1426,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-10-better-auth-security-review",
       "type": "initiative",
       "title": "PR-10: Better Auth security review + Safari/Webkit E2E",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md",
       "status": "Implemented (PR-48 / pr-plan-2026-05 §Security & supply chain row #48)",
       "tier": "core",
       "meta": {}
@@ -1435,7 +1435,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci",
       "type": "initiative",
       "title": "PR-11: Drizzle schema ↔ SQL drift CI gate",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci.md",
       "status": "Closed — drift CI gate landed (`scripts/check-schema-drift.mjs` + `packages/db-schema/src/__tests__/drift.test.ts`); ROOT-path fix in [#2089](https://github.com/Skords-01/Sergeant/pull/2089)",
       "tier": "core",
       "meta": {}
@@ -1444,7 +1444,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-12-sentry-traces-sampler",
       "type": "initiative",
       "title": "PR-12: Sentry tracesSampler dynamic per-route",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-12-sentry-traces-sampler.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-12-sentry-traces-sampler.md",
       "status": "Closed — merged [#2086](https://github.com/Skords-01/Sergeant/pull/2086)",
       "tier": "core",
       "meta": {}
@@ -1453,7 +1453,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-13-postgres-pool-sizing",
       "type": "initiative",
       "title": "PR-13: PG pool sizing + monitoring + alerts",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md",
       "status": "Closed — implementation merged. Observability стек уже мав",
       "tier": "core",
       "meta": {}
@@ -1462,7 +1462,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-14-vercel-coep-review",
       "type": "initiative",
       "title": "PR-14: Vercel COEP review (require-corp)",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-14-vercel-coep-review.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-14-vercel-coep-review.md",
       "status": "Closed (2026-05-05, doc-only) — resolved by M21 compatibility matrix",
       "tier": "core",
       "meta": {}
@@ -1471,7 +1471,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock",
       "type": "initiative",
       "title": "PR-15: `AI_QUOTA_DISABLED=1` hard-block у production",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock.md",
       "status": "Closed — merged [#1567](https://github.com/Skords-01/Sergeant/pull/1567) (production-throw у `env.ts` + tests landed in `main`)",
       "tier": "core",
       "meta": {}
@@ -1480,8 +1480,8 @@
       "id": "initiative:stack-pulse-2026-05/pr-16-pino-redaction-policy",
       "type": "initiative",
       "title": "PR-16: Pino redaction policy + ESLint guard",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md",
-      "status": "Closed — merged [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard + [`docs/security/logging-redaction-policy.md`](../../security/logging-redaction-policy.md) зареєстровані.",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md",
+      "status": "Closed — merged [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard + [`docs/security/logging-redaction-policy.md`](../../../security/logging-redaction-policy.md) зареєстровані.",
       "tier": "core",
       "meta": {}
     },
@@ -1489,7 +1489,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle",
       "type": "initiative",
       "title": "PR-17: 80+ env-vars → DB feature-flag toggle",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md",
       "status": "Planned",
       "tier": "core",
       "meta": {}
@@ -1498,7 +1498,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-18-detox-server-shape-trigger",
       "type": "initiative",
       "title": "PR-18: Detox path-trigger пропускає server-shape changes",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md",
       "status": "Closed — Detox iOS + Android `paths` extended to include `apps/server/src/routes/**`, `packages/shared/**`, and `apps/server/src/migrations/**` (the actual server layout — there is no `apps/server/src/modules/**/*.routes.ts` tree as the original card assumed). CONTRIBUTING.md updated. A separate `scripts/check-api-client-coverage.mjs` gate was intentionally not added: `api:check-openapi` + `api:check-openapi-types` already cover the generated OpenAPI/api-client freshness path.",
       "tier": "core",
       "meta": {}
@@ -1507,7 +1507,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-19-workers-health-registry",
       "type": "initiative",
       "title": "PR-19: Workers health-registry + `/api/health/workers` endpoint",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-19-workers-health-registry.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-19-workers-health-registry.md",
       "status": "Active — `/health/workers` endpoint shipped via PR [#1995](https://github.com/Skords-01/Sergeant/pull/1995) (commit [`cdcdb5ba`](https://github.com/Skords-01/Sergeant/commit/cdcdb5ba)) з in-memory per-queue stats (`aiMemoryIngest` + `monoEnrichment` + `backgroundQueue`); запропонована `worker_health` DB-table + Grafana dashboards / `worker_lag_seconds` метрика — deferred (current in-memory підхід satisfies M3 monitoring need without DB writes), reactivation trigger — наступний stalled-worker incident.",
       "tier": "core",
       "meta": {}
@@ -1516,7 +1516,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-20-patches-readme",
       "type": "initiative",
       "title": "PR-20: `patches/` debt без README",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-20-patches-readme.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-20-patches-readme.md",
       "status": "Closed — `patches/README.md` schema + `scripts/check-patches-doc.mjs` + `pnpm lint:patches` CI gate landed in [#2193](https://github.com/Skords-01/Sergeant/pull/2193) (`fix(docs): restore patches/README Status badge + prettier --write 33 stale docs`). All 4 DoD items shipped: README table з 1 row на `@expo__cli@0.22.28.patch`, `scripts/check-patches-doc.mjs` (10 KB), 6-fixture node:test у `scripts/__tests__/check-patches-doc.test.mjs`, та `lint:patches` step у `.github/workflows/ci.yml` (line 130) — закриває M4 у `00-overview.md`.",
       "tier": "core",
       "meta": {}
@@ -1525,7 +1525,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update",
       "type": "initiative",
       "title": "PR-21: SW `prompt`-mode auto-update on inactivity",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update.md",
       "status": "Closed — SW prompt-mode auto-update shipped in [#2309](https://github.com/Skords-01/Sergeant/pull/2309); `setupAutoUpdate()` lives at `apps/web/src/core/app/autoUpdate.ts` + `apps/server/src/http/buildIdHeader.ts` issues `X-Server-Build-Id` on every response.",
       "tier": "core",
       "meta": {}
@@ -1534,7 +1534,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-22-mobile-expo-sdk-53",
       "type": "initiative",
       "title": "PR-22: Mobile Expo SDK 52 → 53 upgrade",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md",
       "status": "Planned",
       "tier": "core",
       "meta": {}
@@ -1543,8 +1543,8 @@
       "id": "initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests",
       "type": "initiative",
       "title": "PR-23: OpenAPI spec contract-tested vs runtime",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md",
-      "status": "Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md",
+      "status": "Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../../adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.",
       "tier": "core",
       "meta": {}
     },
@@ -1552,7 +1552,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-24-embedding-vendor-abstraction",
       "type": "initiative",
       "title": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in)",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md",
       "status": "Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/00-start/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера).",
       "tier": "core",
       "meta": {}
@@ -1561,7 +1561,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-25-two-production-origins",
       "type": "initiative",
       "title": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md",
       "status": "Planned",
       "tier": "core",
       "meta": {}
@@ -1570,7 +1570,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-26-csp-report-uri",
       "type": "initiative",
       "title": "PR-26: CSP `report-uri` / `report-to` endpoint",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md",
       "status": "Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints` header + `report-to csp-endpoint` directive) shipped in `apps/web/vercel.json`; `docs/03-operations/observability/csp-monitoring.md` operations playbook live. Rate-limit (120/min IP) + 16 KB body cap було мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` + `apps/server/src/routes/csp-report.ts`. E2E `/dummy-violation-page.html` тест — лишається у backlog (browser-level CSP-violation hard to reproduce у unit-test, потребує Playwright fixture; не блокує закриття).",
       "tier": "core",
       "meta": {}
@@ -1579,7 +1579,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-27-internal-api-key-rotation",
       "type": "initiative",
       "title": "PR-27: `INTERNAL_API_KEY` rotation мechanism",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md",
       "status": "Planned",
       "tier": "core",
       "meta": {}
@@ -1588,7 +1588,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-28-sw-build-id-import-meta",
       "type": "initiative",
       "title": "PR-28: `__SW_BUILD_ID__` global → `import.meta.env.VITE_BUILD_ID`",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-28-sw-build-id-import-meta.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-28-sw-build-id-import-meta.md",
       "status": "Closed — merged [#2309](https://github.com/Skords-01/Sergeant/pull/2309) (commit `e8ada9f2`). Migration covers всі два ambient global-и (`__SW_BUILD_ID__` у SW + `__APP_BUILD_ID__` у React Query persister), які ділили той самий build-id; після цього PR-у вони живуть як single `import.meta.env.VITE_BUILD_ID` з типами у `apps/web/src/vite-env.d.ts`.",
       "tier": "core",
       "meta": {}
@@ -1597,7 +1597,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel",
       "type": "initiative",
       "title": "PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md",
       "status": "Active (PR-1 shipped — BroadcastChannel sender + listener в `apps/mobile-shell/src/index.ts` і `apps/web/src/core/app/ShellDeepLinkBridge.tsx`; `window.__sergeantShellNavigate` лишається як backward-compat alias до PR-2 у serpni 2026)",
       "tier": "core",
       "meta": {}
@@ -1606,7 +1606,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve",
       "type": "initiative",
       "title": "PR-30: Dockerfile post-install cleanup CVE-shrink fragility",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md",
       "status": "Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13); shared base layer + console-side Trivy scan tracked as follow-up.",
       "tier": "core",
       "meta": {}
@@ -1615,7 +1615,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-31-eslint-config-split",
       "type": "initiative",
       "title": "PR-31: ESLint config 1073 рядки → split per-app",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-31-eslint-config-split.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-31-eslint-config-split.md",
       "status": "Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/02-engineering/development/eslint-config.md` § Phase 2b).",
       "tier": "core",
       "meta": {}
@@ -1624,7 +1624,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup",
       "type": "initiative",
       "title": "PR-32: `pnpm.overrides` quarterly cleanup",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup.md",
       "status": "Closed (PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423))",
       "tier": "core",
       "meta": {}
@@ -1633,8 +1633,8 @@
       "id": "initiative:stack-pulse-2026-05/pr-33-hard-rules-categorization",
       "type": "initiative",
       "title": "PR-33: 21 hard rules — categorize",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-33-hard-rules-categorization.md",
-      "status": "Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../governance/rules) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-33-hard-rules-categorization.md",
+      "status": "Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../../governance/rules) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.",
       "tier": "core",
       "meta": {}
     },
@@ -1642,7 +1642,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate",
       "type": "initiative",
       "title": "PR-34: `runDemoSeedFromUrl` / `runDemoCleanupOnce` on every load",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate.md",
       "status": "Closed (PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423), commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec))",
       "tier": "core",
       "meta": {}
@@ -1651,7 +1651,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-35-log-level-debug-window",
       "type": "initiative",
       "title": "PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-35-log-level-debug-window.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-35-log-level-debug-window.md",
       "status": "Active — server-side shipped via PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423) (commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec), 2026-05-08); `tools/openclaw` `/debug-window` CLI deferred to follow-up (див. нижче — чекає першого реального debug-incident-у як trigger).",
       "tier": "core",
       "meta": {}
@@ -1660,7 +1660,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard",
       "type": "initiative",
       "title": "PR-36: `lazyImport` chunk-reload no-infinite-loop guard",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md",
       "status": "Closed — merged [#2311](https://github.com/Skords-01/Sergeant/pull/2311) (commit `9bfa006d`). Код живе не у `lazyImport.ts` (як писалось у плані на 2026-05-07), а у `apps/web/src/core/lib/chunkReload.ts` — reload-recovery вже був рефакторений у окремий модуль з cooldown-гардом. Цей PR додав counter-window guard (`MAX_RELOADS = 3`, sliding `RESET_AFTER_MS = 5min`) поверх існуючого 10s cooldown-у.",
       "tier": "core",
       "meta": {}
@@ -1669,7 +1669,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-37-postgres-image-sha-pin",
       "type": "initiative",
       "title": "PR-37: Postgres image SHA-pinning",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md",
       "status": "Closed — merged [#2308](https://github.com/Skords-01/Sergeant/pull/2308) (commit `348f5773`). CI workflows (`ci.yml:410`, `extended-e2e.yml:57`, `visual-regression.yml:40`, `db-backup-verify.yml:34`) already pin `pgvector/pgvector:pg16@sha256:7d400e34…` (landed earlier under M21 / supply-chain hardening). Цей PR закрив останнє drift-місце — `docker-compose.yml` (local dev) — і додав Renovate `pinDigests` rule + setup runbook.",
       "tier": "core",
       "meta": {}
@@ -1678,7 +1678,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-38-pwa-precache-first-party",
       "type": "initiative",
       "title": "PR-38: PWA precache 1st-party verify",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md",
       "status": "Closed — merged [#2312](https://github.com/Skords-01/Sergeant/pull/2312) (commit `e227f2b6`). Скрипт живе не у `apps/web/scripts/` (як писалось у плані на 2026-05-07), а у кореневій `scripts/` — всі інші freshness/процес-гейти репо живуть там (`check-patches-doc.mjs`, `check-tech-debt-freshness.mjs`, ін.). Скрипт використовує `apps/server/dist/sw.js` (`apps/web` білдить сюди через `outDir`).",
       "tier": "core",
       "meta": {}
@@ -1687,7 +1687,7 @@
       "id": "initiative:stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk",
       "type": "initiative",
       "title": "PR-39: `tools/openclaw` Anthropic SDK 0.36.3 → latest",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md",
       "status": "Active — SDK вже на `^0.95.2` (міграція 0.36 → 0.95 відбулась у попередньому PR з ADR-0057); prompt caching opt-in (`ANTHROPIC_PROMPT_CACHE=1`) enable-но у `run-agent-loop`. SDK v1 GA ще не відбулась — див. ADR-0057 § SDK v1 tracking.",
       "tier": "core",
       "meta": {}
@@ -4098,7 +4098,7 @@
       "path": ".agents/skills/sergeant-planning-batch/SKILL.md",
       "tier": "core",
       "meta": {
-        "description": "Use when executing a batch of N open tasks from docs/planning/* PR-plans — dynamic selection, parallel agent fan-out, tracker updates, fast-forward archival of complete docs; UA: виконати батч planning-тасків."
+        "description": "Use when executing a batch of N open tasks from docs/90-work/planning/* PR-plans — dynamic selection, parallel agent fan-out, tracker updates, fast-forward archival of complete docs; UA: виконати батч planning-тасків."
       }
     },
     {

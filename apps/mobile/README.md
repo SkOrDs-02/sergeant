@@ -45,7 +45,7 @@
 - **Store-listing** (іконки, privacy manifest iOS, data safety Android).
 
 **Серверний push (APNs/FCM/web):** fan-out у `apps/server/src/push/send.ts`;
-у проді ще потрібні credentials — `docs/tech-debt/backend.md#push-credentials`.
+у проді ще потрібні credentials — `docs/90-work/tech-debt/backend.md#push-credentials`.
 
 Повний статус-репорт по всіх трьох поверхнях — `docs/02-engineering/architecture/platforms.md`.
 

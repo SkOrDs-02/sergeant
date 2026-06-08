@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** — <!-- pre-flight only; no prior ADR replaced -->
 - **Related:**
-  - [`docs/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md`](../initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md) — source PR plan (M6 finding)
+  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md`](../90-work/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md) — source PR plan (M6 finding)
   - [ADR-0050](./0050-typescript-major-version-policy.md) — TS major-version policy + Expo TS pinning
   - [ADR-0052](./0052-mobile-strategy-capacitor-primary.md) — Capacitor primary, Expo/RN parity track
 
@@ -120,6 +120,6 @@ A pre-flight ADR de-risks a single-maintainer mobile bump by converting an explo
 
 ## Links
 
-- [`docs/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md`](../initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md) — source plan + acceptance criteria
+- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md`](../90-work/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md) — source plan + acceptance criteria
 - [Expo SDK release roadmap](https://docs.expo.dev/versions/latest/)
 - [React Native release notes](https://github.com/facebook/react-native/releases)

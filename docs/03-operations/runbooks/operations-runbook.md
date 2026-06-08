@@ -7,7 +7,7 @@
 тимчасово недоступний (відпустка, sick-leave, hand-off), цей документ дає
 другому інженеру **точку входу в усі підсистеми Sergeant** так, щоб не
 довелося реверсити архітектуру з git-blame-у. PR-37 з
-[`docs/planning/pr-plan-2026-05.md`](../../planning/pr-plan-2026-05.md).
+[`docs/90-work/planning/pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md).
 
 > **Не дублює** інші runbook-и, а служить **routing-картою** до них.
 > Канонічні «як саме виконати» команди живуть у:
@@ -203,7 +203,7 @@ Decision-tree коли щось «не працює»:
 
 ### 8.1. Migration `down.sql` drill
 
-PR-32 з [`docs/planning/pr-plan-2026-05.md`](../../planning/pr-plan-2026-05.md). Repo policy в Hard Rule #4 ([`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../governance/rules/04-sql-migrations-sequential-two-phase.md)): production **ніколи не запускає `.down.sql`** — production rollback завжди = compensating migration. Але `apps/server/src/migrations/NNN_*.down.sql` лишається обов'язковим інструментом для local rollback-у під час incident response / hotfix testing / DBA-recovery без backup-у.
+PR-32 з [`docs/90-work/planning/pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md). Repo policy в Hard Rule #4 ([`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../governance/rules/04-sql-migrations-sequential-two-phase.md)): production **ніколи не запускає `.down.sql`** — production rollback завжди = compensating migration. Але `apps/server/src/migrations/NNN_*.down.sql` лишається обов'язковим інструментом для local rollback-у під час incident response / hotfix testing / DBA-recovery без backup-у.
 
 Раніше `.down.sql` валідувалися виключно `pnpm lint:migrations` (формальні `DROP`-правила два-фази + sequential numbering — статичний lint, що не виконує SQL). Drift в самих down-файлах — `DROP COLUMN` під колонку, яку перейменували, або забутий `DROP INDEX`, що дублює auto-drop через `CASCADE` — мовчав до моменту, коли DBA би відкочував руками вночі.
 
@@ -376,4 +376,4 @@ Auto-create / auto-drop indexes на основі stat-ів — anti-pattern:
 - [`docs/02-engineering/architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md) — surface-by-surface deploy + healthcheck + rollback table.
 - [`docs/security/disaster-recovery.md`](../../security/disaster-recovery.md) — RPO/RTO targets, disaster classes.
 - [`docs/governance/incident-severity-policy.md`](../../governance/incident-severity-policy.md) — SEV-1/2/3/4 mapping.
-- [`docs/planning/pr-plan-2026-05.md`](../../planning/pr-plan-2026-05.md) — поточний 90-day roadmap (PR-37 — це він).
+- [`docs/90-work/planning/pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md) — поточний 90-day roadmap (PR-37 — це він).

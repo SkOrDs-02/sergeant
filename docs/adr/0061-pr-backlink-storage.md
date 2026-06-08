@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5
+  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5
   - [`docs/adr/0058-knowledge-graph-schema.md`](./0058-knowledge-graph-schema.md) — graph schema with `pr` node type
   - [`scripts/docs/generate-open-work.mjs`](../../scripts/docs/generate-open-work.mjs) — existing forward extractor (docs → PR mentions)
   - [`.github/workflows/pr-backlinks.yml`](../../.github/workflows/pr-backlinks.yml) — implementation
@@ -52,14 +52,17 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
         "title": "feat(docs): knowledge graph generator (Initiative 0014 Phase 1)",
         "merged_at": "2026-05-15T...",
         "author": "@Skords-01",
-        "touchedDocs": ["docs/adr/0058-...", "docs/initiatives/0014-..."]
+        "touchedDocs": [
+          "docs/adr/0058-...",
+          "docs/90-work/initiatives/0014-..."
+        ]
       }
     ]
   }
   ```
 - **Canonical doc paths** що отримують backlinks (whitelist у script):
   - `docs/adr/*.md` (крім TEMPLATE.md, README.md)
-  - `docs/initiatives/*.md` (крім archive/, follow-ups.md, README.md)
+  - `docs/90-work/initiatives/*.md` (крім archive/, follow-ups.md, README.md)
   - `docs/00-start/playbooks/*.md` (крім INDEX.md, README.md, \_TEMPLATE-\*)
   - `docs/governance/rules/*.md` (крім README.md)
 - **In-doc block format** (appended at file end, idempotent). The block is delimited by HTML-comment markers `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->` and `<!-- AUTO-GENERATED: PR-BACKLINKS-END -->` and contains a `## Recent PRs` heading with a 3-column markdown table (PR link, title, merge date). Example layout — see any canonical doc that has merged through Phase 5 for a real instance.
@@ -73,7 +76,7 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
 - **Hybrid balances UX vs noise.** JSON-only — погана contributor UX (треба окремо переходити). In-doc-only — N×M duplication, кожен doc редагується при кожному merge.
 - **Single canonical store enables tooling.** Phase 1 graph generator уже має `pr` node type + `touched-by` edge тип; ledger feeds graph generator без додаткового scanner-а.
 - **Follow-up PR strategy respects Hard Rule #6.** No force-push, no direct main-write. Trade-off: 1-PR latency для backlinks update. Acceptable (backlinks не блокують жодну CI gate).
-- **Path whitelist scopes thrashing.** Чотири класи canonical docs (ADR / initiative / playbook / rule) — стабільні, рідко перейменовуються. Не whitelist-уємо `docs/audits/` бо audits є snapshot-документами; не whitelist-уємо `docs/02-engineering/architecture/` бо там auto-gen mirrors з Phase 3, які регулярно міняються від drift-detector.
+- **Path whitelist scopes thrashing.** Чотири класи canonical docs (ADR / initiative / playbook / rule) — стабільні, рідко перейменовуються. Не whitelist-уємо `docs/90-work/audits/` бо audits є snapshot-документами; не whitelist-уємо `docs/02-engineering/architecture/` бо там auto-gen mirrors з Phase 3, які регулярно міняються від drift-detector.
 - **Idempotent block format.** START/END markers роблять регенерацію O(N) string-rewrite без AST-парсингу markdown.
 
 ## Consequences
@@ -104,7 +107,7 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
 
 ## Links
 
-- [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5
+- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5
 - [`docs/governance/schemas/pr-ledger.schema.json`](../governance/schemas/pr-ledger.schema.json)
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->

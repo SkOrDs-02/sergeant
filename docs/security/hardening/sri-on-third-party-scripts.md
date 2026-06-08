@@ -1,13 +1,13 @@
 # SRI на сторонні `<script src>` (S3)
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-09-02.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 | Поле               | Значення                                                                                          |
 | ------------------ | ------------------------------------------------------------------------------------------------- |
 | **Severity**       | **P1** (audit § S3 — ризик ще не активний, фіксуємо до того, як хтось додасть inline CDN-snippet) |
 | **Threat model**   | **T, I** — Tampering → CDN supply-chain ([`threat-model.md`](../threat-model.md) `T`-row)         |
-| **Discovered**     | 2026-05-13 (`docs/audits/2026-05-13-security-observability-roast.md` § S3)                        |
+| **Discovered**     | 2026-05-13 (`docs/90-work/audits/2026-05-13-security-observability-roast.md` § S3)                |
 | **Enforced by**    | `sergeant-design/sri-on-third-party-script` (ESLint), `pnpm lint:html-sri` (path-based gate)      |
 | **Affected files** | `apps/web/index.html`, `apps/web/vercel.json` (CSP allowlist)                                     |
 

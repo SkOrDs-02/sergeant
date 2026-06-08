@@ -194,7 +194,7 @@ export function evaluate({ changedFiles, getDiff, labelsJson }) {
       `  edge-served config — humans must.`,
       ``,
       `See: docs/00-start/playbooks/deploy-config-change.md`,
-      `See: docs/initiatives/0011-foundation-adoption-and-process-discipline.md`,
+      `See: docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md`,
       `       §Фаза 1 → PR 1.3 (Phase 1 PR 1.3)`,
     ].join("\n"),
   );

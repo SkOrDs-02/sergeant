@@ -21,7 +21,7 @@
       "author": "@Skords-01",
       "touchedDocs": [
         "docs/adr/0061-pr-backlink-storage.md",
-        "docs/initiatives/0014-knowledge-graph-and-catalogs.md"
+        "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
       ]
     },
     {
@@ -31,7 +31,7 @@
       "author": "@Skords-01",
       "touchedDocs": [
         "docs/adr/0060-architecture-diagrams-automation-scope.md",
-        "docs/initiatives/0014-knowledge-graph-and-catalogs.md"
+        "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
       ]
     },
     {
@@ -39,7 +39,9 @@
       "title": "feat(docs): auto-derived repo-map + service-catalog (Initiative 0014 Phase 3)",
       "merged_at": "2026-05-15T08:22:56Z",
       "author": "@Skords-01",
-      "touchedDocs": ["docs/initiatives/0014-knowledge-graph-and-catalogs.md"]
+      "touchedDocs": [
+        "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
+      ]
     },
     {
       "number": 2889,
@@ -57,7 +59,7 @@
       "author": "@Skords-01",
       "touchedDocs": [
         "docs/adr/0058-knowledge-graph-schema.md",
-        "docs/initiatives/0014-knowledge-graph-and-catalogs.md"
+        "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
       ]
     }
   ]

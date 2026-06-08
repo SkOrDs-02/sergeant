@@ -5,7 +5,7 @@
 - **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 - **Deciders:** @Skords-01
 - **Supersedes:** —
-- **Related:** PR-39 у [`docs/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md`](../initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md)
+- **Related:** PR-39 у [`docs/90-work/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md`](../90-work/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md)
 
 ---
 
@@ -14,7 +14,7 @@
 `tools/console` використовував `@anthropic-ai/sdk@^0.36.3` — застарілу версію з deprecated
 внутрішніми типами. Найновіший стабільний реліз — `0.95.x`.
 
-PR-39 у `docs/initiatives/stack-pulse-2026-05/` був написаний 2026-05-07 з припущенням, що
+PR-39 у `docs/90-work/initiatives/stack-pulse-2026-05/` був написаний 2026-05-07 з припущенням, що
 Anthropic GA-нула SDK v1 десь у Q2-2026. Це припущення на момент 2026-05-13 не реалізувалось:
 `npm view @anthropic-ai/sdk dist-tags` → `latest: 0.95.2` (released 2026-05-11), `alpha:
 0.34.0-alpha.0` (історичний, не пов'язаний з v1). Жодного v1.x релізу або v1-alpha-у в каналах
@@ -148,4 +148,4 @@ quarterly review цього ADR.
 
 - [Anthropic SDK changelog](https://github.com/anthropics/anthropic-sdk-typescript/releases)
 - [Anthropic prompt caching docs](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
-- PR-39 spec: [`docs/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md`](../initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md)
+- PR-39 spec: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md`](../90-work/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md)

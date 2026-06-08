@@ -1,6 +1,6 @@
 # ADR-0058: Knowledge graph schema and storage format
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 - **Status:** Proposed
@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md)
+  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md)
   - [`docs/governance/schemas/knowledge-graph.schema.json`](../governance/schemas/knowledge-graph.schema.json)
   - [`scripts/docs/check-adr-graph.mjs`](../../scripts/docs/check-adr-graph.mjs) — existing ADR-only graph validator
   - [`scripts/docs/generate-open-work.mjs`](../../scripts/docs/generate-open-work.mjs) — existing one-way `docs → PR` extractor
@@ -86,7 +86,7 @@ Sergeant має 7 розрізнених каталогів артефактів
 
 ## Links
 
-- [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md)
+- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md)
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
 

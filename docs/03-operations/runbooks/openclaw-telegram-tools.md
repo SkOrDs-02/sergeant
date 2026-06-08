@@ -4,7 +4,7 @@
 > **Status:** Active
 
 Operational runbook для LLM tool-у `read_telegram_topic_history` (PR-35,
-Pain P8 з [`docs/planning/pr-plan-2026-05.md`](../../planning/pr-plan-2026-05.md)).
+Pain P8 з [`docs/90-work/planning/pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md)).
 Покриває (a) як перевірити stack-and-config, (b) що означають структуровані
 помилки в response, (c) як degrade-аєш-degrade-аєш при flood-control /
 forbidden Telegram-у.
@@ -110,7 +110,7 @@ Expected: JSON з полями вище. Якщо `error.code=forbidden` — bot
 ## Cross-links
 
 - ADR-0031 §5 — original `read_telegram_topic_history` spec.
-- PR-35 у [`docs/planning/pr-plan-2026-05.md`](../../planning/pr-plan-2026-05.md) — рішення про Bot API probe + structured errors.
+- PR-35 у [`docs/90-work/planning/pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md) — рішення про Bot API probe + structured errors.
 - Tool-set overview: [`tools/openclaw/src/agents/openclaw.ts`](../../../tools/openclaw/src/agents/openclaw.ts).
 - Server tests: [`apps/server/src/modules/openclaw/read-telegram-topic-history.test.ts`](../../../apps/server/src/modules/openclaw/read-telegram-topic-history.test.ts), [`apps/server/src/modules/telegram/bot-client.test.ts`](../../../apps/server/src/modules/telegram/bot-client.test.ts).
 - Adjacent write-tool: `postToTopic` (`apps/server/src/modules/openclaw/write-tools.ts`).

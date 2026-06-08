@@ -8,7 +8,7 @@
 - **Related:**
   - [ADR-0042 — password-hashing-strategy](./0042-password-hashing-strategy.md)
   - [`docs/security/better-auth-crypto-review.md`](../security/better-auth-crypto-review.md)
-  - [`docs/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md`](../initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md)
+  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md`](../90-work/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md)
   - [`docs/security/hardening/H4-encryption-key-rotation.md`](../security/hardening/H4-encryption-key-rotation.md)
 
 ---
@@ -150,4 +150,4 @@ write-test pinning behaviour, (b) ESLint правило заборонити п�
 - [Auth.js](https://authjs.dev/) — primary fallback candidate
 - [Lucia](https://lucia-auth.com/) — alternate fallback (lighter,
   expects more glue code)
-- [`pr-10-better-auth-security-review`](../initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md)
+- [`pr-10-better-auth-security-review`](../90-work/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md)

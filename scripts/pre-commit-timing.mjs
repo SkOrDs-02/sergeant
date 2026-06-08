@@ -2,7 +2,7 @@
 // scripts/pre-commit-timing.mjs
 //
 // Pre-commit timing wrapper. Closes audit item P1-5 from
-// `docs/audits/2026-05-13-testing-devx-roast.md` — "Pre-commit timing не
+// `docs/90-work/audits/2026-05-13-testing-devx-roast.md` — "Pre-commit timing не
 // вимірюється". Invoked by `.husky/pre-commit` instead of `pnpm exec
 // lint-staged` directly, so we keep one source of truth for the staged
 // pipeline while collecting non-invasive timing data.

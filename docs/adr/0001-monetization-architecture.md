@@ -4,7 +4,7 @@
 - **Note:** Історичний архітектурний baseline; pricing/trial уточнено ADR-0051.
 - **Date:** 2026-04-27
 - **Last validated:** 2026-05-19 by Codex. **Next review:** 2026-08-17.
-- **Поточний канон:** ADR-0051 володіє активним pricing (`Free + Pro`, `$7/$49`, 7-day trial). [`docs/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md) володіє delivery-статусом. Старі приклади про 14-day trial, UAH-only price IDs, `billingKeys.plan()` і `POST /api/billing/checkout-session` нижче є історичним контекстом, якщо їх не повторює ADR-0051 або поточний код.
+- **Поточний канон:** ADR-0051 володіє активним pricing (`Free + Pro`, `$7/$49`, 7-day trial). [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../90-work/planning/pr-plan-revenue-2026-05.md) володіє delivery-статусом. Старі приклади про 14-day trial, UAH-only price IDs, `billingKeys.plan()` і `POST /api/billing/checkout-session` нижче є історичним контекстом, якщо їх не повторює ADR-0051 або поточний код.
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**

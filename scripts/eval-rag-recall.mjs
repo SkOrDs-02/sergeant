@@ -2,7 +2,7 @@
 // scripts/eval-rag-recall.mjs
 //
 // RAG eval harness CLI (PR-20 § eval) + quality gate (PR-22 § weekly
-// cron). Linked to `docs/planning/pr-plan-2026-05.md` § PR-20 / PR-22
+// cron). Linked to `docs/90-work/planning/pr-plan-2026-05.md` § PR-20 / PR-22
 // і § Day 60 decision-point (kill module якщо recall@4 < 0.4).
 //
 // Документація: docs/02-engineering/architecture/rag-eval.md (curation, formulas, baseline).

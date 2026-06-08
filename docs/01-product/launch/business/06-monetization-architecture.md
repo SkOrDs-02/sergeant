@@ -4,7 +4,7 @@
 > **Status:** Active (architecture reference; delivery status lives in revenue PR plan)
 
 > Pre-MVP draft. Розширення [01 — Монетизація і ціноутворення](./01-monetization-and-pricing.md) в бік реальної імплементації: розбивка на PR-и, ADR-рішення, risk register, rollout-plan.
-> Canonical delivery owner: [`docs/planning/pr-plan-revenue-2026-05.md`](../../../planning/pr-plan-revenue-2026-05.md). PR tables below are architecture context, not the live execution tracker.
+> Canonical delivery owner: [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../../90-work/planning/pr-plan-revenue-2026-05.md). PR tables below are architecture context, not the live execution tracker.
 > Канонічний implementation snapshot (2026-05-19): shipped contract names — `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/stripe-webhook`, `billingKeys.status`, `STRIPE_ENABLED`. Старі приклади нижче з `GET /api/billing/plan`, `billingKeys.plan()`, `/create-checkout`, `/create-portal`, `PAYWALL_ENABLED` або 14-day trial — історичний architecture context, доки цей reference повністю не переписано під ADR-0051 і поточний код.
 >
 > **Diff проти v1 (skeleton-attachment):** виправлені 5 red flags (idempotency, period_end semantics, cache-invalidation, grandfather policy, aiQuota×requirePlan). Розбивка PR розширена з 6 до 10. Додано: ADR-список рішень, risk register, rollout-план з feature-flag, env-template, контракт-тести.

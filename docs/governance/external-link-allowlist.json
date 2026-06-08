@@ -56,11 +56,11 @@
     },
     {
       "pattern": "^https?://reactrouter\\.com/en/main/components/scroll-restoration",
-      "reason": "Cited в docs/initiatives/0006-frontend-routing-and-code-split.md §6 як reference на ScrollRestoration component API at time of initiative draft. React Router restructured docs site (now /6.x/components/...). Pinned-by-version citation — claim audit-able, link rot expected."
+      "reason": "Cited в docs/90-work/initiatives/0006-frontend-routing-and-code-split.md §6 як reference на ScrollRestoration component API at time of initiative draft. React Router restructured docs site (now /6.x/components/...). Pinned-by-version citation — claim audit-able, link rot expected."
     },
     {
       "pattern": "^https?://node-postgres\\.com/api/pool",
-      "reason": "Cited в docs/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md як reference на pg.Pool API at time of planning (2026-05). node-postgres docs site reorganized in 2025 — API surface unchanged, URL path moved to /apis/pool. Historical citation."
+      "reason": "Cited в docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md як reference на pg.Pool API at time of planning (2026-05). node-postgres docs site reorganized in 2025 — API surface unchanged, URL path moved to /apis/pool. Historical citation."
     },
     {
       "pattern": "^https?://csrc\\.nist\\.gov/(publications/detail|pubs)/sp/",
@@ -72,15 +72,15 @@
     },
     {
       "pattern": "^https?://(www\\.)?nivo\\.rocks(/.*)?$",
-      "reason": "nivo.rocks returns 402 (Payment Required, anti-bot) to non-browser User-Agents; pages render correctly in browsers. Cited в docs/planning/tools-research-2026-05.md як charting-library reference (Nivo, 13k ⭐)."
+      "reason": "nivo.rocks returns 402 (Payment Required, anti-bot) to non-browser User-Agents; pages render correctly in browsers. Cited в docs/90-work/planning/tools-research-2026-05.md як charting-library reference (Nivo, 13k ⭐)."
     },
     {
       "pattern": "^https?://platform\\.openai\\.com(/|$)",
-      "reason": "platform.openai.com gates everything behind Cloudflare anti-bot and returns 403 to non-browser User-Agents; pages render correctly in browsers. Cited в docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md (embeddings guide) та docs/planning/openclaw-user-guide.md (api-keys console)."
+      "reason": "platform.openai.com gates everything behind Cloudflare anti-bot and returns 403 to non-browser User-Agents; pages render correctly in browsers. Cited в docs/90-work/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md (embeddings guide) та docs/90-work/planning/openclaw-user-guide.md (api-keys console)."
     },
     {
       "pattern": "^https?://(www\\.)?codemzy\\.com(/.*)?$",
-      "reason": "codemzy.com times out (ECONNABORTED) against CI runner User-Agents. Cited in docs/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md as a ChunkLoadError fix reference; page loads correctly in browsers."
+      "reason": "codemzy.com times out (ECONNABORTED) against CI runner User-Agents. Cited in docs/90-work/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md as a ChunkLoadError fix reference; page loads correctly in browsers."
     },
     {
       "pattern": "^https?://agentskill\\.sh(/.*)?$",
@@ -88,15 +88,15 @@
     },
     {
       "pattern": "^https?://playwright\\.dev/docs/test-snapshots(/.*)?$",
-      "reason": "playwright.dev/docs/test-snapshots intermittently fails with `fetch failed` from CI runners (network or anti-bot). Cited in docs/initiatives/archive/_0007-design-system-tooling.md as a visual-regression snapshot reference; page loads correctly in browsers."
+      "reason": "playwright.dev/docs/test-snapshots intermittently fails with `fetch failed` from CI runners (network or anti-bot). Cited in docs/90-work/initiatives/archive/_0007-design-system-tooling.md as a visual-regression snapshot reference; page loads correctly in browsers."
     },
     {
       "pattern": "^https?://(www\\.)?sigstore\\.dev(/.*)?$",
-      "reason": "sigstore.dev intermittently fails with `fetch failed` from CI runners. Cited in docs/initiatives/archive/_0008-platform-hardening.md as the canonical Sigstore homepage; page loads correctly in browsers."
+      "reason": "sigstore.dev intermittently fails with `fetch failed` from CI runners. Cited in docs/90-work/initiatives/archive/_0008-platform-hardening.md as the canonical Sigstore homepage; page loads correctly in browsers."
     },
     {
       "pattern": "^https?://security\\.stackexchange\\.com(/.*)?$",
-      "reason": "security.stackexchange.com returns 403 (Cloudflare anti-bot) to non-browser User-Agents. Cited in docs/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md as a bcrypt max-length QA reference; page loads correctly in browsers."
+      "reason": "security.stackexchange.com returns 403 (Cloudflare anti-bot) to non-browser User-Agents. Cited in docs/90-work/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md as a bcrypt max-length QA reference; page loads correctly in browsers."
     },
     {
       "pattern": "^https?://cabinet\\.tax\\.gov\\.ua(/.*)?$",

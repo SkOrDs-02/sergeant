@@ -6,7 +6,7 @@
 // (p50 / p95 / mean / max) for the last N commits.
 //
 // Wired via `pnpm pre-commit:timings`. Closes audit item P1-5 from
-// `docs/audits/2026-05-13-testing-devx-roast.md` together with the
+// `docs/90-work/audits/2026-05-13-testing-devx-roast.md` together with the
 // timing wrapper. The log is gitignored — these numbers are local
 // dev signal, never a CI gate.
 //

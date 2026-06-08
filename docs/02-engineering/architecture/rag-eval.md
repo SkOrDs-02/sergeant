@@ -337,7 +337,7 @@ runtimeKillSwitch.ts`):
 
 ## See also
 
-- [`pr-plan-2026-05.md`](../../planning/pr-plan-2026-05.md) § PR-20 / PR-22
+- [`pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md) § PR-20 / PR-22
 - [Hard Rule #15](../../governance/rules/15-governance-and-doc-language.md) —
   governance + Ukrainian docs
 - [`apps/server/src/modules/ai-memory/`](../../../apps/server/src/modules/ai-memory)

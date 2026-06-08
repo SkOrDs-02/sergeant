@@ -7,7 +7,7 @@
 > Кожен запис — з офіційним посиланням, фактичною ціною (Date checked: 2026-04), статусом у Sergeant.
 > Джерело: `sergeant-services-audit.md` + `sergeant-toolstack.md` + перевірка `package.json`, `railway.toml`, `vercel.json`, `apps/server/src/lib/**`, `apps/server/src/env.ts`, `ops/`.
 >
-> **Канон 2026-05-19:** цей каталог описує service/tool usage, а не live revenue rollout. Stripe уже є в коді (`/api/billing/status`, `/checkout`, `/portal`, `/stripe-webhook`); open work — production configuration/legal readiness, не “додати Stripe з нуля”. Live delivery owner: [`docs/planning/pr-plan-revenue-2026-05.md`](../../../planning/pr-plan-revenue-2026-05.md).
+> **Канон 2026-05-19:** цей каталог описує service/tool usage, а не live revenue rollout. Stripe уже є в коді (`/api/billing/status`, `/checkout`, `/portal`, `/stripe-webhook`); open work — production configuration/legal readiness, не “додати Stripe з нуля”. Live delivery owner: [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../../90-work/planning/pr-plan-revenue-2026-05.md).
 
 ---
 

@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Superseded sections (non-ADR):** pricing sections in [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../01-product/launch/business/01-monetization-and-pricing.md) (§2.2 Plus tier, §2.3 pay-per-feature, §3 Lifetime ₴2999)
 - **Related:**
-  - [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md)
+  - [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../90-work/initiatives/0010-revenue-first-launch.md)
   - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../01-product/launch/business/01-monetization-and-pricing.md)
 
 ---
@@ -82,6 +82,6 @@
 
 ## Links
 
-- [`docs/initiatives/0010-revenue-first-launch.md` § Phase 1.1](../initiatives/0010-revenue-first-launch.md)
+- [`docs/90-work/initiatives/0010-revenue-first-launch.md` § Phase 1.1](../90-work/initiatives/0010-revenue-first-launch.md)
 - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../01-product/launch/business/01-monetization-and-pricing.md)
-- [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md)
+- [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](../90-work/audits/archive/2026-05-04-revenue-and-marketing-roast.md)

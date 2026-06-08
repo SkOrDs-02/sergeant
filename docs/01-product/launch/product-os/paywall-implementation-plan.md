@@ -13,7 +13,7 @@
 
 ## 1. TL;DR
 
-Поточний blocker для PR-20 у full-impl формі — **відсутня billing-інфраструктура з [initiative 0010](../../../initiatives/0010-revenue-first-launch.md) phases 1-3** (subscriptions migration, `getUserPlan(userId)`, Stripe Checkout endpoint). Рекомендована стратегія — **Path C: defer PR-20 impl до 0010 phase 3 merge** + paralelно зашити PostHog FF + dashboard scaffolding (поза codebase, у конфігах PostHog), щоб коли 0010 land-неться — PR-20 почався з готовим telemetry-stack-ом і не блокував conversion-метрику.
+Поточний blocker для PR-20 у full-impl формі — **відсутня billing-інфраструктура з [initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md) phases 1-3** (subscriptions migration, `getUserPlan(userId)`, Stripe Checkout endpoint). Рекомендована стратегія — **Path C: defer PR-20 impl до 0010 phase 3 merge** + paralelно зашити PostHog FF + dashboard scaffolding (поза codebase, у конфігах PostHog), щоб коли 0010 land-неться — PR-20 почався з готовим telemetry-stack-ом і не блокував conversion-метрику.
 
 Ця рекомендація — **не імперативна**. Founder може переключитись на **Path B (FF-gated UI-stub now)**, якщо є бажання почати UX iteration на post-FTUX moment до того як billing live. Path A (full impl now) виключений — будь-який Stripe-touching код без 0010 = mock-чейн на 4-х рівнях, з гарантованим refactor-боргом.
 
@@ -89,7 +89,7 @@
 
 1. Цей plan-doc landing → закриває PR-20 у master-tracker §3.4 з status `Plan landed; impl gated on 0010 phase 3`.
 2. PostHog dashboard scaffolding (поза codebase): створити Insights для 5 `PAYWALL_*` events (порожні до first event), щоб коли flag flip-неться — funnel рендерився.
-3. У `docs/initiatives/0010-revenue-first-launch.md` фіксуємо у Phase 3 → `Acceptance criteria` перехресну вимогу — `usePlan()` hook має бути ready as RQ query before паралель-старт PR-20.
+3. У `docs/90-work/initiatives/0010-revenue-first-launch.md` фіксуємо у Phase 3 → `Acceptance criteria` перехресну вимогу — `usePlan()` hook має бути ready as RQ query before паралель-старт PR-20.
 4. У `docs/01-product/launch/business/06-monetization-architecture.md` фіксуємо що `paywall_post_ftux_v1` FF — pre-зареєстрований у PostHog FF реєстрі, default OFF, перший flag-flip відбувається через 24h після 0010 phase 3 merge (для cohort cleanliness).
 
 **Що ловимо натомість:**
@@ -206,7 +206,7 @@ PR-20 (last sub-PR before flag-flip) НЕ merge-ається без задово
 ## 9. Cross-refs
 
 - [`paywall-ux-placement.md`](./paywall-ux-placement.md) — UX sketch + decision doc (PR-19 output).
-- [Initiative 0010 — revenue-first-launch](../../../initiatives/0010-revenue-first-launch.md) — phases 0-6 для billing-stack.
+- [Initiative 0010 — revenue-first-launch](../../../90-work/initiatives/0010-revenue-first-launch.md) — phases 0-6 для billing-stack.
 - [`06-monetization-architecture.md`](../business/06-monetization-architecture.md) — ADR list (1.1–1.10), risk register, technical skeleton v2.
 - [FTUX master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr) — PR-19/PR-20 у sprint-плані.
 - [FTUX master-tracker §7 → «Paywall»](./ftux-master-tracker.md#7-decisions-log) — decision-log.

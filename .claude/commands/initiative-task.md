@@ -1,9 +1,9 @@
 ---
-description: Виконати наступний невиконаний таск з ініціативи у docs/initiatives/
+description: Виконати наступний невиконаний таск з ініціативи у docs/90-work/initiatives/
 argument-hint: "[NNNN-slug | NNNN | --list]"
 ---
 
-You are executing **one atomic task** from a Sergeant initiative in `docs/initiatives/`. Initiatives are multi-PR program-of-work plans; each phase has a table of PR rows + a `## Критерії DONE` checklist. Your job: pick the next undone unit, route it to the right specialist skill + playbook, and ship it through the canonical CI gates.
+You are executing **one atomic task** from a Sergeant initiative in `docs/90-work/initiatives/`. Initiatives are multi-PR program-of-work plans; each phase has a table of PR rows + a `## Критерії DONE` checklist. Your job: pick the next undone unit, route it to the right specialist skill + playbook, and ship it through the canonical CI gates.
 
 Arguments: `$ARGUMENTS`
 
@@ -11,7 +11,7 @@ Arguments: `$ARGUMENTS`
 
 ### Mode A — `--list` or no args → picker
 
-1. Discover active initiatives via `glob docs/initiatives/[0-9]*.md` (filter out `_`-prefixed completed files) + `glob docs/initiatives/*/` for directory-form series like `stack-pulse-2026-05/`. Cross-check against the active-initiatives table in `docs/initiatives/README.md`; warn if drift exists between file system and README.
+1. Discover active initiatives via `glob docs/90-work/initiatives/[0-9]*.md` (filter out `_`-prefixed completed files) + `glob docs/90-work/initiatives/*/` for directory-form series like `stack-pulse-2026-05/`. Cross-check against the active-initiatives table in `docs/90-work/initiatives/README.md`; warn if drift exists between file system and README.
 2. For each file-form initiative, count `- [ ]` lines scoped to the `## Критерії DONE` section only (use awk between `^## Критерії DONE` and the next `^## ` — counting whole-file checkboxes captures stale carry-over and gives wrong picture). For each directory-form series, count `pr-NN-*.md` files where `> **Status:**` header is not `Done`/`Closed`/`Merged`.
 3. Render a compact table: `#`, slug, status header (truncated to ~80 chars), priority, open / done criteria count, ETA. Mark directory-form rows with `(series)` suffix. Caveman tone OK.
 4. Ask the user which initiative to drive (or to type a slug like `0017`, or a series-internal slug like `stack-pulse-2026-05/pr-01`).
@@ -19,7 +19,7 @@ Arguments: `$ARGUMENTS`
 
 ### Mode B — `<NNNN>` or `<NNNN-slug>` → execute
 
-1. **Resolve file.** Glob `docs/initiatives/{_,}NNNN-*.md`. If 0 hits → report missing and offer `--list`. If multiple (active + archived) → prefer active (no `_` prefix).
+1. **Resolve file.** Glob `docs/90-work/initiatives/{_,}NNNN-*.md`. If 0 hits → report missing and offer `--list`. If multiple (active + archived) → prefer active (no `_` prefix).
 2. **Parse the file.**
    - Status header (`> **Status:** ...`) — bail if `Done`/`Closed`/`Archived`/`Withdrawn` (offer to switch to another initiative).
    - Find the **single `## Критерії DONE` section** of the file (it is always one block — see § DONE structure variants below for how phases are encoded inside it).
@@ -54,8 +54,8 @@ When all criteria for the picked PR pass:
 1. **Tick the criterion** in `## Критерії DONE` (turn `- [ ]` into `- [x]`).
 2. **If this PR closes the whole phase** (all criteria for that phase now `- [x]`):
    - Update the phase row in `## План змін` table if it has a status column.
-   - If this was the last phase and the whole initiative is done, update `> **Status:**` header to `Done`, add an `## Outcome` section, and follow the rename protocol in `docs/initiatives/README.md` step 4 (`git mv NNNN-... _NNNN-...`, update all `.md` links, regenerate `follow-ups.md`).
-3. **Sync README.md** row in `docs/initiatives/README.md` if status text changed.
+   - If this was the last phase and the whole initiative is done, update `> **Status:**` header to `Done`, add an `## Outcome` section, and follow the rename protocol in `docs/90-work/initiatives/README.md` step 4 (`git mv NNNN-... _NNNN-...`, update all `.md` links, regenerate `follow-ups.md`).
+3. **Sync README.md** row in `docs/90-work/initiatives/README.md` if status text changed.
 4. **Run CI gates** in this order, stop on first fail:
    ```
    pnpm lint:initiative-status-sync
@@ -123,5 +123,5 @@ If the structure doesn't fit any variant, stop and ask the user — don't guess.
 ## Output style
 
 - Каверменимо в апдейтах між кроками. Нормальна мова в plan-confirm повідомленні і в кінцевому summary.
-- Не дублюй контент з initiative-файлу — посилайся (`docs/initiatives/NNNN-slug.md § Phase 1`).
+- Не дублюй контент з initiative-файлу — посилайся (`docs/90-work/initiatives/NNNN-slug.md § Phase 1`).
 - End-of-turn: 1-2 речення — що зачекнуто, що далі (наступний PR-row у тій самій фазі, або `Phase X complete → move to Phase Y`).

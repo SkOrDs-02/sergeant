@@ -103,7 +103,7 @@ jobs:
           # the daily refresh PR.
           REFRESH_PATHS=(
             docs/open-work.md
-            docs/initiatives/follow-ups.md
+            docs/90-work/initiatives/follow-ups.md
             docs/today.md
             docs/README.md
             docs/governance/hard-rules-matrix.md

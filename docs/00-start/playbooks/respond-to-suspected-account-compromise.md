@@ -8,7 +8,7 @@ lang-reason: "Superseded stub kept only as historical anchor (`Status: Deprecate
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Deprecated
 
-> **Superseded by:** [access-governance.md § Suspected account compromise](./access-governance.md#4-suspected-account-compromise) — merged 2026-05-04 (initiative [0009](../../initiatives/archive/_0009-agent-os-hardening.md) PR 2.4).
+> **Superseded by:** [access-governance.md § Suspected account compromise](./access-governance.md#4-suspected-account-compromise) — merged 2026-05-04 (initiative [0009](../../90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 2.4).
 
 **Trigger:** historical anchor — open [access-governance.md § Suspected account compromise](./access-governance.md#4-suspected-account-compromise) instead.
 

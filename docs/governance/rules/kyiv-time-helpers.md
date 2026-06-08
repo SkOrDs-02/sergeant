@@ -79,5 +79,5 @@ comment.
 
 - [`apps/web/src/shared/lib/time/kyivTime.ts`](../../../apps/web/src/shared/lib/time/kyivTime.ts) — helper implementation
 - [`docs/02-engineering/architecture/domain-invariants.md`](../../02-engineering/architecture/domain-invariants.md) — Europe/Kyiv invariant
-- [`docs/audits/2026-05-13-page-audit-03-hub-chat-search.md`](../../audits/2026-05-13-page-audit-03-hub-chat-search.md) F1/F2/F8 — first cluster of violations that motivated the rule
-- [`docs/audits/2026-05-13-page-audit-09-routine-strategy.md`](../../audits/2026-05-13-page-audit-09-routine-strategy.md) F3 — Routine module's `setHours(12,…)` cluster
+- [`docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md`](../../90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md) F1/F2/F8 — first cluster of violations that motivated the rule
+- [`docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md`](../../90-work/audits/2026-05-13-page-audit-09-routine-strategy.md) F3 — Routine module's `setHours(12,…)` cluster

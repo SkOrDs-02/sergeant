@@ -69,7 +69,7 @@ const CANONICAL_DOC_ROOTS = [
     excludes: ["TEMPLATE.md", "README.md"],
   },
   {
-    rootDir: "docs/initiatives",
+    rootDir: "docs/90-work/initiatives",
     recursive: false,
     excludes: ["README.md", "follow-ups.md"],
   },

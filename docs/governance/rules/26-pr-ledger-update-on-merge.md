@@ -13,11 +13,11 @@
 Canonical docs that receive PR backlinks (whitelist enforced by [`scripts/ci/update-pr-backlinks.mjs`](../../../scripts/ci/update-pr-backlinks.mjs)):
 
 - `docs/adr/*.md` (excluding `TEMPLATE.md`, `README.md`)
-- `docs/initiatives/*.md` (excluding `archive/`, `follow-ups.md`, `README.md`)
+- `docs/90-work/initiatives/*.md` (excluding `archive/`, `follow-ups.md`, `README.md`)
 - `docs/00-start/playbooks/*.md` (excluding `INDEX.md`, `README.md`, `_TEMPLATE-*`)
 - `docs/governance/rules/*.md` (excluding `README.md`)
 
-`docs/audits/` and `docs/02-engineering/architecture/` are intentionally excluded — audits are snapshot-natured, architecture is already covered by Phase 3 drift-detectors.
+`docs/90-work/audits/` and `docs/02-engineering/architecture/` are intentionally excluded — audits are snapshot-natured, architecture is already covered by Phase 3 drift-detectors.
 
 ## Enforced by
 
@@ -46,7 +46,7 @@ Requires `gh` CLI on PATH. Commit the resulting `docs/pr-ledger/index.json` + in
 
 ## Tracking
 
-- Initiative — [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5.
+- Initiative — [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5.
 - ADR-0061 — [`docs/adr/0061-pr-backlink-storage.md`](../../adr/0061-pr-backlink-storage.md).
 - Workflow — [`.github/workflows/pr-backlinks.yml`](../../../.github/workflows/pr-backlinks.yml).
 

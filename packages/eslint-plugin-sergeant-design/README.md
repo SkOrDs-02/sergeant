@@ -234,7 +234,7 @@ console.log(requestId);
 
 ### `sergeant-design/no-console-pii`
 
-Забороняє передавати PII / secret-shaped значення у `console.{log,error,warn,info}` (S2, audit `docs/audits/2026-05-13-security-observability-roast.md`). `@sentry/react` за замовчуванням вмикає `console`-інтеграцію, тож усе, що йде через `console.*`, осідає Sentry-breadcrumb-ом; DevTools-консоль видно під час screen-share, а PostHog/Logpipe-екстеншни теж тапляться у `console.*`. Severity: **error**. Див. також [`docs/security/logging-redaction-policy.md`](../../docs/security/logging-redaction-policy.md).
+Забороняє передавати PII / secret-shaped значення у `console.{log,error,warn,info}` (S2, audit `docs/90-work/audits/2026-05-13-security-observability-roast.md`). `@sentry/react` за замовчуванням вмикає `console`-інтеграцію, тож усе, що йде через `console.*`, осідає Sentry-breadcrumb-ом; DevTools-консоль видно під час screen-share, а PostHog/Logpipe-екстеншни теж тапляться у `console.*`. Severity: **error**. Див. також [`docs/security/logging-redaction-policy.md`](../../docs/security/logging-redaction-policy.md).
 
 #### Детекція
 
@@ -266,7 +266,7 @@ console.debug("user email: bob@example.com"); // debug поза скоупом
 3. `as any`-cast-и
 4. `as unknown as X`-double-cast-и
 
-Severity: **error** (скоуп: `apps/web/src/**` і `apps/server/src/**`). Тестові файли звільнено. Наявні порушення allowlist-овано в `eslint.config.js` — див. [`docs/tech-debt/frontend.md`](../../docs/tech-debt/frontend.md) §no-strict-bypass.
+Severity: **error** (скоуп: `apps/web/src/**` і `apps/server/src/**`). Тестові файли звільнено. Наявні порушення allowlist-овано в `eslint.config.js` — див. [`docs/90-work/tech-debt/frontend.md`](../../docs/90-work/tech-debt/frontend.md) §no-strict-bypass.
 
 #### Опції
 
@@ -308,11 +308,11 @@ const el = document.getElementById("foo") as HTMLDivElement;
 
 ### `sergeant-design/no-hash-router-in-modules`
 
-Канарка міграції на `react-router@7` ([initiative 0006](../../docs/initiatives/0006-frontend-routing-and-code-split.md)). Підсвічує hash-router callsite-и у `apps/web/src/modules/**`: імпорти з модулів, що містять `useHashRouter` / `useHashRoute` у шляху (включно з ре-експортом), іменовані `ImportSpecifier`-и `useHashRouter` / `useHashRoute`, прямі call-expression-и тих самих хуків і assignment-и `window.location.hash = ...` (та `location.hash = ...`). Тестові файли (`*.test.{ts,tsx}` / `*.spec.{ts,tsx}` / `__tests__/`) ігноруються — там legacy-shim навмисно мокаємо. Scope: тільки `apps/web/src/modules/**` (не `core/`, не `shared/`, не `apps/server/`). Severity: **warn** під час міграції, переходить у **error** після Phase 2 (per-domain route migration).
+Канарка міграції на `react-router@7` ([initiative 0006](../../docs/90-work/initiatives/0006-frontend-routing-and-code-split.md)). Підсвічує hash-router callsite-и у `apps/web/src/modules/**`: імпорти з модулів, що містять `useHashRouter` / `useHashRoute` у шляху (включно з ре-експортом), іменовані `ImportSpecifier`-и `useHashRouter` / `useHashRoute`, прямі call-expression-и тих самих хуків і assignment-и `window.location.hash = ...` (та `location.hash = ...`). Тестові файли (`*.test.{ts,tsx}` / `*.spec.{ts,tsx}` / `__tests__/`) ігноруються — там legacy-shim навмисно мокаємо. Scope: тільки `apps/web/src/modules/**` (не `core/`, не `shared/`, не `apps/server/`). Severity: **warn** під час міграції, переходить у **error** після Phase 2 (per-domain route migration).
 
 ### `sergeant-design/no-bare-fixed-inset-modal`
 
-Підсвічує JSX-елементи, що використовують overlay-className `fixed inset-0` (з опційним `z-*` / `pointer-events-*` сусідом), але не оголошують себе як dialog для assistive tech: на тому самому елементі немає `role="dialog"` / `role="alertdialog"` / `role="presentation"` АБО `aria-modal`. Канонічні модальні примітиви (`Modal`, `Sheet`, `ConfirmDialog`, `InputDialog`, `KeyboardShortcutsModal`, `OnboardingWizard`) інкапсулюють focus-trap + scroll-lock + a11y-атрибути всередині — вони у `options.allow`. Парсить `className`-літерали, template-літерали і аргументи `cn(...)` / `clsx(...)` / `classnames(...)` / `twMerge(...)`. Variable-resolved classNames навмисно поза скоупом. Audit: [`docs/audits/2026-05-13-web-frontend-ergonomics-roast.md`](../../docs/audits/archive/2026-05-13-web-frontend-ergonomics-roast.md) § F2. Severity: **warn** (поки відкриті legacy offender-и; partII — file fixes + axe prop-tests — окремий PR).
+Підсвічує JSX-елементи, що використовують overlay-className `fixed inset-0` (з опційним `z-*` / `pointer-events-*` сусідом), але не оголошують себе як dialog для assistive tech: на тому самому елементі немає `role="dialog"` / `role="alertdialog"` / `role="presentation"` АБО `aria-modal`. Канонічні модальні примітиви (`Modal`, `Sheet`, `ConfirmDialog`, `InputDialog`, `KeyboardShortcutsModal`, `OnboardingWizard`) інкапсулюють focus-trap + scroll-lock + a11y-атрибути всередині — вони у `options.allow`. Парсить `className`-літерали, template-літерали і аргументи `cn(...)` / `clsx(...)` / `classnames(...)` / `twMerge(...)`. Variable-resolved classNames навмисно поза скоупом. Audit: [`docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md`](../../docs/90-work/audits/archive/2026-05-13-web-frontend-ergonomics-roast.md) § F2. Severity: **warn** (поки відкриті legacy offender-и; partII — file fixes + axe prop-tests — окремий PR).
 
 ```tsx
 // ❌ BAD — overlay без `role` / `aria-modal` на тому самому елементі

@@ -16,7 +16,7 @@ pnpm skills:lock    # регенерує SHA-256 у .agents/skills-lock.json п�
 
 Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigger-evals.json). `pnpm eval:skills` перевіряє, що кожен repo-owned skill має 2 trigger, 1 anti-trigger і 1 workflow-compliance prompt; команда входить у `pnpm lint:skills`.
 
-Гейти введено initiative-ою [`0009-agent-os-hardening`](../../initiatives/archive/_0009-agent-os-hardening.md) PR 1.1 ([#1659](https://github.com/Skords-01/Sergeant/pull/1659)). `skill-freshness.yml` тепер запускає той самий `pnpm lint:skills` як required-чек на PR. Без оновленого lock-у CI падає з посиланням на `pnpm skills:lock`.
+Гейти введено initiative-ою [`0009-agent-os-hardening`](../../90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 1.1 ([#1659](https://github.com/Skords-01/Sergeant/pull/1659)). `skill-freshness.yml` тепер запускає той самий `pnpm lint:skills` як required-чек на PR. Без оновленого lock-у CI падає з посиланням на `pnpm skills:lock`.
 
 ## Active Skills
 

@@ -72,5 +72,5 @@ Railway, `Dockerfile.api`. Pre-deploy автоматично запускає `p
 ## Глибше
 
 - [`docs/02-engineering/architecture/api-v1.md`](../../docs/02-engineering/architecture/api-v1.md)
-- [`docs/tech-debt/backend.md`](../../docs/tech-debt/backend.md)
+- [`docs/90-work/tech-debt/backend.md`](../../docs/90-work/tech-debt/backend.md)
 - [`docs/02-engineering/api/README.md`](../../docs/02-engineering/api/README.md) — OpenAPI spec

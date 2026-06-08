@@ -19,7 +19,7 @@ apps/<web|mobile>/src/modules/<domain>/
 ├── components/              # UI компоненти модуля. Презентаційні + контейнерні разом — поки модуль маленький
 ├── hooks/                   # React Query хуки + module-local stateful hooks
 ├── lib/                     # Pure utils без React (storage adapters, validators, parsers)
-├── pages/                   # Top-level screens / routes (web — react-router @7 path-routes для мігрованих модулів (`nutrition`, `finyk`) / hash-router для решти до завершення [initiative 0006](../../initiatives/0006-frontend-routing-and-code-split.md) Phase 2; mobile — Expo router screens)
+├── pages/                   # Top-level screens / routes (web — react-router @7 path-routes для мігрованих модулів (`nutrition`, `finyk`) / hash-router для решти до завершення [initiative 0006](../../90-work/initiatives/0006-frontend-routing-and-code-split.md) Phase 2; mobile — Expo router screens)
 ├── index.ts                 # Public API модуля (re-exports тільки те, що мають бачити інші модулі)
 └── constants.ts             # (опційно) Module-local константи; не share-аться між модулями
 ```

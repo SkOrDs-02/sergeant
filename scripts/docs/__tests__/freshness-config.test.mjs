@@ -29,7 +29,7 @@ describe("globToRegex", () => {
     const re = globToRegex("docs/adr/**");
     assert.equal(re.test("docs/adr/0001-foo.md"), true);
     assert.equal(re.test("docs/adr/sub/dir/file.md"), true);
-    assert.equal(re.test("docs/audits/foo.md"), false);
+    assert.equal(re.test("docs/90-work/audits/foo.md"), false);
   });
 
   it("matches **/X — leading wildcard", () => {

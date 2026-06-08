@@ -40,14 +40,14 @@
 
 **Найактивніше (8, за останніми PR):**
 
-- [`initiatives/0015-docs-automation-daily-ops.md`](./initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
-- [`planning/pr-plan-dead-code-hard-rules-2026-05.md`](./planning/pr-plan-dead-code-hard-rules-2026-05.md) — PR-план — Dead Code + Hard Rules (з прожарки 2026-05-13) — Active _(Планування)_
-- [`planning/pr-plan-testing-devx-2026-05.md`](./planning/pr-plan-testing-devx-2026-05.md) — PR-план Testing & DevX 2026-05 — зі зрізу 2026-05-13 — Active _(Планування)_
-- [`tech-debt/frontend.md`](./tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
-- [`initiatives/0017-hub-tabs-mount-perf.md`](./initiatives/0017-hub-tabs-mount-perf.md) — 0017 — Hub Settings & Reports mount perf — In progress — code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worke _(Ініціативи)_
-- [`audits/2026-05-13-consolidated-page-audit.md`](./audits/2026-05-13-consolidated-page-audit.md) — Consolidated Page Audit — 2026-05-13 — Active _(Аудити й прожарки)_
-- [`audits/2026-05-13-testing-devx-roast.md`](./audits/2026-05-13-testing-devx-roast.md) — Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) — Active _(Аудити й прожарки)_
-- [`tech-debt/backend.md`](./tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
+- [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
+- [`90-work/planning/pr-plan-dead-code-hard-rules-2026-05.md`](./90-work/planning/pr-plan-dead-code-hard-rules-2026-05.md) — PR-план — Dead Code + Hard Rules (з прожарки 2026-05-13) — Active _(Планування)_
+- [`90-work/planning/pr-plan-testing-devx-2026-05.md`](./90-work/planning/pr-plan-testing-devx-2026-05.md) — PR-план Testing & DevX 2026-05 — зі зрізу 2026-05-13 — Active _(Планування)_
+- [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
+- [`90-work/initiatives/0017-hub-tabs-mount-perf.md`](./90-work/initiatives/0017-hub-tabs-mount-perf.md) — 0017 — Hub Settings & Reports mount perf — In progress — code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worke _(Ініціативи)_
+- [`90-work/audits/2026-05-13-consolidated-page-audit.md`](./90-work/audits/2026-05-13-consolidated-page-audit.md) — Consolidated Page Audit — 2026-05-13 — Active _(Аудити й прожарки)_
+- [`90-work/audits/2026-05-13-testing-devx-roast.md`](./90-work/audits/2026-05-13-testing-devx-roast.md) — Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) — Active _(Аудити й прожарки)_
+- [`90-work/tech-debt/backend.md`](./90-work/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
 
 ## ⏭️ Наступний крок / заблоковано
 
@@ -74,7 +74,7 @@ pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 4 застосунки + `tool
 | **Операції**   | [`deploy/`](./03-operations/deploy/README.md), [`observability/`](./03-operations/observability/README.md), [`runbooks/`](./03-operations/runbooks/README.md), [`postmortems/`](./03-operations/postmortems/README.md), [`ops/`](./03-operations/ops/README.md)                                              | деплой, алерти, інциденти          |
 | **Governance** | [`governance/`](./governance/README.md), [`security/`](./security/README.md), [`adr/`](./adr/README.md)                                                                                                                                                                                                      | hard rules, рішення, безпека       |
 | **Дизайн**     | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md)                                                                                                                                                                                          | дизайн-система, патерни            |
-| **Робота**     | [`initiatives/`](./initiatives/README.md), [`planning/`](./planning/README.md), [`audits/`](./audits/README.md), [`tech-debt/`](./tech-debt/README.md)                                                                                                                                                       | трекери: що оновлювати, коли шипиш |
+| **Робота**     | [`initiatives/`](./90-work/initiatives/README.md), [`planning/`](./90-work/planning/README.md), [`audits/`](./90-work/audits/README.md), [`tech-debt/`](./90-work/tech-debt/README.md)                                                                                                                       | трекери: що оновлювати, коли шипиш |
 
 ## Quick links
 

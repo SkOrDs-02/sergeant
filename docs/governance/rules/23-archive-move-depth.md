@@ -24,7 +24,7 @@ When an audit or plan moves into an `archive/` folder, every relative link outsi
 ## BAD
 
 ```markdown
-<!-- docs/audits/archive/2026-05-old-audit.md -->
+<!-- docs/90-work/audits/archive/2026-05-old-audit.md -->
 
 [Plan](../initiatives/foo.md)
 ```
@@ -32,12 +32,12 @@ When an audit or plan moves into an `archive/` folder, every relative link outsi
 ## GOOD
 
 ```markdown
-<!-- docs/audits/archive/2026-05-old-audit.md -->
+<!-- docs/90-work/audits/archive/2026-05-old-audit.md -->
 
-[Plan](../../initiatives/foo.md)
+[Plan](../../90-work/initiatives/foo.md)
 ```
 
 ## Related
 
 - **agents** — #23
-- **audit** — `docs/audits/2026-05-13-dead-code-hard-rules-roast.md` § P2
+- **audit** — `docs/90-work/audits/2026-05-13-dead-code-hard-rules-roast.md` § P2

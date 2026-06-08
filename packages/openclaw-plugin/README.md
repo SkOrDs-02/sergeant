@@ -4,7 +4,7 @@
 
 Тонкий TypeScript-плагін, що реєструє Sergeant tools у [OpenClaw Gateway](https://openclaw.ai) runtime через HTTP-проксі до `apps/server /api/internal/openclaw/*`.
 
-Source-of-truth для контексту і дорожньої карти: [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../docs/planning/openclaw-migration-plan.md). Цей README — короткий статус самого пакета.
+Source-of-truth для контексту і дорожньої карти: [`docs/90-work/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../docs/90-work/planning/openclaw-migration-plan.md). Цей README — короткий статус самого пакета.
 
 ## Поточний стан (Stage 5a merged; production smoke 12/12)
 
@@ -106,4 +106,4 @@ pnpm --filter @sergeant/openclaw-plugin typecheck     # tsc --noEmit
 
 ## Наступні кроки
 
-Послідовність Stages 4b → 8+ описана у [`docs/planning/openclaw-migration-plan.md` § Stage tracker](../../docs/planning/openclaw-migration-plan.md#stage-tracker-2026-05-12--нинішній-source-of-truth). SDK reality-check spike закрився Stage 3 — див. [`docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md`](../../docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md).
+Послідовність Stages 4b → 8+ описана у [`docs/90-work/planning/openclaw-migration-plan.md` § Stage tracker](../../docs/90-work/planning/openclaw-migration-plan.md#stage-tracker-2026-05-12--нинішній-source-of-truth). SDK reality-check spike закрився Stage 3 — див. [`docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md`](../../docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md).

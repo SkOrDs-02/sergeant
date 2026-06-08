@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active.  
 > **Capacitor shell:** `accepted-with-sunset` — sunset schedule див. [ADR-0010 § Sunset schedule](../../adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule).  
-> **Initiative:** [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../../initiatives/archive/_0002-mobile-platform-decision.md).
+> **Initiative:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md).
 
 Короткий репорт «що готово до запуску, що треба доробити» по трьох варіантах Sergeant-а. Живе поруч з `docs/02-engineering/mobile/overview.md` (API-контракт) і `docs/02-engineering/mobile/react-native-migration.md` (роадмап порту web → RN).
 
@@ -22,7 +22,7 @@
 > **Snapshot:** 2026-05-29. Колонки відображають _функціональну_ parity (юзер може зробити цю дію), не code-parity (різна реалізація допустима).  
 > **Легенда:** `✅` — повна parity; `🟡` — часткова / smoke-only / без edge-cases; `🟥` — не реалізовано; `n/a` — поза скоупом.
 >
-> Таблиця оновлюється на кожен Phase-2 PR ініціативи 0002 і повинна бути «свіжою» в межах 7 днів — це **gating сигнал** для рішення про зсув T₀ (див. [`docs/initiatives/archive/_0002-mobile-platform-decision.md` § Ризики](../../initiatives/archive/_0002-mobile-platform-decision.md#ризики-та-митиґація)).
+> Таблиця оновлюється на кожен Phase-2 PR ініціативи 0002 і повинна бути «свіжою» в межах 7 днів — це **gating сигнал** для рішення про зсув T₀ (див. [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md` § Ризики](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md#ризики-та-митиґація)).
 
 | Capability / module               | Web (`apps/web`) | Capacitor shell | RN (`apps/mobile`) | Notes                                                                                                                                                                                                                                                                                                 |
 | --------------------------------- | ---------------- | --------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -168,7 +168,7 @@
 ## 📊 Related docs
 
 - **Детальний статус app/packages:** [`apps-status-matrix.md`](./apps-status-matrix.md)
-- **Feature parity інлання:** [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../../initiatives/archive/_0002-mobile-platform-decision.md)
+- **Feature parity інлання:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md)
 - **API контракт:** [`docs/02-engineering/mobile/overview.md`](../mobile/overview.md)
 - **RN migration roadmap:** [`docs/02-engineering/mobile/react-native-migration.md`](../mobile/react-native-migration.md)
 - **Sunset ADR:** [ADR-0010](../../adr/0010-mobile-dual-track-capacitor-expo.md)

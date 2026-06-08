@@ -51,7 +51,7 @@ If you skip step 2 or 3 the new catalog is unenforced and the rule is violated.
 
 ## Tracking
 
-- Initiative — [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../initiatives/archive/_0014-knowledge-graph-and-catalogs.md).
+- Initiative — [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md).
 - ADR-0058 — [`docs/adr/0058-knowledge-graph-schema.md`](../../adr/0058-knowledge-graph-schema.md).
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->

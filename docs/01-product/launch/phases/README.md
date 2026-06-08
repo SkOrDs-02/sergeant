@@ -97,8 +97,8 @@ SSO не залитий, Apple Developer Program не куплений, окре
 
 - [ADR-0052](../../../adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor PRIMARY до Expo parity (Accepted 2026-05-06)
 - [ADR-0051](../../../adr/0051-pricing-v3-single-tier.md) — Free + Pro $7/міс / $49/рік, UAH UA-only на старті
-- [Initiative 0010](../../../initiatives/0010-revenue-first-launch.md) — revenue-first sprint (Stripe billing у Phase 2-4)
-- [Initiative 0002](../../../initiatives/archive/_0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
+- [Initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md) — revenue-first sprint (Stripe billing у Phase 2-4)
+- [Initiative 0002](../../../90-work/initiatives/archive/_0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
 
 ---
 
@@ -213,11 +213,11 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 | #   | Блокер                                                                                                                                                                                                  | Owner / Surface           | Estimate  | Phase                        |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | --------- | ---------------------------- |
 | 1   | **Privacy Policy + ToS публічні URLs** ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи))                                                                                         | Founder + (юрист consult) | 1-2 тижні | Web public + Capacitor       |
-| 2   | **Stripe billing pipeline** (subscriptions + stripe_webhook_events міграції, Checkout, Customer Portal) — [Initiative 0010 phase 2-4](../../../initiatives/0010-revenue-first-launch.md)                | Devin + founder           | 2-3 тижні | Web public (paywall live)    |
+| 2   | **Stripe billing pipeline** (subscriptions + stripe_webhook_events міграції, Checkout, Customer Portal) — [Initiative 0010 phase 2-4](../../../90-work/initiatives/0010-revenue-first-launch.md)        | Devin + founder           | 2-3 тижні | Web public (paywall live)    |
 | 3   | **Apple Developer Program enrollment** ($99 + D-U-N-S Number; ~2 тижні delay)                                                                                                                           | Founder                   | 2-3 тижні | Capacitor iOS                |
 | 4   | **Google Play Developer Console enrollment** ($25 one-time)                                                                                                                                             | Founder                   | 1-2 дні   | Capacitor Android            |
 | 5   | **ФОП реєстрація + банк-рахунок для UA-Stripe** (UAH support)                                                                                                                                           | Founder                   | 2-4 тижні | Web paywall live             |
-| 6   | **Apple + Google Sign-in via Better Auth** ([0010 phase 4.3](../../../initiatives/0010-revenue-first-launch.md))                                                                                        | Devin                     | 1-2 тижні | Web public (signup friction) |
+| 6   | **Apple + Google Sign-in via Better Auth** ([0010 phase 4.3](../../../90-work/initiatives/0010-revenue-first-launch.md))                                                                                | Devin                     | 1-2 тижні | Web public (signup friction) |
 | 7   | **Окремий лендінг live** (single-page Astro на sergeant.com.ua, опція C)                                                                                                                                | Founder + Devin           | 3-5 днів  | Web public                   |
 | 8   | **Store-listing assets** (іконки, screenshots, demo-video, App Privacy / Data Safety форми)                                                                                                             | Founder + designer        | 1 тиждень | Capacitor                    |
 | 9   | **Cookie consent banner для EU** (ePrivacy compliance)                                                                                                                                                  | Devin                     | 1-2 дні   | Web public                   |
@@ -323,8 +323,8 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 
 ### Initiatives
 
-- [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../../../initiatives/archive/_0002-mobile-platform-decision.md)
-- [`docs/initiatives/0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md)
+- [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../../90-work/initiatives/archive/_0002-mobile-platform-decision.md)
+- [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md)
 
 ### Release playbooks
 

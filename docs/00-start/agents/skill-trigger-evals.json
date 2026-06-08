@@ -726,7 +726,7 @@
       "id": "sergeant-planning-batch-trigger-batch-n",
       "skill": "sergeant-planning-batch",
       "kind": "trigger",
-      "prompt": "Execute a batch of the next N open PR-cards pulled from docs/planning/* and update the trackers for the work done.",
+      "prompt": "Execute a batch of the next N open PR-cards pulled from docs/90-work/planning/* and update the trackers for the work done.",
       "expectedSkills": ["sergeant-start-here", "sergeant-planning-batch"],
       "forbiddenSkills": []
     },

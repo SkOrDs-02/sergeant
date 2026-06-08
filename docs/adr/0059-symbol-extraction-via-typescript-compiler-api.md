@@ -1,6 +1,6 @@
 # ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 - **Status:** Proposed
@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 2
+  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 2
   - [`docs/adr/0058-knowledge-graph-schema.md`](./0058-knowledge-graph-schema.md)
   - [`scripts/docs/generate-symbol-catalog.mjs`](../../scripts/docs/generate-symbol-catalog.mjs)
   - [`docs/governance/schemas/symbol-catalog.schema.json`](../governance/schemas/symbol-catalog.schema.json)
@@ -95,7 +95,7 @@ Hybrid не обираємо — entry-AST + cross-package regex вже є де-
 
 ## Links
 
-- [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 2
+- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 2
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
 

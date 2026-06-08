@@ -12,7 +12,7 @@
   - [`docs/adr/0059-symbol-extraction-via-typescript-compiler-api.md`](./0059-symbol-extraction-via-typescript-compiler-api.md) — `symbol-index.json` як ще одне джерело пойнтерів
   - [`docs/adr/0028-pgvector-ai-memory.md`](./0028-pgvector-ai-memory.md) — наявний production-RAG-стек (Voyage + pgvector), який ми **не** перевикористовуємо як стор (див. Decision)
   - [`docs/02-engineering/architecture/ai-memory.md`](../02-engineering/architecture/ai-memory.md), [`docs/02-engineering/architecture/rag-eval.md`](../02-engineering/architecture/rag-eval.md) — embedding-конвеєр і eval-harness, який перевикористовуємо
-  - [`docs/initiatives/0018-agent-semantic-retrieval.md`](../initiatives/0018-agent-semantic-retrieval.md) — план виконання
+  - [`docs/90-work/initiatives/0018-agent-semantic-retrieval.md`](../90-work/initiatives/0018-agent-semantic-retrieval.md) — план виконання
 
 ---
 
@@ -87,6 +87,6 @@
 
 ## Links
 
-- [`docs/initiatives/0018-agent-semantic-retrieval.md`](../initiatives/0018-agent-semantic-retrieval.md)
+- [`docs/90-work/initiatives/0018-agent-semantic-retrieval.md`](../90-work/initiatives/0018-agent-semantic-retrieval.md)
 - [`docs/adr/0058-knowledge-graph-schema.md`](./0058-knowledge-graph-schema.md)
 - [`docs/02-engineering/architecture/rag-eval.md`](../02-engineering/architecture/rag-eval.md)

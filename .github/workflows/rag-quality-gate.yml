@@ -1,7 +1,7 @@
 name: RAG quality gate (recall@4 weekly)
 
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
-# Linked to docs/planning/pr-plan-2026-05.md § PR-22 «RAG quality gate».
+# Linked to docs/90-work/planning/pr-plan-2026-05.md § PR-22 «RAG quality gate».
 # Reaction playbook: docs/03-operations/observability/runbook.md § «RagQualityGateDegraded».
 #
 # Що робить:

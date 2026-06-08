@@ -24,11 +24,11 @@ Short version: the JSON ledger is canonical (machine-readable, drives the Phase 
 Only these path patterns get backlinks:
 
 - `docs/adr/*.md` (excluding `TEMPLATE.md`, `README.md`)
-- `docs/initiatives/*.md` (excluding `archive/`, `follow-ups.md`, `README.md`)
+- `docs/90-work/initiatives/*.md` (excluding `archive/`, `follow-ups.md`, `README.md`)
 - `docs/00-start/playbooks/*.md` (excluding `INDEX.md`, `README.md`, `_TEMPLATE-*`)
 - `docs/governance/rules/*.md` (excluding `README.md`)
 
-Other doc directories (`docs/audits/`, `docs/02-engineering/architecture/`, `docs/01-product/launch/`, etc.) intentionally don't receive backlinks — they're either snapshot-natured (audits) or already covered by drift-detectors (auto-generated).
+Other doc directories (`docs/90-work/audits/`, `docs/02-engineering/architecture/`, `docs/01-product/launch/`, etc.) intentionally don't receive backlinks — they're either snapshot-natured (audits) or already covered by drift-detectors (auto-generated).
 
 ## CI gate
 

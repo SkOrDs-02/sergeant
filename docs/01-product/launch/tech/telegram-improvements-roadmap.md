@@ -10,7 +10,7 @@
 > Цей файл — **operating roadmap для Telegram-сурфейсів**, не ADR. Конкретні
 > архітектурні рішення в межах кожної ідеї будуть оформлені окремими ADR-ами
 > (вказано у колонці "ADR" таблиці нижче).
-> OpenClaw Gateway/migration/cutover status is not tracked here; canonical owner is [`docs/planning/openclaw-migration-plan.md`](../../../planning/openclaw-migration-plan.md). OpenClaw items below are Telegram-surface UX/backlog context only.
+> OpenClaw Gateway/migration/cutover status is not tracked here; canonical owner is [`docs/90-work/planning/openclaw-migration-plan.md`](../../../90-work/planning/openclaw-migration-plan.md). OpenClaw items below are Telegram-surface UX/backlog context only.
 >
 > Пов'язане:
 > [openclaw-roadmap.md](./openclaw-roadmap.md) (фази OpenClaw),

@@ -13,7 +13,7 @@
 //
 // Schema:    docs/governance/schemas/knowledge-graph.schema.json
 // ADR:       docs/adr/0058-knowledge-graph-schema.md
-// Initiative: docs/initiatives/0014-knowledge-graph-and-catalogs.md
+// Initiative: docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md
 //
 // Usage:
 //   node scripts/docs/generate-knowledge-graph.mjs            # write
@@ -162,7 +162,7 @@ function collectADRs() {
 }
 
 function collectInitiatives() {
-  const dir = resolve(REPO_ROOT, "docs/initiatives");
+  const dir = resolve(REPO_ROOT, "docs/90-work/initiatives");
   // Recursive to include `stack-pulse-2026-05/*`, skip `_` prefix + archive/.
   const files = listMarkdown(dir, { recursive: true, skipUnderscore: true });
   return files.map((abs) => {
@@ -172,7 +172,7 @@ function collectInitiatives() {
     const id = num
       ? `initiative:${num}`
       : `initiative:${relPath(abs)
-          .replace(/^docs\/initiatives\//, "")
+          .replace(/^docs\/90-work\/initiatives\//, "")
           .replace(/\.md$/, "")}`;
     const title = extractTitle(content, base);
     const status = extractStatus(content);
@@ -309,7 +309,7 @@ function collectHardRules() {
 }
 
 function collectAudits() {
-  const dir = resolve(REPO_ROOT, "docs/audits");
+  const dir = resolve(REPO_ROOT, "docs/90-work/audits");
   const files = listMarkdown(dir);
   return files.map((abs) => {
     const content = readSafe(abs);

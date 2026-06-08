@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Related:**
   - [ADR-0004 — CloudSync LWW conflict resolution](./0004-cloudsync-lww-conflict-resolution.md) — це v1, що ми збираємось sunset-нути.
-  - [Initiative 0003 — Sync v2 rollout & v1 sunset](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
+  - [Initiative 0003 — Sync v2 rollout & v1 sunset](../90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
   - [`apps/server/src/modules/sync/sunsetGone.ts`](../../apps/server/src/modules/sync/sunsetGone.ts) — v1 410 Gone handler after the legacy LWW handlers were removed.
   - [`apps/server/src/modules/sync/syncV2.ts`](../../apps/server/src/modules/sync/syncV2.ts) — v2 op-log handlers (Stage 2 / PR #021).
   - [`apps/server/src/modules/sync/sunsetHeaders.ts`](../../apps/server/src/modules/sync/sunsetHeaders.ts) — middleware, що реалізує цей ADR.
@@ -59,7 +59,7 @@ deprecation-сигналів → клієнти не знають, що мают
 ## Decision
 
 **Прийнято Option 3.** CloudSync v1 sunset-имо за 6-фазним планом
-(специфікація — [Initiative 0003](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md)):
+(специфікація — [Initiative 0003](../90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md)):
 
 | Phase | Тривалість          | Що робимо                                                                                    |
 | ----- | ------------------- | -------------------------------------------------------------------------------------------- |
@@ -86,7 +86,7 @@ amend-нута document-update-ом коли:
 - `Deprecation: true` — RFC 8594 §2 (always; не залежить від T₀).
 - `Sunset: <RFC 7231 IMF-fixdate>` — RFC 8594 §3 (only when env var
   `CLOUDSYNC_V1_SUNSET_AT` set до valid ISO 8601 date).
-- `Link: </api/v2/sync/push>; rel="successor-version", </docs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md>; rel="deprecation"`
+- `Link: </api/v2/sync/push>; rel="successor-version", </docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md>; rel="deprecation"`
   — RFC 8288 §3 (always).
 
 На `/api/v2/sync/*` (v2) — **жодного** з цих headers. v2 — successor.

@@ -4,7 +4,7 @@
 > **Status:** Archived
 
 > **Owner:** @Skords-01 · **Created:** 2026-05-02 ·
-> **Roadmap reference:** [`docs/planning/storage-roadmap.md` PR #022](../../../planning/storage-roadmap.md#stage-3--spike-на-routine) ·
+> **Roadmap reference:** [`docs/90-work/planning/storage-roadmap.md` PR #022](../../../90-work/planning/storage-roadmap.md#stage-3--spike-на-routine) ·
 > **Branch:** `devin/1777743313-spike-routine-sqlite-v2` (library) →
 > `devin/1777752068-fix-adr-0031-readme-index` and `devin/1777753778-strict-ts-docs-sync`
 > for follow-up panel landings → this branch (`devin/1777755997-close-routine-sqlite-spike`)
@@ -31,7 +31,7 @@ whole-blob `/v1/sync` path; the SPIKE only writes a parallel SQLite
 mirror inside a runtime `if (flag) {…}` branch.
 
 The SPIKE answers a specific go/no-go question for **Stage 3** of
-[`docs/planning/storage-roadmap.md`](../../../planning/storage-roadmap.md#stage-3--spike-на-routine).
+[`docs/90-work/planning/storage-roadmap.md`](../../../90-work/planning/storage-roadmap.md#stage-3--spike-на-routine).
 A "go" signal unlocks Stage 4 (per-module migration of the rest of the
 app — habits, scratchpad, focus, settings — onto the same pattern).
 A "no-go" signal makes us delete the SPIKE library and stop on
@@ -420,6 +420,6 @@ If the gate fails:
    tables and the `/v2/sync/push` + `/v2/sync/pull` endpoints — they
    are also independent of the SPIKE outcome.
 6. Document blockers in this file and link to it from
-   `docs/planning/storage-roadmap.md` Stage 3.
+   `docs/90-work/planning/storage-roadmap.md` Stage 3.
 7. Fall back to Stage 1 plan B: continue on whole-blob LWW + custom
    per-row diffing on the server.

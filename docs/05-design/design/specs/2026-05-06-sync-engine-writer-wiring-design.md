@@ -15,7 +15,7 @@ Close the remaining Stage 5 storage-roadmap item: wire the already-landed sync v
 - Provide a push-on-enqueue hook so newly queued outbox rows do not wait for the next interval.
 - Emit Sentry breadcrumbs for successful ticks and captured errors for failures without including row payloads.
 - Expose a small status/recovery surface for dev/support UI: status counts and "recover all dead-letter rows, then flush".
-- Update `docs/planning/storage-roadmap.md` so Stage 5 no longer lists the writer wiring as outstanding once the code is verified.
+- Update `docs/90-work/planning/storage-roadmap.md` so Stage 5 no longer lists the writer wiring as outstanding once the code is verified.
 
 ## Out Of Scope
 

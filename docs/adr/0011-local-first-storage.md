@@ -11,10 +11,10 @@
 - **Related:**
   - [`packages/shared/src/lib/storageKeys.ts`](../../packages/shared/src/lib/storageKeys.ts) — централізований реєстр ключів (місце, де `@deprecated`-marker-и вказують на SQLite-tombstone-шлях для кожного домену).
   - [`packages/shared/src/storage/kv.ts`](../../packages/shared/src/storage/kv.ts) — DOM-free `KVStore` runtime-контракт; [`packages/shared/src/test-utils.ts`](../../packages/shared/src/test-utils.ts) — memory adapter для тестів.
-  - [`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts) — `SYNC_MODULES` реєстр; історично — single source of truth для blob-sync, тепер тримає лише `profile` entry (USER_PROFILE / HUB_BIOMETRICS) як test-fixture для ESLint parity-check (`no-raw-tracked-storage`). Decision-pending tombstone: див. [storage-roadmap §Stage 13 → B6](../planning/storage-roadmap.md).
+  - [`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts) — `SYNC_MODULES` реєстр; історично — single source of truth для blob-sync, тепер тримає лише `profile` entry (USER_PROFILE / HUB_BIOMETRICS) як test-fixture для ESLint parity-check (`no-raw-tracked-storage`). Decision-pending tombstone: див. [storage-roadmap §Stage 13 → B6](../90-work/planning/storage-roadmap.md).
   - [`apps/web/src/core/cloudSync/index.ts`](../../apps/web/src/core/cloudSync/index.ts) — status/dirty-state barrel after the v1 CloudSync network facade was removed; див. [ADR-0047](./0047-cloudsync-v1-410-gone.md).
   - [ADR-0047 — CloudSync v1 — T₀ executed (410 Gone)](./0047-cloudsync-v1-410-gone.md) — формально supersede-ить 11.3 (per-module LWW worldview engine на користь per-row op-log v2).
-  - [Storage roadmap §Stage 4 (per-module SQLite mirror)](../planning/storage-roadmap.md) і §Stage 7 (cleanup, drop `module_data` blob) — реалізують перехід.
+  - [Storage roadmap §Stage 4 (per-module SQLite mirror)](../90-work/planning/storage-roadmap.md) і §Stage 7 (cleanup, drop `module_data` blob) — реалізують перехід.
   - [`docs/02-engineering/architecture/data-exchange-storage-audit.md`](../02-engineering/architecture/data-exchange-storage-audit.md) — поточний знімок архітектури (валідовано 2026-05-08).
   - [`docs/02-engineering/mobile/react-native-migration.md`](../02-engineering/mobile/react-native-migration.md) §6 — mobile sync-subsystem.
   - ADR-0010 — mobile dual-track (platform storage адаптери).

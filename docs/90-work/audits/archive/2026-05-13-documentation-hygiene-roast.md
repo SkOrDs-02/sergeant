@@ -1,0 +1,156 @@
+# Doc-hygiene roast — 2026-05-13
+
+> **Last validated:** 2026-05-31 by audits-runner workflow. **Next review:** 2026-08-29.
+> **Status:** Archived — усі 53 broken links + 3 stale claims пофікшено у Devin PR; P0/P1/P2 закриті)
+>
+> **Closure note (2026-05-31, audits-runner triage):** TL;DR пункти 1–3 явно позначені «Fixed у цьому PR» — посилання резолвляться, `lighthouse-ci.yml` claims оновлено, archive-move regression закрита. Поточний `pnpm lint:docs` проходить чисто. Outstanding items: жодних. Документ зберігається як історичний рекорд.
+>
+> **Cross-refs:**
+> [`2026-05-02-doc-hygiene-audit.md`](./2026-05-02-doc-hygiene-audit.md) — попередній doc-hygiene прохід ·
+> [`2026-05-03-readme-gap-analysis.md`](./2026-05-03-readme-gap-analysis.md) — gap-analysis README ·
+> [`2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md) — попередній прохід по dead-links (закрив 14, лишилось 53 нових через archive-move) ·
+> [`archive/2026-05-11-docs-audit-summary.md`](./2026-05-11-docs-audit-summary.md) — summary 2026-05-11 ·
+> [`docs/governance/doc-freshness.md`](../../../governance/doc-freshness.md) — система freshness-маркерів.
+
+## TL;DR
+
+1. **Регресія link-checker-а: 53 broken internal links.** Усі через batch-archive-move від 2026-05-13 ([`8b5a22ef docs(docs): archive 6 mature closed audits without 90-day wait`](https://github.com/Skords-01/Sergeant/commits/main)). Файли переміщені у `docs/90-work/audits/archive/`, але внутрішні relative-paths (`../adr/`, `../launch/`, `./<sibling>`) не оновлені — тепер вони резолвлять на одну директорію вище, ніж треба. **Fixed у цьому PR.**
+2. **`lighthouse-ci.yml` GitHub workflow не існує**, але `apps/web/AGENTS.md:45`, `docs/90-work/planning/sprint-roadmap-q2q3-2026.md:38,374` і `AGENTS.md` посилаються на нього як «shipped». **Fixed у цьому PR** — текст бампнуто до «planned, локально через `pnpm lighthouse`».
+3. **`docs/90-work/initiatives/0006-frontend-routing-and-code-split.md` стейл**: рапортує `useHashRouter` migration як «2/4», насправді 4/4. Дві останні (shared `useHashRoute.ts` + per-module hooks для fizruk/routine) закриті у `f5caf1ee` (2026-05-13). **Fixed у цьому PR.**
+4. **Tech-debt freshness guard не покривав `docs/90-work/tech-debt/backend.md`** — `scripts/check-tech-debt-freshness.mjs` `DEFAULT_FILES` містив лише frontend + mobile. Backend `Last validated` міг дрейфувати без CI-сигналу. **Fixed у цьому PR.**
+5. **README gap-analysis (`2026-05-03`) status drift**: `docs/90-work/audits/README.md` досі рапортує `Implemented: 0/8 ≈ Outstanding: 8 ≈`, хоча 13/15 пунктів чек-листу §6 уже у README.md (Modules, Tech Stack, Prerequisites, Quickstart, Testing, Deployment, Architecture, Integrations, Troubleshooting, License, Feature flags, Observability, Documentation map). Залишається 2 (Packages як окрема таблиця, Environment Variables як окрема секція). **Fixed у follow-up PR** — рядок пересинхронізовано на `13/15 ≈ / 2` (див. §Прогрес виконання → P1-1).
+6. **AGENTS.md split** — попередня прожарка пропонувала розгрупування у `AGENTS.md` slim + `docs/governance/hard-rules.md` full. Поточний AGENTS.md = 170 рядків (manageable), вже містить cross-refs у `docs/governance/rules/`. **Split не потрібен** — попередня прожарка спиралась на стару версію файлу.
+7. **`docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md` 3-date-drift** — у файлі ще 3 окремі дати (Last validated, Initial audit date, Initial audit reference). Файл Archived; рекомендується канонікалізувати у наступному audit-passе.
+
+## P0 — закрити в цьому PR ✓
+
+### P0-1. Broken internal links (53 → 0) ✓
+
+**Root cause:** commit `8b5a22ef docs(docs): archive 6 mature closed audits without 90-day wait` переніс файли у `docs/90-work/audits/archive/` без оновлення `../<dir>/` relative-paths. Тепер посилання типу `../adr/foo.md` резолвляться у `docs/90-work/audits/adr/foo.md` (неіснує) замість `docs/adr/foo.md`.
+
+**Action: Change** — оновлені relative paths:
+
+| File:line                                                                                | Action                                                                                                                                                            |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/90-work/audits/archive/2026-04-26-sergeant-audit-devin.md:391`                     | `../adr/0002-tool-lifecycle.md` → `../../adr/0002-tool-lifecycle.md`                                                                                              |
+| `docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md:4,10`            | `./2026-04-28-implementation-roadmap.md` → `../2026-04-28-implementation-roadmap.md`                                                                              |
+| `docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md:4,11,22`                          | `./2026-04-28-ux-improvement-plan.md` → `../2026-04-28-ux-improvement-plan.md`                                                                                    |
+| `docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md:24`                               | `../design/design-system.md` → `../../design/design-system.md`                                                                                                    |
+| `docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md` (×16, including `:32`) | `../launch/`, `../design/`, `../observability/`, `../../apps/`, `./<peer>` — всі +1 рівень `../` ([sed batch](../../../../scripts/docs/check-markdown-links.mjs)) |
+| `docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md` (×14)              | `../initiatives/`, `../security/`, `../governance/`, `../playbooks/`, `../tech-debt/` — всі +1 рівень `../`                                                       |
+| `docs/90-work/audits/archive/2026-05-11-docs-audit-summary.md:60-66`                     | `../adr/0035-...`, `../adr/0039-...`, `../adr/0046-...`, `../initiatives/archive/2026-08-02-...` — +1 рівень `../`                                                |
+
+**Verification:** `pnpm docs:check-links` тепер `✅ All markdown links resolve.`
+
+### P0-2. `lighthouse-ci.yml` workflow drift ✓
+
+**Root cause:** `.github/workflows/lighthouse-ci.yml` ніколи не був зашиплений (`git log --all --oneline -- '.github/workflows/lighthouse-ci.yml'` → empty). Документація рапортує T5 як «First pass shipped (warn-only)», що неточно. `apps/web/lighthouserc.json` існує, `pnpm --filter @sergeant/web lighthouse` працює локально, але CI-workflow відсутній.
+
+**Action: Change** — оновити claim до «planned, локальний прогон через `pnpm lighthouse`»:
+
+| File:line                                               | Зміна                                                                                           |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `apps/web/AGENTS.md:45`                                 | «Workflow: lighthouse-ci.yml» → «Workflow planned (T5 у тех-боргу); локально `pnpm lighthouse`» |
+| `docs/90-work/planning/sprint-roadmap-q2q3-2026.md:38`  | Status `🚧 First pass shipped (warn-only)` → `🚧 Local-only; workflow planned`                  |
+| `docs/90-work/planning/sprint-roadmap-q2q3-2026.md:374` | Workflow link замінено на текст із поміткою **planned**                                         |
+| `AGENTS.md:117,123,129`                                 | Performance budgets рядок переписано: workflow planned, локально через `pnpm lighthouse`        |
+
+**Status:** ✅ Closed in `cb459c08` / [#2726](https://github.com/Skords-01/Sergeant/pull/2726) — `.github/workflows/lighthouse-ci.yml` зашиплений як `pull_request` gate з `warn`-only Lighthouse thresholds.
+
+### P0-3. `useHashRoute.ts` ghost reference ✓
+
+**Root cause:** `f5caf1ee chore(web): remove unused useHashRoute hook + tests + exports` (2026-05-13) видалив `apps/web/src/shared/hooks/useHashRoute.ts`. `docs/90-work/initiatives/0006-frontend-routing-and-code-split.md:119,160` рапортує файл як «still active for fizruk + routine», що неправда — fizruk має `useFizrukRoute.ts`, routine має `useRoutineRoute.ts`.
+
+**Action: Change** ([`docs/90-work/initiatives/0006-frontend-routing-and-code-split.md`](../../initiatives/0006-frontend-routing-and-code-split.md)):
+
+- `line 119` — статус прогрес-бара `[ ] Прогрес: 2/4` → `[x] 4/4: ... shared usage closed in f5caf1ee`
+- `line 160` — посилання на видалений файл → strikethrough + посилання на per-module hooks
+
+### P0-4. Tech-debt freshness guard coverage gap ✓
+
+**Root cause:** [`scripts/check-tech-debt-freshness.mjs:31-34`](../../../../scripts/check-tech-debt-freshness.mjs) `DEFAULT_FILES` містив лише `frontend.md` + `mobile.md`. `backend.md` мав ручний freshness header (`Last validated: 2026-05-11`), але без auto-check.
+
+**Action: Change** ([`scripts/check-tech-debt-freshness.mjs`](../../../../scripts/check-tech-debt-freshness.mjs)):
+
+- Додано `docs/90-work/tech-debt/backend.md` у `DEFAULT_FILES`
+- Розширено marker grammar: тепер також парсить `> **Last validated:** YYYY-MM-DD …` (canonical freshness-format у всьому репо), а не лише історичні `> **Оновлено …**` / `> **Last reviewed: …**`
+- Тести оновлено: `scripts/__tests__/check-tech-debt-freshness.test.mjs` (новий case для canonical pattern + дефолтний список з 3 файлів)
+
+**Verification:**
+
+```
+✅ docs/90-work/tech-debt/frontend.md:8: marker dated 2026-05-13 (0 day(s) ago).
+✅ docs/90-work/tech-debt/backend.md:3: marker dated 2026-05-11 (2 day(s) ago).
+✅ docs/90-work/tech-debt/mobile.md:6: marker dated 2026-05-12 (1 day(s) ago).
+```
+
+## P1 — recommended follow-up (не в цьому PR)
+
+### P1-1. `docs/90-work/audits/README.md` README-gap-analysis row drift ✅ Closed
+
+**Закрито у follow-up PR** — рядок `2026-05-03-readme-gap-analysis.md` у `docs/90-work/audits/README.md` пересинхронізовано з `0/8 ≈ / 8 ≈` на `13/15 ≈ / 2`. `Last validated` у `docs/90-work/audits/README.md` бампнуто з посиланням на цей audit § P1-1. Деталі дії перенесено у §Прогрес виконання нижче.
+
+### P1-2. `docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md` 3-date canonicalization ✅ Closed (non-actionable)
+
+**Status:** Closed 2026-05-16 as Non-actionable per audit's own recommended action. Файл `Archived` → залишається як-є (read-only historical record). Якщо у майбутньому unarchive — спочатку канонікалізувати у `Last validated` + `Initial audit date` (no third date).
+
+**Original observation:** Файл містить 3 окремі дати:
+
+- `Last validated: 2026-05-13` (header — bump-last-validated.mjs точка істини)
+- `Initial audit date: 2026-04-28` (sub-header — історичний context)
+- `Дата аудиту: 2026-04-28` / `Дата оновлення: ...` (in-content — НЕ дрейфує, але дублює `Initial audit date`)
+
+### P1-3. `.github/workflows/lighthouse-ci.yml` follow-up
+
+✅ Closed in `cb459c08` / [#2726](https://github.com/Skords-01/Sergeant/pull/2726): `lighthouse-ci.yml` workflow зашиплений. Залишок поза цим roast-ом — future tightening thresholds до `error` після baseline.
+
+## P2 — long-term (не блокує)
+
+### P2-1. Codemod catalog enforcement gap
+
+✅ Closed via `local diff`: [`scripts/check-kvstore-deep-imports.mjs`](../../../../scripts/check-kvstore-deep-imports.mjs) guards against new app-layer `kvStore` deep imports, `package.json` wires it through `lint:kvstore-deep-imports` and the top-level `lint`, and [`scripts/__tests__/check-kvstore-deep-imports.test.mjs`](../../../../scripts/__tests__/check-kvstore-deep-imports.test.mjs) now covers both detection and lint wiring.
+
+### P2-2. Knip respects-scaffolded edge case
+
+✅ Closed (already covered): [`scripts/knip-respects-scaffolded.mjs`](../../../../scripts/knip-respects-scaffolded.mjs) `MARKER_RE` уже фільтрує `@scaffolded`, `@deprecated` і `@experimental`.
+
+## Прогрес виконання (в цьому PR)
+
+- ✅ **P0-1**: 53 → 0 broken internal links. `pnpm docs:check-links` зелений.
+- ✅ **P0-2**: 4 stale «lighthouse-ci.yml shipped» refs → виправлені на «planned, local only».
+- ✅ **P0-3**: useHashRoute.ts ghost ref → виправлено + bumped `[x] 4/4`.
+- ✅ **P0-4**: tech-debt-freshness тепер покриває `backend.md`; marker grammar розширена для canonical `Last validated:` pattern; +1 unit-test, +1 default list test.
+- ✅ **P1-1** (follow-up PR): `docs/90-work/audits/README.md` row для `2026-05-03-readme-gap-analysis.md` пересинхронізовано з `Implemented: 0/8 ≈ / Outstanding: 8 ≈` на `Implemented: 13/15 ≈ / Outstanding: 2`. Реальний стан зачекдено по `README.md` (13 секцій присутні: Modules, Tech Stack, Prerequisites, Quickstart, Testing, Deployment, Architecture, Integrations, Troubleshooting, License, Feature flags, Observability, Documentation map; 2 залишаються outstanding — Packages як окрема таблиця-каталог і Environment Variables як окрема секція). `docs/90-work/audits/README.md` `Last validated` бампнуто. Сам `2026-05-03-readme-gap-analysis.md` не редагувався — деталізовані §Резюме-пункти живуть там як історичний знімок 2026-05-03.
+- ✅ **P1-3**: `.github/workflows/lighthouse-ci.yml` зашиплений у `cb459c08` / [#2726](https://github.com/Skords-01/Sergeant/pull/2726).
+- ✅ **P2-2**: `@experimental` уже покритий у `scripts/knip-respects-scaffolded.mjs`.
+- ⏸ **P1-2**: рекомендований follow-up, не блокуючий.
+- ✅ **P2-1**: `kvStore` deep-import guard exists, is wired into `lint`, and is covered by a wiring regression test (`local diff`).
+
+## Файли у цьому PR (~7-9)
+
+| File                                                                     | Action                                                                             |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `docs/90-work/audits/archive/2026-04-26-sergeant-audit-devin.md`         | Fix `../adr/` → `../../adr/`                                                       |
+| `docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md` | Fix `./<peer>` → `../<peer>`                                                       |
+| `docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md`                  | Fix `./<peer>`, `../design/`                                                       |
+| `docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`        | Batch +1 `../` рівень                                                              |
+| `docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md`    | Batch +1 `../` рівень                                                              |
+| `docs/90-work/audits/archive/2026-05-11-docs-audit-summary.md`           | Batch +1 `../` рівень                                                              |
+| `apps/web/AGENTS.md`                                                     | Lighthouse drift fix                                                               |
+| `docs/90-work/planning/sprint-roadmap-q2q3-2026.md`                      | T5 status + workflow ref drift fix                                                 |
+| `AGENTS.md`                                                              | Performance budgets table: lighthouse workflow planned, not shipped                |
+| `docs/90-work/initiatives/0006-frontend-routing-and-code-split.md`       | useHashRoute.ts: `[ ] 2/4` → `[x] 4/4`; видаленa file ref → per-module hooks       |
+| `scripts/check-tech-debt-freshness.mjs`                                  | + `docs/90-work/tech-debt/backend.md` у DEFAULT_FILES; + `Last validated:` pattern |
+| `scripts/__tests__/check-tech-debt-freshness.test.mjs`                   | Tests for new DEFAULT_FILES + new marker pattern                                   |
+| `docs/90-work/audits/2026-05-13-documentation-hygiene-roast.md`          | **Новий** — цей файл                                                               |
+| `docs/90-work/audits/README.md`                                          | +1 status row для цього roast                                                      |
+
+## Acceptance gates
+
+```bash
+pnpm install --frozen-lockfile
+pnpm docs:check-links              # ✅ All markdown links resolve.
+pnpm lint:tech-debt-freshness      # ✅ frontend + backend + mobile freshness OK
+node --test scripts/__tests__/check-tech-debt-freshness.test.mjs   # 33 pass / 0 fail
+pnpm check                         # pre-PR gate
+```

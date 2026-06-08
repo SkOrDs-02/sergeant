@@ -1,6 +1,6 @@
 # Monthly policy review
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 > **Шаблон щомісячного огляду «hard rules» AGENTS.md.**
@@ -24,7 +24,7 @@
 - `git log` за період + GitHub PR list (Conventional Commit лінт = автоматичний).
 - CI runs за період (artifact-и `migration-lint`, `audit`, `commitlint`, `lint`).
 - `docs/security/audit-exceptions.md` — активні винятки `audit-exception`.
-- `docs/tech-debt/frontend.md`, `docs/tech-debt/backend.md` — burn-down trend.
+- `docs/90-work/tech-debt/frontend.md`, `docs/90-work/tech-debt/backend.md` — burn-down trend.
 
 ---
 
@@ -145,6 +145,6 @@ playbook-у. Один рядок на кандидата.
 
 - `AGENTS.md` — джерело hard rules (`#1`–`#9` на момент створення цього шаблону).
 - `docs/security/audit-exceptions.md` — формат запису `audit-exception`.
-- `docs/tech-debt/frontend.md` / `docs/tech-debt/backend.md` — burn-down lists.
+- `docs/90-work/tech-debt/frontend.md` / `docs/90-work/tech-debt/backend.md` — burn-down lists.
 - `packages/eslint-plugin-sergeant-design/README.md` — каталог наявних кастомних
   правил (приклади для нових кандидатів).

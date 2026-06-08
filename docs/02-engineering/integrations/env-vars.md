@@ -660,7 +660,7 @@ Telegram bot-token для alert-бота. Той самий env-var, що йог
 
 Endpoint `/api/internal/alerts/send` приймає `dedupSignature` (stable hash, e.g. `wf-15:railway-deploy-failed:api`). Якщо в межах вікна (`windowMs`, default `600_000` ms = 10 хв) уже існує row з тим самим `(topic, dedup_signature)` — викликається `editMessageText` із counter-prefix `🔁 N× за 10 хв:\n<original>`. Інакше — фрешевий `sendMessage` + INSERT into `tg_alert_acks`. Fail-open: будь-яка DB/Telegram-помилка логуються `level=warn` через Pino + сесія fallback-ить на `sendMessage` (нове повідомлення замість edit-у). Edit-failure (e.g. `message_not_found`) → response action=`sent_after_edit_failure`.
 
-Реалізація: [`apps/server/src/modules/alerts/telegramShipper.ts`](../../../apps/server/src/modules/alerts/telegramShipper.ts) + міграція [`060_tg_alert_acks_dedup_signature.sql`](../../../apps/server/src/migrations/060_tg_alert_acks_dedup_signature.sql). Roadmap-контекст: [`docs/01-product/launch/tech/telegram-improvements-roadmap.md` §4.2](../../01-product/launch/tech/telegram-improvements-roadmap.md), [`docs/planning/sprint-roadmap-q2q3-2026.md` §1.2 B.1](../../planning/sprint-roadmap-q2q3-2026.md).
+Реалізація: [`apps/server/src/modules/alerts/telegramShipper.ts`](../../../apps/server/src/modules/alerts/telegramShipper.ts) + міграція [`060_tg_alert_acks_dedup_signature.sql`](../../../apps/server/src/migrations/060_tg_alert_acks_dedup_signature.sql). Roadmap-контекст: [`docs/01-product/launch/tech/telegram-improvements-roadmap.md` §4.2](../../01-product/launch/tech/telegram-improvements-roadmap.md), [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md` §1.2 B.1](../../90-work/planning/sprint-roadmap-q2q3-2026.md).
 
 ---
 

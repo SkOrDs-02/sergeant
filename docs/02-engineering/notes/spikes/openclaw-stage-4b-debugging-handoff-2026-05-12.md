@@ -83,7 +83,7 @@
 - **Real SDK**: `openclaw@2026.5.7` (downloaded npm package, inspected `dist/loader-B-GXgDrk.js`, `dist/plugin-sdk/src/plugins/hook-types.d.ts`, `dist/dispatch-8E8vi2HV.js`).
 - **Gateway**: окремий Railway service `openclaw-gateway` у проекті `openclaw-clean-gateway`, тримає Telegram webhook через бота `@KENT_OPENCLAW_GATEWAY_BOT`. Legacy grammy bot `@OpenClaw_sergeant_bot` живе паралельно як fallback (не задіяний у цій debugging-сесії).
 - **Spike doc**: [`docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md`](./openclaw-sdk-5.7-real-api.md) — детальний contract SDK 5.7. Рядки 1, 5, 6 — найважливіше для цієї debugging-серії.
-- **Migration plan**: [`docs/planning/openclaw-migration-plan.md`](../../../planning/openclaw-migration-plan.md) — § Reality update 2026-05-12 пункти 11, 12, 13 — chronologically.
+- **Migration plan**: [`docs/90-work/planning/openclaw-migration-plan.md`](../../../90-work/planning/openclaw-migration-plan.md) — § Reality update 2026-05-12 пункти 11, 12, 13 — chronologically.
 
 ## 2. Що було зроблено у цій сесії (хронологічно)
 
@@ -138,7 +138,7 @@ pnpm --filter @sergeant/openclaw-plugin lint         # ✓
 - `packages/openclaw-plugin/src/types/openclaw-ambient.d.ts` — `opts.name: string` mark-нутий як required.
 - `packages/openclaw-plugin/src/index.test.ts` — новий тест `it("passes a unique non-empty opts.name to every registerHook call …")`.
 - `docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md` — Row 5 (`before_dispatch` contract), Row 6 (`opts.name` loader validation).
-- `docs/planning/openclaw-migration-plan.md` — § Reality update пункти 11, 12, 13.
+- `docs/90-work/planning/openclaw-migration-plan.md` — § Reality update пункти 11, 12, 13.
 
 ## 5. Real root-cause #3 — Railway service без GitHub auto-deploy
 

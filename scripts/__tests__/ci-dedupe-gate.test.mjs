@@ -1,7 +1,7 @@
 // scripts/__tests__/ci-dedupe-gate.test.mjs
 //
 // Shape-regression tests for the `pnpm dedupe --check` CI gate added in
-// audit item P2-1 (docs/audits/2026-05-13-testing-devx-roast.md).
+// audit item P2-1 (docs/90-work/audits/2026-05-13-testing-devx-roast.md).
 //
 // The gate itself is a single line in `.github/workflows/ci.yml`, which is
 // cheap to remove or weaken (e.g. by a copy-paste refactor that wraps it in
@@ -109,7 +109,7 @@ test("happy path: `check` job contains a `pnpm dedupe --check` step", () => {
     dedupeSteps.length,
     1,
     "expected exactly one `pnpm dedupe --check` step in the `check` job — " +
-      "P2-1 gate from docs/audits/2026-05-13-testing-devx-roast.md",
+      "P2-1 gate from docs/90-work/audits/2026-05-13-testing-devx-roast.md",
   );
 
   const installIdx = steps.findIndex((s) =>

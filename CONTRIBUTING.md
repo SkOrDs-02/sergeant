@@ -118,19 +118,19 @@ pnpm typecheck
 pnpm dedupe --check   # P2-1: lockfile-drift guard (див. нижче)
 ```
 
-`pnpm dedupe --check` падає з non-zero exit, коли `pnpm install` (без `--frozen-lockfile`) ввів дубль транзитивної залежності — типовий шлях drift-а, коли локальний `pnpm add` дозволив новішу мінорну версію того ж пакета поруч зі старою. Фікс — `pnpm dedupe` локально + коміт `pnpm-lock.yaml`-delta у той самий PR. Той же gate стоїть у CI (`format-lint-test-build` matrix у `.github/workflows/ci.yml`, audit item P2-1 у [`docs/audits/2026-05-13-testing-devx-roast.md`](./docs/audits/2026-05-13-testing-devx-roast.md)).
+`pnpm dedupe --check` падає з non-zero exit, коли `pnpm install` (без `--frozen-lockfile`) ввів дубль транзитивної залежності — типовий шлях drift-а, коли локальний `pnpm add` дозволив новішу мінорну версію того ж пакета поруч зі старою. Фікс — `pnpm dedupe` локально + коміт `pnpm-lock.yaml`-delta у той самий PR. Той же gate стоїть у CI (`format-lint-test-build` matrix у `.github/workflows/ci.yml`, audit item P2-1 у [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](./docs/90-work/audits/2026-05-13-testing-devx-roast.md)).
 
 Далі додатково за surface:
 
 - `web`: `pnpm test`, локальний smoke через browser, за потреби `pnpm --filter @sergeant/web test`
-- `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR torkає `apps/server/src/modules/**/*.routes.ts`, `**/serializers/**` або `apps/server/src/migrations/**` — Detox iOS/Android запускаються автоматично (path-trigger у `.github/workflows/detox-{ios,android}.yml`, [PR-18](./docs/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md)). Defence-in-depth перед production-deploy-ом: `api:check-openapi-types` ловить shape drift на рівні codegen-у, Detox — на рівні runtime behaviour (rename полів, response ordering, header changes).
+- `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR torkає `apps/server/src/modules/**/*.routes.ts`, `**/serializers/**` або `apps/server/src/migrations/**` — Detox iOS/Android запускаються автоматично (path-trigger у `.github/workflows/detox-{ios,android}.yml`, [PR-18](./docs/90-work/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md)). Defence-in-depth перед production-deploy-ом: `api:check-openapi-types` ловить shape drift на рівні codegen-у, Detox — на рівні runtime behaviour (rename полів, response ordering, header changes).
 - `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`. Migration-only PR теж тригерить Detox через `apps/server/src/migrations/**` — schema-change майже завжди передує перейменуванню serializer-а.
 - `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR торкає `apps/server/src/routes/**` або `apps/server/src/migrations/**`, Detox iOS + Android jobs запускаються автоматично (stack-pulse PR-18 / M2: response-shape change без зміни `apps/mobile/**` ламала mobile у prod). Якщо тести впадуть, перегенеруй `packages/api-client/**` типи у тому самому PR.
 - `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`
 - `mobile`: `pnpm --filter @sergeant/mobile test`
 - `console`: `pnpm --filter @sergeant/openclaw exec vitest run`
 - `governance/docs`: `pnpm docs:check-links`, `pnpm docs:check-playbook-schema`, `pnpm docs:check-playbook-index`, `pnpm lint:governance-sync --strict`
-- `testing/devx`: звіряйся з [`docs/planning/pr-plan-testing-devx-2026-05.md`](./docs/planning/pr-plan-testing-devx-2026-05.md) і починай із [`.agents/skills/sergeant-start-here/SKILL.md`](./.agents/skills/sergeant-start-here/SKILL.md). Базові verification-команди — `pnpm lint`, `pnpm typecheck`, `pnpm test` + relevant filter (`pnpm --filter @sergeant/<workspace> test`); E2E / Detox / VRT — лише якщо змінюються відповідні spec-файли.
+- `testing/devx`: звіряйся з [`docs/90-work/planning/pr-plan-testing-devx-2026-05.md`](./docs/90-work/planning/pr-plan-testing-devx-2026-05.md) і починай із [`.agents/skills/sergeant-start-here/SKILL.md`](./.agents/skills/sergeant-start-here/SKILL.md). Базові verification-команди — `pnpm lint`, `pnpm typecheck`, `pnpm test` + relevant filter (`pnpm --filter @sergeant/<workspace> test`); E2E / Detox / VRT — лише якщо змінюються відповідні spec-файли.
 
 Якщо сценарій має окремий playbook, секція `Verification` у playbook має пріоритет над загальним списком вище.
 
@@ -271,4 +271,4 @@ pnpm lint:skills     # перевірить shape + збіг хешів
 
 - Повний doc index: [docs/README.md](./docs/README.md)
 - Agent operating system: [docs/00-start/agents/README.md](./docs/00-start/agents/README.md)
-- Planning/roadmaps: [docs/planning/README.md](./docs/planning/README.md)
+- Planning/roadmaps: [docs/90-work/planning/README.md](./docs/90-work/planning/README.md)

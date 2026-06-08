@@ -128,7 +128,7 @@ const MUST_BE_OWNED = [
     reason: "third-party integration contracts (Mono, Voyage, Anthropic, etc.)",
   },
   {
-    path: "docs/tech-debt",
+    path: "docs/90-work/tech-debt",
     kind: "tree",
     match: /\.md$/,
     reason: "tracked tech debt with explicit freshness cadence",

@@ -19,7 +19,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 - Знайди канонічне джерело істини для зміни:
   - product-facing: spec у `docs/05-design/design/specs/` або issue з acceptance-критеріями;
-  - infra/governance: playbook у `docs/00-start/playbooks/` або initiative у `docs/initiatives/`;
+  - infra/governance: playbook у `docs/00-start/playbooks/` або initiative у `docs/90-work/initiatives/`;
   - bugfix: regression-тест + опис відтворення з `sergeant-bugfix-and-regression`.
 - Звір кожен acceptance-критерій з кодом. Кожен пункт або вкритий diff-ом, або явно out-of-scope з поясненням у PR.
 - Перевір, що зачеплені surfaces покриті правильним specialist skill (тригери merge-готовності нижче).

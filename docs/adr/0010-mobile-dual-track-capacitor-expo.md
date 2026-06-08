@@ -4,13 +4,13 @@
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Lifecycle:** historical dual-track record. The locked shell-sunset schedule below was superseded operationally by [ADR-0052](./0052-mobile-strategy-capacitor-primary.md), which keeps `apps/mobile-shell` primary until Expo/RN parity and a new accepted replacement decision.
 - **Date:** 2026-04-27
-- **Updated:** 2026-05-03 — added § Sunset schedule (T₀/T₁/T₂) per [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../initiatives/archive/_0002-mobile-platform-decision.md)
+- **Updated:** 2026-05-03 — added § Sunset schedule (T₀/T₁/T₂) per [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../90-work/initiatives/archive/_0002-mobile-platform-decision.md)
 - **Updated:** 2026-05-19 — marked the sunset timeline as historical after ADR-0052 made Capacitor primary.
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
   - [`docs/02-engineering/architecture/platforms.md`](../02-engineering/architecture/platforms.md) — зведений статус web / native / capacitor-shell, включно з [feature-parity матрицею](../02-engineering/architecture/platforms.md#0-feature-parity-матриця-web-shell-rn).
-  - [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../initiatives/archive/_0002-mobile-platform-decision.md) — ініціатива, що формалізує дедлайн і guardrails.
+  - [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../90-work/initiatives/archive/_0002-mobile-platform-decision.md) — ініціатива, що формалізує дедлайн і guardrails.
   - [`docs/02-engineering/mobile/overview.md`](../02-engineering/mobile/overview.md) — API-контракт для мобільного клієнта (auth, deep links, push).
   - [`docs/02-engineering/mobile/shell.md`](../02-engineering/mobile/shell.md) — operator-референс для shell, секція [Sunset](../02-engineering/mobile/shell.md#sunset).
   - [`docs/02-engineering/mobile/react-native-migration.md`](../02-engineering/mobile/react-native-migration.md) — детальний roadmap порту web → RN.
@@ -45,7 +45,7 @@ long-term нативний клієнт. Обидва коекзистують �
 
 > Locked-in deprecation timeline for `apps/mobile-shell`. Status `accepted` with the lifecycle marker `dual-track with locked sunset`
 > означає, що dual-track — тимчасовий стан, не steady state. Дати нижче — **operational
-> commitments**: про їх зсув мейнтейнер коментує тут і у [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../initiatives/archive/_0002-mobile-platform-decision.md) Outcome,
+> commitments**: про їх зсув мейнтейнер коментує тут і у [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../90-work/initiatives/archive/_0002-mobile-platform-decision.md) Outcome,
 > з обґрунтуванням на основі feature-parity матриці у
 > [`docs/02-engineering/architecture/platforms.md`](../02-engineering/architecture/platforms.md#0-feature-parity-матриця-web-shell-rn).
 
@@ -71,7 +71,7 @@ long-term нативний клієнт. Обидва коекзистують �
   - Allowlist у `packages/eslint-plugin-sergeant-design/index.js` (rule `forbid-shell-only-feature`) **не** скорочується — він пасе snapshot 2026-05-03. Будь-який новий `.ts`/`.tsx` під `apps/mobile-shell/src/**`, який не входить у snapshot, падає на лінті. Виключення (deprecation banner, sunset modal) додаються у allowlist окремим PR із посиланням сюди.
   - `apps/mobile-shell/README.md` отримує banner «Shell is in sunset (T₀)».
   - Shell-білди (Android / iOS release pipeline) лишаються живі для bug-fix-only PR-ів — пайплайн `mobile-shell-android-release.yml` / `mobile-shell-ios-release.yml` без змін до T₂.
-  - `docs/initiatives/archive/_0002-mobile-platform-decision.md` Outcome заповнюється cost-baseline-ом і pass/fail кожного маяка.
+  - `docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md` Outcome заповнюється cost-baseline-ом і pass/fail кожного маяка.
 
 - **T₁ (2026-11-30):**
   - Internal-track upload через `google-github-actions/upload-google-play` зупиняється; останній shell-білд лишається `production` track із deep-link banner-ом.
@@ -401,7 +401,7 @@ Send-флоу на сервері: окремі кодшляхи для web-push
 **Негативні:**
 
 - Credentials для native-push (APNs key, FCM service account) — окремий
-  operational setup ([`docs/tech-debt/backend.md`](../tech-debt/backend.md)).
+  operational setup ([`docs/90-work/tech-debt/backend.md`](../90-work/tech-debt/backend.md)).
   Shell-юзерів можна нотифікувати тільки через VAPID, поки RN parity не досягнуть.
 
 ### Exit criteria

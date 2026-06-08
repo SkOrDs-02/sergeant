@@ -14,7 +14,7 @@
 > [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) ·
 > [`docs/02-engineering/architecture/service-catalog.md`](../../../02-engineering/architecture/service-catalog.md) ·
 > [`docs/00-start/playbooks/release.md`](../../../00-start/playbooks/release.md) ·
-> [`docs/initiatives/0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md) ·
+> [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) ·
 > [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../../adr/0052-mobile-strategy-capacitor-primary.md)
 
 ---
@@ -46,7 +46,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 ### 3.1 Web (`apps/web`)
 
 - **Стан:** `active` за [`apps-status-matrix.md`](../../../02-engineering/architecture/apps-status-matrix.md). React 18 + Vite 8 PWA, Tailwind 4, TanStack Query, Better Auth cookie-сесії, Service Worker (`src/sw.ts`). Деплой — Vercel (статика + Edge Middleware-проксі на Railway API), per-PR preview-середовища.
-- **Auth:** реалізовано email/password через Better Auth (`AuthContext` у [`apps/web/src/core/auth/AuthContext.tsx`](../../../../apps/web/src/core/auth/AuthContext.tsx)), UA-помилки мапляться за стабільним Better Auth `error.code`. **Apple + Google SSO ще не залиті** — це Phase 4.3 ініціативи [`0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md) (signup-friction blocker).
+- **Auth:** реалізовано email/password через Better Auth (`AuthContext` у [`apps/web/src/core/auth/AuthContext.tsx`](../../../../apps/web/src/core/auth/AuthContext.tsx)), UA-помилки мапляться за стабільним Better Auth `error.code`. **Apple + Google SSO ще не залиті** — це Phase 4.3 ініціативи [`0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) (signup-friction blocker).
 - **FTUX:** `WelcomeScreen` + `OnboardingWizard` на `/welcome`, lazy-loaded chunk; demo-режим `?demo=1` через `seedDemoData/*`. За [`ftux-master-tracker.md`](../product-os/ftux-master-tracker.md): **27 з 35 sprint-items закрито** в `main`, 8-step PostHog activation funnel живе на web, D1/D7 dashboard зеленіє. Real-world conversion поки **TBD** (когорта стартувала ~2026-04-28).
 - **Observability:** Sentry ([`apps/web/src/core/observability/sentry.ts`](../../../../apps/web/src/core/observability/sentry.ts)) + PostHog (8 FTUX events + identify), Web Vitals, Lighthouse CI workflow заплановано (T5 у тех-боргу), `size-limit` уже у CI.
 - **Security:** CSP report-only активний (CSP/COOP/COEP у [`apps/web/vercel.json`](../../../../apps/web/vercel.json)), Permissions-Policy жорстка.
@@ -60,7 +60,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 - **Auth secrets / Hard Rule #20:** OpenClaw PATs заборонені в проді, ротація через [`docs/00-start/playbooks/rotate-secrets.md`](../../../00-start/playbooks/rotate-secrets.md). `BETTER_AUTH_TOKEN_ENC_KEY` + `NUTRITION_BACKUP_KEY_SECRET` — required у проді (з `.env.example`).
 - **Observability:** Pino JSON + ALS-контекст + redaction policy (Hard Rule #21), Prometheus `prom-client` (`GET /metrics` за `METRICS_TOKEN`), Sentry із trace-sampling-presets, GCS log-retention archive cron, n8n webhook events Grafana dashboard.
 - **Billing schema:** `subscriptions` / Stripe webhook-event storage уже є в billing implementation path; перед public launch треба перевірити, що migrations виконані в target Railway DB і Stripe env налаштовано.
-- **Push:** native APNs/FCM register endpoint живе, **fan-out у проді ще потребує credentials** ([`docs/tech-debt/backend.md#push-credentials`](../../../tech-debt/backend.md)).
+- **Push:** native APNs/FCM register endpoint живе, **fan-out у проді ще потребує credentials** ([`docs/90-work/tech-debt/backend.md#push-credentials`](../../../90-work/tech-debt/backend.md)).
 - **Висновок:** server-side готовий до closed beta «as is»; public launch вимагає `subscriptions` + Stripe webhook + прод push creds.
 
 ### 3.3 Capacitor shell (`apps/mobile-shell`)
@@ -142,7 +142,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 **Додаткові blockers, що зʼявляться між closed beta → public web launch** (не входять у top-10, але треба тримати в голові):
 
-- Stripe billing (Phase 2–4 з [`0010`](../../../initiatives/0010-revenue-first-launch.md)).
+- Stripe billing (Phase 2–4 з [`0010`](../../../90-work/initiatives/0010-revenue-first-launch.md)).
 - Apple/Google SSO (Phase 4.3 з 0010).
 - Cookie consent banner для EU.
 - Окремий лендінг на `sergeant.com.ua` (див. § 4).

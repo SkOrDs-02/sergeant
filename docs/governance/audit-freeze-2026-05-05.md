@@ -5,7 +5,7 @@
 
 > **Що це.** Тимчасова заморозка створення нових audit/initiative/governance документів. Працює як **process-level rate-limiter** на час, поки `main` повертає в баланс **product velocity ↔ docs velocity**.
 
-> **Контекст.** На 2026-05-05 в репо: 12 активних `docs/initiatives/`, 12 audit-документів у `docs/audits/`, 334 markdown-файли в `docs/`. AGENTS.md — 839 рядків. За попередні 2 тижні створено 5 нових audit-доків і 2 нові ініціативи (`0011-foundation-adoption`, `0012-perfect-strictness`). Водночас з 15 P0/P1 пунктів FTUX-roast (2026-05-03) частина все ще **open у коді**. Розрив між «закрите в плані» і «закрите для користувача».
+> **Контекст.** На 2026-05-05 в репо: 12 активних `docs/90-work/initiatives/`, 12 audit-документів у `docs/90-work/audits/`, 334 markdown-файли в `docs/`. AGENTS.md — 839 рядків. За попередні 2 тижні створено 5 нових audit-доків і 2 нові ініціативи (`0011-foundation-adoption`, `0012-perfect-strictness`). Водночас з 15 P0/P1 пунктів FTUX-roast (2026-05-03) частина все ще **open у коді**. Розрив між «закрите в плані» і «закрите для користувача».
 
 > **Мета freeze-у.** Дати product-cycle 4 тижні майже-без-нової-документації, щоб PR-flow зосередився на shippable code. Через 4 тижні — review: чи дійсно стало тісно (extend), чи навпаки темп пришвидшився (release).
 
@@ -23,8 +23,8 @@
 
 ## Що ЗАБОРОНЕНО під час freeze
 
-1. **Нові аудит-документи** в `docs/audits/*.md` (топ-рівень).
-2. **Нові ініціативи** в `docs/initiatives/00NN-*.md`.
+1. **Нові аудит-документи** в `docs/90-work/audits/*.md` (топ-рівень).
+2. **Нові ініціативи** в `docs/90-work/initiatives/00NN-*.md`.
 3. **Нові playbook-и** в `docs/00-start/playbooks/*.md` без передумови — playbook народжується з хоча б 2 завершених PR-ів, що руками показали recipe (а не теоретичне «треба зробити»).
 4. **Нові ADR-и** без активного code-PR-у, що потребує decision.
 5. **Розширення AGENTS.md** новими правилами без обов'язкового lint-enforcement (нові rules → `docs/governance/hard-rules.json` + ESLint plugin або CI-gate; pure-text rules відкладаються до post-freeze).
@@ -41,7 +41,7 @@
 4. **Post-mortem-и** завершених PR-серій у `docs/01-product/launch/product-os/sprint-retros/` (1 page max).
 5. **Decisions log** — нові entries у §7 master tracker-у.
 6. **Consolidation-PR-и** — об'єднання 2+ існуючих доків в 1 (як [PR #1934 — FTUX consolidation](https://github.com/Skords-01/Sergeant/pull/1934)).
-7. **Архівація** stale audit-tracker-ів з `docs/audits/` → `docs/audits/archive/`.
+7. **Архівація** stale audit-tracker-ів з `docs/90-work/audits/` → `docs/90-work/audits/archive/`.
 8. **Documentation для shipped code** (CHANGELOG, release notes, in-product whats-new — обов'язкові для PR-ів, які міняють user-visible behavior).
 9. **PR-template / CODEOWNERS / CI-config** оновлення — це process-tooling, не audit-content.
 
@@ -52,8 +52,8 @@
 Cuộc CI-job, що warn-ить (не block-ить), якщо PR створює новий файл під заборонений path:
 
 ```
-docs/audits/[^/]+\.md         (top-level only, archive/ allowed)
-docs/initiatives/00\d{2}-*.md (any new initiative number)
+docs/90-work/audits/[^/]+\.md         (top-level only, archive/ allowed)
+docs/90-work/initiatives/00\d{2}-*.md (any new initiative number)
 docs/00-start/playbooks/*.md           (any new playbook)
 docs/adr/00\d{2}-*.md         (any new ADR)
 ```
@@ -130,9 +130,9 @@ Override — не sin, це signaling механізм. Якщо за 4 тижн
 
 **Pathspec обрано як «продукт-докі без mandatory CI-gate»**:
 
-- `docs/audits/`, `docs/initiatives/`, `docs/00-start/playbooks/`, `docs/adr/` — це місця, куди легко додати «ще один аудит» / «ще одна ініціатива», і де темп зростання випередив темп viability.
+- `docs/90-work/audits/`, `docs/90-work/initiatives/`, `docs/00-start/playbooks/`, `docs/adr/` — це місця, куди легко додати «ще один аудит» / «ще одна ініціатива», і де темп зростання випередив темп viability.
 - `docs/01-product/launch/`, `docs/03-operations/observability/`, `docs/02-engineering/integrations/`, `docs/02-engineering/architecture/`, `docs/05-design/design/`, `docs/00-start/agents/`, **не** заморожуються — це функціональна документація, що часто синкається з shipped code.
-- `*-deep-dive/` піджанр в `docs/audits/` (раніше — окремий `docs/diagnostics/`) **не** заморожується — deep-dives створюються per-incident / на запит, не за роадмапом.
+- `*-deep-dive/` піджанр в `docs/90-work/audits/` (раніше — окремий `docs/diagnostics/`) **не** заморожується — deep-dives створюються per-incident / на запит, не за роадмапом.
 - `AGENTS.md` під обмеженням «розширення без enforcement» — це найбільший read-tax файл.
 
 ---

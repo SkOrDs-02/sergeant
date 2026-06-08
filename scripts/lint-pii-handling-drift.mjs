@@ -9,7 +9,7 @@
 // Why: a stale doc list misleads engineers — someone adds a new redacted
 // key in shared but the doc shows the old list; another dev re-adds an API
 // surface without redaction "because it wasn't in the list yet" (STRIDE:
-// Information disclosure). See docs/planning/pr-plan-security-obs-2026-05.md S10.
+// Information disclosure). See docs/90-work/planning/pr-plan-security-obs-2026-05.md S10.
 //
 // Modes:
 //   default → exit 1 on drift (used by `pnpm lint:pii-handling-drift`).

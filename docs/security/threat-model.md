@@ -182,7 +182,7 @@ SPA fallback, OS-level. Trust boundary: app-tier ↔ persistence-tier.
 2. **Закриття картки** прибирає її ID з колонки `Residual risk`. Якщо
    картка _відкривала_ нову surface — рядок таблиці лишається; колонка
    `Existing controls` оновлюється на новий контроль.
-3. **Audit findings** ([`../audits/`](../audits) — окремий цикл,
+3. **Audit findings** ([`../audits/`](../90-work/audits) — окремий цикл,
    snapshot-аудити) транслюються у hardening-картки → ті крос-референсять
    threat-model. Audit-документ сам у threat-model не лінкується (це
    тимчасові звіти, threat-model — живий контракт).

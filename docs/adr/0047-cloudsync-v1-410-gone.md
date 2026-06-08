@@ -1,6 +1,6 @@
 # ADR-0047: CloudSync v1 — T₀ executed (410 Gone)
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 - **Status:** Accepted
@@ -9,11 +9,11 @@
 - **Supersedes:** [ADR-0004 — CloudSync LWW conflict resolution](./0004-cloudsync-lww-conflict-resolution.md) (per-module LWW worldview engine; цей ADR + Stage 7 cleanup переключають production на per-row op-log v2).
 - **Related:**
   - [ADR-0043 — CloudSync v1 sunset (RFC 8594 deprecation headers + 6-phase rollout)](./0043-cloudsync-v1-sunset.md) — цей ADR виконує Phase 5 з ADR-0043.
-  - [Initiative 0003 — Sync v2 rollout & v1 sunset](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
+  - [Initiative 0003 — Sync v2 rollout & v1 sunset](../90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
   - [`apps/server/src/modules/sync/sunsetGone.ts`](../../apps/server/src/modules/sync/sunsetGone.ts) — handler, який реалізує цей ADR.
   - [`apps/server/src/routes/sync.ts`](../../apps/server/src/routes/sync.ts) — wire-up `respondV1Gone` на v1 push/pull endpoint-ах.
   - [`apps/server/src/modules/sync/sunsetHeaders.ts`](../../apps/server/src/modules/sync/sunsetHeaders.ts) — Phase 2 middleware, лишається активним поверх 410 щоб клієнти могли read-ити RFC 8594 / 8288 headers разом із body.
-  - [Storage roadmap §3 — Stage 7 cleanup](../planning/storage-roadmap.md) — наступні PR-и (#051 drop module_data, #052 видалення v1 коду) gate-нуто на цей ADR.
+  - [Storage roadmap §3 — Stage 7 cleanup](../90-work/planning/storage-roadmap.md) — наступні PR-и (#051 drop module_data, #052 видалення v1 коду) gate-нуто на цей ADR.
 
 ---
 
@@ -51,14 +51,14 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
   HTTP/1.1 410 Gone
   Cache-Control: no-store
   Deprecation: true
-  Link: </api/v2/sync/push>; rel="successor-version", </docs/initiatives/0003-...>; rel="deprecation"
+  Link: </api/v2/sync/push>; rel="successor-version", </docs/90-work/initiatives/0003-...>; rel="deprecation"
   Sunset: <RFC 7231 IMF-fixdate, з CLOUDSYNC_V1_SUNSET_AT env>
 
   {
     "error": "cloudsync_v1_sunset",
     "successor": "/api/v2/sync",
     "since": "<ISO 8601 з CLOUDSYNC_V1_GONE_SINCE env, fallback 'unknown'>",
-    "guide": "/docs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md"
+    "guide": "/docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md"
   }
   ```
 

@@ -46,11 +46,11 @@
 
 - Створи / онови `docs/security/pen-tests/YYYY-MM-<sweep-name>.md` із результатами.
 - Додай рядок у `## Verification checklist` для кожної атаки + експліцитний `Observed (YYYY-MM-DD)` маркер.
-- Якщо знайдено follow-up gap (наприклад, нема automated CI асерту) — заведи `Follow-ups` секцію + open GH issue + закидай у `docs/tech-debt/<surface>.md` якщо це довготривалий борг.
+- Якщо знайдено follow-up gap (наприклад, нема automated CI асерту) — заведи `Follow-ups` секцію + open GH issue + закидай у `docs/90-work/tech-debt/<surface>.md` якщо це довготривалий борг.
 
 ### 6. Маршрутизуй фоллов-ап
 
-- Mock-test-only coverage → відкривай PR із real-Postgres / real-fixture e2e (як PR 3.2 / PR 3.3 ініціативи [0011](../../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md)).
+- Mock-test-only coverage → відкривай PR із real-Postgres / real-fixture e2e (як PR 3.2 / PR 3.3 ініціативи [0011](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md)).
 - Залишковий ризик у самій карті → онови `Status` від `Closed` до `Closed (partial)` + перерахуй у §Deferred карти + лінкуй на новий tracker.
 - Готовність до external pen-test → передай transcript у [`docs/01-product/launch/business/04-launch-readiness.md`](../../01-product/launch/business/04-launch-readiness.md) як evidence-документ.
 

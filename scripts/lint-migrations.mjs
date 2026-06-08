@@ -537,7 +537,7 @@ export function run({
           `   max(${baseRef}) + 1, then re-push. The two-phase DROP rule still`,
           `   applies to the renumbered file.`,
           ``,
-          `   Ref: docs/initiatives/0011-foundation-adoption-and-process-discipline.md`,
+          `   Ref: docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md`,
           `        (Phase 1 PR 1.2 — closes PR #1652 type-incident)`,
         ].join("\n"),
       );

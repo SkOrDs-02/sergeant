@@ -27,7 +27,7 @@
    {
      "cadenceOverrides": {
        "docs/03-operations/observability/runbook.md": 60,
-       "docs/audits/archive/ux-audit-2025.md": 365
+       "docs/90-work/audits/archive/ux-audit-2025.md": 365
      }
    }
    ```

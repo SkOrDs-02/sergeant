@@ -16,7 +16,7 @@ Every auto-generated artifact in the repo. Currently:
 - `docs/governance/symbol-index.html`
 - `docs/02-engineering/architecture/diagrams/c3-workspaces.md`
 - `docs/open-work.md`
-- `docs/initiatives/follow-ups.md`
+- `docs/90-work/initiatives/follow-ups.md`
 - `docs/00-start/playbooks/INDEX.md`
 - `docs/governance/hard-rules-matrix.md`
 
@@ -45,7 +45,7 @@ For JSON outputs (e.g. `knowledge-graph.json`, `repo-map.auto.json`), JSON has n
 
 ## Tracking
 
-- Initiative — [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../initiatives/archive/_0014-knowledge-graph-and-catalogs.md).
+- Initiative — [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md).
 - ADR-0058 — [`docs/adr/0058-knowledge-graph-schema.md`](../../adr/0058-knowledge-graph-schema.md) (schema-first principle).
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->

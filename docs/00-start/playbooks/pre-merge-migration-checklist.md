@@ -11,7 +11,7 @@
 - Coupled surface: `apps/server/src/modules` (serializers — rule #1), `packages/api-client` (rule #3)
 - Governing skill: `sergeant-data-and-migrations`
 
-> Призначення цього playbook-у — це **обов'язковий чек-лист**, який має бути скопійований у PR description і відмічений до merge. Закриває аудитний пункт `PR-5.C` (`docs/audits/archive/2026-04-26-sergeant-audit-devin.md`).
+> Призначення цього playbook-у — це **обов'язковий чек-лист**, який має бути скопійований у PR description і відмічений до merge. Закриває аудитний пункт `PR-5.C` (`docs/90-work/audits/archive/2026-04-26-sergeant-audit-devin.md`).
 
 > **Чому окремий чек-лист?** `add-sql-migration.md` описує авторинг (як написати міграцію). Цей playbook — про **review-фазу**: рев'юер та автор разом перевіряють, що міграція безпечно піде у production без 5-ти типових мисталок (DROP без grace, gaps у номерах, відсутній `down.sql`, забутий bigint-coercion, drift у `api-client`).
 
@@ -88,7 +88,7 @@
 
 - [ ] Pre-deploy команда Railway: автоматичний `pnpm db:migrate` перед стартом нового релізу — готовий до цієї міграції (немає кращого моменту для break-y migrations).
 - [ ] Якщо це **breaking** для running код-у (наприклад, видалення колонки, на яку ще пише чинна версія): двофазний deploy (див. розділ B).
-- [ ] У `docs/tech-debt/backend.md` оновлено секцію "Database & migrations" якщо міграція змінює invariant-и (індекси, foreign keys, нові таблиці-домени).
+- [ ] У `docs/90-work/tech-debt/backend.md` оновлено секцію "Database & migrations" якщо міграція змінює invariant-и (індекси, foreign keys, нові таблиці-домени).
 
 ```
 
@@ -134,5 +134,5 @@ Reviewer must confirm before approving merge:
 - [`AGENTS.md`](../../../AGENTS.md) — hard rules #1 (bigint), #3 (API contract), #4 (migrations).
 - [`scripts/lint-migrations.mjs`](../../../scripts/lint-migrations.mjs) — CI-script для `migration-lint` job-у.
 - [`apps/server/src/migrations/__tests__/rollback-sanity.test.ts`](../../../apps/server/src/migrations/__tests__/rollback-sanity.test.ts) — auto-test, що `down.sql` принаймні виконується (PR #918).
-- [`docs/tech-debt/backend.md`](../../tech-debt/backend.md) — Database & migrations review.
+- [`docs/90-work/tech-debt/backend.md`](../../90-work/tech-debt/backend.md) — Database & migrations review.
 ```

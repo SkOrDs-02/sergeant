@@ -183,7 +183,7 @@ ring-module-accent         ring-module-accent-strong
 
 Усі стандартні Tailwind opacity-modifier-и із зареєстрованої шкали (`0, 5, 8, 10, 15, 20, 25, …`) працюють. Не зареєстровані кроки (`/12`, `/18`) тихо дропаються — див. hard-rule #8 у `AGENTS.md`.
 
-> Web вже на Tailwind v4 ([#1495](https://github.com/Skords-01/Sergeant/pull/1495)); `<alpha-value>`-плейсхолдер у preset-і працює тому, що JS-конфіг підвантажується через `@config`-директиву (`apps/web/src/index.css`). Mobile залишається на NativeWind 4 / Tailwind 3 — токени читаються однаково на обох runtime-ах. Деталі — `docs/planning/tailwind-v4-migration.md`.
+> Web вже на Tailwind v4 ([#1495](https://github.com/Skords-01/Sergeant/pull/1495)); `<alpha-value>`-плейсхолдер у preset-і працює тому, що JS-конфіг підвантажується через `@config`-директиву (`apps/web/src/index.css`). Mobile залишається на NativeWind 4 / Tailwind 3 — токени читаються однаково на обох runtime-ах. Деталі — `docs/90-work/planning/tailwind-v4-migration.md`.
 
 ## Тестування
 

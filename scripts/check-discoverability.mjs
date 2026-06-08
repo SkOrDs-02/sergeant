@@ -26,7 +26,7 @@
 //   node scripts/check-discoverability.mjs --json     # machine-readable
 //   node scripts/check-discoverability.mjs --root <dir>   # alt repo root (tests)
 //
-// Linked initiative: docs/planning/ai-coding-improvements.md § Next blocks
+// Linked initiative: docs/90-work/planning/ai-coding-improvements.md § Next blocks
 // (Discoverability tests).
 
 import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
@@ -204,7 +204,7 @@ export const ROUTES = [
     role: "new-contributor",
     reason: "active initiatives index",
     entrypoints: ["README.md", "docs/README.md"],
-    target: "docs/initiatives/README.md",
+    target: "docs/90-work/initiatives/README.md",
   },
 
   // ── On-call: hot-path playbooks reachable from any landing page ──────────

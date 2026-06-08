@@ -5,7 +5,7 @@
 // *.down.sql` can roll back the corresponding up migration cleanly, and that
 // re-applying every up migration after the rollback produces the same schema.
 //
-// Required by PR-32 of `docs/planning/pr-plan-2026-05.md` and Hard Rule #4
+// Required by PR-32 of `docs/90-work/planning/pr-plan-2026-05.md` and Hard Rule #4
 // (`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`): down
 // migrations exist for **local rollbacks** — production never runs them, but
 // CI must guarantee they are not silently broken (no DROP-references to

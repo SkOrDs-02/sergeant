@@ -123,5 +123,5 @@ flowchart TD
 ## Нотатки
 
 - Джерело CI-job: [`.github/workflows/deploy-config-staging-gate.yml`](../../../.github/workflows/deploy-config-staging-gate.yml). Логіка: [`scripts/ci/check-deploy-config-staging-gate.mjs`](../../../scripts/ci/check-deploy-config-staging-gate.mjs).
-- Initiative ref: [`docs/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) §Фаза 1 → PR 1.3.
+- Initiative ref: [`docs/90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) §Фаза 1 → PR 1.3.
 - Закриває type-incident PR #1595 → PR #1600.

@@ -333,7 +333,7 @@ Monitoring is described in `docs/03-operations/observability/README.md`. Key com
 | `docs/adr/`                         | Architecture Decision Records — why we chose what we chose |
 | `docs/02-engineering/api/`          | OpenAPI contracts, API documentation                       |
 | `docs/02-engineering/architecture/` | Repository map, platforms, service catalog                 |
-| `docs/audits/`                      | UX/UI audits, typography, design reviews                   |
+| `docs/90-work/audits/`              | UX/UI audits, typography, design reviews                   |
 | `docs/03-operations/deploy/`        | Deployment instructions                                    |
 | `docs/05-design/design/`            | Design system: brandbook, colors, module accents           |
 | `docs/governance/`                  | Hard rules, review checklist, release policy               |
@@ -341,14 +341,14 @@ Monitoring is described in `docs/03-operations/observability/README.md`. Key com
 | `docs/01-product/launch/`           | Monetization, GTM, launch readiness                        |
 | `docs/02-engineering/mobile/`       | Capacitor, deep links, React Native migration              |
 | `docs/03-operations/observability/` | SLO, dashboards, metrics, runbook                          |
-| `docs/planning/`                    | Roadmaps, AI improvements, dev stack roadmap               |
+| `docs/90-work/planning/`            | Roadmaps, AI improvements, dev stack roadmap               |
 | `docs/00-start/playbooks/`          | Step-by-step recipes (add an endpoint, do a hotfix)        |
 | `docs/03-operations/postmortems/`   | Incident post-mortems                                      |
 | `docs/security/`                    | Access policy, disaster recovery, security audit           |
 | `docs/00-start/agents/`             | AI agent system: skill catalog, workflows                  |
-| `docs/tech-debt/`                   | Tech debt registries (frontend, backend, mobile)           |
+| `docs/90-work/tech-debt/`           | Tech debt registries (frontend, backend, mobile)           |
 
-Roadmap: `docs/planning/README.md`. Tech debt: `docs/tech-debt/README.md`.
+Roadmap: `docs/90-work/planning/README.md`. Tech debt: `docs/90-work/tech-debt/README.md`.
 
 ## For Contributors and Agents
 

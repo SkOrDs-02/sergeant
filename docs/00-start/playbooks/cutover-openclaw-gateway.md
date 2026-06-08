@@ -15,7 +15,7 @@
 - Coupled surface: `tools/openclaw/src/openclaw/`, `tools/openclaw/src/agents/{openclaw,personas,strategic-modes,dispatcher}.ts`, Railway service `Sergeant` (env-vars)
 - Governing skill: `sergeant-deploy-and-observability`
 - Governing ADR: [ADR-0055](../../adr/0055-openclaw-external-gateway.md) § cutover
-- Governing plan: [`openclaw-migration-plan.md`](../../planning/openclaw-migration-plan.md) — Locked Decision #17
+- Governing plan: [`openclaw-migration-plan.md`](../../90-work/planning/openclaw-migration-plan.md) — Locked Decision #17
 
 ---
 
@@ -168,7 +168,7 @@ curl -s "https://api.telegram.org/bot${OLD_OPENCLAW_BOT_TOKEN}/deleteWebhook"
 
 **2.5. Зафіксуй cutover-day:**
 
-Онови `docs/planning/openclaw-migration-plan.md`:
+Онови `docs/90-work/planning/openclaw-migration-plan.md`:
 
 - Stage 7 row: `⬜` → `✅`
 - Додай: `cutover-day: YYYY-MM-DD`
@@ -347,7 +347,7 @@ pnpm dead-code:files
 
 - [AGENTS.md](../../../AGENTS.md) — hard rules
 - [ADR-0055](../../adr/0055-openclaw-external-gateway.md) — Phase 0 infra + cutover architecture
-- [`openclaw-migration-plan.md`](../../planning/openclaw-migration-plan.md) — повний Stage tracker
+- [`openclaw-migration-plan.md`](../../90-work/planning/openclaw-migration-plan.md) — повний Stage tracker
 - [`rotate-openclaw-credentials.md`](./rotate-openclaw-credentials.md) — ротація GitHub App credentials
 - [`cleanup-dead-code.md`](./cleanup-dead-code.md) — generic dead-code removal process
 - [`release-web-and-api.md`](./release-web-and-api.md) — deploy process for Sergeant main service

@@ -46,7 +46,7 @@
   - `/okrs`, `/okrun setup` → no match (word-boundary anchor захищає від колізій).
   - `OKR_PRIMER` drift gate.
 - Tests у `src/index.test.ts` — два integration cases у існуючому "Stage 5b" describe-блоці (bare + topic форвардинг).
-- Tracker bump у `docs/planning/openclaw-migration-plan.md`:
+- Tracker bump у `docs/90-work/planning/openclaw-migration-plan.md`:
   - Row `5b/okr` ⬜→✅.
   - Parent row `5b` 🚧→✅ (тепер усі чотири sub-стейджі pр-1…pr-4 закриті).
   - Stale row `5b/analyze` `🚧 PR open` виправлено на `✅ merged PR [#2483](./…)` `51290121`.
@@ -70,7 +70,7 @@ pnpm --filter @sergeant/openclaw-plugin build      # clean
 pnpm exec prettier --write …                       # clean
 ```
 
-CI на PR показав 1 pre-existing failure у `markdown-link-check` (4 link-и у `docs/planning/sprint-roadmap-q2q3-2026.md`, `ops/openclaw/skills/council-roundtable/SKILL.md`, `packages/openclaw-plugin/README.md`, `docs/adr/0057-anthropic-sdk-v1-upgrade.md`) — НЕ викликано цим PR (link-checker не нашого скоупу, посилання існують на `main` до цього PR). Founder змерджив поверх свідомо. Окремий fix-up PR — follow-up.
+CI на PR показав 1 pre-existing failure у `markdown-link-check` (4 link-и у `docs/90-work/planning/sprint-roadmap-q2q3-2026.md`, `ops/openclaw/skills/council-roundtable/SKILL.md`, `packages/openclaw-plugin/README.md`, `docs/adr/0057-anthropic-sdk-v1-upgrade.md`) — НЕ викликано цим PR (link-checker не нашого скоупу, посилання існують на `main` до цього PR). Founder змерджив поверх свідомо. Окремий fix-up PR — follow-up.
 
 ---
 
@@ -152,7 +152,7 @@ pnpm lint:tech-debt-freshness                      # clean
 
 ## 3. Tracker / Migration Plan updates
 
-Обидва PR-и оновлювали `docs/planning/openclaw-migration-plan.md`. Загальний підсумок дельти за сесію:
+Обидва PR-и оновлювали `docs/90-work/planning/openclaw-migration-plan.md`. Загальний підсумок дельти за сесію:
 
 - Header `Last validated:` bumped двічі (18:15 UTC → 18:35 UTC).
 - Row `5b` 🚧→✅, row `5b/okr` ⬜→✅, row `5b/analyze` `🚧 PR open` → `✅ merged ([#2483](./…))`.

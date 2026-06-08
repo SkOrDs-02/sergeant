@@ -5,7 +5,7 @@
 
 Канонічні правила tone-of-voice для всієї UA-копії в продукті — UI strings, toast-и, error messages, empty states, onboarding, FTUX, settings. Витяг із i18n-каталогу `apps/web/src/shared/i18n/uk.ts` (PR-30 / PR-31 — uxroast 2026-Q2) + урок-кейси з аудит-проходів.
 
-> **Звідки взято.** Цей документ закриває PR-X3 з `docs/audits/2026-05-06-ux-roast-pr-plan.md`. Машинно-перевірне джерело правди для існуючих рядків — `apps/web/src/shared/i18n/uk.ts`; цей файл — людиночитна версія правил, до яких ці рядки приведені.
+> **Звідки взято.** Цей документ закриває PR-X3 з `docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`. Машинно-перевірне джерело правди для існуючих рядків — `apps/web/src/shared/i18n/uk.ts`; цей файл — людиночитна версія правил, до яких ці рядки приведені.
 
 ---
 
@@ -141,7 +141,7 @@ ESLint `sergeant-design/no-cyrillic-jsx-literal` (warn) ловить нові к
 ## 10. Як викликати оновлення цього документа
 
 - Якщо аудит виявив нову паттерн-помилку — додай у §7 або відповідну секцію.
-- Якщо нова масова заміна (ще один round of i18n cleanup) — додай рядок у `apps/web/src/shared/i18n/uk.ts` коментарем "PR-30 / §X з docs/audits/…" і за потребою новий блок тут.
+- Якщо нова масова заміна (ще один round of i18n cleanup) — додай рядок у `apps/web/src/shared/i18n/uk.ts` коментарем "PR-30 / §X з docs/90-work/audits/…" і за потребою новий блок тут.
 - Reviewer PR-30 / PR-31 — посилається на цей документ у review-нотатці на кожен новий кириличний рядок.
 
 ---
@@ -150,5 +150,5 @@ ESLint `sergeant-design/no-cyrillic-jsx-literal` (warn) ловить нові к
 
 - [`apps/web/src/shared/i18n/uk.ts`](../../../apps/web/src/shared/i18n/uk.ts) — машино-читне джерело правди для існуючих рядків.
 - [`docs/05-design/i18n/readiness.md`](../../05-design/i18n/readiness.md) — план міграції на runtime-i18n + burndown.
-- [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../../audits/2026-05-06-ux-roast-pr-plan.md) § PR-X3 — оригінальне завдання.
+- [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](../../90-work/audits/2026-05-06-ux-roast-pr-plan.md) § PR-X3 — оригінальне завдання.
 - [`AGENTS.md`](../../../AGENTS.md) — посилання на цей документ у § Routing for UA-copy changes.

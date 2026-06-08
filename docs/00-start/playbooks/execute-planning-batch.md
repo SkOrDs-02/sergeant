@@ -3,11 +3,11 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-**Trigger:** «Прожени N тасків з планінгу» / «виконай батч PR-карток з `docs/planning/*`» / «закрий пачку planning-тасків і онови трекери» — коли робота охоплює кілька PR-карток одночасно й потребує паралельних агентів.
+**Trigger:** «Прожени N тасків з планінгу» / «виконай батч PR-карток з `docs/90-work/planning/*`» / «закрий пачку planning-тасків і онови трекери» — коли робота охоплює кілька PR-карток одночасно й потребує паралельних агентів.
 
 ## Owner surface
 
-- Primary surface: `docs/planning/`
+- Primary surface: `docs/90-work/planning/`
 - Coupled surface: `docs/open-work.md`, `docs/today.md` (генеровані трекери) + будь-яка code-surface, яку зачіпає конкретна картка
 - Governing skill: `sergeant-planning-batch`
 
@@ -90,9 +90,9 @@ flowchart TD
 
 ### 6. Fast-forward архівація (skip 90-day gate)
 
-Архівуй planning-док **лише коли** робота довела його до повністю виконано: follow-up-и закриті, немає відкритих `- [ ]`, док став frozen-снапшотом. Тоді переноси у [`docs/planning/archive/`](../../planning/archive) **одразу — без 90-денного stabilization-вікна.** Founder має standing-дозвіл на fast-forward (прецедент: [`docs/initiatives/README.md`](../../initiatives/README.md) — «90-day waiting period skipped за рішенням founder-а», батчі 2026-05-13 і 2026-06-01).
+Архівуй planning-док **лише коли** робота довела його до повністю виконано: follow-up-и закриті, немає відкритих `- [ ]`, док став frozen-снапшотом. Тоді переноси у [`docs/90-work/planning/archive/`](../../90-work/planning/archive) **одразу — без 90-денного stabilization-вікна.** Founder має standing-дозвіл на fast-forward (прецедент: [`docs/90-work/initiatives/README.md`](../../90-work/initiatives/README.md) — «90-day waiting period skipped за рішенням founder-а», батчі 2026-05-13 і 2026-06-01).
 
-При переносі застав archive-frontmatter з [`docs/planning/README.md`](../../planning/README.md) § Конвенція архівації (`Status: Archived (read-only)`, `Source:`, `Purpose:`) і онови inbound-лінки на `archive/`-шлях. Якщо жоден док не дотягнув до повністю виконано цього прогону — архівація це свідомий no-op; **ніколи не форсуй її** за віком чи «виглядає старим».
+При переносі застав archive-frontmatter з [`docs/90-work/planning/README.md`](../../90-work/planning/README.md) § Конвенція архівації (`Status: Archived (read-only)`, `Source:`, `Purpose:`) і онови inbound-лінки на `archive/`-шлях. Якщо жоден док не дотягнув до повністю виконано цього прогону — архівація це свідомий no-op; **ніколи не форсуй її** за віком чи «виглядає старим».
 
 ### 7. Верифікація + один PR
 

@@ -59,9 +59,9 @@ req.log.error({ err, route: req.route?.path }, "handler failed");
 - Object-літерали з explicit-fields (`logger.info({ urls: [req.url] }, "msg")`) — рулі цікавий **shorthand** і raw-identifier; explicit-name пропускається.
 - `console.*` callsite-и — окреме правило `sergeant-design/no-anthropic-key-in-logs` ловить console-leaks для секретів; PII-payload з raw-req на `console` блокується server-wide `no-console` у `apps/server/**` через base-конфіг.
 
-Procedure / посилання: [`docs/security/logging-redaction-policy.md`](../../security/logging-redaction-policy.md). Migration-план + acceptance criteria — [`docs/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md`](../../initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md).
+Procedure / посилання: [`docs/security/logging-redaction-policy.md`](../../security/logging-redaction-policy.md). Migration-план + acceptance criteria — [`docs/90-work/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md).
 
 ## Related
 
-- **doc** — docs/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md
+- **doc** — docs/90-work/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md
 - **agents** — #21

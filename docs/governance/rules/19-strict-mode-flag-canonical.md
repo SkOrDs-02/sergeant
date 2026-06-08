@@ -17,7 +17,7 @@
 
 - **ci** — node tools/tsconfig-guard/check.mjs (run by pnpm lint)
 - **convention** — tools/tsconfig-guard/allowlist.json — every override of a GUARDED strict-family flag MUST have an entry with path/option/value/reason/expires/owner
-- **doc** — docs/initiatives/\_0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)
+- **doc** — docs/90-work/initiatives/\_0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)
 
 ## Why / What is enforced
 
@@ -43,10 +43,10 @@ CI запускає `node tools/tsconfig-guard/check.mjs` (через `pnpm lint
 - Інші TS-прапори, які не входять у `GUARDED_OPTIONS` (e.g. `noImplicitOverride`, `useDefineForClassFields`).
 - Allowlist-entries з активним `expires` у майбутньому — це temporary debt, і саме для цього існує allowlist.
 
-Tracked у [Initiative 0012 — Perfect TS strictness rollout](../../initiatives/archive/_0012-perfect-strictness-rollout.md) і живий burndown — у [`docs/tech-debt/frontend.md` §11.1](../../tech-debt/frontend.md).
+Tracked у [Initiative 0012 — Perfect TS strictness rollout](../../90-work/initiatives/archive/_0012-perfect-strictness-rollout.md) і живий burndown — у [`docs/90-work/tech-debt/frontend.md` §11.1](../../90-work/tech-debt/frontend.md).
 
 ## Related
 
-- **doc** — docs/initiatives/\_0012-perfect-strictness-rollout.md
-- **doc** — docs/tech-debt/frontend.md
+- **doc** — docs/90-work/initiatives/\_0012-perfect-strictness-rollout.md
+- **doc** — docs/90-work/tech-debt/frontend.md
 - **agents** — #19

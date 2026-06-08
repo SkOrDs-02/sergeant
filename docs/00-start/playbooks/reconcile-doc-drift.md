@@ -15,7 +15,7 @@
 
 - Прочитай [`AGENTS.md`](../../../AGENTS.md) → Hard Rule #10 (lifecycle markers), #15 (governance + UA docs), #23 (archive-move depth), #26 (PR ledger).
 - Зрозумій формат дашборду відкритої роботи: [`docs/open-work.md`](../../open-work.md) (source = `> **Status:**` хедер кожного документа).
-- Процедура архівації ініціатив: [`docs/initiatives/archive/README.md`](../../initiatives/archive/README.md).
+- Процедура архівації ініціатив: [`docs/90-work/initiatives/archive/README.md`](../../90-work/initiatives/archive/README.md).
 - Суміжні скіли: `audits-runner` (триаж відкритих аудитів), `initiative-task` (наступний невиконаний таск ініціативи).
 
 ---
@@ -128,7 +128,7 @@ grep -E '"<NNNN>"' docs/pr-ledger/index.json
 
 ```bash
 # Усі unchecked-чекбокси у трекерах
-grep -rn '^\s*-\s*\[ \]' docs/initiatives docs/planning docs/01-product/launch docs/audits docs/security/hardening
+grep -rn '^\s*-\s*\[ \]' docs/90-work/initiatives docs/90-work/planning docs/01-product/launch docs/90-work/audits docs/security/hardening
 ```
 
 Для підозрілого пункту звір реальність: `git log --oneline --all --grep="<ключове слово фічі>"` або grep символу/файла, який пункт обіцяв. Якщо робота є в `main` — пункт треба позначити `- [x]` у [§4](#4-актуалізувати-reconcile).
@@ -169,13 +169,13 @@ pnpm dead-code:files             # marker-aware wrapper (поважає @scaffol
 
 Архівація = **фізичний переніс** файла в `<tracker>/archive/` + 1-рядковий redirect-stub. Передумова: статус `Closed`/`Done`/`Implemented`, ≥ 90 днів без регресій, нема нових follow-up-ів, канонічні правила вже винесені (Q4).
 
-**Ініціативи** (canonical процедура — [`initiatives/archive/README.md`](../../initiatives/archive/README.md)):
+**Ініціативи** (canonical процедура — [`initiatives/archive/README.md`](../../90-work/initiatives/archive/README.md)):
 
 ```bash
-git mv docs/initiatives/<NNNN-slug>.md docs/initiatives/archive/<NNNN-slug>.md
+git mv docs/90-work/initiatives/<NNNN-slug>.md docs/90-work/initiatives/archive/<NNNN-slug>.md
 ```
 
-У `docs/initiatives/README.md`: прибери рядок з § «Нещодавно завершені», додай stub у § «Архів»:
+У `docs/90-work/initiatives/README.md`: прибери рядок з § «Нещодавно завершені», додай stub у § «Архів»:
 
 ```
 - [archive/<NNNN-slug>.md](./archive/<NNNN-slug>.md) — archived YYYY-MM-DD; superseded by <successor / canonical home>.
@@ -184,8 +184,8 @@ git mv docs/initiatives/<NNNN-slug>.md docs/initiatives/archive/<NNNN-slug>.md
 **Аудити / planning / design** — той самий патерн у відповідний `archive/`:
 
 ```bash
-git mv docs/audits/<file>.md docs/audits/archive/<file>.md
-git mv docs/planning/<file>.md docs/planning/archive/<file>.md
+git mv docs/90-work/audits/<file>.md docs/90-work/audits/archive/<file>.md
+git mv docs/90-work/planning/<file>.md docs/90-work/planning/archive/<file>.md
 ```
 
 Додай рядок у таблицю/список архіву відповідного `archive/README.md` (Статус, Закрито YYYY-MM-DD, 1-рядковий підсумок + посилання на PR-и). Якщо в archive-папці ще нема `README.md` — створи його за зразком [`docs/05-design/design/archive/README.md`](../../05-design/design/archive/README.md) (freshness + Status + «Чому архів, а не видалення»).
@@ -234,7 +234,7 @@ git commit -m "docs(docs): reconcile drift, mark done tasks, archive completed <
 
 - [AGENTS.md](../../../AGENTS.md) — Hard Rules #10, #15, #23, #26
 - [`docs/open-work.md`](../../open-work.md) — згенерований single-pane всієї відкритої роботи
-- [`docs/initiatives/archive/README.md`](../../initiatives/archive/README.md) — canonical процедура архівації ініціатив
+- [`docs/90-work/initiatives/archive/README.md`](../../90-work/initiatives/archive/README.md) — canonical процедура архівації ініціатив
 - [`cleanup-dead-code.md`](./cleanup-dead-code.md) — видалення мертвого коду (окремий PR)
 - [`prettier-pass-on-docs.md`](./prettier-pass-on-docs.md) — форматування docs
 - Скіли: `audits-runner` (триаж аудитів), `initiative-task` (наступний таск ініціативи), `sergeant-tech-debt` (governing)

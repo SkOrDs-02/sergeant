@@ -750,7 +750,7 @@ Phase 3 (Native Expo) стартує **якщо хоча б одне з:**
 - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../business/01-monetization-and-pricing.md) — pricing tiers + paywall placement + IAP vs Stripe.
 - [`docs/01-product/launch/business/02-go-to-market.md`](../business/02-go-to-market.md) — GTM phases, beta metrics, PH playbook.
 - [`docs/01-product/launch/business/04-launch-readiness.md`](../business/04-launch-readiness.md) — legal + privacy + alerts + checklists.
-- [`docs/initiatives/0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md) — overarching launch ініціатива.
+- [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) — overarching launch ініціатива.
 - [`.github/workflows/mobile-shell-android-release.yml`](../../../../.github/workflows/mobile-shell-android-release.yml) — Android release pipeline.
 - [`.github/workflows/mobile-shell-ios-release.yml`](../../../../.github/workflows/mobile-shell-ios-release.yml) — iOS release pipeline.
 

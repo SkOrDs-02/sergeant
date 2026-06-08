@@ -295,7 +295,7 @@ function render({ focus, shipped, inflight, priority }) {
     "| **Дизайн** | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md) | дизайн-система, патерни |",
   );
   lines.push(
-    "| **Робота** | [`initiatives/`](./initiatives/README.md), [`planning/`](./planning/README.md), [`audits/`](./audits/README.md), [`tech-debt/`](./tech-debt/README.md) | трекери: що оновлювати, коли шипиш |",
+    "| **Робота** | [`initiatives/`](./90-work/initiatives/README.md), [`planning/`](./90-work/planning/README.md), [`audits/`](./90-work/audits/README.md), [`tech-debt/`](./90-work/tech-debt/README.md) | трекери: що оновлювати, коли шипиш |",
   );
   lines.push("");
 

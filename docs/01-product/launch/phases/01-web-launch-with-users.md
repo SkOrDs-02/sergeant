@@ -672,7 +672,7 @@ flowchart LR
 - [ ] **Публічна оферта** — для UA-ринку, ФОП-формат. Шаблон з Дія.Бізнес.
 - [ ] **All `4xx`/`5xx` error pages мають retry-CTA** — `apps/web/src/core/errors/NotFoundPage.tsx` базовий є; додати «Спробувати ще раз», «Повернутись на головну».
 - [ ] **Performance budget зелений** — `pnpm --filter @sergeant/web size` + `lighthouse` локально passing.
-- [ ] **Lighthouse CI gate live** — T5 з [`sprint-roadmap-q2q3-2026.md`](../../../planning/sprint-roadmap-q2q3-2026.md) — якщо ще ні, manual run щотижня.
+- [ ] **Lighthouse CI gate live** — T5 з [`sprint-roadmap-q2q3-2026.md`](../../../90-work/planning/sprint-roadmap-q2q3-2026.md) — якщо ще ні, manual run щотижня.
 - [ ] **A11y baseline** — Playwright + axe lane (`pnpm --filter @sergeant/web test:a11y`) зелений.
 - [ ] **PostHog dashboards public** — public read-only mirror для transparency.
 - [ ] **Billing email templates** (Resend) — навіть для free-only launch; «welcome», «password reset». Loops для marketing emails.

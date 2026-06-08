@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active — Sprint 0 instrumentation merged 2026-05-20, baseline data collection in progress, dashboard manifest committed 2026-05-25 (ready for import on 2026-05-27 baseline pull).
 
-Цей runbook описує RUM-інструмент, який запровадив Sprint 0 [Initiative 0017 — Hub Settings & Reports mount perf](../../initiatives/0017-hub-tabs-mount-perf.md). Сам файл — **жива сторінка**: коли назбирається ≥ 1 тиждень даних з прода, заповнюємо таблицю «Baseline», і кожен наступний Sprint оновлює свій рядок.
+Цей runbook описує RUM-інструмент, який запровадив Sprint 0 [Initiative 0017 — Hub Settings & Reports mount perf](../../90-work/initiatives/0017-hub-tabs-mount-perf.md). Сам файл — **жива сторінка**: коли назбирається ≥ 1 тиждень даних з прода, заповнюємо таблицю «Baseline», і кожен наступний Sprint оновлює свій рядок.
 
 ## Контракт події
 
@@ -137,6 +137,6 @@ Sprint 0 merged 2026-05-20 з 100% sampling. На 2026-05-27 буде ≥ 7 дн
 
 ## Зв'язки
 
-- Initiative: [0017 — Hub Settings & Reports mount perf](../../initiatives/0017-hub-tabs-mount-perf.md).
-- Tech debt entry: [`docs/tech-debt/frontend.md` §2.5](../../tech-debt/frontend.md).
+- Initiative: [0017 — Hub Settings & Reports mount perf](../../90-work/initiatives/0017-hub-tabs-mount-perf.md).
+- Tech debt entry: [`docs/90-work/tech-debt/frontend.md` §2.5](../../90-work/tech-debt/frontend.md).
 - Сусідні runbook-и observability: [`dashboards.md`](./dashboards.md), [`posthog-founder-pulse.md`](./posthog-founder-pulse.md).

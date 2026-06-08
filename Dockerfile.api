@@ -9,7 +9,7 @@
 # зібрала б arm64-image, який локально проходить smoke, але на Railway
 # падає з "exec format error".
 #
-# Stage map (PR-30 — `docs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
+# Stage map (PR-30 — `docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
 #
 #   1. `builder`  — node:alpine + full dev deps + `pnpm build` (esbuild
 #      бандл у `dist-server/index.js` + копія `migrations/*.sql`).

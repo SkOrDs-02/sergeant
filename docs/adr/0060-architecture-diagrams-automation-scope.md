@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 4
+  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 4
   - [`docs/02-engineering/architecture/diagrams/README.md`](../02-engineering/architecture/diagrams/README.md) — C4 model policy
   - [`docs/governance/symbol-index.json`](../governance/symbol-index.json) — input source (Phase 2)
   - [`docs/adr/0059-symbol-extraction-via-typescript-compiler-api.md`](./0059-symbol-extraction-via-typescript-compiler-api.md)
@@ -94,7 +94,7 @@ Initiative 0014 §Phase 4 спочатку планував auto-gen C3 і C4 а
 
 ## Links
 
-- [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 4
+- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 4
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
 

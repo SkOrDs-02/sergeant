@@ -3,12 +3,12 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-> Як, де і чому web-додаток мутить state. Дві writer-доріжки (`useMutation` vs HubChat tool-call), коли яку обирати, і де живуть инваріанти. Закриває §2.1 з [`docs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md`](../../audits/2026-05-03-web-deep-dive/02-architecture-and-state.md) (parallel-write paths require explicit doc).
+> Як, де і чому web-додаток мутить state. Дві writer-доріжки (`useMutation` vs HubChat tool-call), коли яку обирати, і де живуть инваріанти. Закриває §2.1 з [`docs/90-work/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md`](../../90-work/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md) (parallel-write paths require explicit doc).
 
 Cross-refs:
 
-- [`docs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md`](../../audits/2026-05-03-web-deep-dive/02-architecture-and-state.md) §2.1 — chatActions-як-другий-writer (audit findings)
-- [`docs/audits/2026-05-13-web-architecture-state-roast.md`](../../audits/2026-05-13-web-architecture-state-roast.md) — Roast #3/10 (this doc landed alongside it)
+- [`docs/90-work/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md`](../../90-work/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md) §2.1 — chatActions-як-другий-writer (audit findings)
+- [`docs/90-work/audits/2026-05-13-web-architecture-state-roast.md`](../../90-work/audits/2026-05-13-web-architecture-state-roast.md) — Roast #3/10 (this doc landed alongside it)
 - [`docs/02-engineering/architecture/diagrams/c3-chat-tool-use.md`](./diagrams/c3-chat-tool-use.md) — sequence для tool-use round-trip
 - [`docs/02-engineering/architecture/module-ownership.md`](./module-ownership.md) — який RQ-keys factory належить якому модулю
 - [`apps/web/src/shared/lib/api/queryKeys.ts`](../../../apps/web/src/shared/lib/api/queryKeys.ts) — централізована фабрика ключів (Hard Rule #2)

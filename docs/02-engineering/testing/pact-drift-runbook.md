@@ -110,7 +110,7 @@ node scripts/pact-drift-check.mjs --base-url http://127.0.0.1:3000
 
 ### Крок 5 — Якщо `flake-rate` > 2x/тиждень
 
-Передай у `docs/initiatives/` як окреме завдання — або контракт надто чутливий до даних на staging (треба матчери, `like()` / `term()`), або staging-state нестабільний (треба seed-стабілізація). Не tightening поза runbook-ом без обговорення.
+Передай у `docs/90-work/initiatives/` як окреме завдання — або контракт надто чутливий до даних на staging (треба матчери, `like()` / `term()`), або staging-state нестабільний (треба seed-стабілізація). Не tightening поза runbook-ом без обговорення.
 
 ## Як це працює разом із `provider.test.ts`
 

@@ -12,7 +12,7 @@ Reference-документ: де зараз живе кожен сервіс Ser
 - [`docs/01-product/launch/business/03-services-and-toolstack.md`](../../01-product/launch/business/03-services-and-toolstack.md) — повний каталог сервісів з цінами.
 - [`docs/02-engineering/integrations/railway-vercel.md`](../integrations/railway-vercel.md) — як налаштувати поточний стек (Railway + Vercel).
 - [`docs/03-operations/observability/`](../../03-operations/observability) — SLO, метрики, runbook.
-- [`docs/planning/dev-stack-roadmap.md`](../../planning/dev-stack-roadmap.md) — топ-15 dev-інструментів.
+- [`docs/90-work/planning/dev-stack-roadmap.md`](../../90-work/planning/dev-stack-roadmap.md) — топ-15 dev-інструментів.
 
 ---
 

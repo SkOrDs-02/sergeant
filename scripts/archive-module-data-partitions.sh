@@ -2,7 +2,7 @@
 # archive-module-data-partitions.sh — Detach and dump old monthly partitions
 # of `module_data` for cold-storage archival.
 #
-# Stage 6 / PR #050 з docs/planning/storage-roadmap.md.
+# Stage 6 / PR #050 з docs/90-work/planning/storage-roadmap.md.
 #
 # Usage:
 #   PGURL='postgresql://...' ./scripts/archive-module-data-partitions.sh [retention_months]

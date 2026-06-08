@@ -16,7 +16,7 @@
 ## Enforced by
 
 - **convention** — eslint.config.js → max-lines: [error, { max: 600, skipBlankLines: true, skipComments: true }] (scoped to `apps/web/src/**/*.{ts,tsx}` and `apps/server/src/**/*.{js,ts}`; tests, `__tests__/**` exempt)
-- **doc** — docs/initiatives/\_0001-module-decomposition.md (allowlist + Phase 2 decomposition queue)
+- **doc** — docs/90-work/initiatives/\_0001-module-decomposition.md (allowlist + Phase 2 decomposition queue)
 
 ## Why / What is enforced
 
@@ -56,13 +56,13 @@
 }
 ```
 
-**Allowlist.** Існуючі файли-моноліти (11 на 2026-05-05) виключені окремим блоком `eslint.config.js` з `TODO(0001-module-decomposition): deadline 2026-06-15`. Кожна декомпозиція = видалення одного рядка з allowlist (видно у `git blame`). Allowlist — _не_ постійна fixture: dropping rate відстежується в [`docs/initiatives/archive/_0001-module-decomposition.md`](../../initiatives/archive/_0001-module-decomposition.md) метрикою «Файлів `apps/web/src/**` ≥600 LOC: 16 → 11 → ≤ 2».
+**Allowlist.** Існуючі файли-моноліти (11 на 2026-05-05) виключені окремим блоком `eslint.config.js` з `TODO(0001-module-decomposition): deadline 2026-06-15`. Кожна декомпозиція = видалення одного рядка з allowlist (видно у `git blame`). Allowlist — _не_ постійна fixture: dropping rate відстежується в [`docs/90-work/initiatives/archive/_0001-module-decomposition.md`](../../90-work/initiatives/archive/_0001-module-decomposition.md) метрикою «Файлів `apps/web/src/**` ≥600 LOC: 16 → 11 → ≤ 2».
 
 **Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (`chat.ts` thin orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/`) довів цінність декомпозиції в продакшні. Без жорсткого ліміту декомпозиція — це постійний «уторгований борг» (зробили — наповзло знову).
 
 **Scope rationale.**
 
-- `apps/mobile/**` — поза правилом (mobile-стратегія обговорюється в [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../../initiatives/archive/_0002-mobile-platform-decision.md); декомпозиція ≠ заморозка платформи).
+- `apps/mobile/**` — поза правилом (mobile-стратегія обговорюється в [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md); декомпозиція ≠ заморозка платформи).
 - `packages/**/src/**` — поза правилом (бібліотечні файли — публічний API, поріг для них інший; зачепимо в окремій ініціативі).
 
 **Що блокує:**
@@ -78,5 +78,5 @@
 
 ## Related
 
-- **doc** — docs/initiatives/\_0001-module-decomposition.md
+- **doc** — docs/90-work/initiatives/\_0001-module-decomposition.md
 - **agents** — #18

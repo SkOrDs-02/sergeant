@@ -7,7 +7,7 @@
 
 ## How to use this document
 
-Цей файл — **pre-implementation план** для побудови маркетингу Sergeant з нуля. Після появи shipped `/` landing + `WaitlistForm` у web-app він більше не є прямим execution owner для landing/waitlist техніки; використовуй його як voice/channel/source-evidence і звіряй конкретну реалізацію з `apps/web/src/core/LandingPage.tsx`, `apps/web/src/core/WaitlistForm.tsx`, server `/api/waitlist`, та [`docs/planning/pr-plan-revenue-2026-05.md`](../../planning/pr-plan-revenue-2026-05.md).
+Цей файл — **pre-implementation план** для побудови маркетингу Sergeant з нуля. Після появи shipped `/` landing + `WaitlistForm` у web-app він більше не є прямим execution owner для landing/waitlist техніки; використовуй його як voice/channel/source-evidence і звіряй конкретну реалізацію з `apps/web/src/core/LandingPage.tsx`, `apps/web/src/core/WaitlistForm.tsx`, server `/api/waitlist`, та [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../90-work/planning/pr-plan-revenue-2026-05.md).
 
 **Перед першим PR / publish з цього плану — обов'язково:**
 

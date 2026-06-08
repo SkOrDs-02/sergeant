@@ -5,7 +5,7 @@
 
 > **Що це.** Курований план, як еволюціонувати repo-owned skill-систему Sergeant (`.agents/skills/**`) запозичивши перевірені патерни з широкого agent-skills ecosystem-у — без розмиття існуючих 12 specialist-skill-ів і без імпорту generic-обгорток. Документ працює як roadmap для будь-якого AI-агента (Claude Code, Devin, Codex, Cursor, Gemini CLI), що візьметься за конкретний пункт.
 
-> **Не ініціатива в `docs/initiatives/`** через [audit-freeze 2026-05-05 → 2026-06-02](../../governance/audit-freeze-2026-05-05.md). Якщо post-freeze команда вирішить підняти це в формальну initiative-у з owner-ом і ETA — створити `docs/initiatives/00NN-skills-evolution.md` і перенести скоуп туди; цей файл тоді стає секцією `## Sources` в новій initiative-і. До того часу — це **discovery roadmap**, не зобов'язання.
+> **Не ініціатива в `docs/90-work/initiatives/`** через [audit-freeze 2026-05-05 → 2026-06-02](../../governance/audit-freeze-2026-05-05.md). Якщо post-freeze команда вирішить підняти це в формальну initiative-у з owner-ом і ETA — створити `docs/90-work/initiatives/00NN-skills-evolution.md` і перенести скоуп туди; цей файл тоді стає секцією `## Sources` в новій initiative-і. До того часу — це **discovery roadmap**, не зобов'язання.
 
 > **Що ми НЕ робимо.** Не запускаємо `npx @agentskill.sh/cli@latest setup`. Не ставимо generic-скіли у `.claude/skills/`. Не дублюємо `agentskills.io` open standard 1:1 — наш `lang`/`lang-reason` frontmatter і UA/EN bilingual routing-формат лишаються (PR [#1848](https://github.com/Skords-01/Sergeant/pull/1848)). Це строго **import-of-patterns**, не **import-of-content**.
 
@@ -42,7 +42,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 Дев'ять незалежних PR-ів, від найдешевшого до найдорожчого. Кожен — окремий branch, окремий PR, окремий verify-step. **Один PR на одну проблему** (Hard Rule #15 sub-clause). Ніяких bundled-changes.
 
-> **Drift policy.** Якщо план відстає реальності, фіксуй це errata-блоком у цій секції з датою і коротким поясненням, як у `docs/initiatives/0011-…md`. Не переписуй мовчки, не видаляй "невзяті" пункти.
+> **Drift policy.** Якщо план відстає реальності, фіксуй це errata-блоком у цій секції з датою і коротким поясненням, як у `docs/90-work/initiatives/0011-…md`. Не переписуй мовчки, не видаляй "невзяті" пункти.
 
 ### PR 1 — Pushy descriptions audit (≈30 хв, S) ✅ (merged: #2374, 2026-05-10)
 
@@ -435,7 +435,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ## Tracking
 
-Цей документ — discovery roadmap, не active initiative. PR-и можна брати в довільному порядку (з урахуванням dependencies в матриці вище). Якщо post-freeze (≥ 2026-06-02) команда вирішить підняти це у формальну initiative-у з owner-ом і ETA — створити `docs/initiatives/00NN-skills-evolution.md` і перенести скоуп з цього файлу. До того часу:
+Цей документ — discovery roadmap, не active initiative. PR-и можна брати в довільному порядку (з урахуванням dependencies в матриці вище). Якщо post-freeze (≥ 2026-06-02) команда вирішить підняти це у формальну initiative-у з owner-ом і ETA — створити `docs/90-work/initiatives/00NN-skills-evolution.md` і перенести скоуп з цього файлу. До того часу:
 
 - При закритті PR — додати рядок у "PR-послідовність" вище: `(merged: #NNNN, YYYY-MM-DD)`.
 - При drift — додати errata-блок із поясненням.
@@ -445,5 +445,5 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 - [`docs/00-start/agents/README.md`](./README.md) — індекс agent-OS docs.
 - [`docs/00-start/agents/agent-skills-catalog.md`](./agent-skills-catalog.md) — поточна skill-routing таблиця.
-- [`docs/initiatives/archive/_0009-agent-os-hardening.md`](../../initiatives/archive/_0009-agent-os-hardening.md) — попередня agent-OS initiative-а (closed 2026-05-05).
+- [`docs/90-work/initiatives/archive/_0009-agent-os-hardening.md`](../../90-work/initiatives/archive/_0009-agent-os-hardening.md) — попередня agent-OS initiative-а (closed 2026-05-05).
 - [`docs/governance/audit-freeze-2026-05-05.md`](../../governance/audit-freeze-2026-05-05.md) — чому це не initiative.

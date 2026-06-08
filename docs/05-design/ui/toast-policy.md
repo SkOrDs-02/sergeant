@@ -6,7 +6,7 @@
 
 Канонічна довідка для агентів і розробників: коли який toast, скільки
 показувати, що покласти в `action`, які anti-pattern-и. Закриває
-рекомендацію §3.4 з [`docs/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`](../../audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md).
+рекомендацію §3.4 з [`docs/90-work/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`](../../90-work/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md).
 Машинно гайдиться правилом
 [`sergeant-design/require-toast-error-action`](../../../packages/eslint-plugin-sergeant-design/index.js).
 

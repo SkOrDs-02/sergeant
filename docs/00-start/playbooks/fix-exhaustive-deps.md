@@ -109,5 +109,5 @@ useEffect(() => {
 ## See also
 
 - [apps-web-exhaustive-deps.md](../../02-engineering/architecture/apps-web-exhaustive-deps.md) — повний список warnings
-- [frontend-tech-debt.md](../../tech-debt/frontend.md) — загальний фронтенд tech debt
+- [frontend-tech-debt.md](../../90-work/tech-debt/frontend.md) — загальний фронтенд tech debt
 - [AGENTS.md](../../../AGENTS.md) — загальні конвенції

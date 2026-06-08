@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-12 by Devin. **Next review:** замінено новим SDK-reality spike (TBD — див. § Postmortem 2026-05-12 нижче).
 > **Status:** Archived
 > **Owner:** @Skords-01 · **Created:** 2026-05-10
-> **Roadmap reference:** [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../../planning/openclaw-migration-plan.md)
+> **Roadmap reference:** [`docs/90-work/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../../90-work/planning/openclaw-migration-plan.md)
 > **Time-box:** 1–2 days (per plan §510). **Branch:** `devin/1778445962-openclaw-poc-spike` (merged into `main` via PR [#2385](https://github.com/Skords-01/Sergeant/pull/2385); код перенесено у `packages/openclaw-plugin/src/legacy/` Stage 1 rewrite-ом).
 
 ## Postmortem (2026-05-12)
@@ -272,7 +272,7 @@ $ pnpm --filter @sergeant/openclaw-plugin typecheck
 
 ## References
 
-- Plan: [`docs/planning/openclaw-migration-plan.md` § Phase 0.5](../../../planning/openclaw-migration-plan.md)
+- Plan: [`docs/90-work/planning/openclaw-migration-plan.md` § Phase 0.5](../../../90-work/planning/openclaw-migration-plan.md)
 - Locked decisions: §3 (router), §4 (budget cap), §5 (approval Variant B), §9 (migrations)
 - Hard Rule #1 (DB types — bigint coercion): [`docs/governance/rules/01-db-types-coerce-bigint-to-number.md`](../../../governance/rules/01-db-types-coerce-bigint-to-number.md)
 - Hard Rule #4 (migrations sequential, two-phase): [`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../../governance/rules/04-sql-migrations-sequential-two-phase.md)

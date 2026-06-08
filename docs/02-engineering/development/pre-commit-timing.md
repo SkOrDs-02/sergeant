@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-> Закриває P1-5 з [`docs/audits/2026-05-13-testing-devx-roast.md`](../../audits/2026-05-13-testing-devx-roast.md) — «Pre-commit timing не вимірюється».
+> Закриває P1-5 з [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](../../90-work/audits/2026-05-13-testing-devx-roast.md) — «Pre-commit timing не вимірюється».
 > Жорстко тримається Hard Rule #7 — `--no-verify` далі заборонено, ця обгортка лише вимірює час, не послаблює гейт.
 
 ## Що це таке
@@ -167,6 +167,6 @@ git pipe-ить stdout pre-commit-у, і ми не хочемо забрудни
 - `scripts/staged-typecheck.mjs` — емітить `{ stage: "staged-typecheck", ms }`.
 - `scripts/docs/bump-last-validated.mjs` — емітить `{ stage: "bump-last-validated", ms }`.
 - [`.husky/pre-commit`](../../../.husky/pre-commit) — точка входу.
-- [`docs/audits/2026-05-13-testing-devx-roast.md` § P1-5](../../audits/2026-05-13-testing-devx-roast.md#p1-5-pre-commit-timing-не-вимірюється) — origin audit item.
+- [`docs/90-work/audits/2026-05-13-testing-devx-roast.md` § P1-5](../../90-work/audits/2026-05-13-testing-devx-roast.md#p1-5-pre-commit-timing-не-вимірюється) — origin audit item.
 - [`docs/governance/rules/07-pre-commit-hooks-via-husky.md`](../../governance/rules/07-pre-commit-hooks-via-husky.md) — Hard Rule #7.
 - [`CONTRIBUTING.md § Pre-commit hooks`](../../../CONTRIBUTING.md#pre-commit-hooks) — повний pre-commit matrix.

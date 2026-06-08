@@ -1,8 +1,8 @@
 name: Lighthouse CI
 
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
-# Closes T5 у `docs/planning/sprint-roadmap-q2q3-2026.md` § 1.1 Тех-борг
-# та P1.2 у `docs/audits/2026-05-13-dead-code-hard-rules-roast.md` —
+# Closes T5 у `docs/90-work/planning/sprint-roadmap-q2q3-2026.md` § 1.1 Тех-борг
+# та P1.2 у `docs/90-work/audits/2026-05-13-dead-code-hard-rules-roast.md` —
 # previously planned-only workflow. Runs `@lhci/cli` autorun against the
 # 5 top-level routes (`/`, `/finyk`, `/fizruk`, `/routine`, `/nutrition`)
 # per `apps/web/lighthouserc.json` — first-pass `warn`-only assertions

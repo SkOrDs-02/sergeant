@@ -5,7 +5,7 @@
 
 | Field        | Value                                                                                                                                                                                  |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Initiative   | [`0011`](../../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) Phase 3 PR 3.1                                                                                 |
+| Initiative   | [`0011`](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) Phase 3 PR 3.1                                                                         |
 | Cards        | [H5](../hardening/H5-trusted-origins-exp-scheme.md), [H6](../hardening/H6-email-verification.md), [H8](../hardening/H8-corp-per-route.md), [H9](../hardening/H9-transcribe-usd-cap.md) |
 | Source PRs   | #1604 (H5), #1608 (H6), #1606 (H8), #1567 + #1613 (H9)                                                                                                                                 |
 | Owner        | @Skords-01 (or external pen-tester as follow-up)                                                                                                                                       |
@@ -16,7 +16,7 @@
 Each card under `docs/security/hardening/` carries a `Status: Closed` badge and
 unit-test coverage. None of them, as of 2026-05-06, was confirmed end-to-end
 against a running server in production-like conditions. PR 3.1 of initiative
-[0011 Phase 3](../../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md#фаза-3--hardening-verification-для-launch-readiness--2-тижні-2026-06-23--2026-07-07-поста-0010-launch)
+[0011 Phase 3](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md#фаза-3--hardening-verification-для-launch-readiness--2-тижні-2026-06-23--2026-07-07-поста-0010-launch)
 fills the gap: **manual e2e reproduction** plus a written transcript of the
 attack and the observed defence, so launch-readiness reviewers can verify the
 fixes without re-deriving the attack from the card.
@@ -502,4 +502,4 @@ this initiative adds a real-Postgres e2e to close that gap.
 - [`docs/00-start/playbooks/security-pen-test-checklist.md`](../../00-start/playbooks/security-pen-test-checklist.md) — the recipe that points to this transcript
 - [`docs/security/hardening/README.md`](../hardening/README.md) — full hardening backlog
 - [`docs/security/disaster-recovery.md`](../disaster-recovery.md) — recovery posture for security incidents
-- [`docs/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) — owning initiative
+- [`docs/90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) — owning initiative

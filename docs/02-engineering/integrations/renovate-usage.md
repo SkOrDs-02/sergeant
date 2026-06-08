@@ -179,5 +179,5 @@ LOG_LEVEL=debug npx --package=renovate renovate \
 ## Зв'язки
 
 - `renovate.json` — сам конфіг
-- `docs/planning/dev-stack-roadmap.md` #7 — навіщо ми це робили
+- `docs/90-work/planning/dev-stack-roadmap.md` #7 — навіщо ми це робили
 - AGENTS.md hard rule #5 — конвенціональні commit-меседжі (Renovate їх дотримується через `:semanticCommitTypeAll(chore)` + `:semanticCommitScope(deps)`)

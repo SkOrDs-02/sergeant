@@ -165,6 +165,6 @@ async function healthCheck() {
 ## See also
 
 - [monobank-roadmap.md](../../02-engineering/integrations/monobank-roadmap.md) — приклад повної Monobank-інтеграції
-- [backend-tech-debt.md](../../tech-debt/backend.md) — §Bank integrations deep-dive
+- [backend-tech-debt.md](../../90-work/tech-debt/backend.md) — §Bank integrations deep-dive
 - [railway-vercel.md](../../02-engineering/integrations/railway-vercel.md) — як додати env vars у Railway
 - [AGENTS.md](../../../AGENTS.md) — rule #3 (API contract)

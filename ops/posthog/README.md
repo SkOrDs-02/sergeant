@@ -66,7 +66,7 @@ Manifest — наш власний portable shape, **не** raw PostHog dashboar
 4. Pin to **Dashboards → Founder Pulse** (створити, якщо немає).
 5. Cross-check у runbook (`docs/03-operations/observability/posthog-founder-pulse.md`) — додати live insight `short_id` після збереження.
 
-Auto-import (бажано) — окремий PR під WF-16 (`ops/n8n-workflows/16-posthog-daily-metrics.json`) розширюється або з'являється нова `import-posthog-dashboard.mjs` CLI-команда. Покривається [PR-11 з pr-plan-2026-05](../../docs/planning/pr-plan-2026-05.md).
+Auto-import (бажано) — окремий PR під WF-16 (`ops/n8n-workflows/16-posthog-daily-metrics.json`) розширюється або з'являється нова `import-posthog-dashboard.mjs` CLI-команда. Покривається [PR-11 з pr-plan-2026-05](../../docs/90-work/planning/pr-plan-2026-05.md).
 
 ## Контракт із canonical events
 

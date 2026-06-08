@@ -384,7 +384,7 @@
       "links": [
         {
           "type": "doc",
-          "ref": "docs/audits/archive/2026-04-28-ux-ui-audit.md"
+          "ref": "docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md"
         },
         {
           "type": "agents",
@@ -432,13 +432,13 @@
         },
         {
           "kind": "doc",
-          "ref": "docs/initiatives/archive/_0001-module-decomposition.md (allowlist + Phase 2 decomposition queue)"
+          "ref": "docs/90-work/initiatives/archive/_0001-module-decomposition.md (allowlist + Phase 2 decomposition queue)"
         }
       ],
       "links": [
         {
           "type": "doc",
-          "ref": "docs/initiatives/archive/_0001-module-decomposition.md"
+          "ref": "docs/90-work/initiatives/archive/_0001-module-decomposition.md"
         },
         {
           "type": "agents",
@@ -463,17 +463,17 @@
         },
         {
           "kind": "doc",
-          "ref": "docs/initiatives/archive/_0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)"
+          "ref": "docs/90-work/initiatives/archive/_0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)"
         }
       ],
       "links": [
         {
           "type": "doc",
-          "ref": "docs/initiatives/archive/_0012-perfect-strictness-rollout.md"
+          "ref": "docs/90-work/initiatives/archive/_0012-perfect-strictness-rollout.md"
         },
         {
           "type": "doc",
-          "ref": "docs/tech-debt/frontend.md"
+          "ref": "docs/90-work/tech-debt/frontend.md"
         },
         {
           "type": "agents",
@@ -508,7 +508,7 @@
       "links": [
         {
           "type": "doc",
-          "ref": "docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md"
+          "ref": "docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md"
         },
         {
           "type": "agents",
@@ -543,7 +543,7 @@
       "links": [
         {
           "type": "doc",
-          "ref": "docs/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md"
+          "ref": "docs/90-work/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md"
         },
         {
           "type": "agents",
@@ -597,7 +597,7 @@
       "links": [
         {
           "type": "doc",
-          "ref": "docs/audits/2026-05-13-dead-code-hard-rules-roast.md § P2"
+          "ref": "docs/90-work/audits/2026-05-13-dead-code-hard-rules-roast.md § P2"
         },
         {
           "type": "agents",
@@ -648,7 +648,7 @@
         },
         {
           "type": "doc",
-          "ref": "docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md"
+          "ref": "docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md"
         },
         {
           "type": "agents",
@@ -664,7 +664,7 @@
         "docs/governance/symbol-index.html",
         "docs/02-engineering/architecture/diagrams/c3-workspaces.md",
         "docs/open-work.md",
-        "docs/initiatives/follow-ups.md",
+        "docs/90-work/initiatives/follow-ups.md",
         "docs/00-start/playbooks/INDEX.md"
       ],
       "severity": "blocker",
@@ -682,7 +682,7 @@
         },
         {
           "type": "doc",
-          "ref": "docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md"
+          "ref": "docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md"
         },
         {
           "type": "agents",
@@ -695,7 +695,7 @@
       "title": "Merged PRs touching canonical docs must update `docs/pr-ledger/index.json`",
       "scope": [
         "docs/adr/*.md",
-        "docs/initiatives/*.md",
+        "docs/90-work/initiatives/*.md",
         "docs/00-start/playbooks/*.md",
         "docs/governance/rules/*.md"
       ],
@@ -718,7 +718,7 @@
         },
         {
           "type": "doc",
-          "ref": "docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md"
+          "ref": "docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md"
         },
         {
           "type": "agents",

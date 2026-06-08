@@ -3,7 +3,7 @@ export const meta = {
   description:
     "Triage (and optionally execute) open audits from docs/open-work.md",
   whenToUse:
-    'When the user wants a prioritized action plan across docs/audits/* or wants to fan out execution. Pass args={mode:"triage"|"execute", limit?:N, filter?:"substring"}.',
+    'When the user wants a prioritized action plan across docs/90-work/audits/* or wants to fan out execution. Pass args={mode:"triage"|"execute", limit?:N, filter?:"substring"}.',
   phases: [
     {
       title: "Parse",
@@ -20,7 +20,7 @@ export const meta = {
     },
     {
       title: "Synthesize",
-      detail: "rank, write report to docs/audits/_runner-report.md",
+      detail: "rank, write report to docs/90-work/audits/_runner-report.md",
     },
   ],
 };
@@ -199,7 +199,7 @@ Produce a markdown report with sections:
 5. **Blocked** — items with blockers, list the blocker.
 6. **Executed in this run** (only if mode=execute) — what was actually done, what escalated.
 
-Write the report to \`docs/audits/_runner-report.md\` with a proper lifecycle header:
+Write the report to \`docs/90-work/audits/_runner-report.md\` with a proper lifecycle header:
 \`\`\`
 # Audit runner report
 
@@ -214,7 +214,7 @@ Return the final report text (also the same text that you wrote to disk).`,
 return {
   mode: MODE,
   auditsProcessed: cleaned.length,
-  reportPath: "docs/audits/_runner-report.md",
+  reportPath: "docs/90-work/audits/_runner-report.md",
   reportPreview:
     typeof report === "string" ? report.slice(0, 800) : "(non-string report)",
 };

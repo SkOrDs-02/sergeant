@@ -1,6 +1,6 @@
 # Codemod — strip `.js` / `.jsx` from first-party imports
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Completed & archived (one-time codemod; do not run again outside investigation)
 
 ## What it did
@@ -27,7 +27,7 @@ node scripts/strip-js-extensions.mjs --write    # apply in-place
 
 Codemods — це **одноразові міграційні інструменти**, не CI tooling. Вони не дзвоняться з `package.json` чи з GitHub Actions. Тримання їх поряд із operational scripts (`check-*`, `lint-*`, `generate-*`) розмиває межу "що з цього бажано видалити після виконання". `scripts/codemods/<name>/` чітко сигналізує: «це історичний artefact; зберігається на випадок forensics або re-run на окремому файловому дереві».
 
-Конвенція тут — це **не** Hard Rule, а acceptable practice, виявлена в [`docs/audits/2026-05-02-doc-hygiene-audit.md`](../../../docs/audits/archive/2026-05-02-doc-hygiene-audit.md) §3.
+Конвенція тут — це **не** Hard Rule, а acceptable practice, виявлена в [`docs/90-work/audits/2026-05-02-doc-hygiene-audit.md`](../../../docs/90-work/audits/archive/2026-05-02-doc-hygiene-audit.md) §3.
 
 ## Idempotency
 
@@ -56,5 +56,5 @@ node scripts/codemods/strip-js-extensions/script.mjs --write    # apply
 
 ## Related
 
-- [`docs/tech-debt/frontend.md` § 3](../../../docs/tech-debt/frontend.md) — historical context (виконану секцію позначено strikethrough).
-- [`docs/audits/2026-05-02-doc-hygiene-audit.md` §3](../../../docs/audits/archive/2026-05-02-doc-hygiene-audit.md) — пропозиція винести codemods у `scripts/codemods/` (закрито цим PR).
+- [`docs/90-work/tech-debt/frontend.md` § 3](../../../docs/90-work/tech-debt/frontend.md) — historical context (виконану секцію позначено strikethrough).
+- [`docs/90-work/audits/2026-05-02-doc-hygiene-audit.md` §3](../../../docs/90-work/audits/archive/2026-05-02-doc-hygiene-audit.md) — пропозиція винести codemods у `scripts/codemods/` (закрито цим PR).

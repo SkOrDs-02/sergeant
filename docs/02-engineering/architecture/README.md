@@ -111,6 +111,6 @@ System architecture and runtime surface inventory for Sergeant.
 
 - **Development процес:** [`docs/adr/`](../../adr) — architectural decision records
 - **Operations & alerting:** [`docs/03-operations/observability/`](../../03-operations/observability) — SLO, metrics, runbooks
-- **Product roadmap:** [`docs/initiatives/`](../../initiatives) — фази, блокери, timeline
+- **Product roadmap:** [`docs/90-work/initiatives/`](../../90-work/initiatives) — фази, блокери, timeline
 - **Deployment & CI:** [`docs/03-operations/deploy/`](../../03-operations/deploy), [`docs/02-engineering/integrations/railway-vercel.md`](../integrations/railway-vercel.md)
-- **Tech debt & planning:** [`docs/planning/`](../../planning), [`docs/tech-debt/`](../../tech-debt)
+- **Tech debt & planning:** [`docs/90-work/planning/`](../../90-work/planning), [`docs/90-work/tech-debt/`](../../90-work/tech-debt)

@@ -12,7 +12,7 @@
 >   [Phase 2 — Capacitor](./02-capacitor-launch.md)
 > - [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — feature-parity матриця (source of truth)
 > - [`docs/02-engineering/mobile/react-native-migration.md`](../../../02-engineering/mobile/react-native-migration.md) — детальний RN-роадмап
-> - [`docs/initiatives/0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md) — revenue-first sprint, який зараз фігляє mobile-resource
+> - [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) — revenue-first sprint, який зараз фігляє mobile-resource
 > - [ADR-0010](../../../adr/0010-mobile-dual-track-capacitor-expo.md) — dual-track baseline
 > - [`apps/mobile/README.md`](../../../../apps/mobile/README.md), [`apps/mobile/AGENTS.md`](../../../../apps/mobile/AGENTS.md)
 
@@ -35,10 +35,10 @@ Native-клієнт `apps/mobile` (Expo SDK 52 + RN 0.76 + Expo Router) — **н
 - **[Phase 1 / Web]** — production web-апка live (`apps/web` на Vercel + `apps/server` на Railway, `/api/v1/*` стабільний контракт). Source: [Phase 1 doc](./01-web-launch-with-users.md) + [`platforms.md` §1](../../../02-engineering/architecture/platforms.md).
 - **[Phase 1 / Web]** — `apps/web` PWA з Service Worker + Web Push (VAPID) — fallback-канал якщо native push-credentials ще не у проді.
 - **[Phase 2 / Capacitor]** — `@sergeant/mobile-shell` released хоча б в Internal Testing track Google Play (`com.sergeant.shell`), Apple TestFlight (через `mobile-shell-ios-release.yml`). Хоча б ~10 реальних shell-users у store.
-- **[Phase 2 / Capacitor]** — APNs/FCM credentials налаштовані на server (`docs/tech-debt/backend.md#push-credentials` — закрите). Без цього native push з Expo тоже не злетить, бо backend fan-out у `apps/server/src/push/send.ts` спільний.
+- **[Phase 2 / Capacitor]** — APNs/FCM credentials налаштовані на server (`docs/90-work/tech-debt/backend.md#push-credentials` — закрите). Без цього native push з Expo тоже не злетить, бо backend fan-out у `apps/server/src/push/send.ts` спільний.
 - **[Phase 1 / Legal]** — Privacy Policy + Terms of Service published за `docs/01-product/launch/business/04-launch-readiness.md`. App Store і Play Store не дають approve без них.
 - **[Phase 1 / Business]** — pricing + billing працює (`apps/server/src/modules/billing/*`, Stripe webhooks). Без `getUserPlan()` контракту mobile-додаток не може запропонувати Pro-tier features.
-- **[Cross-cutting]** — Apple Developer Program ($99/year) і Google Play Console ($25 one-time) оформлені на legal entity власника (`@Skords-01` ФОП track — див. [`docs/initiatives/0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md)).
+- **[Cross-cutting]** — Apple Developer Program ($99/year) і Google Play Console ($25 one-time) оформлені на legal entity власника (`@Skords-01` ФОП track — див. [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md)).
 
 **Hard gate:** якщо хоча б одна entry criterion не закрита — Phase 3 не стартує, повертаємось у Phase 2 і пишемо ROI-аналіз «що дає мені native, чого немає у Capacitor».
 
@@ -107,7 +107,7 @@ Native-клієнт `apps/mobile` (Expo SDK 52 + RN 0.76 + Expo Router) — **н
 
 **Проти (НЕ запускати native окремо):**
 
-- **0 paying users, 0₴ MRR** ([`docs/initiatives/0010-revenue-first-launch.md` § TL;DR](../../../initiatives/0010-revenue-first-launch.md)). Native-publish ROI у грошах = 0 поки немає billing-traffic.
+- **0 paying users, 0₴ MRR** ([`docs/90-work/initiatives/0010-revenue-first-launch.md` § TL;DR](../../../90-work/initiatives/0010-revenue-first-launch.md)). Native-publish ROI у грошах = 0 поки немає billing-traffic.
 - **Один maintainer.** Кожен additional store-listing = +1 release flow, +1 review-cycle pain, +1 crash-triage канал, +1 set screenshots, +1 app review delays.
 - **Двосторонній store overhead.** `com.sergeant.shell` + `com.sergeant.app` у Play Console = два data-safety форми, два privacy labels, дві подачі.
 - **Apple bundle prefix collision.** Apple перевіряє bundle-prefix; `com.sergeant.shell` і `com.sergeant.app` можуть конфліктувати у Team-rules якщо team той самий. Випадок "two apps, one product" = manual review, додатковий тиждень.
@@ -525,7 +525,7 @@ User flow:
 | Migration push-storm: 1000 users з shell отримують push, що нативка готова    | Medium     | Medium | Rate-limit migration banners (1 раз на тиждень / user). Не push, а in-app banner.                                |
 | iOS `min-supported-version` cut-off ламає shell-users які не можуть оновитись | Low        | High   | Server-side cut-off робиться через ~6 міс після Native GA. До того — повний support обох клієнтів.               |
 | Apple Developer Program не оплачено вчасно                                    | Low        | High   | Оформити заздалегідь, ~3 тижні до Phase 11. Entry criterion §1.2.                                                |
-| FCM/APNs prod credentials не налаштовані                                      | Medium     | High   | Закрити `docs/tech-debt/backend.md#push-credentials` перед closed beta.                                          |
+| FCM/APNs prod credentials не налаштовані                                      | Medium     | High   | Закрити `docs/90-work/tech-debt/backend.md#push-credentials` перед closed beta.                                  |
 | PostHog tracking event-schema drift між web/shell/native                      | High       | Low    | Спільний `@sergeant/observability` пакет з event constants. Lint-rule на raw `posthog.capture('…')`.             |
 | Sentry source-maps для Hermes bundle не загружені — crash stacks unreadable   | Medium     | Medium | EAS Build hook автоматизує upload (`@sentry/react-native/scripts/expo-upload-sourcemaps`).                       |
 | Detox e2e flaky на Android emu — false-positive PR-blocking                   | High       | Low    | `mobile-flaky-verify.yml` (20-run gate) уже існує. Розширити на Android-suite перед закриттям smoke-only.        |
@@ -548,7 +548,7 @@ User flow:
 - [ ] EAS prod profile налаштований, перший `eas build --profile production` успішний для iOS і Android.
 - [ ] App Store Connect + Google Play Console — app records create-d, screenshots uploaded, privacy labels filled.
 - [ ] Apple Developer Program активний; Google Play Developer акаунт активний.
-- [ ] APNs/FCM prod credentials у `apps/server` (`docs/tech-debt/backend.md#push-credentials` — closed).
+- [ ] APNs/FCM prod credentials у `apps/server` (`docs/90-work/tech-debt/backend.md#push-credentials` — closed).
 - [ ] Closed beta: ≥50 unique users, 14 днів, crash-free ≥99.5%, NPS ≥40, ≤5 P1 bug reports.
 - [ ] Sentry RN prod-DSN wired, source-maps upload automatized у EAS Build hook.
 - [ ] PostHog event-schema validated, `mobile.app_open` / `mobile.session_start` events visible.
@@ -630,7 +630,7 @@ User flow:
 - [`docs/00-start/playbooks/release.md`](../../../00-start/playbooks/release.md) — release playbook (включно з § Expo)
 - [`docs/00-start/playbooks/port-web-screen-to-mobile.md`](../../../00-start/playbooks/port-web-screen-to-mobile.md)
 - [`docs/00-start/playbooks/sync-rn-migration-progress.md`](../../../00-start/playbooks/sync-rn-migration-progress.md)
-- [`docs/initiatives/0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md) — revenue-first context
-- [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../../../initiatives/archive/_0002-mobile-platform-decision.md) — original sunset initiative
+- [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) — revenue-first context
+- [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../../90-work/initiatives/archive/_0002-mobile-platform-decision.md) — original sunset initiative
 - [`apps/mobile/README.md`](../../../../apps/mobile/README.md), [`apps/mobile/AGENTS.md`](../../../../apps/mobile/AGENTS.md)
 - [`apps/mobile-shell/README.md`](../../../../apps/mobile-shell/README.md) — для порівняння

@@ -5,7 +5,7 @@
 > **Status:** Active draft (sketch). Закриває tracker `PR-19` per [ftux-master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr).
 > **Owner:** @Skords-01 + Devin (sketch session 2026-05-06).
 
-> Тільки UX-placement sketch для FTUX-релевантного paywall touch-point-у. Технічний skeleton (Stripe, webhooks, gating-middleware, ADR list) — у [Архітектура монетизації v2](../business/06-monetization-architecture.md) та [Initiative 0010](../../../initiatives/0010-revenue-first-launch.md). Цей документ — **тільки про те, ДЕ і КОЛИ** показуємо paywall новому юзеру, а не **ЯК** його технічно реалізуємо. Імплементація — `PR-20`.
+> Тільки UX-placement sketch для FTUX-релевантного paywall touch-point-у. Технічний skeleton (Stripe, webhooks, gating-middleware, ADR list) — у [Архітектура монетизації v2](../business/06-monetization-architecture.md) та [Initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md). Цей документ — **тільки про те, ДЕ і КОЛИ** показуємо paywall новому юзеру, а не **ЯК** його технічно реалізуємо. Імплементація — `PR-20`.
 >
 > **Канон 2026-05-19:** endpoint/key names в implementation checklist оновлено до shipped billing contract: `/api/billing/checkout`, `/api/billing/status`, `/api/billing/portal`, `billingKeys.status`, `STRIPE_ENABLED`. Історичні згадки `/checkout-session` або `billingKeys.plan()` не є поточними owners.
 
@@ -15,7 +15,7 @@
 
 Перший paywall-контакт нового юзера = **post-first-real-entry sheet** (sheet, не модал, не повноекранна wall) з offering 14-day Pro trial, БЕЗ payment method, з очевидним «Залишитись на free» secondary CTA. Тригер — той самий момент, який зараз стріляє `first_real_entry` PostHog event ([`apps/web/src/core/onboarding/firstRealEntry.ts`](../../../../apps/web/src/core/onboarding/firstRealEntry.ts)) і відкриває [`FirstEntryCelebrationModal`](../../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx). Sheet з'являється **після** celebration-аніма­ції (4 sec delay), не замість. FF-gated за `paywall_post_ftux_v1` (default OFF до 0010 phase 3).
 
-**Чому не «у момент signup»:** [audit-roast 2026-05-03 §B-1](../../../audits/archive/2026-05-03-ftux-onboarding-roast.md) і вся `disciplined-helper` рамка PR-04 — paywall до першої цінності = бренд-самогубство. Чекаємо на `first_real_entry` як proof-of-fit signal.
+**Чому не «у момент signup»:** [audit-roast 2026-05-03 §B-1](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) і вся `disciplined-helper` рамка PR-04 — paywall до першої цінності = бренд-самогубство. Чекаємо на `first_real_entry` як proof-of-fit signal.
 
 ---
 
@@ -39,7 +39,7 @@ Per `ftux-master-tracker.md` §3.4:
 - ❌ Не вирішує **plan-cache TTL / RQ keys / webhook idempotency** (це ADR-1.3, ADR-1.8 там само).
 - ❌ Не пише **код** (це PR-20).
 - ❌ Не вибирає **provider** (Stripe-primary, ADR-1.1, прийнято).
-- ❌ Не draft-ить **pricing page** (це окремий PR за межами FTUX-tracker — див. [Initiative 0010 фаза 4 PR 4.2](../../../initiatives/0010-revenue-first-launch.md)).
+- ❌ Не draft-ить **pricing page** (це окремий PR за межами FTUX-tracker — див. [Initiative 0010 фаза 4 PR 4.2](../../../90-work/initiatives/0010-revenue-first-launch.md)).
 
 ### 2.3. Які рішення цей PR закриває
 
@@ -271,12 +271,12 @@ PR-20 НЕ merge-ається без:
 
 ## 11. Cross-refs
 
-- [Initiative 0010 — revenue-first-launch](../../../initiatives/0010-revenue-first-launch.md) — phases 1-4 для billing-stack.
+- [Initiative 0010 — revenue-first-launch](../../../90-work/initiatives/0010-revenue-first-launch.md) — phases 1-4 для billing-stack.
 - [06 Архітектура монетизації v2](../business/06-monetization-architecture.md) — ADR list (1.1–1.10), risk register, rollout-plan з FF.
 - [01 Монетизація і ціноутворення](../business/01-monetization-and-pricing.md) — pricing strategy, що годує copy-варіанти §6.
 - [FTUX master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr) — PR-19/PR-20 положення у sprint-плані.
 - [FTUX master-tracker §7 Decisions log → «Paywall»](./ftux-master-tracker.md#7-decisions-log) — sketch-session decision.
-- [Audit roast 2026-05-03 §B-1](../../../audits/archive/2026-05-03-ftux-onboarding-roast.md) — чому НЕ paywall у signup.
+- [Audit roast 2026-05-03 §B-1](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) — чому НЕ paywall у signup.
 - [`apps/web/src/core/onboarding/firstRealEntry.ts`](../../../../apps/web/src/core/onboarding/firstRealEntry.ts) — trigger event source.
 - [`apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx`](../../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx) — hand-off modal перед sheet.
 
