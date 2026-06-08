@@ -101,7 +101,7 @@
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
-      <span class="chip chip-adr">adr: <b>61</b></span>
+      <span class="chip chip-adr">adr: <b>62</b></span>
       <span class="chip chip-audit">audit: <b>17</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>47</b></span>
@@ -111,7 +111,7 @@
     </div>
 
     <details open>
-      <summary>Nodes (238 core)</summary>
+      <summary>Nodes (239 core)</summary>
       <table>
         <thead>
           <tr>
@@ -722,7 +722,7 @@
               >
             </td>
             <td>Accepted</td>
-            <td>number=53 · last_validated=2026-06-02</td>
+            <td>number=53 · last_validated=2026-06-07</td>
           </tr>
           <tr>
             <td>adr</td>
@@ -842,6 +842,22 @@
             </td>
             <td>accepted</td>
             <td>number=64</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0065</code></td>
+            <td>
+              <a
+                href="../../docs/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md"
+                >ADR-0065: sync_op_log retention/архівація + multi-instance
+                fan-out (план PR-050)</a
+              >
+            </td>
+            <td>
+              Proposed &lt;!-- Proposed | Accepted | Deprecated | Superseded by
+              ADR-NNNN --&gt;
+            </td>
+            <td>number=65</td>
           </tr>
           <tr>
             <td>audit</td>
@@ -1456,15 +1472,14 @@
               >
             </td>
             <td>
-              In progress — Phases 1–4 done; Phase 5 blocked on a React Router 7
-              location-context bug for its last items — per-route lazy-chunk
-              entries + native RR7 router-level `loader`s need a shared
-              `RootLayout` + `&lt;Outlet /&gt;` (див. `router.tsx`). Shipped
-              2026-05-24: per-route bundle budgets, manualChunks audit («no
-              changes»), ESLint `no-hash-router-in-modules` at `error`, prefetch
-              route-loaders. manualChunks cleanup + bundle-gate per-route tuning
-              — закрито. Also pending (unblocked): Playwright e2e for
-              hash-compat.
+              In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix
+              implemented** (2026-06-07): `RootLayout.tsx` +
+              `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module
+              `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite.
+              Location-context bug resolved — each child route renders a
+              DIFFERENT component via `&lt;Outlet /&gt;`. Pending: typecheck on
+              clean worktree (exFAT install issues), Playwright e2e for
+              hash-compat, manualChunks cleanup.
             </td>
             <td>number=6 · owner=@Skords-01 · priority=P1 (Sprint 2)</td>
           </tr>
@@ -1476,13 +1491,7 @@
                 >0010 — Revenue-first launch: ship paid, focus wedge</a
               >
             </td>
-            <td>
-              In progress — Phases 0+1+2+3+4.1+4.2+4.3+5.1+5.2 done; Phase 6
-              incl. 6.2 EN-locale wiring (LandingPage `useLocale` + `landing`
-              group) done. Pending: **founder-блокери only** — APPLE\_\* env
-              vars in Railway/local + ФОП-реєстрація для live Stripe +
-              rollout/decision metrics
-            </td>
+            <td>In progress</td>
             <td>number=10 · owner=@Skords-01 · priority=P0 (Sprint 1–4)</td>
           </tr>
           <tr>
@@ -3065,10 +3074,7 @@
               description=Implement proven backend architecture patterns
               including Clean Architecture, Hexagonal Architecture, and
               Domain-Driven Design. Use when designing clean architecture for a
-              new microservice, when refactoring a monolith to use bounded
-              contexts, when implementing hexagonal or onion architecture
-              patterns, or when debugging dependency cycles between application
-              layers.
+              new microservice, when refactoring a monolith to
             </td>
           </tr>
           <tr>
@@ -3162,12 +3168,7 @@
               description=Implement saga patterns for distributed transactions
               and cross-aggregate workflows. Use this skill when implementing
               distributed transactions across microservices where 2PC is
-              unavailable, designing compensating actions for failed order
-              workflows that span inventory, payment, and shipping services,
-              building event-driven saga coordinators for travel booking systems
-              that must roll back hotel, flight, and car rental reservations
-              atomically, or debugging stuck saga states in production where
-              compensation steps never complete.
+              unavailable, designing compensating actions
             </td>
           </tr>
           <tr>
@@ -3183,8 +3184,7 @@
               description=Backend API patterns for Sergeant — REST/GraphQL
               design, Clean Architecture, Hexagonal patterns, CQRS, event
               sourcing, Temporal workflows, saga orchestration. Covers service
-              boundaries, testing, security, performance. UA: бекенд, API,
-              архітектура, мікросервіси.
+              boundaries, testing, security, performance
             </td>
           </tr>
           <tr>
@@ -3555,7 +3555,7 @@
               description=Test Temporal workflows with pytest, time-skipping,
               and mocking strategies. Covers unit testing, integration testing,
               replay testing, and local development setup. Use when implementing
-              Temporal workflow tests or debugging test failures.
+              Temporal workflow tests or
             </td>
           </tr>
           <tr>
@@ -3572,8 +3572,7 @@
               description=Design durable workflows with Temporal for distributed
               systems. Covers workflow vs activity separation, saga patterns,
               state management, and determinism constraints. Use when building
-              long-running processes, distributed transactions, or microservice
-              orchestration.
+              long-running processes, distributed
             </td>
           </tr>
         </tbody>
@@ -3581,7 +3580,7 @@
     </details>
 
     <details>
-      <summary>Edges (374 total, first 500 core-to-core)</summary>
+      <summary>Edges (375 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -3705,6 +3704,11 @@
             <td><code>adr:0064</code></td>
             <td>references</td>
             <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0065</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>

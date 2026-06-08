@@ -1,19 +1,28 @@
 ﻿# syncV2.ts Refactoring Plan — Stage 2: Apply Functions Extraction
 
-> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-09-06.
-> **Status:** Active
+> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-07.
+> **Status:** Archived
 
-## Ціль 
+> **Closeout 2026-06-07.** Усі кроки (1–4) завершено й верифіковано в коді
+> (`apps/server/src/modules/sync/` — структура нижче відповідає реальності 1:1).
+> Тести написано (`syncV2.test.ts`, `syncV2.integration.test.ts`) — обидва
+> залишкові пункти «Наступні кроки» закрито. Парний тікет:
+> [`syncV2-engineering-ticket.md`](./syncV2-engineering-ticket.md) (Archived).
+
+## Ціль
+
 Розділити 3096-рядковий файл на модулі ≤600 рядків.
 
 ## Виконано ✓
 
 ### Крок 1: syncV2-types.ts (завершено)
+
 - APPLY_REJECT_REASONS, ENGINE_REJECT_REASONS
 - ApplyRejectReason, EngineRejectReason, RejectReason типи
 - AppliedStatus, ApplyFn типи
 
 ### Крок 2: syncV2-core.ts (завершено)
+
 - readOriginDeviceId
 - recordSyncV2
 - parseOptionalDate, parseRequiredDate, parseOptionalNumber, parseOptionalInt, toNonNegativeInt, toJsonbParam
@@ -21,6 +30,7 @@
 ### Крок 3: Apply-функції per-модуль (завершено)
 
 Структура модулів sync:
+
 ```
 apps/server/src/modules/sync/
 ├── syncV2.ts (~475 рядків) ✓
@@ -37,9 +47,11 @@ apps/server/src/modules/sync/
 ```
 
 ### Крок 4: Оновлено реєстри (завершено)
+
 - OP_LOG_TABLE_REGISTRY імпортує з модулів
 - INCREMENT_OP_SUPPORTED_TABLES, SYNC_V2_SUPPORTED_TABLES експортуються з syncV2.ts
 
 ## Наступні кроки
-- [ ] Запустити тести для верифікації
-- [ ] Оновити документацію
+
+- [x] Запустити тести для верифікації (`syncV2.test.ts` + `syncV2.integration.test.ts`)
+- [x] Оновити документацію (цей closeout + парний тікет переведено в Archived)
