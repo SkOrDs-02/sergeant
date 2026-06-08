@@ -77,7 +77,7 @@ function recordRateLimitDegraded(key: string, mode: "inmem" | "closed"): void {
  * the bucket key changes each time.
  *
  * Trust-proxy is configured in `createApp` (`apps/server/src/app.ts`) and
- * defaults to `1` (single reverse proxy in front of us — Railway / Replit
+ * defaults to `1` (single reverse proxy in front of us — Railway
  * topology). If no trust-proxy is configured, `req.ip` falls back to the
  * raw socket peer, which is the proxy itself — also spoof-safe but means
  * every client behind that proxy shares a bucket. Better to under-distribute

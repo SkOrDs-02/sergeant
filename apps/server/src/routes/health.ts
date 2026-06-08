@@ -21,7 +21,7 @@ import { metricsHandler } from "../obs/metrics.js";
  * | startup     | `/startupz` | `/health/startup`     | 200 коли `app.listen` callback зайшов  |
  *
  * `/health` лишається аліасом на readiness через історичні platform-probe-и
- * (Railway, старі Replit-пайплайни) — не видаляти без координації з деплоєм.
+ * (Railway health checks) — не видаляти без координації з деплоєм.
  * Nested-paths (`/health/liveness`, `/health/readiness`, `/health/startup`)
  * додані за ініціативою 0008 (platform hardening) — це дозволяє
  * Render/k8s-style конфігам брати всі три probe-и з одного префіксу,

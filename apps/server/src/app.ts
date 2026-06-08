@@ -58,8 +58,10 @@ function apiVersionRewrite(
 
 interface CreateAppOptions {
   /**
-   * If true, CSP is disabled and the built SPA from `distPath` is served.
-   * Used by the Replit deploy where one process hosts both API and frontend.
+   * If true, CSP is disabled and the built SPA from `distPath` is served by
+   * this process (unified API + frontend on one port). Dormant since the
+   * Replit deploy mode was removed (2026-06-08): `config.servesFrontend` is
+   * always false, so nothing passes `true` at runtime.
    */
   servesFrontend?: boolean;
   /**
@@ -68,8 +70,8 @@ interface CreateAppOptions {
    */
   distPath?: string | null;
   /**
-   * Forwarded to `app.set('trust proxy', …)`. Pass `undefined` to skip (Replit
-   * historically did not configure this).
+   * Forwarded to `app.set('trust proxy', …)`. Pass `undefined` to skip
+   * (keeps Express defaults; no `app.set` call).
    *
    * **M2** Accepts the same union as `parseTrustProxy` returns:
    *   - `number` — hop count (1 for Railway, 2 for Cloudflare+Railway).
@@ -181,7 +183,7 @@ export function createApp({
 
   // Sentry's error handler must run before ours so it can capture stack traces
   // before we translate the error into a JSON body. Both are no-ops without
-  // `SENTRY_DSN`, so this is safe in Replit-mode and local dev.
+  // `SENTRY_DSN`, so this is safe in local dev.
   attachSentryErrorHandler(app);
   app.use(errorHandler);
 

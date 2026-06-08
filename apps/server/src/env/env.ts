@@ -123,8 +123,7 @@ const envSchema = z.object({
    *   - `false` — вимкнути XFF-парсинг повністю.
    *   - `true` — **ЗАБОРОНЕНО**, відхиляється `parseTrustProxy`.
    *
-   * Якщо порожнє — fallback до Railway-1 / Replit-undefined (зберігає
-   * historical behaviour).
+   * Якщо порожнє — fallback до Railway-1.
    */
   TRUST_PROXY: z.string().optional(),
 
