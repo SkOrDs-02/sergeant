@@ -137,6 +137,7 @@
     "agent:find": "node scripts/agent/find.mjs",
     "agent:build-index": "node scripts/agent/build-retrieval-index.mjs",
     "agent:check-index": "node scripts/agent/build-retrieval-index.mjs --check",
+    "agent:embed": "node scripts/agent/embed-chunks.mjs",
     "agent:find:test": "node --test scripts/agent/__tests__/retrieval.test.mjs",
     "eval:rag": "node scripts/eval-rag-recall.mjs",
     "eval:rag:weekly": "node scripts/rag-eval-weekly.mjs",
