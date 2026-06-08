@@ -39,21 +39,12 @@ const DEFAULT_ALLOW_HEADERS = [
   "tracestate",
 ].join(", ");
 
-function getReplitOrigins() {
-  const domains = process.env["REPLIT_DOMAINS"] || "";
-  return domains
-    .split(",")
-    .map((d) => d.trim())
-    .filter(Boolean)
-    .map((d) => `https://${d}`);
-}
-
 export function getAllowedOrigins() {
   const extra = (process.env["ALLOWED_ORIGINS"] || "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  return [...new Set([...DEFAULT_ORIGINS, ...getReplitOrigins(), ...extra])];
+  return [...new Set([...DEFAULT_ORIGINS, ...extra])];
 }
 
 // Кешуємо скомпільований regex, щоб не пересправляти його на кожен запит.

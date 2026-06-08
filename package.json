@@ -20,7 +20,6 @@
     "dev:web": "pnpm --filter @sergeant/web dev",
     "dev:server": "pnpm --filter @sergeant/server dev",
     "start": "pnpm --filter @sergeant/server start",
-    "start:replit": "pnpm install && pnpm build:web && pnpm --filter @sergeant/server build && pnpm db:migrate && pnpm --filter @sergeant/server start:replit",
     "build": "turbo run build",
     "build:web": "pnpm --filter @sergeant/web build",
     "build:analyze": "pnpm --filter @sergeant/web build:analyze",

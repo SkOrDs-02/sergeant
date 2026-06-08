@@ -14,7 +14,7 @@
  *
  * The implementation is intentionally **DOM-free and dependency-free** so it
  * stays importable from every workspace package (server, web, mobile,
- * tools/console) without dragging Sentry / pino / Express types along.
+ * tools/openclaw) without dragging Sentry / pino / Express types along.
  *
  * Contract:
  *   - `REDACT_KEY_NAMES` — every field name that must be masked at any depth.

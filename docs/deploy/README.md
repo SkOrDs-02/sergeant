@@ -1,6 +1,6 @@
 # Deploy
 
-> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Step-by-step deploy walkthroughs for Sergeant runtime surfaces. These are operational recipes — for the architectural rationale of the hosting split see [`../adr/0009-hosting-split-railway-vercel.md`](../adr/0009-hosting-split-railway-vercel.md), and for the runtime inventory see [`../architecture/service-catalog.md`](../architecture/service-catalog.md).
@@ -9,7 +9,7 @@ Step-by-step deploy walkthroughs for Sergeant runtime surfaces. These are operat
 
 | Document                                                         | Purpose                                                                       |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| [`openclaw.md`](./openclaw.md)                                   | Deploy `tools/openclaw` (Telegram bot) on Railway via `Dockerfile.console`    |
+| [`openclaw.md`](./openclaw.md)                                   | Deploy `tools/openclaw` (Telegram bot) on Railway via `Dockerfile.openclaw`   |
 | [`vercel.md`](./vercel.md)                                       | Vercel project settings, headers contract, COEP compatibility matrix          |
 | [`monorepo-deploy-filtering.md`](./monorepo-deploy-filtering.md) | Per-surface deploy filters (Vercel `ignoreCommand` + Railway `watchPatterns`) |
 

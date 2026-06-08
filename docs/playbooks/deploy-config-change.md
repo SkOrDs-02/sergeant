@@ -1,6 +1,6 @@
 # Playbook: Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `fly.toml`, `railway.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.
@@ -33,7 +33,7 @@ PR #1595 → PR #1600 — «Vercel SSOT-flip». Edit deploy-конфігу у к
 
 - `apps/web/vercel.json` → [§1 Перевір Vercel preview](#1-перевір-vercel-preview).
 - `Dockerfile.api`, `apps/server/build.mjs`, `fly.toml` (api) → [§2 Перевір staging-деплой API](#2-перевір-staging-деплой-api).
-- `Dockerfile.console`, `railway.toml` (console / alloy) → [§3 Перевір Railway-сервіс](#3-перевір-railway-сервіс).
+- `Dockerfile.openclaw`, `railway.toml` (console / alloy) → [§3 Перевір Railway-сервіс](#3-перевір-railway-сервіс).
 - Кілька — застосуй кожну релевантну секцію перед тим, як ставити лейбл.
 
 ```mermaid
@@ -44,7 +44,7 @@ flowchart TD
 
     Q2 -- "vercel.json" --> WEB["§1 Vercel preview"]
     Q2 -- "Dockerfile.api / build.mjs / fly.toml" --> API["§2 Staging API"]
-    Q2 -- "Dockerfile.console / railway.toml" --> RAILWAY["§3 Railway-сервіс"]
+    Q2 -- "Dockerfile.openclaw / railway.toml" --> RAILWAY["§3 Railway-сервіс"]
 
     WEB --> LABEL["Постав verified-on-staging"]
     API --> LABEL

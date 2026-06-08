@@ -15,7 +15,7 @@ import { build } from "esbuild";
  *     `apps/server/build.mjs`) — `packages: "bundle"` втягує workspace-
  *     пакети у самодостатній `dist/index.js`.
  *
- * Output: `dist/index.js` (ESM, Node 20+). Runtime у Dockerfile.console
+ * Output: `dist/index.js` (ESM, Node 20+). Runtime у Dockerfile.openclaw
  * залишається distroless — він виконує `node dist/index.js` без
  * додаткового resolver-а.
  */

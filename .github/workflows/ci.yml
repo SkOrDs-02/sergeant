@@ -546,7 +546,6 @@ jobs:
       # postgres:17-alpine does not ship the extension and breaks
       # `db:migrate:dev` at boot. SHA-pinned for supply-chain hardening
       # (manifest-list digest, multi-arch).
-      # TODO: Replace SHA with actual digest after: docker pull pgvector/pgvector:pg17 && docker inspect pgvector/pgvector:pg17 --format '{{index .RepoDigests 0}}'
       postgres:
         image: pgvector/pgvector:pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
         env:
