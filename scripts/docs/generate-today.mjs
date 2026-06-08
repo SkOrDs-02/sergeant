@@ -31,8 +31,6 @@ import { readFileSync, writeFileSync, statSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import prettier from "prettier";
-
 import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 import { evaluate, loadLimits } from "./check-wip-limits.mjs";
 
@@ -303,6 +301,10 @@ async function main() {
 
   const priority = pickPriorityItems(report);
   const overdue = pickOverdueReview(report);
+  // Lazy import keeps prettier out of the module graph for importers that only
+  // need the pure helpers (e.g. generate-status.mjs) under the install-free
+  // docs-scripts-tests CI job — mirrors generate-open-work.mjs.
+  const { default: prettier } = await import("prettier");
   const next = await prettier.format(render({ priority, overdue, wipRows }), {
     parser: "markdown",
   });
