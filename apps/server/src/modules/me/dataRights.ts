@@ -16,7 +16,9 @@ const DEFAULT_PREFERENCES: Omit<UserPreferences, "updatedAt"> = {
 };
 
 function iso(value: Date | string): string {
-  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+  return value instanceof Date
+    ? value.toISOString()
+    : new Date(value).toISOString();
 }
 
 function maybeIso(value: Date | string | null | undefined): string | null {
@@ -25,7 +27,9 @@ function maybeIso(value: Date | string | null | undefined): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-function rowArray(rows: ReadonlyArray<Record<string, unknown>>): Record<string, unknown>[] {
+function rowArray(
+  rows: ReadonlyArray<Record<string, unknown>>,
+): Record<string, unknown>[] {
   return rows.map((row) => ({ ...row }));
 }
 
@@ -179,7 +183,9 @@ export async function buildMeExport(
     data: {
       moduleData: rowArray(moduleData.rows),
       mono: {
-        connection: monoConnection.rows[0] ? { ...monoConnection.rows[0] } : null,
+        connection: monoConnection.rows[0]
+          ? { ...monoConnection.rows[0] }
+          : null,
         accounts: rowArray(monoAccounts.rows),
         transactions: rowArray(monoTransactions.rows),
       },

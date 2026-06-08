@@ -28,10 +28,7 @@ export function HubPage() {
 
   const shell = useHubShell();
 
-  const openAuth = useCallback(
-    () => navigate(SIGN_IN_PATH),
-    [navigate],
-  );
+  const openAuth = useCallback(() => navigate(SIGN_IN_PATH), [navigate]);
 
   // «Поки що пропустити» на /sign-in (same logic as legacy AppInner):
   const leaveAuth = useCallback(() => {

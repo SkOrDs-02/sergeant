@@ -1,9 +1,10 @@
 # Детальний план декомпозиції syncV2.ts
 
-> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 ## Поточний стан
+
 - **Файл:** `apps/server/src/modules/sync/syncV2.ts`
 - **Розмір:** 3100 LOC (порушує Hard Rule #18: max-lines 600)
 - **Структура:**
@@ -15,7 +16,9 @@
 ## План декомпозиції
 
 ### Крок 1: syncV2Types.ts (~300 LOC)
+
 **Що виноситься:**
+
 - `SyncV2OpKind` type
 - `SyncV2Outcome` type union
 - `APPLY_REJECT_REASONS` const array
@@ -35,21 +38,27 @@
 - `SYNC_V2_SUPPORTED_TABLES` export
 
 **Критерії:**
+
 - Жодної runtime логіки (тільки types + constants)
 - Всі exports для використання в інших модулях
 
 ### Крок 2: syncV2Audit.ts (~150 LOC)
+
 **Що виноситься:**
+
 - `readOriginDeviceId()` function
 - `elapsedMs()` function
 - `recordSyncV2()` function
 
 **Критерії:**
+
 - Всі функції pure (без side effects окрім logging/metrics)
 - Інтеграція з `obs/metrics.ts` та `obs/logger.js`
 
 ### Крок 3: syncV2Apply.ts (~2155 LOC)
+
 **Що виноситься:**
+
 - Всі 30 apply-функцій:
   - `applyRoutineEntries()` (routine_entries)
   - `applyRoutineStreaks()` (routine_streaks)
@@ -87,10 +96,12 @@
 ### Крок 4: Подальша декомпозиція syncV2Apply.ts
 
 #### syncV2ApplyRoutine.ts (~200 LOC)
+
 - `applyRoutineEntries()`
 - `applyRoutineStreaks()`
 
 #### syncV2ApplyFizruk.ts (~600 LOC)
+
 - `applyFizrukWorkouts()`
 - `applyFizrukItems()`
 - `applyFizrukSets()`
@@ -98,6 +109,7 @@
 - `applyFizrukMeasurements()`
 
 #### syncV2ApplyNutrition.ts (~500 LOC)
+
 - `applyNutritionMeals()`
 - `applyNutritionPantries()`
 - `applyNutritionPantryItems()`
@@ -105,6 +117,7 @@
 - `applyNutritionRecipes()`
 
 #### syncV2ApplyFinyk.ts (~850 LOC)
+
 - `applyFinykTombstone()` (helper)
 - `applyFinykHiddenAccounts()`
 - `applyFinykHiddenTransactions()`
@@ -125,17 +138,21 @@
 - `applyFinykPrefs()`
 
 **Примітка:** 850 LOC все ще порушує Hard Rule #18. Потрібна подальша декомпозиція:
+
 - `syncV2ApplyFinykCore.ts` (~450 LOC): tombstone, hidden, per-row-blob
 - `syncV2ApplyFinykEntities.ts` (~400 LOC): budgets, subscriptions, assets, debts, receivables, categories, expenses, filters
 
 ### Крок 5: syncV2.ts (залишок ~512 LOC)
+
 **Що залишається:**
+
 - `syncV2PushHandler()` — HTTP handler
 - `syncV2PullHandler()` — HTTP handler
 - `syncV2Push()` — orchestration logic
 - Transaction management
 
 **Критерії:**
+
 - <600 LOC
 - Тільки HTTP handlers + orchestration
 - Всі apply-функції імпортуються з окремих модулів

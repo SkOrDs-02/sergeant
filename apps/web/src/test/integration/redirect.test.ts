@@ -36,17 +36,14 @@ describe("vercel.json — fizruk → sergeant single-origin redirect (PR-25)", (
     const redirect = config.redirects?.find((rule) =>
       rule.has?.some(
         (condition) =>
-          condition.type === "host" &&
-          condition.value === "fizruk.vercel.app",
+          condition.type === "host" && condition.value === "fizruk.vercel.app",
       ),
     );
 
     expect(redirect).toBeDefined();
     // `permanent: true` is Vercel's contract for an HTTP 301 (vs 307 when false).
     expect(redirect?.permanent).toBe(true);
-    expect(redirect?.destination).toBe(
-      "https://sergeant.vercel.app/:path*",
-    );
+    expect(redirect?.destination).toBe("https://sergeant.vercel.app/:path*");
   });
 
   it("preserves the request path via the `:path*` segment", () => {
@@ -55,8 +52,7 @@ describe("vercel.json — fizruk → sergeant single-origin redirect (PR-25)", (
     const redirect = config.redirects?.find((rule) =>
       rule.has?.some(
         (condition) =>
-          condition.type === "host" &&
-          condition.value === "fizruk.vercel.app",
+          condition.type === "host" && condition.value === "fizruk.vercel.app",
       ),
     );
 
@@ -74,8 +70,7 @@ describe("vercel.json — fizruk → sergeant single-origin redirect (PR-25)", (
     const fizrukRedirect = config.redirects?.find((rule) =>
       rule.has?.some(
         (condition) =>
-          condition.type === "host" &&
-          condition.value === "fizruk.vercel.app",
+          condition.type === "host" && condition.value === "fizruk.vercel.app",
       ),
     );
 

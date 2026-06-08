@@ -49,7 +49,9 @@ export function DataExportSection() {
       setServerMessage("Deletion request прийнято. Повертаю на головну…");
       window.location.assign("/");
     } catch {
-      setServerError("Не вдалося видалити акаунт. Спробуй ще раз або напиши в support.");
+      setServerError(
+        "Не вдалося видалити акаунт. Спробуй ще раз або напиши в support.",
+      );
     } finally {
       setDeleteBusy(false);
     }

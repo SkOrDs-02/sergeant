@@ -15,9 +15,7 @@ export function Component() {
 
   return (
     <ModuleShell moduleId="nutrition">
-      <SuspenseWithMinDelay
-        fallback={<ModulePageLoader module="nutrition" />}
-      >
+      <SuspenseWithMinDelay fallback={<ModulePageLoader module="nutrition" />}>
         <NutritionApp
           onBackToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("nutrition")}

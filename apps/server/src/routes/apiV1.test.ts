@@ -224,18 +224,16 @@ describe("/api/v1/me data rights", () => {
 
   it("PATCH /api/v1/me/preferences валідовує partial patch", async () => {
     getSessionUserMock.mockResolvedValueOnce(user);
-    queryMock
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            analytics: false,
-            ai_memory: true,
-            push_notifications: false,
-            updated_at: new Date("2026-06-06T10:05:00.000Z"),
-          },
-        ],
-      });
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [
+        {
+          analytics: false,
+          ai_memory: true,
+          push_notifications: false,
+          updated_at: new Date("2026-06-06T10:05:00.000Z"),
+        },
+      ],
+    });
     const app = createApp();
     const res = await request(app)
       .patch("/api/v1/me/preferences")

@@ -28,7 +28,9 @@ export interface WorkoutTemplateDeleteOp {
   readonly templateId: string;
 }
 
-export type WorkoutTemplateOp = WorkoutTemplateUpsertOp | WorkoutTemplateDeleteOp;
+export type WorkoutTemplateOp =
+  | WorkoutTemplateUpsertOp
+  | WorkoutTemplateDeleteOp;
 
 export function diffWorkoutTemplatesOps(
   prev: readonly FizrukWorkoutTemplateSnapshot[],

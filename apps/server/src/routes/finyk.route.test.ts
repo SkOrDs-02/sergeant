@@ -122,7 +122,12 @@ describe("finyk routes — POST /manual-expenses happy path", () => {
     const res = await request(app)
       .post("/api/v1/finyk/manual-expenses")
       .set("X-Requested-With", "XMLHttpRequest")
-      .send({ amount: 20000, category: "food", date: "2026-06-06", note: "кава" });
+      .send({
+        amount: 20000,
+        category: "food",
+        date: "2026-06-06",
+        note: "кава",
+      });
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({
@@ -190,7 +195,10 @@ describe("finyk routes — POST /manual-expenses validation", () => {
     ["missing amount", { category: "food" }],
     ["zero amount", { amount: 0, category: "food" }],
     ["negative amount", { amount: -100, category: "food" }],
-    ["float amount (kopiykas must be integer)", { amount: 199.5, category: "food" }],
+    [
+      "float amount (kopiykas must be integer)",
+      { amount: 199.5, category: "food" },
+    ],
     ["missing category", { amount: 1000 }],
     ["empty category", { amount: 1000, category: "" }],
     ["bad date format", { amount: 1000, category: "food", date: "06/06/2026" }],

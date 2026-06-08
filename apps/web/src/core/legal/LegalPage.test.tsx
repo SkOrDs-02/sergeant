@@ -18,34 +18,37 @@ const cases = [
 ] as const;
 
 describe("LegalPage", () => {
-  it.each(cases)("renders public legal page %s with heading and footer links", (pathname, heading) => {
-    render(
-      <MemoryRouter>
-        <LegalPage pathname={pathname} />
-      </MemoryRouter>,
-    );
+  it.each(cases)(
+    "renders public legal page %s with heading and footer links",
+    (pathname, heading) => {
+      render(
+        <MemoryRouter>
+          <LegalPage pathname={pathname} />
+        </MemoryRouter>,
+      );
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: heading }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("navigation", { name: "Юридичні документи" }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Приватність" })).toHaveAttribute(
-      "href",
-      LEGAL_PRIVACY_PATH,
-    );
-    expect(screen.getByRole("link", { name: "Умови" })).toHaveAttribute(
-      "href",
-      LEGAL_TERMS_PATH,
-    );
-    expect(screen.getByRole("link", { name: "Cookies" })).toHaveAttribute(
-      "href",
-      LEGAL_COOKIES_PATH,
-    );
-    expect(screen.getByRole("link", { name: "Оферта" })).toHaveAttribute(
-      "href",
-      LEGAL_OFFER_PATH,
-    );
-  });
+      expect(
+        screen.getByRole("heading", { level: 1, name: heading }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("navigation", { name: "Юридичні документи" }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Приватність" })).toHaveAttribute(
+        "href",
+        LEGAL_PRIVACY_PATH,
+      );
+      expect(screen.getByRole("link", { name: "Умови" })).toHaveAttribute(
+        "href",
+        LEGAL_TERMS_PATH,
+      );
+      expect(screen.getByRole("link", { name: "Cookies" })).toHaveAttribute(
+        "href",
+        LEGAL_COOKIES_PATH,
+      );
+      expect(screen.getByRole("link", { name: "Оферта" })).toHaveAttribute(
+        "href",
+        LEGAL_OFFER_PATH,
+      );
+    },
+  );
 });
