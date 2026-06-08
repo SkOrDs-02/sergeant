@@ -1,6 +1,6 @@
 # Hard Rules — per-rule canonical files
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 > One file per Hard Rule (full prose + BAD/GOOD examples). Compact summary table in [`AGENTS.md § Hard rules`](../../../AGENTS.md#hard-rules-do-not-break). Registry: [`hard-rules.json`](../hard-rules.json). Matrix: [`hard-rules-matrix.md`](../hard-rules-matrix.md). Sync gate: `pnpm lint:hard-rules-registry`.
@@ -24,7 +24,7 @@
 | 15  | Read governance before coding; update docs alongside code; internal docs in Ukrainian | [`15-governance-and-doc-language.md`](./15-governance-and-doc-language.md)                       |
 | 16  | Typography scale — semantic styles + 12px floor                                       | [`16-typography-scale-12px-floor.md`](./16-typography-scale-12px-floor.md)                       |
 | 17  | Animation budget — max 2 concurrent, 3 tiers                                          | [`17-animation-budget.md`](./17-animation-budget.md)                                             |
-| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS                             | [`18-module-size-discipline-600.md`](./18-module-size-discipline-600.md)                         |
+| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS             | [`18-module-size-discipline-600.md`](./18-module-size-discipline-600.md)                         |
 | 19  | Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo      | [`19-strict-mode-flag-canonical.md`](./19-strict-mode-flag-canonical.md)                         |
 | 20  | No OpenClaw PATs in production                                                        | [`20-no-openclaw-pats-in-production.md`](./20-no-openclaw-pats-in-production.md)                 |
 | 21  | Pino redaction policy enforced                                                        | [`21-pino-redaction-policy.md`](./21-pino-redaction-policy.md)                                   |

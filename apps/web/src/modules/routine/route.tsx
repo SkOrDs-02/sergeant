@@ -15,9 +15,7 @@ export function Component() {
 
   return (
     <ModuleShell moduleId="routine">
-      <SuspenseWithMinDelay
-        fallback={<ModulePageLoader module="routine" />}
-      >
+      <SuspenseWithMinDelay fallback={<ModulePageLoader module="routine" />}>
         <RoutineApp
           onBackToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("routine")}

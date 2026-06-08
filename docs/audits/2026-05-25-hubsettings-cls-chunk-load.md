@@ -18,6 +18,7 @@ Sprint 1 PR-1.2 ([apps/web/src/core/hub/HubSettingsPage.tsx](../../apps/web/src/
 **Проблема.** Якщо deploy invalidates chunk hash під час user session (типово PWA + service-worker stale cache + frequent deploys), `lazy(() => import(...))` reject'не з `ChunkLoadError` і React Suspense fallback залишиться вічно. User бачить porozhniy skeleton без recovery UI.
 
 **Fix підхід.**
+
 1. Створити `apps/web/src/core/hub/ChunkErrorBoundary.tsx` — React class component з `componentDidCatch`, що ловить `ChunkLoadError` (`error.name === 'ChunkLoadError'` АБО `/Loading chunk \d+ failed/`).
 2. Fallback — `SectionSkeleton` (existing) + retry button який робить `window.location.reload()`.
 3. НЕ ловити non-chunk errors — re-throw, щоб глобальний error boundary їх обробив.
@@ -31,6 +32,7 @@ Sprint 1 PR-1.2 ([apps/web/src/core/hub/HubSettingsPage.tsx](../../apps/web/src/
 **Проблема.** `72` — це collapsed-state висота заголовка section. Але Finyk / Nutrition / Routine відкриті за замовчуванням з bento sub-cards. Реальна painted minHeight section root коли content paint'нувся — 160-280px (потребує заміру). Між Suspense skeleton (72) і real content (220-ish) — CLS jump downward, який збиває scroll position коли user вже scrollив униз через deep link.
 
 **Fix підхід.**
+
 1. `pnpm dev:web` локально (port 5173). На цій машині `node_modules/.pnpm/` відсутній — може знадобитися `pnpm install` спершу.
 2. Відкрити `/hub#settings` у браузері. Для кожної з 4 sections заміряти `section.getBoundingClientRect().height` через DevTools console після content paint.
 3. Округлити вгору до 8 (Tailwind spacing крок) — уникне subpixel jitter.

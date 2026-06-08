@@ -4,7 +4,7 @@
   "generated_at": "2026-06-08",
   "sourceHashes": {
     "knowledge-graph": "cc930032234d69360b8215c42c4920ddcf13d4e89511cdd07cc3affe3183187c",
-    "symbol-index": "54f587f8b3471999b47e603839b273a9d1601d92f608c7b44897def570df61ed"
+    "symbol-index": "fe8c8c0f40237dc97f5599798b2392c89d91827760c8419139f92cc593096e06"
   },
   "counts": {
     "adr": 63,
@@ -2644,11 +2644,11 @@
     {
       "id": "export:@sergeant/db-schema:*",
       "type": "export",
-      "path": "packages/db-schema/src/shared/index.js",
+      "path": "packages/db-schema/dist/shared/index.js",
       "title": "* (re-export-star)",
       "tier": "extended",
-      "text": "* · re-export-star · @sergeant/db-schema · packages/db-schema/src/shared/index.js · used 0× · dead export unused",
-      "contentHash": "99ad781d880053d2991cf2d577a0550feca45573a3b20a515765afcb6419be94"
+      "text": "* · re-export-star · @sergeant/db-schema · packages/db-schema/dist/shared/index.js · used 0× · dead export unused",
+      "contentHash": "55712d07ee302d783c1862e8517c26efdb012763814669177177e8dc18e9588e"
     },
     {
       "id": "export:@sergeant/design-tokens:BrandColor",

@@ -18,9 +18,7 @@ export function Component() {
 
   return (
     <ModuleShell moduleId="finyk">
-      <SuspenseWithMinDelay
-        fallback={<ModulePageLoader module="finyk" />}
-      >
+      <SuspenseWithMinDelay fallback={<ModulePageLoader module="finyk" />}>
         <FinykApp
           onBackToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("finyk")}

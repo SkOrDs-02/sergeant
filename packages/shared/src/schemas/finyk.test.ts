@@ -90,7 +90,10 @@ describe("ManualExpenseCreateSchema", () => {
     ["float (копійки мають бути цілими)", { amount: 199.5, category: "food" }],
     ["без category", { amount: 1000 }],
     ["порожня category", { amount: 1000, category: "" }],
-    ["битий формат date", { amount: 1000, category: "food", date: "06.06.2026" }],
+    [
+      "битий формат date",
+      { amount: 1000, category: "food", date: "06.06.2026" },
+    ],
     ["зайве поле (strict)", { amount: 1000, category: "food", userId: "u1" }],
   ])("відхиляє невалідне тіло (%s)", (_label, body) => {
     expect(ManualExpenseCreateSchema.safeParse(body).success).toBe(false);

@@ -64,8 +64,7 @@ export const router = createBrowserRouter([
       // Uses `Component` (not `element`) to force fresh JSX per match.
       {
         path: "*",
-        lazy: () =>
-          import("./HubPage").then((m) => ({ Component: m.HubPage })),
+        lazy: () => import("./HubPage").then((m) => ({ Component: m.HubPage })),
       },
     ],
   },

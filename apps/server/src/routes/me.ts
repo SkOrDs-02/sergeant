@@ -68,7 +68,9 @@ export function createMeRouter(): Router {
     "/api/me/export",
     requireSession(),
     asyncHandler(async (req: Request, res: Response) => {
-      const user = serializeMeUser((req as Request & { user: AuthedUser }).user);
+      const user = serializeMeUser(
+        (req as Request & { user: AuthedUser }).user,
+      );
       const payload = MeExportResponseSchema.parse(
         await buildMeExport(pool, user),
       );

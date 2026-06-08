@@ -9,14 +9,38 @@
   },
   "healthScores": {
     "overall": "B+",
-    "codeQuality": { "score": "B+", "summary": "Типобезпека відмінна, розміри серверних файлів потребують уваги" },
-    "dependencyManagement": { "score": "A-", "summary": "Зріла стратегія override/патч, основна прогалина — OTel" },
-    "documentation": { "score": "A", "summary": "Найкраще управління у класі, 57 ADR, авто-генерована свіжість" },
-    "testCoverage": { "score": "C+", "summary": "Інфраструктура відмінна, пороги покриття потребують підвищення" },
-    "security": { "score": "A-", "summary": "Багатошаровий захист, CVE-придушення обмежені часом" },
-    "performance": { "score": "B+", "summary": "Зразкова архітектура фронтенду, пороги Lighthouse потребують посилення" },
-    "uiUx": { "score": "A-", "summary": "Відмінне дотримання дизайн-системи, розміри компонентів потребують уваги" },
-    "infrastructure": { "score": "B+", "summary": "distroless nonroot зразковий, 1 root-контейнер + прогалини закріплення версій" }
+    "codeQuality": {
+      "score": "B+",
+      "summary": "Типобезпека відмінна, розміри серверних файлів потребують уваги"
+    },
+    "dependencyManagement": {
+      "score": "A-",
+      "summary": "Зріла стратегія override/патч, основна прогалина — OTel"
+    },
+    "documentation": {
+      "score": "A",
+      "summary": "Найкраще управління у класі, 57 ADR, авто-генерована свіжість"
+    },
+    "testCoverage": {
+      "score": "C+",
+      "summary": "Інфраструктура відмінна, пороги покриття потребують підвищення"
+    },
+    "security": {
+      "score": "A-",
+      "summary": "Багатошаровий захист, CVE-придушення обмежені часом"
+    },
+    "performance": {
+      "score": "B+",
+      "summary": "Зразкова архітектура фронтенду, пороги Lighthouse потребують посилення"
+    },
+    "uiUx": {
+      "score": "A-",
+      "summary": "Відмінне дотримання дизайн-системи, розміри компонентів потребують уваги"
+    },
+    "infrastructure": {
+      "score": "B+",
+      "summary": "distroless nonroot зразковий, 1 root-контейнер + прогалини закріплення версій"
+    }
   },
   "topRisks": [
     {
@@ -116,164 +140,271 @@
   ],
   "findings": [
     {
-      "id": "F-001", "agent": "code-quality", "severity": "critical",
-      "category": "code-size", "title": "syncV2.ts — 2 912 рядків (4.9× ліміту)",
+      "id": "F-001",
+      "agent": "code-quality",
+      "severity": "critical",
+      "category": "code-size",
+      "title": "syncV2.ts — 2 912 рядків (4.9× ліміту)",
       "file": "apps/server/src/modules/sync/syncV2.ts",
-      "relatedAgents": ["security", "test-coverage"], "crossValidation": "CV-001"
+      "relatedAgents": ["security", "test-coverage"],
+      "crossValidation": "CV-001"
     },
     {
-      "id": "F-002", "agent": "code-quality", "severity": "high",
-      "category": "code-size", "title": "11 серверних файлів >600 рядків без захисту",
-      "relatedAgents": ["ui-ux", "test-coverage"], "crossValidation": "CV-002"
+      "id": "F-002",
+      "agent": "code-quality",
+      "severity": "high",
+      "category": "code-size",
+      "title": "11 серверних файлів >600 рядків без захисту",
+      "relatedAgents": ["ui-ux", "test-coverage"],
+      "crossValidation": "CV-002"
     },
     {
-      "id": "F-006", "agent": "code-quality", "severity": "high",
-      "category": "suppressions", "title": "158 коментарів eslint-disable у продакшені",
+      "id": "F-006",
+      "agent": "code-quality",
+      "severity": "high",
+      "category": "suppressions",
+      "title": "158 коментарів eslint-disable у продакшені",
       "relatedAgents": []
     },
     {
-      "id": "F-003", "agent": "code-quality", "severity": "medium",
-      "category": "code-size", "title": "5 веб-файлів на межі 600 рядків",
+      "id": "F-003",
+      "agent": "code-quality",
+      "severity": "medium",
+      "category": "code-size",
+      "title": "5 веб-файлів на межі 600 рядків",
       "relatedAgents": []
     },
     {
-      "id": "F-004", "agent": "code-quality", "severity": "medium",
-      "category": "duplication", "title": "residualImport.ts скопійовано в 4 модулі",
+      "id": "F-004",
+      "agent": "code-quality",
+      "severity": "medium",
+      "category": "duplication",
+      "title": "residualImport.ts скопійовано в 4 модулі",
       "relatedAgents": []
     },
     {
-      "id": "F-005", "agent": "code-quality", "severity": "medium",
-      "category": "duplication", "title": "Пайплайн dualWrite/ продубльовано в 4 модулях",
+      "id": "F-005",
+      "agent": "code-quality",
+      "severity": "medium",
+      "category": "duplication",
+      "title": "Пайплайн dualWrite/ продубльовано в 4 модулях",
       "relatedAgents": []
     },
     {
-      "id": "F-007", "agent": "code-quality", "severity": "medium",
-      "category": "coupling", "title": "NutritionApp.tsx має 46 імпортів (найвища зв'язність)",
+      "id": "F-007",
+      "agent": "code-quality",
+      "severity": "medium",
+      "category": "coupling",
+      "title": "NutritionApp.tsx має 46 імпортів (найвища зв'язність)",
       "relatedAgents": []
     },
     {
-      "id": "F-008", "agent": "code-quality", "severity": "medium",
-      "category": "logging", "title": "Серверний console.log не захищений правилом no-console",
+      "id": "F-008",
+      "agent": "code-quality",
+      "severity": "medium",
+      "category": "logging",
+      "title": "Серверний console.log не захищений правилом no-console",
       "relatedAgents": []
     },
     {
-      "id": "DEP-004", "agent": "dependency", "severity": "medium",
-      "category": "version-sprawl", "title": "OpenTelemetry 3+ мажорних версій співіснують",
-      "relatedAgents": ["performance"], "crossValidation": "CV-003"
+      "id": "DEP-004",
+      "agent": "dependency",
+      "severity": "medium",
+      "category": "version-sprawl",
+      "title": "OpenTelemetry 3+ мажорних версій співіснують",
+      "relatedAgents": ["performance"],
+      "crossValidation": "CV-003"
     },
     {
-      "id": "DEP-010", "agent": "dependency", "severity": "medium",
-      "category": "sprawl", "title": "~996 транзитивних залежностей",
+      "id": "DEP-010",
+      "agent": "dependency",
+      "severity": "medium",
+      "category": "sprawl",
+      "title": "~996 транзитивних залежностей",
       "relatedAgents": []
     },
     {
-      "id": "DEP-001", "agent": "dependency", "severity": "medium",
-      "category": "version-drift", "title": "Дрейф версій @types/node у 8 пакетах",
+      "id": "DEP-001",
+      "agent": "dependency",
+      "severity": "medium",
+      "category": "version-drift",
+      "title": "Дрейф версій @types/node у 8 пакетах",
       "relatedAgents": []
     },
     {
-      "id": "DEP-002", "agent": "dependency", "severity": "medium",
-      "category": "outdated", "title": "React 18 з override react-server-dom-webpack 19",
+      "id": "DEP-002",
+      "agent": "dependency",
+      "severity": "medium",
+      "category": "outdated",
+      "title": "React 18 з override react-server-dom-webpack 19",
       "relatedAgents": []
     },
     {
-      "id": "TC-01", "agent": "test-coverage", "severity": "high",
-      "category": "coverage", "title": "Покриття вебу критично низьке (рядки 39%, гілки 32%)",
+      "id": "TC-01",
+      "agent": "test-coverage",
+      "severity": "high",
+      "category": "coverage",
+      "title": "Покриття вебу критично низьке (рядки 39%, гілки 32%)",
       "relatedAgents": []
     },
     {
-      "id": "TC-02", "agent": "test-coverage", "severity": "high",
-      "category": "coverage", "title": "Покриття сервера знижується з великими непокритими поверхнями",
-      "relatedAgents": ["code-quality"], "crossValidation": "CV-001"
+      "id": "TC-02",
+      "agent": "test-coverage",
+      "severity": "high",
+      "category": "coverage",
+      "title": "Покриття сервера знижується з великими непокритими поверхнями",
+      "relatedAgents": ["code-quality"],
+      "crossValidation": "CV-001"
     },
     {
-      "id": "TC-03", "agent": "test-coverage", "severity": "medium",
-      "category": "coverage", "title": "Мобільний має найнижче співвідношення тестів до коду (0.24)",
+      "id": "TC-03",
+      "agent": "test-coverage",
+      "severity": "medium",
+      "category": "coverage",
+      "title": "Мобільний має найнижче співвідношення тестів до коду (0.24)",
       "relatedAgents": []
     },
     {
-      "id": "TC-05", "agent": "test-coverage", "severity": "medium",
-      "category": "mutation-testing", "title": "Мутаційне тестування лише для packages/shared tier-1",
+      "id": "TC-05",
+      "agent": "test-coverage",
+      "severity": "medium",
+      "category": "mutation-testing",
+      "title": "Мутаційне тестування лише для packages/shared tier-1",
       "relatedAgents": []
     },
     {
-      "id": "TC-10", "agent": "test-coverage", "severity": "medium",
-      "category": "flaky-tests", "title": "Інфраструктура флакі-тестів реактивна, не проактивна",
+      "id": "TC-10",
+      "agent": "test-coverage",
+      "severity": "medium",
+      "category": "flaky-tests",
+      "title": "Інфраструктура флакі-тестів реактивна, не проактивна",
       "relatedAgents": []
     },
     {
-      "id": "SEC-003", "agent": "security", "severity": "medium",
-      "category": "cve-suppression", "title": "5 придушених CVE у .trivyignore (спливає 2026-07-02)",
-      "relatedAgents": ["infrastructure"], "crossValidation": "CV-004"
+      "id": "SEC-003",
+      "agent": "security",
+      "severity": "medium",
+      "category": "cve-suppression",
+      "title": "5 придушених CVE у .trivyignore (спливає 2026-07-02)",
+      "relatedAgents": ["infrastructure"],
+      "crossValidation": "CV-004"
     },
     {
-      "id": "SEC-001", "agent": "security", "severity": "low",
-      "category": "sql-injection", "title": "Динамічна SQL-інтерполяція у syncV2 (контрольована allowlist)",
-      "relatedAgents": ["code-quality"], "crossValidation": "CV-001"
+      "id": "SEC-001",
+      "agent": "security",
+      "severity": "low",
+      "category": "sql-injection",
+      "title": "Динамічна SQL-інтерполяція у syncV2 (контрольована allowlist)",
+      "relatedAgents": ["code-quality"],
+      "crossValidation": "CV-001"
     },
     {
-      "id": "SEC-002", "agent": "security", "severity": "low",
-      "category": "sql-injection", "title": "OpenClaw query_app_db обгортає SQL, згенерований LLM",
+      "id": "SEC-002",
+      "agent": "security",
+      "severity": "low",
+      "category": "sql-injection",
+      "title": "OpenClaw query_app_db обгортає SQL, згенерований LLM",
       "relatedAgents": []
     },
     {
-      "id": "SEC-004", "agent": "security", "severity": "low",
-      "category": "authentication", "title": "WEBHOOK_HMAC_REQUIRED за замовчуванням false (30-денне вікно)",
+      "id": "SEC-004",
+      "agent": "security",
+      "severity": "low",
+      "category": "authentication",
+      "title": "WEBHOOK_HMAC_REQUIRED за замовчуванням false (30-денне вікно)",
       "relatedAgents": []
     },
     {
-      "id": "PERF-001", "agent": "performance", "severity": "medium",
-      "category": "lighthouse", "title": "Пороги Lighthouse лише попереджають",
-      "relatedAgents": ["infrastructure"], "crossValidation": "CV-005"
+      "id": "PERF-001",
+      "agent": "performance",
+      "severity": "medium",
+      "category": "lighthouse",
+      "title": "Пороги Lighthouse лише попереджають",
+      "relatedAgents": ["infrastructure"],
+      "crossValidation": "CV-005"
     },
     {
-      "id": "PERF-007", "agent": "performance", "severity": "medium",
-      "category": "caching", "title": "Відсутні HTTP-заголовки кешування на стандартних API",
+      "id": "PERF-007",
+      "agent": "performance",
+      "severity": "medium",
+      "category": "caching",
+      "title": "Відсутні HTTP-заголовки кешування на стандартних API",
       "relatedAgents": []
     },
     {
-      "id": "PERF-012", "agent": "performance", "severity": "medium",
-      "category": "workers", "title": "Відсутні web workers для важких обчислень на клієнті",
+      "id": "PERF-012",
+      "agent": "performance",
+      "severity": "medium",
+      "category": "workers",
+      "title": "Відсутні web workers для важких обчислень на клієнті",
       "relatedAgents": []
     },
     {
-      "id": "PERF-002", "agent": "performance", "severity": "medium",
-      "category": "bundle", "title": "Важка залежність: @zxing (~150 КБ+)",
-      "relatedAgents": [], "crossValidation": "CV-006"
+      "id": "PERF-002",
+      "agent": "performance",
+      "severity": "medium",
+      "category": "bundle",
+      "title": "Важка залежність: @zxing (~150 КБ+)",
+      "relatedAgents": [],
+      "crossValidation": "CV-006"
     },
     {
-      "id": "PERF-003", "agent": "performance", "severity": "medium",
-      "category": "bundle", "title": "SQLite WASM (~700 КБ) домінує у загальному бюджеті",
-      "relatedAgents": [], "crossValidation": "CV-006"
+      "id": "PERF-003",
+      "agent": "performance",
+      "severity": "medium",
+      "category": "bundle",
+      "title": "SQLite WASM (~700 КБ) домінує у загальному бюджеті",
+      "relatedAgents": [],
+      "crossValidation": "CV-006"
     },
     {
-      "id": "UX-001", "agent": "ui-ux", "severity": "medium",
-      "category": "component-size", "title": "6 компонентів перевищують 600-рядковий ліміт",
-      "relatedAgents": ["code-quality"], "crossValidation": "CV-002"
+      "id": "UX-001",
+      "agent": "ui-ux",
+      "severity": "medium",
+      "category": "component-size",
+      "title": "6 компонентів перевищують 600-рядковий ліміт",
+      "relatedAgents": ["code-quality"],
+      "crossValidation": "CV-002"
     },
     {
-      "id": "UX-011", "agent": "ui-ux", "severity": "medium",
-      "category": "component-sprawl", "title": "155 UI-примітивів в одній директорії",
+      "id": "UX-011",
+      "agent": "ui-ux",
+      "severity": "medium",
+      "category": "component-sprawl",
+      "title": "155 UI-примітивів в одній директорії",
       "relatedAgents": []
     },
     {
-      "id": "UX-014", "agent": "ui-ux", "severity": "medium",
-      "category": "state-management", "title": "9 контекстів можна згрупувати",
+      "id": "UX-014",
+      "agent": "ui-ux",
+      "severity": "medium",
+      "category": "state-management",
+      "title": "9 контекстів можна згрупувати",
       "relatedAgents": []
     },
     {
-      "id": "INFRA-001", "agent": "infrastructure", "severity": "high",
-      "category": "docker-security", "title": "Dockerfile.openclaw-gateway працює від root",
-      "relatedAgents": ["security"], "crossValidation": "CV-004"
+      "id": "INFRA-001",
+      "agent": "infrastructure",
+      "severity": "high",
+      "category": "docker-security",
+      "title": "Dockerfile.openclaw-gateway працює від root",
+      "relatedAgents": ["security"],
+      "crossValidation": "CV-004"
     },
     {
-      "id": "INFRA-002", "agent": "infrastructure", "severity": "medium",
-      "category": "supply-chain", "title": "node:24-alpine не закріплений до патч-версії",
+      "id": "INFRA-002",
+      "agent": "infrastructure",
+      "severity": "medium",
+      "category": "supply-chain",
+      "title": "node:24-alpine не закріплений до патч-версії",
       "relatedAgents": []
     },
     {
-      "id": "INFRA-003", "agent": "infrastructure", "severity": "medium",
-      "category": "dev-environment", "title": "Devcontainer використовує Node 20, CI — Node 22",
+      "id": "INFRA-003",
+      "agent": "infrastructure",
+      "severity": "medium",
+      "category": "dev-environment",
+      "title": "Devcontainer використовує Node 20, CI — Node 22",
       "relatedAgents": []
     }
   ],
@@ -363,9 +494,27 @@
       "sprint": "current",
       "label": "Критичний — протягом 1 спринту",
       "actions": [
-        { "id": "AP-01", "action": "Розділити syncV2.ts на модулі ≤600 рядків, додати покриття тестами", "owner": "backend", "effort": "3-5 днів", "findingIds": ["F-001", "SEC-001", "TC-02"] },
-        { "id": "AP-02", "action": "Підняти пороги покриття вебу до рядків 50%, гілок 40%", "owner": "frontend", "effort": "2-3 дні", "findingIds": ["TC-01"] },
-        { "id": "AP-03", "action": "Перезібрати базовий образ distroless до спливу CVE 2026-07-02", "owner": "devops", "effort": "1 день", "findingIds": ["SEC-003"] }
+        {
+          "id": "AP-01",
+          "action": "Розділити syncV2.ts на модулі ≤600 рядків, додати покриття тестами",
+          "owner": "backend",
+          "effort": "3-5 днів",
+          "findingIds": ["F-001", "SEC-001", "TC-02"]
+        },
+        {
+          "id": "AP-02",
+          "action": "Підняти пороги покриття вебу до рядків 50%, гілок 40%",
+          "owner": "frontend",
+          "effort": "2-3 дні",
+          "findingIds": ["TC-01"]
+        },
+        {
+          "id": "AP-03",
+          "action": "Перезібрати базовий образ distroless до спливу CVE 2026-07-02",
+          "owner": "devops",
+          "effort": "1 день",
+          "findingIds": ["SEC-003"]
+        }
       ]
     },
     {
@@ -373,11 +522,41 @@
       "sprint": "next-2",
       "label": "Високий — протягом 2 спринтів",
       "actions": [
-        { "id": "AP-04", "action": "Поширити Hard Rule #18 на серверну сторону (apps/server/**/*.ts)", "owner": "backend", "effort": "1 день", "findingIds": ["F-002", "UX-001"] },
-        { "id": "AP-05", "action": "Зробити пороги Lighthouse рівня error для LCP > 3000 мс (T5)", "owner": "frontend", "effort": "0.5 дні", "findingIds": ["PERF-001"] },
-        { "id": "AP-06", "action": "Узгодити версії OpenTelemetry — оновити auto-instrumentations-node", "owner": "backend", "effort": "2 дні", "findingIds": ["DEP-004"] },
-        { "id": "AP-07", "action": "Виправити дрейф @types/node у 8 пакетах", "owner": "any", "effort": "0.5 дні", "findingIds": ["DEP-001"] },
-        { "id": "AP-08", "action": "Зробити Dockerfile.openclaw-gateway нерутовим", "owner": "devops", "effort": "1 день", "findingIds": ["INFRA-001"] }
+        {
+          "id": "AP-04",
+          "action": "Поширити Hard Rule #18 на серверну сторону (apps/server/**/*.ts)",
+          "owner": "backend",
+          "effort": "1 день",
+          "findingIds": ["F-002", "UX-001"]
+        },
+        {
+          "id": "AP-05",
+          "action": "Зробити пороги Lighthouse рівня error для LCP > 3000 мс (T5)",
+          "owner": "frontend",
+          "effort": "0.5 дні",
+          "findingIds": ["PERF-001"]
+        },
+        {
+          "id": "AP-06",
+          "action": "Узгодити версії OpenTelemetry — оновити auto-instrumentations-node",
+          "owner": "backend",
+          "effort": "2 дні",
+          "findingIds": ["DEP-004"]
+        },
+        {
+          "id": "AP-07",
+          "action": "Виправити дрейф @types/node у 8 пакетах",
+          "owner": "any",
+          "effort": "0.5 дні",
+          "findingIds": ["DEP-001"]
+        },
+        {
+          "id": "AP-08",
+          "action": "Зробити Dockerfile.openclaw-gateway нерутовим",
+          "owner": "devops",
+          "effort": "1 день",
+          "findingIds": ["INFRA-001"]
+        }
       ]
     },
     {
@@ -385,14 +564,62 @@
       "sprint": "quarter",
       "label": "Середній — протягом кварталу",
       "actions": [
-        { "id": "AP-09", "action": "Вилучити dualWrite/ та residualImport у спільний фреймворк", "owner": "backend", "effort": "3 дні", "findingIds": ["F-004", "F-005"] },
-        { "id": "AP-10", "action": "Додати HTTP-заголовки кешування до напівстатичних API-ендпоінтів", "owner": "backend", "effort": "1 день", "findingIds": ["PERF-007"] },
-        { "id": "AP-11", "action": "Оцінити web workers для операцій SQLite WASM", "owner": "frontend", "effort": "2 дні", "findingIds": ["PERF-012"] },
-        { "id": "AP-12", "action": "Підвищити покриття тестами мобільного — цільове співвідношення 0.5+", "owner": "mobile", "effort": "3-5 днів", "findingIds": ["TC-03"] },
-        { "id": "AP-13", "action": "Розширити мутаційне тестування на apps/server та apps/web", "owner": "qa", "effort": "2 дні", "findingIds": ["TC-05"] },
-        { "id": "AP-14", "action": "Закріпити node:24-alpine до конкретної патч-версії", "owner": "devops", "effort": "0.5 дні", "findingIds": ["INFRA-002"] },
-        { "id": "AP-15", "action": "Оновити devcontainer до Node 22", "owner": "devops", "effort": "0.5 дні", "findingIds": ["INFRA-003"] },
-        { "id": "AP-16", "action": "Спланувати міграцію на React 19", "owner": "frontend", "effort": "1 день", "findingIds": ["DEP-002"] }
+        {
+          "id": "AP-09",
+          "action": "Вилучити dualWrite/ та residualImport у спільний фреймворк",
+          "owner": "backend",
+          "effort": "3 дні",
+          "findingIds": ["F-004", "F-005"]
+        },
+        {
+          "id": "AP-10",
+          "action": "Додати HTTP-заголовки кешування до напівстатичних API-ендпоінтів",
+          "owner": "backend",
+          "effort": "1 день",
+          "findingIds": ["PERF-007"]
+        },
+        {
+          "id": "AP-11",
+          "action": "Оцінити web workers для операцій SQLite WASM",
+          "owner": "frontend",
+          "effort": "2 дні",
+          "findingIds": ["PERF-012"]
+        },
+        {
+          "id": "AP-12",
+          "action": "Підвищити покриття тестами мобільного — цільове співвідношення 0.5+",
+          "owner": "mobile",
+          "effort": "3-5 днів",
+          "findingIds": ["TC-03"]
+        },
+        {
+          "id": "AP-13",
+          "action": "Розширити мутаційне тестування на apps/server та apps/web",
+          "owner": "qa",
+          "effort": "2 дні",
+          "findingIds": ["TC-05"]
+        },
+        {
+          "id": "AP-14",
+          "action": "Закріпити node:24-alpine до конкретної патч-версії",
+          "owner": "devops",
+          "effort": "0.5 дні",
+          "findingIds": ["INFRA-002"]
+        },
+        {
+          "id": "AP-15",
+          "action": "Оновити devcontainer до Node 22",
+          "owner": "devops",
+          "effort": "0.5 дні",
+          "findingIds": ["INFRA-003"]
+        },
+        {
+          "id": "AP-16",
+          "action": "Спланувати міграцію на React 19",
+          "owner": "frontend",
+          "effort": "1 день",
+          "findingIds": ["DEP-002"]
+        }
       ]
     },
     {
@@ -400,14 +627,62 @@
       "sprint": "backlog",
       "label": "Низький — беклог / безперервне покращення",
       "actions": [
-        { "id": "AP-17", "action": "Зменшити кількість eslint-disable (ціль: <100)", "owner": "any", "effort": "постійно", "findingIds": ["F-006"] },
-        { "id": "AP-18", "action": "Додати тести для packages/config та packages/design-tokens", "owner": "any", "effort": "1 день", "findingIds": ["TC-04"] },
-        { "id": "AP-19", "action": "Розширити тестування на основі властивостей за межами packages/shared", "owner": "any", "effort": "2 дні", "findingIds": ["TC-06"] },
-        { "id": "AP-20", "action": "Проактивний механізм карантину флакі-тестів", "owner": "qa", "effort": "2 дні", "findingIds": ["TC-10"] },
-        { "id": "AP-21", "action": "Консолідувати директорію UI-примітивів (155 → <100)", "owner": "frontend", "effort": "2 дні", "findingIds": ["UX-011"] },
-        { "id": "AP-22", "action": "Згрупувати 9 React-контекстів у доменно-scoped провайдери", "owner": "frontend", "effort": "2 дні", "findingIds": ["UX-014"] },
-        { "id": "AP-23", "action": "Спланувати оновлення Expo SDK 53", "owner": "mobile", "effort": "1 день", "findingIds": [] },
-        { "id": "AP-24", "action": "Спланувати міграцію на Express 5", "owner": "backend", "effort": "1 день", "findingIds": ["DEP-003"] }
+        {
+          "id": "AP-17",
+          "action": "Зменшити кількість eslint-disable (ціль: <100)",
+          "owner": "any",
+          "effort": "постійно",
+          "findingIds": ["F-006"]
+        },
+        {
+          "id": "AP-18",
+          "action": "Додати тести для packages/config та packages/design-tokens",
+          "owner": "any",
+          "effort": "1 день",
+          "findingIds": ["TC-04"]
+        },
+        {
+          "id": "AP-19",
+          "action": "Розширити тестування на основі властивостей за межами packages/shared",
+          "owner": "any",
+          "effort": "2 дні",
+          "findingIds": ["TC-06"]
+        },
+        {
+          "id": "AP-20",
+          "action": "Проактивний механізм карантину флакі-тестів",
+          "owner": "qa",
+          "effort": "2 дні",
+          "findingIds": ["TC-10"]
+        },
+        {
+          "id": "AP-21",
+          "action": "Консолідувати директорію UI-примітивів (155 → <100)",
+          "owner": "frontend",
+          "effort": "2 дні",
+          "findingIds": ["UX-011"]
+        },
+        {
+          "id": "AP-22",
+          "action": "Згрупувати 9 React-контекстів у доменно-scoped провайдери",
+          "owner": "frontend",
+          "effort": "2 дні",
+          "findingIds": ["UX-014"]
+        },
+        {
+          "id": "AP-23",
+          "action": "Спланувати оновлення Expo SDK 53",
+          "owner": "mobile",
+          "effort": "1 день",
+          "findingIds": []
+        },
+        {
+          "id": "AP-24",
+          "action": "Спланувати міграцію на Express 5",
+          "owner": "backend",
+          "effort": "1 день",
+          "findingIds": ["DEP-003"]
+        }
       ]
     }
   ]

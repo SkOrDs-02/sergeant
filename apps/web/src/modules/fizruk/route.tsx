@@ -15,9 +15,7 @@ export function Component() {
 
   return (
     <ModuleShell moduleId="fizruk">
-      <SuspenseWithMinDelay
-        fallback={<ModulePageLoader module="fizruk" />}
-      >
+      <SuspenseWithMinDelay fallback={<ModulePageLoader module="fizruk" />}>
         <FizrukApp
           onBackToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("fizruk")}

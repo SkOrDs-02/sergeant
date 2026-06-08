@@ -1,18 +1,19 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-09-01.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** In progress
 > **✅ Completed:** Phases 0, 1, 2, 3, 4.1, 4.2, 4.3, 5.1, 5.2, 6 (including 6.2 EN-locale wiring)
 > **⏳ Pending (founder-блокери only):**
->   - APPLE\_\* env vars in Railway/local
->   - ФОП-реєстрація для live Stripe
->   - Rollout/decision metrics
-> **Agent-ready:** needs-decision
-> **Priority:** P0 (Sprint 1–4)
-> **Owner:** `@Skords-01`
-> **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)
-> **Sources:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md), [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md), [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md), [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md), [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md)
-> **Canonical delivery owner:** [`docs/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md). This initiative stays as decision frame/reference, not the live PR tracker.
+>
+> - APPLE\_\* env vars in Railway/local
+> - ФОП-реєстрація для live Stripe
+> - Rollout/decision metrics
+>   **Agent-ready:** needs-decision
+>   **Priority:** P0 (Sprint 1–4)
+>   **Owner:** `@Skords-01`
+>   **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)
+>   **Sources:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md), [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md), [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md), [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md), [`docs/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md)
+>   **Canonical delivery owner:** [`docs/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md). This initiative stays as decision frame/reference, not the live PR tracker.
 
 ## TL;DR
 

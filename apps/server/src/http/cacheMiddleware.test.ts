@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Request, Response } from "express";
-import { cachingMiddleware, noStoreMiddleware, publicCacheMiddleware } from "./cacheMiddleware";
+import {
+  cachingMiddleware,
+  noStoreMiddleware,
+  publicCacheMiddleware,
+} from "./cacheMiddleware";
 
 describe("cacheMiddleware", () => {
   const createMockRes = (): Response => {
@@ -28,7 +32,11 @@ describe("cacheMiddleware", () => {
     it("sets no-cache with custom maxAgeSeconds", () => {
       const req = {} as Request;
       const res = createMockRes();
-      cachingMiddleware({ policy: "no-cache", maxAgeSeconds: 60 })(req, res, mockNext);
+      cachingMiddleware({ policy: "no-cache", maxAgeSeconds: 60 })(
+        req,
+        res,
+        mockNext,
+      );
       expect(res.setHeader).toHaveBeenCalledWith(
         "Cache-Control",
         "no-cache, max-age=60, must-revalidate",
@@ -38,7 +46,10 @@ describe("cacheMiddleware", () => {
     it("sets stale-while-revalidate with custom maxAgeSeconds", () => {
       const req = {} as Request;
       const res = createMockRes();
-      cachingMiddleware({ policy: "stale-while-revalidate", maxAgeSeconds: 120 })(req, res, mockNext);
+      cachingMiddleware({
+        policy: "stale-while-revalidate",
+        maxAgeSeconds: 120,
+      })(req, res, mockNext);
       expect(res.setHeader).toHaveBeenCalledWith(
         "Cache-Control",
         "public, max-age=120, stale-while-revalidate=300",
@@ -48,7 +59,11 @@ describe("cacheMiddleware", () => {
     it("sets public with custom maxAgeSeconds", () => {
       const req = {} as Request;
       const res = createMockRes();
-      cachingMiddleware({ policy: "public", maxAgeSeconds: 600 })(req, res, mockNext);
+      cachingMiddleware({ policy: "public", maxAgeSeconds: 600 })(
+        req,
+        res,
+        mockNext,
+      );
       expect(res.setHeader).toHaveBeenCalledWith(
         "Cache-Control",
         "public, max-age=600",
