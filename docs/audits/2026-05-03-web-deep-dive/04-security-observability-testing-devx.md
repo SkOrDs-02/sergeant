@@ -4,7 +4,7 @@
 > **Status:** Closed (source audit; CSP follow-up moved to C2 hardening card)
 > **Scope:** PII у логах, Sentry↔requestId correlation, CSP, contract тести, mutation testing, Storybook, C4-діаграми, CHANGELOG, Hard Rules registry, agent onboarding, audit docs status.
 > **Canonical CSP owner:** [`docs/security/hardening/C2-frontend-csp.md`](../../security/hardening/C2-frontend-csp.md).
-> **Related:** [`00-overview.md`](./00-overview.md), `docs/audits/`, `docs/security/`, `docs/agents/`.
+> **Related:** [`00-overview.md`](./00-overview.md), `docs/audits/`, `docs/security/`, `docs/00-start/agents/`.
 
 Це найширша частина: безпека (2 точки), спостережуваність (3 точки), тестування (3 точки), DevX (3 точки) і документація (3 точки). Всі — high-leverage, низько-середні витрати, **жодна не чіпає продакшн-код**.
 
@@ -241,9 +241,9 @@ OK.
 **Recommendation.**
 
 1. Розбити на:
-   - `docs/agents/web-fe.md` (workflow, tools, examples) — 300 LOC max.
-   - `docs/agents/web-fe-conventions.md` (наслідки code style) — symlink на `docs/conventions/web.md`.
-   - `docs/agents/web-fe-troubleshooting.md` (FAQ) — 200 LOC max.
+   - `docs/00-start/agents/web-fe.md` (workflow, tools, examples) — 300 LOC max.
+   - `docs/00-start/agents/web-fe-conventions.md` (наслідки code style) — symlink на `docs/conventions/web.md`.
+   - `docs/00-start/agents/web-fe-troubleshooting.md` (FAQ) — 200 LOC max.
 2. Маркер «Last reviewed by human: YYYY-MM-DD» зверху.
 3. CI-freshness gate (§7.1) уже є — застосувати до agent-docs.
 
@@ -267,7 +267,7 @@ OK.
 
 **Recommendation.**
 
-1. `docs/agents/start-here.md` — onboarding-checklist:
+1. `docs/00-start/agents/start-here.md` — onboarding-checklist:
    ```md
    1. Read `AGENTS.md` (Hard Rules) — required.
    2. Read `docs/conventions/web.md` — required for FE work.
@@ -393,4 +393,4 @@ OK.
 | CHANGELOG / release notes                       | §9.3                                     |
 | Pre-commit i18n / CSP validators                | §8.4                                     |
 
-> **Tracker hook.** Security items (§6.x) → `docs/security/`. Observability (§4.4 reuse, requestId) → `docs/03-operations/observability/`. Testing (§7.x) → `docs/02-engineering/testing/`. DevX (§8.x) і docs (§9.x, §11) → `docs/agents/` і `docs/audits/`.
+> **Tracker hook.** Security items (§6.x) → `docs/security/`. Observability (§4.4 reuse, requestId) → `docs/03-operations/observability/`. Testing (§7.x) → `docs/02-engineering/testing/`. DevX (§8.x) і docs (§9.x, §11) → `docs/00-start/agents/` і `docs/audits/`.

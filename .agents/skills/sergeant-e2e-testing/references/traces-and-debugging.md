@@ -46,7 +46,7 @@ The trace shows: DOM snapshot at every action, network calls (request + response
 1. Run with `--trace on` locally 3–5 times.
 2. Compare traces between a passing and a failing run — look for timing differences in network calls or animations blocking interaction.
 3. Fix with a web-first assertion (`await expect(locator).toBeVisible()`), not `waitForTimeout`. See `references/selectors.md`.
-4. If still flaky after adding web-first assertions, consult `docs/playbooks/stabilize-flaky-test.md`.
+4. If still flaky after adding web-first assertions, consult `docs/00-start/playbooks/stabilize-flaky-test.md`.
 
 ## Sergeant-specific note
 

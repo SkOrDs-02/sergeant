@@ -70,7 +70,7 @@ Per-workflow checklist:
 3. **Add `X-Signature` and `X-Timestamp` headers** in the same node,
    referencing `={{ $json.xSignature }}` and `={{ $json.xTimestamp }}`.
 4. **Set `WEBHOOK_HMAC_SECRET`** on the n8n Railway env. Use the same
-   value as the server (rotate together via [`rotate-secrets.md`](../playbooks/rotate-secrets.md)).
+   value as the server (rotate together via [`rotate-secrets.md`](../00-start/playbooks/rotate-secrets.md)).
 5. **Update `manifest.json`** for the workflow:
    ```json
    "hmacSigned": true,
@@ -105,7 +105,7 @@ Set `WEBHOOK_HMAC_REQUIRED=false` to revert to grace mode (existing 401s
 stop). Set `WEBHOOK_HMAC_SECRET=""` to fully disable verification (no-op
 middleware). The bearer-token guard remains active in both cases.
 
-If `WEBHOOK_HMAC_SECRET` is compromised: rotate per [`rotate-secrets.md`](../playbooks/rotate-secrets.md) (root path: `docs/playbooks/rotate-secrets.md`).
+If `WEBHOOK_HMAC_SECRET` is compromised: rotate per [`rotate-secrets.md`](../00-start/playbooks/rotate-secrets.md) (root path: `docs/00-start/playbooks/rotate-secrets.md`).
 The replay window (5min) means a leaked signature is useless after a
 few minutes anyway, but key rotation invalidates everything immediately.
 

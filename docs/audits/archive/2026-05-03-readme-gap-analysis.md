@@ -517,10 +517,10 @@ HubChat — це чат-інтерфейс, де ти спілкуєшся з Cl
 | `docs/02-engineering/mobile/`       | Capacitor, deep links, React Native міграція              |
 | `docs/03-operations/observability/` | SLO, дашборди, метрики, runbook                           |
 | `docs/planning/`                    | Roadmaps, AI improvements, dev stack roadmap              |
-| `docs/playbooks/`                   | Покрокові рецепти (як додати endpoint, як зробити hotfix) |
+| `docs/00-start/playbooks/`          | Покрокові рецепти (як додати endpoint, як зробити hotfix) |
 | `docs/03-operations/postmortems/`   | Розбори інцидентів                                        |
 | `docs/security/`                    | Політика доступу, disaster recovery, аудит безпеки        |
-| `docs/agents/`                      | Система для AI-агентів: каталог навичок, workflow         |
+| `docs/00-start/agents/`             | Система для AI-агентів: каталог навичок, workflow         |
 | `docs/tech-debt/`                   | Реєстри технічного боргу (frontend, backend, mobile)      |
 
 ### Які є Hard Rules?

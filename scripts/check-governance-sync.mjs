@@ -27,7 +27,7 @@
 //                                               describe target scripts)
 //      - docs/02-engineering/architecture/diagrams/           (flow diagrams; refs name
 //                                               components that may rename)
-//      - docs/playbooks/                       (recipes referencing template
+//      - docs/00-start/playbooks/                       (recipes referencing template
 //                                               paths and example structures)
 //      - docs/05-design/i18n/                            (i18n migration roadmap; refs
 //                                               include planned target catalogs)
@@ -267,18 +267,19 @@ function checkDanglingRefs() {
     // diagram is regenerated.
     if (relPath.startsWith("docs/02-engineering/architecture/diagrams/"))
       return true;
-    // `docs/playbooks/` are recipes; refs are template/example paths
+    // `docs/00-start/playbooks/` are recipes; refs are template/example paths
     // (e.g., `apps/web/src/App.tsx` as an illustrative anchor) and may
     // describe target structures rather than current code.
-    if (relPath.startsWith("docs/playbooks/")) return true;
+    if (relPath.startsWith("docs/00-start/playbooks/")) return true;
     // `docs/05-design/i18n/` describes the i18n migration roadmap; refs include
     // planned target catalogs (e.g., `apps/web/src/shared/i18n/en.ts`)
     // that don't exist until the corresponding migration phase lands.
     if (relPath.startsWith("docs/05-design/i18n/")) return true;
-    // `docs/agents/<topic>-roadmap.md` are forward-looking initiative
+    // `docs/00-start/agents/<topic>-roadmap.md` are forward-looking initiative
     // roadmaps describing scripts/files that will be created in upcoming
     // PRs. Treat refs as planned, not current.
-    if (/^docs\/agents\/[^/]+-roadmap\.md$/.test(relPath)) return true;
+    if (/^docs\/00-start\/agents\/[^/]+-roadmap\.md$/.test(relPath))
+      return true;
     // `docs/02-engineering/notes/spikes/` are exploratory spike walkthroughs (PR-04
     // bus-factor knowledge transfer). Inline file refs describe the
     // module structure as the spike author imagined / mapped it; if

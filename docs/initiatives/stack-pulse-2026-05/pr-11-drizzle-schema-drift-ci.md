@@ -38,7 +38,7 @@ Sergeant має дві паралельні truth-sources про схему БД
 
 ### 3. Documentation
 
-- `docs/playbooks/add-sql-migration.md` оновити: explicitly note «після SQL — оновити `db-schema/`».
+- `docs/00-start/playbooks/add-sql-migration.md` оновити: explicitly note «після SQL — оновити `db-schema/`».
 
 ## Out of scope
 
@@ -74,7 +74,7 @@ Sergeant має дві паралельні truth-sources про схему БД
 - `packages/db-schema/src/pg/` — Drizzle schema
 - `scripts/check-schema-drift.mjs` — новий
 - `.github/workflows/ci.yml` — додати step
-- `docs/playbooks/add-sql-migration.md` — оновити
+- `docs/00-start/playbooks/add-sql-migration.md` — оновити
 
 ## Refs
 

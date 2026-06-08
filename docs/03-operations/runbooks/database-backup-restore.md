@@ -6,8 +6,8 @@
 > Закриває **docs portion** з [`docs/planning/storage-roadmap.md`](../../planning/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Railway Postgres + smoke-test schema integrity. Weekly verify CI вже live через PR #049b; ручний monthly drill лишається для operator rehearsal.
 >
 > Цей runbook **доповнює** концептуальні playbook-и
-> [`restore-from-backup.md`](../../playbooks/restore-from-backup.md) (incident flow) і
-> [`test-backup-restore.md`](../../playbooks/test-backup-restore.md) (rehearsal cadence) —
+> [`restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md) (incident flow) і
+> [`test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md) (rehearsal cadence) —
 > вони описують `що` і `коли`, а тут лежить точне `як` для нашого Railway+pg-сетапу.
 > RPO/RTO targets: див. [`docs/security/disaster-recovery.md`](../../security/disaster-recovery.md) (RPO ≤ 24h, RTO ≤ 4h для Postgres).
 
@@ -24,7 +24,7 @@ sessions/accounts. Все, що не лежить у `module_data`-blob-ах, л
   від op-log; повний refresh виконується через `syncV2Pull` після відновлення сервера.
 - Файли в Capacitor / RN bundle storage — стандартний restore з App Store / Play backup.
 - Secrets (Better Auth, Mono, Stripe…) — окремий шлях через
-  [`rotate-secrets.md`](../../playbooks/rotate-secrets.md) і
+  [`rotate-secrets.md`](../../00-start/playbooks/rotate-secrets.md) і
   [`docs/03-operations/runbooks/encryption-key-rotation.md`](./encryption-key-rotation.md).
 - LocalStorage / MMKV blob-и (cloudSync v1 legacy) — drop coordinated через PR #052.
 
@@ -71,7 +71,7 @@ pg_restore --list "sergeant-prod-${ts}.dump" | head -40
 ## 2. Restore — full database (incident path)
 
 > **Передумова.** Спершу пройди § «Freeze the blast radius» з
-> [`restore-from-backup.md`](../../playbooks/restore-from-backup.md) — зупини
+> [`restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md) — зупини
 > webhook-инжестори, поставив web-серви в read-only / maintenance mode.
 
 ### 2.1. Через Railway dashboard (швидкий шлях, ≤ 15 хв)
@@ -235,18 +235,18 @@ _(PR #049b — LANDED)_ робить:
 4. Failures → n8n/Telegram incidents + founder DM for page-level failures, or Sentry/backlog ticket for non-page failures.
 
 Manual rehearsal still runs monthly via
-[`test-backup-restore.md`](../../playbooks/test-backup-restore.md); the weekly CI
+[`test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md); the weekly CI
 job is the automated smoke, not a replacement for operator practice.
 
 ## 7. Escalation
 
-- Restore не вдається через corruption у dump-і → перейти на попередній денний snapshot; повідомити Skords-01 у Telegram + [postmortem.md](../../playbooks/write-postmortem.md).
+- Restore не вдається через corruption у dump-і → перейти на попередній денний snapshot; повідомити Skords-01 у Telegram + [postmortem.md](../../00-start/playbooks/write-postmortem.md).
 - Усі 7 Railway-snapshot-ів corrupted → catastrophic event; перейти на manual reconstitute з op-log реплеїв клієнтських БД (best-effort, ≤ 24h data loss expected).
 - pgvector extension не доступний на restore-target → див. note у [AGENTS.md](../../../AGENTS.md) hard-rule #4 — restore-image має бути `pgvector/pgvector:pg16`, не stock `postgres:16-alpine`.
 
 ## Related
 
-- Process flow: [`restore-from-backup.md`](../../playbooks/restore-from-backup.md), [`test-backup-restore.md`](../../playbooks/test-backup-restore.md)
+- Process flow: [`restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md), [`test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md)
 - RPO / RTO: [`disaster-recovery.md`](../../security/disaster-recovery.md)
 - Migration conventions: [`docs/adr/0013-db-migrations-conventions.md`](../../adr/0013-db-migrations-conventions.md)
 - Encryption key rotation (different surface): [`encryption-key-rotation.md`](./encryption-key-rotation.md)

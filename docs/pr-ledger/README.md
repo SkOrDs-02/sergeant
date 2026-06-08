@@ -25,7 +25,7 @@ Only these path patterns get backlinks:
 
 - `docs/adr/*.md` (excluding `TEMPLATE.md`, `README.md`)
 - `docs/initiatives/*.md` (excluding `archive/`, `follow-ups.md`, `README.md`)
-- `docs/playbooks/*.md` (excluding `INDEX.md`, `README.md`, `_TEMPLATE-*`)
+- `docs/00-start/playbooks/*.md` (excluding `INDEX.md`, `README.md`, `_TEMPLATE-*`)
 - `docs/governance/rules/*.md` (excluding `README.md`)
 
 Other doc directories (`docs/audits/`, `docs/02-engineering/architecture/`, `docs/01-product/launch/`, etc.) intentionally don't receive backlinks — they're either snapshot-natured (audits) or already covered by drift-detectors (auto-generated).

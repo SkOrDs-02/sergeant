@@ -12,9 +12,9 @@
   - [`apps/server/src/modules/chat/toolMetrics.ts`](../../apps/server/src/modules/chat/toolMetrics.ts) — `chat_tool_invocations_total{tool, outcome}` (PR-12.C, [#924](https://github.com/Skords-01/Sergeant/pull/924)).
   - [`apps/web/src/core/lib/chatActions/`](../../apps/web/src/core/lib/chatActions) — клієнтські handler-и tool-call-ів.
   - [`docs/planning/ai-coding-improvements.md`](../planning/ai-coding-improvements.md) § «Блок 3. Code markers» — визначення `AI-DANGER`-маркерів.
-  - [`docs/playbooks/add-hubchat-tool.md`](../playbooks/add-hubchat-tool.md) — операційний how-to.
-  - [`docs/playbooks/tune-system-prompt.md`](../playbooks/tune-system-prompt.md).
-  - [`docs/playbooks/add-feature-flag.md`](../playbooks/add-feature-flag.md) — feature-flag механіка для фази 3 (rollout) і ADR-2.10.
+  - [`docs/00-start/playbooks/add-hubchat-tool.md`](../00-start/playbooks/add-hubchat-tool.md) — операційний how-to.
+  - [`docs/00-start/playbooks/tune-system-prompt.md`](../00-start/playbooks/tune-system-prompt.md).
+  - [`docs/00-start/playbooks/add-feature-flag.md`](../00-start/playbooks/add-feature-flag.md) — feature-flag механіка для фази 3 (rollout) і ADR-2.10.
   - [ADR-0005](./0005-anthropic-model-selection-and-prompt-caching.md) — model selection + prompt caching (закриває TBD-ADR з §2.8).
 
 ---
@@ -301,8 +301,8 @@ n/a (operational reference).
 
 Цей ADR **не** покриває:
 
-- **Tool authoring style** (іменування, opinionated input shapes) — це operational guidance у `docs/playbooks/add-hubchat-tool.md`.
-- **System prompt tuning** — окремий playbook `docs/playbooks/tune-system-prompt.md`.
+- **Tool authoring style** (іменування, opinionated input shapes) — це operational guidance у `docs/00-start/playbooks/add-hubchat-tool.md`.
+- **System prompt tuning** — окремий playbook `docs/00-start/playbooks/tune-system-prompt.md`.
 - **Anthropic version bumps / model selection / prompt caching budget** — [ADR-0005](./0005-anthropic-model-selection-and-prompt-caching.md) (закриває TBD-ADR).
 - **Quotas і monetization gating** — ADR-0001 + `requireAiQuota` middleware.
 - **Безпека ширше за tool boundary** (XSS, CSRF, secrets management) — repo-wide AGENTS.md hard rules.
@@ -484,5 +484,5 @@ proposed.
 
 1. **Tool deprecation: hard-delete чи tombstone?** Зараз пропонується hard-delete з `TOOLS`. Альтернатива: лишати у whitelist з `outcome=deprecated` міткою — щоб старі metric-series не зникали миттєво. Вирішується у PR-12.C follow-up.
 2. **Cross-tool dependency.** Наприклад, `start_workout` залежить від `get_active_workout_session`. **Рішення зараз:** описувати у `motivation`-секції issue (фаза 1 ADR-2.2) як free-form text. Explicit `depends_on`-поле у tool-spec додамо, як тільки буде >5 живих випадків у реєстрі (зараз — 0). Ревалідуємо при кожному KPI-review.
-3. **A/B testing нового tool.** **Рішення зараз:** використовуємо existing feature-flag систему (плейбук [`add-feature-flag.md`](../playbooks/add-feature-flag.md)) + `userId %% N`-cohort split у SYSTEM_PREFIX. Перший A/B-tested tool — у PR-12.F (ще не відкритий). Для більш складних cohort-flow (вік, geo) — ADR-0018 (бек-лог в README).
+3. **A/B testing нового tool.** **Рішення зараз:** використовуємо existing feature-flag систему (плейбук [`add-feature-flag.md`](../00-start/playbooks/add-feature-flag.md)) + `userId %% N`-cohort split у SYSTEM_PREFIX. Перший A/B-tested tool — у PR-12.F (ще не відкритий). Для більш складних cohort-flow (вік, geo) — ADR-0018 (бек-лог в README).
 4. **Output cap реалізація.** Safety checklist в ADR-2.3 вимагає `output ≤ 8000 chars`. Реалізація вже є: в `apps/server/src/modules/chat/tools.ts` ToolResult schema truncate-ить овер-cap output і пише metric `chat_tool_result_truncated_total{tool}`. Нові tool-и наслідують автоматично.

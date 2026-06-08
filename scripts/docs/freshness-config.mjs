@@ -102,7 +102,7 @@ export const DEFAULT_CONFIG = {
     // Templates / index files / changelogs are not "validated docs"
     "**/_TEMPLATE*.md",
     "**/TEMPLATE*.md",
-    "docs/playbooks/INDEX.md",
+    "docs/00-start/playbooks/INDEX.md",
     "CHANGELOG.md",
     "THIRD_PARTY_LICENSES.md",
     // Skill / agent libraries shipped from upstream — owned outside this repo's

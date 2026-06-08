@@ -176,8 +176,8 @@ jobs:
 
       - name: Discoverability (every role reaches its target in ≤2 hops)
         # Walks the markdown link graph from documented entrypoints
-        # (README.md, AGENTS.md, docs/agents/onboarding.md,
-        # docs/playbooks/README.md, CONTRIBUTING.md) and asserts that
+        # (README.md, AGENTS.md, docs/00-start/agents/onboarding.md,
+        # docs/00-start/playbooks/README.md, CONTRIBUTING.md) and asserts that
         # each role/target pair in scripts/check-discoverability.mjs is
         # reachable within the configured hop budget. Closes
         # docs/planning/ai-coding-improvements.md item #3.
@@ -307,7 +307,7 @@ jobs:
       - name: Run Knip (dead code detection)
         # Fails CI if unused exports, files, or dependencies are detected.
         # Configuration lives in knip.json at the repo root.
-        # See docs/playbooks/cleanup-dead-code.md for lifecycle marker
+        # See docs/00-start/playbooks/cleanup-dead-code.md for lifecycle marker
         # guards that must be applied before deleting any Knip finding.
         run: pnpm knip
 

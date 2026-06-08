@@ -1,7 +1,7 @@
 # PR-04: Secondary owners + knowledge-transfer plan
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/playbooks/operational-continuity.md`](../../playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).
+> **Status:** Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/00-start/playbooks/operational-continuity.md`](../../00-start/playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).
 
 |              |                                                                        |
 | ------------ | ---------------------------------------------------------------------- |
@@ -55,7 +55,7 @@
 
 ### 4. Operational continuity playbook
 
-`docs/playbooks/operational-continuity.md` з:
+`docs/00-start/playbooks/operational-continuity.md` з:
 
 - Список зовнішніх систем (Railway, Vercel, Anthropic, Voyage, Sentry, PostHog, Resend, Monobank) і **хто має credentials** (1Password vault?)
 - DNS / domain renewal — куди дивитись, коли paid-up
@@ -72,7 +72,7 @@
 - [x] `AGENTS.md` Module ownership map має `secondary` поле для кожного рядка (22/22, всі заповнені placeholder-роллю `TBD (<role>)`).
 - [x] `scripts/check-codeowners-coverage.mjs` оновлений для перевірки secondary-coverage — `validateAgentsSecondaryColumn()` парсить ownership-map і fail-ить, якщо будь-який рядок має empty `Secondary` cell або колонка відсутня в header-і. Покрито 4 testcase-ами в `scripts/__tests__/check-codeowners-coverage.test.mjs`.
 - [x] 6 walkthrough-документів у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`.
-- [x] `docs/playbooks/operational-continuity.md` з секціями (зовнішні системи, escalation contacts, kill-switch).
+- [x] `docs/00-start/playbooks/operational-continuity.md` з секціями (зовнішні системи, escalation contacts, kill-switch).
 - [x] PR-description явно вказує: «це не реальні secondary, а placeholder — фактичний onboarding відбувається коли друга людина приєднається».
 - [x] L2 escalation поле в `AGENTS.md` має конкретний fallback (playbook → vendor support → 1Password vaults), не дубль owner-а.
 
@@ -97,7 +97,7 @@
 - `.github/CODEOWNERS` — повна реструктуризація
 - `AGENTS.md:34–55` — Module ownership map
 - `docs/02-engineering/notes/spikes/` — нові 6 файлів
-- `docs/playbooks/operational-continuity.md` — новий
+- `docs/00-start/playbooks/operational-continuity.md` — новий
 - `scripts/check-codeowners-coverage.mjs` — secondary-coverage logic
 
 ## Refs

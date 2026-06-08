@@ -5,7 +5,7 @@
 
 Operational runbooks для on-call та incident-flow-ів — точне «як» для нашого
 конкретного infra-сетапу (Railway Postgres, pgBouncer, key-ring, replica).
-Доповнюють концептуальні плейбуки в [`docs/playbooks/`](../../playbooks/README.md):
+Доповнюють концептуальні плейбуки в [`docs/00-start/playbooks/`](../../00-start/playbooks/README.md):
 playbook каже **що** і **коли**, runbook — **як саме** виконати на нашому стеку.
 
 ## Документи
@@ -24,7 +24,7 @@ playbook каже **що** і **коли**, runbook — **як саме** вик
 
 | Папка                                            | Призначення                                                                                |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| `docs/playbooks/`                                | Канонічна послідовність кроків для repeatable tasks (incident flow, release, hotfix).      |
+| `docs/00-start/playbooks/`                       | Канонічна послідовність кроків для repeatable tasks (incident flow, release, hotfix).      |
 | `docs/03-operations/runbooks/` (**цей каталог**) | Точне `how` для нашого infra-стеку — команди, ENV-перемикачі, rollback steps, smoke-tests. |
 | `docs/security/disaster-recovery.md`             | RPO/RTO targets, disaster classes, який runbook вмикається на яку класу інциденту.         |
 | `docs/03-operations/postmortems/`                | Incident retrospectives після того, як runbook відпрацював.                                |
@@ -40,6 +40,6 @@ playbook каже **що** і **коли**, runbook — **як саме** вик
 
 ## Cross-links
 
-- Incident playbooks: [`docs/playbooks/declare-incident.md`](../../playbooks/declare-incident.md), [`docs/playbooks/restore-from-backup.md`](../../playbooks/restore-from-backup.md), [`docs/playbooks/test-backup-restore.md`](../../playbooks/test-backup-restore.md).
+- Incident playbooks: [`docs/00-start/playbooks/declare-incident.md`](../../00-start/playbooks/declare-incident.md), [`docs/00-start/playbooks/restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md), [`docs/00-start/playbooks/test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md).
 - Disaster recovery policy: [`docs/security/disaster-recovery.md`](../../security/disaster-recovery.md).
 - Storage roadmap: [`docs/planning/storage-roadmap.md`](../../planning/storage-roadmap.md).

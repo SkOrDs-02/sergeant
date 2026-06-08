@@ -43,7 +43,7 @@ function toRepoPath(p) {
 
 // Required coverage. Each entry is either:
 //   - { path: "AGENTS.md", kind: "file" }       — exact file must be owned.
-//   - { path: "docs/playbooks", kind: "tree" }  — directory + every tracked
+//   - { path: "docs/00-start/playbooks", kind: "tree" }  — directory + every tracked
 //     descendant matching `match` (default *.md) must be owned.
 //
 // Adding/removing entries is a deliberate governance act — always pair with
@@ -68,7 +68,7 @@ const MUST_BE_OWNED = [
     reason: "policy reviews & governance procedures",
   },
   {
-    path: "docs/playbooks",
+    path: "docs/00-start/playbooks",
     kind: "tree",
     match: /\.md$/,
     reason: "AI-agent playbooks (Hard Rule #15 pre-flight inputs)",
@@ -98,7 +98,7 @@ const MUST_BE_OWNED = [
     reason: "threat model & SLA",
   },
   {
-    path: "docs/agents",
+    path: "docs/00-start/agents",
     kind: "tree",
     match: /\.md$/,
     reason: "agent skill catalog & workflow decision trees",

@@ -8,8 +8,8 @@
 - **Related:**
   - [`apps/web/src/core/lib/featureFlags.ts`](../../apps/web/src/core/lib/featureFlags.ts) — реєстр + API (`getFlag` / `setFlag` / `useFlag`).
   - [`apps/web/src/shared/lib/storage/typedStore.ts`](../../apps/web/src/shared/lib/storage/typedStore.ts) — нижній шар сховища (LS-backed, Zod-validated, sync-між-табами).
-  - [`docs/playbooks/add-feature-flag.md`](../playbooks/add-feature-flag.md) — операційний how-to.
-  - [`docs/playbooks/cleanup-dead-code.md`](../playbooks/cleanup-dead-code.md) — гартування flag-у при graduating.
+  - [`docs/00-start/playbooks/add-feature-flag.md`](../00-start/playbooks/add-feature-flag.md) — операційний how-to.
+  - [`docs/00-start/playbooks/cleanup-dead-code.md`](../00-start/playbooks/cleanup-dead-code.md) — гартування flag-у при graduating.
 
 ---
 

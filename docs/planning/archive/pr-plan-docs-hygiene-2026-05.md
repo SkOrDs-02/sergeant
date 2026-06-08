@@ -114,10 +114,10 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 - **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (11 маршрутів до specialist-skill, індекс initiatives і маршрут до policy-review).
 - **Group:** 2) discoverability gaps.
-- **Trigger:** [`scripts/check-discoverability.mjs ROUTES`](../../../scripts/check-discoverability.mjs) сьогодні enforce-ить ≤2 hops до `start-here` + `review-and-merge` + on-call playbooks. Решта 8 Sergeant specialist-skill-ів (writing-skills, mobile-expo, hubchat, web-ui, server-api, data-and-migrations, bugfix-and-regression, monorepo-boundaries) + better-auth-best-practices, + new agent skills evolution (`docs/agents/skills-evolution-roadmap.md`) — НЕ покриті, тому drift у роутингу не ловиться. Аналогічно немає row-а для `docs/initiatives/README.md` (новий contributor не знаходить активних ініціатив).
+- **Trigger:** [`scripts/check-discoverability.mjs ROUTES`](../../../scripts/check-discoverability.mjs) сьогодні enforce-ить ≤2 hops до `start-here` + `review-and-merge` + on-call playbooks. Решта 8 Sergeant specialist-skill-ів (writing-skills, mobile-expo, hubchat, web-ui, server-api, data-and-migrations, bugfix-and-regression, monorepo-boundaries) + better-auth-best-practices, + new agent skills evolution (`docs/00-start/agents/skills-evolution-roadmap.md`) — НЕ покриті, тому drift у роутингу не ловиться. Аналогічно немає row-а для `docs/initiatives/README.md` (новий contributor не знаходить активних ініціатив).
 - **Action:** ~10 нових rows у `ROUTES` array (`role: new-agent` / `role: reviewer` / `role: on-call`):
   - `new-agent → .agents/skills/sergeant-writing-skills/SKILL.md` (entrypoints: AGENTS.md).
-  - `new-agent → .agents/skills/sergeant-{web-ui,server-api,mobile-expo,hubchat,data-and-migrations,bugfix-and-regression,monorepo-boundaries,deploy-and-observability,feature-delivery}/SKILL.md` (entrypoints: `docs/agents/agent-skills-catalog.md`).
+  - `new-agent → .agents/skills/sergeant-{web-ui,server-api,mobile-expo,hubchat,data-and-migrations,bugfix-and-regression,monorepo-boundaries,deploy-and-observability,feature-delivery}/SKILL.md` (entrypoints: `docs/00-start/agents/agent-skills-catalog.md`).
   - `new-agent → .agents/skills/better-auth-best-practices/SKILL.md`.
   - `new-contributor → docs/initiatives/README.md`.
   - `reviewer → docs/governance/policy-review.md`.
@@ -176,13 +176,13 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 
 - **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`docs:check-playbook-3way-sync`, CI step, unit tests, catalog inventory).
 - **Group:** 3) governance sync gates.
-- **Trigger:** `lint:playbook-language` + `docs:check-playbook-index` + `docs:check-playbook-schema` працюють незалежно. Якщо новий playbook доданий до `docs/playbooks/`, але не до `playbook-catalog.md` (canonical routing table), скрипти його не ловлять як drift до перших manual checks.
+- **Trigger:** `lint:playbook-language` + `docs:check-playbook-index` + `docs:check-playbook-schema` працюють незалежно. Якщо новий playbook доданий до `docs/00-start/playbooks/`, але не до `playbook-catalog.md` (canonical routing table), скрипти його не ловлять як drift до перших manual checks.
 - **Action:** розширити `scripts/check-playbook-language.mjs` (або новий `scripts/check-playbook-3way-sync.mjs`):
-  - Кожен `*.md` у `docs/playbooks/` (виключно `_TEMPLATE-*.md`, `README.md`, `INDEX.md`, `playbook-catalog.md`) має row у `playbook-catalog.md` (canonical) і entry у `INDEX.md`.
-  - `INDEX.md` згенерований автоматично (`docs:gen-playbook-index`) — `--check` тепер також enforce-ить, що orphan-файлів у `docs/playbooks/` нема (file без row у catalog).
+  - Кожен `*.md` у `docs/00-start/playbooks/` (виключно `_TEMPLATE-*.md`, `README.md`, `INDEX.md`, `playbook-catalog.md`) має row у `playbook-catalog.md` (canonical) і entry у `INDEX.md`.
+  - `INDEX.md` згенерований автоматично (`docs:gen-playbook-index`) — `--check` тепер також enforce-ить, що orphan-файлів у `docs/00-start/playbooks/` нема (file без row у catalog).
 - **Acceptance:**
   - Existing 50 playbooks pass.
-  - Demo: створи `docs/playbooks/test-orphan.md` локально → `pnpm docs:check-playbook-index` fail з «orphan playbook: missing row in playbook-catalog.md». Then revert.
+  - Demo: створи `docs/00-start/playbooks/test-orphan.md` локально → `pnpm docs:check-playbook-index` fail з «orphan playbook: missing row in playbook-catalog.md». Then revert.
 - **Size:** M (~80 рядків змін у `generate-playbook-index.mjs` + 1 нова assertion + tests). **P-рівень:** P2.
 - **Dependencies:** немає.
 - **Freeze-compatible:** yes (extend existing CI gate).
@@ -195,7 +195,7 @@ Doc-hygiene roast від 2026-05-13 закрив 4 P0-items одним PR-ом (
 - **Status:** ✅ Виконано 2026-05-14 у `codex/docs-open-work-drift-cleanup` (`docs:check-freshness-cadence`, CI step, unit tests, `pnpm lint` wiring).
 - **Group:** 3) governance sync gates.
 - **Trigger:** Cadence governance-доків (90-day review per `policy-review.md`) дрейфує без CI-сигналу. Сьогодні `docs:check-freshness-coverage` лише перевіряє наявність маркера; `check-tech-debt-freshness.mjs` обмежений `docs/tech-debt/{frontend,backend,mobile}.md` (закрито в roast P0-4). Аналогічного guard-а для `docs/governance/*.md` нема — приклад: `pnpm-overrides-policy.md` і `doc-freshness.md` тримали `Last validated: 2026-05-11`, поки решта вже на `2026-05-13` (закрито через QW-3/QW-4 quick-win).
-- **Action:** додати у `scripts/docs/check-freshness.mjs --check-coverage` (або новий `--check-cadence` режим) — для кожного `.md` під `docs/governance/`, `docs/agents/`, `docs/playbooks/README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `README.md`: fail якщо `Last validated:` старіший за `Next review:` мінус 7 днів grace (тобто overdue review).
+- **Action:** додати у `scripts/docs/check-freshness.mjs --check-coverage` (або новий `--check-cadence` режим) — для кожного `.md` під `docs/governance/`, `docs/00-start/agents/`, `docs/00-start/playbooks/README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `README.md`: fail якщо `Last validated:` старіший за `Next review:` мінус 7 днів grace (тобто overdue review).
 - **Acceptance:**
   - Скрипт exit 0 на main після quick-wins QW-3/QW-4.
   - Demo: змінити `Next review:` на `2025-01-01` локально → fail з clear message + список overdue файлів.

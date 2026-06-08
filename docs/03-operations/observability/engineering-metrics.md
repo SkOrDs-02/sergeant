@@ -35,4 +35,4 @@ Run a 15-20 minute review once per week:
 4. Review open postmortem actions and security SLA exceptions.
 5. Decide whether one playbook, runbook, or hard rule needs tightening.
 
-Use [run-weekly-operator-digest.md](../../playbooks/run-weekly-operator-digest.md) as the execution checklist.
+Use [run-weekly-operator-digest.md](../../00-start/playbooks/run-weekly-operator-digest.md) as the execution checklist.

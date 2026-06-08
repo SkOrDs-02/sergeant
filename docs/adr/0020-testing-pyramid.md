@@ -198,7 +198,7 @@ accepted.
 
 1. **Документуй flaky тест у `AGENTS.md`** (поточний формат — список path-ів з reason). Без entry — flaky тест не має права жити в репі.
 2. **Тікет на стабілізацію** з owner-ом (`PR-7.E` на triage існуючих 3-х).
-3. **Stabilization-PR-template** у `docs/playbooks/stabilize-flaky-test.md` — чек-ліст: відтворення локально (loop 100×), root cause, fix, переконатися що 200 запусків поспіль зелені.
+3. **Stabilization-PR-template** у `docs/00-start/playbooks/stabilize-flaky-test.md` — чек-ліст: відтворення локально (loop 100×), root cause, fix, переконатися що 200 запусків поспіль зелені.
 4. **CI retry лише для `smoke-e2e`** (1 retry) — по-перше, цей шар реально transient через мережу/postgres-init; по-друге, інші lay-и не мають retry (real regression стає видимим одразу).
 
 ### Consequences

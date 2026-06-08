@@ -60,7 +60,7 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
 - **Canonical doc paths** що отримують backlinks (whitelist у script):
   - `docs/adr/*.md` (крім TEMPLATE.md, README.md)
   - `docs/initiatives/*.md` (крім archive/, follow-ups.md, README.md)
-  - `docs/playbooks/*.md` (крім INDEX.md, README.md, \_TEMPLATE-\*)
+  - `docs/00-start/playbooks/*.md` (крім INDEX.md, README.md, \_TEMPLATE-\*)
   - `docs/governance/rules/*.md` (крім README.md)
 - **In-doc block format** (appended at file end, idempotent). The block is delimited by HTML-comment markers `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->` and `<!-- AUTO-GENERATED: PR-BACKLINKS-END -->` and contains a `## Recent PRs` heading with a 3-column markdown table (PR link, title, merge date). Example layout — see any canonical doc that has merged through Phase 5 for a real instance.
 

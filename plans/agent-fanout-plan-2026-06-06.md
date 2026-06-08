@@ -2597,7 +2597,7 @@ and packages/db-schema/src/sqlite/syncOpRetry.ts / syncOpOutboxPurge.ts / syncOp
 +> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-09-06.
 +> **Status:** Scaffolded — describes the dual-key DB-backed design from PR-27. The `internal_api_keys` table, `requireInternalApiKey` middleware, and `/internal-key` CLI commands are **not yet merged**. Until PR-27 lands, the current auth mechanism is the single `INTERNAL_API_KEY` env-var bearer described in [§ Legacy env-var](#legacy-env-var-pre-pr-27).
 +> **Owner:** ops + server.
-+> **Related:** [`api-internal-hmac.md`](../docs/security/api-internal-hmac.md), [`secret-ownership-register.md`](../docs/security/secret-ownership-register.md), [`docs/playbooks/rotate-secrets.md`](../docs/playbooks/rotate-secrets.md), [`docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md).
++> **Related:** [`api-internal-hmac.md`](../docs/security/api-internal-hmac.md), [`secret-ownership-register.md`](../docs/security/secret-ownership-register.md), [`docs/00-start/playbooks/rotate-secrets.md`](../docs/00-start/playbooks/rotate-secrets.md), [`docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md).
 +
 +---
 +
@@ -2832,7 +2832,7 @@ and packages/db-schema/src/sqlite/syncOpRetry.ts / syncOpOutboxPurge.ts / syncOp
 +- HMAC signing layer: [`docs/security/api-internal-hmac.md`](../docs/security/api-internal-hmac.md)
 +- Bearer guard implementation: [`apps/server/src/routes/internal/index.ts`](../apps/server/src/routes/internal/index.ts)
 +- Secret ownership register: [`docs/security/secret-ownership-register.md`](../docs/security/secret-ownership-register.md)
-+- Rotate-secrets playbook: [`docs/playbooks/rotate-secrets.md`](../docs/playbooks/rotate-secrets.md)
++- Rotate-secrets playbook: [`docs/00-start/playbooks/rotate-secrets.md`](../docs/00-start/playbooks/rotate-secrets.md)
 ```
 
 ---
@@ -2888,7 +2888,7 @@ Files already current — no diff needed:
 - docs/README.md: header 2026-06-04 @claude, last commit 2026-06-04 (chore(ci): satisfy gates for delegation batch)
 - docs/03-operations/postmortems/README.md: header 2026-05-13 @Skords-01, last commit 2026-05-13 (merge that set this exact header — self-consistent)
 - docs/governance/README.md: header 2026-06-03 @claude, last commit 2026-06-03 (chore(root): retire audit-freeze gate #3349)
-- docs/playbooks/README.md: header 2026-06-03 @claude, last commit 2026-06-03 (same commit as governance)
+- docs/00-start/playbooks/README.md: header 2026-06-03 @claude, last commit 2026-06-03 (same commit as governance)
 ````
 
 </details>

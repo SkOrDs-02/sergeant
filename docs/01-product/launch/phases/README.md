@@ -85,13 +85,13 @@ SSO не залитий, Apple Developer Program не куплений, окре
 
 **Source of truth:** [00 — Readiness audit](./00-readiness-audit.md). Тут — короткий зріз.
 
-| Поверхня                        | Deploy?                                                         | Auth?                               | Observability?                       | Release playbook?                                                                                                    | Real-user tested?          | Найбільший блокер                                                                         |
-| ------------------------------- | --------------------------------------------------------------- | ----------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
-| `apps/web`                      | ✅ prod Vercel                                                  | ✅ email+password (no Apple/Google) | ✅ Sentry+PostHog+CSP-RO             | ✅ [release.md](../../../playbooks/release.md) + [release-web-and-api.md](../../../playbooks/release-web-and-api.md) | 🟡 internal+demo only      | Legal pages (Privacy/ToS); Apple/Google SSO; Stripe                                       |
-| `apps/server`                   | ✅ prod Railway (Dockerfile.api)                                | ✅ Better Auth bearer/cookie        | ✅ Pino+Prom+Sentry+alert-bot        | ✅ [release-web-and-api.md](../../../playbooks/release-web-and-api.md)                                               | 🟡 internal only           | Stripe billing tables (subscriptions, stripe_webhook_events)                              |
-| `apps/mobile-shell` (Capacitor) | 🟡 Android AAB/APK CI ready, iOS CI scaffold (no Apple secrets) | ✅ bearer reuses web                | ✅ Sentry WebView                    | ✅ [release-mobile-shell.md](../../../playbooks/release-mobile-shell.md)                                             | ❌ no external testers yet | Apple Developer enrollment ($99 + D-U-N-S); store metadata + assets                       |
-| `apps/mobile` (Expo)            | ❌ internal dev-client only                                     | ✅ bearer                           | 🟡 Sentry+PostHog wired, no prod DSN | ✅ [release-expo-mobile.md](../../../playbooks/release-expo-mobile.md)                                               | ❌ no external testers     | EAS prod profile lock; Apple/Google accounts; Nutrition Phase 7 (recipes AI, photo-AI) 🟥 |
-| Landing site                    | ❌ немає окремого                                               | n/a                                 | n/a                                  | n/a                                                                                                                  | n/a                        | Рішення: окремий сайт vs `/welcome`-only (див. § 5)                                       |
+| Поверхня                        | Deploy?                                                         | Auth?                               | Observability?                       | Release playbook?                                                                                                                      | Real-user tested?          | Найбільший блокер                                                                         |
+| ------------------------------- | --------------------------------------------------------------- | ----------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
+| `apps/web`                      | ✅ prod Vercel                                                  | ✅ email+password (no Apple/Google) | ✅ Sentry+PostHog+CSP-RO             | ✅ [release.md](../../../00-start/playbooks/release.md) + [release-web-and-api.md](../../../00-start/playbooks/release-web-and-api.md) | 🟡 internal+demo only      | Legal pages (Privacy/ToS); Apple/Google SSO; Stripe                                       |
+| `apps/server`                   | ✅ prod Railway (Dockerfile.api)                                | ✅ Better Auth bearer/cookie        | ✅ Pino+Prom+Sentry+alert-bot        | ✅ [release-web-and-api.md](../../../00-start/playbooks/release-web-and-api.md)                                                        | 🟡 internal only           | Stripe billing tables (subscriptions, stripe_webhook_events)                              |
+| `apps/mobile-shell` (Capacitor) | 🟡 Android AAB/APK CI ready, iOS CI scaffold (no Apple secrets) | ✅ bearer reuses web                | ✅ Sentry WebView                    | ✅ [release-mobile-shell.md](../../../00-start/playbooks/release-mobile-shell.md)                                                      | ❌ no external testers yet | Apple Developer enrollment ($99 + D-U-N-S); store metadata + assets                       |
+| `apps/mobile` (Expo)            | ❌ internal dev-client only                                     | ✅ bearer                           | 🟡 Sentry+PostHog wired, no prod DSN | ✅ [release-expo-mobile.md](../../../00-start/playbooks/release-expo-mobile.md)                                                        | ❌ no external testers     | EAS prod profile lock; Apple/Google accounts; Nutrition Phase 7 (recipes AI, photo-AI) 🟥 |
+| Landing site                    | ❌ немає окремого                                               | n/a                                 | n/a                                  | n/a                                                                                                                                    | n/a                        | Рішення: окремий сайт vs `/welcome`-only (див. § 5)                                       |
 
 **Ключові ADRs / initiatives:**
 
@@ -210,18 +210,18 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 Консолідовано з 4 паралельних аналізів. Owner — `@Skords-01` за замовчуванням,
 де явно не вказано інакше.
 
-| #   | Блокер                                                                                                                                                                                         | Owner / Surface           | Estimate  | Phase                        |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | --------- | ---------------------------- |
-| 1   | **Privacy Policy + ToS публічні URLs** ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи))                                                                                | Founder + (юрист consult) | 1-2 тижні | Web public + Capacitor       |
-| 2   | **Stripe billing pipeline** (subscriptions + stripe_webhook_events міграції, Checkout, Customer Portal) — [Initiative 0010 phase 2-4](../../../initiatives/0010-revenue-first-launch.md)       | Devin + founder           | 2-3 тижні | Web public (paywall live)    |
-| 3   | **Apple Developer Program enrollment** ($99 + D-U-N-S Number; ~2 тижні delay)                                                                                                                  | Founder                   | 2-3 тижні | Capacitor iOS                |
-| 4   | **Google Play Developer Console enrollment** ($25 one-time)                                                                                                                                    | Founder                   | 1-2 дні   | Capacitor Android            |
-| 5   | **ФОП реєстрація + банк-рахунок для UA-Stripe** (UAH support)                                                                                                                                  | Founder                   | 2-4 тижні | Web paywall live             |
-| 6   | **Apple + Google Sign-in via Better Auth** ([0010 phase 4.3](../../../initiatives/0010-revenue-first-launch.md))                                                                               | Devin                     | 1-2 тижні | Web public (signup friction) |
-| 7   | **Окремий лендінг live** (single-page Astro на sergeant.com.ua, опція C)                                                                                                                       | Founder + Devin           | 3-5 днів  | Web public                   |
-| 8   | **Store-listing assets** (іконки, screenshots, demo-video, App Privacy / Data Safety форми)                                                                                                    | Founder + designer        | 1 тиждень | Capacitor                    |
-| 9   | **Cookie consent banner для EU** (ePrivacy compliance)                                                                                                                                         | Devin                     | 1-2 дні   | Web public                   |
-| 10  | **DB backups end-to-end verified** ([04 § 7 item 20](../business/04-launch-readiness.md#7-pre-launch-чеклист) + [playbooks/test-backup-restore.md](../../../playbooks/test-backup-restore.md)) | Devin                     | 1 день    | Web closed beta              |
+| #   | Блокер                                                                                                                                                                                                  | Owner / Surface           | Estimate  | Phase                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | --------- | ---------------------------- |
+| 1   | **Privacy Policy + ToS публічні URLs** ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи))                                                                                         | Founder + (юрист consult) | 1-2 тижні | Web public + Capacitor       |
+| 2   | **Stripe billing pipeline** (subscriptions + stripe_webhook_events міграції, Checkout, Customer Portal) — [Initiative 0010 phase 2-4](../../../initiatives/0010-revenue-first-launch.md)                | Devin + founder           | 2-3 тижні | Web public (paywall live)    |
+| 3   | **Apple Developer Program enrollment** ($99 + D-U-N-S Number; ~2 тижні delay)                                                                                                                           | Founder                   | 2-3 тижні | Capacitor iOS                |
+| 4   | **Google Play Developer Console enrollment** ($25 one-time)                                                                                                                                             | Founder                   | 1-2 дні   | Capacitor Android            |
+| 5   | **ФОП реєстрація + банк-рахунок для UA-Stripe** (UAH support)                                                                                                                                           | Founder                   | 2-4 тижні | Web paywall live             |
+| 6   | **Apple + Google Sign-in via Better Auth** ([0010 phase 4.3](../../../initiatives/0010-revenue-first-launch.md))                                                                                        | Devin                     | 1-2 тижні | Web public (signup friction) |
+| 7   | **Окремий лендінг live** (single-page Astro на sergeant.com.ua, опція C)                                                                                                                                | Founder + Devin           | 3-5 днів  | Web public                   |
+| 8   | **Store-listing assets** (іконки, screenshots, demo-video, App Privacy / Data Safety форми)                                                                                                             | Founder + designer        | 1 тиждень | Capacitor                    |
+| 9   | **Cookie consent banner для EU** (ePrivacy compliance)                                                                                                                                                  | Devin                     | 1-2 дні   | Web public                   |
+| 10  | **DB backups end-to-end verified** ([04 § 7 item 20](../business/04-launch-readiness.md#7-pre-launch-чеклист) + [playbooks/test-backup-restore.md](../../../00-start/playbooks/test-backup-restore.md)) | Devin                     | 1 день    | Web closed beta              |
 
 **Сумарний critical path:** W-4 .. W+8 для всіх Web блокерів; W+2 .. W+11 для Capacitor блокерів.
 
@@ -266,15 +266,15 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 
 ## 9. Top ризики + mitigation
 
-| Ризик                                                                           | Likelihood | Impact | Mitigation                                                                                                                                    |
-| ------------------------------------------------------------------------------- | ---------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Apple Dev D-U-N-S delay блокує Phase 2** (потрібно ≥ 2 тижні, починати у W+2) | Medium     | High   | Стартувати enrollment одразу у W+2; паралельно довести Android lane (швидша)                                                                  |
-| **Stripe ФОП delay блокує public launch з paywall** (2-4 тижні)                 | High       | High   | Path C з [01 — Web](./01-web-launch-with-users.md#5-технічні-передумови): запуск free, paywall post-Phase 2                                   |
-| **Solo founder burnout у W-3 .. W+8** (custdev + dev + ops одночасно)           | High       | High   | Daily triage caps, weekly digest замість ad-hoc reply, Devin для tech-tasks, no-features-Fridays                                              |
-| **P0 production incident у W0..W+1**                                            | Medium     | High   | [hotfix-prod-regression.md](../../../playbooks/hotfix-prod-regression.md), instant Vercel/Railway rollback, status page live, on-call founder |
-| **NPS < 20 на closed beta** → no PMF signal                                     | Medium     | High   | Stop the line, custdev deep-dive, можливо pivot scope (smaller initial module set)                                                            |
-| **Apple Store reject Phase 2** (App Review Guideline issues для health/fin)     | Medium     | Medium | Pre-submit checklist у [02 — Capacitor § 7](./02-capacitor-launch.md), Apple-friendly category, Sign in with Apple якщо Google OAuth активний |
-| **Capacitor crash-free < 98% у W+14**                                           | Low        | Medium | Phased rollout 1%→10%→50%, instant Play rollback, Sentry alert thresholds                                                                     |
+| Ризик                                                                           | Likelihood | Impact | Mitigation                                                                                                                                             |
+| ------------------------------------------------------------------------------- | ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Apple Dev D-U-N-S delay блокує Phase 2** (потрібно ≥ 2 тижні, починати у W+2) | Medium     | High   | Стартувати enrollment одразу у W+2; паралельно довести Android lane (швидша)                                                                           |
+| **Stripe ФОП delay блокує public launch з paywall** (2-4 тижні)                 | High       | High   | Path C з [01 — Web](./01-web-launch-with-users.md#5-технічні-передумови): запуск free, paywall post-Phase 2                                            |
+| **Solo founder burnout у W-3 .. W+8** (custdev + dev + ops одночасно)           | High       | High   | Daily triage caps, weekly digest замість ad-hoc reply, Devin для tech-tasks, no-features-Fridays                                                       |
+| **P0 production incident у W0..W+1**                                            | Medium     | High   | [hotfix-prod-regression.md](../../../00-start/playbooks/hotfix-prod-regression.md), instant Vercel/Railway rollback, status page live, on-call founder |
+| **NPS < 20 на closed beta** → no PMF signal                                     | Medium     | High   | Stop the line, custdev deep-dive, можливо pivot scope (smaller initial module set)                                                                     |
+| **Apple Store reject Phase 2** (App Review Guideline issues для health/fin)     | Medium     | Medium | Pre-submit checklist у [02 — Capacitor § 7](./02-capacitor-launch.md), Apple-friendly category, Sign in with Apple якщо Google OAuth активний          |
+| **Capacitor crash-free < 98% у W+14**                                           | Low        | Medium | Phased rollout 1%→10%→50%, instant Play rollback, Sentry alert thresholds                                                                              |
 
 ---
 
@@ -288,7 +288,7 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 - [ ] **Стартувати ФОП реєстрацію** (паралельно — ~2-4 тижні)
 - [ ] **Apple Developer enrollment** заявка (паралельно — ~2 тижні D-U-N-S)
 - [ ] **Privacy Policy + ToS draft** через Termly (~$50/міс) + review founder
-- [ ] **DB backup restore-тест** ([playbooks/test-backup-restore.md](../../../playbooks/test-backup-restore.md))
+- [ ] **DB backup restore-тест** ([playbooks/test-backup-restore.md](../../../00-start/playbooks/test-backup-restore.md))
 - [ ] **`feature.invite_only_signup` flag** додати в [feature-flags.md registry](../../../governance/feature-flags.md)
 - [ ] **Закласти 5-10 годин на custdev-інтервʼю** у calendar (W-3 .. W+3)
 - [ ] **Відповісти на 10-12 open questions** з § 8 (мінімум — top-6 стратегічних)
@@ -328,12 +328,12 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 
 ### Release playbooks
 
-- [`docs/playbooks/release.md`](../../../playbooks/release.md) — canonical release flow
-- [`docs/playbooks/release-web-and-api.md`](../../../playbooks/release-web-and-api.md)
-- [`docs/playbooks/release-mobile-shell.md`](../../../playbooks/release-mobile-shell.md)
-- [`docs/playbooks/release-expo-mobile.md`](../../../playbooks/release-expo-mobile.md)
-- [`docs/playbooks/test-backup-restore.md`](../../../playbooks/test-backup-restore.md)
-- [`docs/playbooks/hotfix-prod-regression.md`](../../../playbooks/hotfix-prod-regression.md)
+- [`docs/00-start/playbooks/release.md`](../../../00-start/playbooks/release.md) — canonical release flow
+- [`docs/00-start/playbooks/release-web-and-api.md`](../../../00-start/playbooks/release-web-and-api.md)
+- [`docs/00-start/playbooks/release-mobile-shell.md`](../../../00-start/playbooks/release-mobile-shell.md)
+- [`docs/00-start/playbooks/release-expo-mobile.md`](../../../00-start/playbooks/release-expo-mobile.md)
+- [`docs/00-start/playbooks/test-backup-restore.md`](../../../00-start/playbooks/test-backup-restore.md)
+- [`docs/00-start/playbooks/hotfix-prod-regression.md`](../../../00-start/playbooks/hotfix-prod-regression.md)
 
 ---
 

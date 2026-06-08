@@ -15,7 +15,7 @@ Treat an alert, error spike, or user report as an incident when at least one is 
 - error-budget burn suggests the event is not transient noise
 - rollback, mitigation, or stakeholder communication is now required
 
-If none of those are true yet, start with [investigate-alert.md](../playbooks/investigate-alert.md).
+If none of those are true yet, start with [investigate-alert.md](../00-start/playbooks/investigate-alert.md).
 
 ## Severity levels
 
@@ -47,4 +47,4 @@ Create a postmortem when:
 - the same failure mode has recurred
 - the fix required a new runbook, hard rule, or release guardrail
 
-Use [write-postmortem.md](../playbooks/write-postmortem.md) and file the record through [postmortems/INDEX.md](../03-operations/postmortems/INDEX.md).
+Use [write-postmortem.md](../00-start/playbooks/write-postmortem.md) and file the record through [postmortems/INDEX.md](../03-operations/postmortems/INDEX.md).

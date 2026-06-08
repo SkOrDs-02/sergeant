@@ -367,7 +367,7 @@ MVP-стратегія: тиждень 3–4 у Internal, тиждень 5–7 �
 - [ ] **iOS phased release** — App Store Connect → Phased Release for Automatic Updates → toggle on. Apple розкатує 7 днів (1/2/5/10/20/50/100 %).
 - [ ] **Launch announcement** — Telegram, Twitter, Product Hunt (див. [`02-go-to-market.md` § 4.1 PH playbook](../business/02-go-to-market.md#41-product-hunt-playbook)).
 
-**Якщо щось ламається** — пауза rollout-у через ASC (iOS) або Play Console (Android), rollback до попереднього версії через [`docs/playbooks/release.md § 2.4 Post-release`](../../../playbooks/release.md#24-post-release-верифікація).
+**Якщо щось ламається** — пауза rollout-у через ASC (iOS) або Play Console (Android), rollback до попереднього версії через [`docs/00-start/playbooks/release.md § 2.4 Post-release`](../../../00-start/playbooks/release.md#24-post-release-верифікація).
 
 ---
 
@@ -746,7 +746,7 @@ Phase 3 (Native Expo) стартує **якщо хоча б одне з:**
 - [`docs/02-engineering/mobile/shell.md`](../../../02-engineering/mobile/shell.md) — operator cheat-sheet (Android/iOS release secrets, build commands).
 - [`docs/02-engineering/mobile/capacitor-deep-links.md`](../../../02-engineering/mobile/capacitor-deep-links.md) — Universal Links / App Links setup.
 - [`docs/02-engineering/mobile/overview.md`](../../../02-engineering/mobile/overview.md) — API контракт + push notifications spec.
-- [`docs/playbooks/release.md` § 2 Mobile shell (Capacitor)](../../../playbooks/release.md#2-mobile-shell-capacitor) — canonical release loop.
+- [`docs/00-start/playbooks/release.md` § 2 Mobile shell (Capacitor)](../../../00-start/playbooks/release.md#2-mobile-shell-capacitor) — canonical release loop.
 - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../business/01-monetization-and-pricing.md) — pricing tiers + paywall placement + IAP vs Stripe.
 - [`docs/01-product/launch/business/02-go-to-market.md`](../business/02-go-to-market.md) — GTM phases, beta metrics, PH playbook.
 - [`docs/01-product/launch/business/04-launch-readiness.md`](../business/04-launch-readiness.md) — legal + privacy + alerts + checklists.

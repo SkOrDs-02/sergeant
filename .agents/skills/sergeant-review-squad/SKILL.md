@@ -62,6 +62,6 @@ Teammates автоматично завантажують CLAUDE.md і project c
 
 ## Playbooks
 
-- [`docs/playbooks/run-squad-review.md`](../../../docs/playbooks/run-squad-review.md) — step-by-step рецепт запуску review squad
+- [`docs/00-start/playbooks/run-squad-review.md`](../../../docs/00-start/playbooks/run-squad-review.md) — step-by-step рецепт запуску review squad
 - [`docs/governance/review-checklist.md`](../../../docs/governance/review-checklist.md) — governance checklist (Stage 1 spec-compliance)
-- [`docs/agents/agent-skills-catalog.md`](../../../docs/agents/agent-skills-catalog.md) — каталог всіх skills
+- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — каталог всіх skills

@@ -84,7 +84,7 @@
     },
     {
       "pattern": "^https?://agentskill\\.sh(/.*)?$",
-      "reason": "agentskill.sh aborts the request against CI User-Agents (response aborted before body). Cited in docs/agents/skills-evolution-roadmap.md and docs/governance/rules/22-skill-body-security-scan.md as the canonical Agent Skill homepage; page loads in browsers."
+      "reason": "agentskill.sh aborts the request against CI User-Agents (response aborted before body). Cited in docs/00-start/agents/skills-evolution-roadmap.md and docs/governance/rules/22-skill-body-security-scan.md as the canonical Agent Skill homepage; page loads in browsers."
     },
     {
       "pattern": "^https?://playwright\\.dev/docs/test-snapshots(/.*)?$",

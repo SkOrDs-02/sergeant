@@ -25,7 +25,7 @@
 
 1. **Нові аудит-документи** в `docs/audits/*.md` (топ-рівень).
 2. **Нові ініціативи** в `docs/initiatives/00NN-*.md`.
-3. **Нові playbook-и** в `docs/playbooks/*.md` без передумови — playbook народжується з хоча б 2 завершених PR-ів, що руками показали recipe (а не теоретичне «треба зробити»).
+3. **Нові playbook-и** в `docs/00-start/playbooks/*.md` без передумови — playbook народжується з хоча б 2 завершених PR-ів, що руками показали recipe (а не теоретичне «треба зробити»).
 4. **Нові ADR-и** без активного code-PR-у, що потребує decision.
 5. **Розширення AGENTS.md** новими правилами без обов'язкового lint-enforcement (нові rules → `docs/governance/hard-rules.json` + ESLint plugin або CI-gate; pure-text rules відкладаються до post-freeze).
 
@@ -54,7 +54,7 @@ Cuộc CI-job, що warn-ить (не block-ить), якщо PR створює 
 ```
 docs/audits/[^/]+\.md         (top-level only, archive/ allowed)
 docs/initiatives/00\d{2}-*.md (any new initiative number)
-docs/playbooks/*.md           (any new playbook)
+docs/00-start/playbooks/*.md           (any new playbook)
 docs/adr/00\d{2}-*.md         (any new ADR)
 ```
 
@@ -122,7 +122,7 @@ Override — не sin, це signaling механізм. Якщо за 4 тижн
 Жоден з цих 18 PR-ів **не створює** нових файлів за заборонений pathspec, окрім:
 
 - **PR-19 (paywall sketch doc)** — `docs/01-product/launch/paywall-ux-placement.md` — це **launch-doc**, не audit/initiative/playbook/ADR, тому freeze-clean.
-- **PR-22 (agents quick-reference)** — `docs/agents/quick-reference.md` — agents-folder, теж freeze-clean.
+- **PR-22 (agents quick-reference)** — `docs/00-start/agents/quick-reference.md` — agents-folder, теж freeze-clean.
 
 ---
 
@@ -130,8 +130,8 @@ Override — не sin, це signaling механізм. Якщо за 4 тижн
 
 **Pathspec обрано як «продукт-докі без mandatory CI-gate»**:
 
-- `docs/audits/`, `docs/initiatives/`, `docs/playbooks/`, `docs/adr/` — це місця, куди легко додати «ще один аудит» / «ще одна ініціатива», і де темп зростання випередив темп viability.
-- `docs/01-product/launch/`, `docs/03-operations/observability/`, `docs/02-engineering/integrations/`, `docs/02-engineering/architecture/`, `docs/05-design/design/`, `docs/agents/`, **не** заморожуються — це функціональна документація, що часто синкається з shipped code.
+- `docs/audits/`, `docs/initiatives/`, `docs/00-start/playbooks/`, `docs/adr/` — це місця, куди легко додати «ще один аудит» / «ще одна ініціатива», і де темп зростання випередив темп viability.
+- `docs/01-product/launch/`, `docs/03-operations/observability/`, `docs/02-engineering/integrations/`, `docs/02-engineering/architecture/`, `docs/05-design/design/`, `docs/00-start/agents/`, **не** заморожуються — це функціональна документація, що часто синкається з shipped code.
 - `*-deep-dive/` піджанр в `docs/audits/` (раніше — окремий `docs/diagnostics/`) **не** заморожується — deep-dives створюються per-incident / на запит, не за роадмапом.
 - `AGENTS.md` під обмеженням «розширення без enforcement» — це найбільший read-tax файл.
 

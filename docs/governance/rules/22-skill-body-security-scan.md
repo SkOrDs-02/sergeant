@@ -52,5 +52,5 @@ Run `pnpm install --frozen-lockfile` to install dependencies.
 ## Related
 
 - **agents** — #22
-- **roadmap** — `docs/agents/skills-evolution-roadmap.md` (PR 5)
+- **roadmap** — `docs/00-start/agents/skills-evolution-roadmap.md` (PR 5)
 - **reference** — [agentskill.sh](https://agentskill.sh/) threat category taxonomy

@@ -13,7 +13,7 @@ render_with_liquid: false
   - [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md) — workflow → topic routing matrix.
   - [`docs/03-operations/observability/telegram-control-plane.md`](../03-operations/observability/telegram-control-plane.md) — architectural review.
   - [ADR-0026 — n8n workflow source of truth](./0026-n8n-workflow-source-of-truth.md) — Git-as-truth для workflow JSON.
-  - [`docs/playbooks/modify-n8n-workflow.md`](../playbooks/modify-n8n-workflow.md) — playbook оновлення matrix-у разом з workflow.
+  - [`docs/00-start/playbooks/modify-n8n-workflow.md`](../00-start/playbooks/modify-n8n-workflow.md) — playbook оновлення matrix-у разом з workflow.
 
 ---
 
@@ -187,4 +187,4 @@ PII у P0 alerts, > 5 одночасних bot commands, > 30 workflow × > 8
 - [ADR-0026: n8n workflow source of truth](./0026-n8n-workflow-source-of-truth.md)
 - [Reporting matrix](../../ops/n8n-workflows/REPORTING-MATRIX.md)
 - [Telegram-as-control-plane analysis](../03-operations/observability/telegram-control-plane.md)
-- [Modify n8n workflow playbook](../playbooks/modify-n8n-workflow.md)
+- [Modify n8n workflow playbook](../00-start/playbooks/modify-n8n-workflow.md)

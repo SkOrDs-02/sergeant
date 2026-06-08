@@ -3,12 +3,12 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-`CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/playbooks/README.md](./docs/playbooks/README.md).
+`CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md).
 
 ## Перед стартом
 
 1. Прочитай [AGENTS.md](./AGENTS.md), якщо торкаєшся коду, infra або docs governance.
-2. Знайди playbook для свого сценарію в [docs/playbooks/playbook-catalog.md](./docs/playbooks/playbook-catalog.md).
+2. Знайди playbook для свого сценарію в [docs/00-start/playbooks/playbook-catalog.md](./docs/00-start/playbooks/playbook-catalog.md).
 3. Якщо зміна торкає API, migrations, HubChat, mobile, console agent або deploy surface, працюй за відповідним playbook від початку, а не після факту.
 
 ## Setup
@@ -138,9 +138,9 @@ pnpm dedupe --check   # P2-1: lockfile-drift guard (див. нижче)
 
 Playbooks - це канонічні покрокові рецепти виконання роботи.
 
-- Каталог: [docs/playbooks/playbook-catalog.md](./docs/playbooks/playbook-catalog.md)
-- Trigger index: [docs/playbooks/INDEX.md](./docs/playbooks/INDEX.md)
-- Overview і taxonomy: [docs/playbooks/README.md](./docs/playbooks/README.md)
+- Каталог: [docs/00-start/playbooks/playbook-catalog.md](./docs/00-start/playbooks/playbook-catalog.md)
+- Trigger index: [docs/00-start/playbooks/INDEX.md](./docs/00-start/playbooks/INDEX.md)
+- Overview і taxonomy: [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md)
 
 Топові сценарії:
 
@@ -230,7 +230,7 @@ Plop-генератори створюють шаблонні артефакти
 ```bash
 pnpm gen                # інтерактивний вибір генератора
 pnpm gen new-skill      # .agents/skills/<slug>/SKILL.md + запис у skills-lock.json
-pnpm gen new-playbook   # docs/playbooks/<slug>.md з валідним schema + freshness
+pnpm gen new-playbook   # docs/00-start/playbooks/<slug>.md з валідним schema + freshness
 pnpm gen:adr            # docs/adr/<NNNN>-<title>.md (auto-numbered)
 pnpm gen migration      # apps/server/src/migrations/<NNN>_<name>.sql + .down.sql
 pnpm gen rq-hook        # apps/web/src/modules/<module>/hooks/use<Name>.ts
@@ -270,5 +270,5 @@ pnpm lint:skills     # перевірить shape + збіг хешів
 ## Де шукати далі
 
 - Повний doc index: [docs/README.md](./docs/README.md)
-- Agent operating system: [docs/agents/README.md](./docs/agents/README.md)
+- Agent operating system: [docs/00-start/agents/README.md](./docs/00-start/agents/README.md)
 - Planning/roadmaps: [docs/planning/README.md](./docs/planning/README.md)

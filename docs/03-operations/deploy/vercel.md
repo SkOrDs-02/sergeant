@@ -153,7 +153,7 @@ fails outright (e.g. rolldown cannot resolve a workspace package):
 4. If headers truly regressed in production, trigger a rollback via
    `vercel rollback` to the last known-good deployment ID — `vercel ls
 --token=$VERCEL_TOKEN` gives the list. See
-   [`../playbooks/hotfix-prod-regression.md`](../../playbooks/hotfix-prod-regression.md)
+   [`../playbooks/hotfix-prod-regression.md`](../../00-start/playbooks/hotfix-prod-regression.md)
    for the full rollback recipe.
 
 ## Cross-references

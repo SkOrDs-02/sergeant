@@ -7,7 +7,7 @@
 > Vite + React + Tailwind + Workbox) на нативний iOS/Android клієнт
 > (`apps/mobile`, Expo + React Native + Expo Router). Документ живий —
 > оновлюємо по мірі робіт. Шорткат для апдейту прогресу — playbook
-> [`sync-rn-migration-progress.md`](../../playbooks/sync-rn-migration-progress.md).
+> [`sync-rn-migration-progress.md`](../../00-start/playbooks/sync-rn-migration-progress.md).
 
 ## 1. Мета міграції
 
@@ -966,7 +966,7 @@ foodDb export / import, UI). Жодних змін у публічному API `
 - **«Чим замінити `getUserMedia` / `localStorage` / …?»** → §7.
 - **«Що блокує роботу над чимось?»** → §13 (прийняті рішення Q1–Q10).
 - **«Як оновити цей документ після merged-у PR-а?»** → playbook
-  [`sync-rn-migration-progress.md`](../../playbooks/sync-rn-migration-progress.md).
+  [`sync-rn-migration-progress.md`](../../00-start/playbooks/sync-rn-migration-progress.md).
 
 ---
 

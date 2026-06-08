@@ -45,5 +45,5 @@ Sergeant mobile — не тонка копія web-app-у. Він викорис
 
 ## Playbooks
 
-- `docs/playbooks/release.md` — canonical release-playbook (секції Expo і Capacitor shell).
-- Каталог: `docs/agents/agent-skills-catalog.md`.
+- `docs/00-start/playbooks/release.md` — canonical release-playbook (секції Expo і Capacitor shell).
+- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.

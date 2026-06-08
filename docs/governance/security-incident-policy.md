@@ -1,6 +1,6 @@
 # Security Incident Policy
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Use this policy when the incident is primarily about identity compromise, privileged misuse, leaked credentials, or unauthorized access to sensitive systems.
@@ -31,7 +31,7 @@ If the event is only service degradation without access compromise, use [inciden
    - lock or sign out the suspected account if possible
    - revoke membership or disable token first, investigate second
 2. Rotate impacted credentials.
-   - use [rotate-secrets.md](../playbooks/rotate-secrets.md) when secret rotation is involved
+   - use [rotate-secrets.md](../00-start/playbooks/rotate-secrets.md) when secret rotation is involved
 3. Capture evidence.
    - vendor audit logs
    - timestamps
@@ -59,6 +59,6 @@ A postmortem is mandatory when:
 
 ## Canonical routes
 
-- [access-governance.md § Suspected account compromise](../playbooks/access-governance.md#4-suspected-account-compromise)
-- [rotate-secrets.md](../playbooks/rotate-secrets.md)
-- [write-postmortem.md](../playbooks/write-postmortem.md)
+- [access-governance.md § Suspected account compromise](../00-start/playbooks/access-governance.md#4-suspected-account-compromise)
+- [rotate-secrets.md](../00-start/playbooks/rotate-secrets.md)
+- [write-postmortem.md](../00-start/playbooks/write-postmortem.md)

@@ -570,7 +570,7 @@ Broadcast policy: `dm` | `digest` (default — weekly+monthly у 📊 Дайдж
 - `OPENCLAW_GITHUB_APP_PRIVATE_KEY` — PEM-приватник App-у. Деякі secret-store-и (Vercel, Railway, 1Password CLI) розплющують `\n` → `github-auth.ts` репарює `\\n → \n` перед `crypto.createSign('RSA-SHA256')`.
 - `OPENCLAW_GITHUB_APP_INSTALLATION_ID` — installation id (один App може стояти на кількох орг-ах; pin-имо явно щоб blast radius був однозначний).
 
-Реалізація: [`apps/server/src/modules/openclaw/github-auth.ts`](../../../apps/server/src/modules/openclaw/github-auth.ts) — мінт + кеш installation-токена з 5-хв headroom-ом до експайру. Rotation runbook — [`docs/playbooks/rotate-openclaw-credentials.md`](../../playbooks/rotate-openclaw-credentials.md).
+Реалізація: [`apps/server/src/modules/openclaw/github-auth.ts`](../../../apps/server/src/modules/openclaw/github-auth.ts) — мінт + кеш installation-токена з 5-хв headroom-ом до експайру. Rotation runbook — [`docs/00-start/playbooks/rotate-openclaw-credentials.md`](../../00-start/playbooks/rotate-openclaw-credentials.md).
 
 Failure-mode (Phase 1): якщо App-flow ввімкнений АЛЕ exchange падає (HTTP 401, expired key, etc.) — повертаємо `null`, **не** silently fallback-имо на PAT (це маскувало б config-drift); caller бачить `not_configured` у audit-логу і операторне сповіщення спрацьовує негайно.
 
@@ -670,7 +670,7 @@ Endpoint `/api/internal/alerts/send` приймає `dedupSignature` (stable has
 
 ### `WEBHOOK_HMAC_SECRET` _(optional, recommended for prod)_
 
-32+ байтовий shared-secret. Згенерувати: `openssl rand -hex 32`. Пустий рядок (default) — middleware no-op, тільки bearer guard. Виставлений → перевіряється `X-Signature` = `hex(HMAC-SHA256(secret, "<X-Timestamp>.<rawBody>"))`. Той самий байтовий вміст має бути виставлений на n8n Railway, інакше Function-node-template падає з `WEBHOOK_HMAC_SECRET is not set`. Ротація — атомарно в обох місцях через [`rotate-secrets.md`](../../playbooks/rotate-secrets.md) (replay-window 5min робить тимчасовий розфаз нешкідливим).
+32+ байтовий shared-secret. Згенерувати: `openssl rand -hex 32`. Пустий рядок (default) — middleware no-op, тільки bearer guard. Виставлений → перевіряється `X-Signature` = `hex(HMAC-SHA256(secret, "<X-Timestamp>.<rawBody>"))`. Той самий байтовий вміст має бути виставлений на n8n Railway, інакше Function-node-template падає з `WEBHOOK_HMAC_SECRET is not set`. Ротація — атомарно в обох місцях через [`rotate-secrets.md`](../../00-start/playbooks/rotate-secrets.md) (replay-window 5min робить тимчасовий розфаз нешкідливим).
 
 ### `WEBHOOK_HMAC_REQUIRED` _(optional, default `false`)_
 
@@ -688,7 +688,7 @@ Full rollout playbook: [`docs/security/api-internal-hmac.md`](../../security/api
 
 - [`/.env.example`](../../../.env.example) — мінімальний `.env` для `pnpm dev`.
 - [`docs/02-engineering/integrations/railway-vercel.md`](./railway-vercel.md) — топологія хостингу + проксі.
-- [`docs/agents/onboarding.md`](../../agents/onboarding.md) — quickstart для AI-агентів.
+- [`docs/00-start/agents/onboarding.md`](../../00-start/agents/onboarding.md) — quickstart для AI-агентів.
 - [ADR-0028](../../adr/0028-pgvector-ai-memory.md) — pgvector + Voyage AI memory.
 - [ADR-0031](../../adr/0031-openclaw-v0-telegram-cofounder.md) — OpenClaw v0.
 - [ADR-0042](../../adr/0042-password-hashing-strategy.md) — password hashing (scrypt у Better Auth, без 72-byte ліміту).

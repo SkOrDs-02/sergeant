@@ -342,10 +342,10 @@ Monitoring is described in `docs/03-operations/observability/README.md`. Key com
 | `docs/02-engineering/mobile/`       | Capacitor, deep links, React Native migration              |
 | `docs/03-operations/observability/` | SLO, dashboards, metrics, runbook                          |
 | `docs/planning/`                    | Roadmaps, AI improvements, dev stack roadmap               |
-| `docs/playbooks/`                   | Step-by-step recipes (add an endpoint, do a hotfix)        |
+| `docs/00-start/playbooks/`          | Step-by-step recipes (add an endpoint, do a hotfix)        |
 | `docs/03-operations/postmortems/`   | Incident post-mortems                                      |
 | `docs/security/`                    | Access policy, disaster recovery, security audit           |
-| `docs/agents/`                      | AI agent system: skill catalog, workflows                  |
+| `docs/00-start/agents/`             | AI agent system: skill catalog, workflows                  |
 | `docs/tech-debt/`                   | Tech debt registries (frontend, backend, mobile)           |
 
 Roadmap: `docs/planning/README.md`. Tech debt: `docs/tech-debt/README.md`.
@@ -353,10 +353,10 @@ Roadmap: `docs/planning/README.md`. Tech debt: `docs/tech-debt/README.md`.
 ## For Contributors and Agents
 
 - Humans: start with [CONTRIBUTING.md](./CONTRIBUTING.md).
-- Agents: start with [AGENTS.md](./AGENTS.md) and [docs/agents/agent-skills-catalog.md](./docs/agents/agent-skills-catalog.md).
+- Agents: start with [AGENTS.md](./AGENTS.md) and [docs/00-start/agents/agent-skills-catalog.md](./docs/00-start/agents/agent-skills-catalog.md).
 - Full docs index (genre-grouped — informational / trackers / archive): [docs/README.md](./docs/README.md).
 - **What is currently in flight across all 7 trackers** (auto-rollup, CI drift gate): [docs/open-work.md](./docs/open-work.md).
-- Repeatable execution recipes: [docs/playbooks/README.md](./docs/playbooks/README.md).
+- Repeatable execution recipes: [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md).
 - Governance and hard rules matrix: [docs/governance/README.md](./docs/governance/README.md).
 - Runtime inventory, release, incident, and recovery surfaces: [docs/02-engineering/architecture/service-catalog.md](./docs/02-engineering/architecture/service-catalog.md), [docs/security/disaster-recovery.md](./docs/security/disaster-recovery.md).
 

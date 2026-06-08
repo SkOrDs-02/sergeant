@@ -65,10 +65,10 @@ Sergeant має багатий машино-читабельний індекс 
 
 **Acceptance:** агент у будь-якій сесії викликає `agent_find` як перший крок орієнтації замість сліпого grep; `sergeant-start-here` його рекомендує.
 
-| PR         | Що ввозиться                                                   | Файли                                                                      |
-| ---------- | -------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| **PR-4.1** | Тонкий MCP-tool `agent_find` поверх движка з find.mjs          | `scripts/agent/mcp-server.mjs` (або наявний MCP-host), `.mcp.json`         |
-| **PR-4.2** | Промоція у `sergeant-start-here` + `docs/agents/onboarding.md` | `.agents/skills/sergeant-start-here/SKILL.md`, `docs/agents/onboarding.md` |
+| PR         | Що ввозиться                                                            | Файли                                                                               |
+| ---------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **PR-4.1** | Тонкий MCP-tool `agent_find` поверх движка з find.mjs                   | `scripts/agent/mcp-server.mjs` (або наявний MCP-host), `.mcp.json`                  |
+| **PR-4.2** | Промоція у `sergeant-start-here` + `docs/00-start/agents/onboarding.md` | `.agents/skills/sergeant-start-here/SKILL.md`, `docs/00-start/agents/onboarding.md` |
 
 ## Критерії DONE
 

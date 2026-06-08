@@ -42,5 +42,5 @@ pnpm --filter @sergeant/mobile check-build-config  # before EAS build
 - App README: [`apps/mobile/README.md`](./README.md)
 - Mobile strategy ADR: [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../docs/adr/0052-mobile-strategy-capacitor-primary.md)
 - Capacitor / deep links / RN migration: [`docs/02-engineering/mobile/`](../../docs/02-engineering/mobile/)
-- Routing catalog: [`docs/agents/agent-skills-catalog.md`](../../docs/agents/agent-skills-catalog.md)
+- Routing catalog: [`docs/00-start/agents/agent-skills-catalog.md`](../../docs/00-start/agents/agent-skills-catalog.md)
 - Domain invariants: [`docs/02-engineering/architecture/domain-invariants.md`](../../docs/02-engineering/architecture/domain-invariants.md)

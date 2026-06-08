@@ -53,7 +53,7 @@ pnpm gen new-console-specialist
 
 ## Корисні доки
 
-- [docs/playbooks/rotate-openclaw-credentials.md](../../../docs/playbooks/rotate-openclaw-credentials.md)
-- [docs/playbooks/modify-console-agent.md](../../../docs/playbooks/modify-console-agent.md)
+- [docs/00-start/playbooks/rotate-openclaw-credentials.md](../../../docs/00-start/playbooks/rotate-openclaw-credentials.md)
+- [docs/00-start/playbooks/modify-console-agent.md](../../../docs/00-start/playbooks/modify-console-agent.md)
 - [docs/adr/0055-openclaw-external-gateway.md](../../../docs/adr/0055-openclaw-external-gateway.md)
-- [docs/agents/agent-skills-catalog.md](../../../docs/agents/agent-skills-catalog.md)
+- [docs/00-start/agents/agent-skills-catalog.md](../../../docs/00-start/agents/agent-skills-catalog.md)

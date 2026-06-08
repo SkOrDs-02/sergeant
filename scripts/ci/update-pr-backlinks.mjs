@@ -74,7 +74,7 @@ const CANONICAL_DOC_ROOTS = [
     excludes: ["README.md", "follow-ups.md"],
   },
   {
-    rootDir: "docs/playbooks",
+    rootDir: "docs/00-start/playbooks",
     recursive: false,
     excludes: ["README.md", "INDEX.md"],
     excludePrefix: "_",

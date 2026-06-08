@@ -7,7 +7,7 @@
 
 > **Швидко знайти активне:** [`../open-work.md`](../open-work.md) — автогенерований дашборд усіх відкритих tracker-документів. Цей README пояснює саме planning-директорію; open-work відповідає на питання "що зараз НЕ доробленого в репо загалом?".
 
-> **Як виконувати ці плани батчами:** [`../playbooks/execute-planning-batch.md`](../playbooks/execute-planning-batch.md) (governing skill `sergeant-planning-batch`, parallel fan-out layer — [`../agents/agent-workflows.md`](../agents/agent-workflows.md) §12). Динамічно тягне наступні N невиконаних PR-карток звідси, гонить паралельні агенти, оновлює трекери і fast-forward архівує доведені до повністю виконано доки (без 90-day gate, за standing-дозволом founder-а).
+> **Як виконувати ці плани батчами:** [`../playbooks/execute-planning-batch.md`](../00-start/playbooks/execute-planning-batch.md) (governing skill `sergeant-planning-batch`, parallel fan-out layer — [`../agents/agent-workflows.md`](../00-start/agents/agent-workflows.md) §12). Динамічно тягне наступні N невиконаних PR-карток звідси, гонить паралельні агенти, оновлює трекери і fast-forward архівує доведені до повністю виконано доки (без 90-day gate, за standing-дозволом founder-а).
 
 ## Активні документи
 

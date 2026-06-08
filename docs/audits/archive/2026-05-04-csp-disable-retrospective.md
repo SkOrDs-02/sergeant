@@ -166,4 +166,4 @@
 - [`access-policy.md`](../../security/access-policy.md) — `Runtime security knobs` section formalising «no runtime CSP kill switch».
 - [`docs/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) §Фаза 1 → PR 1.4 (this audit).
 - [PR #1697 — deploy-config staging gate (PR 1.3 ініціативи 0011)](https://github.com/Skords-01/Sergeant/pull/1697) — суміжний guard на deploy-config drift у репо.
-- [`docs/playbooks/declare-incident.md`](../../playbooks/declare-incident.md), [`docs/playbooks/write-postmortem.md`](../../playbooks/write-postmortem.md) — playbook-и якщо action items §A2/§A3 виявлять справжній incident (escalate to SEV3+).
+- [`docs/00-start/playbooks/declare-incident.md`](../../00-start/playbooks/declare-incident.md), [`docs/00-start/playbooks/write-postmortem.md`](../../00-start/playbooks/write-postmortem.md) — playbook-и якщо action items §A2/§A3 виявлять справжній incident (escalate to SEV3+).

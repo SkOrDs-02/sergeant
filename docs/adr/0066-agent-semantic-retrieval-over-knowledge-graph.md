@@ -41,7 +41,7 @@
 
 Конкретно:
 
-- **Джерела індексу:** `knowledge-graph.json` (ноди core+extended), секції canonical-docs (`docs/adr`, `docs/playbooks`, `docs/governance/rules`, `docs/02-engineering/architecture`, `.agents/skills/**/SKILL.md`), `symbol-index.json` (export → file:line + owning-package).
+- **Джерела індексу:** `knowledge-graph.json` (ноди core+extended), секції canonical-docs (`docs/adr`, `docs/00-start/playbooks`, `docs/governance/rules`, `docs/02-engineering/architecture`, `.agents/skills/**/SKILL.md`), `symbol-index.json` (export → file:line + owning-package).
 - **Чанкінг:** одна нода/секція = один чанк; кожен чанк несе `{ id, type, path, line, title, text, tier }`. `type` повторює enum нод графа + `export` + `doc-section`.
 - **Сторідж (ключове):** **маніфест** `docs/governance/retrieval-index.json` (чанки без векторів — diffable, queryable, у git) + **вектори** у `.cache/retrieval/<contentHash>.bin` (**gitignored**, регенерується лазі за content-hash). Жодних векторів у git → нема noisy diff (мітигація болю з ADR-0058).
 - **Ембеддинги:** той самий `voyage-3.5-lite` (1024d), що й `ai-memory` — спільний клієнт/budget-guard, але **окремий код-шлях** (не runtime-стор).

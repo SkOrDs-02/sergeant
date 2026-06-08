@@ -55,7 +55,7 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 - Cross-reference CVEs with `renovate.json` — if Renovate already has a pending update PR, do not create a duplicate; comment on the existing one instead.
 - Check `THIRD_PARTY_LICENSES.md` for GPL transitive deps — compliance risk.
 - Run `pnpm outdated` to surface packages outside Renovate range constraints.
-- For safe dep bumps, follow `docs/playbooks/bump-dep-safely.md`.
+- For safe dep bumps, follow `docs/00-start/playbooks/bump-dep-safely.md`.
 
 ## Frontend security (`apps/web`)
 
@@ -72,7 +72,7 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 
 | Level | Action |
 |---|---|
-| Critical — CVE / hardcoded secret / auth bypass | Block PR; escalate via `docs/playbooks/respond-to-suspected-account-compromise.md` |
+| Critical — CVE / hardcoded secret / auth bypass | Block PR; escalate via `docs/00-start/playbooks/respond-to-suspected-account-compromise.md` |
 | High — injection vector / missing auth check | Must-fix before merge |
 | Medium — logging exposure / outdated dep with known exploit | Fix in this PR or create tracked issue |
 | Low — best-practice gap / minor config drift | PR comment; not a blocker |
@@ -86,8 +86,8 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 
 ## Playbooks
 
-- `docs/playbooks/security-pen-test-checklist.md` — full pentest workflow before launch.
-- `docs/playbooks/respond-to-suspected-account-compromise.md` — escalation when credential found in code or logs.
-- `docs/playbooks/rotate-secrets.md` — rotate when a credential is exposed.
-- `docs/playbooks/bump-dep-safely.md` — safe dependency updates after audit findings.
-- Skill catalog: `docs/agents/agent-skills-catalog.md`.
+- `docs/00-start/playbooks/security-pen-test-checklist.md` — full pentest workflow before launch.
+- `docs/00-start/playbooks/respond-to-suspected-account-compromise.md` — escalation when credential found in code or logs.
+- `docs/00-start/playbooks/rotate-secrets.md` — rotate when a credential is exposed.
+- `docs/00-start/playbooks/bump-dep-safely.md` — safe dependency updates after audit findings.
+- Skill catalog: `docs/00-start/agents/agent-skills-catalog.md`.

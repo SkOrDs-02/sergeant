@@ -1,6 +1,6 @@
 # Secret Ownership Register
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Operational metadata registry for secrets and privileged system credentials in Sergeant. This register documents ownership and blast radius, never secret values.
@@ -39,4 +39,4 @@ Audit-trail row-и для retired runtime-flag-ів і secret group-ів. Збе
 
 - [access-policy.md](./access-policy.md)
 - [access-matrix.md](./access-matrix.md)
-- [rotate-secrets.md](../playbooks/rotate-secrets.md)
+- [rotate-secrets.md](../00-start/playbooks/rotate-secrets.md)

@@ -13,7 +13,7 @@
   - [`apps/server/src/migrations/006_push_devices.sql`](../../apps/server/src/migrations/006_push_devices.sql) — `push_devices` (iOS/Android токени).
   - [`packages/shared/src/types/index.ts`](../../packages/shared/src/types/index.ts) — `PushPayload` (cross-package контракт).
   - [`apps/web/src/sw.ts`](../../apps/web/src/sw.ts) — клієнтський SW handler (`push`, `notificationclick`).
-  - [`docs/playbooks/add-push-notification.md`](../playbooks/add-push-notification.md) — операційний how-to.
+  - [`docs/00-start/playbooks/add-push-notification.md`](../00-start/playbooks/add-push-notification.md) — операційний how-to.
 
 ---
 

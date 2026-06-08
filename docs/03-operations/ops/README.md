@@ -17,7 +17,7 @@ hygiene, scheduled scans, weekly housekeeping). Доповнюють incident-fl
 
 | Папка                                       | Призначення                                                                              |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `docs/playbooks/`                           | Канонічні кроки під конкретний trigger (release, incident, fix-failing-CI).              |
+| `docs/00-start/playbooks/`                  | Канонічні кроки під конкретний trigger (release, incident, fix-failing-CI).              |
 | `docs/03-operations/runbooks/`              | Як виконати infra-операцію на нашому стеку (restore-from-backup, key-rotation, replica). |
 | `docs/03-operations/ops/` (**цей каталог**) | Recurring-чергова рутина — щотижнева, щомісячна, scheduled-scan triage.                  |
 

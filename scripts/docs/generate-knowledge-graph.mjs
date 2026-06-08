@@ -196,7 +196,7 @@ function collectInitiatives() {
 }
 
 function collectPlaybooks() {
-  const dir = resolve(REPO_ROOT, "docs/playbooks");
+  const dir = resolve(REPO_ROOT, "docs/00-start/playbooks");
   const files = listMarkdown(dir).filter(
     (f) => !basename(f).startsWith("_") && basename(f) !== "INDEX.md",
   );

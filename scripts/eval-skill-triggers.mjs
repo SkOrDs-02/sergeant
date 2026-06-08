@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 export const DEFAULT_ROOT = resolve(__dirname, "..");
 export const DEFAULT_GOLDEN_PATH = resolve(
   DEFAULT_ROOT,
-  "docs/agents/skill-trigger-evals.json",
+  "docs/00-start/agents/skill-trigger-evals.json",
 );
 
 export const CASE_KINDS = new Set(["trigger", "anti-trigger", "workflow"]);

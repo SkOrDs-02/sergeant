@@ -56,5 +56,5 @@ Every coordinated or high-risk release should record:
 
 ## Canonical playbooks
 
-- [release.md](../playbooks/release.md) — canonical merged playbook (web + API, Capacitor shell, Expo) with decision tree.
-- [hotfix-prod-regression.md](../playbooks/hotfix-prod-regression.md)
+- [release.md](../00-start/playbooks/release.md) — canonical merged playbook (web + API, Capacitor shell, Expo) with decision tree.
+- [hotfix-prod-regression.md](../00-start/playbooks/hotfix-prod-regression.md)

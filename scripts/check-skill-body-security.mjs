@@ -6,7 +6,7 @@
 // Exits non-zero if any hit is found. Severity is always `error` — there
 // is no warning mode. Clean baseline on all 12 existing skills expected.
 //
-// Linked roadmap: docs/agents/skills-evolution-roadmap.md (PR 5).
+// Linked roadmap: docs/00-start/agents/skills-evolution-roadmap.md (PR 5).
 // Linked rule: docs/governance/rules/22-skill-body-security-scan.md.
 
 import { readFileSync, statSync } from "node:fs";

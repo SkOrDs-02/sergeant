@@ -44,7 +44,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ## Playbooks
 
-- `docs/playbooks/add-api-endpoint.md` — handler + route + api-client + тести синхронно.
-- `docs/playbooks/add-sql-migration.md` — коли endpoint потребує schema-змін.
-- `docs/playbooks/release.md` — canonical release-playbook (секція web + API).
-- Каталог: `docs/agents/agent-skills-catalog.md`.
+- `docs/00-start/playbooks/add-api-endpoint.md` — handler + route + api-client + тести синхронно.
+- `docs/00-start/playbooks/add-sql-migration.md` — коли endpoint потребує schema-змін.
+- `docs/00-start/playbooks/release.md` — canonical release-playbook (секція web + API).
+- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.

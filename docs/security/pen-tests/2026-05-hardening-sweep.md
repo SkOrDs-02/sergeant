@@ -21,7 +21,7 @@ fills the gap: **manual e2e reproduction** plus a written transcript of the
 attack and the observed defence, so launch-readiness reviewers can verify the
 fixes without re-deriving the attack from the card.
 
-Use this document together with [`docs/playbooks/security-pen-test-checklist.md`](../../playbooks/security-pen-test-checklist.md)
+Use this document together with [`docs/00-start/playbooks/security-pen-test-checklist.md`](../../00-start/playbooks/security-pen-test-checklist.md)
 — that playbook is the entry-point recipe; this file is the per-card transcript.
 
 ## Scope
@@ -499,7 +499,7 @@ this initiative adds a real-Postgres e2e to close that gap.
 
 ## Related documents
 
-- [`docs/playbooks/security-pen-test-checklist.md`](../../playbooks/security-pen-test-checklist.md) — the recipe that points to this transcript
+- [`docs/00-start/playbooks/security-pen-test-checklist.md`](../../00-start/playbooks/security-pen-test-checklist.md) — the recipe that points to this transcript
 - [`docs/security/hardening/README.md`](../hardening/README.md) — full hardening backlog
 - [`docs/security/disaster-recovery.md`](../disaster-recovery.md) — recovery posture for security incidents
 - [`docs/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) — owning initiative

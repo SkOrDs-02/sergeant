@@ -49,5 +49,5 @@ Sergeant має три Railway services:
 - [docs/02-engineering/integrations/railway-vercel.md](../../../docs/02-engineering/integrations/railway-vercel.md)
 - [docs/03-operations/observability/README.md](../../../docs/03-operations/observability/README.md)
 - [docs/security/logging-redaction-policy.md](../../../docs/security/logging-redaction-policy.md)
-- [docs/playbooks/investigate-alert.md](../../../docs/playbooks/investigate-alert.md)
+- [docs/00-start/playbooks/investigate-alert.md](../../../docs/00-start/playbooks/investigate-alert.md)
 - [docs/adr/0055-openclaw-external-gateway.md](../../../docs/adr/0055-openclaw-external-gateway.md)

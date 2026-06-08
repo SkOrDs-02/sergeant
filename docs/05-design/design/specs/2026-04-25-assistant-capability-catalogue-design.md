@@ -513,6 +513,6 @@ E2E (Playwright smoke):
 ## See also
 
 - [`docs/05-design/design/specs/archive/2026-04-24-assistant-quick-actions-v1-design.md`](./archive/2026-04-24-assistant-quick-actions-v1-design.md) — попередній етап (chips), на якому будується catalogue
-- [`docs/playbooks/add-hubchat-tool.md`](../../../playbooks/add-hubchat-tool.md) — оновити після PR 1: додавання tool вимагає catalogue entry
-- [`docs/playbooks/tune-system-prompt.md`](../../../playbooks/tune-system-prompt.md) — оновити після PR 2: токен-cost через `buildToolList()`
+- [`docs/00-start/playbooks/add-hubchat-tool.md`](../../../00-start/playbooks/add-hubchat-tool.md) — оновити після PR 1: додавання tool вимагає catalogue entry
+- [`docs/00-start/playbooks/tune-system-prompt.md`](../../../00-start/playbooks/tune-system-prompt.md) — оновити після PR 2: токен-cost через `buildToolList()`
 - [`AGENTS.md`](../../../../AGENTS.md) — секція «Architecture: AI tool execution path» (без змін у v1; в PR 2 додамо ноту про реджистр як SSOT)

@@ -98,7 +98,7 @@ Every wired workflow declares these in `manifest.json` → `requiredEnv`:
   `https://api.invalid.local` so the workflow degrades gracefully when the
   variable is missing (POST hits a no-op host instead of crashing).
 - `INTERNAL_API_KEY` — Bearer token for `/api/internal/alerts/post`. Rotated
-  via [`docs/playbooks/rotate-secrets.md`](../../playbooks/rotate-secrets.md).
+  via [`docs/00-start/playbooks/rotate-secrets.md`](../../00-start/playbooks/rotate-secrets.md).
 
 These are in addition to whatever topic-specific variables the workflow
 already required (e.g. `TELEGRAM_TOPIC_GROWTH`, `POSTHOG_API_KEY`).

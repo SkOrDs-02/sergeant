@@ -277,7 +277,7 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("| Домен | Що там | Коли читати |");
   lines.push("| --- | --- | --- |");
   lines.push(
-    "| **Старт** | [`agents/`](./agents/README.md), [`playbooks/`](./playbooks/README.md) | онбординг, routing, рецепти |",
+    "| **Старт** | [`agents/`](./00-start/agents/README.md), [`playbooks/`](./00-start/playbooks/README.md) | онбординг, routing, рецепти |",
   );
   lines.push(
     "| **Продукт** | [`launch/`](./01-product/launch/README.md), [`marketing/`](./01-product/marketing/README.md), [`copy/`](./01-product/copy/README.md) | GTM, монетизація, FTUX |",

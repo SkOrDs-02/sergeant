@@ -348,7 +348,7 @@ export function renderMatrixRaw(
   );
   lines.push("");
   lines.push(
-    "> See also: [`docs/playbooks/add-hard-rule.md`](../playbooks/add-hard-rule.md).",
+    "> See also: [`docs/00-start/playbooks/add-hard-rule.md`](../00-start/playbooks/add-hard-rule.md).",
   );
   lines.push("");
   return lines.join("\n");

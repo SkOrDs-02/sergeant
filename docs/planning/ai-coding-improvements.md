@@ -10,7 +10,7 @@ Roadmap для агентської інфраструктури Sergeant. Це 
 | Блок                                 | Статус | Нотатки                                                                                           |
 | ------------------------------------ | ------ | ------------------------------------------------------------------------------------------------- |
 | Repo-level контракт і hard rules     | done   | `AGENTS.md` + registry + matrix + CI sync gates                                                   |
-| Перша хвиля playbook-ів              | done   | початкові execution recipes у `docs/playbooks/`                                                   |
+| Перша хвиля playbook-ів              | done   | початкові execution recipes у `docs/00-start/playbooks/`                                          |
 | AI-маркери й enforcement             | done   | lifecycle / generation markers під CI                                                             |
 | Preview / test інфраструктура        | done   | Playwright, visual regression, CI coverage                                                        |
 | Оновлення repo-owned skills          | done   | вузька Sergeant-specific skill surface без generic-дублювання                                     |
@@ -23,14 +23,14 @@ Roadmap для агентської інфраструктури Sergeant. Це 
 
 ## Наступні блоки
 
-| Блок                               | Статус | Нотатки                                                                                                                               |
-| ---------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Eval harness для skill trigger-ів  | active | `docs/agents/skill-trigger-evals.json` + `pnpm eval:skills`: 2 trigger + 1 anti-trigger + 1 workflow-compliance prompt на кожен skill |
-| Eval harness для playbook routing  | next   | один очевидний playbook match для priority-сценаріїв                                                                                  |
-| Discoverability tests              | next   | new contributor / new agent знаходить потрібний route менш ніж за два кліки                                                           |
-| Sampling відповідності PR template | next   | dry-run quality gate для PR descriptions                                                                                              |
-| Автоматизація operator dashboards  | next   | saved searches / issue views для lead time, stale flags, postmortem actions                                                           |
-| Privacy and data-rights operations | next   | перетворити launch/privacy draft на канонічні retention, consent, export, delete surface-и                                            |
+| Блок                               | Статус | Нотатки                                                                                                                                        |
+| ---------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Eval harness для skill trigger-ів  | active | `docs/00-start/agents/skill-trigger-evals.json` + `pnpm eval:skills`: 2 trigger + 1 anti-trigger + 1 workflow-compliance prompt на кожен skill |
+| Eval harness для playbook routing  | next   | один очевидний playbook match для priority-сценаріїв                                                                                           |
+| Discoverability tests              | next   | new contributor / new agent знаходить потрібний route менш ніж за два кліки                                                                    |
+| Sampling відповідності PR template | next   | dry-run quality gate для PR descriptions                                                                                                       |
+| Автоматизація operator dashboards  | next   | saved searches / issue views для lead time, stale flags, postmortem actions                                                                    |
+| Privacy and data-rights operations | next   | перетворити launch/privacy draft на канонічні retention, consent, export, delete surface-и                                                     |
 
 ## План оцінювання
 

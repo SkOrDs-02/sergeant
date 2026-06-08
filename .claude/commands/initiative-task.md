@@ -34,9 +34,9 @@ Arguments: `$ARGUMENTS`
    - `tools/openclaw/**` → `sergeant-openclaw`
    - `auth.ts`, Better Auth → `better-auth-best-practices`
    - `docs/**`, `scripts/docs/**`, `.github/workflows/docs-*.yml` → cross-surface: read **no** specialist, treat as `sergeant-writing-skills` if SKILL.md is touched, otherwise plain docs work
-   - `.github/workflows/**` (non-docs), `tools/**` (non-openclaw), `packages/config/**`, root `eslint.config.js` / `pnpm-workspace.yaml` → no specialist exists; load `sergeant-start-here` + relevant playbook from `docs/playbooks/` (e.g. `fix-failing-ci.md`). Note the catalog gap in the end-of-turn summary.
+   - `.github/workflows/**` (non-docs), `tools/**` (non-openclaw), `packages/config/**`, root `eslint.config.js` / `pnpm-workspace.yaml` → no specialist exists; load `sergeant-start-here` + relevant playbook from `docs/00-start/playbooks/` (e.g. `fix-failing-ci.md`). Note the catalog gap in the end-of-turn summary.
    - Multiple surfaces → load `sergeant-feature-delivery` as the umbrella, then the dominant surface skill.
-4. **Match playbook.** Cross-reference the PR's intent against `docs/playbooks/INDEX.md`. If a playbook fits the PR title (e.g. "add migration" → `add-sql-migration.md`, "add endpoint" → `add-api-endpoint.md`, "add hard rule" → `add-hard-rule.md`), load it as the canonical recipe.
+4. **Match playbook.** Cross-reference the PR's intent against `docs/00-start/playbooks/INDEX.md`. If a playbook fits the PR title (e.g. "add migration" → `add-sql-migration.md`, "add endpoint" → `add-api-endpoint.md`, "add hard rule" → `add-hard-rule.md`), load it as the canonical recipe.
 5. **Confirm plan with the user** in 4-6 lines max:
    - Initiative + phase
    - PR row picked (PR-N.M with one-line intent)

@@ -367,7 +367,7 @@ docker compose -f ops/docker-compose.ops.yml --env-file ops/.env.ops --profile c
 
 ## Додавання нового workflow-у
 
-1. [Playbook: modify-or-add an n8n workflow](../docs/playbooks/modify-n8n-workflow.md) — канонічна послідовність кроків.
+1. [Playbook: modify-or-add an n8n workflow](../docs/00-start/playbooks/modify-n8n-workflow.md) — канонічна послідовність кроків.
 2. [ADR-0026 «n8n workflow source of truth»](../docs/adr/0026-n8n-workflow-source-of-truth.md) — «Workflow basics» розділ + Git-as-truth інваріант.
 3. [Reporting matrix](./n8n-workflows/REPORTING-MATRIX.md) — оновити **разом з PR**, інакше ламає Hard Rule #15.
 4. [`manifest.json`](./n8n-workflows/manifest.json) — owner / status / riskTier / requiredEnv / requiredCredentials.

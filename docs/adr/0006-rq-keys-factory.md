@@ -9,7 +9,7 @@
   - [`AGENTS.md`](../../AGENTS.md) — hard rule #2 (RQ keys: only via centralized factories).
   - [`apps/web/src/shared/lib/api/queryKeys.ts`](../../apps/web/src/shared/lib/api/queryKeys.ts) — реєстр factory-функцій.
   - [`packages/eslint-plugin-sergeant-design/index.js`](../../packages/eslint-plugin-sergeant-design/index.js) — правило `rq-keys-only-from-factory` ([#869](https://github.com/Skords-01/Sergeant/pull/869)).
-  - [`docs/playbooks/add-react-query-hook.md`](../playbooks/add-react-query-hook.md).
+  - [`docs/00-start/playbooks/add-react-query-hook.md`](../00-start/playbooks/add-react-query-hook.md).
 
 ---
 

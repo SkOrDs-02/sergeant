@@ -3,14 +3,14 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-> **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
+> **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
 
 ## Agent harnesses & routing
 
 Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, Devin, Cursor — drives this repo through the same shared primitives: harness-neutral skills in `.agents/skills/`, this `AGENTS.md` as the policy source of truth, and the surface→specialist routing table below. **Harness-specific config (models, permissions, MCP wiring, custom agents, commands) lives outside the checkout**, in each tool's own global config directory — the repo itself carries no tool config.
 
 - **Source of truth.** For all project / policy / hard-rules questions, this file (`AGENTS.md`) wins. `CLAUDE.md` and `DEVIN.md` are thin wrappers that add only runtime/tool notes and must not duplicate policy.
-- **Skills.** Load the skill for the touched surface — start with `.agents/skills/sergeant-start-here/SKILL.md`, then exactly one specialist. Catalog: `docs/agents/agent-skills-catalog.md`. Skills are plain SKILL.md files; each harness loads them through its own skill loader — prefer that loader over reading SKILL.md by hand when one exists.
+- **Skills.** Load the skill for the touched surface — start with `.agents/skills/sergeant-start-here/SKILL.md`, then exactly one specialist. Catalog: `docs/00-start/agents/agent-skills-catalog.md`. Skills are plain SKILL.md files; each harness loads them through its own skill loader — prefer that loader over reading SKILL.md by hand when one exists.
 - **Specialists.** 12 Sergeant specialists own the routing below (web-ui, server-api, mobile, data-and-migrations, deploy, openclaw, hubchat, e2e-testing, security-audit, bugfix, tech-debt, review-and-merge). Each harness ships its own agent definitions in its global config; the surface→specialist mapping is what they all share.
 
 **Routing (surface → specialist).** Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
@@ -30,7 +30,7 @@ Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, 
 | Refactor, dead code, Knip baseline, eslint baseline reduction       | `sergeant-tech-debt`           |
 | PR review, squash-merge, release-cut, changelog                     | `sergeant-review-and-merge`    |
 
-If two surfaces overlap (e.g. web + e2e), load the **owner** first; ask the other only when blocked. Full catalog: [`docs/agents/agent-skills-catalog.md`](./docs/agents/agent-skills-catalog.md).
+If two surfaces overlap (e.g. web + e2e), load the **owner** first; ask the other only when blocked. Full catalog: [`docs/00-start/agents/agent-skills-catalog.md`](./docs/00-start/agents/agent-skills-catalog.md).
 
 ### Harness config lives outside the repo
 
@@ -49,11 +49,11 @@ Harness-specific primitives — session recall, worktree/branch managers, MCP to
 ## Agent operating system (project)
 
 - Start here: [`.agents/skills/sergeant-start-here/SKILL.md`](.agents/skills/sergeant-start-here/SKILL.md)
-- 30-minute onboarding: [`docs/agents/onboarding.md`](./docs/agents/onboarding.md)
-- Skill routing catalog: `docs/agents/agent-skills-catalog.md`
-- Workflow decision trees: [`docs/agents/agent-workflows.md`](./docs/agents/agent-workflows.md)
-- Execution recipes: [`docs/playbooks/README.md`](./docs/playbooks/README.md)
-- Playbook lookup: [`docs/playbooks/playbook-catalog.md`](./docs/playbooks/playbook-catalog.md)
+- 30-minute onboarding: [`docs/00-start/agents/onboarding.md`](./docs/00-start/agents/onboarding.md)
+- Skill routing catalog: `docs/00-start/agents/agent-skills-catalog.md`
+- Workflow decision trees: [`docs/00-start/agents/agent-workflows.md`](./docs/00-start/agents/agent-workflows.md)
+- Execution recipes: [`docs/00-start/playbooks/README.md`](./docs/00-start/playbooks/README.md)
+- Playbook lookup: [`docs/00-start/playbooks/playbook-catalog.md`](./docs/00-start/playbooks/playbook-catalog.md)
 
 Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUDE.md` and `DEVIN.md` only add runtime/tool notes and must not become parallel sources of truth.
 
@@ -93,7 +93,7 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 | `packages/**`                            | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/02-engineering/architecture/module-ownership.md#packages)         |
 | `ops/**`, `tools/**`, `scripts/**`       | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/02-engineering/architecture/module-ownership.md#ops-surfaces) |
 
-> ¹ Secondary is the bus-factor backup reviewer (real GitHub handle preferred; `TBD (<role>)` placeholders are accepted while delegation is in flight). L2 escalation when owner is unreachable: [`docs/playbooks/operational-continuity.md`](./docs/playbooks/operational-continuity.md). Empty Secondary cells fail `pnpm lint:codeowners`.
+> ¹ Secondary is the bus-factor backup reviewer (real GitHub handle preferred; `TBD (<role>)` placeholders are accepted while delegation is in flight). L2 escalation when owner is unreachable: [`docs/00-start/playbooks/operational-continuity.md`](./docs/00-start/playbooks/operational-continuity.md). Empty Secondary cells fail `pnpm lint:codeowners`.
 
 ## Hard rules (do not break)
 
@@ -206,8 +206,8 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 ## See also
 
-- [`docs/playbooks/README.md`](docs/playbooks/README.md) — full index of procedural recipes (with triggers and 🌳 decision-tree markers).
-- [`docs/agents/agent-skills-catalog.md`](docs/agents/agent-skills-catalog.md) — canonical routing table for repo-owned Sergeant skills.
+- [`docs/00-start/playbooks/README.md`](docs/00-start/playbooks/README.md) — full index of procedural recipes (with triggers and 🌳 decision-tree markers).
+- [`docs/00-start/agents/agent-skills-catalog.md`](docs/00-start/agents/agent-skills-catalog.md) — canonical routing table for repo-owned Sergeant skills.
 - [`docs/01-product/copy/style-guide.uk.md`](docs/01-product/copy/style-guide.uk.md) — canonical UA-copy tone-of-voice rules (1st-person-singular for action-busy, `ти`-address, action-prompt-closed errors). Reference for every new кирилічний JSX literal.
 - [`.agents/skills/`](.agents/skills/) — current `SKILL.md` files for AI agents; start with `sergeant-start-here`.
 - [`docs/02-engineering/architecture/`](docs/02-engineering/architecture/) — repo map, module ownership, domain invariants, C4 diagrams.

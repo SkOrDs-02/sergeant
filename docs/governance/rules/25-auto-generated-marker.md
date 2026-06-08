@@ -17,7 +17,7 @@ Every auto-generated artifact in the repo. Currently:
 - `docs/02-engineering/architecture/diagrams/c3-workspaces.md`
 - `docs/open-work.md`
 - `docs/initiatives/follow-ups.md`
-- `docs/playbooks/INDEX.md`
+- `docs/00-start/playbooks/INDEX.md`
 - `docs/governance/hard-rules-matrix.md`
 
 Add new artifacts here when a new generator lands.

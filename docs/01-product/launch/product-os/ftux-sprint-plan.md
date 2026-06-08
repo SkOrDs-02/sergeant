@@ -20,7 +20,7 @@
 > [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
 > [`04-launch-readiness.md` §4.2](../business/04-launch-readiness.md) — funnel definitions ·
 > [`docs/governance/feature-flags.md`](../../../governance/feature-flags.md) — flag conventions ·
-> [`docs/playbooks/add-onboarding-step.md`](../../../playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS`.
+> [`docs/00-start/playbooks/add-onboarding-step.md`](../../../00-start/playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS`.
 
 ---
 

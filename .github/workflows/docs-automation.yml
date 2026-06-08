@@ -6,7 +6,7 @@ name: Docs automation
 
 # Guards documentation quality on every PR / push:
 #
-#   - playbook-index: regenerates docs/playbooks/INDEX.md and fails if the
+#   - playbook-index: regenerates docs/00-start/playbooks/INDEX.md and fails if the
 #     checked-in copy drifts from the truth in `**Trigger:**` lines.
 #   - markdown-links: walks every *.md file, verifies every internal link
 #     resolves, and soft-warns on broken external URLs (enable
@@ -51,14 +51,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Check docs/playbooks/INDEX.md is up to date
+      - name: Check docs/00-start/playbooks/INDEX.md is up to date
         run: node scripts/docs/generate-playbook-index.mjs --check
 
       - name: Check playbook files are in INDEX.md and catalog
         run: node scripts/docs/check-playbook-3way-sync.mjs
 
       - name: Check playbook schema (H1 + freshness + Status + Trigger)
-        # Every playbook in docs/playbooks/ (excluding INDEX.md, README.md and
+        # Every playbook in docs/00-start/playbooks/ (excluding INDEX.md, README.md and
         # _TEMPLATE*) must declare an H1 title, a `Last validated` freshness
         # header, a `Status` lifecycle marker, and a `**Trigger:**` line.
         # See scripts/docs/check-playbook-schema.mjs for the exact schema.

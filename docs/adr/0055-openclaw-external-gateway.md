@@ -78,7 +78,7 @@ The single-stage Docker image is possible because `openclaw.plugin.json` sets `"
 - `Dockerfile.openclaw-gateway` specifies Node 24-alpine base image per migration plan prerequisites.
 - `ops/openclaw/docker-entrypoint.sh` copies all config-as-code files; does not overwrite auth state subdirs.
 - `railway.openclaw-gateway.toml` sets `restartPolicyType = "ON_FAILURE"` and `restartPolicyMaxRetries = 10`.
-- `docs/playbooks/rotate-openclaw-credentials.md` updated with `OPENCLAW_GATEWAY_BOT_TOKEN` rotation section.
+- `docs/00-start/playbooks/rotate-openclaw-credentials.md` updated with `OPENCLAW_GATEWAY_BOT_TOKEN` rotation section.
 - ADR-0031, ADR-0036, ADR-0041 marked `Superseded by ADR-0055`.
 
 ## Links

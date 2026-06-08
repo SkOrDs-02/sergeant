@@ -116,7 +116,7 @@
 
 - `AGENTS.md` — 8 hard rules з прикладами BAD/GOOD: bigint coercion, RQ keys factory, API-contract triple-edit, sequential migrations + two-phase drop, conventional commit scopes (явний enum, без `monorepo`/`all`), no force-push на main, no `--no-verify`, valid Tailwind opacity.
 - `CONTRIBUTING.md` (335 рядків) — zero-to-running workflow.
-- 23 playbooks (`docs/playbooks/`) — `add-api-endpoint`, `add-react-query-hook`, `add-sql-migration`, `migrate-localstorage-to-typedstore`, `stabilize-flaky-test`, `rotate-secrets`, `hotfix-prod-regression`, `tune-system-prompt`, `enable-prompt-caching` тощо.
+- 23 playbooks (`docs/00-start/playbooks/`) — `add-api-endpoint`, `add-react-query-hook`, `add-sql-migration`, `migrate-localstorage-to-typedstore`, `stabilize-flaky-test`, `rotate-secrets`, `hotfix-prod-regression`, `tune-system-prompt`, `enable-prompt-caching` тощо.
 
 **Ризики (доповнюю Васю):**
 
@@ -205,7 +205,7 @@
 
 - `PR-5.A` ✅ closed — [#863](https://github.com/Skords-01/Sergeant/pull/863) `ci(server): migration linter — fail PR if a NNN_*.sql contains DROP COLUMN/TABLE without a sibling NNN_*.add_*.sql in a previous merged PR`. Реалізація: Node-скрипт `scripts/lint-migrations.mjs` із escape-hatch коментарем `-- ALLOW_DROP: <reason> (due: YYYY-MM-DD)`.
 - `PR-5.B` ✅ closed — [#918](https://github.com/Skords-01/Sergeant/pull/918) `test(server): rollback sanity for *.down.sql migrations`. `apps/server/src/migrations/__tests__/rollback-sanity.test.ts` піднімає `postgres:16-alpine` через Testcontainers і за цикл: (1) застосовує всі forward-міграції; (2) знімає schema-fingerprint (таблиці+індекси+стовпці); (3) прокатує всі `*.down.sql` у зворотньому порядку; (4) re-applies forward; (5) перевіряє рівність fingerprint-ів. Другий тест — двократний прокат `down.sql` як idempotency-guard для AGENTS rule #4.
-- `PR-5.C` ✅closed — `docs/playbooks/pre-merge-migration-checklist.md` — реалізовано: чек-лист на 10 секцій (numbering, two-phase DROP, bigint coercion, api-client sync, idempotency, performance, RLS, local & CI verification, rollout-readiness) + reviewer responsibilities + common mistakes table. Покликається з PR template для будь-якого PR з `apps/server/src/migrations/`.
+- `PR-5.C` ✅closed — `docs/00-start/playbooks/pre-merge-migration-checklist.md` — реалізовано: чек-лист на 10 секцій (numbering, two-phase DROP, bigint coercion, api-client sync, idempotency, performance, RLS, local & CI verification, rollout-readiness) + reviewer responsibilities + common mistakes table. Покликається з PR template для будь-якого PR з `apps/server/src/migrations/`.
 
 ---
 
@@ -345,7 +345,7 @@
 
 **Що бачу:**
 
-- 23 playbooks у `docs/playbooks/` — кожен має «коли робити», «кроки», «гарантії», «приклади».
+- 23 playbooks у `docs/00-start/playbooks/` — кожен має «коли робити», «кроки», «гарантії», «приклади».
 - `docs/05-design/design/specs/` — окрема директорія для специфікацій великих фіч.
 - `docs/03-operations/observability/{SLO.md, runbook.md, dashboards.md, prometheus/}` — повне operational documentation.
 - AI-marker система (`AI-NOTE`/`AI-CONTEXT`/`AI-DANGER`/`AI-GENERATED`/`AI-LEGACY: expires YYYY-MM-DD`) з `sergeant-design/ai-marker-syntax` ESLint rule (warn). Це формалізована documentation для AI-агентів, що пишуть код.
@@ -356,7 +356,7 @@
 **PR-ідеї:**
 
 - `PR-11.A` ✅ closed — [#952](https://github.com/Skords-01/Sergeant/pull/952) `docs(docs): freshness badges for top-10 docs + nightly overdue-doc issue workflow`. `**Last validated:**` бейдж додано на 11+ топ-документів, `.github/workflows/docs-freshness.yml` + `scripts/docs/check-freshness.mjs` відкриває issue на overdue.
-- `PR-11.B` ✅ closed — [#955](https://github.com/Skords-01/Sergeant/pull/955) `docs(docs): convert top-5 playbooks to decision-tree format`. Додано `docs/playbooks/_TEMPLATE-decision-tree.md` і конвертовано: `debug-chat-tool.md`, `hotfix-prod-regression.md`, `investigate-alert.md`, `rotate-secrets.md`, `stabilize-flaky-test.md`.
+- `PR-11.B` ✅ closed — [#955](https://github.com/Skords-01/Sergeant/pull/955) `docs(docs): convert top-5 playbooks to decision-tree format`. Додано `docs/00-start/playbooks/_TEMPLATE-decision-tree.md` і конвертовано: `debug-chat-tool.md`, `hotfix-prod-regression.md`, `investigate-alert.md`, `rotate-secrets.md`, `stabilize-flaky-test.md`.
 - `PR-11.C` ✅ closed (5/5) — ADR template + README ✅ ([#938](https://github.com/Skords-01/Sergeant/pull/938)) + retroactive batches:
   - `docs/adr/0017-better-auth-choice-and-session-model.md` (Better Auth) ✅ ([#962](https://github.com/Skords-01/Sergeant/pull/962))
   - `docs/adr/0010-mobile-dual-track-capacitor-expo.md` (Capacitor wrapper) ✅ ([#956](https://github.com/Skords-01/Sergeant/pull/956))

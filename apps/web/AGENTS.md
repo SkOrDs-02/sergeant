@@ -111,6 +111,6 @@ pnpm --filter @sergeant/web exec playwright \    # focus one spec locally
 ## Deeper docs
 
 - App README: [`apps/web/README.md`](./README.md)
-- Routing catalog: [`docs/agents/agent-skills-catalog.md`](../../docs/agents/agent-skills-catalog.md)
+- Routing catalog: [`docs/00-start/agents/agent-skills-catalog.md`](../../docs/00-start/agents/agent-skills-catalog.md)
 - Module ownership: [`docs/02-engineering/architecture/module-ownership.md`](../../docs/02-engineering/architecture/module-ownership.md)
 - Domain invariants (Kyiv time, kopiykas as `number`): [`docs/02-engineering/architecture/domain-invariants.md`](../../docs/02-engineering/architecture/domain-invariants.md)

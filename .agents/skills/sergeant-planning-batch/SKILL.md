@@ -14,7 +14,7 @@ planning doc that work has driven to fully-complete.
 
 It is the planning-folder sibling of `sergeant-deliver-squad` (cross-surface
 code) and the parallel docs sweep in
-[`docs/agents/agent-workflows.md`](../../../docs/agents/agent-workflows.md) §12.
+[`docs/00-start/agents/agent-workflows.md`](../../../docs/00-start/agents/agent-workflows.md) §12.
 Unlike the §11 docs-sync sweep, this workflow **does** carry real code work and
 **does** archive — without the 90-day stabilization wait.
 
@@ -55,7 +55,7 @@ Classify each selected card before fan-out, then route it:
 | --------------------------------------------- | ------------------------------------------------------------------------------------- |
 | DB + server + api-client + web/mobile         | `sergeant-deliver-squad` (sequential handoff chain, one card at a time)               |
 | One code surface only                         | The matching specialist skill (`sergeant-web-ui`, `sergeant-server-api`, …)           |
-| Docs / trackers / status only                 | `docs/playbooks/reconcile-doc-drift.md` recipe (evidence-backed edits)                |
+| Docs / trackers / status only                 | `docs/00-start/playbooks/reconcile-doc-drift.md` recipe (evidence-backed edits)                |
 | Cross-surface test/typecheck validation       | `sergeant-qa-squad`                                                                   |
 
 ## Parallel fan-out strategy
@@ -123,7 +123,7 @@ archival is a deliberate no-op — never force it.
 
 ## Playbooks
 
-- [`docs/playbooks/execute-planning-batch.md`](../../../docs/playbooks/execute-planning-batch.md) — step-by-step recipe.
-- [`docs/playbooks/reconcile-doc-drift.md`](../../../docs/playbooks/reconcile-doc-drift.md) — single-doc drift reconcile.
-- [`docs/playbooks/run-squad-deliver.md`](../../../docs/playbooks/run-squad-deliver.md) — cross-surface code card chain.
-- [`docs/agents/agent-skills-catalog.md`](../../../docs/agents/agent-skills-catalog.md) — skill routing catalog.
+- [`docs/00-start/playbooks/execute-planning-batch.md`](../../../docs/00-start/playbooks/execute-planning-batch.md) — step-by-step recipe.
+- [`docs/00-start/playbooks/reconcile-doc-drift.md`](../../../docs/00-start/playbooks/reconcile-doc-drift.md) — single-doc drift reconcile.
+- [`docs/00-start/playbooks/run-squad-deliver.md`](../../../docs/00-start/playbooks/run-squad-deliver.md) — cross-surface code card chain.
+- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — skill routing catalog.

@@ -2119,8 +2119,8 @@ AND status='dead_letter'`. `WHERE status='dead_letter'` guard
   restore матриця (which tables safe per CRDT semantics з PR #043 / #043a / #043b);
   smoke-test SQL пінить migration ledger, row-counts, tombstone-інваріанти,
   op-log monotonic server_ts, FK orphans; migration-skew handling; escalation
-  paths. Cross-link із concept-level [`docs/playbooks/restore-from-backup.md`](../playbooks/restore-from-backup.md),
-  [`docs/playbooks/test-backup-restore.md`](../playbooks/test-backup-restore.md),
+  paths. Cross-link із concept-level [`docs/00-start/playbooks/restore-from-backup.md`](../00-start/playbooks/restore-from-backup.md),
+  [`docs/00-start/playbooks/test-backup-restore.md`](../00-start/playbooks/test-backup-restore.md),
   [`docs/security/disaster-recovery.md`](../security/disaster-recovery.md).
 - **Risk.** None — pure docs, no runtime / schema / code change.
 - **Dep.** None.

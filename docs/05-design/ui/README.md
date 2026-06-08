@@ -17,4 +17,4 @@ mode): тут — конвенції взаємодії, там — візуал
 ## Cross-links
 
 - Design system: [`docs/05-design/design/`](../design/README.md).
-- Web-UI specialist skill: `sergeant-web-ui` (див. [`docs/agents/agent-skills-catalog.md`](../../agents/agent-skills-catalog.md)).
+- Web-UI specialist skill: `sergeant-web-ui` (див. [`docs/00-start/agents/agent-skills-catalog.md`](../../00-start/agents/agent-skills-catalog.md)).

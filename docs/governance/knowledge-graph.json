@@ -573,7 +573,7 @@
       "tier": "core",
       "meta": {
         "number": 53,
-        "last_validated": "2026-06-07"
+        "last_validated": "2026-06-08"
       }
     },
     {
@@ -643,7 +643,7 @@
       "tier": "core",
       "meta": {
         "number": 60,
-        "last_validated": "2026-06-01"
+        "last_validated": "2026-06-08"
       }
     },
     {
@@ -655,7 +655,7 @@
       "tier": "core",
       "meta": {
         "number": 61,
-        "last_validated": "2026-06-01"
+        "last_validated": "2026-06-08"
       }
     },
     {
@@ -678,7 +678,7 @@
       "tier": "core",
       "meta": {
         "number": 63,
-        "last_validated": "2026-06-06"
+        "last_validated": "2026-06-08"
       }
     },
     {
@@ -1123,7 +1123,7 @@
           "docs/02-engineering/architecture/diagrams/c3-workspaces.md",
           "docs/open-work.md",
           "docs/initiatives/follow-ups.md",
-          "docs/playbooks/INDEX.md"
+          "docs/00-start/playbooks/INDEX.md"
         ]
       }
     },
@@ -1140,7 +1140,7 @@
         "scope": [
           "docs/adr/*.md",
           "docs/initiatives/*.md",
-          "docs/playbooks/*.md",
+          "docs/00-start/playbooks/*.md",
           "docs/governance/rules/*.md"
         ]
       }
@@ -1373,7 +1373,7 @@
       "type": "initiative",
       "title": "PR-04: Secondary owners + knowledge-transfer plan",
       "path": "docs/initiatives/stack-pulse-2026-05/pr-04-bus-factor-secondary-owners.md",
-      "status": "Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/playbooks/operational-continuity.md`](../../playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).",
+      "status": "Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/00-start/playbooks/operational-continuity.md`](../../00-start/playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).",
       "tier": "core",
       "meta": {}
     },
@@ -1553,7 +1553,7 @@
       "type": "initiative",
       "title": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in)",
       "path": "docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md",
-      "status": "Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера).",
+      "status": "Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/00-start/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера).",
       "tier": "core",
       "meta": {}
     },
@@ -1696,7 +1696,7 @@
       "id": "playbook:access-governance",
       "type": "playbook",
       "title": "Управління привілейованим доступом (access governance)",
-      "path": "docs/playbooks/access-governance.md",
+      "path": "docs/00-start/playbooks/access-governance.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1705,7 +1705,7 @@
       "id": "playbook:add-api-endpoint",
       "type": "playbook",
       "title": "Add API Endpoint",
-      "path": "docs/playbooks/add-api-endpoint.md",
+      "path": "docs/00-start/playbooks/add-api-endpoint.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1714,7 +1714,7 @@
       "id": "playbook:add-feature-flag",
       "type": "playbook",
       "title": "Додати feature flag",
-      "path": "docs/playbooks/add-feature-flag.md",
+      "path": "docs/00-start/playbooks/add-feature-flag.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1723,7 +1723,7 @@
       "id": "playbook:add-hard-rule",
       "type": "playbook",
       "title": "Додати Hard Rule",
-      "path": "docs/playbooks/add-hard-rule.md",
+      "path": "docs/00-start/playbooks/add-hard-rule.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1732,7 +1732,7 @@
       "id": "playbook:add-hubchat-tool",
       "type": "playbook",
       "title": "Додати HubChat Tool",
-      "path": "docs/playbooks/add-hubchat-tool.md",
+      "path": "docs/00-start/playbooks/add-hubchat-tool.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1741,7 +1741,7 @@
       "id": "playbook:add-monobank-event-handler",
       "type": "playbook",
       "title": "Add Monobank Event Handler",
-      "path": "docs/playbooks/add-monobank-event-handler.md",
+      "path": "docs/00-start/playbooks/add-monobank-event-handler.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1750,7 +1750,7 @@
       "id": "playbook:add-new-page-route",
       "type": "playbook",
       "title": "Add New Page Route",
-      "path": "docs/playbooks/add-new-page-route.md",
+      "path": "docs/00-start/playbooks/add-new-page-route.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1759,7 +1759,7 @@
       "id": "playbook:add-onboarding-step",
       "type": "playbook",
       "title": "Add Onboarding Step",
-      "path": "docs/playbooks/add-onboarding-step.md",
+      "path": "docs/00-start/playbooks/add-onboarding-step.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1768,7 +1768,7 @@
       "id": "playbook:add-push-notification",
       "type": "playbook",
       "title": "Add Push Notification",
-      "path": "docs/playbooks/add-push-notification.md",
+      "path": "docs/00-start/playbooks/add-push-notification.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1777,7 +1777,7 @@
       "id": "playbook:add-react-query-hook",
       "type": "playbook",
       "title": "Add React Query Hook",
-      "path": "docs/playbooks/add-react-query-hook.md",
+      "path": "docs/00-start/playbooks/add-react-query-hook.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1786,7 +1786,7 @@
       "id": "playbook:add-sql-migration",
       "type": "playbook",
       "title": "Add SQL Migration",
-      "path": "docs/playbooks/add-sql-migration.md",
+      "path": "docs/00-start/playbooks/add-sql-migration.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1795,7 +1795,7 @@
       "id": "playbook:author-skill",
       "type": "playbook",
       "title": "Author or Edit a SKILL.md",
-      "path": "docs/playbooks/author-skill.md",
+      "path": "docs/00-start/playbooks/author-skill.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1804,7 +1804,7 @@
       "id": "playbook:bump-dep-safely",
       "type": "playbook",
       "title": "Bump Dependency Safely",
-      "path": "docs/playbooks/bump-dep-safely.md",
+      "path": "docs/00-start/playbooks/bump-dep-safely.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1813,7 +1813,7 @@
       "id": "playbook:change-auth-flow",
       "type": "playbook",
       "title": "Change an Auth Flow (Better Auth)",
-      "path": "docs/playbooks/change-auth-flow.md",
+      "path": "docs/00-start/playbooks/change-auth-flow.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1822,7 +1822,7 @@
       "id": "playbook:cleanup-codex-branch-after-pr",
       "type": "playbook",
       "title": "Cleanup Codex branch after PR",
-      "path": "docs/playbooks/cleanup-codex-branch-after-pr.md",
+      "path": "docs/00-start/playbooks/cleanup-codex-branch-after-pr.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1831,7 +1831,7 @@
       "id": "playbook:cleanup-dead-code",
       "type": "playbook",
       "title": "Прибирання dead code",
-      "path": "docs/playbooks/cleanup-dead-code.md",
+      "path": "docs/00-start/playbooks/cleanup-dead-code.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1840,7 +1840,7 @@
       "id": "playbook:cutover-openclaw-gateway",
       "type": "playbook",
       "title": "Cutover OpenClaw на зовнішній Gateway (Stage 7)",
-      "path": "docs/playbooks/cutover-openclaw-gateway.md",
+      "path": "docs/00-start/playbooks/cutover-openclaw-gateway.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1849,7 +1849,7 @@
       "id": "playbook:debug-chat-tool",
       "type": "playbook",
       "title": "Debug HubChat Tool",
-      "path": "docs/playbooks/debug-chat-tool.md",
+      "path": "docs/00-start/playbooks/debug-chat-tool.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1858,7 +1858,7 @@
       "id": "playbook:declare-incident",
       "type": "playbook",
       "title": "Оголошення інциденту",
-      "path": "docs/playbooks/declare-incident.md",
+      "path": "docs/00-start/playbooks/declare-incident.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1867,7 +1867,7 @@
       "id": "playbook:deploy-config-change",
       "type": "playbook",
       "title": "Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)",
-      "path": "docs/playbooks/deploy-config-change.md",
+      "path": "docs/00-start/playbooks/deploy-config-change.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1876,7 +1876,7 @@
       "id": "playbook:embedding-provider-migration",
       "type": "playbook",
       "title": "Embedding Provider Migration",
-      "path": "docs/playbooks/embedding-provider-migration.md",
+      "path": "docs/00-start/playbooks/embedding-provider-migration.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1885,7 +1885,7 @@
       "id": "playbook:enable-prompt-caching",
       "type": "playbook",
       "title": "Enable Anthropic Prompt Caching",
-      "path": "docs/playbooks/enable-prompt-caching.md",
+      "path": "docs/00-start/playbooks/enable-prompt-caching.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1894,7 +1894,7 @@
       "id": "playbook:execute-planning-batch",
       "type": "playbook",
       "title": "Виконання батчу planning-тасків (parallel fan-out)",
-      "path": "docs/playbooks/execute-planning-batch.md",
+      "path": "docs/00-start/playbooks/execute-planning-batch.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1903,7 +1903,7 @@
       "id": "playbook:fix-exhaustive-deps",
       "type": "playbook",
       "title": "Fix Exhaustive Deps Warnings",
-      "path": "docs/playbooks/fix-exhaustive-deps.md",
+      "path": "docs/00-start/playbooks/fix-exhaustive-deps.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1912,7 +1912,7 @@
       "id": "playbook:fix-failing-ci",
       "type": "playbook",
       "title": "Fix Failing CI on a PR",
-      "path": "docs/playbooks/fix-failing-ci.md",
+      "path": "docs/00-start/playbooks/fix-failing-ci.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1921,7 +1921,7 @@
       "id": "playbook:grant-privileged-access",
       "type": "playbook",
       "title": "Grant Privileged Access",
-      "path": "docs/playbooks/grant-privileged-access.md",
+      "path": "docs/00-start/playbooks/grant-privileged-access.md",
       "status": "Deprecated",
       "tier": "extended",
       "meta": {}
@@ -1930,7 +1930,7 @@
       "id": "playbook:hotfix-prod-regression",
       "type": "playbook",
       "title": "Hotfix Production Regression",
-      "path": "docs/playbooks/hotfix-prod-regression.md",
+      "path": "docs/00-start/playbooks/hotfix-prod-regression.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1939,7 +1939,7 @@
       "id": "playbook:investigate-alert",
       "type": "playbook",
       "title": "Розслідування alert-у",
-      "path": "docs/playbooks/investigate-alert.md",
+      "path": "docs/00-start/playbooks/investigate-alert.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1948,7 +1948,7 @@
       "id": "playbook:migrate-localstorage-to-typedstore",
       "type": "playbook",
       "title": "Migrate localStorage to typedStore",
-      "path": "docs/playbooks/migrate-localstorage-to-typedstore.md",
+      "path": "docs/00-start/playbooks/migrate-localstorage-to-typedstore.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1957,7 +1957,7 @@
       "id": "playbook:modify-console-agent",
       "type": "playbook",
       "title": "Зміна або додавання console-агента",
-      "path": "docs/playbooks/modify-console-agent.md",
+      "path": "docs/00-start/playbooks/modify-console-agent.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1966,7 +1966,7 @@
       "id": "playbook:modify-n8n-workflow",
       "type": "playbook",
       "title": "Зміна або додавання n8n-воркфлоу",
-      "path": "docs/playbooks/modify-n8n-workflow.md",
+      "path": "docs/00-start/playbooks/modify-n8n-workflow.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1975,7 +1975,7 @@
       "id": "playbook:onboard-external-api",
       "type": "playbook",
       "title": "Onboard External API",
-      "path": "docs/playbooks/onboard-external-api.md",
+      "path": "docs/00-start/playbooks/onboard-external-api.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1984,7 +1984,7 @@
       "id": "playbook:operational-continuity",
       "type": "playbook",
       "title": "Operational continuity",
-      "path": "docs/playbooks/operational-continuity.md",
+      "path": "docs/00-start/playbooks/operational-continuity.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -1993,7 +1993,7 @@
       "id": "playbook:playbook-catalog",
       "type": "playbook",
       "title": "Playbook Catalog",
-      "path": "docs/playbooks/playbook-catalog.md",
+      "path": "docs/00-start/playbooks/playbook-catalog.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2002,7 +2002,7 @@
       "id": "playbook:port-web-screen-to-mobile",
       "type": "playbook",
       "title": "Порт web-екрану в mobile",
-      "path": "docs/playbooks/port-web-screen-to-mobile.md",
+      "path": "docs/00-start/playbooks/port-web-screen-to-mobile.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2011,7 +2011,7 @@
       "id": "playbook:pre-merge-migration-checklist",
       "type": "playbook",
       "title": "Pre-Merge Migration Checklist",
-      "path": "docs/playbooks/pre-merge-migration-checklist.md",
+      "path": "docs/00-start/playbooks/pre-merge-migration-checklist.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2020,7 +2020,7 @@
       "id": "playbook:prettier-pass-on-docs",
       "type": "playbook",
       "title": "Prettier Pass on `docs/`",
-      "path": "docs/playbooks/prettier-pass-on-docs.md",
+      "path": "docs/00-start/playbooks/prettier-pass-on-docs.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2029,7 +2029,7 @@
       "id": "playbook:reconcile-doc-drift",
       "type": "playbook",
       "title": "Звірка дрифту документації та архівація",
-      "path": "docs/playbooks/reconcile-doc-drift.md",
+      "path": "docs/00-start/playbooks/reconcile-doc-drift.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2038,7 +2038,7 @@
       "id": "playbook:release",
       "type": "playbook",
       "title": "Реліз",
-      "path": "docs/playbooks/release.md",
+      "path": "docs/00-start/playbooks/release.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2047,7 +2047,7 @@
       "id": "playbook:release-expo-mobile",
       "type": "playbook",
       "title": "Release Expo Mobile",
-      "path": "docs/playbooks/release-expo-mobile.md",
+      "path": "docs/00-start/playbooks/release-expo-mobile.md",
       "status": "Deprecated",
       "tier": "extended",
       "meta": {}
@@ -2056,7 +2056,7 @@
       "id": "playbook:release-mobile-shell",
       "type": "playbook",
       "title": "Release Mobile Shell",
-      "path": "docs/playbooks/release-mobile-shell.md",
+      "path": "docs/00-start/playbooks/release-mobile-shell.md",
       "status": "Deprecated",
       "tier": "extended",
       "meta": {}
@@ -2065,7 +2065,7 @@
       "id": "playbook:release-web-and-api",
       "type": "playbook",
       "title": "Release Web and API",
-      "path": "docs/playbooks/release-web-and-api.md",
+      "path": "docs/00-start/playbooks/release-web-and-api.md",
       "status": "Deprecated",
       "tier": "extended",
       "meta": {}
@@ -2074,7 +2074,7 @@
       "id": "playbook:respond-to-suspected-account-compromise",
       "type": "playbook",
       "title": "Respond to Suspected Account Compromise",
-      "path": "docs/playbooks/respond-to-suspected-account-compromise.md",
+      "path": "docs/00-start/playbooks/respond-to-suspected-account-compromise.md",
       "status": "Deprecated",
       "tier": "extended",
       "meta": {}
@@ -2083,7 +2083,7 @@
       "id": "playbook:restore-from-backup",
       "type": "playbook",
       "title": "Restore from Backup",
-      "path": "docs/playbooks/restore-from-backup.md",
+      "path": "docs/00-start/playbooks/restore-from-backup.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2092,7 +2092,7 @@
       "id": "playbook:retire-feature-flag",
       "type": "playbook",
       "title": "Retire Feature Flag",
-      "path": "docs/playbooks/retire-feature-flag.md",
+      "path": "docs/00-start/playbooks/retire-feature-flag.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2101,7 +2101,7 @@
       "id": "playbook:revoke-privileged-access",
       "type": "playbook",
       "title": "Revoke Privileged Access",
-      "path": "docs/playbooks/revoke-privileged-access.md",
+      "path": "docs/00-start/playbooks/revoke-privileged-access.md",
       "status": "Deprecated",
       "tier": "extended",
       "meta": {}
@@ -2110,7 +2110,7 @@
       "id": "playbook:rotate-openclaw-credentials",
       "type": "playbook",
       "title": "Ротація OpenClaw GitHub credentials",
-      "path": "docs/playbooks/rotate-openclaw-credentials.md",
+      "path": "docs/00-start/playbooks/rotate-openclaw-credentials.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2119,7 +2119,7 @@
       "id": "playbook:rotate-secrets",
       "type": "playbook",
       "title": "Rotate Secrets",
-      "path": "docs/playbooks/rotate-secrets.md",
+      "path": "docs/00-start/playbooks/rotate-secrets.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2128,7 +2128,7 @@
       "id": "playbook:run-access-review",
       "type": "playbook",
       "title": "Run Access Review",
-      "path": "docs/playbooks/run-access-review.md",
+      "path": "docs/00-start/playbooks/run-access-review.md",
       "status": "Deprecated",
       "tier": "extended",
       "meta": {}
@@ -2137,7 +2137,7 @@
       "id": "playbook:run-council",
       "type": "playbook",
       "title": "Council — рада директорів для product рішень",
-      "path": "docs/playbooks/run-council.md",
+      "path": "docs/00-start/playbooks/run-council.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2146,7 +2146,7 @@
       "id": "playbook:run-squad-deliver",
       "type": "playbook",
       "title": "Squad deliver — sequential cross-surface feature delivery",
-      "path": "docs/playbooks/run-squad-deliver.md",
+      "path": "docs/00-start/playbooks/run-squad-deliver.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2155,7 +2155,7 @@
       "id": "playbook:run-squad-qa",
       "type": "playbook",
       "title": "Squad QA — паралельний QA по всіх surfaces",
-      "path": "docs/playbooks/run-squad-qa.md",
+      "path": "docs/00-start/playbooks/run-squad-qa.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2164,7 +2164,7 @@
       "id": "playbook:run-squad-review",
       "type": "playbook",
       "title": "Squad review — паралельний PR review через 4 lens-агентів",
-      "path": "docs/playbooks/run-squad-review.md",
+      "path": "docs/00-start/playbooks/run-squad-review.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2173,7 +2173,7 @@
       "id": "playbook:run-weekly-operator-digest",
       "type": "playbook",
       "title": "Тижневий operator-дайджест",
-      "path": "docs/playbooks/run-weekly-operator-digest.md",
+      "path": "docs/00-start/playbooks/run-weekly-operator-digest.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2182,7 +2182,7 @@
       "id": "playbook:security-pen-test-checklist",
       "type": "playbook",
       "title": "Security pen-test checklist for closed hardening cards",
-      "path": "docs/playbooks/security-pen-test-checklist.md",
+      "path": "docs/00-start/playbooks/security-pen-test-checklist.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2191,7 +2191,7 @@
       "id": "playbook:stabilize-flaky-test",
       "type": "playbook",
       "title": "Stabilize Flaky Test",
-      "path": "docs/playbooks/stabilize-flaky-test.md",
+      "path": "docs/00-start/playbooks/stabilize-flaky-test.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2200,7 +2200,7 @@
       "id": "playbook:sync-rn-migration-progress",
       "type": "playbook",
       "title": "Sync RN Migration Progress",
-      "path": "docs/playbooks/sync-rn-migration-progress.md",
+      "path": "docs/00-start/playbooks/sync-rn-migration-progress.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2209,7 +2209,7 @@
       "id": "playbook:test-backup-restore",
       "type": "playbook",
       "title": "Тестове відновлення бекапу",
-      "path": "docs/playbooks/test-backup-restore.md",
+      "path": "docs/00-start/playbooks/test-backup-restore.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2218,7 +2218,7 @@
       "id": "playbook:tune-system-prompt",
       "type": "playbook",
       "title": "Tune System Prompt",
-      "path": "docs/playbooks/tune-system-prompt.md",
+      "path": "docs/00-start/playbooks/tune-system-prompt.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2227,7 +2227,7 @@
       "id": "playbook:write-e2e-test",
       "type": "playbook",
       "title": "Write or Debug a Playwright E2E Test",
-      "path": "docs/playbooks/write-e2e-test.md",
+      "path": "docs/00-start/playbooks/write-e2e-test.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2236,7 +2236,7 @@
       "id": "playbook:write-postmortem",
       "type": "playbook",
       "title": "Postmortem після інциденту",
-      "path": "docs/playbooks/write-postmortem.md",
+      "path": "docs/00-start/playbooks/write-postmortem.md",
       "status": "Active",
       "tier": "core",
       "meta": {}

@@ -627,9 +627,9 @@ User flow:
 - [`docs/adr/0010-mobile-dual-track-capacitor-expo.md`](../../../adr/0010-mobile-dual-track-capacitor-expo.md) — baseline dual-track
 - [`docs/02-engineering/mobile/react-native-migration.md`](../../../02-engineering/mobile/react-native-migration.md) — RN-міграція tracker
 - [`docs/02-engineering/mobile/overview.md`](../../../02-engineering/mobile/overview.md) — API contract
-- [`docs/playbooks/release.md`](../../../playbooks/release.md) — release playbook (включно з § Expo)
-- [`docs/playbooks/port-web-screen-to-mobile.md`](../../../playbooks/port-web-screen-to-mobile.md)
-- [`docs/playbooks/sync-rn-migration-progress.md`](../../../playbooks/sync-rn-migration-progress.md)
+- [`docs/00-start/playbooks/release.md`](../../../00-start/playbooks/release.md) — release playbook (включно з § Expo)
+- [`docs/00-start/playbooks/port-web-screen-to-mobile.md`](../../../00-start/playbooks/port-web-screen-to-mobile.md)
+- [`docs/00-start/playbooks/sync-rn-migration-progress.md`](../../../00-start/playbooks/sync-rn-migration-progress.md)
 - [`docs/initiatives/0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md) — revenue-first context
 - [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../../../initiatives/archive/_0002-mobile-platform-decision.md) — original sunset initiative
 - [`apps/mobile/README.md`](../../../../apps/mobile/README.md), [`apps/mobile/AGENTS.md`](../../../../apps/mobile/AGENTS.md)

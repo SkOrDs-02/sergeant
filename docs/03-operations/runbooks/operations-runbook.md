@@ -15,14 +15,14 @@
 > - [`docs/03-operations/observability/runbook.md`](../observability/runbook.md) — production incident-flow, alert-decoder
 > - [`docs/03-operations/runbooks/database-backup-restore.md`](./database-backup-restore.md), [`./database-connection-pooling.md`](./database-connection-pooling.md), [`./postgres-read-replica.md`](./postgres-read-replica.md), [`./encryption-key-rotation.md`](./encryption-key-rotation.md) — конкретні DB-операції
 > - [`docs/03-operations/deploy/`](../deploy/README.md) — Railway / Vercel / `tools/openclaw` deploy walkthrough-и
-> - [`docs/playbooks/`](../../playbooks/README.md) — repeatable процедури (incident, release, rotation, hotfix)
+> - [`docs/00-start/playbooks/`](../../00-start/playbooks/README.md) — repeatable процедури (incident, release, rotation, hotfix)
 
 ## 0. TL;DR — що зробити, якщо щось горить
 
 1. **Підтвердь incident:** перевір `https://api.sergeant/healthz` (детальний JSON) і `https://api.sergeant/health/workers`. Якщо `status: unhealthy` — incident; якщо `healthy` — швидше за все user-error / Vercel-side проблема.
 2. **Дізнайся що саме впало:** [§7 «Куди дивитися першим»](#7-куди-дивитися-першим).
 3. **Знайди відповідний runbook:** [`docs/03-operations/observability/runbook.md`](../observability/runbook.md) має алерт-decoder («Що робити, якщо ALERT-NAME триггериться»).
-4. **Якщо runbook відсутній або не допомагає:** [`docs/playbooks/declare-incident.md`](../../playbooks/declare-incident.md) — escalation flow + Telegram комунікація.
+4. **Якщо runbook відсутній або не допомагає:** [`docs/00-start/playbooks/declare-incident.md`](../../00-start/playbooks/declare-incident.md) — escalation flow + Telegram комунікація.
 5. **Backout-варіант завжди є:** [§5 «Як зробити rollback»](#5-як-зробити-rollback).
 
 ## 1. Доступи і креденшали — що потрібно отримати
@@ -45,7 +45,7 @@
 
 > **Hard rule:** Ніколи не commit-ити жодного з токенів вище в репо.
 > `.env.production` НЕ існує в git. Локальний `.env` має `.env.example` як
-> reference. Rotation API-токенів — [`docs/playbooks/rotate-secrets.md`](../../playbooks/rotate-secrets.md);
+> reference. Rotation API-токенів — [`docs/00-start/playbooks/rotate-secrets.md`](../../00-start/playbooks/rotate-secrets.md);
 > rotation encryption-ring-у — [`./encryption-key-rotation.md`](./encryption-key-rotation.md).
 
 ## 2. Топологія — що де живе
@@ -67,8 +67,8 @@ Surface-і та їх deploy targets:
 - `apps/web` → Vercel — [`docs/03-operations/deploy/vercel.md`](../deploy/vercel.md)
 - `apps/server` → Railway service `sergeant-server-api` — Railway Buildpacks, auto-deploy з `main`
 - `tools/openclaw` (OpenClaw_sergeant_bot) → Railway service `sergeant-openclaw` (раніше `sergeant-hubchat` per ADR-0032 / Pain P10) — [`docs/03-operations/deploy/openclaw.md`](../deploy/openclaw.md)
-- `apps/mobile` → Expo / TestFlight — [`docs/playbooks/release-expo-mobile.md`](../../playbooks/release-expo-mobile.md)
-- `apps/mobile-shell` → App Store / Play Store wrap — [`docs/playbooks/release-mobile-shell.md`](../../playbooks/release-mobile-shell.md)
+- `apps/mobile` → Expo / TestFlight — [`docs/00-start/playbooks/release-expo-mobile.md`](../../00-start/playbooks/release-expo-mobile.md)
+- `apps/mobile-shell` → App Store / Play Store wrap — [`docs/00-start/playbooks/release-mobile-shell.md`](../../00-start/playbooks/release-mobile-shell.md)
 - n8n workflows → self-hosted у Railway (project `grateful-nurturing`) — git source-of-truth у [`ops/n8n-workflows/`](../../../ops/n8n-workflows)
 
 Канонічна service-таблиця з alerts/runbook/rollback per surface — [`docs/02-engineering/architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md).
@@ -105,7 +105,7 @@ gh pr create --base main --title "fix(<scope>): <subject>" --body-file <(cat .gi
 #    incident severity SEV-1/SEV-2:
 #    - адмін override через Settings → Branches (потрібні admin права на repo)
 #    - АБО merge through admin-bypass і одразу post у Telegram з посиланням на PR
-#    - повний flow → docs/playbooks/hotfix-prod-regression.md
+#    - повний flow → docs/00-start/playbooks/hotfix-prod-regression.md
 
 # 3. Auto-deploy:
 #    - apps/server → Railway redeploy ~2-3min після merge у main
@@ -122,7 +122,7 @@ curl -I https://app.sergeant.bot/                        # 200 OK + COOP header
 hard-rule-ом #15). Виправ root-cause; якщо нема часу — залиш PR-чернетку
 і запропиши інженеру з review-доступу руки на руль.
 
-Канонічний repeatable-recipe: [`docs/playbooks/hotfix-prod-regression.md`](../../playbooks/hotfix-prod-regression.md).
+Канонічний repeatable-recipe: [`docs/00-start/playbooks/hotfix-prod-regression.md`](../../00-start/playbooks/hotfix-prod-regression.md).
 
 ## 5. Як зробити rollback
 
@@ -147,7 +147,7 @@ n8n live state і git source-of-truth розходяться, тому:
 3. **Деплой змін:** PR з оновленим JSON → merge → `pnpm n8n:import` (manual step) або `n8n` UI → workflow → «Import from JSON». **Active=true у git ніколи не комітимо** — це стан на боці n8n, керується UI.
 4. **Validation:** `pnpm ops:n8n:validate` локально перед commit-ом — перевіряє схему, env-vars, connections, manifest.
 5. **README per-workflow:** `ops/n8n-workflows/<NN>-<name>.README.md` описує webhook-source, payload, side-effects, smoke-test.
-6. **Modify-recipe:** [`docs/playbooks/modify-n8n-workflow.md`](../../playbooks/modify-n8n-workflow.md).
+6. **Modify-recipe:** [`docs/00-start/playbooks/modify-n8n-workflow.md`](../../00-start/playbooks/modify-n8n-workflow.md).
 
 > **Common mistake:** редагувати workflow в n8n UI без оновлення git. Через тиждень
 > import-ом з git ти затреш зміни. **Завжди:** UI-edit → export JSON → PR → merge.
@@ -190,16 +190,16 @@ Decision-tree коли щось «не працює»:
 | ---------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | DB backup smoke-test                           | Тижнева               | [`./database-backup-restore.md`](./database-backup-restore.md)                                                                      |
 | Encryption key rotation                        | Раз на 90 днів        | [`./encryption-key-rotation.md`](./encryption-key-rotation.md)                                                                      |
-| API token rotation (Anthropic / Voyage / Mono) | Раз на 90 днів        | [`docs/playbooks/rotate-secrets.md`](../../playbooks/rotate-secrets.md)                                                             |
+| API token rotation (Anthropic / Voyage / Mono) | Раз на 90 днів        | [`docs/00-start/playbooks/rotate-secrets.md`](../../00-start/playbooks/rotate-secrets.md)                                           |
 | Monobank token re-bind (per-user)              | On-demand (юзер-flow) | `apps/server/src/modules/mono/connection.ts` — endpoint `POST /api/mono/connect` (route у `apps/server/src/routes/mono-webhook.ts`) |
 | Renovate PR-batch                              | Тижнева (вівторок)    | [`docs/03-operations/observability/runbook.md §Renovate`](../observability/runbook.md)                                              |
 | n8n workflows audit                            | Місячна               | `pnpm ops:n8n:validate` + manual review executions-tab                                                                              |
 | `pnpm docs:check-links`                        | Перед-merge per PR    | CI робить sам; локально для draft-PR-ів                                                                                             |
-| Disaster-recovery drill                        | Раз на 6 місяців      | [`docs/playbooks/test-backup-restore.md`](../../playbooks/test-backup-restore.md)                                                   |
+| Disaster-recovery drill                        | Раз на 6 місяців      | [`docs/00-start/playbooks/test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md)                                 |
 | Migration `down.sql` drill                     | Per-PR (CI)           | [§ 8.1 «Migration down drill»](#81-migration-downsql-drill)                                                                         |
 | Two-phase DROP authoring                       | Per-PR (CI)           | [§ 8.2 «Two-phase DROP»](#82-two-phase-drop-authoring)                                                                              |
 | DB index audit (prod-replica snapshot)         | Раз на квартал        | [§ 9 «Index hygiene»](#9-index-hygiene)                                                                                             |
-| Access review (хто має які доступи)            | Квартальна            | [`docs/playbooks/run-access-review.md`](../../playbooks/run-access-review.md)                                                       |
+| Access review (хто має які доступи)            | Квартальна            | [`docs/00-start/playbooks/run-access-review.md`](../../00-start/playbooks/run-access-review.md)                                     |
 
 ### 8.1. Migration `down.sql` drill
 
@@ -353,7 +353,7 @@ Auto-create / auto-drop indexes на основі stat-ів — anti-pattern:
 Якщо incident → SEV-2+ або duration > 30min → обов'язково postmortem.
 
 1. Branch: `postmortem/YYYY-MM-DD-<incident-name>`.
-2. Файл: `docs/03-operations/postmortems/YYYY-MM-DD-<incident-name>.md` з template-ом з [`docs/playbooks/write-postmortem.md`](../../playbooks/write-postmortem.md).
+2. Файл: `docs/03-operations/postmortems/YYYY-MM-DD-<incident-name>.md` з template-ом з [`docs/00-start/playbooks/write-postmortem.md`](../../00-start/playbooks/write-postmortem.md).
 3. Структура: timeline (UTC) → impact (users + revenue) → root cause → fix → action items.
 4. Action items → GitHub issues з label `postmortem-action-item`.
 5. Review через PR (звичайний flow); merge після того, як `@Skords-01` (або acting on-call) одобрив.

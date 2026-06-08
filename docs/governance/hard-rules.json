@@ -502,7 +502,7 @@
         },
         {
           "kind": "doc",
-          "ref": "docs/playbooks/rotate-openclaw-credentials.md"
+          "ref": "docs/00-start/playbooks/rotate-openclaw-credentials.md"
         }
       ],
       "links": [
@@ -570,7 +570,7 @@
       "links": [
         {
           "type": "doc",
-          "ref": "docs/agents/skills-evolution-roadmap.md (PR 5)"
+          "ref": "docs/00-start/agents/skills-evolution-roadmap.md (PR 5)"
         },
         {
           "type": "agents",
@@ -665,7 +665,7 @@
         "docs/02-engineering/architecture/diagrams/c3-workspaces.md",
         "docs/open-work.md",
         "docs/initiatives/follow-ups.md",
-        "docs/playbooks/INDEX.md"
+        "docs/00-start/playbooks/INDEX.md"
       ],
       "severity": "blocker",
       "category": "lint-enforced-convention",
@@ -696,7 +696,7 @@
       "scope": [
         "docs/adr/*.md",
         "docs/initiatives/*.md",
-        "docs/playbooks/*.md",
+        "docs/00-start/playbooks/*.md",
         "docs/governance/rules/*.md"
       ],
       "severity": "blocker",

@@ -67,7 +67,7 @@ const SKIP_DIRS = new Set([
 //     refs point at other skill files that live outside the repo.
 //   - `THIRD_PARTY_LICENSES.md` is auto-generated and legitimately contains
 //     `(undefined)` placeholders when an upstream package omits `homepage`.
-//   - `docs/playbooks/_TEMPLATE-decision-tree.md` uses `<related-playbook>.md`
+//   - `docs/00-start/playbooks/_TEMPLATE-decision-tree.md` uses `<related-playbook>.md`
 //     as a placeholder — real playbooks must fill it in.
 const SKIP_FILE_PATTERNS = [
   /(?:^|\/)\.agents\/skills\//,

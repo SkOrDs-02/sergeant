@@ -59,7 +59,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ## Playbooks
 
-- [`docs/playbooks/run-squad-deliver.md`](../../../docs/playbooks/run-squad-deliver.md) — step-by-step рецепт
-- [`docs/playbooks/add-api-endpoint.md`](../../../docs/playbooks/add-api-endpoint.md) — reference для single-surface server endpoint
-- [`docs/playbooks/add-sql-migration.md`](../../../docs/playbooks/add-sql-migration.md) — reference для migration rules
-- [`docs/agents/agent-skills-catalog.md`](../../../docs/agents/agent-skills-catalog.md) — каталог всіх skills
+- [`docs/00-start/playbooks/run-squad-deliver.md`](../../../docs/00-start/playbooks/run-squad-deliver.md) — step-by-step рецепт
+- [`docs/00-start/playbooks/add-api-endpoint.md`](../../../docs/00-start/playbooks/add-api-endpoint.md) — reference для single-surface server endpoint
+- [`docs/00-start/playbooks/add-sql-migration.md`](../../../docs/00-start/playbooks/add-sql-migration.md) — reference для migration rules
+- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — каталог всіх skills

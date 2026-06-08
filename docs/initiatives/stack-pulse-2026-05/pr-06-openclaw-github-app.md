@@ -51,7 +51,7 @@ OpenClaw — Devin-кероваджувальник, що приймає Telegra
 
 ### 3. Rotation runbook
 
-- `docs/playbooks/rotate-openclaw-credentials.md`:
+- `docs/00-start/playbooks/rotate-openclaw-credentials.md`:
   - Який ключ де лежить (1Password / Vercel / Railway).
   - Кроки: генерація нового key-pair → upload у GitHub App → deploy → revoke old.
   - Quarterly cron у `docs/03-operations/observability/alerts.md` — нагадує про expiration.
@@ -72,7 +72,7 @@ OpenClaw — Devin-кероваджувальник, що приймає Telegra
 - [x] `apps/server/src/openclaw/auth.ts` обмінює App private-key на installation-token + caches його з expiry.
 - [x] `OPENCLAW_GITHUB_PAT` і `Git_PAT` видалені з `env*.ts` (включно з PR-01 unify).
 - [x] Якщо `OPENCLAW_GITHUB_APP_*` не встановлений у production → startup fails з clear error.
-- [x] `docs/playbooks/rotate-openclaw-credentials.md` створений.
+- [x] `docs/00-start/playbooks/rotate-openclaw-credentials.md` створений.
 - [x] Branch protection rule на `main` явно включений (видно у `Settings → Branches`).
 - [x] Hard rule зареєстрований у `docs/governance/hard-rules-registry.json` («No-PAT-in-production»).
 
@@ -100,7 +100,7 @@ OpenClaw — Devin-кероваджувальник, що приймає Telegra
 - `apps/server/src/env.ts:413–414` — DELETE
 - `apps/server/src/openclaw/` — auth-flow rewrite
 - `docs/governance/hard-rules-registry.json` — додати rule
-- `docs/playbooks/rotate-openclaw-credentials.md` — новий
+- `docs/00-start/playbooks/rotate-openclaw-credentials.md` — новий
 - `.github/repository-rulesets.json` (якщо є) — branch protection
 
 ## Refs

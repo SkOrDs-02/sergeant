@@ -16,5 +16,5 @@ Step-by-step deploy walkthroughs for Sergeant runtime surfaces. These are operat
 ## Related
 
 - [`../integrations/railway-vercel.md`](../../02-engineering/integrations/railway-vercel.md) — Railway/Vercel platform setup
-- [`../playbooks/hotfix-prod-regression.md`](../../playbooks/hotfix-prod-regression.md) — emergency rollback recipe
+- [`../playbooks/hotfix-prod-regression.md`](../../00-start/playbooks/hotfix-prod-regression.md) — emergency rollback recipe
 - [`../observability/runbook.md`](../observability/runbook.md) — production incident runbook

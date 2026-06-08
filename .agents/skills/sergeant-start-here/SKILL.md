@@ -12,7 +12,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 ## Швидке орієнтування
 
 - Прочитай `AGENTS.md` для жорстких правил і власників шляхів.
-- Прочитай `docs/README.md` для repo-доків і `docs/agents/agent-skills-catalog.md` для skill-роутингу.
+- Прочитай `docs/README.md` для repo-доків і `docs/00-start/agents/agent-skills-catalog.md` для skill-роутингу.
 - Sergeant — це `pnpm` + Turborepo monorepo з `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/openclaw` і спільними packages.
 
 ## Не-узгоджувані правила

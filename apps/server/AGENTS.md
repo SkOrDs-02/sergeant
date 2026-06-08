@@ -35,7 +35,7 @@ pnpm api:check-openapi                                # freshness gate (CI-block
 - **Migrations (Hard Rule #4):** sequential numbering, no gaps. Two-phase for `DROP` (deploy a writer that ignores the column → ship migration → remove the writer). Generator: `pnpm gen` → `migration`. Lint gate: `pnpm lint:migrations`.
 - **Domain invariants:** Europe/Kyiv timezone; minor units (kopiykas) as `number` for money; user IDs are Better Auth opaque strings (not UUID). Full anti-pattern list: [`docs/02-engineering/architecture/domain-invariants.md`](../../docs/02-engineering/architecture/domain-invariants.md).
 - **Logging (Hard Rule #21):** Pino redaction policy enforced — never log raw secrets, headers, PII, or request bodies that contain them. Use `apps/server/src/obs/logger.ts` redact paths.
-- **Auth secrets (Hard Rule #20):** no OpenClaw PATs in production; rotate via [`docs/playbooks/rotate-secrets.md`](../../docs/playbooks/rotate-secrets.md).
+- **Auth secrets (Hard Rule #20):** no OpenClaw PATs in production; rotate via [`docs/00-start/playbooks/rotate-secrets.md`](../../docs/00-start/playbooks/rotate-secrets.md).
 
 ## Health & deploy
 
@@ -45,6 +45,6 @@ pnpm api:check-openapi                                # freshness gate (CI-block
 
 - App README: [`apps/server/README.md`](./README.md)
 - Domain invariants: [`docs/02-engineering/architecture/domain-invariants.md`](../../docs/02-engineering/architecture/domain-invariants.md)
-- Routing catalog: [`docs/agents/agent-skills-catalog.md`](../../docs/agents/agent-skills-catalog.md)
+- Routing catalog: [`docs/00-start/agents/agent-skills-catalog.md`](../../docs/00-start/agents/agent-skills-catalog.md)
 - Better Auth wiring: [`.agents/skills/better-auth-best-practices/SKILL.md`](../../.agents/skills/better-auth-best-practices/SKILL.md)
 - HubChat tool/executor coordination: [`.agents/skills/sergeant-hubchat/SKILL.md`](../../.agents/skills/sergeant-hubchat/SKILL.md)

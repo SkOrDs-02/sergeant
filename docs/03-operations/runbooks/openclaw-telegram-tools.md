@@ -100,7 +100,7 @@ Expected: JSON з полями вище. Якщо `error.code=forbidden` — bot
 ## When to escalate
 
 - `forbidden` тримається >5min після bot-rejoin → перевір token rotation
-  ([`docs/playbooks/rotate-secrets.md`](../../playbooks/rotate-secrets.md)).
+  ([`docs/00-start/playbooks/rotate-secrets.md`](../../00-start/playbooks/rotate-secrets.md)).
 - `rate_limit` повторюється з `retryAfter > 300s` → flood-wait
   ескалював; зменш частоту calls (OpenClaw `OPENCLAW_MAX_ITERATIONS`).
 - `tg_topic_archive` empty для топіка з guaranteed traffic (e.g. n8n

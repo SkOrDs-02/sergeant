@@ -97,4 +97,4 @@ Detailed pattern documentation lives in `references/details.md`. Read that file 
 3. Idempotency is critical for activities
 4. State preservation is automatic
 5. Design for failure and recovery
-See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.
+See [docs/00-start/agents/agent-skills-catalog.md](docs/00-start/agents/agent-skills-catalog.md) for Sergeant skill routing.

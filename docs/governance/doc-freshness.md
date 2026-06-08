@@ -103,7 +103,7 @@
 Дефолтний `excludeGlobs` (`scripts/docs/freshness-config.mjs` → `DEFAULT_CONFIG`) виключає:
 
 - `docs/adr/**` — Architecture Decision Records іммутабельні (див. нижче).
-- `**/_TEMPLATE*.md`, `**/TEMPLATE*.md`, `docs/playbooks/INDEX.md` — шаблони / згенеровані індекси.
+- `**/_TEMPLATE*.md`, `**/TEMPLATE*.md`, `docs/00-start/playbooks/INDEX.md` — шаблони / згенеровані індекси.
 - `apps/**/README.md`, `packages/**/README.md`, `ops/**/README.md` — code-adjacent доки, які живуть із кодом.
 - `apps/server/src/ai-prompts/**` — промпти, які версіюються разом зі своїми консумерами.
 - `.github/**`, `.agents/**`, `.claude/**` — UI-templates і агентські skill-набори, що приходять зверху.

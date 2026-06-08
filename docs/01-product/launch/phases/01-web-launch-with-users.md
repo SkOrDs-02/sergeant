@@ -17,7 +17,7 @@
 > - [`product-os/ftux-master-tracker.md`](../product-os/ftux-master-tracker.md) — FTUX SSOT, sprint registry, SLO
 > - [`product-os/paywall-implementation-plan.md`](../product-os/paywall-implementation-plan.md) — PR-20 gate, three paths
 > - [`architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — web ↔ shell ↔ RN feature-parity
-> - [`playbooks/release.md`](../../../playbooks/release.md) — canonical release flow
+> - [`playbooks/release.md`](../../../00-start/playbooks/release.md) — canonical release flow
 > - [`governance/feature-flags.md`](../../../governance/feature-flags.md) — flag conventions
 > - [`observability/posthog-ftux-dashboards.md`](../../../03-operations/observability/posthog-ftux-dashboards.md) — funnel dashboards
 
@@ -346,7 +346,7 @@ Moment of truth: реальні юзери торкаються продукту
 
 **Concrete actions:**
 
-- [ ] **Top-3 fix-PRs:** беремо 3 найбільш гострі friction points з W1, шипимо PR-и через стандартний release-flow ([`playbooks/release.md` §1`](../../../playbooks/release.md#1-web--api)).
+- [ ] **Top-3 fix-PRs:** беремо 3 найбільш гострі friction points з W1, шипимо PR-и через стандартний release-flow ([`playbooks/release.md` §1`](../../../00-start/playbooks/release.md#1-web--api)).
 - [ ] **Invite wave +10:** взяти наступних 10 з waitlist (тих, хто не отримав інвайт у W-1).
 - [ ] **Feedback loop close:** у Telegram-групі «Ось що ми виправили — спробуй ще раз». Це створює exclusivity + word-of-mouth.
 - [ ] **First PostHog cohort analysis:** який модуль найчастіше — first_real_entry? Чи є кореляція з retention?

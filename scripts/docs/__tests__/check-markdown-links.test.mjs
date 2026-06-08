@@ -124,7 +124,7 @@ describe("shouldSkipFile", () => {
 
   it("skips _TEMPLATE-*.md files", () => {
     assert.equal(
-      shouldSkipFile("docs/playbooks/_TEMPLATE-decision-tree.md"),
+      shouldSkipFile("docs/00-start/playbooks/_TEMPLATE-decision-tree.md"),
       true,
     );
   });

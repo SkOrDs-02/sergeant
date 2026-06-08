@@ -278,7 +278,7 @@ test("renderMatrixRaw: category legend section enumerates the three buckets", ()
 test("renderMatrixRaw: How-to-add-a-rule section references the playbook", () => {
   const md = renderMatrixRaw(FIXTURE, { now: FROZEN_NOW });
   assert.match(md, /## How to add a rule/);
-  assert.match(md, /docs\/playbooks\/add-hard-rule\.md/);
+  assert.match(md, /docs\/00-start\/playbooks\/add-hard-rule\.md/);
 });
 
 // ── renderMatrix (Prettier integration) ──────────────────────────────────────

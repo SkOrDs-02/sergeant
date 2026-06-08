@@ -20,9 +20,9 @@ import {
 
 describe("globToRegex", () => {
   it("matches exact paths", () => {
-    const re = globToRegex("docs/playbooks/INDEX.md");
-    assert.equal(re.test("docs/playbooks/INDEX.md"), true);
-    assert.equal(re.test("docs/playbooks/INDEX.md.bak"), false);
+    const re = globToRegex("docs/00-start/playbooks/INDEX.md");
+    assert.equal(re.test("docs/00-start/playbooks/INDEX.md"), true);
+    assert.equal(re.test("docs/00-start/playbooks/INDEX.md.bak"), false);
   });
 
   it("matches directory prefix with **", () => {
@@ -155,7 +155,7 @@ describe("buildTrackedList", () => {
   it("skips files matching excludeGlobs", () => {
     const candidates = [
       "docs/adr/0001-foo.md",
-      "docs/playbooks/TEMPLATE-decision-tree.md",
+      "docs/00-start/playbooks/TEMPLATE-decision-tree.md",
       "README.md",
     ];
     const tracked = buildTrackedList({

@@ -36,6 +36,6 @@ Every production flag must have:
 
 ## Related docs
 
-- [add-feature-flag.md](../playbooks/add-feature-flag.md)
-- [retire-feature-flag.md](../playbooks/retire-feature-flag.md)
+- [add-feature-flag.md](../00-start/playbooks/add-feature-flag.md)
+- [retire-feature-flag.md](../00-start/playbooks/retire-feature-flag.md)
 - [release-policy.md](./release-policy.md)

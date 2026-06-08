@@ -238,7 +238,7 @@ indexes для cron queries. Detailed диаграм + runbook —
   `n8n_errors.acknowledged_at`. Розблоковує auto-digest "unacked alerts".
 - **HubChat slash commands.** `/n8n status`, `/n8n recent-errors`, `/n8n ack
 <id>` — доступні з Telegram через існуючу HubChat інтеграцію (див.
-  [`docs/agents/`](../../docs/agents/)).
+  [`docs/00-start/agents/`](../../docs/00-start/agents/)).
 - **Per-user push tracking.** WF-07/09/10 поки що логують тільки агрегати; для
   P2-grade engagement metrics — додати `push_send_log` таблицю + WF-\* запис на
   send/dispatch result.
@@ -259,5 +259,5 @@ indexes для cron queries. Detailed диаграм + runbook —
 - [`../../docs/03-operations/observability/telegram-control-plane.md`](../../docs/03-operations/observability/telegram-control-plane.md) — архітектурний аналіз: чи Telegram = правильний контрол-план.
 - [`../../docs/adr/0030-telegram-reporting-channel-structure.md`](../../docs/adr/0030-telegram-reporting-channel-structure.md) — формальне рішення.
 - [`../../docs/adr/0026-n8n-workflow-source-of-truth.md`](../../docs/adr/0026-n8n-workflow-source-of-truth.md) — Git-as-truth для n8n.
-- [`../../docs/playbooks/modify-n8n-workflow.md`](../../docs/playbooks/modify-n8n-workflow.md) — playbook на додавання/зміну workflow.
+- [`../../docs/00-start/playbooks/modify-n8n-workflow.md`](../../docs/00-start/playbooks/modify-n8n-workflow.md) — playbook на додавання/зміну workflow.
 - [`../../docs/03-operations/observability/runbook.md`](../../docs/03-operations/observability/runbook.md) — incident runbook (що робити, коли спрацював алерт).

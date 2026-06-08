@@ -125,7 +125,7 @@
 
 **Workflow strategy:** action **відкриває follow-up PR** `docs/pr-backlinks-NNNN` замість push-на-main (Hard Rule #6).
 
-**Canonical doc whitelist:** `docs/adr/*.md`, `docs/initiatives/*.md`, `docs/playbooks/*.md`, `docs/governance/rules/*.md` (з винятками README/TEMPLATE/`_`-prefix).
+**Canonical doc whitelist:** `docs/adr/*.md`, `docs/initiatives/*.md`, `docs/00-start/playbooks/*.md`, `docs/governance/rules/*.md` (з винятками README/TEMPLATE/`_`-prefix).
 
 **Deferred to follow-up PR:** HR-24 (all catalogs must have `--check` generator), HR-25 (auto-gen marker enforcement), HR-26 (merged docs-PRs must update ledger). Hard-rules registry update вимагає 3-way sync (`hard-rules.json` ↔ AGENTS.md ↔ per-rule files) — окремий focused PR.
 

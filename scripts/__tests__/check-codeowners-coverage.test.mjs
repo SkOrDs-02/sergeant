@@ -96,7 +96,7 @@ test("tree with directory pattern is reported as fully owned", () => {
       join(root, ".github", "CODEOWNERS"),
       [
         "/.github/workflows/ @owner",
-        "/docs/playbooks/ @owner",
+        "/docs/00-start/playbooks/ @owner",
         "/.github/CODEOWNERS @owner",
       ].join("\n") + "\n",
     );
@@ -110,7 +110,7 @@ test("tree with directory pattern is reported as fully owned", () => {
     const wf = r.json.checked.find((c) => c.path === ".github/workflows");
     assert.equal(wf?.status, "owned");
     assert.equal(wf?.files, 2);
-    const pb = r.json.checked.find((c) => c.path === "docs/playbooks");
+    const pb = r.json.checked.find((c) => c.path === "docs/00-start/playbooks");
     assert.equal(pb?.status, "owned");
     assert.equal(pb?.files, 2);
   } finally {
@@ -125,8 +125,9 @@ test("tree with one uncovered file fails with kind=tree-partial", () => {
     mkdirSync(join(root, "docs", "playbooks"), { recursive: true });
     writeFileSync(
       join(root, ".github", "CODEOWNERS"),
-      ["/docs/playbooks/ @owner", "/.github/CODEOWNERS @owner"].join("\n") +
+      ["/docs/00-start/playbooks/ @owner", "/.github/CODEOWNERS @owner"].join(
         "\n",
+      ) + "\n",
     );
     writeFileSync(join(root, ".github", "workflows", "ci.yml"), "name: ci");
     writeFileSync(join(root, "docs", "playbooks", "x.md"), "# x");

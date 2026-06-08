@@ -95,7 +95,7 @@ URL-форма `POST https://api.<host>/api/mono/webhook/<secret>` логува�
 
 - [docs/security/hardening/sprint-1.md](./sprint-1.md) — sprint context.
 - [docs/security/vulnerability-sla.md](../vulnerability-sla.md) — Critical = 24h acknowledge / 14d fix.
-- [docs/playbooks/rotate-secrets.md](../../playbooks/rotate-secrets.md) — порядок ротації production-секретів.
+- [docs/00-start/playbooks/rotate-secrets.md](../../00-start/playbooks/rotate-secrets.md) — порядок ротації production-секретів.
 - [docs/02-engineering/integrations/](../../02-engineering/integrations) — Monobank integration spec (uplift `setWebHook` payload).
 
 ## Resolution log

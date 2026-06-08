@@ -8,8 +8,8 @@
 - **Related:**
   - [`apps/server/src/migrations/`](../../apps/server/src/migrations) — `001_noop.sql` … `021_governance_audit.sql`.
   - [`apps/server/build.mjs`](../../apps/server/build.mjs) — копіює міграції у `dist/` при білді.
-  - [`docs/playbooks/add-sql-migration.md`](../playbooks/add-sql-migration.md) — authoring how-to.
-  - [`docs/playbooks/pre-merge-migration-checklist.md`](../playbooks/pre-merge-migration-checklist.md) — review-чек-лист.
+  - [`docs/00-start/playbooks/add-sql-migration.md`](../00-start/playbooks/add-sql-migration.md) — authoring how-to.
+  - [`docs/00-start/playbooks/pre-merge-migration-checklist.md`](../00-start/playbooks/pre-merge-migration-checklist.md) — review-чек-лист.
   - [`AGENTS.md`](../../AGENTS.md) §4 — hard rule "sequential, no gaps, two-phase DROP".
   - ADR-0009 — Railway pre-deploy hook.
   - ADR-0014 — bigint→number policy (пов'язана з `BIGINT` column-тип конвенціями).

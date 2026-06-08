@@ -35,7 +35,7 @@ Check: do any changed `.md` files appear to be generated (output of a script, pl
 
 ## Hard Rule #26 — PR ledger update
 
-When a PR modifies canonical docs — files in `docs/governance/`, `docs/02-engineering/architecture/`, `docs/adr/`, `AGENTS.md`, `AGENTS.md`, or `docs/agents/` — it must also update `docs/pr-ledger/index.json` with an entry for this PR.
+When a PR modifies canonical docs — files in `docs/governance/`, `docs/02-engineering/architecture/`, `docs/adr/`, `AGENTS.md`, `AGENTS.md`, or `docs/00-start/agents/` — it must also update `docs/pr-ledger/index.json` with an entry for this PR.
 
 Check: does the PR diff include changes to canonical doc paths but NOT include a change to `docs/pr-ledger/index.json`?
 

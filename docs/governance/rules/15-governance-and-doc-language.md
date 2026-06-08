@@ -30,7 +30,7 @@ Both AI agents and human contributors **must** read the relevant governance up f
 1. **`AGENTS.md`** — Hard Rules (#1–#15), Module ownership map for the path you're touching, AI-marker conventions, Domain invariants.
 2. **`CONTRIBUTING.md`** — branch/commit conventions, pre-commit hooks, PR checklist.
 3. **`CLAUDE.md`** — Claude/AI-specific commands and guardrails (sister file to AGENTS.md).
-4. **The matching playbook** in `docs/playbooks/` — pick by trigger phrase. New API endpoint → `add-api-endpoint.md`. New HubChat tool → `add-hubchat-tool.md`. Removing code → `cleanup-dead-code.md`. Migrations → `add-migration.md`.
+4. **The matching playbook** in `docs/00-start/playbooks/` — pick by trigger phrase. New API endpoint → `add-api-endpoint.md`. New HubChat tool → `add-hubchat-tool.md`. Removing code → `cleanup-dead-code.md`. Migrations → `add-migration.md`.
 5. **The freshness header** of every doc you cite or change (`> Last validated: YYYY-MM-DD by @owner`). If the doc is stale (`Next review` date passed), flag it in the PR — don't blindly trust it, but don't silently ignore it either.
 
 If you're an AI agent, treat steps 1–4 as a **pre-flight checklist**: do not begin implementation until you can name (a) the Hard Rules that apply, (b) the playbook(s) you'll follow, (c) the owner of the path. If no playbook exists for the task type, write a one-paragraph mini-plan and link it in the PR.
@@ -53,7 +53,7 @@ Documentation is part of the change set, not a follow-up. Treat any of the follo
 | New Hard Rule, lint rule, or convention           | `AGENTS.md` § Hard Rules (the canonical entry) **+** mirror summary in `CONTRIBUTING.md § Hard rules`. PR template's "AGENTS.md updated?" checkbox **must** be ticked. |
 | New design token, palette, or component           | `docs/05-design/design/design-system.md`, `docs/05-design/design/brandbook.md`, and the relevant audit (`docs/audits/*-audit-*.md`) if it changes status.              |
 | Deprecating a behaviour                           | Add `@deprecated` JSDoc with `@removeBy YYYY-MM-DD` (Hard Rule #10) **+** update the consuming doc to mark the section `> **Status:** Deprecated`.                     |
-| New playbook trigger or HubChat tool              | `docs/playbooks/<name>.md` (or update the existing playbook). Cross-link from `CLAUDE.md § Before you write code` if it's a frequent trigger.                          |
+| New playbook trigger or HubChat tool              | `docs/00-start/playbooks/<name>.md` (or update the existing playbook). Cross-link from `CLAUDE.md § Before you write code` if it's a frequent trigger.                 |
 | Anything that invalidates an existing doc's claim | Update the doc in the same PR, or move it to `docs/<area>/archive/` with a `> **Status:** Archived` badge if the claim is no longer relevant.                          |
 
 In every doc you touch, also bump the freshness header:

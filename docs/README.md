@@ -32,8 +32,8 @@ Main documentation index for Sergeant.
 - Repo overview: [README.md](../README.md)
 - Contributor manual: [CONTRIBUTING.md](../CONTRIBUTING.md)
 - Repo contract and hard rules: [AGENTS.md](../AGENTS.md)
-- Agent skills catalog: [agents/agent-skills-catalog.md](./agents/agent-skills-catalog.md)
-- Playbook catalog: [playbooks/playbook-catalog.md](./playbooks/playbook-catalog.md)
+- Agent skills catalog: [agents/agent-skills-catalog.md](./00-start/agents/agent-skills-catalog.md)
+- Playbook catalog: [playbooks/playbook-catalog.md](./00-start/playbooks/playbook-catalog.md)
 - Service catalog: [architecture/service-catalog.md](./02-engineering/architecture/service-catalog.md)
 - Feature flag registry: [feature-flags.md](./governance/feature-flags.md)
 - Security access system: [security/access-policy.md](./security/access-policy.md)
@@ -51,7 +51,7 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | Section                                                     | Purpose                                                                               |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | [`adr/`](./adr/README.md)                                   | Architectural decisions and tradeoffs                                                 |
-| [`agents/`](./agents/README.md)                             | Agent operating system, routing catalog, workflows                                    |
+| [`agents/`](./00-start/agents/README.md)                    | Agent operating system, routing catalog, workflows                                    |
 | [`api/`](./02-engineering/api/README.md)                    | OpenAPI, API contracts, generated artifacts                                           |
 | [`architecture/`](./02-engineering/architecture/README.md)  | Repo map, runtime surfaces, platform architecture                                     |
 | [`copy/`](./01-product/copy/README.md)                      | UA-copy tone-of-voice rules; reference for every Cyrillic JSX literal                 |
@@ -66,7 +66,7 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | [`notes/`](./02-engineering/notes/README.md)                | Design spikes and exploratory engineering notes                                       |
 | [`observability/`](./03-operations/observability/README.md) | Alerts, SLOs, logs, engineering metrics                                               |
 | [`ops/`](./03-operations/ops/README.md)                     | Recurring ops runbooks (Renovate maintainer workflow, dependency hygiene)             |
-| [`playbooks/`](./playbooks/README.md)                       | Canonical execution recipes for repeatable tasks                                      |
+| [`playbooks/`](./00-start/playbooks/README.md)              | Canonical execution recipes for repeatable tasks                                      |
 | [`postmortems/`](./03-operations/postmortems/README.md)     | Incident reviews and follow-up memory                                                 |
 | [`runbooks/`](./03-operations/runbooks/README.md)           | DR-grade operational runbooks (DB backup/restore, encryption key rotation, …)         |
 | [`security/`](./security/README.md)                         | Security policy, access governance, recovery, and audit docs                          |
@@ -99,8 +99,8 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 ## Adding new docs
 
 1. Decide the genre first: reference (informational), active tracker, or archive candidate. Put the doc in the matching section above.
-2. If it is an execution recipe, use `docs/playbooks/`.
+2. If it is an execution recipe, use `docs/00-start/playbooks/`.
 3. If it is policy or machine-readable governance, use `docs/governance/`.
-4. If it changes routing for agents, sync `docs/agents/*` and `AGENTS.md`.
+4. If it changes routing for agents, sync `docs/00-start/agents/*` and `AGENTS.md`.
 5. For docs with review cadence, include `Last validated` and `Status` headers.
 6. When a tracker doc reaches its stabilization milestone, move it to the section's `archive/` subdirectory (where one exists) and leave a one-line redirect from the old path.

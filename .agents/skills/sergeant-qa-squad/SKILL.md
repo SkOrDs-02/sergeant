@@ -72,6 +72,6 @@ Run all 4 in parallel via the Task tool. Collect all reports before synthesizing
 
 ## Playbooks
 
-- [`docs/playbooks/run-squad-qa.md`](../../../docs/playbooks/run-squad-qa.md) — step-by-step рецепт
-- [`docs/playbooks/fix-failing-ci.md`](../../../docs/playbooks/fix-failing-ci.md) — якщо QA squad виявив failures
-- [`docs/agents/agent-skills-catalog.md`](../../../docs/agents/agent-skills-catalog.md) — каталог всіх skills
+- [`docs/00-start/playbooks/run-squad-qa.md`](../../../docs/00-start/playbooks/run-squad-qa.md) — step-by-step рецепт
+- [`docs/00-start/playbooks/fix-failing-ci.md`](../../../docs/00-start/playbooks/fix-failing-ci.md) — якщо QA squad виявив failures
+- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — каталог всіх skills
