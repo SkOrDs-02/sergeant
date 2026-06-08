@@ -247,7 +247,7 @@ nodejs20-debian12 to nodejs22-debian13 (5 libssl3 CVE suppressions) `
 > `.trivyignore` наразі придушує 5 CVE для libssl3
 > (`CVE-2026-31789` CRITICAL + `CVE-2026-28387/88/89/90` HIGH), всі
 > expiring `2026-07-02`. Container Security Engineer review від
-> 2026-06-05 ([`docs/04-governance/security/distroless-upgrade-plan.md`](https://github.com/Skords-01/Sergeant/blob/master/docs/security/distroless-upgrade-plan.md))
+> 2026-06-05 ([`docs/04-governance/security/distroless-upgrade-plan.md`](./distroless-upgrade-plan.md))
 > виявив, що:
 >
 > 1. Поточний тег `gcr.io/distroless/nodejs20-debian12:nonroot` **відсутній
@@ -301,9 +301,9 @@ dist-server/migrate.js`).
 > ## Related
 >
 > - Tracked as `AP-03` у
->   [`docs/90-work/tech-debt/priority-1-executive.md`](https://github.com/Skords-01/Sergeant/blob/master/docs/tech-debt/priority-1-executive.md)
+>   [`docs/90-work/tech-debt/priority-1-executive.md`](../../90-work/tech-debt/priority-1-executive.md)
 >   ("Перезібрати базовий образ distroless до спливу CVE 2026-07-02")
 > - Тема "Вплив CVE у базовому образі distroless" у
->   [`docs/90-work/tech-debt/technical-assessment-2026-06-05.md`](https://github.com/Skords-01/Sergeant/blob/master/docs/tech-debt/technical-assessment-2026-06-05.md)
+>   [`docs/90-work/tech-debt/technical-assessment-2026-06-05.md`](../../90-work/tech-debt/technical-assessment-2026-06-05.md)
 > - SEC-003 finding у
->   [`docs/90-work/tech-debt/technical-assessment-2026-06-05.json`](https://github.com/Skords-01/Sergeant/blob/master/docs/tech-debt/technical-assessment-2026-06-05.json)
+>   [`docs/90-work/tech-debt/technical-assessment-2026-06-05.json`](../../90-work/tech-debt/technical-assessment-2026-06-05.json)

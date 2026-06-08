@@ -232,7 +232,7 @@ test("renderMatrixRaw: links — agents refs link back to AGENTS.md", () => {
   const md = renderMatrixRaw(FIXTURE, { now: FROZEN_NOW });
   assert.match(
     md,
-    /AGENTS #1\]\(\.\.\/\.\.\/AGENTS\.md#hard-rules-do-not-break/,
+    /AGENTS #1\]\(\.\.\/\.\.\/\.\.\/AGENTS\.md#hard-rules-do-not-break/,
   );
 });
 
