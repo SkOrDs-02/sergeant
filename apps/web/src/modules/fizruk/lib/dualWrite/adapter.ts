@@ -10,7 +10,7 @@ import type {
   FizrukDailyLogSnapshot,
   FizrukMonthlyPlanSnapshot,
   FizrukWorkoutTemplateSnapshot,
-} from "./diff.js";
+} from "./diff/index.js";
 
 /**
  * Async SQLite-side adapter for the Fizruk dual-write layer.
@@ -194,8 +194,8 @@ async function upsertWorkout(
 
   // Upsert items
   const items = w.items ?? [];
-  for (let i = 0; i < items.length; i++) {
-    await upsertWorkoutItem(client, items[i]!, w.id, userId, clientTs, i);
+  for (const [i, item] of items.entries()) {
+    await upsertWorkoutItem(client, item, w.id, userId, clientTs, i);
   }
 
   // Soft-delete items that were removed from the workout
@@ -262,17 +262,9 @@ async function upsertWorkoutItem(
 
   // Upsert sets
   const sets = item.sets ?? [];
-  for (let s = 0; s < sets.length; s++) {
+  for (const [s, set] of sets.entries()) {
     const setId = `${item.id}:s${s}`;
-    await upsertWorkoutSet(
-      client,
-      setId,
-      item.id,
-      userId,
-      clientTs,
-      sets[s]!,
-      s,
-    );
+    await upsertWorkoutSet(client, setId, item.id, userId, clientTs, set, s);
   }
 
   // Soft-delete removed sets

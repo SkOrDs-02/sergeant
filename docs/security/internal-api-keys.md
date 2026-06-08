@@ -1,11 +1,11 @@
 # `INTERNAL_API_KEY` — rotation, audit & revocation runbook
 
-> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Scaffolded.
 > **Owner:** ops + server.
 > **Related:** [`api-internal-hmac.md`](./api-internal-hmac.md), [`secret-ownership-register.md`](./secret-ownership-register.md), [`secret-rotation.md`](./secret-rotation.md), [`docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md).
 
-> **Scaffolded, not live.** Today `INTERNAL_API_KEY` is a single shared bearer secret with **no** rotation tooling, **no** TTL, and **no** per-call audit. This runbook documents the *current* manual procedure that works now, plus the *planned* `internal_api_keys` table + `/internal-key` CLI from stack-pulse PR-27. Sections tagged **(planned — not yet live)** describe behaviour that does not exist in the codebase yet; update this doc to remove the tags after the implementing PR merges.
+> **Scaffolded, not live.** Today `INTERNAL_API_KEY` is a single shared bearer secret with **no** rotation tooling, **no** TTL, and **no** per-call audit. This runbook documents the _current_ manual procedure that works now, plus the _planned_ `internal_api_keys` table + `/internal-key` CLI from stack-pulse PR-27. Sections tagged **(planned — not yet live)** describe behaviour that does not exist in the codebase yet; update this doc to remove the tags after the implementing PR merges.
 
 ## Why
 
@@ -21,7 +21,7 @@ The bearer is defined once and consumed by a single shared guard:
 
 - **Definition:** `apps/server/src/env/env.ts` → `INTERNAL_API_KEY: stringWithDefault("")` (re-exported via `apps/server/src/env.ts`).
 - **Guard:** `apps/server/src/routes/internal/index.ts` mounts two middleware on `/api/internal/*`, in order:
-  1. Constant-time bearer compare — `safeStringEqual(authHeader, \`Bearer ${INTERNAL_API_KEY}\`)`. **Fail-closed:** `503 "Internal API not configured"` if the key is unset; `401 "Unauthorized"` on mismatch. Constant-time (`crypto.timingSafeEqual`) so a naive `!==` can't leak the secret one byte at a time via branch timing.
+  1. Constant-time bearer compare — `safeStringEqual(authHeader, \`Bearer ${INTERNAL_API_KEY}\`)`. **Fail-closed:** `503 "Internal API not configured"`if the key is unset;`401 "Unauthorized"` on mismatch. Constant-time (`crypto.timingSafeEqual`) so a naive `!==` can't leak the secret one byte at a time via branch timing.
   2. `verifyWebhookSignature()` — HMAC-SHA256, a no-op when `WEBHOOK_HMAC_SECRET` is empty (grace mode by default). See [`api-internal-hmac.md`](./api-internal-hmac.md).
 
 **There is no per-route ACL and no per-key identity.** Every sub-router mounted in `index.ts` sits behind the same bearer; any holder reaches the entire internal surface.
@@ -30,12 +30,12 @@ The bearer is defined once and consumed by a single shared guard:
 
 All four consume the same shared bearer via the `index.ts` guard (PR-27 §Context):
 
-| Consumer route group | File | What it serves |
-| -------------------- | ---- | -------------- |
-| Admin / internal operations | `apps/server/src/routes/internal/index.ts` (+ all mounted sub-routers) | the shared guard + all `/api/internal/*` sub-surfaces |
-| Monobank webhook intake | `apps/server/src/routes/internal/mono.ts` | payment webhook callbacks |
-| OpenClaw bot callback | `apps/server/src/routes/internal/openclaw.ts` | 57 read/write/ritual/n8n/mute/reminder/seo routes (see [`docs/audits/2026-08-XX-openclaw-internal-roast.md`](../audits/2026-08-XX-openclaw-internal-roast.md)) |
-| Sentry alerts router | `apps/server/src/routes/internal/alerts.ts` | alert post / ack / escalate |
+| Consumer route group        | File                                                                   | What it serves                                                                                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin / internal operations | `apps/server/src/routes/internal/index.ts` (+ all mounted sub-routers) | the shared guard + all `/api/internal/*` sub-surfaces                                                                                                          |
+| Monobank webhook intake     | `apps/server/src/routes/internal/mono.ts`                              | payment webhook callbacks                                                                                                                                      |
+| OpenClaw bot callback       | `apps/server/src/routes/internal/openclaw.ts`                          | 57 read/write/ritual/n8n/mute/reminder/seo routes (see [`docs/audits/2026-08-XX-openclaw-internal-roast.md`](../audits/2026-08-XX-openclaw-internal-roast.md)) |
+| Sentry alerts router        | `apps/server/src/routes/internal/alerts.ts`                            | alert post / ack / escalate                                                                                                                                    |
 
 > n8n workflows (`ops/n8n-workflows/*`) are the largest external consumer of the bearer — ~25 workflows send `Authorization: Bearer <INTERNAL_API_KEY>` (see the HMAC rollout playbook). They are not a server route but must be re-pointed on every rotation.
 
@@ -63,7 +63,7 @@ Because it is a single shared secret, a rotation is a coordinated, brief-downtim
 PR-27 replaces the single shared secret with named, scoped, TTL'd keys stored hashed in Postgres. **None of this exists in the codebase yet.** Summary of the design (full detail in [PR-27](../initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md)):
 
 - **`internal_api_keys` table** — `key_hash` (bcrypt), unique `name` (`mono-webhook` / `n8n-alerts` / `openclaw-callback` / `admin-cli` / `bootstrap`), `scopes TEXT[]`, mandatory `expires_at` TTL, `created_by`, `last_used_at`, `revoked_at`.
-- **Hash-based lookup middleware** — `apps/server/src/http/requireInternalApiKey.ts` (rename of `requireInternalIp.ts`): header `X-Internal-Api-Key: <raw-key>`, `bcrypt.compare` against the active row for the expected `name`, update `last_used_at` (throttled — only if `now - last_used > 60s`).
+- **Hash-based lookup middleware** — the current `apps/server/src/http/requireInternalIp.ts`, renamed to `requireInternalApiKey.ts`: header `X-Internal-Api-Key: <raw-key>`, `bcrypt.compare` against the active row for the expected `name`, update `last_used_at` (throttled — only if `now - last_used > 60s`).
 - **Dual-key rotation** — multiple non-revoked rows may share a `name`; both valid for 24h, then revoke the old via CLI. This removes the downtime window the manual procedure has today.
 - **Bootstrap compatibility** — the env `INTERNAL_API_KEY` stays valid as a `name='bootstrap'` row with a 30-day expiry; drop the env var only after all consumers migrate.
 - **Sentry tagging** — `internal_key_name` tag on every internal request, so a leak can be scoped to one named key and revoked with minimal blast radius.
@@ -72,12 +72,12 @@ PR-27 replaces the single shared secret with named, scoped, TTL'd keys stored ha
 
 PR-27 adds a `/internal-key` command group to the OpenClaw Telegram bot (`tools/openclaw/src/agents/ops/internalKey.ts`), gated by the `ops` role. **These commands are stubs in this doc — they are not implemented yet.** Update this section to remove the "planned" tag once the implementing code merges.
 
-| Command | Purpose (planned) |
-| ------- | ----------------- |
-| `/internal-key list` | List active keys — `name`, `expires_at`, `last_used_at` (no raw values). |
+| Command                                           | Purpose (planned)                                                                              |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `/internal-key list`                              | List active keys — `name`, `expires_at`, `last_used_at` (no raw values).                       |
 | `/internal-key create <name> <ttl-days> <scopes>` | Generate a new key; return the raw value **once** (never stored in plaintext, never re-shown). |
-| `/internal-key revoke <name\|id>` | Set `revoked_at = NOW()` on a key. |
-| `/internal-key audit <since>` | Usage stats since a date — per-key `last_used_at` / call counts for leak triage. |
+| `/internal-key revoke <name\|id>`                 | Set `revoked_at = NOW()` on a key.                                                             |
+| `/internal-key audit <since>`                     | Usage stats since a date — per-key `last_used_at` / call counts for leak triage.               |
 
 Planned rotation with dual-key (once live):
 

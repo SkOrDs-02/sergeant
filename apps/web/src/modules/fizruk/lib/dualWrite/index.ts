@@ -11,7 +11,10 @@ import {
   type ApplyDualWriteResult,
   type DualWriteLogger,
 } from "./adapter.js";
-import { diffFizrukDualWriteOps, type FizrukDualWriteState } from "./diff.js";
+import {
+  diffFizrukDualWriteOps,
+  type FizrukDualWriteState,
+} from "./diff/index.js";
 import { probeFizrukParity } from "./parity.js";
 
 /**

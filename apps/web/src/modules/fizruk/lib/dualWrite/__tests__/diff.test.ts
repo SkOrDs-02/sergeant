@@ -9,7 +9,7 @@ import {
   type FizrukDailyLogSnapshot,
   type FizrukMonthlyPlanSnapshot,
   type FizrukWorkoutTemplateSnapshot,
-} from "../diff.js";
+} from "../diff/index.js";
 
 const EMPTY: FizrukDualWriteState = {
   workouts: [],
