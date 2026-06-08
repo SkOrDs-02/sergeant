@@ -1,7 +1,7 @@
 # Session log — 0018 `agent:find` lexical measurement (2026-06-08)
 
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
-> **Status:** Active
+> **Status:** Reference
 
 Лог одного заміру для останнього DONE-критерію [Ініціативи 0018](./0018-agent-semantic-retrieval.md):
 «на репрезентативній вибірці задач агент робить менше сліпих grep-ів (before/after)».
