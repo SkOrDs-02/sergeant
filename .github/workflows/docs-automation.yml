@@ -163,6 +163,12 @@ jobs:
         # frontmatter without re-running the generator.
         run: pnpm docs:check-today
 
+      - name: Check docs/STATUS.md is up to date
+        # Control panel — same drift semantics as today.md. Everything is
+        # regenerated from pr-ledger + tracker Status headers except the
+        # hand-maintained FOCUS block, which is preserved across regen.
+        run: pnpm docs:check-status
+
       - name: Check WIP limits (soft warn / hard fail)
         # Soft over-limit prints a warning to stderr but exits 0; hard
         # over-limit exits 1 and blocks the PR. Tuning: docs/governance/wip-limits.json
@@ -295,6 +301,7 @@ jobs:
             scripts/docs/__tests__/generate-playbook-index.test.mjs \
             scripts/docs/__tests__/generate-initiative-followups.test.mjs \
             scripts/docs/__tests__/generate-open-work.test.mjs \
+            scripts/docs/__tests__/generate-status.test.mjs \
             scripts/docs/__tests__/generate-freshness-dashboard.test.mjs \
             scripts/docs/__tests__/check-markdown-links.test.mjs \
             scripts/docs/__tests__/check-adr-graph.test.mjs \
