@@ -6,7 +6,7 @@
     "adr": 63,
     "audit": 18,
     "hard-rule": 26,
-    "initiative": 48,
+    "initiative": 50,
     "playbook": 61,
     "pr": 164,
     "skill": 33
@@ -1322,6 +1322,28 @@
       "tier": "core",
       "meta": {
         "number": 18
+      }
+    },
+    {
+      "id": "initiative:0019",
+      "type": "initiative",
+      "title": "0019 — Agent routing (`agent:route`)",
+      "path": "docs/90-work/initiatives/0019-agent-routing.md",
+      "status": "In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config).",
+      "tier": "core",
+      "meta": {
+        "number": 19
+      }
+    },
+    {
+      "id": "initiative:0020",
+      "type": "initiative",
+      "title": "0020 — Agent decisions log",
+      "path": "docs/90-work/initiatives/0020-agent-decisions-log.md",
+      "status": "In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями).",
+      "tier": "core",
+      "meta": {
+        "number": 20
       }
     },
     {
@@ -5544,6 +5566,31 @@
       "type": "references"
     },
     {
+      "from": "initiative:0019",
+      "to": "initiative:0015",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0019",
+      "to": "initiative:0018",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0020",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0020",
+      "to": "initiative:0018",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0020",
+      "to": "initiative:0019",
+      "type": "references"
+    },
+    {
       "from": "initiative:stack-pulse-2026-05/00-overview",
       "to": "hard-rule:20",
       "type": "references"
@@ -6096,6 +6143,11 @@
     {
       "from": "skill:sergeant-start-here",
       "to": "initiative:0018",
+      "type": "references"
+    },
+    {
+      "from": "skill:sergeant-start-here",
+      "to": "initiative:0019",
       "type": "references"
     },
     {

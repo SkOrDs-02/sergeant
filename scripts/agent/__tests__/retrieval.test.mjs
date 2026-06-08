@@ -121,3 +121,32 @@ test("cosineSimilarity behaves (Phase 2 vector math)", async () => {
   assert.equal(cosineSimilarity([1, 2], null), 0);
   assert.equal(cosineSimilarity([1, 2, 3], [1, 2]), 0); // length mismatch
 });
+
+// ── agent:route (Tier 2 / Initiative 0019) ──────────────────────────────────
+
+const ROUTE = resolve(REPO_ROOT, "scripts/agent/route.mjs");
+
+function routeJson(paths) {
+  const out = run(ROUTE, [...paths, "--json"]);
+  return JSON.parse(out);
+}
+
+test("route maps a server-module path to sergeant-server-api + rule #1", () => {
+  const r = routeJson(["apps/server/src/modules/sync/syncV2.ts"]);
+  assert.ok(r.skills.some((s) => s.skill === "sergeant-server-api"));
+  assert.ok(r.hardRules.some((x) => x.id === 1)); // bigint coercion
+});
+
+test("route maps a migration path to sergeant-data-and-migrations + rule #4", () => {
+  const r = routeJson(["apps/server/src/migrations/099_x.sql"]);
+  assert.ok(r.skills.some((s) => s.skill === "sergeant-data-and-migrations"));
+  assert.ok(r.hardRules.some((x) => x.id === 4));
+});
+
+test("route maps a web path to sergeant-web-ui and flags universal rules", () => {
+  const r = routeJson(["apps/web/src/Foo.tsx"]);
+  assert.ok(r.skills.some((s) => s.skill === "sergeant-web-ui"));
+  // Universal rules (commit scope / husky / governance) always apply.
+  assert.ok(r.hardRules.some((x) => x.universal === true));
+  assert.match(r.suggestion, /agent:find/);
+});
