@@ -34,8 +34,6 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import prettier from "prettier";
-
 import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 import { pickPriorityItems } from "./generate-today.mjs";
 
@@ -335,9 +333,14 @@ async function main() {
   const inflight = summariseInFlight(report);
   const priority = pickPriorityItems(report);
 
+  // Lazy import keeps prettier out of the module graph for unit tests, which
+  // run in an install-free CI job (docs-scripts-tests) — mirrors the dynamic
+  // import in generate-open-work.mjs.
+  const { default: prettier } = await import("prettier");
+  const opts = (await prettier.resolveConfig(OUTPUT_PATH)) ?? {};
   const next = await prettier.format(
     render({ focus, shipped, inflight, priority }),
-    { parser: "markdown" },
+    { ...opts, parser: "markdown" },
   );
 
   if (CHECK_MODE) {
