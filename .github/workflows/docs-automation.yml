@@ -303,4 +303,5 @@ jobs:
             scripts/__tests__/check-agents-family-sync.test.mjs \
             scripts/__tests__/bootstrap.test.mjs \
             scripts/__tests__/lint-pii-handling-drift.test.mjs \
+            scripts/agent/__tests__/retrieval.test.mjs \
             scripts/ci/__tests__/validate-pr-body.test.mjs
