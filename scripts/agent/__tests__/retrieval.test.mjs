@@ -14,6 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "../../..");
 const BUILD = resolve(REPO_ROOT, "scripts/agent/build-retrieval-index.mjs");
 const FIND = resolve(REPO_ROOT, "scripts/agent/find.mjs");
+const EVAL = resolve(REPO_ROOT, "scripts/agent/eval-retrieval.mjs");
 
 function run(script, args = []) {
   return execFileSync("node", [script, ...args], {
@@ -72,6 +73,17 @@ test("symbol exports are searchable and resolve to a file pointer", () => {
 
 test("empty query exits non-zero with usage", () => {
   assert.throws(() => run(FIND, []), /Usage/);
+});
+
+test("golden-set recall gate passes (lexical)", () => {
+  // eval-retrieval.mjs exits 0 only when recall@K ≥ the warn threshold.
+  const out = run(EVAL, ["--json"]);
+  const summary = JSON.parse(out);
+  assert.equal(summary.status, "pass");
+  assert.ok(
+    summary.recall >= summary.warn,
+    `recall ${summary.recall} < warn ${summary.warn}`,
+  );
 });
 
 test("cosineSimilarity behaves (Phase 2 vector math)", async () => {
