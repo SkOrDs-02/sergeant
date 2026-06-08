@@ -190,7 +190,7 @@ test("validateGraph: complains when an ADR is missing from the README index", ()
   );
   const errors = validateGraph([a], new Set([]));
   assert.equal(errors.length, 1);
-  assert.match(errors[0], /not listed in docs\/adr\/README\.md/);
+  assert.match(errors[0], /not listed in docs\/04-governance\/adr\/README\.md/);
 });
 
 test("validateGraph: enforces bidirectional supersede (forward direction missing)", () => {

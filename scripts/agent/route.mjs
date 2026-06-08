@@ -33,7 +33,10 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "../..");
 const MAPPING_PATH = resolve(REPO_ROOT, "scripts/docs/skill-mapping.json");
-const HARD_RULES_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules.json");
+const HARD_RULES_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/hard-rules.json",
+);
 
 function readJson(abs) {
   return JSON.parse(readFileSync(abs, "utf8"));
