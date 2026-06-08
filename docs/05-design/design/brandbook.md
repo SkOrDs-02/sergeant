@@ -605,7 +605,7 @@ Toolkit: `shadow-soft`, `shadow-card`, `shadow-float` плюс card-варіан
 
 > **Скоуп:** лише `apps/mobile`. Ця секція є канонічною довідкою патернів
 > для mobile (фокус на brand-узгодженій native-поведінці); migration-план
-> і фази лежать окремо в [`react-native-migration.md`](../../mobile/react-native-migration.md)
+> і фази лежать окремо в [`react-native-migration.md`](../../02-engineering/mobile/react-native-migration.md)
 > (рішення Q9 / §13 фіксує, чому native-специфіка живе в брендбуку).
 > Токени, палітра, voice, type-scale — web і mobile ділять.
 
@@ -640,7 +640,7 @@ Toolkit: `shadow-soft`, `shadow-card`, `shadow-float` плюс card-варіан
 | Swipe-to-delete  | Finyk `Transactions`, Routine-звички, pantry-item-и | Потребує confirm-кроку для елементів, старших за сьогодні.                        |
 
 Список екранів по модулях, на які це мапується, див. у
-[`docs/architecture/platforms.md`](../../architecture/platforms.md).
+[`docs/02-engineering/architecture/platforms.md`](../../02-engineering/architecture/platforms.md).
 
 ### Haptics
 

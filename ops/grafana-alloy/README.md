@@ -6,7 +6,7 @@
 Лёгкий scrape-only агент, який ходить по `/metrics` n8n + apps/server і пушить
 все у Grafana Cloud Prometheus. Без локального TSDB — це робота Grafana Cloud.
 
-Контекст рішення — [`docs/architecture/hosting-evolution.md`](../../docs/architecture/hosting-evolution.md)
+Контекст рішення — [`docs/02-engineering/architecture/hosting-evolution.md`](../../docs/02-engineering/architecture/hosting-evolution.md)
 §Фаза 2 та [`docs/adr/0015-observability-stack.md`](../../docs/adr/0015-observability-stack.md)
 §ADR-15.2 (exit criterion: scrape-інфра).
 

@@ -18,11 +18,11 @@
 
 - [`docs/audits/2026-05-13-web-architecture-state-roast.md`](../audits/2026-05-13-web-architecture-state-roast.md) — прожарка #3/10 (architecture + state).
 - [`docs/audits/2026-05-13-web-frontend-ergonomics-roast.md`](../audits/archive/2026-05-13-web-frontend-ergonomics-roast.md) — прожарка #2/10 (frontend ergonomics).
-- [`docs/architecture/repo-map.md`](../architecture/repo-map.md) — per-app stack matrix, `apps/web` runtime: Vite 8 + React 18 + TanStack Query + Tailwind 4 + size-limit gate.
+- [`docs/02-engineering/architecture/repo-map.md`](../02-engineering/architecture/repo-map.md) — per-app stack matrix, `apps/web` runtime: Vite 8 + React 18 + TanStack Query + Tailwind 4 + size-limit gate.
 - [`docs/governance/rules/18-module-size-discipline-600.md`](../governance/rules/18-module-size-discipline-600.md) — Hard Rule #18 (`max-lines: 600` для `apps/web/src/**`); декомпозиція 0013 Sprint 2 (A4 нижче) — це burndown цього правила.
 - [`docs/initiatives/0006-frontend-routing-and-code-split.md`](../initiatives/0006-frontend-routing-and-code-split.md) — react-router migration, Phase 3-5 закриваються картами A1–A3.
 - [`docs/initiatives/archive/_0013-module-decomposition-round-2.md`](../initiatives/archive/_0013-module-decomposition-round-2.md) — `max-lines: 600` Sprint 2 (4 файли на decomposition), карта A4.
-- [`docs/architecture/state-write-paths.md`](../architecture/state-write-paths.md) — doctrine для UI vs chatActions writer-каналів (закрита у прожарці #3); карти A5/A6 — implementation burndown.
+- [`docs/02-engineering/architecture/state-write-paths.md`](../02-engineering/architecture/state-write-paths.md) — doctrine для UI vs chatActions writer-каналів (закрита у прожарці #3); карти A5/A6 — implementation burndown.
 - [`docs/05-design/ui/toast-policy.md`](../05-design/ui/toast-policy.md) — toast tone-table + anti-pattern matrix (закрита у прожарці #2); карти E1–E2 — Modal a11y контракт у тому ж стилі.
 - [`docs/05-design/ui/shortcuts.md`](../05-design/ui/shortcuts.md) — keyboard registry + browser-conflict matrix (закрита у прожарці #2); карта E7 — wire-up або removal TBD-handler-ів.
 
@@ -109,7 +109,7 @@
   - компоненти / hooks використовують `const api = useApiClient()` замість `import { apiClient } from "@shared/api"`.
   - non-React call-sites (e.g. `chatActions/*`) — окремий handler-injection pattern (через DI у HubChatProvider).
   - тести більше не потребують top-level `vi.mock("@shared/api", ...)` — mock через `<ApiClientProvider value={mockApi}>` у RTL render-helper-ах.
-  - оновити `docs/architecture/state-write-paths.md` FAQ-section (зняти singleton vs DI split-brain).
+  - оновити `docs/02-engineering/architecture/state-write-paths.md` FAQ-section (зняти singleton vs DI split-brain).
 - **Size:** L
 - **Priority:** P1
 - **Depends on:** —
@@ -118,7 +118,7 @@
 ### A6 — `refactor(web): chatActions handlers — drop direct localStorage writes`
 
 - **Status:** ✅ Виконано — verified on main: 0 прямих `localStorage.setItem/removeItem` у production chatActions handler-ах (`fizrukActions`/`routineActions`/`nutritionActions`/`crossActions`); усі повертають `ChatActionResult`/`ChatActionUndoableResult`.
-- **Surface:** `apps/web/src/core/lib/chatActions/fizrukActions/*` (deep-rooted local-first state); решта `chatActions/*Actions.ts` handler-ів з прямими `@shared/storage` writes; `docs/architecture/state-write-paths.md § Anti-patterns`.
+- **Surface:** `apps/web/src/core/lib/chatActions/fizrukActions/*` (deep-rooted local-first state); решта `chatActions/*Actions.ts` handler-ів з прямими `@shared/storage` writes; `docs/02-engineering/architecture/state-write-paths.md § Anti-patterns`.
 - **Acceptance:**
   - кожен handler пише через `apiClient` (або, переходно, через явний `apiClient`-mediated SQLite path), не напряму у localStorage.
   - per-handler contract-тест: assert що handler виставляє очікувані RQ-invalidations + повертає `OperationResult` shape.

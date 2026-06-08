@@ -17,9 +17,9 @@
 
 Code-first OpenAPI generation pipeline + freshness gate **уже працюють**, рішення формалізоване в [ADR-0062](../../adr/0062-openapi-source-of-truth.md) (написаний 2026-06-05; раніше прийнято de facto через імплементацію). Що зроблено:
 
-- **Generator:** [`scripts/api/generate-openapi.mjs`](../../../scripts/api/generate-openapi.mjs) + `scripts/api/generate-openapi-types.mjs` — читає Zod-schemas з `apps/server/src/modules/**/serializers/` (через `buildOpenApiDocument`) і генерує `docs/api/openapi.json` + `packages/api-client/src/generated/openapi.d.ts`.
+- **Generator:** [`scripts/api/generate-openapi.mjs`](../../../scripts/api/generate-openapi.mjs) + `scripts/api/generate-openapi-types.mjs` — читає Zod-schemas з `apps/server/src/modules/**/serializers/` (через `buildOpenApiDocument`) і генерує `docs/02-engineering/api/openapi.json` + `packages/api-client/src/generated/openapi.d.ts`.
 - **Committed artifacts:**
-  - `docs/api/openapi.json` (`openapi: 3.1.0`) — single source-of-truth для documented spec.
+  - `docs/02-engineering/api/openapi.json` (`openapi: 3.1.0`) — single source-of-truth для documented spec.
   - `packages/api-client/src/generated/openapi.d.ts` — auto-generated TS types для web/mobile клієнтів.
 - **Freshness gate:**
   - `pnpm api:check-openapi` (= [`scripts/api/check-openapi-fresh.mjs`](../../../scripts/api/check-openapi-fresh.mjs)) — regenerates spec у пам'яті + порівнює з committed файлом. Fail на drift.
@@ -39,7 +39,7 @@ Reactivation trigger для Phase 2: перший production contract-bug де g
 
 ## Контекст (історично)
 
-Якщо OpenAPI spec існує (placeholder — перевірити `apps/server/openapi*` або `docs/api/`), він **manually-written** і drift-ить vs реальної runtime-поведінки сервера. Жоден тест не співставляє documented schema з actual responses.
+Якщо OpenAPI spec існує (placeholder — перевірити `apps/server/openapi*` або `docs/02-engineering/api/`), він **manually-written** і drift-ить vs реальної runtime-поведінки сервера. Жоден тест не співставляє documented schema з actual responses.
 
 Mobile + web клієнти спираються або на ручний `packages/api-client`, або на ad-hoc Zod-схеми. При drift-і — silent runtime mismatch (e.g., поле перейменоване в коді, але документація / api-client lишається старим).
 
@@ -100,7 +100,7 @@ Top-10 endpoint-ів (login, sync, food-search, finyk-import, etc.) — Schemath
 - [ ] `tests/contract/openapi-roundtrip.test.ts` covers ≥80% маршрутів сервера.
 - [ ] Schemathesis CI job у `.github/workflows/contract-tests.yml` для top-10 endpoint-ів.
 - [ ] `scripts/openapi/check-drift.mjs` як `pnpm lint:openapi-drift` + CI step.
-- [ ] `docs/api/openapi.md` пояснює як працює pipeline + як додавати новий endpoint.
+- [ ] `docs/02-engineering/api/openapi.md` пояснює як працює pipeline + як додавати новий endpoint.
 
 ## Тести
 

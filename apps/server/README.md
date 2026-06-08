@@ -45,7 +45,7 @@ pnpm --filter @sergeant/server build            # Production build
 
 Railway, `Dockerfile.api`. Pre-deploy автоматично запускає `pnpm db:migrate`.
 
-Деталі: [`docs/integrations/railway-vercel.md`](../../docs/integrations/railway-vercel.md).
+Деталі: [`docs/02-engineering/integrations/railway-vercel.md`](../../docs/02-engineering/integrations/railway-vercel.md).
 
 ### Trust proxy (`TRUST_PROXY`)
 
@@ -71,6 +71,6 @@ Railway, `Dockerfile.api`. Pre-deploy автоматично запускає `p
 
 ## Глибше
 
-- [`docs/architecture/api-v1.md`](../../docs/architecture/api-v1.md)
+- [`docs/02-engineering/architecture/api-v1.md`](../../docs/02-engineering/architecture/api-v1.md)
 - [`docs/tech-debt/backend.md`](../../docs/tech-debt/backend.md)
-- [`docs/api/README.md`](../../docs/api/README.md) — OpenAPI spec
+- [`docs/02-engineering/api/README.md`](../../docs/02-engineering/api/README.md) — OpenAPI spec

@@ -51,7 +51,7 @@ Source-of-truth для контексту і дорожньої карти: [`do
 
 Files: `src/shortcuts/{router.ts,types.ts,index.ts}` + 17 per-shortcut definition-файлів, `src/hooks/shortcut-router.ts` factory. Експорт `ESCALATE_PREFIX` залишається публічним — він використовується Layer 2 escalation flow-ом через `userMessage` rewrite, а не як `text` short-circuit.
 
-Історія: попередні ревізії реєстрували цей роутер на `before_agent_start` з `{ block: true, blockReason }`. Live smoke-test 2026-05-12 підтвердив, що в real `openclaw@2026.5.7` цей підхід не працює: hook `@deprecated`, event має `prompt` (не `userMessage`), result type не підтримує `block`. Див. `docs/notes/spikes/openclaw-sdk-5.7-real-api.md` § Stage 4b fix-forward.
+Історія: попередні ревізії реєстрували цей роутер на `before_agent_start` з `{ block: true, blockReason }`. Live smoke-test 2026-05-12 підтвердив, що в real `openclaw@2026.5.7` цей підхід не працює: hook `@deprecated`, event має `prompt` (не `userMessage`), result type не підтримує `block`. Див. `docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md` § Stage 4b fix-forward.
 
 Кожен tool — `api.registerTool({ name, label, description, parameters: Type.Object(...), async execute(invocationId, params) { ... } })`. Параметри валідуються `typebox@1.1.x` (не Zod і не `@sinclair/typebox`). Tools проксяться через HTTP до існуючих server endpoints `/api/internal/openclaw/<endpoint>` з `Authorization: Bearer ${INTERNAL_API_KEY}` (server API не змінюється). Для write-tools додатковий server-side гейт — алловліст + `/write-audit/log` (див. `apps/server/src/routes/internal/openclaw.ts`).
 
@@ -106,4 +106,4 @@ pnpm --filter @sergeant/openclaw-plugin typecheck     # tsc --noEmit
 
 ## Наступні кроки
 
-Послідовність Stages 4b → 8+ описана у [`docs/planning/openclaw-migration-plan.md` § Stage tracker](../../docs/planning/openclaw-migration-plan.md#stage-tracker-2026-05-12--нинішній-source-of-truth). SDK reality-check spike закрився Stage 3 — див. [`docs/notes/spikes/openclaw-sdk-5.7-real-api.md`](../../docs/notes/spikes/openclaw-sdk-5.7-real-api.md).
+Послідовність Stages 4b → 8+ описана у [`docs/planning/openclaw-migration-plan.md` § Stage tracker](../../docs/planning/openclaw-migration-plan.md#stage-tracker-2026-05-12--нинішній-source-of-truth). SDK reality-check spike закрився Stage 3 — див. [`docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md`](../../docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md).

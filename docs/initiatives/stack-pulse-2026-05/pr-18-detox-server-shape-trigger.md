@@ -77,8 +77,8 @@ on:
 
 **2. api-client drift detector (вже існує)** — спec пропонував `scripts/check-api-client-coverage.mjs` + `lint:api-client` як новий CI-job. Поточний моноре́по вже має:
 
-- `pnpm api:check-openapi` (`scripts/api/check-openapi-fresh.mjs`) — провіряє, що `docs/api/openapi.json` свіжий відносно server routes and the shared OpenAPI/Zod registry.
-- `pnpm api:check-openapi-types` (`scripts/api/check-openapi-types-fresh.mjs`) — провіряє, що `packages/api-client/src/generated/openapi.d.ts` свіжий відносно `docs/api/openapi.json`.
+- `pnpm api:check-openapi` (`scripts/api/check-openapi-fresh.mjs`) — провіряє, що `docs/02-engineering/api/openapi.json` свіжий відносно server routes and the shared OpenAPI/Zod registry.
+- `pnpm api:check-openapi-types` (`scripts/api/check-openapi-types-fresh.mjs`) — провіряє, що `packages/api-client/src/generated/openapi.d.ts` свіжий відносно `docs/02-engineering/api/openapi.json`.
 
 Обидва gate-и вже у root `lint` script-і → CI запускає їх на кожен PR (`format-lint-test-build` matrix у `.github/workflows/ci.yml`). Тобто будь-який server-shape change, який не сопроводжений `pnpm api:generate-openapi-types`, fail-итиме CI до Detox-а. Додавати paralel `scripts/check-api-client-coverage.mjs` — дублювання: codegen-pipeline уже виконує перевірку, що server-зміна reflected у api-client. Документація для майбутнього розробника, який натрапить на спек і запитає «де `lint:api-client`?»: дивись `api:check-openapi(-types)`.
 

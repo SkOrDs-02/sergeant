@@ -189,7 +189,7 @@
         "INTERNAL_API_KEY"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Railway webhook notifications. Active; webhook path /webhook/railway-deploy. Railway-side wiring is per-project: Project Settings → Webhooks → Add URL https://n8n-production-09ac.up.railway.app/webhook/railway-deploy → Save → Test Webhook. Required on humorous-eagerness (sergeant-api) and grateful-nurturing (n8n). See docs/integrations/railway-vercel.md §8 for full procedure incl. event-type reference and cleanup of stale rules. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row with dynamic topic (success→ops/P2, failure→incidents/P1) + renders 3-button ack-keyboard."
+      "notes": "Railway webhook notifications. Active; webhook path /webhook/railway-deploy. Railway-side wiring is per-project: Project Settings → Webhooks → Add URL https://n8n-production-09ac.up.railway.app/webhook/railway-deploy → Save → Test Webhook. Required on humorous-eagerness (sergeant-api) and grateful-nurturing (n8n). See docs/02-engineering/integrations/railway-vercel.md §8 for full procedure incl. event-type reference and cleanup of stale rules. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row with dynamic topic (success→ops/P2, failure→incidents/P1) + renders 3-button ack-keyboard."
     },
     "16-posthog-daily-metrics.json": {
       "owner": "growth",

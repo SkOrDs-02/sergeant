@@ -27,4 +27,4 @@ import base from "@sergeant/config/vitest.base.js";
 
 ## Примітка
 
-Цей пакет `stabilize` — breaking зміни тільки через ADR. Див. [`docs/architecture/apps-status-matrix.md`](../../docs/architecture/apps-status-matrix.md).
+Цей пакет `stabilize` — breaking зміни тільки через ADR. Див. [`docs/02-engineering/architecture/apps-status-matrix.md`](../../docs/02-engineering/architecture/apps-status-matrix.md).

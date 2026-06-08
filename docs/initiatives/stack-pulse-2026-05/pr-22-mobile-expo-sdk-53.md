@@ -64,8 +64,8 @@ pnpm install
 
 ### 6. Documentation
 
-- `docs/mobile/sdk-version-history.md` — додати entry "Upgraded SDK 52 → 53".
-- Update `docs/mobile/expo-go-vs-dev-build.md` — нова min-version Expo Go.
+- `docs/02-engineering/mobile/sdk-version-history.md` — додати entry "Upgraded SDK 52 → 53".
+- Update `docs/02-engineering/mobile/expo-go-vs-dev-build.md` — нова min-version Expo Go.
 
 ## Out of scope
 
@@ -81,7 +81,7 @@ pnpm install
 - [ ] EAS Preview build на TestFlight + Internal Android Track.
 - [ ] 7-денний soak на 3+ internal testers — no critical regressions.
 - [ ] `patches/@expo__cli@0.22.28.patch` rebased або dropped (per ADR).
-- [ ] `docs/mobile/sdk-version-history.md` updated.
+- [ ] `docs/02-engineering/mobile/sdk-version-history.md` updated.
 
 ## Тести
 

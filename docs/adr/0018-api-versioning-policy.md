@@ -9,7 +9,7 @@
   - [`apps/server/src/app.ts`](../../apps/server/src/app.ts#L24-L50) — `API_V1_PREFIX`, `apiVersionRewrite` middleware.
   - [`apps/web/src/shared/lib/api/apiUrl.ts`](../../apps/web/src/shared/lib/api/apiUrl.ts) — `getApiPrefix()` web-side resolution.
   - [`packages/api-client/src/`](../../packages/api-client/src) — `apiPrefix` config у HTTP client-і.
-  - [`docs/architecture/api-v1.md`](../architecture/api-v1.md) — operational reference.
+  - [`docs/02-engineering/architecture/api-v1.md`](../02-engineering/architecture/api-v1.md) — operational reference.
   - [`docs/adr/0017-better-auth-choice-and-session-model.md`](./0017-better-auth-choice-and-session-model.md) — чому `/api/auth/*` поза версіонуванням.
 
 ---
@@ -248,7 +248,7 @@ custom-fork-у неможливо. Тому `apiVersionRewrite` свідомо *
 
 - Якщо коли-небудь будемо breaking-change-ити auth-flow, потрібно зробити
   через нові methods (e.g. `/api/auth/v2/sign-in`), не через `/api/v2/auth/...`.
-  Documented у `docs/architecture/api-v1.md` § FAQ.
+  Documented у `docs/02-engineering/architecture/api-v1.md` § FAQ.
 - Inconsistency у API-shape: usual endpoints версіоновані, auth/webhooks ні.
   Acceptable trade-off за simplicity.
 
@@ -373,7 +373,7 @@ proposed.
 
 - Smoke-tests дублюються (один path — два префікси). 50ms на test-run.
 - Cognitive overhead: розробники мусять знати про обидва префікси.
-  Mitigation: `docs/architecture/api-v1.md` як onboarding.
+  Mitigation: `docs/02-engineering/architecture/api-v1.md` як onboarding.
 
 ### Alternatives considered
 

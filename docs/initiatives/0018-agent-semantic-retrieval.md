@@ -36,38 +36,38 @@ Sergeant має багатий машино-читабельний індекс 
 
 **Acceptance:** `pnpm agent:find "coerce bigint balance"` повертає `≤8` рейтингованих `path:line — title [type]` пойнтерів за <1с, без `VOYAGE_API_KEY`.
 
-| PR         | Що ввозиться                                                                 | Файли                                                                                  |
-| ---------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **PR-1.1** | Чанкер: граф-ноди + canonical-doc-секції + symbol-index → маніфест            | `scripts/agent/build-retrieval-index.mjs`, `docs/governance/retrieval-index.json`      |
-| **PR-1.2** | `pnpm agent:find` CLI (lexical token-overlap rerank, `--type`/`--k`/`--json`) | `scripts/agent/find.mjs`, `package.json`                                                |
-| **PR-1.3** | `retrieval-index.schema.json` + `.gitignore` для `.cache/retrieval/`          | `docs/governance/schemas/retrieval-index.schema.json`, `.gitignore`                    |
+| PR         | Що ввозиться                                                                  | Файли                                                                             |
+| ---------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **PR-1.1** | Чанкер: граф-ноди + canonical-doc-секції + symbol-index → маніфест            | `scripts/agent/build-retrieval-index.mjs`, `docs/governance/retrieval-index.json` |
+| **PR-1.2** | `pnpm agent:find` CLI (lexical token-overlap rerank, `--type`/`--k`/`--json`) | `scripts/agent/find.mjs`, `package.json`                                          |
+| **PR-1.3** | `retrieval-index.schema.json` + `.gitignore` для `.cache/retrieval/`          | `docs/governance/schemas/retrieval-index.schema.json`, `.gitignore`               |
 
 ### Phase 2 — Семантичний шар (committed)
 
 **Acceptance:** з `VOYAGE_API_KEY` той самий запит повертає семантично-релевантні пойнтери (не лише keyword-overlap); без ключа — автоматичний lexical-фолбек, нуль помилок.
 
-| PR         | Що ввозиться                                                            | Файли                                                                     |
-| ---------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| **PR-2.1** | Voyage-ембеддер чанків у content-hash cache (reuse budget-guard)        | `scripts/agent/embed-chunks.mjs`, `.cache/retrieval/*.bin`                |
-| **PR-2.2** | Cosine ranking + degradation-логіка (semantic → lexical без ключа)      | `scripts/agent/find.mjs` (extend)                                         |
+| PR         | Що ввозиться                                                       | Файли                                                      |
+| ---------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
+| **PR-2.1** | Voyage-ембеддер чанків у content-hash cache (reuse budget-guard)   | `scripts/agent/embed-chunks.mjs`, `.cache/retrieval/*.bin` |
+| **PR-2.2** | Cosine ranking + degradation-логіка (semantic → lexical без ключа) | `scripts/agent/find.mjs` (extend)                          |
 
 ### Phase 3 — Gates і якість (committed)
 
 **Acceptance:** stale-маніфест валить CI; repo-retrieval `recall@K` ≥ baseline.
 
-| PR         | Що ввозиться                                                                  | Файли                                                                          |
-| ---------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| **PR-3.1** | `pnpm agent:find:check` (content-hash diff vs committed) wired у `pnpm lint`    | `scripts/agent/build-retrieval-index.mjs` (`--check`), `package.json`           |
-| **PR-3.2** | Regen у `docs:gen-daily` + Hard Rule #24-реєстрація каталогу                    | `package.json`, `docs/governance/hard-rules.json`, `knowledge-graph.json`       |
-| **PR-3.3** | Repo-retrieval golden-set + `eval-rag-recall.mjs`-режим                         | `scripts/eval/golden-retrieval.json`, `scripts/eval-rag-recall.mjs` (extend)    |
+| PR         | Що ввозиться                                                                 | Файли                                                                        |
+| ---------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **PR-3.1** | `pnpm agent:find:check` (content-hash diff vs committed) wired у `pnpm lint` | `scripts/agent/build-retrieval-index.mjs` (`--check`), `package.json`        |
+| **PR-3.2** | Regen у `docs:gen-daily` + Hard Rule #24-реєстрація каталогу                 | `package.json`, `docs/governance/hard-rules.json`, `knowledge-graph.json`    |
+| **PR-3.3** | Repo-retrieval golden-set + `eval-rag-recall.mjs`-режим                      | `scripts/eval/golden-retrieval.json`, `scripts/eval-rag-recall.mjs` (extend) |
 
 ### Phase 4 — MCP + промоція (committed)
 
 **Acceptance:** агент у будь-якій сесії викликає `agent_find` як перший крок орієнтації замість сліпого grep; `sergeant-start-here` його рекомендує.
 
-| PR         | Що ввозиться                                                  | Файли                                                                |
-| ---------- | ------------------------------------------------------------- | -------------------------------------------------------------------- |
-| **PR-4.1** | Тонкий MCP-tool `agent_find` поверх движка з find.mjs         | `scripts/agent/mcp-server.mjs` (або наявний MCP-host), `.mcp.json`   |
+| PR         | Що ввозиться                                                   | Файли                                                                      |
+| ---------- | -------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **PR-4.1** | Тонкий MCP-tool `agent_find` поверх движка з find.mjs          | `scripts/agent/mcp-server.mjs` (або наявний MCP-host), `.mcp.json`         |
 | **PR-4.2** | Промоція у `sergeant-start-here` + `docs/agents/onboarding.md` | `.agents/skills/sergeant-start-here/SKILL.md`, `docs/agents/onboarding.md` |
 
 ## Критерії DONE
@@ -82,13 +82,13 @@ Sergeant має багатий машино-читабельний індекс 
 
 ## Ризики
 
-| Ризик                                                              | Митигація                                                                                                       |
-| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| **Ще один generated-артефакт, який стає stale**                    | `--check`-gate у CI (як `docs:check-graph`) + content-hash інвалідація + regen у `docs:gen-daily`               |
-| **Vendor lock / вартість Voyage на regen**                         | Ембедимо лише змінені (за content-hash) чанки; спільний budget-guard з ai-memory; lexical-режим повністю безкоштовний |
-| **Lexical-режим дає низьку якість і агенти його ігнорують**        | Phase 3 golden-eval вимірює recall обох режимів; якщо lexical < поріг — піднімаємо як known-limitation у docs   |
-| **Маніфест роздувається з symbol-index (≈300 → тисячі чанків)**    | Tier-фільтр з графа (core завжди, extended за `--type`); symbol-чанки тільки `export`-рівня, не кожен identifier |
-| **Дубль з наявним runtime-recall плутає агентів**                  | ADR-0066 чітко розділяє: `agent_find` = repo-знання (build-time), `ai-memory/recall` = user-data (runtime)      |
+| Ризик                                                           | Митигація                                                                                                             |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Ще один generated-артефакт, який стає stale**                 | `--check`-gate у CI (як `docs:check-graph`) + content-hash інвалідація + regen у `docs:gen-daily`                     |
+| **Vendor lock / вартість Voyage на regen**                      | Ембедимо лише змінені (за content-hash) чанки; спільний budget-guard з ai-memory; lexical-режим повністю безкоштовний |
+| **Lexical-режим дає низьку якість і агенти його ігнорують**     | Phase 3 golden-eval вимірює recall обох режимів; якщо lexical < поріг — піднімаємо як known-limitation у docs         |
+| **Маніфест роздувається з symbol-index (≈300 → тисячі чанків)** | Tier-фільтр з графа (core завжди, extended за `--type`); symbol-чанки тільки `export`-рівня, не кожен identifier      |
+| **Дубль з наявним runtime-recall плутає агентів**               | ADR-0066 чітко розділяє: `agent_find` = repo-знання (build-time), `ai-memory/recall` = user-data (runtime)            |
 
 ## Власник / ETA
 
@@ -99,8 +99,8 @@ Sergeant має багатий машино-читабельний індекс 
 ## Посилання
 
 - [ADR-0066 — Agent semantic retrieval over the knowledge graph](../adr/0066-agent-semantic-retrieval-over-knowledge-graph.md)
-- [`docs/architecture/ai-memory.md`](../architecture/ai-memory.md) — embedding-конвеєр, який перевикористовуємо
-- [`docs/architecture/rag-eval.md`](../architecture/rag-eval.md) — eval-harness і `recall@K`/`MRR` метрики
+- [`docs/02-engineering/architecture/ai-memory.md`](../02-engineering/architecture/ai-memory.md) — embedding-конвеєр, який перевикористовуємо
+- [`docs/02-engineering/architecture/rag-eval.md`](../02-engineering/architecture/rag-eval.md) — eval-harness і `recall@K`/`MRR` метрики
 - [`docs/governance/knowledge-graph.json`](../governance/knowledge-graph.json) — головне джерело нод для індексу
 - [`docs/governance/symbol-index.json`](../governance/symbol-index.json) — export-пойнтери
 - Rule #24 [`catalog-check-generator.md`](../governance/rules/24-catalog-check-generator.md), Rule #25 [`auto-generated-marker.md`](../governance/rules/25-auto-generated-marker.md)

@@ -80,7 +80,7 @@ const MUST_BE_OWNED = [
     reason: "architecture decision records",
   },
   {
-    path: "docs/architecture",
+    path: "docs/02-engineering/architecture",
     kind: "tree",
     match: /\.md$/,
     reason: "architecture overview, platforms, status matrix",
@@ -110,7 +110,7 @@ const MUST_BE_OWNED = [
     reason: "incident postmortems",
   },
   {
-    path: "docs/api",
+    path: "docs/02-engineering/api",
     kind: "tree",
     match: /\.md$/,
     reason: "external API contracts (Hard Rule #3 surface)",
@@ -122,7 +122,7 @@ const MUST_BE_OWNED = [
     reason: "brandbook, design tokens, design-system rules",
   },
   {
-    path: "docs/integrations",
+    path: "docs/02-engineering/integrations",
     kind: "tree",
     match: /\.md$/,
     reason: "third-party integration contracts (Mono, Voyage, Anthropic, etc.)",

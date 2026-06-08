@@ -72,8 +72,8 @@ jobs:
               /^docs\/today\.md$/,
               /^docs\/initiatives\/follow-ups\.md$/,
               /^docs\/playbooks\/INDEX\.md$/,
-              /^docs\/api\/openapi\.json$/,
-              /^docs\/api\/openapi\.yaml$/,
+              /^docs\/02-engineering\/api\/openapi\.json$/,
+              /^docs\/02-engineering\/api\/openapi\.yaml$/,
               /^apps\/.*\/ios\/Pods\//,
               /^apps\/.*\/android\/\.gradle\//,
             ];

@@ -11,18 +11,18 @@
   - [`docs/adr/0058-knowledge-graph-schema.md`](./0058-knowledge-graph-schema.md) — джерело нод/ребер, що індексуються
   - [`docs/adr/0059-symbol-extraction-via-typescript-compiler-api.md`](./0059-symbol-extraction-via-typescript-compiler-api.md) — `symbol-index.json` як ще одне джерело пойнтерів
   - [`docs/adr/0028-pgvector-ai-memory.md`](./0028-pgvector-ai-memory.md) — наявний production-RAG-стек (Voyage + pgvector), який ми **не** перевикористовуємо як стор (див. Decision)
-  - [`docs/architecture/ai-memory.md`](../architecture/ai-memory.md), [`docs/architecture/rag-eval.md`](../architecture/rag-eval.md) — embedding-конвеєр і eval-harness, який перевикористовуємо
+  - [`docs/02-engineering/architecture/ai-memory.md`](../02-engineering/architecture/ai-memory.md), [`docs/02-engineering/architecture/rag-eval.md`](../02-engineering/architecture/rag-eval.md) — embedding-конвеєр і eval-harness, який перевикористовуємо
   - [`docs/initiatives/0018-agent-semantic-retrieval.md`](../initiatives/0018-agent-semantic-retrieval.md) — план виконання
 
 ---
 
 ## Context and Problem Statement
 
-У Sergeant **достатньо** машино-читабельного знання про себе: `knowledge-graph.json` (10 типів нод, 6 типів ребер), `symbol-index.json` (≈298 експортів із usage-графом), 33 skills, 61 playbook, 62 ADR, 26 hard rules, per-file freshness/lifecycle-маркери. Проблема не в **кількості** артефактів, а в **активації**: агент на старті задачі мусить *здогадатися*, котрий із цих сотень файлів релевантний. Наслідки спостережувані щодня:
+У Sergeant **достатньо** машино-читабельного знання про себе: `knowledge-graph.json` (10 типів нод, 6 типів ребер), `symbol-index.json` (≈298 експортів із usage-графом), 33 skills, 61 playbook, 62 ADR, 26 hard rules, per-file freshness/lifecycle-маркери. Проблема не в **кількості** артефактів, а в **активації**: агент на старті задачі мусить _здогадатися_, котрий із цих сотень файлів релевантний. Наслідки спостережувані щодня:
 
 - **Палений час/токени** — агент grep-ає монорепо наосліп замість одного точного пойнтера.
 - **Хибні висновки** — агент читає не той (або застарілий) файл і робить неправильний висновок.
-- **Maintainer розжовує контекст щоразу** — бо нічого не тицяє агента носом у потрібний артефакт у *момент* задачі.
+- **Maintainer розжовує контекст щоразу** — бо нічого не тицяє агента носом у потрібний артефакт у _момент_ задачі.
 
 Усе наявне знання — **pull**: лежить як файли, які треба свідомо відкрити. Бракує одного запитуваного входу, що на природномовний запит («де серіалізація bigint балансу», «який playbook для нового SQL-міграційного кроку») повертає рейтинговані `file:line`-пойнтери з типом артефакту.
 
@@ -41,7 +41,7 @@
 
 Конкретно:
 
-- **Джерела індексу:** `knowledge-graph.json` (ноди core+extended), секції canonical-docs (`docs/adr`, `docs/playbooks`, `docs/governance/rules`, `docs/architecture`, `.agents/skills/**/SKILL.md`), `symbol-index.json` (export → file:line + owning-package).
+- **Джерела індексу:** `knowledge-graph.json` (ноди core+extended), секції canonical-docs (`docs/adr`, `docs/playbooks`, `docs/governance/rules`, `docs/02-engineering/architecture`, `.agents/skills/**/SKILL.md`), `symbol-index.json` (export → file:line + owning-package).
 - **Чанкінг:** одна нода/секція = один чанк; кожен чанк несе `{ id, type, path, line, title, text, tier }`. `type` повторює enum нод графа + `export` + `doc-section`.
 - **Сторідж (ключове):** **маніфест** `docs/governance/retrieval-index.json` (чанки без векторів — diffable, queryable, у git) + **вектори** у `.cache/retrieval/<contentHash>.bin` (**gitignored**, регенерується лазі за content-hash). Жодних векторів у git → нема noisy diff (мітигація болю з ADR-0058).
 - **Ембеддинги:** той самий `voyage-3.5-lite` (1024d), що й `ai-memory` — спільний клієнт/budget-guard, але **окремий код-шлях** (не runtime-стор).
@@ -89,4 +89,4 @@
 
 - [`docs/initiatives/0018-agent-semantic-retrieval.md`](../initiatives/0018-agent-semantic-retrieval.md)
 - [`docs/adr/0058-knowledge-graph-schema.md`](./0058-knowledge-graph-schema.md)
-- [`docs/architecture/rag-eval.md`](../architecture/rag-eval.md)
+- [`docs/02-engineering/architecture/rag-eval.md`](../02-engineering/architecture/rag-eval.md)

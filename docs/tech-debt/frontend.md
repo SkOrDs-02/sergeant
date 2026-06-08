@@ -402,7 +402,7 @@ PR на кожен файл; великі data-файли (`seedFoodsUk.ts`) —
 21 disable-сайт залишається, але тепер кожен має явне обґрунтування поряд
 (intentional ref-based callback, mount-only effect, навмисне виключення
 залежності щоб не зациклитись тощо). Див. зведений каталог
-[`docs/architecture/apps-web-exhaustive-deps.md`](../architecture/apps-web-exhaustive-deps.md). Якщо
+[`docs/02-engineering/architecture/apps-web-exhaustive-deps.md`](../02-engineering/architecture/apps-web-exhaustive-deps.md). Якщо
 з'являється новий disable без коментаря — рев'ю має його блокувати.
 
 </details>

@@ -314,7 +314,7 @@ export function todayLocalDateString(): string {
 }
 ```
 
-Uses the device's local time-zone. Domain invariant (`docs/architecture/domain-invariants.md`, AGENTS.md § Domain invariants) is **Europe/Kyiv** for day-key derivation. A user retro-logging at 23:30 local while travelling in Lisbon would create a record for 2026-05-13 (local) when in Kyiv it is already 2026-05-14 — and aggregation queries that group by Kyiv day will land the row in the wrong bucket.
+Uses the device's local time-zone. Domain invariant (`docs/02-engineering/architecture/domain-invariants.md`, AGENTS.md § Domain invariants) is **Europe/Kyiv** for day-key derivation. A user retro-logging at 23:30 local while travelling in Lisbon would create a record for 2026-05-13 (local) when in Kyiv it is already 2026-05-14 — and aggregation queries that group by Kyiv day will land the row in the wrong bucket.
 
 **Why it matters.**
 Cross-region travel + retro-log + daily-streak / weekly KPI = silent off-by-one. The same pattern was the source of past `kopiykas`-as-string bugs flagged in the domain-invariants doc.

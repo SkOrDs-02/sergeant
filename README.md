@@ -97,7 +97,7 @@ Packages are shared code reused across apps. Instead of copy-pasting between web
 | `@sergeant/openclaw-plugin`     | OpenClaw Gateway tools/hooks plugin (Gateway-only — NOT consumed by web/mobile) |
 | `eslint-plugin-sergeant-design` | Custom ESLint rules for the design system                                       |
 
-Architecture overview lives in [docs/architecture/README.md](./docs/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).
+Architecture overview lives in [docs/02-engineering/architecture/README.md](./docs/02-engineering/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).
 
 ## Architecture
 
@@ -180,14 +180,14 @@ cp .env.example .env
 
 Open `.env` in your editor. Most values are pre-filled for local development. Key variables:
 
-| Variable                                    | Required? | What it does                                                                                                                                                                    |
-| ------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                              | Yes       | Database URL (Docker default: `postgresql://hub:hub@localhost:5432/hub`)                                                                                                        |
-| `BETTER_AUTH_SECRET`                        | Yes       | Session cookie signing secret (min 32 characters)                                                                                                                               |
-| `ANTHROPIC_API_KEY`                         | For AI    | Claude API key — HubChat won't work without it                                                                                                                                  |
-| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | No        | Google OAuth — without these the "Sign in with Google" button won't appear                                                                                                      |
-| `VITE_API_PROXY_TARGET`                     | No        | Dev proxy target (default `http://127.0.0.1:3000`)                                                                                                                              |
-| Others                                      | No        | See [`docs/integrations/env-vars.md`](./docs/integrations/env-vars.md) — full reference for all 100+ optional variables (Sentry, PostHog, Voyage, Mono, OpenClaw, AI quotas, …) |
+| Variable                                    | Required? | What it does                                                                                                                                                                                                  |
+| ------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                              | Yes       | Database URL (Docker default: `postgresql://hub:hub@localhost:5432/hub`)                                                                                                                                      |
+| `BETTER_AUTH_SECRET`                        | Yes       | Session cookie signing secret (min 32 characters)                                                                                                                                                             |
+| `ANTHROPIC_API_KEY`                         | For AI    | Claude API key — HubChat won't work without it                                                                                                                                                                |
+| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | No        | Google OAuth — without these the "Sign in with Google" button won't appear                                                                                                                                    |
+| `VITE_API_PROXY_TARGET`                     | No        | Dev proxy target (default `http://127.0.0.1:3000`)                                                                                                                                                            |
+| Others                                      | No        | See [`docs/02-engineering/integrations/env-vars.md`](./docs/02-engineering/integrations/env-vars.md) — full reference for all 100+ optional variables (Sentry, PostHog, Voyage, Mono, OpenClaw, AI quotas, …) |
 
 #### 3. Start the database
 
@@ -331,15 +331,15 @@ Monitoring is described in `docs/03-operations/observability/README.md`. Key com
 | Directory                           | Contents                                                   |
 | ----------------------------------- | ---------------------------------------------------------- |
 | `docs/adr/`                         | Architecture Decision Records — why we chose what we chose |
-| `docs/api/`                         | OpenAPI contracts, API documentation                       |
-| `docs/architecture/`                | Repository map, platforms, service catalog                 |
+| `docs/02-engineering/api/`          | OpenAPI contracts, API documentation                       |
+| `docs/02-engineering/architecture/` | Repository map, platforms, service catalog                 |
 | `docs/audits/`                      | UX/UI audits, typography, design reviews                   |
 | `docs/03-operations/deploy/`        | Deployment instructions                                    |
 | `docs/05-design/design/`            | Design system: brandbook, colors, module accents           |
 | `docs/governance/`                  | Hard rules, review checklist, release policy               |
-| `docs/integrations/`                | Monobank, Railway, Vercel, Renovate, Voyage                |
+| `docs/02-engineering/integrations/` | Monobank, Railway, Vercel, Renovate, Voyage                |
 | `docs/01-product/launch/`           | Monetization, GTM, launch readiness                        |
-| `docs/mobile/`                      | Capacitor, deep links, React Native migration              |
+| `docs/02-engineering/mobile/`       | Capacitor, deep links, React Native migration              |
 | `docs/03-operations/observability/` | SLO, dashboards, metrics, runbook                          |
 | `docs/planning/`                    | Roadmaps, AI improvements, dev stack roadmap               |
 | `docs/playbooks/`                   | Step-by-step recipes (add an endpoint, do a hotfix)        |
@@ -358,7 +358,7 @@ Roadmap: `docs/planning/README.md`. Tech debt: `docs/tech-debt/README.md`.
 - **What is currently in flight across all 7 trackers** (auto-rollup, CI drift gate): [docs/open-work.md](./docs/open-work.md).
 - Repeatable execution recipes: [docs/playbooks/README.md](./docs/playbooks/README.md).
 - Governance and hard rules matrix: [docs/governance/README.md](./docs/governance/README.md).
-- Runtime inventory, release, incident, and recovery surfaces: [docs/architecture/service-catalog.md](./docs/architecture/service-catalog.md), [docs/security/disaster-recovery.md](./docs/security/disaster-recovery.md).
+- Runtime inventory, release, incident, and recovery surfaces: [docs/02-engineering/architecture/service-catalog.md](./docs/02-engineering/architecture/service-catalog.md), [docs/security/disaster-recovery.md](./docs/security/disaster-recovery.md).
 
 ## License
 

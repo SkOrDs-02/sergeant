@@ -16,7 +16,7 @@
 //      overridden so the bench runs without git config).
 //
 // Per-stage events emitted by the wrappers via `SERGEANT_TIMING_LOG`
-// (see `docs/development/pre-commit-timing.md`) are aggregated alongside
+// (see `docs/02-engineering/development/pre-commit-timing.md`) are aggregated alongside
 // the wall-clock spawn time so the report exposes both inner ("ms inside
 // the script") and outer ("ms incl. node startup") timing.
 //

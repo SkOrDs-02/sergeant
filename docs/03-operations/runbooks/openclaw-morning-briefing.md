@@ -86,7 +86,7 @@ Response:
 § LLM proposals нижче).
 
 `reportingDate` — `YYYY-MM-DD` для дня перед `nowMs` у Europe/Kyiv (domain
-invariant з [`docs/architecture/domain-invariants.md`](../../architecture/domain-invariants.md)).
+invariant з [`docs/02-engineering/architecture/domain-invariants.md`](../../02-engineering/architecture/domain-invariants.md)).
 
 ## Smoke-test
 

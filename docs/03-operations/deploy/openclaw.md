@@ -224,6 +224,6 @@ pnpm dev                    # tsx watch src/index.ts
 
 - ADR-0027 — Console agent allow-list і rate-limit policy
 - ADR-0031 — OpenClaw v0 (DM-only co-founder bot)
-- [service-catalog.md](../../architecture/service-catalog.md) — `sergeant-openclaw` рядок (раніше `sergeant-hubchat`)
+- [service-catalog.md](../../02-engineering/architecture/service-catalog.md) — `sergeant-openclaw` рядок (раніше `sergeant-hubchat`)
 - [§«Railway service rename runbook»](#railway-service-rename-runbook) — як виконати фактичний rename у Railway dashboard
 - [secret-ownership-register.md](../../security/secret-ownership-register.md)

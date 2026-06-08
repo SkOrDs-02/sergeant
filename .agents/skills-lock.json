@@ -4,7 +4,7 @@
     "better-auth-best-practices": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "665f2baff83781628f5ba452d9c1ba04d6ba6de2e0f0228adafb3f959e9bacc9"
+      "computedHash": "ce813256a0c1a5a460ae0be8e8a5ce80bb98fd697baddf84af141e7aad942b97"
     },
     "sergeant-bugfix-and-regression": {
       "source": "local",
@@ -14,12 +14,12 @@
     "sergeant-data-and-migrations": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "54132db8ea631797c20d947de0959f5053f2ca04a200eb390d8ca999797a66e2"
+      "computedHash": "0ec78b533d429c736b845d8326cf027f2b22e50f430acca9f6a9b258b341a140"
     },
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "f1f04278126dc9e06de6aeddcac38e3138a58806c6a557201d6b1e84526410f7"
+      "computedHash": "13cf3fbe913262e1ce38df5b51feddabd77db98d9a8f21409e504dd1dd4d68b3"
     },
     "sergeant-feature-delivery": {
       "source": "local",
@@ -34,7 +34,7 @@
     "sergeant-mobile-expo": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "dff5c92842c16c9c170fdeefc692f86813f2cdcf8000e848fb961e72291c0b4e"
+      "computedHash": "59d9b99bad074fc724fbe50e52c955609f0269b575f8915edd336894ca430ee0"
     },
     "sergeant-monorepo-boundaries": {
       "source": "local",
@@ -69,7 +69,7 @@
     "sergeant-openclaw": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "3a585bc29ba2677659508b5cff7b4d3b337744f70224c3d3b8219f92437a4fcc"
+      "computedHash": "ce531423b3738fbbb05b496789b7d97fdd6e0062de5b415758ad993af4fd9a6e"
     },
     "sergeant-security-audit": {
       "source": "local",
@@ -159,7 +159,7 @@
     "temporal-python-testing": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "5bbed3f9147dbabf5d7e852297a2b5c61a119d9c0b6d35bc4b4aa6306fbe77fb"
+      "computedHash": "b6e3d3dd8356887f2843f36f2d860ec8a41931cf3855be9dfb4472c35fcbe415"
     },
     "workflow-orchestration-patterns": {
       "source": "local",

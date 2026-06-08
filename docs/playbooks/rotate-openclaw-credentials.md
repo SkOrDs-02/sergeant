@@ -16,14 +16,14 @@ Phase 2 (stack-pulse-2026-05 PR-06) видалив legacy PAT-flow: `OPENCLAW_GI
 ## Owner surface
 
 - Primary surface: OpenClaw → GitHub auth (GitHub App-flow only after Phase 2).
-- Coupled surfaces: `apps/server` (Vercel/Railway env vars), `apps/server/src/modules/openclaw/github-auth.ts`, `apps/server/src/env.ts`, `apps/server/src/env/env.ts` (assertStartupEnv hard-block), `docs/integrations/env-vars.md`.
+- Coupled surfaces: `apps/server` (Vercel/Railway env vars), `apps/server/src/modules/openclaw/github-auth.ts`, `apps/server/src/env.ts`, `apps/server/src/env/env.ts` (assertStartupEnv hard-block), `docs/02-engineering/integrations/env-vars.md`.
 - Governing skill: `sergeant-deploy-and-observability` (secrets + env-vars rollout).
 - Governing ADR / план: [`docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md).
 
 ## Required context
 
 - Прочитай спершу [`access-governance.md`](./access-governance.md) — ротація credential-у це Tier 0/1 access event і має бути залогована саме там.
-- Перевір [`docs/integrations/env-vars.md`](../integrations/env-vars.md) — канонічний список env-vars, що споживає OpenClaw.
+- Перевір [`docs/02-engineering/integrations/env-vars.md`](../02-engineering/integrations/env-vars.md) — канонічний список env-vars, що споживає OpenClaw.
 - Відкрий налаштування GitHub App: <https://github.com/organizations/Skords-01/settings/apps> (доступ лише адмінам).
 
 ---

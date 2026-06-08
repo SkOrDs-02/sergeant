@@ -69,7 +69,7 @@ VitePWA({
 
 ### 4. Documentation
 
-`docs/web/pwa-policy.md`:
+`docs/02-engineering/web/pwa-policy.md`:
 
 - Precache must be 1st-party only.
 - How to whitelist 3rd-party (justified case-by-case).
@@ -84,7 +84,7 @@ VitePWA({
 - [x] `scripts/check-pwa-precache-1st-party.mjs` (див. Status-ноту про розміщення).
 - [x] CI step `lint:pwa-precache` running on every PR (`.github/workflows/ci.yml#check`, після `pnpm check`-білд-кроку).
 - [x] Vite config explicit `globPatterns` + new `globIgnores` (`**/node_modules/**`, `**/*.map`, `**/*.map.*`, `bundle-report.html`).
-- [~] `docs/web/pwa-policy.md` — пропущено як follow-up. Module-level doc-string у `scripts/check-pwa-precache-1st-party.mjs` покриває розширений rationale (cache poisoning, CSP-bypass, privacy, supply-chain) + інструкцію як whitelist-ити legitimate origin.
+- [~] `docs/02-engineering/web/pwa-policy.md` — пропущено як follow-up. Module-level doc-string у `scripts/check-pwa-precache-1st-party.mjs` покриває розширений rationale (cache poisoning, CSP-bypass, privacy, supply-chain) + інструкцію як whitelist-ити legitimate origin.
 - [x] Test: intentional 3rd-party URL у manifest → gate fail (`scripts/__tests__/check-pwa-precache-1st-party.test.mjs` — 10 test у 3 suite-ах; реальний build верифікований: 144 URL-и, всі 1st-party).
 
 ## Тести
@@ -111,7 +111,7 @@ VitePWA({
 - `apps/web/vite.config.js:154-169` — `injectManifest.globPatterns` + new `globIgnores`.
 - `.github/workflows/ci.yml:170-177` — додано step «PWA precache 1st-party gate (PR-38 / L11)» після `pnpm check`.
 - `package.json:85` — додано `lint:pwa-precache` script.
-- `docs/web/pwa-policy.md` — follow-up (див. DoD `[~]` вище; module-level doc-string покриває раціонал).
+- `docs/02-engineering/web/pwa-policy.md` — follow-up (див. DoD `[~]` вище; module-level doc-string покриває раціонал).
 
 ## Refs
 

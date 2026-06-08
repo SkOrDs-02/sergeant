@@ -25,7 +25,7 @@ Disaster recovery defines how Sergeant recovers from catastrophic runtime or dat
 ## Minimum controls
 
 - At least one validated restore path for PostgreSQL.
-- One documented rollback path for each runtime in [service-catalog.md](../architecture/service-catalog.md).
+- One documented rollback path for each runtime in [service-catalog.md](../02-engineering/architecture/service-catalog.md).
 - Secret rotation procedure ready for auth and provider keys.
 - Backup restore drill performed on a regular cadence, not only after incidents.
 

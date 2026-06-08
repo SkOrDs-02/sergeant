@@ -1,6 +1,6 @@
 # Прожарка #10/10 — Mobile (Expo + Capacitor) Reliability & UX (2026-05-13)
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Archived
 > **Scope:** `apps/mobile/**` (Expo 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Jest 29) та `apps/mobile-shell/**` (Capacitor 7 wrapper + Vitest). Окрема активна ініціатива з SQLite-міграції (Stage 8/9) сюди не входить — її ведуть інші сесії. Mobile-strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../../adr/0052-mobile-strategy-capacitor-primary.md); dual-track sunset — [initiative 0002](../../initiatives/archive/_0002-mobile-platform-decision.md). Canonical mobile debt owner — [`docs/tech-debt/mobile.md`](../../tech-debt/mobile.md).
 
@@ -106,7 +106,7 @@
 ### P2.5 — `apps/mobile-shell/` deprecation/parity drift
 
 - **Файл:** `docs/initiatives/archive/_0002-mobile-platform-decision.md:4-6`
-- **Симптом:** Initiative 0002 "Phase 1/2 shipped; sunset schedule superseded" — Capacitor + Expo підтримуються паралельно "до Expo feature parity". У `docs/architecture/platforms.md` критерій ≥18/22 рядків ✅, але `report-shell-tax.mjs` не друкує trend. Maintenance-tax росте, dual-track не активний → потрібен квартальний recount.
+- **Симптом:** Initiative 0002 "Phase 1/2 shipped; sunset schedule superseded" — Capacitor + Expo підтримуються паралельно "до Expo feature parity". У `docs/02-engineering/architecture/platforms.md` критерій ≥18/22 рядків ✅, але `report-shell-tax.mjs` не друкує trend. Maintenance-tax росте, dual-track не активний → потрібен квартальний recount.
 - **Дія:** Окремий tracking-PR (`docs/initiatives/0002-…` — додати свіжий cost baseline). Не блокер цього roast.
 
 ---

@@ -3,13 +3,13 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (superseded by ADR-0052 + initiative 0010; historical reference only)
 >
-> **Update 2026-05-06:** owner decision зафіксовано в [ADR-0052](../../adr/0052-mobile-strategy-capacitor-primary.md). Sunset-дати T₀/T₁/T₂ **не є active commitments** у period 0010 revenue launch. Обидва стеки (Capacitor + Expo) підтримуються паралельно. Deprecation-трек активується окремим ADR, коли Expo досягне feature parity з web (тригер: ≥18/22 рядків у `docs/architecture/platforms.md` = ✅). До цього — не цитувати shell-sunset з цього файлу як active outcome.
+> **Update 2026-05-06:** owner decision зафіксовано в [ADR-0052](../../adr/0052-mobile-strategy-capacitor-primary.md). Sunset-дати T₀/T₁/T₂ **не є active commitments** у period 0010 revenue launch. Обидва стеки (Capacitor + Expo) підтримуються паралельно. Deprecation-трек активується окремим ADR, коли Expo досягне feature parity з web (тригер: ≥18/22 рядків у `docs/02-engineering/architecture/platforms.md` = ✅). До цього — не цитувати shell-sunset з цього файлу як active outcome.
 > **Canonical active owner:** mobile strategy now lives in [ADR-0052](../../adr/0052-mobile-strategy-capacitor-primary.md) and [0010 revenue-first launch](../0010-revenue-first-launch.md). This file is retained for historical PR/context links only.
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks (рішення + 1 ADR + комунікація)
 > **Phase 1 PR:** see Outcome нижче (доданий після merge у цей файл).
-> **Sources:** Design Review 2026-05-03 §10, ADR-0010, [`docs/architecture/platforms.md`](../../architecture/platforms.md), [`docs/mobile/react-native-migration.md`](../../mobile/react-native-migration.md)
+> **Sources:** Design Review 2026-05-03 §10, ADR-0010, [`docs/02-engineering/architecture/platforms.md`](../../02-engineering/architecture/platforms.md), [`docs/02-engineering/mobile/react-native-migration.md`](../../02-engineering/mobile/react-native-migration.md)
 
 ## TL;DR
 
@@ -28,7 +28,7 @@
 
 **In:**
 
-1. Зібрати feature-parity матрицю **на 2026-05-08** (web ↔ shell ↔ RN) і опублікувати в `docs/architecture/platforms.md`.
+1. Зібрати feature-parity матрицю **на 2026-05-08** (web ↔ shell ↔ RN) і опублікувати в `docs/02-engineering/architecture/platforms.md`.
 2. Заміряти cost dual-track-у в годинах підтримки за квартал (build-pipelines, Sentry triage, deps bumps).
 3. Прийняти **operational decision**: дата T₀ — після якої всі shell-only PR-и (крім deprecation banner) **відхиляються** на CR.
 4. Прийняти T₁ — дата remove-from-store shell-у (T₀ + 90 днів).
@@ -37,7 +37,7 @@
 
 **Out:**
 
-- Сам RN-порт; він уже tracks у [`docs/mobile/react-native-migration.md`](../../mobile/react-native-migration.md).
+- Сам RN-порт; він уже tracks у [`docs/02-engineering/mobile/react-native-migration.md`](../../02-engineering/mobile/react-native-migration.md).
 - Декомпозиція `apps/mobile/` файлів — ініціатива [0001](./_0001-module-decomposition.md) бере тільки web.
 - Mobile e2e на CI — окрема ініціатива (буде додана), see [`docs/planning/mobile-e2e-testing.md`](../../planning/archive/mobile-e2e-testing.md).
 
@@ -45,7 +45,7 @@
 
 ### Фаза 1 — інвентаризація і метрики (3 дні)
 
-- **PR `mobile-feature-parity-matrix`** — оновити [`docs/architecture/platforms.md`](../../architecture/platforms.md) з повною feature-parity таблицею:
+- **PR `mobile-feature-parity-matrix`** — оновити [`docs/02-engineering/architecture/platforms.md`](../../02-engineering/architecture/platforms.md) з повною feature-parity таблицею:
   | Module | Web | Shell | RN | Notes |
   | ------------- | --- | ----- | -- | ----- |
   | Auth (Better) | ✅ | ✅ | ✅ | bearer контракт уніфікований |
@@ -65,7 +65,7 @@
     - **T₀ (shell freeze):** YYYY-MM-DD (рекомендоване — 2026-09-01, тобто сприйнятний дедлайн на закриття RN-Nutrition, RN-Voice, RN-Detox e2e).
     - **T₁ (remove-from-store):** T₀ + 90 днів.
     - **T₂ (delete `apps/mobile-shell/`):** T₁ + 30 днів.
-  - Додати **Exit dashboard** — три бінарні маяки (RN Nutrition done, RN Voice done, RN Detox e2e), стан читається з `docs/architecture/platforms.md` і коментується раз на спринт.
+  - Додати **Exit dashboard** — три бінарні маяки (RN Nutrition done, RN Voice done, RN Detox e2e), стан читається з `docs/02-engineering/architecture/platforms.md` і коментується раз на спринт.
   - Додати посилання на цю ініціативу.
 
 ### Фаза 3 — guardrails (1–2 дні)
@@ -77,12 +77,12 @@
 
 - Пост у `#mobile-channel`: «Mobile platform decision: shell sunsets at T₀, RN-only after T₀».
 - Сповіщення для бета-тестерів shell-білду (через TestFlight/Play Internal): «Shell перейде у deprecated режим у дату T₀, переключайтеся на RN-app».
-- Оновити `docs/mobile/shell.md` — секція «Sunset» з датами.
+- Оновити `docs/02-engineering/mobile/shell.md` — секція «Sunset» з датами.
 
 ## Критерії DONE
 
 - [x] [ADR-0010](../../adr/0010-mobile-dual-track-capacitor-expo.md) має поле `Sunset schedule` з трьома датами.
-- [x] У `docs/architecture/platforms.md` є feature-parity таблиця, оновлена за останні 7 днів.
+- [x] У `docs/02-engineering/architecture/platforms.md` є feature-parity таблиця, оновлена за останні 7 днів.
 - [x] `scripts/report-shell-tax.mjs` бігає у CI cron щотижня.
 - [x] У lint-плагіні є rule `forbid-shell-only-feature` із покриттям unit-тестами.
 - [ ] У `#mobile-channel` опубліковано рішення з датами.
@@ -117,9 +117,9 @@
 
 - Design Review 2026-05-03 — §10 (Mobile strategy)
 - [ADR-0010 Mobile dual-track](../../adr/0010-mobile-dual-track-capacitor-expo.md) — буде оновлено
-- [`docs/architecture/platforms.md`](../../architecture/platforms.md) — feature-parity матриця
-- [`docs/mobile/react-native-migration.md`](../../mobile/react-native-migration.md) — RN port roadmap
-- [`docs/mobile/shell.md`](../../mobile/shell.md) — operator-ref для shell
+- [`docs/02-engineering/architecture/platforms.md`](../../02-engineering/architecture/platforms.md) — feature-parity матриця
+- [`docs/02-engineering/mobile/react-native-migration.md`](../../02-engineering/mobile/react-native-migration.md) — RN port roadmap
+- [`docs/02-engineering/mobile/shell.md`](../../02-engineering/mobile/shell.md) — operator-ref для shell
 - [`docs/planning/mobile-e2e-testing.md`](../../planning/archive/mobile-e2e-testing.md) — e2e roadmap
 
 ## Outcome
@@ -142,7 +142,7 @@ governance change з парою скриптів і lint-правилом.
   - **T₁ — 2026-11-30** (remove-from-store, T₀ + 90 днів)
   - **T₂ — 2026-12-30** (видалення `apps/mobile-shell/` з репо, T₁ + 30 днів)
 - **Feature-parity матриця** опублікована у
-  [`docs/architecture/platforms.md` § 0](../../architecture/platforms.md#0-feature-parity-матриця-web-shell-rn) —
+  [`docs/02-engineering/architecture/platforms.md` § 0](../../02-engineering/architecture/platforms.md#0-feature-parity-матриця-web-shell-rn) —
   22 рядки (Auth / Hub / Modules / Nutrition / Sync / Voice / тощо), три колонки
   (Web / Capacitor shell / RN), легенда `✅ / 🟡 / 🟥 / n/a`. **Snapshot:** 2026-05-03,
   **Next review:** 2026-08-01.
@@ -159,7 +159,7 @@ governance change з парою скриптів і lint-правилом.
   20 unit-тестів у [`packages/eslint-plugin-sergeant-design/__tests__/forbid-shell-only-feature.test.mjs`](../../../packages/eslint-plugin-sergeant-design/__tests__/forbid-shell-only-feature.test.mjs).
   Це робить T₀ реальним _вже зараз_: не «шукайте на code-review нові shell-онлі
   файли», а `pnpm lint` падає.
-- **`docs/mobile/shell.md` § Sunset** додано — operator cheatsheet для мейнтейнерів
+- **`docs/02-engineering/mobile/shell.md` § Sunset** додано — operator cheatsheet для мейнтейнерів
   shell-у: «що це означає для вашого PR-у», як розширити allowlist для **легітимного**
   нового shell-glue (вимагає посилання на ADR-0010 / цю ініціативу).
 - **Shell-tax baseline скрипт** — [`scripts/report-shell-tax.mjs`](../../../scripts/report-shell-tax.mjs).
@@ -200,7 +200,7 @@ quarterly review мав один table-source-of-truth замість трьох
 | 2026-05-15   | 90d    | 47      | 79    | 4       | Те ж. Очікуємо розшаровувати з наступним recount-ом, коли почнеться T₀ pre-freeze (2026-08).                                           |
 | 2026-08      | …      | …       | …     | …       | TODO — quarterly recount після `report-shell-tax-report.yml` weekly cron baseline.                                                     |
 
-Якщо feature-parity ≥18/22 у `docs/architecture/platforms.md` — окремий
+Якщо feature-parity ≥18/22 у `docs/02-engineering/architecture/platforms.md` — окремий
 ADR-trigger PR для активації sunset-треку (поза скоупом цього recount-у).
 
 Метрики Phase 1 (Phase 2+ ще попереду):

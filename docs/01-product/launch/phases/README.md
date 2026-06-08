@@ -73,7 +73,7 @@ SSO не залитий, Apple Developer Program не куплений, окре
 | Які фази launch-у і що робити на кожній (high-level GTM, без коду)? | [02 — GTM](../business/02-go-to-market.md)                                                             |
 | Що треба юридично / по readiness checklist?                         | [04 — Launch readiness](../business/04-launch-readiness.md)                                            |
 | Який стан FTUX-онбордингу (PR registry, відкриті проблеми)?         | [FTUX master tracker](../product-os/ftux-master-tracker.md)                                            |
-| Архітектурний контекст: web ↔ shell ↔ RN feature parity?            | [architecture/platforms.md](../../../architecture/platforms.md)                                        |
+| Архітектурний контекст: web ↔ shell ↔ RN feature parity?            | [architecture/platforms.md](../../../02-engineering/architecture/platforms.md)                         |
 
 > **Конвенція цього піддерева:** `00-..03-` — це **fixed sequence** (audit → web → Capacitor → native).
 > Інакше ніж у `business/01-..06-`, де milestones, тут — **execution phases** з вхідними/вихідними
@@ -315,9 +315,9 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 
 ### Architecture / ADRs
 
-- [`docs/architecture/platforms.md`](../../../architecture/platforms.md) — feature parity матриця (SSOT)
-- [`docs/architecture/apps-status-matrix.md`](../../../architecture/apps-status-matrix.md)
-- [`docs/architecture/hosting-evolution.md`](../../../architecture/hosting-evolution.md)
+- [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — feature parity матриця (SSOT)
+- [`docs/02-engineering/architecture/apps-status-matrix.md`](../../../02-engineering/architecture/apps-status-matrix.md)
+- [`docs/02-engineering/architecture/hosting-evolution.md`](../../../02-engineering/architecture/hosting-evolution.md)
 - [ADR-0051 — Pricing v3 single tier](../../../adr/0051-pricing-v3-single-tier.md)
 - [ADR-0052 — Mobile strategy: Capacitor primary](../../../adr/0052-mobile-strategy-capacitor-primary.md)
 

@@ -47,8 +47,8 @@ Documentation is part of the change set, not a follow-up. Treat any of the follo
 
 | Code change                                       | Docs that must move with it                                                                                                                                            |
 | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New / changed JSON response shape                 | `packages/api-client/**` types **+** the matching contract test (Hard Rule #3). If the response is documented in `docs/api/*.md`, update there too.                    |
-| New SQL migration                                 | `docs/architecture/data-exchange-storage-audit.md` (DB-level invariants), and any ER-diagram in `docs/architecture/`.                                                  |
+| New / changed JSON response shape                 | `packages/api-client/**` types **+** the matching contract test (Hard Rule #3). If the response is documented in `docs/02-engineering/api/*.md`, update there too.     |
+| New SQL migration                                 | `docs/02-engineering/architecture/data-exchange-storage-audit.md` (DB-level invariants), and any ER-diagram in `docs/02-engineering/architecture/`.                    |
 | New / removed npm script                          | `CONTRIBUTING.md § Everyday Commands`, `CLAUDE.md § Quick commands`.                                                                                                   |
 | New Hard Rule, lint rule, or convention           | `AGENTS.md` § Hard Rules (the canonical entry) **+** mirror summary in `CONTRIBUTING.md § Hard rules`. PR template's "AGENTS.md updated?" checkbox **must** be ticked. |
 | New design token, palette, or component           | `docs/05-design/design/design-system.md`, `docs/05-design/design/brandbook.md`, and the relevant audit (`docs/audits/*-audit-*.md`) if it changes status.              |
@@ -76,7 +76,7 @@ If you genuinely change nothing in the doc but its claims still hold, leave the 
 
 The PR template includes the relevant boxes (`AGENTS.md updated?`, "Docs updated alongside code?"). CI catches the cases that are mechanically detectable:
 
-- `pnpm lint:governance-sync` — fails (error, not warning) on **concrete** dangling `apps/.../*.ts` / `packages/.../*.ts` / `scripts/...` refs in non-aspirational docs (anything outside `docs/01-product/launch/`, `docs/planning/`, `docs/integrations/*-roadmap.md`, `docs/audits/*-implementation-roadmap.md`, ADRs with `Status: proposed`). Refs containing glob/placeholder syntax (`*`, `?`, `<>`, `[]`, `{}`) are skipped — those are templates, not concrete claims.
+- `pnpm lint:governance-sync` — fails (error, not warning) on **concrete** dangling `apps/.../*.ts` / `packages/.../*.ts` / `scripts/...` refs in non-aspirational docs (anything outside `docs/01-product/launch/`, `docs/planning/`, `docs/02-engineering/integrations/*-roadmap.md`, `docs/audits/*-implementation-roadmap.md`, ADRs with `Status: proposed`). Refs containing glob/placeholder syntax (`*`, `?`, `<>`, `[]`, `{}`) are skipped — those are templates, not concrete claims.
 - `pnpm docs:check-freshness-coverage`, `pnpm docs:check-playbook-index`, `pnpm docs:check-playbook-schema`, `pnpm hard-rules:check`, `pnpm api:check-openapi` — supplementary gates per category.
 
 The remaining categories (api-client type drift, CHANGELOG entries, design-system updates) are still reviewer- and self-discipline-enforced. If a reviewer spots an unchecked-but-required doc update, that's a request-changes signal — not a "follow-up issue". And if `lint:governance-sync` shows a path you renamed/moved, **do not** silence it by adding `<>` placeholders unless the file truly is aspirational — fix the doc to reference the real new path.
@@ -90,7 +90,7 @@ All **prose** in internal docs (ADRs, playbooks, audits, RFCs, architecture docs
 - `README.md` (public-facing, GitHub default-rendered).
 - ADR titles and Status badges (canonical English keywords: `proposed`, `accepted`, `superseded`, `shipped`).
 - The first H1 of `AGENTS.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `DEVIN.md` (shared-tooling convention).
-- OpenAPI / `docs/api/*` schema & description fields (consumed by tooling).
+- OpenAPI / `docs/02-engineering/api/*` schema & description fields (consumed by tooling).
 - Commit messages (Conventional Commits English vocabulary — Hard Rule #5).
 - PR titles & descriptions (English so reviewers across timezones / Devin / Codex can scan).
 - Code identifiers, command names, log lines, env-var names, error codes (always English).

@@ -8,7 +8,7 @@
 - **Related:**
   - [`docs/initiatives/archive/_0008-platform-hardening.md`](../initiatives/archive/_0008-platform-hardening.md) §Phase 3
   - [`docs/security/hardening/H2-dependabot.md`](../security/hardening/H2-dependabot.md) (Dependabot setup card)
-  - [`docs/integrations/renovate-usage.md`](../integrations/renovate-usage.md)
+  - [`docs/02-engineering/integrations/renovate-usage.md`](../02-engineering/integrations/renovate-usage.md)
   - [`renovate.json`](../../renovate.json), [`.github/dependabot.yml`](../../.github/dependabot.yml)
 
 ---
@@ -58,7 +58,7 @@ Initiative 0008 Phase 3 явно вимагає одного офіційног�
 
 ### Negative
 
-- Дві конфігурації в репо. Майбутні зміни treba робити двічі (одну в Renovate, дзеркальну в Dependabot security-only). Митиґація — ADR + `docs/integrations/renovate-usage.md` посилається на цей ADR.
+- Дві конфігурації в репо. Майбутні зміни treba робити двічі (одну в Renovate, дзеркальну в Dependabot security-only). Митиґація — ADR + `docs/02-engineering/integrations/renovate-usage.md` посилається на цей ADR.
 - Dependabot security-PR піднімаються за іншим schedule (daily) — двічі за тиждень може бути race з Renovate weekly. Ризик низький: race-resolved через Renovate `rebaseWhen: conflicted`.
 
 ### Neutral
@@ -70,5 +70,5 @@ Initiative 0008 Phase 3 явно вимагає одного офіційног�
 
 - Зміни в `renovate.json`: додаються `anthropic`, `sentry`, `opentelemetry` groups (initiative 0008 spec).
 - Зміни в `.github/dependabot.yml`: звужено npm-scope до security-only; production/dev groups видалено.
-- `docs/integrations/renovate-usage.md` — оновлено з лінком на цей ADR.
+- `docs/02-engineering/integrations/renovate-usage.md` — оновлено з лінком на цей ADR.
 - `docs/security/hardening/H2-dependabot.md` — статус оновлено: «scope reduced to security-only per ADR-0044».

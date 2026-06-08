@@ -4,7 +4,7 @@
 > **Status:** Active
 
 Vercel hosts the React PWA from `apps/web`. The API surface lives on Railway —
-see [`../integrations/railway-vercel.md`](../../integrations/railway-vercel.md) for
+see [`../integrations/railway-vercel.md`](../../02-engineering/integrations/railway-vercel.md) for
 the platform split rationale and [`../adr/0009-hosting-split-railway-vercel.md`](../../adr/0009-hosting-split-railway-vercel.md)
 for the architectural decision.
 
@@ -160,5 +160,5 @@ fails outright (e.g. rolldown cannot resolve a workspace package):
 
 - [`../security/hardening/H7-vercel-config-drift.md`](../../security/hardening/H7-vercel-config-drift.md)
 - [`../security/hardening/C2-frontend-csp.md`](../../security/hardening/C2-frontend-csp.md)
-- [`../integrations/railway-vercel.md`](../../integrations/railway-vercel.md)
+- [`../integrations/railway-vercel.md`](../../02-engineering/integrations/railway-vercel.md)
 - [`../adr/0009-hosting-split-railway-vercel.md`](../../adr/0009-hosting-split-railway-vercel.md)

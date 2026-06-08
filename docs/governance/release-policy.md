@@ -1,6 +1,6 @@
 # Release Policy
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Canonical release policy for Sergeant. This document defines when a normal merge is enough and when a change must be treated as an explicit release event with extra coordination.
@@ -34,7 +34,7 @@ Do not continue a release until one of these is resolved or explicitly waived:
 
 ## Required release loop
 
-1. Identify the primary surface in [service-catalog.md](../architecture/service-catalog.md).
+1. Identify the primary surface in [service-catalog.md](../02-engineering/architecture/service-catalog.md).
 2. Open exactly one primary release playbook.
 3. Confirm release order, rollback path, and post-release verification before merge.
 4. Merge and deploy only after the required checks are green.

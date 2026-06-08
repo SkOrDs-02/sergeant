@@ -36,7 +36,7 @@
 
 **Description.** `deriveSessionTitle` builds the fallback `Бесіда DD.MM HH:MM` label with `new Date(createdAt)` + `date.getDate()` / `getMonth()` / `getHours()` / `getMinutes()`. Those getters return host-local values, not Europe/Kyiv values. On a device whose OS clock is set to Berlin / London / UTC, a session that the user actually created at 11:30 Kyiv will surface in the drawer as `10:30` / `09:30` / `08:30`. The same label is re-derived on every debounced flush in `useChatSessions` (L107–L111), so the value is sticky once written.
 
-**Why it matters.** `docs/architecture/domain-invariants.md` declares **Europe/Kyiv** as the single source of truth for time. Mis-stamped session titles desynchronise the drawer from the user's mental model ("yesterday at 23:55" vs "today at 00:55") and from any time-based filters or recents views built on top.
+**Why it matters.** `docs/02-engineering/architecture/domain-invariants.md` declares **Europe/Kyiv** as the single source of truth for time. Mis-stamped session titles desynchronise the drawer from the user's mental model ("yesterday at 23:55" vs "today at 00:55") and from any time-based filters or recents views built on top.
 
 **Recommendation.** Format with `Intl.DateTimeFormat("uk-UA", { timeZone: "Europe/Kyiv", … })` (or a shared `formatKyivStamp` helper) instead of raw `getHours()` / `getDate()`. Same fix should apply consistently across the scope (see F2, F8).
 
@@ -163,7 +163,7 @@ Any third-party site can post a link like `https://app.sergeant.lol/chat?q=<arbi
 **Page:** `HubSearch` (sources pipeline)
 **File:** `apps/web/src/core/hub/search/searchTypes.ts` (L61–L63), `apps/web/src/core/hub/search/searchSources.ts` (calls at L45, L147, L262, L279)
 
-**Description.** `localDateKey(d: Date)` returns `YYYY-MM-DD` from `d.getFullYear()/getMonth()/getDate()` — host time. `searchSources` calls it on transaction `txDate`, workout `date`, food `eatenAt`, etc., then groups / matches results by that key. The domain invariant ([`docs/architecture/domain-invariants.md`](../architecture/domain-invariants.md)) is **`YYYY-MM-DD` in Kyiv local**, week start Monday. The util is the canonical day-key for the entire palette — wrong key = wrong grouping for every search hit that mentions a date.
+**Description.** `localDateKey(d: Date)` returns `YYYY-MM-DD` from `d.getFullYear()/getMonth()/getDate()` — host time. `searchSources` calls it on transaction `txDate`, workout `date`, food `eatenAt`, etc., then groups / matches results by that key. The domain invariant ([`docs/02-engineering/architecture/domain-invariants.md`](../02-engineering/architecture/domain-invariants.md)) is **`YYYY-MM-DD` in Kyiv local**, week start Monday. The util is the canonical day-key for the entire palette — wrong key = wrong grouping for every search hit that mentions a date.
 
 **Why it matters.** Users searching "вчора кава" miss the matching transaction if the device is in a non-Kyiv timezone. The bug compounds with F1 / F2 because the same wrong-tz value is rendered in the result subtitle.
 

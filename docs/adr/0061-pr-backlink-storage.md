@@ -1,6 +1,6 @@
 # ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 - **Status:** Proposed
@@ -73,7 +73,7 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
 - **Hybrid balances UX vs noise.** JSON-only — погана contributor UX (треба окремо переходити). In-doc-only — N×M duplication, кожен doc редагується при кожному merge.
 - **Single canonical store enables tooling.** Phase 1 graph generator уже має `pr` node type + `touched-by` edge тип; ledger feeds graph generator без додаткового scanner-а.
 - **Follow-up PR strategy respects Hard Rule #6.** No force-push, no direct main-write. Trade-off: 1-PR latency для backlinks update. Acceptable (backlinks не блокують жодну CI gate).
-- **Path whitelist scopes thrashing.** Чотири класи canonical docs (ADR / initiative / playbook / rule) — стабільні, рідко перейменовуються. Не whitelist-уємо `docs/audits/` бо audits є snapshot-документами; не whitelist-уємо `docs/architecture/` бо там auto-gen mirrors з Phase 3, які регулярно міняються від drift-detector.
+- **Path whitelist scopes thrashing.** Чотири класи canonical docs (ADR / initiative / playbook / rule) — стабільні, рідко перейменовуються. Не whitelist-уємо `docs/audits/` бо audits є snapshot-документами; не whitelist-уємо `docs/02-engineering/architecture/` бо там auto-gen mirrors з Phase 3, які регулярно міняються від drift-detector.
 - **Idempotent block format.** START/END markers роблять регенерацію O(N) string-rewrite без AST-парсингу markdown.
 
 ## Consequences

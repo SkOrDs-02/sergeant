@@ -1,6 +1,6 @@
 # Playbook: Onboard External API
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** "Інтегрувати нову зовнішню API" / додати новий third-party сервіс / нова банківська інтеграція / новий AI-провайдер.
@@ -164,7 +164,7 @@ async function healthCheck() {
 
 ## See also
 
-- [monobank-roadmap.md](../integrations/monobank-roadmap.md) — приклад повної Monobank-інтеграції
+- [monobank-roadmap.md](../02-engineering/integrations/monobank-roadmap.md) — приклад повної Monobank-інтеграції
 - [backend-tech-debt.md](../tech-debt/backend.md) — §Bank integrations deep-dive
-- [railway-vercel.md](../integrations/railway-vercel.md) — як додати env vars у Railway
+- [railway-vercel.md](../02-engineering/integrations/railway-vercel.md) — як додати env vars у Railway
 - [AGENTS.md](../../AGENTS.md) — rule #3 (API contract)

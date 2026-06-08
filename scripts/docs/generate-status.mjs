@@ -254,13 +254,13 @@ function render({ focus, shipped, inflight, priority }) {
   );
   lines.push("");
   lines.push(
-    "- [`architecture/repo-map.md`](./architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).",
+    "- [`architecture/repo-map.md`](./02-engineering/architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).",
   );
   lines.push(
-    "- [`architecture/service-catalog.md`](./architecture/service-catalog.md) — runtime-поверхні та сервіси.",
+    "- [`architecture/service-catalog.md`](./02-engineering/architecture/service-catalog.md) — runtime-поверхні та сервіси.",
   );
   lines.push(
-    "- [`architecture/README.md`](./architecture/README.md) — repo map, C4-діаграми, domain invariants.",
+    "- [`architecture/README.md`](./02-engineering/architecture/README.md) — repo map, C4-діаграми, domain invariants.",
   );
   lines.push(
     "- [`../AGENTS.md`](../AGENTS.md) — repo overview, hard rules, performance budgets, scope enum.",
@@ -283,7 +283,7 @@ function render({ focus, shipped, inflight, priority }) {
     "| **Продукт** | [`launch/`](./01-product/launch/README.md), [`marketing/`](./01-product/marketing/README.md), [`copy/`](./01-product/copy/README.md) | GTM, монетизація, FTUX |",
   );
   lines.push(
-    "| **Інженерія** | [`architecture/`](./architecture/README.md), [`api/`](./api/README.md), [`web/`](./web/README.md), [`mobile/`](./mobile/README.md), [`testing/`](./testing/README.md), [`integrations/`](./integrations/README.md) | як влаштовано і як білдити |",
+    "| **Інженерія** | [`architecture/`](./02-engineering/architecture/README.md), [`api/`](./02-engineering/api/README.md), [`web/`](./02-engineering/web/README.md), [`mobile/`](./02-engineering/mobile/README.md), [`testing/`](./02-engineering/testing/README.md), [`integrations/`](./02-engineering/integrations/README.md) | як влаштовано і як білдити |",
   );
   lines.push(
     "| **Операції** | [`deploy/`](./03-operations/deploy/README.md), [`observability/`](./03-operations/observability/README.md), [`runbooks/`](./03-operations/runbooks/README.md), [`postmortems/`](./03-operations/postmortems/README.md), [`ops/`](./03-operations/ops/README.md) | деплой, алерти, інциденти |",

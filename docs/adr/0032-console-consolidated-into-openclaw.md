@@ -10,7 +10,7 @@
   - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md) — supergroup + 7 топіків.
   - [ADR-0031 — OpenClaw v0 Telegram co-founder bot](./0031-openclaw-v0-telegram-cofounder.md) — v0 scope, allowlist, audit-log.
   - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../01-product/launch/tech/openclaw-roadmap.md) — phasing.
-  - [`docs/architecture/apps-status-matrix.md`](../architecture/apps-status-matrix.md) — console deployment row.
+  - [`docs/02-engineering/architecture/apps-status-matrix.md`](../02-engineering/architecture/apps-status-matrix.md) — console deployment row.
 
 ---
 
@@ -129,7 +129,7 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 
 1. ✅ Code: `CONSOLE_BOT_TOKEN` optional, 5 tools ported, 5 routes added, 5 slash-команд додано в OpenClaw.
 2. ✅ ADR-0032 (this).
-3. ✅ Update `docs/architecture/apps-status-matrix.md`: console row → `Status: dormant (consolidated into OpenClaw, ADR-0032)`.
+3. ✅ Update `docs/02-engineering/architecture/apps-status-matrix.md`: console row → `Status: dormant (consolidated into OpenClaw, ADR-0032)`.
 4. ✅ Update `docs/03-operations/deploy/openclaw.md`: rename intent to `sergeant-openclaw` deployment (Railway service перейменовано у PR-47, раніше `sergeant-hubchat`), додати ENV-list для нових tool-ів.
 5. ✅ Update `docs/01-product/launch/tech/openclaw-roadmap.md`: Phase 1 scope включає `/status`, `/metrics`, `/digest`, `/logs`, `/review`.
 6. ✅ Update `docs/03-operations/runbooks/openclaw-runbook.md`: команди + troubleshooting + persona-roadmap.

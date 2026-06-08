@@ -26,7 +26,7 @@
    - Added `packages/shared/stryker.utils.conf.json` for `src/utils/{date,macros}.ts`.
    - Added weekly GitHub Actions workflow `.github/workflows/mutation-testing.yml`.
    - Added focused `macros.test.ts` coverage so the mutation job has useful signal.
-   - Updated `docs/testing/README.md` to reflect the new shared-utils mutation scope.
+   - Updated `docs/02-engineering/testing/README.md` to reflect the new shared-utils mutation scope.
 
 ## New Top 5 Next PR Cards
 

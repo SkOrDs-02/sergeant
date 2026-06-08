@@ -14,7 +14,7 @@
 - `docs/governance/repo-map.auto.json`
 - `docs/governance/service-catalog.auto.json`
 - `docs/governance/symbol-index.json` (+ per-workspace `*/symbols.json`)
-- `docs/architecture/diagrams/c3-workspaces.md`
+- `docs/02-engineering/architecture/diagrams/c3-workspaces.md`
 - `docs/pr-ledger/index.json`
 
 ## Enforced by

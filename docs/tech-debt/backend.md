@@ -602,7 +602,7 @@ env-набір не підхопився; переглянь Railway logs на `
 2. Прибрати `subscribe` / `unsubscribe` з
    `packages/api-client/src/endpoints/push.ts` та оновити
    `apps/web/src/shared/hooks/usePushNotifications.test.tsx`.
-3. Перевірити README / `docs/architecture/api-v1.md` на згадки legacy-шляху.
+3. Перевірити README / `docs/02-engineering/architecture/api-v1.md` на згадки legacy-шляху.
 
 ### Rotation
 

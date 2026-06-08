@@ -104,7 +104,7 @@
 **PR-ідеї:**
 
 - `PR-1.A` — `chore(config): enforce inheritance of strict from tsconfig.base in apps/web,server (codeowner-blocking comment)`.
-- `PR-1.B` ✅ closed — [#932](https://github.com/Skords-01/Sergeant/pull/932) `docs(docs): per-app status matrix` (`docs/architecture/apps-status-matrix.md`) — одна сторінка, 4 apps + 10 packages з `active/stabilize/migration/legacy`-легендою, дата ревалідації (`Last revalidated: 2026-04-27`, наступна — квартально).
+- `PR-1.B` ✅ closed — [#932](https://github.com/Skords-01/Sergeant/pull/932) `docs(docs): per-app status matrix` (`docs/02-engineering/architecture/apps-status-matrix.md`) — одна сторінка, 4 apps + 10 packages з `active/stabilize/migration/legacy`-легендою, дата ревалідації (`Last revalidated: 2026-04-27`, наступна — квартально).
 
 ---
 
@@ -181,7 +181,7 @@
 - `PR-4.A` ✅ closed — [#900](https://github.com/Skords-01/Sergeant/pull/900) `test(server): add SSE end-to-end harness for chat streaming` (17 тестів на `streamAnthropicToSse` / `streamOneIterationToSse`: text-дельти, auto-continuation на `max_tokens`, cap, graceful errors, chunk-боундарі, prompt-cache метрика).
 - `PR-4.B` ✅ closed — [#908](https://github.com/Skords-01/Sergeant/pull/908) `test(server): barcode contract tests for OFF/USDA/UPCitemdb normalizers` (UPCitemdb extracted з `barcode.ts` у власний `normalizers/upcitemdb.ts`; 22 unit-тести + 14 cross-source contract тестів із realistic фікстурами Nutella/Cheerios/Coca-Cola; спільний `NormalizedProduct`-shape зафіксовано через `assertContract()` helper).
 - `PR-4.C` ✅ closed — [#882](https://github.com/Skords-01/Sergeant/pull/882) `refactor(server,lib): extract OFF/USDA/Mono normalizers into apps/server/src/lib/normalizers/{off,usda,mono}.ts`.
-- `PR-4.D` 🟡 partial Phase 1 — інфраструктура `zod-openapi` + `docs/api/openapi.json` (36 paths, 26 components) + freshness check-скрипт (`scripts/api/check-openapi-fresh.mjs`, runnable локально через `pnpm api:check-openapi`) + ADR-0025. Workflow `.github/workflows/openapi-freshness.yml` додає юзер вручну (OAuth App без `workflow` scope не може писати в `.github/workflows/`). Phase 2 (codegen api-client типів зі spec через `openapi-typescript`) — окремий PR.
+- `PR-4.D` 🟡 partial Phase 1 — інфраструктура `zod-openapi` + `docs/02-engineering/api/openapi.json` (36 paths, 26 components) + freshness check-скрипт (`scripts/api/check-openapi-fresh.mjs`, runnable локально через `pnpm api:check-openapi`) + ADR-0025. Workflow `.github/workflows/openapi-freshness.yml` додає юзер вручну (OAuth App без `workflow` scope не може писати в `.github/workflows/`). Phase 2 (codegen api-client типів зі spec через `openapi-typescript`) — окремий PR.
 
 ---
 

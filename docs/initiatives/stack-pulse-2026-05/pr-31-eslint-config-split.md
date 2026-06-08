@@ -1,7 +1,7 @@
 # PR-31: ESLint config 1073 рядки → split per-app
 
 > **Last validated:** 2026-06-01 by Skords-01. **Next review:** 2026-09-01.
-> **Status:** Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/development/eslint-config.md` § Phase 2b).
+> **Status:** Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/02-engineering/development/eslint-config.md` § Phase 2b).
 
 |                    |                                                             |
 | ------------------ | ----------------------------------------------------------- |
@@ -73,7 +73,7 @@ Per-app lint runs паралельно (Turbo).
 
 ### 4. Documentation
 
-`docs/development/eslint-config.md` — який config де живе, як додавати правила.
+`docs/02-engineering/development/eslint-config.md` — який config де живе, як додавати правила.
 
 ## Out of scope
 
@@ -86,7 +86,7 @@ Per-app lint runs паралельно (Turbo).
 - [~] Кожен app/package має власний `eslint.config.js`. **Phase 2a: per-surface МОДУЛІ (`eslint.<surface>.js`), root їх композує.** Справжні standalone `apps/<x>/eslint.config.js` (per-package Turbo discovery) — Phase 2b.
 - [x] `pnpm lint` все ще зелений на all PR-target files. **Byte-neutral (гард `lint:eslint-config-diff` — усі 8 fixtures match; eslint smoke на server-файлі чистий) → поведінка не змінилась.**
 - [ ] CI час `pnpm lint` зменшено (target: <30s через Turbo parallelism). **Phase 2b — root-composes ще не дає per-package parallelism.**
-- [x] `docs/development/eslint-config.md` з diagram + onboarding. **Оновлено: структура post-2a + 2b roadmap.**
+- [x] `docs/02-engineering/development/eslint-config.md` з diagram + onboarding. **Оновлено: структура post-2a + 2b roadmap.**
 
 ## Тести
 
@@ -112,7 +112,7 @@ Per-app lint runs паралельно (Turbo).
 - `packages/{shared,api-client,eslint-plugin-sergeant-design}/eslint.config.js` — new
 - `tools/openclaw/eslint.config.js` — new
 - `turbo.json` — додати lint task
-- `docs/development/eslint-config.md` — new
+- `docs/02-engineering/development/eslint-config.md` — new
 
 ## Implementation notes (2026-06-05 — pre-exec recon)
 

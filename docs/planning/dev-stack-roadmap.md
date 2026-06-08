@@ -40,7 +40,7 @@
 **Поза топ-15 (Місяць 2 + Тиждень 4 беклог)** — ✅ done і вже на main:
 
 - **Storybook** для shared компонентів — 44 `*.stories.tsx` у `apps/web`, `pnpm --filter @sergeant/web storybook`, окремий `storybook-deploy.yml` workflow.
-- **Stryker mutation testing** — _retired 2026-05-06 разом із cloudSync v1 engine drop ([PR #052b](https://github.com/Skords-01/Sergeant/pull/2046))._ Конфіги `stryker.cloudSync.conf.json` / `stryker.cloudSyncQueue.conf.json` цілили на `apps/web/src/core/cloudSync/{conflict,queue}/` — джерельники зникли разом із v1 engine, тож `mutation-testing.yml` workflow + обидва конфіги знесено. `@stryker-mutator/{core,vitest-runner}` лишається в `apps/web/devDependencies`, щоб дешево переавтодожити mutation testing на нову critical-logic поверхню (план — `packages/finyk-domain` після Stage 7 закриття, див. `docs/testing/2026-05-05-tests-pr-plan.md`).
+- **Stryker mutation testing** — _retired 2026-05-06 разом із cloudSync v1 engine drop ([PR #052b](https://github.com/Skords-01/Sergeant/pull/2046))._ Конфіги `stryker.cloudSync.conf.json` / `stryker.cloudSyncQueue.conf.json` цілили на `apps/web/src/core/cloudSync/{conflict,queue}/` — джерельники зникли разом із v1 engine, тож `mutation-testing.yml` workflow + обидва конфіги знесено. `@stryker-mutator/{core,vitest-runner}` лишається в `apps/web/devDependencies`, щоб дешево переавтодожити mutation testing на нову critical-logic поверхню (план — `packages/finyk-domain` після Stage 7 закриття, див. `docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`).
 - **Argos visual regression** — `@argos-ci/playwright` у `apps/web/devDependencies` + `visual-regression.yml` workflow.
 - **Drizzle ORM POC** — повноцінний `packages/db-schema` (Drizzle PG + SQLite) з drizzle-kit, використовується у `apps/server` + `apps/web`. POC закрив §2.2 і Місяць 2 пункт.
 - **Helmet + CSP** — `apps/server/src/http/security.ts` з helmet middleware, HSTS, CSP report-only (M1 hardening card).
@@ -712,7 +712,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ## Зв'язки з іншими roadmap-ами
 
-- `docs/integrations/monobank-roadmap.md` (#709) — продуктовий roadmap по Mono-інтеграції.
+- `docs/02-engineering/integrations/monobank-roadmap.md` (#709) — продуктовий roadmap по Mono-інтеграції.
 - `docs/planning/ai-coding-improvements.md` (#711) — інфраструктура для AI-агентів.
 - `docs/tech-debt/frontend.md` — існуючі borгs у web.
 - `docs/tech-debt/backend.md` — існуючі borгs у server.

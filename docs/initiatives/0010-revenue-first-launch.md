@@ -409,7 +409,7 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 Що зроблено:
 
 - **ADR-0051** ([`docs/adr/0051-pricing-v3-single-tier.md`](../adr/0051-pricing-v3-single-tier.md)) — `Status: Accepted`. Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial 7 днів без картки. Plus tier / Lifetime / pay-per-feature — out of scope MVP.
-- **ADR-0052** ([`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../adr/0052-mobile-strategy-capacitor-primary.md)) — `Status: Accepted`. Capacitor primary до Expo feature parity; обидва стеки паралельно; sunset T₀/T₁/T₂ — не active commitments. Тригер наступного ADR: ≥18/22 рядків матриці `docs/architecture/platforms.md` = ✅.
+- **ADR-0052** ([`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../adr/0052-mobile-strategy-capacitor-primary.md)) — `Status: Accepted`. Capacitor primary до Expo feature parity; обидва стеки паралельно; sunset T₀/T₁/T₂ — не active commitments. Тригер наступного ADR: ≥18/22 рядків матриці `docs/02-engineering/architecture/platforms.md` = ✅.
 - `docs/01-product/launch/business/01-monetization-and-pricing.md` — Update header: §2.2 і §2.3 позначено «Superseded by ADR-0051».
 - `docs/initiatives/archive/_0002-mobile-platform-decision.md` — owner decision note, ADR-0052 supersedes sunset-direction.
 - `apps/mobile/README.md`, `apps/mobile-shell/README.md` — freshness headers + посилання на ADR-0052.

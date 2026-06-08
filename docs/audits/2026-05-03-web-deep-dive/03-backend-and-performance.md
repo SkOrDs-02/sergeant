@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by @Skords-01.
 > **Status:** Active
 > **Scope:** Express factory, request validation, route registry, error handling + `requestId`, rate limiting, graceful shutdown, OpenAPI / typed client drift, Vite chunking, lazy module FCP, Service Worker reminder loop.
-> **Related:** [`00-overview.md`](./00-overview.md), `docs/architecture/`, `docs/audits/2026-04-28-implementation-roadmap.md`.
+> **Related:** [`00-overview.md`](./00-overview.md), `docs/02-engineering/architecture/`, `docs/audits/2026-04-28-implementation-roadmap.md`.
 
 Бекенд — найсильніша частина проєкту: factory `createApp`, granular auth-guards, graceful shutdown з hard timer. Слабкі точки — у contract-шарі (web↔server) і у performance-нюансах (lazy chunks, SW dedup-prune). Ось точкова прожарка.
 
@@ -16,7 +16,7 @@
 **Recommendation (підтримати, не змінювати).**
 
 - Тест-snapshot «всі route-и з підвищеним лімітом» → щоб додавання нового без перевірки не пройшло code review.
-- Документувати у `docs/api/body-size-limits.md` з обґрунтуванням кожного.
+- Документувати у `docs/02-engineering/api/body-size-limits.md` з обґрунтуванням кожного.
 
 ---
 
@@ -86,7 +86,7 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
    });
    ```
 
-2. Розглянути генерацію OpenAPI specа з `zod-to-openapi` (схеми вже є) — це дасть auto-doc-у `docs/api/openapi.yaml` + типобезпечний клієнт.
+2. Розглянути генерацію OpenAPI specа з `zod-to-openapi` (схеми вже є) — це дасть auto-doc-у `docs/02-engineering/api/openapi.yaml` + типобезпечний клієнт.
 3. Додати lint-rule «новий `app.use(router)` тільки через factory `registerRoute()`», який автоматично додає у registry.
 
 > **Tracker.** Зв'язано з §4.7 (OpenAPI). Треба робити одним milestone-ом.
@@ -138,7 +138,7 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 
 ## 4.5 [Bad → Done] Rate limiter — per-module budget, але без єдиного «cost-model»
 
-> **Update 2026-05-04:** done у [#1622](https://github.com/Skords-01/Sergeant/pull/1622). Додано optional `cost(req): number` у `rateLimitExpress`; chat / AI streams тепер коштують `4` (замість `1`) та документовані у `docs/api/rate-limiting.md`. Метрика `rate_limit_consumed_total` отримала `cost`-вимір для алертів. Тести на cost-multiplier додано у `apps/server/src/http/rateLimit.test.ts`.
+> **Update 2026-05-04:** done у [#1622](https://github.com/Skords-01/Sergeant/pull/1622). Додано optional `cost(req): number` у `rateLimitExpress`; chat / AI streams тепер коштують `4` (замість `1`) та документовані у `docs/02-engineering/api/rate-limiting.md`. Метрика `rate_limit_consumed_total` отримала `cost`-вимір для алертів. Тести на cost-multiplier додано у `apps/server/src/http/rateLimit.test.ts`.
 
 **Що бачу.** `apps/server/src/http/rateLimit.ts` (~249 рядків) робить per-module, per-user/IP buckets. Це сильно. Але:
 
@@ -156,7 +156,7 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
    ```
 
 2. Алертати за метрикою `rate_limit_p95_consumed_per_user` — якщо хтось систематично з'їдає budget.
-3. Документувати cost-model у `docs/api/rate-limiting.md`. Кожен новий module автоматично починає з `cost=1`, але важкі — мають explicit override.
+3. Документувати cost-model у `docs/02-engineering/api/rate-limiting.md`. Кожен новий module автоматично починає з `cost=1`, але важкі — мають explicit override.
 4. Reuse той самий `cost`-multiplier для квот (AI usage caps).
 
 ---
@@ -192,7 +192,7 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 
 ## 4.7 [Bad → Done] No OpenAPI / no typed client between web↔server
 
-> **Update 2026-05-04:** Phase 1+2 уже були закриті раніше (zod-as-SSOT + freshness gate `pnpm api:check-openapi`). Phase 3 закрита у [#1629](https://github.com/Skords-01/Sergeant/pull/1629): додано `openapi-typescript` codegen → `packages/api-client/src/generated/openapi.d.ts`, реекспортовано як `OpenApiPaths/OpenApiComponents/OpenApiOperations` з `@sergeant/api-client`, freshness gate `pnpm api:check-openapi-types` підвішений у `pnpm lint`. Quad-edit правило (zod ↔ routes ↔ `openapi.json` ↔ `openapi.d.ts`) задокументовано у `docs/api/README.md`.
+> **Update 2026-05-04:** Phase 1+2 уже були закриті раніше (zod-as-SSOT + freshness gate `pnpm api:check-openapi`). Phase 3 закрита у [#1629](https://github.com/Skords-01/Sergeant/pull/1629): додано `openapi-typescript` codegen → `packages/api-client/src/generated/openapi.d.ts`, реекспортовано як `OpenApiPaths/OpenApiComponents/OpenApiOperations` з `@sergeant/api-client`, freshness gate `pnpm api:check-openapi-types` підвішений у `pnpm lint`. Quad-edit правило (zod ↔ routes ↔ `openapi.json` ↔ `openapi.d.ts`) задокументовано у `docs/02-engineering/api/README.md`.
 
 **Що бачу.** `packages/api-client` — **typed HTTP client** (з `STABILIZE` у audit.md), але я не побачив, щоб він автогенерувався з server-схем. Тобто схеми `zod` живуть на сервері, схеми типів — на клієнті, і вони **синхронізуються вручну**.
 
@@ -204,7 +204,7 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 
 1. **Етап 1 (1 тиждень).** Винести zod-schemas у `packages/shared/api-schemas` (частина вже там) і **імпортувати** на обох сторонах. Це SSOT для shapes, без OpenAPI-generation.
 2. **Етап 2 (2 тижні).** Згенерувати `packages/api-client` з OpenAPI:
-   - `zod-to-openapi` на сервері — генерує `docs/api/openapi.yaml` як build artifact.
+   - `zod-to-openapi` на сервері — генерує `docs/02-engineering/api/openapi.yaml` як build artifact.
    - `openapi-typescript` (або `openapi-fetch`) на клієнті — генерує типобезпечний клієнт.
    - CI-крок: «після build server → run openapi.yaml diff → fail if drift».
 3. **Етап 3 (1 тиждень).** Contract tests web↔server — детально у `04-security-observability-testing-devx.md` §7.4.
@@ -311,7 +311,7 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 
 **Recommendation / fix points.**
 
-1. Документ `docs/architecture/notifications.md`:
+1. Документ `docs/02-engineering/architecture/notifications.md`:
    > **Local reminders (SW timer):** in-foreground only, для guaranteed delivery — Web Push.
 2. Перевірити dedup logic: якщо для того самого `key` push прийшов І local-fire спрацював — show тільки once.
 3. Винести `createReminderHandler({ key, condition, render })` factory з повторюваною логікою (`routine`/`fizruk`/`nutrition` дубують код один одного — див. `10.1` нижче).
@@ -367,4 +367,4 @@ if (navigator.connection?.effectiveType !== "4g") return;
 | SW `notifiedKeys` TTL prune                        | §5.3         |
 | `createReminderHandler` factory                    | §5.4 / §10.1 |
 
-> **Tracker hook.** Перформанс-частина (§5.x) добре лягає у `docs/performance/web-budget.md`. Backend-частина — у `docs/api/`. Спостережуваність (`requestId`) пов'язана з `04-security-observability-testing-devx.md` §6.5.
+> **Tracker hook.** Перформанс-частина (§5.x) добре лягає у `docs/performance/web-budget.md`. Backend-частина — у `docs/02-engineering/api/`. Спостережуваність (`requestId`) пов'язана з `04-security-observability-testing-devx.md` §6.5.

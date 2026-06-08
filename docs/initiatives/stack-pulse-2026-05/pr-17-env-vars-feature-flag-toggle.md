@@ -91,7 +91,7 @@ In-memory cache з 60-сек TTL + invalidation broadcast через `pg_notify(
 - [ ] `pg_notify` listener в `apps/server/src/index.ts` invalidates cache на `feature_flag_changed`.
 - [ ] ADR-0054 «Feature-flag storage migration» з rationale + rollback plan.
 - [ ] `tools/openclaw` /flag команда з role-check `ops`.
-- [ ] Documented у `docs/architecture/feature-flags.md`.
+- [ ] Documented у `docs/02-engineering/architecture/feature-flags.md`.
 
 ## Тести
 
@@ -121,7 +121,7 @@ In-memory cache з 60-сек TTL + invalidation broadcast через `pg_notify(
 - `apps/server/src/index.ts` — pg_notify listener wiring
 - `packages/feature-flags/` — new workspace
 - `tools/openclaw/src/agents/ops/` — /flag command
-- `docs/architecture/feature-flags.md` — new
+- `docs/02-engineering/architecture/feature-flags.md` — new
 - `docs/adr/0054-feature-flag-storage-migration.md` — new
 
 ## Refs

@@ -179,7 +179,7 @@ function printReport({ records, totals, stages, source }) {
       rows.map((cols) => `| ${cols.join(" | ")} |`).join("\n"),
       "",
       "_Per-stage rows show only stages whose subprocess emitted a `SERGEANT_TIMING_LOG`",
-      "event (contract documented in `docs/development/pre-commit-timing.md`)._",
+      "event (contract documented in `docs/02-engineering/development/pre-commit-timing.md`)._",
       "",
     ].join("\n"),
   );

@@ -9,7 +9,7 @@
 - **Related:**
   - [`docs/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md`](../initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md) — original PR-план (premised on bcrypt; superseded by this ADR).
   - [ADR-0017](./0017-better-auth-choice-and-session-model.md) — вибір Better Auth.
-  - [`docs/integrations/env-vars.md`](../integrations/env-vars.md) — `MIN_/MAX_PASSWORD_LENGTH` опис.
+  - [`docs/02-engineering/integrations/env-vars.md`](../02-engineering/integrations/env-vars.md) — `MIN_/MAX_PASSWORD_LENGTH` опис.
 
 ---
 
@@ -80,7 +80,7 @@ scrypt — лінійний по довжині input на pre-block-mix фаз�
 - `apps/server/src/env/env.ts:132` — `MAX_PASSWORD_LENGTH: coerceInt.positive().max(72).default(72)`
 - `apps/server/src/env.ts:60` — `Math.min(72, parseIntEnv("MAX_PASSWORD_LENGTH", 72))`
 - `apps/server/src/auth.ts:151` — коментар «maxPasswordLength захищає від DoS через надто довгі bcrypt-пейлоади»
-- `docs/integrations/env-vars.md` — згадка про bcrypt 72-byte limit
+- `docs/02-engineering/integrations/env-vars.md` — згадка про bcrypt 72-byte limit
 
 Це не призводило до жодної реальної security-issue (cap=72 безпечний, просто надмірно жорсткий по UX), але створювало misleading документацію та обмежувало realistic passphrase-юзерів.
 
@@ -94,7 +94,7 @@ scrypt — лінійний по довжині input на pre-block-mix фаз�
 
 ### 2. Документація
 
-- `docs/integrations/env-vars.md`: розділ `MIN_/MAX_PASSWORD_LENGTH` оновлено з `72 (bcrypt limit)` → `256 (DoS cap, scrypt-based)`. Лінк на цей ADR.
+- `docs/02-engineering/integrations/env-vars.md`: розділ `MIN_/MAX_PASSWORD_LENGTH` оновлено з `72 (bcrypt limit)` → `256 (DoS cap, scrypt-based)`. Лінк на цей ADR.
 - ADR-0017 (Better Auth choice) — окремим slot-ом потребує однорядкового patch-у «hash-algo: scrypt (`@better-auth/utils`) / N=16384, r=16, p=1». **Не міняємо** у цьому PR — це окреме ADR-style-touch, не блокує даний фікс.
 
 ### 3. Регресивний тест

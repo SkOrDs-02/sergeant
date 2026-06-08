@@ -6,11 +6,11 @@
 - **Supersedes:** [ADR-0018](./0018-api-versioning-policy.md)
 - **Related:**
   - [ADR-0018](./0018-api-versioning-policy.md)
-  - [`docs/architecture/api-v1.md`](../architecture/api-v1.md)
+  - [`docs/02-engineering/architecture/api-v1.md`](../02-engineering/architecture/api-v1.md)
   - [`docs/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md`](../initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md)
-  - [`docs/notes/spikes/2026-05-api-v1-usage.md`](../notes/spikes/2026-05-api-v1-usage.md)
+  - [`docs/02-engineering/notes/spikes/2026-05-api-v1-usage.md`](../02-engineering/notes/spikes/2026-05-api-v1-usage.md)
 
-> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 
 ## Context
 
@@ -23,7 +23,7 @@ Stack-pulse-2026-05 PR-08 пропонував видалити shim, припу
 ніколи не використовують `/v1/`. Research-фаза показала, що це **не так**:
 
 - Web (за замовчуванням), mobile (примусово), mobile-shell і `@sergeant/api-client`
-  усі шлють у `/api/v1/*`. Деталі — у [spike `2026-05-api-v1-usage.md`](../notes/spikes/2026-05-api-v1-usage.md).
+  усі шлють у `/api/v1/*`. Деталі — у [spike `2026-05-api-v1-usage.md`](../02-engineering/notes/spikes/2026-05-api-v1-usage.md).
 - Видалення shim сьогодні = breaking change для всіх клієнтів.
 - Видалення `/api/*`-префікса мало б більше сенсу (всі клієнти вже на `/v1`),
   але ми не хочемо ламати rollback-шлях через `VITE_API_VERSION=none`.
@@ -40,7 +40,7 @@ Stack-pulse-2026-05 PR-08 пропонував видалити shim, припу
    eager-rewrite-и (типу зміни payload-структури) не вимагають окремого
    роутера: bump-имо OpenAPI revision, лишаємо routes на тому ж префіксі.
 4. **Видалення legacy `/api/*`-префікса** дозволено лише після:
-   - mobile beta-rollout-у завершено (`docs/architecture/api-v1.md` #FAQ);
+   - mobile beta-rollout-у завершено (`docs/02-engineering/architecture/api-v1.md` #FAQ);
    - усі web-клієнти на `VITE_API_VERSION=v1` (default) — підтверджено через
      access-log або Sentry breadcrumb;
    - відсутність активних інтеграцій, що ходять у `/api/*` напряму.
@@ -59,7 +59,7 @@ Stack-pulse-2026-05 PR-08 пропонував видалити shim, припу
 
 - Plain `/api/*` ↔ `/api/v1/*` mirror створює оманливе враження про
   «справжнє» версіонування. Mitigation: жирний disclaimer у
-  `docs/architecture/api-v1.md` + ADR-цей.
+  `docs/02-engineering/architecture/api-v1.md` + ADR-цей.
 - Технічний борг shim-а лишається, доки не закриється mobile beta.
 
 **Нейтральні:**
@@ -85,7 +85,7 @@ upgrade-path-у (`/api/sync/*`). Зробимо після mobile-beta.
 ## Trigger to revisit
 
 - Поява `v2`-плану з реальним contract-divergence.
-- Завершення mobile beta-rollout-у (target 2026-Q4 за `docs/architecture/api-v1.md`).
+- Завершення mobile beta-rollout-у (target 2026-Q4 за `docs/02-engineering/architecture/api-v1.md`).
 - Quantitative log-evidence, що `/api/*` без `v1`-префікса має нульовий traffic
   від сторонніх інтеграцій (тоді можна видалити legacy-prefix).
 

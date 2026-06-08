@@ -193,7 +193,7 @@ COPY --from=builder --chown=nonroot:nonroot /app/apps/server/dist-server /app/ap
 # `docs/strategy/` навмисно НЕ скопійовано — це aspirational paths.
 COPY --chown=nonroot:nonroot docs/adr /app/docs/adr
 COPY --chown=nonroot:nonroot docs/01-product/launch /app/docs/01-product/launch
-COPY --chown=nonroot:nonroot docs/integrations /app/docs/integrations
+COPY --chown=nonroot:nonroot docs/02-engineering/integrations /app/docs/02-engineering/integrations
 COPY --chown=nonroot:nonroot docs/governance /app/docs/governance
 
 WORKDIR /app/apps/server

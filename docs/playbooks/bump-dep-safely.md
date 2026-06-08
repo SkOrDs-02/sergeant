@@ -1,6 +1,6 @@
 # Playbook: Bump Dependency Safely
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** "Оновити X до версії Y" / Renovate PR з major-bump / security advisory на залежність.
@@ -95,4 +95,4 @@ pnpm lint        # має пройти
 ## See also
 
 - [AGENTS.md](../../AGENTS.md) — soft rule про dependency bumps
-- [renovate-usage.md](../integrations/renovate-usage.md) — як працює Renovate в цьому репо
+- [renovate-usage.md](../02-engineering/integrations/renovate-usage.md) — як працює Renovate в цьому репо

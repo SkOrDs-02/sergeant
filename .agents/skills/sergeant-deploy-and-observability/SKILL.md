@@ -40,13 +40,13 @@ Sergeant має три Railway services:
 
 - релевантна локальна build- або test-команда
 - цільовий endpoint або healthcheck усе ще збігається з доками
-- env-доки оновлено у `docs/integrations/railway-vercel.md` або відповідному runbook
+- env-доки оновлено у `docs/02-engineering/integrations/railway-vercel.md` або відповідному runbook
 - припущення алертингу або Sentry усе ще тримаються, коли зміна торкається обсервабіліті
 - `pnpm lint:archive-move-depth` — якщо торкався docs/archives (Hard Rule #23)
 
 ## Корисні доки
 
-- [docs/integrations/railway-vercel.md](../../../docs/integrations/railway-vercel.md)
+- [docs/02-engineering/integrations/railway-vercel.md](../../../docs/02-engineering/integrations/railway-vercel.md)
 - [docs/03-operations/observability/README.md](../../../docs/03-operations/observability/README.md)
 - [docs/security/logging-redaction-policy.md](../../../docs/security/logging-redaction-policy.md)
 - [docs/playbooks/investigate-alert.md](../../../docs/playbooks/investigate-alert.md)

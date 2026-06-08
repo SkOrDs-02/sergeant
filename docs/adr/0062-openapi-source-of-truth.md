@@ -11,7 +11,7 @@
 
 ## Context and Problem Statement
 
-Sergeant API має один задокументований контракт (`docs/api/openapi.json`) і згенеровані
+Sergeant API має один задокументований контракт (`docs/02-engineering/api/openapi.json`) і згенеровані
 TypeScript-типи (`packages/api-client/src/generated/openapi.d.ts`), на які спираються web- і
 mobile-клієнти. Питання: **що є source-of-truth** для цього контракту — рукописний OpenAPI-spec
 чи runtime Zod-схеми сервера?
@@ -43,7 +43,7 @@ merged ADR назвав себе одразу `0057`, тож `0056` лишивс
 читає Zod-схеми зі `@sergeant/shared/schemas/api` і будує OpenAPI-документ. Pipeline:
 
 - **Generation:** `pnpm api:generate-openapi` (`scripts/api/generate-openapi.mjs`) → пише
-  `docs/api/openapi.json` (`openapi: 3.1.0`, `title: "Sergeant API"`, `version: v1`).
+  `docs/02-engineering/api/openapi.json` (`openapi: 3.1.0`, `title: "Sergeant API"`, `version: v1`).
   `scripts/api/generate-openapi-types.mjs` → `packages/api-client/src/generated/openapi.d.ts`
   через `openapi-typescript`.
 - **Committed artifacts:** обидва файли в репо — single source-of-truth для documented spec і
@@ -79,7 +79,7 @@ merged ADR назвав себе одразу `0057`, тож `0056` лишивс
 
 ## Compliance
 
-`pnpm api:check-openapi` + `pnpm api:check-openapi-types` зелені в CI; `docs/api/openapi.json` і
+`pnpm api:check-openapi` + `pnpm api:check-openapi-types` зелені в CI; `docs/02-engineering/api/openapi.json` і
 `packages/api-client/src/generated/openapi.d.ts` committed і свіжі.
 
 ## Scope

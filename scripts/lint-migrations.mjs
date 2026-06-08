@@ -473,7 +473,7 @@ export function run({
   }
 
   // 2b. Empty-rollback check for new/changed `.down.sql` files.
-  //     Closes PR-T38 from `docs/testing/2026-05-05-tests-pr-plan.md`
+  //     Closes PR-T38 from `docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`
   //     ("migration rollback за замовчуванням") — the plop generator
   //     emits a `-- TODO: write your DOWN` placeholder which contributors
   //     historically leave in place, defeating the two-phase DROP

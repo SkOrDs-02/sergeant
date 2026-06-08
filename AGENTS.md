@@ -78,20 +78,20 @@ Surface-scoped quick references (commands, gotchas, specialist skill pointer) li
 - **pnpm 9.15.1** (enforced via `packageManager`) + **Turborepo** monorepo, **Node 22.x** (Volta pins 22.19.0), **TypeScript 6**.
 - 4 apps (`apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`) + `tools/openclaw` (a `tools/` workspace, not under `apps/`) + 12 packages (`@sergeant/*`, `eslint-plugin-sergeant-design`, 4 domain packages).
 - Pre-commit: **Husky** runs `lint-staged` — ESLint --fix + Prettier for code, `staged-typecheck.mjs` for staged TS/TSX, `bump-last-validated.mjs` for `.md`. Pipeline matrix: [`CONTRIBUTING.md § Pre-commit hooks`](./CONTRIBUTING.md#pre-commit-hooks).
-- Deep tech-stack matrix (per-app stack, per-package purpose, build/deploy outputs): [`docs/architecture/repo-map.md`](./docs/architecture/repo-map.md).
+- Deep tech-stack matrix (per-app stack, per-package purpose, build/deploy outputs): [`docs/02-engineering/architecture/repo-map.md`](./docs/02-engineering/architecture/repo-map.md).
 
 ## Module ownership map
 
-Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-04). Deep per-path map (test stack, RQ keys factory, conventions) lives in [`docs/architecture/module-ownership.md`](./docs/architecture/module-ownership.md). CODEOWNERS coverage and `Secondary` column completeness are enforced by `pnpm lint:codeowners`.
+Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-04). Deep per-path map (test stack, RQ keys factory, conventions) lives in [`docs/02-engineering/architecture/module-ownership.md`](./docs/02-engineering/architecture/module-ownership.md). CODEOWNERS coverage and `Secondary` column completeness are enforced by `pnpm lint:codeowners`.
 
-| Path                                     | Owner        | Secondary ¹             | Deep map                                                                                     |
-| ---------------------------------------- | ------------ | ----------------------- | -------------------------------------------------------------------------------------------- |
-| `apps/web/**`                            | `@Skords-01` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/architecture/module-ownership.md#apps)                 |
-| `apps/server/**`                         | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/architecture/module-ownership.md#apps)                 |
-| `apps/mobile/**`, `apps/mobile-shell/**` | `@Skords-01` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/architecture/module-ownership.md#apps)                 |
-| `tools/openclaw/**`                      | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/architecture/module-ownership.md#apps)                 |
-| `packages/**`                            | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/architecture/module-ownership.md#packages)         |
-| `ops/**`, `tools/**`, `scripts/**`       | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/architecture/module-ownership.md#ops-surfaces) |
+| Path                                     | Owner        | Secondary ¹             | Deep map                                                                                                    |
+| ---------------------------------------- | ------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `apps/web/**`                            | `@Skords-01` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
+| `apps/server/**`                         | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
+| `apps/mobile/**`, `apps/mobile-shell/**` | `@Skords-01` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
+| `tools/openclaw/**`                      | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
+| `packages/**`                            | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/02-engineering/architecture/module-ownership.md#packages)         |
+| `ops/**`, `tools/**`, `scripts/**`       | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/02-engineering/architecture/module-ownership.md#ops-surfaces) |
 
 > ¹ Secondary is the bus-factor backup reviewer (real GitHub handle preferred; `TBD (<role>)` placeholders are accepted while delegation is in flight). L2 escalation when owner is unreachable: [`docs/playbooks/operational-continuity.md`](./docs/playbooks/operational-continuity.md). Empty Secondary cells fail `pnpm lint:codeowners`.
 
@@ -151,7 +151,7 @@ Five comment prefixes: `AI-NOTE` (pointer hint), `AI-CONTEXT` (architectural rat
 
 ## Domain invariants
 
-Single source of truth: **Europe/Kyiv** for time, **minor units (kopiykas) as `number`** for money, **Better Auth opaque strings** for user IDs (not UUID). Day key is `YYYY-MM-DD` in Kyiv local; week start Monday (ISO 8601). Anti-patterns from past bugs and the AI-tool execution path: [`docs/architecture/domain-invariants.md`](./docs/architecture/domain-invariants.md).
+Single source of truth: **Europe/Kyiv** for time, **minor units (kopiykas) as `number`** for money, **Better Auth opaque strings** for user IDs (not UUID). Day key is `YYYY-MM-DD` in Kyiv local; week start Monday (ISO 8601). Anti-patterns from past bugs and the AI-tool execution path: [`docs/02-engineering/architecture/domain-invariants.md`](./docs/02-engineering/architecture/domain-invariants.md).
 
 ## RQ keys factory
 
@@ -210,7 +210,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 - [`docs/agents/agent-skills-catalog.md`](docs/agents/agent-skills-catalog.md) — canonical routing table for repo-owned Sergeant skills.
 - [`docs/01-product/copy/style-guide.uk.md`](docs/01-product/copy/style-guide.uk.md) — canonical UA-copy tone-of-voice rules (1st-person-singular for action-busy, `ти`-address, action-prompt-closed errors). Reference for every new кирилічний JSX literal.
 - [`.agents/skills/`](.agents/skills/) — current `SKILL.md` files for AI agents; start with `sergeant-start-here`.
-- [`docs/architecture/`](docs/architecture/) — repo map, module ownership, domain invariants, C4 diagrams.
+- [`docs/02-engineering/architecture/`](docs/02-engineering/architecture/) — repo map, module ownership, domain invariants, C4 diagrams.
 - [`docs/governance/rules/`](docs/governance/rules/) — per-rule canonical bodies with BAD/GOOD examples.
 - [`docs/governance/freshness-dashboard.html`](docs/governance/freshness-dashboard.html) — generated `Last validated` / `Next review` dashboard for tracked docs.
 - [`docs/security/audit-exceptions.md`](docs/security/audit-exceptions.md) — tracked vulnerabilities with no available fix.

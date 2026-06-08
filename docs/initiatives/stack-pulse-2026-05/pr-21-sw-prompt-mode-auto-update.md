@@ -67,7 +67,7 @@ document.addEventListener("visibilitychange", async () => {
 
 ### 4. Documentation
 
-`docs/web/service-worker.md` — додати section «Update strategy: prompt + idle-auto + hard-floor».
+`docs/02-engineering/web/service-worker.md` — додати section «Update strategy: prompt + idle-auto + hard-floor».
 
 ## Out of scope
 
@@ -80,7 +80,7 @@ document.addEventListener("visibilitychange", async () => {
 - [x] `apps/web/src/main.tsx` викликає `setupAutoUpdate({ updateSW })` після `registerSW`, підписуючи controller на `subscribeServerBuildId`.
 - [x] Server response додає `X-Server-Build-Id` header (`apps/server/src/http/buildIdHeader.ts`, викликається з `apps/server/src/app.ts` після Helmet). `apps/server/src/http/apiCors.ts` викладає хедер у `Access-Control-Expose-Headers` — cross-origin Vercel → Railway бачить його.
 - [x] Unit-тести: `apps/web/src/core/app/autoUpdate.test.ts` (8 cases, JSDOM + fake timers), `apps/server/src/http/buildIdHeader.test.ts` (8 cases, supertest).
-- [x] `docs/web/service-worker.md` додано з секцією «Update strategy: prompt + idle-auto + hard-floor».
+- [x] `docs/02-engineering/web/service-worker.md` додано з секцією «Update strategy: prompt + idle-auto + hard-floor».
 
 ## Тести
 
@@ -111,7 +111,7 @@ document.addEventListener("visibilitychange", async () => {
 - `packages/api-client/src/httpClient.ts` — adds optional `onResponseHeaders` hook to `HttpClientConfig` (status-agnostic, swallowed errors).
 - `apps/web/vite.config.js` — VitePWA config (no change, prompt-mode lишається)
 - `apps/server/src/http/security.ts` — додати X-Server-Build-Id header
-- `docs/web/service-worker.md` — new section
+- `docs/02-engineering/web/service-worker.md` — new section
 
 ## Refs
 

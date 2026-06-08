@@ -1,6 +1,6 @@
 # AI quota kill-switch policy
 
-> **Last validated:** 2026-06-04 by @claude. **Next review:** 2026-09-02.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 ## TL;DR
@@ -194,7 +194,7 @@ set in production`) — fires the moment the misconfig hits.
    викликах: щоб дозволити N викликів, постав `N * AI_QUOTA_TOOL_COST`).
 3. Щоб вимкнути tool через квоту — постав його ліміт `0`
    (`consumeToolQuota` поверне `ok=false, reason="disabled"`).
-4. Канонічний приклад значень — `docs/integrations/env-vars.md`
+4. Канонічний приклад значень — `docs/02-engineering/integrations/env-vars.md`
    (`AI_QUOTA_TOOL_COST` / `AI_QUOTA_TOOL_DEFAULT_LIMIT` /
    `AI_QUOTA_TOOL_LIMITS`). `.env.example` тримає поточний робочий JSON.
 

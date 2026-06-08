@@ -10,8 +10,8 @@
 > - [Launch hub](../README.md) ·
 >   [Phase 1 — Web](./01-web-launch-with-users.md) ·
 >   [Phase 2 — Capacitor](./02-capacitor-launch.md)
-> - [`docs/architecture/platforms.md`](../../../architecture/platforms.md) — feature-parity матриця (source of truth)
-> - [`docs/mobile/react-native-migration.md`](../../../mobile/react-native-migration.md) — детальний RN-роадмап
+> - [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — feature-parity матриця (source of truth)
+> - [`docs/02-engineering/mobile/react-native-migration.md`](../../../02-engineering/mobile/react-native-migration.md) — детальний RN-роадмап
 > - [`docs/initiatives/0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md) — revenue-first sprint, який зараз фігляє mobile-resource
 > - [ADR-0010](../../../adr/0010-mobile-dual-track-capacitor-expo.md) — dual-track baseline
 > - [`apps/mobile/README.md`](../../../../apps/mobile/README.md), [`apps/mobile/AGENTS.md`](../../../../apps/mobile/AGENTS.md)
@@ -22,7 +22,7 @@
 
 ### 1.1 TL;DR
 
-Native-клієнт `apps/mobile` (Expo SDK 52 + RN 0.76 + Expo Router) — **не для запуску у цьому циклі**. Він на стадії _internal dev-client_: ~18 з 22 рядків parity-матриці у [`docs/architecture/platforms.md`](../../../architecture/platforms.md) — ✅, але 2 рядки 🟥 (Nutrition recipes AI, photo-AI) + 2 рядки 🟡 (Hub voice composer, OnboardingWizard AI-customize) лишають Phase 7 і Phase 8 RN-міграції незакритими. Phase 11 (EAS prod + App Store / Play Console) у [`docs/mobile/react-native-migration.md`](../../../mobile/react-native-migration.md) — `⏸ Blocked` на Apple Developer Program і Google Play Console (Q2).
+Native-клієнт `apps/mobile` (Expo SDK 52 + RN 0.76 + Expo Router) — **не для запуску у цьому циклі**. Він на стадії _internal dev-client_: ~18 з 22 рядків parity-матриці у [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — ✅, але 2 рядки 🟥 (Nutrition recipes AI, photo-AI) + 2 рядки 🟡 (Hub voice composer, OnboardingWizard AI-customize) лишають Phase 7 і Phase 8 RN-міграції незакритими. Phase 11 (EAS prod + App Store / Play Console) у [`docs/02-engineering/mobile/react-native-migration.md`](../../../02-engineering/mobile/react-native-migration.md) — `⏸ Blocked` на Apple Developer Program і Google Play Console (Q2).
 
 Рекомендація: **Сценарій A — sunset apps/mobile у поточному launch-циклі НЕ робити, але і НЕ запускати окремим продуктом**. Закінчити RN-порт у фоні (Phases 7–10 за `react-native-migration.md`), коли parity досягне gating-рівня з ADR-0052 (≥18/22 рядків ✅ + 3 Exit-маяки зелені), активувати окремий ADR «Expo becomes primary» і переключити store-listing з Capacitor shell на Expo native — без двох паралельних store-app-ів для одного користувача. До того часу — Capacitor залишається primary (Phase 2).
 
@@ -32,7 +32,7 @@ Native-клієнт `apps/mobile` (Expo SDK 52 + RN 0.76 + Expo Router) — **н
 
 Цей файл вважається _executable_ тільки якщо виконано **усі** з нижче перелічених:
 
-- **[Phase 1 / Web]** — production web-апка live (`apps/web` на Vercel + `apps/server` на Railway, `/api/v1/*` стабільний контракт). Source: [Phase 1 doc](./01-web-launch-with-users.md) + [`platforms.md` §1](../../../architecture/platforms.md).
+- **[Phase 1 / Web]** — production web-апка live (`apps/web` на Vercel + `apps/server` на Railway, `/api/v1/*` стабільний контракт). Source: [Phase 1 doc](./01-web-launch-with-users.md) + [`platforms.md` §1](../../../02-engineering/architecture/platforms.md).
 - **[Phase 1 / Web]** — `apps/web` PWA з Service Worker + Web Push (VAPID) — fallback-канал якщо native push-credentials ще не у проді.
 - **[Phase 2 / Capacitor]** — `@sergeant/mobile-shell` released хоча б в Internal Testing track Google Play (`com.sergeant.shell`), Apple TestFlight (через `mobile-shell-ios-release.yml`). Хоча б ~10 реальних shell-users у store.
 - **[Phase 2 / Capacitor]** — APNs/FCM credentials налаштовані на server (`docs/tech-debt/backend.md#push-credentials` — закрите). Без цього native push з Expo тоже не злетить, бо backend fan-out у `apps/server/src/push/send.ts` спільний.
@@ -48,7 +48,7 @@ Native-клієнт `apps/mobile` (Expo SDK 52 + RN 0.76 + Expo Router) — **н
 
 ### 2.1 Що готово на 2026-05-13
 
-Джерело правди — [`docs/architecture/platforms.md` § Feature-parity матриця](../../../architecture/platforms.md). Дублюємо тут тільки RN-стовпчик і виділяємо delta vs Capacitor shell.
+Джерело правди — [`docs/02-engineering/architecture/platforms.md` § Feature-parity матриця](../../../02-engineering/architecture/platforms.md). Дублюємо тут тільки RN-стовпчик і виділяємо delta vs Capacitor shell.
 
 | Capability                           | Web | Shell | RN     | Delta-коментар для Native launch                                                             |
 | ------------------------------------ | --- | ----- | ------ | -------------------------------------------------------------------------------------------- |
@@ -116,7 +116,7 @@ Native-клієнт `apps/mobile` (Expo SDK 52 + RN 0.76 + Expo Router) — **н
 
 ### 2.4 Скільки роботи до Native parity
 
-Reality check по [`docs/mobile/react-native-migration.md` §2.0](../../../mobile/react-native-migration.md):
+Reality check по [`docs/02-engineering/mobile/react-native-migration.md` §2.0](../../../02-engineering/mobile/react-native-migration.md):
 
 | Фаза | Що залишилось                                                                               | Estimate        |
 | ---- | ------------------------------------------------------------------------------------------- | --------------- |
@@ -253,7 +253,7 @@ Reality check по [`docs/mobile/react-native-migration.md` §2.0](../../../mobi
 
 ### 5.1 Parity gaps — конкретні задачі
 
-Це виписка з [`docs/mobile/react-native-migration.md` §4 + §5.5](../../../mobile/react-native-migration.md):
+Це виписка з [`docs/02-engineering/mobile/react-native-migration.md` §4 + §5.5](../../../02-engineering/mobile/react-native-migration.md):
 
 | Gap                                                                           | Plan                                                                                                                                   | Est.  | Owner skill             |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----------------------- |
@@ -344,7 +344,7 @@ Reality check по [`docs/mobile/react-native-migration.md` §2.0](../../../mobi
 
 ### 6.1 Базовий стан
 
-- Capacitor shell: `com.sergeant.shell` (іще не у Play / App Store згідно з [`platforms.md §3`](../../../architecture/platforms.md), готова release pipeline).
+- Capacitor shell: `com.sergeant.shell` (іще не у Play / App Store згідно з [`platforms.md §3`](../../../02-engineering/architecture/platforms.md), готова release pipeline).
 - Native Expo: `com.sergeant.app` ([`apps/mobile/app.config.ts`](../../../../apps/mobile/app.config.ts) — `ANDROID_PACKAGE = "com.sergeant.app"`).
 
 ### 6.2 Варіант A — окремі applicationId (поточний дизайн)
@@ -540,7 +540,7 @@ User flow:
 
 Переходить у GA коли **усі** виконано:
 
-- [ ] Feature parity ≥20/22 ✅ у `docs/architecture/platforms.md` (поточно 18; +2 закриваємо у Phase 7).
+- [ ] Feature parity ≥20/22 ✅ у `docs/02-engineering/architecture/platforms.md` (поточно 18; +2 закриваємо у Phase 7).
 - [ ] Усі 3 Exit-маяки з ADR-0010 § Sunset schedule — ✅:
   - [ ] RN-Nutrition full parity (recipes + photo-AI).
   - [ ] RN-Voice (STT + TTS у HubChat).
@@ -622,11 +622,11 @@ User flow:
 - [`docs/01-product/launch/README.md`](../README.md)
 - [`docs/01-product/launch/phases/01-web-launch-with-users.md`](./01-web-launch-with-users.md) — Phase 1
 - [`docs/01-product/launch/phases/02-capacitor-launch.md`](./02-capacitor-launch.md) — Phase 2
-- [`docs/architecture/platforms.md`](../../../architecture/platforms.md) — feature-parity матриця
+- [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — feature-parity матриця
 - [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../../adr/0052-mobile-strategy-capacitor-primary.md) — primary decision
 - [`docs/adr/0010-mobile-dual-track-capacitor-expo.md`](../../../adr/0010-mobile-dual-track-capacitor-expo.md) — baseline dual-track
-- [`docs/mobile/react-native-migration.md`](../../../mobile/react-native-migration.md) — RN-міграція tracker
-- [`docs/mobile/overview.md`](../../../mobile/overview.md) — API contract
+- [`docs/02-engineering/mobile/react-native-migration.md`](../../../02-engineering/mobile/react-native-migration.md) — RN-міграція tracker
+- [`docs/02-engineering/mobile/overview.md`](../../../02-engineering/mobile/overview.md) — API contract
 - [`docs/playbooks/release.md`](../../../playbooks/release.md) — release playbook (включно з § Expo)
 - [`docs/playbooks/port-web-screen-to-mobile.md`](../../../playbooks/port-web-screen-to-mobile.md)
 - [`docs/playbooks/sync-rn-migration-progress.md`](../../../playbooks/sync-rn-migration-progress.md)

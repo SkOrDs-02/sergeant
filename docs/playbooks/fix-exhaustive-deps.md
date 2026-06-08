@@ -1,6 +1,6 @@
 # Playbook: Fix Exhaustive Deps Warnings
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** "Виправити exhaustive-deps warnings" / ESLint `react-hooks/exhaustive-deps` violations / стале закриття з `apps-web-exhaustive-deps.md`.
@@ -22,7 +22,7 @@
 pnpm --filter @sergeant/web exec eslint . --rule 'react-hooks/exhaustive-deps: warn' 2>&1 | grep "exhaustive-deps"
 
 # Або перевірити документ-трекер
-cat docs/architecture/apps-web-exhaustive-deps.md
+cat docs/02-engineering/architecture/apps-web-exhaustive-deps.md
 ```
 
 ### 2. Класифікувати кожен warning
@@ -80,7 +80,7 @@ useEffect(() => {
 
 ### 5. Оновити трекер
 
-Оновити `docs/architecture/apps-web-exhaustive-deps.md` — видалити або позначити виправлені файли.
+Оновити `docs/02-engineering/architecture/apps-web-exhaustive-deps.md` — видалити або позначити виправлені файли.
 
 ### 6. Створити PR
 
@@ -96,7 +96,7 @@ useEffect(() => {
 - [ ] `pnpm typecheck` — green
 - [ ] Тести — green
 - [ ] Немає infinite re-render loops (перевірити в dev-mode)
-- [ ] `docs/architecture/apps-web-exhaustive-deps.md` оновлено
+- [ ] `docs/02-engineering/architecture/apps-web-exhaustive-deps.md` оновлено
 - [ ] `eslint-disable` використано тільки для обґрунтованих mount-only effects
 
 ## Notes
@@ -108,6 +108,6 @@ useEffect(() => {
 
 ## See also
 
-- [apps-web-exhaustive-deps.md](../architecture/apps-web-exhaustive-deps.md) — повний список warnings
+- [apps-web-exhaustive-deps.md](../02-engineering/architecture/apps-web-exhaustive-deps.md) — повний список warnings
 - [frontend-tech-debt.md](../tech-debt/frontend.md) — загальний фронтенд tech debt
 - [AGENTS.md](../../AGENTS.md) — загальні конвенції

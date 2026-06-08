@@ -155,6 +155,6 @@ async def test_activity():
 ## Additional References
 
 - Python SDK Testing: docs.temporal.io/develop/python/testing-suite
-- Testing Patterns: github.com/temporalio/temporal/blob/main/docs/development/testing.md
+- Testing Patterns: github.com/temporalio/temporal/blob/main/docs/02-engineering/development/testing.md
 - Python Samples: github.com/temporalio/samples-python
 See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.

@@ -31,7 +31,7 @@ If none of those are true yet, start with [investigate-alert.md](../playbooks/in
 For SEV1-SEV3, keep one running note in the incident issue, PR, or chat thread with:
 
 - start time and detection source
-- affected surface from [service-catalog.md](../architecture/service-catalog.md)
+- affected surface from [service-catalog.md](../02-engineering/architecture/service-catalog.md)
 - severity
 - current impact
 - mitigation/rollback decision

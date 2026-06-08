@@ -43,7 +43,7 @@
 
 **Тригер для наступного ADR («Expo becomes primary»):**
 
-- Expo `apps/mobile/` має feature parity з web за матрицею у `docs/architecture/platforms.md` (≥18 з 22 рядків = ✅).
+- Expo `apps/mobile/` має feature parity з web за матрицею у `docs/02-engineering/architecture/platforms.md` (≥18 з 22 рядків = ✅).
 - Коли умова виконана → окремий ADR фіксує перехід Expo → primary і активує sunset-трек.
 
 ## Rationale
@@ -69,17 +69,17 @@
 ### Neutral
 
 - `shell-tax-report.yml` cron (з PR #1633) продовжує збирати baseline — корисний для майбутнього ADR.
-- `docs/architecture/platforms.md` feature-parity матриця залишається source of truth; next review — 2026-08-01.
+- `docs/02-engineering/architecture/platforms.md` feature-parity матриця залишається source of truth; next review — 2026-08-01.
 
 ## Compliance
 
 - `docs/initiatives/archive/_0002-mobile-platform-decision.md` — додано note «Update 2026-05-06» про те, що sunset-дати не є active commitments (цей ADR supersedes).
 - `apps/mobile/README.md` і `apps/mobile-shell/README.md` — freshness header оновлено з посиланням на цей ADR.
-- Тригер для наступного ADR (feature parity): `docs/architecture/platforms.md` §0 — Exit dashboard.
+- Тригер для наступного ADR (feature parity): `docs/02-engineering/architecture/platforms.md` §0 — Exit dashboard.
 
 ## Links
 
 - [`docs/initiatives/archive/_0002-mobile-platform-decision.md`](../initiatives/archive/_0002-mobile-platform-decision.md) — ініціатива, яку це рішення supersedes у частині sunset-direction
 - [ADR-0010](./0010-mobile-dual-track-capacitor-expo.md) — dual-track original decision
-- [`docs/architecture/platforms.md`](../architecture/platforms.md) — feature-parity матриця (Exit dashboard)
+- [`docs/02-engineering/architecture/platforms.md`](../02-engineering/architecture/platforms.md) — feature-parity матриця (Exit dashboard)
 - [`docs/initiatives/0010-revenue-first-launch.md` § Phase 1.2](../initiatives/0010-revenue-first-launch.md)

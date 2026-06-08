@@ -71,7 +71,7 @@ Surface-і та їх deploy targets:
 - `apps/mobile-shell` → App Store / Play Store wrap — [`docs/playbooks/release-mobile-shell.md`](../../playbooks/release-mobile-shell.md)
 - n8n workflows → self-hosted у Railway (project `grateful-nurturing`) — git source-of-truth у [`ops/n8n-workflows/`](../../../ops/n8n-workflows)
 
-Канонічна service-таблиця з alerts/runbook/rollback per surface — [`docs/architecture/service-catalog.md`](../../architecture/service-catalog.md).
+Канонічна service-таблиця з alerts/runbook/rollback per surface — [`docs/02-engineering/architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md).
 
 ## 3. Daily операції — що дивитися щоранку
 
@@ -373,7 +373,7 @@ Auto-create / auto-drop indexes на основі stat-ів — anti-pattern:
 
 - [AGENTS.md](../../../AGENTS.md) — repo policy, hard rules, scope enum, conventional-commit format.
 - [`docs/03-operations/observability/runbook.md`](../observability/runbook.md) — production incident-flow, alert-decoder, Renovate.
-- [`docs/architecture/service-catalog.md`](../../architecture/service-catalog.md) — surface-by-surface deploy + healthcheck + rollback table.
+- [`docs/02-engineering/architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md) — surface-by-surface deploy + healthcheck + rollback table.
 - [`docs/security/disaster-recovery.md`](../../security/disaster-recovery.md) — RPO/RTO targets, disaster classes.
 - [`docs/governance/incident-severity-policy.md`](../../governance/incident-severity-policy.md) — SEV-1/2/3/4 mapping.
 - [`docs/planning/pr-plan-2026-05.md`](../../planning/pr-plan-2026-05.md) — поточний 90-day roadmap (PR-37 — це він).

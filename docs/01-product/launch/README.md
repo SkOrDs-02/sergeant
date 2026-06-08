@@ -47,7 +47,7 @@ docs/01-product/launch/
 | Як зростати після запуску (SEO, referrals)?                       | [02 — Growth](./business/02-go-to-market.md#5-фаза-3--growth-ongoing)                             |
 | Який стек зараз і що додати?                                      | [03 — Стек](./business/03-services-and-toolstack.md#1-поточний-стек-що-вже-є)                     |
 | Скільки коштуватиме інфраструктура?                               | [03 — Бюджет](./business/03-services-and-toolstack.md#9-повна-monthly-cost-projection)            |
-| Коли і на що мігрувати (managed vs self-host)?                    | [architecture/hosting-evolution](../../architecture/hosting-evolution.md)                         |
+| Коли і на що мігрувати (managed vs self-host)?                    | [architecture/hosting-evolution](../../02-engineering/architecture/hosting-evolution.md)          |
 | Що треба юридично перед запуском?                                 | [04 — Legal](./business/04-launch-readiness.md#1-юридичне-та-compliance)                          |
 | Чеклист «все готово до запуску»?                                  | [04 — Чеклист](./business/04-launch-readiness.md#7-pre-launch-чеклист)                            |
 | Як адмініструвати продукт і не вигоріти?                          | [05 — Операції](./business/05-operations-and-automation.md#1-шість-операційних-зон)               |

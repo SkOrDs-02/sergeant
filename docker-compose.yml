@@ -6,7 +6,7 @@
 #
 # PostgreSQL 17 upgrade (2026-06-05):
 # - pgvector/pgvector:pg17 image
-# - See docs/development/local-postgres-setup.md § "Bumping the SHA"
+# - See docs/02-engineering/development/local-postgres-setup.md § "Bumping the SHA"
 # - Renovate will auto-PR the new digest on monthly cadence
 
 services:
@@ -24,7 +24,7 @@ services:
     #   - Local dev ↔ CI parity — CI pins `@sha256:...` (4 workflows);
     #     a floating local tag drifts and makes "works on CI / fails locally"
     #     reports impossible to triage.
-    # How to bump: see docs/development/local-postgres-setup.md § "Bumping the SHA".
+    # How to bump: see docs/02-engineering/development/local-postgres-setup.md § "Bumping the SHA".
     # Renovate (renovate.json `pgvector pinDigests`) auto-PR's the new digest
     # on a monthly cadence; manually verify migration tests pass on the bump-PR.
     image: pgvector/pgvector:pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966

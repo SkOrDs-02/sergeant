@@ -1,6 +1,6 @@
 # ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility
 
-> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Accepted
 
 - **Status:** Accepted <!-- Proposed | Accepted | Deprecated | Superseded by ADR-NNNN -->
@@ -29,24 +29,24 @@ This ADR is the **pre-flight gate** for stack-pulse PR-22: it records the native
 
 The current native-dep baseline (read from `apps/mobile/package.json`):
 
-| Native dep | Current (SDK 52) | Target (SDK 53 min) | Notes |
-| ---------- | ---------------- | ------------------- | ----- |
-| `expo` | `~52.0.0` | `~53.0.0` | core; drives `expo install --fix` resolution |
-| `react-native` | `0.76.9` | `0.77.x` (SDK-53 pinned) | New Architecture default-on upstream |
-| `expo-notifications` | `~0.29.14` | `~0.30.x` | push lifecycle — highest-risk dep; verify APNs/FCM token flow |
-| `expo-image-picker` | `~16.0.6` | `~17.0.x` | permissions API stable across the bump |
-| `expo-secure-store` | `~14.0.1` | `~15.0.x` | keychain/keystore — auth-token storage; smoke login after bump |
-| `expo-network` | `~7.0.5` | `~8.0.x` | offline/sync gating reads reachability here |
-| `expo-camera` | `~16.0.0` | `~17.0.x` | barcode/scan paths |
-| `expo-crypto` | `~14.0.2` | `~15.0.x` | app-lock PBKDF2 (ADR-0054) consumer |
-| `expo-sqlite` | `~15.1.4` | `~16.0.x` | local-first store (ADR-0011) |
-| `expo-router` | `~4.0.21` | `~5.0.x` | navigation; out-of-scope for behavior changes per PR-22 |
-| `expo-file-system` | `~18.0.12` | `~19.0.x` | document/image export |
-| `react-native-reanimated` | `~3.16.1` | `~3.17.x`+ | New-Arch-sensitive; Detox-cover animations |
-| `react-native-screens` | `~4.4.0` | `~4.5.x`+ | New-Arch-sensitive |
-| `react-native-gesture-handler` | `~2.20.2` | `~2.21.x`+ | New-Arch-sensitive |
-| `react-native-safe-area-context` | `4.12.0` | `5.x` (SDK-53) | major bump — insets API check |
-| `@sentry/react-native` | `~6.10.0` | verify SDK-53 / RN-0.77 support matrix | crash reporting must survive New-Arch |
+| Native dep                       | Current (SDK 52) | Target (SDK 53 min)                    | Notes                                                          |
+| -------------------------------- | ---------------- | -------------------------------------- | -------------------------------------------------------------- |
+| `expo`                           | `~52.0.0`        | `~53.0.0`                              | core; drives `expo install --fix` resolution                   |
+| `react-native`                   | `0.76.9`         | `0.77.x` (SDK-53 pinned)               | New Architecture default-on upstream                           |
+| `expo-notifications`             | `~0.29.14`       | `~0.30.x`                              | push lifecycle — highest-risk dep; verify APNs/FCM token flow  |
+| `expo-image-picker`              | `~16.0.6`        | `~17.0.x`                              | permissions API stable across the bump                         |
+| `expo-secure-store`              | `~14.0.1`        | `~15.0.x`                              | keychain/keystore — auth-token storage; smoke login after bump |
+| `expo-network`                   | `~7.0.5`         | `~8.0.x`                               | offline/sync gating reads reachability here                    |
+| `expo-camera`                    | `~16.0.0`        | `~17.0.x`                              | barcode/scan paths                                             |
+| `expo-crypto`                    | `~14.0.2`        | `~15.0.x`                              | app-lock PBKDF2 (ADR-0054) consumer                            |
+| `expo-sqlite`                    | `~15.1.4`        | `~16.0.x`                              | local-first store (ADR-0011)                                   |
+| `expo-router`                    | `~4.0.21`        | `~5.0.x`                               | navigation; out-of-scope for behavior changes per PR-22        |
+| `expo-file-system`               | `~18.0.12`       | `~19.0.x`                              | document/image export                                          |
+| `react-native-reanimated`        | `~3.16.1`        | `~3.17.x`+                             | New-Arch-sensitive; Detox-cover animations                     |
+| `react-native-screens`           | `~4.4.0`         | `~4.5.x`+                              | New-Arch-sensitive                                             |
+| `react-native-gesture-handler`   | `~2.20.2`        | `~2.21.x`+                             | New-Arch-sensitive                                             |
+| `react-native-safe-area-context` | `4.12.0`         | `5.x` (SDK-53)                         | major bump — insets API check                                  |
+| `@sentry/react-native`           | `~6.10.0`        | verify SDK-53 / RN-0.77 support matrix | crash reporting must survive New-Arch                          |
 
 > Exact minor/patch targets are resolved by `npx expo install --fix` against the SDK-53 manifest at bump time; the table records the major-version step and the per-dep risk, not pinned hashes. The hard gate: **every native dep above must publish an SDK-53-compatible version before the bump PR opens** (PR-22 acceptance — "≥1 critical dep not ready" stops the upgrade).
 
@@ -114,7 +114,7 @@ A pre-flight ADR de-risks a single-maintainer mobile bump by converting an explo
 
 ## Compliance
 
-- Bump does not merge until: Detox iOS + Android green on SDK 53 (New-Arch ON), EAS Preview 7-day soak on ≥3 testers with no critical regressions, clean `pnpm install` (patch resolved), and `docs/mobile/sdk-version-history.md` updated — per the PR-22 DoD checklist.
+- Bump does not merge until: Detox iOS + Android green on SDK 53 (New-Arch ON), EAS Preview 7-day soak on ≥3 testers with no critical regressions, clean `pnpm install` (patch resolved), and `docs/02-engineering/mobile/sdk-version-history.md` updated — per the PR-22 DoD checklist.
 - Every native dep in the matrix must show an SDK-53-compatible published version before the PR opens; `npx expo install --fix` output is the evidence.
 - Any mobile TS-pin change is reflected in [ADR-0050](./0050-typescript-major-version-policy.md) in the same PR.
 

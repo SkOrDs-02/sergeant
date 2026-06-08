@@ -189,7 +189,7 @@
    - `packages/safe-storage/*` (там, де LWW resolution).
 2. CI step `pnpm stryker run --concurrency 4` — раз на тиждень або на PR-и, що чіпають ці модулі.
 3. Threshold: 70% mutation score on cloudSync, 50% — overall.
-4. Документ `docs/testing/mutation.md` з пояснення «що це і чому».
+4. Документ `docs/02-engineering/testing/mutation.md` з пояснення «що це і чому».
 
 ---
 
@@ -325,20 +325,20 @@ OK.
 2. **Containers (C2).** 1 діаграма: Web (Vercel) ↔ API (Express) ↔ Worker (BullMQ in-process, §1.6) + Postgres + Redis.
 3. **Components (C3).** 1-2 діаграми для найскладніших modules (CloudSync, Chat tool-use loop).
 
-   Mermaid-format в `docs/architecture/diagrams/` — auto-render у GitHub.
+   Mermaid-format в `docs/02-engineering/architecture/diagrams/` — auto-render у GitHub.
 
 4. **Key flows (sequence diagrams).** Sign-in cookie flow, sync push/pull, chat tool-use cycle, reminder fire — 4 діаграми.
 
 **Cost / impact.** 1 день роботи, перманентно покращує context-onboarding для будь-кого нового (агент чи людина).
 
-> **Update 2026-05-04 ([#1602](https://github.com/Skords-01/Sergeant/pull/1602)):** done. `docs/architecture/diagrams/` додано:
+> **Update 2026-05-04 ([#1602](https://github.com/Skords-01/Sergeant/pull/1602)):** done. `docs/02-engineering/architecture/diagrams/` додано:
 >
-> - **C1** — [`c1-system-context.md`](../../architecture/diagrams/c1-system-context.md): User ↔ Web/Mobile/Mobile-Shell ↔ Server ↔ Postgres/Redis/Anthropic/Sentry/n8n/Mono/SMTP/APNs/FCM/Telegram.
-> - **C2** — [`c2-containers.md`](../../architecture/diagrams/c2-containers.md): deploy-топологія Vercel ↔ Railway (Server + n8n + Console + Postgres + Redis), BullMQ workers in-process, network boundaries.
-> - **C3** — [`c3-cloudsync.md`](../../architecture/diagrams/c3-cloudsync.md) + [`c3-chat-tool-use.md`](../../architecture/diagrams/c3-chat-tool-use.md).
-> - **Flows** — 4 sequence-діаграми: [sign-in](../../architecture/diagrams/flow-signin.md), [cloudsync](../../architecture/diagrams/flow-cloudsync.md), [chat tool-use](../../architecture/diagrams/flow-chat-tool-use.md), [reminder fire](../../architecture/diagrams/flow-reminder-fire.md).
+> - **C1** — [`c1-system-context.md`](../../02-engineering/architecture/diagrams/c1-system-context.md): User ↔ Web/Mobile/Mobile-Shell ↔ Server ↔ Postgres/Redis/Anthropic/Sentry/n8n/Mono/SMTP/APNs/FCM/Telegram.
+> - **C2** — [`c2-containers.md`](../../02-engineering/architecture/diagrams/c2-containers.md): deploy-топологія Vercel ↔ Railway (Server + n8n + Console + Postgres + Redis), BullMQ workers in-process, network boundaries.
+> - **C3** — [`c3-cloudsync.md`](../../02-engineering/architecture/diagrams/c3-cloudsync.md) + [`c3-chat-tool-use.md`](../../02-engineering/architecture/diagrams/c3-chat-tool-use.md).
+> - **Flows** — 4 sequence-діаграми: [sign-in](../../02-engineering/architecture/diagrams/flow-signin.md), [cloudsync](../../02-engineering/architecture/diagrams/flow-cloudsync.md), [chat tool-use](../../02-engineering/architecture/diagrams/flow-chat-tool-use.md), [reminder fire](../../02-engineering/architecture/diagrams/flow-reminder-fire.md).
 >
-> Усі `docs/architecture/README.md` посилання оновлено. Mermaid рендериться auto-renderom GitHub.
+> Усі `docs/02-engineering/architecture/README.md` посилання оновлено. Mermaid рендериться auto-renderom GitHub.
 
 ---
 
@@ -393,4 +393,4 @@ OK.
 | CHANGELOG / release notes                       | §9.3                                     |
 | Pre-commit i18n / CSP validators                | §8.4                                     |
 
-> **Tracker hook.** Security items (§6.x) → `docs/security/`. Observability (§4.4 reuse, requestId) → `docs/03-operations/observability/`. Testing (§7.x) → `docs/testing/`. DevX (§8.x) і docs (§9.x, §11) → `docs/agents/` і `docs/audits/`.
+> **Tracker hook.** Security items (§6.x) → `docs/security/`. Observability (§4.4 reuse, requestId) → `docs/03-operations/observability/`. Testing (§7.x) → `docs/02-engineering/testing/`. DevX (§8.x) і docs (§9.x, §11) → `docs/agents/` і `docs/audits/`.

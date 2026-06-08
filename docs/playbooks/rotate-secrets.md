@@ -157,6 +157,6 @@ curl -sS https://<prod-domain>/health | jq .
 
 ## See also
 
-- [railway-vercel.md](../integrations/railway-vercel.md) — список env vars для Railway
+- [railway-vercel.md](../02-engineering/integrations/railway-vercel.md) — список env vars для Railway
 - [AGENTS.md](../../AGENTS.md) — ніколи не комітити credentials
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md) — якщо ротація зламала прод

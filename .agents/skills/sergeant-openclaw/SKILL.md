@@ -35,7 +35,7 @@ OpenClaw Gateway — зовнішній Telegram-шлюз (ADR-0055). Він **�
 3. Push → Railway auto-redeploys `sergeant-openclaw-gateway`.
 4. Verify: healthcheck Gateway service + перевірити Telegram `@OpenClaw_sergeant_v2_bot` відповідає.
 
-Env vars для Gateway живуть в [`docs/integrations/env-vars.md`](../../../docs/integrations/env-vars.md) в секції OpenClaw.
+Env vars для Gateway живуть в [`docs/02-engineering/integrations/env-vars.md`](../../../docs/02-engineering/integrations/env-vars.md) в секції OpenClaw.
 
 ## Генератор нового specialist-а
 

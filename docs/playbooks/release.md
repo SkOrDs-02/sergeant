@@ -1,6 +1,6 @@
 # Playbook: Реліз
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «Виконати реліз» / реліз-несуча зміна на продакшні — `apps/web`, `apps/server`, `apps/mobile-shell` (Capacitor) або `apps/mobile` (Expo); EAS-апдейти, store-білди, скоординовані крос-поверхневі деплої.
@@ -15,8 +15,8 @@
 
 - Стартуй з `sergeant-start-here`, тоді завантаж `sergeant-deploy-and-observability` (для web/API і Capacitor) або `sergeant-mobile-expo` (для Expo).
 - Перечитай [release-policy.md](../governance/release-policy.md) — таксономію merge-only / coordinated / high-risk.
-- Перечитай [service-catalog.md](../architecture/service-catalog.md) — щоб знати rollback-шлях і tier поверхні, яку зачіпаєш.
-- Перечитай [platforms.md](../architecture/platforms.md), якщо зміна перетинає Capacitor або Expo.
+- Перечитай [service-catalog.md](../02-engineering/architecture/service-catalog.md) — щоб знати rollback-шлях і tier поверхні, яку зачіпаєш.
+- Перечитай [platforms.md](../02-engineering/architecture/platforms.md), якщо зміна перетинає Capacitor або Expo.
 - Якщо у релізі є міграція — додатково відкрий [add-sql-migration.md](./add-sql-migration.md).
 
 ## Дерево рішень — яку поверхню релізиш?

@@ -133,8 +133,8 @@ Knip-команда `dead-code:files` (по правилам `knip.json` + scaff
 
 ### 3.3 Структурно
 
-- `docs/notes/spikes/routine-sqlite-v2.md` — лише один spike. Якщо це паттерн (плани мати кілька spike-ів), залишити. Якщо це one-off, можна перенести в `docs/planning/storage-roadmap.md` як inline-секцію.
-- `docs/api/` — 1 файл (`README.md` + `openapi.json`). OK як generated artifacts container, але якщо плануєте генерувати ще docs API — варто розширити структуру.
+- `docs/02-engineering/notes/spikes/routine-sqlite-v2.md` — лише один spike. Якщо це паттерн (плани мати кілька spike-ів), залишити. Якщо це one-off, можна перенести в `docs/planning/storage-roadmap.md` як inline-секцію.
+- `docs/02-engineering/api/` — 1 файл (`README.md` + `openapi.json`). OK як generated artifacts container, але якщо плануєте генерувати ще docs API — варто розширити структуру.
 
 ---
 

@@ -1,15 +1,15 @@
 # PR-04: Secondary owners + knowledge-transfer plan
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/playbooks/operational-continuity.md`](../../playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).
+> **Status:** Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/playbooks/operational-continuity.md`](../../playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).
 
-|              |                                                                  |
-| ------------ | ---------------------------------------------------------------- |
-| **Severity** | Critical (C4)                                                    |
-| **Owner**    | TBD (sponsor: @Skords-01)                                        |
-| **Effort**   | 1 тиждень calendar (5–8 actual hours per knowledge-transfer doc) |
-| **Risk**     | Low (organizational, not technical)                              |
-| **Touches**  | `.github/CODEOWNERS`, `AGENTS.md`, `docs/notes/spikes/`          |
+|              |                                                                        |
+| ------------ | ---------------------------------------------------------------------- |
+| **Severity** | Critical (C4)                                                          |
+| **Owner**    | TBD (sponsor: @Skords-01)                                              |
+| **Effort**   | 1 тиждень calendar (5–8 actual hours per knowledge-transfer doc)       |
+| **Risk**     | Low (organizational, not technical)                                    |
+| **Touches**  | `.github/CODEOWNERS`, `AGENTS.md`, `docs/02-engineering/notes/spikes/` |
 
 ## Контекст
 
@@ -42,7 +42,7 @@
 | `hubchat`   | Anthropic streaming, tool-execution, RAG injection, prompt-cache  |
 | `sync`      | CloudSync LWW, op-log, conflict resolution, op-replay determinism |
 
-Кожен walkthrough — `docs/notes/spikes/2026-05-walkthrough-<module>.md` з:
+Кожен walkthrough — `docs/02-engineering/notes/spikes/2026-05-walkthrough-<module>.md` з:
 
 - Архітектурною діаграмою (mermaid)
 - Top-5 файлів та їх роль
@@ -71,7 +71,7 @@
 - [x] `.github/CODEOWNERS` розділений на ≥4 path-rules з secondary placeholder.
 - [x] `AGENTS.md` Module ownership map має `secondary` поле для кожного рядка (22/22, всі заповнені placeholder-роллю `TBD (<role>)`).
 - [x] `scripts/check-codeowners-coverage.mjs` оновлений для перевірки secondary-coverage — `validateAgentsSecondaryColumn()` парсить ownership-map і fail-ить, якщо будь-який рядок має empty `Secondary` cell або колонка відсутня в header-і. Покрито 4 testcase-ами в `scripts/__tests__/check-codeowners-coverage.test.mjs`.
-- [x] 6 walkthrough-документів у `docs/notes/spikes/2026-05-walkthrough-*.md`.
+- [x] 6 walkthrough-документів у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`.
 - [x] `docs/playbooks/operational-continuity.md` з секціями (зовнішні системи, escalation contacts, kill-switch).
 - [x] PR-description явно вказує: «це не реальні secondary, а placeholder — фактичний onboarding відбувається коли друга людина приєднається».
 - [x] L2 escalation поле в `AGENTS.md` має конкретний fallback (playbook → vendor support → 1Password vaults), не дубль owner-а.
@@ -87,16 +87,16 @@
 
 ## Risks & mitigations
 
-| Risk                                                             | Mitigation                                                                                                  |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Walkthrough-документи stale через 6 місяців                      | freshness-gate: `Last validated` поле + `check-tech-debt-freshness.mjs`-style check на `docs/notes/spikes/` |
-| Placeholder secondary (Devin/Claude) не справжній resilience-fix | Чітко marked у CODEOWNERS comment-ах: `# placeholder — replace with real engineer when hired`               |
+| Risk                                                             | Mitigation                                                                                                                 |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Walkthrough-документи stale через 6 місяців                      | freshness-gate: `Last validated` поле + `check-tech-debt-freshness.mjs`-style check на `docs/02-engineering/notes/spikes/` |
+| Placeholder secondary (Devin/Claude) не справжній resilience-fix | Чітко marked у CODEOWNERS comment-ах: `# placeholder — replace with real engineer when hired`                              |
 
 ## Touchpoints (file:line)
 
 - `.github/CODEOWNERS` — повна реструктуризація
 - `AGENTS.md:34–55` — Module ownership map
-- `docs/notes/spikes/` — нові 6 файлів
+- `docs/02-engineering/notes/spikes/` — нові 6 файлів
 - `docs/playbooks/operational-continuity.md` — новий
 - `scripts/check-codeowners-coverage.mjs` — secondary-coverage logic
 

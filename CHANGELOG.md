@@ -377,7 +377,7 @@ metrics/web-vitals}` — а API серверу не було, vite сипав
   до Voyage/БД. `recall_memory` додано у `ASSISTANT_CAPABILITIES` (єдиний
   source-of-truth для tool-ів) → автоматично потрапляє у "Пам'ять"-список
   SYSTEM_PROMPT, тому `SYSTEM_PROMPT_VERSION` піднято з `v6` до `v7`. Доку оновлено
-  у [`docs/integrations/voyage-pgvector.md`](./docs/integrations/voyage-pgvector.md)
+  у [`docs/02-engineering/integrations/voyage-pgvector.md`](./docs/02-engineering/integrations/voyage-pgvector.md)
   і [`docs/adr/0028-pgvector-ai-memory.md`](./docs/adr/0028-pgvector-ai-memory.md).
 
 - **CI: container image scan (Trivy).** Новий workflow

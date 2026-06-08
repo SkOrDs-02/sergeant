@@ -173,7 +173,7 @@ pnpm test:a11y
 
 ### 1.11. Архітектура на високому рівні
 
-**Проблема:** README має посилання на `docs/architecture/README.md`, але сам не дає жодної схеми чи пояснення, як частини пов'язані між собою.
+**Проблема:** README має посилання на `docs/02-engineering/architecture/README.md`, але сам не дає жодної схеми чи пояснення, як частини пов'язані між собою.
 
 **Рекомендація:** Додати хоча б текстову діаграму:
 
@@ -506,15 +506,15 @@ HubChat — це чат-інтерфейс, де ти спілкуєшся з Cl
 | Папка                               | Що там                                                    |
 | ----------------------------------- | --------------------------------------------------------- |
 | `docs/adr/`                         | Архітектурні рішення (ADR) — чому ми обрали саме це       |
-| `docs/api/`                         | OpenAPI-контракти, документація API                       |
-| `docs/architecture/`                | Карта репозиторію, платформи, сервіс-каталог              |
+| `docs/02-engineering/api/`          | OpenAPI-контракти, документація API                       |
+| `docs/02-engineering/architecture/` | Карта репозиторію, платформи, сервіс-каталог              |
 | `docs/audits/`                      | UX/UI аудити, типографіка, дизайн ревʼю                   |
 | `docs/03-operations/deploy/`        | Інструкції з деплою                                       |
 | `docs/05-design/design/`            | Дизайн-система: BRANDBOOK, кольори, акценти модулів       |
 | `docs/governance/`                  | Hard rules, review checklist, релізна політика            |
-| `docs/integrations/`                | Monobank, Railway, Vercel, Renovate, Voyage               |
+| `docs/02-engineering/integrations/` | Monobank, Railway, Vercel, Renovate, Voyage               |
 | `docs/01-product/launch/`           | Монетизація, GTM, launch readiness                        |
-| `docs/mobile/`                      | Capacitor, deep links, React Native міграція              |
+| `docs/02-engineering/mobile/`       | Capacitor, deep links, React Native міграція              |
 | `docs/03-operations/observability/` | SLO, дашборди, метрики, runbook                           |
 | `docs/planning/`                    | Roadmaps, AI improvements, dev stack roadmap              |
 | `docs/playbooks/`                   | Покрокові рецепти (як додати endpoint, як зробити hotfix) |

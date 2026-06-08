@@ -5,7 +5,7 @@
 > **Priority:** P2
 > **Owner:** `@Skords-01`
 > **ETA:** 5 phases (≈4–5 тижнів), **~12 PR-ів**
-> **Sources:** [`docs/architecture/repo-map.md`](../../architecture/repo-map.md), [`docs/architecture/service-catalog.md`](../../architecture/service-catalog.md), [`docs/architecture/diagrams/`](../../architecture/diagrams), [`docs/governance/freshness-dashboard.html`](../../governance/freshness-dashboard.html), [`AGENTS.md`](../../../AGENTS.md) Hard Rules #10 / #15.
+> **Sources:** [`docs/02-engineering/architecture/repo-map.md`](../../02-engineering/architecture/repo-map.md), [`docs/02-engineering/architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md), [`docs/02-engineering/architecture/diagrams/`](../../02-engineering/architecture/diagrams), [`docs/governance/freshness-dashboard.html`](../../governance/freshness-dashboard.html), [`AGENTS.md`](../../../AGENTS.md) Hard Rules #10 / #15.
 
 ## TL;DR
 
@@ -26,7 +26,7 @@
 - `docs/governance/knowledge-graph.{json,html}` — unified graph (nodes + typed edges) + HTML viewer (inline CSS, Mermaid sub-графи).
 - `docs/governance/schemas/knowledge-graph.schema.json` — canonical schema (JSON Schema draft-07).
 - `.github/workflows/pr-backlinks.yml` + `scripts/ci/update-pr-backlinks.mjs` + `docs/pr-ledger/index.json` + AUTO-GEN блок `## Recent PRs` (≤5 latest) у touched ADR/initiative/playbook/rule файлах.
-- Auto-gen `docs/architecture/service-catalog.md`, `docs/architecture/repo-map.md` зі скан-инпутів (`pnpm-workspace.yaml`, `package.json` per workspace, `Dockerfile.*`, `railway.*.toml`, server route registrations, CODEOWNERS).
+- Auto-gen `docs/02-engineering/architecture/service-catalog.md`, `docs/02-engineering/architecture/repo-map.md` зі скан-инпутів (`pnpm-workspace.yaml`, `package.json` per workspace, `Dockerfile.*`, `railway.*.toml`, server route registrations, CODEOWNERS).
 - Per-package `symbols.json` (auto-gen через ts-morph) + `docs/governance/symbol-index.{json,html}` з cross-package usage counts.
 - Auto-gen Mermaid для C3 (component-per-service з turbo task graph + service-catalog) і C4 (code-level з symbol catalog cross-refs).
 - 4 нових `--check` gates у `pnpm lint`: `docs:check-graph`, `docs:check-symbols`, `docs:check-service-catalog` + `docs:check-repo-map`, `docs:check-architecture-diagrams`.
@@ -40,7 +40,7 @@
 - Refactor існуючих 7 генераторів читати з графа (graph — additive aggregator).
 - Cross-repo links.
 - Backfill PR-ledger історії до merge цієї ініціативи.
-- `dev-stack-roadmap.md` auto-gen (лежить у `docs/planning/`, не `docs/architecture/`; залишається hand-maintained).
+- `dev-stack-roadmap.md` auto-gen (лежить у `docs/planning/`, не `docs/02-engineering/architecture/`; залишається hand-maintained).
 
 ## План змін
 
@@ -76,7 +76,7 @@
 
 ### Phase 3 — Drift-detector for service-catalog + repo-map (S) — **shipped**
 
-**Deviation from original plan.** Initially planned full-replacement (`docs/architecture/service-catalog.md` і `repo-map.md` → AUTO-GENERATED, hand content в `docs/_archive/`). При імплементації стало ясно, що editorial columns ці markdown-ів (runbook / alerts / rollback / data-sensitivity для service-catalog; Purpose / Test stacks / Build outputs narrative для repo-map) **не похідні з коду** — full-replacement стер би operational знання.
+**Deviation from original plan.** Initially planned full-replacement (`docs/02-engineering/architecture/service-catalog.md` і `repo-map.md` → AUTO-GENERATED, hand content в `docs/_archive/`). При імплементації стало ясно, що editorial columns ці markdown-ів (runbook / alerts / rollback / data-sensitivity для service-catalog; Purpose / Test stacks / Build outputs narrative для repo-map) **не похідні з коду** — full-replacement стер би operational знання.
 
 Переключились на **drift-detector**: hand-maintained markdown зберігається; додатковий machine-readable mirror (`docs/governance/{service-catalog,repo-map}.auto.json`) генерується з Dockerfile / railway.toml / pnpm-workspace.yaml / CODEOWNERS, з `--check` gate що валідує coverage (кожен workspace/surface у JSON мусить бути згаданий у markdown). Це catches drift без втрати editorial value.
 
@@ -84,7 +84,7 @@
 
 - `scripts/docs/generate-repo-map.mjs` + `docs/governance/repo-map.auto.json` + `docs/governance/schemas/repo-map.schema.json`
 - `scripts/docs/generate-service-catalog.mjs` + `docs/governance/service-catalog.auto.json` + `docs/governance/schemas/service-catalog.schema.json`
-- Banner у `docs/architecture/service-catalog.md` і `docs/architecture/repo-map.md` що посилається на machine-readable mirror
+- Banner у `docs/02-engineering/architecture/service-catalog.md` і `docs/02-engineering/architecture/repo-map.md` що посилається на machine-readable mirror
 - `pnpm docs:check-repo-map` + `pnpm docs:check-service-catalog` wired у lint chain (також restored `pnpm docs:check-symbols` що було пропущено у Phase 2 merge)
 
 **DoD:** обидва `--check` gates green; markdown coverage validates every workspace + surface.
@@ -94,7 +94,7 @@
 **Deviation from original plan.** Initially planned full C3 + C4 automation. При підготовці імплементації виявилось:
 
 1. Існуючі `c3-cloudsync.md` і `c3-chat-tool-use.md` — це **feature-flow діаграми з editorial narrative** (контракт tool_use, prompt-cache, тестування, дані-залежності), не component-per-service.
-2. `docs/architecture/diagrams/README.md` explicitly відкидає C4: «Не додавайте C4 рівень (Code) — TS типи й тестові снепшоти його замінюють».
+2. `docs/02-engineering/architecture/diagrams/README.md` explicitly відкидає C4: «Не додавайте C4 рівень (Code) — TS типи й тестові снепшоти його замінюють».
 3. Жодна з existing діаграм не показує `@sergeant/*` workspace import-graph — це найочевидніший candidate для auto-gen.
 
 Переключились на single auto-gen artifact: **workspace dependency graph** як новий C3-level діаграму. Зберігаємо editorial value existing feature-flow діаграм, поважаємо «no C4» policy. ADR-0060 документує scope.
@@ -102,7 +102,7 @@
 **Files shipped:**
 
 - `scripts/docs/generate-architecture-diagrams.mjs` — читає `docs/governance/symbol-index.json` (Phase 2) → group `usedBy[]` file paths by workspace prefix → cross-workspace edges
-- `docs/architecture/diagrams/c3-workspaces.md` (auto-gen) — Mermaid LR-граф із node per workspace + edges; top-5 most-imported workspaces stats
+- `docs/02-engineering/architecture/diagrams/c3-workspaces.md` (auto-gen) — Mermaid LR-граф із node per workspace + edges; top-5 most-imported workspaces stats
 - `docs/adr/0060-architecture-diagrams-automation-scope.md` — rationale
 - `pnpm docs:check-architecture-diagrams` wired у lint chain
 

@@ -1,12 +1,12 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-07",
+  "generated_at": "2026-06-08",
   "counts": {
-    "adr": 62,
+    "adr": 63,
     "audit": 17,
     "hard-rule": 26,
-    "initiative": 47,
+    "initiative": 48,
     "playbook": 61,
     "pr": 164,
     "skill": 33
@@ -704,6 +704,18 @@
       }
     },
     {
+      "id": "adr:0066",
+      "type": "adr",
+      "title": "ADR-0066: Agent semantic retrieval over the knowledge graph",
+      "path": "docs/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 66,
+        "last_validated": "2026-06-08"
+      }
+    },
+    {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
       "type": "audit",
       "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
@@ -1108,7 +1120,7 @@
         "scope": [
           "docs/governance/knowledge-graph.html",
           "docs/governance/symbol-index.html",
-          "docs/architecture/diagrams/c3-workspaces.md",
+          "docs/02-engineering/architecture/diagrams/c3-workspaces.md",
           "docs/open-work.md",
           "docs/initiatives/follow-ups.md",
           "docs/playbooks/INDEX.md"
@@ -1292,6 +1304,17 @@
       }
     },
     {
+      "id": "initiative:0018",
+      "type": "initiative",
+      "title": "0018 — Agent semantic retrieval (agent:find)",
+      "path": "docs/initiatives/0018-agent-semantic-retrieval.md",
+      "status": "Proposed — чекає на founder-погодження ADR-0066 перед стартом Phase 1.",
+      "tier": "core",
+      "meta": {
+        "number": 18
+      }
+    },
+    {
       "id": "initiative:follow-ups",
       "type": "initiative",
       "title": "Initiative follow-ups",
@@ -1350,7 +1373,7 @@
       "type": "initiative",
       "title": "PR-04: Secondary owners + knowledge-transfer plan",
       "path": "docs/initiatives/stack-pulse-2026-05/pr-04-bus-factor-secondary-owners.md",
-      "status": "Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/playbooks/operational-continuity.md`](../../playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).",
+      "status": "Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/playbooks/operational-continuity.md`](../../playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).",
       "tier": "core",
       "meta": {}
     },
@@ -1386,7 +1409,7 @@
       "type": "initiative",
       "title": "PR-08: API versioning consolidation (видалити v1-rewrite-shim)",
       "path": "docs/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md",
-      "status": "Closed — research done, decision = keep mirror (див. [ADR-0053](../../adr/0053-api-versioning-policy.md) + [spike](../../notes/spikes/2026-05-api-v1-usage.md))",
+      "status": "Closed — research done, decision = keep mirror (див. [ADR-0053](../../adr/0053-api-versioning-policy.md) + [spike](../../02-engineering/notes/spikes/2026-05-api-v1-usage.md))",
       "tier": "core",
       "meta": {}
     },
@@ -1593,7 +1616,7 @@
       "type": "initiative",
       "title": "PR-31: ESLint config 1073 рядки → split per-app",
       "path": "docs/initiatives/stack-pulse-2026-05/pr-31-eslint-config-split.md",
-      "status": "Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/development/eslint-config.md` § Phase 2b).",
+      "status": "Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/02-engineering/development/eslint-config.md` § Phase 2b).",
       "tier": "core",
       "meta": {}
     },
@@ -1611,7 +1634,7 @@
       "type": "initiative",
       "title": "PR-33: 21 hard rules — categorize",
       "path": "docs/initiatives/stack-pulse-2026-05/pr-33-hard-rules-categorization.md",
-      "status": "Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../governance/rules/) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.",
+      "status": "Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../governance/rules) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.",
       "tier": "core",
       "meta": {}
     },
@@ -4601,6 +4624,26 @@
       "type": "references"
     },
     {
+      "from": "adr:0066",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "adr:0066",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "adr:0066",
+      "to": "hard-rule:24",
+      "type": "references"
+    },
+    {
+      "from": "adr:0066",
+      "to": "hard-rule:25",
+      "type": "references"
+    },
+    {
       "from": "audit:2026-05-06-ux-roast-pr-plan",
       "to": "hard-rule:15",
       "type": "references"
@@ -5479,6 +5522,11 @@
       "from": "initiative:0017",
       "to": "pr:3403",
       "type": "touched-by"
+    },
+    {
+      "from": "initiative:0018",
+      "to": "hard-rule:24",
+      "type": "references"
     },
     {
       "from": "initiative:stack-pulse-2026-05/00-overview",

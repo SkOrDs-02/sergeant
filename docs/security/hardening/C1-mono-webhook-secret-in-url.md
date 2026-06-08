@@ -96,7 +96,7 @@ URL-форма `POST https://api.<host>/api/mono/webhook/<secret>` логува�
 - [docs/security/hardening/sprint-1.md](./sprint-1.md) — sprint context.
 - [docs/security/vulnerability-sla.md](../vulnerability-sla.md) — Critical = 24h acknowledge / 14d fix.
 - [docs/playbooks/rotate-secrets.md](../../playbooks/rotate-secrets.md) — порядок ротації production-секретів.
-- [docs/integrations/](../../integrations) — Monobank integration spec (uplift `setWebHook` payload).
+- [docs/02-engineering/integrations/](../../02-engineering/integrations) — Monobank integration spec (uplift `setWebHook` payload).
 
 ## Resolution log
 
@@ -111,7 +111,7 @@ URL-форма `POST https://api.<host>/api/mono/webhook/<secret>` логува�
 - `apps/server/src/obs/sensitiveUrl.ts` — новий хелпер `redactSensitiveUrl(url)` з whitelist відомих secret-bearing prefix-ів (`/api/mono/webhook/`, `/api/v1/mono/webhook/`).
 - `apps/server/src/http/errorHandler.ts` — `path: req.route?.path || redactSensitiveUrl(req.originalUrl)` — fallback вже не може витекти секрет у Pino `request_failed` лог.
 - `apps/server/src/sentry.ts` — `applyBeforeSend` редагує `event.request.url`; `applyBeforeBreadcrumb` редагує `data.url` для outbound HTTP breadcrumbs. Обидва хуки extracted у named-функції для unit-тестування.
-- `packages/shared/src/openapi/routes.ts` + `docs/api/openapi.json` — header-маршрут опубліковано в OpenAPI; legacy path-маршрут позначено deprecated.
+- `packages/shared/src/openapi/routes.ts` + `docs/02-engineering/api/openapi.json` — header-маршрут опубліковано в OpenAPI; legacy path-маршрут позначено deprecated.
 
 **Tests:** `sensitiveUrl.test.ts` (new, 8 cases), `sentry.test.ts` (+9 cases для applyBeforeSend/Breadcrumb), `errorHandler.test.ts` (+2 cases для path-redaction), `webhook.test.ts` (+4 cases для header-transport).
 

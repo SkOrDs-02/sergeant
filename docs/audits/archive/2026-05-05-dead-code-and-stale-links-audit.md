@@ -31,7 +31,7 @@
 | `docs/initiatives/archive/_0007-design-system-tooling.md` | `../design-system/` (×2)                         | `../design/`                                                   | Дизайн-доки переїхали у `docs/05-design/design/` (doc-hygiene PR 2026-05-02). |
 | `docs/initiatives/archive/_0008-platform-hardening.md`    | `../../apps/server/src/__tests__/`               | `../../apps/server/src/http/` + іменовані `rateLimit*.test.ts` | `__tests__/` стало per-module (`http/`, `migrations/__tests__/`).             |
 | `docs/initiatives/archive/_0008-platform-hardening.md`    | `../../apps/server/src/middleware/`              | `../../apps/server/src/http/`                                  | Middleware рефакторнули у `http/`.                                            |
-| `docs/integrations/env-vars.md`                           | ../../apps/web/src/components/VoiceMicButton.tsx | `../../apps/web/src/shared/components/ui/VoiceMicButton.tsx`   | Перенесено в `shared/components/ui/` (за конвенцією).                         |
+| `docs/02-engineering/integrations/env-vars.md`            | ../../apps/web/src/components/VoiceMicButton.tsx | `../../apps/web/src/shared/components/ui/VoiceMicButton.tsx`   | Перенесено в `shared/components/ui/` (за конвенцією).                         |
 | `docs/01-product/launch/product-os/ftux-sprint-plan.md`   | `[…s6-cleanup-batch.md](../sprint-retros/...)`   | code-reference (link removed)                                  | Файл «буде створений по завершенню» — link-checker не вгадає.                 |
 
 `pnpm docs:check-links` тепер `✅All markdown links resolve.` (12 external 404 / aborted — non-fatal, поза scope цього аудиту).
@@ -93,7 +93,7 @@
 
 | Пакет                            | Workspace            | Note                                                                                                      |
 | -------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------- |
-| `@stryker-mutator/vitest-runner` | `apps/web`           | Mutation testing — див. `docs/testing/mutation.md`. Рішення: чи keep-and-wire або drop.                   |
+| `@stryker-mutator/vitest-runner` | `apps/web`           | Mutation testing — див. `docs/02-engineering/testing/mutation.md`. Рішення: чи keep-and-wire або drop.    |
 | `openapi-typescript`             | root                 | Замінено `pnpm api:generate-openapi-types`? Перевірити, чи `pnpm api:check-openapi-types` працює без неї. |
 | `tsc-files`                      | root                 | Невикористаний lint helper. Перевірити lint-staged config.                                                |
 | `drizzle-kit`                    | `packages/db-schema` | Drizzle migration generator. Якщо migration-flow на чистому SQL — drop.                                   |

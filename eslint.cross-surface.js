@@ -491,7 +491,7 @@ export const crossSurfaceBlocks = [
   // any "today" / "this week" derivation must flow through `getKyivDateParts()`,
   // `getKyivDayKey()`, or `getKyivWeekStart()` from
   // `apps/web/src/shared/lib/time/kyivTime.ts` so day boundaries stay anchored
-  // to Europe/Kyiv per the domain-invariants spec (docs/architecture/
+  // to Europe/Kyiv per the domain-invariants spec (docs/02-engineering/architecture/
   // domain-invariants.md § timezone).
   //
   // `new Date(someValue)` (1+ arguments) is NOT banned — constructing a Date

@@ -14,7 +14,7 @@ Every auto-generated artifact in the repo. Currently:
 
 - `docs/governance/knowledge-graph.html`
 - `docs/governance/symbol-index.html`
-- `docs/architecture/diagrams/c3-workspaces.md`
+- `docs/02-engineering/architecture/diagrams/c3-workspaces.md`
 - `docs/open-work.md`
 - `docs/initiatives/follow-ups.md`
 - `docs/playbooks/INDEX.md`

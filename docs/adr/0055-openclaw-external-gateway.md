@@ -71,7 +71,7 @@ The single-stage Docker image is possible because `openclaw.plugin.json` sets `"
 
 - Server-side write-audit (`openclaw_invocations`, ADR-0037) unchanged — remains Active.
 - CI pipeline unchanged; no new TS files in this PR-F, no new typecheck surface.
-- `docs/architecture/service-catalog.md` updated in PR-F to include `sergeant-openclaw-gateway`.
+- `docs/02-engineering/architecture/service-catalog.md` updated in PR-F to include `sergeant-openclaw-gateway`.
 
 ## Compliance
 

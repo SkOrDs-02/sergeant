@@ -114,7 +114,7 @@ jobs:
             docs/governance/symbol-index.html
             docs/governance/repo-map.auto.json
             docs/governance/service-catalog.auto.json
-            docs/architecture/diagrams/c3-workspaces.md
+            docs/02-engineering/architecture/diagrams/c3-workspaces.md
           )
           # Per-workspace symbol-index snapshots — globbed because the
           # workspace set evolves; one new workspace tomorrow should not

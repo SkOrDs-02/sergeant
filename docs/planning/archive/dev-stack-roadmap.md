@@ -75,7 +75,7 @@
 
 - `docs/planning/ai-coding-improvements.md` — TL;DR таблиця з Status-колонкою, прогрес-блок, маркери ✅ на блоках 1, 3, 4.2, 4.5, implementation checklist з лінками на PR.
 - `docs/planning/dev-stack-roadmap.md` — TL;DR з Status-колонкою (5/15 done), §3.1 Static analysis і §4.1 Test infrastructure з ✅, §8.1 Security оновлений з Renovate vulnerabilityAlerts.
-- `docs/integrations/renovate-usage.md` — новий файл, як працювати з Renovate-PR-ами щодня.
+- `docs/02-engineering/integrations/renovate-usage.md` — новий файл, як працювати з Renovate-PR-ами щодня.
 
 ---
 

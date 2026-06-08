@@ -13,7 +13,7 @@
 // to disable formatting rules. `pnpm lint:eslint-config-diff` snapshots the
 // fully-resolved `eslint --print-config` output per surface and fails on any
 // drift — this extraction is a behavioural no-op verified against it. See
-// `docs/development/eslint-config.md` for the split rationale and roadmap.
+// `docs/02-engineering/development/eslint-config.md` for the split rationale and roadmap.
 import eslintConfigPrettier from "eslint-config-prettier";
 import { baseline } from "./eslint.baseline.js";
 import { webBlocks } from "./eslint.web.js";

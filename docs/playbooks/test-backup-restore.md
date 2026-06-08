@@ -12,7 +12,7 @@
 
 ## Required context
 
-- Прочитай [disaster-recovery.md](../security/disaster-recovery.md) і [service-catalog.md](../architecture/service-catalog.md), щоб мати свіжі цифри RPO/RTO та перелік критичних поверхонь.
+- Прочитай [disaster-recovery.md](../security/disaster-recovery.md) і [service-catalog.md](../02-engineering/architecture/service-catalog.md), щоб мати свіжі цифри RPO/RTO та перелік критичних поверхонь.
 
 ## Steps
 

@@ -186,7 +186,7 @@ Persistence — через `safeReadLS('feature_reveal_reports')`. Це дозв
 
 2. Замінити **всі** `min-h-screen` / `100vh` на `100dvh` через codemod (~15 файлів).
 3. Додати E2E test (Playwright + iPhone emulation), який перевіряє, що bottom-CTA не накривається віртуальною клавіатурою при відкритій формі. Покрити: auth login, finyk create transaction, fizruk add exercise, nutrition add food, hubchat input.
-4. Документувати в `docs/mobile/safe-area.md` різницю між web vs Capacitor inset обчисленнями.
+4. Документувати в `docs/02-engineering/mobile/safe-area.md` різницю між web vs Capacitor inset обчисленнями.
 
 ---
 
@@ -269,7 +269,7 @@ Persistence — через `safeReadLS('feature_reveal_reports')`. Це дозв
 
 - Додати тест на «pull-to-refresh during pending sync» — не повинно стартувати другу sync queue.
 - Disable pull-to-refresh, поки `useSWUpdate.updating === true`.
-- Document expected behavior у `docs/mobile/pull-to-refresh.md`.
+- Document expected behavior у `docs/02-engineering/mobile/pull-to-refresh.md`.
 
 ---
 

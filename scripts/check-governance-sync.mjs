@@ -19,19 +19,19 @@
 //      - docs/01-product/launch/                          (launch plans)
 //      - docs/planning/                        (sprint plans)
 //      - docs/audits/*-deep-dive/              (deep-dive recommendations)
-//      - docs/integrations/*-roadmap.md        (integration roadmaps)
+//      - docs/02-engineering/integrations/*-roadmap.md        (integration roadmaps)
 //      - docs/audits/*-implementation-roadmap.md (audit roadmaps)
 //      - docs/initiatives/                     (multi-phase initiative trackers)
 //      - docs/security/hardening/              (PR-bound hardening cards)
 //      - docs/03-operations/runbooks/                        (operations runbooks; refs may
 //                                               describe target scripts)
-//      - docs/architecture/diagrams/           (flow diagrams; refs name
+//      - docs/02-engineering/architecture/diagrams/           (flow diagrams; refs name
 //                                               components that may rename)
 //      - docs/playbooks/                       (recipes referencing template
 //                                               paths and example structures)
 //      - docs/05-design/i18n/                            (i18n migration roadmap; refs
 //                                               include planned target catalogs)
-//      - docs/notes/spikes/                    (exploratory spike walkthroughs;
+//      - docs/02-engineering/notes/spikes/                    (exploratory spike walkthroughs;
 //                                               file refs may describe imagined
 //                                               module shape pre-refactor)
 //    Files in ADRs with Status: proposed are exempt (future refs OK).
@@ -262,10 +262,11 @@ function checkDanglingRefs() {
     // `docs/03-operations/runbooks/` describe operations including target scripts that
     // may not be created until the runbook is exercised in incident.
     if (relPath.startsWith("docs/03-operations/runbooks/")) return true;
-    // `docs/architecture/diagrams/` document flows by naming components;
+    // `docs/02-engineering/architecture/diagrams/` document flows by naming components;
     // a component rename should not break the diagram doc until the
     // diagram is regenerated.
-    if (relPath.startsWith("docs/architecture/diagrams/")) return true;
+    if (relPath.startsWith("docs/02-engineering/architecture/diagrams/"))
+      return true;
     // `docs/playbooks/` are recipes; refs are template/example paths
     // (e.g., `apps/web/src/App.tsx` as an illustrative anchor) and may
     // describe target structures rather than current code.
@@ -278,29 +279,29 @@ function checkDanglingRefs() {
     // roadmaps describing scripts/files that will be created in upcoming
     // PRs. Treat refs as planned, not current.
     if (/^docs\/agents\/[^/]+-roadmap\.md$/.test(relPath)) return true;
-    // `docs/notes/spikes/` are exploratory spike walkthroughs (PR-04
+    // `docs/02-engineering/notes/spikes/` are exploratory spike walkthroughs (PR-04
     // bus-factor knowledge transfer). Inline file refs describe the
     // module structure as the spike author imagined / mapped it; if
     // a refactor moved a file, the spike note should not block CI.
     // Once a spike graduates to canonical architecture, the doc moves
-    // to `docs/architecture/` (non-aspirational) and refs become
+    // to `docs/02-engineering/architecture/` (non-aspirational) and refs become
     // contracts. Until then, treat as warnings.
-    if (relPath.startsWith("docs/notes/spikes/")) return true;
-    // `docs/testing/<date>-tests-pr-plan.md` and
-    // `docs/testing/<date>-tests-review.md` are dated test-PR plans and
+    if (relPath.startsWith("docs/02-engineering/notes/spikes/")) return true;
+    // `docs/02-engineering/testing/<date>-tests-pr-plan.md` and
+    // `docs/02-engineering/testing/<date>-tests-review.md` are dated test-PR plans and
     // analyses — same shape as `docs/planning/`: refs describe upcoming
     // test files (`apps/server/src/.../foo.test.ts`,
     // `apps/web/tests/smoke/<flow>.spec.ts`) that the PRs they plan will
     // create. The README + mutation.md in the same directory describe
     // current behaviour and remain non-aspirational.
     if (
-      /^docs\/testing\/\d{4}-\d{2}-\d{2}-tests-(pr-plan|review)\.md$/.test(
+      /^docs\/02-engineering\/testing\/\d{4}-\d{2}-\d{2}-tests-(pr-plan|review)\.md$/.test(
         relPath,
       )
     )
       return true;
     if (
-      relPath.startsWith("docs/integrations/") &&
+      relPath.startsWith("docs/02-engineering/integrations/") &&
       relPath.endsWith("-roadmap.md")
     )
       return true;

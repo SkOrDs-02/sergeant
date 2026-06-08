@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-Operational runbook для maintainer-а Sergeant. Описує **щотижневу рутину**, **триаж duplicate-PR-ів** з Dependabot (per [ADR-0044](../../adr/0044-renovate-vs-dependabot.md)), **escalation-шлях** на випадок Mend Renovate downtime, і **monthly hygiene**. Контриб'юторам потрібна дочірня дока [`docs/integrations/renovate-usage.md`](../../integrations/renovate-usage.md) — вона про «що приходитиме і як я review-ю». Ця — про «коли і чому щось не приходить».
+Operational runbook для maintainer-а Sergeant. Описує **щотижневу рутину**, **триаж duplicate-PR-ів** з Dependabot (per [ADR-0044](../../adr/0044-renovate-vs-dependabot.md)), **escalation-шлях** на випадок Mend Renovate downtime, і **monthly hygiene**. Контриб'юторам потрібна дочірня дока [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md) — вона про «що приходитиме і як я review-ю». Ця — про «коли і чому щось не приходить».
 
 ## Розподіл ролей з Dependabot
 
@@ -121,7 +121,7 @@ Per ADR-0044, Dependabot піднімає security-PR-и daily. Воркфлоу
 - [`renovate.json`](../../../renovate.json) — конфіг Renovate.
 - [`.github/dependabot.yml`](../../../.github/dependabot.yml) — конфіг Dependabot (security-only npm + github-actions/docker overlap).
 - [`.github/workflows/dependabot-automerge.yml`](../../../.github/workflows/dependabot-automerge.yml) — auto-merge patch-only npm + github-actions.
-- [`docs/integrations/renovate-usage.md`](../../integrations/renovate-usage.md) — гід контриб'ютора (review-cheatsheet, FAQ).
+- [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md) — гід контриб'ютора (review-cheatsheet, FAQ).
 - [`docs/security/hardening/H2-dependabot.md`](../../security/hardening/H2-dependabot.md) — Sprint 1 setup card (Dependabot scope-reduction).
 - [`docs/security/nightly-audit.md`](../../security/nightly-audit.md) — реактивна частина (`pnpm audit` + OSV-Scanner).
 - [`docs/security/vulnerability-sla.md`](../../security/vulnerability-sla.md) — SLA для security-bumps.

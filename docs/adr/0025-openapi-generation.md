@@ -8,7 +8,7 @@
 - **Related:**
   - [`packages/shared/src/openapi/`](../../packages/shared/src/openapi) — `registry.ts`, `routes.ts`, `index.ts`.
   - [`packages/shared/src/schemas/api.ts`](../../packages/shared/src/schemas/api.ts) — canonical zod-схеми (single source of truth).
-  - [`docs/api/openapi.json`](../api/openapi.json) — згенерований spec (committed).
+  - [`docs/02-engineering/api/openapi.json`](../02-engineering/api/openapi.json) — згенерований spec (committed).
   - [`scripts/api/generate-openapi.mjs`](../../scripts/api/generate-openapi.mjs) — generator.
   - [`scripts/api/check-openapi-fresh.mjs`](../../scripts/api/check-openapi-fresh.mjs) — CI freshness check.
   - `.github/workflows/openapi-freshness.yml` — PR gate (додасть user manually після merge цього PR; шаблон у тілі цього ADR).
@@ -19,7 +19,7 @@
 
 ## 0. TL;DR
 
-Замість руками синхронізувати `apps/server` ↔ `packages/api-client` ↔ snapshot-тести, маємо одне джерело правди (`packages/shared/src/schemas/api.ts`) і автогенерований OpenAPI 3.1 у `docs/api/openapi.json`. CI gate (`openapi-freshness.yml`) падає, якщо коммітнутий spec відстає від zod-схем — drift у rule #3 ловиться автоматично.
+Замість руками синхронізувати `apps/server` ↔ `packages/api-client` ↔ snapshot-тести, маємо одне джерело правди (`packages/shared/src/schemas/api.ts`) і автогенерований OpenAPI 3.1 у `docs/02-engineering/api/openapi.json`. CI gate (`openapi-freshness.yml`) падає, якщо коммітнутий spec відстає від zod-схем — drift у rule #3 ловиться автоматично.
 
 ---
 
@@ -43,8 +43,8 @@
    - `registry.ts` — кожна named-схема дістає `id` через `z.<schema>.meta({ id })`. Це зод-нативний механізм у v4 (нема runtime-prototype-патчів, нема CJS/ESM compat-issues).
    - `routes.ts` — статичний каталог endpoint-ів (path → method → schema). Mapping витягнутий зі списку `validateBody(...)`-викликів у `apps/server/src/modules/**`.
    - `index.ts` — `buildOpenApiDocument()` через `zod-openapi@^5.4` бібліотеку.
-3. **Generator** — `scripts/api/generate-openapi.mjs` через `tsx/esm/api`. Пише `docs/api/openapi.json` (детермінований 2-space JSON + trailing newline).
-4. **CI gate** — `.github/workflows/openapi-freshness.yml` запускає `pnpm api:check-openapi` (regenerates і `git diff`). Trigger: будь-яка зміна у `packages/shared/src/schemas/`, `packages/shared/src/openapi/`, `docs/api/openapi.json`, `scripts/api/`.
+3. **Generator** — `scripts/api/generate-openapi.mjs` через `tsx/esm/api`. Пише `docs/02-engineering/api/openapi.json` (детермінований 2-space JSON + trailing newline).
+4. **CI gate** — `.github/workflows/openapi-freshness.yml` запускає `pnpm api:check-openapi` (regenerates і `git diff`). Trigger: будь-яка зміна у `packages/shared/src/schemas/`, `packages/shared/src/openapi/`, `docs/02-engineering/api/openapi.json`, `scripts/api/`.
 5. **Spec коммітимо** — це зручно для рев'ю (diff показує точну зміну API), для зовнішніх інтеграторів і для не-CI запитів (`curl`/`docs`).
 
 ## 3. Що НЕ робимо в Phase 1 (цей PR)
@@ -72,7 +72,7 @@
 **Позитивні:**
 
 - **Drift impossible**: PR що змінює zod-схему, але не оновив `openapi.json` — fail у CI. Аналогічно для нового endpoint-а без запису в `routes.ts`.
-- **External docs**: `docs/api/openapi.json` придатний для імпорту в Postman/Insomnia/Swagger UI без додаткового build-step.
+- **External docs**: `docs/02-engineering/api/openapi.json` придатний для імпорту в Postman/Insomnia/Swagger UI без додаткового build-step.
 - **SDK foundation**: коли треба буде Phase 2 (api-client codegen), spec уже є.
 - **Review UX**: PR diff показує semantic API change у JSON-форматі.
 
@@ -97,7 +97,7 @@ pnpm api:generate-openapi
 pnpm api:check-openapi
 
 # Дивитись зміни:
-git diff docs/api/openapi.json
+git diff docs/02-engineering/api/openapi.json
 ```
 
 ## 8. Workflow-шаблон (потребує `workflow` OAuth scope для коміту)
@@ -112,7 +112,7 @@ on:
     paths:
       - "packages/shared/src/schemas/**"
       - "packages/shared/src/openapi/**"
-      - "docs/api/openapi.json"
+      - "docs/02-engineering/api/openapi.json"
       - "scripts/api/**"
       - ".github/workflows/openapi-freshness.yml"
   push:
@@ -120,7 +120,7 @@ on:
     paths:
       - "packages/shared/src/schemas/**"
       - "packages/shared/src/openapi/**"
-      - "docs/api/openapi.json"
+      - "docs/02-engineering/api/openapi.json"
       - "scripts/api/**"
 
 permissions:
@@ -132,7 +132,7 @@ concurrency:
 
 jobs:
   check:
-    name: docs/api/openapi.json ≡ zod-schemas
+    name: docs/02-engineering/api/openapi.json ≡ zod-schemas
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd

@@ -74,7 +74,7 @@
 
 - `vercel.json:30` — COEP header
 - `apps/web/tests/e2e/security-headers.spec.ts` — новий
-- `docs/notes/spikes/2026-05-coep-audit.md` — новий
+- `docs/02-engineering/notes/spikes/2026-05-coep-audit.md` — новий
 
 ## Refs
 

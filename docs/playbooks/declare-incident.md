@@ -1,6 +1,6 @@
 # Playbook: Оголошення інциденту
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** продакшн-проблема вийшла за межі alert triage і вимагає явної severity, owner-а, шляху мітигації або координації rollback-у.
@@ -13,7 +13,7 @@
 ## Required context
 
 - Спершу `sergeant-start-here`, потім `sergeant-deploy-and-observability`.
-- Перечитати [incident-severity-policy.md](../governance/incident-severity-policy.md) і [service-catalog.md](../architecture/service-catalog.md).
+- Перечитати [incident-severity-policy.md](../governance/incident-severity-policy.md) і [service-catalog.md](../02-engineering/architecture/service-catalog.md).
 
 ## Steps
 

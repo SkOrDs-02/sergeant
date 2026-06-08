@@ -6,8 +6,8 @@
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/integrations/railway-vercel.md`](../integrations/railway-vercel.md) — operator-орієнтована how-to для обох платформ.
-  - [`docs/architecture/platforms.md`](../architecture/platforms.md) — стан web / native / capacitor-shell поверхонь.
+  - [`docs/02-engineering/integrations/railway-vercel.md`](../02-engineering/integrations/railway-vercel.md) — operator-орієнтована how-to для обох платформ.
+  - [`docs/02-engineering/architecture/platforms.md`](../02-engineering/architecture/platforms.md) — стан web / native / capacitor-shell поверхонь.
   - [`apps/web/vercel.json`](../../apps/web/vercel.json) — `installCommand`, `outputDirectory`, headers, rewrites.
   - [`railway.toml`](../../railway.toml), [`Dockerfile.api`](../../Dockerfile.api) — build-контракт Railway.
   - [`apps/web/middleware.ts`](../../apps/web/middleware.ts) — Edge middleware, що проксіює `/api/*` → Railway.
@@ -99,7 +99,7 @@ Edge middleware на Vercel ([`apps/web/middleware.ts`](../../apps/web/middlewar
 
 - `outputDirectory: "../server/dist"` — нестандартний шлях, задокументований у
   [`apps/web/vercel.json`](../../apps/web/vercel.json) і
-  [`docs/architecture/platforms.md`](../architecture/platforms.md#1-web--pwa--appsweb). Vite бандл
+  [`docs/02-engineering/architecture/platforms.md`](../02-engineering/architecture/platforms.md#1-web--pwa--appsweb). Vite бандл
   навмисно кладеться у server-пакет, щоб Capacitor-shell і Railway-бекенд
   читали з одного місця.
 

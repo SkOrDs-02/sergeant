@@ -11,8 +11,8 @@
 > [`docs/01-product/launch/business/04-launch-readiness.md`](../business/04-launch-readiness.md) ·
 > [`docs/01-product/launch/business/02-go-to-market.md`](../business/02-go-to-market.md) ·
 > [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../product-os/ftux-master-tracker.md) ·
-> [`docs/architecture/platforms.md`](../../../architecture/platforms.md) ·
-> [`docs/architecture/service-catalog.md`](../../../architecture/service-catalog.md) ·
+> [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) ·
+> [`docs/02-engineering/architecture/service-catalog.md`](../../../02-engineering/architecture/service-catalog.md) ·
 > [`docs/playbooks/release.md`](../../../playbooks/release.md) ·
 > [`docs/initiatives/0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md) ·
 > [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../../adr/0052-mobile-strategy-capacitor-primary.md)
@@ -31,13 +31,13 @@ Sergeant фактично вже **технічно деплоїться у пр
 >
 > «Real-user tested?» = чи проходили flow зовнішні (не founder-/Devin-) користувачі.
 
-| Surface                        | Deploy ready?                                  | Auth ready?                                             | Observability?                  | Release playbook?                                                                                                            | Real-user tested?        | Top blockers                                                                                                         |
-| ------------------------------ | ---------------------------------------------- | ------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| **Web** (`apps/web`)           | ✅ Vercel prod + preview-per-PR                | 🟡 Email/password live; Apple/Google — 0010 §4.3        | ✅ Sentry + PostHog + CSP-RO    | ✅ [`release.md §1`](../../../playbooks/release.md#1-web--api)                                                               | 🟥 (0 paying)            | Privacy/ToS pages, Stripe billing, Apple/Google SSO, cookie banner                                                   |
-| **Server** (`apps/server`)     | ✅ Railway `Dockerfile.api`                    | ✅ Better Auth (cookie + bearer)                        | ✅ Sentry + Prom + alert-bot    | ✅ [`release.md §1`](../../../playbooks/release.md#1-web--api)                                                               | n/a (B2C-фронт)          | `subscriptions` таблиця + Stripe webhook handlers, прод APNs/FCM creds, Voyage cost alerts уже є                     |
-| **Capacitor** (`mobile-shell`) | 🟡 Android signing live; iOS — secrets pending | ✅ Bearer через Keychain/EncryptedSharedPrefs (PR #505) | 🟡 web-side observability reuse | ✅ [`release.md §2`](../../../playbooks/release.md#2-mobile-shell-capacitor) + [`mobile/shell.md`](../../../mobile/shell.md) | 🟥                       | Apple secrets для iOS release CI, Play store listing assets, internal track config                                   |
-| **Native** (`apps/mobile`)     | 🟡 EAS `production` profile є, без submit      | ✅ Better Auth Expo + bearer                            | 🟡 PostHog wired, Sentry TBD    | ✅ [`release.md §3`](../../../playbooks/release.md#3-expo) + [`mobile/overview.md`](../../../mobile/overview.md)             | 🟥 (internal dev-client) | Store-listing (icons, privacy manifest, data safety), photo-AI / pantry parity, Expo flaky-test green 20/20 baseline |
-| **Landing**                    | 🟥 окремого сайту немає                        | n/a                                                     | n/a                             | n/a                                                                                                                          | 🟥                       | Рішення «окремий лендінг vs `/welcome`», домен `sergeant.com.ua`, SEO/OG, demo-video                                 |
+| Surface                        | Deploy ready?                                  | Auth ready?                                             | Observability?                  | Release playbook?                                                                                                                           | Real-user tested?        | Top blockers                                                                                                         |
+| ------------------------------ | ---------------------------------------------- | ------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **Web** (`apps/web`)           | ✅ Vercel prod + preview-per-PR                | 🟡 Email/password live; Apple/Google — 0010 §4.3        | ✅ Sentry + PostHog + CSP-RO    | ✅ [`release.md §1`](../../../playbooks/release.md#1-web--api)                                                                              | 🟥 (0 paying)            | Privacy/ToS pages, Stripe billing, Apple/Google SSO, cookie banner                                                   |
+| **Server** (`apps/server`)     | ✅ Railway `Dockerfile.api`                    | ✅ Better Auth (cookie + bearer)                        | ✅ Sentry + Prom + alert-bot    | ✅ [`release.md §1`](../../../playbooks/release.md#1-web--api)                                                                              | n/a (B2C-фронт)          | `subscriptions` таблиця + Stripe webhook handlers, прод APNs/FCM creds, Voyage cost alerts уже є                     |
+| **Capacitor** (`mobile-shell`) | 🟡 Android signing live; iOS — secrets pending | ✅ Bearer через Keychain/EncryptedSharedPrefs (PR #505) | 🟡 web-side observability reuse | ✅ [`release.md §2`](../../../playbooks/release.md#2-mobile-shell-capacitor) + [`mobile/shell.md`](../../../02-engineering/mobile/shell.md) | 🟥                       | Apple secrets для iOS release CI, Play store listing assets, internal track config                                   |
+| **Native** (`apps/mobile`)     | 🟡 EAS `production` profile є, без submit      | ✅ Better Auth Expo + bearer                            | 🟡 PostHog wired, Sentry TBD    | ✅ [`release.md §3`](../../../playbooks/release.md#3-expo) + [`mobile/overview.md`](../../../02-engineering/mobile/overview.md)             | 🟥 (internal dev-client) | Store-listing (icons, privacy manifest, data safety), photo-AI / pantry parity, Expo flaky-test green 20/20 baseline |
+| **Landing**                    | 🟥 окремого сайту немає                        | n/a                                                     | n/a                             | n/a                                                                                                                                         | 🟥                       | Рішення «окремий лендінг vs `/welcome`», домен `sergeant.com.ua`, SEO/OG, demo-video                                 |
 
 ---
 
@@ -45,7 +45,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 ### 3.1 Web (`apps/web`)
 
-- **Стан:** `active` за [`apps-status-matrix.md`](../../../architecture/apps-status-matrix.md). React 18 + Vite 8 PWA, Tailwind 4, TanStack Query, Better Auth cookie-сесії, Service Worker (`src/sw.ts`). Деплой — Vercel (статика + Edge Middleware-проксі на Railway API), per-PR preview-середовища.
+- **Стан:** `active` за [`apps-status-matrix.md`](../../../02-engineering/architecture/apps-status-matrix.md). React 18 + Vite 8 PWA, Tailwind 4, TanStack Query, Better Auth cookie-сесії, Service Worker (`src/sw.ts`). Деплой — Vercel (статика + Edge Middleware-проксі на Railway API), per-PR preview-середовища.
 - **Auth:** реалізовано email/password через Better Auth (`AuthContext` у [`apps/web/src/core/auth/AuthContext.tsx`](../../../../apps/web/src/core/auth/AuthContext.tsx)), UA-помилки мапляться за стабільним Better Auth `error.code`. **Apple + Google SSO ще не залиті** — це Phase 4.3 ініціативи [`0010-revenue-first-launch.md`](../../../initiatives/0010-revenue-first-launch.md) (signup-friction blocker).
 - **FTUX:** `WelcomeScreen` + `OnboardingWizard` на `/welcome`, lazy-loaded chunk; demo-режим `?demo=1` через `seedDemoData/*`. За [`ftux-master-tracker.md`](../product-os/ftux-master-tracker.md): **27 з 35 sprint-items закрито** в `main`, 8-step PostHog activation funnel живе на web, D1/D7 dashboard зеленіє. Real-world conversion поки **TBD** (когорта стартувала ~2026-04-28).
 - **Observability:** Sentry ([`apps/web/src/core/observability/sentry.ts`](../../../../apps/web/src/core/observability/sentry.ts)) + PostHog (8 FTUX events + identify), Web Vitals, Lighthouse CI workflow заплановано (T5 у тех-боргу), `size-limit` уже у CI.
@@ -69,14 +69,14 @@ Sergeant фактично вже **технічно деплоїться у пр
 - **Готове:** bearer-auth у Keychain/EncryptedSharedPrefs (PR #505), native barcode (`@capacitor-mlkit/barcode-scanning`, PR #504), status-bar/splash/keyboard/deep-links (PR #506), native push (`@capacitor/push-notifications`, PR #512+#524), Android hardware-back → web-history. Deep-link bridge через `window.__sergeantShellNavigate`.
 - **Release pipeline:**
   - **Android:** [`.github/workflows/mobile-shell-android-release.yml`](../../../../.github/workflows/mobile-shell-android-release.yml) — повний AAB (Play) + APK (sideload) з `SERGEANT_RELEASE_*` env-secrets. Signing config у [`apps/mobile-shell/android/app/build.gradle`](../../../../apps/mobile-shell/android/app/build.gradle), ProGuard/R8 ввімкнено.
-  - **iOS:** [`.github/workflows/mobile-shell-ios-release.yml`](../../../../.github/workflows/mobile-shell-ios-release.yml) — **scaffold готовий**, але без Apple-секретів job логує `::warning::iOS release secrets not configured` і падає у unsigned-simulator-фолбек. Setup-контракт — [`docs/mobile/shell.md` § Release — iOS](../../../mobile/shell.md#release--ios).
+  - **iOS:** [`.github/workflows/mobile-shell-ios-release.yml`](../../../../.github/workflows/mobile-shell-ios-release.yml) — **scaffold готовий**, але без Apple-секретів job логує `::warning::iOS release secrets not configured` і падає у unsigned-simulator-фолбек. Setup-контракт — [`docs/02-engineering/mobile/shell.md` § Release — iOS](../../../02-engineering/mobile/shell.md#release--ios).
 - **Real-user testing:** 🟥 поки що нема — публічного TestFlight/Play Internal track-у не існує.
 - **Висновок:** як тільки web public launch відбудеться (legal + Stripe + домен), **Capacitor Android internal track реально випустити за 1–2 тижні** (build + store-listing). iOS — як тільки буде Apple Developer-акаунт + signing assets.
 
 ### 3.4 Native Expo (`apps/mobile`)
 
 - **Стан:** `active`, **internal dev-client** — готово до `eas build --profile development`, ще не для store. Expo SDK 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Better Auth Expo + bearer у `expo-secure-store`.
-- **Feature parity** (з [`platforms.md`](../../../architecture/platforms.md)): 18/22 рядків функціонально на parity з web; Hub voice (STT/TTS) — 🟡 (HubChat composer Phase 8 follow-up), Onboarding wizard — 🟡 (повний AI-customize крок Phase 7), Харчування — 🟡 (pantry/shopping/recipes/photo-AI).
+- **Feature parity** (з [`platforms.md`](../../../02-engineering/architecture/platforms.md)): 18/22 рядків функціонально на parity з web; Hub voice (STT/TTS) — 🟡 (HubChat composer Phase 8 follow-up), Onboarding wizard — 🟡 (повний AI-customize крок Phase 7), Харчування — 🟡 (pantry/shopping/recipes/photo-AI).
 - **Push:** native APNs/FCM через `expo-notifications`, `PushRegistrar` шле токени у `POST /api/v1/push/register` з ідемпотентним кешем.
 - **CI/tests:** Detox iOS + Android конфіги у CI (поки smoke-build), окремий [`mobile-flaky-verify.yml`](../../../../.github/workflows/mobile-flaky-verify.yml) воркфлоу — 20-run baseline.
 - **EAS:** [`eas.json`](../../../../apps/mobile/eas.json) має `development` / `preview` / `production` profile-и, `production.android.buildType = app-bundle`, `production.distribution = store`. **Submit-secret-и не налаштовані**, store-listing-у не існує (іконки, privacy manifest iOS, data safety Android).
@@ -171,7 +171,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 ### CP-3 → Capacitor closed beta (week 6–8)
 
-- **Entry:** CP-2 exit + Apple Developer-акаунт + Play Console-акаунт активний, Android signing keystore у GitHub Actions secrets (`SERGEANT_RELEASE_*`), Apple iOS secrets налаштовані ([`mobile/shell.md § Release — iOS`](../../../mobile/shell.md#release--ios)), store-listing assets (іконки 1024×1024, screenshots, short description).
+- **Entry:** CP-2 exit + Apple Developer-акаунт + Play Console-акаунт активний, Android signing keystore у GitHub Actions secrets (`SERGEANT_RELEASE_*`), Apple iOS secrets налаштовані ([`mobile/shell.md § Release — iOS`](../../../02-engineering/mobile/shell.md#release--ios)), store-listing assets (іконки 1024×1024, screenshots, short description).
 - **Exit:** AAB у Play Internal Track + IPA у TestFlight internal, 5–15 internal-testers пройшли signup → demo → first-entry, 0 crashes у Sentry за ≥3 дні.
 - **Surface flags:** native push prod creds (`APNS_BUNDLE_ID=com.sergeant.shell`) у server-env, OAuth deep-links через `ASWebAuthenticationSession` працюють.
 
@@ -182,7 +182,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 ### CP-5 → Native (Expo) closed (week 12–16)
 
-- **Entry:** CP-4 exit + Expo feature parity ≥20/22 рядків у [`platforms.md`](../../../architecture/platforms.md) (наразі 18/22), `eas build --profile production` зелений для iOS+Android, mobile-flaky-verify 20/20 baseline зелений.
+- **Entry:** CP-4 exit + Expo feature parity ≥20/22 рядків у [`platforms.md`](../../../02-engineering/architecture/platforms.md) (наразі 18/22), `eas build --profile production` зелений для iOS+Android, mobile-flaky-verify 20/20 baseline зелений.
 - **Exit:** Internal Expo TestFlight + Play Internal Track build-и роздані 5–15 testers, ≥7 днів стабільності, dual-track decision-tree з ADR-0052 переоцінено (тригер — ≥18/22 ✅).
 
 ### CP-6 → Native (Expo) public (week 16–20+)

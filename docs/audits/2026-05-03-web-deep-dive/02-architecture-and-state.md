@@ -177,7 +177,7 @@ ShortcutRegistryProvider
 
 `apps/server/src/app.ts:118-200` — factory не читає `process.env`, не викликає `listen()`, повертає налаштований Express. Тестується trivially у Vitest. **Це лишити як еталон** для майбутніх `createWorker`/`createSocketApp`.
 
-> **Що зробити правильно зараз.** Документувати цей паттерн в `docs/architecture/server-factory.md` як «**The Sergeant server factory contract**» — щоб майбутні нові сервери (gRPC, WebSocket, worker) дотримувались.
+> **Що зробити правильно зараз.** Документувати цей паттерн в `docs/02-engineering/architecture/server-factory.md` як «**The Sergeant server factory contract**» — щоб майбутні нові сервери (gRPC, WebSocket, worker) дотримувались.
 
 ---
 
@@ -209,7 +209,7 @@ ShortcutRegistryProvider
 
 **Recommendation.**
 
-- Документувати **двоконтурний запис-pattern** окремо в `docs/architecture/state-write-paths.md`:
+- Документувати **двоконтурний запис-pattern** окремо в `docs/02-engineering/architecture/state-write-paths.md`:
   - Контур 1 (UI): RQ `useMutation` → `apiClient.x.create()` → invalidate.
   - Контур 2 (AI tool-call): direct `apiClient.x.create()` → CloudSync queue → invalidate via event.
 - Додати ESLint custom rule (через `sergeant-design`-plugin): «JSX-Component, що містить `apiClient.<module>.<verb>` без `useMutation` обгортки → warning, з allowlist у `chatActions/`».

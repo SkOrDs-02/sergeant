@@ -47,7 +47,7 @@ Cтатичний аудит Fizruk Part 2 виявив **6 high-severity** і *
 **Lines:** L17–L23
 
 **Description.**
-`weekStartMs` будує week-bucket через `new Date(d)` + `getDay()` + `setHours(0,0,0,0)` — це native JS, прив'язаний до системного таймзона браузера. Domain invariants ([`docs/architecture/domain-invariants.md`](../architecture/domain-invariants.md)) явно фіксують **Europe/Kyiv** як єдиний правильний таймзон для day-keys і week-bucket-ів.
+`weekStartMs` будує week-bucket через `new Date(d)` + `getDay()` + `setHours(0,0,0,0)` — це native JS, прив'язаний до системного таймзона браузера. Domain invariants ([`docs/02-engineering/architecture/domain-invariants.md`](../02-engineering/architecture/domain-invariants.md)) явно фіксують **Europe/Kyiv** як єдиний правильний таймзон для day-keys і week-bucket-ів.
 
 ```ts
 function weekStartMs(d: number | string | Date) {

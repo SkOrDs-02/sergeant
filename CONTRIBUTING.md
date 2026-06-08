@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/playbooks/README.md](./docs/playbooks/README.md).
@@ -177,7 +177,7 @@ Husky `pre-commit` запускає два кроки послідовно:
 
 Скрипт `scripts/staged-typecheck.mjs` групує staged TS/TSX за найближчим `tsconfig.json` (apps/web, apps/server, packages/\*…) і викликає `tsc-files --noEmit --skipLibCheck` під cwd кожного sub-project — це уникнення повного `pnpm typecheck` (16 турбо-task-ів) на кожен коміт. На гарячому кеші проходить за 3–8 сек на 10–20 staged файлів. На холодному (після `git pull` зі змінами в `node_modules` або `tsconfig`) — 15–30 сек. Якщо typecheck падає на staged-файлі, виправ помилку — `--no-verify` залишається забороненим.
 
-Хук обгорнуто wrapper-ом [`scripts/pre-commit-timing.mjs`](./scripts/pre-commit-timing.mjs), що міряє wall-clock час і друкує markdown summary одразу після commit-у. Історичний p50/p95 — `pnpm pre-commit:timings`. Деталі (env-контракт `SERGEANT_TIMING_LOG`, opt-out `SERGEANT_SKIP_TIMING=1`) — [`docs/development/pre-commit-timing.md`](./docs/development/pre-commit-timing.md).
+Хук обгорнуто wrapper-ом [`scripts/pre-commit-timing.mjs`](./scripts/pre-commit-timing.mjs), що міряє wall-clock час і друкує markdown summary одразу після commit-у. Історичний p50/p95 — `pnpm pre-commit:timings`. Деталі (env-контракт `SERGEANT_TIMING_LOG`, opt-out `SERGEANT_SKIP_TIMING=1`) — [`docs/02-engineering/development/pre-commit-timing.md`](./docs/02-engineering/development/pre-commit-timing.md).
 
 Перед відкриттям PR:
 

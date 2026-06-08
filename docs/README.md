@@ -34,7 +34,7 @@ Main documentation index for Sergeant.
 - Repo contract and hard rules: [AGENTS.md](../AGENTS.md)
 - Agent skills catalog: [agents/agent-skills-catalog.md](./agents/agent-skills-catalog.md)
 - Playbook catalog: [playbooks/playbook-catalog.md](./playbooks/playbook-catalog.md)
-- Service catalog: [architecture/service-catalog.md](./architecture/service-catalog.md)
+- Service catalog: [architecture/service-catalog.md](./02-engineering/architecture/service-catalog.md)
 - Feature flag registry: [feature-flags.md](./governance/feature-flags.md)
 - Security access system: [security/access-policy.md](./security/access-policy.md)
 
@@ -52,27 +52,27 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | [`adr/`](./adr/README.md)                                   | Architectural decisions and tradeoffs                                                 |
 | [`agents/`](./agents/README.md)                             | Agent operating system, routing catalog, workflows                                    |
-| [`api/`](./api/README.md)                                   | OpenAPI, API contracts, generated artifacts                                           |
-| [`architecture/`](./architecture/README.md)                 | Repo map, runtime surfaces, platform architecture                                     |
+| [`api/`](./02-engineering/api/README.md)                    | OpenAPI, API contracts, generated artifacts                                           |
+| [`architecture/`](./02-engineering/architecture/README.md)  | Repo map, runtime surfaces, platform architecture                                     |
 | [`copy/`](./01-product/copy/README.md)                      | UA-copy tone-of-voice rules; reference for every Cyrillic JSX literal                 |
 | [`deploy/`](./03-operations/deploy/README.md)               | Deploy walkthroughs (Railway, Vercel, console, etc.)                                  |
 | [`design/`](./05-design/design/README.md)                   | Design system, brand, accents, dark mode, UI patterns                                 |
-| [`development/`](./development/README.md)                   | Local dev-loop how-tos (ESLint config, local Postgres, pre-commit timing)             |
+| [`development/`](./02-engineering/development/README.md)    | Local dev-loop how-tos (ESLint config, local Postgres, pre-commit timing)             |
 | [`governance/`](./governance/README.md)                     | Hard rules registry, policy docs, feature-flag registry, link-check allowlist         |
 | [`i18n/`](./05-design/i18n/README.md)                       | i18n readiness foundation (UA-only today; lightweight scaffolding for future locales) |
-| [`integrations/`](./integrations/README.md)                 | Third-party integrations (Monobank, Voyage, Renovate, …)                              |
+| [`integrations/`](./02-engineering/integrations/README.md)  | Third-party integrations (Monobank, Voyage, Renovate, …)                              |
 | [`marketing/`](./01-product/marketing/README.md)            | Pre-launch GTM execution plans (reference; reconciled against shipped landing)        |
-| [`mobile/`](./mobile/README.md)                             | Expo/mobile strategy and migration docs                                               |
-| [`notes/`](./notes/README.md)                               | Design spikes and exploratory engineering notes                                       |
+| [`mobile/`](./02-engineering/mobile/README.md)              | Expo/mobile strategy and migration docs                                               |
+| [`notes/`](./02-engineering/notes/README.md)                | Design spikes and exploratory engineering notes                                       |
 | [`observability/`](./03-operations/observability/README.md) | Alerts, SLOs, logs, engineering metrics                                               |
 | [`ops/`](./03-operations/ops/README.md)                     | Recurring ops runbooks (Renovate maintainer workflow, dependency hygiene)             |
 | [`playbooks/`](./playbooks/README.md)                       | Canonical execution recipes for repeatable tasks                                      |
 | [`postmortems/`](./03-operations/postmortems/README.md)     | Incident reviews and follow-up memory                                                 |
 | [`runbooks/`](./03-operations/runbooks/README.md)           | DR-grade operational runbooks (DB backup/restore, encryption key rotation, …)         |
 | [`security/`](./security/README.md)                         | Security policy, access governance, recovery, and audit docs                          |
-| [`testing/`](./testing/README.md)                           | Testing strategy meta-docs (mutation testing, layer matrix, threshold-is)             |
+| [`testing/`](./02-engineering/testing/README.md)            | Testing strategy meta-docs (mutation testing, layer matrix, threshold-is)             |
 | [`ui/`](./05-design/ui/README.md)                           | Cross-cutting UI behaviour policy (keyboard shortcuts registry, toast policy)         |
-| [`web/`](./web/README.md)                                   | `apps/web` platform deep-dives (Service Worker update strategy)                       |
+| [`web/`](./02-engineering/web/README.md)                    | `apps/web` platform deep-dives (Service Worker update strategy)                       |
 
 ### Trackers (multi-PR series, registries, lifecycle-managed work)
 

@@ -64,7 +64,7 @@
 ### Test stack
 
 - Vitest (units), Playwright (e2e), Testcontainers (server integration), MSW (network mocking).
-- Mutation testing (Stryker) — видалено разом з CloudSync v1 sunset (#052b); explicit decision-record присутній у [`docs/testing/README.md:12`](../../testing/README.md), [`2026-05-05-tests-review.md:40`](../../testing/2026-05-05-tests-review.md) і ADR-0020:235. Закрите (див. §[Truly outstanding](#truly-outstanding) item D2 ✅).
+- Mutation testing (Stryker) — видалено разом з CloudSync v1 sunset (#052b); explicit decision-record присутній у [`docs/02-engineering/testing/README.md:12`](../../02-engineering/testing/README.md), [`2026-05-05-tests-review.md:40`](../../02-engineering/testing/2026-05-05-tests-review.md) і ADR-0020:235. Закрите (див. §[Truly outstanding](#truly-outstanding) item D2 ✅).
 
 ## Раніше виявлені «гарячі точки» — closure-таблиця
 
@@ -85,7 +85,7 @@
 | AI Memory silent no-op при відсутньому `VOYAGE_API_KEY` (P2)                   | **By-design**                      | `AI_MEMORY_ENABLED=false` за замовчуванням — master-switch. Activation runbook вимагає key. Fail-loud guard — D3.                                                                                         |
 | `audit-exception` процес (P2)                                                  | **Closed**                         | [`docs/security/audit-exceptions.md`](../../security/audit-exceptions.md) існує; SLA + nightly-audit у тому ж розділі.                                                                                    |
 | Visual-regression pgvector fallback (P2)                                       | **Tracked в pr-plan-testing-devx** | див. [planning/pr-plan-testing-devx-2026-05.md](../../planning/pr-plan-testing-devx-2026-05.md).                                                                                                          |
-| Stryker removal decision-record (P2)                                           | **Closed**                         | Already covered: `docs/testing/README.md:12`, `2026-05-05-tests-review.md:40`, ADR-0020:235 містять explicit decision. Підтверджено second-pass executor 2026-05-15 — див. D2 ✅.                         |
+| Stryker removal decision-record (P2)                                           | **Closed**                         | Already covered: `docs/02-engineering/testing/README.md:12`, `2026-05-05-tests-review.md:40`, ADR-0020:235 містять explicit decision. Підтверджено second-pass executor 2026-05-15 — див. D2 ✅.          |
 | Admin seed-скрипт (P2)                                                         | **By-design (Better Auth)**        | Перша адмін-учетка створюється через web-форму + manual DB-update. Якщо команда хоче формалізувати — окремий PR.                                                                                          |
 
 ## Truly outstanding
@@ -108,8 +108,8 @@
 
 **Resolution:** Explicit decision вже зафіксовано у трьох канонічних місцях:
 
-- [`docs/testing/README.md:12`](../../testing/README.md) — короткий decision-record у каноні testing.
-- [`docs/testing/2026-05-05-tests-review.md:40`](../../testing/2026-05-05-tests-review.md) — historical context у tests-review.
+- [`docs/02-engineering/testing/README.md:12`](../../02-engineering/testing/README.md) — короткий decision-record у каноні testing.
+- [`docs/02-engineering/testing/2026-05-05-tests-review.md:40`](../../02-engineering/testing/2026-05-05-tests-review.md) — historical context у tests-review.
 - ADR-0020:235 — formal decision у ADR.
 
 Жодних подальших дій не потрібно.

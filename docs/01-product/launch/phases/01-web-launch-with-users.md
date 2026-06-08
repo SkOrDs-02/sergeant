@@ -16,7 +16,7 @@
 > - [`business/03-services-and-toolstack.md`](../business/03-services-and-toolstack.md) — стек, бюджет, week-by-week tooling
 > - [`product-os/ftux-master-tracker.md`](../product-os/ftux-master-tracker.md) — FTUX SSOT, sprint registry, SLO
 > - [`product-os/paywall-implementation-plan.md`](../product-os/paywall-implementation-plan.md) — PR-20 gate, three paths
-> - [`architecture/platforms.md`](../../../architecture/platforms.md) — web ↔ shell ↔ RN feature-parity
+> - [`architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — web ↔ shell ↔ RN feature-parity
 > - [`playbooks/release.md`](../../../playbooks/release.md) — canonical release flow
 > - [`governance/feature-flags.md`](../../../governance/feature-flags.md) — flag conventions
 > - [`observability/posthog-ftux-dashboards.md`](../../../03-operations/observability/posthog-ftux-dashboards.md) — funnel dashboards
@@ -900,7 +900,7 @@ Reasonable budget. Lemma: «якщо $50/міс рятує мене 2 годин
 Коли всі hard gates пройшли — створи `docs/01-product/launch/phases/02-capacitor-launch.md` як Phase 2 entry document. Включи:
 
 - Phase 1 retrospective (1 секція): «що ми дізнались про юзерів, фідбек patterns»
-- Web parity baseline (feature matrix): що в web є, що в shell поки немає (див. [`platforms.md` §0`](../../../architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn))
+- Web parity baseline (feature matrix): що в web є, що в shell поки немає (див. [`platforms.md` §0`](../../../02-engineering/architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn))
 - Capacitor-specific risks (ADR-0052 keeps shell primary; old ADR-0010 T₀/T₁/T₂ dates are historical only)
 - Initial Phase 2 timeline draft (≤ 8 тижнів типово)
 

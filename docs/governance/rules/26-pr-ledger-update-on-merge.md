@@ -17,7 +17,7 @@ Canonical docs that receive PR backlinks (whitelist enforced by [`scripts/ci/upd
 - `docs/playbooks/*.md` (excluding `INDEX.md`, `README.md`, `_TEMPLATE-*`)
 - `docs/governance/rules/*.md` (excluding `README.md`)
 
-`docs/audits/` and `docs/architecture/` are intentionally excluded — audits are snapshot-natured, architecture is already covered by Phase 3 drift-detectors.
+`docs/audits/` and `docs/02-engineering/architecture/` are intentionally excluded — audits are snapshot-natured, architecture is already covered by Phase 3 drift-detectors.
 
 ## Enforced by
 

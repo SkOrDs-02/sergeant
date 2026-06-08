@@ -28,7 +28,7 @@ cat .prettierignore | grep -E "docs|\.md"
 ```bash
 pnpm exec prettier --check '<target-glob>'
 # Приклади:
-pnpm exec prettier --check 'docs/mobile/react-native-migration.md'
+pnpm exec prettier --check 'docs/02-engineering/mobile/react-native-migration.md'
 pnpm exec prettier --check 'docs/**/*.md'
 ```
 

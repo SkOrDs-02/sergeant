@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/docs/generate-service-catalog.mjs
 //
-// Build a machine-readable mirror of `docs/architecture/service-catalog.md`
+// Build a machine-readable mirror of `docs/02-engineering/architecture/service-catalog.md`
 // by enumerating production surfaces from:
 //   - Dockerfile.api / Dockerfile.console / Dockerfile.openclaw-gateway
 //   - railway.toml / railway.console.toml / railway.openclaw-gateway.toml
@@ -39,7 +39,10 @@ const OUT_JSON = resolve(
   REPO_ROOT,
   "docs/governance/service-catalog.auto.json",
 );
-const VIEW_MD = resolve(REPO_ROOT, "docs/architecture/service-catalog.md");
+const VIEW_MD = resolve(
+  REPO_ROOT,
+  "docs/02-engineering/architecture/service-catalog.md",
+);
 const CODEOWNERS_PATH = resolve(REPO_ROOT, ".github/CODEOWNERS");
 
 const SCHEMA_VERSION = 1;

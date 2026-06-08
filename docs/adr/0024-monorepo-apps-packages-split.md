@@ -8,7 +8,7 @@
 - **Related:**
   - [`pnpm-workspace.yaml`](../../pnpm-workspace.yaml) — `packages: ["apps/*", "packages/*"]`.
   - [`AGENTS.md`](../../AGENTS.md) — module ownership map (рядки apps/_ + packages/_).
-  - [`docs/architecture/apps-status-matrix.md`](../architecture/apps-status-matrix.md) — поточний статус кожного app/package.
+  - [`docs/02-engineering/architecture/apps-status-matrix.md`](../02-engineering/architecture/apps-status-matrix.md) — поточний статус кожного app/package.
   - ADR-0023 — Turborepo як task-runner поверх цього split-у.
   - ADR-0009 — hosting-split (Railway/Vercel) — наслідок цього boundaries-вибору.
   - ADR-0010 — mobile dual-track (Capacitor + Expo) — пояснює `apps/mobile` + `apps/mobile-shell`.
@@ -182,7 +182,7 @@ ESLint resolver шукає `eslint-plugin-*` за naming convention.
 
 - **Cognitive overhead на старті.** Новий розробник побачить 13
   `package.json` і подумає "де ж справжній код?". Mitigation —
-  [`docs/architecture/apps-status-matrix.md`](../architecture/apps-status-matrix.md)
+  [`docs/02-engineering/architecture/apps-status-matrix.md`](../02-engineering/architecture/apps-status-matrix.md)
   - `AGENTS.md` ownership map.
 - **Dep-version drift.** Кожен `package.json` може мати свою версію React
   / TypeScript. Mitigation — `pnpm-workspace.yaml` overrides у root +

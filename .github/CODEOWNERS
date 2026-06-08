@@ -16,16 +16,16 @@
 # ── Documentation (governance paths: no secondary — intentional) ─────────────
 /docs/*.md                 @Skords-01
 /docs/adr/                 @Skords-01
-/docs/api/                 @Skords-01
-/docs/architecture/        @Skords-01
+/docs/02-engineering/api/                 @Skords-01
+/docs/02-engineering/architecture/        @Skords-01
 /docs/audits/              @Skords-01
 /docs/03-operations/deploy/              @Skords-01
 /docs/05-design/design/              @Skords-01
 /docs/governance/          @Skords-01
-/docs/integrations/        @Skords-01
+/docs/02-engineering/integrations/        @Skords-01
 /docs/01-product/launch/              @Skords-01
-/docs/mobile/              @Skords-01
-/docs/notes/               @Skords-01
+/docs/02-engineering/mobile/              @Skords-01
+/docs/02-engineering/notes/               @Skords-01
 /docs/03-operations/observability/       @Skords-01
 /docs/planning/            @Skords-01
 /docs/playbooks/           @Skords-01

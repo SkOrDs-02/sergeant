@@ -1,6 +1,6 @@
 # ADR-0060: Architecture diagrams — automation scope (workspace graph only)
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 - **Status:** Proposed
@@ -9,7 +9,7 @@
 - **Supersedes:** —
 - **Related:**
   - [`docs/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 4
-  - [`docs/architecture/diagrams/README.md`](../architecture/diagrams/README.md) — C4 model policy
+  - [`docs/02-engineering/architecture/diagrams/README.md`](../02-engineering/architecture/diagrams/README.md) — C4 model policy
   - [`docs/governance/symbol-index.json`](../governance/symbol-index.json) — input source (Phase 2)
   - [`docs/adr/0059-symbol-extraction-via-typescript-compiler-api.md`](./0059-symbol-extraction-via-typescript-compiler-api.md)
 
@@ -19,15 +19,15 @@
 
 Initiative 0014 §Phase 4 спочатку планував auto-gen C3 і C4 архітектурні діаграми з turbo graph + symbol-catalog (Phase 2). При підготовці імплементації виявилось:
 
-1. **Existing C3 diagrams ≠ component-per-service.** Файли [`c3-cloudsync.md`](../architecture/diagrams/c3-cloudsync.md) і [`c3-chat-tool-use.md`](../architecture/diagrams/c3-chat-tool-use.md) — це **feature-flow діаграми** з 50+ рядками editorial narrative (контракт tool_use ↔ tool_result, prompt-cache breakpoints, тестування, дані-залежності). Auto-gen стер би операційний контекст.
-2. **C4 explicitly excluded.** `docs/architecture/diagrams/README.md` фіксує «Не додавайте C4 рівень (Code) — TS типи й тестові снепшоти його замінюють». Це усвідомлене rule, не gap.
+1. **Existing C3 diagrams ≠ component-per-service.** Файли [`c3-cloudsync.md`](../02-engineering/architecture/diagrams/c3-cloudsync.md) і [`c3-chat-tool-use.md`](../02-engineering/architecture/diagrams/c3-chat-tool-use.md) — це **feature-flow діаграми** з 50+ рядками editorial narrative (контракт tool_use ↔ tool_result, prompt-cache breakpoints, тестування, дані-залежності). Auto-gen стер би операційний контекст.
+2. **C4 explicitly excluded.** `docs/02-engineering/architecture/diagrams/README.md` фіксує «Не додавайте C4 рівень (Code) — TS типи й тестові снепшоти його замінюють». Це усвідомлене rule, не gap.
 3. **Workspace-level dependency view відсутній.** Жодна з існуючих діаграм не показує `@sergeant/*` import-graph (workspaces × cross-imports). Це найочевидніший candidate для auto-gen — структурний, без editorial value, повністю derivable з Phase 2 даних.
 
 Без рішення Phase 4 або (а) ламає existing C3 діаграми, або (б) пише C4 проти policy, або (в) пропускає auto-gen цілком.
 
 ## Considered Options
 
-1. **Auto-gen workspace dependency graph as a new C3 diagram.** Додати `docs/architecture/diagrams/c3-workspaces.md` (auto-gen Mermaid LR-граф із `@sergeant/*` import-edges), не торкатись existing C3 / C4.
+1. **Auto-gen workspace dependency graph as a new C3 diagram.** Додати `docs/02-engineering/architecture/diagrams/c3-workspaces.md` (auto-gen Mermaid LR-граф із `@sergeant/*` import-edges), не торкатись existing C3 / C4.
 2. **Replace existing C3 with auto-gen versions.** Стерти editorial narrative; auto-gen лише структурний граф.
 3. **Add C4 (code-level) per original plan.** Вступити в конфлікт з README policy + не зрозуміла користь у local-first архітектурі з замінниками (TS типи + test snapshots).
 4. **Skip Phase 4 entirely.** Зекономити час, але втратити drift-detection для package graph (новий `@sergeant/<X>` без `c3-*.md` оновлення).
@@ -38,7 +38,7 @@ Initiative 0014 §Phase 4 спочатку планував auto-gen C3 і C4 а
 
 Конкретно:
 
-- **New file:** `docs/architecture/diagrams/c3-workspaces.md` (auto-gen, AUTO-GENERATED marker).
+- **New file:** `docs/02-engineering/architecture/diagrams/c3-workspaces.md` (auto-gen, AUTO-GENERATED marker).
 - **Generator:** `scripts/docs/generate-architecture-diagrams.mjs`.
 - **Input:** `docs/governance/symbol-index.json` (Phase 2 output). Кожен `package.exports[].usedBy[]` запис → файл-шлях; групування за workspace prefix (`apps/*`, `packages/*`, `tools/*`) → cross-workspace edges.
 - **Output content:**

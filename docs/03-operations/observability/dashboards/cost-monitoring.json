@@ -63,7 +63,7 @@
       "title": "env-vars.md (cost monitoring)",
       "tooltip": "How to configure *_MONTHLY_COST_USD env-vars",
       "type": "link",
-      "url": "https://github.com/Skords-01/Sergeant/blob/main/docs/integrations/env-vars.md#cost-monitoring-pr-33"
+      "url": "https://github.com/Skords-01/Sergeant/blob/main/docs/02-engineering/integrations/env-vars.md#cost-monitoring-pr-33"
     }
   ],
   "panels": [

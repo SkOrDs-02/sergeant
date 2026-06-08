@@ -8,16 +8,16 @@
 ## TL;DR
 
 - **12 PR-карток** — 8 Testing (unit / integration / contract / E2E / VRT / mutation / coverage / property-based) + 4 DevX (scripts, plop, husky, CI feedback loop, pnpm tasks).
-- **3 quick-wins (XS)** — script-alias-и, `CONTRIBUTING.md` оновлення, `docs/testing/README.md` cross-ref — кожен ≤ 50 LoC, можна злити паралельно з основним планом.
+- **3 quick-wins (XS)** — script-alias-и, `CONTRIBUTING.md` оновлення, `docs/02-engineering/testing/README.md` cross-ref — кожен ≤ 50 LoC, можна злити паралельно з основним планом.
 - **Дві стрічки sequencing** йдуть незалежно: Testing-стрічка (T-1 → T-8) і DevX-стрічка (D-1 → D-4). Між собою з'єднано лише T-6 (mutation) ↔ D-3 (parallel `pnpm check`) — `pnpm check --parallel` повинен з'явитись **до** того, як mutation-job додасть значущий час у CI matrix.
-- **Базова реальність:** 5-шарова піраміда [ADR-0020](../adr/0020-testing-pyramid.md) уже зафіксована, Anthropic mock-harness ([#2012](https://github.com/Skords-01/Sergeant/pull/2012)) і `apps/web/src/test/contract/barcode.contract.test.ts` уже у дереві — більшість пунктів _додають coverage в існуючий стек_, не вводять нових тулів. Винятки: T-6 (Stryker — повертаємо після retirement у `docs/testing/README.md`), T-8 (`fast-check` як новий devDep), D-1 (нові precommit-timing utilities).
+- **Базова реальність:** 5-шарова піраміда [ADR-0020](../adr/0020-testing-pyramid.md) уже зафіксована, Anthropic mock-harness ([#2012](https://github.com/Skords-01/Sergeant/pull/2012)) і `apps/web/src/test/contract/barcode.contract.test.ts` уже у дереві — більшість пунктів _додають coverage в існуючий стек_, не вводять нових тулів. Винятки: T-6 (Stryker — повертаємо після retirement у `docs/02-engineering/testing/README.md`), T-8 (`fast-check` як новий devDep), D-1 (нові precommit-timing utilities).
 
 ## Cross-refs
 
 - **Прожарка-джерело:** [`docs/audits/2026-05-13-testing-devx-roast.md`](../audits/2026-05-13-testing-devx-roast.md) — P0/P1/P2 з file:line та `Add/Change/Remove` діями.
 - **Архітектура тестового стека:** [`docs/adr/0020-testing-pyramid.md`](../adr/0020-testing-pyramid.md) — 5 шарів (unit / component / integration / a11y / smoke-E2E) + per-package coverage floors з 2pp буфером.
-- **Multi-wave план попередньої прожарки:** [`docs/testing/2026-05-05-tests-pr-plan.md`](../testing/2026-05-05-tests-pr-plan.md) — Wave A–G, ~50 PR-ів (статус `merged` для PR-T01..T06, T08, T31, T32, T39; outstanding для T07, T09+, T13–T22, T23–T27, T29–T30, T33–T38).
-- **Інвентар тестового стека:** [`docs/testing/2026-05-05-tests-review.md`](../testing/2026-05-05-tests-review.md) — per-app coverage % зрізу 2026-05-05.
+- **Multi-wave план попередньої прожарки:** [`docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`](../02-engineering/testing/2026-05-05-tests-pr-plan.md) — Wave A–G, ~50 PR-ів (статус `merged` для PR-T01..T06, T08, T31, T32, T39; outstanding для T07, T09+, T13–T22, T23–T27, T29–T30, T33–T38).
+- **Інвентар тестового стека:** [`docs/02-engineering/testing/2026-05-05-tests-review.md`](../02-engineering/testing/2026-05-05-tests-review.md) — per-app coverage % зрізу 2026-05-05.
 - **Operations runbooks (для smoke-E2E залежностей):**
   - [`docs/03-operations/runbooks/database-backup-restore.md`](../03-operations/runbooks/database-backup-restore.md) — Postgres seed/restore для Detox-offline-sync (T-4) і Playwright smoke (T-3).
   - [`docs/03-operations/runbooks/operations-runbook.md`](../03-operations/runbooks/operations-runbook.md) — incident playbook, у який T-6 додає mutation-tier-1 порушення як warn-channel.
@@ -28,7 +28,7 @@
 ## Конвенції
 
 - **Branch naming:** `devin/$(date +%s)-<short-name>` (AGENTS.md repo-конвенція).
-- **Owner placeholder:** `@Skords-01` (solo maintainer; secondary = TBD per AGENTS.md). Якщо PR делегується — заміняй `Owner` на real GitHub handle і онови `docs/architecture/module-ownership.md`.
+- **Owner placeholder:** `@Skords-01` (solo maintainer; secondary = TBD per AGENTS.md). Якщо PR делегується — заміняй `Owner` на real GitHub handle і онови `docs/02-engineering/architecture/module-ownership.md`.
 - **Priority levels (P0–P2):** успадковуємо від прожарки. P0 = blocker без обхідних шляхів; P1 = high-impact gap; P2 = nice-to-have, ризик ≤ medium.
 - **Size buckets:** S = ≤ 100 LoC, ≤ ½ дня. M = 100–300 LoC, 1–2 дні. L = 300–600 LoC, 3–5 днів. XS — у секції quick-wins (≤ 50 LoC).
 - **Acceptance — gate-style:** як CI job підтвердить «зроблено». Не «фіча працює», а «job X зелений / коли job X фейлить — діагностика з step summary».
@@ -86,11 +86,11 @@
 - **Acceptance:** `pnpm docs:check-links` зелений (нове внутрішнє посилання resolve-иться).
 - **Deps:** цей PR (план має бути merged перед QW-2).
 
-### QW-3 · `docs/testing/README.md` cross-ref на цей план
+### QW-3 · `docs/02-engineering/testing/README.md` cross-ref на цей план
 
 - **Status:** ✅ Виконано 2026-05-14 у [#2833](https://github.com/Skords-01/Sergeant/pull/2833) (devin/1778778027-qw3-testing-readme-crossref).
 - **P:** P2 · **Size:** XS · **Owner:** `@Skords-01`
-- **Файли:** `docs/testing/README.md` (нова bullet у секції «Cross-links»).
+- **Файли:** `docs/02-engineering/testing/README.md` (нова bullet у секції «Cross-links»).
 - **Scope:** додати посилання на `docs/planning/pr-plan-testing-devx-2026-05.md` після згадки про initiative 0009. Заодно — оновити `Last validated` header (через `scripts/docs/bump-last-validated.mjs` під час pre-commit).
 - **Acceptance:** `pnpm docs:check-links` зелений; `pnpm lint:tech-debt-freshness` не падає.
 - **Deps:** цей PR.
@@ -102,7 +102,7 @@
 ### T-1 · Server AI-tool unit suites (nutrition × 7 + openclaw + weekly-digest)
 
 - **Status:** ✅ Виконано — verified on main: `apps/server/src/modules/nutrition/` має 9 \*.test.ts (barcode, day-hint, day-plan, food-search, parse-pantry, photoMagicByte, recommend-recipes, shopping-list, week-plan).
-- **Items covered:** P1-2 з прожарки (`apps/server/src/modules/nutrition/{barcode-search,food-search,parse-pantry,log-meal,recall-meals,update-meal,delete-meal}.ts` + `apps/server/src/modules/openclaw/tools/*` + `apps/server/src/modules/digest/weekly-digest.ts` — coverage 0–15%). Відповідає Wave B (T09–T12) у `docs/testing/2026-05-05-tests-pr-plan.md`.
+- **Items covered:** P1-2 з прожарки (`apps/server/src/modules/nutrition/{barcode-search,food-search,parse-pantry,log-meal,recall-meals,update-meal,delete-meal}.ts` + `apps/server/src/modules/openclaw/tools/*` + `apps/server/src/modules/digest/weekly-digest.ts` — coverage 0–15%). Відповідає Wave B (T09–T12) у `docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`.
 - **Priority:** P1 · **Size:** L (~350 LoC tests + ~10 fixture файлів) · **Owner:** `@Skords-01`
 - **Skill:** `sergeant-server-api`.
 - **Scope:**
@@ -119,7 +119,7 @@
 
 ### T-2 · Contract fixtures expansion (food-search, parse-pantry, chat, sync/v2, finyk/cashflow, nutrition/log)
 
-- **Items covered:** P1-1 follow-up з прожарки (`packages/shared/src/contract-fixtures/` має тільки `me.ts` + `barcode.ts` після основного PR; решта endpoint-ів не покриті). Wave F (T29–T30) у `docs/testing/2026-05-05-tests-pr-plan.md`.
+- **Items covered:** P1-1 follow-up з прожарки (`packages/shared/src/contract-fixtures/` має тільки `me.ts` + `barcode.ts` після основного PR; решта endpoint-ів не покриті). Wave F (T29–T30) у `docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`.
 - **Priority:** P1 · **Size:** L (~500 LoC; розбити на 2–3 sub-PR-и якщо PR-size gate сварить) · **Owner:** `@Skords-01`
 - **Skill:** `sergeant-server-api`.
 - **Scope:**
@@ -189,17 +189,17 @@
 
 ### T-6 · Mutation testing — Stryker config + weekly workflow + tier-1 floor
 
-- **Items covered:** P0-2 з прожарки. Wave E (T23–T27) у tests-pr-plan. ⚠️ **NB:** `docs/testing/README.md` фіксує, що stryker meta-doc був прибраний разом з cloudSync v1 retirement — цей PR **повертає** mutation testing з redefined scope (utils-only, не cloudSync).
+- **Items covered:** P0-2 з прожарки. Wave E (T23–T27) у tests-pr-plan. ⚠️ **NB:** `docs/02-engineering/testing/README.md` фіксує, що stryker meta-doc був прибраний разом з cloudSync v1 retirement — цей PR **повертає** mutation testing з redefined scope (utils-only, не cloudSync).
 - **Priority:** P0 · **Size:** M (~150 LoC config + workflow) · **Owner:** `@Skords-01`
 - **Skill:** `sergeant-deploy-and-observability` (CI surface).
 - **Scope:**
   - Новий `packages/shared/stryker.utils.conf.json` — scope `src/utils/macros.ts` + `src/utils/date.ts` (tier-1 floor: 70% mutation score, break threshold).
   - Новий `.github/workflows/mutation-testing.yml` — weekly cron + manual `workflow_dispatch`. Reporters: `json,html` як artifact (retain 30 днів).
-  - Update `docs/testing/README.md` — повернути «Mutation» секцію з redefined scope (utils-only, не cloudSync); update [`docs/adr/0020-testing-pyramid.md`](../adr/0020-testing-pyramid.md) — додати mutation як **6-й шар** (опційний, weekly-only, не PR-blocker для main check).
+  - Update `docs/02-engineering/testing/README.md` — повернути «Mutation» секцію з redefined scope (utils-only, не cloudSync); update [`docs/adr/0020-testing-pyramid.md`](../adr/0020-testing-pyramid.md) — додати mutation як **6-й шар** (опційний, weekly-only, не PR-blocker для main check).
   - PR-required tier: workflow коментує PR, якщо mutation score падає; **не** блокує merge до того, як score стабілізується ≥ 80% на main за 2 weekly run-и.
 - **Acceptance:**
   - `.github/workflows/mutation-testing.yml` зелений на manual `workflow_dispatch` run (perfect-circle test); artifact `mutation-report.json` + `mutation-report.html` доступний для download.
-  - Mutation score baseline зафіксований у `docs/testing/README.md` як `Last baseline: YYYY-MM-DD: utils-macros=82% utils-date=78%`.
+  - Mutation score baseline зафіксований у `docs/02-engineering/testing/README.md` як `Last baseline: YYYY-MM-DD: utils-macros=82% utils-date=78%`.
   - `pnpm hard-rules:check` зелений (ADR-0020 update пройшов governance gate).
 - **Depends on:** **D-3** (parallel `pnpm check`) — інакше weekly Stryker run-time помножується на 4 (web/server/mobile/packages), стає негайно неприйнятним. D-3 знижує час до ~60% baseline → залишається budget на mutation-job.
 - **Risks:** Stryker @ Vitest 4 — раніше repo мав `@stryker-mutator/vitest-runner@9.6.1` у lock-файлі (transitive devDep), потрібно `pnpm add -D @stryker-mutator/core @stryker-mutator/vitest-runner` як explicit devDeps у `packages/shared/package.json` і верифікувати, що vitest 4.x mutator-runner стабільний.
@@ -233,7 +233,7 @@
     - `packages/shared/src/utils/macros.property.test.ts` — identity (`+0 = no-op`), monotonicity (`a + b ≥ a` для positive), bounds (`kcal ∈ [0, 9999]` per meal).
     - `packages/shared/src/utils/date.property.test.ts` — Kyiv-roundtrip (`toKyivDayKey(fromKyivDayKey(x)) = x`), DST-transition handling.
     - `packages/shared/src/utils/speech.property.test.ts` — idempotency (`normalize(normalize(x)) = normalize(x)`).
-  - Update `docs/testing/README.md` — додати «Property-based» layer у table.
+  - Update `docs/02-engineering/testing/README.md` — додати «Property-based» layer у table.
 - **Acceptance:**
   - `pnpm --filter @sergeant/shared test` зелений з 3 новими файлами.
   - Кожен suite запускається з `numRuns: 1000` за замовчуванням, `numRuns: 100` для CI (через ENV var `FAST_CHECK_NUM_RUNS`, fallback читається з `apps/server/src/test-utils/fast-check-config.ts`).

@@ -340,7 +340,7 @@ http://localhost:9090/targets
 ### Phase 2 — Grafana Cloud + Alloy (production scrape)
 
 Як тільки доходимо до публічного лаунчу
-([`docs/architecture/hosting-evolution.md`](../docs/architecture/hosting-evolution.md)
+([`docs/02-engineering/architecture/hosting-evolution.md`](../docs/02-engineering/architecture/hosting-evolution.md)
 §Фаза 2) — локальний `prometheus`/`grafana` лишається для дев-дебагу, а
 production-метрики йдуть у Grafana Cloud free tier через лёгкого
 [Grafana Alloy](https://grafana.com/docs/alloy/latest/) агента.

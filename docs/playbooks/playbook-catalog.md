@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -67,7 +67,7 @@ Curated table вище лишається швидким роутером для
 | [`rotate-secrets.md`](./rotate-secrets.md)                                         | "Secret leaked" / планова ротація / security audit / підозріла активність.                                                                                                                                                  |
 | [`security-pen-test-checklist.md`](./security-pen-test-checklist.md)               | треба підтвердити, що hardening-карта зі статусом `Closed` дійсно закриває описану атаку — наприклад, перед launch readiness gate, перед external pen-test engagement, або як квартальна репетиція pen-test reproduction-у. |
 | [`stabilize-flaky-test.md`](./stabilize-flaky-test.md)                             | «Тест X падає 1 з 5 разів» / у CI red, локально green / тест у списку **«Pre-existing flaky tests»** в AGENTS.md.                                                                                                           |
-| [`sync-rn-migration-progress.md`](./sync-rn-migration-progress.md)                 | після merge порту web → mobile (див. `port-web-screen-to-mobile.md`) — оновити progress tracker `docs/mobile/react-native-migration.md`.                                                                                    |
+| [`sync-rn-migration-progress.md`](./sync-rn-migration-progress.md)                 | після merge порту web → mobile (див. `port-web-screen-to-mobile.md`) — оновити progress tracker `docs/02-engineering/mobile/react-native-migration.md`.                                                                     |
 | [`tune-system-prompt.md`](./tune-system-prompt.md)                                 | «AI відповідає не так як треба» / «Зміни тон асистента» / «Додай нову інструкцію в системний промпт» / зміна як модель розуміє контекст модулі.                                                                             |
 
 ## Deprecated redirect anchors

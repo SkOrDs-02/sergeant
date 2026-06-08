@@ -57,24 +57,24 @@ _Жодного `Phase X next` / `Stage X blocked` маркера. Деталі 
 
 pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 4 застосунки + `tools/openclaw` + 12 пакетів. Канонічні джерела:
 
-- [`architecture/repo-map.md`](./architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).
-- [`architecture/service-catalog.md`](./architecture/service-catalog.md) — runtime-поверхні та сервіси.
-- [`architecture/README.md`](./architecture/README.md) — repo map, C4-діаграми, domain invariants.
+- [`architecture/repo-map.md`](./02-engineering/architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).
+- [`architecture/service-catalog.md`](./02-engineering/architecture/service-catalog.md) — runtime-поверхні та сервіси.
+- [`architecture/README.md`](./02-engineering/architecture/README.md) — repo map, C4-діаграми, domain invariants.
 - [`../AGENTS.md`](../AGENTS.md) — repo overview, hard rules, performance budgets, scope enum.
 
 ## 🗺️ Карта доків
 
 Повний жанровий індекс → [`README.md`](./README.md). Коротка карта верхнього рівня:
 
-| Домен          | Що там                                                                                                                                                                                                                                                          | Коли читати                        |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| **Старт**      | [`agents/`](./agents/README.md), [`playbooks/`](./playbooks/README.md)                                                                                                                                                                                          | онбординг, routing, рецепти        |
-| **Продукт**    | [`launch/`](./01-product/launch/README.md), [`marketing/`](./01-product/marketing/README.md), [`copy/`](./01-product/copy/README.md)                                                                                                                            | GTM, монетизація, FTUX             |
-| **Інженерія**  | [`architecture/`](./architecture/README.md), [`api/`](./api/README.md), [`web/`](./web/README.md), [`mobile/`](./mobile/README.md), [`testing/`](./testing/README.md), [`integrations/`](./integrations/README.md)                                              | як влаштовано і як білдити         |
-| **Операції**   | [`deploy/`](./03-operations/deploy/README.md), [`observability/`](./03-operations/observability/README.md), [`runbooks/`](./03-operations/runbooks/README.md), [`postmortems/`](./03-operations/postmortems/README.md), [`ops/`](./03-operations/ops/README.md) | деплой, алерти, інциденти          |
-| **Governance** | [`governance/`](./governance/README.md), [`security/`](./security/README.md), [`adr/`](./adr/README.md)                                                                                                                                                         | hard rules, рішення, безпека       |
-| **Дизайн**     | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md)                                                                                                                                             | дизайн-система, патерни            |
-| **Робота**     | [`initiatives/`](./initiatives/README.md), [`planning/`](./planning/README.md), [`audits/`](./audits/README.md), [`tech-debt/`](./tech-debt/README.md)                                                                                                          | трекери: що оновлювати, коли шипиш |
+| Домен          | Що там                                                                                                                                                                                                                                                                                                       | Коли читати                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| **Старт**      | [`agents/`](./agents/README.md), [`playbooks/`](./playbooks/README.md)                                                                                                                                                                                                                                       | онбординг, routing, рецепти        |
+| **Продукт**    | [`launch/`](./01-product/launch/README.md), [`marketing/`](./01-product/marketing/README.md), [`copy/`](./01-product/copy/README.md)                                                                                                                                                                         | GTM, монетизація, FTUX             |
+| **Інженерія**  | [`architecture/`](./02-engineering/architecture/README.md), [`api/`](./02-engineering/api/README.md), [`web/`](./02-engineering/web/README.md), [`mobile/`](./02-engineering/mobile/README.md), [`testing/`](./02-engineering/testing/README.md), [`integrations/`](./02-engineering/integrations/README.md) | як влаштовано і як білдити         |
+| **Операції**   | [`deploy/`](./03-operations/deploy/README.md), [`observability/`](./03-operations/observability/README.md), [`runbooks/`](./03-operations/runbooks/README.md), [`postmortems/`](./03-operations/postmortems/README.md), [`ops/`](./03-operations/ops/README.md)                                              | деплой, алерти, інциденти          |
+| **Governance** | [`governance/`](./governance/README.md), [`security/`](./security/README.md), [`adr/`](./adr/README.md)                                                                                                                                                                                                      | hard rules, рішення, безпека       |
+| **Дизайн**     | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md)                                                                                                                                                                                          | дизайн-система, патерни            |
+| **Робота**     | [`initiatives/`](./initiatives/README.md), [`planning/`](./planning/README.md), [`audits/`](./audits/README.md), [`tech-debt/`](./tech-debt/README.md)                                                                                                                                                       | трекери: що оновлювати, коли шипиш |
 
 ## Quick links
 

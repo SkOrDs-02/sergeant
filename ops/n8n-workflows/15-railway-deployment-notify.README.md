@@ -2,7 +2,7 @@
 
 > **Status:** Active. Live since 2026-05-03 (parse_mode=HTML cutover, Wave 1 §3.4) — production n8n workflow `CygZ4vLxTm2ltuRW`.
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > Webhook (`POST /webhook/railway-deploy`) → Telegram message in
 > `Sergeant_ops` (`⚙️ Контрол-план` topic, success → ops; failure →
 > incidents).
@@ -135,7 +135,7 @@ and `grateful-nurturing` (n8n itself) point at:
 https://n8n-production-09ac.up.railway.app/webhook/railway-deploy
 ```
 
-See `docs/integrations/railway-vercel.md §8` for the full procedure
+See `docs/02-engineering/integrations/railway-vercel.md §8` for the full procedure
 (event-type filter, stale-rule cleanup, smoke-test).
 
 ## Live workflow
