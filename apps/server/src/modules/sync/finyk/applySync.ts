@@ -1,5 +1,11 @@
+/* eslint-disable no-restricted-syntax -- Every templated client.query() in this
+   file interpolates only SQL *identifiers* (`${table}`, `${extColumn}`) sourced
+   from the trusted internal sync table/column registry — never user input — while
+   all values flow through $N bind-params. SQL identifiers cannot use $N
+   placeholders, so the template is the only option. Mirrors the documented
+   exemptions in logRetention/archivePoller.ts and modules/sync/audit.ts. */
 import type { PoolClient } from "pg";
-import type { SyncV2Op } from "../../http/schemas.js";
+import type { SyncV2Op } from "../../../http/schemas.js";
 import {
   parseOptionalDate,
   parseOptionalNumber,

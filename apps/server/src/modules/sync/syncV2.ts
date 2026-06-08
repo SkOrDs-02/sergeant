@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type { PoolClient } from "pg";
 import pool from "../../db.js";
 import { parseBody, parseQuery } from "../../http/validate.js";
 import {
@@ -79,7 +80,7 @@ type AppliedStatus =
   | { status: "rejected"; reason: ApplyRejectReason };
 
 type ApplyFn = (
-  client: Parameters<PoolClient>[0],
+  client: PoolClient,
   op: SyncV2Op,
   userId: string,
   clientTs: Date,
