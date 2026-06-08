@@ -16,8 +16,9 @@
 // harness hook (AGENTS.md § "Harness config lives outside the repo").
 //
 // Reuses scripts/docs/skill-mapping.json (path→skill, canonical per Initiative
-// 0015) and docs/governance/hard-rules.json (scope globs) — no duplicated
-// routing logic. See docs/adr/0066-…md (sibling retrieval primitive).
+// 0015) and docs/04-governance/governance/hard-rules.json (scope globs) — no
+// duplicated routing logic. See docs/04-governance/adr/0066-…md (sibling
+// retrieval primitive).
 //
 // Usage:
 //   pnpm agent:route                       # diff vs origin/main + uncommitted

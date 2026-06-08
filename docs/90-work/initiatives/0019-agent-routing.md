@@ -1,7 +1,7 @@
 # 0019 — Agent routing (`agent:route`)
 
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
-> **Status:** In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config).
+> **Status:** In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config). **2026-06-08:** полагоджено регресію — `route.mjs` читав `hard-rules.json` зі старого шляху `docs/governance/` (файл переїхав у `docs/04-governance/governance/` під час docs-reorg), через що `pnpm agent:route` падав з ENOENT і 3 route-тести у `retrieval.test.mjs` були червоні. Шлях виправлено, усі 12 тестів зелені.
 > **Agent-ready:** yes
 
 ## TL;DR
