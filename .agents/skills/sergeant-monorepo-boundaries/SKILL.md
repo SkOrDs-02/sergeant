@@ -37,5 +37,5 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ## Playbooks
 
-- `docs/playbooks/cleanup-dead-code.md` — коли витягуєш чи виводиш з обігу спільні модулі.
-- Каталог: `docs/agents/agent-skills-catalog.md`.
+- `docs/00-start/playbooks/cleanup-dead-code.md` — коли витягуєш чи виводиш з обігу спільні модулі.
+- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.

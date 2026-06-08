@@ -37,7 +37,7 @@
  *
  *   - Додай origin у `ORIGIN_ALLOWLIST` нижче з reason-comment-ом.
  *   - Парно: SRI hash на html-side і CSP `connect-src` review.
- *   - Документуй в `docs/web/pwa-policy.md` (out of scope of цього PR-у —
+ *   - Документуй в `docs/02-engineering/web/pwa-policy.md` (out of scope of цього PR-у —
  *     тимчасово в module-level doc-string-у).
  */
 

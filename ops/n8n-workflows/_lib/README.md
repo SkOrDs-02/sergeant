@@ -18,4 +18,4 @@ project filesystem).
   `apps/server/src/http/verifyWebhookSignature.ts` on the server side
   and with `manifest.json: { hmacSigned: true }` once rolled out.
 
-  Roll-out playbook: [`docs/security/api-internal-hmac.md`](../../../docs/security/api-internal-hmac.md#rollout).
+  Roll-out playbook: [`docs/04-governance/security/api-internal-hmac.md`](../../../docs/04-governance/security/api-internal-hmac.md#rollout).

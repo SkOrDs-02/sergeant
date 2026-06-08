@@ -51,7 +51,7 @@
 
 <!-- How do we verify that the decision is being followed?
      Examples: ESLint rule `sergeant-design/no-xyz`, CI job `migration-lint`,
-     playbook `docs/playbooks/add-hubchat-tool.md`, manual review checklist. -->
+     playbook `docs/00-start/playbooks/add-hubchat-tool.md`, manual review checklist. -->
 
 ## Links
 

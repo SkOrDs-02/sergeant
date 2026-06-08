@@ -5,7 +5,7 @@
 //
 // STATUS.md is the one human-facing page that answers, at a glance:
 //   - 🎯 що в фокусі зараз          (manual FOCUS block, preserved across regen)
-//   - 🟢 що вже зроблено            (from docs/pr-ledger/index.json — shipped PRs)
+//   - 🟢 що вже зроблено            (from docs/04-governance/pr-ledger/index.json — shipped PRs)
 //   - 🔵 що в роботі                (open-work rollup: per-tracker counts + freshest)
 //   - ⏭️ що далі / заблоковано      (priority markers — reuse generate-today logic)
 //   - 🧱 який стек                   (links into the architecture deep-dives)
@@ -41,7 +41,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 const OUTPUT_PATH = resolve(REPO_ROOT, "docs/STATUS.md");
-const PR_LEDGER_PATH = resolve(REPO_ROOT, "docs/pr-ledger/index.json");
+const PR_LEDGER_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/pr-ledger/index.json",
+);
 
 const REPO_SLUG = "Skords-01/Sergeant";
 
@@ -83,7 +86,7 @@ export function extractFocus(existing) {
 // ── Shipped ledger (🟢 done) ─────────────────────────────────────────────────
 
 /**
- * Read docs/pr-ledger/index.json and return the most-recently-merged PRs,
+ * Read docs/04-governance/pr-ledger/index.json and return the most-recently-merged PRs,
  * newest first. Tolerates a missing/empty ledger (returns []).
  */
 export function loadShipped(ledgerPath = PR_LEDGER_PATH, limit = SHIPPED_N) {
@@ -193,11 +196,11 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("");
   if (shipped.length === 0) {
     lines.push(
-      "_pr-ledger порожній. Записи з'являються автоматично, коли merged-PR торкається canonical-доку (ADR / ініціатива / playbook / hard-rule) — див. [`pr-ledger/`](./pr-ledger/README.md)._",
+      "_pr-ledger порожній. Записи з'являються автоматично, коли merged-PR торкається canonical-доку (ADR / ініціатива / playbook / hard-rule) — див. [`pr-ledger/`](./04-governance/pr-ledger/README.md)._",
     );
   } else {
     lines.push(
-      `Останні ${shipped.length} PR, що торкнулися canonical-доків. Повна історія → [\`pr-ledger/index.json\`](./pr-ledger/index.json).`,
+      `Останні ${shipped.length} PR, що торкнулися canonical-доків. Повна історія → [\`pr-ledger/index.json\`](./04-governance/pr-ledger/index.json).`,
     );
     lines.push("");
     for (const pr of shipped) lines.push(fmtShipped(pr));
@@ -254,13 +257,13 @@ function render({ focus, shipped, inflight, priority }) {
   );
   lines.push("");
   lines.push(
-    "- [`architecture/repo-map.md`](./architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).",
+    "- [`architecture/repo-map.md`](./02-engineering/architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).",
   );
   lines.push(
-    "- [`architecture/service-catalog.md`](./architecture/service-catalog.md) — runtime-поверхні та сервіси.",
+    "- [`architecture/service-catalog.md`](./02-engineering/architecture/service-catalog.md) — runtime-поверхні та сервіси.",
   );
   lines.push(
-    "- [`architecture/README.md`](./architecture/README.md) — repo map, C4-діаграми, domain invariants.",
+    "- [`architecture/README.md`](./02-engineering/architecture/README.md) — repo map, C4-діаграми, domain invariants.",
   );
   lines.push(
     "- [`../AGENTS.md`](../AGENTS.md) — repo overview, hard rules, performance budgets, scope enum.",
@@ -277,25 +280,25 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("| Домен | Що там | Коли читати |");
   lines.push("| --- | --- | --- |");
   lines.push(
-    "| **Старт** | [`agents/`](./agents/README.md), [`playbooks/`](./playbooks/README.md) | онбординг, routing, рецепти |",
+    "| **Старт** | [`agents/`](./00-start/agents/README.md), [`playbooks/`](./00-start/playbooks/README.md) | онбординг, routing, рецепти |",
   );
   lines.push(
-    "| **Продукт** | [`launch/`](./launch/README.md), [`marketing/`](./marketing/README.md), [`copy/`](./copy/README.md) | GTM, монетизація, FTUX |",
+    "| **Продукт** | [`launch/`](./01-product/launch/README.md), [`marketing/`](./01-product/marketing/README.md), [`copy/`](./01-product/copy/README.md) | GTM, монетизація, FTUX |",
   );
   lines.push(
-    "| **Інженерія** | [`architecture/`](./architecture/README.md), [`api/`](./api/README.md), [`web/`](./web/README.md), [`mobile/`](./mobile/README.md), [`testing/`](./testing/README.md), [`integrations/`](./integrations/README.md) | як влаштовано і як білдити |",
+    "| **Інженерія** | [`architecture/`](./02-engineering/architecture/README.md), [`api/`](./02-engineering/api/README.md), [`web/`](./02-engineering/web/README.md), [`mobile/`](./02-engineering/mobile/README.md), [`testing/`](./02-engineering/testing/README.md), [`integrations/`](./02-engineering/integrations/README.md) | як влаштовано і як білдити |",
   );
   lines.push(
-    "| **Операції** | [`deploy/`](./deploy/README.md), [`observability/`](./observability/README.md), [`runbooks/`](./runbooks/README.md), [`postmortems/`](./postmortems/README.md), [`ops/`](./ops/README.md) | деплой, алерти, інциденти |",
+    "| **Операції** | [`deploy/`](./03-operations/deploy/README.md), [`observability/`](./03-operations/observability/README.md), [`runbooks/`](./03-operations/runbooks/README.md), [`postmortems/`](./03-operations/postmortems/README.md), [`ops/`](./03-operations/ops/README.md) | деплой, алерти, інциденти |",
   );
   lines.push(
-    "| **Governance** | [`governance/`](./governance/README.md), [`security/`](./security/README.md), [`adr/`](./adr/README.md) | hard rules, рішення, безпека |",
+    "| **Governance** | [`governance/`](./04-governance/governance/README.md), [`security/`](./04-governance/security/README.md), [`adr/`](./04-governance/adr/README.md) | hard rules, рішення, безпека |",
   );
   lines.push(
-    "| **Дизайн** | [`design/`](./design/README.md), [`ui/`](./ui/README.md), [`i18n/`](./i18n/README.md) | дизайн-система, патерни |",
+    "| **Дизайн** | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md) | дизайн-система, патерни |",
   );
   lines.push(
-    "| **Робота** | [`initiatives/`](./initiatives/README.md), [`planning/`](./planning/README.md), [`audits/`](./audits/README.md), [`tech-debt/`](./tech-debt/README.md) | трекери: що оновлювати, коли шипиш |",
+    "| **Робота** | [`initiatives/`](./90-work/initiatives/README.md), [`planning/`](./90-work/planning/README.md), [`audits/`](./90-work/audits/README.md), [`tech-debt/`](./90-work/tech-debt/README.md) | трекери: що оновлювати, коли шипиш |",
   );
   lines.push("");
 
@@ -307,7 +310,7 @@ function render({ focus, shipped, inflight, priority }) {
   );
   lines.push("- [`today.md`](./today.md) — денний бриф (топ-7 на сьогодні)");
   lines.push(
-    "- [`governance/freshness-dashboard.html`](./governance/freshness-dashboard.html) — freshness огляд",
+    "- [`governance/freshness-dashboard.html`](./04-governance/governance/freshness-dashboard.html) — freshness огляд",
   );
   lines.push(
     "- [`../AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing",

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // scripts/docs/generate-repo-map.mjs
 //
-// Build a machine-readable mirror of `docs/architecture/repo-map.md` by
+// Build a machine-readable mirror of `docs/02-engineering/architecture/repo-map.md` by
 // enumerating workspaces (`pnpm-workspace.yaml`) and parsing each
-// `package.json`. Output: `docs/governance/repo-map.auto.json`.
+// `package.json`. Output: `docs/04-governance/governance/repo-map.auto.json`.
 //
 // Acts as a **drift detector**: the markdown view stays hand-maintained
 // (editorial Purpose column, build/deploy narrative, test-stack
@@ -31,8 +31,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 
-const OUT_JSON = resolve(REPO_ROOT, "docs/governance/repo-map.auto.json");
-const VIEW_MD = resolve(REPO_ROOT, "docs/architecture/repo-map.md");
+const OUT_JSON = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/repo-map.auto.json",
+);
+const VIEW_MD = resolve(
+  REPO_ROOT,
+  "docs/02-engineering/architecture/repo-map.md",
+);
 const CODEOWNERS_PATH = resolve(REPO_ROOT, ".github/CODEOWNERS");
 const ROOT_PKG = resolve(REPO_ROOT, "package.json");
 

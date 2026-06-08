@@ -6,7 +6,7 @@
 // (p50 / p95 / mean / max) for the last N commits.
 //
 // Wired via `pnpm pre-commit:timings`. Closes audit item P1-5 from
-// `docs/audits/2026-05-13-testing-devx-roast.md` together with the
+// `docs/90-work/audits/2026-05-13-testing-devx-roast.md` together with the
 // timing wrapper. The log is gitignored — these numbers are local
 // dev signal, never a CI gate.
 //
@@ -179,7 +179,7 @@ function printReport({ records, totals, stages, source }) {
       rows.map((cols) => `| ${cols.join(" | ")} |`).join("\n"),
       "",
       "_Per-stage rows show only stages whose subprocess emitted a `SERGEANT_TIMING_LOG`",
-      "event (contract documented in `docs/development/pre-commit-timing.md`)._",
+      "event (contract documented in `docs/02-engineering/development/pre-commit-timing.md`)._",
       "",
     ].join("\n"),
   );

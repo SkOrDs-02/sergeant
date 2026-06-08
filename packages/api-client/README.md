@@ -368,7 +368,7 @@ function Header() {
 
 ## Push endpoints
 
-Факторі: `createPushEndpoints(http)` у `endpoints/push.ts`. Окрім трьох легасі web-push ендпоінтів (`getVapidPublic`, `subscribe`, `unsubscribe`), експонує уніфіковану реєстрацію пристрою для web / iOS / Android (контракт задокументований у `docs/mobile/overview.md` і `docs/architecture/api-v1.md`):
+Факторі: `createPushEndpoints(http)` у `endpoints/push.ts`. Окрім трьох легасі web-push ендпоінтів (`getVapidPublic`, `subscribe`, `unsubscribe`), експонує уніфіковану реєстрацію пристрою для web / iOS / Android (контракт задокументований у `docs/02-engineering/mobile/overview.md` і `docs/02-engineering/architecture/api-v1.md`):
 
 ```ts
 import { createApiClient } from "@sergeant/api-client";

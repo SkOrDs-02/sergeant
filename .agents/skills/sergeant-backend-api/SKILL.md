@@ -74,4 +74,4 @@ Sergeant вже має:
 - Events version from day one
 - Idempotent activities для Temporal
 - Use `workflow.now()` не `datetime.now()` в workflows
-See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.
+See [docs/00-start/agents/agent-skills-catalog.md](docs/00-start/agents/agent-skills-catalog.md) for Sergeant skill routing.

@@ -15,7 +15,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 - Не знаєш, з чого почати зміну? `pnpm agent:route` — за git-diff/гілкою підкаже потрібний specialist-skill + активні hard-rules + suggested `agent:find`. Деталі: initiative 0019.
 - Прочитай [`docs/agents/decisions.md`](../../../docs/agents/decisions.md) — усталені рішення/вподобання maintainer-а; якщо щось уже вирішено там, дій за ним, не перепитуй.
 - Прочитай `AGENTS.md` для жорстких правил і власників шляхів.
-- Прочитай `docs/README.md` для repo-доків і `docs/agents/agent-skills-catalog.md` для skill-роутингу.
+- Прочитай `docs/README.md` для repo-доків і `docs/00-start/agents/agent-skills-catalog.md` для skill-роутингу.
 - Sergeant — це `pnpm` + Turborepo monorepo з `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/openclaw` і спільними packages.
 
 ## Не-узгоджувані правила
@@ -51,7 +51,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 | Фіча через 2+ surfaces з contract dependencies (DB→server→web)  | `sergeant-deliver-squad`           |
 | Повний QA по всіх surfaces паралельно                            | `sergeant-qa-squad`                |
 | Валідація ідеї / рішення з кількох точок зору, «гублюсь»        | `sergeant-council`                 |
-| Батч N тасків з `docs/planning/*` через паралельні агенти       | `sergeant-planning-batch`          |
+| Батч N тасків з `docs/90-work/planning/*` через паралельні агенти       | `sergeant-planning-batch`          |
 
 ## Політика generic-skill-ів
 

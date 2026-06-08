@@ -1,6 +1,6 @@
 // Grafana Alloy — scrape-only config that ships /metrics to Grafana Cloud.
 //
-// Used by Phase 2 (`docs/architecture/hosting-evolution.md`): no local TSDB,
+// Used by Phase 2 (`docs/02-engineering/architecture/hosting-evolution.md`): no local TSDB,
 // just scrape n8n + apps/server and `remote_write` everything to the
 // Prometheus endpoint of a Grafana Cloud free-tier stack.
 //

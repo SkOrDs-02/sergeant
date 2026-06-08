@@ -12,13 +12,13 @@
 // — answers the question without touring 6+ tracker READMEs.
 //
 // Trackers (in display order; configured via `TRACKERS` below):
-//   1. Initiatives                — docs/initiatives/ (+ stack-pulse-2026-05/)
-//   2. Planning                   — docs/planning/
-//   3. Launch                     — docs/launch/business/ + tech/ + product-os/
-//   4. Audits                     — docs/audits/
-//   5. Security hardening         — docs/security/hardening/
-//   6. Tech debt                  — docs/tech-debt/
-//   7. Superpowers / plans        — docs/superpowers/plans/
+//   1. Initiatives                — docs/90-work/initiatives/ (+ stack-pulse-2026-05/)
+//   2. Planning                   — docs/90-work/planning/
+//   3. Launch                     — docs/01-product/launch/business/ + tech/ + product-os/
+//   4. Audits                     — docs/90-work/audits/
+//   5. Security hardening         — docs/04-governance/security/hardening/
+//   6. Tech debt                  — docs/90-work/tech-debt/
+//   7. Superpowers / plans        — docs/90-work/superpowers/plans/
 //
 // For each tracker the script emits a markdown table with three columns:
 //   | Документ | Статус | PR-згадки |
@@ -96,15 +96,15 @@ const RE_PR_NUMBER = /#(\d{3,5})(?!\d)|\/pull\/(\d{3,5})(?!\d)/g;
  *   - README.md, follow-ups.md, open-work.md
  *   - any path containing `/archive/`
  *   - filenames starting with `_` (completed-prefix convention used in
- *     `docs/initiatives/`, see initiatives README.md § Completed-prefix)
+ *     `docs/90-work/initiatives/`, see initiatives README.md § Completed-prefix)
  */
 export const TRACKERS = [
   {
     id: "initiatives",
     title: "Ініціативи",
     blurb:
-      "Нумеровані multi-PR ініціативи з acceptance criteria. Source: [`docs/initiatives/`](./initiatives/README.md).",
-    rootDir: "docs/initiatives",
+      "Нумеровані multi-PR ініціативи з acceptance criteria. Source: [`docs/90-work/initiatives/`](./90-work/initiatives/README.md).",
+    rootDir: "docs/90-work/initiatives",
     recursive: true,
     // Phase 2 (Initiative 0015): surface agent-dispatch hints —
     // `Agent-ready` status + suggested specialist `Skill` + best-fit
@@ -115,48 +115,48 @@ export const TRACKERS = [
     id: "planning",
     title: "Планування",
     blurb:
-      "Активні roadmap-и, research, decision-rationale. Source: [`docs/planning/`](./planning/README.md).",
-    rootDir: "docs/planning",
+      "Активні roadmap-и, research, decision-rationale. Source: [`docs/90-work/planning/`](./90-work/planning/README.md).",
+    rootDir: "docs/90-work/planning",
     recursive: false,
   },
   {
     id: "launch",
     title: "Launch / запуск",
     blurb:
-      "GTM, монетизація, FTUX delivery і product-surface roadmap-и. Source: [`docs/launch/`](./launch/README.md).",
-    rootDir: "docs/launch",
+      "GTM, монетизація, FTUX delivery і product-surface roadmap-и. Source: [`docs/01-product/launch/`](./01-product/launch/README.md).",
+    rootDir: "docs/01-product/launch",
     recursive: true,
   },
   {
     id: "audits",
     title: "Аудити й прожарки",
     blurb:
-      "Прожарки, аудити та implementation roadmap-и. Source: [`docs/audits/`](./audits/README.md).",
-    rootDir: "docs/audits",
+      "Прожарки, аудити та implementation roadmap-и. Source: [`docs/90-work/audits/`](./90-work/audits/README.md).",
+    rootDir: "docs/90-work/audits",
     recursive: false,
   },
   {
     id: "security-hardening",
     title: "Security hardening",
     blurb:
-      "Картки по окремих findings (C/H/M/L/I severity) + sprint plans. Source: [`docs/security/hardening/`](./security/hardening/README.md).",
-    rootDir: "docs/security/hardening",
+      "Картки по окремих findings (C/H/M/L/I severity) + sprint plans. Source: [`docs/04-governance/security/hardening/`](./04-governance/security/hardening/README.md).",
+    rootDir: "docs/04-governance/security/hardening",
     recursive: false,
   },
   {
     id: "tech-debt",
     title: "Техборг",
     blurb:
-      "Реєстри боргу по платформах (backend / frontend / mobile). Source: [`docs/tech-debt/`](./tech-debt/README.md).",
-    rootDir: "docs/tech-debt",
+      "Реєстри боргу по платформах (backend / frontend / mobile). Source: [`docs/90-work/tech-debt/`](./90-work/tech-debt/README.md).",
+    rootDir: "docs/90-work/tech-debt",
     recursive: false,
   },
   {
     id: "superpowers-plans",
     title: "Superpowers — плани впровадження",
     blurb:
-      "Плани впровадження cross-cutting capabilities. Source: [`docs/superpowers/plans/`](./superpowers/README.md).",
-    rootDir: "docs/superpowers/plans",
+      "Плани впровадження cross-cutting capabilities. Source: [`docs/90-work/superpowers/plans/`](./90-work/superpowers/README.md).",
+    rootDir: "docs/90-work/superpowers/plans",
     recursive: true,
     // Plans tables also carry suggested `Skill` + `Playbook` columns
     // (no `Agent-ready` — that field lives only on numbered initiatives).
@@ -551,7 +551,7 @@ export function truncateStatus(status, maxLen = 180) {
  *
  * This avoids broken-link CI errors in `docs/open-work.md` for status
  * fields that contain relative links like `[ftux-master-tracker §3.4](./ftux-master-tracker.md#…)`
- * — the source doc lived under `docs/launch/product-os/` but the
+ * — the source doc lived under `docs/01-product/launch/product-os/` but the
  * dashboard lives at `docs/`, so `./ftux-master-tracker.md` no longer
  * resolves.
  */

@@ -1,13 +1,13 @@
 # Grafana Alloy — Phase 2 metrics scraper
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Лёгкий scrape-only агент, який ходить по `/metrics` n8n + apps/server і пушить
 все у Grafana Cloud Prometheus. Без локального TSDB — це робота Grafana Cloud.
 
-Контекст рішення — [`docs/architecture/hosting-evolution.md`](../../docs/architecture/hosting-evolution.md)
-§Фаза 2 та [`docs/adr/0015-observability-stack.md`](../../docs/adr/0015-observability-stack.md)
+Контекст рішення — [`docs/02-engineering/architecture/hosting-evolution.md`](../../docs/02-engineering/architecture/hosting-evolution.md)
+§Фаза 2 та [`docs/04-governance/adr/0015-observability-stack.md`](../../docs/04-governance/adr/0015-observability-stack.md)
 §ADR-15.2 (exit criterion: scrape-інфра).
 
 ## Що скрейпиться
@@ -60,17 +60,17 @@ open http://localhost:12345/graph
 ## Імпорт дашбордів у Grafana Cloud
 
 Після того як `up{project="sergeant"} == 1` для обох targets — імпортуй
-дашборди з `docs/observability/dashboards/` через **Dashboards → Import →
+дашборди з `docs/03-operations/observability/dashboards/` через **Dashboards → Import →
 Upload JSON**. Datasource — той самий `grafanacloud-<instance>-prom`.
 
 `slo-burn-rate.json` залежить від recording rules з
-[`docs/observability/prometheus/recording_rules.yml`](../../docs/observability/prometheus/recording_rules.yml)
+[`docs/03-operations/observability/prometheus/recording_rules.yml`](../../docs/03-operations/observability/prometheus/recording_rules.yml)
 — завантаж їх у Grafana Cloud → Alerts & IRM → Alert rules → Recording rules
 (або `mimirtool rules sync`).
 
 ## Алерти
 
-Alert rules у [`docs/observability/prometheus/alert_rules.yml`](../../docs/observability/prometheus/alert_rules.yml)
+Alert rules у [`docs/03-operations/observability/prometheus/alert_rules.yml`](../../docs/03-operations/observability/prometheus/alert_rules.yml)
 вантажаться так само (`mimirtool rules sync`). Contact point — Telegram
 через webhook (див. `ops/n8n-workflows/03-sentry-alert-routing.json` як
 референс для формату повідомлень).

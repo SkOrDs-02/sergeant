@@ -163,4 +163,4 @@ For detailed DDD bounded context mapping, full multi-service project trees, Anti
 - `cqrs-implementation` — Use Clean Architecture as the structural foundation for CQRS command/query separation
 - `saga-orchestration` — Sagas require well-defined aggregate boundaries, which DDD tactical patterns provide
 - `event-store-design` — Domain events produced by aggregates feed directly into an event store
-See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.
+See [docs/00-start/agents/agent-skills-catalog.md](docs/00-start/agents/agent-skills-catalog.md) for Sergeant skill routing.

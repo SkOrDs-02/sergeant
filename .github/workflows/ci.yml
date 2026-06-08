@@ -2,7 +2,7 @@ name: CI
 
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 on:
   push:
@@ -83,7 +83,7 @@ jobs:
 
       - name: pnpm overrides single-major guard (L1)
         # Closes hardening card L1
-        # (docs/security/hardening/L1-uuid-override.md). Verifies that
+        # (docs/04-governance/security/hardening/L1-uuid-override.md). Verifies that
         # every range in `package.json -> pnpm.overrides` still resolves
         # to exactly one major across the workspace. Loose ranges like
         # `>=14` silently fail when a future major lands; tight ranges
@@ -92,7 +92,7 @@ jobs:
 
       - name: pnpm dedupe drift guard (P2-1)
         # Closes audit item P2-1 in
-        # docs/audits/2026-05-13-testing-devx-roast.md. `pnpm install`
+        # docs/90-work/audits/2026-05-13-testing-devx-roast.md. `pnpm install`
         # without `--frozen-lockfile` can silently introduce duplicate
         # copies of a transitive dep when the lockfile drifts (e.g. a
         # local `pnpm add` resolves a newer compatible version that the
@@ -128,7 +128,7 @@ jobs:
         run: pnpm lint:governance-sync
 
       - name: Hard Rules registry (JSON ↔ AGENTS.md ↔ CONTRIBUTING.md)
-        # Validates docs/governance/hard-rules.json against its schema and
+        # Validates docs/04-governance/governance/hard-rules.json against its schema and
         # cross-checks every rule's id+title vs. AGENTS.md `### N. ...` and
         # CONTRIBUTING.md `N. **...**`. Hard Rule #15 — these three move
         # together, so we fail the PR the moment they drift.
@@ -151,7 +151,7 @@ jobs:
 
       - name: HTML SRI gate for apps/web/index.html (audit § S3)
         # Closes audit-item S3 from
-        # docs/audits/2026-05-13-security-observability-roast.md.
+        # docs/90-work/audits/2026-05-13-security-observability-roast.md.
         # Fails CI if `apps/web/index.html` adds a
         # `<script src="https://...">` without `integrity="sha384-..."`
         # + `crossorigin="anonymous"`. Supply-chain hardening: any
@@ -176,11 +176,11 @@ jobs:
 
       - name: Discoverability (every role reaches its target in ≤2 hops)
         # Walks the markdown link graph from documented entrypoints
-        # (README.md, AGENTS.md, docs/agents/onboarding.md,
-        # docs/playbooks/README.md, CONTRIBUTING.md) and asserts that
+        # (README.md, AGENTS.md, docs/00-start/agents/onboarding.md,
+        # docs/00-start/playbooks/README.md, CONTRIBUTING.md) and asserts that
         # each role/target pair in scripts/check-discoverability.mjs is
         # reachable within the configured hop budget. Closes
-        # docs/planning/ai-coding-improvements.md item #3.
+        # docs/90-work/planning/ai-coding-improvements.md item #3.
         run: pnpm lint:discoverability
 
       - name: Vercel config drift guard
@@ -188,8 +188,8 @@ jobs:
         # (whichever lives under the project's Root Directory). A second
         # copy under apps/web/ silently drifts and lets a Vercel UI change
         # swap which security headers protect production. See
-        # docs/security/hardening/H7-vercel-config-drift.md and
-        # docs/deploy/vercel.md.
+        # docs/04-governance/security/hardening/H7-vercel-config-drift.md and
+        # docs/03-operations/deploy/vercel.md.
         run: bash scripts/check-vercel-config.sh
 
       - name: security.txt expiry guard
@@ -205,8 +205,8 @@ jobs:
         # files carry a lifecycle marker (/** @status Active */ or equivalent).
         # Non-blocking during burn-down (exits 0 even with violations); promoted
         # to --fail-on-violations once coverage reaches 100%.
-        # See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 4 and
-        # docs/governance/rules/10-lifecycle-markers.md.
+        # See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 4 and
+        # docs/04-governance/governance/rules/10-lifecycle-markers.md.
         run: node scripts/docs/check-lifecycle-markers.mjs
         continue-on-error: true
 
@@ -226,7 +226,7 @@ jobs:
         # PWA precache manifest. Catches the case where a Vite plugin
         # silently inlines a 3rd-party CDN asset into `dist/`.
         # Cache-poisoning + CSP-bypass + GDPR risk all in one go;
-        # see docs/initiatives/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md.
+        # see docs/90-work/initiatives/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md.
         run: pnpm lint:pwa-precache
 
       - name: Bundle size guard (size-limit)
@@ -307,7 +307,7 @@ jobs:
       - name: Run Knip (dead code detection)
         # Fails CI if unused exports, files, or dependencies are detected.
         # Configuration lives in knip.json at the repo root.
-        # See docs/playbooks/cleanup-dead-code.md for lifecycle marker
+        # See docs/00-start/playbooks/cleanup-dead-code.md for lifecycle marker
         # guards that must be applied before deleting any Knip finding.
         run: pnpm knip
 
@@ -318,7 +318,7 @@ jobs:
     # bundle (e.g. `node:fs`, `node:path`) before they reach `main`.
     #
     # Why this gate exists: see
-    # docs/audits/2026-05-07-app-audit.md §9 (process gap — `pnpm build`
+    # docs/90-work/audits/2026-05-07-app-audit.md §9 (process gap — `pnpm build`
     # for apps/web wasn't running on PRs, so the umbrella `node:fs`
     # import in kvStoreBoot.ts shipped to prod) and §11.1 (recommendation
     # — add `pnpm --filter @sergeant/web build` as a hard CI gate so
@@ -718,7 +718,7 @@ jobs:
 
   migration-down-drill:
     name: Migration down drill (AGENTS rule #4)
-    # PR-32 (`docs/planning/pr-plan-2026-05.md`). Static lint above guarantees
+    # PR-32 (`docs/90-work/planning/pr-plan-2026-05.md`). Static lint above guarantees
     # sequential numbering + two-phase DROP, but down-migrations themselves
     # are not validated by the linter — they could `DROP COLUMN` a column
     # that no longer exists or forget a sequence created in the up, and the

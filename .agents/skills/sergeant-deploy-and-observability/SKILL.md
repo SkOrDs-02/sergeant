@@ -33,21 +33,21 @@ Sergeant має три Railway services:
 - Зміни env-vars трактуй як продуктові зміни: онови canonical-доки.
 - Розрізняй `livez` і `readyz`; readiness може залежати від Postgres.
 - Якщо змінюється поведінка деплою API або auth-у — перевір припущення same-origin proxy через Vercel `/api/*`.
-- **Hard Rule #21 (Pino redaction):** логи не повинні містити PII. Нова поверхня логування → перевір [`docs/security/logging-redaction-policy.md`](../../../docs/security/logging-redaction-policy.md).
+- **Hard Rule #21 (Pino redaction):** логи не повинні містити PII. Нова поверхня логування → перевір [`docs/04-governance/security/logging-redaction-policy.md`](../../../docs/04-governance/security/logging-redaction-policy.md).
 - Не закривай deploy-роботу без конкретного шляху верифікації.
 
 ## Верифікація
 
 - релевантна локальна build- або test-команда
 - цільовий endpoint або healthcheck усе ще збігається з доками
-- env-доки оновлено у `docs/integrations/railway-vercel.md` або відповідному runbook
+- env-доки оновлено у `docs/02-engineering/integrations/railway-vercel.md` або відповідному runbook
 - припущення алертингу або Sentry усе ще тримаються, коли зміна торкається обсервабіліті
 - `pnpm lint:archive-move-depth` — якщо торкався docs/archives (Hard Rule #23)
 
 ## Корисні доки
 
-- [docs/integrations/railway-vercel.md](../../../docs/integrations/railway-vercel.md)
-- [docs/observability/README.md](../../../docs/observability/README.md)
-- [docs/security/logging-redaction-policy.md](../../../docs/security/logging-redaction-policy.md)
-- [docs/playbooks/investigate-alert.md](../../../docs/playbooks/investigate-alert.md)
-- [docs/adr/0055-openclaw-external-gateway.md](../../../docs/adr/0055-openclaw-external-gateway.md)
+- [docs/02-engineering/integrations/railway-vercel.md](../../../docs/02-engineering/integrations/railway-vercel.md)
+- [docs/03-operations/observability/README.md](../../../docs/03-operations/observability/README.md)
+- [docs/04-governance/security/logging-redaction-policy.md](../../../docs/04-governance/security/logging-redaction-policy.md)
+- [docs/00-start/playbooks/investigate-alert.md](../../../docs/00-start/playbooks/investigate-alert.md)
+- [docs/04-governance/adr/0055-openclaw-external-gateway.md](../../../docs/04-governance/adr/0055-openclaw-external-gateway.md)

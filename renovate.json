@@ -156,7 +156,7 @@
       "labels": ["dependencies", "infra-pin"]
     },
     {
-      "description": "OpenClaw runtime — weekly PR з manual review (Locked decision #2 у docs/planning/openclaw-migration-plan.md). Pinned у Dockerfile.openclaw-gateway через `npm install -g openclaw@<pin>`; auto-merge заборонено — кожен апгрейд має проходити Phase 6.5 parity-window observation.",
+      "description": "OpenClaw runtime — weekly PR з manual review (Locked decision #2 у docs/90-work/planning/openclaw-migration-plan.md). Pinned у Dockerfile.openclaw-gateway через `npm install -g openclaw@<pin>`; auto-merge заборонено — кожен апгрейд має проходити Phase 6.5 parity-window observation.",
       "matchManagers": ["custom.regex"],
       "matchPackageNames": ["openclaw"],
       "groupName": "openclaw",

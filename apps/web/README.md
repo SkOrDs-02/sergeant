@@ -42,10 +42,10 @@ pnpm --filter @sergeant/web typecheck      # TypeScript
 
 Vercel автодеплоїть при push у `main`. Edge Middleware проксіює `/api/*` на `BACKEND_URL` (Railway).
 
-Деталі: [`docs/integrations/railway-vercel.md`](../../docs/integrations/railway-vercel.md).
+Деталі: [`docs/02-engineering/integrations/railway-vercel.md`](../../docs/02-engineering/integrations/railway-vercel.md).
 
 ## Глибше
 
-- [`docs/architecture/frontend-overview.md`](../../docs/architecture/frontend-overview.md)
-- [`docs/architecture/platforms.md`](../../docs/architecture/platforms.md)
-- [`docs/tech-debt/frontend.md`](../../docs/tech-debt/frontend.md)
+- [`docs/02-engineering/architecture/frontend-overview.md`](../../docs/02-engineering/architecture/frontend-overview.md)
+- [`docs/02-engineering/architecture/platforms.md`](../../docs/02-engineering/architecture/platforms.md)
+- [`docs/90-work/tech-debt/frontend.md`](../../docs/90-work/tech-debt/frontend.md)

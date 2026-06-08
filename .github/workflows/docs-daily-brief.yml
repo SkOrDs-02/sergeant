@@ -80,7 +80,7 @@ jobs:
         # Steps 7–11 are heavier — they walk the code tree — but still finish
         # in under a minute total on the runner. Centralising the refresh
         # here closes the per-PR drift that was accumulating across both
-        # `docs/governance/*.{json,html,auto.json}` and
+        # `docs/04-governance/governance/*.{json,html,auto.json}` and
         # `apps/*/symbols.json` because none of those generators were on
         # the daily cron until now.
         run: pnpm docs:gen-daily
@@ -103,18 +103,18 @@ jobs:
           # the daily refresh PR.
           REFRESH_PATHS=(
             docs/open-work.md
-            docs/initiatives/follow-ups.md
+            docs/90-work/initiatives/follow-ups.md
             docs/today.md
             docs/README.md
-            docs/governance/hard-rules-matrix.md
-            docs/governance/freshness-dashboard.html
-            docs/governance/knowledge-graph.json
-            docs/governance/knowledge-graph.html
-            docs/governance/symbol-index.json
-            docs/governance/symbol-index.html
-            docs/governance/repo-map.auto.json
-            docs/governance/service-catalog.auto.json
-            docs/architecture/diagrams/c3-workspaces.md
+            docs/04-governance/governance/hard-rules-matrix.md
+            docs/04-governance/governance/freshness-dashboard.html
+            docs/04-governance/governance/knowledge-graph.json
+            docs/04-governance/governance/knowledge-graph.html
+            docs/04-governance/governance/symbol-index.json
+            docs/04-governance/governance/symbol-index.html
+            docs/04-governance/governance/repo-map.auto.json
+            docs/04-governance/governance/service-catalog.auto.json
+            docs/02-engineering/architecture/diagrams/c3-workspaces.md
           )
           # Per-workspace symbol-index snapshots — globbed because the
           # workspace set evolves; one new workspace tomorrow should not

@@ -82,7 +82,7 @@ describe("classifyStatus", () => {
   });
 
   it("handles bold-wrapped status text", () => {
-    // Real-world example from docs/security/hardening/I2-secret-scanning-push-protection.md
+    // Real-world example from docs/04-governance/security/hardening/I2-secret-scanning-push-protection.md
     assert.equal(classifyStatus("**Closed (2026-05-04)**"), "closed");
   });
 
@@ -123,26 +123,41 @@ describe("extractPRNumbers", () => {
 
 describe("shouldSkipFile", () => {
   it("skips README, follow-ups, open-work files", () => {
-    assert.equal(shouldSkipFile("docs/initiatives/README.md"), true);
-    assert.equal(shouldSkipFile("docs/initiatives/follow-ups.md"), true);
+    assert.equal(shouldSkipFile("docs/90-work/initiatives/README.md"), true);
+    assert.equal(
+      shouldSkipFile("docs/90-work/initiatives/follow-ups.md"),
+      true,
+    );
     assert.equal(shouldSkipFile("docs/open-work.md"), true);
   });
 
   it("skips files in archive directories", () => {
-    assert.equal(shouldSkipFile("docs/initiatives/archive/_0001-foo.md"), true);
-    assert.equal(shouldSkipFile("docs/planning/archive/old-roadmap.md"), true);
+    assert.equal(
+      shouldSkipFile("docs/90-work/initiatives/archive/_0001-foo.md"),
+      true,
+    );
+    assert.equal(
+      shouldSkipFile("docs/90-work/planning/archive/old-roadmap.md"),
+      true,
+    );
   });
 
   it("skips completed-prefix files (_NNNN-…)", () => {
     assert.equal(
-      shouldSkipFile("docs/initiatives/_0001-module-decomposition.md"),
+      shouldSkipFile("docs/90-work/initiatives/_0001-module-decomposition.md"),
       true,
     );
   });
 
   it("keeps regular tracker files", () => {
-    assert.equal(shouldSkipFile("docs/initiatives/0002-mobile.md"), false);
-    assert.equal(shouldSkipFile("docs/planning/storage-roadmap.md"), false);
+    assert.equal(
+      shouldSkipFile("docs/90-work/initiatives/0002-mobile.md"),
+      false,
+    );
+    assert.equal(
+      shouldSkipFile("docs/90-work/planning/storage-roadmap.md"),
+      false,
+    );
   });
 });
 
@@ -452,10 +467,10 @@ describe("rewriteRelativeLinks", () => {
   it("rewrites parent-directory references", () => {
     const out = rewriteRelativeLinks(
       "see [config](../../adr/0050.md)",
-      "docs/initiatives/stack-pulse-2026-05/pr-05.md",
+      "docs/90-work/initiatives/stack-pulse-2026-05/pr-05.md",
       "docs/open-work.md",
     );
-    assert.match(out, /\[config\]\(\.\/adr\/0050\.md\)/);
+    assert.match(out, /\[config\]\(\.\/90-work\/adr\/0050\.md\)/);
   });
 
   it("returns input unchanged when no links are present", () => {
@@ -605,7 +620,7 @@ describe("renderOpenWork — enriched initiatives", () => {
         },
         entries: [
           {
-            relPath: "docs/initiatives/0001-x.md",
+            relPath: "docs/90-work/initiatives/0001-x.md",
             linkPath: "initiatives/0001-x.md",
             relToRootDir: "0001-x.md",
             title: "X",

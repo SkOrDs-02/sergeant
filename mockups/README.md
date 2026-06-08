@@ -19,7 +19,7 @@ mockups/
 ├ README.md               ← цей файл
 │
 ├ _shared/                ← одне джерело токенів і стилів
-│  ├ tokens.css           ← дзеркало docs/design/design-system.md
+│  ├ tokens.css           ← дзеркало docs/05-design/design/design-system.md
 │  ├ marketing.css        ← кремові розкладки (лендинг, маркетинг)
 │  ├ product.css          ← темні скляні v2-поверхні
 │  ├ code-references.md   ← мапа: який мокап ↔ який файл коду
@@ -94,11 +94,11 @@ mockups/
 **3-state-формат**. Конвенція успадкована з `redesign-v2/handoff-package/`
 і застосовується до кожного екрана:
 
-| Стан                     | Що показує                                   | Звідки джерело                                   |
-| ------------------------ | -------------------------------------------- | ------------------------------------------------ |
-| **Зараз** _(coral)_      | Те, що користувач бачить сьогодні у проді    | Реальний код `apps/web/src/...`                  |
-| **Планується** _(green)_ | Те, що описано у планах, founder апрувнув    | `docs/launch/...`, `docs/design/redesign-v2/...` |
-| **Рекомендую** _(cyan)_  | Мої доповнення поверх плану — на обговорення | Цей файл · обговорення з founder-ом              |
+| Стан                     | Що показує                                   | Звідки джерело                                                        |
+| ------------------------ | -------------------------------------------- | --------------------------------------------------------------------- |
+| **Зараз** _(coral)_      | Те, що користувач бачить сьогодні у проді    | Реальний код `apps/web/src/...`                                       |
+| **Планується** _(green)_ | Те, що описано у планах, founder апрувнув    | `docs/01-product/launch/...`, `docs/05-design/design/redesign-v2/...` |
+| **Рекомендую** _(cyan)_  | Мої доповнення поверх плану — на обговорення | Цей файл · обговорення з founder-ом                                   |
 
 > **Важливо.** «Рекомендую» — пропозиція, **не** контракт. Її **не** треба
 > імплементувати без додаткового погодження. Це матеріал для розмови.
@@ -127,7 +127,7 @@ HeroPromiseCard, що замінює ModuleChecklist + OnboardingProgress.
   apps/web/src/core/onboarding/
 
 Поведінкові деталі (копія per-module, gate за feature flag
-dashboard_outcome_card_v1) — у docs/launch/product-os/ftux-master-tracker.md
+dashboard_outcome_card_v1) — у docs/01-product/launch/product-os/ftux-master-tracker.md
 розділ 5 «Outcome card sketch».
 
 НЕ роби стан «Рекомендую» — це окреме обговорення.
@@ -190,7 +190,7 @@ dashboard_outcome_card_v1) — у docs/launch/product-os/ftux-master-tracker.md
 - **Не імплементуй стан «Рекомендую» без апруву founder-а.**
   Це матеріал для обговорення, не contract.
 - **Не редагуй `_shared/tokens.css` напряму.** Він — дзеркало
-  `docs/design/design-system.md`. Зміна тут має йти разом зі зміною там.
+  `docs/05-design/design/design-system.md`. Зміна тут має йти разом зі зміною там.
 - **Не змішуй marketing.css і product.css в одному файлі.** Кремовий папір
   для лендингу і темне glass-середовище для продукту — різні режими.
 - **Імена файлів — лише `kebab-case.html`.** Без пробілів, без Title Case.
@@ -236,15 +236,15 @@ the contract.
   живий styleguide примітивів — це джерело правди для **компонентів**,
   не для **сценаріїв**.
 - **Документи з обґрунтуванням.** Розгорнуті дискусії й decision logs
-  лишаються у `docs/` (`docs/launch/`, `docs/design/`). Мокап посилається
+  лишаються у `docs/` (`docs/01-product/launch/`, `docs/05-design/design/`). Мокап посилається
   на них, але сам не є документом.
 
 ---
 
 **Last validated:** 2026-05-18.
 **Maintainer:** founder + Claude (designer-assistant).
-**Канонічний токен-сорс:** `docs/design/design-system.md`.
-**Беклог (що не зроблено / що далі):** `docs/design/mockups-backlog.md`.
+**Канонічний токен-сорс:** `docs/05-design/design/design-system.md`.
+**Беклог (що не зроблено / що далі):** `docs/05-design/design/mockups-backlog.md`.
 
 ---
 

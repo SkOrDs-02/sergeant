@@ -35,5 +35,5 @@ pnpm --filter @sergeant/shared typecheck
 
 ## Глибше
 
-- [`docs/api/README.md`](../../docs/api/README.md) — OpenAPI spec (генерується зі схем цього пакета)
+- [`docs/02-engineering/api/README.md`](../../docs/02-engineering/api/README.md) — OpenAPI spec (генерується зі схем цього пакета)
 - [`AGENTS.md` rule #3](../../AGENTS.md) — API contract: server ↔ api-client ↔ test

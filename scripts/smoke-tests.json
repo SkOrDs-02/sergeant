@@ -1,6 +1,6 @@
 {
   "$schema": "./smoke-tests.schema.md",
-  "description": "Post-deploy smoke-test config. Список critical-endpoint-ів, які запускає scripts/post-deploy-smoke.mjs після кожного deploy на staging/prod. Не редагуй цей файл руками без оновлення docs/testing/smoke-tests.md.",
+  "description": "Post-deploy smoke-test config. Список critical-endpoint-ів, які запускає scripts/post-deploy-smoke.mjs після кожного deploy на staging/prod. Не редагуй цей файл руками без оновлення docs/02-engineering/testing/smoke-tests.md.",
   "defaults": {
     "timeoutMs": 8000,
     "latencyBudgetMs": 2500,

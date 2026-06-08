@@ -26,8 +26,8 @@
 //   node scripts/docs/check-lifecycle-markers.mjs --fail-on-violations  # CI gate
 //   node scripts/docs/check-lifecycle-markers.mjs --json       # machine-readable
 //
-// See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 4.
-// Burn-down target: 2026-Q3. See docs/governance/rules/10-lifecycle-markers.md.
+// See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 4.
+// Burn-down target: 2026-Q3. See docs/04-governance/governance/rules/10-lifecycle-markers.md.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, extname } from "node:path";
@@ -136,7 +136,7 @@ if (JSON_OUTPUT) {
       `\n  Burn-down target: 2026-Q3. Add /** @status Active */ (or Scaffolded / Deprecated)\n`,
     );
     process.stdout.write(
-      `  to each file's top-level JSDoc. See docs/governance/rules/10-lifecycle-markers.md.\n\n`,
+      `  to each file's top-level JSDoc. See docs/04-governance/governance/rules/10-lifecycle-markers.md.\n\n`,
     );
     if (!JSON_OUTPUT) {
       // Show first 20 as a sample.

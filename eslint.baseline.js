@@ -13,7 +13,7 @@
 // index.ts`, `tools/openclaw/src/index.ts`, etc. (run `pnpm
 // lint:eslint-config-diff` to regenerate; CI guards in PR-31 phase-2).
 //
-// Phase 2 (deferred — see `docs/initiatives/stack-pulse-2026-05/
+// Phase 2 (deferred — see `docs/90-work/initiatives/stack-pulse-2026-05/
 // pr-31-eslint-config-split.md` § Acceptance criteria) extracts each
 // surface-specific block (apps/web, apps/server, apps/mobile, apps/
 // mobile-shell, tools/openclaw, packages/**) into per-app `eslint.

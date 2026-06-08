@@ -19,7 +19,7 @@ test("scan reports archive links that need one more ../ segment", () => {
 
     assert.deepEqual(scan(root), [
       {
-        file: "docs/audits/archive/audit.md",
+        file: "docs/90-work/audits/archive/audit.md",
         line: 1,
         target: "../initiatives/foo.md",
         suggested: "../../initiatives/foo.md",

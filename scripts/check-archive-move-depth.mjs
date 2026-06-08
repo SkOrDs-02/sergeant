@@ -2,8 +2,8 @@
 // scripts/check-archive-move-depth.mjs
 //
 // Archive docs move one directory deeper. Links that were correct as
-// `../initiatives/foo.md` from `docs/audits/foo.md` often need to become
-// `../../initiatives/foo.md` after moving to `docs/audits/archive/foo.md`.
+// `../initiatives/foo.md` from `docs/90-work/audits/foo.md` often need to become
+// `../../initiatives/foo.md` after moving to `docs/90-work/audits/archive/foo.md`.
 // This gate spots that exact depth drift and suggests the one-level fix.
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";

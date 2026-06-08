@@ -3,25 +3,25 @@
   "_comment": "See scripts/docs/freshness-config.mjs for semantics. Default cadence is 90 days; only put paths here if they need a different cadence or explicit include/exclude.",
   "defaultCadenceDays": 90,
   "cadenceOverrides": {
-    "docs/observability/runbook.md": 60,
-    "docs/tech-debt/backend.md": 60,
-    "docs/tech-debt/frontend.md": 60,
-    "docs/playbooks/debug-chat-tool.md": 60,
-    "docs/playbooks/hotfix-prod-regression.md": 60,
-    "docs/playbooks/investigate-alert.md": 60,
-    "docs/playbooks/pre-merge-migration-checklist.md": 60,
-    "docs/playbooks/rotate-secrets.md": 60,
-    "docs/governance/audit-freeze-2026-05-05.md": 180,
-    "docs/audits/2026-04-26-sergeant-audit-devin.md": 180,
-    "docs/audits/2026-04-28-sergeant-comprehensive-audit.md": 180,
-    "docs/audits/2026-05-03-readme-gap-analysis.md": 180,
-    "docs/audits/UX-UI-AUDIT-2026.md": 180,
-    "docs/audits/archive/ux-audit-2025.md": 365,
-    "docs/design/specs/2026-04-24-assistant-quick-actions-v1-design.md": 180,
-    "docs/design/specs/2026-04-25-assistant-capability-catalogue-design.md": 180
+    "docs/03-operations/observability/runbook.md": 60,
+    "docs/90-work/tech-debt/backend.md": 60,
+    "docs/90-work/tech-debt/frontend.md": 60,
+    "docs/00-start/playbooks/debug-chat-tool.md": 60,
+    "docs/00-start/playbooks/hotfix-prod-regression.md": 60,
+    "docs/00-start/playbooks/investigate-alert.md": 60,
+    "docs/00-start/playbooks/pre-merge-migration-checklist.md": 60,
+    "docs/00-start/playbooks/rotate-secrets.md": 60,
+    "docs/04-governance/governance/audit-freeze-2026-05-05.md": 180,
+    "docs/90-work/audits/2026-04-26-sergeant-audit-devin.md": 180,
+    "docs/90-work/audits/2026-04-28-sergeant-comprehensive-audit.md": 180,
+    "docs/90-work/audits/2026-05-03-readme-gap-analysis.md": 180,
+    "docs/90-work/audits/UX-UI-AUDIT-2026.md": 180,
+    "docs/90-work/audits/archive/ux-audit-2025.md": 365,
+    "docs/05-design/design/specs/2026-04-24-assistant-quick-actions-v1-design.md": 180,
+    "docs/05-design/design/specs/2026-04-25-assistant-capability-catalogue-design.md": 180
   },
   "excludeGlobs": [
-    "docs/initiatives/follow-ups.md",
+    "docs/90-work/initiatives/follow-ups.md",
     "docs/open-work.md",
     "docs/STATUS.md",
     "scripts/__tests__/fixtures/**",
@@ -31,8 +31,8 @@
   "explicitInclude": [],
   "explicitExclude": [
     "ops/openclaw/cheap-router.system.md",
-    "docs/design/redesign-v2/handoff.md",
-    "docs/design/redesign-v2/handoff-package/Handoff for Claude Code.md",
-    "docs/design/redesign-v2/handoff-package/Hidden tech-debt audit.md"
+    "docs/05-design/design/redesign-v2/handoff.md",
+    "docs/05-design/design/redesign-v2/handoff-package/Handoff for Claude Code.md",
+    "docs/05-design/design/redesign-v2/handoff-package/Hidden tech-debt audit.md"
   ]
 }

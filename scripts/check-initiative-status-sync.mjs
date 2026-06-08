@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // scripts/check-initiative-status-sync.mjs
 //
-// CI guard for `docs/initiatives/README.md` ↔ `docs/initiatives/[_]?[0-9]{4}-*.md`
+// CI guard for `docs/90-work/initiatives/README.md` ↔ `docs/90-work/initiatives/[_]?[0-9]{4}-*.md`
 // status synchronization.
 //
 // Validates three invariants:
 //   1. Every `NNNN-*.md` (or `_NNNN-*.md` for completed-prefix files) in
-//      `docs/initiatives/` is referenced by a row in README.md (active table
+//      `docs/90-work/initiatives/` is referenced by a row in README.md (active table
 //      + recently-completed table + archive stub list). The leading `_`
 //      marks `Done` / `Closed` files so `ls` clearly separates active from
 //      completed; both forms parse to the same NNNN id.
@@ -39,7 +39,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "..");
-const INITIATIVES_DIR = resolve(REPO_ROOT, "docs/initiatives");
+const INITIATIVES_DIR = resolve(REPO_ROOT, "docs/90-work/initiatives");
 const README_PATH = join(INITIATIVES_DIR, "README.md");
 
 const RE_INITIATIVE_FILE = /^_?(\d{4})-[a-z0-9-]+\.md$/i;
@@ -159,7 +159,7 @@ export function parseStatusesFromReadme(content) {
   return result;
 }
 
-/** List initiative files (NNNN-*.md) in `docs/initiatives/`. */
+/** List initiative files (NNNN-*.md) in `docs/90-work/initiatives/`. */
 export function listInitiativeFiles(dir = INITIATIVES_DIR) {
   return readdirSync(dir)
     .filter((f) => RE_INITIATIVE_FILE.test(f))
@@ -205,7 +205,7 @@ export function run({
   for (const [id, info] of fileStatuses.entries()) {
     if (!readmeStatuses.has(id)) {
       errors.push(
-        `${info.file}: no row in docs/initiatives/README.md for #${id}. ` +
+        `${info.file}: no row in docs/90-work/initiatives/README.md for #${id}. ` +
           `Add it to "Активні ініціативи" or "Нещодавно завершені".`,
       );
     }
@@ -215,7 +215,7 @@ export function run({
     const stat = readmeStatuses.get(id);
     if (!fileStatuses.has(id) && stat !== "Archived") {
       errors.push(
-        `docs/initiatives/README.md: row for #${id} but no matching ${id}-*.md file in docs/initiatives/.`,
+        `docs/90-work/initiatives/README.md: row for #${id} but no matching ${id}-*.md file in docs/90-work/initiatives/.`,
       );
     }
   }
@@ -226,13 +226,13 @@ export function run({
     const readmeStatus = readmeStatuses.get(id);
     if (readmeStatus === null) {
       errors.push(
-        `docs/initiatives/README.md: row for #${id} (${info.file}) — no recognised status keyword in cell.`,
+        `docs/90-work/initiatives/README.md: row for #${id} (${info.file}) — no recognised status keyword in cell.`,
       );
       continue;
     }
     if (readmeStatus !== info.status) {
       errors.push(
-        `docs/initiatives/README.md: status drift for #${id} — README says "${readmeStatus}", ${info.file} header says "${info.status}".`,
+        `docs/90-work/initiatives/README.md: status drift for #${id} — README says "${readmeStatus}", ${info.file} header says "${info.status}".`,
       );
     }
   }
@@ -261,7 +261,7 @@ function formatReport(result) {
   lines.push("");
   lines.push(
     "Fix by either:",
-    "  • Updating the offending row in docs/initiatives/README.md to match the file header, or",
+    "  • Updating the offending row in docs/90-work/initiatives/README.md to match the file header, or",
     "  • Updating the file header to match the README row, or",
     "  • Adding/removing the missing entry on either side.",
   );

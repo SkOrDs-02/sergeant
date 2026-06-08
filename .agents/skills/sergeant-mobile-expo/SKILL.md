@@ -39,11 +39,11 @@ Sergeant mobile — не тонка копія web-app-у. Він викорис
 ## Верифікація
 
 - Прогон найближчого Jest-покриття для зачепленої mobile-поверхні.
-- Якщо змінилися навігація чи deep-link-и — перевір відповідні доки у `docs/mobile/`.
+- Якщо змінилися навігація чи deep-link-и — перевір відповідні доки у `docs/02-engineering/mobile/`.
 - Якщо зміна — це порт web-фічі, підтверди, які частини лишаються спільними, а які — platform-specific.
 - Перевір, що зміна не ламає Capacitor-шлях (якщо relevant).
 
 ## Playbooks
 
-- `docs/playbooks/release.md` — canonical release-playbook (секції Expo і Capacitor shell).
-- Каталог: `docs/agents/agent-skills-catalog.md`.
+- `docs/00-start/playbooks/release.md` — canonical release-playbook (секції Expo і Capacitor shell).
+- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.

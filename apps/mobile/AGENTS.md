@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-Expo 52 + React Native 0.76 + Expo Router (file-based) + NativeWind. Storage: MMKV (не localStorage). Тести: Jest. E2E: Detox (iOS sim). Статус — **internal dev-client**: готово до `eas build --profile development`, ще не для store. Mobile strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../../docs/adr/0052-mobile-strategy-capacitor-primary.md).
+Expo 52 + React Native 0.76 + Expo Router (file-based) + NativeWind. Storage: MMKV (не localStorage). Тести: Jest. E2E: Detox (iOS sim). Статус — **internal dev-client**: готово до `eas build --profile development`, ще не для store. Mobile strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../../docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md).
 
 ## Quick commands
 
@@ -35,12 +35,12 @@ pnpm --filter @sergeant/mobile check-build-config  # before EAS build
 - **NativeWind:** Tailwind-like, але **не** Tailwind — частина класів не підтримується. Tailwind preset з `@sergeant/design-tokens` — джерело правди для токенів; перевіряй сумісність із NativeWind перед використанням.
 - **Build config:** `pnpm --filter @sergeant/mobile check-build-config` валідує `app.config.ts` + `eas.json` перед EAS build — запускай локально перед PR, що чіпає mobile config.
 - **Domain invariants** (Kyiv time, kopiykas as `number`, Better Auth opaque user IDs) — однакові з web/server, див. корінь.
-- **Flaky-tests mitigation (T7 / [sprint-roadmap §1.1](../../docs/planning/sprint-roadmap-q2q3-2026.md#11-tech-борг)).** Якщо mobile-suite починає інтермітентно фейлити — спершу перевір канонічний pattern: `AccessibilityInfo.isReduceMotionEnabled()` має бути замоканий через `mockResolvedValue(false)`, а не як never-resolving Promise (інакше unsettled microtask + `act()` flushing → "update not wrapped in act" warning, і на slow-runner-і — таймаут). Референс: commit [`53853e00`](https://github.com/Skords-01/Sergeant/commit/53853e00) (OnboardingWizard) + [`f11c1f49`](https://github.com/Skords-01/Sergeant/commit/f11c1f49) (WeeklyDigestFooter, HubSettingsPage — stub `useWeeklyDigest`). Verification gate: GitHub Actions → **Mobile flaky-tests verification (20-run)** ([`.github/workflows/mobile-flaky-verify.yml`](../../.github/workflows/mobile-flaky-verify.yml)) — manual / weekly cron job, який гонить jest-suite 20 разів і фейлить на першій помилці; 20/20 поспіль зеленим = baseline для зняття flaky-tag-у.
+- **Flaky-tests mitigation (T7 / [sprint-roadmap §1.1](../../docs/90-work/planning/sprint-roadmap-q2q3-2026.md#11-tech-борг)).** Якщо mobile-suite починає інтермітентно фейлити — спершу перевір канонічний pattern: `AccessibilityInfo.isReduceMotionEnabled()` має бути замоканий через `mockResolvedValue(false)`, а не як never-resolving Promise (інакше unsettled microtask + `act()` flushing → "update not wrapped in act" warning, і на slow-runner-і — таймаут). Референс: commit [`53853e00`](https://github.com/Skords-01/Sergeant/commit/53853e00) (OnboardingWizard) + [`f11c1f49`](https://github.com/Skords-01/Sergeant/commit/f11c1f49) (WeeklyDigestFooter, HubSettingsPage — stub `useWeeklyDigest`). Verification gate: GitHub Actions → **Mobile flaky-tests verification (20-run)** ([`.github/workflows/mobile-flaky-verify.yml`](../../.github/workflows/mobile-flaky-verify.yml)) — manual / weekly cron job, який гонить jest-suite 20 разів і фейлить на першій помилці; 20/20 поспіль зеленим = baseline для зняття flaky-tag-у.
 
 ## Deeper docs
 
 - App README: [`apps/mobile/README.md`](./README.md)
-- Mobile strategy ADR: [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../docs/adr/0052-mobile-strategy-capacitor-primary.md)
-- Capacitor / deep links / RN migration: [`docs/mobile/`](../../docs/mobile/)
-- Routing catalog: [`docs/agents/agent-skills-catalog.md`](../../docs/agents/agent-skills-catalog.md)
-- Domain invariants: [`docs/architecture/domain-invariants.md`](../../docs/architecture/domain-invariants.md)
+- Mobile strategy ADR: [`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md)
+- Capacitor / deep links / RN migration: [`docs/02-engineering/mobile/`](../../docs/02-engineering/mobile/)
+- Routing catalog: [`docs/00-start/agents/agent-skills-catalog.md`](../../docs/00-start/agents/agent-skills-catalog.md)
+- Domain invariants: [`docs/02-engineering/architecture/domain-invariants.md`](../../docs/02-engineering/architecture/domain-invariants.md)

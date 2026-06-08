@@ -273,7 +273,7 @@ Find UI/UX defects in the CODE that renders this route. Look for, with file:line
 - typography: font sizes below the 12px floor (Rule #16).
 - layout / responsive: fixed widths that overflow on narrow viewports, missing min-w-0 in flex, content that can clip.
 - state: unhandled loading/empty/error states, missing skeletons, flashes.
-- copy: non-UA copy in user-facing strings, tone violations (docs/copy/style-guide.uk.md).
+- copy: non-UA copy in user-facing strings, tone violations (docs/01-product/copy/style-guide.uk.md).
 
 Only report DEFECTS you can point to in code. For each, give a suggestedFix and a precise browserCheck (what to confirm live after fixing). If the route renders cleanly, return an empty findings array. Return structured output.`,
         {

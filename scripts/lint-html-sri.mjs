@@ -2,7 +2,7 @@
 // scripts/lint-html-sri.mjs
 //
 // SRI (Subresource Integrity) lint для HTML-сторінок Sergeant — закриває
-// audit-item `S3` з `docs/audits/2026-05-13-security-observability-roast.md`.
+// audit-item `S3` з `docs/90-work/audits/2026-05-13-security-observability-roast.md`.
 //
 // Що валідуємо:
 //   Кожен `<script>` із `src="https://..."` (cross-origin / CDN) у
@@ -238,7 +238,7 @@ function main() {
     console.error(
       `\n[lint-html-sri] ${totalErrors} violation(s) across ` +
         `${paths.length} file(s).\n` +
-        `See docs/audits/2026-05-13-security-observability-roast.md § S3 ` +
+        `See docs/90-work/audits/2026-05-13-security-observability-roast.md § S3 ` +
         "for rationale, or scripts/lint-html-sri.mjs header comment.",
     );
     process.exit(1);

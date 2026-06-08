@@ -45,7 +45,7 @@ const REPO_ROOT = resolve(__dirname, "..");
 // (`scripts/pre-commit-timing.mjs`) sets `SERGEANT_TIMING_LOG` to a session-
 // scoped JSONL file; downstream scripts append `{ stage, ms }` records so the
 // summary shows per-stage breakdown. Pure best-effort — never block a commit.
-// Contract documented in `docs/development/pre-commit-timing.md`.
+// Contract documented in `docs/02-engineering/development/pre-commit-timing.md`.
 function emitStageTiming(stage, ms) {
   const log = process.env.SERGEANT_TIMING_LOG;
   if (!log) return;

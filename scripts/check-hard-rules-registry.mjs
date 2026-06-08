@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // scripts/check-hard-rules-registry.mjs
 //
-// Validates the Hard Rules registry at `docs/governance/hard-rules.json`:
+// Validates the Hard Rules registry at `docs/04-governance/governance/hard-rules.json`:
 //
-//   1. Conforms to the JSON Schema at `docs/governance/hard-rules.schema.json`
+//   1. Conforms to the JSON Schema at `docs/04-governance/governance/hard-rules.schema.json`
 //      (a minimal schema validator implemented inline — we do not pull AJV
 //      just to check ~10 properties, see DECISION below).
 //   2. `rules[].id` is dense from 1..N with no gaps and no duplicates.
@@ -13,7 +13,7 @@
 //      the primary form; heading support is a fallback so older fixtures
 //      and downstream consumers still parse during the migration window.
 //   4. Every rule has a per-rule canonical file at
-//      `docs/governance/rules/NN-<slug>.md` whose H1 reads
+//      `docs/04-governance/governance/rules/NN-<slug>.md` whose H1 reads
 //      `# Rule <id> — <title>`. This is the third leg of the 3-way sync
 //      introduced by initiative 0009 PR 3.2 (AGENTS.md ↔ JSON ↔ per-rule
 //      files). Per-rule directory absence is silently tolerated so legacy
@@ -48,11 +48,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT = resolve(__dirname, "..");
 
-const REGISTRY_PATH = resolve(ROOT, "docs/governance/hard-rules.json");
-const SCHEMA_PATH = resolve(ROOT, "docs/governance/hard-rules.schema.json");
+const REGISTRY_PATH = resolve(
+  ROOT,
+  "docs/04-governance/governance/hard-rules.json",
+);
+const SCHEMA_PATH = resolve(
+  ROOT,
+  "docs/04-governance/governance/hard-rules.schema.json",
+);
 const AGENTS_PATH = resolve(ROOT, "AGENTS.md");
 const CONTRIB_PATH = resolve(ROOT, "CONTRIBUTING.md");
-const RULES_DIR = resolve(ROOT, "docs/governance/rules");
+const RULES_DIR = resolve(ROOT, "docs/04-governance/governance/rules");
 const ESLINT_PLUGIN_PATH = resolve(
   ROOT,
   "packages/eslint-plugin-sergeant-design/index.js",
@@ -427,7 +433,7 @@ function main() {
   // 4b. Per-rule canonical files (initiative 0009 PR 3.2 — 3-way sync)
   //
   // For each rule in the registry, expect a file
-  // `docs/governance/rules/NN-<slug>.md` whose H1 is `# Rule <id> — <title>`.
+  // `docs/04-governance/governance/rules/NN-<slug>.md` whose H1 is `# Rule <id> — <title>`.
   // The slug is whatever the file is named — we don't validate it here, only
   // that exactly one file with the `NN-` prefix exists and its H1 matches.
   // The directory can be missing entirely (legacy fixtures don't have it),
@@ -453,13 +459,13 @@ function main() {
       const matches = filesByPrefix.get(r.id) ?? [];
       if (matches.length === 0) {
         errors.push(
-          `rule-file-sync: rule #${r.id} ('${r.title}') has no matching file in docs/governance/rules/ (expected NN-<slug>.md)`,
+          `rule-file-sync: rule #${r.id} ('${r.title}') has no matching file in docs/04-governance/governance/rules/ (expected NN-<slug>.md)`,
         );
         continue;
       }
       if (matches.length > 1) {
         errors.push(
-          `rule-file-sync: rule #${r.id} has multiple files with the same NN prefix in docs/governance/rules/: ${matches.join(", ")}`,
+          `rule-file-sync: rule #${r.id} has multiple files with the same NN prefix in docs/04-governance/governance/rules/: ${matches.join(", ")}`,
         );
         continue;
       }
@@ -469,7 +475,7 @@ function main() {
         body = readFileSync(filePath, "utf-8");
       } catch (err) {
         errors.push(
-          `rule-file-sync: cannot read docs/governance/rules/${matches[0]} — ${err.message}`,
+          `rule-file-sync: cannot read docs/04-governance/governance/rules/${matches[0]} — ${err.message}`,
         );
         continue;
       }
@@ -477,7 +483,7 @@ function main() {
       const h1 = h1Re.exec(body);
       if (!h1) {
         errors.push(
-          `rule-file-sync: docs/governance/rules/${matches[0]} has no '# Rule N — <title>' H1`,
+          `rule-file-sync: docs/04-governance/governance/rules/${matches[0]} has no '# Rule N — <title>' H1`,
         );
         continue;
       }
@@ -485,12 +491,12 @@ function main() {
       const fileTitle = h1[2].trim();
       if (fileId !== r.id) {
         errors.push(
-          `rule-file-sync: docs/governance/rules/${matches[0]} H1 says rule #${fileId} but file is named ${matches[0]} (expected #${r.id})`,
+          `rule-file-sync: docs/04-governance/governance/rules/${matches[0]} H1 says rule #${fileId} but file is named ${matches[0]} (expected #${r.id})`,
         );
       }
       if (fileTitle !== r.title) {
         errors.push(
-          `rule-file-sync: rule #${r.id} title drift — registry='${r.title}' vs docs/governance/rules/${matches[0]} H1='${fileTitle}'`,
+          `rule-file-sync: rule #${r.id} title drift — registry='${r.title}' vs docs/04-governance/governance/rules/${matches[0]} H1='${fileTitle}'`,
         );
       }
     }
@@ -501,7 +507,7 @@ function main() {
     for (const [id, names] of filesByPrefix) {
       if (!knownIds.has(id)) {
         errors.push(
-          `rule-file-sync: docs/governance/rules/${names[0]} numbered #${id} but registry has no such rule`,
+          `rule-file-sync: docs/04-governance/governance/rules/${names[0]} numbered #${id} but registry has no such rule`,
         );
       }
     }
@@ -566,7 +572,7 @@ function report(errors, jsonMode, registry) {
   console.error("❌ Hard Rules registry validation failed:\n");
   for (const e of errors) console.error(`  - ${e}`);
   console.error(
-    "\nFix: update docs/governance/hard-rules.json so it agrees with AGENTS.md " +
+    "\nFix: update docs/04-governance/governance/hard-rules.json so it agrees with AGENTS.md " +
       "§ Hard rules and CONTRIBUTING.md § Hard rules. Hard Rule #15 — these three " +
       "documents move together.\n",
   );

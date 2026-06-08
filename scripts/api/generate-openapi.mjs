@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generates `docs/api/openapi.json` from zod-схем у `@sergeant/shared`.
+ * Generates `docs/02-engineering/api/openapi.json` from zod-схем у `@sergeant/shared`.
  *
  * Запуск:    `pnpm api:generate-openapi` (root) або
  *            `node scripts/api/generate-openapi.mjs`.
@@ -28,7 +28,7 @@ const { buildOpenApiDocument } = await import(
 
 const document = buildOpenApiDocument();
 
-const outDir = path.join(repoRoot, "docs", "api");
+const outDir = path.join(repoRoot, "docs", "02-engineering", "api");
 mkdirSync(outDir, { recursive: true });
 
 const outFile = path.join(outDir, "openapi.json");

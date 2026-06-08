@@ -1,6 +1,6 @@
 # Dependabot configuration for the Sergeant monorepo.
 #
-# **Per ADR-0044** (`docs/adr/0044-renovate-vs-dependabot.md`) — Dependabot's
+# **Per ADR-0044** (`docs/04-governance/adr/0044-renovate-vs-dependabot.md`) — Dependabot's
 # scope is **security-only fallback**. Regular weekly bumps are owned by
 # Renovate (`renovate.json`); Dependabot lifts security-updates daily so a
 # CVE disclosed Tuesday lands in a PR Wednesday morning, not next Monday.

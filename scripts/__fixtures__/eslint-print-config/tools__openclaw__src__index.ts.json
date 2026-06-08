@@ -2475,11 +2475,11 @@
     "no-restricted-syntax": [
       1,
       {
-        "message": "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/security/hardening/M11-eslint-plugin-security.md.",
+        "message": "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/04-governance/security/hardening/M11-eslint-plugin-security.md.",
         "selector": "CallExpression[callee.property.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]"
       },
       {
-        "message": "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/security/hardening/M11-eslint-plugin-security.md.",
+        "message": "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/04-governance/security/hardening/M11-eslint-plugin-security.md.",
         "selector": "CallExpression[callee.type='Identifier'][callee.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]"
       }
     ],

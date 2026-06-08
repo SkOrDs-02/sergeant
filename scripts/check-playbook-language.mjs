@@ -5,7 +5,7 @@
 // Ukrainian (Hard Rule #15: «Internal docs I touched are in Ukrainian»).
 //
 // Targets:
-//   - docs/playbooks/*.md     (skipping INDEX.md, README.md, _TEMPLATE-*.md,
+//   - docs/00-start/playbooks/*.md     (skipping INDEX.md, README.md, _TEMPLATE-*.md,
 //                              underscore-prefixed, and playbook-catalog.md)
 //   - .agents/skills/*/SKILL.md (skipping the locked SKILL files that are
 //                                explicitly tagged `lang: en` in frontmatter)
@@ -39,7 +39,7 @@
 //                    that will be translated in a follow-up commit.
 //   --json         — emit machine-readable JSON instead of human output.
 //
-// Linked initiative: docs/initiatives/archive/_0009-agent-os-hardening.md (PR 1.2).
+// Linked initiative: docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.2).
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, basename } from "node:path";
@@ -47,13 +47,13 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
-const PLAYBOOK_DIR = resolve(REPO_ROOT, "docs/playbooks");
+const PLAYBOOK_DIR = resolve(REPO_ROOT, "docs/00-start/playbooks");
 const SKILLS_DIR = resolve(REPO_ROOT, ".agents/skills");
 
 /** Ratio threshold below which a file is considered "English-dominant". */
 export const MIN_CYRILLIC_RATIO = 0.4;
 
-/** Files inside docs/playbooks/ that are not real playbooks. */
+/** Files inside docs/00-start/playbooks/ that are not real playbooks. */
 const SKIP_PLAYBOOK_BASENAMES = new Set([
   "INDEX.md",
   "README.md",

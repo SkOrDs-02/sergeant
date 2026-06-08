@@ -7,7 +7,7 @@
 // re-embed only touches changed chunks.
 //
 // See apps/server/src/modules/ai-memory/embeddings.ts for the production client
-// this is kept consistent with, and docs/adr/0066-…md for the decoupling rationale.
+// this is kept consistent with, and docs/04-governance/adr/0066-…md for the decoupling rationale.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";

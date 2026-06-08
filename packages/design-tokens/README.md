@@ -28,7 +28,7 @@ export default { presets: [preset] /* … */ };
 @config "../tailwind.config.js"; /* підвантажує JS preset як shared layer між web ↔ mobile */
 ```
 
-> **Чому JS preset, не CSS-first `@theme`?** Sergeant ділить токени між Vite-build (Tailwind v4) і NativeWind (досі на Tailwind v3 — див. `docs/planning/tailwind-v4-migration.md`). Один `tailwind-preset.js` працює в обох runtime-ах; `@theme`-блок було б потрібно дублювати у Metro-конфігу. Рішення зафіксоване Phase 3 міграційного плану.
+> **Чому JS preset, не CSS-first `@theme`?** Sergeant ділить токени між Vite-build (Tailwind v4) і NativeWind (досі на Tailwind v3 — див. `docs/90-work/planning/tailwind-v4-migration.md`). Один `tailwind-preset.js` працює в обох runtime-ах; `@theme`-блок було б потрібно дублювати у Metro-конфігу. Рішення зафіксоване Phase 3 міграційного плану.
 
 ## Hard-rules
 
@@ -43,5 +43,5 @@ pnpm --filter @sergeant/design-tokens test  # snapshot-тести токенів
 
 ## Глибше
 
-- [`docs/design/brandbook.md`](../../docs/design/brandbook.md)
-- [`docs/design/design-system.md`](../../docs/design/design-system.md)
+- [`docs/05-design/design/brandbook.md`](../../docs/05-design/design/brandbook.md)
+- [`docs/05-design/design/design-system.md`](../../docs/05-design/design/design-system.md)

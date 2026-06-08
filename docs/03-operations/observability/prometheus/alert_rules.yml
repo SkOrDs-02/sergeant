@@ -1,0 +1,397 @@
+# Alert rules, прив'язані до SLO в ../SLO.md.
+#
+# Пари вікон (за Google SRE Workbook Ch. 5):
+#   fast  — 1h long / 5m short / burn-rate 14.4 → page (≈2d до вичерпання 30-day бюджету)
+#   slow  — 6h long / 30m short / burn-rate 6   → ticket (≈5d до вичерпання)
+#
+# Поріг burn-rate (напр. 14.4) помножений на error-budget `(1 - SLO)`
+# дає кінцеву межу error-ratio. Для 99% SLO (B=0.01) fast threshold = 0.144.
+#
+# `severity=page` → PagerDuty/Telegram; `severity=ticket` → email/Sentry issue.
+
+groups:
+  # ──────────────────────────── HTTP API (SLO 99.0%) ─────────────
+  - name: slo_http
+    rules:
+      - alert: HttpErrorBudgetBurnFast
+        expr: |
+          sli:http_error:ratio_rate1h > (14.4 * 0.01)
+          and
+          sli:http_error:ratio_rate5m > (14.4 * 0.01)
+        for: 2m
+        labels:
+          severity: page
+          slo: http_availability
+        annotations:
+          summary: "HTTP API burning error budget fast (>14.4× / ~2d to exhaust)"
+          description: |
+            5xx ratio >14.4% over both 1h and 5m windows. At this rate the
+            30-day error budget (1%) will be gone in ~2d (30d / 14.4 ≈ 50h).
+            Current 1h 5xx ratio: {{ $value | humanizePercentage }}.
+          runbook: "docs/03-operations/observability/runbook.md#httperrorbudgetburn"
+
+      - alert: HttpErrorBudgetBurnSlow
+        expr: |
+          sli:http_error:ratio_rate6h > (6 * 0.01)
+          and
+          sli:http_error:ratio_rate30m > (6 * 0.01)
+        for: 15m
+        labels:
+          severity: ticket
+          slo: http_availability
+        annotations:
+          summary: "HTTP API burning error budget slowly (>6× / 5d to exhaust)"
+          description: |
+            5xx ratio >6% over both 6h and 30m windows. At this rate the
+            30-day budget will be gone in ~5d.
+            Current 6h 5xx ratio: {{ $value | humanizePercentage }}.
+          runbook: "docs/03-operations/observability/runbook.md#httperrorbudgetburn"
+
+      - alert: HttpLatencyP95High
+        expr: sli:http_latency_p95_ms:rate5m > 1000
+        for: 15m
+        labels:
+          severity: ticket
+          slo: http_latency
+        annotations:
+          summary: "HTTP p95 latency >1s over 15m (non-AI endpoints)"
+          description: |
+            Current p95: {{ $value }} ms. Check `db_pool_waiting`,
+            `db_query_duration_ms`, and N+1 query patterns.
+          runbook: "docs/03-operations/observability/runbook.md#httplatencyp95high"
+
+      - alert: BackendHealthP95High
+        expr: job:health_p95_5m > 100
+        for: 5m
+        labels:
+          severity: ticket
+          slo: health_latency
+        annotations:
+          summary: "Backend health endpoint p95 >100ms for 5m"
+          description: |
+            Health probe p95 is {{ $value }} ms over 5m. This is a ticket,
+            not a page: the endpoint is still responding, but probes are
+            close to failing during rolling deploys or cold starts. Check DB
+            pool waiting, process event-loop lag, and recent deploys.
+          runbook: "docs/03-operations/observability/runbook.md#backendhealthp95high"
+
+  # ──────────────────────────── Sync (SLO 99.5%) ────────────────
+  - name: slo_sync
+    rules:
+      - alert: SyncErrorBudgetBurnFast
+        expr: |
+          sli:sync_error:ratio_rate1h > (14.4 * 0.005)
+          and
+          sli:sync_error:ratio_rate5m > (14.4 * 0.005)
+        for: 2m
+        labels:
+          severity: page
+          slo: sync_availability
+        annotations:
+          summary: "Sync burning error budget fast"
+          description: |
+            Sync error/too_large/unauthorized ratio >7.2% over 1h and 5m.
+            30-day budget (0.5%) gone in ~2d at this rate (30d / 14.4 ≈ 50h).
+            Clients may be silently losing data. Investigate Postgres and
+            `sync_operations_total{outcome=~"error|too_large"}` breakdown
+            by {op, module}.
+          runbook: "docs/03-operations/observability/runbook.md#syncerrorbudgetburn"
+
+      - alert: SyncErrorBudgetBurnSlow
+        expr: |
+          sli:sync_error:ratio_rate6h > (6 * 0.005)
+          and
+          sli:sync_error:ratio_rate30m > (6 * 0.005)
+        for: 15m
+        labels:
+          severity: ticket
+          slo: sync_availability
+        annotations:
+          summary: "Sync burning error budget slowly"
+          description: "6h ratio >3%. Current: {{ $value | humanizePercentage }}."
+          runbook: "docs/03-operations/observability/runbook.md#syncerrorbudgetburn"
+
+      - alert: SyncLatencyP95High
+        expr: sli:sync_latency_p95_ms:rate5m > 2500
+        for: 15m
+        labels:
+          severity: ticket
+          slo: sync_latency
+        annotations:
+          summary: "Sync p95 duration >2.5s"
+          description: |
+            Current: {{ $value }} ms. Check payload sizes
+            (`sync_payload_bytes`) and DB pool waiting.
+          runbook: "docs/03-operations/observability/runbook.md#synclatencyp95high"
+
+      - alert: SyncConflictSpike
+        expr: sli:sync_conflict:ratio_rate1h > 0.10
+        for: 30m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Sync push conflict ratio >10% over 1h"
+          description: |
+            Conflict ratio on push/push_all is {{ $value | humanizePercentage }}.
+            Either clients are fighting over the same state, or lastPulledAt
+            semantics regressed. Not an SLO violation, but worth attention.
+          runbook: "docs/03-operations/observability/runbook.md#syncconflictspike"
+
+  # ──────────────────────────── Auth (SLO 99.0%) ────────────────
+  - name: slo_auth
+    rules:
+      - alert: AuthErrorBudgetBurnFast
+        expr: |
+          sli:auth_error:ratio_rate1h > (14.4 * 0.01)
+          and
+          sli:auth_error:ratio_rate5m > (14.4 * 0.01)
+        for: 2m
+        labels:
+          severity: page
+          slo: auth_availability
+        annotations:
+          summary: "Auth burning error budget fast"
+          description: |
+            Auth outcome=error ratio >14.4% over 1h and 5m. Users cannot
+            sign in / sign up. Check better-auth logs and DB.
+          runbook: "docs/03-operations/observability/runbook.md#autherrorbudgetburn"
+
+      - alert: AuthErrorBudgetBurnSlow
+        expr: |
+          sli:auth_error:ratio_rate6h > (6 * 0.01)
+          and
+          sli:auth_error:ratio_rate30m > (6 * 0.01)
+        for: 15m
+        labels:
+          severity: ticket
+          slo: auth_availability
+        annotations:
+          summary: "Auth burning error budget slowly"
+          description: "6h error ratio: {{ $value | humanizePercentage }}."
+          runbook: "docs/03-operations/observability/runbook.md#autherrorbudgetburn"
+
+      - alert: AuthSessionLookupSlow
+        expr: sli:auth_session_lookup_p95_ms:rate5m > 100
+        for: 15m
+        labels:
+          severity: ticket
+          slo: auth_latency
+        annotations:
+          summary: "Session lookup p95 >100ms"
+          description: |
+            Session lookup is on every authenticated API hit, so high p95
+            here directly drags the whole API latency. Current: {{ $value }} ms.
+            Likely causes: DB pool saturation, cold Postgres connection,
+            sessions table bloat.
+          runbook: "docs/03-operations/observability/runbook.md#authsessionlookupslow"
+
+      - alert: AuthRateLimitSpike
+        expr: sli:auth_rate_limited:ratio_rate5m > 0.30
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Auth rate-limit ratio >30% over 10m (possible brute-force)"
+          description: |
+            >30% of auth attempts are getting 429. Either a real abuse
+            attempt or misbehaving client. Investigate `rate_limit_hits_total{key="api:auth:sensitive",outcome="blocked"}`
+            and correlate with IPs via access logs.
+          runbook: "docs/03-operations/observability/runbook.md#authratelimitspike"
+
+  # ──────────────────────────── AI (SLO 97.0%) ──────────────────
+  - name: slo_ai
+    rules:
+      - alert: AiErrorBudgetBurnFast
+        expr: |
+          sli:ai_error:ratio_rate1h > (14.4 * 0.03)
+          and
+          sli:ai_error:ratio_rate5m > (14.4 * 0.03)
+        for: 5m
+        labels:
+          severity: page
+          slo: ai_availability
+        annotations:
+          summary: "AI (Anthropic) burning error budget fast"
+          description: |
+            Non-ok AI outcome ratio >43% over 1h and 5m. Likely Anthropic
+            outage or credential/quota issue. Check `ai_requests_total`
+            by outcome and `ai_quota_blocks_total`.
+          runbook: "docs/03-operations/observability/runbook.md#aierrorbudgetburn"
+
+      - alert: AiErrorBudgetBurnSlow
+        expr: |
+          sli:ai_error:ratio_rate6h > (6 * 0.03)
+          and
+          sli:ai_error:ratio_rate30m > (6 * 0.03)
+        for: 30m
+        labels:
+          severity: ticket
+          slo: ai_availability
+        annotations:
+          summary: "AI burning error budget slowly"
+          description: "6h non-ok ratio: {{ $value | humanizePercentage }}."
+          runbook: "docs/03-operations/observability/runbook.md#aierrorbudgetburn"
+
+      - alert: AiLatencyP95High
+        expr: sli:ai_latency_p95_ms:rate5m > 30000
+        for: 30m
+        labels:
+          severity: ticket
+          slo: ai_latency
+        annotations:
+          summary: "AI p95 duration >30s (endpoint={{ $labels.endpoint }})"
+          description: |
+            AI endpoint `{{ $labels.endpoint }}` p95: {{ $value }} ms.
+            Likely Anthropic-side degradation. Check status.anthropic.com.
+          runbook: "docs/03-operations/observability/runbook.md#ailatencyp95high"
+
+      # Щоденний cost-cap: staging baseline < $5/day (2026-05-06 Post-rollout
+      # verification). Поріг $25 = 5× baseline — консервативний запас; при
+      # зростанні трафіку (Initiative 0010 launch) перегляньмо threshold.
+      # `increase(...[24h])` рахує накопичений USD-spend за ковзне 24-годинне
+      # вікно; `for: 1h` уникає помилкових спрацьовувань від коротких сплесків.
+      - alert: AiDailyCostHigh
+        expr: |
+          sum(increase(ai_cost_estimate_usd_total[24h])) > 25
+        for: 1h
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "AI daily cost > $25 (threshold: 5× $5/day staging baseline)"
+          description: "Accumulated AI cost {{ $value | humanize }}$ in last 24h. Review Anthropic console."
+          runbook: "Check cache hit rate; if < 60%, see ADR-0039 for remediation."
+
+      # Квота зберігається в Postgres; якщо сховище впало — `assertAiQuota`
+      # fail-open пропускає запити, тобто ми тимчасово НЕ стримуємо юзерів
+      # від перевитрати Anthropic-бюджету. Це не поломка бекенду в сенсі 5xx
+      # (response = ok), але реальна фінансова ризик-подія, тому ticket.
+      - alert: AiQuotaStoreDown
+        expr: increase(ai_quota_fail_open_total[10m]) > 0
+        for: 5m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "AI quota store unavailable → fail-open (users can exceed limits)"
+          description: |
+            `ai_quota_fail_open_total` інкрементується, коли assertAiQuota
+            не може записати у `ai_usage_daily` (DB down / DATABASE_URL
+            missing / table dropped). Запити пропускаються → юзери можуть
+            вийти за денний ліміт, і ми заплатимо за Anthropic.
+            Reason label: {{ $labels.reason }}.
+          runbook: "docs/03-operations/observability/runbook.md#aiquotastoredown"
+
+  # ──────────────────────────── External HTTP (SLO 95.0% per-upstream) ─
+  - name: slo_external_http
+    rules:
+      - alert: ExternalHttpErrorBudgetBurnSlow
+        expr: |
+          sli:external_http_error:ratio_rate6h > (6 * 0.05)
+          and
+          sli:external_http_error:ratio_rate30m > (6 * 0.05)
+        for: 30m
+        labels:
+          severity: ticket
+          slo: external_http_availability
+        annotations:
+          summary: "Upstream {{ $labels.upstream }} error ratio >30% over 6h"
+          description: |
+            `{{ $labels.upstream }}` outcome=error|timeout ratio over 6h:
+            {{ $value | humanizePercentage }}. We don't own this service,
+            but if it stays degraded — degrade features that depend on it.
+          runbook: "docs/03-operations/observability/runbook.md#externalhttperrorbudgetburn"
+
+  # ──────────────────────────── Process-рівня (hard alerts) ─────
+  - name: process_errors
+    rules:
+      - alert: UnhandledRejectionObserved
+        expr: increase(unhandled_rejections_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: page
+        annotations:
+          summary: "Unhandled promise rejection observed"
+          description: |
+            A promise was rejected without a .catch(). Always a bug — the
+            request likely hung or double-responded. Correlate by timestamp
+            with Pino `level=fatal` logs carrying `err.cause` chain.
+          runbook: "docs/03-operations/observability/runbook.md#unhandledrejection"
+
+      - alert: UncaughtExceptionObserved
+        expr: increase(uncaught_exceptions_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: page
+        annotations:
+          summary: "Uncaught exception observed"
+          description: |
+            Synchronous exception escaped to process root. Process isn't
+            killed (Sentry captures + Railway restarts on health failure),
+            but state may be inconsistent. Investigate immediately.
+          runbook: "docs/03-operations/observability/runbook.md#uncaughtexception"
+
+      # Leading indicator. `DbPoolSaturated` (нижче) page-ить аж через 10m —
+      # до того моменту p95 API вже просів, бо кожен session-check чекає
+      # вільний слот. Ticket на 5m дає команді час почати дослідження до
+      # того, як SLO починає гриміти.
+      - alert: DbPoolWaitingSustained
+        expr: db_pool_waiting > 0
+        for: 5m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Postgres pool has waiting clients for >5m (leading indicator)"
+          description: |
+            `db_pool_waiting` > 0 вже 5 хвилин. p95 API починає деградувати
+            через чергування session-check-ів. Якщо не розсмокчеться — за
+            ще 5m трігернеться page `DbPoolSaturated`. Перевір
+            `db_query_duration_ms{op}` і `db_slow_queries_total{op}` ЗАРАЗ,
+            знайди нового винуватця (недавній deploy / зміна схеми).
+          runbook: "docs/03-operations/observability/runbook.md#dbpoolwaitingsustained"
+
+      - alert: DbPoolSaturated
+        expr: db_pool_waiting > 0
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: "Postgres pool saturated ({{ $value }} waiting) for >10m"
+          description: |
+            Clients queuing for DB connections. Either pool size too small
+            or a leaky query / long-running transaction. Check
+            `db_query_duration_ms` and `db_slow_queries_total`.
+          runbook: "docs/03-operations/observability/runbook.md#dbpoolsaturated"
+
+      # Queue-depth signal — раніше за `DbPoolSaturated`, але вже не
+      # "хтось щось чекає 5 хв" (як `DbPoolWaitingSustained` — тікет на
+      # будь-який waiting), а саме "stack-up ≥ 5 клієнтів стабільно".
+      # Це diagnostic-grade signal: capacity-planning input для PG_POOL_SIZE.
+      - alert: DbPoolWaitingDeep
+        expr: db_pool_waiting > 5
+        for: 5m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Postgres pool queue ≥5 clients deep for 5m"
+          description: |
+            `db_pool_waiting` тримається >5 уже 5 хвилин — це вже не
+            одиничний slow query, а sustained saturation. Перевір
+            `db_pool_acquire_duration_seconds` гістограму (p95/p99
+            повинні скочити одночасно) і `db_pool_size_current{state="idle"}`
+            (зазвичай впав до 0). Якщо рут — слабкий pool size, bump
+            `PG_POOL_SIZE` env var. Якщо leaky transaction — шукай
+            у `db_slow_queries_total{op}`.
+          runbook: "docs/03-operations/observability/runbook.md#dbpoolsaturated"
+
+      - alert: ProgrammerErrorsIncreasing
+        expr: increase(app_errors_total{kind="programmer"}[5m]) > 0
+        for: 0m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Programmer-class error observed (module={{ $labels.module }})"
+          description: |
+            `kind=programmer` means the error wasn't declared as operational
+            via `AppError`, i.e. unexpected crash path. Usually a bug —
+            open a Sentry issue and link the ticket.
+          runbook: "docs/03-operations/observability/runbook.md#programmererrors"

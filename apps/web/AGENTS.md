@@ -48,7 +48,7 @@ CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance bud
 
 ## Lighthouse CI (perf-budget gate)
 
-T5 gate from [`docs/planning/sprint-roadmap-q2q3-2026.md`](../../docs/planning/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг — shipped: workflow [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) рунається на `pull_request` до `main` та `workflow_dispatch`. Локальний прогон: `pnpm --filter @sergeant/web lighthouse` (`lhci autorun`). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
+T5 gate from [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](../../docs/90-work/planning/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг — shipped: workflow [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) рунається на `pull_request` до `main` та `workflow_dispatch`. Локальний прогон: `pnpm --filter @sergeant/web lighthouse` (`lhci autorun`). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
 
 **Routes audited (3 runs each, median):** `/`, `/finyk`, `/fizruk`, `/routine`, `/nutrition`. `/` is the Hub root — there is no separate `/hub` path (see [`apps/web/src/core/app/router.tsx`](./src/core/app/router.tsx)).
 
@@ -111,6 +111,6 @@ pnpm --filter @sergeant/web exec playwright \    # focus one spec locally
 ## Deeper docs
 
 - App README: [`apps/web/README.md`](./README.md)
-- Routing catalog: [`docs/agents/agent-skills-catalog.md`](../../docs/agents/agent-skills-catalog.md)
-- Module ownership: [`docs/architecture/module-ownership.md`](../../docs/architecture/module-ownership.md)
-- Domain invariants (Kyiv time, kopiykas as `number`): [`docs/architecture/domain-invariants.md`](../../docs/architecture/domain-invariants.md)
+- Routing catalog: [`docs/00-start/agents/agent-skills-catalog.md`](../../docs/00-start/agents/agent-skills-catalog.md)
+- Module ownership: [`docs/02-engineering/architecture/module-ownership.md`](../../docs/02-engineering/architecture/module-ownership.md)
+- Domain invariants (Kyiv time, kopiykas as `number`): [`docs/02-engineering/architecture/domain-invariants.md`](../../docs/02-engineering/architecture/domain-invariants.md)

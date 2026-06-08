@@ -1,6 +1,6 @@
 # `@sergeant/mobile` — Detox E2E
 
-Detox-E2E-харнес для мобільного застосунку (Phase 4 з `docs/mobile/react-native-migration.md`, §8 + §13 Q8).
+Detox-E2E-харнес для мобільного застосунку (Phase 4 з `docs/02-engineering/mobile/react-native-migration.md`, §8 + §13 Q8).
 
 ## Сьюти
 

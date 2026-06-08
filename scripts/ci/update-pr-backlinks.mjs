@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/ci/update-pr-backlinks.mjs
 //
-// Update `docs/pr-ledger/index.json` and the in-doc PR-BACKLINKS block
+// Update `docs/04-governance/pr-ledger/index.json` and the in-doc PR-BACKLINKS block
 // at the end of each canonical doc (ADR / initiative / playbook /
 // hard-rule). Driven by the `.github/workflows/pr-backlinks.yml`
 // GitHub Action on every merged PR; can also run locally via
@@ -38,7 +38,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 
-const LEDGER_PATH = resolve(REPO_ROOT, "docs/pr-ledger/index.json");
+const LEDGER_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/pr-ledger/index.json",
+);
 const SCHEMA_VERSION = 1;
 const TOP_N_IN_DOC = 5;
 
@@ -64,23 +67,23 @@ const GITHUB_PR_BASE = "https://github.com/Skords-01/Sergeant/pull";
  */
 const CANONICAL_DOC_ROOTS = [
   {
-    rootDir: "docs/adr",
+    rootDir: "docs/04-governance/adr",
     recursive: false,
     excludes: ["TEMPLATE.md", "README.md"],
   },
   {
-    rootDir: "docs/initiatives",
+    rootDir: "docs/90-work/initiatives",
     recursive: false,
     excludes: ["README.md", "follow-ups.md"],
   },
   {
-    rootDir: "docs/playbooks",
+    rootDir: "docs/00-start/playbooks",
     recursive: false,
     excludes: ["README.md", "INDEX.md"],
     excludePrefix: "_",
   },
   {
-    rootDir: "docs/governance/rules",
+    rootDir: "docs/04-governance/governance/rules",
     recursive: false,
     excludes: ["README.md"],
   },
@@ -231,7 +234,7 @@ function renderBlock(docRelPath, ledger) {
     "| --- | --- | --- |",
     rows,
     "",
-    `_Auto-derived from \`docs/pr-ledger/index.json\`. Top ${entries.length} most recent PRs touching this file._`,
+    `_Auto-derived from \`docs/04-governance/pr-ledger/index.json\`. Top ${entries.length} most recent PRs touching this file._`,
     BLOCK_END,
   ].join("\n");
 }

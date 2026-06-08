@@ -17,7 +17,7 @@ const overridesDocPath = join(repoRoot, "pnpm-overrides.md");
 if (!existsSync(overridesDocPath)) {
   console.warn(
     "[check-pnpm-overrides-staleness] WARNING: pnpm-overrides.md not found. " +
-      "Create it per docs/governance/pnpm-overrides-policy.md.",
+      "Create it per docs/04-governance/governance/pnpm-overrides-policy.md.",
   );
   process.exit(0);
 }

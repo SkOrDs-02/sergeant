@@ -1,7 +1,7 @@
 # Railway config-as-code for the OpenClaw Gateway service.
 # In Railway Service settings → "Config-as-code Path" set this file path.
 # Service name: sergeant-openclaw-gateway (same Railway project as apps/server).
-# See docs/planning/openclaw-migration-plan.md § Locked decision #1 for placement rationale.
+# See docs/90-work/planning/openclaw-migration-plan.md § Locked decision #1 for placement rationale.
 
 [build]
 builder = "DOCKERFILE"

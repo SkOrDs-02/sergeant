@@ -1,8 +1,8 @@
 name: RAG quality gate (recall@4 weekly)
 
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
-# Linked to docs/planning/pr-plan-2026-05.md § PR-22 «RAG quality gate».
-# Reaction playbook: docs/observability/runbook.md § «RagQualityGateDegraded».
+# Linked to docs/90-work/planning/pr-plan-2026-05.md § PR-22 «RAG quality gate».
+# Reaction playbook: docs/03-operations/observability/runbook.md § «RagQualityGateDegraded».
 #
 # Що робить:
 #   - Weekly (Mon 08:00 UTC = 11:00 Kyiv) запускає eval CLI у mock-mode
@@ -201,7 +201,7 @@ jobs:
                   '4. Якщо це false-positive (eval-harness регрес, не RAG-регрес) → close issue з міткою `false-positive`.',
                   '5. Якщо RAG-регрес підтверджений → відкрий follow-up PR під label `ai-memory`.',
                   '',
-                  'Детальний playbook: [`docs/observability/runbook.md` § «RagQualityGateKillSwitch»](../blob/main/docs/observability/runbook.md).',
+                  'Детальний playbook: [`docs/03-operations/observability/runbook.md` § «RagQualityGateKillSwitch»](../blob/main/docs/03-operations/observability/runbook.md).',
                 ].join('\n')
               : [
                   '## Reaction',
@@ -210,7 +210,7 @@ jobs:
                   '2. Чи був recent ingestion-change або embedding-model bump?',
                   '3. RAG залишається ON — це early warning. Якщо мetric не повертається у `pass` за 2 тижні → eскалувати до `kill`.',
                   '',
-                  'Детальний playbook: [`docs/observability/runbook.md` § «RagQualityGateDegraded»](../blob/main/docs/observability/runbook.md).',
+                  'Детальний playbook: [`docs/03-operations/observability/runbook.md` § «RagQualityGateDegraded»](../blob/main/docs/03-operations/observability/runbook.md).',
                 ].join('\n');
 
             const body = [

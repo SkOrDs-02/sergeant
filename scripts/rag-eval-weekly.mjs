@@ -36,7 +36,7 @@
 //     INTERNAL_API_KEY=xxx \\
 //     pnpm eval:rag:weekly --mode=mock          # production
 //
-// Reaction playbook: `docs/observability/runbook.md` §
+// Reaction playbook: `docs/03-operations/observability/runbook.md` §
 // «RagQualityGateDegraded» / «RagQualityGateKillSwitch».
 
 import { spawn } from "node:child_process";

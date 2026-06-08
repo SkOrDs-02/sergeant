@@ -4,9 +4,9 @@
 // Build a per-workspace symbol catalog for every Sergeant workspace:
 //   - `<workspace>/symbols.json` — exports declared at the workspace's
 //      entry point, with cross-package usage counts (`usedBy[]`).
-//   - `docs/governance/symbol-index.json` — aggregated index of all
+//   - `docs/04-governance/governance/symbol-index.json` — aggregated index of all
 //      workspaces with summary counts (totals + dead-export count).
-//   - `docs/governance/symbol-index.html` — readable dashboard
+//   - `docs/04-governance/governance/symbol-index.html` — readable dashboard
 //      (inline CSS, sortable tables, no external deps).
 //
 // Phase 2 of Initiative 0014 — Knowledge Graph & Auto-Generated Catalogs.
@@ -35,8 +35,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 
-const OUT_INDEX_JSON = resolve(REPO_ROOT, "docs/governance/symbol-index.json");
-const OUT_INDEX_HTML = resolve(REPO_ROOT, "docs/governance/symbol-index.html");
+const OUT_INDEX_JSON = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/symbol-index.json",
+);
+const OUT_INDEX_HTML = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/symbol-index.html",
+);
 
 const SCHEMA_VERSION = 1;
 
@@ -388,7 +394,8 @@ function renderPerPackageJSON(packageEntry, globalGeneratedAt) {
   // Trim the per-package view: skip the giant `summary`/`packages` block.
   // Each workspace gets its own minimal artifact.
   const body = {
-    $schema: "../../docs/governance/schemas/symbol-catalog.schema.json",
+    $schema:
+      "../../docs/04-governance/governance/schemas/symbol-catalog.schema.json",
     version: SCHEMA_VERSION,
     generated_at: globalGeneratedAt,
     package: packageEntry.name,

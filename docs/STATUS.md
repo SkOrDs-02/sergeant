@@ -17,7 +17,7 @@
 
 ## 🟢 Зроблено нещодавно
 
-Останні 6 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./pr-ledger/index.json).
+Останні 6 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
 
 - [#2900](https://github.com/Skords-01/Sergeant/pull/2900) — docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) _(2026-05-15)_
 - [#2899](https://github.com/Skords-01/Sergeant/pull/2899) — feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5) _(2026-05-15)_
@@ -26,28 +26,28 @@
 - [#2889](https://github.com/Skords-01/Sergeant/pull/2889) — feat(docs): per-package symbol catalog (Initiative 0014 Phase 2) _(2026-05-15)_
 - [#2876](https://github.com/Skords-01/Sergeant/pull/2876) — feat(docs): knowledge graph generator (Initiative 0014 Phase 1) _(2026-05-15)_
 
-## 🔵 В роботі — 75 відкритих
+## 🔵 В роботі — 74 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 19       |
-| Планування                       | 15       |
+| Ініціативи                       | 20       |
+| Планування                       | 14       |
 | Launch / запуск                  | 17       |
-| Аудити й прожарки                | 17       |
+| Аудити й прожарки                | 16       |
 | Security hardening               | 2        |
 | Техборг                          | 5        |
 | Superpowers — плани впровадження | 0        |
 
 **Найактивніше (8, за останніми PR):**
 
-- [`initiatives/0015-docs-automation-daily-ops.md`](./initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
-- [`planning/pr-plan-dead-code-hard-rules-2026-05.md`](./planning/pr-plan-dead-code-hard-rules-2026-05.md) — PR-план — Dead Code + Hard Rules (з прожарки 2026-05-13) — Active _(Планування)_
-- [`planning/pr-plan-testing-devx-2026-05.md`](./planning/pr-plan-testing-devx-2026-05.md) — PR-план Testing & DevX 2026-05 — зі зрізу 2026-05-13 — Active _(Планування)_
-- [`tech-debt/frontend.md`](./tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
-- [`initiatives/0017-hub-tabs-mount-perf.md`](./initiatives/0017-hub-tabs-mount-perf.md) — 0017 — Hub Settings & Reports mount perf — In progress — code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worke _(Ініціативи)_
-- [`audits/2026-05-13-consolidated-page-audit.md`](./audits/2026-05-13-consolidated-page-audit.md) — Consolidated Page Audit — 2026-05-13 — Active _(Аудити й прожарки)_
-- [`audits/2026-05-13-testing-devx-roast.md`](./audits/2026-05-13-testing-devx-roast.md) — Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) — Active _(Аудити й прожарки)_
-- [`tech-debt/backend.md`](./tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
+- [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
+- [`90-work/planning/pr-plan-testing-devx-2026-05.md`](./90-work/planning/pr-plan-testing-devx-2026-05.md) — PR-план Testing & DevX 2026-05 — зі зрізу 2026-05-13 — Active _(Планування)_
+- [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
+- [`90-work/audits/2026-05-13-consolidated-page-audit.md`](./90-work/audits/2026-05-13-consolidated-page-audit.md) — Consolidated Page Audit — 2026-05-13 — Active _(Аудити й прожарки)_
+- [`90-work/audits/2026-05-13-testing-devx-roast.md`](./90-work/audits/2026-05-13-testing-devx-roast.md) — Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) — Active _(Аудити й прожарки)_
+- [`90-work/tech-debt/backend.md`](./90-work/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
+- [`90-work/tech-debt/mobile.md`](./90-work/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Техборг)_
+- [`90-work/initiatives/0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md) — 0010 — Revenue-first launch: ship paid, focus wedge — In progress _(Ініціативи)_
 
 ## ⏭️ Наступний крок / заблоковано
 
@@ -57,28 +57,28 @@ _Жодного `Phase X next` / `Stage X blocked` маркера. Деталі 
 
 pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 4 застосунки + `tools/openclaw` + 12 пакетів. Канонічні джерела:
 
-- [`architecture/repo-map.md`](./architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).
-- [`architecture/service-catalog.md`](./architecture/service-catalog.md) — runtime-поверхні та сервіси.
-- [`architecture/README.md`](./architecture/README.md) — repo map, C4-діаграми, domain invariants.
+- [`architecture/repo-map.md`](./02-engineering/architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).
+- [`architecture/service-catalog.md`](./02-engineering/architecture/service-catalog.md) — runtime-поверхні та сервіси.
+- [`architecture/README.md`](./02-engineering/architecture/README.md) — repo map, C4-діаграми, domain invariants.
 - [`../AGENTS.md`](../AGENTS.md) — repo overview, hard rules, performance budgets, scope enum.
 
 ## 🗺️ Карта доків
 
 Повний жанровий індекс → [`README.md`](./README.md). Коротка карта верхнього рівня:
 
-| Домен          | Що там                                                                                                                                                                                                             | Коли читати                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
-| **Старт**      | [`agents/`](./agents/README.md), [`playbooks/`](./playbooks/README.md)                                                                                                                                             | онбординг, routing, рецепти        |
-| **Продукт**    | [`launch/`](./launch/README.md), [`marketing/`](./marketing/README.md), [`copy/`](./copy/README.md)                                                                                                                | GTM, монетизація, FTUX             |
-| **Інженерія**  | [`architecture/`](./architecture/README.md), [`api/`](./api/README.md), [`web/`](./web/README.md), [`mobile/`](./mobile/README.md), [`testing/`](./testing/README.md), [`integrations/`](./integrations/README.md) | як влаштовано і як білдити         |
-| **Операції**   | [`deploy/`](./deploy/README.md), [`observability/`](./observability/README.md), [`runbooks/`](./runbooks/README.md), [`postmortems/`](./postmortems/README.md), [`ops/`](./ops/README.md)                          | деплой, алерти, інциденти          |
-| **Governance** | [`governance/`](./governance/README.md), [`security/`](./security/README.md), [`adr/`](./adr/README.md)                                                                                                            | hard rules, рішення, безпека       |
-| **Дизайн**     | [`design/`](./design/README.md), [`ui/`](./ui/README.md), [`i18n/`](./i18n/README.md)                                                                                                                              | дизайн-система, патерни            |
-| **Робота**     | [`initiatives/`](./initiatives/README.md), [`planning/`](./planning/README.md), [`audits/`](./audits/README.md), [`tech-debt/`](./tech-debt/README.md)                                                             | трекери: що оновлювати, коли шипиш |
+| Домен          | Що там                                                                                                                                                                                                                                                                                                       | Коли читати                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| **Старт**      | [`agents/`](./00-start/agents/README.md), [`playbooks/`](./00-start/playbooks/README.md)                                                                                                                                                                                                                     | онбординг, routing, рецепти        |
+| **Продукт**    | [`launch/`](./01-product/launch/README.md), [`marketing/`](./01-product/marketing/README.md), [`copy/`](./01-product/copy/README.md)                                                                                                                                                                         | GTM, монетизація, FTUX             |
+| **Інженерія**  | [`architecture/`](./02-engineering/architecture/README.md), [`api/`](./02-engineering/api/README.md), [`web/`](./02-engineering/web/README.md), [`mobile/`](./02-engineering/mobile/README.md), [`testing/`](./02-engineering/testing/README.md), [`integrations/`](./02-engineering/integrations/README.md) | як влаштовано і як білдити         |
+| **Операції**   | [`deploy/`](./03-operations/deploy/README.md), [`observability/`](./03-operations/observability/README.md), [`runbooks/`](./03-operations/runbooks/README.md), [`postmortems/`](./03-operations/postmortems/README.md), [`ops/`](./03-operations/ops/README.md)                                              | деплой, алерти, інциденти          |
+| **Governance** | [`governance/`](./04-governance/governance/README.md), [`security/`](./04-governance/security/README.md), [`adr/`](./04-governance/adr/README.md)                                                                                                                                                            | hard rules, рішення, безпека       |
+| **Дизайн**     | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md)                                                                                                                                                                                          | дизайн-система, патерни            |
+| **Робота**     | [`initiatives/`](./90-work/initiatives/README.md), [`planning/`](./90-work/planning/README.md), [`audits/`](./90-work/audits/README.md), [`tech-debt/`](./90-work/tech-debt/README.md)                                                                                                                       | трекери: що оновлювати, коли шипиш |
 
 ## Quick links
 
 - [`open-work.md`](./open-work.md) — повний rollup усіх трекерів
 - [`today.md`](./today.md) — денний бриф (топ-7 на сьогодні)
-- [`governance/freshness-dashboard.html`](./governance/freshness-dashboard.html) — freshness огляд
+- [`governance/freshness-dashboard.html`](./04-governance/governance/freshness-dashboard.html) — freshness огляд
 - [`../AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing

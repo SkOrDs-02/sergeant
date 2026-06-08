@@ -3,7 +3,7 @@
   "version": 1,
   "key": "founder-pulse",
   "name": "Founder Pulse",
-  "description": "WF-60 growth-funnel overview for founder/on-call. Aggregates DAU/WAU/MAU, signup→onboarding→first_action activation funnel (overall + per module), MRR / new-subscriptions, D1/D7/D30 retention and activation rate from the canonical events declared in packages/shared/src/lib/analyticsEvents.ts. Runbook: docs/observability/posthog-founder-pulse.md.",
+  "description": "WF-60 growth-funnel overview for founder/on-call. Aggregates DAU/WAU/MAU, signup→onboarding→first_action activation funnel (overall + per module), MRR / new-subscriptions, D1/D7/D30 retention and activation rate from the canonical events declared in packages/shared/src/lib/analyticsEvents.ts. Runbook: docs/03-operations/observability/posthog-founder-pulse.md.",
   "timezone": "Europe/Kyiv",
   "events_contract": {
     "signup_completed": {
@@ -139,7 +139,7 @@
       "description": "Daily count of `subscription_started` events plus the new-MRR contribution (monthly-equivalent revenue) split by cadence. PostHog `$revenue` super-property is set in `apps/server/src/modules/billing/stripe.ts` and stores the major-unit amount.",
       "rationale": "Until a renewals/cancellations feed is wired into PostHog (TBD), the new-MRR contribution per day is the cleanest revenue-pulse signal. Yearly subs are normalised by /12 so monthly + yearly stack on the same axis. Active-MRR (cumulative) is computed downstream in n8n (WF-60) — this panel is the per-day delta.",
       "targets": {
-        "new-MRR run-rate": "≥$50/month aggregated over trailing 7 days (P2 below; baseline tracked in docs/launch/business/01-monetization-and-pricing.md)",
+        "new-MRR run-rate": "≥$50/month aggregated over trailing 7 days (P2 below; baseline tracked in docs/01-product/launch/business/01-monetization-and-pricing.md)",
         "subscription_started ZEROES": "If new subs = 0 over 7 days while ≥10 signups/day → Stripe webhook regression. P1."
       },
       "query": {

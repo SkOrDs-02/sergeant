@@ -43,7 +43,7 @@
 //   node scripts/lint-db-indexes.mjs --all            # all migrations
 //   node scripts/lint-db-indexes.mjs --strict         # fail on warnings
 //
-// Runbook: `docs/runbooks/operations-runbook.md § 9` (index hygiene).
+// Runbook: `docs/03-operations/runbooks/operations-runbook.md § 9` (index hygiene).
 
 import { execSync } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
@@ -360,7 +360,9 @@ export async function run({
   log(
     "     над column-line (NOT IMPLEMENTED YET — TODO marker for next iteration).",
   );
-  log("  3. Runbook: docs/runbooks/operations-runbook.md § 9 (index hygiene).");
+  log(
+    "  3. Runbook: docs/03-operations/runbooks/operations-runbook.md § 9 (index hygiene).",
+  );
 
   return strict ? 1 : 0;
 }

@@ -121,14 +121,14 @@ test("findShortestPath: 3-hop chain fails when budget is 2", () => {
 
 test("findShortestPath: directory link expands to README.md", () => {
   const dir = buildFixture({
-    "README.md": "[playbooks](./docs/playbooks)",
-    "docs/playbooks/README.md": "# playbooks",
+    "README.md": "[playbooks](./docs/00-start/playbooks)",
+    "docs/00-start/playbooks/README.md": "# playbooks",
   });
   try {
     const r = findShortestPath(
       dir,
       ["README.md"],
-      "docs/playbooks/README.md",
+      "docs/00-start/playbooks/README.md",
       1,
     );
     assert.ok(r, "directory link must resolve to README.md");

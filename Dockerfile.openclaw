@@ -12,7 +12,7 @@
 #
 # Збірка: docker build -f Dockerfile.openclaw -t sergeant-openclaw .
 #
-# Stage map (PR-30 — `docs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
+# Stage map (PR-30 — `docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
 #   1. `builder`  — node:alpine + full deps + `pnpm build`.
 #   2. `deps`     — node:alpine + `pnpm install --prod` + cleanup CVE-
 #      noisy optional peers (потребує shell, distroless його не має).

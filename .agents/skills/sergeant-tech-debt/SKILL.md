@@ -39,7 +39,7 @@ pnpm knip          # find unused exports, files, and deps across all workspaces
 
 Knip covers all 5 apps and `packages/`. Setting `ignoreExportsUsedInFile: true` suppresses same-file re-exports as false positives.
 
-Before deleting a Knip finding, apply lifecycle marker guards per `docs/playbooks/cleanup-dead-code.md`:
+Before deleting a Knip finding, apply lifecycle marker guards per `docs/00-start/playbooks/cleanup-dead-code.md`:
 
 | Marker | Action |
 |---|---|
@@ -99,5 +99,5 @@ Do not mix dead-code deletion, baseline reduction, and module decomposition in o
 
 ## Playbooks
 
-- `docs/playbooks/cleanup-dead-code.md` — step-by-step dead code removal with lifecycle marker guards.
-- Skill catalog: `docs/agents/agent-skills-catalog.md`.
+- `docs/00-start/playbooks/cleanup-dead-code.md` — step-by-step dead code removal with lifecycle marker guards.
+- Skill catalog: `docs/00-start/agents/agent-skills-catalog.md`.

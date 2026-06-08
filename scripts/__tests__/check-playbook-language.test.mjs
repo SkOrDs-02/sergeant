@@ -119,23 +119,29 @@ test("countAlphabets counts the Ukrainian apostrophe (ʼ U+02BC) as cyrillic", (
 });
 
 test("isSkippablePlaybook skips INDEX, README, _TEMPLATE-*, playbook-catalog, and underscore-prefixed", () => {
-  assert.equal(isSkippablePlaybook("docs/playbooks/INDEX.md"), true);
-  assert.equal(isSkippablePlaybook("docs/playbooks/README.md"), true);
+  assert.equal(isSkippablePlaybook("docs/00-start/playbooks/INDEX.md"), true);
+  assert.equal(isSkippablePlaybook("docs/00-start/playbooks/README.md"), true);
   assert.equal(
-    isSkippablePlaybook("docs/playbooks/_TEMPLATE-decision-tree.md"),
+    isSkippablePlaybook("docs/00-start/playbooks/_TEMPLATE-decision-tree.md"),
     true,
   );
-  assert.equal(isSkippablePlaybook("docs/playbooks/playbook-catalog.md"), true);
-  assert.equal(isSkippablePlaybook("docs/playbooks/_internal-notes.md"), true);
   assert.equal(
-    isSkippablePlaybook("docs/playbooks/add-api-endpoint.md"),
+    isSkippablePlaybook("docs/00-start/playbooks/playbook-catalog.md"),
+    true,
+  );
+  assert.equal(
+    isSkippablePlaybook("docs/00-start/playbooks/_internal-notes.md"),
+    true,
+  );
+  assert.equal(
+    isSkippablePlaybook("docs/00-start/playbooks/add-api-endpoint.md"),
     false,
   );
 });
 
 test("analyseFile flags an English-dominant playbook", () => {
   const r = analyseFile(
-    "/repo/docs/playbooks/foo.md",
+    "/repo/docs/00-start/playbooks/foo.md",
     "# Playbook: Foo\n\nThis is an English playbook with a lot of English text.\n",
   );
   assert.equal(r.flagged, true);
@@ -145,7 +151,7 @@ test("analyseFile flags an English-dominant playbook", () => {
 
 test("analyseFile does NOT flag an English file with `lang: en` frontmatter", () => {
   const r = analyseFile(
-    "/repo/docs/playbooks/foo.md",
+    "/repo/docs/00-start/playbooks/foo.md",
     "---\nlang: en\n---\n# Playbook: Foo\n\nIntentionally English for on-call shadowing.\n",
   );
   assert.equal(r.flagged, false);
@@ -155,7 +161,7 @@ test("analyseFile does NOT flag an English file with `lang: en` frontmatter", ()
 test("analyseFile does NOT flag a Ukrainian-dominant playbook", () => {
   const ua =
     "# Playbook: Як зробити X\n\nЦей плейбук пояснює, як зробити X. Викликай скрипт `pnpm foo`.\n";
-  const r = analyseFile("/repo/docs/playbooks/x.md", ua);
+  const r = analyseFile("/repo/docs/00-start/playbooks/x.md", ua);
   assert.equal(r.flagged, false);
   assert.ok(r.ratio >= MIN_CYRILLIC_RATIO);
 });
@@ -168,7 +174,7 @@ test("analyseFile is not fooled by code blocks full of English", () => {
     "Запусти команду:\n\n" +
     "```bash\nnode scripts/foo.mjs --very-long-english-flag --another-english-flag\n```\n\n" +
     "Перевір результат у логах.\n";
-  const r = analyseFile("/repo/docs/playbooks/test.md", src);
+  const r = analyseFile("/repo/docs/00-start/playbooks/test.md", src);
   assert.equal(r.flagged, false, JSON.stringify(r));
 });
 
@@ -178,7 +184,7 @@ test("analyseFile ignores the freshness header English handle", () => {
     "# Playbook: Огляд\n\n" +
     "> **Last validated:** 2026-04-30 by @longest-english-username-imaginable. **Next review:** 2026-07-29.\n\n" +
     "Цей файл коротко описує, що ми робимо у такому випадку.\n";
-  const r = analyseFile("/repo/docs/playbooks/oversight.md", src);
+  const r = analyseFile("/repo/docs/00-start/playbooks/oversight.md", src);
   assert.equal(r.flagged, false, JSON.stringify(r));
 });
 
@@ -186,7 +192,7 @@ test("analyseFile ignores the freshness header English handle", () => {
 
 function makeFixtureDirs() {
   const root = mkdtempSync(join(tmpdir(), "playbook-language-test-"));
-  const playbookDir = join(root, "docs/playbooks");
+  const playbookDir = join(root, "docs/00-start/playbooks");
   const skillsDir = join(root, ".agents/skills/example-skill");
   mkdirSync(playbookDir, { recursive: true });
   mkdirSync(skillsDir, { recursive: true });

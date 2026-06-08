@@ -1,6 +1,6 @@
 # n8n Reporting Matrix
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active. Live since 2026-05-02 — supergroup `Sergeant Ops` (chat
 > id `-1003924852082`) у Forum mode, 7 канонічних топіків створені, кожен
 > workflow JSON шле через `={{ $env.TELEGRAM_TOPIC_* }}` expression на
@@ -22,9 +22,9 @@ when** for every active n8n workflow. Канал-, цикл-, escalation- та �
 3. **Workflow (n8n)** — продьюсер повідомлення з конкретного триггера.
 
 Архітектурне обґрунтування — в
-[`../../docs/observability/telegram-control-plane.md`](../../docs/observability/telegram-control-plane.md)
+[`../../docs/03-operations/observability/telegram-control-plane.md`](../../docs/03-operations/observability/telegram-control-plane.md)
 та
-[ADR-0030](../../docs/adr/0030-telegram-reporting-channel-structure.md).
+[ADR-0030](../../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md).
 
 ## Priority levels
 
@@ -132,7 +132,7 @@ WF-98 SQL cooldown), **WF-99** (heartbeat, P3 meta — silent broadcast
 Server-side endpoint —
 [`apps/server/src/modules/alerts/store.ts`](../../apps/server/src/modules/alerts/store.ts).
 Mapping per-workflow деталізований у
-[`docs/observability/alert-bot-routing.md`](../../docs/observability/alert-bot-routing.md).
+[`docs/03-operations/observability/alert-bot-routing.md`](../../docs/03-operations/observability/alert-bot-routing.md).
 
 ⁽⁶⁾ Wave 3 §3.2 ADR-0038. **WF-104** — Telegram callback router: trigger на
 `callback_query`, парсить `ack:<action>:<alertId>`, шле `POST
@@ -160,7 +160,7 @@ level=warning, tags.kind=unacked-alert-escalation)`; off-channel fallback
 коли founder offline. Migration `063_tg_alert_acks_escalation_tiers.sql`
 додає `repeated_at`, `sentry_warned_at`, `snoozed_until_at` + partial
 indexes для cron queries. Detailed диаграм + runbook —
-[`docs/observability/runbook.md`](../../docs/observability/runbook.md)
+[`docs/03-operations/observability/runbook.md`](../../docs/03-operations/observability/runbook.md)
 § "Alert-bot escalation ladder".
 
 ## Escalation flow (hierarchy of pain)
@@ -238,12 +238,12 @@ indexes для cron queries. Detailed диаграм + runbook —
   `n8n_errors.acknowledged_at`. Розблоковує auto-digest "unacked alerts".
 - **HubChat slash commands.** `/n8n status`, `/n8n recent-errors`, `/n8n ack
 <id>` — доступні з Telegram через існуючу HubChat інтеграцію (див.
-  [`docs/agents/`](../../docs/agents/)).
+  [`docs/00-start/agents/`](../../docs/00-start/agents/)).
 - **Per-user push tracking.** WF-07/09/10 поки що логують тільки агрегати; для
   P2-grade engagement metrics — додати `push_send_log` таблицю + WF-\* запис на
   send/dispatch result.
 - **Migration trigger reminders.** Як тільки виконується одна з умов з
-  [`docs/observability/telegram-control-plane.md`](../../docs/observability/telegram-control-plane.md)
+  [`docs/03-operations/observability/telegram-control-plane.md`](../../docs/03-operations/observability/telegram-control-plane.md)
   ("When to migrate"), піднімати ADR-0031 на повноцінний control plane (Slack
   - on-call rotations).
 - **Hybrid agent specialist lanes.** WF-20 уже є validation/router foundation
@@ -256,8 +256,8 @@ indexes для cron queries. Detailed диаграм + runbook —
 ## Related
 
 - [`../README.md`](../README.md) — operational README з env vars і compose-стеком.
-- [`../../docs/observability/telegram-control-plane.md`](../../docs/observability/telegram-control-plane.md) — архітектурний аналіз: чи Telegram = правильний контрол-план.
-- [`../../docs/adr/0030-telegram-reporting-channel-structure.md`](../../docs/adr/0030-telegram-reporting-channel-structure.md) — формальне рішення.
-- [`../../docs/adr/0026-n8n-workflow-source-of-truth.md`](../../docs/adr/0026-n8n-workflow-source-of-truth.md) — Git-as-truth для n8n.
-- [`../../docs/playbooks/modify-n8n-workflow.md`](../../docs/playbooks/modify-n8n-workflow.md) — playbook на додавання/зміну workflow.
-- [`../../docs/observability/runbook.md`](../../docs/observability/runbook.md) — incident runbook (що робити, коли спрацював алерт).
+- [`../../docs/03-operations/observability/telegram-control-plane.md`](../../docs/03-operations/observability/telegram-control-plane.md) — архітектурний аналіз: чи Telegram = правильний контрол-план.
+- [`../../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md`](../../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md) — формальне рішення.
+- [`../../docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md`](../../docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md) — Git-as-truth для n8n.
+- [`../../docs/00-start/playbooks/modify-n8n-workflow.md`](../../docs/00-start/playbooks/modify-n8n-workflow.md) — playbook на додавання/зміну workflow.
+- [`../../docs/03-operations/observability/runbook.md`](../../docs/03-operations/observability/runbook.md) — incident runbook (що робити, коли спрацював алерт).

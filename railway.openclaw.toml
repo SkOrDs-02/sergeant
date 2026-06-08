@@ -6,7 +6,7 @@
 # `railway.toml` (Dockerfile.api). Розділення необхідне щоб обидва сервіси
 # жили з однієї main-гілки monorepo, але білдились різними Dockerfile-ами.
 #
-# Див. docs/deploy/openclaw.md для покрокової інструкції створення сервісу
+# Див. docs/03-operations/deploy/openclaw.md для покрокової інструкції створення сервісу
 # через Railway GraphQL API.
 
 [build]

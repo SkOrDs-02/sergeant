@@ -7,7 +7,7 @@
 //
 // Phase 1 is lexical-only (token overlap, zero network, works offline). Phase 2
 // layers Voyage embeddings on top with automatic fallback to this ranking when
-// no API key is present. See docs/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md.
+// no API key is present. See docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md.
 //
 // Usage:
 //   pnpm agent:find "coerce bigint balance"
@@ -36,7 +36,10 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const INDEX_PATH = resolve(REPO_ROOT, "docs/governance/retrieval-index.json");
+const INDEX_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/retrieval-index.json",
+);
 
 // Tiny stopword set — drop terms that match almost everything.
 const STOPWORDS = new Set([

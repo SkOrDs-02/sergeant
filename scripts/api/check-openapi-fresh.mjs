@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Verifies that `docs/api/openapi.json` matches what the generator
+ * Verifies that `docs/02-engineering/api/openapi.json` matches what the generator
  * produces from the current zod-схеми.
  *
  * Запуск:    `pnpm api:check-openapi` (root) або
@@ -28,7 +28,13 @@ const { buildOpenApiDocument } = await import(
 );
 
 const expected = JSON.stringify(buildOpenApiDocument(), null, 2) + "\n";
-const file = path.join(repoRoot, "docs", "api", "openapi.json");
+const file = path.join(
+  repoRoot,
+  "docs",
+  "02-engineering",
+  "api",
+  "openapi.json",
+);
 
 let actual = "";
 try {

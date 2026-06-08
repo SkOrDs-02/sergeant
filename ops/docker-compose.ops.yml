@@ -117,7 +117,7 @@ services:
       - ./grafana/dashboards/n8n-overview.json:/etc/grafana/provisioning/dashboards/n8n-overview.json:ro
       # Server-side dashboards (HTTP RED, DB USE, SLO burn-rate, sync, auth, AI cost, hubchat, frontend CWV)
       # — JSON sources of truth live next to the docs.
-      - ../docs/observability/dashboards:/etc/grafana/provisioning/dashboards/sergeant:ro
+      - ../docs/03-operations/observability/dashboards:/etc/grafana/provisioning/dashboards/sergeant:ro
     depends_on:
       - prometheus
     healthcheck:

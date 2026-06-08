@@ -22,6 +22,6 @@ _Жодного документа не пропустило `Next review:` да
 ## Quick links
 
 - [`open-work.md`](./open-work.md) — повний rollup усіх 7 trackers
-- [`governance/freshness-dashboard.html`](./governance/freshness-dashboard.html) — повний freshness огляд
+- [`governance/freshness-dashboard.html`](./04-governance/governance/freshness-dashboard.html) — повний freshness огляд
 - [`AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing
 - [`README.md`](./README.md) — docs index (genre-grouped)

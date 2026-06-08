@@ -3,13 +3,13 @@ name: Mobile flaky-tests verification (20-run)
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 #
-# Scope: T7 з `docs/planning/sprint-roadmap-q2q3-2026.md` § 1.1 — Tech-борг.
+# Scope: T7 з `docs/90-work/planning/sprint-roadmap-q2q3-2026.md` § 1.1 — Tech-борг.
 #
 # Що це робить: запускає `pnpm --filter @sergeant/mobile test` 20 разів
 # поспіль в одному CI job-і. Якщо хоч один прогон фейлить — job червоніє і
 # зупиняється на першому ж failure-і. Якщо всі 20 проходять — суїт офіційно
 # вважається не-flaky і можна знімати позначку "⏳ Очікує 20-run CI
-# verification" з roadmap-у та з `docs/tech-debt/mobile.md § Tests`.
+# verification" з roadmap-у та з `docs/90-work/tech-debt/mobile.md § Tests`.
 #
 # Чому окремий workflow, а не gate всередині `ci.yml`:
 #   * `pnpm test` у `ci.yml > check` job-і вже виконується щоразу на PR і
@@ -27,7 +27,7 @@ name: Mobile flaky-tests verification (20-run)
 #
 # Acceptance criteria (sprint-roadmap T7):
 #   * 20/20 passes за останні 20 run-ів → flag T7 ✅ Done
-#   * Якщо < 20/20 — лог fail-rate (X/20) у `docs/tech-debt/mobile.md`
+#   * Якщо < 20/20 — лог fail-rate (X/20) у `docs/90-work/tech-debt/mobile.md`
 #     як baseline і застосувати OnboardingWizard fix-pattern (commit
 #     `53853e00` — `mockResolvedValue(false)` замість never-resolving
 #     promise для `AccessibilityInfo.isReduceMotionEnabled()`).
