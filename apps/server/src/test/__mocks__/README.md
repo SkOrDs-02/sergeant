@@ -95,4 +95,4 @@ it("Anthropic 5xx", async () => {
 - **PR-T08** (цей PR) — створення харнесу.
 - **PR-T09–T12** — nutrition tools та openclaw tools тести (consume цей харнес).
 
-Див. [`docs/testing/2026-05-05-tests-pr-plan.md`](../../../../../docs/testing/2026-05-05-tests-pr-plan.md).
+Див. [`docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`](../../../../../docs/02-engineering/testing/2026-05-05-tests-pr-plan.md).

@@ -4,7 +4,7 @@
 // Validates that each of the 7 threat categories is caught, and that
 // a clean skill body produces 0 hits.
 //
-// Linked roadmap: docs/agents/skills-evolution-roadmap.md (PR 5).
+// Linked roadmap: docs/00-start/agents/skills-evolution-roadmap.md (PR 5).
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
@@ -84,7 +84,7 @@ pnpm test
 
 ### Playbooks
 
-See [docs/playbooks/README.md](docs/playbooks/README.md).
+See [docs/00-start/playbooks/README.md](docs/00-start/playbooks/README.md).
 `;
     const hits = scanBody(cleanBody);
     assert.equal(

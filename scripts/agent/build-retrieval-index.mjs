@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/agent/build-retrieval-index.mjs
 //
-// Build the agent retrieval manifest (`docs/governance/retrieval-index.json`)
+// Build the agent retrieval manifest (`docs/04-governance/governance/retrieval-index.json`)
 // that powers `pnpm agent:find`. One chunk per knowledge-graph node + one per
 // package export from the symbol index, each enriched with the source file's
 // markdown headings so lexical (and, in Phase 2, semantic) search has real
@@ -11,11 +11,11 @@
 // content-hash cache (Phase 2). This is the queryable source of truth.
 //
 // Sources:
-//   docs/governance/knowledge-graph.json   (adr / initiative / playbook / skill / hard-rule / audit nodes)
-//   docs/governance/symbol-index.json       (per-package exports → `export:` chunks)
+//   docs/04-governance/governance/knowledge-graph.json   (adr / initiative / playbook / skill / hard-rule / audit nodes)
+//   docs/04-governance/governance/symbol-index.json       (per-package exports → `export:` chunks)
 //
-// Schema: docs/governance/schemas/retrieval-index.schema.json
-// ADR:    docs/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md
+// Schema: docs/04-governance/governance/schemas/retrieval-index.schema.json
+// ADR:    docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md
 //
 // Usage:
 //   node scripts/agent/build-retrieval-index.mjs           # write
@@ -33,9 +33,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 
-const GRAPH_PATH = resolve(REPO_ROOT, "docs/governance/knowledge-graph.json");
-const SYMBOLS_PATH = resolve(REPO_ROOT, "docs/governance/symbol-index.json");
-const OUT_JSON = resolve(REPO_ROOT, "docs/governance/retrieval-index.json");
+const GRAPH_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/knowledge-graph.json",
+);
+const SYMBOLS_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/symbol-index.json",
+);
+const OUT_JSON = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/retrieval-index.json",
+);
 
 const SCHEMA_VERSION = 1;
 

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { messages } from "@shared/i18n/uk";
 import {
   LEGAL_COOKIES_PATH,
   LEGAL_OFFER_PATH,
@@ -18,10 +19,13 @@ const links = [
   { href: LEGAL_OFFER_PATH, label: "Оферта" },
 ] as const;
 
-export function LegalLinks({ className = "", compact = false }: LegalLinksProps) {
+export function LegalLinks({
+  className = "",
+  compact = false,
+}: LegalLinksProps) {
   return (
     <nav
-      aria-label="Юридичні документи"
+      aria-label={messages.legal.linksNavAria}
       className={[
         "flex flex-wrap items-center justify-center gap-x-3 gap-y-2",
         compact ? "text-style-caption" : "text-style-body-sm",

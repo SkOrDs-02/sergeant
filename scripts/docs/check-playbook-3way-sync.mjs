@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/docs/check-playbook-3way-sync.mjs
 //
-// Ensures every concrete docs/playbooks/*.md playbook is visible in both:
+// Ensures every concrete docs/00-start/playbooks/*.md playbook is visible in both:
 //   1. generated INDEX.md (trigger lookup);
 //   2. playbook-catalog.md (human/agent routing catalog).
 
@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DEFAULT_ROOT = resolve(__dirname, "../..");
 
-const DEFAULT_PLAYBOOKS_DIR = resolve(DEFAULT_ROOT, "docs/playbooks");
+const DEFAULT_PLAYBOOKS_DIR = resolve(DEFAULT_ROOT, "docs/00-start/playbooks");
 const DEFAULT_INDEX_PATH = join(DEFAULT_PLAYBOOKS_DIR, "INDEX.md");
 const DEFAULT_CATALOG_PATH = join(DEFAULT_PLAYBOOKS_DIR, "playbook-catalog.md");
 
@@ -36,10 +36,10 @@ export function checkPlaybook3WaySync({
   const failures = [];
 
   if (!existsSync(indexPath)) {
-    failures.push(`docs/playbooks/INDEX.md is missing.`);
+    failures.push(`docs/00-start/playbooks/INDEX.md is missing.`);
   }
   if (!existsSync(catalogPath)) {
-    failures.push(`docs/playbooks/playbook-catalog.md is missing.`);
+    failures.push(`docs/00-start/playbooks/playbook-catalog.md is missing.`);
   }
 
   const indexLinks = existsSync(indexPath)
@@ -51,11 +51,11 @@ export function checkPlaybook3WaySync({
 
   for (const file of files) {
     if (!indexLinks.has(file)) {
-      failures.push(`${file}: missing from docs/playbooks/INDEX.md.`);
+      failures.push(`${file}: missing from docs/00-start/playbooks/INDEX.md.`);
     }
     if (!catalogLinks.has(file)) {
       failures.push(
-        `${file}: missing from docs/playbooks/playbook-catalog.md.`,
+        `${file}: missing from docs/00-start/playbooks/playbook-catalog.md.`,
       );
     }
   }

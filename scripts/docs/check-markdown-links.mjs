@@ -67,7 +67,7 @@ const SKIP_DIRS = new Set([
 //     refs point at other skill files that live outside the repo.
 //   - `THIRD_PARTY_LICENSES.md` is auto-generated and legitimately contains
 //     `(undefined)` placeholders when an upstream package omits `homepage`.
-//   - `docs/playbooks/_TEMPLATE-decision-tree.md` uses `<related-playbook>.md`
+//   - `docs/00-start/playbooks/_TEMPLATE-decision-tree.md` uses `<related-playbook>.md`
 //     as a placeholder — real playbooks must fill it in.
 const SKIP_FILE_PATTERNS = [
   /(?:^|\/)\.agents\/skills\//,
@@ -94,7 +94,8 @@ const ALWAYS_SKIP_SCHEMES = /^(mailto:|tel:|javascript:|data:|chrome:)/i;
 //     cited as historical references at the time of the decision
 //   - hosts that block automated user-agents (LinkedIn 999, Cloudflare-protected
 //     sites returning 403 to HEAD/GET)
-const DEFAULT_ALLOWLIST_PATH = "docs/governance/external-link-allowlist.json";
+const DEFAULT_ALLOWLIST_PATH =
+  "docs/04-governance/governance/external-link-allowlist.json";
 
 // HTTP statuses we treat as "URL exists" even though `res.ok` is false:
 //   - 429: rate-limited; the URL exists, the server just doesn't want this

@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = fileURLToPath(new URL(".", import.meta.url));
 const REPO_ROOT = join(SCRIPT_DIR, "..", "..");
-const ADR_DIR = join(REPO_ROOT, "docs", "adr");
+const ADR_DIR = join(REPO_ROOT, "docs", "04-governance", "adr");
 
 const LAST_VALIDATED = "2026-05-15";
 const NEXT_REVIEW = "2026-08-13";

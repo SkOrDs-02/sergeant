@@ -10,20 +10,20 @@
 // re-imports and spreads `baseline` so `pnpm exec eslint --print-config`
 // stays byte-identical to pre-refactor — covered by the diff-test fixture
 // snapshots committed under `apps/web/src/main.tsx`, `apps/server/src/
-// index.ts`, `tools/console/src/index.ts`, etc. (run `pnpm
+// index.ts`, `tools/openclaw/src/index.ts`, etc. (run `pnpm
 // lint:eslint-config-diff` to regenerate; CI guards in PR-31 phase-2).
 //
-// Phase 2 (deferred — see `docs/initiatives/stack-pulse-2026-05/
+// Phase 2 (deferred — see `docs/90-work/initiatives/stack-pulse-2026-05/
 // pr-31-eslint-config-split.md` § Acceptance criteria) extracts each
 // surface-specific block (apps/web, apps/server, apps/mobile, apps/
-// mobile-shell, tools/console, packages/**) into per-app `eslint.
+// mobile-shell, tools/openclaw, packages/**) into per-app `eslint.
 // config.js` that re-imports `baseline` and adds only its own glob-
 // scoped rules. ESLint's flat-config discovery walks up from the linted
 // file to the closest `eslint.config.js`, so per-app configs work without
 // any monorepo plumbing.
 //
 // Why phase 1 first: the root config's 31 file-glob blocks have subtle
-// interactions (e.g. `apps/server` + `tools/console` share security
+// interactions (e.g. `apps/server` + `tools/openclaw` share security
 // rules; `apps/web` + `apps/mobile` share the i18n burndown). Lifting
 // them piecemeal requires a diff-test scaffolding that doesn't yet
 // exist — phase 1 ships the scaffolding (this baseline file) without
@@ -128,7 +128,7 @@ export const baseline = [
           alwaysTryTypes: true,
           project: [
             "apps/web/tsconfig.json",
-            "tools/console/tsconfig.json",
+            "tools/openclaw/tsconfig.json",
             "apps/mobile/tsconfig.json",
             "apps/mobile-shell/tsconfig.json",
           ],
@@ -188,10 +188,10 @@ export const baseline = [
       // Guidelines recommend for truncation cues. Auto-fixable.
       "sergeant-design/no-ellipsis-dots": "error",
       // AI code-marker syntax guardrail — catches malformed AI markers
-      // like `AI-NOTES`, `AINOTE`, `AI_NOTE`, or missing colons. Set to
-      // "warn" initially so it doesn't block CI; promote to "error" once
-      // the codebase is clean.
-      "sergeant-design/ai-marker-syntax": "warn",
+      // like `AI-NOTES`, `AINOTE`, `AI_NOTE`, or missing colons. Promoted to
+      // "error" 2026-06-08 — the codebase is clean (0 violations confirmed via
+      // `eslint . --rule '{"sergeant-design/ai-marker-syntax":"error"}'`).
+      "sergeant-design/ai-marker-syntax": "error",
       // Tailwind opacity guardrail — `<color>/<N>` only renders when N
       // is in `theme.opacity`. Sergeant's preset registers 0/5/8/10/…/100
       // (see `packages/design-tokens/tailwind-preset.js`); any other

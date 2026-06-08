@@ -30,7 +30,7 @@ export const serverBlocks = [
   // redact-paths, не заміна. Test-файли свідомо лишаємо у scope:
   // тести теж не мають логувати raw req/res. Скоупимо виключно у
   // `apps/server/**` — лише там живе Pino-stack. Hard rule #21,
-  // докладніше у `docs/security/logging-redaction-policy.md`.
+  // докладніше у `docs/04-governance/security/logging-redaction-policy.md`.
   {
     files: ["apps/server/**/*.{ts,js,mjs}"],
     rules: {

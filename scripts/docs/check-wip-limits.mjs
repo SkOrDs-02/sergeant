@@ -3,7 +3,7 @@
 //
 // WIP (work-in-progress) limit check. Counts open documents per tracker
 // (using the same scan as `generate-open-work.mjs`) and compares against
-// `docs/governance/wip-limits.json`.
+// `docs/04-governance/governance/wip-limits.json`.
 //
 // Exit codes:
 //   0 — every tracker under its soft limit (silent pass)
@@ -28,7 +28,10 @@ import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const LIMITS_PATH = resolve(REPO_ROOT, "docs/governance/wip-limits.json");
+const LIMITS_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/wip-limits.json",
+);
 
 const args = new Set(process.argv.slice(2));
 const JSON_MODE = args.has("--json");

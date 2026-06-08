@@ -31,7 +31,7 @@ const i18nAllowlist = JSON.parse(
 // here and removed as they are refactored. When the array becomes
 // `[]`, promote the rule from "warn" to "error". See
 // `docs/ui/toast-policy.md` and audit
-// `docs/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F1.
+// `docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F1.
 const toastErrorActionAllowlist = JSON.parse(
   readFileSync(
     new URL(
@@ -50,7 +50,7 @@ const toastErrorActionAllowlist = JSON.parse(
 // True offenders (e.g. HubChat, BarcodeScanner) are intentionally left
 // OUT so the rule keeps warning on them until partII (file fixes + axe
 // prop-tests). Remove entries as they migrate to a canonical primitive.
-// See `docs/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F2.
+// See `docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F2.
 const bareFixedInsetModalAllowlist = JSON.parse(
   readFileSync(
     new URL(
@@ -212,7 +212,7 @@ export const webBlocks = [
       // invariants spec. Allowlisted: `kyivTime.ts` itself, `apps/server/**`,
       // and `*.test.{ts,tsx,js}` (mock-clock tests). Severity `warn`
       // initially; ramps to `error` after the burndown sweep closes.
-      // See docs/governance/rules/kyiv-time-helpers.md.
+      // See docs/04-governance/governance/rules/kyiv-time-helpers.md.
       "sergeant-design/prefer-kyiv-time": "warn",
       // `require-toast-error-action` — audit 2026-05-13 § F1 (P0):
       // every error-toast must include an `action: { label, onClick }`
@@ -235,7 +235,7 @@ export const webBlocks = [
       // inline `allow` list. Existing offenders (QuickActionsMenu,
       // StreakCelebration, FeatureSpotlight, …) stay as warnings
       // until partII (file fixes + axe prop-tests). See
-      // docs/audits/2026-05-13-web-frontend-ergonomics-roast.md § F2.
+      // docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md § F2.
       "sergeant-design/no-bare-fixed-inset-modal": [
         "warn",
         { allow: bareFixedInsetModalAllowlist },
@@ -259,7 +259,7 @@ export const webBlocks = [
   // `useRoutineRoute` або через injected `onNavigate` prop із module
   // shell-а. Rule піднята з `warn` (canary) до `error` — нові hash-
   // assignments у модулях ламають lint і CI, як заплановано в
-  // `docs/initiatives/0006-frontend-routing-and-code-split.md` §Phase 2.
+  // `docs/90-work/initiatives/0006-frontend-routing-and-code-split.md` §Phase 2.
   {
     files: ["apps/web/src/modules/**/*.{ts,tsx}"],
     rules: {
@@ -275,7 +275,7 @@ export const webBlocks = [
   // Round-10 (2026-05-05) закрив Phase 2: shared/ui coverage піднято
   // з 35% до 100% non-allowlisted (37 stories на 37 компонентів-
   // кандидатів — див. § Outcome у
-  // `docs/initiatives/archive/_0007-design-system-tooling.md`). Решта 23
+  // `docs/90-work/initiatives/archive/_0007-design-system-tooling.md`). Решта 23
   // файли — barrel / Icon.paths sub-modules / utility / gesture /
   // transient overlay-компоненти — навмисно allowlisted у самому
   // правилі (`packages/eslint-plugin-sergeant-design/index.js` §
@@ -301,7 +301,7 @@ export const webBlocks = [
   // routine Timeline / digest). Canary був warn-only від merge PR-#1823
   // (2026-05-05) — за baseline-вікно 0 hits across 174 модульних
   // файлів (success-criterion з
-  // `docs/initiatives/0011-foundation-adoption-and-process-discipline.md`
+  // `docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md`
   // § 6 — `<DataState>` adopted; carry-over `2026-06-30` Phase 2.9 finalize
   // закрита 2026-05-10). Severity promoted до `error` — нові manual-ladder
   // callsite-и блокуються у CI. Default allowlist (DataState.tsx сама +
@@ -365,7 +365,7 @@ export const webBlocks = [
   // Same block also bans the `@sergeant/db-schema/migrate` umbrella entry —
   // that re-exports `loadMigrationFiles` from `./files.js`, which top-level
   // imports `node:fs` / `node:path` and breaks Vite's browser bundle (white
-  // screen on boot — see audit `docs/audits/2026-05-07-app-audit.md` §1).
+  // screen on boot — see audit `docs/90-work/audits/2026-05-07-app-audit.md` §1).
   // Browser-side callers must use one of the saner sub-segments:
   // `@sergeant/db-schema/migrate/runner` (dialect-free runner),
   // `@sergeant/db-schema/migrate/sqlite` (sqlite adapter),
@@ -387,7 +387,7 @@ export const webBlocks = [
             {
               name: "@sergeant/db-schema/migrate",
               message:
-                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle. See `docs/audits/2026-05-07-app-audit.md` §1.",
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle. See `docs/90-work/audits/2026-05-07-app-audit.md` §1.",
             },
           ],
         },
@@ -415,7 +415,7 @@ export const webBlocks = [
   // a single TS/TSX file in the web bundle must not exceed 600 LOC
   // (skipBlankLines + skipComments). New violations fail CI; existing
   // monoliths are explicitly allowlisted with a deadline TODO so the
-  // queue stays visible. See `docs/initiatives/archive/_0001-module-decomposition.md`.
+  // queue stays visible. See `docs/90-work/initiatives/archive/_0001-module-decomposition.md`.
   //
   // Scope rationale:
   // - Limited to `apps/web/src/**` — the audit's red-flag table flagged
@@ -450,7 +450,7 @@ export const webBlocks = [
   // ExerciseProgressChart.tsx:57, WeeklyVolumeChart.tsx:79, WorkoutTemplatesSection.tsx:491).
   // Severity `warn` because ~96 existing production assertions remain; the
   // ones in fizruk are fixed below. Promoted to `error` when count reaches zero.
-  // Burn-down: 2026-Q3. See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 6.
+  // Burn-down: 2026-Q3. See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 6.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     ignores: [

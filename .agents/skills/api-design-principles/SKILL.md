@@ -109,4 +109,4 @@ Detailed pattern documentation lives in `references/details.md`. Read that file 
 - **Poor Documentation**: Undocumented APIs frustrate developers
 - **Ignoring HTTP Semantics**: POST for idempotent operations breaks expectations
 - **Tight Coupling**: API structure shouldn't mirror database schema
-See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.
+See [docs/00-start/agents/agent-skills-catalog.md](docs/00-start/agents/agent-skills-catalog.md) for Sergeant skill routing.

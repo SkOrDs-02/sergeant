@@ -55,7 +55,7 @@
 
 ## Track відсутніх assets
 
-> Цей track повинен бути порожнім після завершення asset-capture-PR-у (PR-02b з [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) §3).
+> Цей track повинен бути порожнім після завершення asset-capture-PR-у (PR-02b з [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../01-product/launch/product-os/ftux-master-tracker.md) §3).
 
 | Asset               | Reason missing        | Owner / Tracker                       |
 | ------------------- | --------------------- | ------------------------------------- |

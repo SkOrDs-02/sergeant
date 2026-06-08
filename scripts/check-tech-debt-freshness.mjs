@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/check-tech-debt-freshness.mjs
 //
-// CI guard for `docs/tech-debt/frontend.md` (and any other tech-debt
+// CI guard for `docs/90-work/tech-debt/frontend.md` (and any other tech-debt
 // pages the team wants to track). Closes audit PR-3.E.
 //
 // Why a marker, not `git log`?
@@ -19,7 +19,7 @@
 // Usage:
 //   pnpm lint:tech-debt-freshness
 //   FRESHNESS_THRESHOLD_DAYS=90 node scripts/check-tech-debt-freshness.mjs
-//   TECH_DEBT_FILES="docs/tech-debt/frontend.md,docs/tech-debt/backend.md" \
+//   TECH_DEBT_FILES="docs/90-work/tech-debt/frontend.md,docs/90-work/tech-debt/backend.md" \
 //     node scripts/check-tech-debt-freshness.mjs
 //
 // Exits 1 on staleness or a missing/unparseable marker, 0 otherwise.
@@ -29,9 +29,9 @@ import { fileURLToPath } from "node:url";
 
 const DEFAULT_THRESHOLD_DAYS = 60;
 const DEFAULT_FILES = [
-  "docs/tech-debt/frontend.md",
-  "docs/tech-debt/backend.md",
-  "docs/tech-debt/mobile.md",
+  "docs/90-work/tech-debt/frontend.md",
+  "docs/90-work/tech-debt/backend.md",
+  "docs/90-work/tech-debt/mobile.md",
 ];
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 

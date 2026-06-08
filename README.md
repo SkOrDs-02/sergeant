@@ -36,9 +36,9 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 
 - **Локальний запуск:** [§ Quickstart](#quickstart) нижче — ~5 хвилин від клонування до live UI на `http://localhost:5173`.
 - **Демо-режим без реєстрації:** після bootstrap відкрий `http://localhost:5173/welcome?demo=1` — побачиш приклад інтерфейсу з seed-даними, без створення акаунта.
-  _(Public production URL ще не лінкується — додасться, коли launch-readiness допиляється; див. [`docs/launch/business/04-launch-readiness.md`](./docs/launch/business/04-launch-readiness.md))._
-- **Огляд продукту:** [`docs/launch/business/01-monetization-and-pricing.md`](./docs/launch/business/01-monetization-and-pricing.md) — бізнес-модель + позиціонування.
-- **Поточний стан FTUX:** [`docs/launch/product-os/ftux-master-tracker.md`](./docs/launch/product-os/ftux-master-tracker.md) — sprint registry + відкриті проблеми.
+  _(Public production URL ще не лінкується — додасться, коли launch-readiness допиляється; див. [`docs/01-product/launch/business/04-launch-readiness.md`](./docs/01-product/launch/business/04-launch-readiness.md))._
+- **Огляд продукту:** [`docs/01-product/launch/business/01-monetization-and-pricing.md`](./docs/01-product/launch/business/01-monetization-and-pricing.md) — бізнес-модель + позиціонування.
+- **Поточний стан FTUX:** [`docs/01-product/launch/product-os/ftux-master-tracker.md`](./docs/01-product/launch/product-os/ftux-master-tracker.md) — sprint registry + відкриті проблеми.
 
 > Хочеш контриб'ютити, а не просто юзати? → [§ For Contributors and Agents](#for-contributors-and-agents) у кінці.
 
@@ -97,7 +97,7 @@ Packages are shared code reused across apps. Instead of copy-pasting between web
 | `@sergeant/openclaw-plugin`     | OpenClaw Gateway tools/hooks plugin (Gateway-only — NOT consumed by web/mobile) |
 | `eslint-plugin-sergeant-design` | Custom ESLint rules for the design system                                       |
 
-Architecture overview lives in [docs/architecture/README.md](./docs/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).
+Architecture overview lives in [docs/02-engineering/architecture/README.md](./docs/02-engineering/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).
 
 ## Architecture
 
@@ -180,14 +180,14 @@ cp .env.example .env
 
 Open `.env` in your editor. Most values are pre-filled for local development. Key variables:
 
-| Variable                                    | Required? | What it does                                                                                                                                                                    |
-| ------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                              | Yes       | Database URL (Docker default: `postgresql://hub:hub@localhost:5432/hub`)                                                                                                        |
-| `BETTER_AUTH_SECRET`                        | Yes       | Session cookie signing secret (min 32 characters)                                                                                                                               |
-| `ANTHROPIC_API_KEY`                         | For AI    | Claude API key — HubChat won't work without it                                                                                                                                  |
-| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | No        | Google OAuth — without these the "Sign in with Google" button won't appear                                                                                                      |
-| `VITE_API_PROXY_TARGET`                     | No        | Dev proxy target (default `http://127.0.0.1:3000`)                                                                                                                              |
-| Others                                      | No        | See [`docs/integrations/env-vars.md`](./docs/integrations/env-vars.md) — full reference for all 100+ optional variables (Sentry, PostHog, Voyage, Mono, OpenClaw, AI quotas, …) |
+| Variable                                    | Required? | What it does                                                                                                                                                                                                  |
+| ------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                              | Yes       | Database URL (Docker default: `postgresql://hub:hub@localhost:5432/hub`)                                                                                                                                      |
+| `BETTER_AUTH_SECRET`                        | Yes       | Session cookie signing secret (min 32 characters)                                                                                                                                                             |
+| `ANTHROPIC_API_KEY`                         | For AI    | Claude API key — HubChat won't work without it                                                                                                                                                                |
+| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | No        | Google OAuth — without these the "Sign in with Google" button won't appear                                                                                                                                    |
+| `VITE_API_PROXY_TARGET`                     | No        | Dev proxy target (default `http://127.0.0.1:3000`)                                                                                                                                                            |
+| Others                                      | No        | See [`docs/02-engineering/integrations/env-vars.md`](./docs/02-engineering/integrations/env-vars.md) — full reference for all 100+ optional variables (Sentry, PostHog, Voyage, Mono, OpenClaw, AI quotas, …) |
 
 #### 3. Start the database
 
@@ -320,45 +320,45 @@ Test stacks by surface:
 
 ## Feature flags
 
-Feature flags are managed via `docs/governance/feature-flags.md`. Each flag controls the visibility of a specific feature.
+Feature flags are managed via `docs/04-governance/governance/feature-flags.md`. Each flag controls the visibility of a specific feature.
 
 ## Observability
 
-Monitoring is described in `docs/observability/README.md`. Key components: Sentry (errors), PostHog (analytics), Prometheus/Grafana (metrics), Web Vitals (frontend performance).
+Monitoring is described in `docs/03-operations/observability/README.md`. Key components: Sentry (errors), PostHog (analytics), Prometheus/Grafana (metrics), Web Vitals (frontend performance).
 
 ## Documentation map
 
-| Directory             | Contents                                                   |
-| --------------------- | ---------------------------------------------------------- |
-| `docs/adr/`           | Architecture Decision Records — why we chose what we chose |
-| `docs/api/`           | OpenAPI contracts, API documentation                       |
-| `docs/architecture/`  | Repository map, platforms, service catalog                 |
-| `docs/audits/`        | UX/UI audits, typography, design reviews                   |
-| `docs/deploy/`        | Deployment instructions                                    |
-| `docs/design/`        | Design system: brandbook, colors, module accents           |
-| `docs/governance/`    | Hard rules, review checklist, release policy               |
-| `docs/integrations/`  | Monobank, Railway, Vercel, Renovate, Voyage                |
-| `docs/launch/`        | Monetization, GTM, launch readiness                        |
-| `docs/mobile/`        | Capacitor, deep links, React Native migration              |
-| `docs/observability/` | SLO, dashboards, metrics, runbook                          |
-| `docs/planning/`      | Roadmaps, AI improvements, dev stack roadmap               |
-| `docs/playbooks/`     | Step-by-step recipes (add an endpoint, do a hotfix)        |
-| `docs/postmortems/`   | Incident post-mortems                                      |
-| `docs/security/`      | Access policy, disaster recovery, security audit           |
-| `docs/agents/`        | AI agent system: skill catalog, workflows                  |
-| `docs/tech-debt/`     | Tech debt registries (frontend, backend, mobile)           |
+| Directory                           | Contents                                                   |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `docs/04-governance/adr/`           | Architecture Decision Records — why we chose what we chose |
+| `docs/02-engineering/api/`          | OpenAPI contracts, API documentation                       |
+| `docs/02-engineering/architecture/` | Repository map, platforms, service catalog                 |
+| `docs/90-work/audits/`              | UX/UI audits, typography, design reviews                   |
+| `docs/03-operations/deploy/`        | Deployment instructions                                    |
+| `docs/05-design/design/`            | Design system: brandbook, colors, module accents           |
+| `docs/04-governance/governance/`    | Hard rules, review checklist, release policy               |
+| `docs/02-engineering/integrations/` | Monobank, Railway, Vercel, Renovate, Voyage                |
+| `docs/01-product/launch/`           | Monetization, GTM, launch readiness                        |
+| `docs/02-engineering/mobile/`       | Capacitor, deep links, React Native migration              |
+| `docs/03-operations/observability/` | SLO, dashboards, metrics, runbook                          |
+| `docs/90-work/planning/`            | Roadmaps, AI improvements, dev stack roadmap               |
+| `docs/00-start/playbooks/`          | Step-by-step recipes (add an endpoint, do a hotfix)        |
+| `docs/03-operations/postmortems/`   | Incident post-mortems                                      |
+| `docs/04-governance/security/`      | Access policy, disaster recovery, security audit           |
+| `docs/00-start/agents/`             | AI agent system: skill catalog, workflows                  |
+| `docs/90-work/tech-debt/`           | Tech debt registries (frontend, backend, mobile)           |
 
-Roadmap: `docs/planning/README.md`. Tech debt: `docs/tech-debt/README.md`.
+Roadmap: `docs/90-work/planning/README.md`. Tech debt: `docs/90-work/tech-debt/README.md`.
 
 ## For Contributors and Agents
 
 - Humans: start with [CONTRIBUTING.md](./CONTRIBUTING.md).
-- Agents: start with [AGENTS.md](./AGENTS.md) and [docs/agents/agent-skills-catalog.md](./docs/agents/agent-skills-catalog.md).
+- Agents: start with [AGENTS.md](./AGENTS.md) and [docs/00-start/agents/agent-skills-catalog.md](./docs/00-start/agents/agent-skills-catalog.md).
 - Full docs index (genre-grouped — informational / trackers / archive): [docs/README.md](./docs/README.md).
 - **What is currently in flight across all 7 trackers** (auto-rollup, CI drift gate): [docs/open-work.md](./docs/open-work.md).
-- Repeatable execution recipes: [docs/playbooks/README.md](./docs/playbooks/README.md).
-- Governance and hard rules matrix: [docs/governance/README.md](./docs/governance/README.md).
-- Runtime inventory, release, incident, and recovery surfaces: [docs/architecture/service-catalog.md](./docs/architecture/service-catalog.md), [docs/security/disaster-recovery.md](./docs/security/disaster-recovery.md).
+- Repeatable execution recipes: [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md).
+- Governance and hard rules matrix: [docs/04-governance/governance/README.md](./docs/04-governance/governance/README.md).
+- Runtime inventory, release, incident, and recovery surfaces: [docs/02-engineering/architecture/service-catalog.md](./docs/02-engineering/architecture/service-catalog.md), [docs/04-governance/security/disaster-recovery.md](./docs/04-governance/security/disaster-recovery.md).
 
 ## License
 

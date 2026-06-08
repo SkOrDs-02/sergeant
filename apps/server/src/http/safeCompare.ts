@@ -30,5 +30,10 @@ export function safeStringEqual(
   const ab = Buffer.from(a, "utf8");
   const bb = Buffer.from(b, "utf8");
   if (ab.length !== bb.length) return false;
+  // AI-DANGER: do not "simplify" this to `a === b` / `ab.equals(bb)`. A
+  // short-circuiting compare leaks the first-mismatch byte position via branch
+  // timing, letting an attacker recover the Mono webhook / bearer / HMAC secret
+  // one byte at a time. Must stay constant-time `crypto.timingSafeEqual`.
+  // (domain-invariants.md anti-pattern #5 — rewritten as `===` in a cleanup PR.)
   return crypto.timingSafeEqual(ab, bb);
 }

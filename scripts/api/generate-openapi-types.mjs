@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Generates TypeScript types for `packages/api-client` directly from the
- * committed OpenAPI spec (`docs/api/openapi.json`).
+ * committed OpenAPI spec (`docs/02-engineering/api/openapi.json`).
  *
  * Запуск: `pnpm api:generate-openapi-types` або
  *         `node scripts/api/generate-openapi-types.mjs`.
@@ -23,7 +23,13 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
-const specPath = path.join(repoRoot, "docs", "api", "openapi.json");
+const specPath = path.join(
+  repoRoot,
+  "docs",
+  "02-engineering",
+  "api",
+  "openapi.json",
+);
 const specCliPath = path.relative(repoRoot, specPath);
 const outPath = path.join(
   repoRoot,

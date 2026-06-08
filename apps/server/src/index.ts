@@ -1,10 +1,5 @@
 /**
- * Unified server entrypoint.
- *
- * Replaces the previous `server/railway.mjs` + `server/replit.mjs` pair,
- * which duplicated ~80% of their code and had silently diverged (missing
- * `/api/push/*` routes and Sentry init on Replit). The runtime mode is
- * selected by `SERVER_MODE` (or auto-detected from `REPLIT_DOMAINS`) in
+ * Server entrypoint (Railway, API-only). Runtime config lives in
  * `server/config.js`.
  *
  * IMPORTANT: `./obs/tracing.js` is imported FIRST, then `./sentry.js`,
@@ -217,7 +212,7 @@ logArchivePoller.start();
 // ──────────────────────────────────────────────────────────────────────────────
 // Graceful shutdown
 //
-// Railway і Replit надсилають SIGTERM при deploy/restart з grace-period ~30с.
+// Railway надсилає SIGTERM при deploy/restart з grace-period ~30с.
 // Без власного обробника Node просто обриває event loop — усі in-flight
 // запити отримують ECONNRESET, а клієнт — 502 від проксі. Правильна
 // послідовність:

@@ -33,7 +33,7 @@ Added foo to bar. See \`apps/server/src/foo.ts\`.
 
 ## Playbook
 
-- Primary playbook: \`docs/playbooks/add-api-endpoint.md\`
+- Primary playbook: \`docs/00-start/playbooks/add-api-endpoint.md\`
 - Why this playbook: it adds a new \`/api/foo\` route end-to-end.
 - If no playbook matched, why: n/a
 

@@ -2,13 +2,13 @@
 // scripts/docs/lint-initiative-agent-ready.mjs
 //
 // CI gate (Initiative 0015, Phase 2 / PR-2.3): every active numbered
-// initiative under `docs/initiatives/` MUST carry an `> **Agent-ready:**`
+// initiative under `docs/90-work/initiatives/` MUST carry an `> **Agent-ready:**`
 // line in its quote-block metadata header with one of the three allowed
 // values — `yes` / `needs-decision` / `blocked`. This is the agent-dispatch
 // classification consumed by `generate-open-work.mjs` to sort and surface
 // initiatives in `docs/open-work.md`.
 //
-// Active = top-level `docs/initiatives/[0-9]*.md` files. Excluded:
+// Active = top-level `docs/90-work/initiatives/[0-9]*.md` files. Excluded:
 //   - `_`-prefixed files (completed-prefix convention)
 //   - anything under `archive/`
 //   - sub-series PR plans in directory-form series (not numbered initiatives)
@@ -30,7 +30,7 @@ import { extractAgentReady, AGENT_READY_ORDER } from "./generate-open-work.mjs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const INITIATIVES_DIR = resolve(REPO_ROOT, "docs/initiatives");
+const INITIATIVES_DIR = resolve(REPO_ROOT, "docs/90-work/initiatives");
 
 const args = new Set(process.argv.slice(2));
 const JSON_MODE = args.has("--json");
@@ -105,7 +105,7 @@ function main() {
       `🔴 FAIL — ${missing.length} initiative${missing.length === 1 ? "" : "s"} missing a valid \`> **Agent-ready:**\` header:`,
     );
     for (const row of missing) {
-      lines.push(`   • docs/initiatives/${row.file}`);
+      lines.push(`   • docs/90-work/initiatives/${row.file}`);
     }
     lines.push(
       "   Add `> **Agent-ready:** yes | needs-decision | blocked` to the header block, then re-run `pnpm docs:gen-open-work`.",

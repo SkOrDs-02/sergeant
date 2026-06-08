@@ -22,7 +22,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 - Використовуй `Europe/Kyiv` day boundaries; не деривуй day-ключі raw UTC ISO-нарізкою.
 - Better Auth user-id-и — непрозорі рядки.
 - **Білінг (ADR-0051):** якщо endpoint торкається subscription або pricing — `plan: 'free' | 'pro'` тільки. Plus tier видалено зі scope. Enum живе у `apps/server/src/modules/billing/`.
-- **Логування (Hard Rule #21):** нові поверхні логування мають відповідати Pino redaction policy — PII не потрапляє в логи. Перевірка: [`docs/security/logging-redaction-policy.md`](../../../docs/security/logging-redaction-policy.md).
+- **Логування (Hard Rule #21):** нові поверхні логування мають відповідати Pino redaction policy — PII не потрапляє в логи. Перевірка: [`docs/04-governance/security/logging-redaction-policy.md`](../../../docs/04-governance/security/logging-redaction-policy.md).
 
 ## Розміщення
 
@@ -44,7 +44,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ## Playbooks
 
-- `docs/playbooks/add-api-endpoint.md` — handler + route + api-client + тести синхронно.
-- `docs/playbooks/add-sql-migration.md` — коли endpoint потребує schema-змін.
-- `docs/playbooks/release.md` — canonical release-playbook (секція web + API).
-- Каталог: `docs/agents/agent-skills-catalog.md`.
+- `docs/00-start/playbooks/add-api-endpoint.md` — handler + route + api-client + тести синхронно.
+- `docs/00-start/playbooks/add-sql-migration.md` — коли endpoint потребує schema-змін.
+- `docs/00-start/playbooks/release.md` — canonical release-playbook (секція web + API).
+- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.

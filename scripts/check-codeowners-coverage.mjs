@@ -43,7 +43,7 @@ function toRepoPath(p) {
 
 // Required coverage. Each entry is either:
 //   - { path: "AGENTS.md", kind: "file" }       — exact file must be owned.
-//   - { path: "docs/playbooks", kind: "tree" }  — directory + every tracked
+//   - { path: "docs/00-start/playbooks", kind: "tree" }  — directory + every tracked
 //     descendant matching `match` (default *.md) must be owned.
 //
 // Adding/removing entries is a deliberate governance act — always pair with
@@ -62,73 +62,73 @@ const MUST_BE_OWNED = [
 
   // Governance trees
   {
-    path: "docs/governance",
+    path: "docs/04-governance/governance",
     kind: "tree",
     match: /\.md$/,
     reason: "policy reviews & governance procedures",
   },
   {
-    path: "docs/playbooks",
+    path: "docs/00-start/playbooks",
     kind: "tree",
     match: /\.md$/,
     reason: "AI-agent playbooks (Hard Rule #15 pre-flight inputs)",
   },
   {
-    path: "docs/adr",
+    path: "docs/04-governance/adr",
     kind: "tree",
     match: /\.md$/,
     reason: "architecture decision records",
   },
   {
-    path: "docs/architecture",
+    path: "docs/02-engineering/architecture",
     kind: "tree",
     match: /\.md$/,
     reason: "architecture overview, platforms, status matrix",
   },
   {
-    path: "docs/observability",
+    path: "docs/03-operations/observability",
     kind: "tree",
     match: /\.md$/,
     reason: "SLOs, runbooks, on-call procedures",
   },
   {
-    path: "docs/security",
+    path: "docs/04-governance/security",
     kind: "tree",
     match: /\.md$/,
     reason: "threat model & SLA",
   },
   {
-    path: "docs/agents",
+    path: "docs/00-start/agents",
     kind: "tree",
     match: /\.md$/,
     reason: "agent skill catalog & workflow decision trees",
   },
   {
-    path: "docs/postmortems",
+    path: "docs/03-operations/postmortems",
     kind: "tree",
     match: /\.md$/,
     reason: "incident postmortems",
   },
   {
-    path: "docs/api",
+    path: "docs/02-engineering/api",
     kind: "tree",
     match: /\.md$/,
     reason: "external API contracts (Hard Rule #3 surface)",
   },
   {
-    path: "docs/design",
+    path: "docs/05-design/design",
     kind: "tree",
     match: /\.md$/,
     reason: "brandbook, design tokens, design-system rules",
   },
   {
-    path: "docs/integrations",
+    path: "docs/02-engineering/integrations",
     kind: "tree",
     match: /\.md$/,
     reason: "third-party integration contracts (Mono, Voyage, Anthropic, etc.)",
   },
   {
-    path: "docs/tech-debt",
+    path: "docs/90-work/tech-debt",
     kind: "tree",
     match: /\.md$/,
     reason: "tracked tech debt with explicit freshness cadence",

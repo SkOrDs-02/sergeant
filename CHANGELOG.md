@@ -1,6 +1,6 @@
 # Changelog
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Усі помітні зміни проєкту документуються тут.
@@ -10,7 +10,7 @@
 
 > **Як писати:** entries у секції `## [Unreleased]` пишуться **вручну** у rich narrative-style (multi-paragraph з PR-mentions, file refs, technical rationale) — це свідомий вибір, бо auto-generation з commit-subjects втратило б контекст.
 >
-> **Як cut-ити release:** `pnpm changelog:cut` (опц. `<YYYY-MM-DD>` як arg) renames `## [Unreleased]` → `## [<date>]`, додає fresh empty Unreleased, створює tag `v<date>`, commit-ить. `--dry-run` для preview. Деталі — [`docs/initiatives/archive/_0016-changelog-release-cut.md`](./docs/initiatives/archive/_0016-changelog-release-cut.md).
+> **Як cut-ити release:** `pnpm changelog:cut` (опц. `<YYYY-MM-DD>` як arg) renames `## [Unreleased]` → `## [<date>]`, додає fresh empty Unreleased, створює tag `v<date>`, commit-ить. `--dry-run` для preview. Деталі — [`docs/90-work/initiatives/archive/_0016-changelog-release-cut.md`](./docs/90-work/initiatives/archive/_0016-changelog-release-cut.md).
 
 ## [Unreleased]
 
@@ -160,7 +160,7 @@ id, reason)` — UPDATE `status='rejected'` + `reject_reason` verbatim
   [#2835](https://github.com/Skords-01/Sergeant/pull/2835) +
   [#2836](https://github.com/Skords-01/Sergeant/pull/2836) +
   [#2840](https://github.com/Skords-01/Sergeant/pull/2840).** Закриті
-  3 заплановані але не імплементовані картки з `docs/planning/`:
+  3 заплановані але не імплементовані картки з `docs/90-work/planning/`:
   1. **DC-1 (часткове закриття) — `chore(deps): drop idb-keyval (apps/web)`.**
      Видалено `idb-keyval` із `apps/web/package.json` (єдиний підтверджено-
      unused dep із трійки DC-1; `apps/web/src/shared/lib/api/queryClientPersister.ts`
@@ -168,7 +168,7 @@ id, reason)` — UPDATE `status='rejected'` + `reject_reason` verbatim
      wired через `persistQueryClient` callsite). Дві інші DC-1-deps
      (`@fontsource-variable/dm-sans` у apps/web, `@sergeant/shared` у
      packages/openclaw-plugin) лишилися на follow-up — згадані у DC-1b
-     branch у `docs/planning/pr-plan-dead-code-hard-rules-2026-05.md`
+     branch у `docs/90-work/planning/pr-plan-dead-code-hard-rules-2026-05.md`
      status block.
 
   2. **HR-1 — `refactor(server): migrate requireAnthropicKey to env.X +
@@ -207,9 +207,9 @@ OTEL_* | SENTRY_RELEASE | RAILWAY_GIT_COMMIT_SHA | VERCEL_GIT_COMMIT_SHA
      code lines (тільки коментар-згадки); tracing.test.ts 9/9 green;
      typecheck green; lint:env-single-source `93/93 reads (no headroom)`.
 
-  Документація оновлена в тому ж циклі: `docs/planning/pr-plan-dead-code-hard-rules-2026-05.md`
+  Документація оновлена в тому ж циклі: `docs/90-work/planning/pr-plan-dead-code-hard-rules-2026-05.md`
   § DC-1 + § HR-1 отримали Status-блоки з посиланнями на PR-и;
-  `docs/planning/pr-plan-backend-perf-2026-05.md` § PR-02 отримав
+  `docs/90-work/planning/pr-plan-backend-perf-2026-05.md` § PR-02 отримав
   Status-блок. Жодного code regression-у; CI gates (env-single-source,
   typecheck, server lint, server tests крім 2 pre-existing billing.test.ts
   failures, які існують і на `main`) — зелені.
@@ -217,7 +217,7 @@ OTEL_* | SENTRY_RELEASE | RAILWAY_GIT_COMMIT_SHA | VERCEL_GIT_COMMIT_SHA
 - **Docs: audit + sprint-розбивка прогавлених PR-серій (#6 / #8 / #15
   burndown + M10/M14/M19 hardening closure).** Систематична перевірка
   `docs/` проти `main` після round-12 виявила два класи прогалин у
-  трекінгу: (1) `docs/security/hardening/README.md` § «Closed Medium /
+  трекінгу: (1) `docs/04-governance/security/hardening/README.md` § «Closed Medium /
   Low cards» не містив M10 (CSRF token check on state-changing routes),
   M14 (Internal `/api/push/send` IP allowlist) і M19 (Mobile shell
   deep-link sanitisation), хоча всі троє закриті PR
@@ -225,13 +225,13 @@ OTEL_* | SENTRY_RELEASE | RAILWAY_GIT_COMMIT_SHA | VERCEL_GIT_COMMIT_SHA
   hardening) і їхні картки вже мали `Status: Closed`; (2) round-13
   burndown для items #6 (localStorage allowlist) / #8 (`useApiForm`
   rollout) / #15 (`noUncheckedIndexedAccess` per app) існував лише
-  narrative-ом у §11.5 burndown-таблиці [`docs/audits/2026-05-03-web-deep-dive/00-overview.md`](docs/audits/2026-05-03-web-deep-dive/00-overview.md),
+  narrative-ом у §11.5 burndown-таблиці [`docs/90-work/audits/2026-05-03-web-deep-dive/00-overview.md`](docs/90-work/audits/2026-05-03-web-deep-dive/00-overview.md),
   без розпису по AC/LOC/Deps на конкретні PR-и — як це зроблено для
-  Sprint 6 cleanup batch у [`docs/launch/product-os/ftux-sprint-plan.md` §7a](docs/launch/product-os/ftux-sprint-plan.md).
+  Sprint 6 cleanup batch у [`docs/01-product/launch/product-os/ftux-sprint-plan.md` §7a](docs/01-product/launch/product-os/ftux-sprint-plan.md).
   Виправлено: README hardening backlog отримав три нові рядки у closed-
   list table (chronological order, з посиланням на PR #1784 і
   «batched M10 + M14 + M19»); створено новий sprint-doc
-  [`docs/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md`](docs/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md)
+  [`docs/90-work/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md`](docs/90-work/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md)
   з 7 PR-розбивкою (R13.1–R13.7) у стилі §7a FTUX cleanup batch — items
   #6 (1 PR), #8 (3 PR до 10/12 mature plateau), #15 (3 PR на apps/server,
   apps/mobile, apps/web з потенційним spill на R13.7a/R13.7b через
@@ -377,8 +377,8 @@ metrics/web-vitals}` — а API серверу не було, vite сипав
   до Voyage/БД. `recall_memory` додано у `ASSISTANT_CAPABILITIES` (єдиний
   source-of-truth для tool-ів) → автоматично потрапляє у "Пам'ять"-список
   SYSTEM_PROMPT, тому `SYSTEM_PROMPT_VERSION` піднято з `v6` до `v7`. Доку оновлено
-  у [`docs/integrations/voyage-pgvector.md`](./docs/integrations/voyage-pgvector.md)
-  і [`docs/adr/0028-pgvector-ai-memory.md`](./docs/adr/0028-pgvector-ai-memory.md).
+  у [`docs/02-engineering/integrations/voyage-pgvector.md`](./docs/02-engineering/integrations/voyage-pgvector.md)
+  і [`docs/04-governance/adr/0028-pgvector-ai-memory.md`](./docs/04-governance/adr/0028-pgvector-ai-memory.md).
 
 - **CI: container image scan (Trivy).** Новий workflow
   `.github/workflows/container-scan.yml` збирає `Dockerfile.api` і
@@ -386,7 +386,7 @@ metrics/web-vitals}` — а API серверу не було, vite сипав
   завантажується в GitHub Code Scanning (`category: trivy-image`) і
   доступний як артефакт. Тригери: PR (на зміни Dockerfile / serverside
   пакетів), push to main, schedule (04:00 UTC) і workflow_dispatch.
-  Триаж — див. [`docs/security/container-scan.md`](./docs/security/container-scan.md).
+  Триаж — див. [`docs/04-governance/security/container-scan.md`](./docs/04-governance/security/container-scan.md).
 
 ### Changed
 
@@ -403,7 +403,7 @@ nutrition-domain,routine-domain}` — explicit override). Після фліпу
   `@sergeant/design-tokens/{tokens,mobile}` → відповідні `*.d.ts` —
   раніше legacy glob мапив їх на runtime `*.js`-файли, які під
   `allowJs: true` мовчки типувалися як `any`. Деталі —
-  `docs/tech-debt/frontend.md` §11 (`Phase 5c — allowJs workspace-wide flip`)
+  `docs/90-work/tech-debt/frontend.md` §11 (`Phase 5c — allowJs workspace-wide flip`)
   - §11.1 (`Що ще лишилось до «ідеального» стрікту`).
 
 - **Workspace: strict TS rollout — Phase 5b (`: any` в finyk-pages).** PR
@@ -437,7 +437,7 @@ nutrition-domain,routine-domain}` — explicit override). Після фліпу
   `apps/web/src/core/lib/intentPrefetch.ts`. Регресійний guardrail
   тепер: base `strict: true` + `tools/tsconfig-guard` (silent-drift)
   - `pnpm strict:coverage` (інформативний CI-метрика, 13/13 пакетів
-    = 100%). Деталі — `docs/tech-debt/frontend.md` §11
+    = 100%). Деталі — `docs/90-work/tech-debt/frontend.md` §11
     «Phase 5 cleanup — діагностичні tsconfig-и видалено».
 
 - **Web: strict TS rollout — Phase 4 final flip + Phase 5 base-config update.**
@@ -457,7 +457,7 @@ nutrition-domain,routine-domain}` — explicit override). Після фліпу
   `SectionErrorBoundary` + `MigrationFailedError.cause` у
   `packages/db-schema/src/migrate/runner.ts`; explicit `allowJs: false`
   на `apps/web` і `tools/openclaw`. `pnpm strict:coverage` рапортує
-  13/13 пакетів (100%). Деталі — `docs/tech-debt/frontend.md` §11.
+  13/13 пакетів (100%). Деталі — `docs/90-work/tech-debt/frontend.md` §11.
 
 - **Web: strict TS rollout — Phase 2.** `apps/web/tsconfig.strict.json`
   розширено з `src/shared/**` до 10 директорій
@@ -469,4 +469,4 @@ hints, hooks, observability, pricing, profile}`). Cross-file
   `WindowWithSpeech` cast у `useSpeech.ts`. Жодних змін у runtime-коді,
   лише типи + один тестовий null-guard у
   `useCloudSync.behavior.test.ts`. Деталі — у
-  [`docs/tech-debt/frontend.md`](./docs/tech-debt/frontend.md) §11.
+  [`docs/90-work/tech-debt/frontend.md`](./docs/90-work/tech-debt/frontend.md) §11.

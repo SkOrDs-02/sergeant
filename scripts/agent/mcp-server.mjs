@@ -9,7 +9,7 @@
 // (same "no new deps" stance as the TS-compiler symbol extractor, ADR-0059).
 //
 // Wired in .mcp.json as the `sergeant-agent-find` server. See
-// docs/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md.
+// docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md.
 
 import { execFileSync } from "node:child_process";
 import { createInterface } from "node:readline";

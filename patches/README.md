@@ -10,7 +10,7 @@ which fails CI when a patch is missing a row, has empty mandatory cells,
 or when `pnpm.patchedDependencies` in root `package.json` references a
 patch file that does not exist on disk.
 
-Closes [PR-20](../docs/initiatives/stack-pulse-2026-05/pr-20-patches-readme.md)
+Closes [PR-20](../docs/90-work/initiatives/stack-pulse-2026-05/pr-20-patches-readme.md)
 (stack-pulse-2026-05 / M4).
 
 ## Active patches

@@ -183,7 +183,7 @@ function appendN8nWorkflowManifest(entry) {
 
 /** Returns the next zero-padded 4-digit ADR number. */
 function nextAdrNumber() {
-  const adrDir = resolve(__dirname, "docs/adr");
+  const adrDir = resolve(__dirname, "docs/04-governance/adr");
   const files = readdirSync(adrDir);
   const nums = files
     .filter((f) => /^\d{4}-.+\.md$/.test(f))
@@ -431,13 +431,13 @@ export default function (plop) {
         type: "input",
         name: "playbook",
         message:
-          "Linked playbook (path under docs/playbooks/* OR docs/agents/agent-skills-catalog.md):",
-        default: "docs/agents/agent-skills-catalog.md",
+          "Linked playbook (path under docs/00-start/playbooks/* OR docs/00-start/agents/agent-skills-catalog.md):",
+        default: "docs/00-start/agents/agent-skills-catalog.md",
         validate: (v) =>
           /^(docs\/playbooks\/[\w./-]+|docs\/agents\/agent-skills-catalog\.md)$/.test(
             v.trim(),
           ) ||
-          "must be a docs/playbooks/<file>.md path or docs/agents/agent-skills-catalog.md",
+          "must be a docs/00-start/playbooks/<file>.md path or docs/00-start/agents/agent-skills-catalog.md",
       },
     ],
     actions: [
@@ -451,7 +451,7 @@ export default function (plop) {
       },
       () =>
         "Next steps: (1) flesh out the SKILL.md sections, " +
-        "(2) add an entry to docs/agents/agent-skills-catalog.md, " +
+        "(2) add an entry to docs/00-start/agents/agent-skills-catalog.md, " +
         "(3) run `pnpm lint:skills` to verify shape + lock integrity.",
     ],
   });
@@ -459,13 +459,13 @@ export default function (plop) {
   // ── new-playbook ───────────────────────────────────────────────────────────
   plop.setGenerator("new-playbook", {
     description:
-      "New playbook (docs/playbooks/<slug>.md with required schema + freshness header)",
+      "New playbook (docs/00-start/playbooks/<slug>.md with required schema + freshness header)",
     prompts: [
       {
         type: "input",
         name: "slug",
         message:
-          "Playbook slug (kebab-case; becomes docs/playbooks/<slug>.md):",
+          "Playbook slug (kebab-case; becomes docs/00-start/playbooks/<slug>.md):",
         validate: (v) =>
           /^[a-z][a-z0-9-]*[a-z0-9]$/.test(v) ||
           "kebab-case only (lowercase letters, digits, hyphens)",
@@ -534,12 +534,12 @@ export default function (plop) {
       return [
         {
           type: "add",
-          path: "docs/playbooks/{{slug}}.md",
+          path: "docs/00-start/playbooks/{{slug}}.md",
           templateFile: "plop-templates/new-playbook/playbook.md.hbs",
         },
         () =>
           "Next steps: (1) flesh out the Steps and Verification sections, " +
-          "(2) run `pnpm docs:gen-playbook-index` to refresh docs/playbooks/INDEX.md, " +
+          "(2) run `pnpm docs:gen-playbook-index` to refresh docs/00-start/playbooks/INDEX.md, " +
           "(3) run `pnpm lint` to verify schema + freshness + language gates.",
       ];
     },
@@ -756,7 +756,7 @@ export default function (plop) {
           `(2) declare any \`$env.<NAME>\` references in manifest.requiredEnv (validator fails otherwise); ` +
           `(3) declare credentials in manifest.requiredCredentials when nodes start using them; ` +
           `(4) \`pnpm exec node scripts/n8n/validate-n8n-workflows.mjs\` to confirm shape; ` +
-          `(5) follow docs/playbooks/modify-n8n-workflow.md for the rollout flow.`,
+          `(5) follow docs/00-start/playbooks/modify-n8n-workflow.md for the rollout flow.`,
       ];
     },
   });
@@ -849,7 +849,7 @@ export default function (plop) {
           `(2) wire \`run${answers.pascalName}Agent\` into \`tools/openclaw/src/agents/router.ts\` (extend AgentType + parseCommand) and into \`tools/openclaw/src/index.ts\` (dispatch switch); ` +
           `(3) extend \`tools/openclaw/src/agents/router.test.ts\` with a /\`${answers.routeCommand}\` route assertion; ` +
           `(4) \`pnpm --filter @sergeant/openclaw test typecheck lint\` to verify; ` +
-          `(5) update docs/agents/specialists-mapping.md if this specialist needs a governance skill mapping.`,
+          `(5) update docs/00-start/agents/specialists-mapping.md if this specialist needs a governance skill mapping.`,
       ];
     },
   });
@@ -857,7 +857,7 @@ export default function (plop) {
   // ── adr ────────────────────────────────────────────────────────────────────
   plop.setGenerator("adr", {
     description:
-      "New Architecture Decision Record (auto-numbered from docs/adr/)",
+      "New Architecture Decision Record (auto-numbered from docs/04-governance/adr/)",
     prompts: [
       {
         type: "input",
@@ -888,7 +888,7 @@ export default function (plop) {
       return [
         {
           type: "add",
-          path: `docs/adr/${num}-${data.title}.md`,
+          path: `docs/04-governance/adr/${num}-${data.title}.md`,
           templateFile: "plop-templates/adr/adr.md.hbs",
         },
       ];

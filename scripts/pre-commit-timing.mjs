@@ -2,7 +2,7 @@
 // scripts/pre-commit-timing.mjs
 //
 // Pre-commit timing wrapper. Closes audit item P1-5 from
-// `docs/audits/2026-05-13-testing-devx-roast.md` — "Pre-commit timing не
+// `docs/90-work/audits/2026-05-13-testing-devx-roast.md` — "Pre-commit timing не
 // вимірюється". Invoked by `.husky/pre-commit` instead of `pnpm exec
 // lint-staged` directly, so we keep one source of truth for the staged
 // pipeline while collecting non-invasive timing data.
@@ -14,7 +14,7 @@
 //      `perf_hooks.performance.now()`.
 //   3. Optionally forwards per-stage events emitted by downstream
 //      scripts via the `SERGEANT_TIMING_LOG` env var (JSONL contract,
-//      documented in `docs/development/pre-commit-timing.md`).
+//      documented in `docs/02-engineering/development/pre-commit-timing.md`).
 //   4. Prints a Markdown summary to stderr so devs see it immediately
 //      after a slow commit, without polluting stdout that git pipes.
 //   5. Appends one JSON-lines record to

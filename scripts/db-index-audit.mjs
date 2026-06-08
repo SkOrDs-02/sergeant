@@ -21,14 +21,14 @@
 //   DATABASE_URL=postgresql://user:pass@host:5432/db \
 //     node scripts/db-index-audit.mjs > report.md
 //
-//   # або у repo (запис у docs/runbooks/db-index-audit-YYYY-MM-DD.md):
+//   # або у repo (запис у docs/03-operations/runbooks/db-index-audit-YYYY-MM-DD.md):
 //   DATABASE_URL=... node scripts/db-index-audit.mjs --write
 //
 // Hard Rule #4 не зачіпається — це read-only audit. Hard Rule #21
 // (Pino redaction) — DATABASE_URL ніколи не друкується (тільки `host:port`
 // без credentials у header report-у).
 //
-// Runbook: `docs/runbooks/operations-runbook.md § 9` (index hygiene).
+// Runbook: `docs/03-operations/runbooks/operations-runbook.md § 9` (index hygiene).
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";

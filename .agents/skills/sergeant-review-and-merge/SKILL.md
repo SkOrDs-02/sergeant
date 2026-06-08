@@ -18,8 +18,8 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 Питання цієї стадії: **«Чи реалізує diff те, що описано в spec/issue/playbook?»** Без імен змінних, без стилю, без оптимізацій.
 
 - Знайди канонічне джерело істини для зміни:
-  - product-facing: spec у `docs/design/specs/` або issue з acceptance-критеріями;
-  - infra/governance: playbook у `docs/playbooks/` або initiative у `docs/initiatives/`;
+  - product-facing: spec у `docs/05-design/design/specs/` або issue з acceptance-критеріями;
+  - infra/governance: playbook у `docs/00-start/playbooks/` або initiative у `docs/90-work/initiatives/`;
   - bugfix: regression-тест + опис відтворення з `sergeant-bugfix-and-regression`.
 - Звір кожен acceptance-критерій з кодом. Кожен пункт або вкритий diff-ом, або явно out-of-scope з поясненням у PR.
 - Перевір, що зачеплені surfaces покриті правильним specialist skill (тригери merge-готовності нижче).
@@ -49,7 +49,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 - `apps/web/src/shared/lib/api/queryKeys.ts`
 - `apps/web/src/core/lib/hubChat*`
 - auth-обвʼязки, env-доків або deploy-доків
-- `.agents/**`, `docs/agents/**`, `.github/**`
+- `.agents/**`, `docs/00-start/agents/**`, `.github/**`
 
 ## Verification gate
 
@@ -92,6 +92,6 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ## Playbooks
 
-- `docs/playbooks/release.md` — canonical release-playbook (web + API, Capacitor shell, Expo) з decision-tree.
-- `docs/playbooks/declare-incident.md` — ескалація, коли merge зламав прод.
-- Каталог: `docs/agents/agent-skills-catalog.md`.
+- `docs/00-start/playbooks/release.md` — canonical release-playbook (web + API, Capacitor shell, Expo) з decision-tree.
+- `docs/00-start/playbooks/declare-incident.md` — ескалація, коли merge зламав прод.
+- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.

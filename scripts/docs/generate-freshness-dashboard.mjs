@@ -34,7 +34,7 @@ const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 const DEFAULT_OUTPUT = resolve(
   REPO_ROOT,
-  "docs/governance/freshness-dashboard.html",
+  "docs/04-governance/governance/freshness-dashboard.html",
 );
 
 const YELLOW_THRESHOLD_DAYS = 30;

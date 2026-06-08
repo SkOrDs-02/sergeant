@@ -4,7 +4,7 @@
 
 Тонкий TypeScript-плагін, що реєструє Sergeant tools у [OpenClaw Gateway](https://openclaw.ai) runtime через HTTP-проксі до `apps/server /api/internal/openclaw/*`.
 
-Source-of-truth для контексту і дорожньої карти: [`docs/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../docs/planning/openclaw-migration-plan.md). Цей README — короткий статус самого пакета.
+Source-of-truth для контексту і дорожньої карти: [`docs/90-work/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../docs/90-work/planning/openclaw-migration-plan.md). Цей README — короткий статус самого пакета.
 
 ## Поточний стан (Stage 5a merged; production smoke 12/12)
 
@@ -51,7 +51,7 @@ Source-of-truth для контексту і дорожньої карти: [`do
 
 Files: `src/shortcuts/{router.ts,types.ts,index.ts}` + 17 per-shortcut definition-файлів, `src/hooks/shortcut-router.ts` factory. Експорт `ESCALATE_PREFIX` залишається публічним — він використовується Layer 2 escalation flow-ом через `userMessage` rewrite, а не як `text` short-circuit.
 
-Історія: попередні ревізії реєстрували цей роутер на `before_agent_start` з `{ block: true, blockReason }`. Live smoke-test 2026-05-12 підтвердив, що в real `openclaw@2026.5.7` цей підхід не працює: hook `@deprecated`, event має `prompt` (не `userMessage`), result type не підтримує `block`. Див. `docs/notes/spikes/openclaw-sdk-5.7-real-api.md` § Stage 4b fix-forward.
+Історія: попередні ревізії реєстрували цей роутер на `before_agent_start` з `{ block: true, blockReason }`. Live smoke-test 2026-05-12 підтвердив, що в real `openclaw@2026.5.7` цей підхід не працює: hook `@deprecated`, event має `prompt` (не `userMessage`), result type не підтримує `block`. Див. `docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md` § Stage 4b fix-forward.
 
 Кожен tool — `api.registerTool({ name, label, description, parameters: Type.Object(...), async execute(invocationId, params) { ... } })`. Параметри валідуються `typebox@1.1.x` (не Zod і не `@sinclair/typebox`). Tools проксяться через HTTP до існуючих server endpoints `/api/internal/openclaw/<endpoint>` з `Authorization: Bearer ${INTERNAL_API_KEY}` (server API не змінюється). Для write-tools додатковий server-side гейт — алловліст + `/write-audit/log` (див. `apps/server/src/routes/internal/openclaw.ts`).
 
@@ -102,8 +102,8 @@ pnpm --filter @sergeant/openclaw-plugin test          # vitest unit tests
 pnpm --filter @sergeant/openclaw-plugin typecheck     # tsc --noEmit
 ```
 
-Для повного e2e (Gateway → plugin → server) використовуй `Dockerfile.openclaw-gateway` локально або встановлюй OpenClaw глобально (`npm i -g openclaw`) — див. [`docs/playbooks/cutover-openclaw-gateway.md`](../../docs/playbooks/cutover-openclaw-gateway.md) та [`docs/adr/0055-openclaw-external-gateway.md`](../../docs/adr/0055-openclaw-external-gateway.md).
+Для повного e2e (Gateway → plugin → server) використовуй `Dockerfile.openclaw-gateway` локально або встановлюй OpenClaw глобально (`npm i -g openclaw`) — див. [`docs/00-start/playbooks/cutover-openclaw-gateway.md`](../../docs/00-start/playbooks/cutover-openclaw-gateway.md) та [`docs/04-governance/adr/0055-openclaw-external-gateway.md`](../../docs/04-governance/adr/0055-openclaw-external-gateway.md).
 
 ## Наступні кроки
 
-Послідовність Stages 4b → 8+ описана у [`docs/planning/openclaw-migration-plan.md` § Stage tracker](../../docs/planning/openclaw-migration-plan.md#stage-tracker-2026-05-12--нинішній-source-of-truth). SDK reality-check spike закрився Stage 3 — див. [`docs/notes/spikes/openclaw-sdk-5.7-real-api.md`](../../docs/notes/spikes/openclaw-sdk-5.7-real-api.md).
+Послідовність Stages 4b → 8+ описана у [`docs/90-work/planning/openclaw-migration-plan.md` § Stage tracker](../../docs/90-work/planning/openclaw-migration-plan.md#stage-tracker-2026-05-12--нинішній-source-of-truth). SDK reality-check spike закрився Stage 3 — див. [`docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md`](../../docs/02-engineering/notes/spikes/openclaw-sdk-5.7-real-api.md).

@@ -2,7 +2,7 @@ name: Deploy-config staging gate
 
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # Closes initiative 0011 phase 1 PR 1.3 — process guard against the
 # "Vercel SSOT-flip" type-incident (PR #1595 → PR #1600). When a PR
@@ -20,9 +20,9 @@ name: Deploy-config staging gate
 # be a comment in the corresponding file's syntax.
 #
 # Doc context:
-#   docs/initiatives/0011-foundation-adoption-and-process-discipline.md
+#   docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md
 #     §Фаза 1 → PR 1.3 (process guard against deploy-config drift)
-#   docs/playbooks/deploy-config-change.md (decision tree for verifying)
+#   docs/00-start/playbooks/deploy-config-change.md (decision tree for verifying)
 #   AGENTS.md hard rule on deploy safety / vercel SSOT.
 
 on:

@@ -702,7 +702,7 @@ if (JSON_MODE) {
     }
     console.error(
       "\nFix: after adding a SQL migration, update packages/db-schema/src/pg/*.ts\n" +
-        "     to mirror the same tables/columns. See docs/playbooks/add-sql-migration.md\n" +
+        "     to mirror the same tables/columns. See docs/00-start/playbooks/add-sql-migration.md\n" +
         "Whitelist: add an entry to WHITELIST in scripts/check-schema-drift.mjs " +
         "for intentional divergences.",
     );

@@ -8,16 +8,16 @@ You audit Sergeant documentation governance. Inspect docs and generated catalogs
 - Duplicate active trackers for the same workstream.
 - Historical/source audit docs that still look actionable.
 - Active plans whose canonical owner has moved elsewhere.
-- Generated catalog drift: `docs/open-work.md`, `docs/playbooks/INDEX.md`, `docs/governance/knowledge-graph.{json,html}`.
+- Generated catalog drift: `docs/open-work.md`, `docs/00-start/playbooks/INDEX.md`, `docs/04-governance/governance/knowledge-graph.{json,html}`.
 - Broken or misleading canonical-owner links.
 - Lifecycle/status markers that disagree with README/catalog rows.
 
 ## Preferred sources of truth
 
-- Agent skills: `docs/agents/agent-skills-catalog.md`
-- Playbooks: `docs/playbooks/playbook-catalog.md` and generated `docs/playbooks/INDEX.md`
+- Agent skills: `docs/00-start/agents/agent-skills-catalog.md`
+- Playbooks: `docs/00-start/playbooks/playbook-catalog.md` and generated `docs/00-start/playbooks/INDEX.md`
 - Open work: `docs/open-work.md`
-- Knowledge graph: `docs/governance/knowledge-graph.json`
+- Knowledge graph: `docs/04-governance/governance/knowledge-graph.json`
 - Lifecycle headers in the file itself beat README prose when they disagree.
 
 ## Steps

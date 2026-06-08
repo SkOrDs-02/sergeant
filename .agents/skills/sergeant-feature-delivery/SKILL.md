@@ -11,8 +11,8 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ## Flow
 
-1. Перечитай `AGENTS.md`, відповідний specialist skill і будь-який relevant playbook у `docs/playbooks/`.
-2. Запиши або онови design/spec у `docs/design/specs/`, коли зміна нетривіальна або product-facing.
+1. Перечитай `AGENTS.md`, відповідний specialist skill і будь-який relevant playbook у `docs/00-start/playbooks/`.
+2. Запиши або онови design/spec у `docs/05-design/design/specs/`, коли зміна нетривіальна або product-facing.
 3. Визнач, де живе код, через `sergeant-monorepo-boundaries` ще до додавання файлів.
 4. Спершу додай тести там, де змінюється поведінка: unit, контракт, UI або migration verification — за релевантністю.
 5. Імплементуй мінімальний end-to-end slice.
@@ -43,7 +43,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ## Playbooks
 
-- `docs/playbooks/add-api-endpoint.md` — server-контракт + api-client + тести в одному кроці.
-- `docs/playbooks/add-feature-flag.md` — flag-gated rollout нової поведінки.
-- `docs/playbooks/add-onboarding-step.md` — коли фіча торкається onboarding-у.
-- Каталог: `docs/agents/agent-skills-catalog.md`.
+- `docs/00-start/playbooks/add-api-endpoint.md` — server-контракт + api-client + тести в одному кроці.
+- `docs/00-start/playbooks/add-feature-flag.md` — flag-gated rollout нової поведінки.
+- `docs/00-start/playbooks/add-onboarding-step.md` — коли фіча торкається onboarding-у.
+- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.

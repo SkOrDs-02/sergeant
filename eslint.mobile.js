@@ -57,7 +57,7 @@ export const mobileBlocks = [
             {
               name: "@sergeant/db-schema/migrate",
               message:
-                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`. See `docs/audits/2026-05-07-app-audit.md` §1.",
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`. See `docs/90-work/audits/2026-05-07-app-audit.md` §1.",
             },
           ],
         },
@@ -70,7 +70,7 @@ export const mobileBlocks = [
   //
   // Allowlist below names every existing `as unknown as X` call-site
   // on mobile as of rule extension (2026-05-01). Migrate a file → drop
-  // it from the list. See `docs/tech-debt/mobile.md` §no-strict-bypass
+  // it from the list. See `docs/90-work/tech-debt/mobile.md` §no-strict-bypass
   // (registry tracked separately in PR 3).
   {
     files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
@@ -115,7 +115,7 @@ export const mobileBlocks = [
   //     (legacy LS shape parser; eslint-disable-next-line present).
   // New `any` in mobile production code surfaces immediately in CI lint
   // output. Promote to "error" once the burn-down reaches zero. See
-  // `docs/tech-debt/mobile.md` §no-explicit-any.
+  // `docs/90-work/tech-debt/mobile.md` §no-explicit-any.
   {
     files: ["apps/mobile/src/**/*.{ts,tsx}"],
     ignores: [

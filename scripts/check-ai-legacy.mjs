@@ -107,7 +107,10 @@ const SKIP_FILES = new Set([
 // Directories whose entire contents are skipped — the AI-marker docs explain
 // the syntax with deliberately-stale example dates that should never trigger
 // the scanner.
-const SKIP_FILE_PREFIXES = ["docs/playbooks/", "docs/planning/"];
+const SKIP_FILE_PREFIXES = [
+  "docs/00-start/playbooks/",
+  "docs/90-work/planning/",
+];
 
 // Marker regex — anchored to the canonical syntax enforced by the ESLint rule.
 //

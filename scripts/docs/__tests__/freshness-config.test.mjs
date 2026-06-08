@@ -20,16 +20,16 @@ import {
 
 describe("globToRegex", () => {
   it("matches exact paths", () => {
-    const re = globToRegex("docs/playbooks/INDEX.md");
-    assert.equal(re.test("docs/playbooks/INDEX.md"), true);
-    assert.equal(re.test("docs/playbooks/INDEX.md.bak"), false);
+    const re = globToRegex("docs/00-start/playbooks/INDEX.md");
+    assert.equal(re.test("docs/00-start/playbooks/INDEX.md"), true);
+    assert.equal(re.test("docs/00-start/playbooks/INDEX.md.bak"), false);
   });
 
   it("matches directory prefix with **", () => {
-    const re = globToRegex("docs/adr/**");
-    assert.equal(re.test("docs/adr/0001-foo.md"), true);
-    assert.equal(re.test("docs/adr/sub/dir/file.md"), true);
-    assert.equal(re.test("docs/audits/foo.md"), false);
+    const re = globToRegex("docs/04-governance/adr/**");
+    assert.equal(re.test("docs/04-governance/adr/0001-foo.md"), true);
+    assert.equal(re.test("docs/04-governance/adr/sub/dir/file.md"), true);
+    assert.equal(re.test("docs/90-work/audits/foo.md"), false);
   });
 
   it("matches **/X — leading wildcard", () => {
@@ -41,9 +41,9 @@ describe("globToRegex", () => {
 
   it("matches single * inside a segment", () => {
     const re = globToRegex("**/TEMPLATE*.md");
-    assert.equal(re.test("docs/postmortems/TEMPLATE.md"), true);
-    assert.equal(re.test("docs/adr/TEMPLATE-01.md"), true);
-    assert.equal(re.test("docs/postmortems/foo.md"), false);
+    assert.equal(re.test("docs/03-operations/postmortems/TEMPLATE.md"), true);
+    assert.equal(re.test("docs/04-governance/adr/TEMPLATE-01.md"), true);
+    assert.equal(re.test("docs/03-operations/postmortems/foo.md"), false);
   });
 
   it("treats * as single-segment (no /)", () => {
@@ -61,9 +61,12 @@ describe("globToRegex", () => {
 
 describe("matchesAnyGlob", () => {
   it("returns true if any glob matches", () => {
-    const globs = ["docs/adr/**", "**/TEMPLATE*.md"];
-    assert.equal(matchesAnyGlob("docs/adr/0001.md", globs), true);
-    assert.equal(matchesAnyGlob("docs/postmortems/TEMPLATE.md", globs), true);
+    const globs = ["docs/04-governance/adr/**", "**/TEMPLATE*.md"];
+    assert.equal(matchesAnyGlob("docs/04-governance/adr/0001.md", globs), true);
+    assert.equal(
+      matchesAnyGlob("docs/03-operations/postmortems/TEMPLATE.md", globs),
+      true,
+    );
     assert.equal(matchesAnyGlob("README.md", globs), false);
   });
 
@@ -113,8 +116,8 @@ describe("hasFreshnessHeader", () => {
 describe("buildTrackedList", () => {
   const config = {
     ...DEFAULT_CONFIG,
-    excludeGlobs: ["docs/adr/**", "**/TEMPLATE*.md"],
-    cadenceOverrides: { "docs/observability/runbook.md": 60 },
+    excludeGlobs: ["docs/04-governance/adr/**", "**/TEMPLATE*.md"],
+    cadenceOverrides: { "docs/03-operations/observability/runbook.md": 60 },
   };
 
   const headerContent =
@@ -122,7 +125,10 @@ describe("buildTrackedList", () => {
   const noHeaderContent = "# x\n\nNo header here.\n";
 
   it("auto-tracks every candidate that has a freshness header", () => {
-    const candidates = ["README.md", "docs/governance/doc-freshness.md"];
+    const candidates = [
+      "README.md",
+      "docs/04-governance/governance/doc-freshness.md",
+    ];
     const readFile = () => headerContent;
     const tracked = buildTrackedList({ candidates, config, readFile });
     assert.equal(tracked.length, 2);
@@ -130,7 +136,7 @@ describe("buildTrackedList", () => {
   });
 
   it("applies cadence overrides", () => {
-    const candidates = ["docs/observability/runbook.md"];
+    const candidates = ["docs/03-operations/observability/runbook.md"];
     const tracked = buildTrackedList({
       candidates,
       config,
@@ -140,7 +146,7 @@ describe("buildTrackedList", () => {
   });
 
   it("uses default cadence when no override", () => {
-    const candidates = ["docs/governance/doc-freshness.md"];
+    const candidates = ["docs/04-governance/governance/doc-freshness.md"];
     const tracked = buildTrackedList({
       candidates,
       config,
@@ -151,8 +157,8 @@ describe("buildTrackedList", () => {
 
   it("skips files matching excludeGlobs", () => {
     const candidates = [
-      "docs/adr/0001-foo.md",
-      "docs/playbooks/TEMPLATE-decision-tree.md",
+      "docs/04-governance/adr/0001-foo.md",
+      "docs/00-start/playbooks/TEMPLATE-decision-tree.md",
       "README.md",
     ];
     const tracked = buildTrackedList({
@@ -247,7 +253,7 @@ describe("buildTrackedList", () => {
 describe("computeCoverageGaps", () => {
   const config = {
     ...DEFAULT_CONFIG,
-    excludeGlobs: ["docs/adr/**", "apps/**/README.md"],
+    excludeGlobs: ["docs/04-governance/adr/**", "apps/**/README.md"],
     explicitExclude: ["docs/legacy.md"],
   };
   const headerContent =
@@ -258,7 +264,7 @@ describe("computeCoverageGaps", () => {
     const candidates = [
       "README.md",
       "docs/foo.md",
-      "docs/adr/0001.md",
+      "docs/04-governance/adr/0001.md",
       "apps/web/README.md",
       "docs/legacy.md",
     ];

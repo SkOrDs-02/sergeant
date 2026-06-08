@@ -601,7 +601,7 @@ export function renderMarkdown(results, { baseUrl, generatedAt }) {
   lines.push("---");
   lines.push("");
   lines.push(
-    "_See `docs/testing/pact-drift-runbook.md` for triage steps and fix recipes._",
+    "_See `docs/02-engineering/testing/pact-drift-runbook.md` for triage steps and fix recipes._",
   );
   return lines.join("\n");
 }

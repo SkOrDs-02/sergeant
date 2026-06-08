@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // scripts/docs/generate-playbook-index.mjs
 //
-// Scan `docs/playbooks/*.md`, extract each playbook's `**Trigger:**` line,
-// and generate `docs/playbooks/INDEX.md` — a lookup table «phrase → playbook».
+// Scan `docs/00-start/playbooks/*.md`, extract each playbook's `**Trigger:**` line,
+// and generate `docs/00-start/playbooks/INDEX.md` — a lookup table «phrase → playbook».
 //
 // Right now agents and humans have to grep or read `README.md` to figure out
 // which playbook matches a request. An auto-generated index gives O(1) lookup
@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const PLAYBOOKS_DIR = resolve(REPO_ROOT, "docs/playbooks");
+const PLAYBOOKS_DIR = resolve(REPO_ROOT, "docs/00-start/playbooks");
 const INDEX_PATH = join(PLAYBOOKS_DIR, "INDEX.md");
 
 // Files that are NOT playbooks and should be skipped from the index.
@@ -163,7 +163,7 @@ export function collectEntries(dir = PLAYBOOKS_DIR) {
     const meta = extractPlaybookMeta(content);
     if (!meta) {
       console.warn(
-        `[WARN] No **Trigger:** line in docs/playbooks/${file} — skipped`,
+        `[WARN] No **Trigger:** line in docs/00-start/playbooks/${file} — skipped`,
       );
       continue;
     }
@@ -182,25 +182,27 @@ function main() {
   if (checkMode) {
     if (!existsSync(INDEX_PATH)) {
       console.error(
-        `❌ docs/playbooks/INDEX.md does not exist. Run: pnpm docs:gen-playbook-index`,
+        `❌ docs/00-start/playbooks/INDEX.md does not exist. Run: pnpm docs:gen-playbook-index`,
       );
       process.exit(1);
     }
     const existing = readFileSync(INDEX_PATH, "utf8");
     if (normaliseForCompare(existing) !== normaliseForCompare(body)) {
       console.error(
-        `❌ docs/playbooks/INDEX.md is out of date. Run: pnpm docs:gen-playbook-index`,
+        `❌ docs/00-start/playbooks/INDEX.md is out of date. Run: pnpm docs:gen-playbook-index`,
       );
       process.exit(1);
     }
     console.log(
-      `✅ docs/playbooks/INDEX.md is up to date (${entries.length} playbooks).`,
+      `✅ docs/00-start/playbooks/INDEX.md is up to date (${entries.length} playbooks).`,
     );
     return;
   }
 
   writeFileSync(INDEX_PATH, body);
-  console.log(`✅Wrote docs/playbooks/INDEX.md (${entries.length} playbooks).`);
+  console.log(
+    `✅Wrote docs/00-start/playbooks/INDEX.md (${entries.length} playbooks).`,
+  );
 }
 
 const isMain =

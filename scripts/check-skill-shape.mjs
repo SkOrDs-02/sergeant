@@ -10,14 +10,14 @@
 // 4. The body contains either a concrete repo path (apps/*, packages/*, scripts/*,
 //    docs/*, .agents/*, .github/*) or a `pnpm`/`pnpx` command — i.e. the skill
 //    is grounded, not a free-floating checklist.
-// 5. The body links to at least one playbook in docs/playbooks/ OR to the
-//    skill catalog (docs/agents/agent-skills-catalog.md or its successor
-//    docs/agents/agent-skills-catalog.md once that rename ships).
+// 5. The body links to at least one playbook in docs/00-start/playbooks/ OR to the
+//    skill catalog (docs/00-start/agents/agent-skills-catalog.md or its successor
+//    docs/00-start/agents/agent-skills-catalog.md once that rename ships).
 //
 // This is the entrypoint for `pnpm lint:skills`. It exits non-zero with a
 // structured error report so CI logs are easy to scan.
 //
-// Linked initiative: docs/initiatives/archive/_0009-agent-os-hardening.md (PR 1.1).
+// Linked initiative: docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.1).
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -34,7 +34,7 @@ const PATH_HINT_RE =
   /(?:apps\/[\w./-]+|packages\/[\w./-]+|scripts\/[\w./-]+|docs\/[\w./-]+|\.agents\/[\w./-]+|\.github\/[\w./-]+)/;
 const COMMAND_HINT_RE = /\bpnp[mx]\s+[\w:.@/-]+/;
 const PLAYBOOK_LINK_RE =
-  /docs\/playbooks\/[\w./-]+|docs\/agents\/agent-skills-catalog\.md/;
+  /docs\/00-start\/playbooks\/[\w./-]+|docs\/00-start\/agents\/agent-skills-catalog\.md/;
 
 function readJSON(p) {
   return JSON.parse(readFileSync(p, "utf8"));
@@ -101,8 +101,8 @@ function lintSkill(slug) {
   }
   if (!PLAYBOOK_LINK_RE.test(body)) {
     errors.push(
-      `${slug}: body has no link to docs/playbooks/* nor to the skill catalog ` +
-        `(docs/agents/agent-skills-catalog.md). Skills must point at a recipe.`,
+      `${slug}: body has no link to docs/00-start/playbooks/* nor to the skill catalog ` +
+        `(docs/00-start/agents/agent-skills-catalog.md). Skills must point at a recipe.`,
     );
   }
   return errors;
@@ -153,7 +153,7 @@ function main() {
     console.error("");
     console.error(
       "Fix the SKILL.md files above (frontmatter shape, paths/commands, playbook links) " +
-        "or update .agents/skills-lock.json. See docs/initiatives/archive/_0009-agent-os-hardening.md (PR 1.1).",
+        "or update .agents/skills-lock.json. See docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.1).",
     );
     process.exit(1);
   }

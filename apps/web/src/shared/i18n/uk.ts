@@ -648,6 +648,24 @@ export const messages = {
     errorHttpPrefix: "Сервер відповів HTTP",
   },
 
+  // Legal pages (`/legal/*`, PR-#3465). Публічні юридичні сторінки
+  // (privacy / terms / cookies / offer) — UA-only surface. Сам контент
+  // документів (`documents`-таблиця у `LegalPage.tsx`) лишається inline як
+  // plain-string-константи; сюди винесено лише JSX-position-літерали з
+  // chrome-рамки сторінки та `LegalLinks` навігації, які раніше тригерили
+  // `sergeant-design/no-cyrillic-jsx-literal`.
+  legal: {
+    // LegalLinks nav — aria-label юридичної навігації у футері.
+    linksNavAria: "Юридичні документи",
+    // LegalPage chrome.
+    homeLogoAria: "На головну Sergeant",
+    reviewGateNotice:
+      "це робочий draft до public launch, не юридична консультація. Перед відкритою реєстрацією засновник або юрист має підтвердити реквізити, refunds, processors і застосовне право.",
+    lastUpdatedPrefix: "Останнє оновлення:",
+    goToPricing: "Перейти до pricing",
+    signInOrCreate: "Увійти або створити акаунт",
+  },
+
   // What's new modal (PR-18 у `docs/launch/product-os/ftux-master-tracker.md`
   // §3.3). UI-копія обмежена — release-specific копія (title / summary /
   // items / CTA label) живе у TS-таблиці `apps/web/src/core/whatsNew/

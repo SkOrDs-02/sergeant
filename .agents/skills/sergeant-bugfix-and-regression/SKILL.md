@@ -71,7 +71,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ## Playbooks
 
-- `docs/playbooks/hotfix-prod-regression.md` — triage і фікс production-регресій.
-- `docs/playbooks/declare-incident.md` — коли баг доростає до рівня інциденту.
-- `docs/playbooks/write-postmortem.md` — postmortem постфактум.
-- Каталог: `docs/agents/agent-skills-catalog.md`.
+- `docs/00-start/playbooks/hotfix-prod-regression.md` — triage і фікс production-регресій.
+- `docs/00-start/playbooks/declare-incident.md` — коли баг доростає до рівня інциденту.
+- `docs/00-start/playbooks/write-postmortem.md` — postmortem постфактум.
+- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.

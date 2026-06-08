@@ -6,8 +6,8 @@
 // Exits non-zero if any hit is found. Severity is always `error` — there
 // is no warning mode. Clean baseline on all 12 existing skills expected.
 //
-// Linked roadmap: docs/agents/skills-evolution-roadmap.md (PR 5).
-// Linked rule: docs/governance/rules/22-skill-body-security-scan.md.
+// Linked roadmap: docs/00-start/agents/skills-evolution-roadmap.md (PR 5).
+// Linked rule: docs/04-governance/governance/rules/22-skill-body-security-scan.md.
 
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
@@ -192,7 +192,7 @@ function main() {
     console.error(
       "SKILL.md body contains patterns that could instruct an agent to " +
         "execute dangerous commands. Remove or rephrase the flagged lines. " +
-        "See docs/governance/rules/22-skill-body-security-scan.md.",
+        "See docs/04-governance/governance/rules/22-skill-body-security-scan.md.",
     );
     process.exit(1);
   }

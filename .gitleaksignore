@@ -7,17 +7,17 @@
 # Sentry DSNs without a private token, etc.) commonly trip the
 # `generic-api-key` heuristic when they appear in `KEY="value"` shell
 # assignments — those are documented IDs, not credentials, and live in
-# plain text in `docs/deploy/console.md` and similar.
+# plain text in `docs/03-operations/deploy/console.md` and similar.
 
-# docs/deploy/monorepo-deploy-filtering.md (commit fcd3c267) carried the
+# docs/03-operations/deploy/monorepo-deploy-filtering.md (commit fcd3c267) carried the
 # Railway service ID `accea0e9-…` inside a shell-assignment example line
 # `API_SVC="<uuid>"`. Tripped `generic-api-key` because of the high-entropy
 # UUID following an ALL_CAPS name + `=`. The ID is a public Railway service
-# identifier (also listed in plain text in docs/deploy/console.md
+# identifier (also listed in plain text in docs/03-operations/deploy/console.md
 # §«Project / environment»), not a credential. Follow-up commit 2ce3ad40
 # replaced the snippet with `$SERVICE_ID` placeholders so future commits
 # don't carry the pattern.
-fcd3c267e1ef00467d1de18d64bbc5b2adb2fba2:docs/deploy/monorepo-deploy-filtering.md:generic-api-key:134
+fcd3c267e1ef00467d1de18d64bbc5b2adb2fba2:docs/03-operations/deploy/monorepo-deploy-filtering.md:generic-api-key:134
 
 # apps/mobile/e2e/auth-flows.e2e.ts (commit 18a6dcab) introduced a static
 # Detox sign-up fixture password constant (`SIGN_UP_PASSWORD`). It is a

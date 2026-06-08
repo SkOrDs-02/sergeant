@@ -2,7 +2,7 @@
 # archive-module-data-partitions.sh — Detach and dump old monthly partitions
 # of `module_data` for cold-storage archival.
 #
-# Stage 6 / PR #050 з docs/planning/storage-roadmap.md.
+# Stage 6 / PR #050 з docs/90-work/planning/storage-roadmap.md.
 #
 # Usage:
 #   PGURL='postgresql://...' ./scripts/archive-module-data-partitions.sh [retention_months]
@@ -10,7 +10,7 @@
 # Defaults: retention = 3 months. Partitions older than NOW() - retention
 # are detached from `module_data`, dumped to a custom-format file, then
 # dropped. The dump files should be uploaded to S3/B2 cold-storage
-# (see docs/runbooks/database-backup-restore.md).
+# (see docs/03-operations/runbooks/database-backup-restore.md).
 #
 # Prerequisites:
 #   - pg_dump / psql available on PATH.

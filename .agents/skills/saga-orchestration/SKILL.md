@@ -116,4 +116,4 @@ The `references/` directory contains production-grade implementations not needed
 - `cqrs-implementation` — Pair sagas with CQRS for read-model updates after each step completes
 - `event-store-design` — Store saga events in an event store for full audit trail and replay capability
 - `workflow-orchestration-patterns` — Higher-level workflow engines (Temporal, Conductor) that build on saga concepts
-See [docs/agents/agent-skills-catalog.md](docs/agents/agent-skills-catalog.md) for Sergeant skill routing.
+See [docs/00-start/agents/agent-skills-catalog.md](docs/00-start/agents/agent-skills-catalog.md) for Sergeant skill routing.

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Verifies that `packages/api-client/src/generated/openapi.d.ts` matches what
- * `openapi-typescript` produces from the current `docs/api/openapi.json`.
+ * `openapi-typescript` produces from the current `docs/02-engineering/api/openapi.json`.
  *
  * Запуск: `pnpm api:check-openapi-types` (root) або
  *         `node scripts/api/check-openapi-types-fresh.mjs`.
@@ -24,7 +24,13 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
-const specPath = path.join(repoRoot, "docs", "api", "openapi.json");
+const specPath = path.join(
+  repoRoot,
+  "docs",
+  "02-engineering",
+  "api",
+  "openapi.json",
+);
 const specCliPath = path.relative(repoRoot, specPath);
 const outPath = path.join(
   repoRoot,

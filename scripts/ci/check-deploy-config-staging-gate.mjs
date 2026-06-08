@@ -193,8 +193,8 @@ export function evaluate({ changedFiles, getDiff, labelsJson }) {
       `  existed for it. CI cannot replace human verification of edge-cached or`,
       `  edge-served config — humans must.`,
       ``,
-      `See: docs/playbooks/deploy-config-change.md`,
-      `See: docs/initiatives/0011-foundation-adoption-and-process-discipline.md`,
+      `See: docs/00-start/playbooks/deploy-config-change.md`,
+      `See: docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md`,
       `       §Фаза 1 → PR 1.3 (Phase 1 PR 1.3)`,
     ].join("\n"),
   );

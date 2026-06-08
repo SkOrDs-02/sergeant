@@ -122,7 +122,11 @@ export function useFinykBackupSync(
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const parsed = JSON.parse(e.target!.result as string);
+          const result = e.target?.result;
+          if (typeof result !== "string") {
+            throw new Error("невірний формат файлу");
+          }
+          const parsed = JSON.parse(result);
           const normalized = normalizeFinykBackup(parsed);
           applyData(normalized);
           toast?.success("Дані імпортовано.");
@@ -176,10 +180,10 @@ export function useFinykBackupSync(
       // `history.replaceState` — інакше data-router `createBrowserRouter`
       // не дізнається про зміну search-string-у і `useLocation()`
       // консьюмери лишаться зі застарілим URL у пам'яті.
-        navigate(
-          { pathname: location.pathname, search: "", hash: "" },
-          { replace: true },
-        );
+      navigate(
+        { pathname: location.pathname, search: "", hash: "" },
+        { replace: true },
+      );
       return true;
     } catch (err) {
       reportSilentError("load sync from url", err);

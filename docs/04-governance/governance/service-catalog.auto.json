@@ -1,0 +1,77 @@
+{
+  "$schema": "./schemas/service-catalog.schema.json",
+  "version": 1,
+  "generated_at": "2026-06-08",
+  "surfaces": [
+    {
+      "id": "web-pwa",
+      "title": "Web / PWA",
+      "workspace": "apps/web",
+      "deployTarget": "vercel",
+      "deployArtifact": "vercel.json",
+      "railwayService": null,
+      "healthcheckPath": null,
+      "owner": "@Skords-01"
+    },
+    {
+      "id": "api",
+      "title": "API (apps/server)",
+      "workspace": "apps/server",
+      "deployTarget": "railway",
+      "deployArtifact": "Dockerfile.api",
+      "railwayService": null,
+      "healthcheckPath": "/health",
+      "owner": "@Skords-01"
+    },
+    {
+      "id": "mobile-expo",
+      "title": "Mobile (Expo)",
+      "workspace": "apps/mobile",
+      "deployTarget": "expo-eas",
+      "deployArtifact": "eas.json",
+      "railwayService": null,
+      "healthcheckPath": null,
+      "owner": "@Skords-01"
+    },
+    {
+      "id": "mobile-shell",
+      "title": "Mobile shell (Capacitor)",
+      "workspace": "apps/mobile-shell",
+      "deployTarget": "capacitor-stores",
+      "deployArtifact": "capacitor.config.ts",
+      "railwayService": null,
+      "healthcheckPath": null,
+      "owner": "@Skords-01"
+    },
+    {
+      "id": "openclaw",
+      "title": "OpenClaw (Telegram bot)",
+      "workspace": "tools/openclaw",
+      "deployTarget": "railway",
+      "deployArtifact": "Dockerfile.openclaw",
+      "railwayService": null,
+      "healthcheckPath": null,
+      "owner": null
+    },
+    {
+      "id": "openclaw-gateway",
+      "title": "OpenClaw Gateway",
+      "workspace": "ops/openclaw",
+      "deployTarget": "railway",
+      "deployArtifact": "Dockerfile.openclaw-gateway",
+      "railwayService": "sergeant-openclaw-gateway",
+      "healthcheckPath": "/healthz",
+      "owner": null
+    },
+    {
+      "id": "n8n-workflows",
+      "title": "n8n workflows",
+      "workspace": null,
+      "deployTarget": "n8n-runtime",
+      "deployArtifact": "ops/n8n-workflows/",
+      "railwayService": null,
+      "healthcheckPath": null,
+      "owner": "@Skords-01"
+    }
+  ]
+}

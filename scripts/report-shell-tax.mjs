@@ -3,8 +3,8 @@
  * report-shell-tax.mjs — measure ongoing maintenance cost of the
  * Capacitor shell (`apps/mobile-shell/`).
  *
- * Initiative: docs/initiatives/0002-mobile-platform-decision.md (Phase 1).
- * ADR: docs/adr/0010-mobile-dual-track-capacitor-expo.md
+ * Initiative: docs/90-work/initiatives/0002-mobile-platform-decision.md (Phase 1).
+ * ADR: docs/04-governance/adr/0010-mobile-dual-track-capacitor-expo.md
  *      § Sunset schedule (T₀ 2026-09-01, T₁ 2026-11-30, T₂ 2026-12-30).
  *
  * Why: ADR-0010 status is `accepted` with lifecycle marker
@@ -93,12 +93,12 @@ function parseArgs(argv) {
           "",
           "Flags:",
           "  --trend   print 30/60/90-day moving snapshot for quarterly review",
-          "            (overrides --since; see docs/initiatives/0002 trend table).",
+          "            (overrides --since; see docs/90-work/initiatives/0002 trend table).",
           "  --json    machine-readable output; pairs with --trend to emit a",
           "            `windows[]` array instead of the default single window.",
           "",
-          "See docs/initiatives/0002-mobile-platform-decision.md and",
-          "docs/adr/0010-mobile-dual-track-capacitor-expo.md § Sunset schedule.",
+          "See docs/90-work/initiatives/0002-mobile-platform-decision.md and",
+          "docs/04-governance/adr/0010-mobile-dual-track-capacitor-expo.md § Sunset schedule.",
           "",
         ].join("\n"),
       );
@@ -223,7 +223,7 @@ function formatHumanReport({ since, summary, shallow }) {
     "Context: ADR-0010 § Sunset schedule (T₀ 2026-09-01 / T₁ 2026-11-30 / T₂ 2026-12-30).",
   );
   lines.push(
-    "Source initiative: docs/initiatives/0002-mobile-platform-decision.md.",
+    "Source initiative: docs/90-work/initiatives/0002-mobile-platform-decision.md.",
   );
   return lines.join("\n");
 }
@@ -251,7 +251,7 @@ function formatTrendReport({ windows, shallow }) {
     "Context: ADR-0010 § Sunset schedule (T₀ 2026-09-01 / T₁ 2026-11-30 / T₂ 2026-12-30).",
   );
   lines.push(
-    "Source initiative: docs/initiatives/0002-mobile-platform-decision.md § Shell-tax trend.",
+    "Source initiative: docs/90-work/initiatives/0002-mobile-platform-decision.md § Shell-tax trend.",
   );
   return lines.join("\n");
 }

@@ -1,35 +1,16 @@
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
 import { parseTrustProxy, type TrustProxyValue } from "./lib/trustProxy.js";
 
 /**
- * Determines which runtime mode the server is starting in.
+ * Runtime config for the server process.
  *
- * Modes:
- *  - `railway` — API-only deploy (HTTPS, separate frontend on Vercel). Strict API CSP.
- *  - `replit`  — Unified process serving SPA + API on one port. CSP disabled so
- *                the SPA can execute its Vite-PWA bootstrap scripts.
- *
- * Selection:
- *  1. `SERVER_MODE=railway|replit` wins if set.
- *  2. Otherwise, presence of `REPLIT_DEV_DOMAIN` or `REPLIT_DOMAINS` → `replit`.
- *  3. Default → `railway`.
+ * The server runs in a single mode: **Railway** — API-only deploy (HTTPS,
+ * separate frontend on Vercel) with a strict API CSP. (The historical
+ * `replit` unified-process mode was removed 2026-06-08; Replit is no longer a
+ * deploy target.)
  */
-type ServerMode = "railway" | "replit";
+type ServerMode = "railway";
 
-function detectMode(): ServerMode {
-  const raw = process.env["SERVER_MODE"]?.trim().toLowerCase();
-  if (raw === "railway" || raw === "replit") return raw;
-  if (process.env["REPLIT_DEV_DOMAIN"] || process.env["REPLIT_DOMAINS"]) {
-    return "replit";
-  }
-  return "railway";
-}
-
-const mode = detectMode();
-const isReplit = mode === "replit";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const mode: ServerMode = "railway";
 
 interface ServerConfig {
   mode: ServerMode;
@@ -41,13 +22,9 @@ interface ServerConfig {
 }
 
 /**
- * Frozen runtime config consumed by `server/index.js` and `server/app.js`.
- * Preserves the exact behavior of the previous split entrypoints
- * (`railway.mjs` vs `replit.mjs`):
- *  - Railway: port 3000, trust proxy level 1 (override via `TRUST_PROXY`),
- *    API-only, strict CSP.
- *  - Replit:  port 5000, no trust proxy by default, serves built SPA from
- *    ../dist, CSP off.
+ * Frozen runtime config consumed by `server/index.js` and `server/app.js`:
+ * port 3000, trust proxy level 1 (override via `TRUST_PROXY`), API-only,
+ * strict CSP.
  *
  * **M2** (`docs/security/hardening/M2-trust-proxy-parameterize.md`):
  * `trustProxy` тепер читається з `TRUST_PROXY` env-var-у через
@@ -58,17 +35,16 @@ interface ServerConfig {
  *   - `TRUST_PROXY=false` — повністю вимкнути парсинг X-Forwarded-For.
  *   - `TRUST_PROXY=true` — заборонено (open relay для req.ip spoofing).
  *
- * Якщо `TRUST_PROXY` не заданий — fallback до historical Railway/Replit
- * behaviour (1 для Railway, undefined для Replit).
+ * Якщо `TRUST_PROXY` не заданий — fallback до Railway behaviour (1).
  */
 export const config: Readonly<ServerConfig> = Object.freeze({
   mode,
   role: mode,
-  port: Number(process.env["PORT"]) || (isReplit ? 5000 : 3000),
-  servesFrontend: isReplit,
-  distPath: isReplit ? join(__dirname, "..", "dist") : null,
+  port: Number(process.env["PORT"]) || 3000,
+  servesFrontend: false,
+  distPath: null,
   trustProxy: parseTrustProxy({
     raw: process.env["TRUST_PROXY"],
-    fallback: isReplit ? undefined : 1,
+    fallback: 1,
   }),
 });

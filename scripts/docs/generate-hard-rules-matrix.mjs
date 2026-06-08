@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // scripts/docs/generate-hard-rules-matrix.mjs
 //
-// Read the canonical Hard Rules registry at `docs/governance/hard-rules.json`
-// and emit `docs/governance/hard-rules-matrix.md` — a machine-readable index
+// Read the canonical Hard Rules registry at `docs/04-governance/governance/hard-rules.json`
+// and emit `docs/04-governance/governance/hard-rules-matrix.md` — a machine-readable index
 // that maps every rule to its scope and the mechanism that enforces it.
 //
 // The canonical registry shape is defined in `hard-rules.schema.json` and
@@ -26,8 +26,14 @@ import prettier from "prettier";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const REGISTRY_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules.json");
-const MATRIX_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules-matrix.md");
+const REGISTRY_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/hard-rules.json",
+);
+const MATRIX_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/hard-rules-matrix.md",
+);
 
 // The "Last validated by …" handle for this auto-generated matrix is pinned
 // to the script identity rather than resolved from `git config user.email`.
@@ -41,7 +47,7 @@ const MATRIX_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules-matrix.md");
 // pinned convention used by sibling auto-gen scripts: `generate-today.mjs`
 // uses `by docs:gen-today`, `generate-open-work.mjs` uses `by @codex`,
 // `generate-initiative-followups.mjs` uses `by @Skords-01`.
-const RULES_DIR = resolve(REPO_ROOT, "docs/governance/rules");
+const RULES_DIR = resolve(REPO_ROOT, "docs/04-governance/governance/rules");
 
 /**
  * Build an `id → "NN-slug.md"` map from the per-rule file directory. Returns
@@ -183,9 +189,9 @@ function renderLinks(rule) {
           return `[${l.ref}](https://github.com/Skords-01/Sergeant/issues/${num})`;
         }
         case "agents":
-          return `[AGENTS ${l.ref}](../../AGENTS.md#hard-rules-do-not-break)`;
+          return `[AGENTS ${l.ref}](../../../AGENTS.md#hard-rules-do-not-break)`;
         case "doc":
-          return `[\`${l.ref}\`](../../${l.ref})`;
+          return `[\`${l.ref}\`](../../../${l.ref})`;
         case "external":
           return `[${l.ref.replace(/^https?:\/\/(www\.)?/, "")}](${l.ref})`;
         default:
@@ -254,11 +260,11 @@ export function renderMatrixRaw(
   lines.push(`> **Status:** Active`);
   lines.push("");
   lines.push(
-    "<!-- AUTO-GENERATED FILE. Do not edit by hand. Source: `docs/governance/hard-rules.json`. Regenerate via `pnpm hard-rules:generate`. -->",
+    "<!-- AUTO-GENERATED FILE. Do not edit by hand. Source: `docs/04-governance/governance/hard-rules.json`. Regenerate via `pnpm hard-rules:generate`. -->",
   );
   lines.push("");
   lines.push(
-    `Цей файл — машино-читабельний індекс із **${registry.rules.length}** Hard rules. Повні описи живуть в [\`AGENTS.md § Hard rules\`](../../AGENTS.md#hard-rules-do-not-break) — це джерело правди для людей. Реєстр у [\`hard-rules.json\`](./hard-rules.json) — джерело правди для скриптів. Матриця нижче — їх перетин: одним поглядом видно, **який механізм** ловить порушення кожного правила.`,
+    `Цей файл — машино-читабельний індекс із **${registry.rules.length}** Hard rules. Повні описи живуть в [\`AGENTS.md § Hard rules\`](../../../AGENTS.md#hard-rules-do-not-break) — це джерело правди для людей. Реєстр у [\`hard-rules.json\`](./hard-rules.json) — джерело правди для скриптів. Матриця нижче — їх перетин: одним поглядом видно, **який механізм** ловить порушення кожного правила.`,
   );
   lines.push("");
   lines.push("## Quick links");
@@ -266,7 +272,7 @@ export function renderMatrixRaw(
   lines.push("- Реєстр (JSON): [`hard-rules.json`](./hard-rules.json)");
   lines.push("- Schema: [`hard-rules.schema.json`](./hard-rules.schema.json)");
   lines.push(
-    "- Generator: [`scripts/docs/generate-hard-rules-matrix.mjs`](../../scripts/docs/generate-hard-rules-matrix.mjs)",
+    "- Generator: [`scripts/docs/generate-hard-rules-matrix.mjs`](../../../scripts/docs/generate-hard-rules-matrix.mjs)",
   );
   lines.push("- Sync gate: `pnpm lint:hard-rules-registry`");
   lines.push("- CLI: `pnpm hard-rules:list` (plain-text dump for code-review)");
@@ -281,13 +287,13 @@ export function renderMatrixRaw(
   );
   for (const rule of registry.rules) {
     // Prefer per-rule canonical file; fall back to AGENTS.md anchor.
-    // Per-rule files live at `docs/governance/rules/NN-<slug>.md`; the matrix
-    // sits one directory up at `docs/governance/hard-rules-matrix.md`, so the
+    // Per-rule files live at `docs/04-governance/governance/rules/NN-<slug>.md`; the matrix
+    // sits one directory up at `docs/04-governance/governance/hard-rules-matrix.md`, so the
     // relative link is `./rules/<file>`.
     const ruleFile = ruleFiles.get(rule.id);
     const titleLink = ruleFile
       ? `[${escapePipes(rule.title)}](./rules/${ruleFile})`
-      : `[${escapePipes(rule.title)}](../../AGENTS.md#${anchorFromTitle(rule.id, rule.title)})`;
+      : `[${escapePipes(rule.title)}](../../../AGENTS.md#${anchorFromTitle(rule.id, rule.title)})`;
     lines.push(
       [
         `**${rule.id}**`,
@@ -338,7 +344,7 @@ export function renderMatrixRaw(
     "1. Append a new entry to [`hard-rules.json`](./hard-rules.json) (next integer `id`, matching the `### N. …` heading number you'll add to AGENTS.md).",
   );
   lines.push(
-    "2. Add the human-readable description in [`AGENTS.md § Hard rules`](../../AGENTS.md#hard-rules-do-not-break) and the same numbered bullet in [`CONTRIBUTING.md § Hard rules`](../../CONTRIBUTING.md). All three move in one PR (Hard Rule #15).",
+    "2. Add the human-readable description in [`AGENTS.md § Hard rules`](../../../AGENTS.md#hard-rules-do-not-break) and the same numbered bullet in [`CONTRIBUTING.md § Hard rules`](../../../CONTRIBUTING.md). All three move in one PR (Hard Rule #15).",
   );
   lines.push(
     "3. Run `pnpm hard-rules:generate` and commit the regenerated `hard-rules-matrix.md` in the same PR.",
@@ -348,7 +354,7 @@ export function renderMatrixRaw(
   );
   lines.push("");
   lines.push(
-    "> See also: [`docs/playbooks/add-hard-rule.md`](../playbooks/add-hard-rule.md).",
+    "> See also: [`docs/00-start/playbooks/add-hard-rule.md`](../../00-start/playbooks/add-hard-rule.md).",
   );
   lines.push("");
   return lines.join("\n");

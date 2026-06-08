@@ -2,13 +2,13 @@ name: CodeQL (JavaScript / TypeScript SAST)
 
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # Statycznyj analyz TypeScript codebase via GitHub CodeQL — taint-flow
 # matching для SQL injection, XSS, SSRF, prototype-pollution, path
 # traversal та інших класів вразливостей, що OSV-Scanner / Trivy /
 # eslint-plugin-security за дизайном не ловлять. Закриває
-# `docs/security/hardening/I1-codeql-workflow.md` і завершує SAST/SCA
+# `docs/04-governance/security/hardening/I1-codeql-workflow.md` і завершує SAST/SCA
 # trio (Trivy = container CVE; OSV-Scanner = lockfile CVE; CodeQL =
 # source-code taint).
 #
@@ -53,7 +53,7 @@ jobs:
       fail-fast: false
       matrix:
         # `javascript-typescript` покриває обидва React (JSX/TSX) на
-        # apps/web + Node на apps/server, apps/console, apps/mobile.
+        # apps/web + Node на apps/server, tools/openclaw, apps/mobile.
         language: ["javascript-typescript"]
 
     steps:
