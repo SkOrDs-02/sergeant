@@ -66,7 +66,7 @@
 - `posthog-js@^1.372.3` у `apps/web/package.json`, `initPostHog()` викликається з [`apps/web/src/main.tsx`](../../../apps/web/src/main.tsx) через `requestIdleCallback`.
 - `identifyPostHogUser` / `resetPostHog` викликаються з [`AuthContext.tsx`](../../../apps/web/src/core/auth/AuthContext.tsx) на login/logout з `buildIdentifyTraits` (`vibe`, `plan`, `locale`, `signup_date`).
 - Super-properties (`platform`, `is_capacitor`) реєструються через `posthog.register` всередині `initPostHog`.
-- `<PageviewTracker />` змонтований у [`App.tsx`](../../../apps/web/src/core/App.tsx) з `sanitizeUrl()` для magic-link токенів.
+- `<PageviewTracker />` змонтований у [`Providers.tsx`](../../../apps/web/src/core/app/Providers.tsx) з `sanitizeUrl()` для magic-link токенів.
 - `.env.example` (root) має закоментовані `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST`; setup задокументований у [`docs/observability/frontend.md`](../../observability/frontend.md).
 - CI workflow `.github/workflows/posthog-release-annotation.yml` уже постить annotation на release.
 

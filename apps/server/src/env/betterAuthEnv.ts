@@ -10,13 +10,7 @@ function isDeployedProduction(): boolean {
 
 function resolveBetterAuthBaseURL(): string {
   if (process.env["BETTER_AUTH_URL"]) return process.env["BETTER_AUTH_URL"];
-  if (process.env["REPLIT_DEV_DOMAIN"])
-    return `https://${process.env["REPLIT_DEV_DOMAIN"]}`;
-  if (process.env["REPLIT_DOMAINS"]) {
-    const first = process.env["REPLIT_DOMAINS"].split(",")[0]?.trim();
-    if (first) return `https://${first}`;
-  }
-  return `http://localhost:${process.env["PORT"] || "5000"}`;
+  return `http://localhost:${process.env["PORT"] || "3000"}`;
 }
 
 const WEAK_BETTER_AUTH_SECRETS = new Set([
@@ -59,10 +53,7 @@ export function assertBetterAuthStartupEnv(): void {
 
   const crossSiteCookiesOff =
     process.env["BETTER_AUTH_CROSS_SITE_COOKIES"] === "0";
-  const hasWebOrigins =
-    Boolean(process.env["ALLOWED_ORIGINS"]?.trim()) ||
-    Boolean(process.env["REPLIT_DEV_DOMAIN"]) ||
-    Boolean(process.env["REPLIT_DOMAINS"]?.trim());
+  const hasWebOrigins = Boolean(process.env["ALLOWED_ORIGINS"]?.trim());
 
   if (base.startsWith("https://") && !crossSiteCookiesOff && !hasWebOrigins) {
     logger.warn({

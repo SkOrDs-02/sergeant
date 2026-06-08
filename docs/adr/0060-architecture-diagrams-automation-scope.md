@@ -1,9 +1,9 @@
 # ADR-0060: Architecture diagrams — automation scope (workspace graph only)
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-05-15
 - **Deciders:** @Skords-01
 - **Supersedes:** —

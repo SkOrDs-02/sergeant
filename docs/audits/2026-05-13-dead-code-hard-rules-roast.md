@@ -1,7 +1,7 @@
 # Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13)
 
 > **Last validated:** 2026-06-03 (гілка `claude/audits-task-count-un3kj` — P1.1 + P1.3 закриті: knip deps sweep + unused-exports surface). **Next review:** 2026-08-11.
-> **Status:** Active
+> **Status:** Closed (2026-06-08 — 17/17 implemented, 0 actionable outstanding; residual = knip false-positive watchlist, не actionable)
 
 > **Скоуп:** knip-результати, unused exports / deps, lifecycle-маркери (Hard
 > Rule #10), stale internal markdown-links, hard-rule violations від попередніх

@@ -3,8 +3,8 @@
 //
 // Build a machine-readable mirror of `docs/architecture/service-catalog.md`
 // by enumerating production surfaces from:
-//   - Dockerfile.api / Dockerfile.console / Dockerfile.openclaw-gateway
-//   - railway.toml / railway.console.toml / railway.openclaw-gateway.toml
+//   - Dockerfile.api / Dockerfile.openclaw / Dockerfile.openclaw-gateway
+//   - railway.toml / railway.openclaw.toml / railway.openclaw-gateway.toml
 //   - workspace folders (apps/web / apps/mobile / apps/mobile-shell)
 //
 // Output: `docs/governance/service-catalog.auto.json`.
@@ -199,16 +199,16 @@ export function buildServiceCatalog() {
   // OpenClaw (legacy Telegram bot)
   if (
     existsSync(resolve(REPO_ROOT, "tools/openclaw/package.json")) &&
-    dockerfileExists("Dockerfile.console")
+    dockerfileExists("Dockerfile.openclaw")
   ) {
     surfaces.push({
       id: "openclaw",
       title: "OpenClaw (Telegram bot)",
       workspace: "tools/openclaw",
       deployTarget: "railway",
-      deployArtifact: "Dockerfile.console",
+      deployArtifact: "Dockerfile.openclaw",
       railwayService: railwayServiceName(
-        resolve(REPO_ROOT, "railway.console.toml"),
+        resolve(REPO_ROOT, "railway.openclaw.toml"),
       ),
       healthcheckPath: null,
       owner: ownerFor("tools/openclaw", owners),

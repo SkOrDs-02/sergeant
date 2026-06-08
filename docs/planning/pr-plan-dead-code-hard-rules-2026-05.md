@@ -1,7 +1,7 @@
 # PR-план — Dead Code + Hard Rules (з прожарки 2026-05-13)
 
 > **Last validated:** 2026-06-07 by Codex (docs link-gate hardening follow-up documented). **Next review:** 2026-08-11.
-> **Status:** Active
+> **Status:** Closed (2026-06-08 — усі DC/HR items виконані; джерело-прожарка теж Closed)
 
 > **Скоуп:** виконати outstanding items з [`2026-05-13-dead-code-hard-rules-roast.md`](../audits/2026-05-13-dead-code-hard-rules-roast.md) (§ P1 — `pnpm knip` deps sweep, 77 unused exports + 51 duplicate exports, mobile-shell unused exports, env-single-source Phase 2 burn-down, AuthPage re-decomposition) і tightening hard-rule контуру (новий lint-gate проти archive-move depth-drift, який зараз тільки watchlist у § P2). Усе закрите у самій прожарці (P0.1/P0.2/P0.3, P1.2, P1.6 markers, P1.4 partial budget restore) — поза скоупом цього плану.
 >

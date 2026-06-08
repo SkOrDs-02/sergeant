@@ -23,6 +23,7 @@
   "excludeGlobs": [
     "docs/initiatives/follow-ups.md",
     "docs/open-work.md",
+    "docs/STATUS.md",
     "scripts/__tests__/fixtures/**",
     ".telemetry/**",
     "mockups/**"

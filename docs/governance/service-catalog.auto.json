@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/service-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-07",
+  "generated_at": "2026-06-08",
   "surfaces": [
     {
       "id": "web-pwa",
@@ -48,7 +48,7 @@
       "title": "OpenClaw (Telegram bot)",
       "workspace": "tools/openclaw",
       "deployTarget": "railway",
-      "deployArtifact": "Dockerfile.console",
+      "deployArtifact": "Dockerfile.openclaw",
       "railwayService": null,
       "healthcheckPath": null,
       "owner": null

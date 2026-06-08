@@ -583,7 +583,7 @@ export async function readWorkflowLogs(
 //
 // `getUpdates` is gated because it conflicts with long-poll bot
 // processes — calling it would steal updates from the running
-// `tools/console` consumer. Webhook deployments are safe; long-poll
+// `tools/openclaw` consumer. Webhook deployments are safe; long-poll
 // ones must leave the flag off.
 
 function resolveTopicEnvId(

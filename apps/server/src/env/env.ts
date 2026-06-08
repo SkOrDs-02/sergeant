@@ -110,10 +110,8 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["production", "development", "test"])
     .default("development"),
-  /** HTTP-порт. Railway / Replit інжектять автоматично. */
+  /** HTTP-порт. Railway інжектить автоматично. */
   PORT: coerceInt.default(3000),
-  /** `railway` або `replit` — визначає CSP, trust-proxy, static-serving. */
-  SERVER_MODE: z.enum(["railway", "replit"]).optional(),
   /**
    * **M2** Trust-proxy override для Express `app.set('trust proxy', …)`.
    *
@@ -125,8 +123,7 @@ const envSchema = z.object({
    *   - `false` — вимкнути XFF-парсинг повністю.
    *   - `true` — **ЗАБОРОНЕНО**, відхиляється `parseTrustProxy`.
    *
-   * Якщо порожнє — fallback до Railway-1 / Replit-undefined (зберігає
-   * historical behaviour).
+   * Якщо порожнє — fallback до Railway-1.
    */
   TRUST_PROXY: z.string().optional(),
 
@@ -328,10 +325,6 @@ const envSchema = z.object({
   ALLOWED_ORIGINS: z.string().optional(),
   /** Regex pattern для динамічних origins (Vercel preview deploys тощо). */
   ALLOWED_ORIGIN_REGEX: z.string().optional(),
-
-  // ── Replit ──────────────────────────────────────────────────────────
-  REPLIT_DEV_DOMAIN: z.string().optional(),
-  REPLIT_DOMAINS: z.string().optional(),
 
   // ── Railway ─────────────────────────────────────────────────────────
   RAILWAY_ENVIRONMENT: z.string().optional(),

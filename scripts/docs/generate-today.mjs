@@ -31,8 +31,6 @@ import { readFileSync, writeFileSync, statSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import prettier from "prettier";
-
 import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 import { evaluate, loadLimits } from "./check-wip-limits.mjs";
 
@@ -62,6 +60,12 @@ const RE_PHASE_NEXT =
 const RE_NEXT_REVIEW = /\*\*Next review:\*\*\s*(\d{4}-\d{2}-\d{2})/;
 
 const TODAY = new Date().toISOString().slice(0, 10);
+// `today.md` is regenerated daily, but set Next review a week out so the
+// freshness dashboard does not flag it as "Overdue (1d)" the morning after
+// each run (Next review === Last validated would expire same-day).
+const NEXT_REVIEW = new Date(Date.now() + 7 * 86_400_000)
+  .toISOString()
+  .slice(0, 10);
 
 // ── Priority extraction ─────────────────────────────────────────────────────
 
@@ -190,7 +194,7 @@ function render({ priority, overdue, wipRows }) {
   lines.push("# Сьогодні в роботі");
   lines.push("");
   lines.push(
-    `> **Last validated:** ${TODAY} by docs:gen-today. **Next review:** ${TODAY}.`,
+    `> **Last validated:** ${TODAY} by docs:gen-today. **Next review:** ${NEXT_REVIEW}.`,
   );
   lines.push(`> **Status:** Reference`);
   lines.push("");
@@ -297,6 +301,10 @@ async function main() {
 
   const priority = pickPriorityItems(report);
   const overdue = pickOverdueReview(report);
+  // Lazy import keeps prettier out of the module graph for importers that only
+  // need the pure helpers (e.g. generate-status.mjs) under the install-free
+  // docs-scripts-tests CI job — mirrors generate-open-work.mjs.
+  const { default: prettier } = await import("prettier");
   const next = await prettier.format(render({ priority, overdue, wipRows }), {
     parser: "markdown",
   });

@@ -16,7 +16,7 @@
  * - **Прозорий fallback.** Якщо `DATABASE_URL_REPLICA` не заданий, або
  *   replica pool кинув помилку (connection refused, statement_timeout,
  *   replica down) — `queryReplica()` повертається до primary pool.
- *   Тому single-URL деплоїменти (Replit, dev, docker-compose) працюють
+ *   Тому single-URL деплоїменти (dev, docker-compose) працюють
  *   1:1, а production з replica down — деградує по latency, але не по
  *   правильності.
  *
