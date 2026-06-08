@@ -38,11 +38,14 @@ export function buildApiCspDirectives(): ApiCspDirectives {
 /**
  * Helmet middleware для Express.
  *
- * - `servesFrontend: true` — цей процес окрім API віддає ще й React SPA
- *   (режим Replit, `SERVER_MODE=replit`). У цьому режимі CSP вимикається, бо
- *   API-CSP з `script-src 'none'` зламала б фронтенд (Vite-PWA вбудовує
- *   інлайн-скрипт реєстрації SW, плюс `blob:` worker). Для розгортань, де
- *   потрібна CSP на SPA, політика задається на CDN-рівні (Vercel headers).
+ * - `servesFrontend: true` — цей процес окрім API віддає ще й React SPA на
+ *   одному порту. У цьому режимі CSP вимикається, бо API-CSP з
+ *   `script-src 'none'` зламала б фронтенд (Vite-PWA вбудовує інлайн-скрипт
+ *   реєстрації SW, плюс `blob:` worker). Для розгортань, де потрібна CSP на
+ *   SPA, політика задається на CDN-рівні (Vercel headers). **NB:** після
+ *   видалення Replit-режиму (2026-06-08) runtime ніколи не передає
+ *   `servesFrontend: true` — `config.servesFrontend` завжди `false`; ця гілка
+ *   лишається лише як generic capability (kандидат на видалення окремим PR).
  * - `servesFrontend: false` (дефолт) — API-only (Railway). CSP буде строгою
  *   (див. buildApiCspDirectives). `CSP_REPORT_ONLY=1` переводить її у
  *   report-only-режим — корисно під час phased-rollout: браузер логує

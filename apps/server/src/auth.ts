@@ -53,13 +53,7 @@ function escapeHtmlAttr(s: string): string {
 
 function getBaseURL(): string {
   if (env.BETTER_AUTH_URL) return env.BETTER_AUTH_URL;
-  if (env.REPLIT_DEV_DOMAIN) return `https://${env.REPLIT_DEV_DOMAIN}`;
-  const replitDomains = env.REPLIT_DOMAINS;
-  if (replitDomains) {
-    const first = replitDomains.split(",")[0]?.trim();
-    if (first) return `https://${first}`;
-  }
-  return `http://localhost:${process.env["PORT"] || 5000}`;
+  return `http://localhost:${process.env["PORT"] || 3000}`;
 }
 
 /**
@@ -571,15 +565,6 @@ function getTrustedOrigins(): string[] {
     "https://appleid.apple.com",
     ...getTrustedNativeSchemes(),
   ];
-  if (process.env["REPLIT_DEV_DOMAIN"]) {
-    origins.push(`https://${process.env["REPLIT_DEV_DOMAIN"]}`);
-  }
-  if (process.env["REPLIT_DOMAINS"]) {
-    for (const d of process.env["REPLIT_DOMAINS"].split(",")) {
-      const trimmed = d.trim();
-      if (trimmed) origins.push(`https://${trimmed}`);
-    }
-  }
   if (process.env["ALLOWED_ORIGINS"]) {
     for (const o of process.env["ALLOWED_ORIGINS"].split(",")) {
       const trimmed = o.trim();
