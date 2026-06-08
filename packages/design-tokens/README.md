@@ -43,5 +43,5 @@ pnpm --filter @sergeant/design-tokens test  # snapshot-тести токенів
 
 ## Глибше
 
-- [`docs/design/brandbook.md`](../../docs/design/brandbook.md)
-- [`docs/design/design-system.md`](../../docs/design/design-system.md)
+- [`docs/05-design/design/brandbook.md`](../../docs/05-design/design/brandbook.md)
+- [`docs/05-design/design/design-system.md`](../../docs/05-design/design/design-system.md)

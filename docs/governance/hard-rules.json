@@ -199,7 +199,7 @@
         },
         {
           "kind": "doc",
-          "ref": "docs/design/brandbook.md § WCAG-AA -strong Tier"
+          "ref": "docs/05-design/design/brandbook.md § WCAG-AA -strong Tier"
         }
       ],
       "links": [
@@ -378,7 +378,7 @@
         },
         {
           "kind": "doc",
-          "ref": "docs/design/design-system.md § Типографічна шкала"
+          "ref": "docs/05-design/design/design-system.md § Типографічна шкала"
         }
       ],
       "links": [
@@ -405,7 +405,7 @@
         },
         {
           "kind": "doc",
-          "ref": "docs/design/design-system.md § 14. Animations"
+          "ref": "docs/05-design/design/design-system.md § 14. Animations"
         }
       ],
       "links": [

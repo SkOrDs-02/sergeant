@@ -1,6 +1,6 @@
 # Playbook: Add Onboarding Step
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «Додай новий крок в онбординг» / зміна послідовності перших кроків нового юзера / новий FTUX-етап.
@@ -203,7 +203,7 @@ feat(shared): add `<step_id>` onboarding step
 
 ## See also
 
-- [add-feature-flag.md](add-feature-flag.md) — якщо новий крок під A/B
-- [migrate-localstorage-to-typedstore.md](migrate-localstorage-to-typedstore.md) — для KV persistence патернів
+- [add-feature-flag.md](./add-feature-flag.md) — якщо новий крок під A/B
+- [migrate-localstorage-to-typedstore.md](./migrate-localstorage-to-typedstore.md) — для KV persistence патернів
 - `packages/shared/src/lib/onboarding.ts` — single source of truth
 - [AGENTS.md](../../AGENTS.md) — flaky-tests список (mobile OnboardingWizard)

@@ -1,6 +1,6 @@
 # 0007 — Design-system tooling: Storybook + visual regression
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Done (round-10 closed Phases 2–5 — shared/ui coverage 100% non-allowlisted, module-level stories для Finyk / Fizruk / Nutrition / Routine / Insights, Storybook GitHub Pages deploy live, [ADR-0046](../../adr/0046-storybook-vrt-scope.md) фіксує VRT scope, ESLint rule promoteнуто до `error`)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
@@ -17,7 +17,7 @@
 > - **Phase 2** — shared/ui coverage піднято з 35% до **100% non-allowlisted** (37 stories на 37 компонентів-кандидатів). Додані 16 нових stories: `Icon`, `FormField`, `SectionHeading`, `ConfirmDialog`, `AnimatedNumber`, `FloatingActionButton`, `CollapsibleSection`, `Popover`, `Sheet`, `InputDialog`, `ModuleBottomNav`, `AccentColorPicker`, `AnimatedCheckbox`, `StreakFlame`, `StreakCelebration`, `AnimatedList`. Allowlist розширено до 23 файлів (5 дефолтних барелів + 11 utility/wrapper + 7 transient/gesture; per-file rationale comments в `packages/eslint-plugin-sergeant-design/index.js`).
 > - **Phase 3** — module-level stories для всіх п'яти модулів: `apps/web/src/modules/fizruk/components/workouts/SupersetBadge.stories.tsx` + `WorkoutStatTile.stories.tsx`, `apps/web/src/modules/nutrition/components/meal-sheet/MacroChip.stories.tsx`, `apps/web/src/modules/routine/components/DayProgressRing.stories.tsx`, `apps/web/src/core/insights/AssistantAdviceCard.stories.tsx`. Finyk вже був закритий в round-9.
 > - **Phase 4** — [ADR-0046](../../adr/0046-storybook-vrt-scope.md) фіксує VRT scope: Storybook залишається playground-ом, ADR-0034 (Argos + Playwright на hub surfaces) — єдиним authoritative VRT джерелом. Storybook stories MUST NOT дзвонити `argosScreenshot()`. Обгрунтування: budget Argos free tier (5000/міс) + false-positive economy story-isolated diffs.
-> - **Phase 5** — [`.github/workflows/storybook-deploy.yml`](../../../.github/workflows/storybook-deploy.yml) деплоїть Storybook на GitHub Pages (`https://skords-01.github.io/Sergeant/`) при push-і в `main`; PR builds рунають той же build-step + uploadять бандл як artifact (7-денний retention). Написано [`docs/design/storybook.md`](../../design/storybook.md) — contributor guide (writing stories, animations / overlays escape hatches, allowlist hygiene).
+> - **Phase 5** — [`.github/workflows/storybook-deploy.yml`](../../../.github/workflows/storybook-deploy.yml) деплоїть Storybook на GitHub Pages (`https://skords-01.github.io/Sergeant/`) при push-і в `main`; PR builds рунають той же build-step + uploadять бандл як artifact (7-денний retention). Написано [`docs/05-design/design/storybook.md`](../../05-design/design/storybook.md) — contributor guide (writing stories, animations / overlays escape hatches, allowlist hygiene).
 > - **ESLint promote** — `sergeant-design/require-stories-for-ui-components` піднято з `warn` до `error` в [`eslint.config.js`](../../../eslint.config.js) з оновленим коментарем-rationale.
 >
 > **Sources:** Design Review 2026-05-03 §13 (Design system), [`docs/audits/archive/2026-04-28-ux-ui-audit.md`](../../audits/archive/2026-04-28-ux-ui-audit.md)
@@ -47,7 +47,7 @@ Sergeant має **топовий design-system на статичному рів�
 4. Chromatic як альтернатива (decision: Chromatic vs self-hosted Playwright VRT — обирається у фазі 1).
 5. Інтеграція з `eslint-plugin-sergeant-design`: stories валідуються тими ж rules.
 6. Storybook deploy на CI: GitHub Pages / Vercel preview.
-7. Documentation page «Як писати stories» в [`docs/design/`](../../design).
+7. Documentation page «Як писати stories» в [`docs/05-design/design/`](../../05-design/design).
 
 **Out:**
 
@@ -114,7 +114,7 @@ Sergeant має **топовий design-system на статичному рів�
 
 - GitHub Pages workflow або Vercel preview deployment per PR.
 - URL: `storybook.sergeant.app/` (або `https://Skords-01.github.io/Sergeant/`).
-- README у `apps/storybook/` + sectsion в [`docs/design/storybook.md`](../../design/storybook.md) — як писати stories, як інтерпретувати VRT диф.
+- README у `apps/storybook/` + sectsion в [`docs/05-design/design/storybook.md`](../../05-design/design/storybook.md) — як писати stories, як інтерпретувати VRT диф.
 
 ## Критерії DONE
 
@@ -174,7 +174,7 @@ Sergeant має **топовий design-system на статичному рів�
 - **ESLint contract піднято** — `sergeant-design/require-stories-for-ui-components` з `warn` до `error` (`eslint.config.js`). Allowlist розширений до 23 файлів (5 default barrels + 11 utility/wrapper + 7 transient/gesture) з пер-file rationale-коментарем в `packages/eslint-plugin-sergeant-design/index.js`.
 - **Storybook deploy** — [`.github/workflows/storybook-deploy.yml`](../../../.github/workflows/storybook-deploy.yml). PR build (artifact, 7d retention) + `main` deploy на GitHub Pages (`https://skords-01.github.io/Sergeant/`).
 - **VRT decision зафіксовано** — [ADR-0046](../../adr/0046-storybook-vrt-scope.md) cross-linkує ADR-0034. Storybook = playground only; Argos hub-surface baseline залишається єдиним authoritative VRT джерелом. Обгрунтування: budget Argos free tier (5000 screenshots/міс) + false-positive economy story-isolated diffs.
-- **Contributor guide** — [`docs/design/storybook.md`](../../design/storybook.md). Описує де живуть stories, як писати (Meta/StoryОбj, autodocs, viewports), animation escape hatches (`immediate`, `triggerOnView=false`, `show=true`), allowlist hygiene.
+- **Contributor guide** — [`docs/05-design/design/storybook.md`](../../05-design/design/storybook.md). Описує де живуть stories, як писати (Meta/StoryОбj, autodocs, viewports), animation escape hatches (`immediate`, `triggerOnView=false`, `show=true`), allowlist hygiene.
 
 ### Делта до ETA
 

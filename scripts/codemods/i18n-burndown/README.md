@@ -93,7 +93,7 @@ node scripts/codemods/i18n-burndown/script.mjs --write   # apply
 
 When `apps/web/eslint.i18n-allowlist.json` is `[]` and the rule is
 promoted to `"error"` (see
-[`docs/i18n/readiness.md`](../../../docs/i18n/readiness.md) §
+[`docs/05-design/i18n/readiness.md`](../../../docs/05-design/i18n/readiness.md) §
 Phase 3), this codemod is no longer load-bearing. At that point:
 
 1. Mark this file `// @deprecated` like the sibling one-shots.

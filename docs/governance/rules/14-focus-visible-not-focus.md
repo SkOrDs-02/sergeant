@@ -18,7 +18,7 @@
 
 ## Why / What is enforced
 
-> Why a hard rule? `focus:ring-*` and `focus:bg-*` fire on every focus event — including a pointer click, which produces a flashing ring on every mouse interaction with a button or input. `focus-visible:` is the modern primitive that only fires when the user is navigating with the keyboard or assistive tech. Sergeant's design-system contract (`docs/design/design-system.md`) explicitly lists `focus-visible:ring-2 ring-brand-500/45 ring-offset-2 ring-offset-surface` as the canonical focus indicator and notes "**Focus — `focus-visible:ring-brand-500/30`, а не `focus:`, аби pointer-клік не блимав кільцем**". Every `focus:` colour utility shipped to date predates that rule and is a regression that needs to be migrated.
+> Why a hard rule? `focus:ring-*` and `focus:bg-*` fire on every focus event — including a pointer click, which produces a flashing ring on every mouse interaction with a button or input. `focus-visible:` is the modern primitive that only fires when the user is navigating with the keyboard or assistive tech. Sergeant's design-system contract (`docs/05-design/design/design-system.md`) explicitly lists `focus-visible:ring-2 ring-brand-500/45 ring-offset-2 ring-offset-surface` as the canonical focus indicator and notes "**Focus — `focus-visible:ring-brand-500/30`, а не `focus:`, аби pointer-клік не блимав кільцем**". Every `focus:` colour utility shipped to date predates that rule and is a regression that needs to be migrated.
 
 ```tsx
 // ❌ BAD — pointer click on the input flashes the brand ring

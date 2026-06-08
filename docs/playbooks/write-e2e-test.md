@@ -1,6 +1,6 @@
 # Playbook: Write or Debug a Playwright E2E Test
 
-> **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-09-01.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «Напиши E2E-тест на сценарій X» / «smoke-тест на критичний шлях» / «a11y-снапшот для нового екрана» / падає Playwright-спека в CI, а локально зелено, і треба зрозуміти чому.
@@ -27,7 +27,7 @@ Playwright-тести в Sergeant ганяються проти **preview-біл
 
 - Новий happy-path / критичний шлях → [§1](#1-обрати-сюїту-і-стан) → [§5](#5-прогнати-локально-проти-preview)
 - Новий a11y-снапшот → [§4](#4-a11y-снапшот-axe-core)
-- Спека флапає (1 з N) у CI, локально зелено → **STOP** → [`stabilize-flaky-test.md`](stabilize-flaky-test.md)
+- Спека флапає (1 з N) у CI, локально зелено → **STOP** → [`stabilize-flaky-test.md`](./stabilize-flaky-test.md)
 - Спека стабільно червона → [§6](#6-розслідувати-червону-спеку-через-trace)
 
 **Q2: Як довести тест до потрібного стану застосунку?**
@@ -115,13 +115,13 @@ pnpm playwright show-trace test-results/.../trace.zip
 ## Notes
 
 - `workers: 1` стоїть тому, що всі спеки ділять один preview-сервер. `fullyParallel: true` без власного сервера на кожну спеку = гонки і флап.
-- Якщо спека флапає саме в CI — це окремий сценарій: йди в [`stabilize-flaky-test.md`](stabilize-flaky-test.md), не «полагодь і забудь».
-- Auth-fixture з `seedFTUX` + кукі Better Auth розписані в `references/auth-flow.md`; зміну самої auth-поведінки веде [`change-auth-flow.md`](change-auth-flow.md).
+- Якщо спека флапає саме в CI — це окремий сценарій: йди в [`stabilize-flaky-test.md`](./stabilize-flaky-test.md), не «полагодь і забудь».
+- Auth-fixture з `seedFTUX` + кукі Better Auth розписані в `references/auth-flow.md`; зміну самої auth-поведінки веде [`change-auth-flow.md`](./change-auth-flow.md).
 
 ## See also
 
-- [stabilize-flaky-test.md](stabilize-flaky-test.md) — коли спека червона лише в CI
-- [add-new-page-route.md](add-new-page-route.md) — новий екран, який цей тест покриває
-- [change-auth-flow.md](change-auth-flow.md) — якщо тест ламається через зміну логіну/сесії
+- [stabilize-flaky-test.md](./stabilize-flaky-test.md) — коли спека червона лише в CI
+- [add-new-page-route.md](./add-new-page-route.md) — новий екран, який цей тест покриває
+- [change-auth-flow.md](./change-auth-flow.md) — якщо тест ламається через зміну логіну/сесії
 - [AGENTS.md](../../AGENTS.md) — Pre-existing flaky tests, verification before PR
 - `.agents/skills/sergeant-e2e-testing/SKILL.md` — 8 золотих правил + `references/`

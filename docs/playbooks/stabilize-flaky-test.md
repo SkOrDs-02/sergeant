@@ -1,6 +1,6 @@
 # Playbook: Stabilize Flaky Test
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «Тест X падає 1 з 5 разів» / у CI red, локально green / тест у списку **«Pre-existing flaky tests»** в AGENTS.md.
@@ -282,4 +282,4 @@ Verified: 50/50 runs locally pass; AGENTS.md flaky-list trimmed.
 
 - [AGENTS.md](../../AGENTS.md) — секція «Pre-existing flaky tests»
 - [#743](https://github.com/Skords-01/Sergeant/pull/743) — приклад DOM-cleanup fix у `ChatQuickActions.test.tsx`
-- [hotfix-prod-regression.md](hotfix-prod-regression.md) — якщо це не flaky, а справжня регресія
+- [hotfix-prod-regression.md](./hotfix-prod-regression.md) — якщо це не flaky, а справжня регресія

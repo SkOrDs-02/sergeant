@@ -1,7 +1,7 @@
 # PR-33: 21 hard rules — categorize
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../governance/rules/) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.
+> **Status:** Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../governance/rules) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.
 
 |                    |                                                                                       |
 | ------------------ | ------------------------------------------------------------------------------------- |
@@ -83,7 +83,7 @@ Full list → [`docs/governance/hard-rules.md`](./docs/governance/hard-rules.md)
 
 - [x] `hard-rules.schema.json` має `category` field required (`required: ["id", "title", "scope", "severity", "category", "enforced_by"]`).
 - [x] `hard-rules.json` всі 21 entry мають `category` (8 `blocker-invariant` + 11 `lint-enforced-convention` + 2 `active-initiative`).
-- [x] Per-rule canonical bodies живуть у [`docs/governance/rules/`](../../governance/rules/) (з BAD/GOOD прикладами); за-rule машино-читабельна матриця — [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md).
+- [x] Per-rule canonical bodies живуть у [`docs/governance/rules/`](../../governance/rules) (з BAD/GOOD прикладами); за-rule машино-читабельна матриця — [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md).
 - [x] AGENTS.md `Hard rules` section містить таксономію + per-rule таблицю (`#`, `Rule`, `Category`, `Per-rule file`).
 - [x] 3-way sync gate (`pnpm lint:hard-rules-registry` через `scripts/check-hard-rules-registry-sync.mjs`) валідує що `AGENTS.md ↔ hard-rules.json ↔ docs/governance/rules/*` не дрейфують.
 

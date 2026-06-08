@@ -1,6 +1,6 @@
 # 0006 — Frontend routing migration + route-based code-split
 
-> **Last validated:** 2026-06-07 by @claude. **Next review:** 2026-08-27.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. Pending: typecheck on clean worktree (exFAT install issues), Playwright e2e for hash-compat, manualChunks cleanup.
 > **Agent-ready:** needs-decision
 > **Priority:** P1 (Sprint 2)
@@ -159,7 +159,7 @@
 - [`apps/web/src/modules/finyk/lib/finykRouter.ts`](../../apps/web/src/modules/finyk/lib/finykRouter.ts) — Phase 2.b parser/builder + legacy hash-compat dictionary
 - [`apps/web/src/modules/nutrition/hooks/useNutritionRoute.ts`](../../apps/web/src/modules/nutrition/hooks/useNutritionRoute.ts) — Phase 2.a path-router (replaces deleted `hooks/useNutritionHashRoute.ts`)
 - ~~`apps/web/src/shared/hooks/useHashRoute.ts`~~ — видалено в [`f5caf1ee`](https://github.com/Skords-01/Sergeant/commit/f5caf1ee) `chore(web): remove unused useHashRoute hook + tests + exports`; fizruk + routine мають власні пер-модульні hooks ([`useFizrukRoute.ts`](../../apps/web/src/modules/fizruk/hooks/useFizrukRoute.ts), [`useRoutineRoute.ts`](../../apps/web/src/modules/routine/hooks/useRoutineRoute.ts))
-- [`apps/web/src/core/app/`](../../apps/web/src/core/app/)
+- [`apps/web/src/core/app/`](../../apps/web/src/core/app)
 - [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs)
 - [`apps/web/vite.config.js`](../../apps/web/vite.config.js)
 

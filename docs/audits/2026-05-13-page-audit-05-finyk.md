@@ -832,7 +832,7 @@ const cardBudget = {
 ```
 
 The inline comment acknowledges: `// Goal-specific fields live on the
-[extra: string]: unknown index of Budget`. The shape is a union by
+[extra: string]: ./unknown index of Budget`. The shape is a union by
 runtime tag (`type: "limit" | "goal"`) but not by TypeScript — limits
 and goals share one struct with optional fields surfacing on the index
 signature.

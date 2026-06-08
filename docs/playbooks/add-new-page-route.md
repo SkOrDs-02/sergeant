@@ -1,6 +1,6 @@
 # Playbook: Add New Page Route
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** "Додати нову сторінку в apps/web" / новий розділ UI / новий route для SPA.
@@ -65,7 +65,7 @@ export const myModuleKeys = {
 
 - Додати flag в `apps/web/src/core/lib/featureFlags.ts`
 - Обгорнути route або компонент в `useFlag("flag_name")`
-- Див. [add-feature-flag.md](add-feature-flag.md) playbook
+- Див. [add-feature-flag.md](./add-feature-flag.md) playbook
 
 ### 5. Навігація
 
@@ -103,11 +103,11 @@ pnpm --filter @sergeant/web exec playwright test
 
 - `apps/web` — Vite + React 18 SPA з React Router.
 - Feature flags — client-only (localStorage via `typedStore`).
-- Якщо сторінка потребує даних з нового endpoint — спочатку [add-api-endpoint.md](add-api-endpoint.md).
+- Якщо сторінка потребує даних з нового endpoint — спочатку [add-api-endpoint.md](./add-api-endpoint.md).
 
 ## See also
 
-- [add-feature-flag.md](add-feature-flag.md) — якщо сторінка за feature flag
-- [add-api-endpoint.md](add-api-endpoint.md) — якщо потрібен новий backend endpoint
+- [add-feature-flag.md](./add-feature-flag.md) — якщо сторінка за feature flag
+- [add-api-endpoint.md](./add-api-endpoint.md) — якщо потрібен новий backend endpoint
 - [frontend-tech-debt.md](../tech-debt/frontend.md) — загальні фронтенд-конвенції
 - [AGENTS.md](../../AGENTS.md) — rule #2 (RQ keys)

@@ -48,7 +48,7 @@ Phase 2 завершена, коли:
 - [ADR-0052 — Capacitor primary, Expo parallel](../../adr/0052-mobile-strategy-capacitor-primary.md), status `Accepted`, дата 2026-05-06.
 - Sunset-дати T₀ (2026-09-01) / T₁ (2026-11-30) / T₂ (2026-12-30), згадані у [`docs/mobile/shell.md` § Sunset](../../mobile/shell.md#sunset) та [ADR-0010](../../adr/0010-mobile-dual-track-capacitor-expo.md) — **не є active commitments** на період 0010 launch, але reference лишається.
 - Тригер для наступного ADR («Expo becomes primary»): Expo `apps/mobile/` досягає feature parity (≥ 18/22 рядків ✅ у матриці [`platforms.md` § 0](../../architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn)).
-- Lint-правило `sergeant-design/forbid-shell-only-feature` активне — нові shell-only модулі без RN-mirror блокуються, але **shell-glue PR-и дозволяються через `SHELL_GLUE_ALLOWLIST`** у [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design/).
+- Lint-правило `sergeant-design/forbid-shell-only-feature` активне — нові shell-only модулі без RN-mirror блокуються, але **shell-glue PR-и дозволяються через `SHELL_GLUE_ALLOWLIST`** у [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design).
 
 ### 2.2 Що готово (production-ready)
 
@@ -420,7 +420,7 @@ MVP-стратегія: тиждень 3–4 у Internal, тиждень 5–7 �
 - **Crash-free session rate** — Sentry → Issues → filter `event.tags.platform: capacitor` → Stats. Target: ≥ 99 % iOS, ≥ 98.5 % Android (Android ширше через fragmentation).
 - **PostHog funnels per platform** — окремий dashboard «Mobile Shell» з: install → first-open → onboarding completion → first-module-add → D1 return → D7 return. Розбити по `platform` property.
 - **Build comparison** — TestFlight + Play Internal зберігають останні білди. Якщо метрики падають після нового білду — швидкий rollback.
-- **Sprint retrospective** — раз на 2 тижні, як з web (див. [`docs/launch/product-os/sprint-retros/`](../product-os/)).
+- **Sprint retrospective** — раз на 2 тижні, як з web (див. [`docs/launch/product-os/sprint-retros/`](../product-os)).
 
 ---
 

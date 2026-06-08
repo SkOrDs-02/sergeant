@@ -1,6 +1,6 @@
 # Playbook: Debug HubChat Tool
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-07-12.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «Асистент каже що зробив, але нічого не сталось» / «Натиснув кнопку quick action — нема ефекту» / tool call повернувся текстом замість дії / `Невідома дія: …` у відповіді.
@@ -28,7 +28,7 @@
 - Tool не у списку `TOOLS` (`apps/server/src/modules/chat/tools.ts`) → додай у `toolDefs/index.ts`
 - `SYSTEM_PREFIX` не згадує tool (рядки 7–14 `systemPrompt.ts`) → додай згадку
 - `description` у `toolDefs/<domain>.ts` неоднозначний → переписати імперативно з прикладом
-- Все на місці → tune prompt → [tune-system-prompt.md](tune-system-prompt.md)
+- Все на місці → tune prompt → [tune-system-prompt.md](./tune-system-prompt.md)
 
 **Q2: Чи handler виконався на клієнті?**
 
@@ -199,8 +199,8 @@ Response **другого** `/api/chat` запиту повертає `{ type: "
 
 ## See also
 
-- [add-hubchat-tool.md](add-hubchat-tool.md) — як додати tool правильно з нуля
-- [tune-system-prompt.md](tune-system-prompt.md) — зміна системного промпту без поломки tool-calling
+- [add-hubchat-tool.md](./add-hubchat-tool.md) — як додати tool правильно з нуля
+- [tune-system-prompt.md](./tune-system-prompt.md) — зміна системного промпту без поломки tool-calling
 - [AGENTS.md](../../AGENTS.md) — секції _Architecture: AI tool execution path_, _max_tokens budget per request_, anti-pattern #6 про `localStorage.setItem`
 - `apps/web/src/core/lib/hubChatActions.ts` — `executeAction` entry point
 - `apps/server/src/modules/chat/chat.ts` — `/api/chat` handler і continuation logic

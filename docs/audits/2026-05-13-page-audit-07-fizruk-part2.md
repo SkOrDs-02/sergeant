@@ -783,7 +783,7 @@ for (let i = data.length - 1; i >= 0; i--) {
 export interface MeasurementEntry {
   id: string;
   at: string;
-  [field: string]: number | string | undefined;
+  [field: string]: ./number | string | undefined;
 }
 ```
 

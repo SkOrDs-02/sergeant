@@ -116,7 +116,7 @@ const MUST_BE_OWNED = [
     reason: "external API contracts (Hard Rule #3 surface)",
   },
   {
-    path: "docs/design",
+    path: "docs/05-design/design",
     kind: "tree",
     match: /\.md$/,
     reason: "brandbook, design tokens, design-system rules",

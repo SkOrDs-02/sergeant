@@ -292,7 +292,7 @@ function render({ focus, shipped, inflight, priority }) {
     "| **Governance** | [`governance/`](./governance/README.md), [`security/`](./security/README.md), [`adr/`](./adr/README.md) | hard rules, рішення, безпека |",
   );
   lines.push(
-    "| **Дизайн** | [`design/`](./design/README.md), [`ui/`](./ui/README.md), [`i18n/`](./i18n/README.md) | дизайн-система, патерни |",
+    "| **Дизайн** | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md) | дизайн-система, патерни |",
   );
   lines.push(
     "| **Робота** | [`initiatives/`](./initiatives/README.md), [`planning/`](./planning/README.md), [`audits/`](./audits/README.md), [`tech-debt/`](./tech-debt/README.md) | трекери: що оновлювати, коли шипиш |",

@@ -149,6 +149,6 @@ ESLint `sergeant-design/no-cyrillic-jsx-literal` (warn) ловить нові к
 ## Related
 
 - [`apps/web/src/shared/i18n/uk.ts`](../../apps/web/src/shared/i18n/uk.ts) — машино-читне джерело правди для існуючих рядків.
-- [`docs/i18n/readiness.md`](../i18n/readiness.md) — план міграції на runtime-i18n + burndown.
+- [`docs/05-design/i18n/readiness.md`](../05-design/i18n/readiness.md) — план міграції на runtime-i18n + burndown.
 - [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../audits/2026-05-06-ux-roast-pr-plan.md) § PR-X3 — оригінальне завдання.
 - [`AGENTS.md`](../../AGENTS.md) — посилання на цей документ у § Routing for UA-copy changes.

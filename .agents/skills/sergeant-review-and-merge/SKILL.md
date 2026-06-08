@@ -18,7 +18,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 Питання цієї стадії: **«Чи реалізує diff те, що описано в spec/issue/playbook?»** Без імен змінних, без стилю, без оптимізацій.
 
 - Знайди канонічне джерело істини для зміни:
-  - product-facing: spec у `docs/design/specs/` або issue з acceptance-критеріями;
+  - product-facing: spec у `docs/05-design/design/specs/` або issue з acceptance-критеріями;
   - infra/governance: playbook у `docs/playbooks/` або initiative у `docs/initiatives/`;
   - bugfix: regression-тест + опис відтворення з `sergeant-bugfix-and-regression`.
 - Звір кожен acceptance-критерій з кодом. Кожен пункт або вкритий diff-ом, або явно out-of-scope з поясненням у PR.

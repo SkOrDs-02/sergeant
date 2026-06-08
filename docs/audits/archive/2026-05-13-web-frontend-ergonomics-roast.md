@@ -16,8 +16,8 @@
 - [`docs/audits/archive/2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — execution tracker для базових UX-покращень (форми, dark mode, sheet gestures).
 - [`docs/audits/archive/2026-04-28-ux-ui-audit.md`](./2026-04-28-ux-ui-audit.md) — генеральний UX/UI аудит 2026-04-28 (historical record).
 - [`docs/audits/2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md) — UX-прожарка post-onboarding day 0-7.
-- [`docs/design/empty-states.md`](../../design/empty-states.md) — тиер-система (Tier 1 full-screen / Tier 2 compact / Tier 3 inline-text).
-- [`docs/design/radius-rhythm.md`](../../design/radius-rhythm.md) — size-driven border-radius scale (Marker → Hero).
+- [`docs/05-design/design/empty-states.md`](../../05-design/design/empty-states.md) — тиер-система (Tier 1 full-screen / Tier 2 compact / Tier 3 inline-text).
+- [`docs/05-design/design/radius-rhythm.md`](../../05-design/design/radius-rhythm.md) — size-driven border-radius scale (Marker → Hero).
 
 ## TL;DR — топ-7 болів (свіжий зріз 2026-05-13)
 
@@ -49,7 +49,7 @@
 **Дії:**
 
 - **Add** ESLint rule `sergeant-design/require-toast-error-action` в [`packages/eslint-plugin-sergeant-design/index.js`](../../../packages/eslint-plugin-sergeant-design/index.js) з burndown-allowlist (same shape as `no-raw-local-storage`).
-- **Add** [`docs/ui/toast-policy.md`](../../ui/toast-policy.md) — канонічний tone-table + anti-pattern matrix.
+- **Add** [`docs/05-design/ui/toast-policy.md`](../../05-design/ui/toast-policy.md) — канонічний tone-table + anti-pattern matrix.
 - **Add** [`apps/web/eslint.toast-error-action-allowlist.json`](../../../apps/web/eslint.toast-error-action-allowlist.json) — 14 файлів, які зараз порушують rule; цільовий стан — `[]`.
 - **Change** `useRoutineAppState.ts:317` і `NutritionApp.tsx:366` — додано `action: { label: "Повторити", onClick: retry }` (показові first-converts).
 - **Change** [`eslint.config.js`](../../../eslint.config.js) — wire rule як `warn` для `apps/web/**/*.{ts,tsx,js,jsx}`.
@@ -107,7 +107,7 @@ Typecheck: ✅ clean. ESLint: ✅ 0 errors. Shared-tests: ✅ 666/666 passed.
 
 **Дії:**
 
-- **Add** [`docs/ui/shortcuts.md`](../../ui/shortcuts.md) — реєстр + browser-conflict matrix + статус (registered vs TBD) FIX-у-цьому-PR.
+- **Add** [`docs/05-design/ui/shortcuts.md`](../../05-design/ui/shortcuts.md) — реєстр + browser-conflict matrix + статус (registered vs TBD) FIX-у-цьому-PR.
 - **Change** (не зараз) — або wire-up missing handler-ів (G-chord pattern, Cmd+/ AI), або прибрати їх з `DEFAULT_SHORTCUTS` до тих пір. Покладемо в окрему прожарку shortcuts-rollout.
 
 ### F4: PWA defer update-prompt during streaming — P1 ✅ Closed
@@ -171,8 +171,8 @@ Typecheck: ✅ clean. ESLint: ✅ 0 errors. Form tests (PersonalInfoSection + Me
 
 | Item                            | Action                                                                                                                                                                                                                                                                                 | Status               |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| F1 — Toast-policy + ESLint rule | Додано `sergeant-design/require-toast-error-action` з burndown allowlist; додано `docs/ui/toast-policy.md`; виправлено 2 high-traffic PTR-fail callsite-и; решта 14 файлів — у allowlist для burndown.                                                                                 | DONE                 |
-| F3 — Shortcuts registry doc     | Додано `docs/ui/shortcuts.md` — реєстр + browser-conflict matrix + TBD-handler-и зі `DEFAULT_SHORTCUTS`.                                                                                                                                                                               | DONE                 |
+| F1 — Toast-policy + ESLint rule | Додано `sergeant-design/require-toast-error-action` з burndown allowlist; додано `docs/05-design/ui/toast-policy.md`; виправлено 2 high-traffic PTR-fail callsite-и; решта 14 файлів — у allowlist для burndown.                                                                       | DONE                 |
+| F3 — Shortcuts registry doc     | Додано `docs/05-design/ui/shortcuts.md` — реєстр + browser-conflict matrix + TBD-handler-и зі `DEFAULT_SHORTCUTS`.                                                                                                                                                                     | DONE                 |
 | F2-part-I — ESLint rule         | `sergeant-design/no-bare-fixed-inset-modal` warn-only rule додано.                                                                                                                                                                                                                     | DONE                 |
 | F2-part-II — a11y fixes         | `FloatingActionButton`: `useDialogFocusTrap` + `useBodyScrollLock` замість hand-rolled listeners. `ModuleSettingsDrawer`: додано `useBodyScrollLock`. `QuickActionsMenu`, `CelebrationModal` (streak/confetti), `FeatureSpotlight` (не існує) — були вже коректними або не застосовні. | DONE 2026-06-03      |
 | F4 — PWA SW defer               | Реалізовано в `useSWUpdate.ts` (defer + hard-timeout failsafe).                                                                                                                                                                                                                        | DONE (drift, closed) |
@@ -185,8 +185,8 @@ Typecheck: ✅ clean. ESLint: ✅ 0 errors. Form tests (PersonalInfoSection + Me
 ```
 docs/audits/2026-05-13-web-frontend-ergonomics-roast.md      (новий, цей файл)
 docs/audits/README.md                                         (один рядок про новий roast)
-docs/ui/toast-policy.md                                       (новий — F1)
-docs/ui/shortcuts.md                                          (новий — F3)
+docs/05-design/ui/toast-policy.md                                       (новий — F1)
+docs/05-design/ui/shortcuts.md                                          (новий — F3)
 packages/eslint-plugin-sergeant-design/index.js               (+1 rule)
 packages/eslint-plugin-sergeant-design/__tests__/require-toast-error-action.test.mjs  (новий — 16 tests)
 eslint.config.js                                              (+rule wiring, +allowlist read, +plugin self-exclusion)

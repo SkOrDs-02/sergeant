@@ -1,6 +1,6 @@
 # Telegram як control plane для Sergeant Ops
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Це architectural review: **чи достатньо Telegram-бота, щоб масштабувати
@@ -159,6 +159,6 @@ supergroup — operator surface; user push — окрема система че�
 - [ADR-0030: Telegram reporting channel structure](../adr/0030-telegram-reporting-channel-structure.md)
 - [ADR-0026: n8n workflow source of truth](../adr/0026-n8n-workflow-source-of-truth.md)
 - [Reporting Matrix](../../ops/n8n-workflows/REPORTING-MATRIX.md)
-- [Observability runbook](runbook.md)
+- [Observability runbook](./runbook.md)
 - [Hosting evolution (when to scale infra)](../architecture/hosting-evolution.md)
 - [HubChat orchestration playbook (бот-команди)](../playbooks/add-hubchat-tool.md)

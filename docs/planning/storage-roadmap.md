@@ -2912,7 +2912,7 @@ value JSON)`)». Та редакція об'єднувала **дві** орто
   longer enforced — dev-stage, no users).
 
 [^routine-schema-gap]:
-    **Routine SQLite schema gap.** Unlike Fizruk
+    ./**Routine SQLite schema gap.** Unlike Fizruk
     / Nutrition / Finyk (which mirror every LS/MMKV key into
     normalised SQLite tables and so can drop LS-write outright per
     PR #056f / #056n / #056k), Routine's PR #022 SPIKE was

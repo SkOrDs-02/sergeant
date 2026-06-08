@@ -1,6 +1,6 @@
 # 🛠️ Технічний план покращення UI/UX
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Archived — консолідовано у [`docs/launch/product-os/ftux-master-tracker.md`](../../launch/product-os/ftux-master-tracker.md) (P1-4, прожарка [`2026-05-13-ftux-onboarding-roast.md`](./2026-05-13-ftux-onboarding-roast.md) § P1-4)
 
 **Базується на:** 2026-04-28-ux-ui-audit.md  
@@ -9,7 +9,7 @@
 
 > **Code-sync 2026-05-02.** Цей документ тепер є execution tracker для
 > залишкових UI/UX робіт. Канонічні правила живуть у
-> [`docs/design/design-system.md`](../../design/design-system.md); історичний
+> [`docs/05-design/design/design-system.md`](../../05-design/design/design-system.md); історичний
 > аудит і оцінки — у [`2026-04-28-ux-ui-audit.md`](./2026-04-28-ux-ui-audit.md). Статуси
 > нижче звірені з фактичними файлами `apps/mobile` і `apps/web`.
 

@@ -49,7 +49,7 @@
 - Tracker bump у `docs/planning/openclaw-migration-plan.md`:
   - Row `5b/okr` ⬜→✅.
   - Parent row `5b` 🚧→✅ (тепер усі чотири sub-стейджі pр-1…pr-4 закриті).
-  - Stale row `5b/analyze` `🚧 PR open` виправлено на `✅ merged PR [#2483](…)` `51290121`.
+  - Stale row `5b/analyze` `🚧 PR open` виправлено на `✅ merged PR [#2483](./…)` `51290121`.
   - Freshness header bump.
 
 ### 1.2 Key design decision: `topicRequired: false`
@@ -155,7 +155,7 @@ pnpm lint:tech-debt-freshness                      # clean
 Обидва PR-и оновлювали `docs/planning/openclaw-migration-plan.md`. Загальний підсумок дельти за сесію:
 
 - Header `Last validated:` bumped двічі (18:15 UTC → 18:35 UTC).
-- Row `5b` 🚧→✅, row `5b/okr` ⬜→✅, row `5b/analyze` `🚧 PR open` → `✅ merged ([#2483](…))`.
+- Row `5b` 🚧→✅, row `5b/okr` ⬜→✅, row `5b/analyze` `🚧 PR open` → `✅ merged ([#2483](./…))`.
 - Row `5c` ⬜→✅.
 - Gap-table row 4 «Council orchestration» `orchestrator ❌` → `✅ live — Stage 5c`.
 

@@ -6,7 +6,7 @@
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`packages/shared/src/openapi/`](../../packages/shared/src/openapi/) — `registry.ts`, `routes.ts`, `index.ts`.
+  - [`packages/shared/src/openapi/`](../../packages/shared/src/openapi) — `registry.ts`, `routes.ts`, `index.ts`.
   - [`packages/shared/src/schemas/api.ts`](../../packages/shared/src/schemas/api.ts) — canonical zod-схеми (single source of truth).
   - [`docs/api/openapi.json`](../api/openapi.json) — згенерований spec (committed).
   - [`scripts/api/generate-openapi.mjs`](../../scripts/api/generate-openapi.mjs) — generator.

@@ -112,7 +112,7 @@
 - [docs/security/vulnerability-sla.md](../vulnerability-sla.md) — SLA на реакцію + дедлайн усунення.
 - [docs/security/audit-exceptions.md](../audit-exceptions.md) — затверджені винятки з security findings.
 - [docs/governance/security-incident-policy.md](../../governance/security-incident-policy.md) — incident-policy.
-- [docs/audits/](../../audits/) — snapshot-аудити (НЕ ці картки).
+- [docs/audits/](../../audits) — snapshot-аудити (НЕ ці картки).
 
 ## Як працювати з цим беклогом
 

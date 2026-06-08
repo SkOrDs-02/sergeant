@@ -55,7 +55,7 @@ pnpm dead-code:files
 
 ### P0.2 — 53 broken internal markdown-links (`docs:check-links` gate red)
 
-`scripts/docs/check-markdown-links.mjs` (введений у [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./archive/2026-05-05-dead-code-and-stale-links-audit.md)) ловить будь-який `[text](path)`-link, де файл не існує. Між 2026-05-05 і 2026-05-13 зламалось **53 internal links**:
+`scripts/docs/check-markdown-links.mjs` (введений у [`docs/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./archive/2026-05-05-dead-code-and-stale-links-audit.md)) ловить будь-який `[text](./path)`-link, де файл не існує. Між 2026-05-05 і 2026-05-13 зламалось **53 internal links**:
 
 #### 49 archive-move depth-drift (`docs/audits/archive/**`)
 

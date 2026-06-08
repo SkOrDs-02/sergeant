@@ -7,8 +7,8 @@
 - **Supersedes:** —
 - **Related:**
   - [`AGENTS.md`](../../AGENTS.md) §1 — hard rule "coerce bigint to number in serializers".
-  - [`packages/api-client/src/endpoints/`](../../packages/api-client/src/endpoints/) — клієнтські типи API responses.
-  - [`apps/server/src/modules/`](../../apps/server/src/modules/) — serializers (приклади coercion).
+  - [`packages/api-client/src/endpoints/`](../../packages/api-client/src/endpoints) — клієнтські типи API responses.
+  - [`apps/server/src/modules/`](../../apps/server/src/modules) — serializers (приклади coercion).
   - [#708](https://github.com/Skords-01/Sergeant/issues/708) — root-cause для цього правила.
   - ADR-0013 — migration conventions (використання `BIGINT` в DDL).
 

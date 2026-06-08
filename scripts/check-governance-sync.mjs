@@ -29,7 +29,7 @@
 //                                               components that may rename)
 //      - docs/playbooks/                       (recipes referencing template
 //                                               paths and example structures)
-//      - docs/i18n/                            (i18n migration roadmap; refs
+//      - docs/05-design/i18n/                            (i18n migration roadmap; refs
 //                                               include planned target catalogs)
 //      - docs/notes/spikes/                    (exploratory spike walkthroughs;
 //                                               file refs may describe imagined
@@ -270,10 +270,10 @@ function checkDanglingRefs() {
     // (e.g., `apps/web/src/App.tsx` as an illustrative anchor) and may
     // describe target structures rather than current code.
     if (relPath.startsWith("docs/playbooks/")) return true;
-    // `docs/i18n/` describes the i18n migration roadmap; refs include
+    // `docs/05-design/i18n/` describes the i18n migration roadmap; refs include
     // planned target catalogs (e.g., `apps/web/src/shared/i18n/en.ts`)
     // that don't exist until the corresponding migration phase lands.
-    if (relPath.startsWith("docs/i18n/")) return true;
+    if (relPath.startsWith("docs/05-design/i18n/")) return true;
     // `docs/agents/<topic>-roadmap.md` are forward-looking initiative
     // roadmaps describing scripts/files that will be created in upcoming
     // PRs. Treat refs as planned, not current.
@@ -341,7 +341,7 @@ function checkDanglingRefs() {
     if (relPath.startsWith("docs/tech-debt/")) return true;
     if (relPath.startsWith("docs/marketing/")) return true;
     if (relPath.startsWith("docs/observability/")) return true;
-    if (relPath.startsWith("docs/design/redesign-v2/")) return true;
+    if (relPath.startsWith("docs/05-design/design/redesign-v2/")) return true;
     return false;
   }
 

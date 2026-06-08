@@ -1,11 +1,11 @@
 # Agents
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Операційний розділ для AI-агентів у Sergeant — це **operating system для AI-агентів, які працюють у репо**, а не AI-фічі продукту (HubChat, AI Coach, Mono-classifier тощо живуть під `apps/web` і `apps/server` і документуються в окремих модулях). Тут навігація по repo-owned skills, decision trees для типових flow і design specs.
 
-> **History:** до 2026-05-04 цей розділ називався `docs/superpowers/`. Перейменовано в межах initiative 0009 PR 2.2 для усунення термінологічної плутанини між «agent-OS surface» (цей розділ) і product-side AI features. 2026-05-05: підпапка `specs/` (design specs для нетривіальних product-side фіч) переїхала в [`docs/design/specs/`](../design/specs/) — це product/UI design surface, а не agent-OS.
+> **History:** до 2026-05-04 цей розділ називався `docs/superpowers/`. Перейменовано в межах initiative 0009 PR 2.2 для усунення термінологічної плутанини між «agent-OS surface» (цей розділ) і product-side AI features. 2026-05-05: підпапка `specs/` (design specs для нетривіальних product-side фіч) переїхала в [`docs/05-design/design/specs/`](../05-design/design/specs) — це product/UI design surface, а не agent-OS.
 
 ## З чого починати агенту
 

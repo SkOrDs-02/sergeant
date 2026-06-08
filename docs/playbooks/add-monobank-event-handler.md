@@ -1,6 +1,6 @@
 # Playbook: Add Monobank Event Handler
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** "Треба обробити нову подію X від Monobank" / новий тип webhook event / новий статус транзакції від Monobank API.
@@ -129,4 +129,4 @@ pnpm typecheck  # має бути зеленим
 - [monobank-roadmap.md](../integrations/monobank-roadmap.md) — план покращень Monobank-інтеграції
 - [monobank-roadmap.md](../integrations/monobank-roadmap.md) — архітектура Monobank-інтеграції та roadmap
 - [AGENTS.md](../../AGENTS.md) — hard rules
-- [cleanup-dead-code.md](cleanup-dead-code.md) — якщо старий handler потрібно видалити
+- [cleanup-dead-code.md](./cleanup-dead-code.md) — якщо старий handler потрібно видалити

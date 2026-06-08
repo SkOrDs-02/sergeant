@@ -69,7 +69,7 @@ Surface-і та їх deploy targets:
 - `tools/openclaw` (OpenClaw_sergeant_bot) → Railway service `sergeant-openclaw` (раніше `sergeant-hubchat` per ADR-0032 / Pain P10) — [`docs/deploy/openclaw.md`](../deploy/openclaw.md)
 - `apps/mobile` → Expo / TestFlight — [`docs/playbooks/release-expo-mobile.md`](../playbooks/release-expo-mobile.md)
 - `apps/mobile-shell` → App Store / Play Store wrap — [`docs/playbooks/release-mobile-shell.md`](../playbooks/release-mobile-shell.md)
-- n8n workflows → self-hosted у Railway (project `grateful-nurturing`) — git source-of-truth у [`ops/n8n-workflows/`](../../ops/n8n-workflows/)
+- n8n workflows → self-hosted у Railway (project `grateful-nurturing`) — git source-of-truth у [`ops/n8n-workflows/`](../../ops/n8n-workflows)
 
 Канонічна service-таблиця з alerts/runbook/rollback per surface — [`docs/architecture/service-catalog.md`](../architecture/service-catalog.md).
 
@@ -142,7 +142,7 @@ hard-rule-ом #15). Виправ root-cause; якщо нема часу — з�
 
 n8n live state і git source-of-truth розходяться, тому:
 
-1. **Git source-of-truth:** [`ops/n8n-workflows/<NN>-<name>.json`](../../ops/n8n-workflows/). 23 workflow-и. `manifest.json` — реєстр з env-vars, credentials, owner.
+1. **Git source-of-truth:** [`ops/n8n-workflows/<NN>-<name>.json`](../../ops/n8n-workflows). 23 workflow-и. `manifest.json` — реєстр з env-vars, credentials, owner.
 2. **Live state:** [`https://n8n-production-09ac.up.railway.app/`](https://n8n-production-09ac.up.railway.app/). Workflow ID-и фіксовані у README кожного workflow-у.
 3. **Деплой змін:** PR з оновленим JSON → merge → `pnpm n8n:import` (manual step) або `n8n` UI → workflow → «Import from JSON». **Active=true у git ніколи не комітимо** — це стан на боці n8n, керується UI.
 4. **Validation:** `pnpm ops:n8n:validate` локально перед commit-ом — перевіряє схему, env-vars, connections, manifest.

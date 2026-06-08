@@ -18,7 +18,7 @@
 > [`docs/launch/product-os/ftux-sprint-plan.md`](../../launch/product-os/ftux-sprint-plan.md) — план реалізації рекомендацій ·
 > [`docs/audits/archive/2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — попередній технічний UX-план ·
 > [`docs/launch/business/01-monetization-and-pricing.md`](../../launch/business/01-monetization-and-pricing.md) — activation funnel & aha-moment hypotheses ·
-> [`docs/design/empty-states.md`](../../design/empty-states.md) — 3-tier empty states.
+> [`docs/05-design/design/empty-states.md`](../../05-design/design/empty-states.md) — 3-tier empty states.
 
 > ### Errata (2026-05-03 21:53 UTC)
 >

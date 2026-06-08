@@ -1,6 +1,6 @@
 # Playbook: Add Push Notification
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).
@@ -173,8 +173,8 @@ pnpm --filter @sergeant/server exec vitest run src/modules/<your-domain>
 
 ## See also
 
-- [add-monobank-event-handler.md](add-monobank-event-handler.md) — push як реакція на webhook event
-- [add-api-endpoint.md](add-api-endpoint.md) — якщо тригер push-у — це новий endpoint
+- [add-monobank-event-handler.md](./add-monobank-event-handler.md) — push як реакція на webhook event
+- [add-api-endpoint.md](./add-api-endpoint.md) — якщо тригер push-у — це новий endpoint
 - `apps/server/src/push/send.ts` — реалізація `sendToUser` / `sendToUserQuietly`
 - `apps/server/src/lib/webpushSend.ts` — web-push transport
 - `apps/web/src/sw.ts` рядок ~627 — `push` event listener

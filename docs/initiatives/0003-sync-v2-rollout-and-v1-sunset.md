@@ -170,7 +170,7 @@ Sergeant зараз **паралельно тримає два sync-механі
 - [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md) — Stage 5 sync-v2
 - [`docs/tech-debt/backend.md`](../tech-debt/backend.md) — запис «CloudSync v1/v2 dual-stack»
 - [`apps/server/src/modules/sync/sunsetGone.ts`](../../apps/server/src/modules/sync/sunsetGone.ts) — v1 410 Gone handler
-- [`apps/web/src/core/cloudSync/`](../../apps/web/src/core/cloudSync/) — v2 outbox
+- [`apps/web/src/core/cloudSync/`](../../apps/web/src/core/cloudSync) — v2 outbox
 - RFC 8594 — `Sunset` HTTP header
 
 ## Outcome

@@ -1,6 +1,6 @@
 # Playbook: Enable Anthropic Prompt Caching
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Status:** ✅ active (PR-12.A, Sprint 0)
@@ -286,7 +286,7 @@ sum(rate(anthropic_prompt_cache_hit_total{outcome="miss"}[5m])) by (version)
 
 ## See also
 
-- [tune-system-prompt.md](tune-system-prompt.md) — як міняти `SYSTEM_PREFIX` без поломки tool-calling (виконуй до або в окремому PR від caching rollout)
+- [tune-system-prompt.md](./tune-system-prompt.md) — як міняти `SYSTEM_PREFIX` без поломки tool-calling (виконуй до або в окремому PR від caching rollout)
 - [AGENTS.md](../../AGENTS.md) — секції _Architecture: AI tool execution path_ і _SYSTEM_PREFIX is a prompt-cache candidate_
 - `apps/server/src/lib/anthropic.ts` — `anthropicMessages` / `anthropicMessagesStream` / `recordUsage`
 - `apps/server/src/modules/chat/chat.ts` — `buildSystem`, `applyToolsCacheBreakpoint`, request payload-и.

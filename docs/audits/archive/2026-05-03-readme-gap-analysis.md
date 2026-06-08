@@ -503,25 +503,25 @@ HubChat — це чат-інтерфейс, де ти спілкуєшся з Cl
 
 Проєкт має дуже багато документації. Ось карта:
 
-| Папка                 | Що там                                                    |
-| --------------------- | --------------------------------------------------------- |
-| `docs/adr/`           | Архітектурні рішення (ADR) — чому ми обрали саме це       |
-| `docs/api/`           | OpenAPI-контракти, документація API                       |
-| `docs/architecture/`  | Карта репозиторію, платформи, сервіс-каталог              |
-| `docs/audits/`        | UX/UI аудити, типографіка, дизайн ревʼю                   |
-| `docs/deploy/`        | Інструкції з деплою                                       |
-| `docs/design/`        | Дизайн-система: BRANDBOOK, кольори, акценти модулів       |
-| `docs/governance/`    | Hard rules, review checklist, релізна політика            |
-| `docs/integrations/`  | Monobank, Railway, Vercel, Renovate, Voyage               |
-| `docs/launch/`        | Монетизація, GTM, launch readiness                        |
-| `docs/mobile/`        | Capacitor, deep links, React Native міграція              |
-| `docs/observability/` | SLO, дашборди, метрики, runbook                           |
-| `docs/planning/`      | Roadmaps, AI improvements, dev stack roadmap              |
-| `docs/playbooks/`     | Покрокові рецепти (як додати endpoint, як зробити hotfix) |
-| `docs/postmortems/`   | Розбори інцидентів                                        |
-| `docs/security/`      | Політика доступу, disaster recovery, аудит безпеки        |
-| `docs/agents/`        | Система для AI-агентів: каталог навичок, workflow         |
-| `docs/tech-debt/`     | Реєстри технічного боргу (frontend, backend, mobile)      |
+| Папка                    | Що там                                                    |
+| ------------------------ | --------------------------------------------------------- |
+| `docs/adr/`              | Архітектурні рішення (ADR) — чому ми обрали саме це       |
+| `docs/api/`              | OpenAPI-контракти, документація API                       |
+| `docs/architecture/`     | Карта репозиторію, платформи, сервіс-каталог              |
+| `docs/audits/`           | UX/UI аудити, типографіка, дизайн ревʼю                   |
+| `docs/deploy/`           | Інструкції з деплою                                       |
+| `docs/05-design/design/` | Дизайн-система: BRANDBOOK, кольори, акценти модулів       |
+| `docs/governance/`       | Hard rules, review checklist, релізна політика            |
+| `docs/integrations/`     | Monobank, Railway, Vercel, Renovate, Voyage               |
+| `docs/launch/`           | Монетизація, GTM, launch readiness                        |
+| `docs/mobile/`           | Capacitor, deep links, React Native міграція              |
+| `docs/observability/`    | SLO, дашборди, метрики, runbook                           |
+| `docs/planning/`         | Roadmaps, AI improvements, dev stack roadmap              |
+| `docs/playbooks/`        | Покрокові рецепти (як додати endpoint, як зробити hotfix) |
+| `docs/postmortems/`      | Розбори інцидентів                                        |
+| `docs/security/`         | Політика доступу, disaster recovery, аудит безпеки        |
+| `docs/agents/`           | Система для AI-агентів: каталог навичок, workflow         |
+| `docs/tech-debt/`        | Реєстри технічного боргу (frontend, backend, mobile)      |
 
 ### Які є Hard Rules?
 

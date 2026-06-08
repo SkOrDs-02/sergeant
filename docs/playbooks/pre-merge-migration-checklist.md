@@ -1,6 +1,6 @@
 # Playbook: Pre-Merge Migration Checklist
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** PR містить файли в `apps/server/src/migrations/` (новий `NNN_*.sql` або зміна існуючого `*.down.sql`).
@@ -130,7 +130,7 @@ Reviewer must confirm before approving merge:
 
 ## See also
 
-- [`add-sql-migration.md`](add-sql-migration.md) — як написати нову міграцію (authoring side).
+- [`add-sql-migration.md`](./add-sql-migration.md) — як написати нову міграцію (authoring side).
 - [`AGENTS.md`](../../AGENTS.md) — hard rules #1 (bigint), #3 (API contract), #4 (migrations).
 - [`scripts/lint-migrations.mjs`](../../scripts/lint-migrations.mjs) — CI-script для `migration-lint` job-у.
 - [`apps/server/src/migrations/__tests__/rollback-sanity.test.ts`](../../apps/server/src/migrations/__tests__/rollback-sanity.test.ts) — auto-test, що `down.sql` принаймні виконується (PR #918).

@@ -1,6 +1,6 @@
 # 0002 — Mobile platform decision: lock the deprecation deadline
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (superseded by ADR-0052 + initiative 0010; historical reference only)
 >
 > **Update 2026-05-06:** owner decision зафіксовано в [ADR-0052](../../adr/0052-mobile-strategy-capacitor-primary.md). Sunset-дати T₀/T₁/T₂ **не є active commitments** у period 0010 revenue launch. Обидва стеки (Capacitor + Expo) підтримуються паралельно. Deprecation-трек активується окремим ADR, коли Expo досягне feature parity з web (тригер: ≥18/22 рядків у `docs/architecture/platforms.md` = ✅). До цього — не цитувати shell-sunset з цього файлу як active outcome.
@@ -38,7 +38,7 @@
 **Out:**
 
 - Сам RN-порт; він уже tracks у [`docs/mobile/react-native-migration.md`](../../mobile/react-native-migration.md).
-- Декомпозиція `apps/mobile/` файлів — ініціатива [0001](../archive/_0001-module-decomposition.md) бере тільки web.
+- Декомпозиція `apps/mobile/` файлів — ініціатива [0001](./_0001-module-decomposition.md) бере тільки web.
 - Mobile e2e на CI — окрема ініціатива (буде додана), see [`docs/planning/mobile-e2e-testing.md`](../../planning/archive/mobile-e2e-testing.md).
 
 ## План змін

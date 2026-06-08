@@ -1,6 +1,6 @@
 # STRIDE threat model
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Закриває [I6 — Document the STRIDE threat model per module](./hardening/I6-threat-model.md).
@@ -182,7 +182,7 @@ SPA fallback, OS-level. Trust boundary: app-tier ↔ persistence-tier.
 2. **Закриття картки** прибирає її ID з колонки `Residual risk`. Якщо
    картка _відкривала_ нову surface — рядок таблиці лишається; колонка
    `Existing controls` оновлюється на новий контроль.
-3. **Audit findings** ([`../audits/`](../audits/) — окремий цикл,
+3. **Audit findings** ([`../audits/`](../audits) — окремий цикл,
    snapshot-аудити) транслюються у hardening-картки → ті крос-референсять
    threat-model. Audit-документ сам у threat-model не лінкується (це
    тимчасові звіти, threat-model — живий контракт).

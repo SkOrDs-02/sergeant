@@ -78,4 +78,4 @@ flowchart TD
 ## See also
 
 - [AGENTS.md](../../AGENTS.md) — hard rules
-- [<related-playbook>.md](<related-playbook>.md) — <when to use instead>
+- [<related-playbook>.md](./<related-playbook>.md) — <when to use instead>

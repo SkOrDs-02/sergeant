@@ -130,7 +130,7 @@ Persistence — через `safeReadLS('feature_reveal_reports')`. Це дозв
 
 **Recommendation / fix points.**
 
-1. Створити `docs/ui/toast-policy.md` з правилами:
+1. Створити `docs/05-design/ui/toast-policy.md` з правилами:
 
    | Tone    | Duration              | Actionable            | Приклад                                    |
    | ------- | --------------------- | --------------------- | ------------------------------------------ |
@@ -232,7 +232,7 @@ Persistence — через `safeReadLS('feature_reveal_reports')`. Це дозв
 
 2. Накласти ESLint custom-rule «no inline string literals у JSX, що мають літеру з кирилицею» — це підготує ґрунт для майбутньої міграції на runtime-i18n.
 3. Не впроваджувати i18n-runtime, **поки** нема product-вимоги. Але мати готову карту: «messages → t('messages.auth.invalidCredentials')» — однорядкова заміна на момент Х.
-4. Документ `docs/i18n/readiness.md` з checklist'ом для переходу.
+4. Документ `docs/05-design/i18n/readiness.md` з checklist'ом для переходу.
 
 **Point of no return.** Якщо проєкт почне приймати англомовних beta-юзерів без runtime-i18n — це debt буде дорожче з кожним релізом.
 
@@ -285,7 +285,7 @@ Persistence — через `safeReadLS('feature_reveal_reports')`. Це дозв
 
 - Перевірити registry shortcut-ів на конфлікти з топ-5 браузерами.
 - Use `Cmd/Ctrl+/` як conventional shortcut for "show shortcuts" (зараз, мабуть, інший).
-- Документувати в `docs/ui/shortcuts.md`.
+- Документувати в `docs/05-design/ui/shortcuts.md`.
 
 ---
 

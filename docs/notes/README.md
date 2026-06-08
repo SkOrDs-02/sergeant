@@ -1,6 +1,6 @@
 # Notes
 
-> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Exploratory engineering notes that don't fit neatly into ADRs (decisions), playbooks (recipes), or planning (roadmaps). These are short-lived investigations — once the work lands, the spike doc is either archived in place with `Status: Completed & archived` or folded into a permanent home (ADR / planning / tech-debt registry).
@@ -13,9 +13,9 @@ Exploratory engineering notes that don't fit neatly into ADRs (decisions), playb
 
 ## Subdirectories
 
-| Path                   | Purpose                                                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------- |
-| [`spikes/`](./spikes/) | Time-boxed engineering spikes (technical investigations with a clear yes/no/migrate question) |
+| Path                  | Purpose                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| [`spikes/`](./spikes) | Time-boxed engineering spikes (technical investigations with a clear yes/no/migrate question) |
 
 ## Файли у spikes/
 

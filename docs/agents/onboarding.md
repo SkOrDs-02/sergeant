@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -24,7 +24,7 @@
 ## 2. Postgres + міграції
 
 - **Підняти БД:** `pnpm db:up` (== `docker compose up -d` із [`docker-compose.yml`](../../docker-compose.yml)). Image — `pgvector/pgvector:pg16`, не stock `postgres:16-alpine` (міграція `025_ai_memories_pgvector.sql` робить `CREATE EXTENSION vector` — alpine падає). CI workflow'и `ci.yml`, `extended-e2e.yml`, `visual-regression.yml` пінять той же image.
-- **Прогнати міграції:** `pnpm db:migrate` (== `apps/server/migrate.mjs`). Sequential `NNN_*.sql` у [`apps/server/src/migrations/`](../../apps/server/src/migrations/), без gaps. Hard Rule #4 — drop колонок робиться у **двох фазах**, deployed окремо.
+- **Прогнати міграції:** `pnpm db:migrate` (== `apps/server/migrate.mjs`). Sequential `NNN_*.sql` у [`apps/server/src/migrations/`](../../apps/server/src/migrations), без gaps. Hard Rule #4 — drop колонок робиться у **двох фазах**, deployed окремо.
 - **Один-команда стартап:** `pnpm dev:db` (db:up + db:migrate).
 - **Reset:** `docker compose down -v && pnpm dev:db` (стирає volume — `dev` only).
 
@@ -32,16 +32,16 @@
 
 CI hard-rules ловляться різними механізмами. Стартова навігація:
 
-| Симптом                                                    | Куди дивитися                                                                                                                                                                                                                |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lint:hard-rules-registry` падає                           | Drift `AGENTS.md` ↔ [`hard-rules.json`](../governance/hard-rules.json) ↔ `CONTRIBUTING.md`. Прогнати `pnpm hard-rules:list` побачиш точне правило.                                                                           |
-| `sergeant-design/no-hex-in-classname` (Hard Rule #11)      | `AGENTS.md` § [Lint-enforced design conventions](../../AGENTS.md#lint-enforced-design-conventions) → правило #11. ESLint plugin: [`packages/eslint-plugin-sergeant-design/`](../../packages/eslint-plugin-sergeant-design/). |
-| `sergeant-design/no-foreign-module-accent` (Hard Rule #12) | Те саме, правило #12. Cross-module surface (`core/`, `shared/`) — exempt.                                                                                                                                                    |
-| `sergeant-design/no-raw-palette-dark-pair` (Hard Rule #13) | Те саме, правило #13. Lift у design-tokens layer (`bg-success-soft`, `text-brand-strong`).                                                                                                                                   |
-| `sergeant-design/prefer-focus-visible` (Hard Rule #14)     | Те саме, правило #14. `focus:` → `focus-visible:` всюди, крім `focus:outline-none`.                                                                                                                                          |
-| `commitlint` (Hard Rule #5)                                | Дозволені scope-и в `AGENTS.md` § Hard rules → правило #5. Не вигадуй нові.                                                                                                                                                  |
-| `lint:codeowners`                                          | [`scripts/check-codeowners-coverage.mjs`](../../scripts/check-codeowners-coverage.mjs) — кожна governance/CI/migrations поверхня має CODEOWNERS-rule.                                                                        |
-| `docs:check-playbook-schema`                               | Trigger ≤ 240 chars, Status enum {Active, Scaffolded, Deprecated, Archived}, Verification ≥ 1 checkbox. Дивись `add-playbook.md` playbook (якщо є) або інший working playbook.                                               |
+| Симптом                                                    | Куди дивитися                                                                                                                                                                                                               |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lint:hard-rules-registry` падає                           | Drift `AGENTS.md` ↔ [`hard-rules.json`](../governance/hard-rules.json) ↔ `CONTRIBUTING.md`. Прогнати `pnpm hard-rules:list` побачиш точне правило.                                                                          |
+| `sergeant-design/no-hex-in-classname` (Hard Rule #11)      | `AGENTS.md` § [Lint-enforced design conventions](../../AGENTS.md#lint-enforced-design-conventions) → правило #11. ESLint plugin: [`packages/eslint-plugin-sergeant-design/`](../../packages/eslint-plugin-sergeant-design). |
+| `sergeant-design/no-foreign-module-accent` (Hard Rule #12) | Те саме, правило #12. Cross-module surface (`core/`, `shared/`) — exempt.                                                                                                                                                   |
+| `sergeant-design/no-raw-palette-dark-pair` (Hard Rule #13) | Те саме, правило #13. Lift у design-tokens layer (`bg-success-soft`, `text-brand-strong`).                                                                                                                                  |
+| `sergeant-design/prefer-focus-visible` (Hard Rule #14)     | Те саме, правило #14. `focus:` → `focus-visible:` всюди, крім `focus:outline-none`.                                                                                                                                         |
+| `commitlint` (Hard Rule #5)                                | Дозволені scope-и в `AGENTS.md` § Hard rules → правило #5. Не вигадуй нові.                                                                                                                                                 |
+| `lint:codeowners`                                          | [`scripts/check-codeowners-coverage.mjs`](../../scripts/check-codeowners-coverage.mjs) — кожна governance/CI/migrations поверхня має CODEOWNERS-rule.                                                                       |
+| `docs:check-playbook-schema`                               | Trigger ≤ 240 chars, Status enum {Active, Scaffolded, Deprecated, Archived}, Verification ≥ 1 checkbox. Дивись `add-playbook.md` playbook (якщо є) або інший working playbook.                                              |
 
 Повна enforcement-матриця — у [`hard-rules-matrix.md`](../governance/hard-rules-matrix.md). Категорійна семантика (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) описана в `AGENTS.md` § Hard rules intro.
 

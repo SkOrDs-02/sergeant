@@ -1,13 +1,13 @@
 # Codex capabilities у Sergeant
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Цей документ пояснює простими словами, що Codex у цьому репо вже вміє, як це викликати, і що потребує явної команди від тебе.
 
 ## Що працює автоматично
 
-- **Repo skills** у [`.agents/skills/`](../../.agents/skills/) — правила роботи по поверхнях: web, server, mobile, migrations, HubChat, OpenClaw, security, tech-debt. Агент сам має стартувати з `sergeant-start-here` і вибрати один specialist skill під задачу.
+- **Repo skills** у [`.agents/skills/`](../../.agents/skills) — правила роботи по поверхнях: web, server, mobile, migrations, HubChat, OpenClaw, security, tech-debt. Агент сам має стартувати з `sergeant-start-here` і вибрати один specialist skill під задачу.
 - **Git / shell / pnpm** — Codex може читати репо, запускати перевірки, робити коміти й PR, коли задача цього потребує.
 - **Codex hooks** у [`.codex/hooks.json`](../../.codex/hooks.json) — локальні guards перед небезпечними edit/bash діями. Вони не замінюють Husky/CI, а ловлять очевидні помилки раніше.
 - **`pnpm codex:status`** — read-only статус: branch, dirty files, скільки Codex agents і repo skills видно.

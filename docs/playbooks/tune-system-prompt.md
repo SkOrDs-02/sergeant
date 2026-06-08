@@ -1,6 +1,6 @@
 # Playbook: Tune System Prompt
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «AI відповідає не так як треба» / «Зміни тон асистента» / «Додай нову інструкцію в системний промпт» / зміна як модель розуміє контекст модулі.
@@ -158,7 +158,7 @@ feat(server): tighten Finyk tool-calling rules in system prompt
 
 ## See also
 
-- [add-hubchat-tool.md](add-hubchat-tool.md) — для додавання tool, не зміна тону
-- [add-feature-flag.md](add-feature-flag.md) — якщо A/B тест двох промптів
+- [add-hubchat-tool.md](./add-hubchat-tool.md) — для додавання tool, не зміна тону
+- [add-feature-flag.md](./add-feature-flag.md) — якщо A/B тест двох промптів
 - `apps/server/src/modules/chat/toolDefs/systemPrompt.ts` — поточний промпт
 - [AGENTS.md](../../AGENTS.md) — секція «Architecture: AI tool execution path»

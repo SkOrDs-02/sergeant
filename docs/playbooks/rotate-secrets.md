@@ -1,6 +1,6 @@
 # Playbook: Rotate Secrets
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-07-12.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** "Secret leaked" / планова ротація / security audit / підозріла активність.
@@ -38,7 +38,7 @@
 **Q4: Чи `/health` повертає 200 після оновлення?**
 
 - Так → [§5 Invalidate old](#5-інвалідувати-старий-secret) → якщо витік → [§6 Post-mortem](#6-post-mortem-якщо-leak)
-- Ні → відкат до старого secret, debug → [hotfix-prod-regression.md](hotfix-prod-regression.md)
+- Ні → відкат до старого secret, debug → [hotfix-prod-regression.md](./hotfix-prod-regression.md)
 
 ```mermaid
 flowchart TD
@@ -159,4 +159,4 @@ curl -sS https://<prod-domain>/health | jq .
 
 - [railway-vercel.md](../integrations/railway-vercel.md) — список env vars для Railway
 - [AGENTS.md](../../AGENTS.md) — ніколи не комітити credentials
-- [hotfix-prod-regression.md](hotfix-prod-regression.md) — якщо ротація зламала прод
+- [hotfix-prod-regression.md](./hotfix-prod-regression.md) — якщо ротація зламала прод

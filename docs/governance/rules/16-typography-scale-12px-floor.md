@@ -16,7 +16,7 @@
 ## Enforced by
 
 - **convention** — packages/design-tokens/tailwind-preset.js → plugins.semanticTypography (.text-style-\* utilities are the canonical type slots)
-- **doc** — docs/design/design-system.md § Типографічна шкала
+- **doc** — docs/05-design/design/design-system.md § Типографічна шкала
 
 ## Why / What is enforced
 

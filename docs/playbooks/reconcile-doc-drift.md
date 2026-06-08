@@ -1,6 +1,6 @@
 # Playbook: Звірка дрифту документації та архівація
 
-> **Last validated:** 2026-05-31 by @Skords-01. **Next review:** 2026-08-29.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «Актуалізуй документацію» / «Знайди дрифт і не позначені виконані таски» / «Заархівуй завершені плани/ініціативи/аудити» / періодична гігієна docs, щоб у кожному документі було видно стан і залишок роботи.
@@ -188,7 +188,7 @@ git mv docs/audits/<file>.md docs/audits/archive/<file>.md
 git mv docs/planning/<file>.md docs/planning/archive/<file>.md
 ```
 
-Додай рядок у таблицю/список архіву відповідного `archive/README.md` (Статус, Закрито YYYY-MM-DD, 1-рядковий підсумок + посилання на PR-и). Якщо в archive-папці ще нема `README.md` — створи його за зразком [`docs/design/archive/README.md`](../design/archive/README.md) (freshness + Status + «Чому архів, а не видалення»).
+Додай рядок у таблицю/список архіву відповідного `archive/README.md` (Статус, Закрито YYYY-MM-DD, 1-рядковий підсумок + посилання на PR-и). Якщо в archive-папці ще нема `README.md` — створи його за зразком [`docs/05-design/design/archive/README.md`](../05-design/design/archive/README.md) (freshness + Status + «Чому архів, а не видалення»).
 
 > **Rule #23 (archive-move depth):** після `git mv` глибина вкладеності зростає на 1 — усі відносні посилання `../X` всередині перенесеного файла поламаються. Полагодь їх (зазвичай `../` → `../../`) і прожени `pnpm lint:archive-move-depth`.
 

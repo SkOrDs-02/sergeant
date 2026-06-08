@@ -56,10 +56,10 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | [`architecture/`](./architecture/README.md)   | Repo map, runtime surfaces, platform architecture                                     |
 | [`copy/`](./copy/README.md)                   | UA-copy tone-of-voice rules; reference for every Cyrillic JSX literal                 |
 | [`deploy/`](./deploy/README.md)               | Deploy walkthroughs (Railway, Vercel, console, etc.)                                  |
-| [`design/`](./design/README.md)               | Design system, brand, accents, dark mode, UI patterns                                 |
+| [`design/`](./05-design/design/README.md)     | Design system, brand, accents, dark mode, UI patterns                                 |
 | [`development/`](./development/README.md)     | Local dev-loop how-tos (ESLint config, local Postgres, pre-commit timing)             |
 | [`governance/`](./governance/README.md)       | Hard rules registry, policy docs, feature-flag registry, link-check allowlist         |
-| [`i18n/`](./i18n/README.md)                   | i18n readiness foundation (UA-only today; lightweight scaffolding for future locales) |
+| [`i18n/`](./05-design/i18n/README.md)         | i18n readiness foundation (UA-only today; lightweight scaffolding for future locales) |
 | [`integrations/`](./integrations/README.md)   | Third-party integrations (Monobank, Voyage, Renovate, …)                              |
 | [`marketing/`](./marketing/README.md)         | Pre-launch GTM execution plans (reference; reconciled against shipped landing)        |
 | [`mobile/`](./mobile/README.md)               | Expo/mobile strategy and migration docs                                               |
@@ -71,7 +71,7 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | [`runbooks/`](./runbooks/README.md)           | DR-grade operational runbooks (DB backup/restore, encryption key rotation, …)         |
 | [`security/`](./security/README.md)           | Security policy, access governance, recovery, and audit docs                          |
 | [`testing/`](./testing/README.md)             | Testing strategy meta-docs (mutation testing, layer matrix, threshold-is)             |
-| [`ui/`](./ui/README.md)                       | Cross-cutting UI behaviour policy (keyboard shortcuts registry, toast policy)         |
+| [`ui/`](./05-design/ui/README.md)             | Cross-cutting UI behaviour policy (keyboard shortcuts registry, toast policy)         |
 | [`web/`](./web/README.md)                     | `apps/web` platform deep-dives (Service Worker update strategy)                       |
 
 ### Trackers (multi-PR series, registries, lifecycle-managed work)
@@ -89,12 +89,12 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 
 ### Archive (read-only / superseded)
 
-| Path                                                                     | What                                                                            |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| [`audits/archive/`](./audits/archive/)                                   | Audits past their stabilization window; superseded historical scans             |
-| [`initiatives/archive/`](./initiatives/archive/)                         | Initiatives 90+ days past `Closed` without regressions                          |
-| [`launch/product-os/sprint-retros/`](./launch/product-os/sprint-retros/) | Per-sprint launch retrospectives (frozen after sprint closes)                   |
-| [`planning/archive/`](./planning/archive/)                               | Historical roadmap journals (e.g. `dev-stack-roadmap` session log from 2026-04) |
+| Path                                                                    | What                                                                            |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [`audits/archive/`](./audits/archive)                                   | Audits past their stabilization window; superseded historical scans             |
+| [`initiatives/archive/`](./initiatives/archive)                         | Initiatives 90+ days past `Closed` without regressions                          |
+| [`launch/product-os/sprint-retros/`](./launch/product-os/sprint-retros) | Per-sprint launch retrospectives (frozen after sprint closes)                   |
+| [`planning/archive/`](./planning/archive)                               | Historical roadmap journals (e.g. `dev-stack-roadmap` session log from 2026-04) |
 
 ## Adding new docs
 

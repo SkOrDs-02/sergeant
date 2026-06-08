@@ -1,6 +1,6 @@
 # Module ownership map
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 > Per-path ownership, test stack, RQ keys factory, and conventions. Quick look-up before editing. Compact summary table lives in [`AGENTS.md § Module ownership map`](../../AGENTS.md#module-ownership-map); deep per-path table is here so Stack-pulse PR-04 secondary-column gate (`pnpm lint:codeowners`) and the per-module CODEOWNERS coverage stay close to one another.
@@ -54,5 +54,5 @@
 
 - [`repo-map.md`](./repo-map.md) — per-app stack matrix + per-package purpose.
 - [`module-structure.md`](./module-structure.md) — canonical layout of `apps/{web,mobile}/src/modules/<domain>/` + per-module deviations.
-- [`docs/governance/rules/`](../governance/rules/) — per-rule canonical bodies referenced by the table notes.
+- [`docs/governance/rules/`](../governance/rules) — per-rule canonical bodies referenced by the table notes.
 - [`.github/CODEOWNERS`](../../.github/CODEOWNERS) — branch-protection-enforced reviewer assignment per path; coverage gate is `pnpm lint:codeowners`.

@@ -346,7 +346,7 @@
 **Що бачу:**
 
 - 23 playbooks у `docs/playbooks/` — кожен має «коли робити», «кроки», «гарантії», «приклади».
-- `docs/design/specs/` — окрема директорія для специфікацій великих фіч.
+- `docs/05-design/design/specs/` — окрема директорія для специфікацій великих фіч.
 - `docs/observability/{SLO.md, runbook.md, dashboards.md, prometheus/}` — повне operational documentation.
 - AI-marker система (`AI-NOTE`/`AI-CONTEXT`/`AI-DANGER`/`AI-GENERATED`/`AI-LEGACY: expires YYYY-MM-DD`) з `sergeant-design/ai-marker-syntax` ESLint rule (warn). Це формалізована documentation для AI-агентів, що пишуть код.
 - AGENTS.md фіксує **усі скоупи commit-message** як enum (no `monorepo`, no `app`, no `core`, no `all`).

@@ -9,7 +9,7 @@
   - [`docs/observability/SLO.md`](../observability/SLO.md) — SLI/SLO і burn-rate алерти.
   - [`docs/observability/dashboards.md`](../observability/dashboards.md) — Grafana стартер-пак.
   - [`docs/observability/runbook.md`](../observability/runbook.md) — playbook на алерти.
-  - [`apps/server/src/obs/`](../../apps/server/src/obs/) — Pino logger, Prometheus registry, request context.
+  - [`apps/server/src/obs/`](../../apps/server/src/obs) — Pino logger, Prometheus registry, request context.
   - [`apps/server/src/sentry.ts`](../../apps/server/src/sentry.ts) — Sentry bootstrap (server).
   - [`apps/web/src/core/observability/sentry.ts`](../../apps/web/src/core/observability/sentry.ts) — client-side Sentry.
   - [`apps/web/src/core/observability/webVitals.ts`](../../apps/web/src/core/observability/webVitals.ts) — INP/CLS/LCP beacons.

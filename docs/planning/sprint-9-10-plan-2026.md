@@ -101,7 +101,7 @@
 | F5 — `mapApiErrorToUserCopy(error)` централізована функція                                         | Потребує спочатку інвентарю всіх backend error-codes + UA-copy mapping (50+ записів).                                                                  |
 | F6 — PullToRefresh `disabled={cloudPullPending}` wire-up                                           | Низький impact (P2); race ловиться рідко; може йти follow-up у будь-який week.                                                                         |
 | F7 — `useApiForm` rollout (PersonalInfoSection, MemoryBankSection, FinykLoginScreen, WaitlistForm) | 4 окремі невеликі PR, кожна форма має свої invariant-и (debounced submit, optimistic UI). Краще розповсюдити на 4 sub-sessions поза спринтовим планом. |
-| F3 keyboard handlers — `Cmd+/`, `Cmd+S`, `Cmd+Z`, `G H..N` chord wire-up                           | Doc-частина закрита (`docs/ui/shortcuts.md`). Handler-wiring — окрема прожарка shortcuts-rollout; потребує conflict-matrix verification.               |
+| F3 keyboard handlers — `Cmd+/`, `Cmd+S`, `Cmd+Z`, `G H..N` chord wire-up                           | Doc-частина закрита (`docs/05-design/ui/shortcuts.md`). Handler-wiring — окрема прожарка shortcuts-rollout; потребує conflict-matrix verification.     |
 
 ### Web — architecture & state (`web-architecture-state-roast`)
 
@@ -229,4 +229,4 @@
 
 ---
 
-**Документ створено 2026-05-13 на основі прожарок [`docs/audits/2026-05-13-*-roast.md`](../audits/). Наступний review — 2026-07-01 (перед стартом Спринту 9). Затвердження утверджується через PR-review + parent-session sign-off.**
+**Документ створено 2026-05-13 на основі прожарок [`docs/audits/2026-05-13-*-roast.md`](../audits). Наступний review — 2026-07-01 (перед стартом Спринту 9). Затвердження утверджується через PR-review + parent-session sign-off.**

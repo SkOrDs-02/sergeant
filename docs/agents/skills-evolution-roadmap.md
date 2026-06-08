@@ -207,7 +207,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 - Сканер ловить ≥ 7 категорій загроз з регресійних fixture-ів у `scripts/__tests__/fixtures/malicious-skills/`.
 - Прогін на 12 існуючих skill-ів дає 0 hits (clean baseline).
 - `pnpm lint:skills` падає на synthetic malicious skill-фікстурі.
-- Розділ "Skill body security" додано в [`docs/governance/rules/`](../governance/rules/) — або як sub-clause до Rule #10, або як нова Rule #22 (`active-initiative`, deadline 2026-Q3).
+- Розділ "Skill body security" додано в [`docs/governance/rules/`](../governance/rules) — або як sub-clause до Rule #10, або як нова Rule #22 (`active-initiative`, deadline 2026-Q3).
 - Якщо нова Hard Rule — оновити `hard-rules.json`, `hard-rules-matrix.md`, AGENTS.md table; pass `pnpm lint:hard-rules-registry`.
 
 **Files touched.**

@@ -23,8 +23,8 @@
 - [`docs/initiatives/0006-frontend-routing-and-code-split.md`](../initiatives/0006-frontend-routing-and-code-split.md) — react-router migration, Phase 3-5 закриваються картами A1–A3.
 - [`docs/initiatives/archive/_0013-module-decomposition-round-2.md`](../initiatives/archive/_0013-module-decomposition-round-2.md) — `max-lines: 600` Sprint 2 (4 файли на decomposition), карта A4.
 - [`docs/architecture/state-write-paths.md`](../architecture/state-write-paths.md) — doctrine для UI vs chatActions writer-каналів (закрита у прожарці #3); карти A5/A6 — implementation burndown.
-- [`docs/ui/toast-policy.md`](../ui/toast-policy.md) — toast tone-table + anti-pattern matrix (закрита у прожарці #2); карти E1–E2 — Modal a11y контракт у тому ж стилі.
-- [`docs/ui/shortcuts.md`](../ui/shortcuts.md) — keyboard registry + browser-conflict matrix (закрита у прожарці #2); карта E7 — wire-up або removal TBD-handler-ів.
+- [`docs/05-design/ui/toast-policy.md`](../05-design/ui/toast-policy.md) — toast tone-table + anti-pattern matrix (закрита у прожарці #2); карти E1–E2 — Modal a11y контракт у тому ж стилі.
+- [`docs/05-design/ui/shortcuts.md`](../05-design/ui/shortcuts.md) — keyboard registry + browser-conflict matrix (закрита у прожарці #2); карта E7 — wire-up або removal TBD-handler-ів.
 
 ## Як читати картку
 
@@ -216,7 +216,7 @@
   - функція покриває min. 8 канонічних `error.code` з `@sergeant/api-client` (`validation_error`, `unauthenticated`, `forbidden`, `rate_limited`, `network_error`, `conflict`, `not_found`, `server_error`) + fallback на ascii-cleaned generic copy.
   - усі callsite-и під `apps/web/src/core/profile/**` використовують `mapApiErrorToUserCopy(res.error)` замість прямого `.message`.
   - unit-тести покривають кожну гілку маппінгу.
-  - tone — згідно [`docs/ui/toast-policy.md`](../ui/toast-policy.md).
+  - tone — згідно [`docs/05-design/ui/toast-policy.md`](../05-design/ui/toast-policy.md).
 - **Size:** M
 - **Priority:** P2
 - **Depends on:** —
@@ -261,12 +261,12 @@
 - **Surface:**
   - `apps/web/src/core/hooks/useHubKeyboardShortcuts.ts` (поточно registers тільки `?` + `Cmd/Ctrl+K`).
   - `apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx:101-143` (DEFAULT_SHORTCUTS).
-  - `docs/ui/shortcuts.md` (matrix — оновити статуси).
+  - `docs/05-design/ui/shortcuts.md` (matrix — оновити статуси).
 - **Acceptance:**
   - `Cmd+/` — open AI асистент drawer / focus chat input.
   - `Cmd+S` — context-aware save (e.g. у профілі form-submit; на сторінках без form-context — no-op + захист від browser-default Save Page через `e.preventDefault()`).
   - `G H..N` chord pattern — navigation jumps (G→H = Hub, G→F = Finyk, G→Z = Fizruk, G→R = Routine, G→N = Nutrition).
-  - browser-conflict matrix у `docs/ui/shortcuts.md` оновлено: усі handler-и `Registered`; немає більше `TBD`.
+  - browser-conflict matrix у `docs/05-design/ui/shortcuts.md` оновлено: усі handler-и `Registered`; немає більше `TBD`.
   - Playwright smoke-test (`apps/web/tests/smoke/keyboard-shortcuts.spec.ts`, `@critical`) — assert Cmd+K, Cmd+/, G+H працюють.
   - Альтернативний path: якщо wire-up неможливий для будь-якого ярлика — видалити його з `DEFAULT_SHORTCUTS` + оновити doc.
 - **Size:** M

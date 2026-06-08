@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-16 by @Skords-01 (2-round marketing council audit).
 > **Next review:** 2026-08-14.
 > **Status:** Reference — pre-implementation marketing plan; поточне виконання спершу звіряється з shipped `/` landing у `apps/web/src/core/LandingPage.tsx`.
-> **Companion docs:** [`../design/brandbook.md`](../design/brandbook.md) (voice + palette) · [`../design/redesign-v2/execution-plan.md`](../design/redesign-v2/execution-plan.md) (parallel product polish plan).
+> **Companion docs:** [`../design/brandbook.md`](../05-design/design/brandbook.md) (voice + palette) · [`../design/redesign-v2/execution-plan.md`](../05-design/design/redesign-v2/execution-plan.md) (parallel product polish plan).
 
 ## How to use this document
 
@@ -11,7 +11,7 @@
 
 **Перед першим PR / publish з цього плану — обов'язково:**
 
-1. Прочитай [`../design/brandbook.md`](../design/brandbook.md) (voice, persona, palette, refs Duolingo/Yazio/Monobank).
+1. Прочитай [`../design/brandbook.md`](../05-design/design/brandbook.md) (voice, persona, palette, refs Duolingo/Yazio/Monobank).
 2. Прочитай секції **Voice playbook** і **Persona archetype** нижче — це canonical guard для всього маркетинг-output'у.
 3. Виконуй фази в порядку залежностей (див. dependency tree). Phase 0 ставить foundation, Phase 1 ships landing.
 
@@ -24,11 +24,11 @@
 
 ## Context
 
-Sergeant — це багатомодульний застосунок life management (Finyk фінанси / Fizruk фітнес / Routine звички / Nutrition харчування). Tagline working: "Твій персональний хаб життя". Voice: "дружній, мотивуючий, як корисний друг, не drill-сержант" (з [`brandbook.md`](../design/brandbook.md)).
+Sergeant — це багатомодульний застосунок life management (Finyk фінанси / Fizruk фітнес / Routine звички / Nutrition харчування). Tagline working: "Твій персональний хаб життя". Voice: "дружній, мотивуючий, як корисний друг, не drill-сержант" (з [`brandbook.md`](../05-design/design/brandbook.md)).
 
 **Стан на момент створення плану:**
 
-- Продукт ще в активній розробці (parallel UI polish описаний у [`redesign-v2-execution-plan.md`](../design/redesign-v2/execution-plan.md)).
+- Продукт ще в активній розробці (parallel UI polish описаний у [`redesign-v2-execution-plan.md`](../05-design/design/redesign-v2/execution-plan.md)).
 - Landing — shipped in-app surface на `/` у `apps/web/src/core/LandingPage.tsx`; standalone Astro/marketing workspace лишається окремою public-launch опцією, не поточним default.
 - Соцмережі — нуль активних.
 - Брендбук + design system — повні.
@@ -483,7 +483,7 @@ Phase 5 — Launch transition (depends on App Store approval — exogenous)
 - **Module showcase секції на landing** — bright tinted (`--hero-grad-{module}`). Демонструють ідентичність модулів.
 - **Marketing assets (соцмережі, email headers)** — нейтральний або Emerald-палітра. Не яскраві coral/lime окрім module-специфічного контенту.
 
-Це закриває T4 token gap з [`redesign-v2-execution-plan.md`](../design/redesign-v2/execution-plan.md) як **policy decision**, не код. У brandbook.md можна додати «hero gradient lives in module-showcase scope; main hero stays Soft & Organic» одним рядком.
+Це закриває T4 token gap з [`redesign-v2-execution-plan.md`](../05-design/design/redesign-v2/execution-plan.md) як **policy decision**, не код. У brandbook.md можна додати «hero gradient lives in module-showcase scope; main hero stays Soft & Organic» одним рядком.
 
 ## Open questions / decisions deferred
 
@@ -497,7 +497,7 @@ Phase 5 — Launch transition (depends on App Store approval — exogenous)
 
 ## Refs
 
-- [`../design/brandbook.md`](../design/brandbook.md) — voice + palette + references
-- [`../design/redesign-v2/execution-plan.md`](../design/redesign-v2/execution-plan.md) — паралельний product polish plan
-- [`../design/cross-module-prompts.md`](../design/cross-module-prompts.md) — cross-module value framing (transferable у marketing copy)
-- [`../design/empty-states.md`](../design/empty-states.md) — value-first vs feature-first framing (transferable у landing copy)
+- [`../design/brandbook.md`](../05-design/design/brandbook.md) — voice + palette + references
+- [`../design/redesign-v2/execution-plan.md`](../05-design/design/redesign-v2/execution-plan.md) — паралельний product polish plan
+- [`../design/cross-module-prompts.md`](../05-design/design/cross-module-prompts.md) — cross-module value framing (transferable у marketing copy)
+- [`../design/empty-states.md`](../05-design/design/empty-states.md) — value-first vs feature-first framing (transferable у landing copy)

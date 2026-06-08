@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-27.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/governance/repo-map.auto.json`](../governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
@@ -70,5 +70,5 @@
 - Per-path test stack + RQ keys factory + owner map → [`module-ownership.md`](./module-ownership.md).
 - Domain invariants (time, money, identity) → [`domain-invariants.md`](./domain-invariants.md).
 - Diagrams (C4, sequence flows) → [`diagrams/`](./diagrams/README.md).
-- Hard rules with full BAD/GOOD examples → [`docs/governance/rules/`](../governance/rules/).
+- Hard rules with full BAD/GOOD examples → [`docs/governance/rules/`](../governance/rules).
 - Service catalog (runtime targets, healthchecks) → [`service-catalog.md`](./service-catalog.md).

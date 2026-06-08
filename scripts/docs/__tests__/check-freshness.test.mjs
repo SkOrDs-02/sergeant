@@ -202,8 +202,11 @@ describe("freshnessMarker", () => {
 
 describe("issueTitle", () => {
   it("includes the file path", () => {
-    const title = issueTitle("docs/design/brandbook.md");
-    assert.equal(title, "docs: freshness overdue — docs/design/brandbook.md");
+    const title = issueTitle("docs/05-design/design/brandbook.md");
+    assert.equal(
+      title,
+      "docs: freshness overdue — docs/05-design/design/brandbook.md",
+    );
   });
 });
 

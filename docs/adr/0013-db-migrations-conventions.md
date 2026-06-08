@@ -6,7 +6,7 @@
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`apps/server/src/migrations/`](../../apps/server/src/migrations/) — `001_noop.sql` … `021_governance_audit.sql`.
+  - [`apps/server/src/migrations/`](../../apps/server/src/migrations) — `001_noop.sql` … `021_governance_audit.sql`.
   - [`apps/server/build.mjs`](../../apps/server/build.mjs) — копіює міграції у `dist/` при білді.
   - [`docs/playbooks/add-sql-migration.md`](../playbooks/add-sql-migration.md) — authoring how-to.
   - [`docs/playbooks/pre-merge-migration-checklist.md`](../playbooks/pre-merge-migration-checklist.md) — review-чек-лист.
@@ -54,7 +54,7 @@ accepted.
 
 **Sequential `NNN_<short_snake_case_desc>.sql`**, починаючи з `001_noop.sql`.
 Поточний range — 001 до 021 (див.
-[`apps/server/src/migrations/`](../../apps/server/src/migrations/)).
+[`apps/server/src/migrations/`](../../apps/server/src/migrations)).
 Реальний runner — [`apps/server/migrate.mjs`](../../apps/server/migrate.mjs) (Railway pre-deploy, читає
 `fs.readdirSync().sort()`).
 

@@ -16,7 +16,7 @@
 ## Enforced by
 
 - **convention** — AGENTS.md § Hard rules #17 (AMBIENT/RESPONSE/CELEBRATE tiers; max 1 AMBIENT + 1 RESPONSE simultaneously; stagger ≤ 30 ms × N capped at 150 ms; CELEBRATE only on milestones 7/30/100/365)
-- **doc** — docs/design/design-system.md § 14. Animations
+- **doc** — docs/05-design/design/design-system.md § 14. Animations
 
 ## Why / What is enforced
 

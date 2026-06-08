@@ -1,6 +1,6 @@
 # Marketing
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Go-to-market та pre-launch матеріали. Reference-плани, що звіряються з shipped-станом —
@@ -15,5 +15,5 @@ Go-to-market та pre-launch матеріали. Reference-плани, що зв
 ## Cross-links
 
 - GTM / monetization roadmaps: [`docs/launch/`](../launch/README.md).
-- Бренд voice + palette: [`docs/design/brandbook.md`](../design/brandbook.md).
+- Бренд voice + palette: [`docs/05-design/design/brandbook.md`](../05-design/design/brandbook.md).
 - Landing source: [`apps/web/src/core/LandingPage.tsx`](../../apps/web/src/core/LandingPage.tsx).

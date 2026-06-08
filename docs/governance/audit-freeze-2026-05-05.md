@@ -1,6 +1,6 @@
 # Audit-freeze 2026-05-05 → 2026-06-02
 
-> **Last validated:** 2026-06-03 by @claude. **Next review:** 2026-11-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed
 
 > **Що це.** Тимчасова заморозка створення нових audit/initiative/governance документів. Працює як **process-level rate-limiter** на час, поки `main` повертає в баланс **product velocity ↔ docs velocity**.
@@ -131,7 +131,7 @@ Override — не sin, це signaling механізм. Якщо за 4 тижн
 **Pathspec обрано як «продукт-докі без mandatory CI-gate»**:
 
 - `docs/audits/`, `docs/initiatives/`, `docs/playbooks/`, `docs/adr/` — це місця, куди легко додати «ще один аудит» / «ще одна ініціатива», і де темп зростання випередив темп viability.
-- `docs/launch/`, `docs/observability/`, `docs/integrations/`, `docs/architecture/`, `docs/design/`, `docs/agents/`, **не** заморожуються — це функціональна документація, що часто синкається з shipped code.
+- `docs/launch/`, `docs/observability/`, `docs/integrations/`, `docs/architecture/`, `docs/05-design/design/`, `docs/agents/`, **не** заморожуються — це функціональна документація, що часто синкається з shipped code.
 - `*-deep-dive/` піджанр в `docs/audits/` (раніше — окремий `docs/diagnostics/`) **не** заморожується — deep-dives створюються per-incident / на запит, не за роадмапом.
 - `AGENTS.md` під обмеженням «розширення без enforcement» — це найбільший read-tax файл.
 

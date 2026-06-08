@@ -1,6 +1,6 @@
 # Round-13 Burndown Sprint — закриття KPI items #6 / #8 / #15
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Superseded — round 14 ревізія підтвердила, що всі три KPI items закриті без потреби в R13.1–R13.7 PR-послідовності, описаній нижче. Канонічне джерело статусу — [`./00-overview.md` §11.5 (round 14)](./00-overview.md#§115-залишок-роботи-до-повного-закриття-18-items-станом-на-2026-05-05-round-14).
 >
 > **Що сталося насправді:**
@@ -31,7 +31,7 @@
 > [`./00-overview.md` §11.5](./00-overview.md) — burndown narrative ·
 > [`./01-frontend-ergonomics.md` §3.1](./01-frontend-ergonomics.md) — Item #8 джерело ·
 > [`./02-architecture-and-state.md` §1.0 / §2.2](./02-architecture-and-state.md) —
-> Items #15 / #6 джерело · [`docs/i18n/readiness.md`](../../i18n/readiness.md) —
+> Items #15 / #6 джерело · [`docs/05-design/i18n/readiness.md`](../../05-design/i18n/readiness.md) —
 > Item #18 organic roadmap · `docs/testing/mutation.md` (видалений у PR #052b
 > разом з cloudSync v1 Stryker infra) — Item #17 organic roadmap.
 
@@ -189,6 +189,6 @@ contract-schema), R13.6 — паралельно. R13.1–R13.4 — парале
 - [`./00-overview.md` §11.5](./00-overview.md) — burndown narrative + KPI-table.
 - [`./01-frontend-ergonomics.md` §3.1](./01-frontend-ergonomics.md) — Item #8 architecture rationale.
 - [`./02-architecture-and-state.md` §1.0 / §2.2](./02-architecture-and-state.md) — Items #15 / #6.
-- [`docs/i18n/readiness.md`](../../i18n/readiness.md) — Item #18 organic roadmap.
+- [`docs/05-design/i18n/readiness.md`](../../05-design/i18n/readiness.md) — Item #18 organic roadmap.
 - `docs/testing/mutation.md` — Item #17 organic roadmap (файл видалений у PR #052b разом з cloudSync v1 Stryker infra; mutation testing для retired cloudSync engine більше не релевантний).
 - [`docs/launch/product-os/ftux-sprint-plan.md` §7a](../../launch/product-os/ftux-sprint-plan.md) — еталонний pattern «Sprint cleanup batch».

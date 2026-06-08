@@ -5,7 +5,7 @@
 
 Каталог усіх Prometheus-метрик бекенду Sergeant (`GET /metrics`, bearer `METRICS_TOKEN`).
 Джерело істини — [`metrics.ts`](../../apps/server/src/obs/metrics.ts).
-Суміжні docs: [SLO.md](./SLO.md) · [dashboards.md](./dashboards.md) · [runbook.md](./runbook.md) · [`prometheus/`](./prometheus/).
+Суміжні docs: [SLO.md](./SLO.md) · [dashboards.md](./dashboards.md) · [runbook.md](./runbook.md) · [`prometheus/`](./prometheus).
 
 ---
 

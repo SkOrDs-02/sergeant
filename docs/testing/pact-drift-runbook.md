@@ -351,6 +351,6 @@ jobs:
 
 - [`docs/architecture/api-contracts.md`](../architecture/api-contracts.md) — Pact pipeline overview, як додати новий endpoint.
 - [`apps/server/src/__tests__/contracts/provider.test.ts`](../../apps/server/src/__tests__/contracts/provider.test.ts) — per-PR provider replay.
-- [`packages/api-client/src/__tests__/contracts/`](../../packages/api-client/src/__tests__/contracts/) — consumer-side pact specs.
+- [`packages/api-client/src/__tests__/contracts/`](../../packages/api-client/src/__tests__/contracts) — consumer-side pact specs.
 - [`scripts/pact-drift-check.mjs`](../../scripts/pact-drift-check.mjs) — drift CLI.
 - [`.github/workflows/db-backup-verify.yml`](../../.github/workflows/db-backup-verify.yml) — sibling cron-job (same idempotent-issue pattern).

@@ -39,7 +39,7 @@ Execute day before archival to unblock 2026-08-02 batch-PR:
 ### 0004: Server observability
 
 - [ ] Verify: Sentry + OTel running in production
-- [ ] Check: All grafana dashboards pinned / documented in [docs/observability/](../../observability/)
+- [ ] Check: All grafana dashboards pinned / documented in [docs/observability/](../../observability)
 - [ ] Check: Optional follow-up (RED-deltas, AI-latency spans) documented in follow-ups.md
 - [ ] Result: Move carry-over to [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md)
 

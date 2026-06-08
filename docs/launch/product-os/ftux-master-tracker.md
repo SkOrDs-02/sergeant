@@ -17,7 +17,7 @@
 > [`docs/observability/posthog-ftux-dashboards.md`](../../observability/posthog-ftux-dashboards.md) — PostHog dashboards runbook ·
 > [`docs/governance/feature-flags.md`](../../governance/feature-flags.md) — flag conventions ·
 > [`docs/playbooks/add-onboarding-step.md`](../../playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS` ·
-> [`docs/design/empty-states.md`](../../design/empty-states.md) — 3-tier empty states ·
+> [`docs/05-design/design/empty-states.md`](../../05-design/design/empty-states.md) — 3-tier empty states ·
 > `docs/governance/audit-freeze-2026-05-05.md` — freeze правила (4 тижні; з'явиться у PR-01).
 
 > **Audit-freeze contract.** Цей документ — **legal during freeze** (2026-05-05 → 2026-06-02), бо це **consolidation**, не нова прожарка. У freeze-period дозволено:

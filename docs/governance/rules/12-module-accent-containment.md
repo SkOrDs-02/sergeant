@@ -38,7 +38,7 @@ The rule handles variant prefixes (`dark:`, `hover:`, `lg:`), shade suffixes (`-
 - `apps/*/src/modules/shared/**` (non-canonical module folder — a cross-module utility, not an accent owner)
 - `__tests__/*.{ts,tsx,mjs}` — test fixtures naturally reference all four for coverage.
 
-Enforced by `sergeant-design/no-foreign-module-accent` (`error`). See `docs/design/module-accent.md` for the "one accent = one module" design principle.
+Enforced by `sergeant-design/no-foreign-module-accent` (`error`). See `docs/05-design/design/module-accent.md` for the "one accent = one module" design principle.
 
 ## Related
 

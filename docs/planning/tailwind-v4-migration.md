@@ -163,8 +163,8 @@ export default {
 
 ### Фаза 3: Design tokens пакет — ✅ done
 
-1. ✅ **Зафіксовано: JS preset via `@config`.** CSS-first `@theme` дублювався б у Metro-конфізі для NativeWind, який досі на Tailwind 3. Один `packages/design-tokens/tailwind-preset.js` працює в обох runtime-ах. Рішення відображено у [`packages/design-tokens/README.md`](../../packages/design-tokens/README.md) і [`docs/design/module-accent.md`](../design/module-accent.md).
-2. ✅ Оновлено документацію: `docs/design/module-accent.md` (3-layer-діаграма позначає loader per surface; v4-нотатка під Tailwind-API).
+1. ✅ **Зафіксовано: JS preset via `@config`.** CSS-first `@theme` дублювався б у Metro-конфізі для NativeWind, який досі на Tailwind 3. Один `packages/design-tokens/tailwind-preset.js` працює в обох runtime-ах. Рішення відображено у [`packages/design-tokens/README.md`](../../packages/design-tokens/README.md) і [`docs/05-design/design/module-accent.md`](../05-design/design/module-accent.md).
+2. ✅ Оновлено документацію: `docs/05-design/design/module-accent.md` (3-layer-діаграма позначає loader per surface; v4-нотатка під Tailwind-API).
 3. ✅ Перевірено що `brand`, `module-accent`, `status-*` кольори працюють — Phase 1 закрив це через Argos visual regression на web; mobile наслідує preset без змін, тож token-семантика збережена до моменту, коли Phase 2 розморозиться.
 
 ### Фаза 4: Cleanup — ✅ done

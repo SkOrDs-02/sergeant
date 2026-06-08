@@ -24,7 +24,7 @@
     "sergeant-feature-delivery": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "2635ab56dc38f267f077893893e655c58f349a950be0adaea799c7fe6f7fe3be"
+      "computedHash": "45b1adc45c21cc1fe2262115f8aba6ce609cc496ed2832fe913344493617c093"
     },
     "sergeant-hubchat": {
       "source": "local",
@@ -44,7 +44,7 @@
     "sergeant-review-and-merge": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "950c98c8d8402a9c5ee167a1f2bad7e440916df61aa8124f4078580d47546a8c"
+      "computedHash": "7db4748e8f8afed12ecc33f58410a9a1b114f4ef6be0fbf45ad49aefac436e3c"
     },
     "sergeant-server-api": {
       "source": "local",

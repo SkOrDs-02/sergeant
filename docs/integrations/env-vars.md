@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last validated:** 2026-06-05 by @claude. **Next review:** 2026-09-03.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -692,4 +692,4 @@ Full rollout playbook: [`docs/security/api-internal-hmac.md`](../security/api-in
 - [ADR-0028](../adr/0028-pgvector-ai-memory.md) — pgvector + Voyage AI memory.
 - [ADR-0031](../adr/0031-openclaw-v0-telegram-cofounder.md) — OpenClaw v0.
 - [ADR-0042](../adr/0042-password-hashing-strategy.md) — password hashing (scrypt у Better Auth, без 72-byte ліміту).
-- [`docs/security/hardening/`](../security/hardening/) — карти H5, H6, H9, M1.
+- [`docs/security/hardening/`](../security/hardening) — карти H5, H6, H9, M1.

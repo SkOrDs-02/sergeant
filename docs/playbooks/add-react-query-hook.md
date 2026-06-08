@@ -1,6 +1,6 @@
 # Playbook: Add React Query Hook
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «Дай хук який тягне X з API» / новий useQuery або useMutation у `apps/web` / нова server-state дата.
@@ -64,7 +64,7 @@ export async function getMonoBudgetForecast(
 }
 ```
 
-Pешта endpoint-у (handler, route, zod-schema) — див. [add-api-endpoint.md](add-api-endpoint.md).
+Pешта endpoint-у (handler, route, zod-schema) — див. [add-api-endpoint.md](./add-api-endpoint.md).
 
 ### 3. Хук
 
@@ -195,7 +195,7 @@ feat(web): add useMonoBudgetForecast hook
 
 ## See also
 
-- [add-api-endpoint.md](add-api-endpoint.md) — як зробити endpoint, який потім тягне цей хук
+- [add-api-endpoint.md](./add-api-endpoint.md) — як зробити endpoint, який потім тягне цей хук
 - [AGENTS.md](../../AGENTS.md) — hard rule #2 (RQ keys), rule #3 (API contract)
 - `apps/web/src/shared/lib/api/queryKeys.ts` — приклади existing factories
 - [#729](https://github.com/Skords-01/Sergeant/pull/729) — MSW setup

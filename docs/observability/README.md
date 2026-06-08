@@ -1,6 +1,6 @@
 # Observability
 
-> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 SLOs, runtime signals, dashboards, and production operations.
@@ -28,4 +28,4 @@ SLOs, runtime signals, dashboards, and production operations.
 | [`sentry-sampling.md`](./sentry-sampling.md)                 | Політика sampling трейсів Sentry по маршрутах               |
 | [`telegram-control-plane.md`](./telegram-control-plane.md)   | Telegram як control plane для Sergeant Ops                  |
 | [`telemetry-rollout-plan.md`](./telemetry-rollout-plan.md)   | План розгортання телеметрії                                 |
-| [`prometheus/`](./prometheus/)                               | Prometheus alert_rules.yml та recording_rules.yml           |
+| [`prometheus/`](./prometheus)                                | Prometheus alert_rules.yml та recording_rules.yml           |

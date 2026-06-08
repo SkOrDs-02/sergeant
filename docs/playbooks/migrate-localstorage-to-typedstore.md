@@ -1,6 +1,6 @@
 # Playbook: Migrate localStorage to typedStore
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** "Мігрувати файл X з прямого localStorage на typedStore" / зменшити TODO-список у ESLint allowlist / `frontend-tech-debt.md` #2.
@@ -111,5 +111,5 @@ pnpm lint
 ## See also
 
 - [frontend-tech-debt.md](../tech-debt/frontend.md) — §2 Прямі localStorage виклики
-- [cleanup-dead-code.md](cleanup-dead-code.md) — якщо під час міграції знайдено мертвий код
+- [cleanup-dead-code.md](./cleanup-dead-code.md) — якщо під час міграції знайдено мертвий код
 - [AGENTS.md](../../AGENTS.md) — загальні конвенції

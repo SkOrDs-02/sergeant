@@ -1,6 +1,6 @@
 # Railway (API + PostgreSQL) + Vercel (фронт)
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 ## 1. PostgreSQL на Railway
@@ -108,7 +108,7 @@ Error-алерти йдуть з обох Sentry-проєктів (`sergeant-api
    `body.data.issue.{level,title,project.name,count,permalink}` і шле в `TELEGRAM_ALERT_CHAT_ID`.
    Гілки: `level=fatal` → `🚨 FATAL`, інші не-`info` → `⚠️ <level>`.
 
-Воркфлоу/маніфест джерела істини — в [`ops/n8n-workflows/`](../../ops/n8n-workflows/);
+Воркфлоу/маніфест джерела істини — в [`ops/n8n-workflows/`](../../ops/n8n-workflows);
 ADR — [`docs/adr/0026-n8n-workflow-source-of-truth.md`](../adr/0026-n8n-workflow-source-of-truth.md).
 У git `active: false` навмисно (per ADR-0026 — активація це окрема операція в середовищі).
 

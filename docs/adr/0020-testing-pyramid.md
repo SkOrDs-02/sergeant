@@ -10,7 +10,7 @@
   - [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — jobs `check`, `coverage`, `a11y`, `smoke-e2e`, `commitlint`, `migration-lint`, `secret-scan`.
   - [`apps/web/vitest.config.js`](../../apps/web/vitest.config.js), [`apps/server/vitest.config.ts`](../../apps/server/vitest.config.ts) — per-package coverage floors.
   - [`apps/web/playwright.config.ts`](../../apps/web/playwright.config.ts) (a11y), [`apps/web/playwright.smoke.config.ts`](../../apps/web/playwright.smoke.config.ts) (smoke).
-  - [`apps/web/src/test/msw/`](../../apps/web/src/test/msw/) — MSW handlers + setupServer (web fetch mocking).
+  - [`apps/web/src/test/msw/`](../../apps/web/src/test/msw) — MSW handlers + setupServer (web fetch mocking).
   - [`apps/server/src/modules/mono/read.integration.test.ts`](../../apps/server/src/modules/mono/read.integration.test.ts) — приклад Testcontainers integration.
   - PR-історія: MSW [#729](https://github.com/Skords-01/Sergeant/pull/729), Testcontainers [#728](https://github.com/Skords-01/Sergeant/pull/728), Playwright a11y/smoke [#717](https://github.com/Skords-01/Sergeant/pull/717), serializer snapshots [#718](https://github.com/Skords-01/Sergeant/pull/718).
 

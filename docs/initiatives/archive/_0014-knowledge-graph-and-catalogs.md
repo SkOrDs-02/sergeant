@@ -1,11 +1,11 @@
 # 0014 — Knowledge graph & auto-generated catalogs
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Done (all 5 phases shipped; HR-24/25/26 deferred to follow-up)
 > **Priority:** P2
 > **Owner:** `@Skords-01`
 > **ETA:** 5 phases (≈4–5 тижнів), **~12 PR-ів**
-> **Sources:** [`docs/architecture/repo-map.md`](../../architecture/repo-map.md), [`docs/architecture/service-catalog.md`](../../architecture/service-catalog.md), [`docs/architecture/diagrams/`](../../architecture/diagrams/), [`docs/governance/freshness-dashboard.html`](../../governance/freshness-dashboard.html), [`AGENTS.md`](../../../AGENTS.md) Hard Rules #10 / #15.
+> **Sources:** [`docs/architecture/repo-map.md`](../../architecture/repo-map.md), [`docs/architecture/service-catalog.md`](../../architecture/service-catalog.md), [`docs/architecture/diagrams/`](../../architecture/diagrams), [`docs/governance/freshness-dashboard.html`](../../governance/freshness-dashboard.html), [`AGENTS.md`](../../../AGENTS.md) Hard Rules #10 / #15.
 
 ## TL;DR
 

@@ -1,6 +1,6 @@
 # Документаційний аудит — 2026-05-11
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Completed — Actions in progress
 
 Комплексний аудит документації (planning, tech-debt, initiatives, governance) виконаний 2026-05-11. Перевірено свіжість, дріфти, архівні кандидати, та carry-over items. **Всі CRITICAL дії завершено.**
@@ -11,12 +11,12 @@
 
 ### CRITICAL ✅ Завершено
 
-| #   | Дія                         | Файли                              | Commit    | Статус  |
-| --- | --------------------------- | ---------------------------------- | --------- | ------- |
-| 1   | Оновити `backend.md` marker | `docs/tech-debt/backend.md`        | `8cd159d` | ✅ Done |
-| 2   | Оновити `doc-freshness.md`  | `docs/governance/doc-freshness.md` | `8cd159d` | ✅ Done |
-| 3   | Оновити 4 design docs       | `docs/design/*.md` (4 файли)       | `8cd159d` | ✅ Done |
-| 4   | Підготувати batch archival  | `docs/initiatives/archive/*`       | `fe309c4` | ✅ Done |
+| #   | Дія                         | Файли                                  | Commit    | Статус  |
+| --- | --------------------------- | -------------------------------------- | --------- | ------- |
+| 1   | Оновити `backend.md` marker | `docs/tech-debt/backend.md`            | `8cd159d` | ✅ Done |
+| 2   | Оновити `doc-freshness.md`  | `docs/governance/doc-freshness.md`     | `8cd159d` | ✅ Done |
+| 3   | Оновити 4 design docs       | `docs/05-design/design/*.md` (4 файли) | `8cd159d` | ✅ Done |
+| 4   | Підготувати batch archival  | `docs/initiatives/archive/*`           | `fe309c4` | ✅ Done |
 
 **批量commit:** 2 commits × 6 files updated, 1 plan document created.
 
@@ -32,10 +32,10 @@
 | `docs/tech-debt/frontend.md`                              | Tech-debt   | 2026-05-04 | 7   | Оновлено       | ✅ Fresh |
 | `docs/tech-debt/mobile.md`                                | Tech-debt   | 2026-05-03 | 8   | Оновлено       | ✅ Fresh |
 | `docs/governance/doc-freshness.md`                        | Governance  | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/design/cross-module-prompts.md`                     | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/design/radius-rhythm.md`                            | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/design/empty-states.md`                             | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/design/unified-bottom-nav.md`                       | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/05-design/design/cross-module-prompts.md`           | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/05-design/design/radius-rhythm.md`                  | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/05-design/design/empty-states.md`                   | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/05-design/design/unified-bottom-nav.md`             | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
 | `docs/governance/rules/15-governance-and-doc-language.md` | Governance  | 2026-05-09 | 2   | Last validated | ✅ Fresh |
 | `docs/planning/README.md`                                 | Planning    | 2026-05-06 | 5   | Last validated | ✅ Fresh |
 | `docs/tech-debt/README.md`                                | Tech-debt   | 2026-05-02 | 9   | Last validated | ✅ Fresh |
@@ -160,7 +160,7 @@
 - ✅ `docs/governance/doc-freshness.md`
 - ✅ `docs/governance/hard-rules.json`
 - ✅ `docs/governance/rules/15-governance-and-doc-language.md`
-- ✅ `docs/design/*.md` (4 файли)
+- ✅ `docs/05-design/design/*.md` (4 файли)
 - ✅ `AGENTS.md` (header only, + references)
 
 ---
@@ -201,7 +201,7 @@
 - `docs/initiatives/archive/README.md` (+ batch schedule)
 - `docs/tech-debt/backend.md` (marker)
 - `docs/governance/doc-freshness.md` (marker)
-- `docs/design/cross-module-prompts.md` (marker)
-- `docs/design/radius-rhythm.md` (marker)
-- `docs/design/empty-states.md` (marker)
-- `docs/design/unified-bottom-nav.md` (marker)
+- `docs/05-design/design/cross-module-prompts.md` (marker)
+- `docs/05-design/design/radius-rhythm.md` (marker)
+- `docs/05-design/design/empty-states.md` (marker)
+- `docs/05-design/design/unified-bottom-nav.md` (marker)

@@ -1,6 +1,6 @@
 # Sergeant — dead-code & stale-links аудит (2026-05-05)
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Archived
 
 > Аудит виконано 2026-05-05 проти `main @ f6bc64aa` як прохід по «застарілих чи мертвих елементах» репо. Скоуп — те, що автоматичні гарди (`pnpm dead-code:files`, `pnpm knip`, `pnpm docs:check-links`, `pnpm lint:tech-debt-freshness`, `pnpm lint:ai-legacy`, `pnpm docs:check-freshness-coverage`) знаходять зараз. Усі fix-able findings закриті у супровідному PR — цей файл лишається як historical record + дашборд для outstanding hints.
@@ -10,7 +10,7 @@
 ## TL;DR
 
 - **Жодного справжнього мертвого файлу.** Усі 13 «unused files» з `pnpm knip` мають lifecycle-маркер (`@scaffolded` для barrel-ів, чекаючих consumer-ів; `@deprecated` для re-export-ів, які чекають на завершення міграції; `@deprecated` для одноразових кодомодів у `scripts/codemods/`). Гард `pnpm dead-code:files` (через [`scripts/knip-respects-scaffolded.mjs`](../../../scripts/knip-respects-scaffolded.mjs)) тепер passes.
-- **Doc-drift навколо paths.** `pnpm docs:check-links` знайшов **14 broken internal links** у 5 документах — усі через рефактори, що переїхали (vercel.json → `apps/web/vercel.json`, apps/server/src/middleware/ → `apps/server/src/http/`, docs/design-system/ → `docs/design/`, apps/web/src/components/VoiceMicButton.tsx → `apps/web/src/shared/components/ui/VoiceMicButton.tsx`, scripts/bundle-size-guard.ts → `scripts/check-bundle-size.mjs`, useHashRouter.ts переніс у Finyk-модуль, vite.config.js живе під apps/web/). Усе виправлено.
+- **Doc-drift навколо paths.** `pnpm docs:check-links` знайшов **14 broken internal links** у 5 документах — усі через рефактори, що переїхали (vercel.json → `apps/web/vercel.json`, apps/server/src/middleware/ → `apps/server/src/http/`, docs/design-system/ → `docs/05-design/design/`, apps/web/src/components/VoiceMicButton.tsx → `apps/web/src/shared/components/ui/VoiceMicButton.tsx`, scripts/bundle-size-guard.ts → `scripts/check-bundle-size.mjs`, useHashRouter.ts переніс у Finyk-модуль, vite.config.js живе під apps/web/). Усе виправлено.
 - **Один умисний placeholder.** `docs/launch/product-os/sprint-retros/s6-cleanup-batch.md` згадується як «буде створений по завершенню» — конвертовано з markdown-link у code-mention, щоб не ламати лінкер.
 - **2 unmarked barrel-и:** `apps/server/src/modules/ai-memory/index.ts` і `apps/web/src/shared/forms/index.ts` — обидва задумані як public surface, але consumer-и поки що ходять deep-import-ами. Додано `@scaffolded` маркер з `@nextStep` per AGENTS.md → Hard Rule #10.
 - **2 codemod-и без lifecycle marker:** `scripts/codemods/strip-js-extensions/script.mjs` (раніше) і ~~scripts/codemods/syncedKV/script.mjs~~ (доданий PR #008; видалений у PR #053a-cleanup). Обидва промарковані `// @deprecated`, каталог [`scripts/codemods/README.md`](../../../scripts/codemods/README.md) розширено `syncedKV` рядком.
@@ -22,17 +22,17 @@
 
 ### 1.1 Broken internal links → виправлено (14 у 5 файлах)
 
-| Файл                                                      | Старий шлях                                      | Новий шлях                                                     | Чому drift                                                          |
-| --------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `docs/adr/0009-hosting-split-railway-vercel.md`           | `../../vercel.json` (×4)                         | `../../apps/web/vercel.json`                                   | Vercel SSOT перенесено з root у `apps/web/` (commit `61196120`).    |
-| `docs/initiatives/0006-frontend-routing-...md`            | ../../scripts/bundle-size-guard.ts (×2)          | `../../scripts/check-bundle-size.mjs`                          | Bundle-gate переписано з TS на ESM `.mjs`.                          |
-| `docs/initiatives/0006-frontend-routing-...md`            | ../../apps/web/src/shared/hooks/useHashRouter.ts | `../../apps/web/src/modules/finyk/hooks/useHashRouter.ts`      | Hook переїхав в Finyk-module за planом самої ініціативи.            |
-| `docs/initiatives/0006-frontend-routing-...md`            | `../../vite.config.js`                           | `../../apps/web/vite.config.js`                                | Vite-конфіг живе тільки у `apps/web/`.                              |
-| `docs/initiatives/archive/_0007-design-system-tooling.md` | `../design-system/` (×2)                         | `../design/`                                                   | Дизайн-доки переїхали у `docs/design/` (doc-hygiene PR 2026-05-02). |
-| `docs/initiatives/archive/_0008-platform-hardening.md`    | `../../apps/server/src/__tests__/`               | `../../apps/server/src/http/` + іменовані `rateLimit*.test.ts` | `__tests__/` стало per-module (`http/`, `migrations/__tests__/`).   |
-| `docs/initiatives/archive/_0008-platform-hardening.md`    | `../../apps/server/src/middleware/`              | `../../apps/server/src/http/`                                  | Middleware рефакторнули у `http/`.                                  |
-| `docs/integrations/env-vars.md`                           | ../../apps/web/src/components/VoiceMicButton.tsx | `../../apps/web/src/shared/components/ui/VoiceMicButton.tsx`   | Перенесено в `shared/components/ui/` (за конвенцією).               |
-| `docs/launch/product-os/ftux-sprint-plan.md`              | `[…s6-cleanup-batch.md](../sprint-retros/...)`   | code-reference (link removed)                                  | Файл «буде створений по завершенню» — link-checker не вгадає.       |
+| Файл                                                      | Старий шлях                                      | Новий шлях                                                     | Чому drift                                                                    |
+| --------------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `docs/adr/0009-hosting-split-railway-vercel.md`           | `../../vercel.json` (×4)                         | `../../apps/web/vercel.json`                                   | Vercel SSOT перенесено з root у `apps/web/` (commit `61196120`).              |
+| `docs/initiatives/0006-frontend-routing-...md`            | ../../scripts/bundle-size-guard.ts (×2)          | `../../scripts/check-bundle-size.mjs`                          | Bundle-gate переписано з TS на ESM `.mjs`.                                    |
+| `docs/initiatives/0006-frontend-routing-...md`            | ../../apps/web/src/shared/hooks/useHashRouter.ts | `../../apps/web/src/modules/finyk/hooks/useHashRouter.ts`      | Hook переїхав в Finyk-module за planом самої ініціативи.                      |
+| `docs/initiatives/0006-frontend-routing-...md`            | `../../vite.config.js`                           | `../../apps/web/vite.config.js`                                | Vite-конфіг живе тільки у `apps/web/`.                                        |
+| `docs/initiatives/archive/_0007-design-system-tooling.md` | `../design-system/` (×2)                         | `../design/`                                                   | Дизайн-доки переїхали у `docs/05-design/design/` (doc-hygiene PR 2026-05-02). |
+| `docs/initiatives/archive/_0008-platform-hardening.md`    | `../../apps/server/src/__tests__/`               | `../../apps/server/src/http/` + іменовані `rateLimit*.test.ts` | `__tests__/` стало per-module (`http/`, `migrations/__tests__/`).             |
+| `docs/initiatives/archive/_0008-platform-hardening.md`    | `../../apps/server/src/middleware/`              | `../../apps/server/src/http/`                                  | Middleware рефакторнули у `http/`.                                            |
+| `docs/integrations/env-vars.md`                           | ../../apps/web/src/components/VoiceMicButton.tsx | `../../apps/web/src/shared/components/ui/VoiceMicButton.tsx`   | Перенесено в `shared/components/ui/` (за конвенцією).                         |
+| `docs/launch/product-os/ftux-sprint-plan.md`              | `[…s6-cleanup-batch.md](../sprint-retros/...)`   | code-reference (link removed)                                  | Файл «буде створений по завершенню» — link-checker не вгадає.                 |
 
 `pnpm docs:check-links` тепер `✅All markdown links resolve.` (12 external 404 / aborted — non-fatal, поза scope цього аудиту).
 

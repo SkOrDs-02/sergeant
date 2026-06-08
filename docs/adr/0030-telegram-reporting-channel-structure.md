@@ -184,7 +184,7 @@ PII у P0 alerts, > 5 одночасних bot commands, > 30 workflow × > 8
 
 ## Related
 
-- [ADR-0026: n8n workflow source of truth](0026-n8n-workflow-source-of-truth.md)
+- [ADR-0026: n8n workflow source of truth](./0026-n8n-workflow-source-of-truth.md)
 - [Reporting matrix](../../ops/n8n-workflows/REPORTING-MATRIX.md)
 - [Telegram-as-control-plane analysis](../observability/telegram-control-plane.md)
 - [Modify n8n workflow playbook](../playbooks/modify-n8n-workflow.md)

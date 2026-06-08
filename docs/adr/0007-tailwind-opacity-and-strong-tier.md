@@ -9,8 +9,8 @@
   - [`AGENTS.md`](../../AGENTS.md) — hard rules #8 (`valid-tailwind-opacity`) і #9 (`no-low-contrast-text-on-fill`).
   - [`packages/design-tokens/tailwind-preset.js`](../../packages/design-tokens/tailwind-preset.js) — реєстрація `theme.opacity` + `-strong` шейдів.
   - [`packages/eslint-plugin-sergeant-design/index.js`](../../packages/eslint-plugin-sergeant-design/index.js) — правила `valid-tailwind-opacity` та `no-low-contrast-text-on-fill`.
-  - [`docs/design/brandbook.md`](../design/brandbook.md) — секція WCAG-AA `-strong` Tier (per-family contrast table, decision matrix).
-  - [`docs/design/archive/brand-palette-wcag-aa-proposal.md`](../design/archive/brand-palette-wcag-aa-proposal.md).
+  - [`docs/05-design/design/brandbook.md`](../05-design/design/brandbook.md) — секція WCAG-AA `-strong` Tier (per-family contrast table, decision matrix).
+  - [`docs/05-design/design/archive/brand-palette-wcag-aa-proposal.md`](../05-design/design/archive/brand-palette-wcag-aa-proposal.md).
   - PR-historія: [#814](https://github.com/Skords-01/Sergeant/pull/814) (opacity-scale fix), [#854](https://github.com/Skords-01/Sergeant/pull/854) / [#855](https://github.com/Skords-01/Sergeant/pull/855) / [#857](https://github.com/Skords-01/Sergeant/pull/857) (strong-tier rollout).
 
 ---
@@ -119,7 +119,7 @@ Saturated brand colors (`brand`/`accent`/`success`/`warning`/`danger`/`info`/`fi
    | routine   | `#f97066`                          | `bg-routine-strong`   | `#c23a3a` | 5.30 : 1        |
    | nutrition | `#92cc17`                          | `bg-nutrition-strong` | `#466212` | 6.96 : 1        |
 
-   Повна таблиця — у `docs/design/brandbook.md` → "WCAG-AA `-strong` Tier".
+   Повна таблиця — у `docs/05-design/design/brandbook.md` → "WCAG-AA `-strong` Tier".
 
 2. **ESLint `no-low-contrast-text-on-fill` (`error`)** ловить порушення:
 

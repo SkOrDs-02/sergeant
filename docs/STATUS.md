@@ -73,7 +73,7 @@ pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 4 застосунки + `tool
 | **Інженерія**  | [`architecture/`](./architecture/README.md), [`api/`](./api/README.md), [`web/`](./web/README.md), [`mobile/`](./mobile/README.md), [`testing/`](./testing/README.md), [`integrations/`](./integrations/README.md) | як влаштовано і як білдити         |
 | **Операції**   | [`deploy/`](./deploy/README.md), [`observability/`](./observability/README.md), [`runbooks/`](./runbooks/README.md), [`postmortems/`](./postmortems/README.md), [`ops/`](./ops/README.md)                          | деплой, алерти, інциденти          |
 | **Governance** | [`governance/`](./governance/README.md), [`security/`](./security/README.md), [`adr/`](./adr/README.md)                                                                                                            | hard rules, рішення, безпека       |
-| **Дизайн**     | [`design/`](./design/README.md), [`ui/`](./ui/README.md), [`i18n/`](./i18n/README.md)                                                                                                                              | дизайн-система, патерни            |
+| **Дизайн**     | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md)                                                                                                | дизайн-система, патерни            |
 | **Робота**     | [`initiatives/`](./initiatives/README.md), [`planning/`](./planning/README.md), [`audits/`](./audits/README.md), [`tech-debt/`](./tech-debt/README.md)                                                             | трекери: що оновлювати, коли шипиш |
 
 ## Quick links

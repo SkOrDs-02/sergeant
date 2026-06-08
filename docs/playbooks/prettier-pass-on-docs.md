@@ -1,6 +1,6 @@
 # Playbook: Prettier Pass on `docs/`
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** `pnpm format:check` фейлиться на `docs/**/*.md` / треба прогнати prettier по одному / кільком doc-файлах (як [PR #447](https://github.com/Skords-01/Sergeant/pull/447)).
@@ -84,6 +84,6 @@ git diff '<target-glob>' | head -80
 
 ## See also
 
-- [sync-rn-migration-progress.md](sync-rn-migration-progress.md) — частий випадок, коли цей playbook треба відразу після sync-у.
+- [sync-rn-migration-progress.md](./sync-rn-migration-progress.md) — частий випадок, коли цей playbook треба відразу після sync-у.
 - [`.prettierrc.json`](../../.prettierrc.json), [`.prettierignore`](../../.prettierignore) — конфіг.
 - [AGENTS.md](../../AGENTS.md) — rule #5 (commit scope), rule #7 (no `--no-verify`).

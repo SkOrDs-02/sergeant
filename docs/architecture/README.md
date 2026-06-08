@@ -1,6 +1,6 @@
 # 🏗️ Architecture
 
-> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.
@@ -109,8 +109,8 @@ System architecture and runtime surface inventory for Sergeant.
 
 ## 📌 Related docs
 
-- **Development процес:** [`docs/adr/`](../adr/) — architectural decision records
-- **Operations & alerting:** [`docs/observability/`](../observability/) — SLO, metrics, runbooks
-- **Product roadmap:** [`docs/initiatives/`](../initiatives/) — фази, блокери, timeline
-- **Deployment & CI:** [`docs/deploy/`](../deploy/), [`docs/integrations/railway-vercel.md`](../integrations/railway-vercel.md)
-- **Tech debt & planning:** [`docs/planning/`](../planning/), [`docs/tech-debt/`](../tech-debt/)
+- **Development процес:** [`docs/adr/`](../adr) — architectural decision records
+- **Operations & alerting:** [`docs/observability/`](../observability) — SLO, metrics, runbooks
+- **Product roadmap:** [`docs/initiatives/`](../initiatives) — фази, блокери, timeline
+- **Deployment & CI:** [`docs/deploy/`](../deploy), [`docs/integrations/railway-vercel.md`](../integrations/railway-vercel.md)
+- **Tech debt & planning:** [`docs/planning/`](../planning), [`docs/tech-debt/`](../tech-debt)

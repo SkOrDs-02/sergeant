@@ -1,6 +1,6 @@
 # Playbook: Додати feature flag
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «Сховай фічу X за прапорцем» / будь-яка нова експериментальна фіча, яку треба вмикати/вимикати без редеплою.
@@ -98,4 +98,4 @@ it("hides new feature when flag is off", () => {
 
 - Система прапорців — client-only (`localStorage` через `typedStore`). Server-side прапорців поки немає.
 - Прапорці автоматично синхронізуються між вкладками браузера через підписку `typedStore`.
-- При випуску прапорця (видаленні), йди за плейбуком [cleanup-dead-code](cleanup-dead-code.md) для запису прапорця і всіх `useFlag` / `getFlag` call sites.
+- При випуску прапорця (видаленні), йди за плейбуком [cleanup-dead-code](./cleanup-dead-code.md) для запису прапорця і всіх `useFlag` / `getFlag` call sites.

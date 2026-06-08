@@ -1,6 +1,6 @@
 # Генеральний аудит дизайну, UI/UX та користувацького досвіду
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (historical record — outstanding items відстежуються у [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md))
 > **Initial audit date:** 2026-04-28 (історичний — секція "Виявлені проблеми").
 
@@ -21,7 +21,7 @@
 > збережена як історичний audit trail від 2026-04-28; для поточного виконання
 > дивись актуальний tracker у [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md).
 > Канонічні правила дизайну мають вищий пріоритет за аудиторські приклади:
-> [`docs/design/design-system.md`](../../design/design-system.md).
+> [`docs/05-design/design/design-system.md`](../../05-design/design/design-system.md).
 
 ---
 

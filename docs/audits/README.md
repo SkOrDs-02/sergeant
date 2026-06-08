@@ -92,9 +92,9 @@
 
 Точкові ad-hoc прожарки на конкретний зріз системи з власним internal roadmap (sub-файли + sprint-burndown файли). Часто породжують нові tracker-items, які вливаються у `*-implementation-roadmap.md`.
 
-| Документ                                                   | Опис                                                                          | Status | Implemented | Outstanding |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------- | ------ | ----------- | ----------- |
-| [`2026-05-03-web-deep-dive/`](./2026-05-03-web-deep-dive/) | Web deep-dive — 18-item roadmap (forms, state, security, observability, DevX) | Closed | migrated    | migrated    |
+| Документ                                                  | Опис                                                                          | Status | Implemented | Outstanding |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------- | ------ | ----------- | ----------- |
+| [`2026-05-03-web-deep-dive/`](./2026-05-03-web-deep-dive) | Web deep-dive — 18-item roadmap (forms, state, security, observability, DevX) | Closed | migrated    | migrated    |
 
 ## Process
 

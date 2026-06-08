@@ -305,7 +305,7 @@ OK.
    - `<Form>` примітиви (з §3.1).
    - `<Modal>` (з §3.5) — focus management, ESC, backdrop.
 3. Visual regression — раз на quarter, не на кожен PR.
-4. Документ `docs/ui/storybook.md` зі стандартами «що писати у story» (controls, args, parameters).
+4. Документ `docs/05-design/ui/storybook.md` зі стандартами «що писати у story» (controls, args, parameters).
 
 ---
 

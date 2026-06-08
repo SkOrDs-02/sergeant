@@ -1,6 +1,6 @@
 # Playbook: Виконання батчу planning-тасків (parallel fan-out)
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** «Прожени N тасків з планінгу» / «виконай батч PR-карток з `docs/planning/*`» / «закрий пачку planning-тасків і онови трекери» — коли робота охоплює кілька PR-карток одночасно й потребує паралельних агентів.
@@ -90,7 +90,7 @@ flowchart TD
 
 ### 6. Fast-forward архівація (skip 90-day gate)
 
-Архівуй planning-док **лише коли** робота довела його до повністю виконано: follow-up-и закриті, немає відкритих `- [ ]`, док став frozen-снапшотом. Тоді переноси у [`docs/planning/archive/`](../planning/archive/) **одразу — без 90-денного stabilization-вікна.** Founder має standing-дозвіл на fast-forward (прецедент: [`docs/initiatives/README.md`](../initiatives/README.md) — «90-day waiting period skipped за рішенням founder-а», батчі 2026-05-13 і 2026-06-01).
+Архівуй planning-док **лише коли** робота довела його до повністю виконано: follow-up-и закриті, немає відкритих `- [ ]`, док став frozen-снапшотом. Тоді переноси у [`docs/planning/archive/`](../planning/archive) **одразу — без 90-денного stabilization-вікна.** Founder має standing-дозвіл на fast-forward (прецедент: [`docs/initiatives/README.md`](../initiatives/README.md) — «90-day waiting period skipped за рішенням founder-а», батчі 2026-05-13 і 2026-06-01).
 
 При переносі застав archive-frontmatter з [`docs/planning/README.md`](../planning/README.md) § Конвенція архівації (`Status: Archived (read-only)`, `Source:`, `Purpose:`) і онови inbound-лінки на `archive/`-шлях. Якщо жоден док не дотягнув до повністю виконано цього прогону — архівація це свідомий no-op; **ніколи не форсуй її** за віком чи «виглядає старим».
 

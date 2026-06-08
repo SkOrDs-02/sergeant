@@ -1,6 +1,6 @@
 # Playbook: Sync RN Migration Progress
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** після merge порту web → mobile (див. `port-web-screen-to-mobile.md`) — оновити progress tracker `docs/mobile/react-native-migration.md`.
@@ -64,7 +64,7 @@ Diff має містити **тільки** zміни прогресу + авт�
 - PR description (`.github/PULL_REQUEST_TEMPLATE.md`):
   - Перерахуй кожен merged PR з one-liner-ом, що він портнув.
   - Явно: «docs-only — без code diff-ів».
-  - Лінк на [`docs/playbooks/port-web-screen-to-mobile.md`](port-web-screen-to-mobile.md), якщо PR-и слідували йому.
+  - Лінк на [`docs/playbooks/port-web-screen-to-mobile.md`](./port-web-screen-to-mobile.md), якщо PR-и слідували йому.
 
 ---
 
@@ -84,7 +84,7 @@ Diff має містити **тільки** zміни прогресу + авт�
 
 ## See also
 
-- [port-web-screen-to-mobile.md](port-web-screen-to-mobile.md) — як зробити сам порт (single source of truth).
-- [prettier-pass-on-docs.md](prettier-pass-on-docs.md) — якщо CI лає prettier на цьому doc-у поза sync-flow.
+- [port-web-screen-to-mobile.md](./port-web-screen-to-mobile.md) — як зробити сам порт (single source of truth).
+- [prettier-pass-on-docs.md](./prettier-pass-on-docs.md) — якщо CI лає prettier на цьому doc-у поза sync-flow.
 - [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md) — сам tracker.
 - [AGENTS.md](../../AGENTS.md) — rule #5 (commit scope enum), rule #7 (no `--no-verify`).
