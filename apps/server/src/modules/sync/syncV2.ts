@@ -8,13 +8,10 @@ import {
 } from "../../http/schemas.js";
 import { logger } from "../../obs/logger.js";
 import {
-  syncDurationMs,
-  syncOperationsTotal,
   syncOpLogApplyTotal,
   syncOpLogNullOriginDeviceIdTotal,
   syncOpLogPullLagMs,
   syncOpLogPullQueueDepth,
-  syncPayloadBytes,
 } from "../../obs/metrics.js";
 import { notifySyncV2OpsApplied, type SyncV2StreamOp } from "./syncV2Stream.js";
 import { elapsedMs } from "../../lib/timing.js";
@@ -26,7 +23,10 @@ import {
   type RejectReason,
 } from "./syncV2-types.js";
 import { readOriginDeviceId, recordSyncV2 } from "./syncV2-core.js";
-import { applyRoutineEntries, applyRoutineStreaks } from "./routine/applySync.js";
+import {
+  applyRoutineEntries,
+  applyRoutineStreaks,
+} from "./routine/applySync.js";
 import {
   applyFizrukWorkouts,
   applyFizrukItems,
@@ -63,8 +63,6 @@ export { APPLY_REJECT_REASONS, ENGINE_REJECT_REASONS };
 export type { ApplyRejectReason, EngineRejectReason, RejectReason };
 
 type WithSessionUser = Request & { user?: { id: string } };
-
-type SyncV2OpKind = "v2_push" | "v2_pull";
 
 type SyncV2Outcome =
   | "ok"
@@ -107,8 +105,6 @@ interface PullRow {
   server_ts: Date;
   origin_device_id: string | null;
 }
-
-const SYNC_V2_MODULE = "v2";
 
 const CLOCK_SKEW_FORWARD_MS = 60 * 60 * 1000;
 
@@ -427,6 +423,7 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
       row: r.row,
       client_ts: r.client_ts.toISOString(),
       server_ts: r.server_ts.toISOString(),
+      // eslint-disable-next-line sergeant-design/no-bigint-string -- origin_device_id is an opaque TEXT device id (migration 027_sync_op_log.sql), not a pg bigint numeric; Hard Rule #1 N/A.
       origin_device_id: r.origin_device_id,
     }));
 

@@ -2,8 +2,6 @@
 // SyncV2 Types — Stage 1 рефакторингу syncV2.ts
 // ============================================================================
 
-type SyncV2OpKind = "v2_push" | "v2_pull";
-
 export type SyncV2Outcome =
   | "ok"
   | "empty"
