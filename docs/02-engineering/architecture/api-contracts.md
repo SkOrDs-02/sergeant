@@ -159,7 +159,7 @@ jobs:
 
 ### `openclaw` — навмисно не покритий
 
-OpenClaw — це Telegram-бот, який є **отримувачем webhook-ів від Telegram** і не консумить `@sergeant/api-client` для HTTP-комунікації. Контракти між Telegram → OpenClaw перевіряються інакше (signature-validation у `tools/console/src/openclaw/` + smoke-test). У consumer-driven контрактах OpenClaw не має сенсу — у нього немає consumer-боку.
+OpenClaw — це Telegram-бот, який є **отримувачем webhook-ів від Telegram** і не консумить `@sergeant/api-client` для HTTP-комунікації. Контракти між Telegram → OpenClaw перевіряються інакше (signature-validation у `tools/openclaw/src/openclaw/` + smoke-test). У consumer-driven контрактах OpenClaw не має сенсу — у нього немає consumer-боку.
 
 ## 🔁 Pact файл як артефакт
 
@@ -190,4 +190,4 @@ OpenClaw — це Telegram-бот, який є **отримувачем webhook-
 5. **Streaming SSE контракт** для `/api/v1/chat` — Pact JSON не виражає SSE-фрейми; альтернатива — окремий `chat-stream.contract.test.ts` із власним адаптером.
 6. **Fizruk + openclaw покриття** — обидві персони навмисно не покриті v2:
    - **fizruk** — local-first CRDT sync через `/api/v2/sync/*`; sync-payload бінарний (Yjs), не JSON, тому Pact без custom encoder-а не підходить. Альтернатива — окремий contract test за байт-вовнішньою фіксурою.
-   - **openclaw** — Telegram-бот, що консумить власний internal-API (`/api/internal/openclaw/*`) через Bearer-ключ, а не через `@sergeant/api-client`. Якщо потрібна contract-валідація — це окрема (consumer=`sergeant-openclaw-bot`, provider=`sergeant-server-internal`) pact-пара, що жила б у `tools/console/src/__tests__/contracts/`.
+   - **openclaw** — Telegram-бот, що консумить власний internal-API (`/api/internal/openclaw/*`) через Bearer-ключ, а не через `@sergeant/api-client`. Якщо потрібна contract-валідація — це окрема (consumer=`sergeant-openclaw-bot`, provider=`sergeant-server-internal`) pact-пара, що жила б у `tools/openclaw/src/__tests__/contracts/`.

@@ -20,7 +20,7 @@
 | Змінна                  | Дефолт                                      | Що ламає, якщо не задано                                                                                                                              |
 | ----------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`          | `postgresql://hub:hub@localhost:5432/hub`   | Сервер не стартує. Локально — `pnpm db:up` піднімає Postgres у Docker. Railway — Reference `${{ Postgres.DATABASE_URL }}`.                            |
-| `BETTER_AUTH_URL`       | `http://localhost:3000`                     | Better Auth callback URL. Авто-підставляється, якщо є `REPLIT_DEV_DOMAIN`.                                                                            |
+| `BETTER_AUTH_URL`       | `http://localhost:3000`                     | Better Auth callback URL. Дефолт — `http://localhost:$PORT`; у проді встав публічний HTTPS API URL.                                                   |
 | `BETTER_AUTH_SECRET`    | `change_me_to_a_long_random_string_32chars` | Сесійні кукі неможливо підписати → 500 на /api/auth/\*. Мінімум 32 символи; згенерувати: `openssl rand -base64 32`.                                   |
 | `ANTHROPIC_API_KEY`     | `sk-ant-api03-...`                          | HubChat / Fizruk / Nutrition AI повертають 503. Без ключа клієнт виходить раніше з помилкою quota.                                                    |
 | `USDA_FDC_API_KEY`      | _empty_                                     | Fallback на DEMO_KEY (40 req/hr shared). У production обов'язковий — інакше штрихкод-сканер падає на 429. Безкоштовно: api.data.gov.                  |
@@ -324,10 +324,6 @@ Graceful shutdown.
 
 Одинокий regex (без прапорців), який повинен матчити допустимі origin-и. Використовується **на доповнення** до `ALLOWED_ORIGINS` (не замість). Приклад: `^https://pr-\d+\.preview\.example\.com$`.
 
-### `SERVER_MODE` _(optional)_
-
-`replit` | `api` | `full`. Авто-детектиться по `REPLIT_DEV_DOMAIN`, якщо не задано.
-
 ### `TRUST_PROXY` _(optional)_
 
 Скільки upstream-проксі hops довіряти при парсингу `X-Forwarded-For`. **Дефолт для Railway = 1** (Railway edge proxy). Якщо додаєте Cloudflare — підніміть кількість hops або задайте explicit CIDR allowlist. Невалідне значення (наприклад `true`) падає при boot-у.
@@ -457,17 +453,6 @@ Base URL Railway-API, який [`apps/web/middleware.ts`](../../../apps/web/midd
 ### Server-side (event ingestion)
 
 - `POSTHOG_PROJECT_API_KEY=phc_…` — Project ingestion key (той самий public ключ, що й `VITE_POSTHOG_KEY`). Використовується в `capturePostHogEvent()` для server-side трекінгу подій з webhook-ів / background workers (PR-09 — `subscription_started` зі Stripe). Без ключа capture-helper повертає `outcome: "skipped"` і caller (webhook handler) успішно завершує процесинг — аналітика best-effort.
-
----
-
-## 15. Replit (опційно, авто-визначається)
-
-Sergeant може хоститись на Replit dev-середовищі. Sentinel-змінні авто-детектяться:
-
-- `REPLIT_DEV_DOMAIN=your-repl.repl.co`
-- `REPLIT_DOMAINS=your-repl.repl.co`
-
-Якщо виставлені — `BETTER_AUTH_URL` і `SERVER_MODE` авто-резолвляться.
 
 ---
 

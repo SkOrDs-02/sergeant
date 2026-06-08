@@ -10,6 +10,7 @@
   - [`packages/shared/src/schemas/api.ts`](../../../packages/shared/src/schemas/api.ts) — canonical zod-схеми (single source of truth).
   - [`docs/02-engineering/api/openapi.json`](../../02-engineering/api/openapi.json) — згенерований spec (committed).
   - [`scripts/api/generate-openapi.mjs`](../../../scripts/api/generate-openapi.mjs) — generator.
+  - [`docs/04-governance/adr/0062-openapi-source-of-truth.md`](./0062-openapi-source-of-truth.md) — пізніший ADR, що підтверджує code-first (Zod→OpenAPI) як канонічне source-of-truth (доповнює, не суперечить).
   - [`scripts/api/check-openapi-fresh.mjs`](../../../scripts/api/check-openapi-fresh.mjs) — CI freshness check.
   - `.github/workflows/openapi-freshness.yml` — PR gate (додасть user manually після merge цього PR; шаблон у тілі цього ADR).
   - AGENTS.md → "Hard rules" → rule #3 — API contract drift.

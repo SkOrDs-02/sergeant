@@ -43,7 +43,7 @@ export interface ParseTrustProxyInput {
   /** Сире значення з env (як правило `process.env.TRUST_PROXY`). */
   raw: string | undefined | null;
   /**
-   * Default-значення, якщо `raw` порожнє (Railway → 1; Replit → undefined).
+   * Default-значення, якщо `raw` порожнє (Railway → 1).
    * Передавайте `undefined`, щоб не виставляти `trust proxy` взагалі —
    * `app.ts` пропустить виклик `app.set("trust proxy", …)`.
    */

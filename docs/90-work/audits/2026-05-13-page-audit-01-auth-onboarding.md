@@ -1,7 +1,7 @@
 # Page Audit — Auth & Onboarding pages
 
 > **Last validated:** 2026-05-13 by Devin (child session).
-> **Status:** Active
+> **Status:** Closed (2026-06-08 — ~24/25 implemented, 0 outstanding; F4 dead-code already deleted)
 > **Auditor:** child Devin session (parent: <https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40>)
 > **Scope slug:** `01-auth-onboarding`
 > **Audit type:** static analysis (no dev server, no code changes)

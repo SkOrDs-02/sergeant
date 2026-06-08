@@ -4,7 +4,7 @@
   "generated_at": "2026-06-08",
   "counts": {
     "adr": 63,
-    "audit": 17,
+    "audit": 18,
     "hard-rule": 26,
     "initiative": 48,
     "playbook": 61,
@@ -738,7 +738,7 @@
       "type": "audit",
       "title": "Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13)",
       "path": "docs/90-work/audits/2026-05-13-dead-code-hard-rules-roast.md",
-      "status": "Active",
+      "status": "Closed (2026-06-08 — 17/17 implemented, 0 actionable outstanding; residual = knip false-positive watchlist, не actionable)",
       "tier": "core",
       "meta": {}
     },
@@ -747,7 +747,7 @@
       "type": "audit",
       "title": "Page Audit — Auth & Onboarding pages",
       "path": "docs/90-work/audits/2026-05-13-page-audit-01-auth-onboarding.md",
-      "status": "Active",
+      "status": "Closed (2026-06-08 — ~24/25 implemented, 0 outstanding; F4 dead-code already deleted)",
       "tier": "core",
       "meta": {}
     },
@@ -847,6 +847,15 @@
       "title": "HubSettings lazy boundaries — CLS + chunk-load follow-up",
       "path": "docs/90-work/audits/2026-05-25-hubsettings-cls-chunk-load.md",
       "status": "Open",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-06-08-codebase-cleanup-audit",
+      "type": "audit",
+      "title": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф",
+      "path": "docs/90-work/audits/2026-06-08-codebase-cleanup-audit.md",
+      "status": "Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding)",
       "tier": "core",
       "meta": {}
     },
@@ -1296,7 +1305,7 @@
       "type": "initiative",
       "title": "0017 — Hub Settings & Reports mount perf",
       "path": "docs/90-work/initiatives/0017-hub-tabs-mount-perf.md",
-      "status": "In progress — code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worker) explicitly skipped pending next 30-day RUM cut on `aggregateReport` P95 > 50 ms — re-opens as a discrete follow-up only if the threshold trips. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.",
+      "status": "Closed (2026-06-08 — code-complete; Sprint 0 + Sprint 1 + Sprint 2 merged). Sprint 3 (Web Worker) is a **discrete conditional follow-up** — re-opens ТІЛЬКИ якщо post-merge PostHog `aggregateReport` P95 > 50 ms (next 30-day RUM cut); not tracked as open work here. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.",
       "tier": "core",
       "meta": {
         "number": 17,
@@ -5373,6 +5382,11 @@
       "from": "audit:2026-05-13-web-architecture-state-roast",
       "to": "pr:65",
       "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-08-codebase-cleanup-audit",
+      "to": "hard-rule:10",
+      "type": "references"
     },
     {
       "from": "audit:2026-08-XX-sync-engine-roast",

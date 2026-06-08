@@ -72,7 +72,7 @@ CI hard-rules ловляться різними механізмами. Стар
 - Config-as-code: `ops/openclaw/` копіюється в runtime при деплої; нова bot identity: `@OpenClaw_sergeant_v2_bot`
 - Hard Rule #20: ніяких PATs у production — `assertStartupEnv()` блокує запуск
 
-**Anthropic SDK (ADR-0057):** `tools/console` використовує `@anthropic-ai/sdk@0.95.2`. Prompt caching opt-in через `ANTHROPIC_PROMPT_CACHE=1`. Старі SDK ≤0.36.x приклади — неактуальні.
+**Anthropic SDK (ADR-0057):** `tools/openclaw` використовує `@anthropic-ai/sdk@0.95.2`. Prompt caching opt-in через `ANTHROPIC_PROMPT_CACHE=1`. Старі SDK ≤0.36.x приклади — неактуальні.
 
 **Білінг (ADR-0051):** тільки `plan: 'free' | 'pro'`. Plus tier і pay-per-feature видалені.
 

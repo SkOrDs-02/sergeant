@@ -3,24 +3,24 @@
   "version": 1,
   "generated_at": "2026-06-08",
   "sourceHashes": {
-    "knowledge-graph": "cc930032234d69360b8215c42c4920ddcf13d4e89511cdd07cc3affe3183187c",
-    "symbol-index": "54f587f8b3471999b47e603839b273a9d1601d92f608c7b44897def570df61ed"
+    "knowledge-graph": "2cf5b93451890bc4e93a8796bd5ebf86275733c36be84a55ece921facc5028af",
+    "symbol-index": "0c0a01fd995027f830059df5a12a348499dd2994de43e19d852ce8666a3f10e4"
   },
   "counts": {
     "adr": 63,
-    "audit": 17,
+    "audit": 18,
     "export": 298,
     "hard-rule": 26,
     "initiative": 48,
     "playbook": 61,
     "skill": 33,
-    "total": 546
+    "total": 547
   },
   "chunks": [
     {
       "id": "adr:0001",
       "type": "adr",
-      "path": "docs/adr/0001-monetization-architecture.md",
+      "path": "docs/04-governance/adr/0001-monetization-architecture.md",
       "line": 1,
       "title": "ADR-0001: Monetization architecture (16 рішень перед стартом)",
       "tier": "core",
@@ -31,7 +31,7 @@
     {
       "id": "adr:0002",
       "type": "adr",
-      "path": "docs/adr/0002-tool-lifecycle.md",
+      "path": "docs/04-governance/adr/0002-tool-lifecycle.md",
       "line": 1,
       "title": "ADR-0002: AI tool lifecycle (proposal → safety review → rollout → KPIs)",
       "tier": "core",
@@ -42,7 +42,7 @@
     {
       "id": "adr:0003",
       "type": "adr",
-      "path": "docs/adr/0003-refund-and-dispute-handling.md",
+      "path": "docs/04-governance/adr/0003-refund-and-dispute-handling.md",
       "line": 1,
       "title": "ADR-0003: Refund and dispute handling",
       "tier": "core",
@@ -53,7 +53,7 @@
     {
       "id": "adr:0004",
       "type": "adr",
-      "path": "docs/adr/0004-cloudsync-lww-conflict-resolution.md",
+      "path": "docs/04-governance/adr/0004-cloudsync-lww-conflict-resolution.md",
       "line": 1,
       "title": "ADR-0004: CloudSync — LWW conflict resolution",
       "tier": "core",
@@ -64,7 +64,7 @@
     {
       "id": "adr:0005",
       "type": "adr",
-      "path": "docs/adr/0005-anthropic-model-selection-and-prompt-caching.md",
+      "path": "docs/04-governance/adr/0005-anthropic-model-selection-and-prompt-caching.md",
       "line": 1,
       "title": "ADR-0005: Anthropic model selection + prompt caching",
       "tier": "core",
@@ -75,7 +75,7 @@
     {
       "id": "adr:0006",
       "type": "adr",
-      "path": "docs/adr/0006-rq-keys-factory.md",
+      "path": "docs/04-governance/adr/0006-rq-keys-factory.md",
       "line": 1,
       "title": "ADR-0006: React Query keys via centralized factory (no inline tuples)",
       "tier": "core",
@@ -86,7 +86,7 @@
     {
       "id": "adr:0007",
       "type": "adr",
-      "path": "docs/adr/0007-tailwind-opacity-and-strong-tier.md",
+      "path": "docs/04-governance/adr/0007-tailwind-opacity-and-strong-tier.md",
       "line": 1,
       "title": "ADR-0007: Tailwind colour-opacity scale + WCAG-AA `-strong` tier",
       "tier": "core",
@@ -97,7 +97,7 @@
     {
       "id": "adr:0008",
       "type": "adr",
-      "path": "docs/adr/0008-feature-flags.md",
+      "path": "docs/04-governance/adr/0008-feature-flags.md",
       "line": 1,
       "title": "ADR-0008: Feature flags — client-only registry over typedStore",
       "tier": "core",
@@ -108,7 +108,7 @@
     {
       "id": "adr:0009",
       "type": "adr",
-      "path": "docs/adr/0009-hosting-split-railway-vercel.md",
+      "path": "docs/04-governance/adr/0009-hosting-split-railway-vercel.md",
       "line": 1,
       "title": "ADR-0009: Hosting split — Railway (API + Postgres) + Vercel (web)",
       "tier": "core",
@@ -119,18 +119,18 @@
     {
       "id": "adr:0010",
       "type": "adr",
-      "path": "docs/adr/0010-mobile-dual-track-capacitor-expo.md",
+      "path": "docs/04-governance/adr/0010-mobile-dual-track-capacitor-expo.md",
       "line": 1,
       "title": "ADR-0010: Mobile dual-track — Capacitor shell + Expo native",
       "tier": "core",
       "status": "Superseded by ADR-0052",
-      "text": "ADR-0010: Mobile dual-track — Capacitor shell + Expo native · adr:0010 · adr · Superseded by ADR-0052 · 10 · 0. TL;DR · Sunset schedule · Exit dashboard (читається з [docs/architecture/platforms.md](../architecture/platforms.md#0-feature-parity-матриця-web-shell-rn)) · Що зміниться у репо на T₀, T₁, T₂ · Shell-tax baseline (для Outcome ініціативи 0002) · ADR-10.1 — Чому взагалі dual-track, а не одна платформа · Status · Context · Decision · Consequences · Alternatives considered · Exit criteria · ADR-10.2 — Bundle-ID, бренд, coexistence на девайсі · ADR-10.3 — Code sharing: @sergeant/shared + domain-пакети",
-      "contentHash": "b111e260b264e08dd9d3c2aba45996cab7f11ea725f30321f9831a36ab1ab04c"
+      "text": "ADR-0010: Mobile dual-track — Capacitor shell + Expo native · adr:0010 · adr · Superseded by ADR-0052 · 10 · 0. TL;DR · Sunset schedule · Exit dashboard (читається з [docs/02-engineering/architecture/platforms.md](../../02-engineering/architecture/platforms.md#0-feature-parity-матриця-web-shell-rn)) · Що зміниться у репо на T₀, T₁, T₂ · Shell-tax baseline (для Outcome ініціативи 0002) · ADR-10.1 — Чому взагалі dual-track, а не одна платформа · Status · Context · Decision · Consequences · Alternatives considered · Exit criteria · ADR-10.2 — Bundle-ID, бренд, coexistence на девайсі · ADR-10.3 — Code sharing: @sergeant/shared + domain-пакети",
+      "contentHash": "297764c70235aa917c8c45873344ab8653c6dbd8ef2a10abf700eb7ea36cb5d2"
     },
     {
       "id": "adr:0011",
       "type": "adr",
-      "path": "docs/adr/0011-local-first-storage.md",
+      "path": "docs/04-governance/adr/0011-local-first-storage.md",
       "line": 1,
       "title": "ADR-0011: Local-first storage — клієнт як джерело істини, сервер як LWW-реплікатор",
       "tier": "core",
@@ -141,7 +141,7 @@
     {
       "id": "adr:0012",
       "type": "adr",
-      "path": "docs/adr/0012-rls-as-authz-boundary.md",
+      "path": "docs/04-governance/adr/0012-rls-as-authz-boundary.md",
       "line": 1,
       "title": "ADR-0012: RLS як authz boundary — цільова модель, наразі app-enforced",
       "tier": "core",
@@ -152,7 +152,7 @@
     {
       "id": "adr:0013",
       "type": "adr",
-      "path": "docs/adr/0013-db-migrations-conventions.md",
+      "path": "docs/04-governance/adr/0013-db-migrations-conventions.md",
       "line": 1,
       "title": "ADR-0013: DB migrations conventions — sequential, forward-only, two-phase DROP",
       "tier": "core",
@@ -163,7 +163,7 @@
     {
       "id": "adr:0014",
       "type": "adr",
-      "path": "docs/adr/0014-bigint-to-number-policy.md",
+      "path": "docs/04-governance/adr/0014-bigint-to-number-policy.md",
       "line": 1,
       "title": "ADR-0014: `bigint` → `number` coercion у API-серіалізаторах",
       "tier": "core",
@@ -174,7 +174,7 @@
     {
       "id": "adr:0015",
       "type": "adr",
-      "path": "docs/adr/0015-observability-stack.md",
+      "path": "docs/04-governance/adr/0015-observability-stack.md",
       "line": 1,
       "title": "ADR-0015: Observability stack — Pino + Prometheus + Sentry",
       "tier": "core",
@@ -185,7 +185,7 @@
     {
       "id": "adr:0016",
       "type": "adr",
-      "path": "docs/adr/0016-user-deletion-and-pii-handling.md",
+      "path": "docs/04-governance/adr/0016-user-deletion-and-pii-handling.md",
       "line": 1,
       "title": "ADR-0016: User deletion and PII handling",
       "tier": "core",
@@ -196,7 +196,7 @@
     {
       "id": "adr:0017",
       "type": "adr",
-      "path": "docs/adr/0017-better-auth-choice-and-session-model.md",
+      "path": "docs/04-governance/adr/0017-better-auth-choice-and-session-model.md",
       "line": 1,
       "title": "ADR-0017: Better Auth choice and session model",
       "tier": "core",
@@ -207,7 +207,7 @@
     {
       "id": "adr:0018",
       "type": "adr",
-      "path": "docs/adr/0018-api-versioning-policy.md",
+      "path": "docs/04-governance/adr/0018-api-versioning-policy.md",
       "line": 1,
       "title": "ADR-0018: API versioning policy (`/api/v1`)",
       "tier": "core",
@@ -218,7 +218,7 @@
     {
       "id": "adr:0019",
       "type": "adr",
-      "path": "docs/adr/0019-push-notifications.md",
+      "path": "docs/04-governance/adr/0019-push-notifications.md",
       "line": 1,
       "title": "ADR-0019: Push notifications — server-driven fan-out (web + APNs + FCM)",
       "tier": "core",
@@ -229,7 +229,7 @@
     {
       "id": "adr:0020",
       "type": "adr",
-      "path": "docs/adr/0020-testing-pyramid.md",
+      "path": "docs/04-governance/adr/0020-testing-pyramid.md",
       "line": 1,
       "title": "ADR-0020: Testing pyramid — unit / integration / a11y / smoke-e2e",
       "tier": "core",
@@ -240,7 +240,7 @@
     {
       "id": "adr:0021",
       "type": "adr",
-      "path": "docs/adr/0021-memory-bank.md",
+      "path": "docs/04-governance/adr/0021-memory-bank.md",
       "line": 1,
       "title": "ADR-0021: Memory Bank — local-first AI user-fact store",
       "tier": "core",
@@ -251,7 +251,7 @@
     {
       "id": "adr:0022",
       "type": "adr",
-      "path": "docs/adr/0022-atomic-sql-quotas.md",
+      "path": "docs/04-governance/adr/0022-atomic-sql-quotas.md",
       "line": 1,
       "title": "ADR-0022: Atomic SQL daily quotas — `INSERT ... ON CONFLICT DO UPDATE WHERE`",
       "tier": "core",
@@ -262,7 +262,7 @@
     {
       "id": "adr:0023",
       "type": "adr",
-      "path": "docs/adr/0023-turbo-monorepo-runner.md",
+      "path": "docs/04-governance/adr/0023-turbo-monorepo-runner.md",
       "line": 1,
       "title": "ADR-0023: Turborepo as monorepo task runner",
       "tier": "core",
@@ -273,7 +273,7 @@
     {
       "id": "adr:0024",
       "type": "adr",
-      "path": "docs/adr/0024-monorepo-apps-packages-split.md",
+      "path": "docs/04-governance/adr/0024-monorepo-apps-packages-split.md",
       "line": 1,
       "title": "ADR-0024: Monorepo split — `apps/*` (deployables) + `packages/*` (libraries)",
       "tier": "core",
@@ -284,7 +284,7 @@
     {
       "id": "adr:0025",
       "type": "adr",
-      "path": "docs/adr/0025-openapi-generation.md",
+      "path": "docs/04-governance/adr/0025-openapi-generation.md",
       "line": 1,
       "title": "ADR-0025: OpenAPI 3.1 spec — generated from canonical zod-schemas",
       "tier": "core",
@@ -295,7 +295,7 @@
     {
       "id": "adr:0026",
       "type": "adr",
-      "path": "docs/adr/0026-n8n-workflow-source-of-truth.md",
+      "path": "docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md",
       "line": 1,
       "title": "ADR-0026: n8n — джерело істини для воркфлоу",
       "tier": "core",
@@ -305,7 +305,7 @@
     {
       "id": "adr:0027",
       "type": "adr",
-      "path": "docs/adr/0027-openclaw-console-mcp-policy.md",
+      "path": "docs/04-governance/adr/0027-openclaw-console-mcp-policy.md",
       "line": 1,
       "title": "ADR-0027: політика OpenClaw, Console та MCP",
       "tier": "core",
@@ -315,7 +315,7 @@
     {
       "id": "adr:0028",
       "type": "adr",
-      "path": "docs/adr/0028-pgvector-ai-memory.md",
+      "path": "docs/04-governance/adr/0028-pgvector-ai-memory.md",
       "line": 1,
       "title": "ADR-0028: pgvector + Voyage embeddings for AI semantic memory",
       "tier": "core",
@@ -326,7 +326,7 @@
     {
       "id": "adr:0030",
       "type": "adr",
-      "path": "docs/adr/0030-telegram-reporting-channel-structure.md",
+      "path": "docs/04-governance/adr/0030-telegram-reporting-channel-structure.md",
       "line": 1,
       "title": "ADR-0030: Структура Telegram-каналів для n8n reporting",
       "tier": "core",
@@ -337,7 +337,7 @@
     {
       "id": "adr:0031",
       "type": "adr",
-      "path": "docs/adr/0031-openclaw-v0-telegram-cofounder.md",
+      "path": "docs/04-governance/adr/0031-openclaw-v0-telegram-cofounder.md",
       "line": 1,
       "title": "ADR-0031: OpenClaw v0 — Telegram-only co-founder bot",
       "tier": "core",
@@ -348,7 +348,7 @@
     {
       "id": "adr:0032",
       "type": "adr",
-      "path": "docs/adr/0032-console-consolidated-into-openclaw.md",
+      "path": "docs/04-governance/adr/0032-console-consolidated-into-openclaw.md",
       "line": 1,
       "title": "ADR-0032: Sergeant Console зливається в OpenClaw bot",
       "tier": "core",
@@ -359,7 +359,7 @@
     {
       "id": "adr:0033",
       "type": "adr",
-      "path": "docs/adr/0033-openclaw-multi-personas-and-council.md",
+      "path": "docs/04-governance/adr/0033-openclaw-multi-personas-and-council.md",
       "line": 1,
       "title": "ADR-0033: OpenClaw multi-personas + `/council` round-table",
       "tier": "core",
@@ -370,7 +370,7 @@
     {
       "id": "adr:0034",
       "type": "adr",
-      "path": "docs/adr/0034-visual-regression-testing.md",
+      "path": "docs/04-governance/adr/0034-visual-regression-testing.md",
       "line": 1,
       "title": "ADR-0034: Visual regression testing via Argos + Playwright",
       "tier": "core",
@@ -381,7 +381,7 @@
     {
       "id": "adr:0035",
       "type": "adr",
-      "path": "docs/adr/0035-distributed-tracing-opentelemetry.md",
+      "path": "docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md",
       "line": 1,
       "title": "ADR-0035: Distributed tracing — web→server via OpenTelemetry",
       "tier": "core",
@@ -392,7 +392,7 @@
     {
       "id": "adr:0036",
       "type": "adr",
-      "path": "docs/adr/0036-openclaw-write-tools-with-approval.md",
+      "path": "docs/04-governance/adr/0036-openclaw-write-tools-with-approval.md",
       "line": 1,
       "title": "ADR-0036: OpenClaw write-tools with founder-approval flow",
       "tier": "core",
@@ -403,7 +403,7 @@
     {
       "id": "adr:0037",
       "type": "adr",
-      "path": "docs/adr/0037-openclaw-write-audit-persistence.md",
+      "path": "docs/04-governance/adr/0037-openclaw-write-audit-persistence.md",
       "line": 1,
       "title": "ADR-0037: OpenClaw Phase 4.5 — DB-persistent write-audit log",
       "tier": "core",
@@ -414,7 +414,7 @@
     {
       "id": "adr:0038",
       "type": "adr",
-      "path": "docs/adr/0038-tg-alert-acks-and-escalation.md",
+      "path": "docs/04-governance/adr/0038-tg-alert-acks-and-escalation.md",
       "line": 1,
       "title": "ADR-0038: Telegram alert acknowledgement + 15-min escalation",
       "tier": "core",
@@ -425,7 +425,7 @@
     {
       "id": "adr:0039",
       "type": "adr",
-      "path": "docs/adr/0039-anthropic-prompt-cache-policy.md",
+      "path": "docs/04-governance/adr/0039-anthropic-prompt-cache-policy.md",
       "line": 1,
       "title": "ADR-0039: Anthropic prompt-cache breakpoint policy",
       "tier": "core",
@@ -436,7 +436,7 @@
     {
       "id": "adr:0041",
       "type": "adr",
-      "path": "docs/adr/0041-openclaw-telegram-webhook.md",
+      "path": "docs/04-governance/adr/0041-openclaw-telegram-webhook.md",
       "line": 1,
       "title": "ADR-0041: OpenClaw Telegram delivery via webhook",
       "tier": "core",
@@ -447,7 +447,7 @@
     {
       "id": "adr:0042",
       "type": "adr",
-      "path": "docs/adr/0042-password-hashing-strategy.md",
+      "path": "docs/04-governance/adr/0042-password-hashing-strategy.md",
       "line": 1,
       "title": "ADR-0042: Password hashing strategy — scrypt (Better Auth default), `MAX_PASSWORD_LENGTH=256`",
       "tier": "core",
@@ -458,7 +458,7 @@
     {
       "id": "adr:0043",
       "type": "adr",
-      "path": "docs/adr/0043-cloudsync-v1-sunset.md",
+      "path": "docs/04-governance/adr/0043-cloudsync-v1-sunset.md",
       "line": 1,
       "title": "ADR-0043: CloudSync v1 sunset — RFC 8594 deprecation headers + 6-phase rollout",
       "tier": "core",
@@ -469,7 +469,7 @@
     {
       "id": "adr:0044",
       "type": "adr",
-      "path": "docs/adr/0044-renovate-vs-dependabot.md",
+      "path": "docs/04-governance/adr/0044-renovate-vs-dependabot.md",
       "line": 1,
       "title": "ADR-0044: Renovate as the primary dep-update tool, Dependabot as security-only fallback",
       "tier": "core",
@@ -480,7 +480,7 @@
     {
       "id": "adr:0045",
       "type": "adr",
-      "path": "docs/adr/0045-hard-rules-taxonomy.md",
+      "path": "docs/04-governance/adr/0045-hard-rules-taxonomy.md",
       "line": 1,
       "title": "ADR-0045: Hard Rules taxonomy — blocker-invariant / lint-enforced-convention / active-initiative",
       "tier": "core",
@@ -491,7 +491,7 @@
     {
       "id": "adr:0046",
       "type": "adr",
-      "path": "docs/adr/0046-storybook-vrt-scope.md",
+      "path": "docs/04-governance/adr/0046-storybook-vrt-scope.md",
       "line": 1,
       "title": "ADR-0046: Storybook visual regression scope",
       "tier": "core",
@@ -502,18 +502,18 @@
     {
       "id": "adr:0047",
       "type": "adr",
-      "path": "docs/adr/0047-cloudsync-v1-410-gone.md",
+      "path": "docs/04-governance/adr/0047-cloudsync-v1-410-gone.md",
       "line": 1,
       "title": "ADR-0047: CloudSync v1 — T₀ executed (410 Gone)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0047: CloudSync v1 — T₀ executed (410 Gone) · adr:0047 · adr · Active · 47 · 2026-05-13 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Risks / Followups · Status (2026-05-06) · Amendment (2026-05-10): Final removal exit-criteria",
-      "contentHash": "2153a4090911bae43508527e39ae68d2a1efd8ef17315852a7fd44b7c161fd61"
+      "text": "ADR-0047: CloudSync v1 — T₀ executed (410 Gone) · adr:0047 · adr · Active · 47 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Risks / Followups · Status (2026-05-06) · Amendment (2026-05-10): Final removal exit-criteria",
+      "contentHash": "bb3212f626578d1df7120ce6e7dd66df761c9723443911f56d90f91ce8507da8"
     },
     {
       "id": "adr:0048",
       "type": "adr",
-      "path": "docs/adr/0048-apns-provider-library.md",
+      "path": "docs/04-governance/adr/0048-apns-provider-library.md",
       "line": 1,
       "title": "ADR-0048: APNs provider library",
       "tier": "core",
@@ -524,7 +524,7 @@
     {
       "id": "adr:0049",
       "type": "adr",
-      "path": "docs/adr/0049-auth-vendor-risk.md",
+      "path": "docs/04-governance/adr/0049-auth-vendor-risk.md",
       "line": 1,
       "title": "ADR-0049: Auth vendor risk and migration plan (Better Auth → Auth.js / Lucia fallback)",
       "tier": "core",
@@ -535,18 +535,18 @@
     {
       "id": "adr:0050",
       "type": "adr",
-      "path": "docs/adr/0050-typescript-major-version-policy.md",
+      "path": "docs/04-governance/adr/0050-typescript-major-version-policy.md",
       "line": 1,
       "title": "ADR-0050: TypeScript major-version policy + `@types/node` pinning",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-05-13 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
-      "contentHash": "f1d39ff9b106b0eddb94d06b80fab2c86aee4f09431d840418aa659ac5156f2a"
+      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-06-08 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
+      "contentHash": "a1a4a3df73e13f8b206787706800e20e799a83d6ffb1b5f5955c28f1bfbdd727"
     },
     {
       "id": "adr:0051",
       "type": "adr",
-      "path": "docs/adr/0051-pricing-v3-single-tier.md",
+      "path": "docs/04-governance/adr/0051-pricing-v3-single-tier.md",
       "line": 1,
       "title": "ADR-0051: Pricing v3 — Free + Pro, single paid tier",
       "tier": "core",
@@ -557,7 +557,7 @@
     {
       "id": "adr:0052",
       "type": "adr",
-      "path": "docs/adr/0052-mobile-strategy-capacitor-primary.md",
+      "path": "docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md",
       "line": 1,
       "title": "ADR-0052: Mobile strategy — Capacitor primary, Expo parallel (no deprecation)",
       "tier": "core",
@@ -568,18 +568,18 @@
     {
       "id": "adr:0053",
       "type": "adr",
-      "path": "docs/adr/0053-api-versioning-policy.md",
+      "path": "docs/04-governance/adr/0053-api-versioning-policy.md",
       "line": 1,
       "title": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror · adr:0053 · adr · Accepted · 53 · 2026-06-07 · ADR-0053: API versioning policy — /api/ ↔ /api/v1/ mirror · Context · Decision · Consequences · Альтернативи · Trigger to revisit · Refs",
-      "contentHash": "ed31abc7d6ba43c70cf100f17150d1c5514656910195b4763203dde28d1f4166"
+      "text": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror · adr:0053 · adr · Accepted · 53 · 2026-06-08 · ADR-0053: API versioning policy — /api/ ↔ /api/v1/ mirror · Context · Decision · Consequences · Альтернативи · Trigger to revisit · Refs",
+      "contentHash": "f4ce5d5ef08b46ef5fc74c83e453f2dfbf6502a5465a4547603928e397bc7e9f"
     },
     {
       "id": "adr:0054",
       "type": "adr",
-      "path": "docs/adr/0054-ux-roast-2026-q2.md",
+      "path": "docs/04-governance/adr/0054-ux-roast-2026-q2.md",
       "line": 1,
       "title": "ADR-0054: UX-Roast 2026-Q2 — рішення з §1–§13",
       "tier": "core",
@@ -590,7 +590,7 @@
     {
       "id": "adr:0055",
       "type": "adr",
-      "path": "docs/adr/0055-openclaw-external-gateway.md",
+      "path": "docs/04-governance/adr/0055-openclaw-external-gateway.md",
       "line": 1,
       "title": "ADR-0055: OpenClaw External Gateway — Phase 0 infra + Phase 7 cutover",
       "tier": "core",
@@ -601,7 +601,7 @@
     {
       "id": "adr:0057",
       "type": "adr",
-      "path": "docs/adr/0057-anthropic-sdk-v1-upgrade.md",
+      "path": "docs/04-governance/adr/0057-anthropic-sdk-v1-upgrade.md",
       "line": 1,
       "title": "ADR-0057: Upgrade @anthropic-ai/sdk 0.36.3 → 0.95.x у tools/console",
       "tier": "core",
@@ -612,51 +612,51 @@
     {
       "id": "adr:0058",
       "type": "adr",
-      "path": "docs/adr/0058-knowledge-graph-schema.md",
+      "path": "docs/04-governance/adr/0058-knowledge-graph-schema.md",
       "line": 1,
       "title": "ADR-0058: Knowledge graph schema and storage format",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-06-01 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "8354ca62114b1691a8dcd1144553eb6989c6926c87d480a7e047938c550876ec"
+      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "af9ab76a26f70f5ee71434f995bcf3499f42c4cb1c7c56fad18ee2121bcde1e3"
     },
     {
       "id": "adr:0059",
       "type": "adr",
-      "path": "docs/adr/0059-symbol-extraction-via-typescript-compiler-api.md",
+      "path": "docs/04-governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md",
       "line": 1,
       "title": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-06-01 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "27ad7fa2f80aa1c89e3bad5f10b8ba6847f3ed5983c02fd621f17cfc1dc1dae7"
+      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "b874cb7fdd211e8ec25a76deff3693198e5756f363e9fdf2c53b10fef9cba25a"
     },
     {
       "id": "adr:0060",
       "type": "adr",
-      "path": "docs/adr/0060-architecture-diagrams-automation-scope.md",
+      "path": "docs/04-governance/adr/0060-architecture-diagrams-automation-scope.md",
       "line": 1,
       "title": "ADR-0060: Architecture diagrams — automation scope (workspace graph only)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-06-01 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "abe0a564ace8fddc6c05593db60d48ddc9666dfa8e27f50e9866ea9c7e2ee58c"
+      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "07175714cb4cb87a29aa902d47b215d0a8b27906f543e0d885ff5d52d66e7b6d"
     },
     {
       "id": "adr:0061",
       "type": "adr",
-      "path": "docs/adr/0061-pr-backlink-storage.md",
+      "path": "docs/04-governance/adr/0061-pr-backlink-storage.md",
       "line": 1,
       "title": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-06-01 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "5fd8bb1a4d3b2ec75470b8e007a60df7216f62f71dce03ea97528c3fb2cb0b1e"
+      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "a15836fbe3dc1511e22ce8232106c40660d29633528e64e6bdec6d3a5815ed8a"
     },
     {
       "id": "adr:0062",
       "type": "adr",
-      "path": "docs/adr/0062-openapi-source-of-truth.md",
+      "path": "docs/04-governance/adr/0062-openapi-source-of-truth.md",
       "line": 1,
       "title": "ADR-0062: OpenAPI spec source-of-truth — code-first (Zod → OpenAPI)",
       "tier": "core",
@@ -667,18 +667,18 @@
     {
       "id": "adr:0063",
       "type": "adr",
-      "path": "docs/adr/0063-expo-sdk-53-upgrade.md",
+      "path": "docs/04-governance/adr/0063-expo-sdk-53-upgrade.md",
       "line": 1,
       "title": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-06-06 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "97affd30e7d13924c655bc143048f255fe703d7b5cca5b1002ae364ccc3b0ee4"
+      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "c54a9699492a1504353aca338c1ea8419bbb0fd7090e9aaa92b7f8e3dc551094"
     },
     {
       "id": "adr:0064",
       "type": "adr",
-      "path": "docs/adr/0064-syncv2-modular-refactor.md",
+      "path": "docs/04-governance/adr/0064-syncv2-modular-refactor.md",
       "line": 1,
       "title": "0064-syncv2-modular-refactor",
       "tier": "core",
@@ -689,7 +689,7 @@
     {
       "id": "adr:0065",
       "type": "adr",
-      "path": "docs/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md",
+      "path": "docs/04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md",
       "line": 1,
       "title": "ADR-0065: sync_op_log retention/архівація + multi-instance fan-out (план PR-050)",
       "tier": "core",
@@ -700,7 +700,7 @@
     {
       "id": "adr:0066",
       "type": "adr",
-      "path": "docs/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md",
+      "path": "docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md",
       "line": 1,
       "title": "ADR-0066: Agent semantic retrieval over the knowledge graph",
       "tier": "core",
@@ -711,7 +711,7 @@
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
       "type": "audit",
-      "path": "docs/audits/2026-05-06-ux-roast-pr-plan.md",
+      "path": "docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md",
       "line": 1,
       "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
       "tier": "core",
@@ -722,7 +722,7 @@
     {
       "id": "audit:2026-05-13-consolidated-page-audit",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-consolidated-page-audit.md",
+      "path": "docs/90-work/audits/2026-05-13-consolidated-page-audit.md",
       "line": 1,
       "title": "Consolidated Page Audit — 2026-05-13",
       "tier": "core",
@@ -733,29 +733,29 @@
     {
       "id": "audit:2026-05-13-dead-code-hard-rules-roast",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-dead-code-hard-rules-roast.md",
+      "path": "docs/90-work/audits/2026-05-13-dead-code-hard-rules-roast.md",
       "line": 1,
       "title": "Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13)",
       "tier": "core",
-      "status": "Active",
-      "text": "Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13) · audit:2026-05-13-dead-code-hard-rules-roast · audit · Active · TL;DR · P0 — Closed у цьому PR · P0.1 — 11 unmarked unused-файлів (Hard Rule #10, dead-code:files gate red) · Skipped 18 file(s) with @scaffolded/@deprecated/@experimental markers · No unmarked unused files. ✓ · P0.2 — 53 broken internal markdown-links (docs:check-links gate red) · Scanning 540 markdown files… · → 3810 internal links, 2065 external links. · ✅ All markdown links resolve. · P0.3 — knip.json redundant entries (Configuration hints 21 → 5) · P1 — Outstanding (Tracked у 2026-05-13-dead-code-hard-rules-roast.md) · P1.1 — unused deps sweep — ✅ Closed (2026-06-03) · P1.2 — .github/workflows/lighthouse-ci.yml workflow-файл відсутній — ✅ Closed · P1.3 — unused exports + duplicate exports — ✅ Closed (partial-with-residual, 2026-06-03) · P1.4 — process.env budget burn-down (Hard Rule violation, ratchet-baseline restored) · P1.5 — App-audit §1.3 mobile-shell knip — 5 unused exports · P1.6 — AuthPage re-decomposition (Hard Rule #18 regression) — ✅ Closed · P2 — Cosmetic / Watchlist · Прогрес виконання (цей PR) · Follow-up 2026-05-16 — claude/identify-critical-issues-3IgIx (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)) · Verification matrix · Cross-references",
-      "contentHash": "8e8414f5ae68d5ff7976ffb83eb6c2f5d74c3c2f69619fa3ddcda1a3452c4ae0"
+      "status": "Closed (2026-06-08 — 17/17 implemented, 0 actionable outstanding; residual = knip false-positive watchlist, не actionable)",
+      "text": "Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13) · audit:2026-05-13-dead-code-hard-rules-roast · audit · Closed (2026-06-08 — 17/17 implemented, 0 actionable outstanding; residual = knip false-positive watchlist, не actionable) · TL;DR · P0 — Closed у цьому PR · P0.1 — 11 unmarked unused-файлів (Hard Rule #10, dead-code:files gate red) · Skipped 18 file(s) with @scaffolded/@deprecated/@experimental markers · No unmarked unused files. ✓ · P0.2 — 53 broken internal markdown-links (docs:check-links gate red) · Scanning 540 markdown files… · → 3810 internal links, 2065 external links. · ✅ All markdown links resolve. · P0.3 — knip.json redundant entries (Configuration hints 21 → 5) · P1 — Outstanding (Tracked у 2026-05-13-dead-code-hard-rules-roast.md) · P1.1 — unused deps sweep — ✅ Closed (2026-06-03) · P1.2 — .github/workflows/lighthouse-ci.yml workflow-файл відсутній — ✅ Closed · P1.3 — unused exports + duplicate exports — ✅ Closed (partial-with-residual, 2026-06-03) · P1.4 — process.env budget burn-down (Hard Rule violation, ratchet-baseline restored) · P1.5 — App-audit §1.3 mobile-shell knip — 5 unused exports · P1.6 — AuthPage re-decomposition (Hard Rule #18 regression) — ✅ Closed · P2 — Cosmetic / Watchlist · Прогрес виконання (цей PR) · Follow-up 2026-05-16 — claude/identify-critical-issues-3IgIx (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)) · Verification matrix · Cross-references",
+      "contentHash": "1c2ca0db82bf2f4d1bf3701b873ef21b6866a856d176c76b1af13f6c64a4fb1a"
     },
     {
       "id": "audit:2026-05-13-page-audit-01-auth-onboarding",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-page-audit-01-auth-onboarding.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-01-auth-onboarding.md",
       "line": 1,
       "title": "Page Audit — Auth & Onboarding pages",
       "tier": "core",
-      "status": "Active",
-      "text": "Page Audit — Auth & Onboarding pages · audit:2026-05-13-page-audit-01-auth-onboarding · audit · Active · Summary · Findings · F1 — text-error / bg-error / border-error token does not exist [severity: high] [perspective: tailwind/ux/bug] · F2 — AuthPage.tsx exceeds Hard Rule #18 max-lines budget [severity: high] [perspective: rule] · F3 — Scaffolded auth decomposition is dead code [severity: high] [perspective: rule/code-quality] · F4 — PermissionsPrompt.tsx is unwired dead code [severity: high] [perspective: code-quality] · F5 — CelebrationModal hijacks global Enter/Space keydowns [severity: high] [perspective: bug/a11y] · F6 — \"Забули пароль?\" never pre-fills the email the user typed [severity: high] [perspective: bug] · F7 — DailyNudge close X is w-6 h-6 (24×24) — half the touch-target floor [severity: medium] [perspective: a11y] · F8 — DailyNudge popover trigger is w-8 h-8 (32×32) — below touch-target floor [severity: medium] [perspective: a11y] · F9 — DemoModeBanner CTA forces min-h-[40px] below touch-target floor [severity: medium] [perspective: a11y] · F10 — SoftAuthPromptCard \"Пізніше\" plain button is ~28 px tall [severity: medium] [perspective: a11y] · F11 — ReEngagementCard \"Пізніше\" plain button is ~28 px tall [severity: medium] [perspective: a11y] · F12 — FirstRunHintBanner CTA px-2.5 py-1 is ~26 px tall [severity: medium] [perspective: a11y] · F13 — ReEngagementCard pluralization breaks for 11–14 [severity: medium] [perspective: i18n/bug] · F14 — Lifecycle markers missing on every file in scope [severity: medium] [perspective: lifecycle] · F15 — AI markers under-used in high-risk auth code [severity: medium] [perspective: ai-marker] · F16 — presetApply.ts bypasses module storage public API [severity: medium] [perspective: code-quality] · F17 — seedDemoData.ts bypasses storage allowlist [severity: medium] [perspective: code-quality] · F18 — CelebrationModal auto-dismiss timer races user input [severity: medium] [perspective: ux/race] · F19 — ResetPasswordPage.tsx mixes broken and correct error tokens in same file [severity: medium] [perspective: tailwind/code-quality] · F20 — Test coverage targets dead LoginForm.tsx / RegisterForm.tsx [severity: medium] [perspective: test] · F21 — Better Auth client type-extension via as ReturnType<...> & {...} cast [severity: medium] [perspective: ts]",
-      "contentHash": "e01691c2bda6b5164b6603572ac8e01de93903bf662c22623ba368155979355d"
+      "status": "Closed (2026-06-08 — ~24/25 implemented, 0 outstanding; F4 dead-code already deleted)",
+      "text": "Page Audit — Auth & Onboarding pages · audit:2026-05-13-page-audit-01-auth-onboarding · audit · Closed (2026-06-08 — ~24/25 implemented, 0 outstanding; F4 dead-code already deleted) · Summary · Findings · F1 — text-error / bg-error / border-error token does not exist [severity: high] [perspective: tailwind/ux/bug] · F2 — AuthPage.tsx exceeds Hard Rule #18 max-lines budget [severity: high] [perspective: rule] · F3 — Scaffolded auth decomposition is dead code [severity: high] [perspective: rule/code-quality] · F4 — PermissionsPrompt.tsx is unwired dead code [severity: high] [perspective: code-quality] · F5 — CelebrationModal hijacks global Enter/Space keydowns [severity: high] [perspective: bug/a11y] · F6 — \"Забули пароль?\" never pre-fills the email the user typed [severity: high] [perspective: bug] · F7 — DailyNudge close X is w-6 h-6 (24×24) — half the touch-target floor [severity: medium] [perspective: a11y] · F8 — DailyNudge popover trigger is w-8 h-8 (32×32) — below touch-target floor [severity: medium] [perspective: a11y] · F9 — DemoModeBanner CTA forces min-h-[40px] below touch-target floor [severity: medium] [perspective: a11y] · F10 — SoftAuthPromptCard \"Пізніше\" plain button is ~28 px tall [severity: medium] [perspective: a11y] · F11 — ReEngagementCard \"Пізніше\" plain button is ~28 px tall [severity: medium] [perspective: a11y] · F12 — FirstRunHintBanner CTA px-2.5 py-1 is ~26 px tall [severity: medium] [perspective: a11y] · F13 — ReEngagementCard pluralization breaks for 11–14 [severity: medium] [perspective: i18n/bug] · F14 — Lifecycle markers missing on every file in scope [severity: medium] [perspective: lifecycle] · F15 — AI markers under-used in high-risk auth code [severity: medium] [perspective: ai-marker] · F16 — presetApply.ts bypasses module storage public API [severity: medium] [perspective: code-quality] · F17 — seedDemoData.ts bypasses storage allowlist [severity: medium] [perspective: code-quality] · F18 — CelebrationModal auto-dismiss timer races user input [severity: medium] [perspective: ux/race] · F19 — ResetPasswordPage.tsx mixes broken and correct error tokens in same file [severity: medium] [perspective: tailwind/code-quality] · F20 — Test coverage targets dead LoginForm.tsx / RegisterForm.tsx [severity: medium] [perspective: test] · F21 — Better Auth client type-extension via as ReturnType<...> & {...} cast [severity: medium] [perspective: ts]",
+      "contentHash": "7a2dd777d41626a13dde898601d065dbb6bf8d3c1e9c0a036557b9983ead9a60"
     },
     {
       "id": "audit:2026-05-13-page-audit-02-hub-dashboard",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-page-audit-02-hub-dashboard.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-02-hub-dashboard.md",
       "line": 1,
       "title": "Page Audit — Hub Dashboard, Modules Grid & App shell",
       "tier": "core",
@@ -766,7 +766,7 @@
     {
       "id": "audit:2026-05-13-page-audit-03-hub-chat-search",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-page-audit-03-hub-chat-search.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md",
       "line": 1,
       "title": "Page Audit — Hub Chat, Search & Backup panel",
       "tier": "core",
@@ -777,7 +777,7 @@
     {
       "id": "audit:2026-05-13-page-audit-05-finyk",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-page-audit-05-finyk.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-05-finyk.md",
       "line": 1,
       "title": "Page Audit — Finyk module — 5 pages (overview/transactions/budgets/analytics/assets)",
       "tier": "core",
@@ -788,7 +788,7 @@
     {
       "id": "audit:2026-05-13-page-audit-06-fizruk-part1",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-page-audit-06-fizruk-part1.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-06-fizruk-part1.md",
       "line": 1,
       "title": "Page Audit — Fizruk module Part 1 (Dashboard, Atlas, Workouts, Exercise)",
       "tier": "core",
@@ -799,7 +799,7 @@
     {
       "id": "audit:2026-05-13-page-audit-07-fizruk-part2",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-page-audit-07-fizruk-part2.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-07-fizruk-part2.md",
       "line": 1,
       "title": "Page Audit — Fizruk module Part 2 (Progress, Measurements, Programs, Body)",
       "tier": "core",
@@ -810,7 +810,7 @@
     {
       "id": "audit:2026-05-13-page-audit-08-nutrition",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-page-audit-08-nutrition.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-08-nutrition.md",
       "line": 1,
       "title": "Page Audit — Nutrition module — 4 pages (start/pantry/log/menu)",
       "tier": "core",
@@ -821,7 +821,7 @@
     {
       "id": "audit:2026-05-13-page-audit-09-routine-strategy",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-page-audit-09-routine-strategy.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md",
       "line": 1,
       "title": "Page Audit — Routine module + Strategy page",
       "tier": "core",
@@ -832,7 +832,7 @@
     {
       "id": "audit:2026-05-13-page-audit-10-errors-pwa-marketing",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md",
+      "path": "docs/90-work/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md",
       "line": 1,
       "title": "Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing",
       "tier": "core",
@@ -843,7 +843,7 @@
     {
       "id": "audit:2026-05-13-testing-devx-roast",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-testing-devx-roast.md",
+      "path": "docs/90-work/audits/2026-05-13-testing-devx-roast.md",
       "line": 1,
       "title": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13)",
       "tier": "core",
@@ -854,7 +854,7 @@
     {
       "id": "audit:2026-05-13-web-architecture-state-roast",
       "type": "audit",
-      "path": "docs/audits/2026-05-13-web-architecture-state-roast.md",
+      "path": "docs/90-work/audits/2026-05-13-web-architecture-state-roast.md",
       "line": 1,
       "title": "Web Architecture & State Roast — 2026-05-13 (Прожарка #3/10)",
       "tier": "core",
@@ -865,7 +865,7 @@
     {
       "id": "audit:2026-05-25-hubsettings-cls-chunk-load",
       "type": "audit",
-      "path": "docs/audits/2026-05-25-hubsettings-cls-chunk-load.md",
+      "path": "docs/90-work/audits/2026-05-25-hubsettings-cls-chunk-load.md",
       "line": 1,
       "title": "HubSettings lazy boundaries — CLS + chunk-load follow-up",
       "tier": "core",
@@ -874,9 +874,20 @@
       "contentHash": "ff7a7c6aafe99ef0aaa2ac161b75626318974699a74903c84f6dce3aa07ec6af"
     },
     {
+      "id": "audit:2026-06-08-codebase-cleanup-audit",
+      "type": "audit",
+      "path": "docs/90-work/audits/2026-06-08-codebase-cleanup-audit.md",
+      "line": 1,
+      "title": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф",
+      "tier": "core",
+      "status": "Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding)",
+      "text": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф · audit:2026-06-08-codebase-cleanup-audit · audit · Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding) · Виконано в цьому PR (2026-06-08) · TL;DR · Тема 1 — console → openclaw rename (напів-зроблений) · 🔴 Реальний баг (не косметика) · 🟡 Stale-посилання, що збивають агентів (low-risk, high-clarity) · 🟡 Незавершений rename (потребує координації — це деплой) · Тема 2 — Audits/initiatives «Active», але робота закрита · Тема 3 — Застарілі рішення / ADR-дрейф · 🔴 P0-пастка: grammy-deletion (Locked Decision #17) — НЕ виконувати · 🟡 ADR-дрейф · Тема 4 — Lint / tech-debt suppressions без власника · Інфра / стек — інші знахідки (потребують рішення власника) · Свідома інфраструктура — НЕ чіпати · Запропонований план (окремими PR-ами за класом боргу) · Рішення власника (узгоджено 2026-06-08)",
+      "contentHash": "e5b8e23e9cbfbae3cd0c3384bac4c9764cc792a40c4a28a2733f8f0353663353"
+    },
+    {
       "id": "audit:2026-08-XX-openclaw-internal-roast",
       "type": "audit",
-      "path": "docs/audits/2026-08-XX-openclaw-internal-roast.md",
+      "path": "docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md",
       "line": 1,
       "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`",
       "tier": "core",
@@ -887,7 +898,7 @@
     {
       "id": "audit:2026-08-XX-sync-engine-roast",
       "type": "audit",
-      "path": "docs/audits/2026-08-XX-sync-engine-roast.md",
+      "path": "docs/90-work/audits/2026-08-XX-sync-engine-roast.md",
       "line": 1,
       "title": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)",
       "tier": "core",
@@ -3580,7 +3591,7 @@
     {
       "id": "hard-rule:1",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#1",
+      "path": "docs/04-governance/governance/hard-rules.json#1",
       "line": 1,
       "title": "DB types: coerce `bigint` to `number` in serializers",
       "tier": "core",
@@ -3590,7 +3601,7 @@
     {
       "id": "hard-rule:10",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#10",
+      "path": "docs/04-governance/governance/hard-rules.json#10",
       "line": 1,
       "title": "Lifecycle markers — every file/doc declares its status",
       "tier": "core",
@@ -3600,7 +3611,7 @@
     {
       "id": "hard-rule:11",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#11",
+      "path": "docs/04-governance/governance/hard-rules.json#11",
       "line": 1,
       "title": "No arbitrary hex colors in `className`",
       "tier": "core",
@@ -3610,7 +3621,7 @@
     {
       "id": "hard-rule:12",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#12",
+      "path": "docs/04-governance/governance/hard-rules.json#12",
       "line": 1,
       "title": "Module-accent containment — no foreign accents inside a module subtree",
       "tier": "core",
@@ -3620,7 +3631,7 @@
     {
       "id": "hard-rule:13",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#13",
+      "path": "docs/04-governance/governance/hard-rules.json#13",
       "line": 1,
       "title": "No raw-palette light/dark `className` pairs",
       "tier": "core",
@@ -3630,7 +3641,7 @@
     {
       "id": "hard-rule:14",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#14",
+      "path": "docs/04-governance/governance/hard-rules.json#14",
       "line": 1,
       "title": "Visible focus indicators must use `focus-visible:`, not `focus:`",
       "tier": "core",
@@ -3640,7 +3651,7 @@
     {
       "id": "hard-rule:15",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#15",
+      "path": "docs/04-governance/governance/hard-rules.json#15",
       "line": 1,
       "title": "Read governance before coding; update docs alongside code; internal docs in Ukrainian",
       "tier": "core",
@@ -3650,7 +3661,7 @@
     {
       "id": "hard-rule:16",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#16",
+      "path": "docs/04-governance/governance/hard-rules.json#16",
       "line": 1,
       "title": "Typography scale — semantic styles + 12px floor",
       "tier": "core",
@@ -3660,7 +3671,7 @@
     {
       "id": "hard-rule:17",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#17",
+      "path": "docs/04-governance/governance/hard-rules.json#17",
       "line": 1,
       "title": "Animation budget — max 2 concurrent, 3 tiers",
       "tier": "core",
@@ -3670,7 +3681,7 @@
     {
       "id": "hard-rule:18",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#18",
+      "path": "docs/04-governance/governance/hard-rules.json#18",
       "line": 1,
       "title": "Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS",
       "tier": "core",
@@ -3680,7 +3691,7 @@
     {
       "id": "hard-rule:19",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#19",
+      "path": "docs/04-governance/governance/hard-rules.json#19",
       "line": 1,
       "title": "Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo",
       "tier": "core",
@@ -3690,7 +3701,7 @@
     {
       "id": "hard-rule:2",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#2",
+      "path": "docs/04-governance/governance/hard-rules.json#2",
       "line": 1,
       "title": "RQ keys: only via centralized factories",
       "tier": "core",
@@ -3700,7 +3711,7 @@
     {
       "id": "hard-rule:20",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#20",
+      "path": "docs/04-governance/governance/hard-rules.json#20",
       "line": 1,
       "title": "No OpenClaw PATs in production",
       "tier": "core",
@@ -3710,7 +3721,7 @@
     {
       "id": "hard-rule:21",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#21",
+      "path": "docs/04-governance/governance/hard-rules.json#21",
       "line": 1,
       "title": "Pino redaction policy enforced",
       "tier": "core",
@@ -3720,7 +3731,7 @@
     {
       "id": "hard-rule:22",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#22",
+      "path": "docs/04-governance/governance/hard-rules.json#22",
       "line": 1,
       "title": "Skill body security scan — no injection/exfiltration patterns in SKILL.md",
       "tier": "core",
@@ -3730,7 +3741,7 @@
     {
       "id": "hard-rule:23",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#23",
+      "path": "docs/04-governance/governance/hard-rules.json#23",
       "line": 1,
       "title": "Archive-move depth integrity — no broken `../X` links in docs archives",
       "tier": "core",
@@ -3740,37 +3751,37 @@
     {
       "id": "hard-rule:24",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#24",
+      "path": "docs/04-governance/governance/hard-rules.json#24",
       "line": 1,
       "title": "Catalogs registered in `knowledge-graph.json` must have a `--check` generator",
       "tier": "core",
-      "text": "Catalogs registered in `knowledge-graph.json` must have a `--check` generator · hard-rule:24 · hard-rule · 24 · blocker · lint-enforced-convention · docs/governance/*.auto.json,docs/governance/symbol-index.json,docs/governance/knowledge-graph.json,docs/governance/retrieval-index.json",
-      "contentHash": "cbe3e81f434db24103f2aa0fa6c070bd0f2026dd981902be2a001d1c16714302"
+      "text": "Catalogs registered in `knowledge-graph.json` must have a `--check` generator · hard-rule:24 · hard-rule · 24 · blocker · lint-enforced-convention · docs/04-governance/governance/*.auto.json,docs/04-governance/governance/symbol-index.json,docs/04-governance/governance/knowledge-graph.json,docs/04-governance/governance/retrieval-index.json",
+      "contentHash": "4488ab011ed028fa1357c79078207ac6d1abaac03e789df6be8f40a91b041fde"
     },
     {
       "id": "hard-rule:25",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#25",
+      "path": "docs/04-governance/governance/hard-rules.json#25",
       "line": 1,
       "title": "Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker",
       "tier": "core",
-      "text": "Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker · hard-rule:25 · hard-rule · 25 · blocker · lint-enforced-convention · docs/governance/knowledge-graph.html,docs/governance/symbol-index.html,docs/architecture/diagrams/c3-workspaces.md,docs/open-work.md,docs/initiatives/follow-ups.md,docs/playbooks/INDEX.md",
-      "contentHash": "322d73bc80e322eb7c7cce9417155cf3954f826ee604be048bce4afc94fed981"
+      "text": "Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker · hard-rule:25 · hard-rule · 25 · blocker · lint-enforced-convention · docs/04-governance/governance/knowledge-graph.html,docs/04-governance/governance/symbol-index.html,docs/02-engineering/architecture/diagrams/c3-workspaces.md,docs/open-work.md,docs/90-work/initiatives/follow-ups.md,docs/00-start/playbooks/INDEX.md",
+      "contentHash": "89c078686125288ea88410d6ce00a009565ef6940cef1fa76ec955deb608a529"
     },
     {
       "id": "hard-rule:26",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#26",
+      "path": "docs/04-governance/governance/hard-rules.json#26",
       "line": 1,
-      "title": "Merged PRs touching canonical docs must update `docs/pr-ledger/index.json`",
+      "title": "Merged PRs touching canonical docs must update `docs/04-governance/pr-ledger/index.json`",
       "tier": "core",
-      "text": "Merged PRs touching canonical docs must update `docs/pr-ledger/index.json` · hard-rule:26 · hard-rule · 26 · blocker · lint-enforced-convention · docs/adr/*.md,docs/initiatives/*.md,docs/playbooks/*.md,docs/governance/rules/*.md",
-      "contentHash": "d0ce8ad7e4e27a62038380fcd4e15ddda19202a0bceba9c78ad87314d0998790"
+      "text": "Merged PRs touching canonical docs must update `docs/04-governance/pr-ledger/index.json` · hard-rule:26 · hard-rule · 26 · blocker · lint-enforced-convention · docs/04-governance/adr/*.md,docs/90-work/initiatives/*.md,docs/00-start/playbooks/*.md,docs/04-governance/governance/rules/*.md",
+      "contentHash": "1a0a08728d1c962f661691bee0637ca02f77c646684fdea50621518dafae3c50"
     },
     {
       "id": "hard-rule:3",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#3",
+      "path": "docs/04-governance/governance/hard-rules.json#3",
       "line": 1,
       "title": "API contract: server response shape ↔ `api-client` types ↔ test",
       "tier": "core",
@@ -3780,7 +3791,7 @@
     {
       "id": "hard-rule:4",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#4",
+      "path": "docs/04-governance/governance/hard-rules.json#4",
       "line": 1,
       "title": "SQL migrations: sequential, no gaps, two-phase for DROP",
       "tier": "core",
@@ -3790,7 +3801,7 @@
     {
       "id": "hard-rule:5",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#5",
+      "path": "docs/04-governance/governance/hard-rules.json#5",
       "line": 1,
       "title": "Conventional Commits: explicit scope enum",
       "tier": "core",
@@ -3800,7 +3811,7 @@
     {
       "id": "hard-rule:6",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#6",
+      "path": "docs/04-governance/governance/hard-rules.json#6",
       "line": 1,
       "title": "No force push to main/master",
       "tier": "core",
@@ -3810,7 +3821,7 @@
     {
       "id": "hard-rule:7",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#7",
+      "path": "docs/04-governance/governance/hard-rules.json#7",
       "line": 1,
       "title": "Pre-commit hooks via Husky — do not skip",
       "tier": "core",
@@ -3820,7 +3831,7 @@
     {
       "id": "hard-rule:8",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#8",
+      "path": "docs/04-governance/governance/hard-rules.json#8",
       "line": 1,
       "title": "Tailwind colour-opacity steps must be on the registered scale",
       "tier": "core",
@@ -3830,7 +3841,7 @@
     {
       "id": "hard-rule:9",
       "type": "hard-rule",
-      "path": "docs/governance/hard-rules.json#9",
+      "path": "docs/04-governance/governance/hard-rules.json#9",
       "line": 1,
       "title": "Saturated brand fills behind `text-white` must use the `-strong` companion",
       "tier": "core",
@@ -3840,18 +3851,18 @@
     {
       "id": "initiative:0003",
       "type": "initiative",
-      "path": "docs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
+      "path": "docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
       "line": 1,
       "title": "0003 — Sync v2 rollout & v1 sunset",
       "tier": "core",
       "status": "In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first)",
-      "text": "0003 — Sync v2 rollout & v1 sunset · initiative:0003 · initiative · In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first) · 3 · @Skords-01 · P0 (Sprint 1–2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — observability (1 PR) · Фаза 2 — Sunset: header + ADR (1 PR) · Фаза 3 — feature-flag + shadow mode (1 PR) · Фаза 4 — backfill (1 PR) · Фаза 5 — sunset (1 PR) · Фаза 6 — clean-up (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 1 — observability — Done (PR #1621) · Phase 2 — Sunset header + ADR — Done (commit [3e10d799](https://github.com/Skords-01/Sergeant/commit/3e10d7997e9b43bc94b93a33555b33b7c82baac5), [ADR-0043](../adr/0043-cloudsync-v1-sunset.md)) · Phase 5 — T₀ executed (server-side) — Done 2026-05-06 · Phase 5 — client-side cutover — Done 2026-05-06 · Phase 6 — Client cleanup — Done 2026-05-06 · Phase 6 — Remaining server/data cleanup — ✅ Done (2026-05-10 audit refresh) · Phase 7 — Sunset routes final removal — Proposed",
-      "contentHash": "b9a33a0c8887bd1c96a6221fdcca76365e92f761cf125aa87ebb84a969ecf5d1"
+      "text": "0003 — Sync v2 rollout & v1 sunset · initiative:0003 · initiative · In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first) · 3 · @Skords-01 · P0 (Sprint 1–2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — observability (1 PR) · Фаза 2 — Sunset: header + ADR (1 PR) · Фаза 3 — feature-flag + shadow mode (1 PR) · Фаза 4 — backfill (1 PR) · Фаза 5 — sunset (1 PR) · Фаза 6 — clean-up (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 1 — observability — Done (PR #1621) · Phase 2 — Sunset header + ADR — Done (commit [3e10d799](https://github.com/Skords-01/Sergeant/commit/3e10d7997e9b43bc94b93a33555b33b7c82baac5), [ADR-0043](../../04-governance/adr/0043-cloudsync-v1-sunset.md)) · Phase 5 — T₀ executed (server-side) — Done 2026-05-06 · Phase 5 — client-side cutover — Done 2026-05-06 · Phase 6 — Client cleanup — Done 2026-05-06 · Phase 6 — Remaining server/data cleanup — ✅ Done (2026-05-10 audit refresh) · Phase 7 — Sunset routes final removal — Proposed",
+      "contentHash": "42049bbe2bf9aea5644680f33f715bcb5541061f679d0a0287f91263f62cbd67"
     },
     {
       "id": "initiative:0006",
       "type": "initiative",
-      "path": "docs/initiatives/0006-frontend-routing-and-code-split.md",
+      "path": "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md",
       "line": 1,
       "title": "0006 — Frontend routing migration + route-based code-split",
       "tier": "core",
@@ -3862,7 +3873,7 @@
     {
       "id": "initiative:0010",
       "type": "initiative",
-      "path": "docs/initiatives/0010-revenue-first-launch.md",
+      "path": "docs/90-work/initiatives/0010-revenue-first-launch.md",
       "line": 1,
       "title": "0010 — Revenue-first launch: ship paid, focus wedge",
       "tier": "core",
@@ -3873,7 +3884,7 @@
     {
       "id": "initiative:0015",
       "type": "initiative",
-      "path": "docs/initiatives/0015-docs-automation-daily-ops.md",
+      "path": "docs/90-work/initiatives/0015-docs-automation-daily-ops.md",
       "line": 1,
       "title": "0015 — Docs automation for daily ops",
       "tier": "core",
@@ -3884,18 +3895,18 @@
     {
       "id": "initiative:0017",
       "type": "initiative",
-      "path": "docs/initiatives/0017-hub-tabs-mount-perf.md",
+      "path": "docs/90-work/initiatives/0017-hub-tabs-mount-perf.md",
       "line": 1,
       "title": "0017 — Hub Settings & Reports mount perf",
       "tier": "core",
-      "status": "In progress — code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worker) explicitly skipped pending next 30-day RUM cut on `aggregateReport` P95 > 50 ms — re-opens as a discrete follow-up only if the threshold trips. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.",
-      "text": "0017 — Hub Settings & Reports mount perf · initiative:0017 · initiative · In progress — code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worker) explicitly skipped pending next 30-day RUM cut on `aggregateReport` P95 > 50 ms — re-opens as a discrete follow-up only if the threshold trips. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome. · 17 · @Skords-01 · P1 (Sprint 1 candidate after [0016](./archive/_0016-changelog-release-cut.md)) · TL;DR · Чому зараз · Скоуп · Метрики успіху · План змін · Sprint 0 — Observability baseline (1 PR) — shipped 2026-05-20 · Sprint 1 — Per-section lazy у Settings (2 PR-и) · Sprint 2 — HubReports per-card lazy (1 PR) · Sprint 3 — Web Worker for aggregation (stretch, conditional) · Finalize (включається у PR-3 або окремий PR-4 якщо Sprint 3 skipped) · Sprint 3 decision (2026-06-01) · Outcome (2026-06-01, code-complete; 2026-06-02 tech-debt watchlist drained) · Carry-over → successor · Bundle-size findings 2026-06-06 · Критерії DONE · Ризики та митиґація · Власник, ревʼюери · Зв'язки",
-      "contentHash": "b883730275c5a8d20c03959fdbc185a9a9c8a2af4d79db90b47033d283da5155"
+      "status": "Closed (2026-06-08 — code-complete; Sprint 0 + Sprint 1 + Sprint 2 merged). Sprint 3 (Web Worker) is a **discrete conditional follow-up** — re-opens ТІЛЬКИ якщо post-merge PostHog `aggregateReport` P95 > 50 ms (next 30-day RUM cut); not tracked as open work here. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.",
+      "text": "0017 — Hub Settings & Reports mount perf · initiative:0017 · initiative · Closed (2026-06-08 — code-complete; Sprint 0 + Sprint 1 + Sprint 2 merged). Sprint 3 (Web Worker) is a **discrete conditional follow-up** — re-opens ТІЛЬКИ якщо post-merge PostHog `aggregateReport` P95 > 50 ms (next 30-day RUM cut); not tracked as open work here. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome. · 17 · @Skords-01 · P1 (Sprint 1 candidate after [0016](./archive/_0016-changelog-release-cut.md)) · TL;DR · Чому зараз · Скоуп · Метрики успіху · План змін · Sprint 0 — Observability baseline (1 PR) — shipped 2026-05-20 · Sprint 1 — Per-section lazy у Settings (2 PR-и) · Sprint 2 — HubReports per-card lazy (1 PR) · Sprint 3 — Web Worker for aggregation (stretch, conditional) · Finalize (включається у PR-3 або окремий PR-4 якщо Sprint 3 skipped) · Sprint 3 decision (2026-06-01) · Outcome (2026-06-01, code-complete; 2026-06-02 tech-debt watchlist drained) · Carry-over → successor · Bundle-size findings 2026-06-06 · Критерії DONE · Ризики та митиґація · Власник, ревʼюери · Зв'язки",
+      "contentHash": "09d06ffdb6e449208cfd83231e404011afd2f611af191aab537eb4c58907a779"
     },
     {
       "id": "initiative:0018",
       "type": "initiative",
-      "path": "docs/initiatives/0018-agent-semantic-retrieval.md",
+      "path": "docs/90-work/initiatives/0018-agent-semantic-retrieval.md",
       "line": 1,
       "title": "0018 — Agent semantic retrieval (agent:find)",
       "tier": "core",
@@ -3906,7 +3917,7 @@
     {
       "id": "initiative:follow-ups",
       "type": "initiative",
-      "path": "docs/initiatives/follow-ups.md",
+      "path": "docs/90-work/initiatives/follow-ups.md",
       "line": 1,
       "title": "Initiative follow-ups",
       "tier": "core",
@@ -3917,7 +3928,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/00-overview",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/00-overview.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/00-overview.md",
       "line": 1,
       "title": "Overview — stack pulse 2026-05",
       "tier": "core",
@@ -3928,7 +3939,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/01-session-log-2026-05-03",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/01-session-log-2026-05-03.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/01-session-log-2026-05-03.md",
       "line": 1,
       "title": "Session log — 2026-05-03 stack-pulse follow-through",
       "tier": "core",
@@ -3939,7 +3950,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-01-unify-env-modules",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md",
       "line": 1,
       "title": "PR-01: Уніфікувати env-модулі сервера",
       "tier": "core",
@@ -3950,7 +3961,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-02-rate-limit-fail-closed",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-02-rate-limit-fail-closed.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-02-rate-limit-fail-closed.md",
       "line": 1,
       "title": "PR-02: Rate-limit fail-closed на `/api/auth/*`",
       "tier": "core",
@@ -3961,7 +3972,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-03-bcrypt-password-limit",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md",
       "line": 1,
       "title": "PR-03: password length policy — scrypt premise correction",
       "tier": "core",
@@ -3972,18 +3983,18 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-04-bus-factor-secondary-owners",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-04-bus-factor-secondary-owners.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-04-bus-factor-secondary-owners.md",
       "line": 1,
       "title": "PR-04: Secondary owners + knowledge-transfer plan",
       "tier": "core",
-      "status": "Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/playbooks/operational-continuity.md`](../../playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).",
-      "text": "PR-04: Secondary owners + knowledge-transfer plan · initiative:stack-pulse-2026-05/pr-04-bus-factor-secondary-owners · initiative · Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/playbooks/operational-continuity.md`](../../playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope). · Контекст · Scope · 1. Secondary CODEOWNERS · 2. Knowledge-transfer playbook · 3. L2 escalation поле · 4. Operational continuity playbook · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "39813ff5321794a316d619e6043e8a1b77da8c0ba6b3581ea43d4ab1e93eca0c"
+      "status": "Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/00-start/playbooks/operational-continuity.md`](../../../00-start/playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope).",
+      "text": "PR-04: Secondary owners + knowledge-transfer plan · initiative:stack-pulse-2026-05/pr-04-bus-factor-secondary-owners · initiative · Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md` Module ownership map має `Secondary` колонку для всіх 22 рядків (placeholder-роли `TBD (<role>)`), (2) `L2 escalation` поле в `AGENTS.md` тепер посилається на [`docs/00-start/playbooks/operational-continuity.md`](../../../00-start/playbooks/operational-continuity.md) як L2 entry point (vendor support + 1Password vaults замість «paging another person»), (3) `scripts/check-codeowners-coverage.mjs` має `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary placeholder block, 6 module walkthroughs у `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`, ops-runbook ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Реальні secondary engineers — окрема hire-driven задача (out of scope). · Контекст · Scope · 1. Secondary CODEOWNERS · 2. Knowledge-transfer playbook · 3. L2 escalation поле · 4. Operational continuity playbook · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "cef732d6bd9024aab2f64c5248edfe45fee8b18804bcaf3a28c37d98e9e47e43"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-05-typescript-types-node-downgrade",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md",
       "line": 1,
       "title": "PR-05: `@types/node` downgrade до 20.x + ADR на TS 6 vs 5.x",
       "tier": "core",
@@ -3994,18 +4005,18 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-06-openclaw-github-app",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md",
       "line": 1,
       "title": "PR-06: OpenClaw → GitHub App, прибрати `Git_PAT` fallback",
       "tier": "core",
-      "status": "Closed — Phase 1 (GitHub App auth-flow) merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2 (default flip + PAT removal + Hard Rule #20) has landed and is tracked by [Hard Rule #20](../../governance/rules/20-no-openclaw-pats-in-production.md).",
-      "text": "PR-06: OpenClaw → GitHub App, прибрати `Git_PAT` fallback · initiative:stack-pulse-2026-05/pr-06-openclaw-github-app · initiative · Closed — Phase 1 (GitHub App auth-flow) merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2 (default flip + PAT removal + Hard Rule #20) has landed and is tracked by [Hard Rule #20](../../governance/rules/20-no-openclaw-pats-in-production.md). · PR-06: OpenClaw → GitHub App, прибрати GitPAT fallback · Контекст · Scope · 1. Migrate to GitHub App · 2. Видалити PAT-fallback · 3. Rotation runbook · 4. Branch protection enforcement · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "004d6a27b0e8072556615b1bc8baaad15a99eecb1c49a88695be1332611ff337"
+      "status": "Closed — Phase 1 (GitHub App auth-flow) merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2 (default flip + PAT removal + Hard Rule #20) has landed and is tracked by [Hard Rule #20](../../../04-governance/governance/rules/20-no-openclaw-pats-in-production.md).",
+      "text": "PR-06: OpenClaw → GitHub App, прибрати `Git_PAT` fallback · initiative:stack-pulse-2026-05/pr-06-openclaw-github-app · initiative · Closed — Phase 1 (GitHub App auth-flow) merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2 (default flip + PAT removal + Hard Rule #20) has landed and is tracked by [Hard Rule #20](../../../04-governance/governance/rules/20-no-openclaw-pats-in-production.md). · PR-06: OpenClaw → GitHub App, прибрати GitPAT fallback · Контекст · Scope · 1. Migrate to GitHub App · 2. Видалити PAT-fallback · 3. Rotation runbook · 4. Branch protection enforcement · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "54b775cc806d745807a71b2a1ae946721423e5e6d669c26db3639949966c0707"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-07-body-size-declarative-policy",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-07-body-size-declarative-policy.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-07-body-size-declarative-policy.md",
       "line": 1,
       "title": "PR-07: Declarative body-size policy",
       "tier": "core",
@@ -4016,29 +4027,29 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-08-api-versioning-consolidation",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md",
       "line": 1,
       "title": "PR-08: API versioning consolidation (видалити v1-rewrite-shim)",
       "tier": "core",
-      "status": "Closed — research done, decision = keep mirror (див. [ADR-0053](../../adr/0053-api-versioning-policy.md) + [spike](../../notes/spikes/2026-05-api-v1-usage.md))",
-      "text": "PR-08: API versioning consolidation (видалити v1-rewrite-shim) · initiative:stack-pulse-2026-05/pr-08-api-versioning-consolidation · initiative · Closed — research done, decision = keep mirror (див. [ADR-0053](../../adr/0053-api-versioning-policy.md) + [spike](../../notes/spikes/2026-05-api-v1-usage.md)) · Контекст · Scope · Decision першочергово (research, не цей PR) · Implementation (after decision) · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "e85c828f21ad21c4a5a238db130d92d1ede41555c9431998f0a6a2d5c34c442a"
+      "status": "Closed — research done, decision = keep mirror (див. [ADR-0053](../../../04-governance/adr/0053-api-versioning-policy.md) + [spike](../../../02-engineering/notes/spikes/2026-05-api-v1-usage.md))",
+      "text": "PR-08: API versioning consolidation (видалити v1-rewrite-shim) · initiative:stack-pulse-2026-05/pr-08-api-versioning-consolidation · initiative · Closed — research done, decision = keep mirror (див. [ADR-0053](../../../04-governance/adr/0053-api-versioning-policy.md) + [spike](../../../02-engineering/notes/spikes/2026-05-api-v1-usage.md)) · Контекст · Scope · Decision першочергово (research, не цей PR) · Implementation (after decision) · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "9f15ec5d0b562a1e1402f3b4ff8e3b5eab22a03f93a740804e742ae3e9fabdd1"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-09-apns-library-adr",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-09-apns-library-adr.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-09-apns-library-adr.md",
       "line": 1,
       "title": "PR-09: `@parse/node-apn` review (ADR-only)",
       "tier": "core",
-      "status": "Closed — ADR-0048 merged ([`docs/adr/0048-apns-provider-library.md`](../../adr/0048-apns-provider-library.md))",
-      "text": "PR-09: `@parse/node-apn` review (ADR-only) · initiative:stack-pulse-2026-05/pr-09-apns-library-adr · initiative · Closed — ADR-0048 merged ([`docs/adr/0048-apns-provider-library.md`](../../adr/0048-apns-provider-library.md)) · PR-09: @parse/node-apn review (ADR-only) · Контекст · Scope · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Resolution note · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "f1cca1d89da2e7bf6040c92961ddd315ee5356e80332436f579b6c04e0f4b6af"
+      "status": "Closed — ADR-0048 merged ([`docs/04-governance/adr/0048-apns-provider-library.md`](../../../04-governance/adr/0048-apns-provider-library.md))",
+      "text": "PR-09: `@parse/node-apn` review (ADR-only) · initiative:stack-pulse-2026-05/pr-09-apns-library-adr · initiative · Closed — ADR-0048 merged ([`docs/04-governance/adr/0048-apns-provider-library.md`](../../../04-governance/adr/0048-apns-provider-library.md)) · PR-09: @parse/node-apn review (ADR-only) · Контекст · Scope · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Resolution note · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "f4336a14b4ff45cf3f1eb48ec5040cf40a6cd2cdadcfa9107bd4caa92ef7b924"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-10-better-auth-security-review",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md",
       "line": 1,
       "title": "PR-10: Better Auth security review + Safari/Webkit E2E",
       "tier": "core",
@@ -4049,7 +4060,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci.md",
       "line": 1,
       "title": "PR-11: Drizzle schema ↔ SQL drift CI gate",
       "tier": "core",
@@ -4060,7 +4071,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-12-sentry-traces-sampler",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-12-sentry-traces-sampler.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-12-sentry-traces-sampler.md",
       "line": 1,
       "title": "PR-12: Sentry tracesSampler dynamic per-route",
       "tier": "core",
@@ -4071,7 +4082,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-13-postgres-pool-sizing",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md",
       "line": 1,
       "title": "PR-13: PG pool sizing + monitoring + alerts",
       "tier": "core",
@@ -4082,7 +4093,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-14-vercel-coep-review",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-14-vercel-coep-review.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-14-vercel-coep-review.md",
       "line": 1,
       "title": "PR-14: Vercel COEP review (require-corp)",
       "tier": "core",
@@ -4093,7 +4104,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock.md",
       "line": 1,
       "title": "PR-15: `AI_QUOTA_DISABLED=1` hard-block у production",
       "tier": "core",
@@ -4104,18 +4115,18 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-16-pino-redaction-policy",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md",
       "line": 1,
       "title": "PR-16: Pino redaction policy + ESLint guard",
       "tier": "core",
-      "status": "Closed — merged [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard + [`docs/security/logging-redaction-policy.md`](../../security/logging-redaction-policy.md) зареєстровані.",
-      "text": "PR-16: Pino redaction policy + ESLint guard · initiative:stack-pulse-2026-05/pr-16-pino-redaction-policy · initiative · Closed — merged [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard + [`docs/security/logging-redaction-policy.md`](../../security/logging-redaction-policy.md) зареєстровані. · Statuses · Контекст · Scope · 1. Configure pino-redaction · 2. ESLint guard · 3. Audit + sweep · 4. Sentry parity · 5. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "e4224d2bdecee1f4c8e60e4dff55788fd3a60eeca8c3575a0cbf9c03f004eb10"
+      "status": "Closed — merged [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard + [`docs/04-governance/security/logging-redaction-policy.md`](../../../04-governance/security/logging-redaction-policy.md) зареєстровані.",
+      "text": "PR-16: Pino redaction policy + ESLint guard · initiative:stack-pulse-2026-05/pr-16-pino-redaction-policy · initiative · Closed — merged [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard + [`docs/04-governance/security/logging-redaction-policy.md`](../../../04-governance/security/logging-redaction-policy.md) зареєстровані. · Statuses · Контекст · Scope · 1. Configure pino-redaction · 2. ESLint guard · 3. Audit + sweep · 4. Sentry parity · 5. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "0775edb2bdb968318459cc7e2f2eacff5825542c94ea4c4c4e433bdb60cb6322"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md",
       "line": 1,
       "title": "PR-17: 80+ env-vars → DB feature-flag toggle",
       "tier": "core",
@@ -4126,7 +4137,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-18-detox-server-shape-trigger",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md",
       "line": 1,
       "title": "PR-18: Detox path-trigger пропускає server-shape changes",
       "tier": "core",
@@ -4137,7 +4148,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-19-workers-health-registry",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-19-workers-health-registry.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-19-workers-health-registry.md",
       "line": 1,
       "title": "PR-19: Workers health-registry + `/api/health/workers` endpoint",
       "tier": "core",
@@ -4148,7 +4159,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-20-patches-readme",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-20-patches-readme.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-20-patches-readme.md",
       "line": 1,
       "title": "PR-20: `patches/` debt без README",
       "tier": "core",
@@ -4159,7 +4170,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update.md",
       "line": 1,
       "title": "PR-21: SW `prompt`-mode auto-update on inactivity",
       "tier": "core",
@@ -4170,7 +4181,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-22-mobile-expo-sdk-53",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md",
       "line": 1,
       "title": "PR-22: Mobile Expo SDK 52 → 53 upgrade",
       "tier": "core",
@@ -4181,29 +4192,29 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md",
       "line": 1,
       "title": "PR-23: OpenAPI spec contract-tested vs runtime",
       "tier": "core",
-      "status": "Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.",
-      "text": "PR-23: OpenAPI spec contract-tested vs runtime · initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests · initiative · Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production. · Outcome (Phase 1 shipped) · Контекст (історично) · Scope · 1. Source-of-truth decision (ADR) · 2. Generation pipeline · scripts/openapi/generate.mjs · Зчитує всі route registrations + Zod-output-schemas · Виводить apps/server/openapi.generated.json · 3. Contract tests · 4. Schemathesis property-based testing · .github/workflows/contract-tests.yml · 5. PR check: openapi-drift · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "78fad425dbe246ec3eb95181e5c94c735a34157225c73f75d820cc7d3a19d9a2"
+      "status": "Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.",
+      "text": "PR-23: OpenAPI spec contract-tested vs runtime · initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests · initiative · Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production. · Outcome (Phase 1 shipped) · Контекст (історично) · Scope · 1. Source-of-truth decision (ADR) · 2. Generation pipeline · scripts/openapi/generate.mjs · Зчитує всі route registrations + Zod-output-schemas · Виводить apps/server/openapi.generated.json · 3. Contract tests · 4. Schemathesis property-based testing · .github/workflows/contract-tests.yml · 5. PR check: openapi-drift · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "70d44377c1923e09350e5c971f60fdf02eff6a845319ada1549d2a4dc3ddb2fc"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-24-embedding-vendor-abstraction",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md",
       "line": 1,
       "title": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in)",
       "tier": "core",
-      "status": "Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера).",
-      "text": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in) · initiative:stack-pulse-2026-05/pr-24-embedding-vendor-abstraction · initiative · Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера). · Контекст · Scope · 1. Provider interface · 2. Concrete adapters · 3. Routing · 4. modelid в БД · 5. Migration playbook · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "6aecbd496b8f2cbd5c2e5cb12941816413fe9b5b5b97c678c3c2cc931eca1ce3"
+      "status": "Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/00-start/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера).",
+      "text": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in) · initiative:stack-pulse-2026-05/pr-24-embedding-vendor-abstraction · initiative · Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/00-start/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера). · Контекст · Scope · 1. Provider interface · 2. Concrete adapters · 3. Routing · 4. modelid в БД · 5. Migration playbook · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "b1941953bc7d54a7e968e856d03821865b9889056d141d4d7b0f021ca25aa038"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-25-two-production-origins",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md",
       "line": 1,
       "title": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin",
       "tier": "core",
@@ -4214,18 +4225,18 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-26-csp-report-uri",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md",
       "line": 1,
       "title": "PR-26: CSP `report-uri` / `report-to` endpoint",
       "tier": "core",
-      "status": "Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints` header + `report-to csp-endpoint` directive) shipped in `apps/web/vercel.json`; `docs/observability/csp-monitoring.md` operations playbook live. Rate-limit (120/min IP) + 16 KB body cap було мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` + `apps/server/src/routes/csp-report.ts`. E2E `/dummy-violation-page.html` тест — лишається у backlog (browser-level CSP-violation hard to reproduce у unit-test, потребує Playwright fixture; не блокує закриття).",
-      "text": "PR-26: CSP `report-uri` / `report-to` endpoint · initiative:stack-pulse-2026-05/pr-26-csp-report-uri · initiative · Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints` header + `report-to csp-endpoint` directive) shipped in `apps/web/vercel.json`; `docs/observability/csp-monitoring.md` operations playbook live. Rate-limit (120/min IP) + 16 KB body cap було мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` + `apps/server/src/routes/csp-report.ts`. E2E `/dummy-violation-page.html` тест — лишається у backlog (browser-level CSP-violation hard to reproduce у unit-test, потребує Playwright fixture; не блокує закриття). · PR-26: CSP report-uri / report-to endpoint · Контекст · Scope · 1. CSP header додає reporting · 2. Server endpoint hardening · 3. Monitoring · 4. Documentation update · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "dd355a711f53a0790f09c2e180f3938fba4a4ce500ce7264cb7782e2b69af7aa"
+      "status": "Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints` header + `report-to csp-endpoint` directive) shipped in `apps/web/vercel.json`; `docs/03-operations/observability/csp-monitoring.md` operations playbook live. Rate-limit (120/min IP) + 16 KB body cap було мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` + `apps/server/src/routes/csp-report.ts`. E2E `/dummy-violation-page.html` тест — лишається у backlog (browser-level CSP-violation hard to reproduce у unit-test, потребує Playwright fixture; не блокує закриття).",
+      "text": "PR-26: CSP `report-uri` / `report-to` endpoint · initiative:stack-pulse-2026-05/pr-26-csp-report-uri · initiative · Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints` header + `report-to csp-endpoint` directive) shipped in `apps/web/vercel.json`; `docs/03-operations/observability/csp-monitoring.md` operations playbook live. Rate-limit (120/min IP) + 16 KB body cap було мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` + `apps/server/src/routes/csp-report.ts`. E2E `/dummy-violation-page.html` тест — лишається у backlog (browser-level CSP-violation hard to reproduce у unit-test, потребує Playwright fixture; не блокує закриття). · PR-26: CSP report-uri / report-to endpoint · Контекст · Scope · 1. CSP header додає reporting · 2. Server endpoint hardening · 3. Monitoring · 4. Documentation update · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "79f07466c3a12788f693570ec15f0ca9c8358207eaa7235ee0ff3123b8870f17"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-27-internal-api-key-rotation",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md",
       "line": 1,
       "title": "PR-27: `INTERNAL_API_KEY` rotation мechanism",
       "tier": "core",
@@ -4236,7 +4247,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-28-sw-build-id-import-meta",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-28-sw-build-id-import-meta.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-28-sw-build-id-import-meta.md",
       "line": 1,
       "title": "PR-28: `__SW_BUILD_ID__` global → `import.meta.env.VITE_BUILD_ID`",
       "tier": "core",
@@ -4247,7 +4258,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md",
       "line": 1,
       "title": "PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel",
       "tier": "core",
@@ -4258,7 +4269,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md",
       "line": 1,
       "title": "PR-30: Dockerfile post-install cleanup CVE-shrink fragility",
       "tier": "core",
@@ -4269,18 +4280,18 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-31-eslint-config-split",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-31-eslint-config-split.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-31-eslint-config-split.md",
       "line": 1,
       "title": "PR-31: ESLint config 1073 рядки → split per-app",
       "tier": "core",
-      "status": "Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/development/eslint-config.md` § Phase 2b).",
-      "text": "PR-31: ESLint config 1073 рядки → split per-app · initiative:stack-pulse-2026-05/pr-31-eslint-config-split · initiative · Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/development/eslint-config.md` § Phase 2b). · Контекст · Scope · 1. Spliting strategy · 2. Migration approach · 3. CI optimization · 4. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Implementation notes (2026-06-05 — pre-exec recon) · 1. ~10 з ~28 блоків — cross-surface · 2. Execution-model: per-package eslint . + gate з кореня · 3. Snapshot-артефакти генеруються лише з робочим eslint · Рекомендований порядок (для виконавця в робочому env) · Refs",
-      "contentHash": "fbce99128ef45e057994aca7e4ee5999e131b75f5c68e9561bd16d2bc6f0d227"
+      "status": "Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/02-engineering/development/eslint-config.md` § Phase 2b).",
+      "text": "PR-31: ESLint config 1073 рядки → split per-app · initiative:stack-pulse-2026-05/pr-31-eslint-config-split · initiative · Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків, byte-identical `--print-config` output verified on 7 fixture files). **Phase 2 scaffolding** (2026-06-01): `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):** per-surface extraction завершено — surface блоки винесені у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root composition manifest 1128 → 37 рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8 fixtures match, нуль зміни снапшотів. **Phase 2b deferred:** справжні per-package standalone `apps/<x>/eslint.config.js` + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни resolution-model + diff-gate cd-per-package + re-baseline снапшотів у CI-env (див. § Implementation notes + `docs/02-engineering/development/eslint-config.md` § Phase 2b). · Контекст · Scope · 1. Spliting strategy · 2. Migration approach · 3. CI optimization · 4. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Implementation notes (2026-06-05 — pre-exec recon) · 1. ~10 з ~28 блоків — cross-surface · 2. Execution-model: per-package eslint . + gate з кореня · 3. Snapshot-артефакти генеруються лише з робочим eslint · Рекомендований порядок (для виконавця в робочому env) · Refs",
+      "contentHash": "e194012c64fd826a3382228b0b5be705be94e81e3f4548800d541c741d2c9c3e"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup.md",
       "line": 1,
       "title": "PR-32: `pnpm.overrides` quarterly cleanup",
       "tier": "core",
@@ -4291,18 +4302,18 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-33-hard-rules-categorization",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-33-hard-rules-categorization.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-33-hard-rules-categorization.md",
       "line": 1,
       "title": "PR-33: 21 hard rules — categorize",
       "tier": "core",
-      "status": "Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../governance/rules/) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.",
-      "text": "PR-33: 21 hard rules — categorize · initiative:stack-pulse-2026-05/pr-33-hard-rules-categorization · initiative · Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../adr/0045-hard-rules-taxonomy.md), [`docs/governance/hard-rules-matrix.md`](../../governance/hard-rules-matrix.md), [`docs/governance/rules/`](../../governance/rules/) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate. · Контекст · Scope · 1. Categorization · 2. Schema update · 3. Per-category navigation · Hard Rules (21 total) · 4. Per-category enforcement table · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "298dff7bdc62d09f193b8dbdadf2a5f50b9313adbadc3a7e826b3464a6aa4152"
+      "status": "Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../../04-governance/adr/0045-hard-rules-taxonomy.md), [`docs/04-governance/governance/hard-rules-matrix.md`](../../../04-governance/governance/hard-rules-matrix.md), [`docs/04-governance/governance/rules/`](../../../04-governance/governance/rules) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate.",
+      "text": "PR-33: 21 hard rules — categorize · initiative:stack-pulse-2026-05/pr-33-hard-rules-categorization · initiative · Closed — implemented via 3 enforcement-categories (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) instead of 5 subject-categories. See [ADR-0045](../../../04-governance/adr/0045-hard-rules-taxonomy.md), [`docs/04-governance/governance/hard-rules-matrix.md`](../../../04-governance/governance/hard-rules-matrix.md), [`docs/04-governance/governance/rules/`](../../../04-governance/governance/rules) per-rule files, AGENTS.md `Hard rules` section, and `pnpm lint:hard-rules-registry` 3-way sync gate. · Контекст · Scope · 1. Categorization · 2. Schema update · 3. Per-category navigation · Hard Rules (21 total) · 4. Per-category enforcement table · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "6f7ded479910ca7f474d2204367f48eca70f94f0c4fede2f34cfeca4b94e2382"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate.md",
       "line": 1,
       "title": "PR-34: `runDemoSeedFromUrl` / `runDemoCleanupOnce` on every load",
       "tier": "core",
@@ -4313,7 +4324,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-35-log-level-debug-window",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-35-log-level-debug-window.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-35-log-level-debug-window.md",
       "line": 1,
       "title": "PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle",
       "tier": "core",
@@ -4324,7 +4335,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md",
       "line": 1,
       "title": "PR-36: `lazyImport` chunk-reload no-infinite-loop guard",
       "tier": "core",
@@ -4335,7 +4346,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-37-postgres-image-sha-pin",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md",
       "line": 1,
       "title": "PR-37: Postgres image SHA-pinning",
       "tier": "core",
@@ -4346,7 +4357,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-38-pwa-precache-first-party",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md",
       "line": 1,
       "title": "PR-38: PWA precache 1st-party verify",
       "tier": "core",
@@ -4357,7 +4368,7 @@
     {
       "id": "initiative:stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk",
       "type": "initiative",
-      "path": "docs/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md",
+      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md",
       "line": 1,
       "title": "PR-39: `tools/openclaw` Anthropic SDK 0.36.3 → latest",
       "tier": "core",
@@ -4368,7 +4379,7 @@
     {
       "id": "playbook:access-governance",
       "type": "playbook",
-      "path": "docs/playbooks/access-governance.md",
+      "path": "docs/00-start/playbooks/access-governance.md",
       "line": 1,
       "title": "Управління привілейованим доступом (access governance)",
       "tier": "core",
@@ -4379,7 +4390,7 @@
     {
       "id": "playbook:add-api-endpoint",
       "type": "playbook",
-      "path": "docs/playbooks/add-api-endpoint.md",
+      "path": "docs/00-start/playbooks/add-api-endpoint.md",
       "line": 1,
       "title": "Add API Endpoint",
       "tier": "core",
@@ -4390,7 +4401,7 @@
     {
       "id": "playbook:add-feature-flag",
       "type": "playbook",
-      "path": "docs/playbooks/add-feature-flag.md",
+      "path": "docs/00-start/playbooks/add-feature-flag.md",
       "line": 1,
       "title": "Додати feature flag",
       "tier": "core",
@@ -4401,7 +4412,7 @@
     {
       "id": "playbook:add-hard-rule",
       "type": "playbook",
-      "path": "docs/playbooks/add-hard-rule.md",
+      "path": "docs/00-start/playbooks/add-hard-rule.md",
       "line": 1,
       "title": "Додати Hard Rule",
       "tier": "core",
@@ -4412,7 +4423,7 @@
     {
       "id": "playbook:add-hubchat-tool",
       "type": "playbook",
-      "path": "docs/playbooks/add-hubchat-tool.md",
+      "path": "docs/00-start/playbooks/add-hubchat-tool.md",
       "line": 1,
       "title": "Додати HubChat Tool",
       "tier": "core",
@@ -4423,7 +4434,7 @@
     {
       "id": "playbook:add-monobank-event-handler",
       "type": "playbook",
-      "path": "docs/playbooks/add-monobank-event-handler.md",
+      "path": "docs/00-start/playbooks/add-monobank-event-handler.md",
       "line": 1,
       "title": "Add Monobank Event Handler",
       "tier": "core",
@@ -4434,7 +4445,7 @@
     {
       "id": "playbook:add-new-page-route",
       "type": "playbook",
-      "path": "docs/playbooks/add-new-page-route.md",
+      "path": "docs/00-start/playbooks/add-new-page-route.md",
       "line": 1,
       "title": "Add New Page Route",
       "tier": "core",
@@ -4445,7 +4456,7 @@
     {
       "id": "playbook:add-onboarding-step",
       "type": "playbook",
-      "path": "docs/playbooks/add-onboarding-step.md",
+      "path": "docs/00-start/playbooks/add-onboarding-step.md",
       "line": 1,
       "title": "Add Onboarding Step",
       "tier": "core",
@@ -4456,7 +4467,7 @@
     {
       "id": "playbook:add-push-notification",
       "type": "playbook",
-      "path": "docs/playbooks/add-push-notification.md",
+      "path": "docs/00-start/playbooks/add-push-notification.md",
       "line": 1,
       "title": "Add Push Notification",
       "tier": "core",
@@ -4467,7 +4478,7 @@
     {
       "id": "playbook:add-react-query-hook",
       "type": "playbook",
-      "path": "docs/playbooks/add-react-query-hook.md",
+      "path": "docs/00-start/playbooks/add-react-query-hook.md",
       "line": 1,
       "title": "Add React Query Hook",
       "tier": "core",
@@ -4478,7 +4489,7 @@
     {
       "id": "playbook:add-sql-migration",
       "type": "playbook",
-      "path": "docs/playbooks/add-sql-migration.md",
+      "path": "docs/00-start/playbooks/add-sql-migration.md",
       "line": 1,
       "title": "Add SQL Migration",
       "tier": "core",
@@ -4489,7 +4500,7 @@
     {
       "id": "playbook:author-skill",
       "type": "playbook",
-      "path": "docs/playbooks/author-skill.md",
+      "path": "docs/00-start/playbooks/author-skill.md",
       "line": 1,
       "title": "Author or Edit a SKILL.md",
       "tier": "core",
@@ -4500,7 +4511,7 @@
     {
       "id": "playbook:bump-dep-safely",
       "type": "playbook",
-      "path": "docs/playbooks/bump-dep-safely.md",
+      "path": "docs/00-start/playbooks/bump-dep-safely.md",
       "line": 1,
       "title": "Bump Dependency Safely",
       "tier": "core",
@@ -4511,7 +4522,7 @@
     {
       "id": "playbook:change-auth-flow",
       "type": "playbook",
-      "path": "docs/playbooks/change-auth-flow.md",
+      "path": "docs/00-start/playbooks/change-auth-flow.md",
       "line": 1,
       "title": "Change an Auth Flow (Better Auth)",
       "tier": "core",
@@ -4522,7 +4533,7 @@
     {
       "id": "playbook:cleanup-codex-branch-after-pr",
       "type": "playbook",
-      "path": "docs/playbooks/cleanup-codex-branch-after-pr.md",
+      "path": "docs/00-start/playbooks/cleanup-codex-branch-after-pr.md",
       "line": 1,
       "title": "Cleanup Codex branch after PR",
       "tier": "core",
@@ -4533,7 +4544,7 @@
     {
       "id": "playbook:cleanup-dead-code",
       "type": "playbook",
-      "path": "docs/playbooks/cleanup-dead-code.md",
+      "path": "docs/00-start/playbooks/cleanup-dead-code.md",
       "line": 1,
       "title": "Прибирання dead code",
       "tier": "core",
@@ -4544,7 +4555,7 @@
     {
       "id": "playbook:cutover-openclaw-gateway",
       "type": "playbook",
-      "path": "docs/playbooks/cutover-openclaw-gateway.md",
+      "path": "docs/00-start/playbooks/cutover-openclaw-gateway.md",
       "line": 1,
       "title": "Cutover OpenClaw на зовнішній Gateway (Stage 7)",
       "tier": "core",
@@ -4555,7 +4566,7 @@
     {
       "id": "playbook:debug-chat-tool",
       "type": "playbook",
-      "path": "docs/playbooks/debug-chat-tool.md",
+      "path": "docs/00-start/playbooks/debug-chat-tool.md",
       "line": 1,
       "title": "Debug HubChat Tool",
       "tier": "core",
@@ -4566,7 +4577,7 @@
     {
       "id": "playbook:declare-incident",
       "type": "playbook",
-      "path": "docs/playbooks/declare-incident.md",
+      "path": "docs/00-start/playbooks/declare-incident.md",
       "line": 1,
       "title": "Оголошення інциденту",
       "tier": "core",
@@ -4577,7 +4588,7 @@
     {
       "id": "playbook:deploy-config-change",
       "type": "playbook",
-      "path": "docs/playbooks/deploy-config-change.md",
+      "path": "docs/00-start/playbooks/deploy-config-change.md",
       "line": 1,
       "title": "Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)",
       "tier": "core",
@@ -4588,7 +4599,7 @@
     {
       "id": "playbook:embedding-provider-migration",
       "type": "playbook",
-      "path": "docs/playbooks/embedding-provider-migration.md",
+      "path": "docs/00-start/playbooks/embedding-provider-migration.md",
       "line": 1,
       "title": "Embedding Provider Migration",
       "tier": "core",
@@ -4599,7 +4610,7 @@
     {
       "id": "playbook:enable-prompt-caching",
       "type": "playbook",
-      "path": "docs/playbooks/enable-prompt-caching.md",
+      "path": "docs/00-start/playbooks/enable-prompt-caching.md",
       "line": 1,
       "title": "Enable Anthropic Prompt Caching",
       "tier": "core",
@@ -4610,7 +4621,7 @@
     {
       "id": "playbook:execute-planning-batch",
       "type": "playbook",
-      "path": "docs/playbooks/execute-planning-batch.md",
+      "path": "docs/00-start/playbooks/execute-planning-batch.md",
       "line": 1,
       "title": "Виконання батчу planning-тасків (parallel fan-out)",
       "tier": "core",
@@ -4621,7 +4632,7 @@
     {
       "id": "playbook:fix-exhaustive-deps",
       "type": "playbook",
-      "path": "docs/playbooks/fix-exhaustive-deps.md",
+      "path": "docs/00-start/playbooks/fix-exhaustive-deps.md",
       "line": 1,
       "title": "Fix Exhaustive Deps Warnings",
       "tier": "core",
@@ -4632,7 +4643,7 @@
     {
       "id": "playbook:fix-failing-ci",
       "type": "playbook",
-      "path": "docs/playbooks/fix-failing-ci.md",
+      "path": "docs/00-start/playbooks/fix-failing-ci.md",
       "line": 1,
       "title": "Fix Failing CI on a PR",
       "tier": "core",
@@ -4643,7 +4654,7 @@
     {
       "id": "playbook:grant-privileged-access",
       "type": "playbook",
-      "path": "docs/playbooks/grant-privileged-access.md",
+      "path": "docs/00-start/playbooks/grant-privileged-access.md",
       "line": 1,
       "title": "Grant Privileged Access",
       "tier": "extended",
@@ -4654,7 +4665,7 @@
     {
       "id": "playbook:hotfix-prod-regression",
       "type": "playbook",
-      "path": "docs/playbooks/hotfix-prod-regression.md",
+      "path": "docs/00-start/playbooks/hotfix-prod-regression.md",
       "line": 1,
       "title": "Hotfix Production Regression",
       "tier": "core",
@@ -4665,7 +4676,7 @@
     {
       "id": "playbook:investigate-alert",
       "type": "playbook",
-      "path": "docs/playbooks/investigate-alert.md",
+      "path": "docs/00-start/playbooks/investigate-alert.md",
       "line": 1,
       "title": "Розслідування alert-у",
       "tier": "core",
@@ -4676,7 +4687,7 @@
     {
       "id": "playbook:migrate-localstorage-to-typedstore",
       "type": "playbook",
-      "path": "docs/playbooks/migrate-localstorage-to-typedstore.md",
+      "path": "docs/00-start/playbooks/migrate-localstorage-to-typedstore.md",
       "line": 1,
       "title": "Migrate localStorage to typedStore",
       "tier": "core",
@@ -4687,7 +4698,7 @@
     {
       "id": "playbook:modify-console-agent",
       "type": "playbook",
-      "path": "docs/playbooks/modify-console-agent.md",
+      "path": "docs/00-start/playbooks/modify-console-agent.md",
       "line": 1,
       "title": "Зміна або додавання console-агента",
       "tier": "core",
@@ -4698,7 +4709,7 @@
     {
       "id": "playbook:modify-n8n-workflow",
       "type": "playbook",
-      "path": "docs/playbooks/modify-n8n-workflow.md",
+      "path": "docs/00-start/playbooks/modify-n8n-workflow.md",
       "line": 1,
       "title": "Зміна або додавання n8n-воркфлоу",
       "tier": "core",
@@ -4709,7 +4720,7 @@
     {
       "id": "playbook:onboard-external-api",
       "type": "playbook",
-      "path": "docs/playbooks/onboard-external-api.md",
+      "path": "docs/00-start/playbooks/onboard-external-api.md",
       "line": 1,
       "title": "Onboard External API",
       "tier": "core",
@@ -4720,7 +4731,7 @@
     {
       "id": "playbook:operational-continuity",
       "type": "playbook",
-      "path": "docs/playbooks/operational-continuity.md",
+      "path": "docs/00-start/playbooks/operational-continuity.md",
       "line": 1,
       "title": "Operational continuity",
       "tier": "core",
@@ -4731,7 +4742,7 @@
     {
       "id": "playbook:playbook-catalog",
       "type": "playbook",
-      "path": "docs/playbooks/playbook-catalog.md",
+      "path": "docs/00-start/playbooks/playbook-catalog.md",
       "line": 1,
       "title": "Playbook Catalog",
       "tier": "core",
@@ -4742,7 +4753,7 @@
     {
       "id": "playbook:port-web-screen-to-mobile",
       "type": "playbook",
-      "path": "docs/playbooks/port-web-screen-to-mobile.md",
+      "path": "docs/00-start/playbooks/port-web-screen-to-mobile.md",
       "line": 1,
       "title": "Порт web-екрану в mobile",
       "tier": "core",
@@ -4753,18 +4764,18 @@
     {
       "id": "playbook:pre-merge-migration-checklist",
       "type": "playbook",
-      "path": "docs/playbooks/pre-merge-migration-checklist.md",
+      "path": "docs/00-start/playbooks/pre-merge-migration-checklist.md",
       "line": 1,
       "title": "Pre-Merge Migration Checklist",
       "tier": "core",
       "status": "Active",
-      "text": "Pre-Merge Migration Checklist · playbook:pre-merge-migration-checklist · playbook · Active · Playbook: Pre-Merge Migration Checklist · Owner surface · Checklist (скопіюй у PR description) · Pre-merge migration checklist (docs/playbooks/pre-merge-migration-checklist.md) · A. Numbering & file structure · B. AGENTS.md rule #4 — DROP-safety (two-phase) · C. AGENTS.md rule #1 — bigint coercion · D. AGENTS.md rule #3 — API contract sync · E. Idempotency & defaults · F. Performance & locks · G. RLS (Row-Level Security) · H. Local verification (автор) · I. CI verification (автор) · J. Rollout-readiness · Reviewer's responsibility · Verification · Common mistakes (не повторюй) · See also",
-      "contentHash": "d5e74a45e1937492402e09d348116dff46a1e69c86ebd7893a4281f90b84e1fe"
+      "text": "Pre-Merge Migration Checklist · playbook:pre-merge-migration-checklist · playbook · Active · Playbook: Pre-Merge Migration Checklist · Owner surface · Checklist (скопіюй у PR description) · Pre-merge migration checklist (docs/00-start/playbooks/pre-merge-migration-checklist.md) · A. Numbering & file structure · B. AGENTS.md rule #4 — DROP-safety (two-phase) · C. AGENTS.md rule #1 — bigint coercion · D. AGENTS.md rule #3 — API contract sync · E. Idempotency & defaults · F. Performance & locks · G. RLS (Row-Level Security) · H. Local verification (автор) · I. CI verification (автор) · J. Rollout-readiness · Reviewer's responsibility · Verification · Common mistakes (не повторюй) · See also",
+      "contentHash": "155fdc8756a53e003d71609c288a281e33f527d120073296d7affb71cbfc95f9"
     },
     {
       "id": "playbook:prettier-pass-on-docs",
       "type": "playbook",
-      "path": "docs/playbooks/prettier-pass-on-docs.md",
+      "path": "docs/00-start/playbooks/prettier-pass-on-docs.md",
       "line": 1,
       "title": "Prettier Pass on `docs/`",
       "tier": "core",
@@ -4775,7 +4786,7 @@
     {
       "id": "playbook:reconcile-doc-drift",
       "type": "playbook",
-      "path": "docs/playbooks/reconcile-doc-drift.md",
+      "path": "docs/00-start/playbooks/reconcile-doc-drift.md",
       "line": 1,
       "title": "Звірка дрифту документації та архівація",
       "tier": "core",
@@ -4786,7 +4797,7 @@
     {
       "id": "playbook:release",
       "type": "playbook",
-      "path": "docs/playbooks/release.md",
+      "path": "docs/00-start/playbooks/release.md",
       "line": 1,
       "title": "Реліз",
       "tier": "core",
@@ -4797,7 +4808,7 @@
     {
       "id": "playbook:release-expo-mobile",
       "type": "playbook",
-      "path": "docs/playbooks/release-expo-mobile.md",
+      "path": "docs/00-start/playbooks/release-expo-mobile.md",
       "line": 1,
       "title": "Release Expo Mobile",
       "tier": "extended",
@@ -4808,7 +4819,7 @@
     {
       "id": "playbook:release-mobile-shell",
       "type": "playbook",
-      "path": "docs/playbooks/release-mobile-shell.md",
+      "path": "docs/00-start/playbooks/release-mobile-shell.md",
       "line": 1,
       "title": "Release Mobile Shell",
       "tier": "extended",
@@ -4819,7 +4830,7 @@
     {
       "id": "playbook:release-web-and-api",
       "type": "playbook",
-      "path": "docs/playbooks/release-web-and-api.md",
+      "path": "docs/00-start/playbooks/release-web-and-api.md",
       "line": 1,
       "title": "Release Web and API",
       "tier": "extended",
@@ -4830,7 +4841,7 @@
     {
       "id": "playbook:respond-to-suspected-account-compromise",
       "type": "playbook",
-      "path": "docs/playbooks/respond-to-suspected-account-compromise.md",
+      "path": "docs/00-start/playbooks/respond-to-suspected-account-compromise.md",
       "line": 1,
       "title": "Respond to Suspected Account Compromise",
       "tier": "extended",
@@ -4841,7 +4852,7 @@
     {
       "id": "playbook:restore-from-backup",
       "type": "playbook",
-      "path": "docs/playbooks/restore-from-backup.md",
+      "path": "docs/00-start/playbooks/restore-from-backup.md",
       "line": 1,
       "title": "Restore from Backup",
       "tier": "core",
@@ -4852,7 +4863,7 @@
     {
       "id": "playbook:retire-feature-flag",
       "type": "playbook",
-      "path": "docs/playbooks/retire-feature-flag.md",
+      "path": "docs/00-start/playbooks/retire-feature-flag.md",
       "line": 1,
       "title": "Retire Feature Flag",
       "tier": "core",
@@ -4863,7 +4874,7 @@
     {
       "id": "playbook:revoke-privileged-access",
       "type": "playbook",
-      "path": "docs/playbooks/revoke-privileged-access.md",
+      "path": "docs/00-start/playbooks/revoke-privileged-access.md",
       "line": 1,
       "title": "Revoke Privileged Access",
       "tier": "extended",
@@ -4874,7 +4885,7 @@
     {
       "id": "playbook:rotate-openclaw-credentials",
       "type": "playbook",
-      "path": "docs/playbooks/rotate-openclaw-credentials.md",
+      "path": "docs/00-start/playbooks/rotate-openclaw-credentials.md",
       "line": 1,
       "title": "Ротація OpenClaw GitHub credentials",
       "tier": "core",
@@ -4885,7 +4896,7 @@
     {
       "id": "playbook:rotate-secrets",
       "type": "playbook",
-      "path": "docs/playbooks/rotate-secrets.md",
+      "path": "docs/00-start/playbooks/rotate-secrets.md",
       "line": 1,
       "title": "Rotate Secrets",
       "tier": "core",
@@ -4896,7 +4907,7 @@
     {
       "id": "playbook:run-access-review",
       "type": "playbook",
-      "path": "docs/playbooks/run-access-review.md",
+      "path": "docs/00-start/playbooks/run-access-review.md",
       "line": 1,
       "title": "Run Access Review",
       "tier": "extended",
@@ -4907,7 +4918,7 @@
     {
       "id": "playbook:run-council",
       "type": "playbook",
-      "path": "docs/playbooks/run-council.md",
+      "path": "docs/00-start/playbooks/run-council.md",
       "line": 1,
       "title": "Council — рада директорів для product рішень",
       "tier": "core",
@@ -4918,7 +4929,7 @@
     {
       "id": "playbook:run-squad-deliver",
       "type": "playbook",
-      "path": "docs/playbooks/run-squad-deliver.md",
+      "path": "docs/00-start/playbooks/run-squad-deliver.md",
       "line": 1,
       "title": "Squad deliver — sequential cross-surface feature delivery",
       "tier": "core",
@@ -4929,7 +4940,7 @@
     {
       "id": "playbook:run-squad-qa",
       "type": "playbook",
-      "path": "docs/playbooks/run-squad-qa.md",
+      "path": "docs/00-start/playbooks/run-squad-qa.md",
       "line": 1,
       "title": "Squad QA — паралельний QA по всіх surfaces",
       "tier": "core",
@@ -4940,7 +4951,7 @@
     {
       "id": "playbook:run-squad-review",
       "type": "playbook",
-      "path": "docs/playbooks/run-squad-review.md",
+      "path": "docs/00-start/playbooks/run-squad-review.md",
       "line": 1,
       "title": "Squad review — паралельний PR review через 4 lens-агентів",
       "tier": "core",
@@ -4951,7 +4962,7 @@
     {
       "id": "playbook:run-weekly-operator-digest",
       "type": "playbook",
-      "path": "docs/playbooks/run-weekly-operator-digest.md",
+      "path": "docs/00-start/playbooks/run-weekly-operator-digest.md",
       "line": 1,
       "title": "Тижневий operator-дайджест",
       "tier": "core",
@@ -4962,7 +4973,7 @@
     {
       "id": "playbook:security-pen-test-checklist",
       "type": "playbook",
-      "path": "docs/playbooks/security-pen-test-checklist.md",
+      "path": "docs/00-start/playbooks/security-pen-test-checklist.md",
       "line": 1,
       "title": "Security pen-test checklist for closed hardening cards",
       "tier": "core",
@@ -4973,7 +4984,7 @@
     {
       "id": "playbook:stabilize-flaky-test",
       "type": "playbook",
-      "path": "docs/playbooks/stabilize-flaky-test.md",
+      "path": "docs/00-start/playbooks/stabilize-flaky-test.md",
       "line": 1,
       "title": "Stabilize Flaky Test",
       "tier": "core",
@@ -4984,18 +4995,18 @@
     {
       "id": "playbook:sync-rn-migration-progress",
       "type": "playbook",
-      "path": "docs/playbooks/sync-rn-migration-progress.md",
+      "path": "docs/00-start/playbooks/sync-rn-migration-progress.md",
       "line": 1,
       "title": "Sync RN Migration Progress",
       "tier": "core",
       "status": "Active",
-      "text": "Sync RN Migration Progress · playbook:sync-rn-migration-progress · playbook · Active · Playbook: Sync RN Migration Progress · Owner surface · Steps · 1. Зібрати список merged PR-ів · Або від користувача (наприклад: «синкни прогрес по #443, #444, #445»), · або через GitHub UI / git CLI: · 2. Прочитати docs/mobile/react-native-migration.md · Чи компонент справді існує і використовується в apps/mobile? · 3. Оновити рядки в трекері · 4. Прогнати prettier · 5. Створити PR · Verification · Notes · See also",
-      "contentHash": "b1d110493defa281e93b529e2a25563fbce277d06956d0a34849dd6eb4ce352f"
+      "text": "Sync RN Migration Progress · playbook:sync-rn-migration-progress · playbook · Active · Playbook: Sync RN Migration Progress · Owner surface · Steps · 1. Зібрати список merged PR-ів · Або від користувача (наприклад: «синкни прогрес по #443, #444, #445»), · або через GitHub UI / git CLI: · 2. Прочитати docs/02-engineering/mobile/react-native-migration.md · Чи компонент справді існує і використовується в apps/mobile? · 3. Оновити рядки в трекері · 4. Прогнати prettier · 5. Створити PR · Verification · Notes · See also",
+      "contentHash": "5337f13feb00522fb0ce79700609ab46c0a2d31f6ef193ad80a6870958a48f29"
     },
     {
       "id": "playbook:test-backup-restore",
       "type": "playbook",
-      "path": "docs/playbooks/test-backup-restore.md",
+      "path": "docs/00-start/playbooks/test-backup-restore.md",
       "line": 1,
       "title": "Тестове відновлення бекапу",
       "tier": "core",
@@ -5006,7 +5017,7 @@
     {
       "id": "playbook:tune-system-prompt",
       "type": "playbook",
-      "path": "docs/playbooks/tune-system-prompt.md",
+      "path": "docs/00-start/playbooks/tune-system-prompt.md",
       "line": 1,
       "title": "Tune System Prompt",
       "tier": "core",
@@ -5017,7 +5028,7 @@
     {
       "id": "playbook:write-e2e-test",
       "type": "playbook",
-      "path": "docs/playbooks/write-e2e-test.md",
+      "path": "docs/00-start/playbooks/write-e2e-test.md",
       "line": 1,
       "title": "Write or Debug a Playwright E2E Test",
       "tier": "core",
@@ -5028,7 +5039,7 @@
     {
       "id": "playbook:write-postmortem",
       "type": "playbook",
-      "path": "docs/playbooks/write-postmortem.md",
+      "path": "docs/00-start/playbooks/write-postmortem.md",
       "line": 1,
       "title": "Postmortem після інциденту",
       "tier": "core",
@@ -5253,8 +5264,8 @@
       "line": 1,
       "title": "sergeant-planning-batch",
       "tier": "core",
-      "text": "sergeant-planning-batch · skill:sergeant-planning-batch · skill · Use when executing a batch of N open tasks from docs/planning/* PR-plans — dynamic selection, parallel agent fan-out, tracker updates, fast-forward archival of complete docs; UA: виконати батч planning-тасків. · Planning-batch executor (dynamic parallel fan-out) · When to load · Dynamic batch selection · Task classification → execution lane · Parallel fan-out strategy · Tracker updates (always) · Archival policy — fast-forward (skip the 90-day gate) · Verification · Red flags · Playbooks",
-      "contentHash": "fc550665f3b1ddcbfe26bc8ac4858b8fb0f36eb9312f90bc22396ce14b810039"
+      "text": "sergeant-planning-batch · skill:sergeant-planning-batch · skill · Use when executing a batch of N open tasks from docs/90-work/planning/* PR-plans — dynamic selection, parallel agent fan-out, tracker updates, fast-forward archival of complete docs; UA: виконати батч planning-тасків. · Planning-batch executor (dynamic parallel fan-out) · When to load · Dynamic batch selection · Task classification → execution lane · Parallel fan-out strategy · Tracker updates (always) · Archival policy — fast-forward (skip the 90-day gate) · Verification · Red flags · Playbooks",
+      "contentHash": "55b016523c19d855c12b2430443991ef35fd98aa76cbc203266a77aa2cbcc208"
     },
     {
       "id": "skill:sergeant-qa-squad",

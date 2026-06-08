@@ -48,7 +48,7 @@
       "title": "OpenClaw (Telegram bot)",
       "workspace": "tools/openclaw",
       "deployTarget": "railway",
-      "deployArtifact": "Dockerfile.console",
+      "deployArtifact": "Dockerfile.openclaw",
       "railwayService": null,
       "healthcheckPath": null,
       "owner": null

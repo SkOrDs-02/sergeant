@@ -26,14 +26,14 @@
 - [#2889](https://github.com/Skords-01/Sergeant/pull/2889) — feat(docs): per-package symbol catalog (Initiative 0014 Phase 2) _(2026-05-15)_
 - [#2876](https://github.com/Skords-01/Sergeant/pull/2876) — feat(docs): knowledge graph generator (Initiative 0014 Phase 1) _(2026-05-15)_
 
-## 🔵 В роботі — 75 відкритих
+## 🔵 В роботі — 72 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 19       |
-| Планування                       | 15       |
+| Ініціативи                       | 18       |
+| Планування                       | 14       |
 | Launch / запуск                  | 17       |
-| Аудити й прожарки                | 17       |
+| Аудити й прожарки                | 16       |
 | Security hardening               | 2        |
 | Техборг                          | 5        |
 | Superpowers — плани впровадження | 0        |
@@ -41,13 +41,13 @@
 **Найактивніше (8, за останніми PR):**
 
 - [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
-- [`90-work/planning/pr-plan-dead-code-hard-rules-2026-05.md`](./90-work/planning/pr-plan-dead-code-hard-rules-2026-05.md) — PR-план — Dead Code + Hard Rules (з прожарки 2026-05-13) — Active _(Планування)_
 - [`90-work/planning/pr-plan-testing-devx-2026-05.md`](./90-work/planning/pr-plan-testing-devx-2026-05.md) — PR-план Testing & DevX 2026-05 — зі зрізу 2026-05-13 — Active _(Планування)_
 - [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
-- [`90-work/initiatives/0017-hub-tabs-mount-perf.md`](./90-work/initiatives/0017-hub-tabs-mount-perf.md) — 0017 — Hub Settings & Reports mount perf — In progress — code-complete, RUM review pending (2026-06-01). Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worke _(Ініціативи)_
 - [`90-work/audits/2026-05-13-consolidated-page-audit.md`](./90-work/audits/2026-05-13-consolidated-page-audit.md) — Consolidated Page Audit — 2026-05-13 — Active _(Аудити й прожарки)_
 - [`90-work/audits/2026-05-13-testing-devx-roast.md`](./90-work/audits/2026-05-13-testing-devx-roast.md) — Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) — Active _(Аудити й прожарки)_
 - [`90-work/tech-debt/backend.md`](./90-work/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
+- [`90-work/tech-debt/mobile.md`](./90-work/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Техборг)_
+- [`90-work/initiatives/0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md) — 0010 — Revenue-first launch: ship paid, focus wedge — In progress _(Ініціативи)_
 
 ## ⏭️ Наступний крок / заблоковано
 

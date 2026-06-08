@@ -470,7 +470,7 @@ describe("rewriteRelativeLinks", () => {
       "docs/90-work/initiatives/stack-pulse-2026-05/pr-05.md",
       "docs/open-work.md",
     );
-    assert.match(out, /\[config\]\(\.\/adr\/0050\.md\)/);
+    assert.match(out, /\[config\]\(\.\/90-work\/adr\/0050\.md\)/);
   });
 
   it("returns input unchanged when no links are present", () => {

@@ -33,7 +33,7 @@ HubChat і OpenClaw Gateway — **окремі поверхні**:
 - Сервер НЕ виконує chat-tool side-effect-и у `chat.ts`.
 - Клієнтські executor-и мають використовувати наявні storage-врапери або типовані API-клієнти, а не ad-hoc storage.
 - Результати tool-ів, що повертаються моделі, мають лишатися лаконічними і детермінованими.
-- **Prompt cache (ADR-0057):** зміна tool-визначень може інвалідовувати prompt-cache candidates — `tools/console` використовує `@anthropic-ai/sdk@0.95.2` із opt-in caching (`ANTHROPIC_PROMPT_CACHE=1`). Групуй wording-правки разом; не роби часткових tool-def змін між PR-ами.
+- **Prompt cache (ADR-0057):** зміна tool-визначень може інвалідовувати prompt-cache candidates — `tools/openclaw` використовує `@anthropic-ai/sdk@0.95.2` із opt-in caching (`ANTHROPIC_PROMPT_CACHE=1`). Групуй wording-правки разом; не роби часткових tool-def змін між PR-ами.
 - **Hard Rule #20:** Ніяких OpenClaw PAT-ів у production. `assertStartupEnv()` захищає runtime; не обходь.
 
 ## Верифікація
@@ -41,7 +41,7 @@ HubChat і OpenClaw Gateway — **окремі поверхні**:
 - Протестуй executor-шлях і принаймні один error-шлях.
 - Використай задокументований curl- або local-UI flow для end-to-end виклику tool-а.
 - Перевір, чи tool слід позначити risky або відрендерити з action card.
-- Якщо зміна торкається tool def wording — перевір, чи не зламаний prompt-cache кандидат у `tools/console`.
+- Якщо зміна торкається tool def wording — перевір, чи не зламаний prompt-cache кандидат у `tools/openclaw`.
 
 ## Корисні доки
 

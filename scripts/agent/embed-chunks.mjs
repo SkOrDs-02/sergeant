@@ -8,7 +8,7 @@
 //
 // This is a manual / cron step, NOT a CI gate — it needs VOYAGE_API_KEY and the
 // network. Without a key it exits 0 with a notice; `agent:find` then stays in
-// lexical mode. See docs/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md.
+// lexical mode. See docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md.
 //
 // Usage:
 //   VOYAGE_API_KEY=… pnpm agent:embed            # embed missing chunks
@@ -26,7 +26,10 @@ import {
   saveVectorCache,
 } from "./voyage.mjs";
 
-const INDEX_PATH = resolve(REPO_ROOT, "docs/governance/retrieval-index.json");
+const INDEX_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/retrieval-index.json",
+);
 
 async function main() {
   const rebuild = process.argv.slice(2).includes("--rebuild");

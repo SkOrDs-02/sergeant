@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by @Skords-01 / Devin (PR-30). **Next review:** 2026-08-11.
 > **Status:** Active
 
-Політика для runtime container-image-ів Sergeant: Hub API (`Dockerfile.api`) і Console / OpenClaw (`Dockerfile.console`). Описує rationale за distroless multi-stage build (PR-30 — `docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`), CVE-бюджет, healthcheck-семантику, і rollout-послідовність.
+Політика для runtime container-image-ів Sergeant: Hub API (`Dockerfile.api`) і Console / OpenClaw (`Dockerfile.openclaw`). Описує rationale за distroless multi-stage build (PR-30 — `docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`), CVE-бюджет, healthcheck-семантику, і rollout-послідовність.
 
 ## TL;DR
 
@@ -30,7 +30,7 @@ RUN find node_modules -maxdepth 3 -type d \
 **Проблеми попереднього підходу:**
 
 1. **Fragile** — кожна нова transitive deps з peer-bundle тягнула Go-binary `esbuild` / `vite`, і `find … -prune` доводилося розширювати manually.
-2. **Inconsistent** — `Dockerfile.api` (154 рядків) і `Dockerfile.console` (97 рядків) мали різні cleanup-lists.
+2. **Inconsistent** — `Dockerfile.api` (154 рядків) і `Dockerfile.openclaw` (97 рядків) мали різні cleanup-lists.
 3. **Implicit CVE-shrink** — list of removed CVE-paths був у comments, не enforce-ило-ся CI-ем.
 4. **Shell + corepack залишалися** — `/bin/sh`, `wget`, `npm`, `corepack` все ще присутні; attack surface не нульова.
 
@@ -53,7 +53,7 @@ Builder + deps stage-и залишаються на `node:20.20.2-alpine` — ї
 | `deps`    | `node:20.20.2-alpine`                         | `pnpm install --prod --filter @sergeant/server...`. Cleanup CVE-noisy peers через `find … -prune`.                     |
 | `runtime` | `gcr.io/distroless/nodejs20-debian12:nonroot` | Тільки `node_modules` (з deps) + `dist-server/` (з builder) + `docs/<read_strategy_docs allowlist>/`. NO HEALTHCHECK.  |
 
-### `Dockerfile.console` (Telegram bot, long-poll)
+### `Dockerfile.openclaw` (Telegram bot, long-poll)
 
 | Stage     | Base                                          | Покликання                                                                           |
 | --------- | --------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -82,7 +82,7 @@ CI workflow [`.github/workflows/container-scan.yml`](../../../.github/workflows/
 **Очікувані Trivy-метрики після PR-30:**
 
 - `Dockerfile.api`: 0 HIGH/CRITICAL (порівняти з pre-PR baseline через CI artifacts).
-- `Dockerfile.console`: Trivy scan ще не enabled у CI (follow-up PR розширить `container-scan.yml`).
+- `Dockerfile.openclaw`: Trivy scan ще не enabled у CI (follow-up PR розширить `container-scan.yml`).
 
 **`.trivyignore`** — не використовуємо. Якщо в майбутньому з'явиться false-positive на known-good vendor package, рішення: (a) додати у `.trivyignore` з obligatory inline comment-justification і audit-trail, (b) preferred — upgrade-нути dep до patched версії.
 
@@ -148,7 +148,7 @@ Native-binding deps (наприклад `sharp`) — НЕ у поточному 
 ## See also
 
 - [`Dockerfile.api`](../../../Dockerfile.api) — Hub API multi-stage build.
-- [`Dockerfile.console`](../../../Dockerfile.console) — Console / OpenClaw multi-stage build.
+- [`Dockerfile.openclaw`](../../../Dockerfile.openclaw) — Console / OpenClaw multi-stage build.
 - [`.github/workflows/container-scan.yml`](../../../.github/workflows/container-scan.yml) — Trivy CI gate.
 - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md) — PR-30 design doc.
 - [`docs/04-governance/security/hardening/L13-docker-platform-pin.md`](../../04-governance/security/hardening/L13-docker-platform-pin.md) — `--platform=linux/amd64` pin policy.

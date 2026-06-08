@@ -10,7 +10,7 @@
 #   1. `@sergeant_console_bot` (ADR-0027) — multi-agent ops/marketing.
 #   2. `@OpenClaw_sergeant_bot` (ADR-0031) — DM-only co-founder bot.
 #
-# Збірка: docker build -f Dockerfile.console -t sergeant-console .
+# Збірка: docker build -f Dockerfile.openclaw -t sergeant-openclaw .
 #
 # Stage map (PR-30 — `docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
 #   1. `builder`  — node:alpine + full deps + `pnpm build`.

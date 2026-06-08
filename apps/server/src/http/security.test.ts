@@ -83,7 +83,7 @@ describe("apiHelmetMiddleware", () => {
     expect(String(csp!.value)).toContain("script-src 'none'");
   });
 
-  it("servesFrontend=true → CSP вимкнена (не ламає SPA на Replit)", () => {
+  it("servesFrontend=true → CSP вимкнена (не ламає SPA на unified serving)", () => {
     const csp = captureCsp(apiHelmetMiddleware({ servesFrontend: true }));
     expect(csp).toBeUndefined();
   });
@@ -156,8 +156,8 @@ describe("apiHelmetMiddleware", () => {
       expect(headers.get("x-dns-prefetch-control")).toBe("off");
     });
 
-    it("L5 + L6 — same defaults still apply on the Replit servesFrontend mode", () => {
-      // The Replit-mode disables CSP (the SPA needs inline scripts) but the
+    it("L5 + L6 — same defaults still apply in the servesFrontend mode", () => {
+      // servesFrontend disables CSP (the SPA needs inline scripts) but the
       // sniff/prefetch defaults must keep firing because they cost the SPA
       // nothing and protect text/* responses (e.g. health endpoints) from
       // MIME-confusion attacks regardless of CSP state.

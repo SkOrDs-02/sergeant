@@ -50,7 +50,7 @@ react/flat, jsx-a11y/flat, global `**/*` plugin/settings/rules block,
 TS-only `@typescript-eslint/no-unused-vars`). Root config робить
 `...baseline` spread на початку масиву, після чого ідуть surface-specific
 блоки (apps/web, apps/server, apps/mobile, apps/mobile-shell,
-packages/eslint-plugin-sergeant-design, tools/console, jest setup,
+packages/eslint-plugin-sergeant-design, tools/openclaw, jest setup,
 packages/api-client, тощо — 28 file-glob blocks).
 
 `eslint --print-config <file>` залишається **byte-identical** до pre-PR-31
@@ -84,7 +84,7 @@ apps/web/eslint.config.js              (extends baseline + i18n + dark-mode
                                         + module accents + `apps/web`-only)
 apps/mobile/eslint.config.js           (extends baseline + RN + nativewind)
 apps/mobile-shell/eslint.config.js     (extends baseline + capacitor)
-tools/console/eslint.config.js         (extends baseline + telegram/grammy)
+tools/openclaw/eslint.config.js         (extends baseline + telegram/grammy)
 packages/shared/eslint.config.js       (extends baseline + isomorphic)
 packages/api-client/eslint.config.js   (extends baseline + no-react)
 packages/eslint-plugin-sergeant-design/eslint.config.js  (extends + meta)
@@ -109,7 +109,7 @@ ESLint flat-config discovery walks up from the linted file to the closest
 
 Root config has 28 file-glob blocks з subtle interactions:
 
-- `apps/server` + `tools/console` share `security/*` rules (line ~700).
+- `apps/server` + `tools/openclaw` share `security/*` rules (line ~700).
 - `apps/web` + `apps/mobile` share i18n burndown allowlist (line ~960).
 - `apps/web` + `apps/mobile` share module-accent containment (line ~870).
 - `apps/server/src/**` + `apps/web/src/**` share `no-restricted-imports`

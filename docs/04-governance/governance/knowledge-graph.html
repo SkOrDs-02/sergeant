@@ -102,7 +102,7 @@
     </p>
     <div class="summary">
       <span class="chip chip-adr">adr: <b>63</b></span>
-      <span class="chip chip-audit">audit: <b>17</b></span>
+      <span class="chip chip-audit">audit: <b>18</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>48</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
@@ -111,7 +111,7 @@
     </div>
 
     <details open>
-      <summary>Nodes (241 core)</summary>
+      <summary>Nodes (242 core)</summary>
       <table>
         <thead>
           <tr>
@@ -940,7 +940,10 @@
                 (2026-05-13)</a
               >
             </td>
-            <td>Active</td>
+            <td>
+              Closed (2026-06-08 — 17/17 implemented, 0 actionable outstanding;
+              residual = knip false-positive watchlist, не actionable)
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -952,7 +955,10 @@
                 >Page Audit — Auth &amp; Onboarding pages</a
               >
             </td>
-            <td>Active</td>
+            <td>
+              Closed (2026-06-08 — ~24/25 implemented, 0 outstanding; F4
+              dead-code already deleted)
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -1094,6 +1100,22 @@
               >
             </td>
             <td>Open</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-06-08-codebase-cleanup-audit</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-06-08-codebase-cleanup-audit.md"
+                >Codebase Cleanup Audit — мертвий код, застарілі рішення та
+                інфра-дрейф</a
+              >
+            </td>
+            <td>
+              Active (4 founder-decisions executed 2026-06-08; залишок —
+              lint-debt / tombstones / інфра-питання — outstanding)
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -1581,13 +1603,13 @@
               >
             </td>
             <td>
-              In progress — code-complete, RUM review pending (2026-06-01).
-              Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worker)
-              explicitly skipped pending next 30-day RUM cut on
-              `aggregateReport` P95 &gt; 50 ms — re-opens as a discrete
-              follow-up only if the threshold trips. See § Outcome / § Sprint 3
-              decision. **Sprint 1 done:** per-section lazy wiring landed on
-              main — the 4 heavy module-scoped sections
+              Closed (2026-06-08 — code-complete; Sprint 0 + Sprint 1 + Sprint 2
+              merged). Sprint 3 (Web Worker) is a **discrete conditional
+              follow-up** — re-opens ТІЛЬКИ якщо post-merge PostHog
+              `aggregateReport` P95 &gt; 50 ms (next 30-day RUM cut); not
+              tracked as open work here. See § Outcome / § Sprint 3 decision.
+              **Sprint 1 done:** per-section lazy wiring landed on main — the 4
+              heavy module-scoped sections
               (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` +
               `&lt;Suspense fallback={&lt;SectionSkeleton minH={72}/&gt;}&gt;`
               in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10
@@ -3668,7 +3690,7 @@
     </details>
 
     <details>
-      <summary>Edges (381 total, first 500 core-to-core)</summary>
+      <summary>Edges (382 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -4236,6 +4258,11 @@
             <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
             <td>references</td>
             <td><code>initiative:0006</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-06-08-codebase-cleanup-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
           </tr>
           <tr>
             <td><code>initiative:0003</code></td>

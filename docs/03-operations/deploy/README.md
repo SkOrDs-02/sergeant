@@ -9,7 +9,7 @@ Step-by-step deploy walkthroughs for Sergeant runtime surfaces. These are operat
 
 | Document                                                         | Purpose                                                                       |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| [`openclaw.md`](./openclaw.md)                                   | Deploy `tools/openclaw` (Telegram bot) on Railway via `Dockerfile.console`    |
+| [`openclaw.md`](./openclaw.md)                                   | Deploy `tools/openclaw` (Telegram bot) on Railway via `Dockerfile.openclaw`   |
 | [`vercel.md`](./vercel.md)                                       | Vercel project settings, headers contract, COEP compatibility matrix          |
 | [`monorepo-deploy-filtering.md`](./monorepo-deploy-filtering.md) | Per-surface deploy filters (Vercel `ignoreCommand` + Railway `watchPatterns`) |
 
