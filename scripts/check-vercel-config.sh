@@ -10,7 +10,7 @@
 # headers protect production with zero git diff.
 #
 # This guard fails the lint job the moment another `vercel.json` appears so
-# the drift can never come back. Update `docs/deploy/vercel.md` if the policy
+# the drift can never come back. Update `docs/03-operations/deploy/vercel.md` if the policy
 # changes (e.g. if the Vercel Root Directory is ever moved back to repo root).
 set -euo pipefail
 
@@ -38,7 +38,7 @@ if [[ ${#extras[@]} -gt 0 ]]; then
   echo "monorepo root) silently drifts and lets a UI change to Root Directory"
   echo "swap which security headers protect production. See"
   echo "docs/security/hardening/H7-vercel-config-drift.md and"
-  echo "docs/deploy/vercel.md."
+  echo "docs/03-operations/deploy/vercel.md."
   exit 1
 fi
 
@@ -48,7 +48,7 @@ if [[ ! -f apps/web/vercel.json ]]; then
   echo "apps/web/vercel.json (because Root Directory = apps/web in the Vercel"
   echo "project). Without it, Vercel cannot pre-build @sergeant/db-schema and"
   echo "the production build fails with a rolldown resolution error. See"
-  echo "docs/deploy/vercel.md."
+  echo "docs/03-operations/deploy/vercel.md."
   exit 1
 fi
 

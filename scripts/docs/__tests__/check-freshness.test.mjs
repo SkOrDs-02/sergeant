@@ -192,8 +192,8 @@ describe("daysBetween", () => {
 describe("freshnessMarker", () => {
   it("produces the correct HTML comment", () => {
     assert.equal(
-      freshnessMarker("docs/observability/runbook.md"),
-      "<!-- doc-freshness:docs/observability/runbook.md -->",
+      freshnessMarker("docs/03-operations/observability/runbook.md"),
+      "<!-- doc-freshness:docs/03-operations/observability/runbook.md -->",
     );
   });
 });

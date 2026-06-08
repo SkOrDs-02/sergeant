@@ -409,7 +409,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 | Tool                   | What                            | Cost           | Статус                                                                                                                                                              |
 | ---------------------- | ------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **PgHero**             | Performance dashboard           | $0             | ⏳ pending                                                                                                                                                          |
-| **pg_stat_statements** | Slow query identification       | $0 (extension) | ⏳ pending — включити на Railway PG, додати рубрику у [`docs/observability/runbook.md`](../observability/runbook.md)                                                |
+| **pg_stat_statements** | Slow query identification       | $0 (extension) | ⏳ pending — включити на Railway PG, додати рубрику у [`docs/03-operations/observability/runbook.md`](../03-operations/observability/runbook.md)                    |
 | **pgBouncer**          | Connection pooling              | $0             | ⏳ pending — PR #13 `postgres-pool-sizing.md` у [stack-pulse-2026-05](../initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md) (`pg.Pool.max` поки дефолт) |
 | **Atlas** (atlasgo.io) | Schema-as-code, drift detection | $0 / $30/міс   | ⏳ pending — PR #11 `drizzle-schema-drift-ci.md` у stack-pulse-2026-05 (Drizzle drift CI без повного Atlas)                                                         |
 | **dbmate**             | Migrations CLI (lightweight)    | $0             | ⏳ not used — власний `apps/server/migrate.mjs` + sequential `NNN_*.sql` вже покриває                                                                               |
@@ -519,13 +519,13 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### 10.1. Репо-доки
 
-| Practice                                | Tool                |
-| --------------------------------------- | ------------------- |
-| **README.md з 5-min quickstart**        | manual              |
-| **CONTRIBUTING.md**                     | manual              |
-| **AGENTS.md**                           | manual (з #711)     |
-| **ADR** (Architecture Decision Records) | adr-tools / madr    |
-| **Postmortems folder**                  | `docs/postmortems/` |
+| Practice                                | Tool                              |
+| --------------------------------------- | --------------------------------- |
+| **README.md з 5-min quickstart**        | manual                            |
+| **CONTRIBUTING.md**                     | manual                            |
+| **AGENTS.md**                           | manual (з #711)                   |
+| **ADR** (Architecture Decision Records) | adr-tools / madr                  |
+| **Postmortems folder**                  | `docs/03-operations/postmortems/` |
 
 ### 10.2. Генеровані доки
 
@@ -569,7 +569,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 - **PR template** з блоком "How tested" (з #711).
 - **CODEOWNERS** для auto-assigned reviewers.
 - **Quarterly tech debt sprint** — 1 тиждень на рефакторинг без нових фіч.
-- **Postmortems на all production incidents** — folder `docs/postmortems/YYYY-MM-DD-*.md`.
+- **Postmortems на all production incidents** — folder `docs/03-operations/postmortems/YYYY-MM-DD-*.md`.
 - **Onboarding doc** для нових — крок за кроком 1-й тиждень.
 
 ### 11.3. Обмін знаннями

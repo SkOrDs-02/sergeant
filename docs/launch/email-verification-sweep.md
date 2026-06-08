@@ -1,6 +1,6 @@
 # Email-verification soft-gate sweep plan — legacy unverified users
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 | Field          | Value                                                                                                                                                           |
@@ -160,7 +160,7 @@ ETA повного циклу: ~6 робочих днів implementation + 14+ �
 - **Pre-implementation review:** transcript обговорення (async на GH-issue), де команда вибирає Опцію 1 / 2 / 3 explicitly. Якщо вибрано **не Опцію 1** — оновіть цей doc до запуску implementation.
 - **Roll-back trigger після Phase D:**
   - > 5% support tickets за 7 днів з ключовою фразою «не можу зайти» / «акаунт заблоковано».
-  - АБО drop у DAU > 10% з [PostHog FTUX dashboards](../observability/posthog-ftux-dashboards.md) activation-cohort.
+  - АБО drop у DAU > 10% з [PostHog FTUX dashboards](../03-operations/observability/posthog-ftux-dashboards.md) activation-cohort.
 - **Roll-back action:** `UPDATE "user" SET "forceVerifyAt" = NULL` (бо колонка все-таки залишається у схемі — це не data-loss).
 
 ## Ризики

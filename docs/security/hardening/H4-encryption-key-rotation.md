@@ -1,6 +1,6 @@
 # H4 — No rotation procedure for AES-256-GCM data-encryption keys
 
-> **Last validated:** 2026-06-01 by @Skords-01. **Next review:** 2026-09-01.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (2026-06-01) — Phase 1 PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679) (Better Auth); Phase 2 brings Mono `mono_connection.token_*` under the same versioned KeyRing (migration `074_mono_token_key_version.sql`).
 
 | Field          | Value                                                                                                                                                                                                                                                                                                                                                                           |
@@ -29,7 +29,7 @@ versioned KeyRing as Better Auth. Existing legacy (unversioned) Mono
 ciphertext decrypts transparently — `mono_connection.token_key_version` is
 `NULL` for those rows and read as key version 1 — and is lazily re-encrypted
 to the current version on the next successful read. See the updated procedure
-in [`docs/runbooks/encryption-key-rotation.md`](../../runbooks/encryption-key-rotation.md).
+in [`docs/03-operations/runbooks/encryption-key-rotation.md`](../../03-operations/runbooks/encryption-key-rotation.md).
 
 ## Summary
 
@@ -80,7 +80,7 @@ no `token_key_version` column.
 - Add a **lazy re-encryption** pass: on every successful read, if the row's
   key version is not current, write back with the new key in the same
   transaction.
-- Document rotation in `docs/runbooks/encryption-key-rotation.md` (new) and
+- Document rotation in `docs/03-operations/runbooks/encryption-key-rotation.md` (new) and
   link from [`disaster-recovery.md`](../disaster-recovery.md).
 
 ## Correction points
@@ -97,7 +97,7 @@ iv, tag, ciphertext])` so legacy rows with no version byte fail fast.
 - `apps/server/src/modules/mono/connection.ts` —
   on read: decrypt with `byVersion.get(keyVersion)`; if `keyVersion !==
 current`, re-encrypt and `UPDATE` the row in the same Drizzle transaction.
-- `docs/runbooks/encryption-key-rotation.md` (new) — step-by-step procedure:
+- `docs/03-operations/runbooks/encryption-key-rotation.md` (new) — step-by-step procedure:
   generate new key → add to env-var list → bump current → deploy → monitor
   re-encrypt counter → after 30 days remove old key.
 

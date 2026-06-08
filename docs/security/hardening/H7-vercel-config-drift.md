@@ -1,6 +1,6 @@
 # H7 — `apps/web/vercel.json` vs root `vercel.json` config drift
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (2026-05-04 — SSOT at `apps/web/vercel.json` + CI guard, after live-rollback of an incorrect SSOT choice).
 
 | Field          | Value                                                           |
@@ -63,7 +63,7 @@ The Vercel-bot PR comment metadata
 - Add a CI guard `scripts/check-vercel-config.sh` that fails if any
   `vercel.json` exists outside `apps/web/`.
 - Document the Vercel "Root Directory" expected value (= `apps/web`) and the
-  out-of-repo settings contract in `docs/deploy/vercel.md`.
+  out-of-repo settings contract in `docs/03-operations/deploy/vercel.md`.
 
 ## Correction points
 
@@ -89,7 +89,7 @@ fi
 
 - `.github/workflows/ci.yml` — keep `bash scripts/check-vercel-config.sh` in
   the `check` job (already wired in 2026-05-04 morning batch, just inverted).
-- `docs/deploy/vercel.md` — already documents the SSOT and the Vercel project
+- `docs/03-operations/deploy/vercel.md` — already documents the SSOT and the Vercel project
   configuration; updated to note that Root Directory must remain `apps/web`.
 - `docs/security/access-matrix.md` — link Vercel project settings to the
   privileged surfaces register.
@@ -107,16 +107,16 @@ fi
 
 ## Implementation log
 
-| Date       | Event                                                                                                                                                                                                                |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-05-03 | Drift detected during Sprint 2 prep; card opened.                                                                                                                                                                    |
-| 2026-05-04 | First attempt (PR #1595): deleted `apps/web/vercel.json` on the wrong assumption that Root Directory = `/`. Vercel build started failing post-merge with rolldown `@sergeant/db-schema/sqlite/migrations` error.     |
-| 2026-05-04 | Live-rolled in PR-#1599: restored `apps/web/vercel.json` (now SSOT), deleted root `vercel.json` (dead config), inverted `scripts/check-vercel-config.sh`, refreshed `docs/deploy/vercel.md`. Card closed in earnest. |
+| Date       | Event                                                                                                                                                                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-05-03 | Drift detected during Sprint 2 prep; card opened.                                                                                                                                                                                  |
+| 2026-05-04 | First attempt (PR #1595): deleted `apps/web/vercel.json` on the wrong assumption that Root Directory = `/`. Vercel build started failing post-merge with rolldown `@sergeant/db-schema/sqlite/migrations` error.                   |
+| 2026-05-04 | Live-rolled in PR-#1599: restored `apps/web/vercel.json` (now SSOT), deleted root `vercel.json` (dead config), inverted `scripts/check-vercel-config.sh`, refreshed `docs/03-operations/deploy/vercel.md`. Card closed in earnest. |
 
 ## Cross-references
 
 - [`./C2-frontend-csp.md`](./C2-frontend-csp.md)
 - [`../disaster-recovery.md`](../disaster-recovery.md) — Vercel re-deploy
   procedure relies on `apps/web/vercel.json`.
-- [`../../deploy/vercel.md`](../../deploy/vercel.md) — Vercel project SSOT
+- [`../../deploy/vercel.md`](../../03-operations/deploy/vercel.md) — Vercel project SSOT
   - incident playbook (this file is the long-term remediation).

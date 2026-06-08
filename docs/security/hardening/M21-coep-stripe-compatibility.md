@@ -1,6 +1,6 @@
 # M21 — `Cross-Origin-Embedder-Policy: require-corp` may break future iframes
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (2026-05-05, doc-only) — see Resolution log.
 
 | Field          | Value                             |
@@ -24,14 +24,14 @@ with `ERR_BLOCKED_BY_RESPONSE`.
 ## Recommendation
 
 - Run a canary check (Stripe sandbox, Google OAuth iframe, PostHog session
-  replay) and document compatibility in `docs/deploy/vercel.md`.
+  replay) and document compatibility in `docs/03-operations/deploy/vercel.md`.
 - If any planned integration cannot meet COEP, downgrade to
   `unsafe-none` and rely on COOP `same-origin` alone — record the decision
   in `docs/security/audit-exceptions.md`.
 
 ## Correction points
 
-- `docs/deploy/vercel.md` — add a "Third-party iframe compatibility" matrix
+- `docs/03-operations/deploy/vercel.md` — add a "Third-party iframe compatibility" matrix
   with one row per planned integration.
 - `docs/security/audit-exceptions.md` — entry if/when COEP is downgraded.
 - `vercel.json` — only edit when an exception is approved.
@@ -54,7 +54,7 @@ with `ERR_BLOCKED_BY_RESPONSE`.
 
 The audit-card recommended **document compatibility** before any
 third-party iframe ships. Resolution adds a canonical compatibility
-matrix to [`docs/deploy/vercel.md`](../../deploy/vercel.md#third-party-iframe--cross-origin-compatibility)
+matrix to [`docs/03-operations/deploy/vercel.md`](../../03-operations/deploy/vercel.md#third-party-iframe--cross-origin-compatibility)
 with one row per integration (Sentry, PostHog, Mono, OFF, Stripe,
 Google OAuth, YouTube/Vimeo, Telegram login widget) plus a verification
 recipe for new SDK rollouts.

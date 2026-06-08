@@ -1,6 +1,6 @@
 # Playbook: Тижневий operator-дайджест
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** щотижневий операційний огляд (operating review) здоров'я репозиторію, релізної дисципліни, інцидентів і процесного тертя (process friction).
@@ -12,7 +12,7 @@
 
 ## Потрібний контекст
 
-- Перегляньте [engineering-metrics.md](../observability/engineering-metrics.md), [feature-flags.md](../governance/feature-flags.md) і [review-checklist.md](../governance/review-checklist.md).
+- Перегляньте [engineering-metrics.md](../03-operations/observability/engineering-metrics.md), [feature-flags.md](../governance/feature-flags.md) і [review-checklist.md](../governance/review-checklist.md).
 
 ## Кроки
 

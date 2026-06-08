@@ -2139,10 +2139,10 @@
             <td>
               Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints`
               header + `report-to csp-endpoint` directive) shipped in
-              `apps/web/vercel.json`; `docs/observability/csp-monitoring.md`
-              operations playbook live. Rate-limit (120/min IP) + 16 KB body cap
-              було мерджнуто раніше через
-              `apps/server/src/http/bodySizePolicy.ts` +
+              `apps/web/vercel.json`;
+              `docs/03-operations/observability/csp-monitoring.md` operations
+              playbook live. Rate-limit (120/min IP) + 16 KB body cap було
+              мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` +
               `apps/server/src/routes/csp-report.ts`. E2E
               `/dummy-violation-page.html` тест — лишається у backlog
               (browser-level CSP-violation hard to reproduce у unit-test,

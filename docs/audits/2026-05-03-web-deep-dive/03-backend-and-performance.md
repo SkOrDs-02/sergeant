@@ -130,7 +130,7 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
    ```
 
 3. У ErrorBoundary логувати `requestId` як `extra` для Sentry events на фронті.
-4. Документ `docs/observability/requestId-correlation.md` з прикладом «як знайти ту саму помилку у Sentry, у server logs, і у user report».
+4. Документ `docs/03-operations/observability/requestId-correlation.md` з прикладом «як знайти ту саму помилку у Sentry, у server logs, і у user report».
 
 **Cost.** ~1 година, найнижча ціна серед всіх fix points.
 

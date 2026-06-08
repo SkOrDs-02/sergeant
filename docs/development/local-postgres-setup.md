@@ -1,6 +1,6 @@
 # Local Postgres setup
 
-> **Last validated:** 2026-06-05 by @Skords-01. **Next review:** 2026-09-01.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Локальний Postgres для розробки запускається через `docker-compose.yml` у
@@ -114,7 +114,7 @@ linux/amd64`. Зменшіть platform-mismatch правкою в `docker-compo
 - CI workflows: `.github/workflows/{ci, extended-e2e, visual-regression, db-backup-verify}.yml`.
 - Renovate config: `renovate.json` (`pgvector pinDigests` rule).
 - Migration: `apps/server/src/migrations/025_ai_memories_pgvector.sql`.
-- Pool sizing runbook: [`docs/observability/pg-pool-sizing.md`](../observability/pg-pool-sizing.md).
-- Backup/restore runbook: [`docs/runbooks/database-backup-restore.md`](../runbooks/database-backup-restore.md).
-- Renovate operations: [`docs/ops/renovate.md`](../ops/renovate.md).
+- Pool sizing runbook: [`docs/03-operations/observability/pg-pool-sizing.md`](../03-operations/observability/pg-pool-sizing.md).
+- Backup/restore runbook: [`docs/03-operations/runbooks/database-backup-restore.md`](../03-operations/runbooks/database-backup-restore.md).
+- Renovate operations: [`docs/03-operations/ops/renovate.md`](../03-operations/ops/renovate.md).
 - Initiative: [`docs/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md`](../initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md).

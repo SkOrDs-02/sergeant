@@ -286,7 +286,7 @@ function render({ focus, shipped, inflight, priority }) {
     "| **Інженерія** | [`architecture/`](./architecture/README.md), [`api/`](./api/README.md), [`web/`](./web/README.md), [`mobile/`](./mobile/README.md), [`testing/`](./testing/README.md), [`integrations/`](./integrations/README.md) | як влаштовано і як білдити |",
   );
   lines.push(
-    "| **Операції** | [`deploy/`](./deploy/README.md), [`observability/`](./observability/README.md), [`runbooks/`](./runbooks/README.md), [`postmortems/`](./postmortems/README.md), [`ops/`](./ops/README.md) | деплой, алерти, інциденти |",
+    "| **Операції** | [`deploy/`](./03-operations/deploy/README.md), [`observability/`](./03-operations/observability/README.md), [`runbooks/`](./03-operations/runbooks/README.md), [`postmortems/`](./03-operations/postmortems/README.md), [`ops/`](./03-operations/ops/README.md) | деплой, алерти, інциденти |",
   );
   lines.push(
     "| **Governance** | [`governance/`](./governance/README.md), [`security/`](./security/README.md), [`adr/`](./adr/README.md) | hard rules, рішення, безпека |",

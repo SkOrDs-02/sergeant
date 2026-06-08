@@ -393,4 +393,4 @@ OK.
 | CHANGELOG / release notes                       | §9.3                                     |
 | Pre-commit i18n / CSP validators                | §8.4                                     |
 
-> **Tracker hook.** Security items (§6.x) → `docs/security/`. Observability (§4.4 reuse, requestId) → `docs/observability/`. Testing (§7.x) → `docs/testing/`. DevX (§8.x) і docs (§9.x, §11) → `docs/agents/` і `docs/audits/`.
+> **Tracker hook.** Security items (§6.x) → `docs/security/`. Observability (§4.4 reuse, requestId) → `docs/03-operations/observability/`. Testing (§7.x) → `docs/testing/`. DevX (§8.x) і docs (§9.x, §11) → `docs/agents/` і `docs/audits/`.

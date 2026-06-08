@@ -3,7 +3,7 @@
   "_comment": "See scripts/docs/freshness-config.mjs for semantics. Default cadence is 90 days; only put paths here if they need a different cadence or explicit include/exclude.",
   "defaultCadenceDays": 90,
   "cadenceOverrides": {
-    "docs/observability/runbook.md": 60,
+    "docs/03-operations/observability/runbook.md": 60,
     "docs/tech-debt/backend.md": 60,
     "docs/tech-debt/frontend.md": 60,
     "docs/playbooks/debug-chat-tool.md": 60,

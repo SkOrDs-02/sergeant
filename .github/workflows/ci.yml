@@ -189,7 +189,7 @@ jobs:
         # copy under apps/web/ silently drifts and lets a Vercel UI change
         # swap which security headers protect production. See
         # docs/security/hardening/H7-vercel-config-drift.md and
-        # docs/deploy/vercel.md.
+        # docs/03-operations/deploy/vercel.md.
         run: bash scripts/check-vercel-config.sh
 
       - name: security.txt expiry guard

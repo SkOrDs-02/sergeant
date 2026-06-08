@@ -4,7 +4,7 @@ lang: en
 
 # Playbook: Operational continuity
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 > **Context:** Stack-pulse PR-04 bus-factor fix. This document answers: «що робити, якщо @Skords-01 недоступний тиждень / місяць / 6 місяців?»
 >
@@ -24,7 +24,7 @@ lang: en
 - [ ] 1Password vault `Sergeant / Railway` opens and decrypts; same for the per-vendor sub-vaults referenced below.
 - [ ] `pnpm db:migrate` runs against the production Postgres without prompting for credentials (Railway env injects `DATABASE_URL`).
 - [ ] Each kill-switch in the «Kill-switches (emergency)» table can be activated from the Railway env panel without redeploy.
-- [ ] Related runbooks (`docs/runbooks/operations-runbook.md`, `docs/security/disaster-recovery.md`, `docs/observability/runbook.md`) are reachable and their referenced tools are installed locally.
+- [ ] Related runbooks (`docs/03-operations/runbooks/operations-runbook.md`, `docs/security/disaster-recovery.md`, `docs/03-operations/observability/runbook.md`) are reachable and their referenced tools are installed locally.
 
 ---
 
@@ -65,7 +65,7 @@ lang: en
 
 1. **Monitor alerts** — Sentry (error spikes), Railway (deploy failures), PostHog (DAU drop).
 2. **n8n workflows** — WF-15 Telegram deploys, WF-98 alerts are automated. If they stop: check Railway n8n instance is running.
-3. **Hotfix flow** — see `docs/runbooks/operations-runbook.md` § Hotfix flow.
+3. **Hotfix flow** — see `docs/03-operations/runbooks/operations-runbook.md` § Hotfix flow.
 4. **CI failures** — check `.github/workflows/ci.yml`. Most common: pnpm audit advisory → add `audit-exception` label or bump dep.
 
 ---
@@ -97,6 +97,6 @@ lang: en
 
 ## Related runbooks
 
-- `docs/runbooks/operations-runbook.md` — full operations guide
+- `docs/03-operations/runbooks/operations-runbook.md` — full operations guide
 - `docs/security/disaster-recovery.md` — DR scenarios (Postgres restore, bad migration, etc.)
-- `docs/observability/runbook.md` — metrics + alerting runbook
+- `docs/03-operations/observability/runbook.md` — metrics + alerting runbook

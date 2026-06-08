@@ -1548,7 +1548,7 @@
       "type": "initiative",
       "title": "PR-26: CSP `report-uri` / `report-to` endpoint",
       "path": "docs/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md",
-      "status": "Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints` header + `report-to csp-endpoint` directive) shipped in `apps/web/vercel.json`; `docs/observability/csp-monitoring.md` operations playbook live. Rate-limit (120/min IP) + 16 KB body cap було мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` + `apps/server/src/routes/csp-report.ts`. E2E `/dummy-violation-page.html` тест — лишається у backlog (browser-level CSP-violation hard to reproduce у unit-test, потребує Playwright fixture; не блокує закриття).",
+      "status": "Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints` header + `report-to csp-endpoint` directive) shipped in `apps/web/vercel.json`; `docs/03-operations/observability/csp-monitoring.md` operations playbook live. Rate-limit (120/min IP) + 16 KB body cap було мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` + `apps/server/src/routes/csp-report.ts`. E2E `/dummy-violation-page.html` тест — лишається у backlog (browser-level CSP-violation hard to reproduce у unit-test, потребує Playwright fixture; не блокує закриття).",
       "tier": "core",
       "meta": {}
     },

@@ -32,7 +32,7 @@ Parent session: див. URL у PR-description-і.
    клієнту такий же contract як старий `validateBody`-flow. **Закрито в цьому PR.**
 3. **`app_build_info` Gauge існує у коді
    ([`obs/metrics.ts:713-736`](../../../apps/server/src/obs/metrics.ts#L713)),
-   але НЕ задокументовано** у `docs/observability/metrics.md`. Grafana-promql
+   але НЕ задокументовано** у `docs/03-operations/observability/metrics.md`. Grafana-promql
    шаблони (`* on (instance) group_left(release) <metric>`) тримаються
    на цій серії, але ніхто крім авторів не знає, як її використовувати.
    **Закрито в цьому PR (нова секція §15a).**
@@ -57,7 +57,7 @@ Parent session: див. URL у PR-description-і.
    P0+). **Закрито (verified 2026-06-02):** `packages/db-schema/package.json`
    `exports` тепер експонує лише `./migrate/{runner,pg,sqlite,files}` — umbrella
    `./migrate` entry прибрано; усі mobile + web каллери на deep-paths.
-8. **`docs/observability/metrics.md` не покриває `cost monitoring` секцію
+8. **`docs/03-operations/observability/metrics.md` не покриває `cost monitoring` секцію
    повністю** — лише `infra_monthly_cost_usd` + `voyage_daily_budget_usd`,
    але per-model `anthropic_tokens_total` join-pattern із
    `app_build_info`-ом не показаний. **Не в цьому PR**, малий impact.
@@ -129,7 +129,7 @@ migration), поза скоупом цієї прожарки.
 
 ### P1-5. `app_build_info` documented у metrics.md §15a ✅ Зроблено в цьому PR
 
-- **File:** [`docs/observability/metrics.md:325-360`](../../observability/metrics.md#15a-buildrelease-identity-app_build_info)
+- **File:** [`docs/03-operations/observability/metrics.md:325-360`](../../03-operations/observability/metrics.md#15a-buildrelease-identity-app_build_info)
 - **Дія:** **Add** нова секція `## 15a. Build/release identity
 (app_build_info)` з PromQL-шаблонами для join-on-labels у Grafana
   (per-release latency, error-rate, rolling-deploy detection).
@@ -187,7 +187,7 @@ migration), поза скоупом цієї прожарки.
 
 ### P2-4. Documentation gap: per-model AI-token join-pattern ✅ Closed
 
-- **Status:** Closed 2026-05-16 у branch `claude/identify-critical-issues-3IgIx` (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)). `docs/observability/metrics.md §6` had a stray copy-paste leftover at L216-225 — an orphan `* on(instance) group_left(release) app_build_info` followed by duplicate Voyage tokens/USD blocks that already appeared earlier in the section. Cleaned up; the section now ends cleanly after the cheap-tier breakdown. The canonical per-model join-pattern documentation (Anthropic + Voyage + cheap-tier USD breakdowns + the "unknown-model drift" PromQL idiom via `app_build_info`, cross-referenced to §15a) is intact.
+- **Status:** Closed 2026-05-16 у branch `claude/identify-critical-issues-3IgIx` (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)). `docs/03-operations/observability/metrics.md §6` had a stray copy-paste leftover at L216-225 — an orphan `* on(instance) group_left(release) app_build_info` followed by duplicate Voyage tokens/USD blocks that already appeared earlier in the section. Cleaned up; the section now ends cleanly after the cheap-tier breakdown. The canonical per-model join-pattern documentation (Anthropic + Voyage + cheap-tier USD breakdowns + the "unknown-model drift" PromQL idiom via `app_build_info`, cross-referenced to §15a) is intact.
 
 ### P2-5. `pool.end()` failure handling під час shutdown ✅ Closed in this PR
 
@@ -205,10 +205,10 @@ migration), поза скоупом цієї прожарки.
 ### P2-6. Health-endpoint p95 не алертимо в Grafana ✅ Closed (`local diff`)
 
 - **Files:** AGENTS.md §Performance budgets і `apps/server/AGENTS.md` тепер
-  посилаються на формальний SLO: `docs/observability/SLO.md` §2.1.
+  посилаються на формальний SLO: `docs/03-operations/observability/SLO.md` §2.1.
   Фактичний стан: recording rule `job:health_p95_5m` у
-  `docs/observability/prometheus/recording_rules.yml`, alert
-  `BackendHealthP95High` у `docs/observability/prometheus/alert_rules.yml`
+  `docs/03-operations/observability/prometheus/recording_rules.yml`, alert
+  `BackendHealthP95High` у `docs/03-operations/observability/prometheus/alert_rules.yml`
   (`severity=ticket`, `for: 5m`) і runbook `#backendhealthp95high`.
 - **Closure note:** закрито локально (`local diff`): alert/doc/runbook уже
   присутні; синхронізовано audit-рядок із фактичним станом без зміни
@@ -226,11 +226,11 @@ migration), поза скоупом цієї прожарки.
   Поведінка sampler-а не змінювалась, щоб не рухати production quota.
 - **Reviewer:** порядок правил лишився longest-prefix-first; quota-ризик не
   збільшений, бо нових non-zero/high-rate правил не додано.
-- **Docs:** `docs/observability/sentry-sampling.md` пояснює, чому broad
+- **Docs:** `docs/03-operations/observability/sentry-sampling.md` пояснює, чому broad
   `/api/internal/` 1.0 не додаємо і чому виняток лишається тільки для
   OpenClaw write mutations.
 
-### P2-8. `docs/observability/metrics.md` §Відкриті питання — застаріле ⚠️ Cosmetic
+### P2-8. `docs/03-operations/observability/metrics.md` §Відкриті питання — застаріле ⚠️ Cosmetic
 
 - Не в скоупі цього PR.
 
@@ -242,14 +242,14 @@ migration), поза скоупом цієї прожарки.
 | P1-2 | `errorHandler` surfaces `cause.details` для 4xx                | `apps/server/src/http/errorHandler.ts`, `http/errorHandler.test.ts`          | ~50      |
 | P1-3 | `GET /metrics` token-check → `safeStringEqual` (constant-time) | `apps/server/src/obs/metrics.ts`, `obs/metrics.test.ts`                      | ~50      |
 | P1-4 | Route registry — 3 нові інваріантні тести                      | `apps/server/src/routes/registerRoutes.test.ts`                              | ~50      |
-| P1-5 | Документація `app_build_info` у metrics.md §15a                | `docs/observability/metrics.md`                                              | ~40      |
+| P1-5 | Документація `app_build_info` у metrics.md §15a                | `docs/03-operations/observability/metrics.md`                                | ~40      |
 | P1-6 | `obs/metrics.ts` мігровано на `env.ts` reads + нові env-keys   | `apps/server/src/env/env.ts`, `obs/metrics.ts`                               | ~25      |
 |      |                                                                | **Всього**                                                                   | **~295** |
 
 Файлів змінено: **9** (`apps/server/src/http/{validate,index,validate.test,errorHandler,errorHandler.test}.ts`,
 `apps/server/src/obs/{metrics,metrics.test}.ts`,
 `apps/server/src/env/env.ts`, `apps/server/src/routes/registerRoutes.test.ts`,
-`docs/observability/metrics.md`, `docs/audits/README.md` + цей файл).
+`docs/03-operations/observability/metrics.md`, `docs/audits/README.md` + цей файл).
 
 ## Все, що НЕ зайшло в PR (виноситься у наступну прожарку)
 
@@ -259,7 +259,7 @@ migration), поза скоупом цієї прожарки.
 - **P2** Migration `push.ts` / `routes/push.ts` `process.env` reads → `env.ts` — окремий PR через 15+ test-патчів. P2-1 closed in [#2752](https://github.com/Skords-01/Sergeant/pull/2752); решта міграції — тут.
 - **P2** `obs/tracing.ts` env-injection refactor — обговорюємо, чи лишити DI-pattern.
 - **P2** SQLite `sync_op_outbox` no-such-table fix — Stage 8/9 (інша ініціатива).
-- **P2-8** `docs/observability/metrics.md` §Відкриті питання — cosmetic освіження.
+- **P2-8** `docs/03-operations/observability/metrics.md` §Відкриті питання — cosmetic освіження.
 
 ## Methodology notes
 

@@ -194,7 +194,7 @@ ShortcutRegistryProvider
 
 1. Додати **`SERVER_ROLE=api|worker|all`** env (вже є `SERVER_MODE`, але це не те саме). При `worker`-only процесі — не запускати `app.listen()`. Це дасть тобі готову dial при першому скейлі.
 2. Додати окремі prom-метрики `worker_event_loop_lag_seconds` і алерт на p95 > 200ms.
-3. Документ `docs/observability/event-loop-health.md` зі SLO «p95 event-loop lag < 200ms» і runbook'ом «що робити, якщо алерт спрацював».
+3. Документ `docs/03-operations/observability/event-loop-health.md` зі SLO «p95 event-loop lag < 200ms» і runbook'ом «що робити, якщо алерт спрацював».
 4. **Не розділяти** на окремі процеси, поки SLO тримається. Це YAGNI.
 
 ---

@@ -39,7 +39,7 @@ pnpm api:check-openapi                                # freshness gate (CI-block
 
 ## Health & deploy
 
-`/health` p95 < 100 ms (formalized: [`SLO.md § 2.1`](../../docs/observability/SLO.md#21-health-endpoint-p95) · alert `BackendHealthP95High`). Pre-deploy: `pnpm db:migrate` (requires `MIGRATE_DATABASE_URL` = public DB URL). Anthropic `/api/chat` p95 first token < 1.5 s. AI memory endpoints require `VOYAGE_API_KEY` when `AI_MEMORY_ENABLED=true`.
+`/health` p95 < 100 ms (formalized: [`SLO.md § 2.1`](../../docs/03-operations/observability/SLO.md#21-health-endpoint-p95) · alert `BackendHealthP95High`). Pre-deploy: `pnpm db:migrate` (requires `MIGRATE_DATABASE_URL` = public DB URL). Anthropic `/api/chat` p95 first token < 1.5 s. AI memory endpoints require `VOYAGE_API_KEY` when `AI_MEMORY_ENABLED=true`.
 
 ## Deeper docs
 

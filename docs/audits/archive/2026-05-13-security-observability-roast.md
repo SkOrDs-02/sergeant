@@ -15,7 +15,7 @@
 
 **Code-area фокус:** `apps/web/src/core/security/**`, `apps/server/src/auth/**`, `apps/server/src/http/`, observability-хуки в обох додатках.
 
-**Метод:** статичний code-review (`apps/web` / `apps/server` / `packages/shared`) + крос-перевірка з `docs/security/*` (canonical policy) і `docs/observability/*` (operational runbook). Кожен outstanding-пункт — landing-якорь `file:line` для подальшого PR-плану.
+**Метод:** статичний code-review (`apps/web` / `apps/server` / `packages/shared`) + крос-перевірка з `docs/security/*` (canonical policy) і `docs/03-operations/observability/*` (operational runbook). Кожен outstanding-пункт — landing-якорь `file:line` для подальшого PR-плану.
 
 **Формат:** P0/P1/P2 пріоритети + дії Add / Change / Remove + посилання `file:line`.
 

@@ -54,7 +54,7 @@ OpenClaw — Devin-кероваджувальник, що приймає Telegra
 - `docs/playbooks/rotate-openclaw-credentials.md`:
   - Який ключ де лежить (1Password / Vercel / Railway).
   - Кроки: генерація нового key-pair → upload у GitHub App → deploy → revoke old.
-  - Quarterly cron у `docs/observability/alerts.md` — нагадує про expiration.
+  - Quarterly cron у `docs/03-operations/observability/alerts.md` — нагадує про expiration.
 
 ### 4. Branch protection enforcement
 

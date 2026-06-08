@@ -49,7 +49,7 @@ env:
 
 ### 4. Documentation
 
-- `docs/observability/ai-cost-monitoring.md` — щоденний spend dashboard, alert на 80% daily-cap.
+- `docs/03-operations/observability/ai-cost-monitoring.md` — щоденний spend dashboard, alert на 80% daily-cap.
 
 ## Out of scope
 
@@ -84,7 +84,7 @@ env:
 - `apps/server/src/env.ts` — quota-disabled flag
 - `apps/server/src/ai/quotaGuard.ts` — quota guard logic
 - `.github/workflows/extended-e2e.yml:56` — додати NODE_ENV=test
-- `docs/observability/ai-cost-monitoring.md` — новий
+- `docs/03-operations/observability/ai-cost-monitoring.md` — новий
 
 ## Refs
 

@@ -1,6 +1,6 @@
 # Pino logging redaction policy
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active.
 > **Hard rule:** [#21 — Pino redaction policy enforced](../../AGENTS.md#21-pino-redaction-policy-enforced).
 > **Stack-pulse initiative:** [PR-16](../initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md).
@@ -114,7 +114,7 @@ CI ганяє `pnpm lint` + `pnpm typecheck` + `pnpm test` на кожен push,
 ## Що ця policy НЕ покриває
 
 - **Зовнішні sub-processors поза Sentry/Loki/Railway.** Якщо новий downstream (наприклад, Datadog, Honeycomb) додається — окрема ревізія цієї policy + DPA-апдейт.
-- **Frontend / mobile log-buffers.** Окремий контракт у [`docs/observability/frontend.md`](../observability/frontend.md). Цей файл — про Pino-stack у `apps/server/`.
+- **Frontend / mobile log-buffers.** Окремий контракт у [`docs/03-operations/observability/frontend.md`](../03-operations/observability/frontend.md). Цей файл — про Pino-stack у `apps/server/`.
 - **`console.*` callsite-и** у server-коді. Заборонені окремим базовим конфігом (`no-console` у `apps/server/**`); PII-payload через `console.log(req)` блокується тим правилом, не цим. На фронтенді (`apps/web/**`), де `console.*` дозволений, PII / secret-shaped аргументи у `console.{log,error,warn,info}` ловить окреме ESLint-правило [`sergeant-design/no-console-pii`](../../packages/eslint-plugin-sergeant-design/index.js) (severity `error`, S2) — Sentry `console`-breadcrumb-и, DevTools screen-share і browser-екстеншни тапляться у той самий канал.
 - **Body-логування через middleware** (наприклад, `morgan`, `pino-http` request-serializer). `pino-http` стандартний request-serializer (`pinoHttp({ serializers: { req: …}})`) — окрема поверхня; зміни у ньому ревьюються через owner-у `apps/server/src/obs/`.
 

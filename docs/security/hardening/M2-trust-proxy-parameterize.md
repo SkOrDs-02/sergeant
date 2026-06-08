@@ -1,6 +1,6 @@
 # M2 — `trust proxy = 1` is hard-coded
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682)
 
 | Field          | Value                                                                                                                                                                                                                            |
@@ -24,7 +24,7 @@ client-controlled value, which makes every rate-limit and audit log spoofable.
 
 - Read `process.env.TRUST_PROXY` at startup (default `"1"`); accept either an
   integer (number of hops) or a comma-separated allowlist of CIDR blocks.
-- Document in `apps/server/README.md` and `docs/deploy/`.
+- Document in `apps/server/README.md` and `docs/03-operations/deploy/`.
 
 ## Correction points
 

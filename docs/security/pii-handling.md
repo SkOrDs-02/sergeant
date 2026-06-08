@@ -4,7 +4,7 @@
 > **Status:** Active.
 > **Scope:** Server logs (Pino), Sentry payloads (server, web, **mobile**, **OpenClaw**),
 > Loki/Grafana retention, in-process error captures. Mobile/web log buffers — see
-> [`docs/observability/frontend.md`](../observability/frontend.md).
+> [`docs/03-operations/observability/frontend.md`](../03-operations/observability/frontend.md).
 >
 > **Canonical implementation (since 2026-05-13):**
 > [`packages/shared/src/lib/pii.ts`](../../packages/shared/src/lib/pii.ts) —
@@ -311,7 +311,7 @@ railway logs --service sergeant-api | grep '"email"\|"password"'
 - [`docs/security/hardening/M3-pino-redact-paths.md`](./hardening/M3-pino-redact-paths.md) (round 14 closure)
 - [`docs/security/hardening/L10-user-id-hash-in-logs.md`](./hardening/L10-user-id-hash-in-logs.md) (userId hashing)
 - [`docs/security/hardening/C1-mono-webhook-secret-in-url.md`](./hardening/C1-mono-webhook-secret-in-url.md) (URL redaction)
-- [`docs/observability/logging.md`](../observability/logging.md) (logging conventions)
+- [`docs/03-operations/observability/logging.md`](../03-operations/observability/logging.md) (logging conventions)
 - [`packages/shared/src/lib/pii.ts`](../../packages/shared/src/lib/pii.ts) (canonical `REDACT_KEY_NAMES` + `scrubPII`)
 - [`apps/server/src/obs/logger.ts`](../../apps/server/src/obs/logger.ts) (Pino config + back-compat alias)
 - [`apps/server/src/sentry.ts`](../../apps/server/src/sentry.ts) (server Sentry beforeSend)

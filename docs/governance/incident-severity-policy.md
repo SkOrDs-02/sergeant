@@ -1,6 +1,6 @@
 # Incident Severity Policy
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Use this policy to decide when a production symptom becomes an incident and what level of response Sergeant requires.
@@ -47,4 +47,4 @@ Create a postmortem when:
 - the same failure mode has recurred
 - the fix required a new runbook, hard rule, or release guardrail
 
-Use [write-postmortem.md](../playbooks/write-postmortem.md) and file the record through [postmortems/INDEX.md](../postmortems/INDEX.md).
+Use [write-postmortem.md](../playbooks/write-postmortem.md) and file the record through [postmortems/INDEX.md](../03-operations/postmortems/INDEX.md).

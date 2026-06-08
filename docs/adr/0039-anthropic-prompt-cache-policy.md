@@ -193,7 +193,7 @@ Tool-result у HubChat — short-lived (1-turn flow): user задає question, 
 ## Compliance
 
 1. **Code path:** `apps/server/src/modules/chat/chat.ts` — `buildSystem()` + `applyToolsCacheBreakpoint()` присутні. Зміна структури `system[]` чи `tools[]` cache breakpoints вимагає update-у цього ADR.
-2. **Grafana panel `Cache-hit ratio (1h window)`** у `docs/observability/dashboards/ai-cost.json` (panel id 3) — required ; recoverable threshold 30% для rollback decision.
+2. **Grafana panel `Cache-hit ratio (1h window)`** у `docs/03-operations/observability/dashboards/ai-cost.json` (panel id 3) — required ; recoverable threshold 30% для rollback decision.
 3. **Versioning:** `SYSTEM_PROMPT_VERSION` константа у [`apps/server/src/modules/chat/tools.ts`](../../apps/server/src/modules/chat/tools.ts) — bump при будь-якому смисловому edit-і `SYSTEM_PREFIX`. Перевіряється у code-review.
 4. **Pricing drift:** раз у квартал звірити `ANTHROPIC_PRICING_USD_PER_MTOK` з https://www.anthropic.com/pricing. Запис у calendar — на 1 травня кожного кварталу.
 
@@ -204,5 +204,5 @@ Tool-result у HubChat — short-lived (1-turn flow): user задає question, 
 - [Anthropic Prompt Caching docs](https://docs.claude.com/en/docs/build-with-claude/prompt-caching)
 - [Anthropic Pricing](https://www.anthropic.com/pricing)
 - [Initiative 0005 — AI cost optimisation (prompt cache)](../initiatives/archive/_0005-ai-cost-and-prompt-cache.md)
-- [`docs/observability/dashboards/ai-cost.json`](../observability/dashboards/ai-cost.json) — 7-panel Grafana.
+- [`docs/03-operations/observability/dashboards/ai-cost.json`](../03-operations/observability/dashboards/ai-cost.json) — 7-panel Grafana.
 - [`apps/server/src/lib/anthropic.ts`](../../apps/server/src/lib/anthropic.ts) — `recordAnthropicUsage` + pricing table.

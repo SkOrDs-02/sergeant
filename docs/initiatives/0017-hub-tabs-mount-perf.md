@@ -90,7 +90,7 @@
 - [`apps/web/src/main.tsx`](../../apps/web/src/main.tsx): `initLongTaskMonitor()` в тому ж idle slot що `initPostHog()`.
 - [`packages/shared/src/lib/analyticsEvents.ts`](../../packages/shared/src/lib/analyticsEvents.ts): `ANALYTICS_EVENTS.HUB_TAB_SWITCH_PERF`.
 - Tests: [`longTaskMonitor.test.ts`](../../apps/web/src/core/lib/longTaskMonitor.test.ts) (idempotent init, buffered:true, ring-buffer bound, Safari fallback), [`hubPerf.test.ts`](../../apps/web/src/core/lib/hubPerf.test.ts) (begin/end flow, longtask aggregation, cacheHit detection, edge cases).
-- Baseline runbook: [`docs/observability/hub-perf-baseline.md`](../observability/hub-perf-baseline.md) — PostHog dashboard spec + target таблиця per Sprint + carry-over пункти.
+- Baseline runbook: [`docs/03-operations/observability/hub-perf-baseline.md`](../03-operations/observability/hub-perf-baseline.md) — PostHog dashboard spec + target таблиця per Sprint + carry-over пункти.
 
 **Acceptance**: Sampling 100% перші 30 днів (за runbook-ом), потім 10%. Перша перевірка baseline-таблиці — 2026-05-27.
 
@@ -189,7 +189,7 @@ The initiative assumed "~30 KB index after Sprint 1+2 split". That assumption wa
 
 ## Критерії DONE
 
-- [x] Sprint 0 PR merged, PostHog `hub_tab_switch_perf` event працює, baseline зафіксований у `docs/observability/hub-perf-baseline.md`.
+- [x] Sprint 0 PR merged, PostHog `hub_tab_switch_perf` event працює, baseline зафіксований у `docs/03-operations/observability/hub-perf-baseline.md`.
 - [x] Sprint 1 PR-и merged: 14 секцій — окремі chunk-и, кожна обгорнута у Suspense з SectionSkeleton, cross-module queries gated на `useInView`.
 - [x] Sprint 2 PR merged: HubReports — 5 lazy-cards. ([#3094](https://github.com/Skords-01/Sergeant/pull/3094), 2026-05-24, squash як `5c98b41e`)
 - [ ] Sprint 3 PR merged (умовно — тільки якщо метрики > target Sprint 2).
@@ -222,4 +222,4 @@ The initiative assumed "~30 KB index after Sprint 1+2 split". That assumption wa
 - Уточнює: [0006-frontend-routing-and-code-split](./0006-frontend-routing-and-code-split.md) — per-route split вже зроблений, тут per-section split всередині route.
 - Залежить від: [0013-module-decomposition-round-2](./archive/_0013-module-decomposition-round-2.md) — Sprint 1 декомпозиція дала чисті imports у sections, без неї cross-module bootstrap було б ще гірше.
 - Може вплинути на: [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs) — gate потребує оновлення.
-- Породжує: [`docs/observability/hub-perf-baseline.md`](../observability) (new в Sprint 0).
+- Породжує: [`docs/03-operations/observability/hub-perf-baseline.md`](../03-operations/observability) (new в Sprint 0).

@@ -8,7 +8,7 @@
 PR-розкладка по решті open / Partial / Follow-up / Backlog items із прожарки
 [`docs/audits/archive/2026-05-13-backend-performance-roast.md`](../audits/archive/2026-05-13-backend-performance-roast.md).
 Скоуп: `apps/server/`, `packages/db-schema/`, `packages/shared/`,
-`docs/observability/`. P0/P1 із самої прожарки вже закриті у її landing-PR-і
+`docs/03-operations/observability/`. P0/P1 із самої прожарки вже закриті у її landing-PR-і
 — тут лишається передбачуваний P2-tail + дві витягнуті ініціативи з TL;DR
 #4 / #7, які потребували крос-app координації.
 
@@ -48,11 +48,11 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 | PR-01 | `refactor(server): centralize push env reads through env.ts`                      | M    | P2                            | `apps/server/src/modules/push/push.ts`, `routes/push.ts`, `env/env.ts`, тести                                                                                               |
 | PR-02 | `refactor(server): drop process.env DI default in obs/tracing.ts`                 | S    | P2                            | `apps/server/src/obs/tracing.ts`, `env/env.ts`, `obs/tracing.test.ts`                                                                                                       |
 | PR-03 | `chore(db-schema): drop umbrella ./migrate export`                                | M    | P2 (P0+ для type-cleanliness) | `packages/db-schema/package.json`, mobile + web import sites                                                                                                                |
-| PR-04 | `docs(observability): document per-model AI-token join-pattern in metrics.md §6`  | S    | P2                            | `docs/observability/metrics.md`                                                                                                                                             |
+| PR-04 | `docs(observability): document per-model AI-token join-pattern in metrics.md §6`  | S    | P2                            | `docs/03-operations/observability/metrics.md`                                                                                                                               |
 | PR-05 | `fix(server): bounded pool.end() drain with AbortController on shutdown`          | S    | P2                            | `apps/server/src/index.ts` (shutdown sequence)                                                                                                                              |
-| PR-06 | `feat(observability): Alertmanager rule for backend /health p95 SLO`              | S    | P2                            | `docs/observability/prometheus/alert_rules.yml`, `docs/observability/SLO.md`                                                                                                |
-| PR-07 | `feat(server): tighten Sentry sampling for /api/internal/* (admin=1.0)`           | S    | P2                            | `apps/server/src/sentry.ts`, `docs/observability/sentry-sampling.md`                                                                                                        |
-| PR-08 | `docs(observability): refresh metrics.md §Відкриті питання`                       | XS   | P2                            | `docs/observability/metrics.md`                                                                                                                                             |
+| PR-06 | `feat(observability): Alertmanager rule for backend /health p95 SLO`              | S    | P2                            | `docs/03-operations/observability/prometheus/alert_rules.yml`, `docs/03-operations/observability/SLO.md`                                                                    |
+| PR-07 | `feat(server): tighten Sentry sampling for /api/internal/* (admin=1.0)`           | S    | P2                            | `apps/server/src/sentry.ts`, `docs/03-operations/observability/sentry-sampling.md`                                                                                          |
+| PR-08 | `docs(observability): refresh metrics.md §Відкриті питання`                       | XS   | P2                            | `docs/03-operations/observability/metrics.md`                                                                                                                               |
 | PR-09 | `refactor(server): migrate validateBody→parseBody (batch 1 — nutrition)`          | M    | P2                            | `apps/server/src/modules/nutrition/*.ts` + матчений тест-стек                                                                                                               |
 | PR-10 | `refactor(server): migrate validateBody→parseBody (batch 2 — sync/chat/internal)` | L    | P2                            | `modules/sync/syncV2{,Stream}.ts`, `modules/chat/{chat,coach}.ts`, `routes/internal/*`, `routes/{billing,push,waitlist}.ts`, `modules/{ai-memory,digest,transcribe,mono}/*` |
 | PR-11 | `feat(governance): eslint rule prefer-parseBody for new server handlers`          | S    | P2                            | `packages/eslint-plugin-sergeant-design/`, `apps/server/eslint.config.*`                                                                                                    |
@@ -183,8 +183,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 **Surface**
 
-- `docs/observability/metrics.md` §6 (AI-метрики).
-- Опційно: `docs/observability/dashboards/*.json` — приклад існуючого Grafana-панелі, що користується patterns-ом.
+- `docs/03-operations/observability/metrics.md` §6 (AI-метрики).
+- Опційно: `docs/03-operations/observability/dashboards/*.json` — приклад існуючого Grafana-панелі, що користується patterns-ом.
 
 **Scope**
 
@@ -200,7 +200,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 **Acceptance criteria**
 
-- [x] `docs/observability/metrics.md` §6 містить мінімум один `app_build_info`-join PromQL для AI-токенів.
+- [x] `docs/03-operations/observability/metrics.md` §6 містить мінімум один `app_build_info`-join PromQL для AI-токенів.
 - [x] Кросс-лінк на §15a (build/release identity) у обох напрямках.
 - [x] `pnpm format` + `pnpm lint:markdown` (якщо є) — зелені.
 - [x] `Last validated` у `metrics.md` оновлено (bump хуком).
@@ -254,10 +254,10 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 **Surface**
 
-- `docs/observability/prometheus/recording_rules.yml` — recording rule `job:health_p95_5m`.
-- `docs/observability/prometheus/alert_rules.yml` — нова rule `BackendHealthP95High`.
-- `docs/observability/SLO.md` — секція "Health endpoint p95" (формалізуємо з informal SLO в `AGENTS.md`).
-- `docs/observability/alertmanager.yml` — pre-flight перевірка, що `severity = ticket` route існує (а він вже є — лише verify).
+- `docs/03-operations/observability/prometheus/recording_rules.yml` — recording rule `job:health_p95_5m`.
+- `docs/03-operations/observability/prometheus/alert_rules.yml` — нова rule `BackendHealthP95High`.
+- `docs/03-operations/observability/SLO.md` — секція "Health endpoint p95" (формалізуємо з informal SLO в `AGENTS.md`).
+- `docs/03-operations/observability/alertmanager.yml` — pre-flight перевірка, що `severity = ticket` route існує (а він вже є — лише verify).
 
 **Scope**
 
@@ -272,8 +272,8 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 **Acceptance criteria**
 
-- [x] `docs/observability/prometheus/alert_rules.yml` містить `BackendHealthP95High` із `for: 5m`, threshold = `100ms`, severity=`ticket`.
-- [x] `docs/observability/SLO.md` має нову секцію `Health endpoint p95`.
+- [x] `docs/03-operations/observability/prometheus/alert_rules.yml` містить `BackendHealthP95High` із `for: 5m`, threshold = `100ms`, severity=`ticket`.
+- [x] `docs/03-operations/observability/SLO.md` має нову секцію `Health endpoint p95`.
 - [x] `promtool check rules` fallback: локальний `yaml` parse зелений; `promtool` у desktop-shell недоступний.
 - [x] Link з `AGENTS.md` informal-SLO рядка → формалізована SLO-секція.
 
@@ -291,7 +291,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 **Surface**
 
 - `apps/server/src/sentry.ts` — `SENTRY_SAMPLING_RULES` (рядок 32+) додати правило `match: "/api/internal/"` із `1.0`. Перевірити, що існуючі `/api/internal/openclaw/write/` (`1.0`) і `/api/admin/` (`1.0`) — лишаються, нова rule — це загальний "будь-який internal namespace".
-- `docs/observability/sentry-sampling.md` — задокументувати rule і rationale.
+- `docs/03-operations/observability/sentry-sampling.md` — задокументувати rule і rationale.
 - `apps/server/src/sentry.test.ts` (якщо є — інакше створюємо).
 
 **Scope**
@@ -309,7 +309,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 - [ ] `apps/server/src/sentry.ts` `SENTRY_SAMPLING_RULES` містить `/api/internal/*` rule.
 - [ ] Test (unit, не runtime) перевіряє, що `samplingContext.transaction = "/api/internal/foo"` → rate = `1.0`.
-- [ ] `docs/observability/sentry-sampling.md` оновлений із новою rule і baseline-кількостями.
+- [ ] `docs/03-operations/observability/sentry-sampling.md` оновлений із новою rule і baseline-кількостями.
 - [ ] PR-description містить лінк на Sentry-дашборд із baseline (за останні 7 днів).
 
 **Risks / mitigations**
@@ -326,7 +326,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 **Surface**
 
-- `docs/observability/metrics.md` — секція "Відкриті питання" (footer).
+- `docs/03-operations/observability/metrics.md` — секція "Відкриті питання" (footer).
 
 **Scope**
 

@@ -1,6 +1,6 @@
 # OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`
 
-> **Last validated:** 2026-06-06 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 > **Owner:** @Skords-01 (backend)
@@ -52,99 +52,99 @@ ADR-0027 (OpenClaw, Console та MCP) визначає policy: write-scopes ок
 
 ### Read / memory family
 
-| Route | Handler | Audit-write | Mutation-target |
-| ----- | ------- | ----------- | --------------- |
-| `POST /openclaw/recall` | `recallCofounderMemory` | ні | read-only (pgvector) |
-| `POST /openclaw/forget` | `forgetById`/`forgetByTopic`/`forgetSince`/`previewForget` | так (forget-audit; rate-limited 3/h) | app-DB soft-delete `ai_memories` (крім `previewQuery`) |
-| `POST /openclaw/forget/confirm` | `confirmForget` | так (forget-audit) | app-DB soft-delete `ai_memories` |
-| `POST /openclaw/forget/cancel` | `cancelForget` | ні | read-only (in-memory token drop) |
-| `POST /openclaw/strategy` | `readStrategyDoc` | ні | read-only (repo file, allowlist-guarded) |
-| `POST /openclaw/query` | `queryAppDb` | ні | read-only (SQL allowlist + schema guard) |
-| `POST /openclaw/github` | `readGithub` | ні | read-only (GitHub API) |
-| `POST /openclaw/workflow` | `readWorkflowLogs` | ні | read-only (n8n logs) |
-| `POST /openclaw/telegram` | `readTelegramTopicHistory` | ні | read-only (`tg_topic_archive`) |
-| `POST /openclaw/decision` | `recordDecision` | так (запис decision-row) | app-DB insert `openclaw_decisions` |
-| `POST /openclaw/decisions/list` | `listRecentDecisions` | ні | read-only |
-| `POST /openclaw/classify` | `classifyMessage` (Haiku) | ні | read-only (Anthropic call; `503` без key, `502` на upstream fail) |
-| `POST /openclaw/budget` | `checkDailyBudget` | ні | read-only (budget envelope) |
+| Route                           | Handler                                                    | Audit-write                          | Mutation-target                                                   |
+| ------------------------------- | ---------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------- |
+| `POST /openclaw/recall`         | `recallCofounderMemory`                                    | ні                                   | read-only (pgvector)                                              |
+| `POST /openclaw/forget`         | `forgetById`/`forgetByTopic`/`forgetSince`/`previewForget` | так (forget-audit; rate-limited 3/h) | app-DB soft-delete `ai_memories` (крім `previewQuery`)            |
+| `POST /openclaw/forget/confirm` | `confirmForget`                                            | так (forget-audit)                   | app-DB soft-delete `ai_memories`                                  |
+| `POST /openclaw/forget/cancel`  | `cancelForget`                                             | ні                                   | read-only (in-memory token drop)                                  |
+| `POST /openclaw/strategy`       | `readStrategyDoc`                                          | ні                                   | read-only (repo file, allowlist-guarded)                          |
+| `POST /openclaw/query`          | `queryAppDb`                                               | ні                                   | read-only (SQL allowlist + schema guard)                          |
+| `POST /openclaw/github`         | `readGithub`                                               | ні                                   | read-only (GitHub API)                                            |
+| `POST /openclaw/workflow`       | `readWorkflowLogs`                                         | ні                                   | read-only (n8n logs)                                              |
+| `POST /openclaw/telegram`       | `readTelegramTopicHistory`                                 | ні                                   | read-only (`tg_topic_archive`)                                    |
+| `POST /openclaw/decision`       | `recordDecision`                                           | так (запис decision-row)             | app-DB insert `openclaw_decisions`                                |
+| `POST /openclaw/decisions/list` | `listRecentDecisions`                                      | ні                                   | read-only                                                         |
+| `POST /openclaw/classify`       | `classifyMessage` (Haiku)                                  | ні                                   | read-only (Anthropic call; `503` без key, `502` на upstream fail) |
+| `POST /openclaw/budget`         | `checkDailyBudget`                                         | ні                                   | read-only (budget envelope)                                       |
 
 ### Observability / metrics / ritual family
 
-| Route | Handler | Audit-write | Mutation-target |
-| ----- | ------- | ----------- | --------------- |
-| `POST /openclaw/ai-cost-summary` | `buildAiCostSummary` | ні | read-only (`ai_usage_daily` + prom-counter) |
-| `POST /openclaw/perf-snapshot` | `buildPerfSnapshot` | ні | read-only (prom register) |
-| `POST /openclaw/invocations/open` | `openInvocation` | **так (lifecycle row)** | app-DB insert `openclaw_invocations` |
-| `POST /openclaw/invocations/finalize` | `finalizeInvocation` | **так (lifecycle row)** | app-DB update `openclaw_invocations` |
-| `POST /openclaw/invocations/list` | `listRecentInvocations` | ні | read-only |
-| `POST /openclaw/metrics/stripe` | `getStripeMetrics` | ні | read-only (Stripe API) |
-| `POST /openclaw/metrics/sentry` | `getSentryIssues` | ні | read-only (Sentry API) |
-| `POST /openclaw/metrics/server` | `getServerStats` | ні | read-only |
-| `POST /openclaw/metrics/posthog` | `getPostHogStats` | ні | read-only (PostHog API) |
-| `POST /openclaw/github/releases` | `getGithubReleases` | ні | read-only (GitHub API) |
-| `POST /openclaw/briefing/morning` | `assembleMorningBriefing` (+`isFounderMuted`) | ні | read-only (fail-soft assembler) |
-| `POST /openclaw/ritual/weekly` | `assembleWeeklyReview` | ні | read-only (fail-soft assembler) |
-| `POST /openclaw/ritual/monthly` | `assembleMonthlyOkrReview` | ні | read-only (fail-soft assembler) |
+| Route                                 | Handler                                       | Audit-write             | Mutation-target                             |
+| ------------------------------------- | --------------------------------------------- | ----------------------- | ------------------------------------------- |
+| `POST /openclaw/ai-cost-summary`      | `buildAiCostSummary`                          | ні                      | read-only (`ai_usage_daily` + prom-counter) |
+| `POST /openclaw/perf-snapshot`        | `buildPerfSnapshot`                           | ні                      | read-only (prom register)                   |
+| `POST /openclaw/invocations/open`     | `openInvocation`                              | **так (lifecycle row)** | app-DB insert `openclaw_invocations`        |
+| `POST /openclaw/invocations/finalize` | `finalizeInvocation`                          | **так (lifecycle row)** | app-DB update `openclaw_invocations`        |
+| `POST /openclaw/invocations/list`     | `listRecentInvocations`                       | ні                      | read-only                                   |
+| `POST /openclaw/metrics/stripe`       | `getStripeMetrics`                            | ні                      | read-only (Stripe API)                      |
+| `POST /openclaw/metrics/sentry`       | `getSentryIssues`                             | ні                      | read-only (Sentry API)                      |
+| `POST /openclaw/metrics/server`       | `getServerStats`                              | ні                      | read-only                                   |
+| `POST /openclaw/metrics/posthog`      | `getPostHogStats`                             | ні                      | read-only (PostHog API)                     |
+| `POST /openclaw/github/releases`      | `getGithubReleases`                           | ні                      | read-only (GitHub API)                      |
+| `POST /openclaw/briefing/morning`     | `assembleMorningBriefing` (+`isFounderMuted`) | ні                      | read-only (fail-soft assembler)             |
+| `POST /openclaw/ritual/weekly`        | `assembleWeeklyReview`                        | ні                      | read-only (fail-soft assembler)             |
+| `POST /openclaw/ritual/monthly`       | `assembleMonthlyOkrReview`                    | ні                      | read-only (fail-soft assembler)             |
 
 ### Write-tool family (ADR-0036 — approval-gated на Gateway-side ПЕРЕД викликом)
 
-| Route | Handler | Audit-write | Mutation-target |
-| ----- | ------- | ----------- | --------------- |
-| `POST /openclaw/write/strategy-doc` | `commitToStrategyDoc` (repo allowlist `assertOpenClawRepoAllowed`) | ні (audit через окремий write-audit/log) | **зовн. GitHub commit** |
-| `POST /openclaw/write/github-issue` | `createGithubIssue` (repo allowlist) | ні (окремий write-audit) | **зовн. GitHub issue** |
-| `POST /openclaw/write/post-to-topic` | `postToTopic` (topic allowlist `POST_TO_TOPIC_ALLOWLIST`) | **так — mirror у `tg_topic_archive` при `status==='posted'`** | **зовн. Telegram post** + app-DB insert |
-| `POST /openclaw/write/pause-workflow` | `pauseWorkflow` | ні (окремий write-audit) | **зовн. n8n pause** |
-| `POST /openclaw/write/mute-alert` | `muteSentryAlert` | ні (окремий write-audit) | **зовн. Sentry mute** |
+| Route                                 | Handler                                                            | Audit-write                                                   | Mutation-target                         |
+| ------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- | --------------------------------------- |
+| `POST /openclaw/write/strategy-doc`   | `commitToStrategyDoc` (repo allowlist `assertOpenClawRepoAllowed`) | ні (audit через окремий write-audit/log)                      | **зовн. GitHub commit**                 |
+| `POST /openclaw/write/github-issue`   | `createGithubIssue` (repo allowlist)                               | ні (окремий write-audit)                                      | **зовн. GitHub issue**                  |
+| `POST /openclaw/write/post-to-topic`  | `postToTopic` (topic allowlist `POST_TO_TOPIC_ALLOWLIST`)          | **так — mirror у `tg_topic_archive` при `status==='posted'`** | **зовн. Telegram post** + app-DB insert |
+| `POST /openclaw/write/pause-workflow` | `pauseWorkflow`                                                    | ні (окремий write-audit)                                      | **зовн. n8n pause**                     |
+| `POST /openclaw/write/mute-alert`     | `muteSentryAlert`                                                  | ні (окремий write-audit)                                      | **зовн. Sentry mute**                   |
 
 ### Write-audit family (ADR-0037 — append-only lifecycle log)
 
-| Route | Handler | Audit-write | Mutation-target |
-| ----- | ------- | ----------- | --------------- |
-| `POST /openclaw/write-audit/log` | `recordWriteAudit` | **так (це і є audit-таблиця)** | app-DB insert `openclaw_write_audit` |
-| `POST /openclaw/write-audit/list` | `listRecentWriteAudits` | ні | read-only |
+| Route                             | Handler                 | Audit-write                    | Mutation-target                      |
+| --------------------------------- | ----------------------- | ------------------------------ | ------------------------------------ |
+| `POST /openclaw/write-audit/log`  | `recordWriteAudit`      | **так (це і є audit-таблиця)** | app-DB insert `openclaw_write_audit` |
+| `POST /openclaw/write-audit/list` | `listRecentWriteAudits` | ні                             | read-only                            |
 
 ### n8n delegation family (PR-C1c — tier-gated)
 
-| Route | Handler | Audit-write | Mutation-target |
-| ----- | ------- | ----------- | --------------- |
-| `POST /openclaw/n8n/list` | `listN8nWorkflows` | ні | read-only |
-| `POST /openclaw/n8n/describe` | `describeN8nWorkflow` | ні | read-only |
-| `POST /openclaw/n8n/trigger` | `triggerN8nWorkflow` (Tier A auto / Tier C gated; B/D + unknown → `N8nAllowlistError`) | ні | **зовн. n8n trigger** |
-| `POST /openclaw/n8n/activate` | `activateN8nWorkflow` (Tier A/C only) | ні | **зовн. n8n activate/deactivate** |
-| `POST /openclaw/snapshot/refresh` | `refreshBusinessSnapshot` (fan-out усіх Tier A) | ні | **зовн. n8n fan-out trigger** |
+| Route                             | Handler                                                                                | Audit-write | Mutation-target                   |
+| --------------------------------- | -------------------------------------------------------------------------------------- | ----------- | --------------------------------- |
+| `POST /openclaw/n8n/list`         | `listN8nWorkflows`                                                                     | ні          | read-only                         |
+| `POST /openclaw/n8n/describe`     | `describeN8nWorkflow`                                                                  | ні          | read-only                         |
+| `POST /openclaw/n8n/trigger`      | `triggerN8nWorkflow` (Tier A auto / Tier C gated; B/D + unknown → `N8nAllowlistError`) | ні          | **зовн. n8n trigger**             |
+| `POST /openclaw/n8n/activate`     | `activateN8nWorkflow` (Tier A/C only)                                                  | ні          | **зовн. n8n activate/deactivate** |
+| `POST /openclaw/snapshot/refresh` | `refreshBusinessSnapshot` (fan-out усіх Tier A)                                        | ні          | **зовн. n8n fan-out trigger**     |
 
 ### Mute family (PR /mute Phase 5b — founder DND)
 
-| Route | Handler | Audit-write | Mutation-target |
-| ----- | ------- | ----------- | --------------- |
-| `POST /openclaw/mute/set` | `setFounderMute` | ні | app-DB upsert mute-state |
-| `POST /openclaw/mute/clear` | `clearFounderMute` | ні | app-DB clear mute-state |
-| `POST /openclaw/mute/status` | `getFounderMute` | ні | read-only |
-| `POST /openclaw/mute/check` | `isFounderMuted` | ні | read-only (outbound-channel guard) |
+| Route                        | Handler            | Audit-write | Mutation-target                    |
+| ---------------------------- | ------------------ | ----------- | ---------------------------------- |
+| `POST /openclaw/mute/set`    | `setFounderMute`   | ні          | app-DB upsert mute-state           |
+| `POST /openclaw/mute/clear`  | `clearFounderMute` | ні          | app-DB clear mute-state            |
+| `POST /openclaw/mute/status` | `getFounderMute`   | ні          | read-only                          |
+| `POST /openclaw/mute/check`  | `isFounderMuted`   | ні          | read-only (outbound-channel guard) |
 
 ### Whois / code-understanding / SEO families (read-only)
 
-| Route | Handler | Audit-write | Mutation-target |
-| ----- | ------- | ----------- | --------------- |
-| `POST /openclaw/whois` | `lookupWhois` (+ optional Telegram `getChat`) | ні | read-only aggregator |
-| `POST /openclaw/github/search` | `githubSearch` | ні | read-only (GitHub API) |
-| `POST /openclaw/github/tree` | `githubTree` | ні | read-only (GitHub API) |
-| `POST /openclaw/github/diff` | `githubDiff` | ні | read-only (GitHub API) |
-| `POST /openclaw/github/prs` | `githubPrs` | ні | read-only (GitHub API) |
-| `POST /openclaw/seo/gsc` | `seoGscQuery` | ні | read-only (env-stub GSC) |
-| `POST /openclaw/seo/lighthouse` | `seoPsiAudit` | ні | read-only (env-stub PSI) |
-| `POST /openclaw/seo/serp` | `seoSerpLookup` | ні | read-only (env-stub SERP) |
+| Route                           | Handler                                       | Audit-write | Mutation-target           |
+| ------------------------------- | --------------------------------------------- | ----------- | ------------------------- |
+| `POST /openclaw/whois`          | `lookupWhois` (+ optional Telegram `getChat`) | ні          | read-only aggregator      |
+| `POST /openclaw/github/search`  | `githubSearch`                                | ні          | read-only (GitHub API)    |
+| `POST /openclaw/github/tree`    | `githubTree`                                  | ні          | read-only (GitHub API)    |
+| `POST /openclaw/github/diff`    | `githubDiff`                                  | ні          | read-only (GitHub API)    |
+| `POST /openclaw/github/prs`     | `githubPrs`                                   | ні          | read-only (GitHub API)    |
+| `POST /openclaw/seo/gsc`        | `seoGscQuery`                                 | ні          | read-only (env-stub GSC)  |
+| `POST /openclaw/seo/lighthouse` | `seoPsiAudit`                                 | ні          | read-only (env-stub PSI)  |
+| `POST /openclaw/seo/serp`       | `seoSerpLookup`                               | ні          | read-only (env-stub SERP) |
 
 ### Reminder family (PR-C1b — FSM store)
 
-| Route | Handler | Audit-write | Mutation-target |
-| ----- | ------- | ----------- | --------------- |
-| `POST /openclaw/reminders/set` | `setReminder` | ні | app-DB insert reminder |
-| `POST /openclaw/reminders/list-due` | `listDueReminders` | ні | read-only (cron-poller) |
-| `POST /openclaw/reminders/mark-sent` | `markReminderSent` | ні | app-DB FSM transition `pending→sent` |
-| `POST /openclaw/reminders/mark-failed` | `markReminderFailed` | ні | app-DB FSM transition `pending→failed` |
-| `POST /openclaw/reminders/cancel` | `markReminderCancelled` (founder-scoped owner check) | ні | app-DB FSM transition `pending→cancelled` |
-| `POST /openclaw/reminders/list` | `listFounderReminders` | ні | read-only |
+| Route                                  | Handler                                              | Audit-write | Mutation-target                           |
+| -------------------------------------- | ---------------------------------------------------- | ----------- | ----------------------------------------- |
+| `POST /openclaw/reminders/set`         | `setReminder`                                        | ні          | app-DB insert reminder                    |
+| `POST /openclaw/reminders/list-due`    | `listDueReminders`                                   | ні          | read-only (cron-poller)                   |
+| `POST /openclaw/reminders/mark-sent`   | `markReminderSent`                                   | ні          | app-DB FSM transition `pending→sent`      |
+| `POST /openclaw/reminders/mark-failed` | `markReminderFailed`                                 | ні          | app-DB FSM transition `pending→failed`    |
+| `POST /openclaw/reminders/cancel`      | `markReminderCancelled` (founder-scoped owner check) | ні          | app-DB FSM transition `pending→cancelled` |
+| `POST /openclaw/reminders/list`        | `listFounderReminders`                               | ні          | read-only                                 |
 
 ### Перше прочитання матриці (raw signal, не recommendations)
 
@@ -161,4 +161,4 @@ ADR-0027 (OpenClaw, Console та MCP) визначає policy: write-scopes ок
 - **Strategic modes ADR:** [`docs/adr/0033-openclaw-multi-personas-and-council.md`](../adr/0033-openclaw-multi-personas-and-council.md) (council + approval-gate model).
 - **Webhook ADR:** [`docs/adr/0041-openclaw-telegram-webhook.md`](../adr/0041-openclaw-telegram-webhook.md) (token-rotation + idempotency).
 - **PR plan:** [`docs/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/pr-plan-backend-perf-2026-05.md).
-- **Routing map:** [`docs/observability/alert-bot-routing.md`](../observability/alert-bot-routing.md).
+- **Routing map:** [`docs/03-operations/observability/alert-bot-routing.md`](../03-operations/observability/alert-bot-routing.md).

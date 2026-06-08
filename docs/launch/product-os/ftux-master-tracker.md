@@ -14,7 +14,7 @@
 > **Cross-refs:**
 > [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
 > [`04-launch-readiness.md` §4.2](../business/04-launch-readiness.md) — funnel definitions ·
-> [`docs/observability/posthog-ftux-dashboards.md`](../../observability/posthog-ftux-dashboards.md) — PostHog dashboards runbook ·
+> [`docs/03-operations/observability/posthog-ftux-dashboards.md`](../../03-operations/observability/posthog-ftux-dashboards.md) — PostHog dashboards runbook ·
 > [`docs/governance/feature-flags.md`](../../governance/feature-flags.md) — flag conventions ·
 > [`docs/playbooks/add-onboarding-step.md`](../../playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS` ·
 > [`docs/05-design/design/empty-states.md`](../../05-design/design/empty-states.md) — 3-tier empty states ·
@@ -54,7 +54,7 @@
 >
 > **Paywall placement decided 2026-05-06:** post-first-real-entry sheet (soft, FF-gated, 14d Pro trial без payment method). Sketch + telemetry contract + 3 copy variants (α/β/γ) + acceptance criteria for PR-20 — у [`paywall-ux-placement.md`](./paywall-ux-placement.md). PR-19 landed; PR-20 чекає 0010 Stripe scaffold.
 >
-> **Roast #1/10 — 2026-05-13 progress (parent-driven, freeze override):** 3 carryover items закрито у `2026-05-13-ftux-onboarding-roast` PR — (1) **B-11 §2.9** generic «Що далі» tip → module-aware `nextStepTip` у [`FIRST_ENTRY_CELEBRATIONS`](../../../packages/shared/src/lib/onboardingCelebrations.ts); (2) **P2-15 §4** generic «Продовжити» CTA → module-aware `primaryCtaLabel`; (3) **M-10** FTUX SLO відсутні → declarative [`docs/observability/ftux-slo.yml`](../../observability/ftux-slo.yml). Audit guards у [`onboardingCelebrations.test.ts`](../../../packages/shared/src/lib/onboardingCelebrations.test.ts) блокують regression. Roast doc: [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../../audits/archive/2026-05-13-ftux-onboarding-roast.md).
+> **Roast #1/10 — 2026-05-13 progress (parent-driven, freeze override):** 3 carryover items закрито у `2026-05-13-ftux-onboarding-roast` PR — (1) **B-11 §2.9** generic «Що далі» tip → module-aware `nextStepTip` у [`FIRST_ENTRY_CELEBRATIONS`](../../../packages/shared/src/lib/onboardingCelebrations.ts); (2) **P2-15 §4** generic «Продовжити» CTA → module-aware `primaryCtaLabel`; (3) **M-10** FTUX SLO відсутні → declarative [`docs/03-operations/observability/ftux-slo.yml`](../../03-operations/observability/ftux-slo.yml). Audit guards у [`onboardingCelebrations.test.ts`](../../../packages/shared/src/lib/onboardingCelebrations.test.ts) блокують regression. Roast doc: [`docs/audits/2026-05-13-ftux-onboarding-roast.md`](../../audits/archive/2026-05-13-ftux-onboarding-roast.md).
 
 **Стан 2026-05-05:**
 
@@ -336,7 +336,7 @@
 
 ## 6. Метрики, FTUX SLO
 
-> PR: **PR-14**. Декларативний `docs/observability/ftux-slo.yml` + PostHog dashboard + Sentry/PostHog alert.
+> PR: **PR-14**. Декларативний `docs/03-operations/observability/ftux-slo.yml` + PostHog dashboard + Sentry/PostHog alert.
 
 ### 6.1. Канонічні events (за `posthog-ftux-dashboards.md`)
 
@@ -367,7 +367,7 @@ celebration_shown        → CelebrationModal rendered
 ### 6.3. Запропонована FTUX SLO (PR-14)
 
 ```yaml
-# docs/observability/ftux-slo.yml (proposed)
+# docs/03-operations/observability/ftux-slo.yml (proposed)
 slos:
   - name: ftux_activation_conversion
     target: ">= 30%"
@@ -483,20 +483,20 @@ slos:
 
 ### 8.4. 2026-05-05 mega-roast — нові знахідки
 
-| #    | Знахідка                                                                 | Стан                    | Кроки                                                                                                                                                                                                |
-| ---- | ------------------------------------------------------------------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M-1  | **Audit hyperloop** (12 ініціатив, 12 audit-доків, 334 markdown)         | 🚧 Mitigation in flight | PR-01 (audit-freeze) + PR-08 (archive 3 stale tracker-и) + цей master tracker (PR-00)                                                                                                                |
-| M-2  | Brand-naming inconsistency (Latin / Cyrillic / English / emoji-prefixed) | ✅ Closed               | PR-06 [#1998](https://github.com/Skords-01/Sergeant/pull/1998)                                                                                                                                       |
-| M-3  | 14 onboarding-adjacent компонентів — guidance bloat                      | ⏳ Open                 | PR-12 (incremental orchestrator)                                                                                                                                                                     |
-| M-4  | Demo mode прихований за `?demo=1`                                        | ✅ Closed               | PR-05 [#1986](https://github.com/Skords-01/Sergeant/pull/1986)                                                                                                                                       |
-| M-5  | UA-only product UI без runtime i18n                                      | 🗄️ Deferred             | UA-only до launch (per Q4)                                                                                                                                                                           |
-| M-6  | Mobile FTUX parity gap                                                   | 🚧 Partial              | PR-15 (PostHog) ✅ код ready 2026-05-07 (needs EAS Secret); PR-21 (FTUX components) ⏳ open                                                                                                          |
-| M-7  | Paywall placement у FTUX — повна відсутність UX-плану                    | ⏳ Open                 | PR-19 (sketch) → PR-20 (impl)                                                                                                                                                                        |
-| M-8  | AGENTS.md 81 КБ — read-tax 6×                                            | 🚧 Mitigation           | PR-22 (TOC + quick-reference, без split)                                                                                                                                                             |
-| M-9  | PWA install prompt відсутній                                             | ✅ Closed               | PR-07 [#2011](https://github.com/Skords-01/Sergeant/pull/2011)                                                                                                                                       |
-| M-10 | FTUX SLO відсутні                                                        | ✅ Closed (declarative) | Declarative SLO landed у [`docs/observability/ftux-slo.yml`](../../observability/ftux-slo.yml) — 2026-05-13 roast PR. Alerting wiring (PostHog Alerts + Sentry webhook) лишається у PR-14 follow-up. |
-| M-11 | A11y manual audit не проведений                                          | ⏳ Open                 | PR-16                                                                                                                                                                                                |
-| M-12 | What's new modal                                                         | ✅ Closed               | PR-18 — `apps/web/src/core/whatsNew/` (`<WhatsNewModal />` + `useWhatsNew` + `releases.ts` + `storage.ts`, з тестами) + `docs/whats-new/`; інтегровано у `HubHomeView.tsx`                           |
+| #    | Знахідка                                                                 | Стан                    | Кроки                                                                                                                                                                                                                            |
+| ---- | ------------------------------------------------------------------------ | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M-1  | **Audit hyperloop** (12 ініціатив, 12 audit-доків, 334 markdown)         | 🚧 Mitigation in flight | PR-01 (audit-freeze) + PR-08 (archive 3 stale tracker-и) + цей master tracker (PR-00)                                                                                                                                            |
+| M-2  | Brand-naming inconsistency (Latin / Cyrillic / English / emoji-prefixed) | ✅ Closed               | PR-06 [#1998](https://github.com/Skords-01/Sergeant/pull/1998)                                                                                                                                                                   |
+| M-3  | 14 onboarding-adjacent компонентів — guidance bloat                      | ⏳ Open                 | PR-12 (incremental orchestrator)                                                                                                                                                                                                 |
+| M-4  | Demo mode прихований за `?demo=1`                                        | ✅ Closed               | PR-05 [#1986](https://github.com/Skords-01/Sergeant/pull/1986)                                                                                                                                                                   |
+| M-5  | UA-only product UI без runtime i18n                                      | 🗄️ Deferred             | UA-only до launch (per Q4)                                                                                                                                                                                                       |
+| M-6  | Mobile FTUX parity gap                                                   | 🚧 Partial              | PR-15 (PostHog) ✅ код ready 2026-05-07 (needs EAS Secret); PR-21 (FTUX components) ⏳ open                                                                                                                                      |
+| M-7  | Paywall placement у FTUX — повна відсутність UX-плану                    | ⏳ Open                 | PR-19 (sketch) → PR-20 (impl)                                                                                                                                                                                                    |
+| M-8  | AGENTS.md 81 КБ — read-tax 6×                                            | 🚧 Mitigation           | PR-22 (TOC + quick-reference, без split)                                                                                                                                                                                         |
+| M-9  | PWA install prompt відсутній                                             | ✅ Closed               | PR-07 [#2011](https://github.com/Skords-01/Sergeant/pull/2011)                                                                                                                                                                   |
+| M-10 | FTUX SLO відсутні                                                        | ✅ Closed (declarative) | Declarative SLO landed у [`docs/03-operations/observability/ftux-slo.yml`](../../03-operations/observability/ftux-slo.yml) — 2026-05-13 roast PR. Alerting wiring (PostHog Alerts + Sentry webhook) лишається у PR-14 follow-up. |
+| M-11 | A11y manual audit не проведений                                          | ⏳ Open                 | PR-16                                                                                                                                                                                                                            |
+| M-12 | What's new modal                                                         | ✅ Closed               | PR-18 — `apps/web/src/core/whatsNew/` (`<WhatsNewModal />` + `useWhatsNew` + `releases.ts` + `storage.ts`, з тестами) + `docs/whats-new/`; інтегровано у `HubHomeView.tsx`                                                       |
 
 ### 8.5. UX-roast 2026-05-06 — P0/P1/P2
 

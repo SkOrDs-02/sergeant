@@ -324,29 +324,29 @@ Feature flags are managed via `docs/governance/feature-flags.md`. Each flag cont
 
 ## Observability
 
-Monitoring is described in `docs/observability/README.md`. Key components: Sentry (errors), PostHog (analytics), Prometheus/Grafana (metrics), Web Vitals (frontend performance).
+Monitoring is described in `docs/03-operations/observability/README.md`. Key components: Sentry (errors), PostHog (analytics), Prometheus/Grafana (metrics), Web Vitals (frontend performance).
 
 ## Documentation map
 
-| Directory                | Contents                                                   |
-| ------------------------ | ---------------------------------------------------------- |
-| `docs/adr/`              | Architecture Decision Records — why we chose what we chose |
-| `docs/api/`              | OpenAPI contracts, API documentation                       |
-| `docs/architecture/`     | Repository map, platforms, service catalog                 |
-| `docs/audits/`           | UX/UI audits, typography, design reviews                   |
-| `docs/deploy/`           | Deployment instructions                                    |
-| `docs/05-design/design/` | Design system: brandbook, colors, module accents           |
-| `docs/governance/`       | Hard rules, review checklist, release policy               |
-| `docs/integrations/`     | Monobank, Railway, Vercel, Renovate, Voyage                |
-| `docs/launch/`           | Monetization, GTM, launch readiness                        |
-| `docs/mobile/`           | Capacitor, deep links, React Native migration              |
-| `docs/observability/`    | SLO, dashboards, metrics, runbook                          |
-| `docs/planning/`         | Roadmaps, AI improvements, dev stack roadmap               |
-| `docs/playbooks/`        | Step-by-step recipes (add an endpoint, do a hotfix)        |
-| `docs/postmortems/`      | Incident post-mortems                                      |
-| `docs/security/`         | Access policy, disaster recovery, security audit           |
-| `docs/agents/`           | AI agent system: skill catalog, workflows                  |
-| `docs/tech-debt/`        | Tech debt registries (frontend, backend, mobile)           |
+| Directory                           | Contents                                                   |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `docs/adr/`                         | Architecture Decision Records — why we chose what we chose |
+| `docs/api/`                         | OpenAPI contracts, API documentation                       |
+| `docs/architecture/`                | Repository map, platforms, service catalog                 |
+| `docs/audits/`                      | UX/UI audits, typography, design reviews                   |
+| `docs/03-operations/deploy/`        | Deployment instructions                                    |
+| `docs/05-design/design/`            | Design system: brandbook, colors, module accents           |
+| `docs/governance/`                  | Hard rules, review checklist, release policy               |
+| `docs/integrations/`                | Monobank, Railway, Vercel, Renovate, Voyage                |
+| `docs/launch/`                      | Monetization, GTM, launch readiness                        |
+| `docs/mobile/`                      | Capacitor, deep links, React Native migration              |
+| `docs/03-operations/observability/` | SLO, dashboards, metrics, runbook                          |
+| `docs/planning/`                    | Roadmaps, AI improvements, dev stack roadmap               |
+| `docs/playbooks/`                   | Step-by-step recipes (add an endpoint, do a hotfix)        |
+| `docs/03-operations/postmortems/`   | Incident post-mortems                                      |
+| `docs/security/`                    | Access policy, disaster recovery, security audit           |
+| `docs/agents/`                      | AI agent system: skill catalog, workflows                  |
+| `docs/tech-debt/`                   | Tech debt registries (frontend, backend, mobile)           |
 
 Roadmap: `docs/planning/README.md`. Tech debt: `docs/tech-debt/README.md`.
 

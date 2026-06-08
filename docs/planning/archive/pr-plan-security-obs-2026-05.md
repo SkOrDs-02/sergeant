@@ -30,18 +30,18 @@
   [`docs/security/vulnerability-sla.md`](../../security/vulnerability-sla.md),
   [`docs/security/audit-exceptions.md`](../../security/audit-exceptions.md).
 - **Observability runbooks / dashboards:**
-  [`docs/observability/metrics.md`](../../observability/metrics.md) (Prometheus
+  [`docs/03-operations/observability/metrics.md`](../../03-operations/observability/metrics.md) (Prometheus
   довідник, single source of truth для `apps/server/src/obs/metrics.ts`),
-  [`docs/observability/runbook.md`](../../observability/runbook.md) (алерт-runbook),
-  [`docs/observability/sentry-sampling.md`](../../observability/sentry-sampling.md),
-  [`docs/observability/csp-monitoring.md`](../../observability/csp-monitoring.md),
-  [`docs/observability/frontend.md`](../../observability/frontend.md),
-  [`docs/observability/log-retention.md`](../../observability/log-retention.md),
-  [`docs/observability/SLO.md`](../../observability/SLO.md).
+  [`docs/03-operations/observability/runbook.md`](../../03-operations/observability/runbook.md) (алерт-runbook),
+  [`docs/03-operations/observability/sentry-sampling.md`](../../03-operations/observability/sentry-sampling.md),
+  [`docs/03-operations/observability/csp-monitoring.md`](../../03-operations/observability/csp-monitoring.md),
+  [`docs/03-operations/observability/frontend.md`](../../03-operations/observability/frontend.md),
+  [`docs/03-operations/observability/log-retention.md`](../../03-operations/observability/log-retention.md),
+  [`docs/03-operations/observability/SLO.md`](../../03-operations/observability/SLO.md).
 - **Runbooks (operations-side):**
-  [`docs/runbooks/operations-runbook.md`](../../runbooks/operations-runbook.md),
-  [`docs/runbooks/encryption-key-rotation.md`](../../runbooks/encryption-key-rotation.md),
-  [`docs/runbooks/database-backup-restore.md`](../../runbooks/database-backup-restore.md).
+  [`docs/03-operations/runbooks/operations-runbook.md`](../../03-operations/runbooks/operations-runbook.md),
+  [`docs/03-operations/runbooks/encryption-key-rotation.md`](../../03-operations/runbooks/encryption-key-rotation.md),
+  [`docs/03-operations/runbooks/database-backup-restore.md`](../../03-operations/runbooks/database-backup-restore.md).
 - **ADR-and-Hard-Rules baseline:**
   [`docs/adr/0015-observability-stack.md`](../../adr/0015-observability-stack.md)
   (Pino + Prometheus + Sentry — три незалежні шари; жоден PR нижче не змінює
@@ -329,7 +329,7 @@
       на моменті init — `'pending' | 'ok' | 'failed'`);
     - `setTag('webVitalsEnabled', String(webVitalsEnabled))`.
   - Документ-стаб у
-    [`docs/observability/sentry-sampling.md`](../../observability/sentry-sampling.md)
+    [`docs/03-operations/observability/sentry-sampling.md`](../../03-operations/observability/sentry-sampling.md)
     додає рядок про нові теги (вони не змінюють sampling, але впливають
     на пошук).
 - **Acceptance:**
@@ -388,7 +388,7 @@
   - Normalizing helper — `parseCsp(header) → Map<directive, Set<source>>`
     у `apps/web/src/test/helpers/parseCsp.ts`.
   - Документ-апдейт у
-    [`docs/observability/csp-monitoring.md`](../../observability/csp-monitoring.md)
+    [`docs/03-operations/observability/csp-monitoring.md`](../../03-operations/observability/csp-monitoring.md)
     — додати рядок «parity test є частиною CI-gate-у».
 - **Acceptance:**
   - Test passes на main.

@@ -89,7 +89,7 @@ Pino `level()` setter dynamically swap-ається на check.
 - [x] `apps/server/src/obs/logger.ts` має `enableDebugWindow(durationMs, requestedBy)` + `disableDebugWindow()` + `debugWindowRemainingMs()` + `currentLogLevel()`; динамічний swap через `setInterval(…, 5_000).unref()` (in-place `logger.level = newLevel`, без child-Pino, без memory-leak ризик-у).
 - [x] Auto-revert + 30-min hard ceiling — `DEBUG_WINDOW_MAX_MS = 30 * 60 * 1000` у `logger.ts`; `Math.min(durationMs, DEBUG_WINDOW_MAX_MS)` при enable.
 - [x] Tests pass — `apps/server/src/obs/__tests__/logger-debug-window.test.ts` (7 кейсів: базовий level / enable → debug / expire → base / `debugWindowRemainingMs` поведінка / 30-min cap / `disableDebugWindow` clears).
-- [x] [`docs/observability/log-levels.md`](../../observability/log-levels.md) — production-`info` / dev-`debug` policy + Telegram `/debug-window` UX.
+- [x] [`docs/03-operations/observability/log-levels.md`](../../03-operations/observability/log-levels.md) — production-`info` / dev-`debug` policy + Telegram `/debug-window` UX.
 - [x] `tools/openclaw` `/debug_window` + `/debug_window_status` commands — wired via `debug-window-runner.ts` + `handler-info-commands.ts` + `apps/server/src/routes/internal/debug-window.ts` (PR-35 follow-up).
 - [ ] Sentry alert на >30 хв window — **не потрібно** без CLI-bypass: 30-min hard ceiling уже не дає ввімкнути більше (`enableDebugWindow` clamp); ре-оцінити при CLI follow-up-і якщо в CLI буде retry-loop з 'continuous-debug' патерном.
 
@@ -129,7 +129,7 @@ Pino `level()` setter dynamically swap-ається на check.
 - `apps/server/src/obs/logger.ts` — Pino instance + debug-window logic
 - `tools/openclaw/src/agents/ops/debugWindow.ts` — new
 - `apps/server/src/obs/__tests__/logger-debug-window.test.ts` — new
-- `docs/observability/log-levels.md` — new
+- `docs/03-operations/observability/log-levels.md` — new
 
 ## Refs
 

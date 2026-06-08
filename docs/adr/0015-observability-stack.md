@@ -6,9 +6,9 @@
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/observability/SLO.md`](../observability/SLO.md) — SLI/SLO і burn-rate алерти.
-  - [`docs/observability/dashboards.md`](../observability/dashboards.md) — Grafana стартер-пак.
-  - [`docs/observability/runbook.md`](../observability/runbook.md) — playbook на алерти.
+  - [`docs/03-operations/observability/SLO.md`](../03-operations/observability/SLO.md) — SLI/SLO і burn-rate алерти.
+  - [`docs/03-operations/observability/dashboards.md`](../03-operations/observability/dashboards.md) — Grafana стартер-пак.
+  - [`docs/03-operations/observability/runbook.md`](../03-operations/observability/runbook.md) — playbook на алерти.
   - [`apps/server/src/obs/`](../../apps/server/src/obs) — Pino logger, Prometheus registry, request context.
   - [`apps/server/src/sentry.ts`](../../apps/server/src/sentry.ts) — Sentry bootstrap (server).
   - [`apps/web/src/core/observability/sentry.ts`](../../apps/web/src/core/observability/sentry.ts) — client-side Sentry.
@@ -267,8 +267,8 @@ Alternative: Google SRE Workbook Ch.5 — multi-window multi-burn-rate:
 ### Decision
 
 **SLO + burn-rate alerts** для кожного критичного домена. Реалізовано у
-[`prometheus/alert_rules.yml`](../observability/prometheus/alert_rules.yml) +
-визначено у [`docs/observability/SLO.md`](../observability/SLO.md):
+[`prometheus/alert_rules.yml`](../03-operations/observability/prometheus/alert_rules.yml) +
+визначено у [`docs/03-operations/observability/SLO.md`](../03-operations/observability/SLO.md):
 
 | Домен          | SLO    | Fast burn alert | Slow burn alert |
 | -------------- | ------ | --------------- | --------------- |
@@ -282,7 +282,7 @@ histogram рахувати дорого і sensitive-до-bucket-вибору.
 
 Process-рівня hard alerts без SLO — `unhandled_rejections_total` +
 `uncaught_exceptions_total` (див.
-[`SLO.md#7-process`](../observability/SLO.md#7-process-рівня-не-slo-hard-alerts)).
+[`SLO.md#7-process`](../03-operations/observability/SLO.md#7-process-рівня-не-slo-hard-alerts)).
 
 ### Consequences
 
@@ -296,7 +296,7 @@ Process-рівня hard alerts без SLO — `unhandled_rejections_total` +
 **Негативні:**
 
 - Складніший mental model для нової людини. Runbook
-  ([`docs/observability/runbook.md`](../observability/runbook.md)) пояснює.
+  ([`docs/03-operations/observability/runbook.md`](../03-operations/observability/runbook.md)) пояснює.
 - Потрібна достатня traffic, щоб SLI був stable — на low-traffic періоди
   burn-rate може flap-ити. Мітігація: min sample threshold у PromQL
   (`... and sum(rate(...)) > 0.1`).

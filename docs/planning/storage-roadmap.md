@@ -1995,7 +1995,7 @@ AND status='dead_letter'`. `WHERE status='dead_letter'` guard
 - **Виконано.** `apps/server/src/modules/sync/syncV2.ts` — нові типи + експорт
   `as const`-масивів; `apps/server/src/obs/metrics.test.ts` — regression-test
   пінить довжину allowlist-у (45/4) + key CRDT-інваріанти + snake_case-shape +
-  no-duplicates; `docs/observability/metrics.md` §4 — оновлений cardinality
+  no-duplicates; `docs/03-operations/observability/metrics.md` §4 — оновлений cardinality
   budget і source-of-truth-лінк. Locally: typecheck + lint + 121 sync/obs тестів зелені.
 - **Risk.** Low — types-only narrowing; runtime label-set Prometheus незмінний.
   Forward-compat: future apply-fn additions extend `as const` array (TS блокує
@@ -2056,7 +2056,7 @@ AND status='dead_letter'`. `WHERE status='dead_letter'` guard
     у `getPoolStats()` (для `/healthz` дашбордів).
   - `apps/server/src/env.ts` + `apps/server/src/env/env.ts` — `DATABASE_URL_POOL: z.string().url().optional()`.
   - `apps/server/src/db.test.ts` — 4 unit-тести покривають усі комбінації routing-у через `vi.stubEnv` + `vi.resetModules`.
-  - `docs/runbooks/database-connection-pooling.md` — Railway-deploy shape (`edoburu/pgbouncer`, transaction-mode, MAX_CLIENT_CONN sizing), верифікація, rollback, prepared-statement caveat.
+  - `docs/03-operations/runbooks/database-connection-pooling.md` — Railway-deploy shape (`edoburu/pgbouncer`, transaction-mode, MAX_CLIENT_CONN sizing), верифікація, rollback, prepared-statement caveat.
 - AC. Стабільні з'єднання при 200 concurrent users — Railway pgBouncer-сервіс
   - `DATABASE_URL_POOL` уведено в production runbook; verification смокується
     через `getPoolStats().routedThrough === "pgbouncer"` на `/healthz`.
@@ -2076,7 +2076,7 @@ AND status='dead_letter'`. `WHERE status='dead_letter'` guard
   - `apps/server/src/env.ts` + `apps/server/src/env/env.ts` — `DATABASE_URL_REPLICA: z.string().url().optional()`.
   - 4 dbReplica + 22 internal-route unit-тести (eager `pg.Pool` instantiation
     не відкриває TCP, паттерн із `db.test.ts`).
-  - `docs/runbooks/postgres-read-replica.md` — Railway deploy shape, мінімальні
+  - `docs/03-operations/runbooks/postgres-read-replica.md` — Railway deploy shape, мінімальні
     privilege-и для replica role, верифікація, rollback, alerts.
 - AC. Lag < 5s на p99 — задокументований alert threshold у runbook-у;
   analytics queries route у replica через `queryReplica()`; primary бере на
@@ -2094,13 +2094,13 @@ AND status='dead_letter'`. `WHERE status='dead_letter'` guard
   Інструментація в `syncV2Push` (3 call-site-и) + `syncV2Pull` (lag
   observation на newest op + depth = `opsOut.length`); усе в `try/catch`,
   не ламає request у разі Prometheus failure. 4 нові панелі в
-  `docs/observability/dashboards/sync.json` (per-op outcomes stacked,
+  `docs/03-operations/observability/dashboards/sync.json` (per-op outcomes stacked,
   topk-10 reject reasons, pull lag p50/95/99, queue depth p50/95/99).
   Cardinality cap: ~1100 worst-case (phenomenologically ~50–100 active).
   3 нові тести в `apps/server/src/obs/metrics.test.ts` фіксують registry
   - label-set + bucket boundaries `le=100` / `5000` / `200`, на які
     будуть прив'язані SLO-алерти. PromQL рецепти оновлені в
-    `docs/observability/metrics.md` §4 і `docs/observability/dashboards.md`.
+    `docs/03-operations/observability/metrics.md` §4 і `docs/03-operations/observability/dashboards.md`.
 
 #### **PR #049 — `feat(ops): backup/restore runbook + weekly verify CI`** ✅ LANDED — split into PR #049 (docs) + PR #049b (CI)
 
@@ -2113,7 +2113,7 @@ AND status='dead_letter'`. `WHERE status='dead_letter'` guard
 
 ##### **PR #049 — `docs(docs): Railway Postgres backup/restore runbook (PR #049 docs portion)`** ✅ LANDED ([#1757](https://github.com/Skords-01/Sergeant/pull/1757))
 
-- Scope. Новий runbook у [`docs/runbooks/database-backup-restore.md`](../runbooks/database-backup-restore.md):
+- Scope. Новий runbook у [`docs/03-operations/runbooks/database-backup-restore.md`](../03-operations/runbooks/database-backup-restore.md):
   Railway dashboard + локальні `pg_dump`/`pg_restore` команди (custom format,
   `--no-owner --no-privileges --clean --if-exists`); sync-aware row-level
   restore матриця (which tables safe per CRDT semantics з PR #043 / #043a / #043b);
@@ -2264,7 +2264,7 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   `docs/adr/0047-cloudsync-v1-410-gone.md`,
   `docs/architecture/data-exchange-storage-audit.md`,
   `docs/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md`,
-  `docs/observability/frontend.md`,
+  `docs/03-operations/observability/frontend.md`,
   `docs/tech-debt/mobile.md`.
 - Bidirectional supersede edge ADR-0004 ↔ ADR-0047: ADR-0047 тепер
   явно `Supersedes: ADR-0004` (ADR graph CI gate enforces — раніше було

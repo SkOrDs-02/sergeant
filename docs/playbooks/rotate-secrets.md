@@ -134,7 +134,7 @@ curl -sS https://<prod-domain>/health | jq .
 
 Якщо secret витік (а не планова ротація):
 
-- Створити `docs/postmortems/YYYY-MM-DD-secret-rotation.md`
+- Створити `docs/03-operations/postmortems/YYYY-MM-DD-secret-rotation.md`
 - Описати: що витекло, як, timeline, impact, prevention.
 
 ---

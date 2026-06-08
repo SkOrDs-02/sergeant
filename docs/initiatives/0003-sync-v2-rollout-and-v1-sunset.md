@@ -180,11 +180,11 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
 ### Phase 1 — observability — Done (PR #1621)
 
 - **Survey counter** [`sync_v1_legacy_clients_total{user_agent_class, app_version, op}`](../../apps/server/src/obs/metrics.ts) — окремий від `sync_operations_total`, монтується middleware-ом ТІЛЬКИ на `/api/sync/*` (НЕ на v2). Cardinality bound: 5×20×4 = 400 series worst-case. Implementation у [`apps/server/src/modules/sync/clientSurvey.ts`](../../apps/server/src/modules/sync/clientSurvey.ts) + 28 тестів (`clientSurvey.test.ts`).
-- **Grafana panels** (id 6/7/8 у [`docs/observability/dashboards/sync.json`](../observability/dashboards/sync.json)):
+- **Grafana panels** (id 6/7/8 у [`docs/03-operations/observability/dashboards/sync.json`](../03-operations/observability/dashboards/sync.json)):
   - V1 vs V2 traffic split (5m rate, by `module` label)
   - V1 legacy clients by UA-class
   - V1 legacy clients by app-version (top 5, 1h rate)
-- **Recording rules** ([`recording_rules.yml`](../observability/prometheus/recording_rules.yml)):
+- **Recording rules** ([`recording_rules.yml`](../03-operations/observability/prometheus/recording_rules.yml)):
   - `sli:sync_v1:rate5m`
   - `sli:sync_v2:rate5m`
   - `sli:sync_v1_legacy:rate1h_by_appversion`

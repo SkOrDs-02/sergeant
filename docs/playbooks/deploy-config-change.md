@@ -1,6 +1,6 @@
 # Playbook: Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `fly.toml`, `railway.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.
@@ -13,7 +13,7 @@
 ## Required context
 
 - Стартуй з `sergeant-start-here`, тоді відкрий `sergeant-deploy-and-observability`.
-- Перечитай [vercel.md](../deploy/vercel.md), [service-catalog.md](../architecture/service-catalog.md), [release-policy.md](../governance/release-policy.md).
+- Перечитай [vercel.md](../03-operations/deploy/vercel.md), [service-catalog.md](../architecture/service-catalog.md), [release-policy.md](../governance/release-policy.md).
 - Vercel SSOT-нотатка: `apps/web/vercel.json` — канонічний. У Vercel Project «Root Directory» = `apps/web`. Додавати другий `vercel.json` (наприклад, у корені monorepo) **заборонено** — `pnpm lint` енфорсить це через `scripts/check-vercel-config.sh`.
 
 ## Чому існує цей playbook
@@ -92,7 +92,7 @@ flowchart TD
 1. Тіло PR **обовʼязково** містить:
    - Чому staging неможливо задіяти (наприклад, «лише production Vercel-проєкт має edge-config binding»).
    - План мітигації, якщо зміна поведе себе погано (rollback commit SHA, шлях kill-switch, on-call rotation).
-   - Зобовʼязання написати post-mortem протягом 7 календарних днів, з лінком у `docs/postmortems/`.
+   - Зобовʼязання написати post-mortem протягом 7 календарних днів, з лінком у `docs/03-operations/postmortems/`.
 2. Принаймні один додатковий reviewer від `@Skords-01` (або призначений reviewer) на PR перед merge.
 3. Стеж за prod-логами / Sentry перші 30 хвилин після деплою.
 4. Напиши post-mortem; полінкуй цей PR.

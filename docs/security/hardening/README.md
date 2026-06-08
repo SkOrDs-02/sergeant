@@ -102,7 +102,7 @@
 | [L13](./L13-docker-platform-pin.md)            | `Dockerfile.api` platform pin in CI                     | Closed (2026-05-06) — `Dockerfile.api` + `.github/workflows/container-scan.yml` pin `linux/amd64`; `docker image inspect` guard added        | [Sprint 4](./sprint-4.md) |
 | [L2](./L2-permissions-policy-broader.md)       | Permissions-Policy could disable more APIs              | Closed (2026-05-06) — `apps/web/vercel.json` directive list extended; regression test in `apps/web/src/test/permissionsPolicyHeader.test.ts` | [Sprint 4](./sprint-4.md) |
 | [I6](./I6-threat-model.md)                     | STRIDE threat model per module                          | Closed (2026-05-06) — [`docs/security/threat-model.md`](../threat-model.md) shipped with per-module STRIDE tables + cross-cutting controls   | [Sprint 4](./sprint-4.md) |
-| [I7](./I7-security-events-openclaw.md)         | Push security events to OpenClaw                        | Closed (2026-06-01) — typed emitter + call sites wired + OpenClaw consumer + runbook (`docs/runbooks/security-events.md`)                    | [Sprint 4](./sprint-4.md) |
+| [I7](./I7-security-events-openclaw.md)         | Push security events to OpenClaw                        | Closed (2026-06-01) — typed emitter + call sites wired + OpenClaw consumer + runbook (`docs/03-operations/runbooks/security-events.md`)      | [Sprint 4](./sprint-4.md) |
 
 ## Cross-references
 

@@ -58,7 +58,7 @@ Any new `*.up.sql` migration that contains `DROP TABLE` or `ALTER TABLE … DROP
 
 The legacy escape hatch `-- ALLOW_DROP: <reason>` still passes the lint for backward-compat with pre-existing migrations on `main`, but new migrations should use `TWO-PHASE-DROP:` so the deprecation timeline is machine-verifiable.
 
-Authoring walkthrough + failure-mode catalog: [`docs/runbooks/operations-runbook.md § 8.2`](../../runbooks/operations-runbook.md#82-two-phase-drop-authoring).
+Authoring walkthrough + failure-mode catalog: [`docs/03-operations/runbooks/operations-runbook.md § 8.2`](../../03-operations/runbooks/operations-runbook.md#82-two-phase-drop-authoring).
 
 ### Empty `.down.sql` is a lint error
 

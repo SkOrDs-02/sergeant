@@ -86,7 +86,7 @@ const MUST_BE_OWNED = [
     reason: "architecture overview, platforms, status matrix",
   },
   {
-    path: "docs/observability",
+    path: "docs/03-operations/observability",
     kind: "tree",
     match: /\.md$/,
     reason: "SLOs, runbooks, on-call procedures",
@@ -104,7 +104,7 @@ const MUST_BE_OWNED = [
     reason: "agent skill catalog & workflow decision trees",
   },
   {
-    path: "docs/postmortems",
+    path: "docs/03-operations/postmortems",
     kind: "tree",
     match: /\.md$/,
     reason: "incident postmortems",

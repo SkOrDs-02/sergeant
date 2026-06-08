@@ -1,6 +1,6 @@
 # 0004 — Server observability (Sentry server-side + OpenTelemetry traces)
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Done. Phase 1 (Sentry server-side) shipped 2026-05-04. Phase 3 (Grafana dashboards) shipped 2026-05-04. **Phase 2 + 4 (OpenTelemetry SDK + custom sampler) shipped 2026-05-05** — vendor-agnostic OTLP/HTTP, graceful no-op коли `OTEL_EXPORTER_OTLP_ENDPOINT` не заданий, route-aware `RouteAwareSampler`. Backend-vendor (Honeycomb / Grafana Cloud Tempo / self-hosted) вибирається через env (см. ADR-0035 "Implementation").
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
@@ -63,7 +63,7 @@
   });
   ```
 - Додати `Sentry.errorHandler()` у `app.use()` після всіх routes, перед `errorHandler`.
-- Додати docs-фрагмент у [`docs/observability/runbook.md`](../../observability/runbook.md): як читати Sentry server events, як зробити replay/sample.
+- Додати docs-фрагмент у [`docs/03-operations/observability/runbook.md`](../../03-operations/observability/runbook.md): як читати Sentry server events, як зробити replay/sample.
 
 ### Фаза 2 — OpenTelemetry (1 PR)
 
@@ -93,7 +93,7 @@
   - `error-rate > 1%` за 5 хв → Telegram `#alerts`.
   - `p99 latency > 2s` за 10 хв → Telegram `#alerts-warn`.
   - `Anthropic 429 rate > 5%` за 1 хв → Telegram `#ai-ops`.
-- Запис у [`docs/observability/runbook.md`](../../observability/runbook.md): «як інтерпретувати алерти».
+- Запис у [`docs/03-operations/observability/runbook.md`](../../03-operations/observability/runbook.md): «як інтерпретувати алерти».
 
 ### Фаза 4 — sampling config + cleanup (1 PR)
 
@@ -114,7 +114,7 @@
 - [x] У Grafana dashboard `server.json` усі 8 panels live.
 - [x] Alert «error-rate > 1%» спрацьовує (можна тестово знизити поріг до 0.01% і перевірити).
 - [x] У `apps/server/src/observability/otel.ts` сервер не падає при відсутності `OTEL_EXPORTER_OTLP_ENDPOINT` (graceful no-op).
-- [x] Sampling rates документовані у [`docs/observability/runbook.md`](../../observability/runbook.md).
+- [x] Sampling rates документовані у [`docs/03-operations/observability/runbook.md`](../../03-operations/observability/runbook.md).
 - [x] CI lint-checks проходять без warnings.
 
 ## Ризики та митиґація
@@ -146,7 +146,7 @@
 
 - Design Review 2026-05-03 — §11 Observability
 - [`docs/tech-debt/backend.md`](../../tech-debt/backend.md) — запис «No server-side Sentry / no traces»
-- [`docs/observability/`](../../observability) — існуючий runbook (буде розширений)
+- [`docs/03-operations/observability/`](../../03-operations/observability) — існуючий runbook (буде розширений)
 - [`apps/server/src/index.ts`](../../../apps/server/src/index.ts)
 - [`apps/web/src/shared/lib/api/queryClient.ts`](../../../apps/web/src/shared/lib/api/queryClient.ts) — місце для `traceparent` injection
 - [Sentry Node SDK](https://docs.sentry.io/platforms/javascript/guides/node/)
@@ -177,7 +177,7 @@
 
 **Phase 3 — Grafana dashboards: ✅ DONE**
 
-Дашборди живуть у [`docs/observability/dashboards/`](../../observability/dashboards) (а не `ops/grafana/dashboards/` як у плані — `ops/grafana/dashboards/` лишається для n8n/operational), 9 готових JSON-ів:
+Дашборди живуть у [`docs/03-operations/observability/dashboards/`](../../03-operations/observability/dashboards) (а не `ops/grafana/dashboards/` як у плані — `ops/grafana/dashboards/` лишається для n8n/operational), 9 готових JSON-ів:
 
 | Dashboard            | Purpose                                                            |
 | -------------------- | ------------------------------------------------------------------ |
@@ -204,12 +204,12 @@
 - `db_pool_busy/idle/waiting`.
 - `sync_conflicts_total{module}`, `push_sends_total{outcome}`, `auth_attempts_total{op, outcome}`.
 
-**Alerts** (через `docs/observability/prometheus/alert_rules.yml` + `alertmanager.yml`):
+**Alerts** (через `docs/03-operations/observability/prometheus/alert_rules.yml` + `alertmanager.yml`):
 
 - `AiErrorBudgetBurn` / `AiErrorBudgetBurnSlow` (multi-burn-rate).
 - `AiQuotaFailOpen` (10хв вікно, severity=ticket).
 - HTTP error budget burn, sync-conflicts spike, tool unknown_tool spike, DB pool saturation.
-- `docs/observability/runbook.md` має по runbook на кожен alert (як грепати, що дивитись).
+- `docs/03-operations/observability/runbook.md` має по runbook на кожен alert (як грепати, що дивитись).
 
 ### Чого свідомо не робимо
 
@@ -217,7 +217,7 @@ Phase 2 і 4 були carry-over до 2026-05-05 — сьогодні вони �
 
 - НЕ привʼязуємось до Honeycomb або іншого конкретного SaaS — вибір backend-у відкладено до окремої ревізії в ADR-0035 секції «Implementation» (потрібно оцінити реальний volume, perf perf budget і прайсинг кількох candidate-ів).
 - НЕ ставимо повноцінний OTel SDK у веб-бандл (`@opentelemetry/sdk-trace-web` ≈ 50KB gzip) — на клієнті генеруємо тільки W3C `traceparent` (без spans) через `packages/api-client/src/httpClient.ts` (див. `generateTraceparent`). Серверна сторона підхоплює traceId і будує від нього дерево span-ів. RUM-рівень клієнтських spans — окрема P1 ініціатива.
-- НЕ вимикаємо Sentry web tracing автоматично — Sentry продовжує ловити помилки і client-side performance як раніше. Коли OTLP-endpoint увімкнено на сервері, runbook (`docs/observability/runbook.md` § «OpenTelemetry traces») рекомендує виставити `SENTRY_TRACES_SAMPLE_RATE=0`, щоб не платити двічі за перф latency на server-side.
+- НЕ вимикаємо Sentry web tracing автоматично — Sentry продовжує ловити помилки і client-side performance як раніше. Коли OTLP-endpoint увімкнено на сервері, runbook (`docs/03-operations/observability/runbook.md` § «OpenTelemetry traces») рекомендує виставити `SENTRY_TRACES_SAMPLE_RATE=0`, щоб не платити двічі за перф latency на server-side.
 
 ### Phase 2 + 4 — OpenTelemetry SDK (shipped 2026-05-05)
 
@@ -257,14 +257,14 @@ P1 follow-up (RUM-spans на веб-клієнті) трекається окр�
 
 ### Що змінено vs. оригінального плану
 
-| Spec (Proposed)                                                     | Shipped                                                                                                                          | Why deviation                                                                                                  |
-| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `Sentry.init` у `index.ts`                                          | `Sentry.init` у виділеному `sentry.ts`, який імпортується першим                                                                 | ESM depth-first hoisting робить top-level `init` у `index.ts` вже **після** `import express`                   |
-| `nodeProfilingIntegration`                                          | ❌ — не додано                                                                                                                   | Performance overhead не виправдовує додавання у personal-tier; легко повертається коли потрібно                |
-| `httpIntegration / expressIntegration / postgresIntegration` (явно) | Defaults Sentry SDK v8 (auto-discovers)                                                                                          | `@sentry/node@8.55` авто-підключає http+express без явного списку; явний `integrations:` лише ускладнює конфіг |
-| `ops/grafana/dashboards/server.json` 8 panels                       | `docs/observability/dashboards/{auth,db-use,frontend-cwv,http-red,hubchat,sync,ai-cost,slo-burn-rate}.json` 9 dashboards         | Repo organisation — дашборди у `docs/` поруч з runbook та alert rules; `ops/grafana/` — для n8n provisioning   |
-| AI-spans з `aiSpan`-helper                                          | `aiSpan` (OTel `gen_ai.*`) + Prom counters (`ai_tokens_total`, `ai_cost_estimate_usd_total`, `anthropic_prompt_cache_hit_total`) | Prom залишився для Grafana-дашбордів; OTel — для trace-tree (коли OTLP-endpoint увімкнено)                     |
-| Honeycomb-only backend                                              | Vendor-agnostic OTLP/HTTP — backend обирається через env (Honeycomb / Grafana Cloud Tempo / self-hosted)                         | Уникаємо SaaS-lock-in; ADR-0035 фіксує фінальний вибір після volume-оцінки в prod                              |
+| Spec (Proposed)                                                     | Shipped                                                                                                                                | Why deviation                                                                                                  |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `Sentry.init` у `index.ts`                                          | `Sentry.init` у виділеному `sentry.ts`, який імпортується першим                                                                       | ESM depth-first hoisting робить top-level `init` у `index.ts` вже **після** `import express`                   |
+| `nodeProfilingIntegration`                                          | ❌ — не додано                                                                                                                         | Performance overhead не виправдовує додавання у personal-tier; легко повертається коли потрібно                |
+| `httpIntegration / expressIntegration / postgresIntegration` (явно) | Defaults Sentry SDK v8 (auto-discovers)                                                                                                | `@sentry/node@8.55` авто-підключає http+express без явного списку; явний `integrations:` лише ускладнює конфіг |
+| `ops/grafana/dashboards/server.json` 8 panels                       | `docs/03-operations/observability/dashboards/{auth,db-use,frontend-cwv,http-red,hubchat,sync,ai-cost,slo-burn-rate}.json` 9 dashboards | Repo organisation — дашборди у `docs/` поруч з runbook та alert rules; `ops/grafana/` — для n8n provisioning   |
+| AI-spans з `aiSpan`-helper                                          | `aiSpan` (OTel `gen_ai.*`) + Prom counters (`ai_tokens_total`, `ai_cost_estimate_usd_total`, `anthropic_prompt_cache_hit_total`)       | Prom залишився для Grafana-дашбордів; OTel — для trace-tree (коли OTLP-endpoint увімкнено)                     |
+| Honeycomb-only backend                                              | Vendor-agnostic OTLP/HTTP — backend обирається через env (Honeycomb / Grafana Cloud Tempo / self-hosted)                               | Уникаємо SaaS-lock-in; ADR-0035 фіксує фінальний вибір після volume-оцінки в prod                              |
 
 ### Done-criteria звірка
 
@@ -273,7 +273,7 @@ P1 follow-up (RUM-spans на веб-клієнті) трекається окр�
 - [x] У Grafana 8+ dashboards live — фактично 9.
 - [x] Alert «error-rate > 1%» — є `HttpErrorBudgetBurn` (multi-burn-rate; еквівалентна логіка).
 - [x] Сервер не падає при відсутності `SENTRY_DSN` / `OTEL_EXPORTER_OTLP_ENDPOINT` (обидва модулі роблять env-guard на init).
-- [x] Sampling rates документовані — `docs/observability/runbook.md` § «OpenTelemetry traces» + `alert_rules.yml` коментарі + `apps/server/src/obs/sampler.ts` JSDoc.
+- [x] Sampling rates документовані — `docs/03-operations/observability/runbook.md` § «OpenTelemetry traces» + `alert_rules.yml` коментарі + `apps/server/src/obs/sampler.ts` JSDoc.
 - [x] CI lint без warnings.
 
 ### Метрики (Baseline → Shipped)

@@ -19,7 +19,7 @@
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "3a9e89f3bd25a99dbe7ac963a51f3349d558038e76d2d5ab6d1203ec07984743"
+      "computedHash": "f1f04278126dc9e06de6aeddcac38e3138a58806c6a557201d6b1e84526410f7"
     },
     "sergeant-feature-delivery": {
       "source": "local",

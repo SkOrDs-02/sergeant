@@ -429,7 +429,7 @@ export function run({
           [
             `❌ ${filePath}: TWO-PHASE-DROP header validation failed.`,
             `   ${reason}.`,
-            `   Hard Rule #4: see docs/runbooks/operations-runbook.md § 8.2.`,
+            `   Hard Rule #4: see docs/03-operations/runbooks/operations-runbook.md § 8.2.`,
           ].join("\n"),
         );
       }
@@ -442,7 +442,7 @@ export function run({
           `   ${parsedTwoPhase.reason}.`,
           `   Expected (single line, single comment):`,
           `     -- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe to drop after YYYY-MM-DD`,
-          `   Hard Rule #4: see docs/runbooks/operations-runbook.md § 8.2.`,
+          `   Hard Rule #4: see docs/03-operations/runbooks/operations-runbook.md § 8.2.`,
         ].join("\n"),
       );
       continue;
@@ -458,7 +458,7 @@ export function run({
     errors.push(
       [
         `❌ Migration ${name} contains destructive DROP without two-phase header.`,
-        `   Hard Rule #4: see docs/runbooks/operations-runbook.md § 8.2.`,
+        `   Hard Rule #4: see docs/03-operations/runbooks/operations-runbook.md § 8.2.`,
         ``,
         `   First non-comment DROP line: ${filePath}:${dropLines[0].lineNumber}:`,
         `     ${dropLines[0].text.trim()}`,

@@ -23,7 +23,7 @@
 //      - docs/audits/*-implementation-roadmap.md (audit roadmaps)
 //      - docs/initiatives/                     (multi-phase initiative trackers)
 //      - docs/security/hardening/              (PR-bound hardening cards)
-//      - docs/runbooks/                        (operations runbooks; refs may
+//      - docs/03-operations/runbooks/                        (operations runbooks; refs may
 //                                               describe target scripts)
 //      - docs/architecture/diagrams/           (flow diagrams; refs name
 //                                               components that may rename)
@@ -259,9 +259,9 @@ function checkDanglingRefs() {
     // badge and "PRs landed" section is the truth; inline path refs are
     // a description, not a contract.
     if (relPath.startsWith("docs/security/hardening/")) return true;
-    // `docs/runbooks/` describe operations including target scripts that
+    // `docs/03-operations/runbooks/` describe operations including target scripts that
     // may not be created until the runbook is exercised in incident.
-    if (relPath.startsWith("docs/runbooks/")) return true;
+    if (relPath.startsWith("docs/03-operations/runbooks/")) return true;
     // `docs/architecture/diagrams/` document flows by naming components;
     // a component rename should not break the diagram doc until the
     // diagram is regenerated.
@@ -340,7 +340,7 @@ function checkDanglingRefs() {
     // the source of truth, inline file refs are descriptive.
     if (relPath.startsWith("docs/tech-debt/")) return true;
     if (relPath.startsWith("docs/marketing/")) return true;
-    if (relPath.startsWith("docs/observability/")) return true;
+    if (relPath.startsWith("docs/03-operations/observability/")) return true;
     if (relPath.startsWith("docs/05-design/design/redesign-v2/")) return true;
     return false;
   }

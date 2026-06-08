@@ -98,7 +98,7 @@ flowchart TD
   - Payload містить `tipVariant: string` та `ctaLabel: string` для всіх 4 модулів (finyk / fizruk / routine / nutrition).
   - PostHog dashboard `posthog-ftux-dashboards.md § celebration_shown` оновлено (новий filter facet `tipVariant`).
   - Vitest assertion: після close-cycle CelebrationModal в `__hubAnalytics` ring-buffer-і знайдеться `celebration_shown` із обома новими полями.
-- **Conversion-метрика.** Не пряма (це instrumentation); enables `ftux_activation_conversion` cohort facet by variant. Cross-ref: `docs/observability/ftux-slo.yml § activation_conversion`.
+- **Conversion-метрика.** Не пряма (це instrumentation); enables `ftux_activation_conversion` cohort facet by variant. Cross-ref: `docs/03-operations/observability/ftux-slo.yml § activation_conversion`.
 - **Розмір / Пріоритет.** **XS / P1** (quick-win — окремий PR, як просив prompt).
 - **Залежності.** Жодних. Можна ship-нути паралельно з PR-B.
 - **Owner.** `@Skords-01`; secondary — `TBD (analytics-engineer)`.
@@ -295,7 +295,7 @@ gantt
 
 ## Метрики моніторингу після ship-у плану
 
-- `ftux_activation_conversion` (`docs/observability/ftux-slo.yml`) — target ≥ 30%, alert < 25% за 3 дні. Має бути green після PR-C + PR-D.
+- `ftux_activation_conversion` (`docs/03-operations/observability/ftux-slo.yml`) — target ≥ 30%, alert < 25% за 3 дні. Має бути green після PR-C + PR-D.
 - `first_real_entry / wizard_completed` per module — target ↑ 10pp після PR-C (outcome-card).
 - `celebration_cta_clicked → add_sheet_opened` — target ≥ 70% після PR-D.
 - `d2_retention` (нова SLO — додасться у `ftux-slo.yml` разом із PR-H) — baseline ↑ 8pp.

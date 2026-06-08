@@ -1416,8 +1416,8 @@ describe("fizruk.vercel.app → sergeant.vercel.app 301 redirect (PR-25)", () =>
 -
 -/**
 - * Закритий enum причин відхилення, які повертають apply-функції.
-- * Дзеркалить allowlist у `docs/observability/metrics.md` §4
-- * (`sync_op_log_apply_total{reason}`) + `docs/observability/dashboards/sync.json`
+- * Дзеркалить allowlist у `docs/03-operations/observability/metrics.md` §4
+- * (`sync_op_log_apply_total{reason}`) + `docs/03-operations/observability/dashboards/sync.json`
 - * (top-10 reject reasons panel).
 - *
 - * Експортуємо як `as const`-масив, аби однакові літерали слугували
@@ -1425,8 +1425,8 @@ describe("fizruk.vercel.app → sergeant.vercel.app 301 redirect (PR-25)", () =>
 - * introspection-джерелом для regression-тесту в
 - * `apps/server/src/obs/metrics.test.ts`. Розширення/перейменування
 - * причини потребує синхронного апдейту:
-- *   1. `docs/observability/metrics.md` §4 (cardinality budget),
-- *   2. `docs/observability/dashboards/sync.json` (top-10 reject panel),
+- *   1. `docs/03-operations/observability/metrics.md` §4 (cardinality budget),
+- *   2. `docs/03-operations/observability/dashboards/sync.json` (top-10 reject panel),
 - *   3. цього `as const`-масиву.
 - *
 - * Категорії:
@@ -1608,7 +1608,7 @@ Additional deletion needed (INCREMENT_OP_SUPPORTED_TABLES and its JSDoc, lines 2
 - * Governance. Adding a new PN-counter table requires (1) adding the
 - * literal here, (2) extending the matching apply-fn with an
 - * `op === 'increment'` branch that persists `delta` atomically,
-- * (3) updating cardinality calc у `docs/observability/metrics.md` §4
+- * (3) updating cardinality calc у `docs/03-operations/observability/metrics.md` §4
 - * (нові `*_delta` reject-причини), (4) regression test у
 - * `metrics.test.ts` для довжини `APPLY_REJECT_REASONS`. Той самий
 - * pattern, що для `OP_LOG_TABLE_REGISTRY` — TS-tsc блокує accidental
@@ -2886,7 +2886,7 @@ In the `## Register` table, append this row after the last active row (before th
 Files already current — no diff needed:
 - AGENTS.md: header 2026-06-04 @kilo, last commit 2026-06-04 (chore(agents): add Kilo Code operating model #3370)
 - docs/README.md: header 2026-06-04 @claude, last commit 2026-06-04 (chore(ci): satisfy gates for delegation batch)
-- docs/postmortems/README.md: header 2026-05-13 @Skords-01, last commit 2026-05-13 (merge that set this exact header — self-consistent)
+- docs/03-operations/postmortems/README.md: header 2026-05-13 @Skords-01, last commit 2026-05-13 (merge that set this exact header — self-consistent)
 - docs/governance/README.md: header 2026-06-03 @claude, last commit 2026-06-03 (chore(root): retire audit-freeze gate #3349)
 - docs/playbooks/README.md: header 2026-06-03 @claude, last commit 2026-06-03 (same commit as governance)
 ````

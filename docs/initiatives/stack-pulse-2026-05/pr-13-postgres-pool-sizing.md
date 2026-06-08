@@ -6,7 +6,7 @@
 > `DbPoolSaturated`) до старту PR-13; цей PR довіз: бамп `PG_POOL_SIZE`
 > default 10 → 20, slow-connect Pino warn + Sentry breadcrumb +
 > `db_slow_pool_connects_total` counter, новий
-> [`docs/observability/pg-pool-sizing.md`](../../observability/pg-pool-sizing.md).
+> [`docs/03-operations/observability/pg-pool-sizing.md`](../../03-operations/observability/pg-pool-sizing.md).
 
 |              |                                                                            |
 | ------------ | -------------------------------------------------------------------------- |
@@ -59,11 +59,11 @@ PG_POOL_SIZE: parseIntEnv("PG_POOL_SIZE", 10);
 
 - Pino metric `pg_pool_size`, `pg_pool_idle`, `pg_pool_waiting` — кожні 30s emit.
 - Sentry breadcrumb на `pool.connect()` longer than 500ms.
-- Alert у `docs/observability/alerts.md`: «pg_pool_waiting > 5 sustained for 2 min».
+- Alert у `docs/03-operations/observability/alerts.md`: «pg_pool_waiting > 5 sustained for 2 min».
 
 ### 4. Documentation
 
-- `docs/observability/pg-pool-sizing.md` — формула, як змінити, як зрозуміти що time-to-pool slow.
+- `docs/03-operations/observability/pg-pool-sizing.md` — формула, як змінити, як зрозуміти що time-to-pool slow.
 
 ## Out of scope
 
@@ -81,8 +81,8 @@ PG_POOL_SIZE: parseIntEnv("PG_POOL_SIZE", 10);
       default 500мс.
 - [x] Alert правила задокументовані — `DbPoolWaitingSustained` (5m, ticket)
       і `DbPoolSaturated` (10m, page) живуть у
-      [`docs/observability/prometheus/alert_rules.yml`](../../observability/prometheus/alert_rules.yml).
-- [x] Документ [`docs/observability/pg-pool-sizing.md`](../../observability/pg-pool-sizing.md).
+      [`docs/03-operations/observability/prometheus/alert_rules.yml`](../../03-operations/observability/prometheus/alert_rules.yml).
+- [x] Документ [`docs/03-operations/observability/pg-pool-sizing.md`](../../03-operations/observability/pg-pool-sizing.md).
 
 ## Тести
 
@@ -109,7 +109,7 @@ PG_POOL_SIZE: parseIntEnv("PG_POOL_SIZE", 10);
 - `apps/server/src/env.ts:56`
 - `apps/server/src/db.ts` — pool configuration
 - `apps/server/src/obs/db-pool-metrics.ts` — новий
-- `docs/observability/pg-pool-sizing.md` — новий
+- `docs/03-operations/observability/pg-pool-sizing.md` — новий
 
 ## Refs
 

@@ -104,7 +104,7 @@
     },
     {
       "pattern": "^https?://n8n-production-09ac\\.up\\.railway\\.app(/.*)?$",
-      "reason": "Founder's self-hosted n8n instance on Railway (cited in docs/runbooks/operations-runbook.md as the workflow editor UI). Railway PaaS routes 404 when the deploy slug is paused, asleep, or scaled-to-zero between cron ticks — the URL is correct for the owner (dmytro.skords@gmail.com) and behind Railway-managed Postgres auth."
+      "reason": "Founder's self-hosted n8n instance on Railway (cited in docs/03-operations/runbooks/operations-runbook.md as the workflow editor UI). Railway PaaS routes 404 when the deploy slug is paused, asleep, or scaled-to-zero between cron ticks — the URL is correct for the owner (dmytro.skords@gmail.com) and behind Railway-managed Postgres auth."
     },
     {
       "pattern": "^https?://eur-lex\\.europa\\.eu(/.*)?$",

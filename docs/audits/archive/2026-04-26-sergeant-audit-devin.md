@@ -271,7 +271,7 @@
 
 **Що бачу:**
 
-- `docs/observability/SLO.md` — формальні SLI/SLO для HTTP API (99%), Sync (99.5%), Auth (99%), AI (97%), External HTTP per-upstream (95%). Latency SLOs p95 окремо.
+- `docs/03-operations/observability/SLO.md` — формальні SLI/SLO для HTTP API (99%), Sync (99.5%), Auth (99%), AI (97%), External HTTP per-upstream (95%). Latency SLOs p95 окремо.
 - `prometheus/recording_rules.yml` + `prometheus/alert_rules.yml` — multi-window multi-burn-rate alerts (Google SRE Workbook Ch. 5). Це не «informal goals», це справжні burn-rate alerts.
 - Sentry DSN-gated на web/server/mobile.
 - Pino + ALS (`requestId`/`userId`/`module`) + `X-Request-Id` у response headers.
@@ -347,7 +347,7 @@
 
 - 23 playbooks у `docs/playbooks/` — кожен має «коли робити», «кроки», «гарантії», «приклади».
 - `docs/05-design/design/specs/` — окрема директорія для специфікацій великих фіч.
-- `docs/observability/{SLO.md, runbook.md, dashboards.md, prometheus/}` — повне operational documentation.
+- `docs/03-operations/observability/{SLO.md, runbook.md, dashboards.md, prometheus/}` — повне operational documentation.
 - AI-marker система (`AI-NOTE`/`AI-CONTEXT`/`AI-DANGER`/`AI-GENERATED`/`AI-LEGACY: expires YYYY-MM-DD`) з `sergeant-design/ai-marker-syntax` ESLint rule (warn). Це формалізована documentation для AI-агентів, що пишуть код.
 - AGENTS.md фіксує **усі скоупи commit-message** як enum (no `monorepo`, no `app`, no `core`, no `all`).
 

@@ -1,7 +1,7 @@
 # PR-26: CSP `report-uri` / `report-to` endpoint
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints` header + `report-to csp-endpoint` directive) shipped in `apps/web/vercel.json`; `docs/observability/csp-monitoring.md` operations playbook live. Rate-limit (120/min IP) + 16 KB body cap було мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` + `apps/server/src/routes/csp-report.ts`. E2E `/dummy-violation-page.html` тест — лишається у backlog (browser-level CSP-violation hard to reproduce у unit-test, потребує Playwright fixture; не блокує закриття).
+> **Status:** Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints` header + `report-to csp-endpoint` directive) shipped in `apps/web/vercel.json`; `docs/03-operations/observability/csp-monitoring.md` operations playbook live. Rate-limit (120/min IP) + 16 KB body cap було мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` + `apps/server/src/routes/csp-report.ts`. E2E `/dummy-violation-page.html` тест — лишається у backlog (browser-level CSP-violation hard to reproduce у unit-test, потребує Playwright fixture; не блокує закриття).
 
 |                    |                                                                                       |
 | ------------------ | ------------------------------------------------------------------------------------- |
@@ -27,7 +27,7 @@
 
 1. Modern Reporting API: `Reporting-Endpoints` header + `report-to` directive в CSP (необов'язково, але future-proof; Chrome 130+ deprecate-ить старий `Report-To` header у favor of `Reporting-Endpoints`).
 2. Rate-limit + 16KB body cap на `/api/csp-report` (DoS-resistance — зараз endpoint прийматиме arbitrary payload).
-3. `docs/observability/csp-monitoring.md` — operations doc із dashboard-link, alert-thresholds, allowlist-update-runbook.
+3. `docs/03-operations/observability/csp-monitoring.md` — operations doc із dashboard-link, alert-thresholds, allowlist-update-runbook.
 
 Поточний state: CSP violations надсилаються на endpoint, але немає formal monitoring playbook + DoS-cap.
 
@@ -70,7 +70,7 @@
 
 ### 3. Monitoring
 
-`docs/observability/csp-monitoring.md`:
+`docs/03-operations/observability/csp-monitoring.md`:
 
 - Dashboard: violations grouped by `violated-directive`.
 - Alert: spike (>10× baseline) → Sentry / Slack.
@@ -91,7 +91,7 @@
 - [x] `apps/web/vercel.json` додає modern `Reporting-Endpoints` header + `report-to csp-endpoint` directive.
 - [x] `apps/server/src/routes/csp-report.ts` має rate-limit (`api:csp-report` 120/min IP) + 16KB body cap (`apps/server/src/http/bodySizePolicy.ts` — три rule-и для `application/csp-report`, `application/reports+json`, fallback).
 - [ ] CSP report при load-і `/dummy-violation-page.html` (E2E test) → endpoint receives + Sentry breadcrumb (pending — endpoint існує, E2E немає; backlog, не блокує).
-- [x] `docs/observability/csp-monitoring.md` з alert YAML + dashboard reference.
+- [x] `docs/03-operations/observability/csp-monitoring.md` з alert YAML + dashboard reference.
 - [x] `apps/web/src/test/cspMonitoringAllowlist.test.ts` живе у репо як baseline-тест (+ `report-to` додано у `META_NOT_ALLOWED`).
 
 ## Тести
@@ -119,7 +119,7 @@
 - `apps/server/src/routes/csp-report.ts` — existing handler
 - `apps/server/src/modules/observability/csp-report.ts` — існуючий handler
 - `apps/web/src/test/cspMonitoringAllowlist.test.ts` — баseline
-- `docs/observability/csp-monitoring.md` — new
+- `docs/03-operations/observability/csp-monitoring.md` — new
 - `docs/security/hardening/M1-csp-disable-runtime-flag.md` — update context
 
 ## Refs

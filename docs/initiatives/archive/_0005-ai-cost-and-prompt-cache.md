@@ -1,6 +1,6 @@
 # 0005 — AI cost optimisation (Anthropic prompt cache + AI-ops dashboards)
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Done (2026-05-04). Prompt-cache на 2 breakpoints (system + last tool), token / cost / cache-hit Prom counters, 7-panel `ai-cost` Grafana dashboard, alerts на cost / quota — усе шипнуто. Policy зафіксована у [ADR-0039](../../adr/0039-anthropic-prompt-cache-policy.md).
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
@@ -122,7 +122,7 @@ Sergeant досить агресивно використовує Anthropic Clau
   - `ai_daily_cost_usd > 50` → Telegram `#ai-ops`.
   - `ai_cache_hit_rate < 30%` за 1 год → Telegram `#ai-ops-warn`.
   - `ai_429_rate > 5%` за 5 хв → Telegram `#ai-ops`.
-- Запис у [`docs/observability/runbook.md`](../../observability/runbook.md): «як інтерпретувати AI алерти, як зробити drill-down per model».
+- Запис у [`docs/03-operations/observability/runbook.md`](../../03-operations/observability/runbook.md): «як інтерпретувати AI алерти, як зробити drill-down per model».
 
 ### Фаза 4 — ADR (1 PR)
 
@@ -178,9 +178,9 @@ Sergeant досить агресивно використовує Anthropic Clau
 - [ADR-0039 — Anthropic prompt-cache breakpoint policy](../../adr/0039-anthropic-prompt-cache-policy.md) — rationale для 2 breakpoints, ephemeral vs 1h, rollback порогу 30%.
 - [ADR-0005 — Anthropic model selection and prompt caching](../../adr/0005-anthropic-model-selection-and-prompt-caching.md) — попередник, model-selection baseline.
 - [Playbook `enable-prompt-caching.md`](../../playbooks/enable-prompt-caching.md) — операційний rollout-checklist + manual smoke-команди.
-- [`docs/observability/dashboards/ai-cost.json`](../../observability/dashboards/ai-cost.json) (uid `sergeant-ai-cost`) — 7-panel Grafana.
-- [`docs/observability/metrics.md`](../../observability/metrics.md) — реєстр метрик (`ai_tokens_total`, `anthropic_prompt_cache_hit_total`, `ai_cost_estimate_usd_total`).
-- [`docs/observability/runbook.md` § Troubleshooting](../../observability/runbook.md#troubleshooting) — як інтерпретувати порожні Anthropic-spans + AI-алерти.
+- [`docs/03-operations/observability/dashboards/ai-cost.json`](../../03-operations/observability/dashboards/ai-cost.json) (uid `sergeant-ai-cost`) — 7-panel Grafana.
+- [`docs/03-operations/observability/metrics.md`](../../03-operations/observability/metrics.md) — реєстр метрик (`ai_tokens_total`, `anthropic_prompt_cache_hit_total`, `ai_cost_estimate_usd_total`).
+- [`docs/03-operations/observability/runbook.md` § Troubleshooting](../../03-operations/observability/runbook.md#troubleshooting) — як інтерпретувати порожні Anthropic-spans + AI-алерти.
 - [`apps/server/src/modules/chat/`](../../../apps/server/src/modules/chat) — `chat.ts`, `tools.ts`, `toolDefs/systemPrompt.ts`.
 - Координується з ініціативою [0004 — server observability](./_0004-server-observability.md) — `aiSpan` помічатиме `cache_hit` як attribute.
 - [`docs/tech-debt/backend.md`](../../tech-debt/backend.md) — запис про AI cost (раніше «not measured»; зараз закритий, prompt-caching активний з [#864](https://github.com/Skords-01/Sergeant/pull/864), per-endpoint cost-метрики з [#1247](https://github.com/Skords-01/Sergeant/pull/1247)).
@@ -215,7 +215,7 @@ Sergeant досить агресивно використовує Anthropic Clau
 
 **Phase 3 — Grafana dashboards: ✅ DONE (7 panels, не 5)**
 
-- [`docs/observability/dashboards/ai-cost.json`](../../observability/dashboards/ai-cost.json) (uid `sergeant-ai-cost`):
+- [`docs/03-operations/observability/dashboards/ai-cost.json`](../../03-operations/observability/dashboards/ai-cost.json) (uid `sergeant-ai-cost`):
   1. Token rate by model (prompt + completion) — `sum by (model, kind) (rate(ai_tokens_total{kind=~"prompt|completion"}[5m]))`.
   2. Estimated daily spend (USD) — `sum(increase(ai_tokens_total{kind=~"prompt|completion"}[24h])) / 1e6 * $usd_per_1m_tokens`.
   3. Cache-hit ratio (1h window) — `sum(rate(anthropic_prompt_cache_hit_total{outcome="hit"}[1h])) / clamp_min(sum(rate(anthropic_prompt_cache_hit_total[1h])), 1)`.
@@ -223,7 +223,7 @@ Sergeant досить агресивно використовує Anthropic Clau
   5. AI quota fail-open (CRITICAL) — `sum(increase(ai_quota_fail_open_total[1h]))`.
   6. AI request outcomes — `sum by (endpoint, outcome) (rate(ai_requests_total[5m]))`.
   7. AI p95 latency by endpoint — `histogram_quantile(0.95, sum by (le, endpoint) (rate(ai_request_duration_ms_bucket[5m])))`.
-- Alerts (у [`docs/observability/prometheus/alert_rules.yml`](../../observability/prometheus/alert_rules.yml)): `AiErrorBudgetBurnFast` / `AiErrorBudgetBurnSlow` (multi-window, multi-burn-rate per Google SRE), `AiQuotaStoreDown` / `AiQuotaFailOpen` (10 хв вікно, severity=ticket). Runbook entry «Anthropic-spans порожні (немає tokens, prompt_cache_hit)» — [`docs/observability/runbook.md` § Troubleshooting](../../observability/runbook.md#troubleshooting).
+- Alerts (у [`docs/03-operations/observability/prometheus/alert_rules.yml`](../../03-operations/observability/prometheus/alert_rules.yml)): `AiErrorBudgetBurnFast` / `AiErrorBudgetBurnSlow` (multi-window, multi-burn-rate per Google SRE), `AiQuotaStoreDown` / `AiQuotaFailOpen` (10 хв вікно, severity=ticket). Runbook entry «Anthropic-spans порожні (немає tokens, prompt_cache_hit)» — [`docs/03-operations/observability/runbook.md` § Troubleshooting](../../03-operations/observability/runbook.md#troubleshooting).
 
 **Phase 4 — ADR: ✅ DONE**
 
@@ -322,6 +322,6 @@ Manual smoke (потрібен реальний `ANTHROPIC_API_KEY`, не `AI_QU
 ### Carry-over → successor
 
 - [x] **2026-05-12 (≈ +тиждень):** перевірити cache-hit-rate ≥60% (panel #3 у `ai-cost.json` + query #1 вище). Якщо <30% — fixture-чек `SYSTEM_PROMPT_VERSION` drift, перевірити що `system[1]` (context) не йде у `system[0]` (regression-тест `chat.test.ts:673`); за потреби — варіант A (drop cache) per ADR-0039 § 7. — ahead-of-schedule закритий 2026-05-06 з 96.81%/90.64% (див. § [Post-rollout verification](#post-rollout-verification-2026-05-06)).
-- [x] **Після baseline-week:** cost-based alert `ai_daily_cost_usd > $X` — `X` обираємо з реальних spending-numbers (зараз < $5/day на staging, ставити cap на 50× від baseline передчасно). Додати у `alert_rules.yml` поряд з `AiErrorBudgetBurnFast`. — **Закрито 2026-05-11**: `AiDailyCostHigh` alert додано до `docs/observability/prometheus/alert_rules.yml`; threshold $25/day = 5× staging baseline ($5/day), `for: 1h` для уникання false positives.
+- [x] **Після baseline-week:** cost-based alert `ai_daily_cost_usd > $X` — `X` обираємо з реальних spending-numbers (зараз < $5/day на staging, ставити cap на 50× від baseline передчасно). Додати у `alert_rules.yml` поряд з `AiErrorBudgetBurnFast`. — **Закрито 2026-05-11**: `AiDailyCostHigh` alert додано до `docs/03-operations/observability/prometheus/alert_rules.yml`; threshold $25/day = 5× staging baseline ($5/day), `for: 1h` для уникання false positives.
 - [ ] Per-route hit-rate breakdown — додати `endpoint` label на `anthropic_prompt_cache_hit_total` коли буде incident, що цього вимагає (поки що `aggregated` view достатньо).
 - [ ] OpenAI prompt cache (auto-cache після 1024 токенів) — окремий ADR, якщо/коли перейдемо на OpenAI або multi-provider routing. Тільки метрика, без коду — Anthropic SDK залишається primary.

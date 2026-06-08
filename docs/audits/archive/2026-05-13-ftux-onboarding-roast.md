@@ -1,6 +1,6 @@
 # FTUX onboarding roast — Day 0-7 (2026-05-13)
 
-> **Last validated:** 2026-05-19 by @codex. **Next review:** 2026-08-17.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Archived
 > Прожарка #1/10 серії «10 прожарок», запущеної 2026-05-13. Скоуп — `apps/web/src/core/onboarding/**`, `apps/web/src/core/app/WelcomeScreen.tsx`, FTUX hero, peek backdrop, first-run sheets, CelebrationModal та перші 7 днів у хабі. Перспектива — продуктовий UX-аудит очима нового користувача, який дає продукту 30-60 секунд перш ніж піти.
 >
@@ -91,12 +91,12 @@ events працюють, dashboards задокументовані, retention-co
 
 ### P0-3. FTUX SLO declarative contract (M-10) — ✅ Закрито у цьому PR
 
-- **Файл:** новий [`docs/observability/ftux-slo.yml`](../../observability/ftux-slo.yml).
+- **Файл:** новий [`docs/03-operations/observability/ftux-slo.yml`](../../03-operations/observability/ftux-slo.yml).
 - **Проблема:** FTUX-метрики жили у `posthog-ftux-dashboards.md` як
   таблиця saved insights, але **немає declarative-контракту**, що
   перевіряється у CI / alerting. Master-tracker §6.3 (M-10) тримає
   proposed yaml в inline-блоці з 2026-05-05, але файл не з'явився.
-- **Дія:** Створено `docs/observability/ftux-slo.yml` з 4 SLO
+- **Дія:** Створено `docs/03-operations/observability/ftux-slo.yml` з 4 SLO
   (activation conversion, TTV p50, D1 retention, celebration
   visibility) + alert thresholds + owner + PostHog insight name.
 - **Acceptance:** файл лінкований у master tracker §6.3 (status bump
@@ -187,7 +187,7 @@ events працюють, dashboards задокументовані, retention-co
 
 - ✅ **B-11 §2.9** — module-aware `nextStepTip` у `FIRST_ENTRY_CELEBRATIONS`.
 - ✅ **P2-15 §4** — module-aware `primaryCtaLabel` (зняв generic «Продовжити»).
-- ✅ **M-10** — declarative `docs/observability/ftux-slo.yml` створений.
+- ✅ **M-10** — declarative `docs/03-operations/observability/ftux-slo.yml` створений.
 - ✅ Audit guards у `onboardingCelebrations.test.ts` (3 нові tests):
   - non-empty + length-budget contract на обидва поля
   - regex-guard блокує regression до «продовжуй додавати записи / кількох днів отримаєш»

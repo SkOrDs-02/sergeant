@@ -98,7 +98,7 @@ router.get("/api/health/workers", requireInternalIp, async (req, res) => {
 
 ### 5. Grafana alert
 
-`docs/observability/runbook.md` — alert: `worker_lag_seconds > expected_period * 3` for >5min.
+`docs/03-operations/observability/runbook.md` — alert: `worker_lag_seconds > expected_period * 3` for >5min.
 
 ## Out of scope
 
@@ -112,7 +112,7 @@ router.get("/api/health/workers", requireInternalIp, async (req, res) => {
 - [ ] Existing workers (`authMail`, `ftuxDrip`, `connection`, metrics-flusher) registered.
 - [ ] `/api/health/workers` endpoint live + integration test.
 - [ ] Prometheus metrics додані + scrape-config задокументований.
-- [ ] Grafana alert YAML додано у `docs/observability/`.
+- [ ] Grafana alert YAML додано у `docs/03-operations/observability/`.
 - [ ] Runbook entry «How to debug a stalled worker».
 
 ## Тести

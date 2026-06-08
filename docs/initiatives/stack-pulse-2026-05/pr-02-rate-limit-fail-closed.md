@@ -37,7 +37,7 @@ if (redis) {
 2. **Спостережуваність:**
    - Pino metric `rate_limit_redis_fallback_count` (counter) + `rate_limit_redis_fallback_duration_ms` (histogram).
    - Sentry tag `rate_limit.mode = redis | inmem | unavailable`.
-   - Alert у `docs/observability/alerts.md`: «Fallback active >5 min на security-route».
+   - Alert у `docs/03-operations/observability/alerts.md`: «Fallback active >5 min на security-route».
 3. **Документація:**
    - `docs/security/rate-limit-failure-mode.md` — як саме fail-closed себе поводить, які маршрути захищені.
    - Розглянути `@upstash/ratelimit-js` або переїзд на edge-rate-limit перед сервером (як ADR, не цей PR).
@@ -81,7 +81,7 @@ if (redis) {
 - `apps/server/src/routes/index.ts` — middleware mount-points
 - `apps/server/src/auth.ts` — Better Auth `/api/auth/*` route mount
 - `docs/security/` — нова сторінка про failure-mode
-- `docs/observability/alerts.md` — додати alert
+- `docs/03-operations/observability/alerts.md` — додати alert
 
 ## Refs
 

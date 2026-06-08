@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Related:**
   - [ADR-0015](./0015-observability-stack.md) — observability stack (Pino + Prometheus + Sentry); цей ADR розширює його traces-шаром.
-  - [`docs/observability/frontend.md`](../observability/frontend.md) §7 «Sentry-події не з'єднані» — поточний gap.
+  - [`docs/03-operations/observability/frontend.md`](../03-operations/observability/frontend.md) §7 «Sentry-події не з'єднані» — поточний gap.
   - [`apps/server/src/obs/requestContext.ts`](../../apps/server/src/obs/requestContext.ts) — ALS-based request context (вже є `requestId`, але без trace propagation).
   - [`docs/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](../audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-2 — audit row.
 
@@ -34,7 +34,7 @@
 - **No mobile coverage** — Mobile RN навіть Sentry поки не має (Phase 10 не реалізовано). Distributed tracing підготує grunt-роботу для mobile observability.
 - **Audit P3-2** — explicitly identified as gap.
 
-`docs/observability/frontend.md:451` має TODO: «додати `x-request-id` header у fetch-клієнт». Half-fix — додати `requestId`. Full-fix — додати W3C `traceparent` (включає `requestId` як trace-id + parent span context).
+`docs/03-operations/observability/frontend.md:451` має TODO: «додати `x-request-id` header у fetch-клієнт». Half-fix — додати `requestId`. Full-fix — додати W3C `traceparent` (включає `requestId` як trace-id + parent span context).
 
 ---
 

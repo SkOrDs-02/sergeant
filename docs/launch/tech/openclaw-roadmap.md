@@ -1,6 +1,6 @@
 # OpenClaw — roadmap до v0 і далі
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (historical grammy roadmap; canonical active owner is OpenClaw migration plan).
 > **Canonical active owner:** OpenClaw Gateway/migration work lives in [`docs/planning/openclaw-migration-plan.md`](../../planning/openclaw-migration-plan.md). This file is retained as historical context for the old `@OpenClaw_sergeant_bot` roadmap only; do not add new active migration tasks here.
 
@@ -352,7 +352,7 @@ sentry,server,posthog}` + `/api/internal/openclaw/github/releases`) з
 - `analyze-mode` (`/analyze <anomaly>`) — multi-step root-cause:
   - Аномалія → гіпотези → кожну перевірити tool-ом → ranked висновок.
   - Output: short Telegram message + детальний report у
-    `docs/postmortems/<date>-<slug>.md` (через write-tool у Phase 4).
+    `docs/03-operations/postmortems/<date>-<slug>.md` (через write-tool у Phase 4).
 - `okr-mode` (`/okr`) — explicit OKR session:
   - Список активних OKR з `docs/strategy/`.
   - Progress per KR.
@@ -364,7 +364,7 @@ sentry,server,posthog}` + `/api/internal/openclaw/github/releases`) з
 
 - `/plan churn-reduction-q3` → 4-step session → PR з `docs/strategy/churn-q3.md`.
 - `/analyze падіння signups вчора` → гіпотези + докази +
-  `docs/postmortems/<date>-signups-drop.md`.
+  `docs/03-operations/postmortems/<date>-signups-drop.md`.
 - `/okr` → дашборд з 3 OKR і прогресом.
 
 ### Phase 4 — Write-tools з approval flow (ADR-0036, **shipped**)

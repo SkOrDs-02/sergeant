@@ -19,7 +19,7 @@
 > - [`architecture/platforms.md`](../../architecture/platforms.md) — web ↔ shell ↔ RN feature-parity
 > - [`playbooks/release.md`](../../playbooks/release.md) — canonical release flow
 > - [`governance/feature-flags.md`](../../governance/feature-flags.md) — flag conventions
-> - [`observability/posthog-ftux-dashboards.md`](../../observability/posthog-ftux-dashboards.md) — funnel dashboards
+> - [`observability/posthog-ftux-dashboards.md`](../../03-operations/observability/posthog-ftux-dashboards.md) — funnel dashboards
 
 ---
 
@@ -59,7 +59,7 @@ Phase 1 — це **16-тижнева кампанія від "web-PWA шипит
 - [x] **Web app деплоїться на Vercel** з `apps/web` → `apps/server/dist/` (unified-mode). Підтверджено в `apps/web/README.md` (production-ready stack).
 - [x] **Backend стабільно тримає Railway** + Postgres 16, міграції gated через `pnpm db:migrate`.
 - [x] **Auth working end-to-end:** Better Auth cookie-сесії, sign-up, sign-in, password reset на `/reset-password` (`apps/web/src/core/auth/`).
-- [x] **FTUX funnel працює:** 8 канонічних подій у PostHog (`onboarding_started → … → celebration_shown`); див. [`posthog-ftux-dashboards.md` §2](../../observability/posthog-ftux-dashboards.md).
+- [x] **FTUX funnel працює:** 8 канонічних подій у PostHog (`onboarding_started → … → celebration_shown`); див. [`posthog-ftux-dashboards.md` §2](../../03-operations/observability/posthog-ftux-dashboards.md).
 - [x] **Sentry alerts активні** для error-rate, unhandled exceptions.
 - [x] **Vercel preview-per-PR + production-on-merge-to-main** живий, CI зеленіє з `pnpm check` matrix.
 - [ ] **Domain `sergeant.com.ua` зареєстрований** і вказує на Vercel apex (status TBD — open question).
@@ -240,7 +240,7 @@ sergeant.com.ua/blog           → SEO-блог (Astro SSG)
 - [ ] **Перший build-in-public пост:** Twitter/X (англ., якщо аудиторія dev) або Threads/Telegram (укр., якщо UA-аудиторія). Тема: «Запускаю Sergeant — 16-тижневий план. Прозоро. Підписуйся: sergeant.com.ua».
 - [ ] **Опитування «Які модулі найважливіші?»:** Tally form, шеру у двох-трьох українських productivity/fitness Telegram-чатах.
 - [ ] **Founder's story для DOU.ua:** drafting почати; публікація — W-2.
-- [ ] **Запуск founder-pulse у PostHog:** [`docs/observability/posthog-founder-pulse.md`](../../observability/posthog-founder-pulse.md) — щоденний digest «новий signup / нова сесія / новий error».
+- [ ] **Запуск founder-pulse у PostHog:** [`docs/03-operations/observability/posthog-founder-pulse.md`](../../03-operations/observability/posthog-founder-pulse.md) — щоденний digest «новий signup / нова сесія / новий error».
 
 **Acceptance gate:**
 

@@ -19,9 +19,9 @@
 - **Multi-wave план попередньої прожарки:** [`docs/testing/2026-05-05-tests-pr-plan.md`](../testing/2026-05-05-tests-pr-plan.md) — Wave A–G, ~50 PR-ів (статус `merged` для PR-T01..T06, T08, T31, T32, T39; outstanding для T07, T09+, T13–T22, T23–T27, T29–T30, T33–T38).
 - **Інвентар тестового стека:** [`docs/testing/2026-05-05-tests-review.md`](../testing/2026-05-05-tests-review.md) — per-app coverage % зрізу 2026-05-05.
 - **Operations runbooks (для smoke-E2E залежностей):**
-  - [`docs/runbooks/database-backup-restore.md`](../runbooks/database-backup-restore.md) — Postgres seed/restore для Detox-offline-sync (T-4) і Playwright smoke (T-3).
-  - [`docs/runbooks/operations-runbook.md`](../runbooks/operations-runbook.md) — incident playbook, у який T-6 додає mutation-tier-1 порушення як warn-channel.
-  - [`docs/runbooks/db-index-audit-template.md`](../runbooks/db-index-audit-template.md) — шаблон, який не змінюємо тут, але D-2 (`pnpm dedupe --check`) спирається на ту ж lockfile-discipline.
+  - [`docs/03-operations/runbooks/database-backup-restore.md`](../03-operations/runbooks/database-backup-restore.md) — Postgres seed/restore для Detox-offline-sync (T-4) і Playwright smoke (T-3).
+  - [`docs/03-operations/runbooks/operations-runbook.md`](../03-operations/runbooks/operations-runbook.md) — incident playbook, у який T-6 додає mutation-tier-1 порушення як warn-channel.
+  - [`docs/03-operations/runbooks/db-index-audit-template.md`](../03-operations/runbooks/db-index-audit-template.md) — шаблон, який не змінюємо тут, але D-2 (`pnpm dedupe --check`) спирається на ту ж lockfile-discipline.
 - **Agent entrypoint:** [`.agents/skills/sergeant-start-here/SKILL.md`](../../.agents/skills/sergeant-start-here/SKILL.md) — обов'язковий routing-skill. Кожна картка нижче вказує, який specialist skill вантажиться після нього (`sergeant-feature-delivery` для testing surfaces, `sergeant-deploy-and-observability` для CI gating, тощо).
 - **CI gate matrix:** [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) — 759 LoC, 12+ jobs (`check`, `coverage`, `a11y`, `smoke-e2e`, `commitlint`, `migration-lint`, `secret-scan`).
 
@@ -166,7 +166,7 @@
   - `offline-sync.e2e.ts` — offline-actions → reconcile через `apps/server/src/modules/sync/v2`.
 - **Acceptance:**
   - `.github/workflows/detox-android.yml` і `.github/workflows/detox-ios.yml` зелені на CI з усіма 10 specs (4 existing + 6 нових).
-  - Flake budget ≤ 3% per spec (трекається через [`docs/runbooks/operations-runbook.md`](../runbooks/operations-runbook.md) — secondary вже з мобільним runbook-ом).
+  - Flake budget ≤ 3% per spec (трекається через [`docs/03-operations/runbooks/operations-runbook.md`](../03-operations/runbooks/operations-runbook.md) — secondary вже з мобільним runbook-ом).
   - `offline-sync.e2e.ts` крутиться **останнім** у sequence — найскладніший і має highest flake risk.
 - **Depends on:** —. PR #2215 (heap-OOM fix у Jest 30) уже merged, тому infra стабільна.
 - **Risks:** Detox iteration-cycle високої тертя (run-on-simulator + flake). Перші 3 PR (auth, fizruk, deep-link) дають baseline; nutrition × 2 і offline-sync — після стабілізації.

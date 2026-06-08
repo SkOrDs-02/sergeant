@@ -348,5 +348,5 @@ Snooze, на відміну, **latest-write-wins** (`SET snoozed_until_at = $2`
 - Store: `markAlertRepeated`, `markAlertSentryWarned`, `markAlertSnoozed` у [`apps/server/src/modules/alerts/store.ts`](../../apps/server/src/modules/alerts/store.ts).
 - Routes: `POST /api/internal/alerts/repeat`, `/alerts/sentry-warn`, `/alerts/snooze` у [`apps/server/src/routes/internal/alerts.ts`](../../apps/server/src/routes/internal/alerts.ts).
 - Workflows: [`105-alert-repeat-ping-cron.json`](../../ops/n8n-workflows/105-alert-repeat-ping-cron.json) (T2), [`106-alert-sentry-warn-cron.json`](../../ops/n8n-workflows/106-alert-sentry-warn-cron.json) (T3); [`104-alert-callback-router.json`](../../ops/n8n-workflows/104-alert-callback-router.json) updated with snooze branch.
-- Runbook: [`docs/observability/runbook.md`](../observability/runbook.md) § "Alert-bot escalation ladder".
-- Lifecycle diagram + keyboard spec: [`docs/observability/alert-bot-routing.md`](../observability/alert-bot-routing.md) § "Acknowledgment lifecycle" + § "T2 repeat-ping inline keyboard".
+- Runbook: [`docs/03-operations/observability/runbook.md`](../03-operations/observability/runbook.md) § "Alert-bot escalation ladder".
+- Lifecycle diagram + keyboard spec: [`docs/03-operations/observability/alert-bot-routing.md`](../03-operations/observability/alert-bot-routing.md) § "Acknowledgment lifecycle" + § "T2 repeat-ping inline keyboard".

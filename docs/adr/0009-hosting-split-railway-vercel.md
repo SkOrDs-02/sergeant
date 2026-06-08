@@ -87,7 +87,7 @@ Edge middleware на Vercel ([`apps/web/middleware.ts`](../../apps/web/middlewar
 - Додатковий hop: browser → Vercel Edge → Railway → Postgres. Latency зросла
   на ~30–80 ms p95 (Київ → Frankfurt edge → Frankfurt Railway). Прийнятно
   для persоnal-PWA, але на SLO (`< 1s p95`, див.
-  [`docs/observability/SLO.md`](../observability/SLO.md#2-http-latency-slo-p95--1s-non-ai))
+  [`docs/03-operations/observability/SLO.md`](../03-operations/observability/SLO.md#2-http-latency-slo-p95--1s-non-ai))
   це з'їдає частину бюджету.
 - `BACKEND_URL` має бути встановлений у Vercel env (Production + Preview),
   інакше middleware падає з 502 на всі API-запити.
@@ -142,7 +142,7 @@ accepted.
    Better Auth session-cache у пам'яті, Prometheus `/metrics` endpoint
    (in-process counters).
 2. **Long-running AI requests** — Anthropic streaming до 30s (див. SLO § 5 у
-   [`docs/observability/SLO.md`](../observability/SLO.md#5-ai-anthropic-slo-970-)).
+   [`docs/03-operations/observability/SLO.md`](../03-operations/observability/SLO.md#5-ai-anthropic-slo-970-)).
 3. **Postgres** — міграції, pool `pg.Pool`, `NOTIFY`-тригери для plan-cache
    invalidation (ADR-0001 §1.3), `Testcontainers` для тестів.
 4. **Background-friendly** — cron для Monobank-backfill (планується як
@@ -208,7 +208,7 @@ accepted.
 
 - `SERVER_MODE=railway` (або автодефолт) відрізняється від `SERVER_MODE=replit`
   (legacy) тим, що відсутній Replit-specific bootstrap. Runbook у
-  [`docs/observability/runbook.md`](../observability/runbook.md) assume-ує
+  [`docs/03-operations/observability/runbook.md`](../03-operations/observability/runbook.md) assume-ує
   Railway.
 
 ### Alternatives considered

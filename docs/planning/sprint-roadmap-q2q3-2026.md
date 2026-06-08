@@ -53,7 +53,7 @@
 | O6  | W4.1: bootstrap setWebhook poll-and-retry hardening           | tg-improvements §3.5.1 | W4    | XS     | ✅ Done ([PR #2531](https://github.com/Skords-01/Sergeant/pull/2531), `49d5c846`)                                                                                                                                                                                                                                                   |
 | O7  | A.6+A.7: `/help` discovery + persona quick-row                | tg-improvements §4.1   | W4    | S      | ✅ Done ([PR #2534](https://github.com/Skords-01/Sergeant/pull/2534), `6ee444d3`)                                                                                                                                                                                                                                                   |
 | O8  | Phase 3: `/plan`, `/analyze`, `/okr`                          | openclaw §Phase 3      | Later | L      | ✅ Done за founder підтвердженням 2026-05-13 — Stage 5b PR-1..PR-4 + persona allowlist Stage 5a                                                                                                                                                                                                                                     |
-| O9  | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2   | W3+   | M      | ✅ Done (W3 PR-4: 8 wirings — WF-08/15/16/30/60/63/98/99 — закривають 17-workflow set; routing map: `docs/observability/alert-bot-routing.md`)                                                                                                                                                                                      |
+| O9  | Alert-bot: 17 workflow ACK-wirings (W3 follow-up від W3 PR-2) | tg-improvements §3.2   | W3+   | M      | ✅ Done (W3 PR-4: 8 wirings — WF-08/15/16/30/60/63/98/99 — закривають 17-workflow set; routing map: `docs/03-operations/observability/alert-bot-routing.md`)                                                                                                                                                                        |
 
 ### 1.3. Вже зроблено (довідка)
 
@@ -242,7 +242,7 @@
 - [x] Всі 17 broadcast workflows мають 3-кнопковий row при нових alert-ах
 - [x] WF-103 (escalation cron) коректно знаходить unacked-и від всіх wired workflows (uniform `alertId` shape per workflow)
 - [x] `ops/n8n-workflows/` JSON оновлені у git (`"active": false` — staging → prod toggle лишається UI-only step)
-- [x] Routing map зафіксована в `docs/observability/alert-bot-routing.md` (workflow → topic/severity/alertId)
+- [x] Routing map зафіксована в `docs/03-operations/observability/alert-bot-routing.md` (workflow → topic/severity/alertId)
 
 ---
 

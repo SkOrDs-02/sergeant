@@ -11,7 +11,7 @@ render_with_liquid: false
 - **Supersedes:** —
 - **Related:**
   - [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md) — workflow → topic routing matrix.
-  - [`docs/observability/telegram-control-plane.md`](../observability/telegram-control-plane.md) — architectural review.
+  - [`docs/03-operations/observability/telegram-control-plane.md`](../03-operations/observability/telegram-control-plane.md) — architectural review.
   - [ADR-0026 — n8n workflow source of truth](./0026-n8n-workflow-source-of-truth.md) — Git-as-truth для workflow JSON.
   - [`docs/playbooks/modify-n8n-workflow.md`](../playbooks/modify-n8n-workflow.md) — playbook оновлення matrix-у разом з workflow.
 
@@ -109,7 +109,7 @@ ops:n8n:validate`.
 ### Тригери ре-evaluation
 
 ADR ре-розглядається коли спрацює один з тригерів з
-[`docs/observability/telegram-control-plane.md`](../observability/telegram-control-plane.md#when-to-migrate):
+[`docs/03-operations/observability/telegram-control-plane.md`](../03-operations/observability/telegram-control-plane.md#when-to-migrate):
 team > 2 active operators, alert volume > 50/день, SOC-2 розпочався,
 PII у P0 alerts, > 5 одночасних bot commands, > 30 workflow × > 8
 топіків.
@@ -172,7 +172,7 @@ PII у P0 alerts, > 5 одночасних bot commands, > 30 workflow × > 8
       `pnpm ops:n8n:validate` — наступний крок.
 - [x] Документувати layout у `REPORTING-MATRIX.md`.
 - [x] Документувати архітектурне обґрунтування у
-      `docs/observability/telegram-control-plane.md`.
+      `docs/03-operations/observability/telegram-control-plane.md`.
 - [x] Прийняти цей ADR.
 - [ ] (Roadmap) Розширити `manifest.schema.json` schema for
       `telegramTopic` + `audienceTier` (поки valid as additional fields,
@@ -186,5 +186,5 @@ PII у P0 alerts, > 5 одночасних bot commands, > 30 workflow × > 8
 
 - [ADR-0026: n8n workflow source of truth](./0026-n8n-workflow-source-of-truth.md)
 - [Reporting matrix](../../ops/n8n-workflows/REPORTING-MATRIX.md)
-- [Telegram-as-control-plane analysis](../observability/telegram-control-plane.md)
+- [Telegram-as-control-plane analysis](../03-operations/observability/telegram-control-plane.md)
 - [Modify n8n workflow playbook](../playbooks/modify-n8n-workflow.md)

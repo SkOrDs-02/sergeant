@@ -3,7 +3,7 @@ name: Weekly DB backup verify
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: storage-roadmap.md PR #049b — weekly rehearsal of Railway Postgres restore + smoke-test schema integrity.
-# Ref: docs/runbooks/database-backup-restore.md § 4 + § 6.
+# Ref: docs/03-operations/runbooks/database-backup-restore.md § 4 + § 6.
 
 on:
   schedule:
@@ -128,7 +128,7 @@ jobs:
           pnpm --filter @sergeant/server db:migrate:dev
 
       # ── Step 4: Smoke-test schema integrity ───────────────────────
-      # Mirrors docs/runbooks/database-backup-restore.md § 4.
+      # Mirrors docs/03-operations/runbooks/database-backup-restore.md § 4.
       - name: Smoke-test schema integrity
         run: |
           set -euo pipefail
@@ -257,7 +257,7 @@ jobs:
               '6. Sync op-log has future-dated entries (clock skew)',
               '7. Foreign-key orphans detected',
               '',
-              'See [database-backup-restore.md](docs/runbooks/database-backup-restore.md) for investigation steps.',
+              'See [database-backup-restore.md](docs/03-operations/runbooks/database-backup-restore.md) for investigation steps.',
               '',
               'cc @Skords-01',
             ].join('\n');

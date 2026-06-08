@@ -1,6 +1,6 @@
 # AI Memory — activation runbook
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active (operational activation runbook; behavior SSOT is architecture doc)
 
 Як перевести pgvector AI memory підсистему з dormant у production-active після
@@ -247,4 +247,4 @@ use case (finyk → ingest, weekly digest, auth-mail) це OK: продюсер�
 - [ADR-0028: pgvector + Voyage embeddings](../../adr/0028-pgvector-ai-memory.md)
 - [Voyage AI + pgvector integration doc](../../integrations/voyage-pgvector.md)
 - [Feature flags registry](../../governance/feature-flags.md)
-- [Observability runbook](../../observability/runbook.md)
+- [Observability runbook](../../03-operations/observability/runbook.md)

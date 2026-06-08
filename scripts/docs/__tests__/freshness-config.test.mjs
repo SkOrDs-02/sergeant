@@ -41,9 +41,9 @@ describe("globToRegex", () => {
 
   it("matches single * inside a segment", () => {
     const re = globToRegex("**/TEMPLATE*.md");
-    assert.equal(re.test("docs/postmortems/TEMPLATE.md"), true);
+    assert.equal(re.test("docs/03-operations/postmortems/TEMPLATE.md"), true);
     assert.equal(re.test("docs/adr/TEMPLATE-01.md"), true);
-    assert.equal(re.test("docs/postmortems/foo.md"), false);
+    assert.equal(re.test("docs/03-operations/postmortems/foo.md"), false);
   });
 
   it("treats * as single-segment (no /)", () => {
@@ -63,7 +63,10 @@ describe("matchesAnyGlob", () => {
   it("returns true if any glob matches", () => {
     const globs = ["docs/adr/**", "**/TEMPLATE*.md"];
     assert.equal(matchesAnyGlob("docs/adr/0001.md", globs), true);
-    assert.equal(matchesAnyGlob("docs/postmortems/TEMPLATE.md", globs), true);
+    assert.equal(
+      matchesAnyGlob("docs/03-operations/postmortems/TEMPLATE.md", globs),
+      true,
+    );
     assert.equal(matchesAnyGlob("README.md", globs), false);
   });
 
@@ -114,7 +117,7 @@ describe("buildTrackedList", () => {
   const config = {
     ...DEFAULT_CONFIG,
     excludeGlobs: ["docs/adr/**", "**/TEMPLATE*.md"],
-    cadenceOverrides: { "docs/observability/runbook.md": 60 },
+    cadenceOverrides: { "docs/03-operations/observability/runbook.md": 60 },
   };
 
   const headerContent =
@@ -130,7 +133,7 @@ describe("buildTrackedList", () => {
   });
 
   it("applies cadence overrides", () => {
-    const candidates = ["docs/observability/runbook.md"];
+    const candidates = ["docs/03-operations/observability/runbook.md"];
     const tracked = buildTrackedList({
       candidates,
       config,

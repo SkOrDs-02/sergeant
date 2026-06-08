@@ -198,7 +198,7 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 
 **Open Initiative:** [0017 — Hub Settings & Reports mount perf](../initiatives/0017-hub-tabs-mount-perf.md) — 5 PR-ів за 3 спринти:
 
-1. **Sprint 0 (`feat/0017-hub-tab-perf-rum`) — shipped 2026-05-20**: PostHog `hub_tab_switch_perf` baseline, `PerformanceObserver({type:"longtask"})`. Runbook: [`docs/observability/hub-perf-baseline.md`](../observability/hub-perf-baseline.md).
+1. **Sprint 0 (`feat/0017-hub-tab-perf-rum`) — shipped 2026-05-20**: PostHog `hub_tab_switch_perf` baseline, `PerformanceObserver({type:"longtask"})`. Runbook: [`docs/03-operations/observability/hub-perf-baseline.md`](../03-operations/observability/hub-perf-baseline.md).
 2. Sprint 1.1 (`feat/0017-settings-section-skeleton-primitive`): per-section `React.lazy()` + `SectionSkeleton` стабільної висоти.
 3. Sprint 1.2 (`feat/0017-settings-cross-module-defer`): `useInView` gate на heavy queries у sections, dynamic `import()` для cleanup-handler-ів.
 4. Sprint 2 (`feat/0017-reports-per-card-lazy`): HubReports → 5 lazy cards (ExpensesCard / FitnessCard / NutritionCard / RoutineCard / WeeklyDigestCard).

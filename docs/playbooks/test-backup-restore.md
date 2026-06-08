@@ -1,6 +1,6 @@
 # Playbook: Тестове відновлення бекапу
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 **Trigger:** планова репетиція відновлення (recovery rehearsal), перевірка довіри до бекапів, або сигнал, що снапшоти існують, але давно не перевірялися на придатність.
@@ -23,7 +23,7 @@
 
 ### 2. Виконай репетицію
 
-- Розгорни бекап у безпечне середовище за конкретними командами з [`docs/runbooks/database-backup-restore.md`](../runbooks/database-backup-restore.md) §2.
+- Розгорни бекап у безпечне середовище за конкретними командами з [`docs/03-operations/runbooks/database-backup-restore.md`](../03-operations/runbooks/database-backup-restore.md) §2.
 - Перевір: підключення до інстансу, стан міграцій (§4.1), row count критичних таблиць (§4.2) і 1–2 ключові доменні записи (наприклад, відомий `users.id` + його `transactions`).
 - Заміряй фактичний час відновлення відносно очікуваного RTO.
 

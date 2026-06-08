@@ -770,7 +770,7 @@ proposed.
 
 Billing pipeline = critical path. Сlient checkout → server → Stripe → webhook → DB → cache invalidation → UI update. Будь-яка ланка може тихо зламатися: Stripe webhook lag, DB transaction deadlock, NOTIFY-trigger drop, SSE disconnect. Без observability ці failures починають вилазити через user-complaints у Telegram, не через alert.
 
-Зараз `apps/server/src/obs/` має базову Prometheus-інфру; `docs/observability/SLO.md` визначає загальні SLO. Питання: які саме метрики **specifically** для billing, і які thresholds.
+Зараз `apps/server/src/obs/` має базову Prometheus-інфру; `docs/03-operations/observability/SLO.md` визначає загальні SLO. Питання: які саме метрики **specifically** для billing, і які thresholds.
 
 ### Decision
 
@@ -789,7 +789,7 @@ Billing pipeline = critical path. Сlient checkout → server → Stripe → web
 | `dunning_recovery_total{outcome}`                | counter   | 7-day recovery rate < 20% → alert (Smart Retries не працює). |
 | `dispute_created_total{reason_code}`             | counter   | > 0 / тиждень → Sentry — потребує ручного triage.            |
 
-**Dashboard:** `docs/observability/dashboards.md` — додати секцію `Billing` з Grafana-board JSON. PR-M.16 покриває це.
+**Dashboard:** `docs/03-operations/observability/dashboards.md` — додати секцію `Billing` з Grafana-board JSON. PR-M.16 покриває це.
 
 **SLO targets (перші 90 днів post-launch):**
 
@@ -806,7 +806,7 @@ Thresholds — **initial heuristic**, ревалідуємо після перш
 - Усі вищезгадані метрики **emit-ить** код (навіть якщо threshold не відомий ще).
 - Sentry-alerts **створено** на P1-критичні (webhook errors, NOTIFY disconnect).
 - Grafana board існує (нехай поки порожній).
-- `docs/observability/runbook.md` має секцію «Billing incidents» з top-3 most-likely failures.
+- `docs/03-operations/observability/runbook.md` має секцію «Billing incidents» з top-3 most-likely failures.
 
 ### Consequences
 

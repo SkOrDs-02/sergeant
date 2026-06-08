@@ -1,6 +1,6 @@
 # CSP_DISABLE runtime kill-switch — retrospective audit (2026-05-04)
 
-> **Last validated:** 2026-06-01 by @claude. **Next review:** 2026-08-30.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (2026-05-06 — A1–A5 resolved, див. §Resolution log)
 
 > **Що це.** Це не postmortem справжнього incident-у. Це **retrospective audit / near-miss**, який закриває [`docs/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) §Фаза 1 → PR 1.4. Питання, на яке цей документ відповідає: **«Чи був прапорець `CSP_DISABLE=1` коли-небудь увімкнений у production-Railway env-var-ах за 16 днів існування?»** Code-side cleanup завершений у [PR #1631](https://github.com/Skords-01/Sergeant/pull/1631); цей файл закриває operational boundary.
@@ -34,7 +34,7 @@
 
 ## Impact
 
-- **Підтверджений user-impact:** **0.** Жодного incident-а у `docs/postmortems/` не зареєстровано за цей період; жодного звернення в support-каналах; жодного rollback-у деплою.
+- **Підтверджений user-impact:** **0.** Жодного incident-а у `docs/03-operations/postmortems/` не зареєстровано за цей період; жодного звернення в support-каналах; жодного rollback-у деплою.
 - **Hypothetical worst-case impact:** якби атакер отримав Railway env-var write-credentials у будь-який момент між 2026-04-18 і 2026-05-04, він міг встановити `CSP_DISABLE=1`, отримати CSP-bypass window для XSS exfiltration на API-origin, і вимкнути назад. Хоча API-origin — JSON-only (frontend живе на Vercel), CSP-bypass там відкриває side-channels: `connect-src` з API на третій origin, frame-ancestors override (якщо API колись буде embedded у iframe), data: URI fetch.
 - **Audit-trail gap:** Railway env-var changes не пишуться у `docs/security/secret-ownership-register.md`, тому навіть legitimate-flip залишився б невидимим до моменту коли хтось би запустив `printenv | grep CSP` у production-shell.
 - **SLO budget consumed:** N/A.

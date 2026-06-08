@@ -6,7 +6,7 @@
 > Canonical reference for the RAG quality-eval pipeline shipped as **PR-20**
 > (eval harness — golden-set, P@1 / MRR) and consumed by **PR-22** (weekly
 > quality gate with auto-disable). Pointer у [`AGENTS.md`](../../AGENTS.md)
-> та у runbook ([`docs/observability/runbook.md`](../observability/runbook.md)
+> та у runbook ([`docs/03-operations/observability/runbook.md`](../03-operations/observability/runbook.md)
 > § `RagQualityGateDegraded` / `RagQualityGateKillSwitch`). Deep prose тут.
 
 ## Що це
@@ -227,7 +227,7 @@ Threshold `regression: true` — drop recall@K mean більше ніж на **0
 
 ## Як reagуvати на degradation
 
-Див. [`docs/observability/runbook.md`](../observability/runbook.md):
+Див. [`docs/03-operations/observability/runbook.md`](../03-operations/observability/runbook.md):
 
 - **`RagQualityGateDegraded`** (warn): scan per-domain breakdown, recent
   embedding-changes; alert не блокує. Якщо не повертається у `pass` за 2
@@ -331,7 +331,7 @@ runtimeKillSwitch.ts`):
 | kill   | mean < `kill_threshold` (= 0.4)  | Sentry error + **auto-flip kill-switch**.        |
 | error  | CLI hard-fail (exit ≥3)          | Endpoint не отримає payload — cron alert окремо. |
 
-**Reaction playbook**: [`docs/observability/runbook.md`](../observability/runbook.md)
+**Reaction playbook**: [`docs/03-operations/observability/runbook.md`](../03-operations/observability/runbook.md)
 секції `RagQualityGateDegraded`, `RagQualityGateKillSwitch`,
 `RagEvalAutomationAlert`.
 
@@ -342,7 +342,7 @@ runtimeKillSwitch.ts`):
   governance + Ukrainian docs
 - [`apps/server/src/modules/ai-memory/`](../../apps/server/src/modules/ai-memory)
   — real retrieval pipeline (consumer of golden-set @ PR-21)
-- [`docs/observability/runbook.md`](../observability/runbook.md) — alert
+- [`docs/03-operations/observability/runbook.md`](../03-operations/observability/runbook.md) — alert
   reaction
 - [`apps/server/src/routes/internal/eval-rag.ts`](../../apps/server/src/routes/internal/eval-rag.ts) —
   endpoint

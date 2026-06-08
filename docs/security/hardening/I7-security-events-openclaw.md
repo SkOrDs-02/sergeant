@@ -1,6 +1,6 @@
 # I7 — Push security events to OpenClaw
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (2026-06-01)
 
 | Field          | Value                                                                                  |
@@ -33,7 +33,7 @@ details, timestamp }`.
 - `apps/server/src/modules/mono/webhook.ts`, `auth.ts`, `chat.ts`,
   `transcribe.ts` — call sites for each event.
 - `tools/openclaw/src/openclaw/securityRoom.ts` (new) — OpenClaw consumer.
-- `docs/runbooks/security-events.md` (new) — operator playbook for each
+- `docs/03-operations/runbooks/security-events.md` (new) — operator playbook for each
   event type.
 
 ## Verification

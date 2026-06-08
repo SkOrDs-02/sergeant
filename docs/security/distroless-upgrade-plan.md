@@ -8,15 +8,15 @@
 
 ## TL;DR
 
-| Item                         | Value                                                                                                                                     |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Suppressed CVEs              | `CVE-2026-31789` (CRITICAL) + `CVE-2026-28387/88/89/90` (HIGH) for libssl3 in distroless base                                             |
-| Affected Dockerfiles         | `Dockerfile.api:143` і `Dockerfile.console:92`                                                                                            |
-| Base image tag (поточний)    | `gcr.io/distroless/nodejs20-debian12:nonroot`                                                                                             |
-| Expiry (original → extended) | `2026-07-02` → `2026-12-31` (6 months)                                                                                                    |
-| Дія                          | `.trivyignore` expiry extended; Dockerfiles НЕ змінені (див. § "Чому не патчимо FROM"); план upgrade-у на нову major-версію distroless    |
-| Owner                        | @Skords-01 (platform / devops per `docs/tech-debt/technical-assessment-2026-06-05.md` AP-03)                                              |
-| Пов'язані артефакти          | `.trivyignore`, `Dockerfile.api`, `Dockerfile.console`, `docs/ops/docker-image-policy.md`, `docs/tech-debt/priority-1-executive.md` AP-03 |
+| Item                         | Value                                                                                                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Suppressed CVEs              | `CVE-2026-31789` (CRITICAL) + `CVE-2026-28387/88/89/90` (HIGH) for libssl3 in distroless base                                                           |
+| Affected Dockerfiles         | `Dockerfile.api:143` і `Dockerfile.console:92`                                                                                                          |
+| Base image tag (поточний)    | `gcr.io/distroless/nodejs20-debian12:nonroot`                                                                                                           |
+| Expiry (original → extended) | `2026-07-02` → `2026-12-31` (6 months)                                                                                                                  |
+| Дія                          | `.trivyignore` expiry extended; Dockerfiles НЕ змінені (див. § "Чому не патчимо FROM"); план upgrade-у на нову major-версію distroless                  |
+| Owner                        | @Skords-01 (platform / devops per `docs/tech-debt/technical-assessment-2026-06-05.md` AP-03)                                                            |
+| Пов'язані артефакти          | `.trivyignore`, `Dockerfile.api`, `Dockerfile.console`, `docs/03-operations/ops/docker-image-policy.md`, `docs/tech-debt/priority-1-executive.md` AP-03 |
 
 ## Чому не можна просто `docker pull` і пофіксити тут і зараз
 
@@ -215,7 +215,7 @@ upgrade`).
 - `.trivyignore` — escape-hatch для CRITICAL/HIGH CVE з self-cleaning expiry
 - `Dockerfile.api:143` — runtime stage FROM
 - `Dockerfile.console:92` — runtime stage FROM
-- `docs/ops/docker-image-policy.md` — канонічна політика distroless-вибору
+- `docs/03-operations/ops/docker-image-policy.md` — канонічна політика distroless-вибору
 - `docs/tech-debt/priority-1-executive.md` — AP-03 action item ("Перезібрати
   базовий образ distroless до спливу CVE 2026-07-02")
 - `docs/tech-debt/technical-assessment-2026-06-05.md` — SEC-003 finding + theme

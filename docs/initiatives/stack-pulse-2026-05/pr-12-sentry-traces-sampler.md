@@ -51,7 +51,7 @@ Sentry.init({
 
 ### Documentation
 
-- `docs/observability/sentry-sampling.md` — таблиця per-route з обгрунтуванням і expected event-budget per month.
+- `docs/03-operations/observability/sentry-sampling.md` — таблиця per-route з обгрунтуванням і expected event-budget per month.
 
 ## Out of scope
 
@@ -60,7 +60,7 @@ Sentry.init({
 ## Acceptance criteria (DoD)
 
 - [x] `tracesSampler` функція в server (`apps/server/src/sentry.ts`) + web (`apps/web/src/core/observability/sentry.ts`).
-- [x] `docs/observability/sentry-sampling.md` з таблицею per-route + rationale.
+- [x] `docs/03-operations/observability/sentry-sampling.md` з таблицею per-route + rationale.
 - [ ] Sentry quota usage (через Sentry-API) перевірити: до зміни → після зміни (target: same total events, краща розподіленість). Пост-merge: порівняти тижневу quota базову лінію (T-7 vs T+0 vs T+7).
 
 ## Outcome
@@ -88,7 +88,7 @@ Sentry.init({
 
 - `apps/server/src/sentry.ts:28`
 - `apps/web/src/observability/sentry.ts` (path approximate)
-- `docs/observability/sentry-sampling.md` — новий
+- `docs/03-operations/observability/sentry-sampling.md` — новий
 
 ## Refs
 

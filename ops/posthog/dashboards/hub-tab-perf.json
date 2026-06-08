@@ -3,7 +3,7 @@
   "version": 1,
   "key": "hub-tab-perf",
   "name": "Hub tab perf",
-  "description": "RUM dashboard for Initiative 0017 (Hub Settings & Reports mount perf). Aggregates HUB_TAB_SWITCH_PERF events emitted by apps/web/src/core/lib/hubPerf.ts: P50/P95 ttiMs per tab, long-task burden, cache-hit ratio, histogram of ttiMs, and longTaskCount P95 per tab. Runbook: docs/observability/hub-perf-baseline.md. Baseline pull target: 2026-05-27 (≥ 7 days after Sprint 0 merge 2026-05-20).",
+  "description": "RUM dashboard for Initiative 0017 (Hub Settings & Reports mount perf). Aggregates HUB_TAB_SWITCH_PERF events emitted by apps/web/src/core/lib/hubPerf.ts: P50/P95 ttiMs per tab, long-task burden, cache-hit ratio, histogram of ttiMs, and longTaskCount P95 per tab. Runbook: docs/03-operations/observability/hub-perf-baseline.md. Baseline pull target: 2026-05-27 (≥ 7 days after Sprint 0 merge 2026-05-20).",
   "timezone": "Europe/Kyiv",
   "events_contract": {
     "hub_tab_switch_perf": {
