@@ -99,7 +99,7 @@ describe("Web Compatibility", () => {
     expect(Object.isFrozen(DEEP_LINK_HTTPS_HOSTS)).toBe(true);
   });
 
-  it("platform module exports isCapacitor and getPlatform", async () => {
+  it("platform module exports isCapacitor", async () => {
     vi.doMock("@capacitor/core", () => ({
       Capacitor: {
         isNativePlatform: () => false,
@@ -108,7 +108,6 @@ describe("Web Compatibility", () => {
     }));
     const mod = await import("../platform.js");
     expect(typeof mod.isCapacitor).toBe("function");
-    expect(typeof mod.getPlatform).toBe("function");
   });
 
   it("isCapacitor returns false when not in native context", async () => {
@@ -118,9 +117,8 @@ describe("Web Compatibility", () => {
         getPlatform: () => "web",
       },
     }));
-    const { isCapacitor, getPlatform } = await import("../platform.js");
+    const { isCapacitor } = await import("../platform.js");
     expect(isCapacitor()).toBe(false);
-    expect(getPlatform()).toBe("web");
   });
 
   it("no unsupported APIs leak: initNativeShell is callable without crashing on plugin errors", async () => {
