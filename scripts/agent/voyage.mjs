@@ -23,7 +23,7 @@ export const EMBEDDING_MODEL =
 export const EMBEDDING_DIM = Number(
   process.env["VOYAGE_EMBEDDING_DIM"] || 1024,
 );
-const BATCH_SIZE = 96;
+const BATCH_SIZE = Number(process.env["VOYAGE_EMBED_BATCH"] || 96);
 
 export function hasApiKey() {
   return Boolean(process.env["VOYAGE_API_KEY"]);
@@ -31,6 +31,8 @@ export function hasApiKey() {
 
 // Embed an array of texts. `inputType` is "document" when indexing chunks and
 // "query" when embedding a search query — Voyage tunes the space per side.
+// Retries on rate-limit / transient errors with backoff (mirrors the production
+// ai-memory embeddings client) — also self-paces under Voyage's free-tier RPM cap.
 export async function embedTexts(texts, { inputType = "document" } = {}) {
   const apiKey = process.env["VOYAGE_API_KEY"];
   if (!apiKey)
@@ -40,6 +42,22 @@ export async function embedTexts(texts, { inputType = "document" } = {}) {
   const out = [];
   for (let i = 0; i < texts.length; i += BATCH_SIZE) {
     const batch = texts.slice(i, i + BATCH_SIZE);
+    const embeddings = await embedBatchWithRetry(apiKey, batch, inputType);
+    for (const e of embeddings) out.push(e);
+  }
+  return out;
+}
+
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const MAX_ATTEMPTS = 6;
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function embedBatchWithRetry(apiKey, batch, inputType) {
+  let lastErr;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const response = await fetch(VOYAGE_URL, {
       method: "POST",
       headers: {
@@ -54,14 +72,22 @@ export async function embedTexts(texts, { inputType = "document" } = {}) {
         output_dtype: "float",
       }),
     });
-    if (!response.ok) {
-      const body = await response.text().catch(() => "");
-      throw new Error(`Voyage HTTP ${response.status}: ${body.slice(0, 200)}`);
+    if (response.ok) {
+      const json = await response.json();
+      return (json.data ?? []).map((row) => row.embedding);
     }
-    const json = await response.json();
-    for (const row of json.data ?? []) out.push(row.embedding);
+    const body = await response.text().catch(() => "");
+    lastErr = new Error(
+      `Voyage HTTP ${response.status}: ${body.slice(0, 160)}`,
+    );
+    if (!RETRYABLE_STATUSES.has(response.status) || attempt === MAX_ATTEMPTS) {
+      throw lastErr;
+    }
+    // 429 on the free tier means ~3 RPM — wait long enough to clear the window.
+    const base = response.status === 429 ? 22_000 : 1_000;
+    await sleep(base * attempt);
   }
-  return out;
+  throw lastErr;
 }
 
 export function cosineSimilarity(a, b) {
