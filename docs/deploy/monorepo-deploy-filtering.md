@@ -1,6 +1,6 @@
 # Monorepo deploy filtering — Vercel ignoreCommand + Railway watchPatterns
 
-> **Last validated:** 2026-06-07 by @Skords-01. **Next review:** 2026-09-05.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Sergeant ships three production surfaces from one `main` branch:
@@ -8,7 +8,7 @@ Sergeant ships three production surfaces from one `main` branch:
 - `apps/web` → Vercel
 - `apps/server` → Railway service `Sergeant`
 - `tools/openclaw` → Railway service `sergeant-openclaw` (config-as-code path
-  `railway.console.toml`)
+  `railway.openclaw.toml`)
 
 Without filtering, **every push to `main` triggers all three deploys**, even
 for `docs/**`-only or `apps/mobile/**`-only changes. That wastes build
@@ -71,7 +71,7 @@ service × environment). When non-empty, a push triggers a deploy only if
 at least one changed path matches at least one pattern.
 
 Both production services have explicit watch patterns set via the Railway
-GraphQL API. **They are NOT in `railway.toml` / `railway.console.toml`** —
+GraphQL API. **They are NOT in `railway.toml` / `railway.openclaw.toml`** —
 Railway intentionally only allows config-as-code for build/runtime fields,
 not for source/git-trigger settings (those live in the project DB only).
 
@@ -109,8 +109,8 @@ Rationale:
 ```
 tools/openclaw/**
 packages/config/**
-Dockerfile.console
-railway.console.toml
+Dockerfile.openclaw
+railway.openclaw.toml
 package.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
@@ -123,7 +123,7 @@ patches/**
 Rationale:
 
 - `tools/openclaw/package.json` only depends on `@sergeant/config`. Keep this list narrower than `Sergeant`'s on purpose — long-poll grammy bots are sensitive to needless restarts (per [`./openclaw.md`](./openclaw.md) §Build / runtime, the service is `restartPolicyType=ON_FAILURE` for exactly this reason).
-- `railway.console.toml` is the config-as-code file; `Dockerfile.console` is the build input.
+- `railway.openclaw.toml` is the config-as-code file; `Dockerfile.openclaw` is the build input.
 
 ### Read / update via GraphQL
 
