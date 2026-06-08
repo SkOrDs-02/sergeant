@@ -2,13 +2,25 @@
 
 > **Last validated:** 2026-06-08 by Claude (cleanup-audit fan-out: 3 паралельні Explore-проходи — dead-code/markers, infra/stack, docs/decisions — + ручна верифікація 2 P0-заяв). **Next review:** 2026-07-08.
 >
-> **Status:** Draft
+> **Status:** Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding)
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл —
 > аудиторський знімок на 2026-06-08. Не дублює repo policy; кожна знахідка
 > лінкує конкретний `file:line`. Драфт — узгоджуємо й розбиваємо на PR-и
 > окремими класами боргу (за `sergeant-tech-debt`: dead-code / baseline /
 > rename / doc-hygiene — різні ризик-профілі, різні PR-и).
+
+## Виконано в цьому PR (2026-06-08)
+
+Після узгодження з founder-ом виконано всі 4 рішення (коміти в цьому PR):
+
+- ✅ **Тема 1 — console→openclaw rename (in-repo).** Реальний баг `eslint.baseline.js` (resolver → неіснуючий `tools/console/`) виправлено + fixtures/skills-lock регенеровано; scope `console` прибрано з commitlint+AGENTS.md; усі stale `tools/console`/`apps/console` посилання в активних доках/скілах/коментарях/CI. **Фіз. deploy-файли** `Dockerfile.console`/`railway.console.toml` свідомо лишено (захардкоджені в Railway dashboard — перейменування під Railway-крок).
+- ✅ **Тема 3 — grammy / Locked Decision #17** → closed без видалення (код live, retained; дедлайн знято).
+- ✅ **Replit прибрано** — mode/env/scripts/CSP-disable вектор; тести зелені. Залишок: stale Replit-_коментарі_ в `index.ts`/`app.ts`/`frontend.ts` (follow-up).
+- ✅ **Тема 2 — stale-status доки** → 4 закрито (`dead-code-hard-rules-roast`, `page-audit-01`, `pr-plan-dead-code-hard-rules`, initiative `0017`) з верифікацією; `open-work.md` 74→71. 4 borderline переглянуто поштучно й свідомо лишено Active.
+- ✅ **Бонус: server-typecheck розблоковано** — виправлено передіснуючі регресії декомпозиції syncV2 (`9d8c0d4`/ADR-0064): битий `ApplyFn` тип, 4× биті type-import шляхи `applySync`, відсутній рантайм-імпорт `toNonNegativeInt` (реальний баг), unused `req`. `turbo typecheck` → 0 помилок.
+
+**Ще НЕ зроблено (з Теми 4 / нижче — потребує окремого рішення):** lint-suppressions без власника (react-hooks v7 ~152, i18n block-disables), `@removeBy 2026-09-01` tombstones (батч у вересні), інфра-питання (`@types/node`, Loki, Dependabot dup), фіз. deploy-rename + Railway dashboard.
 
 ## TL;DR
 
@@ -77,19 +89,20 @@
 Фантомна «відкрита робота» в `docs/open-work.md`. Перевести в `Archived`/`Closed`
 (+ перенести в `archive/` де треба):
 
-| Документ | Реальний стан | Дія |
-| --- | --- | --- |
-| `docs/audits/2026-05-13-dead-code-hard-rules-roast.md` | 17/17, 0 outstanding (лишився knip-false-positive watchlist) | → `Archived` |
-| `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md` | ~24/25, 0 outstanding | → `Archived` |
-| `docs/audits/2026-05-13-page-audit-02-hub-dashboard.md` | ~23/24, 0 (тільки burn-down markers watchlist) | borderline — підтвердити |
-| `docs/initiatives/0017-hub-tabs-mount-perf.md` | code-complete; Sprint 3 gated на метрику `>50ms` | → `Closed` + observation-window дедлайн |
-| `docs/tech-debt/syncV2-refactor-plan.md`, `…-engineering-ticket.md` | syncV2 декомпозовано (3096→474, ADR-0064) | → `archive/` |
-| `docs/planning/pr-plan-dead-code-hard-rules-2026-05.md` | усі DC/HR items ✅ | → `Closed`/`archive/` |
-| `docs/planning/dev-stack-roadmap.md` | 15/15 done (`Status: Reference`) | → `archive/` |
-| `docs/planning/flyio-vs-railway.md` | decision-артефакт, «дій не потребує» | → `archive/` |
-| `docs/planning/pr-plan-2026-05.md` | всі logged-items `merged` | підтвердити → `Closed` |
+| Документ                                                            | Реальний стан                                                | Дія                                     |
+| ------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------- |
+| `docs/audits/2026-05-13-dead-code-hard-rules-roast.md`              | 17/17, 0 outstanding (лишився knip-false-positive watchlist) | → `Archived`                            |
+| `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md`           | ~24/25, 0 outstanding                                        | → `Archived`                            |
+| `docs/audits/2026-05-13-page-audit-02-hub-dashboard.md`             | ~23/24, 0 (тільки burn-down markers watchlist)               | borderline — підтвердити                |
+| `docs/initiatives/0017-hub-tabs-mount-perf.md`                      | code-complete; Sprint 3 gated на метрику `>50ms`             | → `Closed` + observation-window дедлайн |
+| `docs/tech-debt/syncV2-refactor-plan.md`, `…-engineering-ticket.md` | syncV2 декомпозовано (3096→474, ADR-0064)                    | → `archive/`                            |
+| `docs/planning/pr-plan-dead-code-hard-rules-2026-05.md`             | усі DC/HR items ✅                                           | → `Closed`/`archive/`                   |
+| `docs/planning/dev-stack-roadmap.md`                                | 15/15 done (`Status: Reference`)                             | → `archive/`                            |
+| `docs/planning/flyio-vs-railway.md`                                 | decision-артефакт, «дій не потребує»                         | → `archive/`                            |
+| `docs/planning/pr-plan-2026-05.md`                                  | всі logged-items `merged`                                    | підтвердити → `Closed`                  |
 
 **Структурний дрейф freshness (не борг, а скрипт):**
+
 - `docs/today.md` — overdue 1d бо `Next review = Last validated` (той самий день). `docs:gen-today` має ставити `Next review: today+1`. Полагодити генератор, а не дату.
 
 ---
@@ -102,6 +115,7 @@
 видалити `tools/openclaw/src/openclaw/` + `agents/{openclaw,personas,strategic-modes,dispatcher}.ts`.
 
 **Верифіковано вручну — це live-код, не legacy:**
+
 - entrypoint `tools/openclaw/src/index.ts:12,18,19` імпортує `./openclaw/index.js`, `commands.js`, `webhook.js`;
 - `src/openclaw/handler-*.ts` імпортують усі 4 «legacy» agent-файли (`handler-events.ts:20`, `handler-audit.ts:20`, `handler-agent-commands.ts:21-26`, …);
 - гейтвей **досі на grammy** (`src/index.ts:3 import { Bot } from "grammy"`).
@@ -123,19 +137,20 @@
 
 ## Тема 4 — Lint / tech-debt suppressions без власника
 
-| Кластер | Обсяг | Файл | Нотатка |
-| --- | --- | --- | --- |
-| `react-hooks/*` v7 disabled | ~152 (set-state-in-effect 78, refs 37, purity 17, …) | `eslint.baseline.js:146-178` | «queued for dedicated cleanup initiative» — без тикета й дати. Завести ініціативу. |
-| `react-hooks/exhaustive-deps` inline | 50 disables | apps/* | здебільшого свідомі |
-| `@typescript-eslint/no-explicit-any` | 30 | apps/* | test-stubs/DI |
-| i18n block-disable `no-cyrillic-jsx-literal` | 3 файли | `apps/web/.../nutrition/components/LogCard{Search,WeeklyTable,Analytics}.tsx:5` | permanent block, «pre-existing i18n debt», без `@removeBy` |
-| `no-raw-storage-key` block | 1 | `apps/web/src/core/lib/chatActions/queryFinykActions.ts:1` | без sunset-дати |
+| Кластер                                      | Обсяг                                                | Файл                                                                            | Нотатка                                                                            |
+| -------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `react-hooks/*` v7 disabled                  | ~152 (set-state-in-effect 78, refs 37, purity 17, …) | `eslint.baseline.js:146-178`                                                    | «queued for dedicated cleanup initiative» — без тикета й дати. Завести ініціативу. |
+| `react-hooks/exhaustive-deps` inline         | 50 disables                                          | apps/\*                                                                         | здебільшого свідомі                                                                |
+| `@typescript-eslint/no-explicit-any`         | 30                                                   | apps/\*                                                                         | test-stubs/DI                                                                      |
+| i18n block-disable `no-cyrillic-jsx-literal` | 3 файли                                              | `apps/web/.../nutrition/components/LogCard{Search,WeeklyTable,Analytics}.tsx:5` | permanent block, «pre-existing i18n debt», без `@removeBy`                         |
+| `no-raw-storage-key` block                   | 1                                                    | `apps/web/src/core/lib/chatActions/queryFinykActions.ts:1`                      | без sunset-дати                                                                    |
 
 **Quick win:** `sergeant-design/ai-marker-syntax` стоїть `"warn"` (`eslint.baseline.js:194`)
 з нотаткою «promote to error once clean». В source **0** `AI-LEGACY` маркерів →
 безпечно підняти до `"error"`.
 
 **Lingering legacy-аліаси без `@removeBy` (дрібні, але «висять»):**
+
 - `apps/server/src/env/env.ts:212` — `SLOW_QUERY_THRESHOLD_MS` «legacy alias of DB_SLOW_MS», але саме він і використовується (`db.ts:181`); `DB_SLOW_MS` мертвий. Консолідувати.
 - `packages/shared/src/openapi/routes.ts:429,444` — push «legacy alias» endpoints, без дати.
 - `apps/server/src/obs/metrics.ts:1132` — label `skipped` «legacy; kept for back-compat».
@@ -158,9 +173,10 @@
 ## Свідома інфраструктура — НЕ чіпати
 
 Щоб агенти не «почистили» зайве:
+
 - Усі `@scaffolded` barrels (knip-ignored, Hard Rule #10).
 - Усі `@removeBy 2026-09-01` tombstones (KV→SQLite migration; ще не настали — батч у вересні): `packages/shared/src/lib/storageKeys.ts` (31 ключ), `kvStore.ts`, `db-schema/.../migrations/index.ts` (SPIKE-аліаси, **активно імпортуються** `clientMigrate.ts`), Card/Settings/i18n/push deprecated props.
-- 7 deprecated playbook-stubs (`Status: Deprecated`, 308-redirect, git-blame anchor, initiative 0009) — *можливо* перенести в `archive/`, але це свідомо.
+- 7 deprecated playbook-stubs (`Status: Deprecated`, 308-redirect, git-blame anchor, initiative 0009) — _можливо_ перенести в `archive/`, але це свідомо.
 - Hash-compat shims (`HashRedirect.tsx`, module-router rewrites) — PWA back-compat для старих bookmarks.
 - `packages/openclaw-plugin/src/legacy/` — свідомо retained per dead-code roast.
 
@@ -177,9 +193,9 @@
 5. **Рішення власника (не код, окремо):** grammy/Locked-Decision-#17 reconcile (P0 — зняти дедлайн); Replit drop; Loki active?; Dependabot dup?; `@types/node` уніфікація.
 6. **Відкладено на вересень:** `@removeBy 2026-09-01` tombstones — один батч.
 
-## Потрібні твої рішення (щоб рухатись)
+## Рішення власника (узгоджено 2026-06-08)
 
-- **Grammy / Locked Decision #17** — moot (закрити рядок) чи реальна задача з іншим scope?
-- **`console` rename** — завершуємо зараз чи тримаємо alias до закриття open-PR?
-- **Replit** — ще ціль деплою? (впливає на CSP-скрипти)
-- **Stale-status audits** — масово в `Archived` чи хочеш переглянути поштучно?
+- **Grammy / Locked Decision #17** — ✅ **закрити** (moot; код retained, дедлайн знято).
+- **`console` rename** — ✅ **завершуємо** (in-repo done; фіз. deploy-файли — окремий Railway-крок).
+- **Replit** — ✅ **прибрати** (більше не ціль деплою).
+- **Stale-status audits** — ✅ **поштучно** (4 закрито з верифікацією, 4 borderline лишено).
