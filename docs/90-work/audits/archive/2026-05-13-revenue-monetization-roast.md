@@ -10,8 +10,8 @@
 
 - Попередня прожарка цієї теми: [`2026-05-04-revenue-and-marketing-roast.md`](./2026-05-04-revenue-and-marketing-roast.md) — перша «нульова» ревізія, що констатувала «56 k LOC docs / 0 paying users».
 - Ініціатива: [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../initiatives/0010-revenue-first-launch.md) — 6-фазний plan Phase 0–5.1 done; Phase 2/3 active.
-- ADR-0051: [`docs/adr/0051-pricing-v3-single-tier.md`](../../../adr/0051-pricing-v3-single-tier.md) — Free + Pro ($7/мес), ₴ для UA, 7-day trial.
-- ADR-0052: [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../../adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor primary, Expo parallel.
+- ADR-0051: [`docs/04-governance/adr/0051-pricing-v3-single-tier.md`](../../../04-governance/adr/0051-pricing-v3-single-tier.md) — Free + Pro ($7/мес), ₴ для UA, 7-day trial.
+- ADR-0052: [`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor primary, Expo parallel.
 - Бізнес-стратегія: [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../../01-product/launch/business/01-monetization-and-pricing.md), [`02-go-to-market.md`](../../../01-product/launch/business/02-go-to-market.md), [`06-monetization-architecture.md`](../../../01-product/launch/business/06-monetization-architecture.md).
 
 ## TL;DR

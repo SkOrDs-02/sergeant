@@ -9,7 +9,7 @@ landing PR1 (foundation) + PR2 (ingestion) + PR3 (retrieval). Усі три PR-�
 `recall()` no-op-лять без HTTP до Voyage / БД, нема ніяких side-effects.
 
 Canonical behavior/ownership — [`docs/02-engineering/architecture/ai-memory.md`](../../../02-engineering/architecture/ai-memory.md).
-ADR — [`docs/adr/0028-pgvector-ai-memory.md`](../../../adr/0028-pgvector-ai-memory.md).
+ADR — [`docs/04-governance/adr/0028-pgvector-ai-memory.md`](../../../04-governance/adr/0028-pgvector-ai-memory.md).
 Інтеграційний doc — [`docs/02-engineering/integrations/voyage-pgvector.md`](../../../02-engineering/integrations/voyage-pgvector.md).
 
 ---
@@ -231,20 +231,20 @@ use case (finyk → ingest, weekly digest, auth-mail) це OK: продюсер�
 
 - **ESLint guard** — заблокувати direct-import з `vectorStore.ts` /
   `embeddings.ts` через `@typescript-eslint/no-restricted-imports` у
-  `eslint-plugin-sergeant-design`. TODO зафіксований в [ADR-0028 § Compliance](../../../adr/0028-pgvector-ai-memory.md#compliance).
+  `eslint-plugin-sergeant-design`. TODO зафіксований в [ADR-0028 § Compliance](../../../04-governance/adr/0028-pgvector-ai-memory.md#compliance).
 - **Re-embed worker (PR2.1)** — batch-job для re-embed-у при зміні
   `voyage-3.5-lite` / `embedding_version`.
 - **Prometheus dashboard** — рознести `ai_memory_*` і `voyage_external_http_*`
   у окрему Grafana-панель.
 - **PR4: hybrid hot/cold storage** — `user_memory_summaries` + pgvector
-  тільки для hot 90 днів. Threshold-и в [ADR-0028 § Scaling thresholds](../../../adr/0028-pgvector-ai-memory.md#scaling-thresholds).
+  тільки для hot 90 днів. Threshold-и в [ADR-0028 § Scaling thresholds](../../../04-governance/adr/0028-pgvector-ai-memory.md#scaling-thresholds).
   Не зараз — потрібно для >100k активних юзерів.
 
 ---
 
 ## Related
 
-- [ADR-0028: pgvector + Voyage embeddings](../../../adr/0028-pgvector-ai-memory.md)
+- [ADR-0028: pgvector + Voyage embeddings](../../../04-governance/adr/0028-pgvector-ai-memory.md)
 - [Voyage AI + pgvector integration doc](../../../02-engineering/integrations/voyage-pgvector.md)
-- [Feature flags registry](../../../governance/feature-flags.md)
+- [Feature flags registry](../../../04-governance/governance/feature-flags.md)
 - [Observability runbook](../../../03-operations/observability/runbook.md)

@@ -109,7 +109,7 @@ Error-алерти йдуть з обох Sentry-проєктів (`sergeant-api
    Гілки: `level=fatal` → `🚨 FATAL`, інші не-`info` → `⚠️ <level>`.
 
 Воркфлоу/маніфест джерела істини — в [`ops/n8n-workflows/`](../../../ops/n8n-workflows);
-ADR — [`docs/adr/0026-n8n-workflow-source-of-truth.md`](../../adr/0026-n8n-workflow-source-of-truth.md).
+ADR — [`docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md`](../../04-governance/adr/0026-n8n-workflow-source-of-truth.md).
 У git `active: false` навмисно (per ADR-0026 — активація це окрема операція в середовищі).
 
 ## 8. Railway → n8n → Telegram (deploy notify)

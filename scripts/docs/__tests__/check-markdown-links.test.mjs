@@ -130,7 +130,7 @@ describe("shouldSkipFile", () => {
   });
 
   it("does not skip regular docs", () => {
-    assert.equal(shouldSkipFile("docs/adr/0001-foo.md"), false);
+    assert.equal(shouldSkipFile("docs/04-governance/adr/0001-foo.md"), false);
     assert.equal(shouldSkipFile("README.md"), false);
   });
 });

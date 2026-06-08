@@ -5,7 +5,7 @@
 >
 > Створено 2026-04-25 разом з [#721](https://github.com/Skords-01/Sergeant/pull/721). Конфіг: `renovate.json` у корені.
 >
-> **Розподіл ролей з Dependabot:** див. [ADR-0044](../../adr/0044-renovate-vs-dependabot.md). Коротко — Renovate primary для regular weekly bumps; Dependabot security-only daily fallback. Якщо бачиш одночасно два PR-и на той самий пакет — закривай Dependabot-PR з коментарем `duplicate of Renovate group: <name>`.
+> **Розподіл ролей з Dependabot:** див. [ADR-0044](../../04-governance/adr/0044-renovate-vs-dependabot.md). Коротко — Renovate primary для regular weekly bumps; Dependabot security-only daily fallback. Якщо бачиш одночасно два PR-и на той самий пакет — закривай Dependabot-PR з коментарем `duplicate of Renovate group: <name>`.
 
 ## TL;DR
 

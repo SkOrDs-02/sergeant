@@ -1348,7 +1348,7 @@ const modalRef = useFocusTrap<HTMLDivElement>(isOpen, onClose);
 ## 14. Motion & Animation (2026-05-13)
 
 > Канонічна специфікація — [Hard Rule #17 (Animation
-> budget)](../../governance/rules/17-animation-budget.md). Цей розділ описує
+> budget)](../../04-governance/governance/rules/17-animation-budget.md). Цей розділ описує
 > токени та choreography, на які лінт-плагін + ESLint посилаються; код
 > живе в `apps/web/src/styles/animations.css` +
 > `packages/design-tokens/tailwind-preset.js`.

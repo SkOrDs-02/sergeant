@@ -1,7 +1,7 @@
 # PR-06: OpenClaw → GitHub App, прибрати `Git_PAT` fallback
 
 > **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
-> **Status:** Closed — Phase 1 (GitHub App auth-flow) merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2 (default flip + PAT removal + Hard Rule #20) has landed and is tracked by [Hard Rule #20](../../../governance/rules/20-no-openclaw-pats-in-production.md).
+> **Status:** Closed — Phase 1 (GitHub App auth-flow) merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2 (default flip + PAT removal + Hard Rule #20) has landed and is tracked by [Hard Rule #20](../../../04-governance/governance/rules/20-no-openclaw-pats-in-production.md).
 
 |              |                                                                              |
 | ------------ | ---------------------------------------------------------------------------- |
@@ -29,7 +29,7 @@ OpenClaw — Devin-кероваджувальник, що приймає Telegra
 Ризики:
 
 - **Compromise blast radius:** один зкомпрометований PAT = full access до всіх рев-ї і всіх PR-ів.
-- **Rotation:** plain PAT не має auto-rotation. Last rotated date — невідомо, у `docs/security/` нема runbook.
+- **Rotation:** plain PAT не має auto-rotation. Last rotated date — невідомо, у `docs/04-governance/security/` нема runbook.
 - **Audit trail:** дії не помічаються як `bot[X]`-actor, лишають шум в історії від real-user-а.
 - `Git_PAT` як fallback робить production-codepath **залежним від Devin-org-environment** — це зайва coupling.
 
@@ -74,7 +74,7 @@ OpenClaw — Devin-кероваджувальник, що приймає Telegra
 - [x] Якщо `OPENCLAW_GITHUB_APP_*` не встановлений у production → startup fails з clear error.
 - [x] `docs/00-start/playbooks/rotate-openclaw-credentials.md` створений.
 - [x] Branch protection rule на `main` явно включений (видно у `Settings → Branches`).
-- [x] Hard rule зареєстрований у `docs/governance/hard-rules-registry.json` («No-PAT-in-production»).
+- [x] Hard rule зареєстрований у `docs/04-governance/governance/hard-rules-registry.json` («No-PAT-in-production»).
 
 ## Тести
 
@@ -99,7 +99,7 @@ OpenClaw — Devin-кероваджувальник, що приймає Telegra
 
 - `apps/server/src/env.ts:413–414` — DELETE
 - `apps/server/src/openclaw/` — auth-flow rewrite
-- `docs/governance/hard-rules-registry.json` — додати rule
+- `docs/04-governance/governance/hard-rules-registry.json` — додати rule
 - `docs/00-start/playbooks/rotate-openclaw-credentials.md` — новий
 - `.github/repository-rulesets.json` (якщо є) — branch protection
 

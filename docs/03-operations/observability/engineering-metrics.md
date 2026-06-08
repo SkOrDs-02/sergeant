@@ -7,16 +7,16 @@ Lightweight process observability for the development system itself. The goal is
 
 ## Core metrics
 
-| Metric                        | Why it matters                                              | Suggested review cadence | Source                                                      |
-| ----------------------------- | ----------------------------------------------------------- | ------------------------ | ----------------------------------------------------------- |
-| PR lead time                  | Shows how long changes wait between first commit and merge  | Weekly                   | GitHub PRs                                                  |
-| Review turnaround             | Reveals whether review is the current bottleneck            | Weekly                   | GitHub review timestamps                                    |
-| CI failure rate               | Shows instability in default contributor path               | Weekly                   | GitHub Actions                                              |
-| Flaky test count              | Measures reliability debt that erodes trust in green builds | Weekly                   | flaky test dashboard, CI reruns                             |
-| Docs/governance gate failures | Detects drift in documentation operating system             | Weekly                   | docs/governance CI jobs                                     |
-| Postmortem action item aging  | Prevents learning from incidents from going stale           | Weekly                   | postmortem follow-up issues                                 |
-| Stale feature flags           | Surfaces hidden release debt and dead code                  | Weekly                   | [feature-flags.md](../../governance/feature-flags.md)       |
-| Open security SLA breaches    | Makes unresolved risk visible                               | Weekly                   | [vulnerability-sla.md](../../security/vulnerability-sla.md) |
+| Metric                        | Why it matters                                              | Suggested review cadence | Source                                                                    |
+| ----------------------------- | ----------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------- |
+| PR lead time                  | Shows how long changes wait between first commit and merge  | Weekly                   | GitHub PRs                                                                |
+| Review turnaround             | Reveals whether review is the current bottleneck            | Weekly                   | GitHub review timestamps                                                  |
+| CI failure rate               | Shows instability in default contributor path               | Weekly                   | GitHub Actions                                                            |
+| Flaky test count              | Measures reliability debt that erodes trust in green builds | Weekly                   | flaky test dashboard, CI reruns                                           |
+| Docs/governance gate failures | Detects drift in documentation operating system             | Weekly                   | docs/04-governance/governance CI jobs                                     |
+| Postmortem action item aging  | Prevents learning from incidents from going stale           | Weekly                   | postmortem follow-up issues                                               |
+| Stale feature flags           | Surfaces hidden release debt and dead code                  | Weekly                   | [feature-flags.md](../../04-governance/governance/feature-flags.md)       |
+| Open security SLA breaches    | Makes unresolved risk visible                               | Weekly                   | [vulnerability-sla.md](../../04-governance/security/vulnerability-sla.md) |
 
 ## Dashboard strategy
 

@@ -1,7 +1,7 @@
 # 0005 — AI cost optimisation (Anthropic prompt cache + AI-ops dashboards)
 
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
-> **Status:** Done (2026-05-04). Prompt-cache на 2 breakpoints (system + last tool), token / cost / cache-hit Prom counters, 7-panel `ai-cost` Grafana dashboard, alerts на cost / quota — усе шипнуто. Policy зафіксована у [ADR-0039](../../../adr/0039-anthropic-prompt-cache-policy.md).
+> **Status:** Done (2026-05-04). Prompt-cache на 2 breakpoints (system + last tool), token / cost / cache-hit Prom counters, 7-panel `ai-cost` Grafana dashboard, alerts на cost / quota — усе шипнуто. Policy зафіксована у [ADR-0039](../../../04-governance/adr/0039-anthropic-prompt-cache-policy.md).
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 working days
@@ -128,7 +128,7 @@ Sergeant досить агресивно використовує Anthropic Clau
 
 **PR `adr-0041-anthropic-prompt-cache-policy`:**
 
-- Створити `docs/adr/0041+-anthropic-prompt-cache-policy.md` (next number — перевірити). Зміст:
+- Створити `docs/04-governance/adr/0041+-anthropic-prompt-cache-policy.md` (next number — перевірити). Зміст:
   - Контекст: Anthropic prompt cache, 5-min TTL, $3.75 / 1M write, $0.30 / 1M read.
   - Рішення: кешуємо тільки `system` + `tools`. **Не кешуємо** user messages (privacy + breakpoint логіка).
   - Наслідки: cache write-cost 1.25× vs input. Тому **тільки якщо** `system + tools > 1024 tokens` (мінімальний поріг Anthropic). Cache-hit rate треба моніторити; якщо < 30% — переглянути prompt structure.
@@ -175,8 +175,8 @@ Sergeant досить агресивно використовує Anthropic Clau
 - Design Review 2026-05-03 — §8 AI Integration
 - [Anthropic Prompt Caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
 - [Anthropic Pricing](https://www.anthropic.com/pricing)
-- [ADR-0039 — Anthropic prompt-cache breakpoint policy](../../../adr/0039-anthropic-prompt-cache-policy.md) — rationale для 2 breakpoints, ephemeral vs 1h, rollback порогу 30%.
-- [ADR-0005 — Anthropic model selection and prompt caching](../../../adr/0005-anthropic-model-selection-and-prompt-caching.md) — попередник, model-selection baseline.
+- [ADR-0039 — Anthropic prompt-cache breakpoint policy](../../../04-governance/adr/0039-anthropic-prompt-cache-policy.md) — rationale для 2 breakpoints, ephemeral vs 1h, rollback порогу 30%.
+- [ADR-0005 — Anthropic model selection and prompt caching](../../../04-governance/adr/0005-anthropic-model-selection-and-prompt-caching.md) — попередник, model-selection baseline.
 - [Playbook `enable-prompt-caching.md`](../../../00-start/playbooks/enable-prompt-caching.md) — операційний rollout-checklist + manual smoke-команди.
 - [`docs/03-operations/observability/dashboards/ai-cost.json`](../../../03-operations/observability/dashboards/ai-cost.json) (uid `sergeant-ai-cost`) — 7-panel Grafana.
 - [`docs/03-operations/observability/metrics.md`](../../../03-operations/observability/metrics.md) — реєстр метрик (`ai_tokens_total`, `anthropic_prompt_cache_hit_total`, `ai_cost_estimate_usd_total`).
@@ -196,7 +196,7 @@ Sergeant досить агресивно використовує Anthropic Clau
   - `system[1]` = per-user `context` **без** `cache_control` — інакше cache-key різниться між юзерами на тривіальних змінах і hit-rate валиться у 0%.
 - `applyToolsCacheBreakpoint(TOOLS)` додає `cache_control: ephemeral` на **останній tool** у масиві:
   - Anthropic читає cache в order `system → tools → messages`; останній `cache_control` каже «кешуй усе до цього блоку **включно**». Тому cache реально покриває `system[0]` + усі tools (~5825 байт SYSTEM_PREFIX + 83 tool-definitions у `toolDefs/{finyk,fizruk,routine,nutrition,crossModule,utility,memory}.ts` ≈ **12k токенів** при першому write).
-  - **Без цього другого breakpoint-у** cache_control на `system[0]` сам по собі не вмикає кеш на tools (та й сам не реєструється на 987 токенах). Це специфіка Anthropic, не очевидна з doc-ів — зафіксована в коментарях `chat.ts:30-48` і у [ADR-0039](../../../adr/0039-anthropic-prompt-cache-policy.md). Operational rollout-checklist — у [playbook `enable-prompt-caching.md`](../../../00-start/playbooks/enable-prompt-caching.md) (включно з real-key smoke output: `cache_creation=12284` → `cache_read=12284` між першим і другим запитом).
+  - **Без цього другого breakpoint-у** cache_control на `system[0]` сам по собі не вмикає кеш на tools (та й сам не реєструється на 987 токенах). Це специфіка Anthropic, не очевидна з doc-ів — зафіксована в коментарях `chat.ts:30-48` і у [ADR-0039](../../../04-governance/adr/0039-anthropic-prompt-cache-policy.md). Operational rollout-checklist — у [playbook `enable-prompt-caching.md`](../../../00-start/playbooks/enable-prompt-caching.md) (включно з real-key smoke output: `cache_creation=12284` → `cache_read=12284` між першим і другим запитом).
 - `messages` НЕ кешуються (single-turn flow; cache-write-cost > read-saving).
 - Тести: [`apps/server/src/modules/chat/chat.stream.test.ts:732-844`](../../../../apps/server/src/modules/chat/chat.stream.test.ts) — 4 кейси для `recordAnthropicUsage` (cache_read>0, cache_creation>0, both, neither). Структурні тести `system[]`/tools breakpoint — у [`chat.test.ts:673-731`](../../../../apps/server/src/modules/chat/chat.test.ts).
 
@@ -227,7 +227,7 @@ Sergeant досить агресивно використовує Anthropic Clau
 
 **Phase 4 — ADR: ✅ DONE**
 
-- [ADR-0039: Anthropic prompt-cache breakpoint policy](../../../adr/0039-anthropic-prompt-cache-policy.md) — status `Accepted`. Зафіксовано:
+- [ADR-0039: Anthropic prompt-cache breakpoint policy](../../../04-governance/adr/0039-anthropic-prompt-cache-policy.md) — status `Accepted`. Зафіксовано:
   - чому 2 breakpoints (а не 1, не 4),
   - чому ephemeral, а не 1h-cache,
   - чому НЕ кешуємо `messages`,

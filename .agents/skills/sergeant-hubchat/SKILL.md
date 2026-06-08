@@ -48,5 +48,5 @@ HubChat і OpenClaw Gateway — **окремі поверхні**:
 - [docs/00-start/playbooks/add-hubchat-tool.md](../../../docs/00-start/playbooks/add-hubchat-tool.md)
 - [docs/00-start/playbooks/debug-chat-tool.md](../../../docs/00-start/playbooks/debug-chat-tool.md)
 - [docs/00-start/playbooks/enable-prompt-caching.md](../../../docs/00-start/playbooks/enable-prompt-caching.md)
-- [docs/adr/0055-openclaw-external-gateway.md](../../../docs/adr/0055-openclaw-external-gateway.md) — топологія Gateway (ADR-0055)
-- [docs/adr/0057-anthropic-sdk-v1-upgrade.md](../../../docs/adr/0057-anthropic-sdk-v1-upgrade.md) — SDK 0.95.x і prompt caching
+- [docs/04-governance/adr/0055-openclaw-external-gateway.md](../../../docs/04-governance/adr/0055-openclaw-external-gateway.md) — топологія Gateway (ADR-0055)
+- [docs/04-governance/adr/0057-anthropic-sdk-v1-upgrade.md](../../../docs/04-governance/adr/0057-anthropic-sdk-v1-upgrade.md) — SDK 0.95.x і prompt caching

@@ -122,7 +122,7 @@ In-memory cache з 60-сек TTL + invalidation broadcast через `pg_notify(
 - `packages/feature-flags/` — new workspace
 - `tools/openclaw/src/agents/ops/` — /flag command
 - `docs/02-engineering/architecture/feature-flags.md` — new
-- `docs/adr/0054-feature-flag-storage-migration.md` — new
+- `docs/04-governance/adr/0054-feature-flag-storage-migration.md` — new
 
 ## Refs
 

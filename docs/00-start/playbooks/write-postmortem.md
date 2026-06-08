@@ -12,7 +12,7 @@
 
 ## Required context
 
-- Перш ніж писати — перечитати [incident-severity-policy.md](../../governance/incident-severity-policy.md), [Postmortem Index](../../03-operations/postmortems/INDEX.md) і [TEMPLATE.md](../../03-operations/postmortems/TEMPLATE.md).
+- Перш ніж писати — перечитати [incident-severity-policy.md](../../04-governance/governance/incident-severity-policy.md), [Postmortem Index](../../03-operations/postmortems/INDEX.md) і [TEMPLATE.md](../../03-operations/postmortems/TEMPLATE.md).
 
 ## Steps
 

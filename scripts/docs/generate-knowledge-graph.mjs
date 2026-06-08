@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/docs/generate-knowledge-graph.mjs
 //
-// Build a unified knowledge graph (`docs/governance/knowledge-graph.json` +
+// Build a unified knowledge graph (`docs/04-governance/governance/knowledge-graph.json` +
 // `.html`) that links every Sergeant governance artifact:
 //   adr | initiative | playbook | skill | hard-rule | audit |
 //   service (Phase 3) | package (Phase 3) | file (Phase 2) | pr (Phase 5)
@@ -11,8 +11,8 @@
 // Later phases (services, packages, symbols) feed this generator with
 // additional node sources.
 //
-// Schema:    docs/governance/schemas/knowledge-graph.schema.json
-// ADR:       docs/adr/0058-knowledge-graph-schema.md
+// Schema:    docs/04-governance/governance/schemas/knowledge-graph.schema.json
+// ADR:       docs/04-governance/adr/0058-knowledge-graph-schema.md
 // Initiative: docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md
 //
 // Usage:
@@ -30,11 +30,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 
-const OUT_JSON = resolve(REPO_ROOT, "docs/governance/knowledge-graph.json");
-const OUT_HTML = resolve(REPO_ROOT, "docs/governance/knowledge-graph.html");
+const OUT_JSON = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/knowledge-graph.json",
+);
+const OUT_HTML = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/knowledge-graph.html",
+);
 const SCHEMA_PATH = resolve(
   REPO_ROOT,
-  "docs/governance/schemas/knowledge-graph.schema.json",
+  "docs/04-governance/governance/schemas/knowledge-graph.schema.json",
 );
 
 const SCHEMA_VERSION = 1;
@@ -134,7 +140,7 @@ function todayISO() {
 // ── Node collectors ─────────────────────────────────────────────────────────
 
 function collectADRs() {
-  const dir = resolve(REPO_ROOT, "docs/adr");
+  const dir = resolve(REPO_ROOT, "docs/04-governance/adr");
   const files = listMarkdown(dir);
   return files.map((abs) => {
     const content = readSafe(abs);
@@ -250,7 +256,10 @@ function collectSkills() {
 }
 
 function collectHardRules() {
-  const jsonPath = resolve(REPO_ROOT, "docs/governance/hard-rules.json");
+  const jsonPath = resolve(
+    REPO_ROOT,
+    "docs/04-governance/governance/hard-rules.json",
+  );
   let registry;
   try {
     registry = JSON.parse(readSafe(jsonPath));
@@ -265,7 +274,7 @@ function collectHardRules() {
       id,
       type: "hard-rule",
       title: rule.title,
-      path: `docs/governance/hard-rules.json#${rule.id}`,
+      path: `docs/04-governance/governance/hard-rules.json#${rule.id}`,
       tier: "core",
       meta: {
         number: rule.id,

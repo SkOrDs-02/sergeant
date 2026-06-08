@@ -8,7 +8,7 @@ Sergeant ships a Storybook 10 (`@storybook/react-vite`) playground for the web d
 1. The canonical, deployed "what does this component look like" reference for design partners + contributors.
 2. The contract surface for ESLint rule [`sergeant-design/require-stories-for-ui-components`](../../../packages/eslint-plugin-sergeant-design/index.js) (severity `error`) — every public UI component in `apps/web/src/shared/components/ui/` either has a sibling `.stories.tsx` or is in the rule's allowlist with a documented rationale.
 
-Storybook is **not** a visual-regression source. See [ADR-0046](../../adr/0046-storybook-vrt-scope.md) for the scope decision and [ADR-0034](../../adr/0034-visual-regression-testing.md) for the actual VRT pipeline (Argos + Playwright over real hub surfaces).
+Storybook is **not** a visual-regression source. See [ADR-0046](../../04-governance/adr/0046-storybook-vrt-scope.md) for the scope decision and [ADR-0034](../../04-governance/adr/0034-visual-regression-testing.md) for the actual VRT pipeline (Argos + Playwright over real hub surfaces).
 
 ---
 
@@ -138,7 +138,7 @@ Failed deploy → previous Pages build stays live. Investigate via the workflow 
 
 ## What stories are NOT
 
-- **Not a visual regression baseline.** ADR-0034 (Argos + Playwright over hub surfaces) is the only authorised pixel-diff source. Stories MUST NOT call `argosScreenshot()` or `expect.toHaveScreenshot()`. See [ADR-0046](../../adr/0046-storybook-vrt-scope.md) for the rationale.
+- **Not a visual regression baseline.** ADR-0034 (Argos + Playwright over hub surfaces) is the only authorised pixel-diff source. Stories MUST NOT call `argosScreenshot()` or `expect.toHaveScreenshot()`. See [ADR-0046](../../04-governance/adr/0046-storybook-vrt-scope.md) for the rationale.
 - **Not a unit-test substitute.** Vitest + RTL covers behaviour; stories cover _appearance_. Don't move test assertions into Storybook play functions.
 - **Not a dependency-free entry point.** Stories run inside the same Vite pipeline as the app — Tailwind + design-tokens + accent CSS variables flow through `preview.tsx`. If a global is missing, fix `preview.tsx`, don't work around it per-story.
 
@@ -146,8 +146,8 @@ Failed deploy → previous Pages build stays live. Investigate via the workflow 
 
 ## Links
 
-- [ADR-0046 — Storybook visual regression scope](../../adr/0046-storybook-vrt-scope.md)
-- [ADR-0034 — Visual regression testing via Argos + Playwright](../../adr/0034-visual-regression-testing.md)
+- [ADR-0046 — Storybook visual regression scope](../../04-governance/adr/0046-storybook-vrt-scope.md)
+- [ADR-0034 — Visual regression testing via Argos + Playwright](../../04-governance/adr/0034-visual-regression-testing.md)
 - [Initiative 0007 — Design-system tooling](../../90-work/initiatives/archive/_0007-design-system-tooling.md)
 - [`apps/web/.storybook/main.ts`](../../../apps/web/.storybook/main.ts)
 - [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design)

@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-> **Machine-readable mirror:** [`docs/governance/repo-map.auto.json`](../../governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
+> **Machine-readable mirror:** [`docs/04-governance/governance/repo-map.auto.json`](../../04-governance/governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
 
 > Deep tech-stack inventory for Sergeant. Compact summary lives in [`AGENTS.md § Repo overview`](../../../AGENTS.md#repo-overview); this file holds the full per-app + per-package matrix that AGENTS.md used to inline before initiative 0009 PR 3.2. Cross-reference with [`service-catalog.md`](./service-catalog.md) for runtime targets / healthchecks and with [`platforms.md`](./platforms.md) for the web ↔ mobile feature-parity view.
 
@@ -47,7 +47,7 @@
 - `ops/n8n-workflows/` — n8n workflow JSON manifests (heartbeat, agent-dispatcher). Validated by `pnpm ops:n8n:validate`.
 - `tools/openclaw/` — Telegram bot (above). Sidecar `tsconfig.json` extends `tsconfig.node.json`.
 - `tools/tsconfig-guard/` — guards strict-family `tsconfig` flags (Hard Rule #19); allowlist with expiry/owner.
-- `scripts/` — governance / docs / API / CI helpers. See [`docs/governance/README.md`](../../governance/README.md) for the full list.
+- `scripts/` — governance / docs / API / CI helpers. See [`docs/04-governance/governance/README.md`](../../04-governance/governance/README.md) for the full list.
 
 ## Test stacks per surface
 
@@ -70,5 +70,5 @@
 - Per-path test stack + RQ keys factory + owner map → [`module-ownership.md`](./module-ownership.md).
 - Domain invariants (time, money, identity) → [`domain-invariants.md`](./domain-invariants.md).
 - Diagrams (C4, sequence flows) → [`diagrams/`](./diagrams/README.md).
-- Hard rules with full BAD/GOOD examples → [`docs/governance/rules/`](../../governance/rules).
+- Hard rules with full BAD/GOOD examples → [`docs/04-governance/governance/rules/`](../../04-governance/governance/rules).
 - Service catalog (runtime targets, healthchecks) → [`service-catalog.md`](./service-catalog.md).

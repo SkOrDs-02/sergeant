@@ -1,7 +1,7 @@
 # PR-23: OpenAPI spec contract-tested vs runtime
 
 > **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../../adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.
+> **Status:** Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.
 
 |                    |                                                                           |
 | ------------------ | ------------------------------------------------------------------------- |
@@ -15,7 +15,7 @@
 
 ## Outcome (Phase 1 shipped)
 
-Code-first OpenAPI generation pipeline + freshness gate **уже працюють**, рішення формалізоване в [ADR-0062](../../../adr/0062-openapi-source-of-truth.md) (написаний 2026-06-05; раніше прийнято de facto через імплементацію). Що зроблено:
+Code-first OpenAPI generation pipeline + freshness gate **уже працюють**, рішення формалізоване в [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) (написаний 2026-06-05; раніше прийнято de facto через імплементацію). Що зроблено:
 
 - **Generator:** [`scripts/api/generate-openapi.mjs`](../../../../scripts/api/generate-openapi.mjs) + `scripts/api/generate-openapi-types.mjs` — читає Zod-schemas з `apps/server/src/modules/**/serializers/` (через `buildOpenApiDocument`) і генерує `docs/02-engineering/api/openapi.json` + `packages/api-client/src/generated/openapi.d.ts`.
 - **Committed artifacts:**
@@ -28,7 +28,7 @@ Code-first OpenAPI generation pipeline + freshness gate **уже працюют�
 
 Що **НЕ** зроблено (deferred):
 
-- **ADR-0062 (`docs/adr/0062-openapi-source-of-truth.md`):** ✅ **написаний 2026-06-05** (більше не deferred). Code-first рішення формалізоване. Записаний під `0062`, а не `0056` — той слот sealed gap (whitelisted у `KNOWN_NUMBERING_GAPS`, `scripts/docs/check-adr-graph.mjs`; ADR-и не нумеруються заднім числом).
+- **ADR-0062 (`docs/04-governance/adr/0062-openapi-source-of-truth.md`):** ✅ **написаний 2026-06-05** (більше не deferred). Code-first рішення формалізоване. Записаний під `0062`, а не `0056` — той слот sealed gap (whitelisted у `KNOWN_NUMBERING_GAPS`, `scripts/docs/check-adr-graph.mjs`; ADR-и не нумеруються заднім числом).
 - **Contract roundtrip tests (`tests/contract/openapi-roundtrip.test.ts`):** немає. Testcontainers Postgres + supertest fetch + schema validation проти live responses не зроблено.
 - **Schemathesis property-based testing:** не імплементовано. `.github/workflows/contract-tests.yml` не існує.
 - **CI-job `lint:api-client` drift detector (per PR-18):** не зроблено.
@@ -47,7 +47,7 @@ Mobile + web клієнти спираються або на ручний `packa
 
 ### 1. Source-of-truth decision (ADR)
 
-`docs/adr/0062-openapi-source-of-truth.md` — два опції:
+`docs/04-governance/adr/0062-openapi-source-of-truth.md` — два опції:
 
 - **A. Code-first**: Zod schemas в `apps/server/src/modules/**/serializers/` → generate OpenAPI з `zod-to-openapi`.
 - **B. Spec-first**: `openapi.yml` → generate Zod з `openapi-typescript`.
@@ -95,7 +95,7 @@ Top-10 endpoint-ів (login, sync, food-search, finyk-import, etc.) — Schemath
 
 ## Acceptance criteria (DoD)
 
-- [ ] ADR-0062 merged. _(файл написаний 2026-06-05: `docs/adr/0062-openapi-source-of-truth.md`; лишилось змерджити)_
+- [ ] ADR-0062 merged. _(файл написаний 2026-06-05: `docs/04-governance/adr/0062-openapi-source-of-truth.md`; лишилось змерджити)_
 - [ ] `pnpm openapi:generate` working + outputs `apps/server/openapi.generated.json`.
 - [ ] `tests/contract/openapi-roundtrip.test.ts` covers ≥80% маршрутів сервера.
 - [ ] Schemathesis CI job у `.github/workflows/contract-tests.yml` для top-10 endpoint-ів.
@@ -130,7 +130,7 @@ Top-10 endpoint-ів (login, sync, food-search, finyk-import, etc.) — Schemath
 - `scripts/openapi/check-drift.mjs` — new
 - `tests/contract/` — new directory
 - `.github/workflows/contract-tests.yml` — new
-- `docs/adr/0062-openapi-source-of-truth.md` — new
+- `docs/04-governance/adr/0062-openapi-source-of-truth.md` — new
 
 ## Refs
 

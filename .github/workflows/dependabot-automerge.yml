@@ -1,4 +1,4 @@
-# Dependabot auto-merge — Sprint 1 follow-up to docs/security/hardening/H2.
+# Dependabot auto-merge — Sprint 1 follow-up to docs/04-governance/security/hardening/H2.
 #
 # Goal: shrink supply-chain MTTR for the safest class of updates by letting
 # Dependabot self-serve patch-level security updates (and patch-level direct

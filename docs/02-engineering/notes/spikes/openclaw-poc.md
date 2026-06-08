@@ -274,6 +274,6 @@ $ pnpm --filter @sergeant/openclaw-plugin typecheck
 
 - Plan: [`docs/90-work/planning/openclaw-migration-plan.md` § Phase 0.5](../../../90-work/planning/openclaw-migration-plan.md)
 - Locked decisions: §3 (router), §4 (budget cap), §5 (approval Variant B), §9 (migrations)
-- Hard Rule #1 (DB types — bigint coercion): [`docs/governance/rules/01-db-types-coerce-bigint-to-number.md`](../../../governance/rules/01-db-types-coerce-bigint-to-number.md)
-- Hard Rule #4 (migrations sequential, two-phase): [`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../../governance/rules/04-sql-migrations-sequential-two-phase.md)
-- Hard Rule #20 (no OpenClaw PATs in production): [`docs/governance/rules/20-no-openclaw-pats-in-production.md`](../../../governance/rules/20-no-openclaw-pats-in-production.md)
+- Hard Rule #1 (DB types — bigint coercion): [`docs/04-governance/governance/rules/01-db-types-coerce-bigint-to-number.md`](../../../04-governance/governance/rules/01-db-types-coerce-bigint-to-number.md)
+- Hard Rule #4 (migrations sequential, two-phase): [`docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../../04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md)
+- Hard Rule #20 (no OpenClaw PATs in production): [`docs/04-governance/governance/rules/20-no-openclaw-pats-in-production.md`](../../../04-governance/governance/rules/20-no-openclaw-pats-in-production.md)

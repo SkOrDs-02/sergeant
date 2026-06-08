@@ -344,7 +344,7 @@ Hard Rule #11 (`no arbitrary hex in className`) сюди формально не
 </div>
 ```
 
-`text-2xs` = 10px (per `packages/design-tokens/tailwind-preset.js:446`). Hard Rule #16 ([12px floor](../../governance/rules/16-typography-scale-12px-floor.md)) дозволяє 10px **лише для chart axis ticks і decorative metadata badges**. Тут "Відпочинок: 120с / Прогресія: +2.5 кг" — це primary workout-config information, який юзер має прочитати, щоб зрозуміти, як працює програма.
+`text-2xs` = 10px (per `packages/design-tokens/tailwind-preset.js:446`). Hard Rule #16 ([12px floor](../../04-governance/governance/rules/16-typography-scale-12px-floor.md)) дозволяє 10px **лише для chart axis ticks і decorative metadata badges**. Тут "Відпочинок: 120с / Прогресія: +2.5 кг" — це primary workout-config information, який юзер має прочитати, щоб зрозуміти, як працює програма.
 
 **Why it matters.**
 Лит-rule fires on the lint-side (`sergeant-design/...`-родина), і автор міг пропустити, бо badges поряд (`text-2xs` для "День 1") виглядають legitimate. Але змішування decorative і primary в одному visual chunk — це type-system drift, який точно треба ловити в audit.
@@ -603,7 +603,7 @@ sublabel={
 **Lines:** L1–L591
 
 **Description.**
-591 LOC — за 9 рядків від `max-lines: 600` Hard Rule #18 ([active initiative](../../governance/rules/18-module-size-discipline-600.md)). Один компонент `Progress` робить:
+591 LOC — за 9 рядків від `max-lines: 600` Hard Rule #18 ([active initiative](../../04-governance/governance/rules/18-module-size-discipline-600.md)). Один компонент `Progress` робить:
 
 1. Header + quickStats (header strip, L235–L258).
 2. Weekly volume chart wrapper.

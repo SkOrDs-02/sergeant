@@ -127,4 +127,4 @@ function dispatchDeepLink(url: string) {
 
 - [MDN: BroadcastChannel API](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel)
 - [Capacitor App.addListener](https://capacitorjs.com/docs/apis/app#addlistenerappurlopen-)
-- `docs/security/hardening/M19-mobile-deeplink-sanitize.md`
+- `docs/04-governance/security/hardening/M19-mobile-deeplink-sanitize.md`

@@ -320,7 +320,7 @@ Test stacks by surface:
 
 ## Feature flags
 
-Feature flags are managed via `docs/governance/feature-flags.md`. Each flag controls the visibility of a specific feature.
+Feature flags are managed via `docs/04-governance/governance/feature-flags.md`. Each flag controls the visibility of a specific feature.
 
 ## Observability
 
@@ -330,13 +330,13 @@ Monitoring is described in `docs/03-operations/observability/README.md`. Key com
 
 | Directory                           | Contents                                                   |
 | ----------------------------------- | ---------------------------------------------------------- |
-| `docs/adr/`                         | Architecture Decision Records — why we chose what we chose |
+| `docs/04-governance/adr/`           | Architecture Decision Records — why we chose what we chose |
 | `docs/02-engineering/api/`          | OpenAPI contracts, API documentation                       |
 | `docs/02-engineering/architecture/` | Repository map, platforms, service catalog                 |
 | `docs/90-work/audits/`              | UX/UI audits, typography, design reviews                   |
 | `docs/03-operations/deploy/`        | Deployment instructions                                    |
 | `docs/05-design/design/`            | Design system: brandbook, colors, module accents           |
-| `docs/governance/`                  | Hard rules, review checklist, release policy               |
+| `docs/04-governance/governance/`    | Hard rules, review checklist, release policy               |
 | `docs/02-engineering/integrations/` | Monobank, Railway, Vercel, Renovate, Voyage                |
 | `docs/01-product/launch/`           | Monetization, GTM, launch readiness                        |
 | `docs/02-engineering/mobile/`       | Capacitor, deep links, React Native migration              |
@@ -344,7 +344,7 @@ Monitoring is described in `docs/03-operations/observability/README.md`. Key com
 | `docs/90-work/planning/`            | Roadmaps, AI improvements, dev stack roadmap               |
 | `docs/00-start/playbooks/`          | Step-by-step recipes (add an endpoint, do a hotfix)        |
 | `docs/03-operations/postmortems/`   | Incident post-mortems                                      |
-| `docs/security/`                    | Access policy, disaster recovery, security audit           |
+| `docs/04-governance/security/`      | Access policy, disaster recovery, security audit           |
 | `docs/00-start/agents/`             | AI agent system: skill catalog, workflows                  |
 | `docs/90-work/tech-debt/`           | Tech debt registries (frontend, backend, mobile)           |
 
@@ -357,8 +357,8 @@ Roadmap: `docs/90-work/planning/README.md`. Tech debt: `docs/90-work/tech-debt/R
 - Full docs index (genre-grouped — informational / trackers / archive): [docs/README.md](./docs/README.md).
 - **What is currently in flight across all 7 trackers** (auto-rollup, CI drift gate): [docs/open-work.md](./docs/open-work.md).
 - Repeatable execution recipes: [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md).
-- Governance and hard rules matrix: [docs/governance/README.md](./docs/governance/README.md).
-- Runtime inventory, release, incident, and recovery surfaces: [docs/02-engineering/architecture/service-catalog.md](./docs/02-engineering/architecture/service-catalog.md), [docs/security/disaster-recovery.md](./docs/security/disaster-recovery.md).
+- Governance and hard rules matrix: [docs/04-governance/governance/README.md](./docs/04-governance/governance/README.md).
+- Runtime inventory, release, incident, and recovery surfaces: [docs/02-engineering/architecture/service-catalog.md](./docs/02-engineering/architecture/service-catalog.md), [docs/04-governance/security/disaster-recovery.md](./docs/04-governance/security/disaster-recovery.md).
 
 ## License
 

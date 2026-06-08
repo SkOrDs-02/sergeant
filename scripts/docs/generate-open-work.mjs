@@ -16,7 +16,7 @@
 //   2. Planning                   — docs/90-work/planning/
 //   3. Launch                     — docs/01-product/launch/business/ + tech/ + product-os/
 //   4. Audits                     — docs/90-work/audits/
-//   5. Security hardening         — docs/security/hardening/
+//   5. Security hardening         — docs/04-governance/security/hardening/
 //   6. Tech debt                  — docs/90-work/tech-debt/
 //   7. Superpowers / plans        — docs/90-work/superpowers/plans/
 //
@@ -139,8 +139,8 @@ export const TRACKERS = [
     id: "security-hardening",
     title: "Security hardening",
     blurb:
-      "Картки по окремих findings (C/H/M/L/I severity) + sprint plans. Source: [`docs/security/hardening/`](./security/hardening/README.md).",
-    rootDir: "docs/security/hardening",
+      "Картки по окремих findings (C/H/M/L/I severity) + sprint plans. Source: [`docs/04-governance/security/hardening/`](./04-governance/security/hardening/README.md).",
+    rootDir: "docs/04-governance/security/hardening",
     recursive: false,
   },
   {

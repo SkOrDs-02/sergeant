@@ -124,7 +124,7 @@
   явно перелічений — не glob — щоб новий ≥600-LOC файл не «пролазив» через широкий патерн.
   Список збігається з табличкою «Фаза 2 — Top-7 декомпозиція» вище.
 - **Hard Rule #18** додано у [`AGENTS.md`](../../../../AGENTS.md), [`CONTRIBUTING.md`](../../../../CONTRIBUTING.md)
-  та [`docs/governance/hard-rules.json`](../../../governance/hard-rules.json) одночасно (Hard Rule #15
+  та [`docs/04-governance/governance/hard-rules.json`](../../../04-governance/governance/hard-rules.json) одночасно (Hard Rule #15
   тримає ці три файли синхронізованими — `pnpm lint:hard-rules-registry` падає при дрейфі).
   Текст правила: _“У `apps/web/src/**` не може з'явитися новий файл ≥600 LOC. Декомпонуйте
   по доменах перед merge — або додавайте до allowlist у `eslint.config.js` із deadline-коментарем

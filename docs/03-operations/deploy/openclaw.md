@@ -10,7 +10,7 @@
 
 `tools/openclaw` — Node.js процес, що хостить OpenClaw Telegram bot. Production
 uses webhook delivery since 2026-05-03; long-poll is local-dev/backout mode.
-Після [ADR-0032](../../adr/0032-console-consolidated-into-openclaw.md) активний
+Після [ADR-0032](../../04-governance/adr/0032-console-consolidated-into-openclaw.md) активний
 там тільки **`@OpenClaw_sergeant_bot`** (ADR-0031, DM-only co-founder з
 chat + slash-командами + ops/marketing tool-ами). Legacy
 `@sergeant_console_bot` (ADR-0027) консолідовано в OpenClaw і він тепер
@@ -226,4 +226,4 @@ pnpm dev                    # tsx watch src/index.ts
 - ADR-0031 — OpenClaw v0 (DM-only co-founder bot)
 - [service-catalog.md](../../02-engineering/architecture/service-catalog.md) — `sergeant-openclaw` рядок (раніше `sergeant-hubchat`)
 - [§«Railway service rename runbook»](#railway-service-rename-runbook) — як виконати фактичний rename у Railway dashboard
-- [secret-ownership-register.md](../../security/secret-ownership-register.md)
+- [secret-ownership-register.md](../../04-governance/security/secret-ownership-register.md)

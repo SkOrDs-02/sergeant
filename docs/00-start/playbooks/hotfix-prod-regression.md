@@ -14,7 +14,7 @@
 
 - Почни з `sergeant-start-here`, потім відкрий `sergeant-deploy-and-observability`.
 - Для root-cause repair у коді переключись на відповідний specialist skill лише після triage.
-- Reviewer/incident notes мають посилатись на [review-checklist.md](../../governance/review-checklist.md).
+- Reviewer/incident notes мають посилатись на [review-checklist.md](../../04-governance/governance/review-checklist.md).
 
 ## Steps
 

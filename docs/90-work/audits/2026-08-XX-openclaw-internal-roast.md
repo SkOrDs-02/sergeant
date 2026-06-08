@@ -46,7 +46,7 @@ ADR-0027 (OpenClaw, Console та MCP) визначає policy: write-scopes ок
 
 Згенеровано прямим читанням `createOpenClawInternalRouter()` (`apps/server/src/routes/internal/openclaw.ts`, рядки 684–1819) станом на 2026-06-06. Всі 57 маршрутів — **`POST`** (немає жодного `r.get`).
 
-**Спільний guard (один для всіх):** `routes/internal/index.ts` монтує `/api/internal/*` за двома middleware у порядку: (1) constant-time bearer-token `Authorization: Bearer <INTERNAL_API_KEY>` (`safeStringEqual`, fail-closed `503` якщо key не сконфігурований, `401` на mismatch); (2) `verifyWebhookSignature()` — HMAC-SHA256 (no-op коли `WEBHOOK_HMAC_SECRET` порожній; grace-mode за замовчуванням, див. [`api-internal-hmac.md`](../../security/api-internal-hmac.md)). **Per-route ACL немає** — будь-який holder bearer-токена дістає всю поверхню. Telegram user-id allowlist (ADR-0027/0031) живе на Gateway-side (`tools/openclaw` / `packages/openclaw-plugin`), не на цьому HTTP-шарі.
+**Спільний guard (один для всіх):** `routes/internal/index.ts` монтує `/api/internal/*` за двома middleware у порядку: (1) constant-time bearer-token `Authorization: Bearer <INTERNAL_API_KEY>` (`safeStringEqual`, fail-closed `503` якщо key не сконфігурований, `401` на mismatch); (2) `verifyWebhookSignature()` — HMAC-SHA256 (no-op коли `WEBHOOK_HMAC_SECRET` порожній; grace-mode за замовчуванням, див. [`api-internal-hmac.md`](../../04-governance/security/api-internal-hmac.md)). **Per-route ACL немає** — будь-який holder bearer-токена дістає всю поверхню. Telegram user-id allowlist (ADR-0027/0031) живе на Gateway-side (`tools/openclaw` / `packages/openclaw-plugin`), не на цьому HTTP-шарі.
 
 **Колонки:** `Audit-write` = чи цей handler сам пише в БД audit/log-таблицю (`openclaw_invocations` через open/finalize, `openclaw_write_audit` через write-audit/log, `ai_memory_forget_audit` через forget-helpers, `tg_topic_archive` через post-to-topic). Більшість read-tools НЕ пишуть audit-row безпосередньо — lifecycle логуэться окремими `invocations/open`+`finalize` викликами з Gateway. `Mutation` = чи handler має side-effect поза app-DB (зовнішній GitHub/Telegram/n8n/Sentry write) чи мутує app-DB.
 
@@ -156,9 +156,9 @@ ADR-0027 (OpenClaw, Console та MCP) визначає policy: write-scopes ок
 
 - **Code:** [`apps/server/src/routes/internal/openclaw.ts`](../../../apps/server/src/routes/internal/openclaw.ts) (1819 LOC, 57 POST-маршрутів).
 - **Guard:** [`apps/server/src/routes/internal/index.ts`](../../../apps/server/src/routes/internal/index.ts) (shared bearer + HMAC).
-- **Policy ADR:** [`docs/adr/0027-openclaw-console-mcp-policy.md`](../../adr/0027-openclaw-console-mcp-policy.md) (allowlist + audit + approval).
-- **Gateway ADR:** [`docs/adr/0055-openclaw-external-gateway.md`](../../adr/0055-openclaw-external-gateway.md) (external bot identity + plugin architecture).
-- **Strategic modes ADR:** [`docs/adr/0033-openclaw-multi-personas-and-council.md`](../../adr/0033-openclaw-multi-personas-and-council.md) (council + approval-gate model).
-- **Webhook ADR:** [`docs/adr/0041-openclaw-telegram-webhook.md`](../../adr/0041-openclaw-telegram-webhook.md) (token-rotation + idempotency).
+- **Policy ADR:** [`docs/04-governance/adr/0027-openclaw-console-mcp-policy.md`](../../04-governance/adr/0027-openclaw-console-mcp-policy.md) (allowlist + audit + approval).
+- **Gateway ADR:** [`docs/04-governance/adr/0055-openclaw-external-gateway.md`](../../04-governance/adr/0055-openclaw-external-gateway.md) (external bot identity + plugin architecture).
+- **Strategic modes ADR:** [`docs/04-governance/adr/0033-openclaw-multi-personas-and-council.md`](../../04-governance/adr/0033-openclaw-multi-personas-and-council.md) (council + approval-gate model).
+- **Webhook ADR:** [`docs/04-governance/adr/0041-openclaw-telegram-webhook.md`](../../04-governance/adr/0041-openclaw-telegram-webhook.md) (token-rotation + idempotency).
 - **PR plan:** [`docs/90-work/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/pr-plan-backend-perf-2026-05.md).
 - **Routing map:** [`docs/03-operations/observability/alert-bot-routing.md`](../../03-operations/observability/alert-bot-routing.md).

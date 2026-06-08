@@ -1311,7 +1311,7 @@ Same as F7. Optionally extract a `createId()` helper in
 **Lines:** L1
 
 **Description.**
-Hard Rule #10 (`docs/governance/rules/10-lifecycle-markers.md`) accepts
+Hard Rule #10 (`docs/04-governance/governance/rules/10-lifecycle-markers.md`) accepts
 "no tag = Active" as the default for source files (JSDoc tags
 `@scaffolded`/`@experimental`/`@deprecated` only when non-Active). The
 five page-shell files have no JSDoc lifecycle tag, which per the rule

@@ -77,7 +77,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 
 #### PR 1.1 `docs-adr-pricing-v3` (scope: `docs`)
 
-- [`docs/adr/0051-pricing-v3-single-tier.md`](../../adr/0051-pricing-v3-single-tier.md) — ADR про перехід на 2-тірну модель: **Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial безкоштовний без прив'язки картки.**
+- [`docs/04-governance/adr/0051-pricing-v3-single-tier.md`](../../04-governance/adr/0051-pricing-v3-single-tier.md) — ADR про перехід на 2-тірну модель: **Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial безкоштовний без прив'язки картки.**
 - Оновити `docs/01-product/launch/business/01-monetization-and-pricing.md` — додати «Update 2026-05-XX: pricing v3 затверджено» зі статусом «Superseded by ADR-0051» на застарілих секціях (Plus tier, Lifetime ₴2999, pay-per-feature).
 - Додати freshness-update header.
 
@@ -87,7 +87,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 
 #### PR 1.2 `docs-adr-mobile-strategy` (scope: `docs`)
 
-- [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../adr/0052-mobile-strategy-capacitor-primary.md) — продовжує `0002-mobile-platform-decision`: **Capacitor — primary** mobile-shell до завершення Expo-нативки; **обидва стеки підтримуються паралельно**, deprecate жодного. Конкретний рішення «коли Expo стане primary» — окремий ADR пізніше (триггер: Expo має feature parity з web).
+- [`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — продовжує `0002-mobile-platform-decision`: **Capacitor — primary** mobile-shell до завершення Expo-нативки; **обидва стеки підтримуються паралельно**, deprecate жодного. Конкретний рішення «коли Expo стане primary» — окремий ADR пізніше (триггер: Expo має feature parity з web).
 - Оновити `docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md` — додати «Update 2026-05-04: рішення владника не deprecate, а підтримувати обидва паралельно. Capacitor primary до Expo feature-parity.»
 
 **Залежить від:** Фаза 0.
@@ -408,8 +408,8 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 
 Що зроблено:
 
-- **ADR-0051** ([`docs/adr/0051-pricing-v3-single-tier.md`](../../adr/0051-pricing-v3-single-tier.md)) — `Status: Accepted`. Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial 7 днів без картки. Plus tier / Lifetime / pay-per-feature — out of scope MVP.
-- **ADR-0052** ([`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../adr/0052-mobile-strategy-capacitor-primary.md)) — `Status: Accepted`. Capacitor primary до Expo feature parity; обидва стеки паралельно; sunset T₀/T₁/T₂ — не active commitments. Тригер наступного ADR: ≥18/22 рядків матриці `docs/02-engineering/architecture/platforms.md` = ✅.
+- **ADR-0051** ([`docs/04-governance/adr/0051-pricing-v3-single-tier.md`](../../04-governance/adr/0051-pricing-v3-single-tier.md)) — `Status: Accepted`. Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial 7 днів без картки. Plus tier / Lifetime / pay-per-feature — out of scope MVP.
+- **ADR-0052** ([`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md)) — `Status: Accepted`. Capacitor primary до Expo feature parity; обидва стеки паралельно; sunset T₀/T₁/T₂ — не active commitments. Тригер наступного ADR: ≥18/22 рядків матриці `docs/02-engineering/architecture/platforms.md` = ✅.
 - `docs/01-product/launch/business/01-monetization-and-pricing.md` — Update header: §2.2 і §2.3 позначено «Superseded by ADR-0051».
 - `docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md` — owner decision note, ADR-0052 supersedes sunset-direction.
 - `apps/mobile/README.md`, `apps/mobile-shell/README.md` — freshness headers + посилання на ADR-0052.

@@ -70,7 +70,7 @@ pnpm --filter @sergeant/openclaw-plugin build      # clean
 pnpm exec prettier --write …                       # clean
 ```
 
-CI на PR показав 1 pre-existing failure у `markdown-link-check` (4 link-и у `docs/90-work/planning/sprint-roadmap-q2q3-2026.md`, `ops/openclaw/skills/council-roundtable/SKILL.md`, `packages/openclaw-plugin/README.md`, `docs/adr/0057-anthropic-sdk-v1-upgrade.md`) — НЕ викликано цим PR (link-checker не нашого скоупу, посилання існують на `main` до цього PR). Founder змерджив поверх свідомо. Окремий fix-up PR — follow-up.
+CI на PR показав 1 pre-existing failure у `markdown-link-check` (4 link-и у `docs/90-work/planning/sprint-roadmap-q2q3-2026.md`, `ops/openclaw/skills/council-roundtable/SKILL.md`, `packages/openclaw-plugin/README.md`, `docs/04-governance/adr/0057-anthropic-sdk-v1-upgrade.md`) — НЕ викликано цим PR (link-checker не нашого скоупу, посилання існують на `main` до цього PR). Founder змерджив поверх свідомо. Окремий fix-up PR — follow-up.
 
 ---
 

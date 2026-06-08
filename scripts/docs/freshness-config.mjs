@@ -30,7 +30,7 @@ const LEGACY_ALLOWLIST_PATH = resolve(__dirname, "freshness-allowlist.json");
 // ── Glob → regex (intentionally minimal) ─────────────────────────────────────
 //
 // Supported syntax: `**` (any depth), `*` (single segment, no `/`), literal
-// strings. That's enough for our patterns (`docs/adr/**`, `**/_partials/**`,
+// strings. That's enough for our patterns (`docs/04-governance/adr/**`, `**/_partials/**`,
 // `**/TEMPLATE*.md`, exact paths). We deliberately avoid pulling in a glob
 // dependency for a 30-line script.
 
@@ -97,8 +97,8 @@ export const DEFAULT_CONFIG = {
     "**/dist/**",
     "coverage/**",
     "**/coverage/**",
-    // ADR are immutable — see docs/governance/doc-freshness.md § "Свідомо виключено"
-    "docs/adr/**",
+    // ADR are immutable — see docs/04-governance/governance/doc-freshness.md § "Свідомо виключено"
+    "docs/04-governance/adr/**",
     // Templates / index files / changelogs are not "validated docs"
     "**/_TEMPLATE*.md",
     "**/TEMPLATE*.md",

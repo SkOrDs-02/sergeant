@@ -35,6 +35,6 @@ graph TD
 
 ## Escalation
 
-- APNs library decision: `docs/adr/0048-apns-provider-library.md`
-- Push notifications architecture: `docs/adr/0019-push-notifications.md`
+- APNs library decision: `docs/04-governance/adr/0048-apns-provider-library.md`
+- Push notifications architecture: `docs/04-governance/adr/0019-push-notifications.md`
 - Runtime issues: `@Skords-01` (поки TBD secondary)

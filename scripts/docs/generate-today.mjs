@@ -234,7 +234,7 @@ function render({ priority, overdue, wipRows }) {
     if (overdue.length > TOP_OVERDUE) {
       lines.push("");
       lines.push(
-        `_… ще ${overdue.length - TOP_OVERDUE} — див. [freshness dashboard](./governance/freshness-dashboard.html)._`,
+        `_… ще ${overdue.length - TOP_OVERDUE} — див. [freshness dashboard](./04-governance/governance/freshness-dashboard.html)._`,
       );
     }
   }
@@ -275,7 +275,7 @@ function render({ priority, overdue, wipRows }) {
     "- [`open-work.md`](./open-work.md) — повний rollup усіх 7 trackers",
   );
   lines.push(
-    "- [`governance/freshness-dashboard.html`](./governance/freshness-dashboard.html) — повний freshness огляд",
+    "- [`governance/freshness-dashboard.html`](./04-governance/governance/freshness-dashboard.html) — повний freshness огляд",
   );
   lines.push(
     "- [`AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing",

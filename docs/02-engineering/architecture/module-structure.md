@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-Канонічна структура продуктового модуля в `apps/web` та `apps/mobile` плюс пояснення наявних розбіжностей. Цей doc — це **explainer**, а не enforced-стандарт: межа `apps/*` ↔ `packages/*` enforced через [ADR-0024](../../adr/0024-monorepo-apps-packages-split.md), а внутрішня форма модуля еволюціонує під його потреби. Він тут, щоб новий контриб'ютор не намагався вгадати, чому в одному модулі є `pages/`, а в іншому — `domain/`.
+Канонічна структура продуктового модуля в `apps/web` та `apps/mobile` плюс пояснення наявних розбіжностей. Цей doc — це **explainer**, а не enforced-стандарт: межа `apps/*` ↔ `packages/*` enforced через [ADR-0024](../../04-governance/adr/0024-monorepo-apps-packages-split.md), а внутрішня форма модуля еволюціонує під його потреби. Він тут, щоб новий контриб'ютор не намагався вгадати, чому в одному модулі є `pages/`, а в іншому — `domain/`.
 
 Власник кожного модуля та його test-stack живе в [`AGENTS.md` § Module ownership map](../../../AGENTS.md#module-ownership-map). Цей doc — про **внутрішнє влаштування** модуля.
 
@@ -56,7 +56,7 @@ apps/<web|mobile>/src/modules/<domain>/
 ## Cross-module правила (короткий нагадач)
 
 - **Modules не імпортують один одного напряму.** Cross-module комунікація — через `apps/<web|mobile>/src/core/lib/hubBus.ts` (event bus) або через спільні `packages/<X>-domain/` (тільки чиста логіка, без React).
-- **`packages/*` не імпортує з `apps/*`** (Hard rule, [ADR-0024](../../adr/0024-monorepo-apps-packages-split.md)).
+- **`packages/*` не імпортує з `apps/*`** (Hard rule, [ADR-0024](../../04-governance/adr/0024-monorepo-apps-packages-split.md)).
 - **Module Quick Actions** (HubChat) — реєструються через `apps/web/src/shared/lib/modules/moduleQuickActions.ts`; кожен модуль експонує свій action-set через `apps/web/src/core/lib/chatActions/<module>Actions.ts`.
 - **Storage** — кожен модуль використовує свій namespace через `createModuleStorage(moduleName)` з `@shared/lib/storage/createModuleStorage` (web) / MMKV-bound еквівалент (mobile).
 - **`apps/web/src/shared/lib/` layout** — після reorg-у (PR #1479) утиліти живуть у п'яти thematic піддиректоріях: `api/` (HTTP, RQ, errors, auth), `storage/` (localStorage / IndexedDB primitives), `modules/` (cross-module communication, navigation, registry), `adapters/` (web shims for `@sergeant/shared` contracts) і `ui/` (rendering / styling helpers). Гард `sergeant-design/no-flat-shared-lib` блокує будь-який import, що резолвиться у top-level flat-файл під `apps/web/src/shared/lib/` — нові утиліти кладуться у відповідний subdir, або імпортуються через `@shared/lib` barrel.
@@ -66,8 +66,8 @@ apps/<web|mobile>/src/modules/<domain>/
 ## Related docs
 
 - [`AGENTS.md` § Module ownership map](../../../AGENTS.md#module-ownership-map) — owner, test stack, RQ keys factory per module.
-- [`ADR-0024`](../../adr/0024-monorepo-apps-packages-split.md) — `apps/*` vs `packages/*` boundary.
-- [`ADR-0010`](../../adr/0010-mobile-dual-track-capacitor-expo.md) — пояснює, чому `apps/mobile` ≠ `apps/mobile-shell`.
-- [`ADR-0006`](../../adr/0006-rq-keys-factory.md) — Hard rule #2 (RQ keys factory) — що зобов'язана експонувати кожна `<module>/lib/queryKeys.ts`-подібна точка.
+- [`ADR-0024`](../../04-governance/adr/0024-monorepo-apps-packages-split.md) — `apps/*` vs `packages/*` boundary.
+- [`ADR-0010`](../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md) — пояснює, чому `apps/mobile` ≠ `apps/mobile-shell`.
+- [`ADR-0006`](../../04-governance/adr/0006-rq-keys-factory.md) — Hard rule #2 (RQ keys factory) — що зобов'язана експонувати кожна `<module>/lib/queryKeys.ts`-подібна точка.
 - [`docs/02-engineering/architecture/frontend-overview.md`](./frontend-overview.md) — fronend-wide архітектурний overview.
 - [`docs/02-engineering/architecture/apps-status-matrix.md`](./apps-status-matrix.md) — статус кожного app/package.

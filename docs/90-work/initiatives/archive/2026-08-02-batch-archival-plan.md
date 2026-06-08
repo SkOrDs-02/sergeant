@@ -6,7 +6,7 @@
 > **ETA:** 2026-08-02 (3 hours estimated) — фактично виконано 2026-05-13 в одному PR-і.
 > **Related:** [initiatives/archive/README.md](./README.md), [AGENTS.md Hard Rules](../../../../AGENTS.md#hard-rules-do-not-break)
 
-> **Outcome (2026-05-13):** Архівовано 7 initiatives (6 з оригінального batch + 0009 Agent-OS hardening, Closed 2026-05-09). 90-day waiting period skipped за рішенням founder-а після перевірки, що всі carry-over items закриті або передані successor-ам (Hard Rule #18 для 0001, ADR-0035 для 0004, ADR-0039 для 0005, Storybook live + ADR-0046 для 0007, `RATE_LIMIT_POLICIES` registry + ADR-0044 для 0008, AGENTS.md slim + `docs/governance/rules/` для 0009, Hard Rule #19 + `tools/tsconfig-guard/allowlist.json` для 0012). Нижче — історичний листинг лишається для аудит сліду.
+> **Outcome (2026-05-13):** Архівовано 7 initiatives (6 з оригінального batch + 0009 Agent-OS hardening, Closed 2026-05-09). 90-day waiting period skipped за рішенням founder-а після перевірки, що всі carry-over items закриті або передані successor-ам (Hard Rule #18 для 0001, ADR-0035 для 0004, ADR-0039 для 0005, Storybook live + ADR-0046 для 0007, `RATE_LIMIT_POLICIES` registry + ADR-0044 для 0008, AGENTS.md slim + `docs/04-governance/governance/rules/` для 0009, Hard Rule #19 + `tools/tsconfig-guard/allowlist.json` для 0012). Нижче — історичний листинг лишається для аудит сліду.
 
 Одночасна архівація 6 initiatives, які пройшли 90 днів від Done/Closed статусу без регресій.
 
@@ -14,14 +14,14 @@
 
 ## Ініціативи для архівації
 
-| Initiative                      | Status | Done/Closed | Wait until | Canonical                                                          | Notes                                                            |
-| ------------------------------- | ------ | ----------- | ---------- | ------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| **0001** Module decomposition   | Closed | 2026-05-04  | 2026-08-02 | Successor: 0013, Hard Rule #18                                     | max-lines: 600 guard active                                      |
-| **0004** Server observability   | Done   | 2026-05-04  | 2026-08-02 | [ADR-0035](../../../adr/0035-distributed-tracing-opentelemetry.md) | Sentry + OTel live; OTLP optional follow-up                      |
-| **0005** AI cost (prompt cache) | Done   | 2026-05-04  | 2026-08-02 | [ADR-0039](../../../adr/0039-anthropic-prompt-cache-policy.md)     | Prompt cache live; cost-alerts post-baseline                     |
-| **0008** Platform hardening     | Closed | 2026-05-04  | 2026-08-02 | `RATE_LIMIT_POLICIES` registry                                     | RFC-9239 RateLimit-\* headers live                               |
-| **0012** Perfect TS strictness  | Closed | 2026-05-04  | 2026-08-02 | Hard Rule #19, allowlist.json                                      | Phase 6a/6c/6e done; 6b/6d residual in allowlist                 |
-| **0007** Design-system tooling  | Done   | 2026-05-05  | 2026-08-03 | Storybook live deployment                                          | VRT scope → [ADR-0046](../../../adr/0046-storybook-vrt-scope.md) |
+| Initiative                      | Status | Done/Closed | Wait until | Canonical                                                                        | Notes                                                                          |
+| ------------------------------- | ------ | ----------- | ---------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **0001** Module decomposition   | Closed | 2026-05-04  | 2026-08-02 | Successor: 0013, Hard Rule #18                                                   | max-lines: 600 guard active                                                    |
+| **0004** Server observability   | Done   | 2026-05-04  | 2026-08-02 | [ADR-0035](../../../04-governance/adr/0035-distributed-tracing-opentelemetry.md) | Sentry + OTel live; OTLP optional follow-up                                    |
+| **0005** AI cost (prompt cache) | Done   | 2026-05-04  | 2026-08-02 | [ADR-0039](../../../04-governance/adr/0039-anthropic-prompt-cache-policy.md)     | Prompt cache live; cost-alerts post-baseline                                   |
+| **0008** Platform hardening     | Closed | 2026-05-04  | 2026-08-02 | `RATE_LIMIT_POLICIES` registry                                                   | RFC-9239 RateLimit-\* headers live                                             |
+| **0012** Perfect TS strictness  | Closed | 2026-05-04  | 2026-08-02 | Hard Rule #19, allowlist.json                                                    | Phase 6a/6c/6e done; 6b/6d residual in allowlist                               |
+| **0007** Design-system tooling  | Done   | 2026-05-05  | 2026-08-03 | Storybook live deployment                                                        | VRT scope → [ADR-0046](../../../04-governance/adr/0046-storybook-vrt-scope.md) |
 
 ---
 
@@ -41,7 +41,7 @@ Execute day before archival to unblock 2026-08-02 batch-PR:
 - [ ] Verify: Sentry + OTel running in production
 - [ ] Check: All grafana dashboards pinned / documented in [docs/03-operations/observability/](../../../03-operations/observability)
 - [ ] Check: Optional follow-up (RED-deltas, AI-latency spans) documented in follow-ups.md
-- [ ] Result: Move carry-over to [ADR-0035](../../../adr/0035-distributed-tracing-opentelemetry.md)
+- [ ] Result: Move carry-over to [ADR-0035](../../../04-governance/adr/0035-distributed-tracing-opentelemetry.md)
 
 ### 0005: AI cost (prompt cache)
 
@@ -71,7 +71,7 @@ Execute day before archival to unblock 2026-08-02 batch-PR:
 - [ ] Verify: Storybook deployed to GitHub Pages (https://skords-01.github.io/Sergeant/)
 - [ ] Check: `shared/ui` coverage 100% (37/37 stories)
 - [ ] Check: `sergeant-design/require-stories-for-ui-components` ESLint rule active
-- [ ] Check: [ADR-0046](../../../adr/0046-storybook-vrt-scope.md) describes VRT scope
+- [ ] Check: [ADR-0046](../../../04-governance/adr/0046-storybook-vrt-scope.md) describes VRT scope
 - [ ] Result: Phase 2 ESLint rule already merged (PR #1812)
 
 ---
@@ -134,7 +134,7 @@ Archive 6 Done/Closed initiatives after ≥90 days without regressions:
 - 0012-perfect-strictness-rollout → Hard Rule #19 + allowlist
 - 0007-design-system-tooling → Storybook live + ADR-0046
 
-All canonical rules, ADRs, lint-rules continue to live in AGENTS.md / docs/governance/.
+All canonical rules, ADRs, lint-rules continue to live in AGENTS.md / docs/04-governance/governance/.
 Archive README updated with batch schedule.
 
 Related: initiative-status-sync audit 2026-05-11.
@@ -152,7 +152,7 @@ gh pr create \
 
 See [archive/README.md](./docs/90-work/initiatives/archive/README.md) for prep details.
 
-All canonical rules/ADRs/lint-rules remain active in AGENTS.md / docs/governance/.
+All canonical rules/ADRs/lint-rules remain active in AGENTS.md / docs/04-governance/governance/.
 File renames preserve slug IDs for backward references (TODO-markers, hard-rules.json)."
 ```
 
@@ -185,4 +185,4 @@ git push -f origin claude/update-docs-tasks-Y9RNJ  # NOT to main
 
 - [initiatives/README.md](../README.md) — master schedule + lifecycle rules
 - [initiatives/archive/README.md](./README.md) — archive policy + this batch schedule
-- [docs/governance/doc-freshness.md](../../../governance/doc-freshness.md) — freshness marker policy
+- [docs/04-governance/governance/doc-freshness.md](../../../04-governance/governance/doc-freshness.md) — freshness marker policy

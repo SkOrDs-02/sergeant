@@ -27,16 +27,16 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ### Дотичні ADR
 
-- [`docs/adr/0015-observability-stack.md`](../../adr/0015-observability-stack.md) — Pino + Prometheus + Sentry baseline.
-- [`docs/adr/0035-distributed-tracing-opentelemetry.md`](../../adr/0035-distributed-tracing-opentelemetry.md) — tracing бутстрап у `obs/tracing.ts`.
-- [`docs/adr/0019-push-notifications.md`](../../adr/0019-push-notifications.md) — server-driven web-push / APNs / FCM, з якого ростуть `VAPID_*` env-vars у `modules/push/push.ts`.
-- [`docs/adr/0013-db-migrations-conventions.md`](../../adr/0013-db-migrations-conventions.md) — sequential / two-phase DROP — релевантно для `@sergeant/db-schema` umbrella export drop.
-- [`docs/adr/0024-monorepo-apps-packages-split.md`](../../adr/0024-monorepo-apps-packages-split.md) — межі між `apps/*` і `packages/*`, які треба тримати під час drop-у umbrella export.
+- [`docs/04-governance/adr/0015-observability-stack.md`](../../04-governance/adr/0015-observability-stack.md) — Pino + Prometheus + Sentry baseline.
+- [`docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md`](../../04-governance/adr/0035-distributed-tracing-opentelemetry.md) — tracing бутстрап у `obs/tracing.ts`.
+- [`docs/04-governance/adr/0019-push-notifications.md`](../../04-governance/adr/0019-push-notifications.md) — server-driven web-push / APNs / FCM, з якого ростуть `VAPID_*` env-vars у `modules/push/push.ts`.
+- [`docs/04-governance/adr/0013-db-migrations-conventions.md`](../../04-governance/adr/0013-db-migrations-conventions.md) — sequential / two-phase DROP — релевантно для `@sergeant/db-schema` umbrella export drop.
+- [`docs/04-governance/adr/0024-monorepo-apps-packages-split.md`](../../04-governance/adr/0024-monorepo-apps-packages-split.md) — межі між `apps/*` і `packages/*`, які треба тримати під час drop-у umbrella export.
 
 ### Governance
 
-- Hard Rule #3 ([`03-api-contract-server-client-test.md`](../../governance/rules/03-api-contract-server-client-test.md)) — будь-яка зміна форми API-відповіді у migration-PR-ах має оновити `api-client` + contract-test.
-- Hard Rule #21 ([`21-pino-redaction-policy.md`](../../governance/rules/21-pino-redaction-policy.md)) — логування під час shutdown / pool.end / tracing-fail.
+- Hard Rule #3 ([`03-api-contract-server-client-test.md`](../../04-governance/governance/rules/03-api-contract-server-client-test.md)) — будь-яка зміна форми API-відповіді у migration-PR-ах має оновити `api-client` + contract-test.
+- Hard Rule #21 ([`21-pino-redaction-policy.md`](../../04-governance/governance/rules/21-pino-redaction-policy.md)) — логування під час shutdown / pool.end / tracing-fail.
 - Performance budget (`AGENTS.md § Performance budgets`) — `/health` p95 < 100 ms (informal SLO) → формалізуємо у PR-6.
 
 ---
@@ -471,7 +471,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## PR-11 — `feat(governance): eslint rule prefer-parseBody for new server handlers`
 
-> **Статус 2026-06-01:** ✅ Закрито в робочому дереві (claude/planning-15-tasks). Додано rule `prefer-parse-body-over-validate-body` у `packages/eslint-plugin-sergeant-design/index.js` (severity `warn`, scope `apps/server/src/**`). Виключення: `apps/server/src/http/validate.ts` та `*.test.*`. Підключено у `eslint.config.js` з коментарем про rollout (`warn` → `error` через 1 sprint). Тести: `__tests__/prefer-parse-body-over-validate-body.test.mjs` (11/11 зелені). Canonical docs: `docs/governance/rules/27-prefer-parse-body.md`. `pnpm --filter @sergeant/server typecheck` ✅ clean; `pnpm --filter @sergeant/server lint` ✅ (0 errors, 3 pre-existing security warnings не стосуються цього PR).
+> **Статус 2026-06-01:** ✅ Закрито в робочому дереві (claude/planning-15-tasks). Додано rule `prefer-parse-body-over-validate-body` у `packages/eslint-plugin-sergeant-design/index.js` (severity `warn`, scope `apps/server/src/**`). Виключення: `apps/server/src/http/validate.ts` та `*.test.*`. Підключено у `eslint.config.js` з коментарем про rollout (`warn` → `error` через 1 sprint). Тести: `__tests__/prefer-parse-body-over-validate-body.test.mjs` (11/11 зелені). Canonical docs: `docs/04-governance/governance/rules/27-prefer-parse-body.md`. `pnpm --filter @sergeant/server typecheck` ✅ clean; `pnpm --filter @sergeant/server lint` ✅ (0 errors, 3 pre-existing security warnings не стосуються цього PR).
 
 **Surface**
 
@@ -492,10 +492,10 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 **Acceptance criteria**
 
-- [x] Rule `prefer-parse-body-over-validate-body` екзистує у plugin-і + має BAD/GOOD приклад у `docs/governance/rules/27-prefer-parse-body.md`.
+- [x] Rule `prefer-parse-body-over-validate-body` екзистує у plugin-і + має BAD/GOOD приклад у `docs/04-governance/governance/rules/27-prefer-parse-body.md`.
 - [x] `pnpm --filter eslint-plugin-sergeant-design test` зелений (11/11 тестів).
 - [x] `pnpm lint` на `apps/server/src` не падає (0 errors; rule = warn; PR-09 + PR-10 уже мігрували всі callsite-и).
-- [x] Rollout plan задокументовано: `warn` зараз → `error` через 1 sprint у `eslint.config.js` та `docs/governance/rules/27-prefer-parse-body.md`.
+- [x] Rollout plan задокументовано: `warn` зараз → `error` через 1 sprint у `eslint.config.js` та `docs/04-governance/governance/rules/27-prefer-parse-body.md`.
 
 **Risks / mitigations**
 

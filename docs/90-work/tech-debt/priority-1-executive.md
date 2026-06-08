@@ -23,7 +23,7 @@
 | `syncV2Stream.ts`                               | 401   | SSE pull stream                      |
 | `{finyk,fizruk,nutrition,routine}/applySync.ts` | —     | per-module apply-функції             |
 
-Супутні артефакти: ADR-0064 (`docs/adr/0064-syncv2-modular-refactor.md`), план (`syncV2-refactor-plan.md`), тікет (`syncV2-engineering-ticket.md`).
+Супутні артефакти: ADR-0064 (`docs/04-governance/adr/0064-syncv2-modular-refactor.md`), план (`syncV2-refactor-plan.md`), тікет (`syncV2-engineering-ticket.md`).
 
 > **⚠️ Відоме дублювання типів (не dead code).** Поряд з активним `syncV2-types.ts` існує другий, **scaffolded** файл `syncV2Types.ts` (camelCase, 251 рядок), створений під ADR-0062 як майбутня консолідація типів. Він навмисно ще не підключений жодним consumer-ом і **захищений від dead-code cleanup** (Hard Rule #10 — маркер `@scaffolded` у header самого файлу). Дублювання `APPLY_REJECT_REASONS` між ним і активним `syncV2-types.ts` — відомий тимчасовий стан, закривається завершенням ADR-0062 Phase 1. **Не видаляти `syncV2Types.ts`** під час прибирання мертвого коду.
 

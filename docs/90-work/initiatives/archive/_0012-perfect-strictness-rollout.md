@@ -140,7 +140,7 @@ const c2: Config = {}; // ✅ OK
   - `noPropertyAccessFromIndexSignature` — **11 / 12 = 92%** (відсутній лише `apps/web` — allowlist `expires: 2026-09-30`)
 - [x] `tools/tsconfig-guard/allowlist.json` — лише residual `apps/web` для двох нових прапорів (`expires: 2026-09-30`). Решта прапорів — без override-ів. CI падає при regress-override.
 - [x] [`docs/90-work/tech-debt/frontend.md` §11.1](../../tech-debt/frontend.md) — таблиця Status оновлена: 6a/6c/6e/6f ✅ Done; 6b/6d residual `apps/web` mark `🟡 in-flight (apps/web only — Sprint 5+)`.
-- [x] [`AGENTS.md` Hard Rules](../../../../AGENTS.md) — Hard Rule #19 «Strict-mode flag canonical: `noUncheckedIndexedAccess: true` по всьому monorepo» зафіксований у [`docs/governance/hard-rules.json`](../../../governance/hard-rules.json).
+- [x] [`AGENTS.md` Hard Rules](../../../../AGENTS.md) — Hard Rule #19 «Strict-mode flag canonical: `noUncheckedIndexedAccess: true` по всьому monorepo» зафіксований у [`docs/04-governance/governance/hard-rules.json`](../../../04-governance/governance/hard-rules.json).
 - [x] CI ganye `pnpm strict:coverage` post-PR-merge → markdown table попадає в `$GITHUB_STEP_SUMMARY` (як зараз для existing flags). Columns для `exactOptionalPropertyTypes` + `noPropertyAccessFromIndexSignature` додано у `scripts/strict-coverage.mjs`.
 - [x] Жодного `as unknown as X` у production-коді (`apps/*/src/**` excluding `**/*.test.ts`/`*.spec.ts`) — 2026-05-05 audit: 0 matches.
 

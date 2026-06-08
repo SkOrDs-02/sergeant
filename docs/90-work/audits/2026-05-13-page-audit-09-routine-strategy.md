@@ -370,7 +370,7 @@ arr.push(g);
 **Lines:** L12–L15
 
 **Description.**
-Rule #10 (`docs/governance/rules/10-lifecycle-markers.md`) prescribes that every `@scaffolded` marker carries `@owner`, `@addedIn <short-sha>`, `@nextStep`. The file provides `@scaffolded` and `@nextStep` but omits `@owner` and `@addedIn`.
+Rule #10 (`docs/04-governance/governance/rules/10-lifecycle-markers.md`) prescribes that every `@scaffolded` marker carries `@owner`, `@addedIn <short-sha>`, `@nextStep`. The file provides `@scaffolded` and `@nextStep` but omits `@owner` and `@addedIn`.
 
 **Why it matters.**
 Knip honours `@scaffolded` to suppress dead-code warnings — the lint contract relies on the surrounding metadata to make ownership reviewable. Without `@owner` the bus-factor + cleanup audit (`pnpm dead-code:files`) cannot route follow-ups.

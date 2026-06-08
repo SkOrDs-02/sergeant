@@ -1,7 +1,7 @@
 # `@sergeant/mobile-shell` — Capacitor shell
 
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
-> **Mobile strategy:** Capacitor shell — primary до Expo feature parity; sunset-дати T₀/T₁/T₂ не є active commitments — [ADR-0052](../../docs/adr/0052-mobile-strategy-capacitor-primary.md).
+> **Mobile strategy:** Capacitor shell — primary до Expo feature parity; sunset-дати T₀/T₁/T₂ не є active commitments — [ADR-0052](../../docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md).
 
 Тонкий native-shell навколо `@sergeant/web`. Спочатку задумувався як PoC
 («чи запуститься поточний веб-код у WebView»), але зараз доріс до MVP:
@@ -115,8 +115,8 @@ WebView мовчки би пропустив http-трафік незалежн�
 Скрипт читається парсером XML-plist на Node — працює і на macOS-runner-і,
 і на Linux-боксах розробників (`node --test apps/mobile-shell/scripts/__tests__/check-info-plist.test.mjs`).
 Per-domain винятки (`NSExceptionDomains`) дозволені — додавай їх разом
-із записом у [`docs/security/audit-exceptions.md`](../../docs/security/audit-exceptions.md).
-Деталі — у [`docs/security/hardening/L12-ios-app-transport-security.md`](../../docs/security/hardening/L12-ios-app-transport-security.md).
+із записом у [`docs/04-governance/security/audit-exceptions.md`](../../docs/04-governance/security/audit-exceptions.md).
+Деталі — у [`docs/04-governance/security/hardening/L12-ios-app-transport-security.md`](../../docs/04-governance/security/hardening/L12-ios-app-transport-security.md).
 
 ## Що НЕ зроблено
 

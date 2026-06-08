@@ -12,8 +12,8 @@ PR-план виконавчих кроків, що закриває outstanding
 - **Source roast (поточна):** [`docs/90-work/audits/2026-05-13-revenue-monetization-roast.md`](../audits/archive/2026-05-13-revenue-monetization-roast.md) — viewer-facing inventory P0/P1/P2 з 6 closed-у-PR і 16 outstanding-items.
 - **Source roast (попередня, baseline):** [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md) — «56 k LOC docs / 0 paying users», wedge-позиціонування, owner-decisions (pricing v3, Apple+Google+Email auth, activation v2, no OpenClaw freeze).
 - **Initiative tracker:** [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md) — 6-фазний план; Phase 0–5.1 done, Phase 2/3 active.
-- **ADR-0001:** [`docs/adr/0001-monetization-architecture.md`](../../adr/0001-monetization-architecture.md) — 16 архітектурних рішень (Stripe primary, single-row-per-user `subscriptions`, RQ `staleTime: 60s`, idempotency keys, webhook retention, dunning, proration, observability/SLO).
-- **ADR-0051:** [`docs/adr/0051-pricing-v3-single-tier.md`](../../adr/0051-pricing-v3-single-tier.md) — Free + Pro, $7/міс або $49/рік, ₴ UA-only на старті, 7-day trial без картки.
+- **ADR-0001:** [`docs/04-governance/adr/0001-monetization-architecture.md`](../../04-governance/adr/0001-monetization-architecture.md) — 16 архітектурних рішень (Stripe primary, single-row-per-user `subscriptions`, RQ `staleTime: 60s`, idempotency keys, webhook retention, dunning, proration, observability/SLO).
+- **ADR-0051:** [`docs/04-governance/adr/0051-pricing-v3-single-tier.md`](../../04-governance/adr/0051-pricing-v3-single-tier.md) — Free + Pro, $7/міс або $49/рік, ₴ UA-only на старті, 7-day trial без картки.
 - **apps/web paywall/billing surface (статус 2026-05-13):**
   - `apps/web/src/core/billing/usePlan.ts` (shipped) — `useQuery(billingKeys.status)` → `{ plan, isPro, isLoading, subscription }`.
   - `apps/web/src/core/billing/PaywallModal.tsx` (shipped) — fires `PAYWALL_VIEWED`, CTA → `/pricing?source=paywall`.
@@ -316,7 +316,7 @@ Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS 
 - `apps/server/src/modules/billing/provider.ts` (new) — `BillingProvider` interface; `getProviderForCountry({ country }): BillingProvider` resolver (default `stripe`, future-shape: `country === "UA" && featureFlag.liqpay → liqpay`).
 - `subscriptions` table — column `provider TEXT NOT NULL DEFAULT 'stripe'` (вже існує у схемі — підтвердити migration історію). Якщо ні — migration `040_billing_provider.sql`.
 - Feature-flag: `liqpay-enabled` (default off) — Phase 7 enablement через PostHog feature-flag.
-- ADR amendment: `docs/adr/0001-monetization-architecture.md` §ADR-1.1 — оновити «LiqPay Phase 2» → «LiqPay placeholder Phase 2; live Phase 7».
+- ADR amendment: `docs/04-governance/adr/0001-monetization-architecture.md` §ADR-1.1 — оновити «LiqPay Phase 2» → «LiqPay placeholder Phase 2; live Phase 7».
 
 ### Acceptance
 
@@ -404,7 +404,7 @@ Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS 
 - **P2-1** (GTM hero copy A/B test) — залежить від PR-6 (landing) + PR-7 (EN locale). Відкладено до Phase 7.
 - **P2-3** (Subscription change proration) — out-of-scope до моменту, коли є яким змінювати (single Pro tier у MVP). Відкладено до multi-tier launch (post-Phase 7).
 - **P2-4** (Invoice PDF + email) — Stripe сам генерує PDF + email. Net-new infra оверкіл для перших 50 paying. Відкладено до 200+.
-- **P2-5** (Referral / promo code) — окрема ініціатива у [ADR-0001 §Open questions](../../adr/0001-monetization-architecture.md#open-questions). Відкладено.
+- **P2-5** (Referral / promo code) — окрема ініціатива у [ADR-0001 §Open questions](../../04-governance/adr/0001-monetization-architecture.md#open-questions). Відкладено.
 - **P2-6** (Annual billing toggle) — `49/рік` цінник уже у `PricingPage` як displayed text, але без Stripe annual `Price`. ADR-amendment + Stripe annual `Price` + UI toggle — окремий PR post-launch, але `included` у спеціально нижченаведеному PR-10' (опціональний, якщо є capacity у тому ж спринті).
 
 > Якщо приходить capacity для PR-10' (`P2-6 Annual billing`) — це M-size (2–3 дні): нова `STRIPE_PRICE_ID_PRO_YEARLY` env, UI toggle у `PricingPage`, ADR-0001 amendment. Sequencing — після PR-2 (Customer Portal), щоб annual-cancel працював.

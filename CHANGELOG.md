@@ -217,7 +217,7 @@ OTEL_* | SENTRY_RELEASE | RAILWAY_GIT_COMMIT_SHA | VERCEL_GIT_COMMIT_SHA
 - **Docs: audit + sprint-розбивка прогавлених PR-серій (#6 / #8 / #15
   burndown + M10/M14/M19 hardening closure).** Систематична перевірка
   `docs/` проти `main` після round-12 виявила два класи прогалин у
-  трекінгу: (1) `docs/security/hardening/README.md` § «Closed Medium /
+  трекінгу: (1) `docs/04-governance/security/hardening/README.md` § «Closed Medium /
   Low cards» не містив M10 (CSRF token check on state-changing routes),
   M14 (Internal `/api/push/send` IP allowlist) і M19 (Mobile shell
   deep-link sanitisation), хоча всі троє закриті PR
@@ -378,7 +378,7 @@ metrics/web-vitals}` — а API серверу не було, vite сипав
   source-of-truth для tool-ів) → автоматично потрапляє у "Пам'ять"-список
   SYSTEM_PROMPT, тому `SYSTEM_PROMPT_VERSION` піднято з `v6` до `v7`. Доку оновлено
   у [`docs/02-engineering/integrations/voyage-pgvector.md`](./docs/02-engineering/integrations/voyage-pgvector.md)
-  і [`docs/adr/0028-pgvector-ai-memory.md`](./docs/adr/0028-pgvector-ai-memory.md).
+  і [`docs/04-governance/adr/0028-pgvector-ai-memory.md`](./docs/04-governance/adr/0028-pgvector-ai-memory.md).
 
 - **CI: container image scan (Trivy).** Новий workflow
   `.github/workflows/container-scan.yml` збирає `Dockerfile.api` і
@@ -386,7 +386,7 @@ metrics/web-vitals}` — а API серверу не було, vite сипав
   завантажується в GitHub Code Scanning (`category: trivy-image`) і
   доступний як артефакт. Тригери: PR (на зміни Dockerfile / serverside
   пакетів), push to main, schedule (04:00 UTC) і workflow_dispatch.
-  Триаж — див. [`docs/security/container-scan.md`](./docs/security/container-scan.md).
+  Триаж — див. [`docs/04-governance/security/container-scan.md`](./docs/04-governance/security/container-scan.md).
 
 ### Changed
 

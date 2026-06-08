@@ -19,7 +19,7 @@ render_with_liquid: false
 ## Scope notes
 
 - **Pure static analysis.** Без `pnpm install` чи dev-серверу — `grep`, `read`, repo-cross-reference.
-- Hard Rules registry використано як ground truth: `docs/governance/hard-rules.json` + `docs/governance/rules/*`.
+- Hard Rules registry використано як ground truth: `docs/04-governance/governance/hard-rules.json` + `docs/04-governance/governance/rules/*`.
 - Module-accent для Nutrition — `nutrition` (lime/green), допустимі semantic tokens (`info`, `success`, `danger`, `warning`, `subtle`, `panel`, `line`).
 - RQ key factory для модуля — `nutritionKeys`, plus `coachKeys` / `digestKeys` для cross-module invalidation.
 - WCAG 2.1 AA — touch targets ≥44×44 px (див. Apple HIG + Stack-pulse PR `Button` auto-min).
@@ -436,7 +436,7 @@ Empty-states в модулі мають різний tone:
 - ShoppingListCard / PantryCard / RecipesCard — самі копи звертаються на "ти" ("Додай продукти на склад.", "Дай хоча б 2–3 продукти для рецептів.")
 
 **Why it matters.**
-Розрив у тональності UX, особливо помітний при flow з Pantry в Log (юзер за 2 кліки міняє звертання). Стиль-guide репо (`docs/governance/copy-style-guide.md`, якщо є) має дисциплінувати tone.
+Розрив у тональності UX, особливо помітний при flow з Pantry в Log (юзер за 2 кліки міняє звертання). Стиль-guide репо (`docs/04-governance/governance/copy-style-guide.md`, якщо є) має дисциплінувати tone.
 
 **Recommendation.**
 Стандартизувати "ти" (більшість модуля так звертається, виходячи з grep). Замінити "Додайте", "Перевір з'єднання" → "Додай", "Перевір з'єднання".

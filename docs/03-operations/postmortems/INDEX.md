@@ -8,7 +8,7 @@ Index of incident reviews and follow-up expectations.
 ## How to use
 
 1. Open [TEMPLATE.md](./TEMPLATE.md) for the write-up format.
-2. Use [incident-severity-policy.md](../../governance/incident-severity-policy.md) to confirm whether a postmortem is required.
+2. Use [incident-severity-policy.md](../../04-governance/governance/incident-severity-policy.md) to confirm whether a postmortem is required.
 3. Add a new row here in the same PR or incident follow-up that adds the postmortem document.
 4. Track the follow-up issues until closed or explicitly accepted as debt.
 

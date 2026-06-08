@@ -24,11 +24,11 @@
   [`docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md`](../../audits/archive/2026-05-04-csp-disable-retrospective.md)
   (A1–A5 closed 2026-05-06).
 - **Security policy / canonical:**
-  [`docs/security/pii-handling.md`](../../../security/pii-handling.md),
-  [`docs/security/logging-redaction-policy.md`](../../../security/logging-redaction-policy.md),
-  [`docs/security/threat-model.md`](../../../security/threat-model.md),
-  [`docs/security/vulnerability-sla.md`](../../../security/vulnerability-sla.md),
-  [`docs/security/audit-exceptions.md`](../../../security/audit-exceptions.md).
+  [`docs/04-governance/security/pii-handling.md`](../../../04-governance/security/pii-handling.md),
+  [`docs/04-governance/security/logging-redaction-policy.md`](../../../04-governance/security/logging-redaction-policy.md),
+  [`docs/04-governance/security/threat-model.md`](../../../04-governance/security/threat-model.md),
+  [`docs/04-governance/security/vulnerability-sla.md`](../../../04-governance/security/vulnerability-sla.md),
+  [`docs/04-governance/security/audit-exceptions.md`](../../../04-governance/security/audit-exceptions.md).
 - **Observability runbooks / dashboards:**
   [`docs/03-operations/observability/metrics.md`](../../../03-operations/observability/metrics.md) (Prometheus
   довідник, single source of truth для `apps/server/src/obs/metrics.ts`),
@@ -43,7 +43,7 @@
   [`docs/03-operations/runbooks/encryption-key-rotation.md`](../../../03-operations/runbooks/encryption-key-rotation.md),
   [`docs/03-operations/runbooks/database-backup-restore.md`](../../../03-operations/runbooks/database-backup-restore.md).
 - **ADR-and-Hard-Rules baseline:**
-  [`docs/adr/0015-observability-stack.md`](../../../adr/0015-observability-stack.md)
+  [`docs/04-governance/adr/0015-observability-stack.md`](../../../04-governance/adr/0015-observability-stack.md)
   (Pino + Prometheus + Sentry — три незалежні шари; жоден PR нижче не змінює
   цей розклад),
   [`AGENTS.md`](../../../../AGENTS.md) Hard Rules #20 (no OpenClaw PATs у проді),
@@ -60,7 +60,7 @@
 - **Effort:** S = ≤ 0.5 day end-to-end (PR + review), M = 1–2 days, L = > 2 days
   (зазвичай із multi-file refactor або новим depandency).
 - **Threat-model impact:** мапиться на колонки STRIDE з
-  [`docs/security/threat-model.md`](../../../security/threat-model.md) — S(poofing),
+  [`docs/04-governance/security/threat-model.md`](../../../04-governance/security/threat-model.md) — S(poofing),
   T(ampering), R(epudiation), I(nformation disclosure), D(enial of service),
   E(levation of privilege).
 - **Owner — placeholder:** `TBD (<role>)` — поки delegation не зафіксована
@@ -113,15 +113,15 @@
     ``console.log(`token=${value}`)``.
   - `pnpm lint` чистий на main після введення правила (для існуючого коду —
     або auto-fix, або `// eslint-disable-next-line` з audit-exception-у
-    у `docs/security/audit-exceptions.md`).
+    у `docs/04-governance/security/audit-exceptions.md`).
   - Документ-стаб у
-    [`docs/security/logging-redaction-policy.md`](../../../security/logging-redaction-policy.md)
+    [`docs/04-governance/security/logging-redaction-policy.md`](../../../04-governance/security/logging-redaction-policy.md)
     оновлено посиланням на правило.
 - **Threat-model impact (STRIDE):** **I** — закриває канал
   «Information disclosure через DevTools screen-share + Sentry `console`-breadcrumb +
   Logpipe-екстеншни». Це той самий threat-vector, що STRIDE-row
   _Information disclosure → mobile/web log buffers_ (див.
-  [`threat-model.md`](../../../security/threat-model.md) розділ web-app).
+  [`threat-model.md`](../../../04-governance/security/threat-model.md) розділ web-app).
 - **Effort:** M (1 day — правило + тести + автограф у CONTRIBUTING).
 - **P:** **P0** (audit §6.5 — carry-over з 2026-05-03, прострочено понад
   10 днів; найближчий sprint).
@@ -142,8 +142,8 @@
     без `crossorigin="anonymous"` — error.
   - Тестова фікстура: `apps/web/index.html` + штучний bad-case.
   - Документ-стаб у новому
-    `docs/security/hardening/sri-on-third-party-scripts.md` (cross-link із
-    [`docs/security/threat-model.md`](../../../security/threat-model.md) `T`-row).
+    `docs/04-governance/security/hardening/sri-on-third-party-scripts.md` (cross-link із
+    [`docs/04-governance/security/threat-model.md`](../../../04-governance/security/threat-model.md) `T`-row).
 - **Acceptance:**
   - `pnpm lint` фейлить штучний `<script src="https://cdn.example.com/x.js">`
     без `integrity=`.
@@ -156,7 +156,7 @@
   `https://js.sentry-cdn.com`. Без SRI компроміс будь-якого з цих CDN-ів =
   одношаговий XSS у frontend, що bypass-ить наш CSP report-only/enforce
   pipeline. Закриває STRIDE-row _Tampering → CDN supply-chain_ у
-  [`docs/security/threat-model.md`](../../../security/threat-model.md).
+  [`docs/04-governance/security/threat-model.md`](../../../04-governance/security/threat-model.md).
 - **Effort:** L (parse5 + правило + 2 fixture-файли + перевірка
   cross-app-у `apps/console/index.html` / `apps/mobile-shell/`).
 - **P:** **P1** (CSP allowlist + поточна відсутність статичних third-party
@@ -181,7 +181,7 @@
     `logger.info({ a: { b: { c: { password: 'secret-xyz' } } } })` → у
     stringify-output не зустрічається substring `'secret-xyz'`.
   - Sync-перевірка з
-    [`docs/security/pii-handling.md`](../../../security/pii-handling.md):
+    [`docs/04-governance/security/pii-handling.md`](../../../04-governance/security/pii-handling.md):
     канонічний список ключів живе тільки у
     `packages/shared/src/lib/pii.ts`.
 - **Acceptance:**
@@ -195,7 +195,7 @@
   «Loki access-logs ловлять `req.body.nested.user.password`-валуй із 3+
   глибини». STRIDE _Information disclosure → server logs_ і
   _Repudiation → audit trail з PII_ у
-  [`threat-model.md`](../../../security/threat-model.md).
+  [`threat-model.md`](../../../04-governance/security/threat-model.md).
 - **Effort:** M.
 - **P:** **P1**.
 - **Dependencies:** має ландитися перед S5 (бо OTel parity-test опирається
@@ -244,10 +244,10 @@
     і записати `version: 2`.
   - Snapshot-тест у `apps/web/src/core/security/lockStorage.test.ts` —
     `iterations === 600_000`.
-  - Документ-стаб у `docs/security/hardening/` (нова картка) +
-    оновлення [`docs/security/pii-handling.md`](../../../security/pii-handling.md)
+  - Документ-стаб у `docs/04-governance/security/hardening/` (нова картка) +
+    оновлення [`docs/04-governance/security/pii-handling.md`](../../../04-governance/security/pii-handling.md)
     cross-ref-ом, якщо існує розділ про lockStorage; інакше — у
-    [`docs/security/access-policy.md`](../../../security/access-policy.md).
+    [`docs/04-governance/security/access-policy.md`](../../../04-governance/security/access-policy.md).
 - **Acceptance:**
   - Snapshot-test passes (`iterations === 600_000`).
   - Migration-path-тест: існуючий IDB record (`version: 1`) → unlock →
@@ -349,16 +349,16 @@
 
 ### S10 — `pii-handling.md` drift-guard lint
 
-- **Status:** ✅ Виконано — `scripts/lint-pii-handling-drift.mjs` + `pnpm lint:pii-handling-drift` (у `pnpm lint` aggregate), machine-readable `<!-- pii-keys-start -->` блок у `docs/security/pii-handling.md` (42 ключі), unit-тест `scripts/__tests__/lint-pii-handling-drift.test.mjs` (8 cases).
+- **Status:** ✅ Виконано — `scripts/lint-pii-handling-drift.mjs` + `pnpm lint:pii-handling-drift` (у `pnpm lint` aggregate), machine-readable `<!-- pii-keys-start -->` блок у `docs/04-governance/security/pii-handling.md` (42 ключі), unit-тест `scripts/__tests__/lint-pii-handling-drift.test.mjs` (8 cases).
 - **Title:** `feat(governance): lint guard against pii-handling.md drift from @sergeant/shared/lib/pii.ts`
 - **Scope:**
   - Новий скрипт `scripts/lint-pii-handling-drift.mjs` — парсить
-    [`docs/security/pii-handling.md`](../../../security/pii-handling.md) для списку
+    [`docs/04-governance/security/pii-handling.md`](../../../04-governance/security/pii-handling.md) для списку
     «redacted keys», порівнює з `REDACT_KEY_NAMES` із
     `packages/shared/src/lib/pii.ts`. Якщо різниця — fail.
   - Реєстрація у `package.json` під `lint:pii-handling-drift` і у
     `pnpm lint`-agg-command.
-  - Документ-апдейт у самому `docs/security/pii-handling.md` — додати
+  - Документ-апдейт у самому `docs/04-governance/security/pii-handling.md` — додати
     machine-readable секцію (`<!-- pii-keys-start -->` … `<!-- pii-keys-end -->`)
     для парсера.
 - **Acceptance:**
@@ -453,7 +453,7 @@ S9, S10, S11 — незалежні backlog
 > tracker, цей файл, security-channel у Telegram), але **не** мають
 > зʼявлятися у публічних PR-описах на GitHub до моменту, поки відповідний
 > fix не зальотний на main + не пройде 30-day vulnerability-SLA
-> ([`docs/security/vulnerability-sla.md`](../../../security/vulnerability-sla.md)).
+> ([`docs/04-governance/security/vulnerability-sla.md`](../../../04-governance/security/vulnerability-sla.md)).
 > Це не «security through obscurity», це baseline-розумна затримка, щоб
 > не давати атакувальнику готовий exploitable map.
 

@@ -1,15 +1,15 @@
 # PR-09: `@parse/node-apn` review (ADR-only)
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Closed — ADR-0048 merged ([`docs/adr/0048-apns-provider-library.md`](../../../adr/0048-apns-provider-library.md))
+> **Status:** Closed — ADR-0048 merged ([`docs/04-governance/adr/0048-apns-provider-library.md`](../../../04-governance/adr/0048-apns-provider-library.md))
 
-|              |                                                                   |
-| ------------ | ----------------------------------------------------------------- |
-| **Severity** | High (H3)                                                         |
-| **Owner**    | TBD                                                               |
-| **Effort**   | 0.5 дня (research + ADR)                                          |
-| **Risk**     | Low (ADR-only)                                                    |
-| **Touches**  | `docs/adr/0048-apns-provider-library.md`, `apps/server/src/push/` |
+|              |                                                                                 |
+| ------------ | ------------------------------------------------------------------------------- |
+| **Severity** | High (H3)                                                                       |
+| **Owner**    | TBD                                                                             |
+| **Effort**   | 0.5 дня (research + ADR)                                                        |
+| **Risk**     | Low (ADR-only)                                                                  |
+| **Touches**  | `docs/04-governance/adr/0048-apns-provider-library.md`, `apps/server/src/push/` |
 
 ## Контекст
 
@@ -57,7 +57,7 @@
 
 ## Resolution note
 
-Implemented as [`ADR-0048`](../../../adr/0048-apns-provider-library.md) instead of
+Implemented as [`ADR-0048`](../../../04-governance/adr/0048-apns-provider-library.md) instead of
 `ADR-0045`, because `0045` is already the Hard Rules taxonomy ADR. Current
 decision: keep `@parse/node-apn`; re-open on stale release (>12 months),
 high/critical advisory, APNs auth/signing defect, or Node runtime breakage.
@@ -72,7 +72,7 @@ high/critical advisory, APNs auth/signing defect, or Node runtime breakage.
 
 - `apps/server/package.json:22`
 - `apps/server/src/push/` — APNs sender code
-- `docs/adr/0048-apns-provider-library.md` — новий
+- `docs/04-governance/adr/0048-apns-provider-library.md` — новий
 
 ## Refs
 

@@ -32,7 +32,7 @@
 
 ### 1. `patches/README.md`
 
-Schema (ESLint-style table, як у `docs/governance/hard-rules.json`):
+Schema (ESLint-style table, як у `docs/04-governance/governance/hard-rules.json`):
 
 ```markdown
 # patches/

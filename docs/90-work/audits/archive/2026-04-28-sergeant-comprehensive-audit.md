@@ -177,14 +177,14 @@ Workflows:
 
 ### 2.7. Безпека
 
-| Аспект            | Статус                   | Деталі                              |
-| ----------------- | ------------------------ | ----------------------------------- |
-| `pnpm audit`      | ✅ Blocking (high+)      | PR-9.A merged                       |
-| gitleaks          | ✅ SHA-pinned            | PR-9.B merged                       |
-| Vulnerability SLA | ✅ Defined               | PR-9.C merged                       |
-| Audit exceptions  | ✅ Documented            | `docs/security/audit-exceptions.md` |
-| Session security  | ✅ HTTP-only cookies     | Better Auth                         |
-| SQL injection     | ✅ Parameterized queries | pg driver                           |
+| Аспект            | Статус                   | Деталі                                            |
+| ----------------- | ------------------------ | ------------------------------------------------- |
+| `pnpm audit`      | ✅ Blocking (high+)      | PR-9.A merged                                     |
+| gitleaks          | ✅ SHA-pinned            | PR-9.B merged                                     |
+| Vulnerability SLA | ✅ Defined               | PR-9.C merged                                     |
+| Audit exceptions  | ✅ Documented            | `docs/04-governance/security/audit-exceptions.md` |
+| Session security  | ✅ HTTP-only cookies     | Better Auth                                       |
+| SQL injection     | ✅ Parameterized queries | pg driver                                         |
 
 ### 2.8. Observability
 

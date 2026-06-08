@@ -18,13 +18,13 @@ graph TD
 
 ## Top-5 файлів та їх роль
 
-| Файл                                          | Роль                                                                         |
-| --------------------------------------------- | ---------------------------------------------------------------------------- |
-| `apps/server/src/modules/sync/syncRouter.ts`  | `/api/sync/push` і `/api/sync/pull` endpoints                                |
-| `apps/server/src/modules/sync/syncService.ts` | LWW merge logic, op-log replay, conflict resolution                          |
-| `packages/db-schema/src/pg/syncOpLog.ts`      | Drizzle schema: `sync_op_log` таблиця з `clientTs`, `serverId`, `entityType` |
-| `apps/server/src/migrations/`                 | SQL files що створили `sync_op_log` і related tables                         |
-| `docs/adr/0043-cloudsync-v1-sunset.md`        | Рішення про sunset CloudSync v1; поточний стан — v2                          |
+| Файл                                                 | Роль                                                                         |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `apps/server/src/modules/sync/syncRouter.ts`         | `/api/sync/push` і `/api/sync/pull` endpoints                                |
+| `apps/server/src/modules/sync/syncService.ts`        | LWW merge logic, op-log replay, conflict resolution                          |
+| `packages/db-schema/src/pg/syncOpLog.ts`             | Drizzle schema: `sync_op_log` таблиця з `clientTs`, `serverId`, `entityType` |
+| `apps/server/src/migrations/`                        | SQL files що створили `sync_op_log` і related tables                         |
+| `docs/04-governance/adr/0043-cloudsync-v1-sunset.md` | Рішення про sunset CloudSync v1; поточний стан — v2                          |
 
 ## Top-3 gotcha
 
@@ -34,6 +34,6 @@ graph TD
 
 ## Escalation
 
-- CloudSync v1 sunset: `docs/adr/0047-cloudsync-v1-410-gone.md`
-- v2 architecture: `docs/adr/0043-cloudsync-v1-sunset.md`
+- CloudSync v1 sunset: `docs/04-governance/adr/0047-cloudsync-v1-410-gone.md`
+- v2 architecture: `docs/04-governance/adr/0043-cloudsync-v1-sunset.md`
 - Runtime issues: `@Skords-01` (поки TBD secondary)

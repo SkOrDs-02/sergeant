@@ -506,7 +506,7 @@ export function run({
         `      impossible (irreversible data write, dropping an obsolete`,
         `      table, etc.):`,
         `        -- NO_ROLLBACK: <reason> (due: YYYY-MM-DD)`,
-        `   Ref: https://github.com/Skords-01/Sergeant/blob/main/docs/governance/rules/04-sql-migrations-sequential-two-phase.md`,
+        `   Ref: https://github.com/Skords-01/Sergeant/blob/main/docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md`,
       ].join("\n"),
     );
   }

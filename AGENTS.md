@@ -97,49 +97,49 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 
 ## Hard rules (do not break)
 
-> Кожне правило має `category` у [`hard-rules.json`](./docs/governance/hard-rules.json):
+> Кожне правило має `category` у [`hard-rules.json`](./docs/04-governance/governance/hard-rules.json):
 >
 > - **`blocker-invariant`** — корректність ран-тайму чи процес-інваріант (DB integrity, deploy safety, branch-protection, no-skip-hooks). Порушення = data loss / outage / silent regression.
 > - **`lint-enforced-convention`** — стилістичне/процесне правило з механічним enforcement (ESLint, commitlint, governance-sync, freshness). Severity blocker, але enforcement — лінтер, не ран-тайм.
 > - **`active-initiative`** — правило з allowlist + дедлайном (див. лінкований `TODO(NNNN-…): YYYY-MM-DD`). Для нового коду — blocker; винятки трекаються окремо.
 >
-> Поточний розподіл (26 rule): 8 `blocker-invariant`, 16 `lint-enforced-convention`, 2 `active-initiative`. Машино-читабельна матриця: [`docs/governance/hard-rules-matrix.md`](./docs/governance/hard-rules-matrix.md). Семантика категорій — у [`docs/adr/0045-hard-rules-taxonomy.md`](./docs/adr/0045-hard-rules-taxonomy.md). Per-rule canonical bodies (з BAD/GOOD прикладами): [`docs/governance/rules/`](./docs/governance/rules/). 3-way sync gate (AGENTS.md ↔ JSON ↔ per-rule files): `pnpm lint:hard-rules-registry`. `id` стабільні в обох розділах і `hard-rules.json` — старі PR-описи лінкуються без змін.
+> Поточний розподіл (26 rule): 8 `blocker-invariant`, 16 `lint-enforced-convention`, 2 `active-initiative`. Машино-читабельна матриця: [`docs/04-governance/governance/hard-rules-matrix.md`](./docs/04-governance/governance/hard-rules-matrix.md). Семантика категорій — у [`docs/04-governance/adr/0045-hard-rules-taxonomy.md`](./docs/04-governance/adr/0045-hard-rules-taxonomy.md). Per-rule canonical bodies (з BAD/GOOD прикладами): [`docs/04-governance/governance/rules/`](./docs/04-governance/governance/rules/). 3-way sync gate (AGENTS.md ↔ JSON ↔ per-rule files): `pnpm lint:hard-rules-registry`. `id` стабільні в обох розділах і `hard-rules.json` — старі PR-описи лінкуються без змін.
 
-| #   | Rule                                                                                  | Category                   | Per-rule file                                                                                                          |
-| --- | ------------------------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| 1   | DB types: coerce `bigint` to `number` in serializers                                  | `blocker-invariant`        | [`01-db-types-coerce-bigint-to-number.md`](./docs/governance/rules/01-db-types-coerce-bigint-to-number.md)             |
-| 2   | RQ keys: only via centralized factories                                               | `blocker-invariant`        | [`02-rq-keys-via-centralized-factories.md`](./docs/governance/rules/02-rq-keys-via-centralized-factories.md)           |
-| 3   | API contract: server response shape ↔ `api-client` types ↔ test                       | `blocker-invariant`        | [`03-api-contract-server-client-test.md`](./docs/governance/rules/03-api-contract-server-client-test.md)               |
-| 4   | SQL migrations: sequential, no gaps, two-phase for DROP                               | `blocker-invariant`        | [`04-sql-migrations-sequential-two-phase.md`](./docs/governance/rules/04-sql-migrations-sequential-two-phase.md)       |
-| 5   | Conventional Commits: explicit scope enum                                             | `lint-enforced-convention` | [`05-conventional-commits-explicit-scope.md`](./docs/governance/rules/05-conventional-commits-explicit-scope.md)       |
-| 6   | No force push to main/master                                                          | `blocker-invariant`        | [`06-no-force-push-to-main.md`](./docs/governance/rules/06-no-force-push-to-main.md)                                   |
-| 7   | Pre-commit hooks via Husky — do not skip                                              | `blocker-invariant`        | [`07-pre-commit-hooks-via-husky.md`](./docs/governance/rules/07-pre-commit-hooks-via-husky.md)                         |
-| 8   | Tailwind colour-opacity steps must be on the registered scale                         | `lint-enforced-convention` | [`08-tailwind-colour-opacity-scale.md`](./docs/governance/rules/08-tailwind-colour-opacity-scale.md)                   |
-| 9   | Saturated brand fills behind `text-white` must use the `-strong` companion            | `lint-enforced-convention` | [`09-saturated-brand-fills-strong-companion.md`](./docs/governance/rules/09-saturated-brand-fills-strong-companion.md) |
-| 10  | Lifecycle markers — every file/doc declares its status                                | `lint-enforced-convention` | [`10-lifecycle-markers.md`](./docs/governance/rules/10-lifecycle-markers.md)                                           |
-| 15  | Read governance before coding; update docs alongside code; internal docs in Ukrainian | `lint-enforced-convention` | [`15-governance-and-doc-language.md`](./docs/governance/rules/15-governance-and-doc-language.md)                       |
-| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS             | `active-initiative`        | [`18-module-size-discipline-600.md`](./docs/governance/rules/18-module-size-discipline-600.md)                         |
-| 19  | Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo      | `active-initiative`        | [`19-strict-mode-flag-canonical.md`](./docs/governance/rules/19-strict-mode-flag-canonical.md)                         |
-| 20  | No OpenClaw PATs in production                                                        | `blocker-invariant`        | [`20-no-openclaw-pats-in-production.md`](./docs/governance/rules/20-no-openclaw-pats-in-production.md)                 |
-| 21  | Pino redaction policy enforced                                                        | `blocker-invariant`        | [`21-pino-redaction-policy.md`](./docs/governance/rules/21-pino-redaction-policy.md)                                   |
-| 22  | Skill body security scan — no injection/exfiltration patterns in SKILL.md             | `lint-enforced-convention` | [`22-skill-body-security-scan.md`](./docs/governance/rules/22-skill-body-security-scan.md)                             |
-| 23  | Archive-move depth integrity — no broken `../X` links in docs archives                | `lint-enforced-convention` | [`23-archive-move-depth.md`](./docs/governance/rules/23-archive-move-depth.md)                                         |
-| 24  | Catalogs registered in `knowledge-graph.json` must have a `--check` generator         | `lint-enforced-convention` | [`24-catalog-check-generator.md`](./docs/governance/rules/24-catalog-check-generator.md)                               |
-| 25  | Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker                  | `lint-enforced-convention` | [`25-auto-generated-marker.md`](./docs/governance/rules/25-auto-generated-marker.md)                                   |
-| 26  | Merged PRs touching canonical docs must update `docs/pr-ledger/index.json`            | `lint-enforced-convention` | [`26-pr-ledger-update-on-merge.md`](./docs/governance/rules/26-pr-ledger-update-on-merge.md)                           |
+| #   | Rule                                                                                     | Category                   | Per-rule file                                                                                                                        |
+| --- | ---------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | DB types: coerce `bigint` to `number` in serializers                                     | `blocker-invariant`        | [`01-db-types-coerce-bigint-to-number.md`](./docs/04-governance/governance/rules/01-db-types-coerce-bigint-to-number.md)             |
+| 2   | RQ keys: only via centralized factories                                                  | `blocker-invariant`        | [`02-rq-keys-via-centralized-factories.md`](./docs/04-governance/governance/rules/02-rq-keys-via-centralized-factories.md)           |
+| 3   | API contract: server response shape ↔ `api-client` types ↔ test                          | `blocker-invariant`        | [`03-api-contract-server-client-test.md`](./docs/04-governance/governance/rules/03-api-contract-server-client-test.md)               |
+| 4   | SQL migrations: sequential, no gaps, two-phase for DROP                                  | `blocker-invariant`        | [`04-sql-migrations-sequential-two-phase.md`](./docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md)       |
+| 5   | Conventional Commits: explicit scope enum                                                | `lint-enforced-convention` | [`05-conventional-commits-explicit-scope.md`](./docs/04-governance/governance/rules/05-conventional-commits-explicit-scope.md)       |
+| 6   | No force push to main/master                                                             | `blocker-invariant`        | [`06-no-force-push-to-main.md`](./docs/04-governance/governance/rules/06-no-force-push-to-main.md)                                   |
+| 7   | Pre-commit hooks via Husky — do not skip                                                 | `blocker-invariant`        | [`07-pre-commit-hooks-via-husky.md`](./docs/04-governance/governance/rules/07-pre-commit-hooks-via-husky.md)                         |
+| 8   | Tailwind colour-opacity steps must be on the registered scale                            | `lint-enforced-convention` | [`08-tailwind-colour-opacity-scale.md`](./docs/04-governance/governance/rules/08-tailwind-colour-opacity-scale.md)                   |
+| 9   | Saturated brand fills behind `text-white` must use the `-strong` companion               | `lint-enforced-convention` | [`09-saturated-brand-fills-strong-companion.md`](./docs/04-governance/governance/rules/09-saturated-brand-fills-strong-companion.md) |
+| 10  | Lifecycle markers — every file/doc declares its status                                   | `lint-enforced-convention` | [`10-lifecycle-markers.md`](./docs/04-governance/governance/rules/10-lifecycle-markers.md)                                           |
+| 15  | Read governance before coding; update docs alongside code; internal docs in Ukrainian    | `lint-enforced-convention` | [`15-governance-and-doc-language.md`](./docs/04-governance/governance/rules/15-governance-and-doc-language.md)                       |
+| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS                | `active-initiative`        | [`18-module-size-discipline-600.md`](./docs/04-governance/governance/rules/18-module-size-discipline-600.md)                         |
+| 19  | Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo         | `active-initiative`        | [`19-strict-mode-flag-canonical.md`](./docs/04-governance/governance/rules/19-strict-mode-flag-canonical.md)                         |
+| 20  | No OpenClaw PATs in production                                                           | `blocker-invariant`        | [`20-no-openclaw-pats-in-production.md`](./docs/04-governance/governance/rules/20-no-openclaw-pats-in-production.md)                 |
+| 21  | Pino redaction policy enforced                                                           | `blocker-invariant`        | [`21-pino-redaction-policy.md`](./docs/04-governance/governance/rules/21-pino-redaction-policy.md)                                   |
+| 22  | Skill body security scan — no injection/exfiltration patterns in SKILL.md                | `lint-enforced-convention` | [`22-skill-body-security-scan.md`](./docs/04-governance/governance/rules/22-skill-body-security-scan.md)                             |
+| 23  | Archive-move depth integrity — no broken `../X` links in docs archives                   | `lint-enforced-convention` | [`23-archive-move-depth.md`](./docs/04-governance/governance/rules/23-archive-move-depth.md)                                         |
+| 24  | Catalogs registered in `knowledge-graph.json` must have a `--check` generator            | `lint-enforced-convention` | [`24-catalog-check-generator.md`](./docs/04-governance/governance/rules/24-catalog-check-generator.md)                               |
+| 25  | Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker                     | `lint-enforced-convention` | [`25-auto-generated-marker.md`](./docs/04-governance/governance/rules/25-auto-generated-marker.md)                                   |
+| 26  | Merged PRs touching canonical docs must update `docs/04-governance/pr-ledger/index.json` | `lint-enforced-convention` | [`26-pr-ledger-update-on-merge.md`](./docs/04-governance/governance/rules/26-pr-ledger-update-on-merge.md)                           |
 
 ## Lint-enforced design conventions
 
 Дизайн-конвенції з механічним enforcement через `eslint-plugin-sergeant-design`. Per-rule файли містять BAD/GOOD приклади + посилання на ESLint-правила.
 
-| #   | Rule                                                                   | Per-rule file                                                                                            |
-| --- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| 11  | No arbitrary hex colors in `className`                                 | [`11-no-arbitrary-hex-in-classname.md`](./docs/governance/rules/11-no-arbitrary-hex-in-classname.md)     |
-| 12  | Module-accent containment — no foreign accents inside a module subtree | [`12-module-accent-containment.md`](./docs/governance/rules/12-module-accent-containment.md)             |
-| 13  | No raw-palette light/dark `className` pairs                            | [`13-no-raw-palette-light-dark-pairs.md`](./docs/governance/rules/13-no-raw-palette-light-dark-pairs.md) |
-| 14  | Visible focus indicators must use `focus-visible:`, not `focus:`       | [`14-focus-visible-not-focus.md`](./docs/governance/rules/14-focus-visible-not-focus.md)                 |
-| 16  | Typography scale — semantic styles + 12px floor                        | [`16-typography-scale-12px-floor.md`](./docs/governance/rules/16-typography-scale-12px-floor.md)         |
-| 17  | Animation budget — max 2 concurrent, 3 tiers                           | [`17-animation-budget.md`](./docs/governance/rules/17-animation-budget.md)                               |
+| #   | Rule                                                                   | Per-rule file                                                                                                          |
+| --- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 11  | No arbitrary hex colors in `className`                                 | [`11-no-arbitrary-hex-in-classname.md`](./docs/04-governance/governance/rules/11-no-arbitrary-hex-in-classname.md)     |
+| 12  | Module-accent containment — no foreign accents inside a module subtree | [`12-module-accent-containment.md`](./docs/04-governance/governance/rules/12-module-accent-containment.md)             |
+| 13  | No raw-palette light/dark `className` pairs                            | [`13-no-raw-palette-light-dark-pairs.md`](./docs/04-governance/governance/rules/13-no-raw-palette-light-dark-pairs.md) |
+| 14  | Visible focus indicators must use `focus-visible:`, not `focus:`       | [`14-focus-visible-not-focus.md`](./docs/04-governance/governance/rules/14-focus-visible-not-focus.md)                 |
+| 16  | Typography scale — semantic styles + 12px floor                        | [`16-typography-scale-12px-floor.md`](./docs/04-governance/governance/rules/16-typography-scale-12px-floor.md)         |
+| 17  | Animation budget — max 2 concurrent, 3 tiers                           | [`17-animation-budget.md`](./docs/04-governance/governance/rules/17-animation-budget.md)                               |
 
 ## Touch targets
 
@@ -147,7 +147,7 @@ WCAG 2.5.5 / Apple HIG ≥44×44 на coarse pointers. Three layers: `Button` (a
 
 ## AI markers
 
-Five comment prefixes: `AI-NOTE` (pointer hint), `AI-CONTEXT` (architectural rationale future AI must know), `AI-DANGER` (high-risk zone — confirm before changing), `AI-GENERATED: <generator>` (file is generated — edit the generator), `AI-LEGACY: expires YYYY-MM-DD` (temporary code with deadline). Enforced by `sergeant-design/ai-marker-syntax`. `AI-LEGACY` expiry tracked by `pnpm lint:ai-legacy` (PR-time gate + weekly idempotent issue from `.github/workflows/ai-legacy-scan.yml`). Lifecycle status semantics for files/docs (Active / Scaffolded / Deprecated / Archived) — see [Rule #10](./docs/governance/rules/10-lifecycle-markers.md).
+Five comment prefixes: `AI-NOTE` (pointer hint), `AI-CONTEXT` (architectural rationale future AI must know), `AI-DANGER` (high-risk zone — confirm before changing), `AI-GENERATED: <generator>` (file is generated — edit the generator), `AI-LEGACY: expires YYYY-MM-DD` (temporary code with deadline). Enforced by `sergeant-design/ai-marker-syntax`. `AI-LEGACY` expiry tracked by `pnpm lint:ai-legacy` (PR-time gate + weekly idempotent issue from `.github/workflows/ai-legacy-scan.yml`). Lifecycle status semantics for files/docs (Active / Scaffolded / Deprecated / Archived) — see [Rule #10](./docs/04-governance/governance/rules/10-lifecycle-markers.md).
 
 ## Domain invariants
 
@@ -155,7 +155,7 @@ Single source of truth: **Europe/Kyiv** for time, **minor units (kopiykas) as `n
 
 ## RQ keys factory
 
-Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`. Hard Rule #2 — full text + BAD/GOOD examples in [`02-rq-keys-via-centralized-factories.md`](./docs/governance/rules/02-rq-keys-via-centralized-factories.md).
+Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`. Hard Rule #2 — full text + BAD/GOOD examples in [`02-rq-keys-via-centralized-factories.md`](./docs/04-governance/governance/rules/02-rq-keys-via-centralized-factories.md).
 
 ## Performance budgets
 
@@ -196,7 +196,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 ## Verification before PR
 
-`pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test`, which fans both pipelines out in parallel — see [D-3 у pr-plan-testing-devx-2026-05.md](./docs/90-work/planning/pr-plan-testing-devx-2026-05.md)). When changing UI: attach a screenshot. When bumping deps or shipping a heavy import: `pnpm licenses:check` + `pnpm --filter @sergeant/web size` (both blocking). Full CI matrix + non-blocking workflows: [`docs/governance/release-policy.md`](./docs/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/governance/external-link-allowlist.json`](./docs/governance/external-link-allowlist.json).
+`pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test`, which fans both pipelines out in parallel — see [D-3 у pr-plan-testing-devx-2026-05.md](./docs/90-work/planning/pr-plan-testing-devx-2026-05.md)). When changing UI: attach a screenshot. When bumping deps or shipping a heavy import: `pnpm licenses:check` + `pnpm --filter @sergeant/web size` (both blocking). Full CI matrix + non-blocking workflows: [`docs/04-governance/governance/release-policy.md`](./docs/04-governance/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/04-governance/governance/external-link-allowlist.json`](./docs/04-governance/governance/external-link-allowlist.json).
 
 ## Deployment & test users
 
@@ -211,7 +211,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 - [`docs/01-product/copy/style-guide.uk.md`](docs/01-product/copy/style-guide.uk.md) — canonical UA-copy tone-of-voice rules (1st-person-singular for action-busy, `ти`-address, action-prompt-closed errors). Reference for every new кирилічний JSX literal.
 - [`.agents/skills/`](.agents/skills/) — current `SKILL.md` files for AI agents; start with `sergeant-start-here`.
 - [`docs/02-engineering/architecture/`](docs/02-engineering/architecture/) — repo map, module ownership, domain invariants, C4 diagrams.
-- [`docs/governance/rules/`](docs/governance/rules/) — per-rule canonical bodies with BAD/GOOD examples.
-- [`docs/governance/freshness-dashboard.html`](docs/governance/freshness-dashboard.html) — generated `Last validated` / `Next review` dashboard for tracked docs.
-- [`docs/security/audit-exceptions.md`](docs/security/audit-exceptions.md) — tracked vulnerabilities with no available fix.
+- [`docs/04-governance/governance/rules/`](docs/04-governance/governance/rules/) — per-rule canonical bodies with BAD/GOOD examples.
+- [`docs/04-governance/governance/freshness-dashboard.html`](docs/04-governance/governance/freshness-dashboard.html) — generated `Last validated` / `Next review` dashboard for tracked docs.
+- [`docs/04-governance/security/audit-exceptions.md`](docs/04-governance/security/audit-exceptions.md) — tracked vulnerabilities with no available fix.
 - [`docs/90-work/tech-debt/frontend.md`](docs/90-work/tech-debt/frontend.md), [`docs/90-work/tech-debt/backend.md`](docs/90-work/tech-debt/backend.md).

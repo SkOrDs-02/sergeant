@@ -212,7 +212,7 @@ export const webBlocks = [
       // invariants spec. Allowlisted: `kyivTime.ts` itself, `apps/server/**`,
       // and `*.test.{ts,tsx,js}` (mock-clock tests). Severity `warn`
       // initially; ramps to `error` after the burndown sweep closes.
-      // See docs/governance/rules/kyiv-time-helpers.md.
+      // See docs/04-governance/governance/rules/kyiv-time-helpers.md.
       "sergeant-design/prefer-kyiv-time": "warn",
       // `require-toast-error-action` — audit 2026-05-13 § F1 (P0):
       // every error-toast must include an `action: { label, onClick }`

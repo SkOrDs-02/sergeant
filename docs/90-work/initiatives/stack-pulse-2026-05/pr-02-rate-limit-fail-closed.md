@@ -39,7 +39,7 @@ if (redis) {
    - Sentry tag `rate_limit.mode = redis | inmem | unavailable`.
    - Alert у `docs/03-operations/observability/alerts.md`: «Fallback active >5 min на security-route».
 3. **Документація:**
-   - `docs/security/rate-limit-failure-mode.md` — як саме fail-closed себе поводить, які маршрути захищені.
+   - `docs/04-governance/security/rate-limit-failure-mode.md` — як саме fail-closed себе поводить, які маршрути захищені.
    - Розглянути `@upstash/ratelimit-js` або переїзд на edge-rate-limit перед сервером (як ADR, не цей PR).
 
 ## Out of scope
@@ -54,7 +54,7 @@ if (redis) {
 - [x] Тест: симулюємо Redis-error → 503 на `/api/auth/sign-in`, не 200/429.
 - [x] Тест: симулюємо Redis-error → fallback (200) на `/api/health` чи інших non-security routes.
 - [x] Pino-метрика `rate_limit_redis_fallback_count` пишеться у логи.
-- [x] `docs/security/rate-limit-failure-mode.md` створений з threat-моделлю.
+- [x] `docs/04-governance/security/rate-limit-failure-mode.md` створений з threat-моделлю.
 
 ## Тести
 
@@ -80,7 +80,7 @@ if (redis) {
 - `apps/server/src/http/rateLimit.ts:202–249` — fallback-логіка
 - `apps/server/src/routes/index.ts` — middleware mount-points
 - `apps/server/src/auth.ts` — Better Auth `/api/auth/*` route mount
-- `docs/security/` — нова сторінка про failure-mode
+- `docs/04-governance/security/` — нова сторінка про failure-mode
 - `docs/03-operations/observability/alerts.md` — додати alert
 
 ## Refs

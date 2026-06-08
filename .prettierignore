@@ -59,7 +59,7 @@ scripts/__fixtures__/eslint-print-config/
 docs/open-work.md
 docs/today.md
 docs/90-work/initiatives/follow-ups.md
-docs/governance/freshness-dashboard.html
+docs/04-governance/governance/freshness-dashboard.html
 
 # Mockup HTML files — inline styles on long lines; Prettier would break
 # the formatting and make diffs unreadable. See mockups/_shared/components/README.md.

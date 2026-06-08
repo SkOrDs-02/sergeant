@@ -17,7 +17,7 @@
 
 ## 🟢 Зроблено нещодавно
 
-Останні 6 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./pr-ledger/index.json).
+Останні 6 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
 
 - [#2900](https://github.com/Skords-01/Sergeant/pull/2900) — docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) _(2026-05-15)_
 - [#2899](https://github.com/Skords-01/Sergeant/pull/2899) — feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5) _(2026-05-15)_
@@ -72,7 +72,7 @@ pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 4 застосунки + `tool
 | **Продукт**    | [`launch/`](./01-product/launch/README.md), [`marketing/`](./01-product/marketing/README.md), [`copy/`](./01-product/copy/README.md)                                                                                                                                                                         | GTM, монетизація, FTUX             |
 | **Інженерія**  | [`architecture/`](./02-engineering/architecture/README.md), [`api/`](./02-engineering/api/README.md), [`web/`](./02-engineering/web/README.md), [`mobile/`](./02-engineering/mobile/README.md), [`testing/`](./02-engineering/testing/README.md), [`integrations/`](./02-engineering/integrations/README.md) | як влаштовано і як білдити         |
 | **Операції**   | [`deploy/`](./03-operations/deploy/README.md), [`observability/`](./03-operations/observability/README.md), [`runbooks/`](./03-operations/runbooks/README.md), [`postmortems/`](./03-operations/postmortems/README.md), [`ops/`](./03-operations/ops/README.md)                                              | деплой, алерти, інциденти          |
-| **Governance** | [`governance/`](./governance/README.md), [`security/`](./security/README.md), [`adr/`](./adr/README.md)                                                                                                                                                                                                      | hard rules, рішення, безпека       |
+| **Governance** | [`governance/`](./04-governance/governance/README.md), [`security/`](./04-governance/security/README.md), [`adr/`](./04-governance/adr/README.md)                                                                                                                                                            | hard rules, рішення, безпека       |
 | **Дизайн**     | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md)                                                                                                                                                                                          | дизайн-система, патерни            |
 | **Робота**     | [`initiatives/`](./90-work/initiatives/README.md), [`planning/`](./90-work/planning/README.md), [`audits/`](./90-work/audits/README.md), [`tech-debt/`](./90-work/tech-debt/README.md)                                                                                                                       | трекери: що оновлювати, коли шипиш |
 
@@ -80,5 +80,5 @@ pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 4 застосунки + `tool
 
 - [`open-work.md`](./open-work.md) — повний rollup усіх трекерів
 - [`today.md`](./today.md) — денний бриф (топ-7 на сьогодні)
-- [`governance/freshness-dashboard.html`](./governance/freshness-dashboard.html) — freshness огляд
+- [`governance/freshness-dashboard.html`](./04-governance/governance/freshness-dashboard.html) — freshness огляд
 - [`../AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing

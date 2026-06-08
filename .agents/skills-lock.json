@@ -19,7 +19,7 @@
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "be759cdf39aa6f398172b9ce6a60831d5f2f3932b456549cd187f5ce10711371"
+      "computedHash": "73197b54e134b04b4e6f9ccbe4fd8f68a5edc223ca0d08659c0cf349c4364c72"
     },
     "sergeant-feature-delivery": {
       "source": "local",
@@ -29,7 +29,7 @@
     "sergeant-hubchat": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "26f658544f11cee639277c39da6d0751bf8dfa746c446a9e947118f337ac657c"
+      "computedHash": "33bd531490a808ae980b4d88367968d29fadbf4527c17fed4a8d821322c9f92d"
     },
     "sergeant-mobile-expo": {
       "source": "local",
@@ -49,7 +49,7 @@
     "sergeant-server-api": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "3e0321c205ca2caae0b500298866d64eca7412b913a897bcaa0ed73d54249797"
+      "computedHash": "6728d7fbda87e59ffa5a2f049e48ed88efbd2e20912ebf976062dff620b7db8d"
     },
     "sergeant-start-here": {
       "source": "local",
@@ -64,12 +64,12 @@
     "sergeant-writing-skills": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "b4e884ef11f35f2b53e3b8a5be8ac0a166df46a93c49059632c39faf453d5db3"
+      "computedHash": "1a9ea1de7b38e99b417ac58c0805af2ceea66d0f2aa4d42ddee475ef6b219d21"
     },
     "sergeant-openclaw": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "520e3330032f8156fd2ee6b70321eac8d057d7b38291d4b492615aed246d82dd"
+      "computedHash": "8152ed93324e85c8ebd63633d7cb700048a15b3c567e454347e632a4729f1703"
     },
     "sergeant-security-audit": {
       "source": "local",
@@ -89,7 +89,7 @@
     "sergeant-review-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "222f397adcce81943d50b1ce635cc9024d2b2384be0adbf3901c5b66b6259d00"
+      "computedHash": "7c78c89264c6e5ddb508384f787ecbfe39ca0438a14bb6657c75c75be973e471"
     },
     "sergeant-deliver-squad": {
       "source": "local",
@@ -109,7 +109,7 @@
     "sergeant-planning-batch": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "92aefc00f3aeaf8ad4b5db94a429ff5adb45ff4f163a9f51d75da40ac2a430b2"
+      "computedHash": "78794f7369dccc50279e195c5a90286c80c544825736d6594dd81c4cc1799485"
     },
     "api-design-principles": {
       "source": "local",

@@ -113,7 +113,7 @@
 - [ ] Failover — якщо ritual не вдався → пост у `⚙️ Контрол-план` через alert-bot
 - [ ] LLM cost ~$0.10 на ritual (в межах `OPENCLAW_DAILY_USD_BUDGET=$5`)
 
-**Пов'язане:** [openclaw-roadmap §Phase 2](../../01-product/launch/tech/openclaw-roadmap.md), [ADR-0033](../../adr/0033-openclaw-multi-personas-and-council.md) + [ADR-0055](../../adr/0055-openclaw-external-gateway.md)
+**Пов'язане:** [openclaw-roadmap §Phase 2](../../01-product/launch/tech/openclaw-roadmap.md), [ADR-0033](../../04-governance/adr/0033-openclaw-multi-personas-and-council.md) + [ADR-0055](../../04-governance/adr/0055-openclaw-external-gateway.md)
 
 ---
 
@@ -295,7 +295,7 @@ apps/web/src/core/hub/
 - [x] Sentry breadcrumb `[openclaw] webhook recovered after race` при retry-успіху
 - [ ] Smoke: long-poll → webhook → long-poll → webhook redeploy без ручного curl-у
 
-**Пов'язане:** [ADR-0041 §5](../../adr/0041-openclaw-telegram-webhook.md), [tg-improvements §3.5.1](../../01-product/launch/tech/telegram-improvements-roadmap.md)
+**Пов'язане:** [ADR-0041 §5](../../04-governance/adr/0041-openclaw-telegram-webhook.md), [tg-improvements §3.5.1](../../01-product/launch/tech/telegram-improvements-roadmap.md)
 
 ---
 

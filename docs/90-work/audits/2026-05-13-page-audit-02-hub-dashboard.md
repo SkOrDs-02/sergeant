@@ -946,7 +946,7 @@ Test coverage gap для одного з найскладніших компон
 
 ## Audit-freeze exception
 
-Цей PR створено під час freeze-вікна 2026-05-05 → 2026-06-02 (`docs/governance/audit-freeze-2026-05-05.md`). Він потрапляє у override-категорію:
+Цей PR створено під час freeze-вікна 2026-05-05 → 2026-06-02 (`docs/04-governance/governance/audit-freeze-2026-05-05.md`). Він потрапляє у override-категорію:
 
 - **Чому це exception:** аудит замовлений батьківським session-ом (`https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40`) як частина systematic page-by-page audit-пасу — серія child-сесій, кожна по своєму scope.
 - **Чому не може почекати до 2026-06-02:** parent-сесія координує merging audit-findings у master-tracker одразу після завершення усіх child-ів; затримка зруйнує паралельний pipeline і витратить duplicate-work-у.

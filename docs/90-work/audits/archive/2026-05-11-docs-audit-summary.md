@@ -11,12 +11,12 @@
 
 ### CRITICAL ✅ Завершено
 
-| #   | Дія                         | Файли                                  | Commit    | Статус  |
-| --- | --------------------------- | -------------------------------------- | --------- | ------- |
-| 1   | Оновити `backend.md` marker | `docs/90-work/tech-debt/backend.md`    | `8cd159d` | ✅ Done |
-| 2   | Оновити `doc-freshness.md`  | `docs/governance/doc-freshness.md`     | `8cd159d` | ✅ Done |
-| 3   | Оновити 4 design docs       | `docs/05-design/design/*.md` (4 файли) | `8cd159d` | ✅ Done |
-| 4   | Підготувати batch archival  | `docs/90-work/initiatives/archive/*`   | `fe309c4` | ✅ Done |
+| #   | Дія                         | Файли                                            | Commit    | Статус  |
+| --- | --------------------------- | ------------------------------------------------ | --------- | ------- |
+| 1   | Оновити `backend.md` marker | `docs/90-work/tech-debt/backend.md`              | `8cd159d` | ✅ Done |
+| 2   | Оновити `doc-freshness.md`  | `docs/04-governance/governance/doc-freshness.md` | `8cd159d` | ✅ Done |
+| 3   | Оновити 4 design docs       | `docs/05-design/design/*.md` (4 файли)           | `8cd159d` | ✅ Done |
+| 4   | Підготувати batch archival  | `docs/90-work/initiatives/archive/*`             | `fe309c4` | ✅ Done |
 
 **批量commit:** 2 commits × 6 files updated, 1 plan document created.
 
@@ -26,22 +26,22 @@
 
 Усі критичні маркери оновлені на 2026-05-11 з Next review: 2026-08-09 (+90 днів).
 
-| Документ                                                  | Тип         | Дата       | Дні | Маркер         | Статус   |
-| --------------------------------------------------------- | ----------- | ---------- | --- | -------------- | -------- |
-| `docs/90-work/tech-debt/backend.md`                       | Tech-debt   | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/90-work/tech-debt/frontend.md`                      | Tech-debt   | 2026-05-04 | 7   | Оновлено       | ✅ Fresh |
-| `docs/90-work/tech-debt/mobile.md`                        | Tech-debt   | 2026-05-03 | 8   | Оновлено       | ✅ Fresh |
-| `docs/governance/doc-freshness.md`                        | Governance  | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/05-design/design/cross-module-prompts.md`           | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/05-design/design/radius-rhythm.md`                  | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/05-design/design/empty-states.md`                   | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/05-design/design/unified-bottom-nav.md`             | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/governance/rules/15-governance-and-doc-language.md` | Governance  | 2026-05-09 | 2   | Last validated | ✅ Fresh |
-| `docs/90-work/planning/README.md`                         | Planning    | 2026-05-06 | 5   | Last validated | ✅ Fresh |
-| `docs/90-work/tech-debt/README.md`                        | Tech-debt   | 2026-05-02 | 9   | Last validated | ✅ Fresh |
-| `docs/90-work/initiatives/README.md`                      | Initiatives | 2026-05-06 | 5   | Last validated | ✅ Fresh |
-| `docs/90-work/initiatives/follow-ups.md`                  | Follow-ups  | 2026-05-11 | 0   | Last validated | ✅ Fresh |
-| `docs/90-work/initiatives/stack-pulse-2026-05/README.md`  | Stack-pulse | 2026-05-10 | 1   | Last validated | ✅ Fresh |
+| Документ                                                                | Тип         | Дата       | Дні | Маркер         | Статус   |
+| ----------------------------------------------------------------------- | ----------- | ---------- | --- | -------------- | -------- |
+| `docs/90-work/tech-debt/backend.md`                                     | Tech-debt   | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/90-work/tech-debt/frontend.md`                                    | Tech-debt   | 2026-05-04 | 7   | Оновлено       | ✅ Fresh |
+| `docs/90-work/tech-debt/mobile.md`                                      | Tech-debt   | 2026-05-03 | 8   | Оновлено       | ✅ Fresh |
+| `docs/04-governance/governance/doc-freshness.md`                        | Governance  | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/05-design/design/cross-module-prompts.md`                         | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/05-design/design/radius-rhythm.md`                                | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/05-design/design/empty-states.md`                                 | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/05-design/design/unified-bottom-nav.md`                           | Design      | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/04-governance/governance/rules/15-governance-and-doc-language.md` | Governance  | 2026-05-09 | 2   | Last validated | ✅ Fresh |
+| `docs/90-work/planning/README.md`                                       | Planning    | 2026-05-06 | 5   | Last validated | ✅ Fresh |
+| `docs/90-work/tech-debt/README.md`                                      | Tech-debt   | 2026-05-02 | 9   | Last validated | ✅ Fresh |
+| `docs/90-work/initiatives/README.md`                                    | Initiatives | 2026-05-06 | 5   | Last validated | ✅ Fresh |
+| `docs/90-work/initiatives/follow-ups.md`                                | Follow-ups  | 2026-05-11 | 0   | Last validated | ✅ Fresh |
+| `docs/90-work/initiatives/stack-pulse-2026-05/README.md`                | Stack-pulse | 2026-05-10 | 1   | Last validated | ✅ Fresh |
 
 **Порог свіжості:** 90 днів (tech-debt), 90 днів (planning/initiatives).
 **Дата наступної масової валідації:** 2026-08-09.
@@ -54,14 +54,14 @@
 
 Шість initiatives готові до архівації (≥90 днів від Done/Closed):
 
-| Initiative                      | Done/Closed | Archive date | Prep status  | Canonical location                                                 |
-| ------------------------------- | ----------- | ------------ | ------------ | ------------------------------------------------------------------ |
-| **0001** Module decomposition   | 2026-05-04  | 2026-08-02   | ✅ Prep done | Hard Rule #18                                                      |
-| **0004** Server observability   | 2026-05-04  | 2026-08-02   | ✅ Prep done | [ADR-0035](../../../adr/0035-distributed-tracing-opentelemetry.md) |
-| **0005** AI cost (prompt cache) | 2026-05-04  | 2026-08-02   | ✅ Prep done | [ADR-0039](../../../adr/0039-anthropic-prompt-cache-policy.md)     |
-| **0008** Platform hardening     | 2026-05-04  | 2026-08-02   | ✅ Prep done | `RATE_LIMIT_POLICIES` registry                                     |
-| **0012** Perfect TS strictness  | 2026-05-04  | 2026-08-02   | ✅ Prep done | Hard Rule #19                                                      |
-| **0007** Design-system tooling  | 2026-05-05  | 2026-08-03   | ✅ Prep done | [ADR-0046](../../../adr/0046-storybook-vrt-scope.md)               |
+| Initiative                      | Done/Closed | Archive date | Prep status  | Canonical location                                                               |
+| ------------------------------- | ----------- | ------------ | ------------ | -------------------------------------------------------------------------------- |
+| **0001** Module decomposition   | 2026-05-04  | 2026-08-02   | ✅ Prep done | Hard Rule #18                                                                    |
+| **0004** Server observability   | 2026-05-04  | 2026-08-02   | ✅ Prep done | [ADR-0035](../../../04-governance/adr/0035-distributed-tracing-opentelemetry.md) |
+| **0005** AI cost (prompt cache) | 2026-05-04  | 2026-08-02   | ✅ Prep done | [ADR-0039](../../../04-governance/adr/0039-anthropic-prompt-cache-policy.md)     |
+| **0008** Platform hardening     | 2026-05-04  | 2026-08-02   | ✅ Prep done | `RATE_LIMIT_POLICIES` registry                                                   |
+| **0012** Perfect TS strictness  | 2026-05-04  | 2026-08-02   | ✅ Prep done | Hard Rule #19                                                                    |
+| **0007** Design-system tooling  | 2026-05-05  | 2026-08-03   | ✅ Prep done | [ADR-0046](../../../04-governance/adr/0046-storybook-vrt-scope.md)               |
 
 **Execution plan:** [`docs/90-work/initiatives/archive/2026-08-02-batch-archival-plan.md`](../../initiatives/archive/2026-08-02-batch-archival-plan.md) — готов до виконання 2026-08-02.
 
@@ -157,9 +157,9 @@
 - ✅ `docs/90-work/initiatives/stack-pulse-2026-05/README.md`
 - ✅ `docs/90-work/initiatives/follow-ups.md`
 - ✅ `docs/90-work/initiatives/archive/README.md`
-- ✅ `docs/governance/doc-freshness.md`
-- ✅ `docs/governance/hard-rules.json`
-- ✅ `docs/governance/rules/15-governance-and-doc-language.md`
+- ✅ `docs/04-governance/governance/doc-freshness.md`
+- ✅ `docs/04-governance/governance/hard-rules.json`
+- ✅ `docs/04-governance/governance/rules/15-governance-and-doc-language.md`
 - ✅ `docs/05-design/design/*.md` (4 файли)
 - ✅ `AGENTS.md` (header only, + references)
 
@@ -200,7 +200,7 @@
 
 - `docs/90-work/initiatives/archive/README.md` (+ batch schedule)
 - `docs/90-work/tech-debt/backend.md` (marker)
-- `docs/governance/doc-freshness.md` (marker)
+- `docs/04-governance/governance/doc-freshness.md` (marker)
 - `docs/05-design/design/cross-module-prompts.md` (marker)
 - `docs/05-design/design/radius-rhythm.md` (marker)
 - `docs/05-design/design/empty-states.md` (marker)

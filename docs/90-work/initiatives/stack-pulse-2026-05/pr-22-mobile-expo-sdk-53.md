@@ -30,7 +30,7 @@ Lag-policy (Hard Rule N+1): тримаємо одну major-версію Expo н
 
 ### 1. Pre-flight ADR
 
-`docs/adr/0055-expo-sdk-53-upgrade.md`:
+`docs/04-governance/adr/0055-expo-sdk-53-upgrade.md`:
 
 - Compatibility matrix: всі native deps (`expo-notifications`, `expo-av`, `expo-image-picker`, `expo-secure-store`, etc.) — кожна має minimum-SDK-53 version?
 - Breaking changes RN 0.76 → 0.77 (zero-config Hermes? new arch default? expo-router changes?)
@@ -115,7 +115,7 @@ pnpm install
 - `apps/mobile/ios/Podfile.lock` — regen
 - `apps/mobile/android/gradle.properties` — AGP version
 - `patches/@expo__cli@0.22.28.patch` — rebase
-- `docs/adr/0055-expo-sdk-53-upgrade.md` — new
+- `docs/04-governance/adr/0055-expo-sdk-53-upgrade.md` — new
 
 ## Refs
 

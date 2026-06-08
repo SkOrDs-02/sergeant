@@ -5,7 +5,7 @@
 >
 > **v2 (persona-extend) coverage:** 10 consumer interactions → 8 provider replays + 2 `it.todo` markers. Diff from PR-42 v1: +5 endpoints (`mono/sync-state`, `mono/transactions`, `coach/memory`, `barcode`, `nutrition/day-plan`).
 
-Pact-based **runtime** contract verification for `@sergeant/api-client ↔ @sergeant/server`. Доповнює, а не замінює, **type-level** sync через Hard Rule #3 ([`03-api-contract-server-client-test.md`](../../governance/rules/03-api-contract-server-client-test.md)) + `pnpm api:check-openapi` / `pnpm api:check-openapi-types`.
+Pact-based **runtime** contract verification for `@sergeant/api-client ↔ @sergeant/server`. Доповнює, а не замінює, **type-level** sync через Hard Rule #3 ([`03-api-contract-server-client-test.md`](../../04-governance/governance/rules/03-api-contract-server-client-test.md)) + `pnpm api:check-openapi` / `pnpm api:check-openapi-types`.
 
 ## TL;DR
 

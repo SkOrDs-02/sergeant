@@ -15,10 +15,10 @@
 > [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
 > [`04-launch-readiness.md` §4.2](../business/04-launch-readiness.md) — funnel definitions ·
 > [`docs/03-operations/observability/posthog-ftux-dashboards.md`](../../../03-operations/observability/posthog-ftux-dashboards.md) — PostHog dashboards runbook ·
-> [`docs/governance/feature-flags.md`](../../../governance/feature-flags.md) — flag conventions ·
+> [`docs/04-governance/governance/feature-flags.md`](../../../04-governance/governance/feature-flags.md) — flag conventions ·
 > [`docs/00-start/playbooks/add-onboarding-step.md`](../../../00-start/playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS` ·
 > [`docs/05-design/design/empty-states.md`](../../../05-design/design/empty-states.md) — 3-tier empty states ·
-> `docs/governance/audit-freeze-2026-05-05.md` — freeze правила (4 тижні; з'явиться у PR-01).
+> `docs/04-governance/governance/audit-freeze-2026-05-05.md` — freeze правила (4 тижні; з'явиться у PR-01).
 
 > **Audit-freeze contract.** Цей документ — **legal during freeze** (2026-05-05 → 2026-06-02), бо це **consolidation**, не нова прожарка. У freeze-period дозволено:
 >
@@ -500,7 +500,7 @@ slos:
 
 ### 8.5. UX-roast 2026-05-06 — P0/P1/P2
 
-> Джерело: [`docs/90-work/audits/2026-05-06-ux-roast.md`](../../../90-work/audits/archive/2026-05-06-ux-roast.md). Виконавчий план: [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](../../../90-work/audits/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../../adr/0054-ux-roast-2026-q2.md).
+> Джерело: [`docs/90-work/audits/2026-05-06-ux-roast.md`](../../../90-work/audits/archive/2026-05-06-ux-roast.md). Виконавчий план: [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](../../../90-work/audits/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../../04-governance/adr/0054-ux-roast-2026-q2.md).
 >
 > Статус станом на 2026-05-07: **15/41 змерджено**, 2 obsolete (PR-13, PR-37). Головний блокер Sprint 1: PR-0 (telemetry, S) — не стартував.
 

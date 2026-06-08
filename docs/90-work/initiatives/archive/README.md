@@ -8,7 +8,7 @@
 ## Чим це не є
 
 - **Не tombstone для Withdrawn-ініціатив.** `Withdrawn` означає «передумови зникли, ніколи не починали реалізувати». Такі файли лишаються в активному списку у `../README.md` зі статусом `Withdrawn` для аудит-сліду; сюди не переносяться.
-- **Не source of truth для канонічних правил.** Якщо ініціатива породила Hard Rule / lint-правило / ADR — канонічна копія живе у [`AGENTS.md`](../../../../AGENTS.md), [`docs/governance/`](../../../governance) або відповідному ESLint-плагіні. Архівований файл — це **історичний контекст**, а не контракт.
+- **Не source of truth для канонічних правил.** Якщо ініціатива породила Hard Rule / lint-правило / ADR — канонічна копія живе у [`AGENTS.md`](../../../../AGENTS.md), [`docs/04-governance/governance/`](../../../04-governance/governance) або відповідному ESLint-плагіні. Архівований файл — це **історичний контекст**, а не контракт.
 
 ## Як архівувати ініціативу
 
@@ -20,7 +20,7 @@
    ```
    - [archive/<NNNN-slug>.md](./archive/<NNNN-slug>.md) — archived YYYY-MM-DD; superseded by <посилання на successor / canonical home>.
    ```
-4. Перевірити, що канонічні правила (Hard Rules, lint-правила, ADR-и), які ініціатива породила, все ще живі у `AGENTS.md` / `docs/governance/`. Якщо ні — спочатку винести їх туди, тоді архівувати.
+4. Перевірити, що канонічні правила (Hard Rules, lint-правила, ADR-и), які ініціатива породила, все ще живі у `AGENTS.md` / `docs/04-governance/governance/`. Якщо ні — спочатку винести їх туди, тоді архівувати.
 5. Запустити `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` локально перед PR-ом. CI-гейт `lint:initiative-status-sync` розуміє Archive-stub-формат і не падає на «row without file».
 
 ## Batch archival schedule
@@ -29,20 +29,20 @@
 
 Сім initiatives архівовано в одному PR-і — founder прийняв рішення про fast-forward, 90-day waiting period skipped:
 
-| Initiative                      | Done/Closed | Successor / Canonical                                                                    | Archive path                                                                   |
-| ------------------------------- | ----------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| **0001** Module decomposition   | 2026-05-04  | Hard Rule #18 + Successor [0013](./_0013-module-decomposition-round-2.md)                | [`_0001-module-decomposition.md`](./_0001-module-decomposition.md)             |
-| **0004** Server observability   | 2026-05-04  | [ADR-0035](../../../adr/0035-distributed-tracing-opentelemetry.md)                       | [`_0004-server-observability.md`](./_0004-server-observability.md)             |
-| **0005** AI cost (prompt cache) | 2026-05-04  | [ADR-0039](../../../adr/0039-anthropic-prompt-cache-policy.md)                           | [`_0005-ai-cost-and-prompt-cache.md`](./_0005-ai-cost-and-prompt-cache.md)     |
-| **0007** Design-system tooling  | 2026-05-05  | Storybook live deploy + [ADR-0046](../../../adr/0046-storybook-vrt-scope.md)             | [`_0007-design-system-tooling.md`](./_0007-design-system-tooling.md)           |
-| **0008** Platform hardening     | 2026-05-04  | `RATE_LIMIT_POLICIES` registry + [ADR-0044](../../../adr/0044-renovate-vs-dependabot.md) | [`_0008-platform-hardening.md`](./_0008-platform-hardening.md)                 |
-| **0009** Agent-OS hardening     | 2026-05-09  | AGENTS.md slim (907 → 137 LOC) + `docs/governance/rules/` (canonical Hard Rule bodies)   | [`_0009-agent-os-hardening.md`](./_0009-agent-os-hardening.md)                 |
-| **0012** Perfect TS strictness  | 2026-05-04  | Hard Rule #19 + `tools/tsconfig-guard/allowlist.json`                                    | [`_0012-perfect-strictness-rollout.md`](./_0012-perfect-strictness-rollout.md) |
+| Initiative                      | Done/Closed | Successor / Canonical                                                                                  | Archive path                                                                   |
+| ------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| **0001** Module decomposition   | 2026-05-04  | Hard Rule #18 + Successor [0013](./_0013-module-decomposition-round-2.md)                              | [`_0001-module-decomposition.md`](./_0001-module-decomposition.md)             |
+| **0004** Server observability   | 2026-05-04  | [ADR-0035](../../../04-governance/adr/0035-distributed-tracing-opentelemetry.md)                       | [`_0004-server-observability.md`](./_0004-server-observability.md)             |
+| **0005** AI cost (prompt cache) | 2026-05-04  | [ADR-0039](../../../04-governance/adr/0039-anthropic-prompt-cache-policy.md)                           | [`_0005-ai-cost-and-prompt-cache.md`](./_0005-ai-cost-and-prompt-cache.md)     |
+| **0007** Design-system tooling  | 2026-05-05  | Storybook live deploy + [ADR-0046](../../../04-governance/adr/0046-storybook-vrt-scope.md)             | [`_0007-design-system-tooling.md`](./_0007-design-system-tooling.md)           |
+| **0008** Platform hardening     | 2026-05-04  | `RATE_LIMIT_POLICIES` registry + [ADR-0044](../../../04-governance/adr/0044-renovate-vs-dependabot.md) | [`_0008-platform-hardening.md`](./_0008-platform-hardening.md)                 |
+| **0009** Agent-OS hardening     | 2026-05-09  | AGENTS.md slim (907 → 137 LOC) + `docs/04-governance/governance/rules/` (canonical Hard Rule bodies)   | [`_0009-agent-os-hardening.md`](./_0009-agent-os-hardening.md)                 |
+| **0012** Perfect TS strictness  | 2026-05-04  | Hard Rule #19 + `tools/tsconfig-guard/allowlist.json`                                                  | [`_0012-perfect-strictness-rollout.md`](./_0012-perfect-strictness-rollout.md) |
 
 **Verification (2026-05-13):**
 
 - [x] Усі carry-over items закриті або передані successor-ам
-- [x] Hard Rules / ADRs / lint-правила live у AGENTS.md / docs/governance/
+- [x] Hard Rules / ADRs / lint-правила live у AGENTS.md / docs/04-governance/governance/
 - [x] Batch-PR побудовано (7 файлів + README оновлення + comment-refs)
 - [x] `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` pass
 - [x] Merge виконано 2026-05-13
@@ -51,21 +51,21 @@
 
 П'ять initiatives архівовано — founder прийняв рішення про fast-forward, 90-day waiting period skipped (усі `Done`/`Closed`, без активних регресій / follow-up-ів):
 
-| Initiative                      | Done/Closed | Successor / Canonical                                                                                        | Archive path                                                                                                   |
-| ------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| **0002** Mobile platform        | 2026-05-18  | [ADR-0052](../../../adr/0052-mobile-strategy-capacitor-primary.md) + [0010](../0010-revenue-first-launch.md) | [`_0002-mobile-platform-decision.md`](./_0002-mobile-platform-decision.md)                                     |
-| **0011** Foundation adoption    | 2026-05-20  | Hard Rule #15 + [email-verification-sweep](../../../01-product/launch/email-verification-sweep.md)           | [`_0011-foundation-adoption-and-process-discipline.md`](./_0011-foundation-adoption-and-process-discipline.md) |
-| **0013** Module decomp. round 2 | 2026-05-29  | Hard Rule #18 + [tech-debt/frontend](../../tech-debt/frontend.md)                                            | [`_0013-module-decomposition-round-2.md`](./_0013-module-decomposition-round-2.md)                             |
-| **0014** Knowledge graph        | 2026-05-15  | [ADR-0058](../../../adr/0058-knowledge-graph-schema.md) + generated catalogs                                 | [`_0014-knowledge-graph-and-catalogs.md`](./_0014-knowledge-graph-and-catalogs.md)                             |
-| **0016** CHANGELOG release-cut  | 2026-05-29  | `changelog:cut` script + [CHANGELOG](../../../../CHANGELOG.md)                                               | [`_0016-changelog-release-cut.md`](./_0016-changelog-release-cut.md)                                           |
+| Initiative                      | Done/Closed | Successor / Canonical                                                                                                      | Archive path                                                                                                   |
+| ------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **0002** Mobile platform        | 2026-05-18  | [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) + [0010](../0010-revenue-first-launch.md) | [`_0002-mobile-platform-decision.md`](./_0002-mobile-platform-decision.md)                                     |
+| **0011** Foundation adoption    | 2026-05-20  | Hard Rule #15 + [email-verification-sweep](../../../01-product/launch/email-verification-sweep.md)                         | [`_0011-foundation-adoption-and-process-discipline.md`](./_0011-foundation-adoption-and-process-discipline.md) |
+| **0013** Module decomp. round 2 | 2026-05-29  | Hard Rule #18 + [tech-debt/frontend](../../tech-debt/frontend.md)                                                          | [`_0013-module-decomposition-round-2.md`](./_0013-module-decomposition-round-2.md)                             |
+| **0014** Knowledge graph        | 2026-05-15  | [ADR-0058](../../../04-governance/adr/0058-knowledge-graph-schema.md) + generated catalogs                                 | [`_0014-knowledge-graph-and-catalogs.md`](./_0014-knowledge-graph-and-catalogs.md)                             |
+| **0016** CHANGELOG release-cut  | 2026-05-29  | `changelog:cut` script + [CHANGELOG](../../../../CHANGELOG.md)                                                             | [`_0016-changelog-release-cut.md`](./_0016-changelog-release-cut.md)                                           |
 
 **Verification (2026-06-01):**
 
 - [x] Усі carry-over items закриті або передані successor-ам
-- [x] Hard Rules / ADRs / lint-правила live у AGENTS.md / docs/governance/
+- [x] Hard Rules / ADRs / lint-правила live у AGENTS.md / docs/04-governance/governance/
 - [x] internal relative links у перенесених файлах поглиблено на 1 рівень (`../` → `../../`, `./` → `../`)
 - [x] `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` + `pnpm lint:archive-move-depth` pass
 
 ## Поточний вміст
 
-12 archived initiatives — див. таблиці вище. Канонічні правила з цих initiatives продовжують жити у [`AGENTS.md`](../../../../AGENTS.md) Hard Rules + [`docs/governance/`](../../../governance) — файли нижче — **історичний контекст**, не джерело правди.
+12 archived initiatives — див. таблиці вище. Канонічні правила з цих initiatives продовжують жити у [`AGENTS.md`](../../../../AGENTS.md) Hard Rules + [`docs/04-governance/governance/`](../../../04-governance/governance) — файли нижче — **історичний контекст**, не джерело правди.

@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by Devin (Phase 2 child session of `andrijvigrav@gmail.com`). **Next review:** 2026-08-11.
 > **Status:** Active — research deliverable for the parent launch program.
 > **Owner surface:** `apps/mobile-shell` (Capacitor 7 shell over `apps/web`).
-> **Strategy anchor:** [ADR-0052 — Capacitor primary, Expo parallel](../../../adr/0052-mobile-strategy-capacitor-primary.md).
+> **Strategy anchor:** [ADR-0052 — Capacitor primary, Expo parallel](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md).
 > **Sibling phases:** Phase 1 — Web (`01-web-launch-with-users.md`), Phase 3 — Native Expo (`03-native-expo-launch.md`), Phase 0 — audit (`00-readiness-audit.md`).
 > **Scope:** як запустити Capacitor-shell на TestFlight + Play Internal Testing і провести цикл бета-тестування з реальними людьми до GA.
 
@@ -13,7 +13,7 @@
 
 ### 1.1 TLDR (3 речення)
 
-Capacitor shell (`@sergeant/mobile-shell`) — це primary mobile-поверхня Sergeant за [ADR-0052](../../../adr/0052-mobile-strategy-capacitor-primary.md), і вона **технічно готова** до перших підписаних білдів: release-pipeline на Android ([`mobile-shell-android-release.yml`](../../../../.github/workflows/mobile-shell-android-release.yml)) і iOS ([`mobile-shell-ios-release.yml`](../../../../.github/workflows/mobile-shell-ios-release.yml)) уже мерджнуті, signing-контракти задокументовані, native push (APNs/FCM) і HTTPS-deep-links інтегровані. Реальний запуск з юзерами зараз блокується двома операційними справами — Apple Developer Program enrollment / ASC API ключі та Google Play Console + service-account JSON для авто-upload-у — а не кодом. Цей документ описує 4–8-тижневий план: тиждень 1–2 — store enrollment + перший unsigned smoke; тиждень 3–4 — TestFlight + Play Internal билди з 5–10 internal тестерами; тиждень 5–8 — closed beta 50–150 external testers, потім staged production rollout.
+Capacitor shell (`@sergeant/mobile-shell`) — це primary mobile-поверхня Sergeant за [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md), і вона **технічно готова** до перших підписаних білдів: release-pipeline на Android ([`mobile-shell-android-release.yml`](../../../../.github/workflows/mobile-shell-android-release.yml)) і iOS ([`mobile-shell-ios-release.yml`](../../../../.github/workflows/mobile-shell-ios-release.yml)) уже мерджнуті, signing-контракти задокументовані, native push (APNs/FCM) і HTTPS-deep-links інтегровані. Реальний запуск з юзерами зараз блокується двома операційними справами — Apple Developer Program enrollment / ASC API ключі та Google Play Console + service-account JSON для авто-upload-у — а не кодом. Цей документ описує 4–8-тижневий план: тиждень 1–2 — store enrollment + перший unsigned smoke; тиждень 3–4 — TestFlight + Play Internal билди з 5–10 internal тестерами; тиждень 5–8 — closed beta 50–150 external testers, потім staged production rollout.
 
 ### 1.2 Entry criteria (що має бути готове від Phase 1 — Web)
 
@@ -45,8 +45,8 @@ Phase 2 завершена, коли:
 
 ### 2.1 Стратегія
 
-- [ADR-0052 — Capacitor primary, Expo parallel](../../../adr/0052-mobile-strategy-capacitor-primary.md), status `Accepted`, дата 2026-05-06.
-- Sunset-дати T₀ (2026-09-01) / T₁ (2026-11-30) / T₂ (2026-12-30), згадані у [`docs/02-engineering/mobile/shell.md` § Sunset](../../../02-engineering/mobile/shell.md#sunset) та [ADR-0010](../../../adr/0010-mobile-dual-track-capacitor-expo.md) — **не є active commitments** на період 0010 launch, але reference лишається.
+- [ADR-0052 — Capacitor primary, Expo parallel](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md), status `Accepted`, дата 2026-05-06.
+- Sunset-дати T₀ (2026-09-01) / T₁ (2026-11-30) / T₂ (2026-12-30), згадані у [`docs/02-engineering/mobile/shell.md` § Sunset](../../../02-engineering/mobile/shell.md#sunset) та [ADR-0010](../../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md) — **не є active commitments** на період 0010 launch, але reference лишається.
 - Тригер для наступного ADR («Expo becomes primary»): Expo `apps/mobile/` досягає feature parity (≥ 18/22 рядків ✅ у матриці [`platforms.md` § 0](../../../02-engineering/architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn)).
 - Lint-правило `sergeant-design/forbid-shell-only-feature` активне — нові shell-only модулі без RN-mirror блокуються, але **shell-glue PR-и дозволяються через `SHELL_GLUE_ALLOWLIST`** у [`packages/eslint-plugin-sergeant-design/`](../../../../packages/eslint-plugin-sergeant-design).
 
@@ -699,11 +699,11 @@ Go / no-go для Production:
 1. **Crash-free rate stabilization** — якщо Capacitor shell тримає ≥ 99 % iOS / ≥ 98.5 % Android протягом 30+ днів, NO immediate need для Native Expo.
 2. **Feature gaps, які shell не покриває** — поточно: native voice recognition (STT) + native TTS (web ще шакальні на iOS WebView), глибока offline-camera UX, advanced haptics. Якщо ці gaps впливають на conversion / retention — є argument для Native.
 3. **App Store Review escalations** — якщо Apple консистентно reject-ить shell за «not native enough» (це бувало в історії для thin wrappers), Native — це buffer.
-4. **Cost-benefit Expo migration** — повний RN-порт Nutrition + Voice + Detox e2e — це 4–6 PR-ів. Vs підтримка Capacitor — 34 shell-commits/30 днів (з shell-tax baseline, [`ADR-0052` § Consequences](../../../adr/0052-mobile-strategy-capacitor-primary.md#consequences)).
+4. **Cost-benefit Expo migration** — повний RN-порт Nutrition + Voice + Detox e2e — це 4–6 PR-ів. Vs підтримка Capacitor — 34 shell-commits/30 днів (з shell-tax baseline, [`ADR-0052` § Consequences](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md#consequences)).
 
 ### 12.2 ADR-0052 Exit gate
 
-За [ADR-0052](../../../adr/0052-mobile-strategy-capacitor-primary.md): тригер для наступного ADR («Expo becomes primary») = Expo `apps/mobile/` досягає feature parity (≥ 18/22 ✅ у [feature-parity матриці `platforms.md` §0](../../../02-engineering/architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn)).
+За [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md): тригер для наступного ADR («Expo becomes primary») = Expo `apps/mobile/` досягає feature parity (≥ 18/22 ✅ у [feature-parity матриці `platforms.md` §0](../../../02-engineering/architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn)).
 
 Поточний стан матриці (snapshot 2026-05-06):
 
@@ -740,8 +740,8 @@ Phase 3 (Native Expo) стартує **якщо хоча б одне з:**
 ## Cross-refs
 
 - [`apps/mobile-shell/README.md`](../../../../apps/mobile-shell/README.md) — джерело правди для shell-функціональності.
-- [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../../adr/0052-mobile-strategy-capacitor-primary.md) — стратегічне рішення.
-- [`docs/adr/0010-mobile-dual-track-capacitor-expo.md`](../../../adr/0010-mobile-dual-track-capacitor-expo.md) — original dual-track decision.
+- [`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — стратегічне рішення.
+- [`docs/04-governance/adr/0010-mobile-dual-track-capacitor-expo.md`](../../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md) — original dual-track decision.
 - [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — feature parity матриця, Exit dashboard.
 - [`docs/02-engineering/mobile/shell.md`](../../../02-engineering/mobile/shell.md) — operator cheat-sheet (Android/iOS release secrets, build commands).
 - [`docs/02-engineering/mobile/capacitor-deep-links.md`](../../../02-engineering/mobile/capacitor-deep-links.md) — Universal Links / App Links setup.

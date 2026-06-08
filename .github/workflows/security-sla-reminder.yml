@@ -82,7 +82,7 @@ jobs:
                     MARKER,
                     `> **SLA breach:** ${severity} issue is **${ageDays}** days old (deadline: ${deadline} days).`,
                     '',
-                    `See [vulnerability SLA policy](../docs/security/vulnerability-sla.md) for escalation steps.`,
+                    `See [vulnerability SLA policy](../docs/04-governance/security/vulnerability-sla.md) for escalation steps.`,
                   ].join('\n'),
                 });
 

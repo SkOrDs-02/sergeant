@@ -13,7 +13,7 @@
 ## Required context
 
 - Стартуй з `sergeant-start-here`, тоді відкрий `sergeant-deploy-and-observability`.
-- Перечитай [vercel.md](../../03-operations/deploy/vercel.md), [service-catalog.md](../../02-engineering/architecture/service-catalog.md), [release-policy.md](../../governance/release-policy.md).
+- Перечитай [vercel.md](../../03-operations/deploy/vercel.md), [service-catalog.md](../../02-engineering/architecture/service-catalog.md), [release-policy.md](../../04-governance/governance/release-policy.md).
 - Vercel SSOT-нотатка: `apps/web/vercel.json` — канонічний. У Vercel Project «Root Directory» = `apps/web`. Додавати другий `vercel.json` (наприклад, у корені monorepo) **заборонено** — `pnpm lint` енфорсить це через `scripts/check-vercel-config.sh`.
 
 ## Чому існує цей playbook

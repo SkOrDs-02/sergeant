@@ -3,25 +3,25 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-| Field          | Value                                                                                                                                                           |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Initiative     | [`0011`](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) Phase 3 PR 3.4                                                  |
-| Closes         | H6 residual risk: "Legacy users with `email_verified=false` still exist in the prod DB. Switching the global flag to `true` would lock them out."               |
-| Cards          | [H6](../../security/hardening/H6-email-verification.md), [I8](../../security/hardening/I8-periodic-external-pentest.md) (engagement preparation)                |
-| Decision shape | Decision-document — outlines three options, recommends one. Implementation lives in a successor mini-initiative gated on 0010-revenue-first-launch Stripe-MVP.  |
-| Owner          | `@Skords-01`                                                                                                                                                    |
-| Target window  | Pre-launch Q3 2026 (post-0010 Stripe-MVP, before public marketing-driven traffic). Latest tolerable: 14 days before flipping `REQUIRE_EMAIL_VERIFICATION=true`. |
-| Risk           | Low — this PR ships **planning** only. Implementation rollout has its own risk register (§ Risks below).                                                        |
+| Field          | Value                                                                                                                                                                        |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Initiative     | [`0011`](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) Phase 3 PR 3.4                                                               |
+| Closes         | H6 residual risk: "Legacy users with `email_verified=false` still exist in the prod DB. Switching the global flag to `true` would lock them out."                            |
+| Cards          | [H6](../../04-governance/security/hardening/H6-email-verification.md), [I8](../../04-governance/security/hardening/I8-periodic-external-pentest.md) (engagement preparation) |
+| Decision shape | Decision-document — outlines three options, recommends one. Implementation lives in a successor mini-initiative gated on 0010-revenue-first-launch Stripe-MVP.               |
+| Owner          | `@Skords-01`                                                                                                                                                                 |
+| Target window  | Pre-launch Q3 2026 (post-0010 Stripe-MVP, before public marketing-driven traffic). Latest tolerable: 14 days before flipping `REQUIRE_EMAIL_VERIFICATION=true`.              |
+| Risk           | Low — this PR ships **planning** only. Implementation rollout has its own risk register (§ Risks below).                                                                     |
 
 ## Чому цей документ існує
 
-[H6](../../security/hardening/H6-email-verification.md) було закрито 2026-05-04 у статусі `Closed (partial)`:
+[H6](../../04-governance/security/hardening/H6-email-verification.md) було закрито 2026-05-04 у статусі `Closed (partial)`:
 
 - `emailVerification.sendOnSignUp: true` — нові юзери одразу отримують лист.
 - `requireVerifiedEmail()` middleware на `/api/mono/connect` — **безумовний** gate, не залежить від `REQUIRE_EMAIL_VERIFICATION`. Squatter→bank-leak ланцюг закритий.
 - `REQUIRE_EMAIL_VERIFICATION` env-var — глобальний sign-in gate, default `false`.
 
-Residual risk, що фіксували pen-test sweep 2026-05-06 ([§ H6 — Residual risk](../../security/pen-tests/2026-05-hardening-sweep.md#residual-risk-1)):
+Residual risk, що фіксували pen-test sweep 2026-05-06 ([§ H6 — Residual risk](../../04-governance/security/pen-tests/2026-05-hardening-sweep.md#residual-risk-1)):
 
 > Legacy users with `email_verified=false` still exist in the prod DB.
 > Switching the global flag to `true` would lock them out.
@@ -47,7 +47,7 @@ Residual risk, що фіксували pen-test sweep 2026-05-06 ([§ H6 — Res
 
 ## Threat model recap
 
-Атака, від якої захищаємось — той же scenario, що й H6 ([H6 § Impact](../../security/hardening/H6-email-verification.md#impact)):
+Атака, від якої захищаємось — той же scenario, що й H6 ([H6 § Impact](../../04-governance/security/hardening/H6-email-verification.md#impact)):
 
 1. Squatter реєструється `victim@gmail.com`, ставить пароль.
 2. Legitimate owner пізніше намагається зареєструватись → `email already exists`.
@@ -180,12 +180,12 @@ ETA повного циклу: ~6 робочих днів implementation + 14+ �
 - **Password-change endpoint gate.** H6 § Deferred згадує, що коли з'явиться `/api/auth/password` (а не Better Auth internal), drop-аємо `requireVerifiedEmail()` middleware у chain. Це окремий tracker, не залежить від sweep-у.
 - **Push subscribe gate.** H6 § Deferred оцінює push як low-impact (per-device, no cross-account exposure). Якщо anti-fraud signal покаже інше — окремий PR.
 - **Per-user verification-email rate-limit (1/min, 6/h, 24/24h).** H6 § Deferred — revisit коли `<VerifyEmailGate />` UI лендить (Phase B), бо саме воно exposed-ить «Resend» button назовні. Tracked окремим item-ом, не блокує sweep.
-- **External pen-test engagement (I8).** Sweep — internal hardening, не engagement з зовнішнім pen-tester-ом. Engagement має власний tracker у [`docs/security/hardening/I8-periodic-external-pentest.md`](../../security/hardening/I8-periodic-external-pentest.md).
+- **External pen-test engagement (I8).** Sweep — internal hardening, не engagement з зовнішнім pen-tester-ом. Engagement має власний tracker у [`docs/04-governance/security/hardening/I8-periodic-external-pentest.md`](../../04-governance/security/hardening/I8-periodic-external-pentest.md).
 
 ## Cross-references
 
-- H6 card: [`docs/security/hardening/H6-email-verification.md`](../../security/hardening/H6-email-verification.md)
-- Pen-test sweep transcript (2026-05): [`docs/security/pen-tests/2026-05-hardening-sweep.md`](../../security/pen-tests/2026-05-hardening-sweep.md)
+- H6 card: [`docs/04-governance/security/hardening/H6-email-verification.md`](../../04-governance/security/hardening/H6-email-verification.md)
+- Pen-test sweep transcript (2026-05): [`docs/04-governance/security/pen-tests/2026-05-hardening-sweep.md`](../../04-governance/security/pen-tests/2026-05-hardening-sweep.md)
 - Pen-test playbook: [`docs/00-start/playbooks/security-pen-test-checklist.md`](../../00-start/playbooks/security-pen-test-checklist.md)
 - Better Auth wiring: [`apps/server/src/auth.ts`](../../../apps/server/src/auth.ts)
 - Initiative 0011: [`docs/90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md)

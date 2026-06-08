@@ -56,7 +56,7 @@ jobs:
           context: .
           file: Dockerfile.api
           # `platforms: linux/amd64` робить платформу образу явною
-          # (closes hardening card L13 — `docs/security/hardening/L13-docker-platform-pin.md`).
+          # (closes hardening card L13 — `docs/04-governance/security/hardening/L13-docker-platform-pin.md`).
           # Railway runtime — amd64; без явного pin-а локальний build на
           # Apple Silicon видає arm64-image, який не збігається з production,
           # а Trivy сканує те, що зібрав buildx, тож drift проходить
@@ -78,7 +78,7 @@ jobs:
           echo "hub-api:scan platform = ${os}/${arch}"
           if [[ "${os}/${arch}" != "linux/amd64" ]]; then
             echo "::error::hub-api:scan was built for ${os}/${arch}, expected linux/amd64."
-            echo "See docs/security/hardening/L13-docker-platform-pin.md."
+            echo "See docs/04-governance/security/hardening/L13-docker-platform-pin.md."
             exit 1
           fi
 

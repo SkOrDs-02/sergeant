@@ -29,7 +29,7 @@ Issues:
 
 ### 1. Pre-flight ADR (small)
 
-`docs/adr/0057-anthropic-sdk-v1-upgrade.md` — coverage matrix:
+`docs/04-governance/adr/0057-anthropic-sdk-v1-upgrade.md` — coverage matrix:
 
 - Які SDK calls використовуються в `tools/openclaw/src/`?
 - Breaking changes від v0 → v1 (constructor signatures? methods renamed?).
@@ -95,7 +95,7 @@ pnpm add @anthropic-ai/sdk@^1.0.0
 - `tools/openclaw/src/__tests__/` + co-located `*.test.ts`
 - `tools/openclaw/README.md`
 - `tools/openclaw/docs/architecture.md` (на 2026-05-14 не існує — створити якщо потрібен dedicated architecture doc)
-- `docs/adr/0057-anthropic-sdk-v1-upgrade.md` — створено
+- `docs/04-governance/adr/0057-anthropic-sdk-v1-upgrade.md` — створено
 
 ## Refs
 

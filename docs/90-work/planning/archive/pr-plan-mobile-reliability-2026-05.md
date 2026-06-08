@@ -14,7 +14,7 @@ Canonical mobile debt owner: [`docs/90-work/tech-debt/mobile.md`](../../tech-deb
 
 - **Прожарка:** [`docs/90-work/audits/2026-05-13-mobile-reliability-ux-roast.md`](../../audits/archive/2026-05-13-mobile-reliability-ux-roast.md) — джерело TL;DR-болів, P1/P2/P3 розбивка, Outstanding-таблиця.
 - **Living burndown:** [`docs/90-work/tech-debt/mobile.md`](../../tech-debt/mobile.md) — Summary per-category, large-file inventory (>600 LOC), Roadmap-таблиця M1–M9 (статус оновлюється у момент merge кожного PR із цього плану).
-- **Mobile-strategy ADR:** [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../../adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor primary, Expo parallel; жоден стек не deprecate-иться до окремого ADR на feature parity (≥18/22 у `docs/02-engineering/architecture/platforms.md`).
+- **Mobile-strategy ADR:** [`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor primary, Expo parallel; жоден стек не deprecate-иться до окремого ADR на feature parity (≥18/22 у `docs/02-engineering/architecture/platforms.md`).
 - **Dual-track initiative:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../initiatives/archive/_0002-mobile-platform-decision.md) — sunset-дати **не active commitments** на час 0010 revenue launch; quarterly recount shell-tax трекається тут.
 - **Surface AGENTS:** [`apps/mobile/AGENTS.md`](../../../../apps/mobile/AGENTS.md) — NativeWind, MMKV-only, Expo Router gotchas; flaky-tests T7 verification (`mobile-flaky-verify.yml`).
 - **Sprint context:** [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](../sprint-roadmap-q2q3-2026.md) (§1.1 тех-борг, T7 verification, lighthouse budget).

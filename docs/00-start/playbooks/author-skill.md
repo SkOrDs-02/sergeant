@@ -106,6 +106,6 @@ pnpm lint:discoverability   # нові доки досяжні з AGENTS.md ≤ 
 ## See also
 
 - [AGENTS.md](../../../AGENTS.md) — Hard Rule #22 (skill body security scan)
-- [docs/governance/rules/22-skill-body-security-scan.md](../../governance/rules/22-skill-body-security-scan.md) — 7 категорій загроз
+- [docs/04-governance/governance/rules/22-skill-body-security-scan.md](../../04-governance/governance/rules/22-skill-body-security-scan.md) — 7 категорій загроз
 - [docs/00-start/agents/agent-skills-catalog.md](../agents/agent-skills-catalog.md) — додай рядок у Active Skills
 - `.agents/skills/sergeant-writing-skills/SKILL.md` — граматика, anti-patterns, червоні прапорці

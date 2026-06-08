@@ -21,7 +21,10 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "../../..");
-const REGISTRY_PATH = resolve(REPO_ROOT, "docs/governance/hard-rules.json");
+const REGISTRY_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/hard-rules.json",
+);
 
 // Fixture used across tests: minimum valid registry shape (canonical schema).
 const FIXTURE = {

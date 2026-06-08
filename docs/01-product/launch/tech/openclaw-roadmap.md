@@ -17,13 +17,13 @@
 > Gateway/cutover/deletion, звірятися з [`openclaw-migration-plan.md`](../../../90-work/planning/openclaw-migration-plan.md)
 > і з ADR-ами нижче.
 >
-> Пов'язане: [ADR-0027](../../../adr/0027-openclaw-console-mcp-policy.md) (політика console / MCP),
-> [ADR-0028](../../../adr/0028-pgvector-ai-memory.md) (pgvector AI memory),
-> [ADR-0030](../../../adr/0030-telegram-reporting-channel-structure.md) (forum-mode роутинг),
-> [ADR-0031](../../../adr/0031-openclaw-v0-telegram-cofounder.md) (OpenClaw v0 baseline),
-> [ADR-0032](../../../adr/0032-console-consolidated-into-openclaw.md) (Sergeant Console
+> Пов'язане: [ADR-0027](../../../04-governance/adr/0027-openclaw-console-mcp-policy.md) (політика console / MCP),
+> [ADR-0028](../../../04-governance/adr/0028-pgvector-ai-memory.md) (pgvector AI memory),
+> [ADR-0030](../../../04-governance/adr/0030-telegram-reporting-channel-structure.md) (forum-mode роутинг),
+> [ADR-0031](../../../04-governance/adr/0031-openclaw-v0-telegram-cofounder.md) (OpenClaw v0 baseline),
+> [ADR-0032](../../../04-governance/adr/0032-console-consolidated-into-openclaw.md) (Sergeant Console
 > consolidated into OpenClaw — slash-commands + ops/marketing tools live в OpenClaw),
-> [ADR-0033](../../../adr/0033-openclaw-multi-personas-and-council.md) (multi-personas +
+> [ADR-0033](../../../04-governance/adr/0033-openclaw-multi-personas-and-council.md) (multi-personas +
 > `/council` round-table — Phase 2.5 architecture),
 > [05 — Operations and Automation](../business/05-operations-and-automation.md) (узагальнена картина
 > n8n + OpenClaw).
@@ -133,7 +133,7 @@ cross-domain знання продукту. Це робить його _парт
     - `read_telegram_topic_history` — Bot API для контрол-плану.
     - `read_github` — recent PRs, open issues, TODO grep, commits since
       last review (через `Git_PAT`).
-    - `read_strategy_docs` — read `docs/01-product/launch/`, `docs/strategy/`, `docs/adr/`
+    - `read_strategy_docs` — read `docs/01-product/launch/`, `docs/strategy/`, `docs/04-governance/adr/`
       (file-system на Railway або git-blob через GitHub API).
     - `recall_memory` — pgvector з `namespace='cofounder'` (окремий від
       end-user namespace).
@@ -372,7 +372,7 @@ sentry,server,posthog}` + `/api/internal/openclaw/github/releases`) з
 **Ціль:** OpenClaw може діяти, не тільки думати — кожна mutating дія
 потребує human-approval inline (per ADR-0027 + ADR-0036).
 
-**Архітектура:** [ADR-0036](../../../adr/0036-openclaw-write-tools-with-approval.md) — server-side
+**Архітектура:** [ADR-0036](../../../04-governance/adr/0036-openclaw-write-tools-with-approval.md) — server-side
 endpoints + console-side `ApprovalStore` (in-memory, 10-min TTL) + executor
 interception (`createOpenClawToolExecutor` детектить write-tool name → queue
 до `PendingApprovalsCollector` → handler `drain()` після turn-у → пост inline-keyboard
@@ -484,7 +484,7 @@ session кожні 2-3 дні.
 ### 4.3 Resolved decisions (2026-05-02 by @Skords-01)
 
 Всі 6 open questions для Phase 1 закриті. Канонічна референція цих рішень —
-[ADR-0031](../../../adr/0031-openclaw-v0-telegram-cofounder.md). Реплікація сюди
+[ADR-0031](../../../04-governance/adr/0031-openclaw-v0-telegram-cofounder.md). Реплікація сюди
 для self-contained roadmap-у.
 
 1. **Memory namespace — strict isolation.** OpenClaw читає / пише тільки

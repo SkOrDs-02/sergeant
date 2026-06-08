@@ -83,7 +83,7 @@ jobs:
 
       - name: pnpm overrides single-major guard (L1)
         # Closes hardening card L1
-        # (docs/security/hardening/L1-uuid-override.md). Verifies that
+        # (docs/04-governance/security/hardening/L1-uuid-override.md). Verifies that
         # every range in `package.json -> pnpm.overrides` still resolves
         # to exactly one major across the workspace. Loose ranges like
         # `>=14` silently fail when a future major lands; tight ranges
@@ -128,7 +128,7 @@ jobs:
         run: pnpm lint:governance-sync
 
       - name: Hard Rules registry (JSON ↔ AGENTS.md ↔ CONTRIBUTING.md)
-        # Validates docs/governance/hard-rules.json against its schema and
+        # Validates docs/04-governance/governance/hard-rules.json against its schema and
         # cross-checks every rule's id+title vs. AGENTS.md `### N. ...` and
         # CONTRIBUTING.md `N. **...**`. Hard Rule #15 — these three move
         # together, so we fail the PR the moment they drift.
@@ -188,7 +188,7 @@ jobs:
         # (whichever lives under the project's Root Directory). A second
         # copy under apps/web/ silently drifts and lets a Vercel UI change
         # swap which security headers protect production. See
-        # docs/security/hardening/H7-vercel-config-drift.md and
+        # docs/04-governance/security/hardening/H7-vercel-config-drift.md and
         # docs/03-operations/deploy/vercel.md.
         run: bash scripts/check-vercel-config.sh
 
@@ -206,7 +206,7 @@ jobs:
         # Non-blocking during burn-down (exits 0 even with violations); promoted
         # to --fail-on-violations once coverage reaches 100%.
         # See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 4 and
-        # docs/governance/rules/10-lifecycle-markers.md.
+        # docs/04-governance/governance/rules/10-lifecycle-markers.md.
         run: node scripts/docs/check-lifecycle-markers.mjs
         continue-on-error: true
 

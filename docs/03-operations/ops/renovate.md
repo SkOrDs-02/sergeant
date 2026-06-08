@@ -3,11 +3,11 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-Operational runbook для maintainer-а Sergeant. Описує **щотижневу рутину**, **триаж duplicate-PR-ів** з Dependabot (per [ADR-0044](../../adr/0044-renovate-vs-dependabot.md)), **escalation-шлях** на випадок Mend Renovate downtime, і **monthly hygiene**. Контриб'юторам потрібна дочірня дока [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md) — вона про «що приходитиме і як я review-ю». Ця — про «коли і чому щось не приходить».
+Operational runbook для maintainer-а Sergeant. Описує **щотижневу рутину**, **триаж duplicate-PR-ів** з Dependabot (per [ADR-0044](../../04-governance/adr/0044-renovate-vs-dependabot.md)), **escalation-шлях** на випадок Mend Renovate downtime, і **monthly hygiene**. Контриб'юторам потрібна дочірня дока [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md) — вона про «що приходитиме і як я review-ю». Ця — про «коли і чому щось не приходить».
 
 ## Розподіл ролей з Dependabot
 
-Відповідно до [ADR-0044](../../adr/0044-renovate-vs-dependabot.md):
+Відповідно до [ADR-0044](../../04-governance/adr/0044-renovate-vs-dependabot.md):
 
 | Інструмент | Роль                                                       | Trigger                                  | Конфіг                                                      |
 | ---------- | ---------------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------- |
@@ -113,15 +113,15 @@ Per ADR-0044, Dependabot піднімає security-PR-и daily. Воркфлоу
 1. **Patch-only direct production** → нічого не робити, auto-merge впорається після зеленого CI;
 2. **Minor/major security** → читай advisory (`Dependabot fetched: GHSA-...` лінк у тілі PR), оцінюй breaking-ризик, якщо OK — merge;
 3. **Indirect production** (наприклад, transitive `@types/node`) → переконайся, що pin у `package.json` overrides (якщо є) не блокує fix, merge або пін;
-4. **MTTR target:** ≤ 24 години від `disclosed_at` advisory до merged-PR. Якщо більше — додай рядок у `docs/security/nightly-audit.md` з причиною затримки.
+4. **MTTR target:** ≤ 24 години від `disclosed_at` advisory до merged-PR. Якщо більше — додай рядок у `docs/04-governance/security/nightly-audit.md` з причиною затримки.
 
 ## Зв'язки
 
-- [ADR-0044 — Renovate vs Dependabot](../../adr/0044-renovate-vs-dependabot.md) — рішення про розподіл ролей.
+- [ADR-0044 — Renovate vs Dependabot](../../04-governance/adr/0044-renovate-vs-dependabot.md) — рішення про розподіл ролей.
 - [`renovate.json`](../../../renovate.json) — конфіг Renovate.
 - [`.github/dependabot.yml`](../../../.github/dependabot.yml) — конфіг Dependabot (security-only npm + github-actions/docker overlap).
 - [`.github/workflows/dependabot-automerge.yml`](../../../.github/workflows/dependabot-automerge.yml) — auto-merge patch-only npm + github-actions.
 - [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md) — гід контриб'ютора (review-cheatsheet, FAQ).
-- [`docs/security/hardening/H2-dependabot.md`](../../security/hardening/H2-dependabot.md) — Sprint 1 setup card (Dependabot scope-reduction).
-- [`docs/security/nightly-audit.md`](../../security/nightly-audit.md) — реактивна частина (`pnpm audit` + OSV-Scanner).
-- [`docs/security/vulnerability-sla.md`](../../security/vulnerability-sla.md) — SLA для security-bumps.
+- [`docs/04-governance/security/hardening/H2-dependabot.md`](../../04-governance/security/hardening/H2-dependabot.md) — Sprint 1 setup card (Dependabot scope-reduction).
+- [`docs/04-governance/security/nightly-audit.md`](../../04-governance/security/nightly-audit.md) — реактивна частина (`pnpm audit` + OSV-Scanner).
+- [`docs/04-governance/security/vulnerability-sla.md`](../../04-governance/security/vulnerability-sla.md) — SLA для security-bumps.

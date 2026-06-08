@@ -22,7 +22,7 @@
 //      - docs/02-engineering/integrations/*-roadmap.md        (integration roadmaps)
 //      - docs/90-work/audits/*-implementation-roadmap.md (audit roadmaps)
 //      - docs/90-work/initiatives/                     (multi-phase initiative trackers)
-//      - docs/security/hardening/              (PR-bound hardening cards)
+//      - docs/04-governance/security/hardening/              (PR-bound hardening cards)
 //      - docs/03-operations/runbooks/                        (operations runbooks; refs may
 //                                               describe target scripts)
 //      - docs/02-engineering/architecture/diagrams/           (flow diagrams; refs name
@@ -159,7 +159,10 @@ function checkStatusBadges() {
     const relPath = relative(ROOT, file).replace(/\\/g, "/");
 
     // Skip ADRs — they use their own Status format
-    if (relPath.startsWith("docs/adr/") && !relPath.endsWith("README.md")) {
+    if (
+      relPath.startsWith("docs/04-governance/adr/") &&
+      !relPath.endsWith("README.md")
+    ) {
       continue;
     }
     // Skip templates
@@ -254,11 +257,12 @@ function checkDanglingRefs() {
     // initiative status badge + PR-link table is the source of truth for
     // shipped state, not inline file refs.
     if (relPath.startsWith("docs/90-work/initiatives/")) return true;
-    // `docs/security/hardening/` are PR-bound hardening cards — they
+    // `docs/04-governance/security/hardening/` are PR-bound hardening cards — they
     // describe the target file layout for each card. The card's status
     // badge and "PRs landed" section is the truth; inline path refs are
     // a description, not a contract.
-    if (relPath.startsWith("docs/security/hardening/")) return true;
+    if (relPath.startsWith("docs/04-governance/security/hardening/"))
+      return true;
     // `docs/03-operations/runbooks/` describe operations including target scripts that
     // may not be created until the runbook is exercised in incident.
     if (relPath.startsWith("docs/03-operations/runbooks/")) return true;
@@ -365,7 +369,7 @@ function checkDanglingRefs() {
 
     // Check if this is a "proposed" ADR (future refs are OK)
     if (
-      relPath.startsWith("docs/adr/") &&
+      relPath.startsWith("docs/04-governance/adr/") &&
       /Status:\*?\*?\s*proposed/i.test(content)
     ) {
       continue;
@@ -377,7 +381,7 @@ function checkDanglingRefs() {
     // contractual. Scoped to the header so a body-level narrative
     // mention of "Note: ... historical" can't accidentally exempt
     // the whole document (CodeRabbit feedback on PR #3026).
-    if (relPath.startsWith("docs/adr/")) {
+    if (relPath.startsWith("docs/04-governance/adr/")) {
       const adrHeader = content.split("\n").slice(0, 30).join("\n");
       if (
         /^-\s+\*\*Note:\*\*\s*(?:[Іі]сторичн|[Hh]istorical)/m.test(adrHeader)

@@ -26,7 +26,7 @@
   - `apps/server/**` → primary `@Skords-01`, secondary TBD (backend-engineer)
   - `apps/mobile*/**` → primary `@Skords-01`, secondary TBD (mobile-engineer)
   - `packages/db-schema/**` + `apps/server/src/migrations/**` → primary, secondary TBD (data-engineer)
-  - `docs/governance/**` + `AGENTS.md` → primary `@Skords-01` (governance не делегується)
+  - `docs/04-governance/governance/**` + `AGENTS.md` → primary `@Skords-01` (governance не делегується)
 - Якщо реальних людей наразі немає — використати **AI-агента (наприклад Devin/Claude)** як placeholder secondary, з примусовим human-review від `@Skords-01` як final approver.
 
 ### 2. Knowledge-transfer playbook

@@ -178,5 +178,5 @@ grep -rln 'featureFlag\|isFeatureEnabled\|getFeatureFlag' apps/
 - [`tools-research-2026-05.md`](./tools-research-2026-05.md) — основний research-довідник, який цей документ доповнює.
 - [`dev-stack-roadmap.md`](./dev-stack-roadmap.md) — живий журнал стеку, де адопчені тулзи фіксуються.
 - [`storage-roadmap.md`](./storage-roadmap.md) — roadmap до Stage 14, тут же зафіксовано рішення проти ElectricSQL/PowerSync.
-- [`docs/adr/0011-local-first-storage.md`](../../adr/0011-local-first-storage.md) — фундамент, чому sync-engines з server-authoritative моделлю не вписуються.
+- [`docs/04-governance/adr/0011-local-first-storage.md`](../../04-governance/adr/0011-local-first-storage.md) — фундамент, чому sync-engines з server-authoritative моделлю не вписуються.
 - [`docs/90-work/initiatives/archive/_0004-server-observability.md`](../initiatives/archive/_0004-server-observability.md) — Uptime Kuma / UptimeRobot згадка з лютого.

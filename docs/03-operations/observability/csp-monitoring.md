@@ -155,7 +155,7 @@ groups:
 For the current frontend Phase-1 rollout, `apps/web/vercel.json` still emits
 `Content-Security-Policy-Report-Only`, so frontend violations should arrive
 with `disposition="report"`. If strict/enforce frontend CSP ships in Phase 2
-of [C2 hardening](../../security/hardening/C2-frontend-csp.md), this alert becomes
+of [C2 hardening](../../04-governance/security/hardening/C2-frontend-csp.md), this alert becomes
 actionable for the SPA too; if `CSP_REPORT_ONLY=1` is used as rollback for API
 CSP, expect `disposition="report"` instead.
 
@@ -198,7 +198,7 @@ When an alert fires:
 5. **If suspicious** (unknown host, unfamiliar script source), escalate
    to security on-call and treat as a potential XSS exfiltration
    attempt. Reference
-   [`docs/security/hardening/C2-frontend-csp.md`](../../security/hardening/C2-frontend-csp.md)
+   [`docs/04-governance/security/hardening/C2-frontend-csp.md`](../../04-governance/security/hardening/C2-frontend-csp.md)
    for the threat model.
 
 ## Out-of-scope
@@ -215,5 +215,5 @@ When an alert fires:
 - [MDN: Reporting API](https://developer.mozilla.org/en-US/docs/Web/API/Reporting_API)
 - [MDN: CSP `report-to`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/report-to)
 - [W3C: Reporting API spec](https://www.w3.org/TR/reporting/)
-- [C2 hardening card](../../security/hardening/C2-frontend-csp.md)
+- [C2 hardening card](../../04-governance/security/hardening/C2-frontend-csp.md)
 - [PR-26 initiative](../../90-work/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md)

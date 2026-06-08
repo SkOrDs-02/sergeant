@@ -175,7 +175,7 @@ NativeWind + RN-core. Поверх — додаткові примітиви в 
 **Sync (`apps/mobile/src/sync/*`)** — Phase 3:
 
 - **CloudSync v1 — викошений.** Сервер віддає `410 Gone`
-  ([ADR-0047](../../adr/0047-cloudsync-v1-410-gone.md)), `module_data` колонку
+  ([ADR-0047](../../04-governance/adr/0047-cloudsync-v1-410-gone.md)), `module_data` колонку
   та v1-handlers видалено ([`75dcdd5`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c));
   web-клієнт стабнув ентрі-пойнт у фінальному cut-over-і ([#2010](https://github.com/Skords-01/Sergeant/pull/2010));
   mobile-engine видалено ([`20793ad`](https://github.com/Skords-01/Sergeant/commit/20793adb)).

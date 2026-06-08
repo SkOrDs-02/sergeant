@@ -54,7 +54,7 @@ await bcrypt.compare("x".repeat(72) + "DIFFERENT", a); // also true 😱
 
 - `MAX_PASSWORD_LENGTH=72` за замовчуванням у обох env-modul-ях.
 - `MIN_PASSWORD_LENGTH=10` лишити (вище за NIST baseline, OK).
-- ADR `docs/adr/0042-password-hashing-strategy.md` з аналізом bcrypt vs Argon2id, ризики Option B, цільова дата.
+- ADR `docs/04-governance/adr/0042-password-hashing-strategy.md` з аналізом bcrypt vs Argon2id, ризики Option B, цільова дата.
 - Hard rule reg: «Password length policy is locked in `env/index.ts` only; do not duplicate in app-code».
 - Unit-тест-кейс що ловить regress.
 
@@ -97,7 +97,7 @@ await bcrypt.compare("x".repeat(72) + "DIFFERENT", a); // also true 😱
 - `apps/server/src/env/env.ts:57`
 - `.env.example:177`
 - `apps/server/src/auth.ts:1–319`
-- `docs/adr/0042-password-hashing-strategy.md` — новий ADR
+- `docs/04-governance/adr/0042-password-hashing-strategy.md` — новий ADR
 
 ## Refs
 

@@ -65,7 +65,7 @@ Root `package.json` має `pnpm.overrides` block з pinning-ами для:
 
 ### 4. ADR / process
 
-`docs/governance/pnpm-overrides-policy.md`:
+`docs/04-governance/governance/pnpm-overrides-policy.md`:
 
 - Кожен новий override → PR description must explain.
 - Quarterly review reminder автоматично через GitHub issue (Renovate / scheduled-action).
@@ -79,7 +79,7 @@ Root `package.json` має `pnpm.overrides` block з pinning-ами для:
 
 - [x] Кожен override у `package.json` має comment-block з Why/Drop-when/Last-reviewed — винесено у [`pnpm-overrides.md`](../../../../pnpm-overrides.md) (8 записів, kept у JSON-validity contract).
 - [x] `scripts/check-pnpm-overrides-staleness.mjs` + npm-script `lint:overrides` (warning-only, exit 0); 90-day freshness budget.
-- [x] [`docs/governance/pnpm-overrides-policy.md`](../../../governance/pnpm-overrides-policy.md) — process doc (when to add / drop, quarterly review cadence).
+- [x] [`docs/04-governance/governance/pnpm-overrides-policy.md`](../../../04-governance/governance/pnpm-overrides-policy.md) — process doc (when to add / drop, quarterly review cadence).
 - [x] Drift guard `scripts/check-pnpm-overrides.mjs` + npm-script `lint:pnpm-overrides` (single-major-resolution check via `pnpm why`).
 - [ ] Audit-result: ≥1 override dropped — **deferred**. Усі 8 поточних overrides обґрунтовані active CVE-fixes / `@types/node@^20` (Hard Rule #19) / React 19 alignment; жоден не можна безпечно зняти зараз. Перевіряти наступним quarterly-review-ом (`2026-08-11`).
 
@@ -106,7 +106,7 @@ Root `package.json` має `pnpm.overrides` block з pinning-ами для:
 - `package.json` — `pnpm.overrides` block
 - `pnpm-overrides.md` — new (rationale book)
 - `scripts/check-pnpm-overrides-staleness.mjs` — new
-- `docs/governance/pnpm-overrides-policy.md` — new
+- `docs/04-governance/governance/pnpm-overrides-policy.md` — new
 
 ## Refs
 

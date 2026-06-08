@@ -9,9 +9,9 @@
 
 - **Diff-friendly review**: PR показує semantic API change в одному файлі.
 - **External integrators**: можна імпортувати в Postman/Insomnia/Swagger UI без додаткового build-step.
-- **CI gate**: PR що змінює zod-схему, але не оновив spec — fail через `pnpm api:check-openapi` (workflow `.github/workflows/openapi-freshness.yml` додається вручну, шаблон у [ADR-0025 §8](../../adr/0025-openapi-generation.md)).
+- **CI gate**: PR що змінює zod-схему, але не оновив spec — fail через `pnpm api:check-openapi` (workflow `.github/workflows/openapi-freshness.yml` додається вручну, шаблон у [ADR-0025 §8](../../04-governance/adr/0025-openapi-generation.md)).
 
-Drift-protection — мотивація, описана в [ADR-0025](../../adr/0025-openapi-generation.md).
+Drift-protection — мотивація, описана в [ADR-0025](../../04-governance/adr/0025-openapi-generation.md).
 
 ## Як перегенерувати
 
@@ -27,7 +27,7 @@ pnpm api:generate-openapi
 pnpm api:check-openapi
 ```
 
-Скрипт призначений для CI (workflow-шаблон у [ADR-0025 §8](../../adr/0025-openapi-generation.md)). Якщо коммітнутий файл відстає від generator output — exit 1 з підказкою, що запустити.
+Скрипт призначений для CI (workflow-шаблон у [ADR-0025 §8](../../04-governance/adr/0025-openapi-generation.md)). Якщо коммітнутий файл відстає від generator output — exit 1 з підказкою, що запустити.
 
 ## Як переглянути в браузері
 
@@ -82,7 +82,7 @@ type ChatBody =
   OpenApiPaths["/api/chat"]["post"]["requestBody"]["content"]["application/json"];
 ```
 
-Hand-written types у `packages/api-client/src/endpoints/*` залишаються public surface — generated layer додатковий і incrementally consumed (планований migration plan — у [ADR-0025](../../adr/0025-openapi-generation.md)).
+Hand-written types у `packages/api-client/src/endpoints/*` залишаються public surface — generated layer додатковий і incrementally consumed (планований migration plan — у [ADR-0025](../../04-governance/adr/0025-openapi-generation.md)).
 
 ## Що НЕ покрито (Phase 4+, окремі PR-и)
 
@@ -90,7 +90,7 @@ Hand-written types у `packages/api-client/src/endpoints/*` залишаютьс
 - Swagger UI на `/api/docs` у `apps/server`.
 - Перенесення `packages/api-client/src/endpoints/*` повністю на `OpenApiOperations`-derived типи (наразі — incremental).
 
-Деталі — [ADR-0025](../../adr/0025-openapi-generation.md), розділ "Migration plan".
+Деталі — [ADR-0025](../../04-governance/adr/0025-openapi-generation.md), розділ "Migration plan".
 
 ## Як додати новий endpoint
 

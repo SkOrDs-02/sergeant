@@ -14,7 +14,7 @@
 ## Required context
 
 - Стартуй з `sergeant-start-here`, тоді завантаж `sergeant-deploy-and-observability` (для web/API і Capacitor) або `sergeant-mobile-expo` (для Expo).
-- Перечитай [release-policy.md](../../governance/release-policy.md) — таксономію merge-only / coordinated / high-risk.
+- Перечитай [release-policy.md](../../04-governance/governance/release-policy.md) — таксономію merge-only / coordinated / high-risk.
 - Перечитай [service-catalog.md](../../02-engineering/architecture/service-catalog.md) — щоб знати rollback-шлях і tier поверхні, яку зачіпаєш.
 - Перечитай [platforms.md](../../02-engineering/architecture/platforms.md), якщо зміна перетинає Capacitor або Expo.
 - Якщо у релізі є міграція — додатково відкрий [add-sql-migration.md](./add-sql-migration.md).
@@ -47,7 +47,7 @@ flowchart TD
 
 ### 1.1 Класифікуй реліз
 
-- Визнач, що це: merge-only, coordinated чи high-risk — за [release-policy.md](../../governance/release-policy.md).
+- Визнач, що це: merge-only, coordinated чи high-risk — за [release-policy.md](../../04-governance/governance/release-policy.md).
 - У PR явно назви зачеплені поверхні і деплой-таргети.
 - Підтверди rollback-шлях **до** мерджу.
 

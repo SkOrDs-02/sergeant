@@ -7,7 +7,7 @@
 //   - railway.toml / railway.console.toml / railway.openclaw-gateway.toml
 //   - workspace folders (apps/web / apps/mobile / apps/mobile-shell)
 //
-// Output: `docs/governance/service-catalog.auto.json`.
+// Output: `docs/04-governance/governance/service-catalog.auto.json`.
 //
 // Acts as a **drift detector**: the markdown view stays hand-maintained
 // (editorial runbook / rollback / data-sensitivity columns). This
@@ -37,7 +37,7 @@ const REPO_ROOT = resolve(__dirname, "../..");
 
 const OUT_JSON = resolve(
   REPO_ROOT,
-  "docs/governance/service-catalog.auto.json",
+  "docs/04-governance/governance/service-catalog.auto.json",
 );
 const VIEW_MD = resolve(
   REPO_ROOT,

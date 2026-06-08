@@ -14,7 +14,7 @@ name: Release SBOM + SLSA L1 provenance
 #     для попереднього тегу (наприклад, audit після CVE).
 #
 # Ініціатива: docs/90-work/initiatives/archive/_0008-platform-hardening.md § Phase 4
-# (SBOM I3 Phase 1) + docs/security/hardening/I3-sbom-generation.md § Phase 3
+# (SBOM I3 Phase 1) + docs/04-governance/security/hardening/I3-sbom-generation.md § Phase 3
 # (sigstore signing — закрито у PR-45 / pr-plan-2026-05 §«Security & supply
 # chain» row #45 «SLSA Level 1 / SBOM via syft»).
 #
@@ -147,7 +147,7 @@ jobs:
       # OIDC certificate, and writes the attestation to the GH Attestations
       # API. Verifiable post-publish via:
       #   gh attestation verify <file> --repo Skords-01/Sergeant
-      # See docs/security/hardening/I3-sbom-generation.md § Phase 3.
+      # See docs/04-governance/security/hardening/I3-sbom-generation.md § Phase 3.
       - name: Attest SBOM build provenance (SLSA L1)
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
         with:

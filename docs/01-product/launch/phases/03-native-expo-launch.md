@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by Devin / @andrijvigrav. **Next review:** 2026-08-11.
 > **Status:** Draft (research-only, без code-impact). Sequencing: **Web (Phase 1) → Capacitor (Phase 2) → Native (Phase 3, цей файл)**.
 >
-> **Власник рішень:** `@Skords-01`. Передумова — [ADR-0052](../../../adr/0052-mobile-strategy-capacitor-primary.md) (Capacitor primary, Expo parallel; deprecation тригериться окремим ADR за feature parity).
+> **Власник рішень:** `@Skords-01`. Передумова — [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) (Capacitor primary, Expo parallel; deprecation тригериться окремим ADR за feature parity).
 >
 > **Cross-refs:**
 >
@@ -13,7 +13,7 @@
 > - [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — feature-parity матриця (source of truth)
 > - [`docs/02-engineering/mobile/react-native-migration.md`](../../../02-engineering/mobile/react-native-migration.md) — детальний RN-роадмап
 > - [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) — revenue-first sprint, який зараз фігляє mobile-resource
-> - [ADR-0010](../../../adr/0010-mobile-dual-track-capacitor-expo.md) — dual-track baseline
+> - [ADR-0010](../../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md) — dual-track baseline
 > - [`apps/mobile/README.md`](../../../../apps/mobile/README.md), [`apps/mobile/AGENTS.md`](../../../../apps/mobile/AGENTS.md)
 
 ---
@@ -623,8 +623,8 @@ User flow:
 - [`docs/01-product/launch/phases/01-web-launch-with-users.md`](./01-web-launch-with-users.md) — Phase 1
 - [`docs/01-product/launch/phases/02-capacitor-launch.md`](./02-capacitor-launch.md) — Phase 2
 - [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — feature-parity матриця
-- [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../../adr/0052-mobile-strategy-capacitor-primary.md) — primary decision
-- [`docs/adr/0010-mobile-dual-track-capacitor-expo.md`](../../../adr/0010-mobile-dual-track-capacitor-expo.md) — baseline dual-track
+- [`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — primary decision
+- [`docs/04-governance/adr/0010-mobile-dual-track-capacitor-expo.md`](../../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md) — baseline dual-track
 - [`docs/02-engineering/mobile/react-native-migration.md`](../../../02-engineering/mobile/react-native-migration.md) — RN-міграція tracker
 - [`docs/02-engineering/mobile/overview.md`](../../../02-engineering/mobile/overview.md) — API contract
 - [`docs/00-start/playbooks/release.md`](../../../00-start/playbooks/release.md) — release playbook (включно з § Expo)

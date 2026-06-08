@@ -154,6 +154,6 @@ flowchart TD
 
 - [`access-governance.md`](./access-governance.md) — парасоля для privileged-access ревʼю; ця ротація є її листком.
 - [`declare-incident.md`](./declare-incident.md) — escalation для emergency-кейсу.
-- [`docs/governance/security-incident-policy.md`](../../governance/security-incident-policy.md) — що рахується security-інцидентом, а що — звичайною ротацією.
+- [`docs/04-governance/governance/security-incident-policy.md`](../../04-governance/governance/security-incident-policy.md) — що рахується security-інцидентом, а що — звичайною ротацією.
 - ADR-0031 — оригінальна архітектура OpenClaw (PAT-епоха).
 - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md) — migration-план, що ввів цей runbook.

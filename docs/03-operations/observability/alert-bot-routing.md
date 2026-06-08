@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active. **Owner:** ops.
-> **Spec:** [`docs/adr/0038-tg-alert-acks-and-escalation.md`](../../adr/0038-tg-alert-acks-and-escalation.md)
+> **Spec:** [`docs/04-governance/adr/0038-tg-alert-acks-and-escalation.md`](../../04-governance/adr/0038-tg-alert-acks-and-escalation.md)
 > §3.2; reporting matrix footnote 5 in
 > [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md).
 

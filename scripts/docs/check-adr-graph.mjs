@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/docs/check-adr-graph.mjs
 //
-// Validate the integrity of the ADR collection in `docs/adr/`:
+// Validate the integrity of the ADR collection in `docs/04-governance/adr/`:
 //
 //   1. Every ADR file (NNNN-*.md) has a recognised `Status:` value.
 //   2. Every ADR file has a `Supersedes:` field (`—` for none, or a list
@@ -10,14 +10,14 @@
 //      B, then B's status must be `superseded by ADR-A`. The reverse
 //      direction is also enforced — superseded ADRs must declare which
 //      ADR replaced them.
-//   4. Every ADR file is listed in `docs/adr/README.md` (the «Поточні
+//   4. Every ADR file is listed in `docs/04-governance/adr/README.md` (the «Поточні
 //      ADR» table) under its number.
 //   5. No "dangling" ADRs: every file has a numeric prefix and its
 //      status is one of accepted / proposed / deprecated / superseded.
 //   6. ADR numbering is **sequential without gaps**, with the sole
 //      exception of `KNOWN_NUMBERING_GAPS` (gaps that became permanent
 //      because of merge-time collisions and are documented in
-//      `docs/adr/README.md`'s «Note on missing NNNN» blockquotes).
+//      `docs/04-governance/adr/README.md`'s «Note on missing NNNN» blockquotes).
 //      Any new gap fails the check — a future parallel-session collision
 //      cannot quietly drop a number.
 //
@@ -38,7 +38,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const ADR_DIR = resolve(REPO_ROOT, "docs/adr");
+const ADR_DIR = resolve(REPO_ROOT, "docs/04-governance/adr");
 const README_PATH = resolve(ADR_DIR, "README.md");
 
 const ADR_FILE_RE = /^(\d{4})-[a-z0-9-]+\.md$/;
@@ -53,7 +53,7 @@ const VALID_STATUSES = new Set([
 
 /**
  * Known permanent gaps in ADR numbering. Each entry MUST be documented
- * in `docs/adr/README.md` under a «Note on missing NNNN» blockquote so
+ * in `docs/04-governance/adr/README.md` under a «Note on missing NNNN» blockquote so
  * future readers understand why the number is reserved-but-empty.
  *
  * Adding to this set is a deliberate act — the default expectation is
@@ -64,21 +64,21 @@ export const KNOWN_NUMBERING_GAPS = new Set([
   // 2026-05-02: ADR-0029-candidate (per-source AI-memory ingestion gating)
   // was rolled back into ADR-0028 during review; ADR-0030 / ADR-0031 were
   // created in parallel sessions on the same day and skipped 0029.
-  // See `docs/adr/README.md` § «Note on missing 0029».
+  // See `docs/04-governance/adr/README.md` § «Note on missing 0029».
   "0029",
   // 2026-05-03: ADR-0040 was referenced in code comments
   // (`tools/openclaw/src/openclaw/alerts-format.ts`) and roadmap §3.6
   // ("strategic mode — /plan/analyze/okr") as the planned ADR for the
   // Wave-3 HTML-mode broadcast formatting decision; the decision was
   // captured inline in the Wave-3 PRs (#1473/#1480/#1503/#1508) and the
-  // standalone ADR was never written. See `docs/adr/README.md`
+  // standalone ADR was never written. See `docs/04-governance/adr/README.md`
   // § «Note on missing 0040».
   "0040",
   // 2026-05-11: ADR-0056 was reserved by the README «Note on next ADR»
   // header but never filled in — the next merged ADR was 0057
   // (`cfb20ecb feat(console): upgrade @anthropic-ai/sdk 0.36.3 → 0.95.x`,
   // which named itself 0057 directly). ADRs are not renumbered
-  // retroactively, so `0056` stays a known gap. See `docs/adr/README.md`
+  // retroactively, so `0056` stays a known gap. See `docs/04-governance/adr/README.md`
   // «Note on missing 0056».
   "0056",
 ]);
@@ -239,7 +239,7 @@ export function validateGraph(adrs, readmeIndexed) {
   // 6. Sequential numbering — no unrecorded gaps.
   for (const missing of findNumberingGaps(adrs)) {
     errors.push(
-      `numbering gap: ADR-${missing} is missing and not whitelisted in KNOWN_NUMBERING_GAPS (docs/adr/README.md must also document it under «Note on missing ${missing}»)`,
+      `numbering gap: ADR-${missing} is missing and not whitelisted in KNOWN_NUMBERING_GAPS (docs/04-governance/adr/README.md must also document it under «Note on missing ${missing}»)`,
     );
   }
 
@@ -253,7 +253,7 @@ export function validateGraph(adrs, readmeIndexed) {
     // 2. README-index check.
     if (!readmeIndexed.has(a.number)) {
       errors.push(
-        `${basename(a.file)}: ADR-${a.number} is not listed in docs/adr/README.md`,
+        `${basename(a.file)}: ADR-${a.number} is not listed in docs/04-governance/adr/README.md`,
       );
     }
 
@@ -350,11 +350,11 @@ if (isMain) {
 
   if (errors.length > 0) {
     console.error(
-      `[check-adr-graph] ${errors.length} problem(s) found in docs/adr/:`,
+      `[check-adr-graph] ${errors.length} problem(s) found in docs/04-governance/adr/:`,
     );
     for (const e of errors) console.error(`  ✘ ${e}`);
     console.error(
-      `\nFix the metadata in the offending ADR files (Status, Supersedes) or update docs/adr/README.md to list missing entries.`,
+      `\nFix the metadata in the offending ADR files (Status, Supersedes) or update docs/04-governance/adr/README.md to list missing entries.`,
     );
     process.exit(1);
   }

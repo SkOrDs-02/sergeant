@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-> Автор: obs-team. Огляд щокварталу (див. [`docs/governance/policy-review.md`](../../governance/policy-review.md)).
+> Автор: obs-team. Огляд щокварталу (див. [`docs/04-governance/governance/policy-review.md`](../../04-governance/governance/policy-review.md)).
 >
 > Натхнення: [Google SRE Workbook, Ch. 5 — Alerting on SLOs](https://sre.google/workbook/alerting-on-slos/)
 > та [Ch. 2 — Implementing SLOs](https://sre.google/workbook/implementing-slos/).
@@ -170,7 +170,7 @@ budget_remaining = (0.995 - 0.99) / (1 - 0.99) = 0.5 = 50%  → жовта зо�
 ## 6. Перегляд політики
 
 Ця політика переглядається **раз на квартал** у рамках загального policy
-review (див. [`docs/governance/policy-review.md`](../../governance/policy-review.md)).
+review (див. [`docs/04-governance/governance/policy-review.md`](../../04-governance/governance/policy-review.md)).
 
 Під час перегляду оцінюємо:
 

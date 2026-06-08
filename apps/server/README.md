@@ -61,7 +61,7 @@ Railway, `Dockerfile.api`. Pre-deploy автоматично запускає `p
 | Internal-only (no edge proxy) | `TRUST_PROXY=false`                     |
 | Multi-edge з відомими IP      | `TRUST_PROXY=10.0.0.0/8,192.168.0.0/16` |
 
-`TRUST_PROXY=true` **навмисно заборонено** — це робить кожен `req.ip` client-controlled і знеосмислює rate-limit / audit-логи. `parseTrustProxy` падає з помилкою при boot-у. Деталі: [`docs/security/hardening/M2-trust-proxy-parameterize.md`](../../docs/security/hardening/M2-trust-proxy-parameterize.md).
+`TRUST_PROXY=true` **навмисно заборонено** — це робить кожен `req.ip` client-controlled і знеосмислює rate-limit / audit-логи. `parseTrustProxy` падає з помилкою при boot-у. Деталі: [`docs/04-governance/security/hardening/M2-trust-proxy-parameterize.md`](../../docs/04-governance/security/hardening/M2-trust-proxy-parameterize.md).
 
 ## Hard rules
 

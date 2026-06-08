@@ -4,7 +4,7 @@
  * Capacitor shell (`apps/mobile-shell/`).
  *
  * Initiative: docs/90-work/initiatives/0002-mobile-platform-decision.md (Phase 1).
- * ADR: docs/adr/0010-mobile-dual-track-capacitor-expo.md
+ * ADR: docs/04-governance/adr/0010-mobile-dual-track-capacitor-expo.md
  *      § Sunset schedule (T₀ 2026-09-01, T₁ 2026-11-30, T₂ 2026-12-30).
  *
  * Why: ADR-0010 status is `accepted` with lifecycle marker
@@ -98,7 +98,7 @@ function parseArgs(argv) {
           "            `windows[]` array instead of the default single window.",
           "",
           "See docs/90-work/initiatives/0002-mobile-platform-decision.md and",
-          "docs/adr/0010-mobile-dual-track-capacitor-expo.md § Sunset schedule.",
+          "docs/04-governance/adr/0010-mobile-dual-track-capacitor-expo.md § Sunset schedule.",
           "",
         ].join("\n"),
       );

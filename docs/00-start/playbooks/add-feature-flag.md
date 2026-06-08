@@ -50,7 +50,7 @@ function MyComponent() {
 
 ### 3. Задокументуй прапорець
 
-Створи або онови `docs/governance/feature-flags.md` із записом:
+Створи або онови `docs/04-governance/governance/feature-flags.md` із записом:
 
 | Flag             | Owner   | Default | Expires    | Rollout plan                         |
 | ---------------- | ------- | ------- | ---------- | ------------------------------------ |

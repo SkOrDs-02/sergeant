@@ -231,7 +231,7 @@ MIT — див. [LICENSE](../LICENSE).
 
 **Рекомендація:** Додати посилання:
 
-> Feature flags керуються через `docs/governance/feature-flags.md`. Кожен прапорець контролює, чи видимий конкретний функціонал.
+> Feature flags керуються через `docs/04-governance/governance/feature-flags.md`. Кожен прапорець контролює, чи видимий конкретний функціонал.
 
 ### 1.15. Інтеграції
 
@@ -505,13 +505,13 @@ HubChat — це чат-інтерфейс, де ти спілкуєшся з Cl
 
 | Папка                               | Що там                                                    |
 | ----------------------------------- | --------------------------------------------------------- |
-| `docs/adr/`                         | Архітектурні рішення (ADR) — чому ми обрали саме це       |
+| `docs/04-governance/adr/`           | Архітектурні рішення (ADR) — чому ми обрали саме це       |
 | `docs/02-engineering/api/`          | OpenAPI-контракти, документація API                       |
 | `docs/02-engineering/architecture/` | Карта репозиторію, платформи, сервіс-каталог              |
 | `docs/90-work/audits/`              | UX/UI аудити, типографіка, дизайн ревʼю                   |
 | `docs/03-operations/deploy/`        | Інструкції з деплою                                       |
 | `docs/05-design/design/`            | Дизайн-система: BRANDBOOK, кольори, акценти модулів       |
-| `docs/governance/`                  | Hard rules, review checklist, релізна політика            |
+| `docs/04-governance/governance/`    | Hard rules, review checklist, релізна політика            |
 | `docs/02-engineering/integrations/` | Monobank, Railway, Vercel, Renovate, Voyage               |
 | `docs/01-product/launch/`           | Монетизація, GTM, launch readiness                        |
 | `docs/02-engineering/mobile/`       | Capacitor, deep links, React Native міграція              |
@@ -519,7 +519,7 @@ HubChat — це чат-інтерфейс, де ти спілкуєшся з Cl
 | `docs/90-work/planning/`            | Roadmaps, AI improvements, dev stack roadmap              |
 | `docs/00-start/playbooks/`          | Покрокові рецепти (як додати endpoint, як зробити hotfix) |
 | `docs/03-operations/postmortems/`   | Розбори інцидентів                                        |
-| `docs/security/`                    | Політика доступу, disaster recovery, аудит безпеки        |
+| `docs/04-governance/security/`      | Політика доступу, disaster recovery, аудит безпеки        |
 | `docs/00-start/agents/`             | Система для AI-агентів: каталог навичок, workflow         |
 | `docs/90-work/tech-debt/`           | Реєстри технічного боргу (frontend, backend, mobile)      |
 

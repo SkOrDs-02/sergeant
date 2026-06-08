@@ -94,19 +94,23 @@ export const ROUTES = [
     role: "new-agent",
     reason: "machine-readable hard rules registry",
     entrypoints: ["AGENTS.md"],
-    target: "docs/governance/hard-rules.json",
+    target: "docs/04-governance/governance/hard-rules.json",
   },
   {
     role: "new-agent",
     reason: "generated hard rules matrix",
     entrypoints: ["AGENTS.md"],
-    target: "docs/governance/hard-rules-matrix.md",
+    target: "docs/04-governance/governance/hard-rules-matrix.md",
   },
   {
     role: "new-agent",
     reason: "docs freshness dashboard",
-    entrypoints: ["AGENTS.md", "docs/README.md", "docs/governance/README.md"],
-    target: "docs/governance/freshness-dashboard.html",
+    entrypoints: [
+      "AGENTS.md",
+      "docs/README.md",
+      "docs/04-governance/governance/README.md",
+    ],
+    target: "docs/04-governance/governance/freshness-dashboard.html",
   },
   {
     role: "new-agent",
@@ -264,7 +268,7 @@ export const ROUTES = [
     role: "reviewer",
     reason: "review checklist",
     entrypoints: ["AGENTS.md", "README.md", "CONTRIBUTING.md"],
-    target: "docs/governance/review-checklist.md",
+    target: "docs/04-governance/governance/review-checklist.md",
   },
   {
     role: "reviewer",
@@ -275,8 +279,12 @@ export const ROUTES = [
   {
     role: "reviewer",
     reason: "governance policy review process",
-    entrypoints: ["docs/governance/README.md", "AGENTS.md", "CONTRIBUTING.md"],
-    target: "docs/governance/policy-review.md",
+    entrypoints: [
+      "docs/04-governance/governance/README.md",
+      "AGENTS.md",
+      "CONTRIBUTING.md",
+    ],
+    target: "docs/04-governance/governance/policy-review.md",
   },
 ];
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // pnpm overrides drift guard — closes hardening card L1
-// (docs/security/hardening/L1-uuid-override.md).
+// (docs/04-governance/security/hardening/L1-uuid-override.md).
 //
 // `package.json` declares `pnpm.overrides` to force a specific major of
 // transitive deps (e.g. `uuid`) so that we don't ship two copies in the
@@ -164,7 +164,7 @@ if (failures.length > 0) {
   console.error("\n[check-pnpm-overrides] FAILED:\n");
   for (const f of failures) console.error(`  - ${f}`);
   console.error(
-    '\nFix: tighten the override range to a single major (e.g. "^14" not ">=14"),\nor drop the override if no package depends on the target. See\ndocs/security/hardening/L1-uuid-override.md for context.\n',
+    '\nFix: tighten the override range to a single major (e.g. "^14" not ">=14"),\nor drop the override if no package depends on the target. See\ndocs/04-governance/security/hardening/L1-uuid-override.md for context.\n',
   );
   process.exit(1);
 }

@@ -201,5 +201,5 @@ real changes — when in doubt, widen the pattern set.
 - [`./vercel.md`](./vercel.md) — Vercel project settings + headers contract
 - [`./openclaw.md`](./openclaw.md) — `sergeant-openclaw` deploy walkthrough
 - [`../integrations/railway-vercel.md`](../../02-engineering/integrations/railway-vercel.md) — platform setup
-- [`../adr/0009-hosting-split-railway-vercel.md`](../../adr/0009-hosting-split-railway-vercel.md) — why Railway + Vercel
+- [`../adr/0009-hosting-split-railway-vercel.md`](../../04-governance/adr/0009-hosting-split-railway-vercel.md) — why Railway + Vercel
 - [`../playbooks/hotfix-prod-regression.md`](../../00-start/playbooks/hotfix-prod-regression.md) — emergency rollback

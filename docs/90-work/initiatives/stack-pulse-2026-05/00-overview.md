@@ -50,7 +50,7 @@
 | ID  | Заголовок                                        | PR-план                                          | Статус                                                                                                                                                                                                                    |
 | --- | ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | H1  | Body-size policy order-dependent                 | [PR-07](./pr-07-body-size-declarative-policy.md) | **Closed** ([#2081](https://github.com/Skords-01/Sergeant/pull/2081))                                                                                                                                                     |
-| H2  | API-version rewrite committed to v1 forever      | [PR-08](./pr-08-api-versioning-consolidation.md) | **Closed** — research, decision = keep mirror ([ADR-0053](../../../adr/0053-api-versioning-policy.md) + [spike](../../../02-engineering/notes/spikes/2026-05-api-v1-usage.md))                                            |
+| H2  | API-version rewrite committed to v1 forever      | [PR-08](./pr-08-api-versioning-consolidation.md) | **Closed** — research, decision = keep mirror ([ADR-0053](../../../04-governance/adr/0053-api-versioning-policy.md) + [spike](../../../02-engineering/notes/spikes/2026-05-api-v1-usage.md))                              |
 | H3  | `@parse/node-apn` non-canonical maintainer       | [PR-09](./pr-09-apns-library-adr.md)             | **Closed** — ADR-0048 merged                                                                                                                                                                                              |
 | H4  | Better Auth security review (own-crypto adapter) | [PR-10](./pr-10-better-auth-security-review.md)  | **Closed** — implemented in PR-48                                                                                                                                                                                         |
 | H5  | Drizzle schema ↔ SQL drift untracked             | [PR-11](./pr-11-drizzle-schema-drift-ci.md)      | **Closed** — drift CI gate in main ([#2089](https://github.com/Skords-01/Sergeant/pull/2089))                                                                                                                             |
@@ -58,7 +58,7 @@
 | H7  | PG pool size 10 — undersized для AI ingestion    | [PR-13](./pr-13-postgres-pool-sizing.md)         | **Closed** — `PG_POOL_SIZE` default 10→20, slow-connect Sentry breadcrumb + `db_slow_pool_connects_total`, [`docs/03-operations/observability/pg-pool-sizing.md`](../../../03-operations/observability/pg-pool-sizing.md) |
 | H8  | Vercel COEP `require-corp` — broad blast radius  | [PR-14](./pr-14-vercel-coep-review.md)           | **Closed** — M21 + Vercel compatibility matrix                                                                                                                                                                            |
 | H9  | `AI_QUOTA_DISABLED=1` ризик у production         | [PR-15](./pr-15-ai-quota-disabled-hardblock.md)  | **Closed** ([#1567](https://github.com/Skords-01/Sergeant/pull/1567))                                                                                                                                                     |
-| H10 | Pino без enforced redaction policy               | [PR-16](./pr-16-pino-redaction-policy.md)        | **Closed** ([#2125](https://github.com/Skords-01/Sergeant/pull/2125)) — Hard Rule #21 + ESLint `no-raw-req-in-pino-log` + `docs/security/logging-redaction-policy.md`                                                     |
+| H10 | Pino без enforced redaction policy               | [PR-16](./pr-16-pino-redaction-policy.md)        | **Closed** ([#2125](https://github.com/Skords-01/Sergeant/pull/2125)) — Hard Rule #21 + ESLint `no-raw-req-in-pino-log` + `docs/04-governance/security/logging-redaction-policy.md`                                       |
 
 ### Medium (PR-17..27, trigger-gated)
 
@@ -77,7 +77,7 @@ real `file:line` touchpoints. PR-плани — `Planned`, owner = TBD, акти
 | M7  | OpenAPI-spec не contract-tested vs runtime                           | [PR-23](./pr-23-openapi-contract-tests.md)                                                                                                                          | при першому contract-bug                                                     |
 | M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | [PR-24](./pr-24-embedding-vendor-abstraction.md)                                                                                                                    | при появі quality regression                                                 |
 | M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | [PR-25](./pr-25-two-production-origins.md)                                                                                                                          | next CSP/CORS-related incident                                               |
-| M10 | DR runbook documented                                                | **Closed** — `docs/security/disaster-recovery.md` + ops-runbook                                                                                                     | `docs/security/disaster-recovery.md` + operations runbook                    |
+| M10 | DR runbook documented                                                | **Closed** — `docs/04-governance/security/disaster-recovery.md` + ops-runbook                                                                                       | `docs/04-governance/security/disaster-recovery.md` + operations runbook      |
 | M11 | CSP без `report-uri` / `report-to`                                   | [PR-26](./pr-26-csp-report-uri.md)                                                                                                                                  | при першому unknown CSP-bug                                                  |
 | M12 | `INTERNAL_API_KEY` без rotation-механізму                            | [PR-27](./pr-27-internal-api-key-rotation.md)                                                                                                                       | next security audit / suspected leak                                         |
 
@@ -121,20 +121,20 @@ real `file:line` touchpoints. PR-плани — `Planned`, owner = TBD, акти
 
 ## Missing (відсутнє)
 
-| #    | Що                                       | Запропонована дія                                                                      |
-| ---- | ---------------------------------------- | -------------------------------------------------------------------------------------- |
-| MS1  | `docs/security/disaster-recovery.md`     | Done — DR runbook + drill cadence documented                                           |
-| MS2  | `/api/health/workers` endpoint           | реалізувати в межах M3                                                                 |
-| MS3  | Contract testing (Pact / Schemathesis)   | топ-10 endpoint-ів                                                                     |
-| MS4  | `actions/dependency-review-action` на PR | додати у `ci.yml`                                                                      |
-| MS5  | E2E на mobile-shell (Capacitor)          | Detox is the current implemented mobile E2E path; Maestro note is historical research. |
-| MS6  | Performance budget per route             | `metrics/p95.test.ts` з threshold                                                      |
-| MS7  | Threat model document (STRIDE)           | Done — `docs/security/threat-model.md`                                                 |
-| MS8  | Migration `down.sql` rollback drill у CI | applied → run down → re-run forward → diff schema                                      |
-| MS9  | Cost monitoring dashboard                | Grafana `cost_per_user_per_module`                                                     |
-| MS10 | Public status page                       | self-hosted instatus у `tools/openclaw`                                                |
-| MS11 | Privacy policy CI-check                  | annual review checklist в `.github/`                                                   |
-| MS12 | Build provenance / SBOM                  | `cyclonedx-bom` step → release artifact                                                |
+| #    | Що                                                 | Запропонована дія                                                                      |
+| ---- | -------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| MS1  | `docs/04-governance/security/disaster-recovery.md` | Done — DR runbook + drill cadence documented                                           |
+| MS2  | `/api/health/workers` endpoint                     | реалізувати в межах M3                                                                 |
+| MS3  | Contract testing (Pact / Schemathesis)             | топ-10 endpoint-ів                                                                     |
+| MS4  | `actions/dependency-review-action` на PR           | додати у `ci.yml`                                                                      |
+| MS5  | E2E на mobile-shell (Capacitor)                    | Detox is the current implemented mobile E2E path; Maestro note is historical research. |
+| MS6  | Performance budget per route                       | `metrics/p95.test.ts` з threshold                                                      |
+| MS7  | Threat model document (STRIDE)                     | Done — `docs/04-governance/security/threat-model.md`                                   |
+| MS8  | Migration `down.sql` rollback drill у CI           | applied → run down → re-run forward → diff schema                                      |
+| MS9  | Cost monitoring dashboard                          | Grafana `cost_per_user_per_module`                                                     |
+| MS10 | Public status page                                 | self-hosted instatus у `tools/openclaw`                                                |
+| MS11 | Privacy policy CI-check                            | annual review checklist в `.github/`                                                   |
+| MS12 | Build provenance / SBOM                            | `cyclonedx-bom` step → release artifact                                                |
 
 ---
 

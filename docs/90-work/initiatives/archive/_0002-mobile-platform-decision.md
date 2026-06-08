@@ -3,8 +3,8 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Closed (superseded by ADR-0052 + initiative 0010; historical reference only)
 >
-> **Update 2026-05-06:** owner decision зафіксовано в [ADR-0052](../../../adr/0052-mobile-strategy-capacitor-primary.md). Sunset-дати T₀/T₁/T₂ **не є active commitments** у period 0010 revenue launch. Обидва стеки (Capacitor + Expo) підтримуються паралельно. Deprecation-трек активується окремим ADR, коли Expo досягне feature parity з web (тригер: ≥18/22 рядків у `docs/02-engineering/architecture/platforms.md` = ✅). До цього — не цитувати shell-sunset з цього файлу як active outcome.
-> **Canonical active owner:** mobile strategy now lives in [ADR-0052](../../../adr/0052-mobile-strategy-capacitor-primary.md) and [0010 revenue-first launch](../0010-revenue-first-launch.md). This file is retained for historical PR/context links only.
+> **Update 2026-05-06:** owner decision зафіксовано в [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md). Sunset-дати T₀/T₁/T₂ **не є active commitments** у period 0010 revenue launch. Обидва стеки (Capacitor + Expo) підтримуються паралельно. Deprecation-трек активується окремим ADR, коли Expo досягне feature parity з web (тригер: ≥18/22 рядків у `docs/02-engineering/architecture/platforms.md` = ✅). До цього — не цитувати shell-sunset з цього файлу як active outcome.
+> **Canonical active owner:** mobile strategy now lives in [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) and [0010 revenue-first launch](../0010-revenue-first-launch.md). This file is retained for historical PR/context links only.
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks (рішення + 1 ADR + комунікація)
@@ -15,7 +15,7 @@
 
 > **Update 2026-05-06:** ця ініціатива фіксувала напрямок на shell sunset, але [0010 revenue-first launch](../0010-revenue-first-launch.md) пізніше зафіксувала owner decision: Capacitor лишається primary до Expo feature parity, обидва mobile stacks підтримуються паралельно, deprecate жодного. До окремого ADR-0047 / successor decision не цитувати дедлайн shell deprecation з цього файлу як active outcome.
 
-[ADR-0010](../../../adr/0010-mobile-dual-track-capacitor-expo.md) дозволяє dual-track (Capacitor shell + Expo RN), але **без жорсткого дедлайну** на deprecation shell-у. У результаті ми платимо подвійну ціну (підтримка двох пайплайнів, два store-listing-и, два набори Sentry-проєктів, дві QA-матриці) **без зворотного відліку**. Ця ініціатива не обирає інший стек — вона **формалізує дедлайн**: проставити фіксовану дату «freeze shell, RN-only» на основі feature-parity gating і опублікувати її в ADR-0010 як **Exit decision**.
+[ADR-0010](../../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md) дозволяє dual-track (Capacitor shell + Expo RN), але **без жорсткого дедлайну** на deprecation shell-у. У результаті ми платимо подвійну ціну (підтримка двох пайплайнів, два store-listing-и, два набори Sentry-проєктів, дві QA-матриці) **без зворотного відліку**. Ця ініціатива не обирає інший стек — вона **формалізує дедлайн**: проставити фіксовану дату «freeze shell, RN-only» на основі feature-parity gating і опублікувати її в ADR-0010 як **Exit decision**.
 
 ## Чому зараз
 
@@ -59,7 +59,7 @@
 
 ### Фаза 2 — рішення і ADR (3 дні)
 
-- **PR `adr-0010-supersede-deadline`** — оновити [ADR-0010](../../../adr/0010-mobile-dual-track-capacitor-expo.md):
+- **PR `adr-0010-supersede-deadline`** — оновити [ADR-0010](../../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md):
   - Status: `accepted` → `accepted-with-sunset`.
   - Додати секцію **Sunset schedule**:
     - **T₀ (shell freeze):** YYYY-MM-DD (рекомендоване — 2026-09-01, тобто сприйнятний дедлайн на закриття RN-Nutrition, RN-Voice, RN-Detox e2e).
@@ -81,7 +81,7 @@
 
 ## Критерії DONE
 
-- [x] [ADR-0010](../../../adr/0010-mobile-dual-track-capacitor-expo.md) має поле `Sunset schedule` з трьома датами.
+- [x] [ADR-0010](../../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md) має поле `Sunset schedule` з трьома датами.
 - [x] У `docs/02-engineering/architecture/platforms.md` є feature-parity таблиця, оновлена за останні 7 днів.
 - [x] `scripts/report-shell-tax.mjs` бігає у CI cron щотижня.
 - [x] У lint-плагіні є rule `forbid-shell-only-feature` із покриттям unit-тестами.
@@ -116,7 +116,7 @@
 ## Посилання
 
 - Design Review 2026-05-03 — §10 (Mobile strategy)
-- [ADR-0010 Mobile dual-track](../../../adr/0010-mobile-dual-track-capacitor-expo.md) — буде оновлено
+- [ADR-0010 Mobile dual-track](../../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md) — буде оновлено
 - [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — feature-parity матриця
 - [`docs/02-engineering/mobile/react-native-migration.md`](../../../02-engineering/mobile/react-native-migration.md) — RN port roadmap
 - [`docs/02-engineering/mobile/shell.md`](../../../02-engineering/mobile/shell.md) — operator-ref для shell
@@ -136,7 +136,7 @@ governance change з парою скриптів і lint-правилом.
 
 Що зробили:
 
-- **Sunset schedule зафіксовано в ADR-0010** ([§ Sunset schedule](../../../adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule)),
+- **Sunset schedule зафіксовано в ADR-0010** ([§ Sunset schedule](../../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule)),
   status PR-а: `accepted` → `accepted-with-sunset`. Дати:
   - **T₀ — 2026-09-01** (shell freeze, lint-блок на shell-only PR-и)
   - **T₁ — 2026-11-30** (remove-from-store, T₀ + 90 днів)

@@ -9,7 +9,7 @@
 > [`restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md) (incident flow) і
 > [`test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md) (rehearsal cadence) —
 > вони описують `що` і `коли`, а тут лежить точне `як` для нашого Railway+pg-сетапу.
-> RPO/RTO targets: див. [`docs/security/disaster-recovery.md`](../../security/disaster-recovery.md) (RPO ≤ 24h, RTO ≤ 4h для Postgres).
+> RPO/RTO targets: див. [`docs/04-governance/security/disaster-recovery.md`](../../04-governance/security/disaster-recovery.md) (RPO ≤ 24h, RTO ≤ 4h для Postgres).
 
 ## Що ми бекапимо
 
@@ -60,7 +60,7 @@ pg_restore --list "sergeant-prod-${ts}.dump" | head -40
 
 **Куди класти.** В нашому setup-і — на operator-овий ноут + S3-bucket
 `sergeant-db-backups` (Backblaze B2, ENV-doc у
-[`disaster-recovery.md`](../../security/disaster-recovery.md)). Файли **never**
+[`disaster-recovery.md`](../../04-governance/security/disaster-recovery.md)). Файли **never**
 комітяться в git (там можуть бути PII).
 
 **Що НЕ робити:**
@@ -247,7 +247,7 @@ job is the automated smoke, not a replacement for operator practice.
 ## Related
 
 - Process flow: [`restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md), [`test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md)
-- RPO / RTO: [`disaster-recovery.md`](../../security/disaster-recovery.md)
-- Migration conventions: [`docs/adr/0013-db-migrations-conventions.md`](../../adr/0013-db-migrations-conventions.md)
+- RPO / RTO: [`disaster-recovery.md`](../../04-governance/security/disaster-recovery.md)
+- Migration conventions: [`docs/04-governance/adr/0013-db-migrations-conventions.md`](../../04-governance/adr/0013-db-migrations-conventions.md)
 - Encryption key rotation (different surface): [`encryption-key-rotation.md`](./encryption-key-rotation.md)
 - Skill: `sergeant-data-and-migrations`, `sergeant-deploy-and-observability`

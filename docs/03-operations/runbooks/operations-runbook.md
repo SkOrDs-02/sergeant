@@ -33,7 +33,7 @@
 | ----------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **GitHub repo write**   | `Skords-01/Sergeant`                                              | PR / merge / branch protection bypass для hotfix-у. Required reviewer лишається `@Skords-01`, тому emergency-merge через admin-override (GitHub repo → Settings → Branches → відключити protection на час hotfix-у) — тільки за direct запит у Telegram. |
 | **Railway workspace**   | `Sergeant Workspace` (`46c491e1-...`)                             | Деплой / env-vars / DB-shell / logs. Project `humorous-eagerness` (Sergeant API + redis + Postgres + sergeant-openclaw, раніше `sergeant-hubchat` per ADR-0032 / Pain P10). Project `grateful-nurturing` (n8n self-hosted).                              |
-| **Vercel team**         | `skords-01` team                                                  | Деплой / env-vars `apps/web`. Hosting split рознесений з API (Railway) — див. [ADR-0009](../../adr/0009-hosting-split-railway-vercel.md).                                                                                                                |
+| **Vercel team**         | `skords-01` team                                                  | Деплой / env-vars `apps/web`. Hosting split рознесений з API (Railway) — див. [ADR-0009](../../04-governance/adr/0009-hosting-split-railway-vercel.md).                                                                                                  |
 | **Sentry org**          | `sergeant-ops`                                                    | Errors / replay для web + server + console. Alert-routing через [WF-03](../../../ops/n8n-workflows/03-sentry-alert-routing.json).                                                                                                                        |
 | **PostHog project**     | `Sergeant`                                                        | Product analytics. Канонічні events — у [`packages/shared/src/lib/analyticsEvents.ts`](../../../packages/shared/src/lib/analyticsEvents.ts).                                                                                                             |
 | **Telegram bot tokens** | 1Password vault `sergeant-bots`                                   | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ALERT_BOT_TOKEN` (Sergeant_alert_bot для n8n), `OPENCLAW_BOT_TOKEN` (OpenClaw_sergeant_bot для `tools/openclaw`).                                                                                                        |
@@ -203,7 +203,7 @@ Decision-tree коли щось «не працює»:
 
 ### 8.1. Migration `down.sql` drill
 
-PR-32 з [`docs/90-work/planning/pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md). Repo policy в Hard Rule #4 ([`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../governance/rules/04-sql-migrations-sequential-two-phase.md)): production **ніколи не запускає `.down.sql`** — production rollback завжди = compensating migration. Але `apps/server/src/migrations/NNN_*.down.sql` лишається обов'язковим інструментом для local rollback-у під час incident response / hotfix testing / DBA-recovery без backup-у.
+PR-32 з [`docs/90-work/planning/pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md). Repo policy в Hard Rule #4 ([`docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md)): production **ніколи не запускає `.down.sql`** — production rollback завжди = compensating migration. Але `apps/server/src/migrations/NNN_*.down.sql` лишається обов'язковим інструментом для local rollback-у під час incident response / hotfix testing / DBA-recovery без backup-у.
 
 Раніше `.down.sql` валідувалися виключно `pnpm lint:migrations` (формальні `DROP`-правила два-фази + sequential numbering — статичний lint, що не виконує SQL). Drift в самих down-файлах — `DROP COLUMN` під колонку, яку перейменували, або забутий `DROP INDEX`, що дублює auto-drop через `CASCADE` — мовчав до моменту, коли DBA би відкочував руками вночі.
 
@@ -228,7 +228,7 @@ Exit code `0` + останній рядок `drill_ok` з digest = pass. Exit co
 
 ### 8.2. Two-phase DROP authoring
 
-Hard Rule #4 ([`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../governance/rules/04-sql-migrations-sequential-two-phase.md)): **destructive `DROP TABLE` / `ALTER TABLE … DROP COLUMN` мають проходити дві фази, розведені у часі мінімум на 14 днів.** Сенс правила — дати running app-у час перестати читати/писати в колонку/таблицю перед тим, як її фізично прибрати. Один-PR-DROP частіше = production incident.
+Hard Rule #4 ([`docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md)): **destructive `DROP TABLE` / `ALTER TABLE … DROP COLUMN` мають проходити дві фази, розведені у часі мінімум на 14 днів.** Сенс правила — дати running app-у час перестати читати/писати в колонку/таблицю перед тим, як її фізично прибрати. Один-PR-DROP частіше = production incident.
 
 **Phase 1 (deprecate).** Окремий PR, що deploy-ить новий код, який більше не reads/writes до колонки/таблиці. Може бути за тиждень-два до Phase 2 — головне, щоб **на дату merge Phase 2 PR-у Phase 1 уже стояв на проді як мінімум 14 днів** (для відкату при необхідності).
 
@@ -374,6 +374,6 @@ Auto-create / auto-drop indexes на основі stat-ів — anti-pattern:
 - [AGENTS.md](../../../AGENTS.md) — repo policy, hard rules, scope enum, conventional-commit format.
 - [`docs/03-operations/observability/runbook.md`](../observability/runbook.md) — production incident-flow, alert-decoder, Renovate.
 - [`docs/02-engineering/architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md) — surface-by-surface deploy + healthcheck + rollback table.
-- [`docs/security/disaster-recovery.md`](../../security/disaster-recovery.md) — RPO/RTO targets, disaster classes.
-- [`docs/governance/incident-severity-policy.md`](../../governance/incident-severity-policy.md) — SEV-1/2/3/4 mapping.
+- [`docs/04-governance/security/disaster-recovery.md`](../../04-governance/security/disaster-recovery.md) — RPO/RTO targets, disaster classes.
+- [`docs/04-governance/governance/incident-severity-policy.md`](../../04-governance/governance/incident-severity-policy.md) — SEV-1/2/3/4 mapping.
 - [`docs/90-work/planning/pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md) — поточний 90-day roadmap (PR-37 — це він).

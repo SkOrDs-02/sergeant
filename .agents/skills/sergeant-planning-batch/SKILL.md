@@ -37,13 +37,13 @@ Ground truth for "what is still open" is the trackers, not the prose:
 
 - [`docs/open-work.md`](../../../docs/open-work.md) — generated dashboard of all
   open tracker docs (`pnpm docs:gen-open-work` to refresh).
-- [`docs/pr-ledger/index.json`](../../../docs/pr-ledger/index.json) — whether a
+- [`docs/04-governance/pr-ledger/index.json`](../../../docs/04-governance/pr-ledger/index.json) — whether a
   `#NNNN` PR-mention already merged.
 
 Select the next batch by: skip every card already marked `✅ Виконано` /
 `Closed`; honor each card's `Dependencies` (never start a card before its
 blockers); respect each card's `Freeze-compatible` flag against any active
-freeze in `docs/governance/`. Prefer the lowest `P-рівень` and smallest `Size`
+freeze in `docs/04-governance/governance/`. Prefer the lowest `P-рівень` and smallest `Size`
 first so the batch front-loads shippable wins. The batch size N is dynamic —
 take what the request asks for, capped by what dependencies actually unblock.
 

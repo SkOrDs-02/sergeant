@@ -1,13 +1,13 @@
 # Mobile-білди — команди для локальної розробки
 
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
-> **Status:** Active. Capacitor shell is the primary mobile product per [ADR-0052](../../adr/0052-mobile-strategy-capacitor-primary.md); the old ADR-0010 sunset schedule below is historical reference only.
+> **Status:** Active. Capacitor shell is the primary mobile product per [ADR-0052](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md); the old ADR-0010 sunset schedule below is historical reference only.
 
 > Короткий operator-oriented довідник по Capacitor-shell-у (`@sergeant/mobile-shell`). Дизайн-обґрунтування, список плагінів і історію shell-а — див. [`apps/mobile-shell/README.md`](../../../apps/mobile-shell/README.md). Для Expo / React Native застосунку (`@sergeant/mobile`) — див. [`apps/mobile/README.md`](../../../apps/mobile/README.md) і [`overview.md`](./overview.md).
 
 ## Historical sunset note
 
-> **Historical only.** ADR-0010 captured a previous shell-sunset plan, but [ADR-0052](../../adr/0052-mobile-strategy-capacitor-primary.md) replaced the active strategy: `apps/mobile-shell` remains the primary mobile product until Expo/RN has product parity and a new accepted ADR sets a replacement timeline. Do not use the T0/T1/T2 dates below as active commitments.
+> **Historical only.** ADR-0010 captured a previous shell-sunset plan, but [ADR-0052](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) replaced the active strategy: `apps/mobile-shell` remains the primary mobile product until Expo/RN has product parity and a new accepted ADR sets a replacement timeline. Do not use the T0/T1/T2 dates below as active commitments.
 
 | Маркер | Дата       | Що робить мейнтейнер shell-у                                                                                                                                                            |
 | ------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

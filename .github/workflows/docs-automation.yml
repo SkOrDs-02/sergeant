@@ -82,7 +82,7 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate docs/adr/ graph integrity
+      - name: Validate docs/04-governance/adr/ graph integrity
         run: node scripts/docs/check-adr-graph.mjs
 
   initiative-followups:
@@ -171,7 +171,7 @@ jobs:
 
       - name: Check WIP limits (soft warn / hard fail)
         # Soft over-limit prints a warning to stderr but exits 0; hard
-        # over-limit exits 1 and blocks the PR. Tuning: docs/governance/wip-limits.json
+        # over-limit exits 1 and blocks the PR. Tuning: docs/04-governance/governance/wip-limits.json
         run: pnpm docs:check-wip-limits
 
       - name: Check trust badge in docs/README.md is up to date
@@ -198,8 +198,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check docs/governance/hard-rules-matrix.md is up to date
-        # Regenerate the matrix from docs/governance/hard-rules.json and fail if
+      - name: Check docs/04-governance/governance/hard-rules-matrix.md is up to date
+        # Regenerate the matrix from docs/04-governance/governance/hard-rules.json and fail if
         # the on-disk file diverges. Pairs with `pnpm lint:hard-rules-registry`,
         # which validates the JSON ↔ AGENTS.md ↔ CONTRIBUTING.md sync.
         run: pnpm hard-rules:check
@@ -230,7 +230,7 @@ jobs:
 
       - name: Check markdown links
         # External URLs are fetched and failures are errors. The default
-        # allowlist at docs/governance/external-link-allowlist.json covers known
+        # allowlist at docs/04-governance/governance/external-link-allowlist.json covers known
         # link-rot in immutable ADRs and hosts that block automated
         # user-agents (each entry carries a 'reason' field).
         run: node scripts/docs/check-markdown-links.mjs --strict-external
@@ -244,7 +244,7 @@ jobs:
         # Network-free CI twin of the nightly freshness issue creator.
         run: node scripts/docs/check-freshness.mjs --check-cadence
 
-      - name: Check docs/governance/freshness-dashboard.html is up to date
+      - name: Check docs/04-governance/governance/freshness-dashboard.html is up to date
         # Committed dashboard ignores daily relative counters in --check mode,
         # but catches changed row membership and freshness header values.
         run: node scripts/docs/generate-freshness-dashboard.mjs --check

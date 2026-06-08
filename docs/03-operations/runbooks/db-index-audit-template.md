@@ -60,5 +60,5 @@ pnpm db:index-audit --write                           # запис у
 ## Cross-links
 
 - Runbook recipe + decision tree: [`operations-runbook.md § 9`](./operations-runbook.md#9-index-hygiene)
-- Hard Rule #4 (sequential / two-phase DROP): [`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../governance/rules/04-sql-migrations-sequential-two-phase.md)
+- Hard Rule #4 (sequential / two-phase DROP): [`docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md)
 - Static heuristic linter: `pnpm lint:db-indexes --all`

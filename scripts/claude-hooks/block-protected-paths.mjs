@@ -27,7 +27,7 @@ const PROTECTED = [
   /(^|\/)package-lock\.json$/i,
   /(^|\/)yarn\.lock$/i,
   /apps\/server\/src\/migrations\/.+\.sql$/i,
-  /docs\/governance\/freshness-dashboard\.html$/i,
+  /docs\/04-governance\/governance\/freshness-dashboard\.html$/i,
   /\.agents\/skills-lock\.json$/i,
   /\.generated\.(ts|js|json|yaml|yml)$/i,
   /openapi\.(generated|gen)\.(ts|js|json|yaml|yml)$/i,

@@ -8,7 +8,7 @@
 > ENV-перемикач `DATABASE_URL_POOL`, та правила, які API-маршрути / cron / міграції
 > ходять через який URL.
 >
-> Cross-link: [`docs/security/disaster-recovery.md`](../../security/disaster-recovery.md)
+> Cross-link: [`docs/04-governance/security/disaster-recovery.md`](../../04-governance/security/disaster-recovery.md)
 > (як pooler впливає на RTO) і
 > [`docs/03-operations/runbooks/database-backup-restore.md`](./database-backup-restore.md)
 > (`DATABASE_URL_PUBLIC` для restore-on-staging — теж direct, не pooled).

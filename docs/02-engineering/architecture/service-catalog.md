@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-> **Machine-readable mirror:** [`docs/governance/service-catalog.auto.json`](../../governance/service-catalog.auto.json) (auto-gen via `pnpm docs:gen-service-catalog`; CI gate `pnpm docs:check-service-catalog` enforces that every surface listed here is mentioned in this file). Editorial columns (runbook, alerts, rollback, data-sensitivity) stay hand-maintained — the auto-mirror only covers fields derivable from Dockerfile / railway.toml / workspace folder.
+> **Machine-readable mirror:** [`docs/04-governance/governance/service-catalog.auto.json`](../../04-governance/governance/service-catalog.auto.json) (auto-gen via `pnpm docs:gen-service-catalog`; CI gate `pnpm docs:check-service-catalog` enforces that every surface listed here is mentioned in this file). Editorial columns (runbook, alerts, rollback, data-sensitivity) stay hand-maintained — the auto-mirror only covers fields derivable from Dockerfile / railway.toml / workspace folder.
 
 Runtime-oriented inventory for the production surfaces that Sergeant operates today. Use this document to answer four questions fast:
 
@@ -38,6 +38,6 @@ Runtime-oriented inventory for the production surfaces that Sergeant operates to
 ## Related docs
 
 - [platforms.md](./platforms.md)
-- [release-policy.md](../../governance/release-policy.md)
-- [incident-severity-policy.md](../../governance/incident-severity-policy.md)
-- [disaster-recovery.md](../../security/disaster-recovery.md)
+- [release-policy.md](../../04-governance/governance/release-policy.md)
+- [incident-severity-policy.md](../../04-governance/governance/incident-severity-policy.md)
+- [disaster-recovery.md](../../04-governance/security/disaster-recovery.md)

@@ -78,7 +78,7 @@
 
 ### 4. Documentation update
 
-`docs/security/hardening/M1-csp-disable-runtime-flag.md` — оновлений context: «Reports тепер shipping; runtime-disable lишається guarded».
+`docs/04-governance/security/hardening/M1-csp-disable-runtime-flag.md` — оновлений context: «Reports тепер shipping; runtime-disable lишається guarded».
 
 ## Out of scope
 
@@ -120,10 +120,10 @@
 - `apps/server/src/modules/observability/csp-report.ts` — існуючий handler
 - `apps/web/src/test/cspMonitoringAllowlist.test.ts` — баseline
 - `docs/03-operations/observability/csp-monitoring.md` — new
-- `docs/security/hardening/M1-csp-disable-runtime-flag.md` — update context
+- `docs/04-governance/security/hardening/M1-csp-disable-runtime-flag.md` — update context
 
 ## Refs
 
 - [MDN: CSP `report-to`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/report-to)
 - [Reporting API spec](https://www.w3.org/TR/reporting-1/)
-- `docs/security/hardening/L11-csp-monitoring-allowlist.md`
+- `docs/04-governance/security/hardening/L11-csp-monitoring-allowlist.md`

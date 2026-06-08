@@ -14,7 +14,7 @@
 - Primary surface: `packages/openclaw-plugin/`, `ops/openclaw/`, Railway service `sergeant-openclaw-gateway`
 - Coupled surface: `tools/openclaw/src/openclaw/`, `tools/openclaw/src/agents/{openclaw,personas,strategic-modes,dispatcher}.ts`, Railway service `Sergeant` (env-vars)
 - Governing skill: `sergeant-deploy-and-observability`
-- Governing ADR: [ADR-0055](../../adr/0055-openclaw-external-gateway.md) § cutover
+- Governing ADR: [ADR-0055](../../04-governance/adr/0055-openclaw-external-gateway.md) § cutover
 - Governing plan: [`openclaw-migration-plan.md`](../../90-work/planning/openclaw-migration-plan.md) — Locked Decision #17
 
 ---
@@ -346,7 +346,7 @@ pnpm dead-code:files
 ## See also
 
 - [AGENTS.md](../../../AGENTS.md) — hard rules
-- [ADR-0055](../../adr/0055-openclaw-external-gateway.md) — Phase 0 infra + cutover architecture
+- [ADR-0055](../../04-governance/adr/0055-openclaw-external-gateway.md) — Phase 0 infra + cutover architecture
 - [`openclaw-migration-plan.md`](../../90-work/planning/openclaw-migration-plan.md) — повний Stage tracker
 - [`rotate-openclaw-credentials.md`](./rotate-openclaw-credentials.md) — ротація GitHub App credentials
 - [`cleanup-dead-code.md`](./cleanup-dead-code.md) — generic dead-code removal process

@@ -5,7 +5,7 @@
 
 > **Що це.** Курований план, як еволюціонувати repo-owned skill-систему Sergeant (`.agents/skills/**`) запозичивши перевірені патерни з широкого agent-skills ecosystem-у — без розмиття існуючих 12 specialist-skill-ів і без імпорту generic-обгорток. Документ працює як roadmap для будь-якого AI-агента (Claude Code, Devin, Codex, Cursor, Gemini CLI), що візьметься за конкретний пункт.
 
-> **Не ініціатива в `docs/90-work/initiatives/`** через [audit-freeze 2026-05-05 → 2026-06-02](../../governance/audit-freeze-2026-05-05.md). Якщо post-freeze команда вирішить підняти це в формальну initiative-у з owner-ом і ETA — створити `docs/90-work/initiatives/00NN-skills-evolution.md` і перенести скоуп туди; цей файл тоді стає секцією `## Sources` в новій initiative-і. До того часу — це **discovery roadmap**, не зобов'язання.
+> **Не ініціатива в `docs/90-work/initiatives/`** через [audit-freeze 2026-05-05 → 2026-06-02](../../04-governance/governance/audit-freeze-2026-05-05.md). Якщо post-freeze команда вирішить підняти це в формальну initiative-у з owner-ом і ETA — створити `docs/90-work/initiatives/00NN-skills-evolution.md` і перенести скоуп туди; цей файл тоді стає секцією `## Sources` в новій initiative-і. До того часу — це **discovery roadmap**, не зобов'язання.
 
 > **Що ми НЕ робимо.** Не запускаємо `npx @agentskill.sh/cli@latest setup`. Не ставимо generic-скіли у `.claude/skills/`. Не дублюємо `agentskills.io` open standard 1:1 — наш `lang`/`lang-reason` frontmatter і UA/EN bilingual routing-формат лишаються (PR [#1848](https://github.com/Skords-01/Sergeant/pull/1848)). Це строго **import-of-patterns**, не **import-of-content**.
 
@@ -60,7 +60,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 - Кожен містить ≥ 3 тригер-фрази/контексти.
 - Кожен містить UA-фразу (як `; UA: …`).
 - `pnpm lint:skills` лишається зеленим (shape + integrity).
-- Опційно: розширити `pnpm lint:skills` гейтом `description.length >= 200`. Якщо так — зафіксувати ескалацію severity у [`hard-rules.json`](../../governance/hard-rules.json) як sub-clause до Rule #10 (lifecycle markers) або як новий "skill description quality" rule (нова active-initiative; не blocker до runs of evals у PR 7).
+- Опційно: розширити `pnpm lint:skills` гейтом `description.length >= 200`. Якщо так — зафіксувати ескалацію severity у [`hard-rules.json`](../../04-governance/governance/hard-rules.json) як sub-clause до Rule #10 (lifecycle markers) або як новий "skill description quality" rule (нова active-initiative; не blocker до runs of evals у PR 7).
 
 **Files touched.**
 
@@ -142,7 +142,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 **References.**
 
 - [`supabase/agent-skills/skills/supabase-postgres-best-practices/references/`](https://github.com/supabase/agent-skills/tree/main/skills/supabase-postgres-best-practices/references) — джерело-форма (MIT — атрибутувати в кожному адаптованому файлі).
-- [`docs/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../governance/rules/04-sql-migrations-sequential-two-phase.md) — наш супутній hard-rule.
+- [`docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md) — наш супутній hard-rule.
 
 ---
 
@@ -207,23 +207,23 @@ PR проходить у roadmap, якщо він задовольняє всі 
 - Сканер ловить ≥ 7 категорій загроз з регресійних fixture-ів у `scripts/__tests__/fixtures/malicious-skills/`.
 - Прогін на 12 існуючих skill-ів дає 0 hits (clean baseline).
 - `pnpm lint:skills` падає на synthetic malicious skill-фікстурі.
-- Розділ "Skill body security" додано в [`docs/governance/rules/`](../../governance/rules) — або як sub-clause до Rule #10, або як нова Rule #22 (`active-initiative`, deadline 2026-Q3).
+- Розділ "Skill body security" додано в [`docs/04-governance/governance/rules/`](../../04-governance/governance/rules) — або як sub-clause до Rule #10, або як нова Rule #22 (`active-initiative`, deadline 2026-Q3).
 - Якщо нова Hard Rule — оновити `hard-rules.json`, `hard-rules-matrix.md`, AGENTS.md table; pass `pnpm lint:hard-rules-registry`.
 
 **Files touched.**
 
 - `scripts/lint-skills.mjs`.
 - `scripts/__tests__/lint-skills-scan.test.mjs` + `fixtures/malicious-skills/*.md`.
-- `docs/governance/hard-rules.json` (якщо нова rule).
-- `docs/governance/hard-rules-matrix.md` (regenerated).
-- `docs/governance/rules/22-skill-body-security-scan.md` (опційно).
+- `docs/04-governance/governance/hard-rules.json` (якщо нова rule).
+- `docs/04-governance/governance/hard-rules-matrix.md` (regenerated).
+- `docs/04-governance/governance/rules/22-skill-body-security-scan.md` (опційно).
 - `AGENTS.md` Hard rules table (опційно).
 
 **References.**
 
 - [`agentskill.sh`](https://agentskill.sh/) — категорії загроз (12 категорій: command injection / data exfiltration / credential harvesting / prompt injection / persistence / sensitive file access / external calls / reverse shells / destructive commands / social engineering / obfuscation / supply-chain).
 - OpenClaw incident — search-tag: "OpenClaw skills attack 2025" (sources: agentskill.sh blog, Koi.ai writeup; конкретний URL зафіксувати на момент PR-у).
-- Існуючий `docs/governance/rules/07-pre-commit-hooks-via-husky.md` — формат hard-rule файлу.
+- Існуючий `docs/04-governance/governance/rules/07-pre-commit-hooks-via-husky.md` — формат hard-rule файлу.
 
 ---
 
@@ -446,4 +446,4 @@ PR проходить у roadmap, якщо він задовольняє всі 
 - [`docs/00-start/agents/README.md`](./README.md) — індекс agent-OS docs.
 - [`docs/00-start/agents/agent-skills-catalog.md`](./agent-skills-catalog.md) — поточна skill-routing таблиця.
 - [`docs/90-work/initiatives/archive/_0009-agent-os-hardening.md`](../../90-work/initiatives/archive/_0009-agent-os-hardening.md) — попередня agent-OS initiative-а (closed 2026-05-05).
-- [`docs/governance/audit-freeze-2026-05-05.md`](../../governance/audit-freeze-2026-05-05.md) — чому це не initiative.
+- [`docs/04-governance/governance/audit-freeze-2026-05-05.md`](../../04-governance/governance/audit-freeze-2026-05-05.md) — чому це не initiative.

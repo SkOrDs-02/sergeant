@@ -1,0 +1,4489 @@
+<!doctype html>
+<!-- AUTO-GENERATED -->
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sergeant — Knowledge Graph (2026-06-08)</title>
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        margin: 2rem;
+        color: #111;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      .summary {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+      }
+      .chip {
+        padding: 0.4rem 0.65rem;
+        border-radius: 6px;
+        font-weight: 600;
+        background: #e2e3e5;
+        color: #383d41;
+        font-size: 14px;
+      }
+      .chip-adr {
+        background: #d4edda;
+        color: #155724;
+      }
+      .chip-initiative {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .chip-playbook {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
+      .chip-skill {
+        background: #e2d4f0;
+        color: #4a235a;
+      }
+      .chip-hard-rule {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .chip-audit {
+        background: #fde2cf;
+        color: #82461c;
+      }
+      .chip-pr {
+        background: #cfe2ff;
+        color: #0a3d8f;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+        margin-top: 1rem;
+      }
+      th,
+      td {
+        padding: 0.35rem 0.55rem;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+        vertical-align: top;
+      }
+      th {
+        background: #f6f8fa;
+        position: sticky;
+        top: 0;
+      }
+      code {
+        background: #f6f8fa;
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 13px;
+      }
+      details {
+        margin: 1rem 0;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .auto-gen {
+        color: #666;
+        font-size: 13px;
+        margin-bottom: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sergeant — Knowledge Graph</h1>
+    <p class="auto-gen">
+      Generated 2026-06-08 · schema v1 · do not edit by hand — regenerate via
+      <code>pnpm docs:gen-graph</code>.
+    </p>
+    <div class="summary">
+      <span class="chip chip-adr">adr: <b>63</b></span>
+      <span class="chip chip-audit">audit: <b>17</b></span>
+      <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
+      <span class="chip chip-initiative">initiative: <b>48</b></span>
+      <span class="chip chip-playbook">playbook: <b>61</b></span>
+      <span class="chip chip-pr">pr: <b>164</b></span>
+      <span class="chip chip-skill">skill: <b>33</b></span>
+    </div>
+
+    <details open>
+      <summary>Nodes (241 core)</summary>
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Id</th>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Meta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0001</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0001-monetization-architecture.md"
+                >ADR-0001: Monetization architecture (16 рішень перед
+                стартом)</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=1</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0002</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0002-tool-lifecycle.md"
+                >ADR-0002: AI tool lifecycle (proposal → safety review → rollout
+                → KPIs)</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=2</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0003</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0003-refund-and-dispute-handling.md"
+                >ADR-0003: Refund and dispute handling</a
+              >
+            </td>
+            <td>proposed</td>
+            <td>number=3</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0004</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0004-cloudsync-lww-conflict-resolution.md"
+                >ADR-0004: CloudSync — LWW conflict resolution</a
+              >
+            </td>
+            <td>
+              superseded by [ADR-0047](./0047-cloudsync-v1-410-gone.md)
+              (CloudSync v1 → 410 Gone, T₀ executed 2026-05-06)
+            </td>
+            <td>number=4</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0005</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0005-anthropic-model-selection-and-prompt-caching.md"
+                >ADR-0005: Anthropic model selection + prompt caching</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=5</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0006</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0006-rq-keys-factory.md"
+                >ADR-0006: React Query keys via centralized factory (no inline
+                tuples)</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=6</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0007</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0007-tailwind-opacity-and-strong-tier.md"
+                >ADR-0007: Tailwind colour-opacity scale + WCAG-AA `-strong`
+                tier</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=7</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0008</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0008-feature-flags.md"
+                >ADR-0008: Feature flags — client-only registry over
+                typedStore</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=8</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0009</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0009-hosting-split-railway-vercel.md"
+                >ADR-0009: Hosting split — Railway (API + Postgres) + Vercel
+                (web)</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=9</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0010</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0010-mobile-dual-track-capacitor-expo.md"
+                >ADR-0010: Mobile dual-track — Capacitor shell + Expo native</a
+              >
+            </td>
+            <td>Superseded by ADR-0052</td>
+            <td>number=10</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0011</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0011-local-first-storage.md"
+                >ADR-0011: Local-first storage — клієнт як джерело істини,
+                сервер як LWW-реплікатор</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=11 · last_validated=2026-05-13</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0012</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0012-rls-as-authz-boundary.md"
+                >ADR-0012: RLS як authz boundary — цільова модель, наразі
+                app-enforced</a
+              >
+            </td>
+            <td>proposed</td>
+            <td>number=12</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0013</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0013-db-migrations-conventions.md"
+                >ADR-0013: DB migrations conventions — sequential, forward-only,
+                two-phase DROP</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=13</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0014</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0014-bigint-to-number-policy.md"
+                >ADR-0014: `bigint` → `number` coercion у API-серіалізаторах</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=14</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0015</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0015-observability-stack.md"
+                >ADR-0015: Observability stack — Pino + Prometheus + Sentry</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=15</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0016</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0016-user-deletion-and-pii-handling.md"
+                >ADR-0016: User deletion and PII handling</a
+              >
+            </td>
+            <td>proposed</td>
+            <td>number=16</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0017</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0017-better-auth-choice-and-session-model.md"
+                >ADR-0017: Better Auth choice and session model</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=17</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0018</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0018-api-versioning-policy.md"
+                >ADR-0018: API versioning policy (`/api/v1`)</a
+              >
+            </td>
+            <td>Superseded by [ADR-0053](./0053-api-versioning-policy.md)</td>
+            <td>number=18</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0019</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0019-push-notifications.md"
+                >ADR-0019: Push notifications — server-driven fan-out (web +
+                APNs + FCM)</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=19</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0020</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0020-testing-pyramid.md"
+                >ADR-0020: Testing pyramid — unit / integration / a11y /
+                smoke-e2e</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=20</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0021</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0021-memory-bank.md"
+                >ADR-0021: Memory Bank — local-first AI user-fact store</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=21</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0022</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0022-atomic-sql-quotas.md"
+                >ADR-0022: Atomic SQL daily quotas — `INSERT ... ON CONFLICT DO
+                UPDATE WHERE`</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=22</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0023</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0023-turbo-monorepo-runner.md"
+                >ADR-0023: Turborepo as monorepo task runner</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=23</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0024</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0024-monorepo-apps-packages-split.md"
+                >ADR-0024: Monorepo split — `apps/*` (deployables) +
+                `packages/*` (libraries)</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=24</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0025</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0025-openapi-generation.md"
+                >ADR-0025: OpenAPI 3.1 spec — generated from canonical
+                zod-schemas</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=25</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0026</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md"
+                >ADR-0026: n8n — джерело істини для воркфлоу</a
+              >
+            </td>
+            <td></td>
+            <td>number=26</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0027</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0027-openclaw-console-mcp-policy.md"
+                >ADR-0027: політика OpenClaw, Console та MCP</a
+              >
+            </td>
+            <td></td>
+            <td>number=27</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0028</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0028-pgvector-ai-memory.md"
+                >ADR-0028: pgvector + Voyage embeddings for AI semantic
+                memory</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=28</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0030</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md"
+                >ADR-0030: Структура Telegram-каналів для n8n reporting</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=30</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0031</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0031-openclaw-v0-telegram-cofounder.md"
+                >ADR-0031: OpenClaw v0 — Telegram-only co-founder bot</a
+              >
+            </td>
+            <td>
+              Superseded by [ADR-0055](./0055-openclaw-external-gateway.md)
+            </td>
+            <td>number=31</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0032</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0032-console-consolidated-into-openclaw.md"
+                >ADR-0032: Sergeant Console зливається в OpenClaw bot</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=32</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0033</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0033-openclaw-multi-personas-and-council.md"
+                >ADR-0033: OpenClaw multi-personas + `/council` round-table</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=33</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0034</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0034-visual-regression-testing.md"
+                >ADR-0034: Visual regression testing via Argos + Playwright</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=34</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0035</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md"
+                >ADR-0035: Distributed tracing — web→server via OpenTelemetry</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=35</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0036</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0036-openclaw-write-tools-with-approval.md"
+                >ADR-0036: OpenClaw write-tools with founder-approval flow</a
+              >
+            </td>
+            <td>
+              Superseded by [ADR-0055](./0055-openclaw-external-gateway.md)
+            </td>
+            <td>number=36</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0037</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0037-openclaw-write-audit-persistence.md"
+                >ADR-0037: OpenClaw Phase 4.5 — DB-persistent write-audit log</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=37</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0038</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0038-tg-alert-acks-and-escalation.md"
+                >ADR-0038: Telegram alert acknowledgement + 15-min escalation</a
+              >
+            </td>
+            <td>
+              Active. **Added:** 2026-05-13 (Sprint 6 / alert-escalation-tiers).
+            </td>
+            <td>number=38</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0039</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0039-anthropic-prompt-cache-policy.md"
+                >ADR-0039: Anthropic prompt-cache breakpoint policy</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=39</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0041</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0041-openclaw-telegram-webhook.md"
+                >ADR-0041: OpenClaw Telegram delivery via webhook</a
+              >
+            </td>
+            <td>
+              Superseded by [ADR-0055](./0055-openclaw-external-gateway.md)
+            </td>
+            <td>number=41</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0042</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0042-password-hashing-strategy.md"
+                >ADR-0042: Password hashing strategy — scrypt (Better Auth
+                default), `MAX_PASSWORD_LENGTH=256`</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=42</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0043</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0043-cloudsync-v1-sunset.md"
+                >ADR-0043: CloudSync v1 sunset — RFC 8594 deprecation headers +
+                6-phase rollout</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=43</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0044</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0044-renovate-vs-dependabot.md"
+                >ADR-0044: Renovate as the primary dep-update tool, Dependabot
+                as security-only fallback</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=44</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0045</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0045-hard-rules-taxonomy.md"
+                >ADR-0045: Hard Rules taxonomy — blocker-invariant /
+                lint-enforced-convention / active-initiative</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=45</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0046</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0046-storybook-vrt-scope.md"
+                >ADR-0046: Storybook visual regression scope</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=46</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0047</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0047-cloudsync-v1-410-gone.md"
+                >ADR-0047: CloudSync v1 — T₀ executed (410 Gone)</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=47 · last_validated=2026-06-08</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0048</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0048-apns-provider-library.md"
+                >ADR-0048: APNs provider library</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=48 · last_validated=2026-05-13</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0049</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0049-auth-vendor-risk.md"
+                >ADR-0049: Auth vendor risk and migration plan (Better Auth →
+                Auth.js / Lucia fallback)</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=49</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0050</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0050-typescript-major-version-policy.md"
+                >ADR-0050: TypeScript major-version policy + `@types/node`
+                pinning</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=50 · last_validated=2026-06-08</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0051</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0051-pricing-v3-single-tier.md"
+                >ADR-0051: Pricing v3 — Free + Pro, single paid tier</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=51</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0052</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md"
+                >ADR-0052: Mobile strategy — Capacitor primary, Expo parallel
+                (no deprecation)</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=52</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0053</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0053-api-versioning-policy.md"
+                >ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*`
+                mirror</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=53 · last_validated=2026-06-08</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0054</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0054-ux-roast-2026-q2.md"
+                >ADR-0054: UX-Roast 2026-Q2 — рішення з §1–§13</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=54</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0055</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0055-openclaw-external-gateway.md"
+                >ADR-0055: OpenClaw External Gateway — Phase 0 infra + Phase 7
+                cutover</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=55 · last_validated=2026-05-11</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0057</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0057-anthropic-sdk-v1-upgrade.md"
+                >ADR-0057: Upgrade @anthropic-ai/sdk 0.36.3 → 0.95.x у
+                tools/console</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=57</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0058</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0058-knowledge-graph-schema.md"
+                >ADR-0058: Knowledge graph schema and storage format</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=58 · last_validated=2026-06-08</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0059</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md"
+                >ADR-0059: Symbol extraction via TypeScript compiler API (no
+                ts-morph)</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=59 · last_validated=2026-06-08</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0060</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0060-architecture-diagrams-automation-scope.md"
+                >ADR-0060: Architecture diagrams — automation scope (workspace
+                graph only)</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=60 · last_validated=2026-06-08</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0061</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0061-pr-backlink-storage.md"
+                >ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc
+                block)</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=61 · last_validated=2026-06-08</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0062</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0062-openapi-source-of-truth.md"
+                >ADR-0062: OpenAPI spec source-of-truth — code-first (Zod →
+                OpenAPI)</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=62</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0063</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0063-expo-sdk-53-upgrade.md"
+                >ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight
+                compatibility</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=63 · last_validated=2026-06-08</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0064</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0064-syncv2-modular-refactor.md"
+                >0064-syncv2-modular-refactor</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=64</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0065</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md"
+                >ADR-0065: sync_op_log retention/архівація + multi-instance
+                fan-out (план PR-050)</a
+              >
+            </td>
+            <td>
+              Proposed &lt;!-- Proposed | Accepted | Deprecated | Superseded by
+              ADR-NNNN --&gt;
+            </td>
+            <td>number=65</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0066</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md"
+                >ADR-0066: Agent semantic retrieval over the knowledge graph</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=66 · last_validated=2026-06-08</td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
+            <td>
+              <a href="../../docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md"
+                >Sergeant — План PR-ів за UX-прожаркою (post-onboarding,
+                2026-05-06)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-consolidated-page-audit</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-consolidated-page-audit.md"
+                >Consolidated Page Audit — 2026-05-13</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-dead-code-hard-rules-roast</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-dead-code-hard-rules-roast.md"
+                >Прожарка #9/10 — Dead Code, Stale Links &amp; Hard Rules
+                (2026-05-13)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-page-audit-01-auth-onboarding</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-page-audit-01-auth-onboarding.md"
+                >Page Audit — Auth &amp; Onboarding pages</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-page-audit-02-hub-dashboard.md"
+                >Page Audit — Hub Dashboard, Modules Grid &amp; App shell</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-page-audit-03-hub-chat-search</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md"
+                >Page Audit — Hub Chat, Search &amp; Backup panel</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-page-audit-05-finyk.md"
+                >Page Audit — Finyk module — 5 pages
+                (overview/transactions/budgets/analytics/assets)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-page-audit-06-fizruk-part1.md"
+                >Page Audit — Fizruk module Part 1 (Dashboard, Atlas, Workouts,
+                Exercise)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-page-audit-07-fizruk-part2</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-page-audit-07-fizruk-part2.md"
+                >Page Audit — Fizruk module Part 2 (Progress, Measurements,
+                Programs, Body)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-page-audit-08-nutrition</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-page-audit-08-nutrition.md"
+                >Page Audit — Nutrition module — 4 pages
+                (start/pantry/log/menu)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md"
+                >Page Audit — Routine module + Strategy page</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td>
+              <code>audit:2026-05-13-page-audit-10-errors-pwa-marketing</code>
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md"
+                >Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-testing-devx-roast</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-testing-devx-roast.md"
+                >Sergeant — Прожарка #6/10: Testing &amp; DevX (2026-05-13)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-13-web-architecture-state-roast.md"
+                >Web Architecture &amp; State Roast — 2026-05-13 (Прожарка
+                #3/10)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-05-25-hubsettings-cls-chunk-load</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-05-25-hubsettings-cls-chunk-load.md"
+                >HubSettings lazy boundaries — CLS + chunk-load follow-up</a
+              >
+            </td>
+            <td>Open</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-08-XX-openclaw-internal-roast</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md"
+                >OpenClaw Internal Routes Deep Roast —
+                `apps/server/src/routes/internal/openclaw.ts`</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:2026-08-XX-sync-engine-roast</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-08-XX-sync-engine-roast.md"
+                >Sync Engine Deep Roast —
+                `apps/server/src/modules/sync/syncV2.ts` (stub)</a
+              >
+            </td>
+            <td>Draft</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:1</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#1"
+                >DB types: coerce `bigint` to `number` in serializers</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=1 · severity=blocker · category=blocker-invariant ·
+              scope=[&quot;apps/server/src/modules/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:10</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#10"
+                >Lifecycle markers — every file/doc declares its status</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=10 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;apps/**/*.{ts,tsx,js,jsx,mjs,cjs}&quot;,&quot;packages/**/*.{ts,tsx,js,jsx,mjs,cjs}&quot;,&quot;docs/**/*.md&quot;,&quot;scripts/**/*.{mjs,js}&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:11</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#11"
+                >No arbitrary hex colors in `className`</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=11 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;apps/web/src/**&quot;,&quot;apps/mobile/src/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:12</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#12"
+                >Module-accent containment — no foreign accents inside a module
+                subtree</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=12 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;apps/web/src/modules/finyk/**&quot;,&quot;apps/web/src/modules/fizruk/**&quot;,&quot;apps/web/src/modules/nutrition/**&quot;,&quot;apps/web/src/modules/routine/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:13</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#13"
+                >No raw-palette light/dark `className` pairs</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=13 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;apps/web/src/**&quot;,&quot;apps/mobile/src/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:14</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#14"
+                >Visible focus indicators must use `focus-visible:`, not
+                `focus:`</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=14 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;apps/web/src/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:15</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#15"
+                >Read governance before coding; update docs alongside code;
+                internal docs in Ukrainian</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=15 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;**/*&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:16</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#16"
+                >Typography scale — semantic styles + 12px floor</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=16 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;apps/web/src/**&quot;,&quot;packages/design-tokens/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:17</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#17"
+                >Animation budget — max 2 concurrent, 3 tiers</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=17 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;apps/web/src/**&quot;,&quot;packages/design-tokens/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:18</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#18"
+                >Module-size discipline — `max-lines: 600` for web TS/TSX and
+                server TS/JS</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=18 · severity=blocker · category=active-initiative ·
+              scope=[&quot;apps/web/src/**&quot;,&quot;apps/server/src/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:19</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#19"
+                >Strict-mode flag canonical — `noUncheckedIndexedAccess: true`
+                по всьому monorepo</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=19 · severity=blocker · category=active-initiative ·
+              scope=[&quot;apps/**/tsconfig.json&quot;,&quot;packages/**/tsconfig.json&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:2</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#2"
+                >RQ keys: only via centralized factories</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=2 · severity=blocker · category=blocker-invariant ·
+              scope=[&quot;apps/web/src/**&quot;,&quot;apps/mobile/src/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:20</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#20"
+                >No OpenClaw PATs in production</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=20 · severity=blocker · category=blocker-invariant ·
+              scope=[&quot;apps/server/src/env.ts&quot;,&quot;apps/server/src/env/env.ts&quot;,&quot;apps/server/src/modules/openclaw/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:21</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#21"
+                >Pino redaction policy enforced</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=21 · severity=blocker · category=blocker-invariant ·
+              scope=[&quot;apps/server/src/obs/logger.ts&quot;,&quot;apps/server/src/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:22</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#22"
+                >Skill body security scan — no injection/exfiltration patterns
+                in SKILL.md</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=22 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;.agents/skills/*/SKILL.md&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:23</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#23"
+                >Archive-move depth integrity — no broken `../X` links in docs
+                archives</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=23 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;docs/**/archive/**/*.md&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:24</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#24"
+                >Catalogs registered in `knowledge-graph.json` must have a
+                `--check` generator</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=24 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;docs/04-governance/governance/*.auto.json&quot;,&quot;docs/04-governance/governance/symbol-index.json&quot;,&quot;docs/04-governance/governance/knowledge-graph.json&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:25</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#25"
+                >Auto-generated docs must start with `&lt;!-- AUTO-GENERATED
+                --&gt;` marker</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=25 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;docs/04-governance/governance/knowledge-graph.html&quot;,&quot;docs/04-governance/governance/symbol-index.html&quot;,&quot;docs/02-engineering/architecture/diagrams/c3-workspaces.md&quot;,&quot;docs/open-work.md&quot;,&quot;docs/90-work/initiatives/follow-ups.md&quot;,&quot;docs/00-start/playbooks/INDEX.md&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:26</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#26"
+                >Merged PRs touching canonical docs must update
+                `docs/04-governance/pr-ledger/index.json`</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=26 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;docs/04-governance/adr/*.md&quot;,&quot;docs/90-work/initiatives/*.md&quot;,&quot;docs/00-start/playbooks/*.md&quot;,&quot;docs/04-governance/governance/rules/*.md&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:3</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#3"
+                >API contract: server response shape ↔ `api-client` types ↔
+                test</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=3 · severity=blocker · category=blocker-invariant ·
+              scope=[&quot;apps/server/src/modules/**&quot;,&quot;packages/api-client/src/**&quot;,&quot;apps/server/src/modules/**/*.test.ts&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:4</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#4"
+                >SQL migrations: sequential, no gaps, two-phase for DROP</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=4 · severity=blocker · category=blocker-invariant ·
+              scope=[&quot;apps/server/src/migrations/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:5</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#5"
+                >Conventional Commits: explicit scope enum</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=5 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;**/*&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:6</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#6"
+                >No force push to main/master</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=6 · severity=blocker · category=blocker-invariant ·
+              scope=[&quot;main&quot;,&quot;master&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:7</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#7"
+                >Pre-commit hooks via Husky — do not skip</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=7 · severity=blocker · category=blocker-invariant ·
+              scope=[&quot;**/*&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:8</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#8"
+                >Tailwind colour-opacity steps must be on the registered
+                scale</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=8 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;apps/web/src/**&quot;,&quot;packages/design-tokens/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>hard-rule</td>
+            <td><code>hard-rule:9</code></td>
+            <td>
+              <a href="../../docs/04-governance/governance/hard-rules.json#9"
+                >Saturated brand fills behind `text-white` must use the
+                `-strong` companion</a
+              >
+            </td>
+            <td></td>
+            <td>
+              number=9 · severity=blocker · category=lint-enforced-convention ·
+              scope=[&quot;apps/web/src/**&quot;]
+            </td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0003</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md"
+                >0003 — Sync v2 rollout &amp; v1 sunset</a
+              >
+            </td>
+            <td>
+              In progress (Phases 1-6 done; Phase 7 sunset-routes-removal
+              Proposed — exit-criteria 8-week zero signal OR 2026-08-04,
+              whichever first)
+            </td>
+            <td>number=3 · owner=@Skords-01 · priority=P0 (Sprint 1–2)</td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0006</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/0006-frontend-routing-and-code-split.md"
+                >0006 — Frontend routing migration + route-based code-split</a
+              >
+            </td>
+            <td>
+              In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix
+              implemented** (2026-06-07): `RootLayout.tsx` +
+              `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module
+              `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite.
+              Location-context bug resolved — each child route renders a
+              DIFFERENT component via `&lt;Outlet /&gt;`. Pending: typecheck on
+              clean worktree (exFAT install issues), Playwright e2e for
+              hash-compat, manualChunks cleanup.
+            </td>
+            <td>number=6 · owner=@Skords-01 · priority=P1 (Sprint 2)</td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0010</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/0010-revenue-first-launch.md"
+                >0010 — Revenue-first launch: ship paid, focus wedge</a
+              >
+            </td>
+            <td>In progress</td>
+            <td>number=10 · owner=@Skords-01 · priority=P0 (Sprint 1–4)</td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0015</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/0015-docs-automation-daily-ops.md"
+                >0015 — Docs automation for daily ops</a
+              >
+            </td>
+            <td>
+              In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle
+              Beta) shipped: skill+playbook columns + `agent-ready` field on all
+              initiatives + `lint:initiative-agent-ready` gate. Remaining =
+              Phase 1 **observational acceptance only**. **Observation window
+              2026-06-03 → 2026-06-09 (7 consecutive cron days); progress 3/7**
+              — daily-brief cron confirmed green 06-03 / 06-04 / 06-05; 06-06 →
+              06-09 still pending, and the maintainer 5/7-day usage self-report
+              is not yet recorded. Stays In progress until both signals close;
+              do NOT flip to Done before 2026-06-09. Not 90-day-gated; archival
+              deferred until the observation window closes.
+            </td>
+            <td>number=15</td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0017</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/0017-hub-tabs-mount-perf.md"
+                >0017 — Hub Settings &amp; Reports mount perf</a
+              >
+            </td>
+            <td>
+              In progress — code-complete, RUM review pending (2026-06-01).
+              Sprint 0 + Sprint 1 + Sprint 2 merged. Sprint 3 (Web Worker)
+              explicitly skipped pending next 30-day RUM cut on
+              `aggregateReport` P95 &gt; 50 ms — re-opens as a discrete
+              follow-up only if the threshold trips. See § Outcome / § Sprint 3
+              decision. **Sprint 1 done:** per-section lazy wiring landed on
+              main — the 4 heavy module-scoped sections
+              (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` +
+              `&lt;Suspense fallback={&lt;SectionSkeleton minH={72}/&gt;}&gt;`
+              in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10
+              lightweight sections stay static **by design** (a per-chunk for a
+              tiny section is net overhead). PR-1.2 cross-module defer landed
+              for **Finyk only**
+              ([#3102](https://github.com/Skords-01/Sergeant/pull/3102),
+              `useInView` gate on the Monobank sync-state query + backfill
+              poller) — it was the only section with off-screen _network_ cost;
+              `fizruk`/`nutrition`/`routine` carry only local-state hydration
+              (no `enabled:inView`-gatable queries), already mitigated by the
+              lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card
+              lazy decomposition merged via
+              [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash
+              on main as `5c98b41e`); remote branch
+              `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:**
+              Sprint 3 conditional on post-merge PostHog `aggregateReport` P95
+              metrics (cut window — only if &gt; 50 ms); Finalize PR — bundle
+              gate update + tech-debt watchlist drain + Outcome.
+            </td>
+            <td>
+              number=17 · owner=@Skords-01 · priority=P1 (Sprint 1 candidate
+              after [0016](./archive/_0016-changelog-release-cut.md))
+            </td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0018</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/0018-agent-semantic-retrieval.md"
+                >0018 — Agent semantic retrieval (agent:find)</a
+              >
+            </td>
+            <td>
+              Proposed — чекає на founder-погодження ADR-0066 перед стартом
+              Phase 1.
+            </td>
+            <td>number=18</td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:follow-ups</code></td>
+            <td>
+              <a href="../../docs/90-work/initiatives/follow-ups.md"
+                >Initiative follow-ups</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:stack-pulse-2026-05/00-overview</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/00-overview.md"
+                >Overview — stack pulse 2026-05</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/01-session-log-2026-05-03</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/01-session-log-2026-05-03.md"
+                >Session log — 2026-05-03 stack-pulse follow-through</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-01-unify-env-modules</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md"
+                >PR-01: Уніфікувати env-модулі сервера</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              ([#2122](https://github.com/Skords-01/Sergeant/pull/2122)).
+              `apps/server/src/env.ts` зведено до 19-рядкового re-export shim
+              над `apps/server/src/env/env.ts` (єдиний Zod-schema джерело правди
+              + `assertStartupEnv()`); CI-guard
+              `scripts/check-env-single-source.mjs` блокує `process.env`-доступ
+              поза дозволеним списком. `env/betterAuthEnv.ts` лишено навмисно —
+              викликається з auth lifecycle до повного startup.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-02-rate-limit-fail-closed</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-02-rate-limit-fail-closed.md"
+                >PR-02: Rate-limit fail-closed на `/api/auth/*`</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              [#1552](https://github.com/Skords-01/Sergeant/pull/1552)
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-03-bcrypt-password-limit</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md"
+                >PR-03: password length policy — scrypt premise correction</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              [#1550](https://github.com/Skords-01/Sergeant/pull/1550)
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-04-bus-factor-secondary-owners</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-04-bus-factor-secondary-owners.md"
+                >PR-04: Secondary owners + knowledge-transfer plan</a
+              >
+            </td>
+            <td>
+              Closed — last 3 DoD items shipped in this PR: (1) `AGENTS.md`
+              Module ownership map має `Secondary` колонку для всіх 22 рядків
+              (placeholder-роли `TBD (&lt;role&gt;)`), (2) `L2 escalation` поле
+              в `AGENTS.md` тепер посилається на
+              [`docs/00-start/playbooks/operational-continuity.md`](../../../00-start/playbooks/operational-continuity.md)
+              як L2 entry point (vendor support + 1Password vaults замість
+              «paging another person»), (3)
+              `scripts/check-codeowners-coverage.mjs` має
+              `validateAgentsSecondaryColumn()` що падає, якщо хтось додасть
+              рядок без `Secondary`-cell. Раніше landed: CODEOWNERS secondary
+              placeholder block, 6 module walkthroughs у
+              `docs/02-engineering/notes/spikes/2026-05-walkthrough-*.md`,
+              ops-runbook
+              ([#2000](https://github.com/Skords-01/Sergeant/pull/2000)).
+              Реальні secondary engineers — окрема hire-driven задача (out of
+              scope).
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-05-typescript-types-node-downgrade</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md"
+                >PR-05: `@types/node` downgrade до 20.x + ADR на TS 6 vs 5.x</a
+              >
+            </td>
+            <td>
+              Closed — merged (ADR-0050, @types/node pinned to ^20.19.0,
+              pnpm.overrides + renovate rule)
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-06-openclaw-github-app</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md"
+                >PR-06: OpenClaw → GitHub App, прибрати `Git_PAT` fallback</a
+              >
+            </td>
+            <td>
+              Closed — Phase 1 (GitHub App auth-flow) merged
+              [#1816](https://github.com/Skords-01/Sergeant/pull/1816); Phase 2
+              (default flip + PAT removal + Hard Rule #20) has landed and is
+              tracked by [Hard Rule
+              #20](../../../04-governance/governance/rules/20-no-openclaw-pats-in-production.md).
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-07-body-size-declarative-policy</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-07-body-size-declarative-policy.md"
+                >PR-07: Declarative body-size policy</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              [#2081](https://github.com/Skords-01/Sergeant/pull/2081)
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-08-api-versioning-consolidation</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md"
+                >PR-08: API versioning consolidation (видалити
+                v1-rewrite-shim)</a
+              >
+            </td>
+            <td>
+              Closed — research done, decision = keep mirror (див.
+              [ADR-0053](../../../04-governance/adr/0053-api-versioning-policy.md)
+              +
+              [spike](../../../02-engineering/notes/spikes/2026-05-api-v1-usage.md))
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code>initiative:stack-pulse-2026-05/pr-09-apns-library-adr</code>
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-09-apns-library-adr.md"
+                >PR-09: `@parse/node-apn` review (ADR-only)</a
+              >
+            </td>
+            <td>
+              Closed — ADR-0048 merged
+              ([`docs/04-governance/adr/0048-apns-provider-library.md`](../../../04-governance/adr/0048-apns-provider-library.md))
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-10-better-auth-security-review</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md"
+                >PR-10: Better Auth security review + Safari/Webkit E2E</a
+              >
+            </td>
+            <td>
+              Implemented (PR-48 / pr-plan-2026-05 §Security &amp; supply chain
+              row #48)
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-11-drizzle-schema-drift-ci.md"
+                >PR-11: Drizzle schema ↔ SQL drift CI gate</a
+              >
+            </td>
+            <td>
+              Closed — drift CI gate landed (`scripts/check-schema-drift.mjs` +
+              `packages/db-schema/src/__tests__/drift.test.ts`); ROOT-path fix
+              in [#2089](https://github.com/Skords-01/Sergeant/pull/2089)
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-12-sentry-traces-sampler</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-12-sentry-traces-sampler.md"
+                >PR-12: Sentry tracesSampler dynamic per-route</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              [#2086](https://github.com/Skords-01/Sergeant/pull/2086)
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-13-postgres-pool-sizing</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md"
+                >PR-13: PG pool sizing + monitoring + alerts</a
+              >
+            </td>
+            <td>Closed — implementation merged. Observability стек уже мав</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-14-vercel-coep-review</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-14-vercel-coep-review.md"
+                >PR-14: Vercel COEP review (require-corp)</a
+              >
+            </td>
+            <td>
+              Closed (2026-05-05, doc-only) — resolved by M21 compatibility
+              matrix
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock.md"
+                >PR-15: `AI_QUOTA_DISABLED=1` hard-block у production</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              [#1567](https://github.com/Skords-01/Sergeant/pull/1567)
+              (production-throw у `env.ts` + tests landed in `main`)
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-16-pino-redaction-policy</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md"
+                >PR-16: Pino redaction policy + ESLint guard</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard
+              Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard +
+              [`docs/04-governance/security/logging-redaction-policy.md`](../../../04-governance/security/logging-redaction-policy.md)
+              зареєстровані.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md"
+                >PR-17: 80+ env-vars → DB feature-flag toggle</a
+              >
+            </td>
+            <td>Planned</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-18-detox-server-shape-trigger</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md"
+                >PR-18: Detox path-trigger пропускає server-shape changes</a
+              >
+            </td>
+            <td>
+              Closed — Detox iOS + Android `paths` extended to include
+              `apps/server/src/routes/**`, `packages/shared/**`, and
+              `apps/server/src/migrations/**` (the actual server layout — there
+              is no `apps/server/src/modules/**/*.routes.ts` tree as the
+              original card assumed). CONTRIBUTING.md updated. A separate
+              `scripts/check-api-client-coverage.mjs` gate was intentionally not
+              added: `api:check-openapi` + `api:check-openapi-types` already
+              cover the generated OpenAPI/api-client freshness path.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-19-workers-health-registry</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-19-workers-health-registry.md"
+                >PR-19: Workers health-registry + `/api/health/workers`
+                endpoint</a
+              >
+            </td>
+            <td>
+              Active — `/health/workers` endpoint shipped via PR
+              [#1995](https://github.com/Skords-01/Sergeant/pull/1995) (commit
+              [`cdcdb5ba`](https://github.com/Skords-01/Sergeant/commit/cdcdb5ba))
+              з in-memory per-queue stats (`aiMemoryIngest` + `monoEnrichment` +
+              `backgroundQueue`); запропонована `worker_health` DB-table +
+              Grafana dashboards / `worker_lag_seconds` метрика — deferred
+              (current in-memory підхід satisfies M3 monitoring need without DB
+              writes), reactivation trigger — наступний stalled-worker incident.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code>initiative:stack-pulse-2026-05/pr-20-patches-readme</code>
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-20-patches-readme.md"
+                >PR-20: `patches/` debt без README</a
+              >
+            </td>
+            <td>
+              Closed — `patches/README.md` schema +
+              `scripts/check-patches-doc.mjs` + `pnpm lint:patches` CI gate
+              landed in [#2193](https://github.com/Skords-01/Sergeant/pull/2193)
+              (`fix(docs): restore patches/README Status badge + prettier
+              --write 33 stale docs`). All 4 DoD items shipped: README table з 1
+              row на `@expo__cli@0.22.28.patch`, `scripts/check-patches-doc.mjs`
+              (10 KB), 6-fixture node:test у
+              `scripts/__tests__/check-patches-doc.test.mjs`, та `lint:patches`
+              step у `.github/workflows/ci.yml` (line 130) — закриває M4 у
+              `00-overview.md`.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update.md"
+                >PR-21: SW `prompt`-mode auto-update on inactivity</a
+              >
+            </td>
+            <td>
+              Closed — SW prompt-mode auto-update shipped in
+              [#2309](https://github.com/Skords-01/Sergeant/pull/2309);
+              `setupAutoUpdate()` lives at `apps/web/src/core/app/autoUpdate.ts`
+              + `apps/server/src/http/buildIdHeader.ts` issues
+              `X-Server-Build-Id` on every response.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-22-mobile-expo-sdk-53</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md"
+                >PR-22: Mobile Expo SDK 52 → 53 upgrade</a
+              >
+            </td>
+            <td>Planned</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md"
+                >PR-23: OpenAPI spec contract-tested vs runtime</a
+              >
+            </td>
+            <td>
+              Active — Phase 1 (generation + freshness gate) shipped +
+              [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md)
+              source-of-truth написаний (2026-06-05); contract roundtrip tests
+              (`tests/contract/`) + Schemathesis property-based testing
+              лишаються deferred. Phase 1 закриває drift-detection use-case
+              (spec ↔ runtime Zod); roundtrip/property-based testing активуються
+              коли з'явиться перший contract-bug у production.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-24-embedding-vendor-abstraction</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md"
+                >PR-24: Embedding-vendor abstraction (voyage-3.5-lite
+                lock-in)</a
+              >
+            </td>
+            <td>
+              Active — groundwork done; abstraction вже в коді (2026-05-13 план
+              передував поточній архітектурі). `EmbeddingProvider`/`VectorStore`
+              vendor-agnostic інтерфейси (`types.ts`) +
+              `createVoyageEmbeddingProvider` factory + per-row
+              `embedding_provider`/`embedding_model`/`embedding_version` колонки
+              вже існували; цей прохід додав active-model read-filter у
+              `vectorStore.query` +
+              `docs/00-start/playbooks/embedding-provider-migration.md`.
+              **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely
+              trigger-gated** на voyage regression / pricing / outage.
+              `047_model_id` міграція та env-router/OpenAI-adapter — superseded
+              (redundant / speculative dead code до реального тригера).
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-25-two-production-origins</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md"
+                >PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app`
+                → один production origin</a
+              >
+            </td>
+            <td>Planned</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code>initiative:stack-pulse-2026-05/pr-26-csp-report-uri</code>
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md"
+                >PR-26: CSP `report-uri` / `report-to` endpoint</a
+              >
+            </td>
+            <td>
+              Closed (modulo E2E) — modern Reporting API (`Reporting-Endpoints`
+              header + `report-to csp-endpoint` directive) shipped in
+              `apps/web/vercel.json`;
+              `docs/03-operations/observability/csp-monitoring.md` operations
+              playbook live. Rate-limit (120/min IP) + 16 KB body cap було
+              мерджнуто раніше через `apps/server/src/http/bodySizePolicy.ts` +
+              `apps/server/src/routes/csp-report.ts`. E2E
+              `/dummy-violation-page.html` тест — лишається у backlog
+              (browser-level CSP-violation hard to reproduce у unit-test,
+              потребує Playwright fixture; не блокує закриття).
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-27-internal-api-key-rotation</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md"
+                >PR-27: `INTERNAL_API_KEY` rotation мechanism</a
+              >
+            </td>
+            <td>Planned</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-28-sw-build-id-import-meta</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-28-sw-build-id-import-meta.md"
+                >PR-28: `__SW_BUILD_ID__` global →
+                `import.meta.env.VITE_BUILD_ID`</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              [#2309](https://github.com/Skords-01/Sergeant/pull/2309) (commit
+              `e8ada9f2`). Migration covers всі два ambient global-и
+              (`__SW_BUILD_ID__` у SW + `__APP_BUILD_ID__` у React Query
+              persister), які ділили той самий build-id; після цього PR-у вони
+              живуть як single `import.meta.env.VITE_BUILD_ID` з типами у
+              `apps/web/src/vite-env.d.ts`.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md"
+                >PR-29: `window.__sergeantShellNavigate` global →
+                BroadcastChannel</a
+              >
+            </td>
+            <td>
+              Active (PR-1 shipped — BroadcastChannel sender + listener в
+              `apps/mobile-shell/src/index.ts` і
+              `apps/web/src/core/app/ShellDeepLinkBridge.tsx`;
+              `window.__sergeantShellNavigate` лишається як backward-compat
+              alias до PR-2 у serpni 2026)
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md"
+                >PR-30: Dockerfile post-install cleanup CVE-shrink fragility</a
+              >
+            </td>
+            <td>
+              Done — multi-stage distroless shipped via PR
+              [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit
+              [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0),
+              2026-05-13); shared base layer + console-side Trivy scan tracked
+              as follow-up.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-31-eslint-config-split</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-31-eslint-config-split.md"
+                >PR-31: ESLint config 1073 рядки → split per-app</a
+              >
+            </td>
+            <td>
+              Phase 1 shipped + Phase 2 scaffolding shipped — baseline extracted
+              into `eslint.baseline.js` (PR-31 phase 1, ~180 рядків,
+              byte-identical `--print-config` output verified on 7 fixture
+              files). **Phase 2 scaffolding** (2026-06-01):
+              `scripts/eslint-print-config-diff.mjs` + 8 surface snapshots під
+              `scripts/__fixtures__/eslint-print-config/` + `pnpm
+              lint:eslint-config-diff` gate. **Phase 2a shipped (2026-06-05):**
+              per-surface extraction завершено — surface блоки винесені у
+              `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` /
+              `eslint.shell.js` / `eslint.openclaw.js` / `eslint.packages.js` /
+              `eslint.cross-surface.js`; root composition manifest 1128 → 37
+              рядків. **Byte-neutral**: `lint:eslint-config-diff` — усі 8
+              fixtures match, нуль зміни снапшотів. **Phase 2b deferred:**
+              справжні per-package standalone `apps/&lt;x&gt;/eslint.config.js`
+              + Turbo parallelism (DoD #2 strict / #3 / #4) — потребують зміни
+              resolution-model + diff-gate cd-per-package + re-baseline
+              снапшотів у CI-env (див. § Implementation notes +
+              `docs/02-engineering/development/eslint-config.md` § Phase 2b).
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup.md"
+                >PR-32: `pnpm.overrides` quarterly cleanup</a
+              >
+            </td>
+            <td>
+              Closed (PR
+              [#2423](https://github.com/Skords-01/Sergeant/pull/2423))
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-33-hard-rules-categorization</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-33-hard-rules-categorization.md"
+                >PR-33: 21 hard rules — categorize</a
+              >
+            </td>
+            <td>
+              Closed — implemented via 3 enforcement-categories
+              (`blocker-invariant` / `lint-enforced-convention` /
+              `active-initiative`) instead of 5 subject-categories. See
+              [ADR-0045](../../../04-governance/adr/0045-hard-rules-taxonomy.md),
+              [`docs/04-governance/governance/hard-rules-matrix.md`](../../../04-governance/governance/hard-rules-matrix.md),
+              [`docs/04-governance/governance/rules/`](../../../04-governance/governance/rules)
+              per-rule files, AGENTS.md `Hard rules` section, and `pnpm
+              lint:hard-rules-registry` 3-way sync gate.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate.md"
+                >PR-34: `runDemoSeedFromUrl` / `runDemoCleanupOnce` on every
+                load</a
+              >
+            </td>
+            <td>
+              Closed (PR
+              [#2423](https://github.com/Skords-01/Sergeant/pull/2423), commit
+              [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec))
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-35-log-level-debug-window</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-35-log-level-debug-window.md"
+                >PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle</a
+              >
+            </td>
+            <td>
+              Active — server-side shipped via PR
+              [#2423](https://github.com/Skords-01/Sergeant/pull/2423) (commit
+              [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec),
+              2026-05-08); `tools/openclaw` `/debug-window` CLI deferred to
+              follow-up (див. нижче — чекає першого реального debug-incident-у
+              як trigger).
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md"
+                >PR-36: `lazyImport` chunk-reload no-infinite-loop guard</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              [#2311](https://github.com/Skords-01/Sergeant/pull/2311) (commit
+              `9bfa006d`). Код живе не у `lazyImport.ts` (як писалось у плані на
+              2026-05-07), а у `apps/web/src/core/lib/chunkReload.ts` —
+              reload-recovery вже був рефакторений у окремий модуль з
+              cooldown-гардом. Цей PR додав counter-window guard (`MAX_RELOADS =
+              3`, sliding `RESET_AFTER_MS = 5min`) поверх існуючого 10s
+              cooldown-у.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-37-postgres-image-sha-pin</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md"
+                >PR-37: Postgres image SHA-pinning</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              [#2308](https://github.com/Skords-01/Sergeant/pull/2308) (commit
+              `348f5773`). CI workflows (`ci.yml:410`, `extended-e2e.yml:57`,
+              `visual-regression.yml:40`, `db-backup-verify.yml:34`) already pin
+              `pgvector/pgvector:pg16@sha256:7d400e34…` (landed earlier under
+              M21 / supply-chain hardening). Цей PR закрив останнє drift-місце —
+              `docker-compose.yml` (local dev) — і додав Renovate `pinDigests`
+              rule + setup runbook.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-38-pwa-precache-first-party</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md"
+                >PR-38: PWA precache 1st-party verify</a
+              >
+            </td>
+            <td>
+              Closed — merged
+              [#2312](https://github.com/Skords-01/Sergeant/pull/2312) (commit
+              `e227f2b6`). Скрипт живе не у `apps/web/scripts/` (як писалось у
+              плані на 2026-05-07), а у кореневій `scripts/` — всі інші
+              freshness/процес-гейти репо живуть там (`check-patches-doc.mjs`,
+              `check-tech-debt-freshness.mjs`, ін.). Скрипт використовує
+              `apps/server/dist/sw.js` (`apps/web` білдить сюди через `outDir`).
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md"
+                >PR-39: `tools/openclaw` Anthropic SDK 0.36.3 → latest</a
+              >
+            </td>
+            <td>
+              Active — SDK вже на `^0.95.2` (міграція 0.36 → 0.95 відбулась у
+              попередньому PR з ADR-0057); prompt caching opt-in
+              (`ANTHROPIC_PROMPT_CACHE=1`) enable-но у `run-agent-loop`. SDK v1
+              GA ще не відбулась — див. ADR-0057 § SDK v1 tracking.
+            </td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:access-governance</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/access-governance.md"
+                >Управління привілейованим доступом (access governance)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:add-api-endpoint</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/add-api-endpoint.md"
+                >Add API Endpoint</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:add-feature-flag</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/add-feature-flag.md"
+                >Додати feature flag</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:add-hard-rule</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/add-hard-rule.md"
+                >Додати Hard Rule</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:add-hubchat-tool</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/add-hubchat-tool.md"
+                >Додати HubChat Tool</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:add-monobank-event-handler</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/add-monobank-event-handler.md"
+                >Add Monobank Event Handler</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:add-new-page-route</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/add-new-page-route.md"
+                >Add New Page Route</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:add-onboarding-step</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/add-onboarding-step.md"
+                >Add Onboarding Step</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:add-push-notification</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/add-push-notification.md"
+                >Add Push Notification</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:add-react-query-hook</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/add-react-query-hook.md"
+                >Add React Query Hook</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:add-sql-migration</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/add-sql-migration.md"
+                >Add SQL Migration</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:author-skill</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/author-skill.md"
+                >Author or Edit a SKILL.md</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:bump-dep-safely</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/bump-dep-safely.md"
+                >Bump Dependency Safely</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:change-auth-flow</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/change-auth-flow.md"
+                >Change an Auth Flow (Better Auth)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:cleanup-codex-branch-after-pr</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/cleanup-codex-branch-after-pr.md"
+                >Cleanup Codex branch after PR</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:cleanup-dead-code</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/cleanup-dead-code.md"
+                >Прибирання dead code</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:cutover-openclaw-gateway</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/cutover-openclaw-gateway.md"
+                >Cutover OpenClaw на зовнішній Gateway (Stage 7)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:debug-chat-tool</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/debug-chat-tool.md"
+                >Debug HubChat Tool</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:declare-incident</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/declare-incident.md"
+                >Оголошення інциденту</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:deploy-config-change</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/deploy-config-change.md"
+                >Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:embedding-provider-migration</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/embedding-provider-migration.md"
+                >Embedding Provider Migration</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:enable-prompt-caching</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/enable-prompt-caching.md"
+                >Enable Anthropic Prompt Caching</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:execute-planning-batch</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/execute-planning-batch.md"
+                >Виконання батчу planning-тасків (parallel fan-out)</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:fix-exhaustive-deps</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/fix-exhaustive-deps.md"
+                >Fix Exhaustive Deps Warnings</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:fix-failing-ci</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/fix-failing-ci.md"
+                >Fix Failing CI on a PR</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:hotfix-prod-regression</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/hotfix-prod-regression.md"
+                >Hotfix Production Regression</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:investigate-alert</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/investigate-alert.md"
+                >Розслідування alert-у</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:migrate-localstorage-to-typedstore</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/migrate-localstorage-to-typedstore.md"
+                >Migrate localStorage to typedStore</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:modify-console-agent</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/modify-console-agent.md"
+                >Зміна або додавання console-агента</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:modify-n8n-workflow</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/modify-n8n-workflow.md"
+                >Зміна або додавання n8n-воркфлоу</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:onboard-external-api</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/onboard-external-api.md"
+                >Onboard External API</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:operational-continuity</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/operational-continuity.md"
+                >Operational continuity</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:playbook-catalog</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/playbook-catalog.md"
+                >Playbook Catalog</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:port-web-screen-to-mobile</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/port-web-screen-to-mobile.md"
+                >Порт web-екрану в mobile</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:pre-merge-migration-checklist</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/pre-merge-migration-checklist.md"
+                >Pre-Merge Migration Checklist</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:prettier-pass-on-docs</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/prettier-pass-on-docs.md"
+                >Prettier Pass on `docs/`</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:reconcile-doc-drift</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/reconcile-doc-drift.md"
+                >Звірка дрифту документації та архівація</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:release</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/release.md">Реліз</a>
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:restore-from-backup</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/restore-from-backup.md"
+                >Restore from Backup</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:retire-feature-flag</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/retire-feature-flag.md"
+                >Retire Feature Flag</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:rotate-openclaw-credentials</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/rotate-openclaw-credentials.md"
+                >Ротація OpenClaw GitHub credentials</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:rotate-secrets</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/rotate-secrets.md"
+                >Rotate Secrets</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:run-council</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/run-council.md"
+                >Council — рада директорів для product рішень</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:run-squad-deliver</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/run-squad-deliver.md"
+                >Squad deliver — sequential cross-surface feature delivery</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:run-squad-qa</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/run-squad-qa.md"
+                >Squad QA — паралельний QA по всіх surfaces</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:run-squad-review</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/run-squad-review.md"
+                >Squad review — паралельний PR review через 4 lens-агентів</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:run-weekly-operator-digest</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/run-weekly-operator-digest.md"
+                >Тижневий operator-дайджест</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:security-pen-test-checklist</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/security-pen-test-checklist.md"
+                >Security pen-test checklist for closed hardening cards</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:stabilize-flaky-test</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/stabilize-flaky-test.md"
+                >Stabilize Flaky Test</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:sync-rn-migration-progress</code></td>
+            <td>
+              <a
+                href="../../docs/00-start/playbooks/sync-rn-migration-progress.md"
+                >Sync RN Migration Progress</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:test-backup-restore</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/test-backup-restore.md"
+                >Тестове відновлення бекапу</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:tune-system-prompt</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/tune-system-prompt.md"
+                >Tune System Prompt</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:write-e2e-test</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/write-e2e-test.md"
+                >Write or Debug a Playwright E2E Test</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>playbook</td>
+            <td><code>playbook:write-postmortem</code></td>
+            <td>
+              <a href="../../docs/00-start/playbooks/write-postmortem.md"
+                >Postmortem після інциденту</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:api-design-principles</code></td>
+            <td>
+              <a href="../../.agents/skills/api-design-principles/SKILL.md"
+                >api-design-principles</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Master REST and GraphQL API design principles to build
+              intuitive, scalable, and maintainable APIs that delight
+              developers. Use when designing new APIs, reviewing API
+              specifications, or establishing API design standards.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:architecture-patterns</code></td>
+            <td>
+              <a href="../../.agents/skills/architecture-patterns/SKILL.md"
+                >architecture-patterns</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Implement proven backend architecture patterns
+              including Clean Architecture, Hexagonal Architecture, and
+              Domain-Driven Design. Use when designing clean architecture for a
+              new microservice, when refactoring a monolith to
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:better-auth-best-practices</code></td>
+            <td>
+              <a href="../../.agents/skills/better-auth-best-practices/SKILL.md"
+                >better-auth-best-practices</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when editing Sergeant auth — login, signup,
+              session cookies, middleware, account lifecycle, Better Auth
+              wiring; also when touching protected routes or token refresh; UA:
+              правиш логін, реєстрацію, сесії, авторизацію.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:cqrs-implementation</code></td>
+            <td>
+              <a href="../../.agents/skills/cqrs-implementation/SKILL.md"
+                >cqrs-implementation</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Implement Command Query Responsibility Segregation for
+              scalable architectures. Use when separating read and write models,
+              optimizing query performance, or building event-sourced systems.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:event-store-design</code></td>
+            <td>
+              <a href="../../.agents/skills/event-store-design/SKILL.md"
+                >event-store-design</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Design and implement event stores for event-sourced
+              systems. Use when building event sourcing infrastructure, choosing
+              event store technologies, or implementing event persistence
+              patterns.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:microservices-patterns</code></td>
+            <td>
+              <a href="../../.agents/skills/microservices-patterns/SKILL.md"
+                >microservices-patterns</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Design microservices architectures with service
+              boundaries, event-driven communication, and resilience patterns.
+              Use when building distributed systems, decomposing monoliths, or
+              implementing microservices.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:projection-patterns</code></td>
+            <td>
+              <a href="../../.agents/skills/projection-patterns/SKILL.md"
+                >projection-patterns</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Build read models and projections from event streams.
+              Use when implementing CQRS read sides, building materialized
+              views, or optimizing query performance in event-sourced systems.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:saga-orchestration</code></td>
+            <td>
+              <a href="../../.agents/skills/saga-orchestration/SKILL.md"
+                >saga-orchestration</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Implement saga patterns for distributed transactions
+              and cross-aggregate workflows. Use this skill when implementing
+              distributed transactions across microservices where 2PC is
+              unavailable, designing compensating actions
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-backend-api</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-backend-api/SKILL.md"
+                >sergeant-backend-api</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Backend API patterns for Sergeant — REST/GraphQL
+              design, Clean Architecture, Hexagonal patterns, CQRS, event
+              sourcing, Temporal workflows, saga orchestration. Covers service
+              boundaries, testing, security, performance
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-backend-architecture</code></td>
+            <td>
+              <a
+                href="../../.agents/skills/sergeant-backend-architecture/SKILL.md"
+                >sergeant-backend-architecture</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Backend architecture patterns — Clean Architecture,
+              Hexagonal, CQRS, Event Sourcing, Temporal, Saga, microservices.
+              UA: архітектура бекенду, мікросервіси, event sourcing.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-bugfix-and-regression</code></td>
+            <td>
+              <a
+                href="../../.agents/skills/sergeant-bugfix-and-regression/SKILL.md"
+                >sergeant-bugfix-and-regression</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when fixing a Sergeant bug, regression, flaky
+              test, broken deploy, or production issue — even if the fix seems
+              obvious, always reproduce first; UA: фіксиш баг, регресію,
+              флакі-тест, зламаний деплой.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-council</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-council/SKILL.md"
+                >sergeant-council</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when the founder needs a multi-perspective
+              advisory board — spawns council specialists in parallel (product,
+              ux, growth, tech, critic) and synthesizes recommendations; UA:
+              скликай раду / порадься з командою.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-data-and-migrations</code></td>
+            <td>
+              <a
+                href="../../.agents/skills/sergeant-data-and-migrations/SKILL.md"
+                >sergeant-data-and-migrations</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when changing Sergeant SQL, Postgres schema, query
+              behavior, migration numbering, or Railway pre-deploy data paths;
+              also when adding indexes or fixing query perf; UA: правиш SQL,
+              схему БД, міграції, rollout даних.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-deliver-squad</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-deliver-squad/SKILL.md"
+                >sergeant-deliver-squad</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when implementing a Sergeant feature across 2+
+              surfaces with contract dependencies (DB + server + api-client +
+              web/mobile) — sequential subagent handoffs prevent bigint and
+              triplet gaps; UA: фіча через 2+ surfaces.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-deploy-and-observability</code></td>
+            <td>
+              <a
+                href="../../.agents/skills/sergeant-deploy-and-observability/SKILL.md"
+                >sergeant-deploy-and-observability</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when a Sergeant change touches deploy config, env
+              vars, Railway/Vercel, health checks, Sentry, n8n, or production
+              verification; also when editing CI/CD or Dockerfile; UA: деплой,
+              env, Railway, Vercel, Sentry, n8n.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-e2e-testing</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-e2e-testing/SKILL.md"
+                >sergeant-e2e-testing</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when writing, reviewing, or debugging Playwright
+              E2E tests in apps/web; for auth fixtures, network mocking, trace
+              debugging, or CI retry config; UA: Playwright, E2E тести, e2e,
+              smoke test.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-feature-delivery</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-feature-delivery/SKILL.md"
+                >sergeant-feature-delivery</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when building a new Sergeant feature, screen,
+              endpoint, workflow, or behavior change needing design, planning,
+              tests, docs, and verification — even if scope looks small; UA:
+              робиш нову фічу/екран/endpoint.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-hubchat</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-hubchat/SKILL.md"
+                >sergeant-hubchat</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when creating, modifying, reviewing, or debugging
+              Sergeant HubChat tool defs, executors, action cards, or chat side
+              effects; also when editing AI prompts or stream; UA: правиш
+              HubChat tool/executor/action card/chat.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-mobile-expo</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-mobile-expo/SKILL.md"
+                >sergeant-mobile-expo</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when editing Sergeant Expo screens, React Native,
+              mobile navigation, MMKV flows, Capacitor shell, or web→mobile
+              ports; also for platform-specific bugs; UA: правиш
+              Expo/RN/MMKV/Capacitor/mobile-shell.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-monorepo-boundaries</code></td>
+            <td>
+              <a
+                href="../../.agents/skills/sergeant-monorepo-boundaries/SKILL.md"
+                >sergeant-monorepo-boundaries</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when a Sergeant change spans multiple
+              apps/packages, extracts shared logic, or import boundaries are
+              unclear — even if the change seems isolated to one app; UA: межі
+              між app/package, спільна логіка в монорепо.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-openclaw</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-openclaw/SKILL.md"
+                >sergeant-openclaw</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when working on the OpenClaw Gateway service,
+              console agent, @sergeant/openclaw-plugin package, ops/openclaw
+              config, or Telegram bot identity; UA: OpenClaw / gateway /
+              console-agent / openclaw-plugin / Telegram-бот.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-planning-batch</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-planning-batch/SKILL.md"
+                >sergeant-planning-batch</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when executing a batch of N open tasks from
+              docs/90-work/planning/* PR-plans — dynamic selection, parallel
+              agent fan-out, tracker updates, fast-forward archival of complete
+              docs; UA: виконати батч planning-тасків.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-qa-squad</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-qa-squad/SKILL.md"
+                >sergeant-qa-squad</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when running full QA across all Sergeant surfaces
+              — spawns qa-server, qa-web, qa-mobile, qa-openclaw as Agent Team
+              in parallel and synthesizes per-surface results; UA: повний QA по
+              всіх surfaces.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-review-and-merge</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-review-and-merge/SKILL.md"
+                >sergeant-review-and-merge</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when reviewing a Sergeant PR, preparing for merge,
+              checking commit scope, validating docs freshness, or deciding if a
+              change is safe to ship; also for rollback safety checks; UA: ревʼю
+              PR і мердж.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-review-squad</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-review-squad/SKILL.md"
+                >sergeant-review-squad</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use for Sergeant PR review touching 3+ governed
+              surfaces — spawns 4 Agent Team reviewers (contract, design,
+              security, docs) in parallel then synthesizes; UA: ревʼю PR через
+              3+ governed surfaces паралельно.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-security-audit</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-security-audit/SKILL.md"
+                >sergeant-security-audit</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when running a security review of Sergeant code or
+              API, auditing deps with pnpm audit, or checking PAT/credential
+              safety; before any auth or user-data surface ships; UA: security
+              review, перевірка безпеки, аудит.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-server-api</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-server-api/SKILL.md"
+                >sergeant-server-api</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when editing Sergeant server routes, serializers,
+              modules, api-client types, React Query server hooks, or
+              time-sensitive logic; also for middleware or env changes; UA:
+              правиш роути/серіалізатори/RQ-хуки.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-start-here</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-start-here/SKILL.md"
+                >sergeant-start-here</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when starting any task in the Sergeant repo — web,
+              server, mobile, migrations, HubChat, deploys, reviews, or
+              cross-package boundaries; always load this skill first; UA:
+              будь-яка нова задача в Sergeant.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-tech-debt</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-tech-debt/SKILL.md"
+                >sergeant-tech-debt</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when reducing technical debt, cleaning dead code
+              with Knip, lowering ESLint baseline violations, or tackling Hard
+              Rule #18 (module-size) refactor sprints in Sergeant; UA: технічний
+              борг, dead code, рефакторинг.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-web-ui</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-web-ui/SKILL.md"
+                >sergeant-web-ui</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when editing Sergeant web UI, PWA shell, React
+              screens, Tailwind, accessibility, localStorage flows, or shared
+              web interaction patterns; also for design tokens or theme; UA:
+              правиш веб-UI/PWA/Tailwind.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:sergeant-writing-skills</code></td>
+            <td>
+              <a href="../../.agents/skills/sergeant-writing-skills/SKILL.md"
+                >sergeant-writing-skills</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Use when creating, editing, or pressure-testing a
+              `.agents/skills/*/SKILL.md` in Sergeant — applies TDD to skill
+              content; UA: пишеш або редагуєш SKILL.md.
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:temporal-python-testing</code></td>
+            <td>
+              <a href="../../.agents/skills/temporal-python-testing/SKILL.md"
+                >temporal-python-testing</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Test Temporal workflows with pytest, time-skipping,
+              and mocking strategies. Covers unit testing, integration testing,
+              replay testing, and local development setup. Use when implementing
+              Temporal workflow tests or
+            </td>
+          </tr>
+          <tr>
+            <td>skill</td>
+            <td><code>skill:workflow-orchestration-patterns</code></td>
+            <td>
+              <a
+                href="../../.agents/skills/workflow-orchestration-patterns/SKILL.md"
+                >workflow-orchestration-patterns</a
+              >
+            </td>
+            <td></td>
+            <td>
+              description=Design durable workflows with Temporal for distributed
+              systems. Covers workflow vs activity separation, saga patterns,
+              state management, and determinism constraints. Use when building
+              long-running processes, distributed
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
+
+    <details>
+      <summary>Edges (380 total, first 500 core-to-core)</summary>
+      <table>
+        <thead>
+          <tr>
+            <th>From</th>
+            <th>Edge</th>
+            <th>To</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>adr:0006</code></td>
+            <td>references</td>
+            <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0010</code></td>
+            <td>references</td>
+            <td><code>hard-rule:3</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0012</code></td>
+            <td>references</td>
+            <td><code>hard-rule:1</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0013</code></td>
+            <td>references</td>
+            <td><code>hard-rule:3</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0014</code></td>
+            <td>references</td>
+            <td><code>hard-rule:1</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0024</code></td>
+            <td>references</td>
+            <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0030</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0037</code></td>
+            <td>references</td>
+            <td><code>hard-rule:1</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0037</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0043</code></td>
+            <td>references</td>
+            <td><code>initiative:0003</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0047</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0047</code></td>
+            <td>references</td>
+            <td><code>initiative:0003</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0052</code></td>
+            <td>supersedes</td>
+            <td><code>adr:0010</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0054</code></td>
+            <td>references</td>
+            <td><code>initiative:0006</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0055</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0058</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0058</code></td>
+            <td>references</td>
+            <td><code>hard-rule:24</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0058</code></td>
+            <td>references</td>
+            <td><code>initiative:0010</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0061</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0061</code></td>
+            <td>references</td>
+            <td><code>hard-rule:6</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0061</code></td>
+            <td>references</td>
+            <td><code>hard-rule:7</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0061</code></td>
+            <td>references</td>
+            <td><code>initiative:0010</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0064</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0065</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0066</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0066</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0066</code></td>
+            <td>references</td>
+            <td><code>hard-rule:24</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0066</code></td>
+            <td>references</td>
+            <td><code>hard-rule:25</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
+            <td>references</td>
+            <td><code>initiative:0006</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-consolidated-page-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-consolidated-page-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:11</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-consolidated-page-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:12</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-consolidated-page-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-consolidated-page-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-consolidated-page-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:9</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-dead-code-hard-rules-roast</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-dead-code-hard-rules-roast</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-dead-code-hard-rules-roast</code></td>
+            <td>references</td>
+            <td><code>hard-rule:23</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-01-auth-onboarding</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-01-auth-onboarding</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-01-auth-onboarding</code></td>
+            <td>references</td>
+            <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-01-auth-onboarding</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
+            <td>references</td>
+            <td><code>hard-rule:11</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
+            <td>references</td>
+            <td><code>hard-rule:12</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
+            <td>references</td>
+            <td><code>hard-rule:13</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
+            <td>references</td>
+            <td><code>hard-rule:14</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
+            <td>references</td>
+            <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
+            <td>references</td>
+            <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
+            <td>references</td>
+            <td><code>hard-rule:9</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-03-hub-chat-search</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-03-hub-chat-search</code></td>
+            <td>references</td>
+            <td><code>hard-rule:14</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-03-hub-chat-search</code></td>
+            <td>references</td>
+            <td><code>hard-rule:17</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-03-hub-chat-search</code></td>
+            <td>references</td>
+            <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-03-hub-chat-search</code></td>
+            <td>references</td>
+            <td><code>hard-rule:3</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
+            <td>references</td>
+            <td><code>hard-rule:14</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
+            <td>references</td>
+            <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
+            <td>references</td>
+            <td><code>hard-rule:8</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
+            <td>references</td>
+            <td><code>hard-rule:9</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
+            <td>references</td>
+            <td><code>hard-rule:11</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
+            <td>references</td>
+            <td><code>hard-rule:13</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
+            <td>references</td>
+            <td><code>hard-rule:16</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
+            <td>references</td>
+            <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
+            <td>references</td>
+            <td><code>hard-rule:9</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-07-fizruk-part2</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-07-fizruk-part2</code></td>
+            <td>references</td>
+            <td><code>hard-rule:11</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-07-fizruk-part2</code></td>
+            <td>references</td>
+            <td><code>hard-rule:12</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-07-fizruk-part2</code></td>
+            <td>references</td>
+            <td><code>hard-rule:14</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-07-fizruk-part2</code></td>
+            <td>references</td>
+            <td><code>hard-rule:16</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-07-fizruk-part2</code></td>
+            <td>references</td>
+            <td><code>hard-rule:17</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-07-fizruk-part2</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-07-fizruk-part2</code></td>
+            <td>references</td>
+            <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-08-nutrition</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-08-nutrition</code></td>
+            <td>references</td>
+            <td><code>hard-rule:11</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-08-nutrition</code></td>
+            <td>references</td>
+            <td><code>hard-rule:12</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-08-nutrition</code></td>
+            <td>references</td>
+            <td><code>hard-rule:13</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-08-nutrition</code></td>
+            <td>references</td>
+            <td><code>hard-rule:17</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-08-nutrition</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-08-nutrition</code></td>
+            <td>references</td>
+            <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-08-nutrition</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-page-audit-08-nutrition</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:11</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:12</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:13</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:3</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-09-routine-strategy</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:9</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code>audit:2026-05-13-page-audit-10-errors-pwa-marketing</code>
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-testing-devx-roast</code></td>
+            <td>references</td>
+            <td><code>hard-rule:3</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-testing-devx-roast</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-testing-devx-roast</code></td>
+            <td>references</td>
+            <td><code>hard-rule:7</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
+            <td>references</td>
+            <td><code>hard-rule:12</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
+            <td>references</td>
+            <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
+            <td>references</td>
+            <td><code>initiative:0006</code></td>
+          </tr>
+          <tr>
+            <td><code>initiative:0003</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>initiative:0018</code></td>
+            <td>references</td>
+            <td><code>hard-rule:24</code></td>
+          </tr>
+          <tr>
+            <td><code>initiative:stack-pulse-2026-05/00-overview</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>initiative:stack-pulse-2026-05/00-overview</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-06-openclaw-github-app</code
+              >
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-16-pino-redaction-policy</code
+              >
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup</code
+              >
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-33-hard-rules-categorization</code
+              >
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:add-hard-rule</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:add-react-query-hook</code></td>
+            <td>references</td>
+            <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:author-skill</code></td>
+            <td>references</td>
+            <td><code>hard-rule:22</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:change-auth-flow</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:cleanup-dead-code</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:cleanup-dead-code</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:cutover-openclaw-gateway</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:modify-n8n-workflow</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:reconcile-doc-drift</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:release</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>playbook:rotate-openclaw-credentials</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-deliver-squad</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-deploy-and-observability</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-deploy-and-observability</code></td>
+            <td>references</td>
+            <td><code>hard-rule:23</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-hubchat</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-openclaw</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-review-and-merge</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-review-and-merge</code></td>
+            <td>references</td>
+            <td><code>hard-rule:3</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-review-and-merge</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-review-and-merge</code></td>
+            <td>references</td>
+            <td><code>hard-rule:5</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-security-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:1</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-security-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-security-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-security-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:22</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-server-api</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-tech-debt</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-tech-debt</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-tech-debt</code></td>
+            <td>references</td>
+            <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-web-ui</code></td>
+            <td>references</td>
+            <td><code>hard-rule:16</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-writing-skills</code></td>
+            <td>references</td>
+            <td><code>hard-rule:22</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
+
+    <details>
+      <summary>ADR supersede / reference graph (Mermaid)</summary>
+      <pre><code class="language-mermaid">graph LR
+  adr_0001[&quot;ADR-0001: Monetization architecture (16 рішень перед стартом&quot;]
+  adr_0002[&quot;ADR-0002: AI tool lifecycle (proposal → safety review → roll&quot;]
+  adr_0003[&quot;ADR-0003: Refund and dispute handling&quot;]
+  adr_0004[&quot;ADR-0004: CloudSync — LWW conflict resolution&quot;]
+  adr_0005[&quot;ADR-0005: Anthropic model selection + prompt caching&quot;]
+  adr_0006[&quot;ADR-0006: React Query keys via centralized factory (no inlin&quot;]
+  adr_0007[&quot;ADR-0007: Tailwind colour-opacity scale + WCAG-AA `-strong` &quot;]
+  adr_0008[&quot;ADR-0008: Feature flags — client-only registry over typedSto&quot;]
+  adr_0009[&quot;ADR-0009: Hosting split — Railway (API + Postgres) + Vercel &quot;]
+  adr_0010[&quot;ADR-0010: Mobile dual-track — Capacitor shell + Expo native&quot;]
+  adr_0011[&quot;ADR-0011: Local-first storage — клієнт як джерело істини, се&quot;]
+  adr_0012[&quot;ADR-0012: RLS як authz boundary — цільова модель, наразі app&quot;]
+  adr_0013[&quot;ADR-0013: DB migrations conventions — sequential, forward-on&quot;]
+  adr_0014[&quot;ADR-0014: `bigint` → `number` coercion у API-серіалізаторах&quot;]
+  adr_0015[&quot;ADR-0015: Observability stack — Pino + Prometheus + Sentry&quot;]
+  adr_0016[&quot;ADR-0016: User deletion and PII handling&quot;]
+  adr_0017[&quot;ADR-0017: Better Auth choice and session model&quot;]
+  adr_0018[&quot;ADR-0018: API versioning policy (`/api/v1`)&quot;]
+  adr_0019[&quot;ADR-0019: Push notifications — server-driven fan-out (web + &quot;]
+  adr_0020[&quot;ADR-0020: Testing pyramid — unit / integration / a11y / smok&quot;]
+  adr_0021[&quot;ADR-0021: Memory Bank — local-first AI user-fact store&quot;]
+  adr_0022[&quot;ADR-0022: Atomic SQL daily quotas — `INSERT ... ON CONFLICT &quot;]
+  adr_0023[&quot;ADR-0023: Turborepo as monorepo task runner&quot;]
+  adr_0024[&quot;ADR-0024: Monorepo split — `apps/*` (deployables) + `package&quot;]
+  adr_0025[&quot;ADR-0025: OpenAPI 3.1 spec — generated from canonical zod-sc&quot;]
+  adr_0026[&quot;ADR-0026: n8n — джерело істини для воркфлоу&quot;]
+  adr_0027[&quot;ADR-0027: політика OpenClaw, Console та MCP&quot;]
+  adr_0028[&quot;ADR-0028: pgvector + Voyage embeddings for AI semantic memor&quot;]
+  adr_0030[&quot;ADR-0030: Структура Telegram-каналів для n8n reporting&quot;]
+  adr_0031[&quot;ADR-0031: OpenClaw v0 — Telegram-only co-founder bot&quot;]
+  adr_0052 --|supersedes|--&gt; adr_0010</code></pre>
+      <p>
+        <em
+          >Tip: paste the block above into
+          <a href="https://mermaid.live">mermaid.live</a> to render it.</em
+        >
+      </p>
+    </details>
+  </body>
+</html>

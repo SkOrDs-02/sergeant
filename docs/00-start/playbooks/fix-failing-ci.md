@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-**Trigger:** один або кілька CI checks червоні на PR: `commitlint`, `lint`, `typecheck`, `test`, `build`, docs/governance gates, bundle або mobile jobs.
+**Trigger:** один або кілька CI checks червоні на PR: `commitlint`, `lint`, `typecheck`, `test`, `build`, docs/04-governance/governance gates, bundle або mobile jobs.
 
 ## Owner surface
 
@@ -13,7 +13,7 @@
 ## Required context
 
 - Почни з `sergeant-start-here`, потім відкрий `sergeant-bugfix-and-regression`.
-- Якщо CI red пов'язаний із docs або governance, звір [review-checklist.md](../../governance/review-checklist.md).
+- Якщо CI red пов'язаний із docs або governance, звір [review-checklist.md](../../04-governance/governance/review-checklist.md).
 - Якщо red походить від migrations або deploy, переключись у відповідний specialist skill.
 
 ## Steps
@@ -30,7 +30,7 @@
 - formatting / lint
 - typecheck
 - tests
-- docs/governance index or schema
+- docs/04-governance/governance index or schema
 - build/runtime-specific job
 
 ### 3. Зроби мінімальний fix

@@ -27,7 +27,7 @@ cp .env.example .env
 pnpm dev:db
 ```
 
-### `pnpm install --frozen-lockfile` як дефолт ([L14](./docs/security/hardening/L14-pnpm-frozen-lockfile-dev.md))
+### `pnpm install --frozen-lockfile` як дефолт ([L14](./docs/04-governance/security/hardening/L14-pnpm-frozen-lockfile-dev.md))
 
 CI завжди ставить deps через `--frozen-lockfile` — тобто падає, якщо `pnpm-lock.yaml` хоч на байт відрізняється від того, що зафіксовано в репі. Це supply-chain hardening: `pnpm install` без прапорця може мовчки переписати lockfile (наприклад, після `pnpm add foo` без `pnpm-lock.yaml` у staged-files), і регресія/malicious-bump просочиться у feature-гілку без рев'ю diff-а в lock-файлі.
 
@@ -49,7 +49,7 @@ pnpm update -r
 
 Якщо `pnpm install` (без `--frozen-lockfile`) залишив `git diff pnpm-lock.yaml` непустим, а ти не додавав/оновлював deps свідомо — значить, drift. Скинь зміни (`git checkout -- pnpm-lock.yaml`) і перерозберись, чому твоє локальне дерево не сходиться з lockfile (типово — нова версія `pnpm` сама, або забутий `pnpm install --frozen-lockfile` після `git pull`).
 
-Кожен override у `pnpm.overrides` (root `package.json`) трекається окремо — `pnpm lint:pnpm-overrides` падає, якщо range уже не resolves до одного major-а ([L1](./docs/security/hardening/L1-uuid-override.md)).
+Кожен override у `pnpm.overrides` (root `package.json`) трекається окремо — `pnpm lint:pnpm-overrides` падає, якщо range уже не resolves до одного major-а ([L1](./docs/04-governance/security/hardening/L1-uuid-override.md)).
 
 ### Worktrees: тримай на тому ж томі, що й pnpm store
 
@@ -74,7 +74,7 @@ pnpm dev:web
 
 ### Локальний secret-scan (gitleaks)
 
-Pre-commit hook (`scripts/pre-commit-gitleaks.mjs`) запускає `gitleaks protect --staged` на staged-зміни — це той самий сканер, що і у CI (`.github/workflows/ci.yml :: secret-scan`, [I5](./docs/security/hardening/I5-pre-commit-secret-detection.md)). Catching секретів локально (перед тим, як коміт потрапить у reflog) дешевше, ніж на PR-boundary — attacker timeline стартує з моменту локального коміту.
+Pre-commit hook (`scripts/pre-commit-gitleaks.mjs`) запускає `gitleaks protect --staged` на staged-зміни — це той самий сканер, що і у CI (`.github/workflows/ci.yml :: secret-scan`, [I5](./docs/04-governance/security/hardening/I5-pre-commit-secret-detection.md)). Catching секретів локально (перед тим, як коміт потрапить у reflog) дешевше, ніж на PR-boundary — attacker timeline стартує з моменту локального коміту.
 
 Встанови `gitleaks` один раз:
 
@@ -106,7 +106,7 @@ pnpm lint:secrets
 2. Відкрий playbook або specialist doc для цього surface.
 3. Зроби найменший узгоджений change-set.
 4. Прожени verification для свого типу зміни.
-5. Онови docs/governance/playbooks у тому ж PR, якщо поведінка або процес змінилися.
+5. Онови docs/04-governance/governance/playbooks у тому ж PR, якщо поведінка або процес змінилися.
 
 ## Verification за типом зміни
 
@@ -166,7 +166,7 @@ Playbooks - це канонічні покрокові рецепти викон
 Husky `pre-commit` запускає два кроки послідовно:
 
 1. `lint-staged` з пайплайнами для staged-файлів (таблиця нижче).
-2. `node scripts/pre-commit-gitleaks.mjs` — secret-scan на staged-changes ([I5](./docs/security/hardening/I5-pre-commit-secret-detection.md); деталі та інсталяція — у §«Локальний secret-scan (gitleaks)» вище).
+2. `node scripts/pre-commit-gitleaks.mjs` — secret-scan на staged-changes ([I5](./docs/04-governance/security/hardening/I5-pre-commit-secret-detection.md); деталі та інсталяція — у §«Локальний secret-scan (gitleaks)» вище).
 
 | Pattern                      | Команди                                                                  |
 | ---------------------------- | ------------------------------------------------------------------------ |
@@ -186,7 +186,7 @@ Husky `pre-commit` запускає два кроки послідовно:
 3. Переліч конкретні verification steps.
 4. Перевір, чи треба було оновити `AGENTS.md`, playbook, governance doc або roadmap.
 
-Reviewer checklist живе в [docs/governance/review-checklist.md](./docs/governance/review-checklist.md).
+Reviewer checklist живе в [docs/04-governance/governance/review-checklist.md](./docs/04-governance/governance/review-checklist.md).
 
 ### Hard rules (з `AGENTS.md`)
 
@@ -215,13 +215,13 @@ Reviewer checklist живе в [docs/governance/review-checklist.md](./docs/gove
 23. **Archive-move depth integrity — no broken `../X` links in docs archives**
 24. **Catalogs registered in `knowledge-graph.json` must have a `--check` generator**
 25. **Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker**
-26. **Merged PRs touching canonical docs must update `docs/pr-ledger/index.json`**
+26. **Merged PRs touching canonical docs must update `docs/04-governance/pr-ledger/index.json`**
 
 Джерела істини:
 
 - Human-readable contract: [AGENTS.md](./AGENTS.md)
-- Machine-readable registry: [docs/governance/hard-rules.json](./docs/governance/hard-rules.json)
-- Generated matrix: [docs/governance/hard-rules-matrix.md](./docs/governance/hard-rules-matrix.md)
+- Machine-readable registry: [docs/04-governance/governance/hard-rules.json](./docs/04-governance/governance/hard-rules.json)
+- Generated matrix: [docs/04-governance/governance/hard-rules-matrix.md](./docs/04-governance/governance/hard-rules-matrix.md)
 
 ## Generators (`pnpm gen`)
 
@@ -231,7 +231,7 @@ Plop-генератори створюють шаблонні артефакти
 pnpm gen                # інтерактивний вибір генератора
 pnpm gen new-skill      # .agents/skills/<slug>/SKILL.md + запис у skills-lock.json
 pnpm gen new-playbook   # docs/00-start/playbooks/<slug>.md з валідним schema + freshness
-pnpm gen:adr            # docs/adr/<NNNN>-<title>.md (auto-numbered)
+pnpm gen:adr            # docs/04-governance/adr/<NNNN>-<title>.md (auto-numbered)
 pnpm gen migration      # apps/server/src/migrations/<NNN>_<name>.sql + .down.sql
 pnpm gen rq-hook        # apps/web/src/modules/<module>/hooks/use<Name>.ts
 pnpm gen hubchat-tool   # server toolDef stub + web action stub

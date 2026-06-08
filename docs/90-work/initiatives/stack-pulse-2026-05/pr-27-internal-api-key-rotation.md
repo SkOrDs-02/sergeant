@@ -87,7 +87,7 @@ Single env-var `INTERNAL_API_KEY` lишається валідним bootstrap-k
 
 ### 6. Documentation
 
-`docs/security/internal-api-keys.md` — runbook для rotation, audit, revocation.
+`docs/04-governance/security/internal-api-keys.md` — runbook для rotation, audit, revocation.
 
 ## Out of scope
 
@@ -102,7 +102,7 @@ Single env-var `INTERNAL_API_KEY` lишається валідним bootstrap-k
 - [ ] `tools/openclaw` має `/internal-key` group commands з role-check `ops`.
 - [ ] Bootstrap-row seeded з env-INTERNAL_API_KEY на startup.
 - [ ] Sentry tag `internal_key_name` додається на кожен internal request.
-- [ ] `docs/security/internal-api-keys.md` з rotation runbook.
+- [ ] `docs/04-governance/security/internal-api-keys.md` з rotation runbook.
 - [ ] Тест: rotation simulation — два keys одночасно valid → старий revoked.
 
 ## Тести
@@ -138,7 +138,7 @@ Single env-var `INTERNAL_API_KEY` lишається валідним bootstrap-k
 - `tools/openclaw/src/agents/ops/internalKey.ts` — new commands
 - `ops/n8n-workflows/03-sentry-alert-routing.json` — update header to use new key
 - `ops/n8n-workflows/18-nightly-security-audit.json` — те саме
-- `docs/security/internal-api-keys.md` — new
+- `docs/04-governance/security/internal-api-keys.md` — new
 
 ## Refs
 

@@ -15,7 +15,7 @@
 > findings, all INFO/LOW). Safari/Webkit + mobile-safari projects додані
 > у `playwright.smoke.config.ts`; nightly extended-e2e workflow запускає
 > matrix on cron. ADR-0049 (auth-vendor-risk) accepted з explicit re-open
-> trigger-ами. Деталі — у `docs/security/better-auth-crypto-review.md`.
+> trigger-ами. Деталі — у `docs/04-governance/security/better-auth-crypto-review.md`.
 
 ## Контекст
 
@@ -40,7 +40,7 @@ Sergeant використовує Better Auth v1.6.x — це новіша і м
   - Чи `iv` для AES-GCM генерується свіжим на кожен encrypt?
   - Чи tag-length 16 bytes?
   - Чи timing-attack-resistant compare на token-verify?
-- Документ `docs/security/better-auth-crypto-review.md` зі знахідками.
+- Документ `docs/04-governance/security/better-auth-crypto-review.md` зі знахідками.
 
 ### 2. Safari/Webkit E2E
 
@@ -64,7 +64,7 @@ Sergeant використовує Better Auth v1.6.x — це новіша і м
 
 ### 4. Fallback ADR
 
-- `docs/adr/0046-auth-vendor-risk.md`:
+- `docs/04-governance/adr/0046-auth-vendor-risk.md`:
   - Якщо Better Auth deprecated / abandoned — план міграції на Lucia / Auth.js.
   - Estimated effort + interface boundary, де нам найпростіше swap-нути.
 
@@ -75,7 +75,7 @@ Sergeant використовує Better Auth v1.6.x — це новіша і м
 
 ## Acceptance criteria (DoD)
 
-- [x] `docs/security/better-auth-crypto-review.md` створений з findings (severity-list).
+- [x] `docs/04-governance/security/better-auth-crypto-review.md` створений з findings (severity-list).
 - [x] Кожен `severity: high` finding адресований у тому самому PR (vacuously true — 0 high findings).
 - [x] `playwright.smoke.config.ts` має `webkit` + `mobile-safari` projects (`playwright.config.ts` лишився a11y-only — у Sergeant є три config-файли: a11y, smoke, visual; auth flow живе у smoke).
 - [x] `pnpm e2e:auth` (новий script у `apps/web/package.json`) запускає auth-flow по `@auth` grep-у на трьох browsers.
@@ -110,8 +110,8 @@ Sergeant використовує Better Auth v1.6.x — це новіша і м
 - `apps/web/tests/smoke/auth-webkit.spec.ts` — Safari/Webkit cookie regression spec (новий)
 - `apps/web/package.json` — `e2e:auth` script (новий)
 - `.github/workflows/extended-e2e.yml` — browser matrix на nightly cron
-- `docs/security/better-auth-crypto-review.md` — новий
-- `docs/adr/0049-auth-vendor-risk.md` — новий (0046 already taken)
+- `docs/04-governance/security/better-auth-crypto-review.md` — новий
+- `docs/04-governance/adr/0049-auth-vendor-risk.md` — новий (0046 already taken)
 
 ## Refs
 

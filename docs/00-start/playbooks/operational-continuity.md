@@ -24,7 +24,7 @@ lang: en
 - [ ] 1Password vault `Sergeant / Railway` opens and decrypts; same for the per-vendor sub-vaults referenced below.
 - [ ] `pnpm db:migrate` runs against the production Postgres without prompting for credentials (Railway env injects `DATABASE_URL`).
 - [ ] Each kill-switch in the «Kill-switches (emergency)» table can be activated from the Railway env panel without redeploy.
-- [ ] Related runbooks (`docs/03-operations/runbooks/operations-runbook.md`, `docs/security/disaster-recovery.md`, `docs/03-operations/observability/runbook.md`) are reachable and their referenced tools are installed locally.
+- [ ] Related runbooks (`docs/03-operations/runbooks/operations-runbook.md`, `docs/04-governance/security/disaster-recovery.md`, `docs/03-operations/observability/runbook.md`) are reachable and their referenced tools are installed locally.
 
 ---
 
@@ -98,5 +98,5 @@ lang: en
 ## Related runbooks
 
 - `docs/03-operations/runbooks/operations-runbook.md` — full operations guide
-- `docs/security/disaster-recovery.md` — DR scenarios (Postgres restore, bad migration, etc.)
+- `docs/04-governance/security/disaster-recovery.md` — DR scenarios (Postgres restore, bad migration, etc.)
 - `docs/03-operations/observability/runbook.md` — metrics + alerting runbook

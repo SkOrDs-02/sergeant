@@ -132,7 +132,7 @@ jobs:
         # the related per-surface flags) is `true` — which would
         # silently bypass the `cleartext: false` guarantee declared in
         # `apps/mobile-shell/capacitor.config.ts`. See
-        # `docs/security/hardening/L12-ios-app-transport-security.md`.
+        # `docs/04-governance/security/hardening/L12-ios-app-transport-security.md`.
         run: node apps/mobile-shell/scripts/check-info-plist.mjs
 
       - name: Build App scheme for iOS Simulator (no signing)

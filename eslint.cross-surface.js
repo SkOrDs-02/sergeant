@@ -99,7 +99,7 @@ export const crossSurfaceBlocks = [
   },
   // SAST guardrail — `eslint-plugin-security` taint-flow heuristics on
   // production server + console code. Closes the M11 audit gap from
-  // `docs/security/hardening/M11-eslint-plugin-security.md`: SQL
+  // `docs/04-governance/security/hardening/M11-eslint-plugin-security.md`: SQL
   // parameterisation and table-name allowlists are correct today, but
   // nothing in lint forbids the next regression. The three rules below
   // catch the highest-signal patterns the audit asked for; the
@@ -133,12 +133,12 @@ export const crossSurfaceBlocks = [
       // patterns in the existing codebase (typed `distPath` arguments,
       // user-id-keyed backup file paths, the openclaw doc-search
       // helpers, the CORS allowlist regex). Per
-      // `docs/security/hardening/M11-eslint-plugin-security.md`
+      // `docs/04-governance/security/hardening/M11-eslint-plugin-security.md`
       // verification ("baseline run produces no new errors on the
       // existing codebase") the rules ship at "warn" — review-time
       // signal in CI lint output without blocking on the audited
       // baseline. Promote to "error" once the baseline is migrated;
-      // see `docs/security/audit-exceptions.md` for the inventory.
+      // see `docs/04-governance/security/audit-exceptions.md` for the inventory.
       "security/detect-non-literal-fs-filename": "warn",
       "security/detect-non-literal-regexp": "warn",
       // Custom hard-rule companion to the SAST plugin: forbid templated
@@ -169,13 +169,13 @@ export const crossSurfaceBlocks = [
           selector:
             "CallExpression[callee.property.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]",
           message:
-            "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/security/hardening/M11-eslint-plugin-security.md.",
+            "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/04-governance/security/hardening/M11-eslint-plugin-security.md.",
         },
         {
           selector:
             "CallExpression[callee.type='Identifier'][callee.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]",
           message:
-            "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/security/hardening/M11-eslint-plugin-security.md.",
+            "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/04-governance/security/hardening/M11-eslint-plugin-security.md.",
         },
       ],
     },

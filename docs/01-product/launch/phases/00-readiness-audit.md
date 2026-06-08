@@ -15,7 +15,7 @@
 > [`docs/02-engineering/architecture/service-catalog.md`](../../../02-engineering/architecture/service-catalog.md) ·
 > [`docs/00-start/playbooks/release.md`](../../../00-start/playbooks/release.md) ·
 > [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) ·
-> [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../../../adr/0052-mobile-strategy-capacitor-primary.md)
+> [`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md)
 
 ---
 

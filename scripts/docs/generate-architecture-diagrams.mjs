@@ -4,7 +4,7 @@
 // Generate `docs/02-engineering/architecture/diagrams/c3-workspaces.md` — an auto-gen
 // Mermaid LR graph showing `@sergeant/*` workspace dependency edges.
 //
-// Input: `docs/governance/symbol-index.json` (Phase 2 output). Each
+// Input: `docs/04-governance/governance/symbol-index.json` (Phase 2 output). Each
 // `package.exports[].usedBy[]` entry is a file path; group by workspace
 // prefix (apps/*, packages/*, tools/*) to derive cross-workspace edges.
 //
@@ -27,7 +27,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 
-const INPUT_INDEX = resolve(REPO_ROOT, "docs/governance/symbol-index.json");
+const INPUT_INDEX = resolve(
+  REPO_ROOT,
+  "docs/04-governance/governance/symbol-index.json",
+);
 const OUT_MD = resolve(
   REPO_ROOT,
   "docs/02-engineering/architecture/diagrams/c3-workspaces.md",
@@ -281,9 +284,9 @@ function renderMarkdown(graph, generatedAt) {
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via \`pnpm docs:gen-architecture-diagrams\`. -->
 
-Workspace-level dependency view of \`@sergeant/*\` import edges. Derived from [\`docs/governance/symbol-index.json\`](../../../governance/symbol-index.json) (Phase 2 symbol catalog). Each edge \`A → B\` means workspace **A** imports at least one symbol from workspace **B** via static ESM \`import\` / \`export from\` statements.
+Workspace-level dependency view of \`@sergeant/*\` import edges. Derived from [\`docs/04-governance/governance/symbol-index.json\`](../../../04-governance/governance/symbol-index.json) (Phase 2 symbol catalog). Each edge \`A → B\` means workspace **A** imports at least one symbol from workspace **B** via static ESM \`import\` / \`export from\` statements.
 
-**Limitations:** does not include dynamic \`await import()\`, runtime \`require()\`, or \`peerDependencies\` declared in \`package.json\`. For runtime deployment topology see [\`c2-containers.md\`](./c2-containers.md); for feature-level flows see \`c3-cloudsync.md\` / \`c3-chat-tool-use.md\`; for the rationale on what is and isn't auto-generated see [ADR-0060](../../../adr/0060-architecture-diagrams-automation-scope.md).
+**Limitations:** does not include dynamic \`await import()\`, runtime \`require()\`, or \`peerDependencies\` declared in \`package.json\`. For runtime deployment topology see [\`c2-containers.md\`](./c2-containers.md); for feature-level flows see \`c3-cloudsync.md\` / \`c3-chat-tool-use.md\`; for the rationale on what is and isn't auto-generated see [ADR-0060](../../../04-governance/adr/0060-architecture-diagrams-automation-scope.md).
 
 ## Graph
 

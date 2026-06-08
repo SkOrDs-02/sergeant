@@ -17,4 +17,4 @@
 
 - Перед claim про completion запускай явні verification commands (lint / typecheck / focused tests).
 - Для multi-surface змін вирішуй один primary surface і один primary playbook; не міксуй кілька workflow без причини.
-- Якщо задача торкає `docs/governance/`, `.agents/skills/` або `docs/00-start/playbooks/` — стався до них як до production surfaces: перевір індекси, схеми, sync gates і CODEOWNERS coverage.
+- Якщо задача торкає `docs/04-governance/governance/`, `.agents/skills/` або `docs/00-start/playbooks/` — стався до них як до production surfaces: перевір індекси, схеми, sync gates і CODEOWNERS coverage.

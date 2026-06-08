@@ -12,7 +12,7 @@
 
 ## Потрібний контекст
 
-- Перегляньте [engineering-metrics.md](../../03-operations/observability/engineering-metrics.md), [feature-flags.md](../../governance/feature-flags.md) і [review-checklist.md](../../governance/review-checklist.md).
+- Перегляньте [engineering-metrics.md](../../03-operations/observability/engineering-metrics.md), [feature-flags.md](../../04-governance/governance/feature-flags.md) і [review-checklist.md](../../04-governance/governance/review-checklist.md).
 
 ## Кроки
 

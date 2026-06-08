@@ -63,9 +63,9 @@ flowchart TD
 Спершу перерахуй дашборди, щоб дрейф рахувався проти живого стану, а не кешу:
 
 - `pnpm docs:gen-daily` (open-work + today + trust-badge), `pnpm docs:gen-initiative-followups`.
-- Прочитай [`docs/open-work.md`](../../open-work.md) як ground truth «що відкрито» і [`docs/pr-ledger/index.json`](../../pr-ledger/index.json) як ground truth «чи `#NNNN` змерджено».
+- Прочитай [`docs/open-work.md`](../../open-work.md) як ground truth «що відкрито» і [`docs/04-governance/pr-ledger/index.json`](../../04-governance/pr-ledger/index.json) як ground truth «чи `#NNNN` змерджено».
 
-**Динамічний відбір батчу.** Пропусти кожну картку зі статусом `✅ Виконано` / `Closed`. Поважай `Dependencies` (не починай картку раніше її блокерів) і `Freeze-compatible` проти будь-якого активного freeze у `docs/governance/`. Бери спершу найнижчий `P-рівень` і найменший `Size`. Розмір N — динамічний: бери стільки, скільки просить запит, обмежене тим, що реально розблоковано залежностями.
+**Динамічний відбір батчу.** Пропусти кожну картку зі статусом `✅ Виконано` / `Closed`. Поважай `Dependencies` (не починай картку раніше її блокерів) і `Freeze-compatible` проти будь-якого активного freeze у `docs/04-governance/governance/`. Бери спершу найнижчий `P-рівень` і найменший `Size`. Розмір N — динамічний: бери стільки, скільки просить запит, обмежене тим, що реально розблоковано залежностями.
 
 ### 2. Fan-out (parallel)
 

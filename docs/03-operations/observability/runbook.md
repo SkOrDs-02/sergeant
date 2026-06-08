@@ -337,7 +337,7 @@ Status-code mapping:
 
 ## AI memory activation & Day-30 decision-point
 
-> **Owner:** `@Skords-01`. **Scope:** server. **Last validated:** 2026-05-13 by Devin (PR-19). **Related:** [`docs/01-product/launch/tech/ai-memory-activation.md`](../../01-product/launch/tech/ai-memory-activation.md), [`docs/governance/feature-flags.md`](../../governance/feature-flags.md), [ADR-0028](../../adr/0028-pgvector-ai-memory.md).
+> **Owner:** `@Skords-01`. **Scope:** server. **Last validated:** 2026-05-13 by Devin (PR-19). **Related:** [`docs/01-product/launch/tech/ai-memory-activation.md`](../../01-product/launch/tech/ai-memory-activation.md), [`docs/04-governance/governance/feature-flags.md`](../../04-governance/governance/feature-flags.md), [ADR-0028](../../04-governance/adr/0028-pgvector-ai-memory.md).
 > **Canonical split:** current AI memory behavior lives in [`docs/02-engineering/architecture/ai-memory.md`](../../02-engineering/architecture/ai-memory.md); this section is operational response/activation only.
 
 ### Контекст
@@ -403,7 +403,7 @@ WHERE inserted_at >= now() - interval '7 days';
 
 1. **Швидкий kill (≤30s):** `AI_MEMORY_ENABLED=false` у Railway → redeploy. `recall_memory` tool, RAG-injection і ingest все no-op-ять; existing data у `ai_memories` залишається.
 2. **Видалення коду:** окремий PR `revert(server): rollback AI memory module (PR-19 Day-30 decision)`. Drop migrations НЕ робити одразу — лишити schema на місці ≥30 днів на випадок реверсу рішення.
-3. **Документація:** позначити `AI_MEMORY_ENABLED` і `MONO_AI_MEMORY_INGEST_ENABLED` як `Killed YYYY-MM-DD` у [`docs/governance/feature-flags.md`](../../governance/feature-flags.md); архівувати activation runbook у `docs/01-product/launch/tech/archive/`.
+3. **Документація:** позначити `AI_MEMORY_ENABLED` і `MONO_AI_MEMORY_INGEST_ENABLED` як `Killed YYYY-MM-DD` у [`docs/04-governance/governance/feature-flags.md`](../../04-governance/governance/feature-flags.md); архівувати activation runbook у `docs/01-product/launch/tech/archive/`.
 4. **Постмортем:** короткий `docs/learnings/ai-memory-kill-postmortem.md` із сигналами (`rows_7d` timeline, Voyage USD spend, top reasons for low adoption).
 
 ### Edge cases
@@ -450,7 +450,7 @@ WF-30 — щоденний 09:05 Kyiv n8n workflow, що SELECT-ить агре�
 
 ## Як обробити Renovate PR із breaking change
 
-Per [ADR-0044](../../adr/0044-renovate-vs-dependabot.md), Renovate — primary tool для regular weekly bumps. Більшість PR-ів — devDep patches з auto-merge. Для **нон-trivial** PR-ів:
+Per [ADR-0044](../../04-governance/adr/0044-renovate-vs-dependabot.md), Renovate — primary tool для regular weekly bumps. Більшість PR-ів — devDep patches з auto-merge. Для **нон-trivial** PR-ів:
 
 | Тип PR                                                       | Дія                                                                                                                                              |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -486,7 +486,7 @@ SBOM (Software Bill of Materials) — це machine-readable список **вс�
 2. Запусти `trivy sbom sergeant-v<tag>.spdx.json` — отримуєш список CVE проти цього SBOM-snapshot-а.
 3. Це **швидше** за full re-scan і відповідає на питання "is prod affected by this CVE" без redeploy.
 
-**Compliance use-case:** аудитор просить SBOM → надсилаєш SPDX-файл з GitHub Release. Sigstore-signing буде Phase 3 ([I3-sbom-generation.md](../../security/hardening/I3-sbom-generation.md) Phase 3 Open).
+**Compliance use-case:** аудитор просить SBOM → надсилаєш SPDX-файл з GitHub Release. Sigstore-signing буде Phase 3 ([I3-sbom-generation.md](../../04-governance/security/hardening/I3-sbom-generation.md) Phase 3 Open).
 
 ## RagQualityGateDegraded
 
@@ -644,7 +644,7 @@ treat kill-switch як advisory (env-flag залишається authoritative).
 
 ## OpenTelemetry traces (server-side OTLP)
 
-**Звідки:** [ADR-0035](../../adr/0035-distributed-tracing-opentelemetry.md) shipped 2026-05-05 (initiative [0004 Phase 2 + 4](../../90-work/initiatives/archive/_0004-server-observability.md)). Server `apps/server/src/obs/{tracing,spans,sampler}.ts` — NodeSDK + auto-instrumentation для `http`, `express`, `pg`, `redis`, `undici`. Web `packages/api-client/src/httpClient.ts` додає `traceparent` header у кожний fetch.
+**Звідки:** [ADR-0035](../../04-governance/adr/0035-distributed-tracing-opentelemetry.md) shipped 2026-05-05 (initiative [0004 Phase 2 + 4](../../90-work/initiatives/archive/_0004-server-observability.md)). Server `apps/server/src/obs/{tracing,spans,sampler}.ts` — NodeSDK + auto-instrumentation для `http`, `express`, `pg`, `redis`, `undici`. Web `packages/api-client/src/httpClient.ts` додає `traceparent` header у кожний fetch.
 
 ### Ввімкнення
 

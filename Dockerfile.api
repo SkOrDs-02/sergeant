@@ -4,7 +4,7 @@
 #     -f Dockerfile.api -t hub-api .
 #
 # `--platform=linux/amd64` піниться явно на FROM-рівні (closes hardening
-# card L13 — `docs/security/hardening/L13-docker-platform-pin.md`). Railway
+# card L13 — `docs/04-governance/security/hardening/L13-docker-platform-pin.md`). Railway
 # runtime це amd64, і dev-машина на Apple Silicon (arm64) без явного pin-у
 # зібрала б arm64-image, який локально проходить smoke, але на Railway
 # падає з "exec format error".
@@ -191,10 +191,10 @@ COPY --from=builder --chown=nonroot:nonroot /app/apps/server/dist-server /app/ap
 # Копіюємо ТІЛЬКИ існуючі директорії з `READ_STRATEGY_DOCS_ALLOWED_PATHS`
 # (`apps/server/src/modules/openclaw/types.ts`). `docs/decisions/` і
 # `docs/strategy/` навмисно НЕ скопійовано — це aspirational paths.
-COPY --chown=nonroot:nonroot docs/adr /app/docs/adr
+COPY --chown=nonroot:nonroot docs/04-governance/adr /app/docs/04-governance/adr
 COPY --chown=nonroot:nonroot docs/01-product/launch /app/docs/01-product/launch
 COPY --chown=nonroot:nonroot docs/02-engineering/integrations /app/docs/02-engineering/integrations
-COPY --chown=nonroot:nonroot docs/governance /app/docs/governance
+COPY --chown=nonroot:nonroot docs/04-governance/governance /app/docs/04-governance/governance
 
 WORKDIR /app/apps/server
 

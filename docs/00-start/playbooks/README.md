@@ -38,7 +38,7 @@ Each playbook must include:
 
 - Agent routing catalog: [docs/00-start/agents/agent-skills-catalog.md](../agents/agent-skills-catalog.md)
 - Trigger index: [INDEX.md](./INDEX.md)
-- Reviewer checklist: [docs/governance/review-checklist.md](../../governance/review-checklist.md)
+- Reviewer checklist: [docs/04-governance/governance/review-checklist.md](../../04-governance/governance/review-checklist.md)
 
 ## Priority playbooks
 

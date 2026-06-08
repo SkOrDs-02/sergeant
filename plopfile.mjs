@@ -183,7 +183,7 @@ function appendN8nWorkflowManifest(entry) {
 
 /** Returns the next zero-padded 4-digit ADR number. */
 function nextAdrNumber() {
-  const adrDir = resolve(__dirname, "docs/adr");
+  const adrDir = resolve(__dirname, "docs/04-governance/adr");
   const files = readdirSync(adrDir);
   const nums = files
     .filter((f) => /^\d{4}-.+\.md$/.test(f))
@@ -857,7 +857,7 @@ export default function (plop) {
   // ── adr ────────────────────────────────────────────────────────────────────
   plop.setGenerator("adr", {
     description:
-      "New Architecture Decision Record (auto-numbered from docs/adr/)",
+      "New Architecture Decision Record (auto-numbered from docs/04-governance/adr/)",
     prompts: [
       {
         type: "input",
@@ -888,7 +888,7 @@ export default function (plop) {
       return [
         {
           type: "add",
-          path: `docs/adr/${num}-${data.title}.md`,
+          path: `docs/04-governance/adr/${num}-${data.title}.md`,
           templateFile: "plop-templates/adr/adr.md.hbs",
         },
       ];

@@ -38,12 +38,12 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 
 **Acceptance:** maintainer відкриває `docs/today.md` вранці і отримує 3-5 actionable items без чтення інших файлів.
 
-| PR         | Що ввозиться                                                               | Файли                                                                  |
-| ---------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **PR-1.1** | `pnpm docs:gen-today` script + `docs/today.md` generated artifact          | `scripts/docs/generate-today.mjs`, `docs/today.md`                     |
-| **PR-1.2** | `pnpm docs:check-wip-limits` — soft warn + hard fail на violation          | `scripts/docs/check-wip-limits.mjs`, `docs/governance/wip-limits.json` |
-| **PR-1.3** | Trust badge в `docs/README.md` (auto-updated section)                      | `scripts/docs/generate-trust-badge.mjs`, `docs/README.md`              |
-| **PR-1.4** | GitHub Action cron: daily regen `today.md` + trust badge; weekly WIP audit | `.github/workflows/docs-daily-brief.yml`                               |
+| PR         | Що ввозиться                                                               | Файли                                                                                |
+| ---------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **PR-1.1** | `pnpm docs:gen-today` script + `docs/today.md` generated artifact          | `scripts/docs/generate-today.mjs`, `docs/today.md`                                   |
+| **PR-1.2** | `pnpm docs:check-wip-limits` — soft warn + hard fail на violation          | `scripts/docs/check-wip-limits.mjs`, `docs/04-governance/governance/wip-limits.json` |
+| **PR-1.3** | Trust badge в `docs/README.md` (auto-updated section)                      | `scripts/docs/generate-trust-badge.mjs`, `docs/README.md`                            |
+| **PR-1.4** | GitHub Action cron: daily regen `today.md` + trust badge; weekly WIP audit | `.github/workflows/docs-daily-brief.yml`                                             |
 
 **WIP limits (стартові, можна підкручувати):**
 
@@ -150,6 +150,6 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 - Phase 0 cleanup audit з якого виросла ця ініціатива: commits `92e5ffda`, `46d73386`, `921fd992` на `chore/repo-cleanup`
 - [`docs/open-work.md`](../../open-work.md) — source-of-truth для daily brief генератора
 - [`scripts/docs/generate-open-work.mjs`](../../../scripts/docs/generate-open-work.mjs) — pattern reference для нових generators
-- [`docs/governance/freshness-dashboard.html`](../../governance/freshness-dashboard.html) — джерело для trust badge stale-count
-- Rule #10 [`lifecycle-markers.md`](../../governance/rules/10-lifecycle-markers.md) — Status header semantics
-- Rule #25 [`auto-generated-marker.md`](../../governance/rules/25-auto-generated-marker.md) — обовʼязковий marker на нових generated файлах
+- [`docs/04-governance/governance/freshness-dashboard.html`](../../04-governance/governance/freshness-dashboard.html) — джерело для trust badge stale-count
+- Rule #10 [`lifecycle-markers.md`](../../04-governance/governance/rules/10-lifecycle-markers.md) — Status header semantics
+- Rule #25 [`auto-generated-marker.md`](../../04-governance/governance/rules/25-auto-generated-marker.md) — обовʼязковий marker на нових generated файлах

@@ -72,7 +72,7 @@ Prefer (a) — fewer aliases, single source of truth. Add an ESLint custom rule 
 **Lines:** L1–L693 (whole file)
 
 **Description.**
-`AuthPage.tsx` is 693 lines. The root `AGENTS.md` § Hard rules and `docs/governance/rules/18-module-size-discipline-600.md` enforce `max-lines: 600` on web TS/TSX. The file inlines `PasswordStrengthBar`, `PasswordVisibilityToggle`, `FieldError`, `LoginForm`, `RegisterForm`, the Google OAuth button (with inline SVG), and the forgot-password panel — every one of which has an extracted sibling sitting next to it (see F3).
+`AuthPage.tsx` is 693 lines. The root `AGENTS.md` § Hard rules and `docs/04-governance/governance/rules/18-module-size-discipline-600.md` enforce `max-lines: 600` on web TS/TSX. The file inlines `PasswordStrengthBar`, `PasswordVisibilityToggle`, `FieldError`, `LoginForm`, `RegisterForm`, the Google OAuth button (with inline SVG), and the forgot-password panel — every one of which has an extracted sibling sitting next to it (see F3).
 
 **Why it matters.**
 `active-initiative` Hard Rule with a recorded TODO. The file's own siblings document the violation in their JSDoc (`useForgotPassword.ts:3–10`: «PR #2586 re-inlined AuthPage UX … and reverted the decomposition — `AuthPage.tsx` is now 693 LOC again»). The lint budget exists because beyond 600 LOC the code becomes very hard to review — every Auth change now touches a file that combines five distinct responsibilities (validation, OAuth, password reset, password meter, visibility toggle).
@@ -404,14 +404,14 @@ const word = forms[pr.select(daysInactive)] ?? "днів";
 
 ### F14 — Lifecycle markers missing on every file in scope [severity: medium] [perspective: lifecycle]
 
-> **Closure note (2026-05-31, audits-runner triage):** Closed as superseded by the actual Rule #10 reading. [`docs/governance/rules/10-lifecycle-markers.md`](../../governance/rules/10-lifecycle-markers.md) explicitly states for source code: "If a file/doc has no marker, treat it as `Active` (the default)." Markers are required only for non-Active states (`@scaffolded`, `@experimental`, `@deprecated`) — and those use JSDoc tags, NOT the `Last validated:` / `Status:` doc-style block. The scaffolded auth siblings already carry `@scaffolded` tags (Rule-compliant); the recommendation here would add 700+ lines of useless `Status: Active` noise that the rule does not ask for. Real F3/F4 follow-ups (wire vs delete the scaffolded files) remain open as their own findings.
+> **Closure note (2026-05-31, audits-runner triage):** Closed as superseded by the actual Rule #10 reading. [`docs/04-governance/governance/rules/10-lifecycle-markers.md`](../../04-governance/governance/rules/10-lifecycle-markers.md) explicitly states for source code: "If a file/doc has no marker, treat it as `Active` (the default)." Markers are required only for non-Active states (`@scaffolded`, `@experimental`, `@deprecated`) — and those use JSDoc tags, NOT the `Last validated:` / `Status:` doc-style block. The scaffolded auth siblings already carry `@scaffolded` tags (Rule-compliant); the recommendation here would add 700+ lines of useless `Status: Active` noise that the rule does not ask for. Real F3/F4 follow-ups (wire vs delete the scaffolded files) remain open as their own findings.
 
 **Page:** All in-scope files
 **File:** entire `apps/web/src/core/auth/` and `apps/web/src/core/onboarding/`
 **Lines:** Top-of-file JSDoc / module header missing.
 
 **Description.**
-Hard Rule #10 (`docs/governance/rules/10-lifecycle-markers.md`) requires `Last validated:` and `Status:` markers on every file/doc. `grep "Last validated:\\|Status: Active\\|Status: Scaffolded" apps/web/src/core/auth apps/web/src/core/onboarding` finds **zero matches** — only seven `@scaffolded` annotations on the unwired auth siblings (no `Last validated:` date attached). Onboarding files describe their status in prose comments (e.g. `picksStorage.ts:13–19` describes "the one-screen rebuild") but never with the canonical marker shape.
+Hard Rule #10 (`docs/04-governance/governance/rules/10-lifecycle-markers.md`) requires `Last validated:` and `Status:` markers on every file/doc. `grep "Last validated:\\|Status: Active\\|Status: Scaffolded" apps/web/src/core/auth apps/web/src/core/onboarding` finds **zero matches** — only seven `@scaffolded` annotations on the unwired auth siblings (no `Last validated:` date attached). Onboarding files describe their status in prose comments (e.g. `picksStorage.ts:13–19` describes "the one-screen rebuild") but never with the canonical marker shape.
 
 **Why it matters.**
 Without machine-readable lifecycle markers, `pnpm lint:lifecycle-markers` (if it covers TS/TSX) cannot tell active code from scaffolded carcasses (F3, F4) from deprecated demo paths. The audit itself relied on prose comments to disambiguate state.
@@ -752,5 +752,5 @@ These are observations that fall outside the 12 mandatory perspectives but are w
 - Cloned `Skords-01/Sergeant` via PAT proxy (no `pnpm install`, no `pnpm dev:*`).
 - Read every file listed in the scope spec.
 - `grep` sweeps for: inline `queryKey: [...]` (Hard Rule #2), `focus:` without `-visible:` (Rule #14), `dangerouslySetInnerHTML` / `eval` / inline-hex-className (Rule #11), `: any` / `as any` / `getattr`, `console.log` debug residue, `AI-NOTE` / `AI-CONTEXT` / `AI-DANGER` markers, `Last validated:` / `Status:` lifecycle markers (Rule #10), `--c-error` / `error:` colour token (registered? — no), file LOC counts (Rule #18 `max-lines: 600`).
-- Cross-checked findings against the canonical Hard Rules registry at `docs/governance/rules/*.md` and the touch-target contract at root `AGENTS.md § Touch targets`.
+- Cross-checked findings against the canonical Hard Rules registry at `docs/04-governance/governance/rules/*.md` and the touch-target contract at root `AGENTS.md § Touch targets`.
 - No findings rely on running the app — every assertion is reproducible by `grep` + `read` against the commit at the head of `main`.

@@ -23,7 +23,7 @@ hygiene, scheduled scans, weekly housekeeping). Доповнюють incident-fl
 
 ## Cross-links
 
-- ADR-0044 — [Renovate vs Dependabot](../../adr/0044-renovate-vs-dependabot.md).
+- ADR-0044 — [Renovate vs Dependabot](../../04-governance/adr/0044-renovate-vs-dependabot.md).
 - Contributor view of Renovate: [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md).
 - Renovate config: [`renovate.json`](../../../renovate.json).
 - Dependabot config: [`.github/dependabot.yml`](../../../.github/dependabot.yml).

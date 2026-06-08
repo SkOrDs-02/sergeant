@@ -165,7 +165,7 @@ jobs:
         # related per-surface flags) is `true` — silently bypassing the
         # `cleartext: false` guarantee in
         # `apps/mobile-shell/capacitor.config.ts`. See
-        # `docs/security/hardening/L12-ios-app-transport-security.md`.
+        # `docs/04-governance/security/hardening/L12-ios-app-transport-security.md`.
         run: node apps/mobile-shell/scripts/check-info-plist.mjs
 
       # ─────────────────────────── Unsigned fallback ──────────────────────

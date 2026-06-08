@@ -3,7 +3,7 @@
 Self-hosted n8n для автоматизації ops-задач Sergeant.
 Повний контекст — [docs/01-product/launch/business/05-operations-and-automation.md](../docs/01-product/launch/business/05-operations-and-automation.md).
 
-> **Routing & ownership matrix:** [`n8n-workflows/REPORTING-MATRIX.md`](./n8n-workflows/REPORTING-MATRIX.md) — workflow → Telegram topic → audience → cadence → escalation. Архітектурне обґрунтування — [`docs/03-operations/observability/telegram-control-plane.md`](../docs/03-operations/observability/telegram-control-plane.md), формальне рішення — [ADR-0030](../docs/adr/0030-telegram-reporting-channel-structure.md).
+> **Routing & ownership matrix:** [`n8n-workflows/REPORTING-MATRIX.md`](./n8n-workflows/REPORTING-MATRIX.md) — workflow → Telegram topic → audience → cadence → escalation. Архітектурне обґрунтування — [`docs/03-operations/observability/telegram-control-plane.md`](../docs/03-operations/observability/telegram-control-plane.md), формальне рішення — [ADR-0030](../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md).
 
 ## Що всередині
 
@@ -368,7 +368,7 @@ docker compose -f ops/docker-compose.ops.yml --env-file ops/.env.ops --profile c
 ## Додавання нового workflow-у
 
 1. [Playbook: modify-or-add an n8n workflow](../docs/00-start/playbooks/modify-n8n-workflow.md) — канонічна послідовність кроків.
-2. [ADR-0026 «n8n workflow source of truth»](../docs/adr/0026-n8n-workflow-source-of-truth.md) — «Workflow basics» розділ + Git-as-truth інваріант.
+2. [ADR-0026 «n8n workflow source of truth»](../docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md) — «Workflow basics» розділ + Git-as-truth інваріант.
 3. [Reporting matrix](./n8n-workflows/REPORTING-MATRIX.md) — оновити **разом з PR**, інакше ламає Hard Rule #15.
 4. [`manifest.json`](./n8n-workflows/manifest.json) — owner / status / riskTier / requiredEnv / requiredCredentials.
 5. Приклади JSON — у `ops/n8n-workflows/`.

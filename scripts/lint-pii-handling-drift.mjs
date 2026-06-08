@@ -3,7 +3,7 @@
 //
 // Guard against drift between the canonical redacted-key list in
 // `packages/shared/src/lib/pii.ts` (`REDACT_KEY_NAMES`) and the
-// machine-readable mirror in `docs/security/pii-handling.md`
+// machine-readable mirror in `docs/04-governance/security/pii-handling.md`
 // (between `<!-- pii-keys-start -->` and `<!-- pii-keys-end -->`).
 //
 // Why: a stale doc list misleads engineers — someone adds a new redacted
@@ -26,7 +26,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
 
 export const SOURCE_PATH = "packages/shared/src/lib/pii.ts";
-export const DOC_PATH = "docs/security/pii-handling.md";
+export const DOC_PATH = "docs/04-governance/security/pii-handling.md";
 export const DOC_START = "<!-- pii-keys-start -->";
 export const DOC_END = "<!-- pii-keys-end -->";
 

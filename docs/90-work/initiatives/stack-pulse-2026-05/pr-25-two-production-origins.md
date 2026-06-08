@@ -65,7 +65,7 @@
 
 ### 5. ADR update
 
-`docs/adr/0009-hosting-split-railway-vercel.md` — додати section «Single origin policy» з rationale (CORS simplification, Sentry release dedup, OAuth allowlist).
+`docs/04-governance/adr/0009-hosting-split-railway-vercel.md` — додати section «Single origin policy» з rationale (CORS simplification, Sentry release dedup, OAuth allowlist).
 
 ## Out of scope
 
@@ -108,7 +108,7 @@
 - `apps/mobile-shell/src/index.ts` — verify single origin
 - `apps/mobile-shell/src/__tests__/parseDeepLink.test.ts` — assertions
 - `packages/shared/src/observability/release.ts` — single release format
-- `docs/adr/0009-hosting-split-railway-vercel.md` — add section
+- `docs/04-governance/adr/0009-hosting-split-railway-vercel.md` — add section
 
 ## Refs
 

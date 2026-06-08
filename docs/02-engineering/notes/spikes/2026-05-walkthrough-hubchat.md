@@ -30,12 +30,12 @@ graph TD
 
 ## Top-3 gotcha
 
-1. **Prompt cache policy** — Anthropic дає discount на cached tokens. Структура повідомлень (system block перший, потім user history) чітко задана в `docs/adr/0039-anthropic-prompt-cache-policy.md`. Не переставляй блоки без розуміння кешування.
+1. **Prompt cache policy** — Anthropic дає discount на cached tokens. Структура повідомлень (system block перший, потім user history) чітко задана в `docs/04-governance/adr/0039-anthropic-prompt-cache-policy.md`. Не переставляй блоки без розуміння кешування.
 2. **Circuit breaker fail-closed** — якщо DB quota-table недоступна, `aiQuota` повертає `null` (не пускає запит). Це свідоме рішення (ADR). Не змінюй на fail-open без review.
 3. **Tool result — тільки `string`** — Anthropic очікує `tool_result.content: string`. Клієнтські handlers у `chatActions/` МУСЯТЬ повертати string (JSON.stringify якщо потрібно). Тест: happy path + error path для кожного handler.
 
 ## Escalation
 
 - Quota + circuit breaker: `apps/server/src/modules/chat/aiQuotaCircuitBreaker.ts`
-- Prompt cache: `docs/adr/0039-anthropic-prompt-cache-policy.md`
+- Prompt cache: `docs/04-governance/adr/0039-anthropic-prompt-cache-policy.md`
 - Runtime issues: `@Skords-01` (поки TBD secondary)

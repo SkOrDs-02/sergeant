@@ -78,7 +78,7 @@
 
 ### PR-0 · Telemetry & ADR foundation
 
-> **Closure note (2026-05-31, audits-runner triage):** Shipped via prior catalog work. Усі 9 PR-0 events живуть у [`packages/shared/src/lib/analyticsEvents.ts:273-302`](../../../packages/shared/src/lib/analyticsEvents.ts): `APP_LOCK_SETUP_STARTED`, `APP_LOCK_SETUP_COMPLETED`, `APP_LOCK_UNLOCK_SUCCESS`, `APP_LOCK_UNLOCK_FAILED`, `BIOMETRIC_SETUP_COMPLETED`, `MODULE_SETTINGS_OPENED`, `MODULE_LANDING_TAB_CLICKED`, `ERROR_BOUNDARY_REQUEST_ID_COPIED`, `PERMISSIONS_SETTINGS_OPENED`. ADR розписаний як [ADR-0054](../../adr/0054-ux-roast-2026-q2.md). Master-tracker entry [flipped to Closed in this PR](../../01-product/launch/product-os/ftux-master-tracker.md). **Анблок 11 downstream PR-ів** (PR-1a/1b, PR-2, PR-3, PR-6, PR-7, PR-8, PR-14, PR-16, PR-22, PR-42, PR-X4).
+> **Closure note (2026-05-31, audits-runner triage):** Shipped via prior catalog work. Усі 9 PR-0 events живуть у [`packages/shared/src/lib/analyticsEvents.ts:273-302`](../../../packages/shared/src/lib/analyticsEvents.ts): `APP_LOCK_SETUP_STARTED`, `APP_LOCK_SETUP_COMPLETED`, `APP_LOCK_UNLOCK_SUCCESS`, `APP_LOCK_UNLOCK_FAILED`, `BIOMETRIC_SETUP_COMPLETED`, `MODULE_SETTINGS_OPENED`, `MODULE_LANDING_TAB_CLICKED`, `ERROR_BOUNDARY_REQUEST_ID_COPIED`, `PERMISSIONS_SETTINGS_OPENED`. ADR розписаний як [ADR-0054](../../04-governance/adr/0054-ux-roast-2026-q2.md). Master-tracker entry [flipped to Closed in this PR](../../01-product/launch/product-os/ftux-master-tracker.md). **Анблок 11 downstream PR-ів** (PR-1a/1b, PR-2, PR-3, PR-6, PR-7, PR-8, PR-14, PR-16, PR-22, PR-42, PR-X4).
 
 **Why first:** §18 (Як міряти ефект) вимагає PostHog-events, які зараз або відсутні, або непослідовні. Без них ми не помітимо, чи P0-зміни щось дали.
 **Scope:**
@@ -89,9 +89,9 @@
   - `module_landing_tab_clicked` з `{ module, tab_key }` (для PR-4)
   - `error_boundary_request_id_copied`, `error_boundary_retried` (для PR-14)
   - `permissions_settings_opened`, `permission_status_changed` (для PR-7)
-- `docs/adr/00NN-ux-roast-2026-Q2.md` — фіксація рішень з §1–§13 прожарки.
+- `docs/04-governance/adr/00NN-ux-roast-2026-Q2.md` — фіксація рішень з §1–§13 прожарки.
 - `docs/01-product/launch/product-os/ftux-master-tracker.md` — нова секція «UX-roast P0/P1/P2».
-  **Files:** `apps/web/src/core/observability/analytics.ts`, `docs/adr/00NN-…md`, tracker.
+  **Files:** `apps/web/src/core/observability/analytics.ts`, `docs/04-governance/adr/00NN-…md`, tracker.
   **Acceptance:** events видно в PostHog dev-проєкті, ADR прийнятий PR-review.
   **Size:** S
   **Depends on:** —
@@ -153,7 +153,7 @@
 - Disable-toggle не вимикає PIN — лише biometric-частину.
   **Size:** M
   **Depends on:** PR-1a
-  **Risks:** WebAuthn UX непослідовний між браузерами; iOS PWA без shell-у — без біометрії взагалі (документуємо в `docs/security/app-lock.md`).
+  **Risks:** WebAuthn UX непослідовний між браузерами; iOS PWA без shell-у — без біометрії взагалі (документуємо в `docs/04-governance/security/app-lock.md`).
 
 ### PR-2 · Module settings shortcut [A2]
 

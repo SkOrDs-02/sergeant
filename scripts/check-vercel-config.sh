@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Vercel config drift guard — closes hardening card H7
-# (docs/security/hardening/H7-vercel-config-drift.md).
+# (docs/04-governance/security/hardening/H7-vercel-config-drift.md).
 #
 # We ship exactly ONE `vercel.json` and it MUST live at `apps/web/vercel.json`,
 # because the Vercel project's "Root Directory" is `apps/web`. Vercel reads
@@ -37,7 +37,7 @@ if [[ ${#extras[@]} -gt 0 ]]; then
   echo "Vercel reads only apps/web/vercel.json. A second copy (e.g. at the"
   echo "monorepo root) silently drifts and lets a UI change to Root Directory"
   echo "swap which security headers protect production. See"
-  echo "docs/security/hardening/H7-vercel-config-drift.md and"
+  echo "docs/04-governance/security/hardening/H7-vercel-config-drift.md and"
   echo "docs/03-operations/deploy/vercel.md."
   exit 1
 fi

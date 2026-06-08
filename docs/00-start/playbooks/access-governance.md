@@ -15,8 +15,8 @@
 ## Required context
 
 - Почни з `sergeant-start-here`, потім завантаж `sergeant-review-and-merge` (за замовчуванням) або `sergeant-deploy-and-observability` (якщо реагуєш на підозру компрометації).
-- Перевір [access-policy.md](../../security/access-policy.md), [access-matrix.md](../../security/access-matrix.md) і [secret-ownership-register.md](../../security/secret-ownership-register.md).
-- Для подій компрометації додатково перевір [security-incident-policy.md](../../governance/security-incident-policy.md) і тримай напохваті [rotate-secrets.md](./rotate-secrets.md).
+- Перевір [access-policy.md](../../04-governance/security/access-policy.md), [access-matrix.md](../../04-governance/security/access-matrix.md) і [secret-ownership-register.md](../../04-governance/security/secret-ownership-register.md).
+- Для подій компрометації додатково перевір [security-incident-policy.md](../../04-governance/governance/security-incident-policy.md) і тримай напохваті [rotate-secrets.md](./rotate-secrets.md).
 
 ## Decision tree — яку access-подію ти обробляєш?
 
@@ -118,7 +118,7 @@ flowchart TD
 ### 4.1 Класифікуй і заморозь
 
 - Назви зачеплену привілейовану поверхню.
-- Оціни severity згідно з [security-incident-policy.md](../../governance/security-incident-policy.md).
+- Оціни severity згідно з [security-incident-policy.md](../../04-governance/governance/security-incident-policy.md).
 - Дисейбли або примусово виходь із підозрілого акаунта/токена першим, якщо платформа це дозволяє.
 
 ### 4.2 Інвентаризуй blast-radius

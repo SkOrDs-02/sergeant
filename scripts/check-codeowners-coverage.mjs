@@ -62,7 +62,7 @@ const MUST_BE_OWNED = [
 
   // Governance trees
   {
-    path: "docs/governance",
+    path: "docs/04-governance/governance",
     kind: "tree",
     match: /\.md$/,
     reason: "policy reviews & governance procedures",
@@ -74,7 +74,7 @@ const MUST_BE_OWNED = [
     reason: "AI-agent playbooks (Hard Rule #15 pre-flight inputs)",
   },
   {
-    path: "docs/adr",
+    path: "docs/04-governance/adr",
     kind: "tree",
     match: /\.md$/,
     reason: "architecture decision records",
@@ -92,7 +92,7 @@ const MUST_BE_OWNED = [
     reason: "SLOs, runbooks, on-call procedures",
   },
   {
-    path: "docs/security",
+    path: "docs/04-governance/security",
     kind: "tree",
     match: /\.md$/,
     reason: "threat model & SLA",

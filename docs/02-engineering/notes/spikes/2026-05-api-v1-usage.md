@@ -12,7 +12,7 @@
 `apiVersionRewrite` зараз **не можна без breaking change** для мобільного клієнта.
 
 Рішення: лишити mirror `/api/*` ↔ `/api/v1/*` чинним, формалізувати правила в
-[ADR-0053](../../../adr/0053-api-versioning-policy.md), а PR-08 закрити по
+[ADR-0053](../../../04-governance/adr/0053-api-versioning-policy.md), а PR-08 закрити по
 research-фазі.
 
 ## Що ми перевіряли
@@ -75,7 +75,7 @@ prod-mobile одним релізом сервера.
 
 ## Action items
 
-- [x] [ADR-0053](../../../adr/0053-api-versioning-policy.md) — політика
+- [x] [ADR-0053](../../../04-governance/adr/0053-api-versioning-policy.md) — політика
       версіонування + умови видалення shim.
 - [x] [`pr-08-api-versioning-consolidation.md`](../../../90-work/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md)
       — статус оновлений на «Closed — research, decision = keep mirror».

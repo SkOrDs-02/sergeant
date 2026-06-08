@@ -234,7 +234,7 @@ console.log(requestId);
 
 ### `sergeant-design/no-console-pii`
 
-Забороняє передавати PII / secret-shaped значення у `console.{log,error,warn,info}` (S2, audit `docs/90-work/audits/2026-05-13-security-observability-roast.md`). `@sentry/react` за замовчуванням вмикає `console`-інтеграцію, тож усе, що йде через `console.*`, осідає Sentry-breadcrumb-ом; DevTools-консоль видно під час screen-share, а PostHog/Logpipe-екстеншни теж тапляться у `console.*`. Severity: **error**. Див. також [`docs/security/logging-redaction-policy.md`](../../docs/security/logging-redaction-policy.md).
+Забороняє передавати PII / secret-shaped значення у `console.{log,error,warn,info}` (S2, audit `docs/90-work/audits/2026-05-13-security-observability-roast.md`). `@sentry/react` за замовчуванням вмикає `console`-інтеграцію, тож усе, що йде через `console.*`, осідає Sentry-breadcrumb-ом; DevTools-консоль видно під час screen-share, а PostHog/Logpipe-екстеншни теж тапляться у `console.*`. Severity: **error**. Див. також [`docs/04-governance/security/logging-redaction-policy.md`](../../docs/04-governance/security/logging-redaction-policy.md).
 
 #### Детекція
 
@@ -327,7 +327,7 @@ const el = document.getElementById("foo") as HTMLDivElement;
 
 ### `sergeant-design/sri-on-third-party-script`
 
-Вимагає `integrity="sha(256|384|512)-…"` **і** `crossorigin="anonymous"` на кожному cross-origin `<script src="https://…">` (а також schema-relative `//cdn…`) у HTML-shell-ах застосунків (`apps/**/index.html`). Парсить сирий HTML через `parse5`, тож працює як справжнє ESLint-правило на `.html`-файлах (через HTML-processor) і юніт-тестується подачею HTML напряму у експортовані хелпери. Локальні / відносні джерела (`src="/src/main.tsx"`, `src="./x.js"`) та inline-`<script>` (без `src`) навмисно НЕ флагуються — вони контролюються нашим Vite-build + CSP `'self'`. Закриває STRIDE-row _Tampering → CDN supply-chain_: CSP-allowlist у `apps/web/vercel.json` пропускає `*.posthog.com` / `*.sentry-cdn.com`, тож без SRI компроміс будь-якого CDN = одношаговий XSS повз CSP. Companion path-based gate — `pnpm lint:html-sri`. Audit § S3, докладніше у [`docs/security/hardening/sri-on-third-party-scripts.md`](../../docs/security/hardening/sri-on-third-party-scripts.md). Severity: **error** (чистий на main — PostHog/Sentry йдуть через npm-bundle).
+Вимагає `integrity="sha(256|384|512)-…"` **і** `crossorigin="anonymous"` на кожному cross-origin `<script src="https://…">` (а також schema-relative `//cdn…`) у HTML-shell-ах застосунків (`apps/**/index.html`). Парсить сирий HTML через `parse5`, тож працює як справжнє ESLint-правило на `.html`-файлах (через HTML-processor) і юніт-тестується подачею HTML напряму у експортовані хелпери. Локальні / відносні джерела (`src="/src/main.tsx"`, `src="./x.js"`) та inline-`<script>` (без `src`) навмисно НЕ флагуються — вони контролюються нашим Vite-build + CSP `'self'`. Закриває STRIDE-row _Tampering → CDN supply-chain_: CSP-allowlist у `apps/web/vercel.json` пропускає `*.posthog.com` / `*.sentry-cdn.com`, тож без SRI компроміс будь-якого CDN = одношаговий XSS повз CSP. Companion path-based gate — `pnpm lint:html-sri`. Audit § S3, докладніше у [`docs/04-governance/security/hardening/sri-on-third-party-scripts.md`](../../docs/04-governance/security/hardening/sri-on-third-party-scripts.md). Severity: **error** (чистий на main — PostHog/Sentry йдуть через npm-bundle).
 
 ```html
 <!-- ❌ BAD — сторонній CDN-скрипт без SRI -->

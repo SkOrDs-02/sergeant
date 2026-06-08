@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 >
-> **Update 2026-05-06:** pricing v3 зафіксовано в [ADR-0051](../../../adr/0051-pricing-v3-single-tier.md). Секції §2.2 (Plus tier з decoy), §2.3 (pay-per-feature) та альтернативна ціна ₴2999 Lifetime — **Superseded by ADR-0051** (не йдуть у код MVP). Активна модель: **Free + Pro $7/міс / $49/рік**, ₴ UA-only на старті, trial 7 днів без картки.
+> **Update 2026-05-06:** pricing v3 зафіксовано в [ADR-0051](../../../04-governance/adr/0051-pricing-v3-single-tier.md). Секції §2.2 (Plus tier з decoy), §2.3 (pay-per-feature) та альтернативна ціна ₴2999 Lifetime — **Superseded by ADR-0051** (не йдуть у код MVP). Активна модель: **Free + Pro $7/міс / $49/рік**, ₴ UA-only на старті, trial 7 днів без картки.
 > **Канон 2026-05-19:** delivery-статус живе у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../../90-work/planning/pr-plan-revenue-2026-05.md). Pricing tables і LiqPay/native-IAP варіанти нижче — історичний decision context, якщо ADR-0051 явно не лишає їх активними. Поточний billing-контракт у коді: `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/stripe-webhook`; live rollout/env/legal readiness лишається в Initiative 0010.
 
 > Pricing model лишається орієнтиром для A/B-тестів, але базовий Stripe MVP уже має серверний contract:

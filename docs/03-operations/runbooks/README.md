@@ -22,12 +22,12 @@ playbook каже **що** і **коли**, runbook — **як саме** вик
 
 ## Runbook vs playbook vs incident workflow
 
-| Папка                                            | Призначення                                                                                |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| `docs/00-start/playbooks/`                       | Канонічна послідовність кроків для repeatable tasks (incident flow, release, hotfix).      |
-| `docs/03-operations/runbooks/` (**цей каталог**) | Точне `how` для нашого infra-стеку — команди, ENV-перемикачі, rollback steps, smoke-tests. |
-| `docs/security/disaster-recovery.md`             | RPO/RTO targets, disaster classes, який runbook вмикається на яку класу інциденту.         |
-| `docs/03-operations/postmortems/`                | Incident retrospectives після того, як runbook відпрацював.                                |
+| Папка                                              | Призначення                                                                                |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `docs/00-start/playbooks/`                         | Канонічна послідовність кроків для repeatable tasks (incident flow, release, hotfix).      |
+| `docs/03-operations/runbooks/` (**цей каталог**)   | Точне `how` для нашого infra-стеку — команди, ENV-перемикачі, rollback steps, smoke-tests. |
+| `docs/04-governance/security/disaster-recovery.md` | RPO/RTO targets, disaster classes, який runbook вмикається на яку класу інциденту.         |
+| `docs/03-operations/postmortems/`                  | Incident retrospectives після того, як runbook відпрацював.                                |
 
 ## Як додати новий runbook
 
@@ -41,5 +41,5 @@ playbook каже **що** і **коли**, runbook — **як саме** вик
 ## Cross-links
 
 - Incident playbooks: [`docs/00-start/playbooks/declare-incident.md`](../../00-start/playbooks/declare-incident.md), [`docs/00-start/playbooks/restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md), [`docs/00-start/playbooks/test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md).
-- Disaster recovery policy: [`docs/security/disaster-recovery.md`](../../security/disaster-recovery.md).
+- Disaster recovery policy: [`docs/04-governance/security/disaster-recovery.md`](../../04-governance/security/disaster-recovery.md).
 - Storage roadmap: [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/storage-roadmap.md).

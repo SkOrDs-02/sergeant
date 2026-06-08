@@ -12,7 +12,7 @@ Cross-refs:
 - [`docs/02-engineering/architecture/diagrams/c3-chat-tool-use.md`](./diagrams/c3-chat-tool-use.md) — sequence для tool-use round-trip
 - [`docs/02-engineering/architecture/module-ownership.md`](./module-ownership.md) — який RQ-keys factory належить якому модулю
 - [`apps/web/src/shared/lib/api/queryKeys.ts`](../../../apps/web/src/shared/lib/api/queryKeys.ts) — централізована фабрика ключів (Hard Rule #2)
-- [`docs/governance/hard-rules.json`](../../governance/hard-rules.json) — RQ-keys / no-raw-localStorage / max-lines інваріанти
+- [`docs/04-governance/governance/hard-rules.json`](../../04-governance/governance/hard-rules.json) — RQ-keys / no-raw-localStorage / max-lines інваріанти
 
 ## TL;DR
 
@@ -99,7 +99,7 @@ LLM continues stream → final assistant message
 
 ## Інваріанти, які CI перевіряє
 
-1. **RQ-keys factory only** — Hard Rule #2 ([`docs/governance/hard-rules.json`](../../governance/hard-rules.json) + ESLint `sergeant-design/no-inline-rq-keys`). Жодного інлайнового `["finyk", "transactions"]` у `queryKey` / `setQueryData` / `invalidateQueries`. Усе йде через `<module>Keys` з [`queryKeys.ts`](../../../apps/web/src/shared/lib/api/queryKeys.ts).
+1. **RQ-keys factory only** — Hard Rule #2 ([`docs/04-governance/governance/hard-rules.json`](../../04-governance/governance/hard-rules.json) + ESLint `sergeant-design/no-inline-rq-keys`). Жодного інлайнового `["finyk", "transactions"]` у `queryKey` / `setQueryData` / `invalidateQueries`. Усе йде через `<module>Keys` з [`queryKeys.ts`](../../../apps/web/src/shared/lib/api/queryKeys.ts).
 2. **`no-raw-local-storage`** — Hard Rule (`sergeant-design/no-raw-local-storage`). Production-allowlist у [`eslint.config.js`](../../../eslint.config.js) — порожній; усі write-и йдуть через `webKVStore` / `safeReadLS` / `safeWriteLS` з `@shared/lib/storage/storage`. Це робить **Канал 1 → API** єдиним шляхом до durable state — навіть якщо handler хоче кешувати, він робить це через KV-store з cross-tab `onChange`.
 3. **chatActions handlers повертають `string`** — статичний контракт у `hubChatActions.ts:dispatch`. Якщо handler потрібно повернути JSON, він серіалізує його в текст для LLM (`JSON.stringify(...)` обгорнутий у природне речення).
 4. **chatActions-тести покривають happy path + error path** для кожного handler-а — [`docs/02-engineering/architecture/module-ownership.md`](./module-ownership.md) row `apps/web/src/core/lib/chatActions/**` контракт. `fizrukActions.test.ts` / `finykActions.test.ts` / `nutritionActions.test.ts` / `routineActions.test.ts` — `pnpm --filter @sergeant/web test src/core/lib/chatActions` має 0 fail.
@@ -114,7 +114,7 @@ LLM continues stream → final assistant message
 
 ## Як додати новий writer
 
-1. Завести endpoint у `apps/server/src/modules/<module>/` (якщо ще нема). Update `@sergeant/api-client` types — `bigint → number` через [Rule #1](../../governance/rules/01-db-types-coerce-bigint-to-number.md).
+1. Завести endpoint у `apps/server/src/modules/<module>/` (якщо ще нема). Update `@sergeant/api-client` types — `bigint → number` через [Rule #1](../../04-governance/governance/rules/01-db-types-coerce-bigint-to-number.md).
 2. Завести RQ-ключ у [`queryKeys.ts`](../../../apps/web/src/shared/lib/api/queryKeys.ts).
 3. **Канал 1** — додати `useXxxMutation()` у `apps/web/src/modules/<module>/hooks/`. `mutationFn` → `apiClient.<module>.<action>`. `onSuccess` → invalidate RQ-keys.
 4. **Канал 2** — якщо action потрібен у HubChat: додати tool-def у `apps/server/src/modules/chat/toolDefs/<module>.ts` + handler у `apps/web/src/core/lib/chatActions/<module>Actions/<action>.ts`, який викликає ту саму mutation і повертає `string` для `tool_result`.

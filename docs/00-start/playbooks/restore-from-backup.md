@@ -12,7 +12,7 @@
 
 ## Required context
 
-- Перегляньте [disaster-recovery.md](../../security/disaster-recovery.md), [service-catalog.md](../../02-engineering/architecture/service-catalog.md) і [incident-severity-policy.md](../../governance/incident-severity-policy.md).
+- Перегляньте [disaster-recovery.md](../../04-governance/security/disaster-recovery.md), [service-catalog.md](../../02-engineering/architecture/service-catalog.md) і [incident-severity-policy.md](../../04-governance/governance/incident-severity-policy.md).
 - Якщо подія активна в production, спершу відкрийте [declare-incident.md](./declare-incident.md).
 
 ## Steps

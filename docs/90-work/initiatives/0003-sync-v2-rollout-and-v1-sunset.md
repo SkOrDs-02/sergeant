@@ -63,7 +63,7 @@ Sergeant зараз **паралельно тримає два sync-механі
 
 **PR `adr-0040-sunset-cloudsync-v1`:**
 
-- Створити ADR `docs/adr/0040+-sunset-cloudsync-v1.md` (наступний номер після 0040 — перевірити поточний максимум).
+- Створити ADR `docs/04-governance/adr/0040+-sunset-cloudsync-v1.md` (наступний номер після 0040 — перевірити поточний максимум).
 - Додати `Sunset: <T₀>` + `Deprecation: true` + `Link: <…>; rel="successor-version"` headers на:
   - `GET/PUT /api/v1/sync/module/:moduleId`
   - `GET/POST /api/v1/sync/cloudsync/*`
@@ -166,7 +166,7 @@ Sergeant зараз **паралельно тримає два sync-механі
 ## Посилання
 
 - Design Review 2026-05-03 — §2.2, §5.2
-- [ADR-0004 CloudSync LWW conflict resolution](../../adr/0004-cloudsync-lww-conflict-resolution.md)
+- [ADR-0004 CloudSync LWW conflict resolution](../../04-governance/adr/0004-cloudsync-lww-conflict-resolution.md)
 - [`docs/90-work/planning/storage-roadmap.md`](../planning/storage-roadmap.md) — Stage 5 sync-v2
 - [`docs/90-work/tech-debt/backend.md`](../tech-debt/backend.md) — запис «CloudSync v1/v2 dual-stack»
 - [`apps/server/src/modules/sync/sunsetGone.ts`](../../../apps/server/src/modules/sync/sunsetGone.ts) — v1 410 Gone handler
@@ -190,9 +190,9 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
   - `sli:sync_v1_legacy:rate1h_by_appversion`
 - **Out of scope vs original plan**: `sync_v1_v2_dual_writes_total`, `sync_v2_pull_lag_ms` histogram, `sync_v2_queue_depth` gauge — derivable з існуючих labels (`sync_operations_total{module=...}`) і `sync_duration_ms`. Дублювання counter-ів забило б vmagent backpressure без додаткового signal-у. Conflict-rate / queue-depth alerts — defer-ed до Phase 3, коли буде baseline-week-data.
 
-### Phase 2 — Sunset header + ADR — Done (commit [`3e10d799`](https://github.com/Skords-01/Sergeant/commit/3e10d7997e9b43bc94b93a33555b33b7c82baac5), [ADR-0043](../../adr/0043-cloudsync-v1-sunset.md))
+### Phase 2 — Sunset header + ADR — Done (commit [`3e10d799`](https://github.com/Skords-01/Sergeant/commit/3e10d7997e9b43bc94b93a33555b33b7c82baac5), [ADR-0043](../../04-governance/adr/0043-cloudsync-v1-sunset.md))
 
-- **ADR-0043** [CloudSync v1 sunset](../../adr/0043-cloudsync-v1-sunset.md) — Accepted 2026-05-04. Фіксує: RFC 8594/8288 deprecation contract; 6-фазний rollout-план; T₀ controlled через env var `CLOUDSYNC_V1_SUNSET_AT` (ISO 8601), не code-constant.
+- **ADR-0043** [CloudSync v1 sunset](../../04-governance/adr/0043-cloudsync-v1-sunset.md) — Accepted 2026-05-04. Фіксує: RFC 8594/8288 deprecation contract; 6-фазний rollout-план; T₀ controlled через env var `CLOUDSYNC_V1_SUNSET_AT` (ISO 8601), не code-constant.
 - **HTTP headers на `/api/sync/*`** ([`apps/server/src/modules/sync/sunsetHeaders.ts`](../../../apps/server/src/modules/sync/sunsetHeaders.ts) + 20 тестів):
   - `Deprecation: true` — always (RFC 8594 §2.1.2 "true" form).
   - `Sunset: <RFC 7231 IMF-fixdate>` — only when env var set; malformed value → no header + log.warn once (cached).
@@ -204,7 +204,7 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
 
 ### Phase 5 — T₀ executed (server-side) — Done 2026-05-06
 
-- **ADR-0047** [CloudSync v1 — T₀ executed (410 Gone)](../../adr/0047-cloudsync-v1-410-gone.md) — Accepted 2026-05-06. Document-amendment до ADR-0043 фіксує T₀-execution: усі v1 push/pull endpoint-и повертають `410 Gone` з RFC-9110 body `{error, successor, since, guide}`.
+- **ADR-0047** [CloudSync v1 — T₀ executed (410 Gone)](../../04-governance/adr/0047-cloudsync-v1-410-gone.md) — Accepted 2026-05-06. Document-amendment до ADR-0043 фіксує T₀-execution: усі v1 push/pull endpoint-и повертають `410 Gone` з RFC-9110 body `{error, successor, since, guide}`.
 - **Handler** [`apps/server/src/modules/sync/sunsetGone.ts`](../../../apps/server/src/modules/sync/sunsetGone.ts) + 11 тестів (`sunsetGone.test.ts`).
 - **Wire-up** [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) — `r.post("/api/sync/push", asyncHandler(respondV1Gone))` для всіх 4-х legacy push/pull endpoint-ів (`push`, `pull`, `pull-all` GET+POST, `push-all`). `/api/sync/audit` лишається — це read-only audit, не sync-канал.
 - **Phase 1+2 middleware (survey + sunset-headers) лишається активним поверх 410-handler-а** — клієнти все ще читають `Sunset:` / `Deprecation:` / `Link:` headers разом із 410-body. Це дозволяє їм перевести retry-decay logic у "stop calling permanently".

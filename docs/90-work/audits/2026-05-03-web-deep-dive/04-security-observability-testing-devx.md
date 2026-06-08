@@ -3,8 +3,8 @@
 > **Last validated:** 2026-05-18 by @codex.
 > **Status:** Closed (source audit; CSP follow-up moved to C2 hardening card)
 > **Scope:** PII у логах, Sentry↔requestId correlation, CSP, contract тести, mutation testing, Storybook, C4-діаграми, CHANGELOG, Hard Rules registry, agent onboarding, audit docs status.
-> **Canonical CSP owner:** [`docs/security/hardening/C2-frontend-csp.md`](../../../security/hardening/C2-frontend-csp.md).
-> **Related:** [`00-overview.md`](./00-overview.md), `docs/90-work/audits/`, `docs/security/`, `docs/00-start/agents/`.
+> **Canonical CSP owner:** [`docs/04-governance/security/hardening/C2-frontend-csp.md`](../../../04-governance/security/hardening/C2-frontend-csp.md).
+> **Related:** [`00-overview.md`](./00-overview.md), `docs/90-work/audits/`, `docs/04-governance/security/`, `docs/00-start/agents/`.
 
 Це найширша частина: безпека (2 точки), спостережуваність (3 точки), тестування (3 точки), DevX (3 точки) і документація (3 точки). Всі — high-leverage, низько-середні витрати, **жодна не чіпає продакшн-код**.
 
@@ -53,7 +53,7 @@
    }
    ```
 
-3. В `docs/security/auth-secondary-storage.md` явно записати «тестовано проти Better Auth v8.x.y, при upgrade — re-validate».
+3. В `docs/04-governance/security/auth-secondary-storage.md` явно записати «тестовано проти Better Auth v8.x.y, при upgrade — re-validate».
 
 ---
 
@@ -88,7 +88,7 @@
 
 ## 6.5 [Bad → Done] PII у логах: `Pino` без redact, `requestId` корелюється тільки за timestamp
 
-> **Status update (2026-05-03):** Pino redact list розширено до 50+ paths (req/res headers, root tokens, 1-2 рівні wildcard, email/phone), Sentry `beforeSend` тепер робить рекурсивний `scrubPII()` через спільний `redactKeyNames` контракт, requestId додається тегом до всіх Sentry-подій з ALS-контексту, ErrorBoundary показує requestId з кнопкою «копіювати» на 5xx/network/parse — у [#1551](https://github.com/Skords-01/Sergeant/pull/1551). Залишилось (окремі PR-и): `docs/security/pii-handling.md` зі списком заборонених полів і ESLint-правило проти `console.log` з email-rg.
+> **Status update (2026-05-03):** Pino redact list розширено до 50+ paths (req/res headers, root tokens, 1-2 рівні wildcard, email/phone), Sentry `beforeSend` тепер робить рекурсивний `scrubPII()` через спільний `redactKeyNames` контракт, requestId додається тегом до всіх Sentry-подій з ALS-контексту, ErrorBoundary показує requestId з кнопкою «копіювати» на 5xx/network/parse — у [#1551](https://github.com/Skords-01/Sergeant/pull/1551). Залишилось (окремі PR-и): `docs/04-governance/security/pii-handling.md` зі списком заборонених полів і ESLint-правило проти `console.log` з email-rg.
 
 **Що бачу.** Я не побачив у Pino-конфігурації `redact: ['email', 'phone', 'password', '*.user.email', ...]`. Якщо на Sentry приходять exceptions з body — там може бути PII.
 
@@ -138,7 +138,7 @@
    ```
 
 3. Тест: «Sentry payload не містить email/phone/password у будь-якому полі» — recursive scan на `event.request`, `event.contexts`, `event.extra`, `event.breadcrumbs`.
-4. Документ `docs/security/pii-handling.md` зі списком полів, які **ніколи** не повинні з'являтися у логах.
+4. Документ `docs/04-governance/security/pii-handling.md` зі списком полів, які **ніколи** не повинні з'являтися у логах.
 5. ESLint-правило: `console.log` / `console.error` з email-rg → fail.
 
 **Cost / impact.** **30 хвилин — найвищий ROI security-fix у проєкті. Чому це не зроблено вчора?**
@@ -393,4 +393,4 @@ OK.
 | CHANGELOG / release notes                               | §9.3                                     |
 | Pre-commit i18n / CSP validators                        | §8.4                                     |
 
-> **Tracker hook.** Security items (§6.x) → `docs/security/`. Observability (§4.4 reuse, requestId) → `docs/03-operations/observability/`. Testing (§7.x) → `docs/02-engineering/testing/`. DevX (§8.x) і docs (§9.x, §11) → `docs/00-start/agents/` і `docs/90-work/audits/`.
+> **Tracker hook.** Security items (§6.x) → `docs/04-governance/security/`. Observability (§4.4 reuse, requestId) → `docs/03-operations/observability/`. Testing (§7.x) → `docs/02-engineering/testing/`. DevX (§8.x) і docs (§9.x, §11) → `docs/00-start/agents/` і `docs/90-work/audits/`.

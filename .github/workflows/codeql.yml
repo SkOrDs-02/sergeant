@@ -8,7 +8,7 @@ name: CodeQL (JavaScript / TypeScript SAST)
 # matching для SQL injection, XSS, SSRF, prototype-pollution, path
 # traversal та інших класів вразливостей, що OSV-Scanner / Trivy /
 # eslint-plugin-security за дизайном не ловлять. Закриває
-# `docs/security/hardening/I1-codeql-workflow.md` і завершує SAST/SCA
+# `docs/04-governance/security/hardening/I1-codeql-workflow.md` і завершує SAST/SCA
 # trio (Trivy = container CVE; OSV-Scanner = lockfile CVE; CodeQL =
 # source-code taint).
 #

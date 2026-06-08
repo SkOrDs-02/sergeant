@@ -24,7 +24,7 @@ when** for every active n8n workflow. Канал-, цикл-, escalation- та �
 Архітектурне обґрунтування — в
 [`../../docs/03-operations/observability/telegram-control-plane.md`](../../docs/03-operations/observability/telegram-control-plane.md)
 та
-[ADR-0030](../../docs/adr/0030-telegram-reporting-channel-structure.md).
+[ADR-0030](../../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md).
 
 ## Priority levels
 
@@ -257,7 +257,7 @@ indexes для cron queries. Detailed диаграм + runbook —
 
 - [`../README.md`](../README.md) — operational README з env vars і compose-стеком.
 - [`../../docs/03-operations/observability/telegram-control-plane.md`](../../docs/03-operations/observability/telegram-control-plane.md) — архітектурний аналіз: чи Telegram = правильний контрол-план.
-- [`../../docs/adr/0030-telegram-reporting-channel-structure.md`](../../docs/adr/0030-telegram-reporting-channel-structure.md) — формальне рішення.
-- [`../../docs/adr/0026-n8n-workflow-source-of-truth.md`](../../docs/adr/0026-n8n-workflow-source-of-truth.md) — Git-as-truth для n8n.
+- [`../../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md`](../../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md) — формальне рішення.
+- [`../../docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md`](../../docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md) — Git-as-truth для n8n.
 - [`../../docs/00-start/playbooks/modify-n8n-workflow.md`](../../docs/00-start/playbooks/modify-n8n-workflow.md) — playbook на додавання/зміну workflow.
 - [`../../docs/03-operations/observability/runbook.md`](../../docs/03-operations/observability/runbook.md) — incident runbook (що робити, коли спрацював алерт).

@@ -145,7 +145,7 @@ Staging smoke: sign-in → PostHog Activity показує `identify` + Sentry
   - заборонити string literals у `trackEvent` першому аргументі (тільки `ANALYTICS_EVENTS.X`)
   - вимагати `^[a-z][a-z0-9_]*_<past_tense_verb>$` для нових values у `ANALYTICS_EVENTS`
   - whitelist verbs з [`delta.md § Naming`](../../../.telemetry/delta.md#naming-convention--locked-not-migrated)
-- NEW section у [`AGENTS.md`](../../../AGENTS.md) або `docs/governance/telemetry-naming.md`
+- NEW section у [`AGENTS.md`](../../../AGENTS.md) або `docs/04-governance/governance/telemetry-naming.md`
 - ADD test fixtures у plugin
 
 **Tests:** ESLint plugin test suite + dry-run rule against `analyticsEvents.ts`

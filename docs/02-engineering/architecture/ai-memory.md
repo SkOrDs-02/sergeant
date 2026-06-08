@@ -210,7 +210,7 @@ WHERE sent_at > NOW() - ($N::int * INTERVAL '1 day')
 
 ## Related ADRs
 
-- [ADR-0028](../../adr/0028-pgvector-ai-memory.md) — initial design (storage + Voyage).
-- [ADR-0031](../../adr/0031-openclaw-v0-telegram-cofounder.md) §3 — cofounder source strict isolation.
+- [ADR-0028](../../04-governance/adr/0028-pgvector-ai-memory.md) — initial design (storage + Voyage).
+- [ADR-0031](../../04-governance/adr/0031-openclaw-v0-telegram-cofounder.md) §3 — cofounder source strict isolation.
 - PR-19 (#2605) — ingest activation + per-source gating.
 - PR-21 (#2625) — WF-30 weekly digest activation.

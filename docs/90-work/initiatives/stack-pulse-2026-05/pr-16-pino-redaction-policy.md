@@ -1,7 +1,7 @@
 # PR-16: Pino redaction policy + ESLint guard
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Closed — merged [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard + [`docs/security/logging-redaction-policy.md`](../../../security/logging-redaction-policy.md) зареєстровані.
+> **Status:** Closed — merged [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard + [`docs/04-governance/security/logging-redaction-policy.md`](../../../04-governance/security/logging-redaction-policy.md) зареєстровані.
 
 |              |                                                                |
 | ------------ | -------------------------------------------------------------- |
@@ -14,7 +14,7 @@
 ## Statuses
 
 - **2026-05-03** — Initiative заведено зі статусом `Planned`. Pino-redact-paths уже частково існували в `apps/server/src/obs/logger.ts`; гап був у ESLint-guard + governance.
-- **2026-05-06** — Implementation: додано `sergeant-design/no-raw-req-in-pino-log` (severity `error`, scope `apps/server/**`), створено [`docs/security/logging-redaction-policy.md`](../../../security/logging-redaction-policy.md), зареєстровано Hard Rule #21 у [`AGENTS.md`](../../../../AGENTS.md#21-pino-redaction-policy-enforced) + [`docs/governance/hard-rules.json`](../../../governance/hard-rules.json) + [`CONTRIBUTING.md`](../../../../CONTRIBUTING.md). Server-lint: `0 errors` після додавання правила (raw-req логування не виявлено у поточному коді — guard fixates clean baseline).
+- **2026-05-06** — Implementation: додано `sergeant-design/no-raw-req-in-pino-log` (severity `error`, scope `apps/server/**`), створено [`docs/04-governance/security/logging-redaction-policy.md`](../../../04-governance/security/logging-redaction-policy.md), зареєстровано Hard Rule #21 у [`AGENTS.md`](../../../../AGENTS.md#21-pino-redaction-policy-enforced) + [`docs/04-governance/governance/hard-rules.json`](../../../04-governance/governance/hard-rules.json) + [`CONTRIBUTING.md`](../../../../CONTRIBUTING.md). Server-lint: `0 errors` після додавання правила (raw-req логування не виявлено у поточному коді — guard fixates clean baseline).
 
 ## Контекст
 
@@ -92,8 +92,8 @@ export const logger = pino({
 
 ### 5. Documentation
 
-- `docs/security/logging-redaction-policy.md` — явні правила, ownership-line, як додати нове поле.
-- `docs/governance/hard-rules-registry.json` — нове правило «Logging-redaction-required».
+- `docs/04-governance/security/logging-redaction-policy.md` — явні правила, ownership-line, як додати нове поле.
+- `docs/04-governance/governance/hard-rules-registry.json` — нове правило «Logging-redaction-required».
 
 ## Out of scope
 
@@ -105,7 +105,7 @@ export const logger = pino({
 - [x] `apps/server/src/obs/logger.ts` має enforced `redact:` config з ≥15 paths.
 - [x] Pino unit-test: `logger.info({ password: "x" })` → output має `[REDACTED]`, не `"x"`.
 - [x] ESLint rule active + 0 warnings у server-tree.
-- [x] `docs/security/logging-redaction-policy.md` описаний.
+- [x] `docs/04-governance/security/logging-redaction-policy.md` описаний.
 - [x] Hard rule зареєстрований.
 - [x] Sentry `beforeSend` синхронізований.
 
@@ -130,8 +130,8 @@ export const logger = pino({
 - `apps/server/src/obs/logger.ts`
 - `apps/server/src/sentry.ts` — beforeSend sync
 - `packages/eslint-plugin-sergeant-design/` — нове правило
-- `docs/security/logging-redaction-policy.md` — новий
-- `docs/governance/hard-rules-registry.json` — додати rule
+- `docs/04-governance/security/logging-redaction-policy.md` — новий
+- `docs/04-governance/governance/hard-rules-registry.json` — додати rule
 
 ## Refs
 

@@ -13,7 +13,7 @@
 >
 > - [`2026-05-05-dead-code-and-stale-links-audit.md`](./archive/2026-05-05-dead-code-and-stale-links-audit.md) — перша системна dead-code прожарка (knip + docs:check-links). 5/5 P0/P1 закриті; outstanding був §3 (unused deps + 77 unused exports + 51 duplicate exports).
 > - [`2026-05-07-app-audit.md`](./archive/2026-05-07-app-audit.md) — повний app-audit, включно з web-boot BLOCKER (`db-schema/migrate` umbrella) та hard-rule violations (process.env budget 120 > 119, namespace boundaries, latent imports).
-> - [`docs/governance/hard-rules.json`](../../governance/hard-rules.json) + [`hard-rules-matrix.md`](../../governance/hard-rules-matrix.md) — 22 правил (8 blocker-invariant, 12 lint-enforced-convention, 2 active-initiative).
+> - [`docs/04-governance/governance/hard-rules.json`](../../04-governance/governance/hard-rules.json) + [`hard-rules-matrix.md`](../../04-governance/governance/hard-rules-matrix.md) — 22 правил (8 blocker-invariant, 12 lint-enforced-convention, 2 active-initiative).
 
 ## TL;DR
 
@@ -288,7 +288,7 @@ pnpm format:check && pnpm lint && pnpm typecheck && pnpm test  # = pnpm check (f
 
 - [`docs/90-work/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./archive/2026-05-05-dead-code-and-stale-links-audit.md) — попередня dead-code прожарка.
 - [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](./archive/2026-05-07-app-audit.md) — повний app-audit (web-blocker, mobile tests, hard-rule violations).
-- [`docs/governance/hard-rules.json`](../../governance/hard-rules.json) — 22-rule registry (Hard Rule #10 — lifecycle markers).
-- [`docs/governance/rules/10-lifecycle-markers.md`](../../governance/rules/10-lifecycle-markers.md) — canonical body для маркерів.
+- [`docs/04-governance/governance/hard-rules.json`](../../04-governance/governance/hard-rules.json) — 22-rule registry (Hard Rule #10 — lifecycle markers).
+- [`docs/04-governance/governance/rules/10-lifecycle-markers.md`](../../04-governance/governance/rules/10-lifecycle-markers.md) — canonical body для маркерів.
 - [`scripts/knip-respects-scaffolded.mjs`](../../../scripts/knip-respects-scaffolded.mjs) — wrapper, який імплементує filter для marker-ів.
 - [`scripts/docs/check-markdown-links.mjs`](../../../scripts/docs/check-markdown-links.mjs) — gate, який ловить broken-link drift.

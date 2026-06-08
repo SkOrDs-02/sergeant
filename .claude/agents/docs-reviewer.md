@@ -42,9 +42,9 @@ Check: do any changed `.md` files appear to be generated (output of a script, pl
 
 ## Hard Rule #26 — PR ledger update
 
-When a PR modifies canonical docs — files in `docs/governance/`, `docs/02-engineering/architecture/`, `docs/adr/`, `AGENTS.md`, `CLAUDE.md`, or `docs/00-start/agents/` — it must also update `docs/pr-ledger/index.json` with an entry for this PR.
+When a PR modifies canonical docs — files in `docs/04-governance/governance/`, `docs/02-engineering/architecture/`, `docs/04-governance/adr/`, `AGENTS.md`, `CLAUDE.md`, or `docs/00-start/agents/` — it must also update `docs/04-governance/pr-ledger/index.json` with an entry for this PR.
 
-Check: does the PR diff include changes to canonical doc paths but NOT include a change to `docs/pr-ledger/index.json`?
+Check: does the PR diff include changes to canonical doc paths but NOT include a change to `docs/04-governance/pr-ledger/index.json`?
 
 ## How to review
 
@@ -52,7 +52,7 @@ Check: does the PR diff include changes to canonical doc paths but NOT include a
 2. Read each for lifecycle marker presence (Last validated, Next review, Status).
 3. Scan body text language for Ukrainian compliance.
 4. Check if any generated files are missing the AUTO-GENERATED marker.
-5. Check if canonical docs were changed — if yes, verify `docs/pr-ledger/index.json` is also in the diff.
+5. Check if canonical docs were changed — if yes, verify `docs/04-governance/pr-ledger/index.json` is also in the diff.
 
 ## Report format
 

@@ -89,7 +89,7 @@
 - `apps/server/package.json` + усі `apps/*` + `packages/*` — `@types/node` рядки
 - `pnpm-workspace.yaml` / `pnpm.overrides` у root
 - `renovate.json` — додати allowed-version правило
-- `docs/adr/0043-typescript-major-version-policy.md` — новий ADR
+- `docs/04-governance/adr/0043-typescript-major-version-policy.md` — новий ADR
 
 ## Refs
 

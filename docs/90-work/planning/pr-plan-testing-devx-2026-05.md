@@ -10,12 +10,12 @@
 - **12 PR-карток** — 8 Testing (unit / integration / contract / E2E / VRT / mutation / coverage / property-based) + 4 DevX (scripts, plop, husky, CI feedback loop, pnpm tasks).
 - **3 quick-wins (XS)** — script-alias-и, `CONTRIBUTING.md` оновлення, `docs/02-engineering/testing/README.md` cross-ref — кожен ≤ 50 LoC, можна злити паралельно з основним планом.
 - **Дві стрічки sequencing** йдуть незалежно: Testing-стрічка (T-1 → T-8) і DevX-стрічка (D-1 → D-4). Між собою з'єднано лише T-6 (mutation) ↔ D-3 (parallel `pnpm check`) — `pnpm check --parallel` повинен з'явитись **до** того, як mutation-job додасть значущий час у CI matrix.
-- **Базова реальність:** 5-шарова піраміда [ADR-0020](../../adr/0020-testing-pyramid.md) уже зафіксована, Anthropic mock-harness ([#2012](https://github.com/Skords-01/Sergeant/pull/2012)) і `apps/web/src/test/contract/barcode.contract.test.ts` уже у дереві — більшість пунктів _додають coverage в існуючий стек_, не вводять нових тулів. Винятки: T-6 (Stryker — повертаємо після retirement у `docs/02-engineering/testing/README.md`), T-8 (`fast-check` як новий devDep), D-1 (нові precommit-timing utilities).
+- **Базова реальність:** 5-шарова піраміда [ADR-0020](../../04-governance/adr/0020-testing-pyramid.md) уже зафіксована, Anthropic mock-harness ([#2012](https://github.com/Skords-01/Sergeant/pull/2012)) і `apps/web/src/test/contract/barcode.contract.test.ts` уже у дереві — більшість пунктів _додають coverage в існуючий стек_, не вводять нових тулів. Винятки: T-6 (Stryker — повертаємо після retirement у `docs/02-engineering/testing/README.md`), T-8 (`fast-check` як новий devDep), D-1 (нові precommit-timing utilities).
 
 ## Cross-refs
 
 - **Прожарка-джерело:** [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](../audits/2026-05-13-testing-devx-roast.md) — P0/P1/P2 з file:line та `Add/Change/Remove` діями.
-- **Архітектура тестового стека:** [`docs/adr/0020-testing-pyramid.md`](../../adr/0020-testing-pyramid.md) — 5 шарів (unit / component / integration / a11y / smoke-E2E) + per-package coverage floors з 2pp буфером.
+- **Архітектура тестового стека:** [`docs/04-governance/adr/0020-testing-pyramid.md`](../../04-governance/adr/0020-testing-pyramid.md) — 5 шарів (unit / component / integration / a11y / smoke-E2E) + per-package coverage floors з 2pp буфером.
 - **Multi-wave план попередньої прожарки:** [`docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`](../../02-engineering/testing/2026-05-05-tests-pr-plan.md) — Wave A–G, ~50 PR-ів (статус `merged` для PR-T01..T06, T08, T31, T32, T39; outstanding для T07, T09+, T13–T22, T23–T27, T29–T30, T33–T38).
 - **Інвентар тестового стека:** [`docs/02-engineering/testing/2026-05-05-tests-review.md`](../../02-engineering/testing/2026-05-05-tests-review.md) — per-app coverage % зрізу 2026-05-05.
 - **Operations runbooks (для smoke-E2E залежностей):**
@@ -33,7 +33,7 @@
 - **Size buckets:** S = ≤ 100 LoC, ≤ ½ дня. M = 100–300 LoC, 1–2 дні. L = 300–600 LoC, 3–5 днів. XS — у секції quick-wins (≤ 50 LoC).
 - **Acceptance — gate-style:** як CI job підтвердить «зроблено». Не «фіча працює», а «job X зелений / коли job X фейлить — діагностика з step summary».
 - **Dependencies:** використовуй `T-N` / `D-N` ID. Cross-stream залежності (Testing ↔ DevX) явно позначені.
-- **Hard rules (з [AGENTS.md](../../../AGENTS.md)):** не пропускати Husky (Rule #7), не force-push у `main` (Rule #6), Conventional Commits зі scope-енумом (Rule #5), оновлення docs/governance у тому ж PR (Rule #15).
+- **Hard rules (з [AGENTS.md](../../../AGENTS.md)):** не пропускати Husky (Rule #7), не force-push у `main` (Rule #6), Conventional Commits зі scope-енумом (Rule #5), оновлення docs/04-governance/governance у тому ж PR (Rule #15).
 
 ## Sequencing
 
@@ -129,7 +129,7 @@
   - Update `packages/shared/src/contract-fixtures/README.md` — додати нові endpoints у таблицю + повторити «one fixture = golden shape» дисципліну.
 - **Acceptance:**
   - `pnpm --filter @sergeant/shared test` + `pnpm --filter @sergeant/web test` зелені; нові 6 файлів повністю крутяться у `check` job.
-  - Hard Rule #3 (`docs/governance/rules/03-api-contract-server-client-test.md`) cross-link перевірений `pnpm lint:governance-sync --strict`.
+  - Hard Rule #3 (`docs/04-governance/governance/rules/03-api-contract-server-client-test.md`) cross-link перевірений `pnpm lint:governance-sync --strict`.
   - Producer-side companion-и винесені в окремий sub-PR (потребує `supertest` + `createApp()` stab — окремий ефорт).
 - **Depends on:** PR-T08 (mock-harness ✓), цей PR (план doc) для cross-ref.
 - **Risks:** `chat.ts` streaming SSE — нетривіальний contract (chunked Transfer-Encoding). Якщо складність вибухне — винеси streaming-fixture у окремий sub-PR.
@@ -195,7 +195,7 @@
 - **Scope:**
   - Новий `packages/shared/stryker.utils.conf.json` — scope `src/utils/macros.ts` + `src/utils/date.ts` (tier-1 floor: 70% mutation score, break threshold).
   - Новий `.github/workflows/mutation-testing.yml` — weekly cron + manual `workflow_dispatch`. Reporters: `json,html` як artifact (retain 30 днів).
-  - Update `docs/02-engineering/testing/README.md` — повернути «Mutation» секцію з redefined scope (utils-only, не cloudSync); update [`docs/adr/0020-testing-pyramid.md`](../../adr/0020-testing-pyramid.md) — додати mutation як **6-й шар** (опційний, weekly-only, не PR-blocker для main check).
+  - Update `docs/02-engineering/testing/README.md` — повернути «Mutation» секцію з redefined scope (utils-only, не cloudSync); update [`docs/04-governance/adr/0020-testing-pyramid.md`](../../04-governance/adr/0020-testing-pyramid.md) — додати mutation як **6-й шар** (опційний, weekly-only, не PR-blocker для main check).
   - PR-required tier: workflow коментує PR, якщо mutation score падає; **не** блокує merge до того, як score стабілізується ≥ 80% на main за 2 weekly run-и.
 - **Acceptance:**
   - `.github/workflows/mutation-testing.yml` зелений на manual `workflow_dispatch` run (perfect-circle test); artifact `mutation-report.json` + `mutation-report.html` доступний для download.

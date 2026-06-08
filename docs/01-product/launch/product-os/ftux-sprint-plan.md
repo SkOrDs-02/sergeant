@@ -19,7 +19,7 @@
 > [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) — джерело рекомендацій ·
 > [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
 > [`04-launch-readiness.md` §4.2](../business/04-launch-readiness.md) — funnel definitions ·
-> [`docs/governance/feature-flags.md`](../../../governance/feature-flags.md) — flag conventions ·
+> [`docs/04-governance/governance/feature-flags.md`](../../../04-governance/governance/feature-flags.md) — flag conventions ·
 > [`docs/00-start/playbooks/add-onboarding-step.md`](../../../00-start/playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS`.
 
 ---

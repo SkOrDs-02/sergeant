@@ -13,7 +13,7 @@
 ## Required context
 
 - Спершу `sergeant-start-here`, потім `sergeant-deploy-and-observability`.
-- Перечитати [incident-severity-policy.md](../../governance/incident-severity-policy.md) і [service-catalog.md](../../02-engineering/architecture/service-catalog.md).
+- Перечитати [incident-severity-policy.md](../../04-governance/governance/incident-severity-policy.md) і [service-catalog.md](../../02-engineering/architecture/service-catalog.md).
 
 ## Steps
 

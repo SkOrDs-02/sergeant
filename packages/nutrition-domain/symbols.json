@@ -1,5 +1,5 @@
 {
-  "$schema": "../../docs/governance/schemas/symbol-catalog.schema.json",
+  "$schema": "../../docs/04-governance/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
   "generated_at": "2026-06-08",
   "package": "@sergeant/nutrition-domain",

@@ -5,7 +5,7 @@
 //
 // STATUS.md is the one human-facing page that answers, at a glance:
 //   - 🎯 що в фокусі зараз          (manual FOCUS block, preserved across regen)
-//   - 🟢 що вже зроблено            (from docs/pr-ledger/index.json — shipped PRs)
+//   - 🟢 що вже зроблено            (from docs/04-governance/pr-ledger/index.json — shipped PRs)
 //   - 🔵 що в роботі                (open-work rollup: per-tracker counts + freshest)
 //   - ⏭️ що далі / заблоковано      (priority markers — reuse generate-today logic)
 //   - 🧱 який стек                   (links into the architecture deep-dives)
@@ -41,7 +41,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 const OUTPUT_PATH = resolve(REPO_ROOT, "docs/STATUS.md");
-const PR_LEDGER_PATH = resolve(REPO_ROOT, "docs/pr-ledger/index.json");
+const PR_LEDGER_PATH = resolve(
+  REPO_ROOT,
+  "docs/04-governance/pr-ledger/index.json",
+);
 
 const REPO_SLUG = "Skords-01/Sergeant";
 
@@ -83,7 +86,7 @@ export function extractFocus(existing) {
 // ── Shipped ledger (🟢 done) ─────────────────────────────────────────────────
 
 /**
- * Read docs/pr-ledger/index.json and return the most-recently-merged PRs,
+ * Read docs/04-governance/pr-ledger/index.json and return the most-recently-merged PRs,
  * newest first. Tolerates a missing/empty ledger (returns []).
  */
 export function loadShipped(ledgerPath = PR_LEDGER_PATH, limit = SHIPPED_N) {
@@ -193,11 +196,11 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("");
   if (shipped.length === 0) {
     lines.push(
-      "_pr-ledger порожній. Записи з'являються автоматично, коли merged-PR торкається canonical-доку (ADR / ініціатива / playbook / hard-rule) — див. [`pr-ledger/`](./pr-ledger/README.md)._",
+      "_pr-ledger порожній. Записи з'являються автоматично, коли merged-PR торкається canonical-доку (ADR / ініціатива / playbook / hard-rule) — див. [`pr-ledger/`](./04-governance/pr-ledger/README.md)._",
     );
   } else {
     lines.push(
-      `Останні ${shipped.length} PR, що торкнулися canonical-доків. Повна історія → [\`pr-ledger/index.json\`](./pr-ledger/index.json).`,
+      `Останні ${shipped.length} PR, що торкнулися canonical-доків. Повна історія → [\`pr-ledger/index.json\`](./04-governance/pr-ledger/index.json).`,
     );
     lines.push("");
     for (const pr of shipped) lines.push(fmtShipped(pr));
@@ -289,7 +292,7 @@ function render({ focus, shipped, inflight, priority }) {
     "| **Операції** | [`deploy/`](./03-operations/deploy/README.md), [`observability/`](./03-operations/observability/README.md), [`runbooks/`](./03-operations/runbooks/README.md), [`postmortems/`](./03-operations/postmortems/README.md), [`ops/`](./03-operations/ops/README.md) | деплой, алерти, інциденти |",
   );
   lines.push(
-    "| **Governance** | [`governance/`](./governance/README.md), [`security/`](./security/README.md), [`adr/`](./adr/README.md) | hard rules, рішення, безпека |",
+    "| **Governance** | [`governance/`](./04-governance/governance/README.md), [`security/`](./04-governance/security/README.md), [`adr/`](./04-governance/adr/README.md) | hard rules, рішення, безпека |",
   );
   lines.push(
     "| **Дизайн** | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md) | дизайн-система, патерни |",
@@ -307,7 +310,7 @@ function render({ focus, shipped, inflight, priority }) {
   );
   lines.push("- [`today.md`](./today.md) — денний бриф (топ-7 на сьогодні)");
   lines.push(
-    "- [`governance/freshness-dashboard.html`](./governance/freshness-dashboard.html) — freshness огляд",
+    "- [`governance/freshness-dashboard.html`](./04-governance/governance/freshness-dashboard.html) — freshness огляд",
   );
   lines.push(
     "- [`../AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing",

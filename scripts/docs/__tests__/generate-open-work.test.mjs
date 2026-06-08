@@ -82,7 +82,7 @@ describe("classifyStatus", () => {
   });
 
   it("handles bold-wrapped status text", () => {
-    // Real-world example from docs/security/hardening/I2-secret-scanning-push-protection.md
+    // Real-world example from docs/04-governance/security/hardening/I2-secret-scanning-push-protection.md
     assert.equal(classifyStatus("**Closed (2026-05-04)**"), "closed");
   });
 

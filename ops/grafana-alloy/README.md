@@ -7,7 +7,7 @@
 все у Grafana Cloud Prometheus. Без локального TSDB — це робота Grafana Cloud.
 
 Контекст рішення — [`docs/02-engineering/architecture/hosting-evolution.md`](../../docs/02-engineering/architecture/hosting-evolution.md)
-§Фаза 2 та [`docs/adr/0015-observability-stack.md`](../../docs/adr/0015-observability-stack.md)
+§Фаза 2 та [`docs/04-governance/adr/0015-observability-stack.md`](../../docs/04-governance/adr/0015-observability-stack.md)
 §ADR-15.2 (exit criterion: scrape-інфра).
 
 ## Що скрейпиться

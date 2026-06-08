@@ -10,7 +10,7 @@
 > [`2026-05-03-readme-gap-analysis.md`](./2026-05-03-readme-gap-analysis.md) — gap-analysis README ·
 > [`2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md) — попередній прохід по dead-links (закрив 14, лишилось 53 нових через archive-move) ·
 > [`archive/2026-05-11-docs-audit-summary.md`](./2026-05-11-docs-audit-summary.md) — summary 2026-05-11 ·
-> [`docs/governance/doc-freshness.md`](../../../governance/doc-freshness.md) — система freshness-маркерів.
+> [`docs/04-governance/governance/doc-freshness.md`](../../../04-governance/governance/doc-freshness.md) — система freshness-маркерів.
 
 ## TL;DR
 
@@ -19,14 +19,14 @@
 3. **`docs/90-work/initiatives/0006-frontend-routing-and-code-split.md` стейл**: рапортує `useHashRouter` migration як «2/4», насправді 4/4. Дві останні (shared `useHashRoute.ts` + per-module hooks для fizruk/routine) закриті у `f5caf1ee` (2026-05-13). **Fixed у цьому PR.**
 4. **Tech-debt freshness guard не покривав `docs/90-work/tech-debt/backend.md`** — `scripts/check-tech-debt-freshness.mjs` `DEFAULT_FILES` містив лише frontend + mobile. Backend `Last validated` міг дрейфувати без CI-сигналу. **Fixed у цьому PR.**
 5. **README gap-analysis (`2026-05-03`) status drift**: `docs/90-work/audits/README.md` досі рапортує `Implemented: 0/8 ≈ Outstanding: 8 ≈`, хоча 13/15 пунктів чек-листу §6 уже у README.md (Modules, Tech Stack, Prerequisites, Quickstart, Testing, Deployment, Architecture, Integrations, Troubleshooting, License, Feature flags, Observability, Documentation map). Залишається 2 (Packages як окрема таблиця, Environment Variables як окрема секція). **Fixed у follow-up PR** — рядок пересинхронізовано на `13/15 ≈ / 2` (див. §Прогрес виконання → P1-1).
-6. **AGENTS.md split** — попередня прожарка пропонувала розгрупування у `AGENTS.md` slim + `docs/governance/hard-rules.md` full. Поточний AGENTS.md = 170 рядків (manageable), вже містить cross-refs у `docs/governance/rules/`. **Split не потрібен** — попередня прожарка спиралась на стару версію файлу.
+6. **AGENTS.md split** — попередня прожарка пропонувала розгрупування у `AGENTS.md` slim + `docs/04-governance/governance/hard-rules.md` full. Поточний AGENTS.md = 170 рядків (manageable), вже містить cross-refs у `docs/04-governance/governance/rules/`. **Split не потрібен** — попередня прожарка спиралась на стару версію файлу.
 7. **`docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md` 3-date-drift** — у файлі ще 3 окремі дати (Last validated, Initial audit date, Initial audit reference). Файл Archived; рекомендується канонікалізувати у наступному audit-passе.
 
 ## P0 — закрити в цьому PR ✓
 
 ### P0-1. Broken internal links (53 → 0) ✓
 
-**Root cause:** commit `8b5a22ef docs(docs): archive 6 mature closed audits without 90-day wait` переніс файли у `docs/90-work/audits/archive/` без оновлення `../<dir>/` relative-paths. Тепер посилання типу `../adr/foo.md` резолвляться у `docs/90-work/audits/adr/foo.md` (неіснує) замість `docs/adr/foo.md`.
+**Root cause:** commit `8b5a22ef docs(docs): archive 6 mature closed audits without 90-day wait` переніс файли у `docs/90-work/audits/archive/` без оновлення `../<dir>/` relative-paths. Тепер посилання типу `../adr/foo.md` резолвляться у `docs/90-work/audits/adr/foo.md` (неіснує) замість `docs/04-governance/adr/foo.md`.
 
 **Action: Change** — оновлені relative paths:
 

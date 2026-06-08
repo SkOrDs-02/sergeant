@@ -18,7 +18,7 @@
 > - [`product-os/paywall-implementation-plan.md`](../product-os/paywall-implementation-plan.md) — PR-20 gate, three paths
 > - [`architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — web ↔ shell ↔ RN feature-parity
 > - [`playbooks/release.md`](../../../00-start/playbooks/release.md) — canonical release flow
-> - [`governance/feature-flags.md`](../../../governance/feature-flags.md) — flag conventions
+> - [`governance/feature-flags.md`](../../../04-governance/governance/feature-flags.md) — flag conventions
 > - [`observability/posthog-ftux-dashboards.md`](../../../03-operations/observability/posthog-ftux-dashboards.md) — funnel dashboards
 
 ---

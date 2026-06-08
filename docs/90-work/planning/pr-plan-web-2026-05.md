@@ -19,7 +19,7 @@
 - [`docs/90-work/audits/2026-05-13-web-architecture-state-roast.md`](../audits/2026-05-13-web-architecture-state-roast.md) — прожарка #3/10 (architecture + state).
 - [`docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md`](../audits/archive/2026-05-13-web-frontend-ergonomics-roast.md) — прожарка #2/10 (frontend ergonomics).
 - [`docs/02-engineering/architecture/repo-map.md`](../../02-engineering/architecture/repo-map.md) — per-app stack matrix, `apps/web` runtime: Vite 8 + React 18 + TanStack Query + Tailwind 4 + size-limit gate.
-- [`docs/governance/rules/18-module-size-discipline-600.md`](../../governance/rules/18-module-size-discipline-600.md) — Hard Rule #18 (`max-lines: 600` для `apps/web/src/**`); декомпозиція 0013 Sprint 2 (A4 нижче) — це burndown цього правила.
+- [`docs/04-governance/governance/rules/18-module-size-discipline-600.md`](../../04-governance/governance/rules/18-module-size-discipline-600.md) — Hard Rule #18 (`max-lines: 600` для `apps/web/src/**`); декомпозиція 0013 Sprint 2 (A4 нижче) — це burndown цього правила.
 - [`docs/90-work/initiatives/0006-frontend-routing-and-code-split.md`](../initiatives/0006-frontend-routing-and-code-split.md) — react-router migration, Phase 3-5 закриваються картами A1–A3.
 - [`docs/90-work/initiatives/archive/_0013-module-decomposition-round-2.md`](../initiatives/archive/_0013-module-decomposition-round-2.md) — `max-lines: 600` Sprint 2 (4 файли на decomposition), карта A4.
 - [`docs/02-engineering/architecture/state-write-paths.md`](../../02-engineering/architecture/state-write-paths.md) — doctrine для UI vs chatActions writer-каналів (закрита у прожарці #3); карти A5/A6 — implementation burndown.

@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active.  
-> **Capacitor shell:** `accepted-with-sunset` — sunset schedule див. [ADR-0010 § Sunset schedule](../../adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule).  
+> **Capacitor shell:** `accepted-with-sunset` — sunset schedule див. [ADR-0010 § Sunset schedule](../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule).  
 > **Initiative:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md).
 
 Короткий репорт «що готово до запуску, що треба доробити» по трьох варіантах Sergeant-а. Живе поруч з `docs/02-engineering/mobile/overview.md` (API-контракт) і `docs/02-engineering/mobile/react-native-migration.md` (роадмап порту web → RN).
@@ -171,5 +171,5 @@
 - **Feature parity інлання:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md)
 - **API контракт:** [`docs/02-engineering/mobile/overview.md`](../mobile/overview.md)
 - **RN migration roadmap:** [`docs/02-engineering/mobile/react-native-migration.md`](../mobile/react-native-migration.md)
-- **Sunset ADR:** [ADR-0010](../../adr/0010-mobile-dual-track-capacitor-expo.md)
+- **Sunset ADR:** [ADR-0010](../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md)
 - **Shell deep-links:** [`docs/02-engineering/mobile/capacitor-deep-links.md`](../mobile/capacitor-deep-links.md)

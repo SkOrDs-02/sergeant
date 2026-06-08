@@ -95,8 +95,8 @@ SSO не залитий, Apple Developer Program не куплений, окре
 
 **Ключові ADRs / initiatives:**
 
-- [ADR-0052](../../../adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor PRIMARY до Expo parity (Accepted 2026-05-06)
-- [ADR-0051](../../../adr/0051-pricing-v3-single-tier.md) — Free + Pro $7/міс / $49/рік, UAH UA-only на старті
+- [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor PRIMARY до Expo parity (Accepted 2026-05-06)
+- [ADR-0051](../../../04-governance/adr/0051-pricing-v3-single-tier.md) — Free + Pro $7/міс / $49/рік, UAH UA-only на старті
 - [Initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md) — revenue-first sprint (Stripe billing у Phase 2-4)
 - [Initiative 0002](../../../90-work/initiatives/archive/_0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
 
@@ -289,7 +289,7 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 - [ ] **Apple Developer enrollment** заявка (паралельно — ~2 тижні D-U-N-S)
 - [ ] **Privacy Policy + ToS draft** через Termly (~$50/міс) + review founder
 - [ ] **DB backup restore-тест** ([playbooks/test-backup-restore.md](../../../00-start/playbooks/test-backup-restore.md))
-- [ ] **`feature.invite_only_signup` flag** додати в [feature-flags.md registry](../../../governance/feature-flags.md)
+- [ ] **`feature.invite_only_signup` flag** додати в [feature-flags.md registry](../../../04-governance/governance/feature-flags.md)
 - [ ] **Закласти 5-10 годин на custdev-інтервʼю** у calendar (W-3 .. W+3)
 - [ ] **Відповісти на 10-12 open questions** з § 8 (мінімум — top-6 стратегічних)
 
@@ -318,8 +318,8 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 - [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — feature parity матриця (SSOT)
 - [`docs/02-engineering/architecture/apps-status-matrix.md`](../../../02-engineering/architecture/apps-status-matrix.md)
 - [`docs/02-engineering/architecture/hosting-evolution.md`](../../../02-engineering/architecture/hosting-evolution.md)
-- [ADR-0051 — Pricing v3 single tier](../../../adr/0051-pricing-v3-single-tier.md)
-- [ADR-0052 — Mobile strategy: Capacitor primary](../../../adr/0052-mobile-strategy-capacitor-primary.md)
+- [ADR-0051 — Pricing v3 single tier](../../../04-governance/adr/0051-pricing-v3-single-tier.md)
+- [ADR-0052 — Mobile strategy: Capacitor primary](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md)
 
 ### Initiatives
 

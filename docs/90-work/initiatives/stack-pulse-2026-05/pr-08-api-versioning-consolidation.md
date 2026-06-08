@@ -1,7 +1,7 @@
 # PR-08: API versioning consolidation (видалити v1-rewrite-shim)
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Closed — research done, decision = keep mirror (див. [ADR-0053](../../../adr/0053-api-versioning-policy.md) + [spike](../../../02-engineering/notes/spikes/2026-05-api-v1-usage.md))
+> **Status:** Closed — research done, decision = keep mirror (див. [ADR-0053](../../../04-governance/adr/0053-api-versioning-policy.md) + [spike](../../../02-engineering/notes/spikes/2026-05-api-v1-usage.md))
 
 |              |                                                                       |
 | ------------ | --------------------------------------------------------------------- |
@@ -31,7 +31,7 @@ app.use((req, _res, next) => {
 
 Якщо api-versioning потрібно — слід використати proper `Accept: application/vnd.sergeant.v2+json` header або path-based з реальним routing-divergence. Якщо не потрібно — видалити shim.
 
-**Update 2026-05-06 (research-фаза):** видалити shim сьогодні неможливо без breaking change для mobile. Decision зафіксовано в [ADR-0053](../../../adr/0053-api-versioning-policy.md): mirror лишається до моменту або (a) реального `v2`-split-у, або (b) завершення mobile beta-rollout-у. Подальша implementation-фаза цього PR-а **не потрібна**.
+**Update 2026-05-06 (research-фаза):** видалити shim сьогодні неможливо без breaking change для mobile. Decision зафіксовано в [ADR-0053](../../../04-governance/adr/0053-api-versioning-policy.md): mirror лишається до моменту або (a) реального `v2`-split-у, або (b) завершення mobile beta-rollout-у. Подальша implementation-фаза цього PR-а **не потрібна**.
 
 ## Scope
 
@@ -57,7 +57,7 @@ app.use((req, _res, next) => {
 ## Acceptance criteria (DoD)
 
 - [x] Research report — у [`docs/02-engineering/notes/spikes/2026-05-api-v1-usage.md`](../../../02-engineering/notes/spikes/2026-05-api-v1-usage.md). Code-grep evidence показує, що клієнти за замовчуванням використовують `/api/v1/*`; Vercel-логи самі по собі недостатні (API живе на `api.sergeant.app`, не на Vercel).
-- [x] Decision зафіксовано в [ADR-0053 «API versioning policy»](../../../adr/0053-api-versioning-policy.md) (раніше планувалось як ADR-0044, але цей номер уже зайнято Renovate-ом).
+- [x] Decision зафіксовано в [ADR-0053 «API versioning policy»](../../../04-governance/adr/0053-api-versioning-policy.md) (раніше планувалось як ADR-0044, але цей номер уже зайнято Renovate-ом).
 - [ ] ~~Якщо usage > 0 → 90-day deprecation plan з `Sunset:` header.~~ (Не потрібно — decision = keep mirror.)
 - [ ] ~~Якщо usage == 0 → shim видалений, OpenAPI clean.~~ (Не потрібно — clients use `/v1`.)
 - [ ] ~~Тест: `GET /api/v1/health` повертає 404 (after removal).~~ (Не потрібно.)
@@ -82,7 +82,7 @@ app.use((req, _res, next) => {
 
 - `apps/server/src/app.ts:43-55` (`apiVersionRewrite` — лишається)
 - `apps/mobile-shell/` — config-check
-- [`docs/adr/0053-api-versioning-policy.md`](../../../adr/0053-api-versioning-policy.md) — створено
+- [`docs/04-governance/adr/0053-api-versioning-policy.md`](../../../04-governance/adr/0053-api-versioning-policy.md) — створено
 - [`docs/02-engineering/notes/spikes/2026-05-api-v1-usage.md`](../../../02-engineering/notes/spikes/2026-05-api-v1-usage.md) — research note
 
 ## Refs

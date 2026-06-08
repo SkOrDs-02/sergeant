@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-> **Pointer.** Implementation: [`apps/server/src/http/rateLimit.ts`](../../../apps/server/src/http/rateLimit.ts). Failure-mode rules: [`docs/security/rate-limit-failure-mode.md`](../../security/rate-limit-failure-mode.md). Diagnostic that triggered the cost-multiplier: [`docs/90-work/audits/2026-05-03-web-deep-dive/03-backend-and-performance.md`](../../90-work/audits/2026-05-03-web-deep-dive/03-backend-and-performance.md) §4.5.
+> **Pointer.** Implementation: [`apps/server/src/http/rateLimit.ts`](../../../apps/server/src/http/rateLimit.ts). Failure-mode rules: [`docs/04-governance/security/rate-limit-failure-mode.md`](../../04-governance/security/rate-limit-failure-mode.md). Diagnostic that triggered the cost-multiplier: [`docs/90-work/audits/2026-05-03-web-deep-dive/03-backend-and-performance.md`](../../90-work/audits/2026-05-03-web-deep-dive/03-backend-and-performance.md) §4.5.
 
 ## Чому є cost-multiplier
 

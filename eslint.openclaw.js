@@ -10,7 +10,7 @@ export const openclawBlocks = [
   // `packages/eslint-plugin-sergeant-design/index.js` so `no-restricted-syntax`
   // does not collide with the M11 templated-query selectors that
   // also live on `tools/console/**`. See
-  // `docs/security/hardening/M16-telegram-markdown-v2.md`.
+  // `docs/04-governance/security/hardening/M16-telegram-markdown-v2.md`.
   {
     files: ["tools/openclaw/src/**/*.{js,ts}"],
     rules: {
