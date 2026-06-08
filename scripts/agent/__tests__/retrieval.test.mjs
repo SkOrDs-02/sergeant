@@ -1,0 +1,71 @@
+// scripts/agent/__tests__/retrieval.test.mjs
+//
+// Integration tests for the agent retrieval entrypoint (Initiative 0018 Phase 1).
+// Exercises the committed manifest + `agent:find` CLI end-to-end so the lexical
+// ranking and the --check drift gate stay honest.
+
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { test } from "node:test";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(__dirname, "../../..");
+const BUILD = resolve(REPO_ROOT, "scripts/agent/build-retrieval-index.mjs");
+const FIND = resolve(REPO_ROOT, "scripts/agent/find.mjs");
+
+function run(script, args = []) {
+  return execFileSync("node", [script, ...args], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+  });
+}
+
+function runJson(args) {
+  return JSON.parse(run(FIND, [...args, "--json"]));
+}
+
+test("committed manifest is in sync (--check passes)", () => {
+  const out = run(BUILD, ["--check"]);
+  assert.match(out, /up to date/);
+});
+
+test("lexical search routes a domain query to the owning rule + ADR", () => {
+  const results = runJson(["coerce bigint balance"]);
+  assert.ok(results.length > 0, "expected at least one hit");
+  const ids = results.map((r) => r.id);
+  // The hard rule and/or the policy ADR must surface in the top results.
+  assert.ok(
+    ids.includes("hard-rule:1") || ids.includes("adr:0014"),
+    `expected hard-rule:1 or adr:0014 in ${JSON.stringify(ids)}`,
+  );
+  // Top hit should carry a usable pointer.
+  assert.ok(results[0].path && results[0].path.length > 0);
+});
+
+test("--type filter restricts results to that chunk type", () => {
+  const results = runJson(["react query key", "--type", "playbook"]);
+  assert.ok(results.length > 0);
+  assert.ok(results.every((r) => r.type === "playbook"));
+});
+
+test("--k caps the number of results", () => {
+  const results = runJson(["sync", "--k", "3"]);
+  assert.ok(results.length <= 3);
+});
+
+test("symbol exports are searchable and resolve to a file pointer", () => {
+  const results = runJson([
+    "ALLOWED_TAILWIND_OPACITY_STEPS",
+    "--type",
+    "export",
+  ]);
+  assert.ok(results.length > 0, "expected the exported constant to be found");
+  assert.equal(results[0].type, "export");
+  assert.match(results[0].path, /\.(ts|tsx|js|mjs)$/);
+});
+
+test("empty query exits non-zero with usage", () => {
+  assert.throws(() => run(FIND, []), /Usage/);
+});

@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sergeant.dev/schemas/retrieval-index.schema.json",
+  "title": "Agent retrieval index manifest",
+  "description": "Build-time, committed chunk manifest that powers `pnpm agent:find`. Vectors live out of git in a content-hash cache (Phase 2); this manifest is the queryable, diffable source of truth. See docs/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "generated_at", "sourceHashes", "counts", "chunks"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "generated_at": { "type": "string", "format": "date" },
+    "sourceHashes": {
+      "type": "object",
+      "description": "SHA-256 of each input source, so a stale manifest is detectable without re-reading every file.",
+      "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "chunks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "path",
+          "title",
+          "tier",
+          "text",
+          "contentHash"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable chunk id: `<type>:<slug>` for graph nodes, `export:<package>:<name>` for symbols."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "adr",
+              "initiative",
+              "playbook",
+              "skill",
+              "hard-rule",
+              "audit",
+              "service",
+              "package",
+              "file",
+              "doc-section",
+              "export"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "Repo-relative pointer the agent should open."
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based line pointer when known (omitted otherwise)."
+          },
+          "title": { "type": "string" },
+          "tier": { "type": "string", "enum": ["core", "extended"] },
+          "status": {
+            "type": "string",
+            "description": "Lifecycle status of the source artifact (e.g. Active / Deprecated), when known — lets agents discount stale sources."
+          },
+          "text": {
+            "type": "string",
+            "description": "Normalized searchable text: title + headings + key terms. Used for lexical ranking and Phase-2 embedding."
+          },
+          "contentHash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "SHA-256 of `text` — Phase-2 vector cache key, also drives incremental re-embedding."
+          }
+        }
+      }
+    }
+  }
+}
