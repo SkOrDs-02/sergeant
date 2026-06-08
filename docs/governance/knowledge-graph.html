@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-06-07)</title>
+    <title>Sergeant — Knowledge Graph (2026-06-08)</title>
     <style>
       body {
         font-family:
@@ -97,21 +97,21 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-06-07 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-06-08 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
-      <span class="chip chip-adr">adr: <b>62</b></span>
+      <span class="chip chip-adr">adr: <b>63</b></span>
       <span class="chip chip-audit">audit: <b>17</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
-      <span class="chip chip-initiative">initiative: <b>47</b></span>
+      <span class="chip chip-initiative">initiative: <b>48</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
       <span class="chip chip-pr">pr: <b>164</b></span>
       <span class="chip chip-skill">skill: <b>33</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (239 core)</summary>
+      <summary>Nodes (241 core)</summary>
       <table>
         <thead>
           <tr>
@@ -860,6 +860,18 @@
             <td>number=65</td>
           </tr>
           <tr>
+            <td>adr</td>
+            <td><code>adr:0066</code></td>
+            <td>
+              <a
+                href="../../docs/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md"
+                >ADR-0066: Agent semantic retrieval over the knowledge graph</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=66 · last_validated=2026-06-08</td>
+          </tr>
+          <tr>
             <td>audit</td>
             <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
             <td>
@@ -1556,6 +1568,20 @@
               number=17 · owner=@Skords-01 · priority=P1 (Sprint 1 candidate
               after [0016](./archive/_0016-changelog-release-cut.md))
             </td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0018</code></td>
+            <td>
+              <a href="../../docs/initiatives/0018-agent-semantic-retrieval.md"
+                >0018 — Agent semantic retrieval (agent:find)</a
+              >
+            </td>
+            <td>
+              Proposed — чекає на founder-погодження ADR-0066 перед стартом
+              Phase 1.
+            </td>
+            <td>number=18</td>
           </tr>
           <tr>
             <td>initiative</td>
@@ -3580,7 +3606,7 @@
     </details>
 
     <details>
-      <summary>Edges (375 total, first 500 core-to-core)</summary>
+      <summary>Edges (380 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -3709,6 +3735,26 @@
             <td><code>adr:0065</code></td>
             <td>references</td>
             <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0066</code></td>
+            <td>references</td>
+            <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0066</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0066</code></td>
+            <td>references</td>
+            <td><code>hard-rule:24</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0066</code></td>
+            <td>references</td>
+            <td><code>hard-rule:25</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
@@ -4133,6 +4179,11 @@
             <td><code>initiative:0003</code></td>
             <td>references</td>
             <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td><code>initiative:0018</code></td>
+            <td>references</td>
+            <td><code>hard-rule:24</code></td>
           </tr>
           <tr>
             <td><code>initiative:stack-pulse-2026-05/00-overview</code></td>
