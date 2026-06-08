@@ -1,0 +1,185 @@
+# Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф
+
+> **Last validated:** 2026-06-08 by Claude (cleanup-audit fan-out: 3 паралельні Explore-проходи — dead-code/markers, infra/stack, docs/decisions — + ручна верифікація 2 P0-заяв). **Next review:** 2026-07-08.
+>
+> **Status:** Draft
+
+> **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл —
+> аудиторський знімок на 2026-06-08. Не дублює repo policy; кожна знахідка
+> лінкує конкретний `file:line`. Драфт — узгоджуємо й розбиваємо на PR-и
+> окремими класами боргу (за `sergeant-tech-debt`: dead-code / baseline /
+> rename / doc-hygiene — різні ризик-профілі, різні PR-и).
+
+## TL;DR
+
+Репо в доброму стані — система governance/freshness/audits працює (548 свіжих
+доків, 1 overdue). Це **не** «занедбаний» код. Те, що реально «висить мертвим
+вантажем і збиває агентів», згруповано у 4 теми:
+
+1. **Напів-зроблений `console` → `openclaw` rename** (наскрізна тема, зачіпає
+   всі 3 осі). Один з артефактів — **реальний баг конфігу** (`eslint.baseline.js:131`
+   вказує на неіснуючий `tools/console/tsconfig.json`), решта — stale-коментарі
+   та шляхи в доках, що дезорієнтують агентів.
+2. **Audits/initiatives зі статусом `Active`, але 0 outstanding** — створюють
+   фантомну «відкриту роботу» в `open-work.md`.
+3. **Один застарілий decision-record із дедлайном «сьогодні», який НЕ можна
+   виконувати** (grammy-deletion, Locked Decision #17) — named-шляхи зараз є
+   живим кодом гейтвея. Це пастка для агента, що візьме задачу буквально.
+4. **Lint/tech-debt suppressions без тикета й дати** (react-hooks v7 ~152
+   violations, i18n block-disables) — легітимний борг, але без власника.
+
+⚠️ **Застереження щодо охоплення:** `pnpm knip` НЕ запускався (у цьому
+середовищі немає `node_modules`) — цифри по dead-exports нижче евристичні
+(grep + `knip.json` suppressions). Перед будь-яким видаленням exports —
+прогнати `pnpm knip` на свіжому install. `@removeBy 2026-09-01` tombstones
+(нижче) ще НЕ настали — це не «прострочене», їх чистити батчем у вересні.
+
+---
+
+## Тема 1 — `console` → `openclaw` rename (напів-зроблений)
+
+Каталог `apps/console` → `tools/openclaw`, сервіс `sergeant-hubchat` →
+`sergeant-openclaw` (ADR-0032, PR-1792/PR-47). Код, npm-пакет (`@sergeant/openclaw`)
+і workspace перейменовані. **Не** перейменовані: 2 deploy-файли, commit-scope і
+купа stale-посилань на неіснуючий `tools/console/`.
+
+### 🔴 Реальний баг (не косметика)
+
+- **`eslint.baseline.js:131`** — у `import/resolver` TypeScript-project list стоїть
+  `"tools/console/tsconfig.json"`. Каталог `tools/console/` **не існує** (підтверджено);
+  реальний — `tools/openclaw/tsconfig.json`. Resolver тихо падає на `node`-fallback
+  і не бачить openclaw-workspace для import-правил. Fixture-снапшоти в
+  `scripts/__fixtures__/eslint-print-config/` запікають той самий битий шлях.
+
+### 🟡 Stale-посилання, що збивають агентів (low-risk, high-clarity)
+
+- `docs/agents/onboarding.md:75` — `tools/console використовує @anthropic-ai/sdk` (решта файлу вже `tools/openclaw`).
+- `docs/development/eslint-config.md:53,87,112` — три `tools/console` посилання.
+- `eslint.baseline.js:13,19,26`, `eslint.openclaw.js:12` — prose-коментарі `tools/console`.
+- `apps/server/src/modules/openclaw/tools.ts:586`, `packages/shared/src/lib/pii.ts:17` — коментарі `tools/console`.
+- `.github/workflows/codeql.yml:56` — коментар `apps/console` (шлях ніколи не існував у цій формі).
+- `plop-templates/hubchat-tool/` та `new-console-specialist` — генератори зі stale-брендингом («HubChat», «console-specialist»), хоча генерують у правильні шляхи.
+
+### 🟡 Незавершений rename (потребує координації — це деплой)
+
+- `Dockerfile.console`, `railway.console.toml` — досі стара назва; `railway.console.toml → dockerfilePath = "Dockerfile.console"`.
+- `commitlint.config.js:12-14` — scope `console` як «deprecated alias for back-compat» (AGENTS.md:186 = «PR-47 phase 2 removes once Dockerfile.console / railway.console.toml renamed»).
+- `docs/governance/service-catalog.auto.json` — `"deployArtifact": "Dockerfile.console"` для сервісу `openclaw` (name-mismatch).
+- `docs/deploy/openclaw.md:34-36`, `docs/ops/docker-image-policy.md`, `docs/deploy/monorepo-deploy-filtering.md` — посилаються на `Dockerfile.console`/`railway.console.toml` як канонічні.
+- **Gap:** `Dockerfile.console` НЕ покривається `container-scan.yml` (тільки `Dockerfile.api`); `docs/ops/docker-image-policy.md:85` сам це визнає як «follow-up PR».
+
+> **ADR-immutable:** `ADR-0032`, `ADR-0057` (title `tools/console`) — історичні, НЕ чіпати; максимум — 1 рядок-нотатка про rename (як уже зроблено в `stack-pulse pr-39`).
+
+---
+
+## Тема 2 — Audits/initiatives «Active», але робота закрита
+
+Фантомна «відкрита робота» в `docs/open-work.md`. Перевести в `Archived`/`Closed`
+(+ перенести в `archive/` де треба):
+
+| Документ | Реальний стан | Дія |
+| --- | --- | --- |
+| `docs/audits/2026-05-13-dead-code-hard-rules-roast.md` | 17/17, 0 outstanding (лишився knip-false-positive watchlist) | → `Archived` |
+| `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md` | ~24/25, 0 outstanding | → `Archived` |
+| `docs/audits/2026-05-13-page-audit-02-hub-dashboard.md` | ~23/24, 0 (тільки burn-down markers watchlist) | borderline — підтвердити |
+| `docs/initiatives/0017-hub-tabs-mount-perf.md` | code-complete; Sprint 3 gated на метрику `>50ms` | → `Closed` + observation-window дедлайн |
+| `docs/tech-debt/syncV2-refactor-plan.md`, `…-engineering-ticket.md` | syncV2 декомпозовано (3096→474, ADR-0064) | → `archive/` |
+| `docs/planning/pr-plan-dead-code-hard-rules-2026-05.md` | усі DC/HR items ✅ | → `Closed`/`archive/` |
+| `docs/planning/dev-stack-roadmap.md` | 15/15 done (`Status: Reference`) | → `archive/` |
+| `docs/planning/flyio-vs-railway.md` | decision-артефакт, «дій не потребує» | → `archive/` |
+| `docs/planning/pr-plan-2026-05.md` | всі logged-items `merged` | підтвердити → `Closed` |
+
+**Структурний дрейф freshness (не борг, а скрипт):**
+- `docs/today.md` — overdue 1d бо `Next review = Last validated` (той самий день). `docs:gen-today` має ставити `Next review: today+1`. Полагодити генератор, а не дату.
+
+---
+
+## Тема 3 — Застарілі рішення / ADR-дрейф
+
+### 🔴 P0-пастка: grammy-deletion (Locked Decision #17) — НЕ виконувати
+
+`docs/planning/openclaw-migration-plan.md:6,241` наказує до **2026-06-09 (сьогодні)**
+видалити `tools/openclaw/src/openclaw/` + `agents/{openclaw,personas,strategic-modes,dispatcher}.ts`.
+
+**Верифіковано вручну — це live-код, не legacy:**
+- entrypoint `tools/openclaw/src/index.ts:12,18,19` імпортує `./openclaw/index.js`, `commands.js`, `webhook.js`;
+- `src/openclaw/handler-*.ts` імпортують усі 4 «legacy» agent-файли (`handler-events.ts:20`, `handler-audit.ts:20`, `handler-agent-commands.ts:21-26`, …);
+- гейтвей **досі на grammy** (`src/index.ts:3 import { Bot } from "grammy"`).
+
+→ Named-шляхи в decision-record **застаріли/не відповідають дереву**. Виконання
+наосліп = видалення живого гейтвея. **Дія: НЕ видаляти.** Потрібне рішення
+власника — або grammy-код реструктуризовано/поглинуто (decision moot, закрити
+рядок у migration-plan), або «legacy» означає щось інше. Поки що — зняти дедлайн
+і позначити Locked Decision #17 як `superseded/needs-reconciliation`.
+
+### 🟡 ADR-дрейф
+
+- **ADR-0058/0059/0060/0061** — усі `Proposed`, але батьківська Initiative 0014 вже `archive/`. → `Accepted` (якщо код shipped) або `Deprecated`.
+- **ADR-0003** (`proposed`) — у тілі стара ціна «Pro ₴99/міс» (рядки 10,23); ADR-0051 (accepted) встановив $7/міс. Stale price у тілі.
+- **ADR-0025 ↔ ADR-0062** — обидва «OpenAPI з Zod», 0062 не лінкує 0025 як supersede. Уточнити зв'язок.
+- Superseded ADR (0004/0010/0018/0031/0036/0041) — коректно крос-залінковані, immutable-policy, **НЕ чіпати**.
+
+---
+
+## Тема 4 — Lint / tech-debt suppressions без власника
+
+| Кластер | Обсяг | Файл | Нотатка |
+| --- | --- | --- | --- |
+| `react-hooks/*` v7 disabled | ~152 (set-state-in-effect 78, refs 37, purity 17, …) | `eslint.baseline.js:146-178` | «queued for dedicated cleanup initiative» — без тикета й дати. Завести ініціативу. |
+| `react-hooks/exhaustive-deps` inline | 50 disables | apps/* | здебільшого свідомі |
+| `@typescript-eslint/no-explicit-any` | 30 | apps/* | test-stubs/DI |
+| i18n block-disable `no-cyrillic-jsx-literal` | 3 файли | `apps/web/.../nutrition/components/LogCard{Search,WeeklyTable,Analytics}.tsx:5` | permanent block, «pre-existing i18n debt», без `@removeBy` |
+| `no-raw-storage-key` block | 1 | `apps/web/src/core/lib/chatActions/queryFinykActions.ts:1` | без sunset-дати |
+
+**Quick win:** `sergeant-design/ai-marker-syntax` стоїть `"warn"` (`eslint.baseline.js:194`)
+з нотаткою «promote to error once clean». В source **0** `AI-LEGACY` маркерів →
+безпечно підняти до `"error"`.
+
+**Lingering legacy-аліаси без `@removeBy` (дрібні, але «висять»):**
+- `apps/server/src/env/env.ts:212` — `SLOW_QUERY_THRESHOLD_MS` «legacy alias of DB_SLOW_MS», але саме він і використовується (`db.ts:181`); `DB_SLOW_MS` мертвий. Консолідувати.
+- `packages/shared/src/openapi/routes.ts:429,444` — push «legacy alias» endpoints, без дати.
+- `apps/server/src/obs/metrics.ts:1132` — label `skipped` «legacy; kept for back-compat».
+
+---
+
+## Інфра / стек — інші знахідки (потребують рішення власника)
+
+- **`start:replit` скрипти** (`package.json:23`, `apps/server/package.json:10`) — вмикають `SERVER_MODE=replit` що **вимикає CSP** (`security.ts:42`). ADR-0009 пішов від Replit. Replit ще ціль? Якщо ні — видалити (security-relevant).
+- **`@types/node@^20`** override при runtime Node 22 (`pnpm-overrides.md` — «drop when workspaces pin Node 22»). + `Dockerfile.console` на Node 20 vs Node 22 baseline (api) vs Node 24 (gateway). Уніфікувати/підтвердити інтенцію.
+- **`pino-loki`** wired у коді (`obs/lokiTransport.ts`), але залежить від `GRAFANA_CLOUD_LOKI_URL` (optional). Підтвердити чи активний у prod, інакше — мертвий шлях.
+- **Renovate + можливий Dependabot** (`dependabot-automerge.yml` згадує `.github/dependabot.yml`) — перевірити чи нема дубльованих PR-ів.
+- **`ci.yml:549`** — `TODO: Replace SHA` хоча SHA вже є й консистентний — зняти TODO.
+- **`visual-regression.yml`** — disabled з 2026-06-02 (founder decision, 3 acceptance-критерії). Свідомо; тримати на радарі.
+- **Scaffolded-but-not-wired (свідомо, Phase 2):** `ops/grafana-alloy/` (не deployed), `ops/posthog/` (manual import), local Prometheus без server recording-rules. Документовано — НЕ чистити, але мати на увазі що це «aspirational».
+- **`plans/`** top-level (2 свіжі файли) — структурно дивно поряд із `docs/planning/`; розглянути перенесення.
+
+---
+
+## Свідома інфраструктура — НЕ чіпати
+
+Щоб агенти не «почистили» зайве:
+- Усі `@scaffolded` barrels (knip-ignored, Hard Rule #10).
+- Усі `@removeBy 2026-09-01` tombstones (KV→SQLite migration; ще не настали — батч у вересні): `packages/shared/src/lib/storageKeys.ts` (31 ключ), `kvStore.ts`, `db-schema/.../migrations/index.ts` (SPIKE-аліаси, **активно імпортуються** `clientMigrate.ts`), Card/Settings/i18n/push deprecated props.
+- 7 deprecated playbook-stubs (`Status: Deprecated`, 308-redirect, git-blame anchor, initiative 0009) — *можливо* перенести в `archive/`, але це свідомо.
+- Hash-compat shims (`HashRedirect.tsx`, module-router rewrites) — PWA back-compat для старих bookmarks.
+- `packages/openclaw-plugin/src/legacy/` — свідомо retained per dead-code roast.
+
+---
+
+## Запропонований план (окремими PR-ами за класом боргу)
+
+> `sergeant-tech-debt`: НЕ змішувати класи боргу в одному PR.
+
+1. **PR-A `fix(config)` — battle stale `tools/console` (zero-risk, найбільший agent-clarity).** `eslint.baseline.js:131` → `tools/openclaw/tsconfig.json` + fixture-resnapshot; виправити stale-посилання в `onboarding.md:75`, `eslint-config.md:53/87/112`, коментарі. **Починати з цього.**
+2. **PR-B `docs` — doc-hygiene статуси.** Архівувати/закрити Тему 2 (audits/initiatives/plans з 0 outstanding); полагодити `docs:gen-today` cadence; ADR-0058..0061 статуси; ADR-0003 price; ADR-0025↔0062 link.
+3. **PR-C `chore(openclaw)` — завершити rename** (deploy-координація): `Dockerfile.console`→`Dockerfile.openclaw`, `railway.console.toml`, service-catalog, розширити `container-scan.yml`, прибрати scope `console` з commitlint (узгодити з open-PR).
+4. **PR-D `chore(eslint-plugins)` — promote `ai-marker-syntax` to error** + завести ініціативу react-hooks v7 cleanup (з тикетом і датою).
+5. **Рішення власника (не код, окремо):** grammy/Locked-Decision-#17 reconcile (P0 — зняти дедлайн); Replit drop; Loki active?; Dependabot dup?; `@types/node` уніфікація.
+6. **Відкладено на вересень:** `@removeBy 2026-09-01` tombstones — один батч.
+
+## Потрібні твої рішення (щоб рухатись)
+
+- **Grammy / Locked Decision #17** — moot (закрити рядок) чи реальна задача з іншим scope?
+- **`console` rename** — завершуємо зараз чи тримаємо alias до закриття open-PR?
+- **Replit** — ще ціль деплою? (впливає на CSP-скрипти)
+- **Stale-status audits** — масово в `Archived` чи хочеш переглянути поштучно?
