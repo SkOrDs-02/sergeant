@@ -14,7 +14,8 @@
 
 Після узгодження з founder-ом виконано всі 4 рішення (коміти в цьому PR):
 
-- ✅ **Тема 1 — console→openclaw rename (in-repo).** Реальний баг `eslint.baseline.js` (resolver → неіснуючий `tools/console/`) виправлено + fixtures/skills-lock регенеровано; scope `console` прибрано з commitlint+AGENTS.md; усі stale `tools/console`/`apps/console` посилання в активних доках/скілах/коментарях/CI. **Фіз. deploy-файли** `Dockerfile.console`/`railway.console.toml` свідомо лишено (захардкоджені в Railway dashboard — перейменування під Railway-крок).
+- ✅ **Тема 1 — console→openclaw rename (in-repo).** Реальний баг `eslint.baseline.js` (resolver → неіснуючий `tools/console/`) виправлено + fixtures/skills-lock регенеровано; scope `console` прибрано з commitlint+AGENTS.md; усі stale `tools/console`/`apps/console` посилання в активних доках/скілах/коментарях/CI.
+- ✅ **Фіз. deploy-файли перейменовано** — `git mv Dockerfile.console→Dockerfile.openclaw`, `railway.console.toml→railway.openclaw.toml` + dockerfilePath + service-catalog generator (регенеровано) + live deploy-доки + build.mjs. **Railway-частина застосована через API** (`serviceInstanceUpdate` на `sergeant-hubchat`): `railwayConfigFile=railway.openclaw.toml` + watchPatterns на нові імена (заодно фікс застарілого `tools/console/**`→`tools/openclaw/**`). Бот лишився live (healthz 200); деплой не тригернуто. **⚠️ Стане консистентним після мерджу PR у main** (до мерджу новий деплой `sergeant-hubchat` падав би — railway.openclaw.toml ще не на main — але running-контейнер не зачеплено, downtime 0). Service NAME `sergeant-hubchat`→`sergeant-openclaw` — окрема операція (domain+webhook), НЕ робив.
 - ✅ **Тема 3 — grammy / Locked Decision #17** → closed без видалення (код live, retained; дедлайн знято).
 - ✅ **Replit прибрано** — mode/env/scripts/CSP-disable вектор; тести зелені. Залишок: stale Replit-_коментарі_ в `index.ts`/`app.ts`/`frontend.ts` (follow-up).
 - ✅ **Тема 2 — stale-status доки** → 4 закрито (`dead-code-hard-rules-roast`, `page-audit-01`, `pr-plan-dead-code-hard-rules`, initiative `0017`) з верифікацією; `open-work.md` 74→71. 4 borderline переглянуто поштучно й свідомо лишено Active.
@@ -24,7 +25,7 @@
 
 **Розслідувано → no-action:** Dependabot/Renovate — **це НЕ дубль** (ADR-0044: Renovate primary + Dependabot security-only fallback; npm у Dependabot уже звужений до `applies-to: security-updates`; actions/docker overlap навмисний — інші CVE-фіди).
 
-**Ще НЕ зроблено (потребує окремого рішення / розкладу):** lint-suppressions без власника (react-hooks v7 ~152 — окрема ініціатива, i18n block-disables), `@removeBy 2026-09-01` tombstones (батч у вересні), `@types/node` уніфікація, `pino-loki` prod-перевірка, фіз. deploy-rename + Railway dashboard, dormant `servesFrontend`/`frontend.ts` (follow-up), plop-генератори `hubchat-tool`/`new-console-specialist` rename (10+ doc-refs — focused-PR, не quick-fix).
+**Ще НЕ зроблено (потребує окремого рішення / розкладу):** lint-suppressions без власника (react-hooks v7 ~152 — окрема ініціатива, i18n block-disables), `@removeBy 2026-09-01` tombstones (батч у вересні), `@types/node` уніфікація, `pino-loki` prod-перевірка, dormant `servesFrontend`/`frontend.ts` (follow-up), plop-генератори `hubchat-tool`/`new-console-specialist` rename (10+ doc-refs — focused-PR), service-NAME rename `sergeant-hubchat`→`sergeant-openclaw` (domain+webhook), container-scan Trivy для `Dockerfile.openclaw` (tracked follow-up).
 
 ## TL;DR
 
