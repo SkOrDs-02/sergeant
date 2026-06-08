@@ -2,12 +2,12 @@
 
 # Audit runner report
 
-> **Last validated:** 2026-06-04 by audit-triage routine. **Next review:** 2026-09-02.
-> **Status:** Active
+> **Last validated:** 2026-06-08 by audit-triage routine. **Next review:** 2026-09-06.
+> **Status:** Reference
 
-## Triage digest — 2026-06-04
+## Triage digest — 2026-06-08
 
-Source: `docs/open-work.md §Аудити й прожарки` (20 open docs) + direct reads of each audit file. Audits with `Closed` / `Archived` status excluded. Sorted by impact within each bucket.
+Source: `docs/open-work.md §Аудити й прожарки` (17 open docs) + direct reads of each audit file. Audits with `Closed` / `Archived` / `Done` status excluded. Sorted by impact within each bucket.
 
 ---
 
@@ -15,29 +15,33 @@ Source: `docs/open-work.md §Аудити й прожарки` (20 open docs) + 
 
 Highest blast radius; fix before next release.
 
-1. **`docs/audits/2026-05-13-consolidated-page-audit.md` C1** — `useChatSend.ts` dispatches AI `tool_calls` with no allow-list or Zod schema validation; prompt injection → arbitrary action execution with full Better Auth cookie context. **Add a Zod-validated tool registry; reject + log unknown tool names before dispatch.**
+1. **`docs/audits/2026-05-13-consolidated-page-audit.md` C1** — `useChatSend.ts` dispatches AI `tool_calls` with no allow-list or Zod schema validation; prompt injection → arbitrary action execution with full Better Auth cookie context. **Add Zod-validated tool registry; reject + log unknown tool names before dispatch.**
 
-2. **`docs/audits/2026-05-13-consolidated-page-audit.md` C2 / `docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md`** — Service-worker `Cache` namespace for `/api/*` is keyed by URL only; after user A signs out on a shared device, user B receives A's cached API responses. **Key API cache by hashed session id; flush cache in `signOut` handler; add `Cache-Control: private` on all `/api/*` server responses.**
+2. **`docs/audits/2026-05-13-consolidated-page-audit.md` C2 / `docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md`** — Service-worker `Cache` namespace for `/api/*` keyed by URL only; after user A signs out on a shared device, user B receives A's cached API responses. **Key API cache by hashed session id; flush cache in `signOut` handler; add `Cache-Control: private` on all `/api/*` server responses.**
 
-3. **`docs/audits/2026-05-13-dead-code-hard-rules-roast.md` P1.4** — Four `process.env` callers (`requireAnthropicKey`, `requireGroqKey`, `posthogCapture` ×2, `authTransactionalMail`) bypass the typed `env` object; `lint:env-single-source` budget drifts with each feature PR. **Ship PR(A): migrate `requireAnthropicKey` + refactor `coach.route.test.ts` to `vi.resetModules + vi.stubEnv` pattern** (net −1; establishes canonical test pattern for remaining 3 PRs).
+3. **`docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md` F3 + F4** — Sentry Session Replay records text without `maskAllText: true` (PII leak); `PricingPage` redirects to `checkout.url` without origin allow-list (open redirect). **Add `maskAllText: true` to Sentry Replay init; validate `checkout.url` origin against an explicit allowlist before redirect.**
 
-4. **`docs/audits/2026-08-XX-openclaw-internal-roast.md`** — Security boundary of 1781-LOC `routes/internal/openclaw.ts` (bearer-token guard coverage, audit-log gaps for write-tools, write-tool approval-gate drift vs ADR-0027) is a stub awaiting Q3 audit. **Assign backend owner and schedule full audit session before 2026-08-11 trigger window.**
+4. **`docs/audits/2026-05-13-page-audit-01-auth-onboarding.md` F1** — 14× `text-error`/`bg-error` references a non-existent design token; auth error banners and the password-strength bar render colorless in production (Tailwind silently drops unknown utilities). **Replace all 14 occurrences with `text-danger`/`bg-danger`** (pure rename, no logic change, zero risk).
+
+5. **`docs/audits/2026-05-13-dead-code-hard-rules-roast.md` P1.4** — Four `process.env` callers (`requireAnthropicKey`, `requireGroqKey`, `posthogCapture` ×2, `authTransactionalMail`) bypass the typed `env` object; `lint:env-single-source` budget drifts with each feature PR. **Ship PR(A): migrate `requireAnthropicKey` + refactor `coach.route.test.ts` to `vi.resetModules + vi.stubEnv` pattern (net −1; establishes canonical test pattern for remaining 3 PRs).**
+
+6. **`docs/audits/2026-08-XX-openclaw-internal-roast.md`** — Security boundary of 1819-LOC `routes/internal/openclaw.ts` has been stub-audited (bearer-token guard on all 57 routes confirmed; HMAC grace-mode noted); audit-log gaps for write-tools and approval-gate drift vs ADR-0027 are not yet fully verified. **Assign a backend owner and schedule a full audit session before the 2026-08-11 trigger window.**
 
 ---
 
 ## B — Cheap AutoSafe Wins
 
-Low-effort, high signal-to-noise; can ship independently.
+Low-effort, high signal-to-noise; can ship independently without cross-team coordination.
 
-1. **`docs/audits/2026-05-13-testing-devx-roast.md` P1-4 PARTIAL** — Seven Detox e2e specs are authored (`auth-flows`, `nutrition-full`, `nutrition-water-barcode`, `fizruk-full`, `fizruk-measurements`, `deep-link`, `offline-sync`) but not green because component `testID` props are missing in source. **Add missing `testID` attributes to auth/nutrition/fizruk components** to unblock the authored suite without new spec work.
+1. **`docs/audits/2026-05-25-hubsettings-cls-chunk-load.md` MEDIUM #1** — `HubSettingsPage.tsx` lazy sections throw `ChunkLoadError` on stale-chunk PWA deploys → permanent white screen with no recovery UI. **Create `ChunkErrorBoundary.tsx`; wrap all 4 `<Suspense>` blocks; add retry button calling `window.location.reload()`** (5 files, branch `fix/hub-settings-cls-error-boundary`).
 
-2. **`docs/audits/2026-05-13-dead-code-hard-rules-roast.md` P1.5** — Five exported symbols in `apps/mobile-shell/` (`requestNativeBarcode`, `requestPermissions`, `subscribePushTokens`, `isCapacitorReady`, `getPlatform`) have zero JS importers. **Delete or wire into the Capacitor shell entry point** (micro-PR, no test changes needed).
+2. **`docs/audits/2026-05-25-hubsettings-cls-chunk-load.md` MEDIUM #2** — All 4 lazy sections share `minH: 72` (collapsed-state height); real painted height is 160–280 px → CLS jump when user has already scrolled. **Measure real heights via DevTools on `/hub#settings`; set per-section `minH` in `HubSettingsPage.tsx:254-277`** (can combine with MEDIUM #1 in one PR).
 
-3. **`docs/audits/2026-05-13-consolidated-page-audit.md` Theme 2 (touch targets)** — Three surfaces remain below 44×44 px after the audits-runner pass: FTUX 5 components (01 F8 — `DailyNudge`, `DemoModeBanner`, `SoftAuthPromptCard`, `ReEngagementCard`, `FirstRunHintBanner`), Finyk analytics month-nav (05 F5), Fizruk Atlas anterior/posterior toggle (06). ESLint `no-small-button-touch-target` already warns. **Batch-add `min-h-[44px] min-w-[44px]` across the 3 remaining surfaces** (pure CSS, no logic change).
+3. **`docs/audits/2026-05-13-testing-devx-roast.md` P1-4 PARTIAL** — 7 Detox e2e specs authored (`auth-flows`, `nutrition-full`, `nutrition-water-barcode`, `fizruk-full`, `fizruk-measurements`, `deep-link`, `offline-sync`) but not green because component `testID` props are missing in source. **Add missing `testID` attributes to auth/nutrition/fizruk source components** to unblock the authored suite without writing any new specs.
 
-4. **`docs/audits/2026-05-13-page-audit-01-auth-onboarding.md`** — 25 findings (0C, 6H, 16M, 3L); no execution PRs beyond F1 (token rename) closed in the audits-runner pass. **Pick the top-H item and ship** (H-class items: a11y hit-area + CSRF/CORS surface + FTUX flow gaps per consolidated §01 cluster).
+4. **`docs/audits/2026-05-13-dead-code-hard-rules-roast.md` P1.5** — Five exported symbols in `apps/mobile-shell` (`requestNativeBarcode`, `requestPermissions`, `subscribePushTokens`, `isCapacitorReady`, `getPlatform`) have zero JS importers. **Delete or wire into the Capacitor shell entry point** (micro-PR, no test-file changes needed).
 
-5. **`docs/audits/2026-05-13-web-frontend-ergonomics-roast.md` F2-II / F4 / F7** — Three ergonomics findings deferred from the 2026-06-02 runner pass. **Review and ship at least one** (F4 is likely smallest; confirm scope from the roast file).
+5. **`docs/audits/2026-05-13-consolidated-page-audit.md` Theme 2 (touch targets, partial)** — Three surfaces remain below 44×44 px after the previous audits-runner pass: 5 FTUX components (01 F8 — `DailyNudge`, `DemoModeBanner`, `SoftAuthPromptCard`, `ReEngagementCard`, `FirstRunHintBanner`), Finyk analytics month-nav (05 F5), Fizruk Atlas anterior/posterior toggle (06). **Batch-add `min-h-[44px] min-w-[44px]`** (pure CSS; ESLint `no-small-button-touch-target` already surfaces these as `warn`).
 
 ---
 
@@ -45,33 +49,33 @@ Low-effort, high signal-to-noise; can ship independently.
 
 Shipping these removes blockers on downstream work.
 
-1. **`docs/audits/2026-05-06-ux-roast-pr-plan.md` Sprint 0 PR-0** — Telemetry ADR + PostHog event taxonomy foundation has not started; it blocks A1 (App-lock UX), A4, A8, and ~21 downstream Sprint 2/3 UX PRs (20/41 shipped so far). **Ship PR-0** to unblock roughly half the remaining UX execution plan.
+1. **`docs/audits/2026-05-06-ux-roast-pr-plan.md` Sprint 0 PR-0** — 9 PostHog events already catalogued in `analyticsEvents.ts`; Sprint 0 is formally open and blocks App-lock (PR-1a/1b), module settings (A4), error-boundary (A8) and ~11 other downstream items (20/41 PRs shipped; 21 remain). **Formally close PR-0** with a landing note pointing to the existing events, unblocking the full Sprint 1 queue.
 
-2. **`docs/audits/2026-05-13-web-architecture-state-roast.md` P1-E** — `fizrukActions`, `finykActions`, and `nutritionActions` still write via `safeWriteLS` (localStorage bypass), violating the state-write-paths doctrine; migration is impossible without server endpoints. **Create `POST /api/v1/finyk/manual-expenses`** as priority-1 domain endpoint to enable the finyk chatActions migration (per P1-E migration plan in the roast).
+2. **`docs/audits/2026-05-13-web-architecture-state-roast.md` P1-E** — `fizrukActions`, `finykActions`, `nutritionActions` still write via `safeWriteLS` (localStorage bypass), violating the state-write-paths doctrine; migration is impossible without server endpoints. **Create `POST /api/v1/finyk/manual-expenses`** as priority-1 domain endpoint to enable the finyk chatActions migration (per P1-E migration plan in the roast).
 
-3. **`docs/audits/2026-05-13-consolidated-page-audit.md` audit-04 coverage gap** — Hub Settings, Profile & Assistant Catalogue were **never audited** (VM infra failure; 0 findings recorded). **Re-run page-audit-04** to complete the consolidated 10-scope coverage matrix before Sprint 9 planning.
+3. **`docs/audits/2026-05-13-consolidated-page-audit.md` audit-04 coverage gap** — Hub Settings, Profile & Assistant Catalogue were **never audited** (VM infra failure at 2026-05-13 session); 0 findings recorded for these pages. **Re-run page-audit-04** to complete the 10-scope coverage matrix and close the blind spot before Sprint 9 planning.
 
-4. **`docs/audits/2026-08-XX-sync-engine-roast.md`** — Atomic-transaction boundaries and DLQ TTL in the 3031-LOC `syncV2.ts` are undocumented; this must be clarified before Stage 8/9 SQLite dual-write is wired. **Trigger Q3 audit session** (gated on sprint-roadmap Спринт 8 closeout, planned 2026-08-11).
+4. **`docs/audits/2026-05-13-consolidated-page-audit.md` individual page audits 02, 05–09** — Scopes for Hub Dashboard, Finyk, Fizruk Part 1/2, Nutrition, Routine+Strategy contain individual H/M findings beyond the 7 consolidated themes (e.g., 06 F3: rest-timer silently broken on navigation; 07 F3/F4: Measurements accepts `weightKg=99999` with no validation; 09 F1/F2: Strategy page calls internal API without bearer auth). **Triage each audit for H/M items not already in consolidated themes 1–7**; target at least one fix per sprint.
 
 ---
 
 ## D — Blocked / Gated
 
-No immediate action possible without external input or gating milestone.
+No immediate action possible without external input or a gating milestone.
 
-1. **`docs/audits/2026-05-06-ux-roast-pr-plan.md` PR-11 + PR-28** — CSV export (PR-11) and Avatar upload (PR-28) are explicitly **paused pending S3/R2 credentials** from founder. Skeleton can be started; upload storage half must wait.
+1. **`docs/audits/2026-05-06-ux-roast-pr-plan.md` PR-11 + PR-28** — CSV export and Avatar upload explicitly **paused pending S3/R2 credentials** from founder; skeleton work can start but the upload-storage half must wait.
 
-2. **`docs/audits/2026-05-13-web-architecture-state-roast.md` P1-E full migration** — chatActions `safeWriteLS` → `apiClient` migration for fizruk/nutrition blocked until their server endpoints exist (no `POST /api/v1/fizruk/workouts`, `POST /api/v1/nutrition/log`). Unblocked incrementally as each domain API ships (see C2 above for finyk priority).
+2. **`docs/audits/2026-05-13-web-architecture-state-roast.md` P1-E full migration** — `fizrukActions`/`nutritionActions` → `apiClient` migration blocked until `POST /api/v1/fizruk/workouts` and `POST /api/v1/nutrition/log` server endpoints exist; unblocks incrementally as each domain API ships (C2 above covers finyk priority-1).
 
-3. **`docs/audits/2026-08-XX-openclaw-internal-roast.md` + `docs/audits/2026-08-XX-sync-engine-roast.md`** — Both are stubs in Draft status, **gated on Q3 2026 backend-roast cycle** (trigger window 2026-08-11). No actionable findings yet.
+3. **`docs/audits/2026-08-XX-openclaw-internal-roast.md` + `docs/audits/2026-08-XX-sync-engine-roast.md`** — Both are stubs **gated on the Q3 2026 backend-roast cycle** (trigger window 2026-08-11); no actionable findings before that date.
 
-4. **`docs/audits/2026-05-15-deep-audit-state-of-repo.md`** — Status Active but 0 truly-outstanding items (D1–D4 all closed 2026-06-03); retained for cross-references only. **Candidate for archiving** once cross-ref consumers are updated.
+4. **`docs/audits/2026-05-13-web-architecture-state-roast.md` P2 open enhancements** — `STANDALONE_ROUTES` factory pattern and Provider HMR remount-invariant test are low-risk, deferred to a future tech-debt sprint.
 
 ---
 
 ## Coverage notes
 
-- **Zero findings — audit-04 (Hub Settings / Profile / Assistant Catalogue):** Never completed due to VM infra failure at the consolidated audit session (2026-05-13). This is an active blind spot covering Settings, Profile, and the Assistant Catalogue pages.
-- **Potential input truncation:** Page audits 06 (fizruk-part1, 27 findings), 07 (fizruk-part2, 50 findings), 08 (nutrition, 25 findings), and 09 (routine-strategy, 23 findings) were not read in detail this pass. Theme 1 (TZ correctness) and Theme 2 (touch targets) are accounted for via the consolidated audit; remaining H/M findings in these four files may have additional open work beyond what this triage captures.
-- **`docs/audits/2026-05-07-full-app-regression-ux-audit.md`:** Active with 7 PR mentions; content not fully read this pass — may contain residual findings beyond the archived `app-audit` cross-refs.
-- **`docs/audits/2026-05-02-doc-hygiene-audit.md`:** Active but all P0 items (ADR gap rule, lifecycle markers, CLAUDE/DEVIN thin-pointer) were closed in the original PR; remaining items appear cosmetic (duplicate `Last validated` dates).
+- **Audit-04 (Hub Settings / Profile / Assistant Catalogue):** Never completed — active blind spot covering an estimated 30–40 H/M findings.
+- **Individual page audits 02 (Hub Dashboard), 05–09 (Finyk, Fizruk Part 1/2, Nutrition, Routine+Strategy):** Read at consolidated-theme level only this pass; individual H/M findings not captured by themes 1–7 may require separate triage (see C4 above).
+- **`docs/audits/2026-05-13-testing-devx-roast.md` P2 items (P2-2 ESLint plugin coverage, P2-4 property-based tests, P2-5 `pnpm check` parallelisation):** Nice-to-have; not blocking any lane.
+- **`docs/audits/2026-05-13-web-architecture-state-roast.md` outstanding P2 items:** Low risk; tracked in `docs/tech-debt/frontend.md`.
