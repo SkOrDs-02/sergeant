@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
-import type { FizrukDualWriteState, FizrukWorkoutSnapshot } from "../diff.js";
+import type {
+  FizrukDualWriteState,
+  FizrukWorkoutSnapshot,
+} from "../diff/index.js";
 import { probeFizrukParity } from "../parity.js";
 import { createTestSqlite } from "./testSqlite.js";
 

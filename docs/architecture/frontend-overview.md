@@ -1,6 +1,6 @@
 # Огляд фронтенду (Sergeant-2)
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Короткий знімок поточного фронтенду монорепо: веб (Vite PWA), мобільний (Expo), спільні пакети та модулі продукту. Детальніший статус поверхонь — [platforms.md](./platforms.md). Навмисні винятки `react-hooks/exhaustive-deps` у web — [apps-web-exhaustive-deps.md](./apps-web-exhaustive-deps.md).
@@ -26,7 +26,7 @@
 | Sync    | SQLite-WASM (OPFS/kvvfs) + `syncEngine/` — v2 op-log outbox sync |
 | Інше    | Sentry, dnd-kit, react-virtuoso, ZXing, body-highlighter         |
 
-**Структура за змістом** (entry: `apps/web/src/core/App.tsx`):
+**Структура за змістом** (entry: `apps/web/src/main.tsx` → `apps/web/src/core/app/RootLayout.tsx`):
 
 - **Hub-оболонка**: таби, хедер, модалки, онбординг, PWA (install/update), офлайн-банер, sync status
 - **Ліниві модулі**: Finyk, Fizruk, Nutrition, Routine; окремо Auth, Profile, DesignShowcase

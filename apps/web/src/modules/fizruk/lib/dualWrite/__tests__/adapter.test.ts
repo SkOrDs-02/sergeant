@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { applyFizrukDualWriteOps } from "../adapter.js";
-import type { FizrukDualWriteOp } from "../diff.js";
+import type { FizrukDualWriteOp } from "../diff/index.js";
 import { createTestSqlite, type TestSqliteHandle } from "./testSqlite.js";
 
 let handle: TestSqliteHandle;

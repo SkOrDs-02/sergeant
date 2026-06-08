@@ -34,7 +34,7 @@ import { applyFizrukDualWriteOps } from "./dualWrite/adapter.js";
 import {
   diffFizrukDualWriteOps,
   type FizrukDualWriteState,
-} from "./dualWrite/diff.js";
+} from "./dualWrite/diff/index.js";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractCustomExerciseSnapshots,

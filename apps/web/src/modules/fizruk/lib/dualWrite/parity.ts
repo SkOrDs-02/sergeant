@@ -1,6 +1,6 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
-import type { FizrukDualWriteState } from "./diff.js";
+import type { FizrukDualWriteState } from "./diff/index.js";
 
 /**
  * Parity probe for the Fizruk SQLite dual-write layer.
