@@ -15,6 +15,7 @@ const REPO_ROOT = resolve(__dirname, "../../..");
 const BUILD = resolve(REPO_ROOT, "scripts/agent/build-retrieval-index.mjs");
 const FIND = resolve(REPO_ROOT, "scripts/agent/find.mjs");
 const EVAL = resolve(REPO_ROOT, "scripts/agent/eval-retrieval.mjs");
+const MCP = resolve(REPO_ROOT, "scripts/agent/mcp-server.mjs");
 
 function run(script, args = []) {
   return execFileSync("node", [script, ...args], {
@@ -84,6 +85,32 @@ test("golden-set recall gate passes (lexical)", () => {
     summary.recall >= summary.warn,
     `recall ${summary.recall} < warn ${summary.warn}`,
   );
+});
+
+test("MCP server answers initialize / tools/list / tools/call", () => {
+  const lines = [
+    '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}',
+    '{"jsonrpc":"2.0","method":"notifications/initialized"}',
+    '{"jsonrpc":"2.0","id":2,"method":"tools/list"}',
+    '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"agent_find","arguments":{"query":"coerce bigint balance","k":2}}}',
+  ].join("\n");
+  const out = execFileSync("node", [MCP], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    input: lines,
+  });
+  const responses = out
+    .trim()
+    .split("\n")
+    .map((l) => JSON.parse(l));
+  const byId = new Map(
+    responses.filter((r) => r.id != null).map((r) => [r.id, r]),
+  );
+
+  assert.equal(byId.get(1).result.serverInfo.name, "sergeant-agent-find");
+  assert.equal(byId.get(2).result.tools[0].name, "agent_find");
+  const callText = byId.get(3).result.content[0].text;
+  assert.match(callText, /hard-rule:|bigint/i);
 });
 
 test("cosineSimilarity behaves (Phase 2 vector math)", async () => {

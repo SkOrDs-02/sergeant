@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-06-08",
   "sourceHashes": {
-    "knowledge-graph": "77ea5072405cc644c356b1fe165e0df43babe5a28c9a5ef4c98661aac3b31e7b",
+    "knowledge-graph": "cc930032234d69360b8215c42c4920ddcf13d4e89511cdd07cc3affe3183187c",
     "symbol-index": "54f587f8b3471999b47e603839b273a9d1601d92f608c7b44897def570df61ed"
   },
   "counts": {
@@ -3744,8 +3744,8 @@
       "line": 1,
       "title": "Catalogs registered in `knowledge-graph.json` must have a `--check` generator",
       "tier": "core",
-      "text": "Catalogs registered in `knowledge-graph.json` must have a `--check` generator · hard-rule:24 · hard-rule · 24 · blocker · lint-enforced-convention · docs/governance/*.auto.json,docs/governance/symbol-index.json,docs/governance/knowledge-graph.json",
-      "contentHash": "b23b8537a6a58772c8897c0a380e83ba3f11b79e4932627838c4191b7cc3256d"
+      "text": "Catalogs registered in `knowledge-graph.json` must have a `--check` generator · hard-rule:24 · hard-rule · 24 · blocker · lint-enforced-convention · docs/governance/*.auto.json,docs/governance/symbol-index.json,docs/governance/knowledge-graph.json,docs/governance/retrieval-index.json",
+      "contentHash": "cbe3e81f434db24103f2aa0fa6c070bd0f2026dd981902be2a001d1c16714302"
     },
     {
       "id": "hard-rule:25",
@@ -3899,9 +3899,9 @@
       "line": 1,
       "title": "0018 — Agent semantic retrieval (agent:find)",
       "tier": "core",
-      "status": "Proposed — чекає на founder-погодження ADR-0066 перед стартом Phase 1.",
-      "text": "0018 — Agent semantic retrieval (agent:find) · initiative:0018 · initiative · Proposed — чекає на founder-погодження ADR-0066 перед стартом Phase 1. · 18 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Lexical-кістяк (committed) — ETA TBD після погодження · Phase 2 — Семантичний шар (committed) · Phase 3 — Gates і якість (committed) · Phase 4 — MCP + промоція (committed) · Критерії DONE · Ризики · Власник / ETA · Посилання",
-      "contentHash": "8521825207dd2e404584e5d678206cae3f36a5de9644c5ce07987fc0a8a31155"
+      "status": "In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). Залишок: live-mode acceptance (одноразовий `pnpm agent:embed` з ключем + заміри before/after на реальних задачах).",
+      "text": "0018 — Agent semantic retrieval (agent:find) · initiative:0018 · initiative · In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). Залишок: live-mode acceptance (одноразовий `pnpm agent:embed` з ключем + заміри before/after на реальних задачах). · 18 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Lexical-кістяк (committed) — ETA TBD після погодження · Phase 2 — Семантичний шар (committed) · Phase 3 — Gates і якість (committed) · Phase 4 — MCP + промоція (committed) · Критерії DONE · Ризики · Власник / ETA · Посилання",
+      "contentHash": "25f9bba4cb3ae96fa9170b404819c37a28ae634d62f514a7dfb82c081e7ad5f4"
     },
     {
       "id": "initiative:follow-ups",

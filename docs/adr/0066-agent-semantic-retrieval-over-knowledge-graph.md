@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-06-08
 - **Deciders:** @Skords-01
 - **Supersedes:** —
@@ -18,11 +18,11 @@
 
 ## Context and Problem Statement
 
-У Sergeant **достатньо** машино-читабельного знання про себе: `knowledge-graph.json` (10 типів нод, 6 типів ребер), `symbol-index.json` (≈298 експортів із usage-графом), 33 skills, 61 playbook, 62 ADR, 26 hard rules, per-file freshness/lifecycle-маркери. Проблема не в **кількості** артефактів, а в **активації**: агент на старті задачі мусить *здогадатися*, котрий із цих сотень файлів релевантний. Наслідки спостережувані щодня:
+У Sergeant **достатньо** машино-читабельного знання про себе: `knowledge-graph.json` (10 типів нод, 6 типів ребер), `symbol-index.json` (≈298 експортів із usage-графом), 33 skills, 61 playbook, 62 ADR, 26 hard rules, per-file freshness/lifecycle-маркери. Проблема не в **кількості** артефактів, а в **активації**: агент на старті задачі мусить _здогадатися_, котрий із цих сотень файлів релевантний. Наслідки спостережувані щодня:
 
 - **Палений час/токени** — агент grep-ає монорепо наосліп замість одного точного пойнтера.
 - **Хибні висновки** — агент читає не той (або застарілий) файл і робить неправильний висновок.
-- **Maintainer розжовує контекст щоразу** — бо нічого не тицяє агента носом у потрібний артефакт у *момент* задачі.
+- **Maintainer розжовує контекст щоразу** — бо нічого не тицяє агента носом у потрібний артефакт у _момент_ задачі.
 
 Усе наявне знання — **pull**: лежить як файли, які треба свідомо відкрити. Бракує одного запитуваного входу, що на природномовний запит («де серіалізація bigint балансу», «який playbook для нового SQL-міграційного кроку») повертає рейтинговані `file:line`-пойнтери з типом артефакту.
 
@@ -80,7 +80,7 @@
 
 ## Compliance
 
-- `pnpm agent:find:check` (CI gate, wired у `pnpm lint`) — exit 1, якщо committed `retrieval-index.json` ≠ regenerated із поточних джерел (Hard Rule #24 — catalog має `--check` generator).
+- `pnpm agent:check-index` (CI gate, wired у `pnpm lint`) — exit 1, якщо committed `retrieval-index.json` ≠ regenerated із поточних джерел (Hard Rule #24 — catalog має `--check` generator).
 - Маніфест `retrieval-index.json` має `<!-- AUTO-GENERATED: ... -->`-семантику через схему (Hard Rule #25 — generated-артефакт).
 - Repo-retrieval golden-set + `recall@K`/`MRR` gate через наявний `eval-rag-recall.mjs` режим (узгоджено з `rag-eval.md`).
 - Lifecycle/freshness-маркери на нових docs (Hard Rule #10) + discoverability з AGENTS.md (Hard Rule #15 doc-sync).

@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -75,6 +75,8 @@ CI hard-rules ловляться різними механізмами. Стар
 **Anthropic SDK (ADR-0057):** `tools/console` використовує `@anthropic-ai/sdk@0.95.2`. Prompt caching opt-in через `ANTHROPIC_PROMPT_CACHE=1`. Старі SDK ≤0.36.x приклади — неактуальні.
 
 **Білінг (ADR-0051):** тільки `plan: 'free' | 'pro'`. Plus tier і pay-per-feature видалені.
+
+**Agent retrieval (ADR-0066 / initiative 0018):** не знаєш, де щось живе — `pnpm agent:find "<query>"` (або MCP-tool `agent_find`) повертає рейтинговані `file:line`-пойнтери на ADR / playbook / skill / hard-rule / export замість сліпого grep. Lexical-режим працює офлайн; семантичний вмикається автоматично за наявності `VOYAGE_API_KEY` + `pnpm agent:embed`.
 
 ## 5. Plop generators (boilerplate без копіпаста)
 
