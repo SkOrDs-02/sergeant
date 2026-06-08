@@ -135,6 +135,7 @@
     "pre-commit:timings": "node scripts/pre-commit-timings-report.mjs",
     "precommit:bench": "node scripts/precommit-bench.mjs",
     "agent:find": "node scripts/agent/find.mjs",
+    "agent:route": "node scripts/agent/route.mjs",
     "agent:build-index": "node scripts/agent/build-retrieval-index.mjs",
     "agent:check-index": "node scripts/agent/build-retrieval-index.mjs --check",
     "agent:embed": "node scripts/agent/embed-chunks.mjs",
