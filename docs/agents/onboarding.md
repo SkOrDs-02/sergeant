@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last validated:** 2026-06-02 by @claude. **Next review:** 2026-08-31.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -72,7 +72,7 @@ CI hard-rules ловляться різними механізмами. Стар
 - Config-as-code: `ops/openclaw/` копіюється в runtime при деплої; нова bot identity: `@OpenClaw_sergeant_v2_bot`
 - Hard Rule #20: ніяких PATs у production — `assertStartupEnv()` блокує запуск
 
-**Anthropic SDK (ADR-0057):** `tools/console` використовує `@anthropic-ai/sdk@0.95.2`. Prompt caching opt-in через `ANTHROPIC_PROMPT_CACHE=1`. Старі SDK ≤0.36.x приклади — неактуальні.
+**Anthropic SDK (ADR-0057):** `tools/openclaw` використовує `@anthropic-ai/sdk@0.95.2`. Prompt caching opt-in через `ANTHROPIC_PROMPT_CACHE=1`. Старі SDK ≤0.36.x приклади — неактуальні.
 
 **Білінг (ADR-0051):** тільки `plan: 'free' | 'pro'`. Plus tier і pay-per-feature видалені.
 

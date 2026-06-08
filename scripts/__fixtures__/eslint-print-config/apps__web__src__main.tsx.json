@@ -2508,11 +2508,11 @@
       2,
       {
         "message": "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
-        "selector": "Literal[value=//b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-/d+)(?:///d+)?/b/]"
+        "selector": "Literal[value=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]"
       },
       {
         "message": "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
-        "selector": "TemplateElement[value.raw=//b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-/d+)(?:///d+)?/b/]"
+        "selector": "TemplateElement[value.raw=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]"
       },
       {
         "message": "Direct access to the retired `STORAGE_KEYS.FIZRUK_*` cloud-sync keys is forbidden (PR #030, storage-roadmap). Use the canonical fizruk hooks (`useFizrukWorkouts`, `useMeasurements`, `useWorkoutTemplates`, …) from `apps/{web,mobile}/src/modules/fizruk/hooks` — they handle the SQLite overlay transparently.",
@@ -3433,7 +3433,7 @@
         "alwaysTryTypes": true,
         "project": [
           "apps/web/tsconfig.json",
-          "tools/console/tsconfig.json",
+          "tools/openclaw/tsconfig.json",
           "apps/mobile/tsconfig.json",
           "apps/mobile-shell/tsconfig.json"
         ]
