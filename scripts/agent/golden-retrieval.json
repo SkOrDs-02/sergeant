@@ -1,0 +1,59 @@
+{
+  "_comment": "Golden set for agent:find quality gate (Initiative 0018 Phase 3). Each query lists acceptable chunk ids — a hit is any expected id appearing in the top-K. Keep queries phrased like real agent questions; keep expected ids stable. See scripts/agent/eval-retrieval.mjs.",
+  "k": 5,
+  "thresholds": { "warn": 0.8, "kill": 0.6 },
+  "cases": [
+    {
+      "query": "coerce bigint balance to number in serializer",
+      "expected": ["hard-rule:1", "adr:0014"]
+    },
+    {
+      "query": "react query keys centralized factory",
+      "expected": ["hard-rule:2", "adr:0006", "playbook:add-react-query-hook"]
+    },
+    {
+      "query": "add a new server api endpoint with contract test",
+      "expected": ["playbook:add-api-endpoint", "skill:sergeant-server-api"]
+    },
+    {
+      "query": "sql migration sequential two-phase drop",
+      "expected": [
+        "hard-rule:4",
+        "playbook:add-sql-migration",
+        "skill:sergeant-data-and-migrations"
+      ]
+    },
+    {
+      "query": "tailwind opacity scale steps",
+      "expected": ["hard-rule:8", "adr:0007"]
+    },
+    {
+      "query": "focus visible accessibility indicator",
+      "expected": ["hard-rule:14"]
+    },
+    {
+      "query": "no openclaw personal access tokens in production",
+      "expected": ["hard-rule:20", "skill:sergeant-openclaw"]
+    },
+    {
+      "query": "pino logger redaction sensitive fields",
+      "expected": ["hard-rule:21"]
+    },
+    {
+      "query": "working on web ui pwa tailwind component",
+      "expected": ["skill:sergeant-web-ui"]
+    },
+    {
+      "query": "fix a regression bug that used to work",
+      "expected": ["skill:sergeant-bugfix-and-regression"]
+    },
+    {
+      "query": "playwright end to end smoke test",
+      "expected": ["skill:sergeant-e2e-testing", "playbook:write-e2e-test"]
+    },
+    {
+      "query": "agent semantic retrieval find index",
+      "expected": ["adr:0066", "initiative:0018"]
+    }
+  ]
+}

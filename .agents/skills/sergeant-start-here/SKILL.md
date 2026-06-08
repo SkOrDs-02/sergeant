@@ -11,6 +11,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ## Швидке орієнтування
 
+- Не знаєш, де щось живе? Спершу `pnpm agent:find "<query>"` (або MCP-tool `agent_find`) — повертає рейтинговані `file:line`-пойнтери на ADR / playbook / skill / hard-rule / export, замість сліпого grep. Працює офлайн (lexical). Деталі: ADR-0066 / initiative 0018.
 - Прочитай `AGENTS.md` для жорстких правил і власників шляхів.
 - Прочитай `docs/README.md` для repo-доків і `docs/agents/agent-skills-catalog.md` для skill-роутингу.
 - Sergeant — це `pnpm` + Turborepo monorepo з `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/openclaw` і спільними packages.

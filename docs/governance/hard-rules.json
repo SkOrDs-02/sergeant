@@ -611,7 +611,8 @@
       "scope": [
         "docs/governance/*.auto.json",
         "docs/governance/symbol-index.json",
-        "docs/governance/knowledge-graph.json"
+        "docs/governance/knowledge-graph.json",
+        "docs/governance/retrieval-index.json"
       ],
       "severity": "blocker",
       "category": "lint-enforced-convention",
@@ -619,6 +620,10 @@
         {
           "kind": "ci",
           "ref": "pnpm docs:check-graph"
+        },
+        {
+          "kind": "ci",
+          "ref": "pnpm agent:check-index"
         },
         {
           "kind": "ci",

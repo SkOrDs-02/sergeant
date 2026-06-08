@@ -94,8 +94,8 @@ export function FirstRunHintBanner({
             type="button"
             onClick={onDismiss}
             className={cn(
-              "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1",
-              "min-h-[44px] text-xs font-semibold transition-colors",
+              "inline-flex items-center justify-center gap-1 rounded-xl border px-2.5 py-1",
+              "min-h-[44px] min-w-[44px] text-xs font-semibold transition-colors",
               v.cta,
             )}
           >

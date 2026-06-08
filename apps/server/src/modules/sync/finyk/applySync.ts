@@ -1,9 +1,9 @@
-/* eslint-disable no-restricted-syntax --
-   The finyk apply functions build SQL with templated identifiers (${table},
-   ${extColumn}) that are type-constrained literal-string unions sourced from
-   the validated sync registry — never user input. All user-supplied values are
-   parameterised ($1/$2/…). Так шаблонний-query guard (M11) тут — false-positive.
-   See docs/security/hardening/M11-eslint-plugin-security.md. */
+/* eslint-disable no-restricted-syntax -- Every templated client.query() in this
+   file interpolates only SQL *identifiers* (`${table}`, `${extColumn}`) sourced
+   from the trusted internal sync table/column registry — never user input — while
+   all values flow through $N bind-params. SQL identifiers cannot use $N
+   placeholders, so the template is the only option. Mirrors the documented
+   exemptions in logRetention/archivePoller.ts and modules/sync/audit.ts. */
 import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
 import {
