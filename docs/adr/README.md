@@ -133,8 +133,9 @@ pnpm gen:adr
 
 | 0064 | syncV2.ts модульний рефакторинг | accepted | 2026-06-05 | Розбиває `apps/server/src/modules/sync/syncV2.ts` на handlers, shared helpers/types і per-domain apply modules, щоб закрити Hard Rule #18 module-size debt без зміни public sync API. |
 | 0065 | sync_op_log retention/архівація + multi-instance fan-out (план PR-050) | proposed | 2026-06-07 | Фіксує цільову архітектуру PR-050: PG `LISTEN/NOTIFY` (над Redis) для cross-process SSE fan-out + retention-за-курсором для `sync_op_log` (з cursor-safety інваріантом). Важка реалізація gated на multi-instance тригер; client-side DLQ TTL (`purgeStaleTerminalOutbox`) уже зроблено окремо. |
+| 0066 | Agent semantic retrieval over the knowledge graph | proposed | 2026-06-08 | Семантичний retrieval агента поверх knowledge graph — векторний пошук по вузлах графа замість keyword-обходу. |
 
-> **Note on next ADR:** наступний номер — **`0066`** (`0029`, `0040` і `0056` лишаються gap-ами).
+> **Note on next ADR:** наступний номер — **`0067`** (`0029`, `0040` і `0056` лишаються gap-ами).
 
 > **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+.
 

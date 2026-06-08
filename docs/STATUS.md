@@ -26,11 +26,11 @@
 - [#2889](https://github.com/Skords-01/Sergeant/pull/2889) — feat(docs): per-package symbol catalog (Initiative 0014 Phase 2) _(2026-05-15)_
 - [#2876](https://github.com/Skords-01/Sergeant/pull/2876) — feat(docs): knowledge graph generator (Initiative 0014 Phase 1) _(2026-05-15)_
 
-## 🔵 В роботі — 74 відкритих
+## 🔵 В роботі — 75 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 18       |
+| Ініціативи                       | 19       |
 | Планування                       | 15       |
 | Launch / запуск                  | 17       |
 | Аудити й прожарки                | 17       |
