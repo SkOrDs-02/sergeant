@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-06-08",
   "sourceHashes": {
-    "knowledge-graph": "cc930032234d69360b8215c42c4920ddcf13d4e89511cdd07cc3affe3183187c",
+    "knowledge-graph": "528647e42709ae4923ded2df9482828f53348a9472b30d0c398728d2b2ed1316",
     "symbol-index": "fe8c8c0f40237dc97f5599798b2392c89d91827760c8419139f92cc593096e06"
   },
   "counts": {
@@ -672,8 +672,8 @@
       "title": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-06-06 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "97affd30e7d13924c655bc143048f255fe703d7b5cca5b1002ae364ccc3b0ee4"
+      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "c54a9699492a1504353aca338c1ea8419bbb0fd7090e9aaa92b7f8e3dc551094"
     },
     {
       "id": "adr:0064",
