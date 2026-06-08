@@ -47,7 +47,7 @@
 
 `agent:eval` (golden-set, 12 кейсів, K=5) повністю офлайн, lexical:
 
-```
+```text
 recall@5 = 1.000  ·  MRR = 0.917  ·  status = pass (warn 0.8 / kill 0.6)
 ```
 
