@@ -104,14 +104,14 @@
       <span class="chip chip-adr">adr: <b>63</b></span>
       <span class="chip chip-audit">audit: <b>17</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
-      <span class="chip chip-initiative">initiative: <b>48</b></span>
+      <span class="chip chip-initiative">initiative: <b>50</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
       <span class="chip chip-pr">pr: <b>164</b></span>
       <span class="chip chip-skill">skill: <b>33</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (241 core)</summary>
+      <summary>Nodes (243 core)</summary>
       <table>
         <thead>
           <tr>
@@ -1585,6 +1585,34 @@
               ключем + заміри before/after на реальних задачах).
             </td>
             <td>number=18</td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0019</code></td>
+            <td>
+              <a href="../../docs/initiatives/0019-agent-routing.md"
+                >0019 — Agent routing (`agent:route`)</a
+              >
+            </td>
+            <td>
+              In progress — code-complete; залишок: live-mode acceptance (заміри
+              + опційна harness-wiring у власному global config).
+            </td>
+            <td>number=19</td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0020</code></td>
+            <td>
+              <a href="../../docs/initiatives/0020-agent-decisions-log.md"
+                >0020 — Agent decisions log</a
+              >
+            </td>
+            <td>
+              In progress — code-complete; залишок: live-mode usage (агент
+              реально звіряється + maintainer курує між сесіями).
+            </td>
+            <td>number=20</td>
           </tr>
           <tr>
             <td>initiative</td>
@@ -3609,7 +3637,7 @@
     </details>
 
     <details>
-      <summary>Edges (381 total, first 500 core-to-core)</summary>
+      <summary>Edges (387 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -4189,6 +4217,31 @@
             <td><code>hard-rule:24</code></td>
           </tr>
           <tr>
+            <td><code>initiative:0019</code></td>
+            <td>references</td>
+            <td><code>initiative:0015</code></td>
+          </tr>
+          <tr>
+            <td><code>initiative:0019</code></td>
+            <td>references</td>
+            <td><code>initiative:0018</code></td>
+          </tr>
+          <tr>
+            <td><code>initiative:0020</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>initiative:0020</code></td>
+            <td>references</td>
+            <td><code>initiative:0018</code></td>
+          </tr>
+          <tr>
+            <td><code>initiative:0020</code></td>
+            <td>references</td>
+            <td><code>initiative:0019</code></td>
+          </tr>
+          <tr>
             <td><code>initiative:stack-pulse-2026-05/00-overview</code></td>
             <td>references</td>
             <td><code>hard-rule:20</code></td>
@@ -4363,6 +4416,11 @@
             <td><code>skill:sergeant-start-here</code></td>
             <td>references</td>
             <td><code>initiative:0018</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-start-here</code></td>
+            <td>references</td>
+            <td><code>initiative:0019</code></td>
           </tr>
           <tr>
             <td><code>skill:sergeant-tech-debt</code></td>
