@@ -1,11 +1,12 @@
 import type { PoolClient } from "pg";
-import type { SyncV2Op } from "../../http/schemas.js";
+import type { SyncV2Op } from "../../../http/schemas.js";
 import {
   parseOptionalDate,
   parseRequiredDate,
   parseOptionalNumber,
   parseOptionalInt,
   toJsonbParam,
+  toNonNegativeInt,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 

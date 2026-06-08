@@ -1103,7 +1103,8 @@
         "scope": [
           "docs/04-governance/governance/*.auto.json",
           "docs/04-governance/governance/symbol-index.json",
-          "docs/04-governance/governance/knowledge-graph.json"
+          "docs/04-governance/governance/knowledge-graph.json",
+          "docs/04-governance/governance/retrieval-index.json"
         ]
       }
     },
@@ -1308,7 +1309,7 @@
       "type": "initiative",
       "title": "0018 — Agent semantic retrieval (agent:find)",
       "path": "docs/90-work/initiatives/0018-agent-semantic-retrieval.md",
-      "status": "Proposed — чекає на founder-погодження ADR-0066 перед стартом Phase 1.",
+      "status": "In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). Залишок: live-mode acceptance (одноразовий `pnpm agent:embed` з ключем + заміри before/after на реальних задачах).",
       "tier": "core",
       "meta": {
         "number": 18
@@ -6077,6 +6078,11 @@
       "from": "skill:sergeant-server-api",
       "to": "pr:1848",
       "type": "touched-by"
+    },
+    {
+      "from": "skill:sergeant-start-here",
+      "to": "initiative:0018",
+      "type": "references"
     },
     {
       "from": "skill:sergeant-start-here",

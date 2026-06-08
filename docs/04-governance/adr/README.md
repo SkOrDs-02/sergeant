@@ -133,7 +133,7 @@ pnpm gen:adr
 
 | 0064 | syncV2.ts модульний рефакторинг | accepted | 2026-06-05 | Розбиває `apps/server/src/modules/sync/syncV2.ts` на handlers, shared helpers/types і per-domain apply modules, щоб закрити Hard Rule #18 module-size debt без зміни public sync API. |
 | 0065 | sync_op_log retention/архівація + multi-instance fan-out (план PR-050) | proposed | 2026-06-07 | Фіксує цільову архітектуру PR-050: PG `LISTEN/NOTIFY` (над Redis) для cross-process SSE fan-out + retention-за-курсором для `sync_op_log` (з cursor-safety інваріантом). Важка реалізація gated на multi-instance тригер; client-side DLQ TTL (`purgeStaleTerminalOutbox`) уже зроблено окремо. |
-| 0066 | Agent semantic retrieval over the knowledge graph | proposed | 2026-06-08 | Семантичний retrieval агента поверх knowledge graph — векторний пошук по вузлах графа замість keyword-обходу. |
+| 0066 | Agent semantic retrieval over the knowledge graph (`agent:find`) | proposed | 2026-06-08 | Build-time **committed retrieval index** + `pnpm agent:find` entrypoint поверх `knowledge-graph.json` + `symbol-index.json` + canonical docs. Перевикористовує Voyage + `eval-rag-recall.mjs`, але свідомо decoupled від per-user runtime-стору `ai_memories`; вектори — у gitignored content-hash cache, маніфест — у git; lexical-фолбек без `VOYAGE_API_KEY`. План: [Initiative 0018](../../90-work/initiatives/0018-agent-semantic-retrieval.md). |
 
 > **Note on next ADR:** наступний номер — **`0067`** (`0029`, `0040` і `0056` лишаються gap-ами).
 

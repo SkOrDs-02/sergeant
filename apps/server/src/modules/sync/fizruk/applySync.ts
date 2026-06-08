@@ -1,5 +1,5 @@
 import type { PoolClient } from "pg";
-import type { SyncV2Op } from "../../http/schemas.js";
+import type { SyncV2Op } from "../../../http/schemas.js";
 import {
   parseOptionalDate,
   parseRequiredDate,

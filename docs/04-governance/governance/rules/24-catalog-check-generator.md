@@ -14,19 +14,21 @@
 - `docs/04-governance/governance/repo-map.auto.json`
 - `docs/04-governance/governance/service-catalog.auto.json`
 - `docs/04-governance/governance/symbol-index.json` (+ per-workspace `*/symbols.json`)
+- `docs/04-governance/governance/retrieval-index.json`
 - `docs/02-engineering/architecture/diagrams/c3-workspaces.md`
 - `docs/04-governance/pr-ledger/index.json`
 
 ## Enforced by
 
 - **ci** — `pnpm docs:check-graph` (knowledge graph)
+- **ci** — `pnpm agent:check-index` (agent retrieval manifest)
 - **ci** — `pnpm docs:check-symbols` (symbol catalog)
 - **ci** — `pnpm docs:check-repo-map` (repo-map auto-mirror)
 - **ci** — `pnpm docs:check-service-catalog` (service catalog auto-mirror)
 - **ci** — `pnpm docs:check-architecture-diagrams` (workspace dependency diagram)
 - **ci** — `pnpm docs:check-pr-ledger` (PR ledger + in-doc blocks)
 
-All six checks are wired into the `pnpm lint` chain (root `package.json`). Adding a new catalog without a matching `--check` is a CI-blocker.
+All checks are wired into the `pnpm lint` chain (root `package.json`). Adding a new catalog without a matching `--check` is a CI-blocker.
 
 ## Why / What is enforced
 

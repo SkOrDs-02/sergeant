@@ -1365,7 +1365,7 @@
             <td></td>
             <td>
               number=24 · severity=blocker · category=lint-enforced-convention ·
-              scope=[&quot;docs/04-governance/governance/*.auto.json&quot;,&quot;docs/04-governance/governance/symbol-index.json&quot;,&quot;docs/04-governance/governance/knowledge-graph.json&quot;]
+              scope=[&quot;docs/04-governance/governance/*.auto.json&quot;,&quot;docs/04-governance/governance/symbol-index.json&quot;,&quot;docs/04-governance/governance/knowledge-graph.json&quot;,&quot;docs/04-governance/governance/retrieval-index.json&quot;]
             </td>
           </tr>
           <tr>
@@ -1623,8 +1623,11 @@
               >
             </td>
             <td>
-              Proposed — чекає на founder-погодження ADR-0066 перед стартом
-              Phase 1.
+              In progress — **Phases 1–4 code-complete** (lexical `agent:find` +
+              manifest, Voyage semantic layer з degradation, HR#24-gate +
+              golden-eval, `agent_find` MCP-tool + промоція у start-here).
+              Залишок: live-mode acceptance (одноразовий `pnpm agent:embed` з
+              ключем + заміри before/after на реальних задачах).
             </td>
             <td>number=18</td>
           </tr>
@@ -3665,7 +3668,7 @@
     </details>
 
     <details>
-      <summary>Edges (380 total, first 500 core-to-core)</summary>
+      <summary>Edges (381 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -4414,6 +4417,11 @@
             <td><code>skill:sergeant-server-api</code></td>
             <td>references</td>
             <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-start-here</code></td>
+            <td>references</td>
+            <td><code>initiative:0018</code></td>
           </tr>
           <tr>
             <td><code>skill:sergeant-tech-debt</code></td>

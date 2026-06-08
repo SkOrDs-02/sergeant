@@ -76,6 +76,8 @@ CI hard-rules ловляться різними механізмами. Стар
 
 **Білінг (ADR-0051):** тільки `plan: 'free' | 'pro'`. Plus tier і pay-per-feature видалені.
 
+**Agent retrieval (ADR-0066 / initiative 0018):** не знаєш, де щось живе — `pnpm agent:find "<query>"` (або MCP-tool `agent_find`) повертає рейтинговані `file:line`-пойнтери на ADR / playbook / skill / hard-rule / export замість сліпого grep. Lexical-режим працює офлайн; семантичний вмикається автоматично за наявності `VOYAGE_API_KEY` + `pnpm agent:embed`.
+
 ## 5. Plop generators (boilerplate без копіпаста)
 
 - `pnpm gen:adr` — створює `docs/04-governance/adr/NNNN-<slug>.md` із валідною шапкою (Status / Date / Reviewers / Supersedes / Related). Номер обчислюється через `nextAdrNumber()` у [`plopfile.mjs`](../../../plopfile.mjs), gaps пропускаються.

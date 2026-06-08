@@ -1,6 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
 
-type CachePolicy = "no-store" | "no-cache" | "stale-while-revalidate" | "public";
+type CachePolicy =
+  | "no-store"
+  | "no-cache"
+  | "stale-while-revalidate"
+  | "public";
 
 interface CacheOptions {
   policy?: CachePolicy;
@@ -67,22 +71,30 @@ function buildCacheControl(options: CacheOptions): string {
   }
 }
 
-export function cachingMiddleware(options: CacheOptions = {}): (req: Request, res: Response, next: NextFunction) => void {
+export function cachingMiddleware(
+  options: CacheOptions = {},
+): (req: Request, res: Response, next: NextFunction) => void {
   const cacheControl = buildCacheControl(options);
 
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (_req: Request, res: Response, next: NextFunction) => {
     res.setHeader("Cache-Control", cacheControl);
     next();
   };
 }
 
-export function noStoreMiddleware(_req: Request, res: Response, next: NextFunction): void {
+export function noStoreMiddleware(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   next();
 }
 
-export function publicCacheMiddleware(maxAgeSeconds = 300): (req: Request, res: Response, next: NextFunction) => void {
-  return (req: Request, res: Response, next: NextFunction) => {
+export function publicCacheMiddleware(
+  maxAgeSeconds = 300,
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (_req: Request, res: Response, next: NextFunction) => {
     res.setHeader("Cache-Control", `public, max-age=${maxAgeSeconds}`);
     next();
   };

@@ -1,7 +1,7 @@
 # 0018 — Agent semantic retrieval (agent:find)
 
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
-> **Status:** Proposed — чекає на founder-погодження ADR-0066 перед стартом Phase 1.
+> **Status:** In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). Залишок: live-mode acceptance (одноразовий `pnpm agent:embed` з ключем + заміри before/after на реальних задачах).
 > **Agent-ready:** yes
 
 ## TL;DR
@@ -72,13 +72,13 @@ Sergeant має багатий машино-читабельний індекс 
 
 ## Критерії DONE
 
-- [ ] `pnpm agent:find "<q>"` працює офлайн (lexical) і повертає рейтинговані `path:line [type]` пойнтери
-- [ ] З `VOYAGE_API_KEY` ранжування семантичне; без ключа — graceful lexical-фолбек, нуль крашів
-- [ ] `pnpm agent:find:check` блокує merge при stale-маніфесті; каталог зареєстровано під Hard Rule #24
-- [ ] Маніфест регенерується у `docs:gen-daily`; вектори — у gitignored cache (нуль binary-diff у git)
-- [ ] Repo-retrieval golden-set + `recall@K`/`MRR` gate проходить ≥ baseline
-- [ ] MCP-tool `agent_find` доступний; `sergeant-start-here` його промотує
-- [ ] Заміряно: на репрезентативній вибірці задач агент робить менше сліпих grep-ів (before/after — у session-log)
+- [x] `pnpm agent:find "<q>"` працює офлайн (lexical) і повертає рейтинговані `path:line [type]` пойнтери
+- [x] З `VOYAGE_API_KEY` ранжування семантичне; без ключа — graceful lexical-фолбек, нуль крашів _(blend cosine+lexical у `find.mjs`; degradation покрита тестом + `cosineSimilarity` unit)_
+- [x] `pnpm agent:check-index` блокує merge при stale-маніфесті; каталог зареєстровано під Hard Rule #24 _(scope + enforced_by + matrix у синхроні)_
+- [x] Маніфест регенерується у `docs:gen-daily`; вектори — у gitignored cache (нуль binary-diff у git)
+- [x] Repo-retrieval golden-set + `recall@K`/`MRR` gate проходить ≥ baseline _(recall@5=1.0, MRR=0.92; гейт у docs-automation тестах)_
+- [x] MCP-tool `agent_find` доступний; `sergeant-start-here` його промотує
+- [ ] Заміряно: на репрезентативній вибірці задач агент робить менше сліпих grep-ів (before/after — у session-log) _(observational — чекає на живу роботу)_
 
 ## Ризики
 

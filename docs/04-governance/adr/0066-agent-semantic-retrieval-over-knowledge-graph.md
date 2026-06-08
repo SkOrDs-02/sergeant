@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-06-08
 - **Deciders:** @Skords-01
 - **Supersedes:** —
@@ -80,7 +80,7 @@
 
 ## Compliance
 
-- `pnpm agent:find:check` (CI gate, wired у `pnpm lint`) — exit 1, якщо committed `retrieval-index.json` ≠ regenerated із поточних джерел (Hard Rule #24 — catalog має `--check` generator).
+- `pnpm agent:check-index` (CI gate, wired у `pnpm lint`) — exit 1, якщо committed `retrieval-index.json` ≠ regenerated із поточних джерел (Hard Rule #24 — catalog має `--check` generator).
 - Маніфест `retrieval-index.json` має `<!-- AUTO-GENERATED: ... -->`-семантику через схему (Hard Rule #25 — generated-артефакт).
 - Repo-retrieval golden-set + `recall@K`/`MRR` gate через наявний `eval-rag-recall.mjs` режим (узгоджено з `rag-eval.md`).
 - Lifecycle/freshness-маркери на нових docs (Hard Rule #10) + discoverability з AGENTS.md (Hard Rule #15 doc-sync).

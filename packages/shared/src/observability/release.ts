@@ -52,12 +52,22 @@ const SHORT_SHA_LENGTH = 7;
 type ReleaseEnv = Record<string, string | undefined>;
 
 /**
+ * Runtime-agnostic handle to the ambient env bag. Read through `globalThis`
+ * (never a bare `process` reference) so the module typechecks and runs
+ * unchanged in node, the browser bundle, and the RN/Capacitor shell — none
+ * of which share `@types/node`. Absent `process` (browser/RN) → empty bag,
+ * which `resolveReleaseSha` already treats as "no SHA set".
+ */
+const DEFAULT_ENV: ReleaseEnv =
+  (globalThis as { process?: { env?: ReleaseEnv } }).process?.env ?? {};
+
+/**
  * Resolve the deployed git SHA from the deploy environment. Trims whitespace
  * and skips empty / whitespace-only values. Returns `undefined` when no
  * candidate is set.
  */
 export function resolveReleaseSha(
-  env: ReleaseEnv = process.env,
+  env: ReleaseEnv = DEFAULT_ENV,
 ): string | undefined {
   for (const key of SHA_ENV_KEYS) {
     const value = env[key];
@@ -87,7 +97,7 @@ export function formatRelease(sha: string | undefined): string | undefined {
  * current deploy environment, or `undefined` when no SHA is available.
  */
 export function resolveSentryRelease(
-  env: ReleaseEnv = process.env,
+  env: ReleaseEnv = DEFAULT_ENV,
 ): string | undefined {
   return formatRelease(resolveReleaseSha(env));
 }
