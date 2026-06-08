@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-06-08",
   "sourceHashes": {
-    "knowledge-graph": "4de3977cd1c642f33f522db140a0998d260496604c4b5a138e9f1e3f426eb93f",
+    "knowledge-graph": "d4dd418ca384b80119f3a3616ff722a02f2951f3eb92115d252803acedf485fd",
     "symbol-index": "54f587f8b3471999b47e603839b273a9d1601d92f608c7b44897def570df61ed"
   },
   "counts": {
@@ -11,10 +11,10 @@
     "audit": 17,
     "export": 298,
     "hard-rule": 26,
-    "initiative": 49,
+    "initiative": 50,
     "playbook": 61,
     "skill": 33,
-    "total": 547
+    "total": 548
   },
   "chunks": [
     {
@@ -3913,6 +3913,17 @@
       "status": "In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config).",
       "text": "0019 — Agent routing (`agent:route`) · initiative:0019 · initiative · In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config). · 19 · 0019 — Agent routing (agent:route) · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Критерії DONE · Ризики · Власник / ETA · Посилання",
       "contentHash": "7063d0d9b82191e47a1e70598077ab865c10e5eacf427ec4938f48ec4e59e068"
+    },
+    {
+      "id": "initiative:0020",
+      "type": "initiative",
+      "path": "docs/initiatives/0020-agent-decisions-log.md",
+      "line": 1,
+      "title": "0020 — Agent decisions log",
+      "tier": "core",
+      "status": "In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями).",
+      "text": "0020 — Agent decisions log · initiative:0020 · initiative · In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями). · 20 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Критерії DONE · Ризики · Власник / ETA · Посилання",
+      "contentHash": "602b74fb84abf1ecb7d25eb6f9907123368ccb8302bfacc36aabfc657c5a820d"
     },
     {
       "id": "initiative:follow-ups",

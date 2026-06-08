@@ -6,7 +6,7 @@
     "adr": 63,
     "audit": 17,
     "hard-rule": 26,
-    "initiative": 49,
+    "initiative": 50,
     "playbook": 61,
     "pr": 164,
     "skill": 33
@@ -1324,6 +1324,17 @@
       "tier": "core",
       "meta": {
         "number": 19
+      }
+    },
+    {
+      "id": "initiative:0020",
+      "type": "initiative",
+      "title": "0020 — Agent decisions log",
+      "path": "docs/initiatives/0020-agent-decisions-log.md",
+      "status": "In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями).",
+      "tier": "core",
+      "meta": {
+        "number": 20
       }
     },
     {
@@ -5548,6 +5559,21 @@
     {
       "from": "initiative:0019",
       "to": "initiative:0018",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0020",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0020",
+      "to": "initiative:0018",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0020",
+      "to": "initiative:0019",
       "type": "references"
     },
     {

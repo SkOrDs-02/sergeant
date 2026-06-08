@@ -1,6 +1,6 @@
 # Agents
 
-> **Last validated:** 2026-05-18 by @codex. **Next review:** 2026-08-16.
+> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
 > **Status:** Active
 
 Операційний розділ для AI-агентів у Sergeant — це **operating system для AI-агентів, які працюють у репо**, а не AI-фічі продукту (HubChat, AI Coach, Mono-classifier тощо живуть під `apps/web` і `apps/server` і документуються в окремих модулях). Тут навігація по repo-owned skills, decision trees для типових flow і design specs.
@@ -11,14 +11,16 @@
 
 1. Відкрий [`AGENTS.md`](../../AGENTS.md) для hard rules і ownership.
 2. Стартуй з [`sergeant-start-here`](../../.agents/skills/sergeant-start-here/SKILL.md).
-3. За таблицею в [`agent-skills-catalog.md`](./agent-skills-catalog.md) вибери рівно один specialist skill.
-4. Для flow-level роботи звіряйся з [`agent-workflows.md`](./agent-workflows.md).
+3. Звір [`decisions.md`](./decisions.md) — усталені рішення/вподобання, щоб не перепитувати вже вирішене.
+4. За таблицею в [`agent-skills-catalog.md`](./agent-skills-catalog.md) вибери рівно один specialist skill.
+5. Для flow-level роботи звіряйся з [`agent-workflows.md`](./agent-workflows.md).
 
 ## Підрозділи
 
 | Підрозділ                                                      | Призначення                                                                                                |
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | [`onboarding.md`](./onboarding.md)                             | Перші 30 хвилин агента в Sergeant: секрети, БД, hard-rule навігація, plop.                                 |
+| [`decisions.md`](./decisions.md)                               | Курований журнал усталених рішень/вподобань — щоб агент не перепитував вже вирішене (Initiative 0020).     |
 | [`agent-skills-catalog.md`](./agent-skills-catalog.md)         | Scenario -> skill -> what it enforces.                                                                     |
 | [`agent-workflows.md`](./agent-workflows.md)                   | Decision trees для feature, bugfix, review, migration, release.                                            |
 | [`codex-capabilities.md`](./codex-capabilities.md)             | Що Codex у цьому репо вміє, що запускається автоматично, а що потребує явної команди.                      |
