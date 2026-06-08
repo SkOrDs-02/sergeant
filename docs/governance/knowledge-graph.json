@@ -1,12 +1,12 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-07",
+  "generated_at": "2026-06-08",
   "counts": {
-    "adr": 62,
+    "adr": 63,
     "audit": 17,
     "hard-rule": 26,
-    "initiative": 47,
+    "initiative": 48,
     "playbook": 61,
     "pr": 164,
     "skill": 33
@@ -704,6 +704,18 @@
       }
     },
     {
+      "id": "adr:0066",
+      "type": "adr",
+      "title": "ADR-0066: Agent semantic retrieval over the knowledge graph",
+      "path": "docs/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 66,
+        "last_validated": "2026-06-08"
+      }
+    },
+    {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
       "type": "audit",
       "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
@@ -1289,6 +1301,17 @@
         "number": 17,
         "owner": "@Skords-01",
         "priority": "P1 (Sprint 1 candidate after [0016](./archive/_0016-changelog-release-cut.md))"
+      }
+    },
+    {
+      "id": "initiative:0018",
+      "type": "initiative",
+      "title": "0018 — Agent semantic retrieval (agent:find)",
+      "path": "docs/initiatives/0018-agent-semantic-retrieval.md",
+      "status": "Proposed — чекає на founder-погодження ADR-0066 перед стартом Phase 1.",
+      "tier": "core",
+      "meta": {
+        "number": 18
       }
     },
     {
@@ -4601,6 +4624,26 @@
       "type": "references"
     },
     {
+      "from": "adr:0066",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "adr:0066",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "adr:0066",
+      "to": "hard-rule:24",
+      "type": "references"
+    },
+    {
+      "from": "adr:0066",
+      "to": "hard-rule:25",
+      "type": "references"
+    },
+    {
       "from": "audit:2026-05-06-ux-roast-pr-plan",
       "to": "hard-rule:15",
       "type": "references"
@@ -5479,6 +5522,11 @@
       "from": "initiative:0017",
       "to": "pr:3403",
       "type": "touched-by"
+    },
+    {
+      "from": "initiative:0018",
+      "to": "hard-rule:24",
+      "type": "references"
     },
     {
       "from": "initiative:stack-pulse-2026-05/00-overview",
