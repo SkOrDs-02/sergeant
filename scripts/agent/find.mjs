@@ -17,11 +17,21 @@
 // Flags:
 //   --type <t>   filter to one chunk type (adr|initiative|playbook|skill|hard-rule|audit|export|...)
 //   --k <n>      number of results (default 8)
-//   --json       machine-readable output
+//   --json       machine-readable output ({ mode, results })
+//   --lexical    force lexical mode even when a Voyage key + vector cache exist
+//
+// Semantic mode activates automatically when VOYAGE_API_KEY is set and the
+// vector cache (`pnpm agent:embed`) is populated; any Voyage error degrades to lexical.
 
 import { readFileSync } from "node:fs";
 import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  cosineSimilarity,
+  embedTexts,
+  hasApiKey,
+  loadVectorCache,
+} from "./voyage.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -71,12 +81,13 @@ function tokenize(text) {
 }
 
 function parseArgs(argv) {
-  const opts = { type: null, k: 8, json: false, query: [] };
+  const opts = { type: null, k: 8, json: false, lexical: false, query: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--type") opts.type = argv[++i];
     else if (a === "--k") opts.k = Math.max(1, Number(argv[++i]) || 8);
     else if (a === "--json") opts.json = true;
+    else if (a === "--lexical") opts.lexical = true;
     else opts.query.push(a);
   }
   opts.query = opts.query.join(" ").trim();
@@ -137,40 +148,92 @@ function scoreChunk(chunk, queryTokens, queryString) {
   return score;
 }
 
-function main() {
+// Lexical ranking (Phase 1) — always available, zero network.
+function rankLexical(candidates, opts) {
+  const queryTokens = [...new Set(tokenize(opts.query))];
+  const queryString = opts.query.toLowerCase();
+  return candidates
+    .map((c) => ({ chunk: c, score: scoreChunk(c, queryTokens, queryString) }))
+    .filter((r) => r.score > 0);
+}
+
+// Semantic ranking (Phase 2) — blend cosine similarity with normalized lexical
+// so exact-term hits still help and uncached chunks degrade gracefully.
+async function rankSemantic(candidates, opts) {
+  const cache = loadVectorCache();
+  const [queryVec] = await embedTexts([opts.query], { inputType: "query" });
+  const lexical = rankLexical(candidates, opts);
+  const maxLex = Math.max(1, ...lexical.map((r) => r.score));
+  const lexById = new Map(lexical.map((r) => [r.chunk.id, r.score]));
+
+  const scored = candidates
+    .map((chunk) => {
+      const vec = cache.vectors[chunk.contentHash];
+      const cosine = vec ? Math.max(0, cosineSimilarity(queryVec, vec)) : 0;
+      const lexNorm = (lexById.get(chunk.id) ?? 0) / maxLex;
+      return { chunk, score: 0.7 * cosine + 0.3 * lexNorm };
+    })
+    .filter((r) => r.score > 0);
+  return scored;
+}
+
+async function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (!opts.query) {
     console.error(
-      'Usage: pnpm agent:find "<query>" [--type <t>] [--k <n>] [--json]',
+      'Usage: pnpm agent:find "<query>" [--type <t>] [--k <n>] [--json] [--lexical]',
     );
     process.exit(1);
   }
 
   const index = loadIndex();
-  const queryTokens = [...new Set(tokenize(opts.query))];
-  const queryString = opts.query.toLowerCase();
-
   let candidates = index.chunks;
   if (opts.type) candidates = candidates.filter((c) => c.type === opts.type);
 
-  const ranked = candidates
-    .map((c) => ({ chunk: c, score: scoreChunk(c, queryTokens, queryString) }))
-    .filter((r) => r.score > 0)
+  // Mode selection with automatic degradation: semantic needs an API key AND a
+  // populated vector cache; otherwise (or on any Voyage error) fall back to lexical.
+  const cache = loadVectorCache();
+  const canSemantic =
+    !opts.lexical &&
+    hasApiKey() &&
+    cache &&
+    Object.keys(cache.vectors ?? {}).length > 0;
+
+  let mode = "lexical";
+  let results;
+  if (canSemantic) {
+    try {
+      results = await rankSemantic(candidates, opts);
+      mode = "semantic";
+    } catch (err) {
+      console.error(
+        `semantic mode failed (${err.message}); falling back to lexical.`,
+      );
+      results = rankLexical(candidates, opts);
+    }
+  } else {
+    results = rankLexical(candidates, opts);
+  }
+
+  const ranked = results
     .sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id))
     .slice(0, opts.k);
 
   if (opts.json) {
     console.log(
       JSON.stringify(
-        ranked.map((r) => ({
-          id: r.chunk.id,
-          type: r.chunk.type,
-          path: r.chunk.path,
-          line: r.chunk.line ?? null,
-          title: r.chunk.title,
-          status: r.chunk.status ?? null,
-          score: Number(r.score.toFixed(2)),
-        })),
+        {
+          mode,
+          results: ranked.map((r) => ({
+            id: r.chunk.id,
+            type: r.chunk.type,
+            path: r.chunk.path,
+            line: r.chunk.line ?? null,
+            title: r.chunk.title,
+            status: r.chunk.status ?? null,
+            score: Number(r.score.toFixed(3)),
+          })),
+        },
         null,
         2,
       ),
@@ -180,12 +243,12 @@ function main() {
 
   if (ranked.length === 0) {
     console.log(
-      `No matches for "${opts.query}" (lexical). Try fewer / different terms.`,
+      `No matches for "${opts.query}" (${mode}). Try fewer / different terms.`,
     );
     return;
   }
 
-  console.log(`agent:find "${opts.query}" — top ${ranked.length} (lexical):\n`);
+  console.log(`agent:find "${opts.query}" — top ${ranked.length} (${mode}):\n`);
   for (const { chunk, score } of ranked) {
     // Don't append a line number to anchor-style pointers (e.g. foo.json#1).
     const where =
@@ -195,9 +258,12 @@ function main() {
     const status = chunk.status ? ` {${chunk.status}}` : "";
     console.log(`  ${where}`);
     console.log(
-      `    ${chunk.title}  [${chunk.type}]${status}  (${score.toFixed(1)})`,
+      `    ${chunk.title}  [${chunk.type}]${status}  (${score.toFixed(2)})`,
     );
   }
 }
 
-main();
+main().catch((err) => {
+  console.error(err.message || err);
+  process.exit(1);
+});

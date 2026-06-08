@@ -23,7 +23,11 @@ function run(script, args = []) {
 }
 
 function runJson(args) {
-  return JSON.parse(run(FIND, [...args, "--json"]));
+  // Without VOYAGE_API_KEY the CLI runs in lexical mode and returns
+  // { mode: "lexical", results: [...] }.
+  const parsed = JSON.parse(run(FIND, [...args, "--json"]));
+  assert.equal(parsed.mode, "lexical");
+  return parsed.results;
 }
 
 test("committed manifest is in sync (--check passes)", () => {
@@ -68,4 +72,13 @@ test("symbol exports are searchable and resolve to a file pointer", () => {
 
 test("empty query exits non-zero with usage", () => {
   assert.throws(() => run(FIND, []), /Usage/);
+});
+
+test("cosineSimilarity behaves (Phase 2 vector math)", async () => {
+  const { cosineSimilarity } = await import("../voyage.mjs");
+  assert.equal(cosineSimilarity([1, 0], [1, 0]), 1);
+  assert.equal(cosineSimilarity([1, 0], [0, 1]), 0);
+  assert.ok(Math.abs(cosineSimilarity([1, 1], [2, 2]) - 1) < 1e-9);
+  assert.equal(cosineSimilarity([1, 2], null), 0);
+  assert.equal(cosineSimilarity([1, 2, 3], [1, 2]), 0); // length mismatch
 });
