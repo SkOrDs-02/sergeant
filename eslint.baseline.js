@@ -188,10 +188,10 @@ export const baseline = [
       // Guidelines recommend for truncation cues. Auto-fixable.
       "sergeant-design/no-ellipsis-dots": "error",
       // AI code-marker syntax guardrail — catches malformed AI markers
-      // like `AI-NOTES`, `AINOTE`, `AI_NOTE`, or missing colons. Set to
-      // "warn" initially so it doesn't block CI; promote to "error" once
-      // the codebase is clean.
-      "sergeant-design/ai-marker-syntax": "warn",
+      // like `AI-NOTES`, `AINOTE`, `AI_NOTE`, or missing colons. Promoted to
+      // "error" 2026-06-08 — the codebase is clean (0 violations confirmed via
+      // `eslint . --rule '{"sergeant-design/ai-marker-syntax":"error"}'`).
+      "sergeant-design/ai-marker-syntax": "error",
       // Tailwind opacity guardrail — `<color>/<N>` only renders when N
       // is in `theme.opacity`. Sergeant's preset registers 0/5/8/10/…/100
       // (see `packages/design-tokens/tailwind-preset.js`); any other
