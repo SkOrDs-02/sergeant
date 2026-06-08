@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { messages } from "@shared/i18n/uk";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { BrandLogo } from "../app/BrandLogo";
 import {
@@ -221,7 +222,8 @@ function isLegalPath(pathname: string): pathname is LegalPath {
 }
 
 export function LegalPage({ pathname }: LegalPageProps) {
-  const document = documents[isLegalPath(pathname) ? pathname : LEGAL_PRIVACY_PATH];
+  const document =
+    documents[isLegalPath(pathname) ? pathname : LEGAL_PRIVACY_PATH];
 
   return (
     <MeshBackground className="min-h-screen overflow-y-auto px-5 py-8 sm:py-12">
@@ -230,7 +232,7 @@ export function LegalPage({ pathname }: LegalPageProps) {
           <Link
             to="/"
             className="inline-flex justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
-            aria-label="На головну Sergeant"
+            aria-label={messages.legal.homeLogoAria}
           >
             <BrandLogo size="lg" />
           </Link>
@@ -244,13 +246,11 @@ export function LegalPage({ pathname }: LegalPageProps) {
             </p>
           </div>
           <div className="rounded-3xl border border-warning-soft bg-warning-soft/40 p-4 text-left text-style-body-sm text-text">
-            <strong>Founder/lawyer review gate:</strong> це робочий draft до
-            public launch, не юридична консультація. Перед відкритою
-            реєстрацією засновник або юрист має підтвердити реквізити,
-            refunds, processors і застосовне право.
+            <strong>Founder/lawyer review gate:</strong>{" "}
+            {messages.legal.reviewGateNotice}
           </div>
           <p className="text-style-caption text-subtle">
-            Останнє оновлення: {LAST_UPDATED}
+            {messages.legal.lastUpdatedPrefix} {LAST_UPDATED}
           </p>
         </header>
 
@@ -260,9 +260,7 @@ export function LegalPage({ pathname }: LegalPageProps) {
               key={section.title}
               className="rounded-3xl border border-line bg-panel p-5 sm:p-6"
             >
-              <h2 className="text-style-headline text-text">
-                {section.title}
-              </h2>
+              <h2 className="text-style-headline text-text">{section.title}</h2>
               <div className="mt-3 space-y-3 text-style-body-sm text-muted">
                 {section.body.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
@@ -279,7 +277,7 @@ export function LegalPage({ pathname }: LegalPageProps) {
               to={PRICING_PATH}
               className="text-brand-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
             >
-              Перейти до pricing
+              {messages.legal.goToPricing}
             </Link>
             <span className="text-subtle" aria-hidden="true">
               ·
@@ -288,7 +286,7 @@ export function LegalPage({ pathname }: LegalPageProps) {
               to={SIGN_IN_PATH}
               className="text-brand-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
             >
-              Увійти або створити акаунт
+              {messages.legal.signInOrCreate}
             </Link>
           </div>
         </footer>

@@ -28,10 +28,7 @@ import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
 import { useNutritionDualWriteBoot } from "../../modules/nutrition/hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "../../modules/nutrition/hooks/useNutritionSqliteReadBoot";
-import {
-  HubShellProvider,
-  type HubShellValue,
-} from "./HubShellContext";
+import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 
 // Side-effect-only child rendered exclusively for authenticated users.
 function AuthenticatedNutritionBoot() {
@@ -89,8 +86,21 @@ export function RootLayout() {
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(browserLocation.search);
 
-  // Navigation FSM — determines activeModule from URL
+  // Navigation FSM — determines activeModule from URL.
+  // Destructure the individually-stable members up-front: `useHubNavigation`
+  // returns a fresh object literal each render, so depending on `navigation`
+  // wholesale would invalidate the memoized callbacks below every render
+  // (and re-register the keyboard-shortcut listeners). The members are the
+  // correct, stable dependency set — `goToHub`/`openModule`/`goToModuleSettings`
+  // are `useCallback`-wrapped and `activeModule` is primitive state.
   const navigation = useHubNavigation();
+  const {
+    activeModule,
+    openModule,
+    goToHub,
+    goToModuleSettings,
+    moduleAnimClass,
+  } = navigation;
 
   // Hub UI state (search, hub view tab)
   const ui = useHubUIState();
@@ -118,39 +128,34 @@ export function RootLayout() {
     user,
     authLoading,
     ui,
-    openModule: navigation.openModule,
+    openModule,
     navigate,
     setPwaAction,
     validActions,
   });
 
   // Auth callback
-  const openAuth = useCallback(
-    () => navigate(SIGN_IN_PATH),
-    [navigate],
-  );
+  const openAuth = useCallback(() => navigate(SIGN_IN_PATH), [navigate]);
 
   // Keyboard shortcuts (work on all routes — hub + modules)
   const openSearchFromShortcut = useCallback(() => {
-    if (navigation.activeModule) {
-      navigation.goToHub();
+    if (activeModule) {
+      goToHub();
       requestAnimationFrame(() => ui.setSearchOpen(true));
       return;
     }
     ui.setSearchOpen(true);
-  }, [navigation.activeModule, navigation.goToHub, ui]);
+  }, [activeModule, goToHub, ui]);
 
   const handleNavigateChord = useCallback(
-    (
-      target: import("../hooks/useHubKeyboardShortcuts").NavChordTarget,
-    ) => {
+    (target: import("../hooks/useHubKeyboardShortcuts").NavChordTarget) => {
       if (target === "hub") {
-        navigation.goToHub();
+        goToHub();
       } else {
-        navigation.openModule(target);
+        openModule(target);
       }
     },
-    [navigation.goToHub, navigation.openModule],
+    [goToHub, openModule],
   );
 
   useHubKeyboardShortcuts({
@@ -167,11 +172,11 @@ export function RootLayout() {
 
   // Build the context value for child routes
   const hubShellValue: HubShellValue = {
-    activeModule: navigation.activeModule,
-    openModule: navigation.openModule,
-    goToHub: navigation.goToHub,
-    goToModuleSettings: navigation.goToModuleSettings,
-    moduleAnimClass: navigation.moduleAnimClass,
+    activeModule,
+    openModule,
+    goToHub,
+    goToModuleSettings,
+    moduleAnimClass,
     ui,
     pwaAction,
     clearPwaAction,
