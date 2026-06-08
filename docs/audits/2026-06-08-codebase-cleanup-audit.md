@@ -19,8 +19,12 @@
 - ✅ **Replit прибрано** — mode/env/scripts/CSP-disable вектор; тести зелені. Залишок: stale Replit-_коментарі_ в `index.ts`/`app.ts`/`frontend.ts` (follow-up).
 - ✅ **Тема 2 — stale-status доки** → 4 закрито (`dead-code-hard-rules-roast`, `page-audit-01`, `pr-plan-dead-code-hard-rules`, initiative `0017`) з верифікацією; `open-work.md` 74→71. 4 borderline переглянуто поштучно й свідомо лишено Active.
 - ✅ **Бонус: server-typecheck розблоковано** — виправлено передіснуючі регресії декомпозиції syncV2 (`9d8c0d4`/ADR-0064): битий `ApplyFn` тип, 4× биті type-import шляхи `applySync`, відсутній рантайм-імпорт `toNonNegativeInt` (реальний баг), unused `req`. `turbo typecheck` → 0 помилок.
+- ✅ **Replit-коментарі добиті** — вичищено stale Replit-згадки з 8 server-файлів (header `index.ts`, `app.ts`, `env.ts`, `trustProxy.ts`, `db.ts`, `dbReplica.ts`, `rateLimit.ts`, `health.ts`).
+- ✅ **Блок A (швидкі doc/lint-фікси):** ADR-0058–0061 `Proposed`→`Accepted` (Initiative 0014 Done) + sync adr/README; ADR-0003 price-note (історичні ₴99 → чинні $7 per ADR-0051); ADR-0025↔0062 cross-link; `ai-marker-syntax` `warn`→`error` (0 violations) + fixtures; `today.md` Next-review cadence (+7, припинено same-day overdue); знято stale `ci.yml` pgvector-SHA TODO.
 
-**Ще НЕ зроблено (з Теми 4 / нижче — потребує окремого рішення):** lint-suppressions без власника (react-hooks v7 ~152, i18n block-disables), `@removeBy 2026-09-01` tombstones (батч у вересні), інфра-питання (`@types/node`, Loki, Dependabot dup), фіз. deploy-rename + Railway dashboard.
+**Розслідувано → no-action:** Dependabot/Renovate — **це НЕ дубль** (ADR-0044: Renovate primary + Dependabot security-only fallback; npm у Dependabot уже звужений до `applies-to: security-updates`; actions/docker overlap навмисний — інші CVE-фіди).
+
+**Ще НЕ зроблено (потребує окремого рішення / розкладу):** lint-suppressions без власника (react-hooks v7 ~152 — окрема ініціатива, i18n block-disables), `@removeBy 2026-09-01` tombstones (батч у вересні), `@types/node` уніфікація, `pino-loki` prod-перевірка, фіз. deploy-rename + Railway dashboard, dormant `servesFrontend`/`frontend.ts` (follow-up), plop-генератори `hubchat-tool`/`new-console-specialist` rename (10+ doc-refs — focused-PR, не quick-fix).
 
 ## TL;DR
 
