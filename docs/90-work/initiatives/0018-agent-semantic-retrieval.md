@@ -1,7 +1,7 @@
 # 0018 — Agent semantic retrieval (agent:find)
 
 > **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
-> **Status:** In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). **Lexical before/after заміряно** ([session-log 2026-06-08](./0018-agent-find-measurement-session-log-2026-06-08.md)). Залишок: **semantic** live-mode acceptance (одноразовий `pnpm agent:embed` з `VOYAGE_API_KEY` + cosine-blend заміри) — відкладено, бо ключа в середовищі немає.
+> **Status:** In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). **Lexical before/after заміряно** ([session-log 2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md)). Залишок: **semantic** live-mode acceptance (одноразовий `pnpm agent:embed` з `VOYAGE_API_KEY` + cosine-blend заміри) — відкладено, бо ключа в середовищі немає.
 > **Agent-ready:** yes
 
 ## TL;DR
@@ -78,7 +78,7 @@ Sergeant має багатий машино-читабельний індекс 
 - [x] Маніфест регенерується у `docs:gen-daily`; вектори — у gitignored cache (нуль binary-diff у git)
 - [x] Repo-retrieval golden-set + `recall@K`/`MRR` gate проходить ≥ baseline _(recall@5=1.0, MRR=0.92; гейт у docs-automation тестах)_
 - [x] MCP-tool `agent_find` доступний; `sergeant-start-here` його промотує
-- [x] Заміряно (**lexical**): на репрезентативній вибірці з 8 реальних задач `agent:find` дає правильний canonical-артефакт rank-1 у 7/8 (8/8 у топ-3), замінюючи раунд сліпих grep-ів — before/after у [session-log 2026-06-08](./0018-agent-find-measurement-session-log-2026-06-08.md). **Semantic (Voyage) замір — відкладено** до появи `VOYAGE_API_KEY` (`pnpm agent:embed` + cosine-blend не вимірювались); це залишковий live-mode acceptance
+- [x] Заміряно (**lexical**): на репрезентативній вибірці з 8 реальних задач `agent:find` дає правильний canonical-артефакт rank-1 у 7/8 (8/8 у топ-3), замінюючи раунд сліпих grep-ів — before/after у [session-log 2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md). **Semantic (Voyage) замір — відкладено** до появи `VOYAGE_API_KEY` (`pnpm agent:embed` + cosine-blend не вимірювались); це залишковий live-mode acceptance
 
 ## Ризики
 
