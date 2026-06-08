@@ -248,6 +248,12 @@ async function callAnthropicWithContinuation(
   let lastNonTextBlocks: AnthropicContentBlock[] = [];
   let continued = false;
 
+  // AI-DANGER: do not remove this continuation loop as an "optimization". When
+  // Anthropic returns `stop_reason: "max_tokens"` with text-only content, this
+  // re-issues the call with the partial text appended so the model resumes
+  // exactly where it cut off — it is the safety net that hides short-capped
+  // replies (parity with a manual "продовж"). Capped at MAX_TEXT_CONTINUATIONS.
+  // (domain-invariants.md — PR #813.)
   for (let i = 0; i <= MAX_TEXT_CONTINUATIONS; i++) {
     if (options.signal?.aborted) break;
 

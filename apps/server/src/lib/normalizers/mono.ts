@@ -12,6 +12,10 @@
 export function toNumberOrNull(v: unknown): number | null {
   if (v == null) return null;
   if (typeof v === "number") return v;
+  // AI-DANGER: keep the string→Number coercion. `pg` returns bigint columns as
+  // strings; dropping this leaks stringly-typed balances to the API, where
+  // `"123" + "456"` silently became `"123456"` in the dashboard (issue #708,
+  // Hard Rule #1). Snapshot tests on response shapes guard this.
   if (typeof v === "string" || typeof v === "bigint") return Number(v);
   return null;
 }
