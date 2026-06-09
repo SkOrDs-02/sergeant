@@ -371,4 +371,46 @@ describe("no-foreign-module-accent", () => {
     assert.match(messages[0].message, /bg-finyk-surface\/30/);
     assert.match(messages[0].message, /routine/);
   });
+
+  // ─────────────────────────────────────────────────────────────────
+  // GOOD-fixture edge cases: rule must stay silent on accentless code,
+  // no-className nodes, and same-module accent usage. These pin the
+  // three GOOD shapes the task spec (P2-2) calls out explicitly.
+  // ─────────────────────────────────────────────────────────────────
+
+  it("does NOT flag an element with no className attribute at all", () => {
+    // The rule walks Literal nodes — a JSX element with no className
+    // string has no Literal for the rule to inspect, so it must be
+    // silent regardless of which module's file the component lives in.
+    const messages = lint(
+      `export function Wrapper({ children }) { return <div>{children}</div>; }`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 0);
+  });
+
+  it("does NOT flag accentless Tailwind utility classes inside a module file", () => {
+    // Layout / spacing / border-radius utilities (`flex`, `gap-4`,
+    // `rounded-xl`, `border-border`, `shadow-sm`, …) carry no module
+    // prefix so the rule must not misidentify them as foreign accents.
+    const messages = lint(
+      `const c = "flex items-center gap-4 rounded-xl border border-border p-3 shadow-sm";`,
+      FIZRUK_FILE,
+    );
+    assert.equal(messages.length, 0);
+  });
+
+  it("does NOT flag a module's own accent inside that module's file", () => {
+    // nutrition file using nutrition accents — same-module GOOD case.
+    // The rule fires only when the module in the *file path* differs
+    // from the module prefix in the accent token.
+    const NUTRITION_FILE = abs(
+      "apps/web/src/modules/nutrition/components/MealCard.tsx",
+    );
+    const messages = lint(
+      `const c = "bg-nutrition-surface text-nutrition-strong ring-nutrition border-nutrition/30";`,
+      NUTRITION_FILE,
+    );
+    assert.equal(messages.length, 0);
+  });
 });
