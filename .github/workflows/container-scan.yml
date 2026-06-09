@@ -4,8 +4,9 @@ name: Container image scan (Trivy)
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
-# Сканує зібраний Docker-образ Hub API (`Dockerfile.api`) на CVE через
-# Trivy. Це OS+бібліотечний шар поверх існуючого `pnpm audit` / OSV-Scanner
+# Сканує зібрані Docker-образи Hub API (`Dockerfile.api`) і OpenClaw console
+# bot (`Dockerfile.openclaw`, раніше `Dockerfile.console`) на CVE через Trivy.
+# Це OS+бібліотечний шар поверх існуючого `pnpm audit` / OSV-Scanner
 # / Snyk pipeline (див. `.github/workflows/nightly-audit.yml`) — там
 # скануються лише lockfile-залежності, тут — реальний runtime-image
 # (alpine layers, transitive npm у рантайм-вузлі тощо).
@@ -14,12 +15,14 @@ on:
   pull_request:
     paths:
       - "Dockerfile.api"
+      - "Dockerfile.openclaw"
       - ".dockerignore"
       - "pnpm-lock.yaml"
       - "apps/server/**"
       - "packages/shared/**"
       - "packages/config/**"
       - "packages/finyk-domain/**"
+      - "tools/openclaw/**"
       - "patches/**"
       - ".github/workflows/container-scan.yml"
   push:
@@ -142,4 +145,90 @@ jobs:
             echo "- Severity gate: CRITICAL, HIGH (ignore-unfixed = true)"
             echo "- SARIF artifact: \`trivy-image-sarif\`"
             echo "- Code Scanning category: \`trivy-image\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  trivy-image-openclaw:
+    name: Trivy image scan (Dockerfile.openclaw)
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # docker/setup-buildx-action v4.0.0 (SHA-pinned)
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd
+
+      # docker/build-push-action v7.1.0 (SHA-pinned)
+      - name: Build openclaw image (load into local Docker, no push)
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f
+        with:
+          context: .
+          file: Dockerfile.openclaw
+          # `platforms: linux/amd64` — same invariant as Dockerfile.api
+          # (L13 — `docs/04-governance/security/hardening/L13-docker-platform-pin.md`).
+          # Railway runtime — amd64; distroless runtime must match production arch.
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: sergeant-openclaw-ci:latest
+          cache-from: type=gha,scope=container-scan-openclaw
+          cache-to: type=gha,mode=max,scope=container-scan-openclaw
+
+      - name: Confirm scanned image is linux/amd64
+        run: |
+          # Defense-in-depth: якщо хтось у майбутньому забере `platforms`
+          # вище, цей крок упаде до Trivy і пояснить чому.
+          arch="$(docker image inspect sergeant-openclaw-ci:latest --format '{{.Architecture}}')"
+          os="$(docker image inspect sergeant-openclaw-ci:latest --format '{{.Os}}')"
+          echo "sergeant-openclaw-ci:latest platform = ${os}/${arch}"
+          if [[ "${os}/${arch}" != "linux/amd64" ]]; then
+            echo "::error::sergeant-openclaw-ci:latest was built for ${os}/${arch}, expected linux/amd64."
+            echo "See docs/04-governance/security/hardening/L13-docker-platform-pin.md."
+            exit 1
+          fi
+
+      # aquasecurity/trivy-action v0.36.0 (SHA-pinned)
+      # Same gate as Dockerfile.api: fail on CRITICAL/HIGH, ignore-unfixed,
+      # use shared .trivyignore escape hatch. SARIF uploaded under a distinct
+      # category so Code Scanning shows both images separately.
+      - name: Trivy image scan (SARIF + fail on CRITICAL/HIGH)
+        id: trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: sergeant-openclaw-ci:latest
+          format: sarif
+          output: trivy-openclaw.sarif
+          severity: "CRITICAL,HIGH"
+          limit-severities-for-sarif: true
+          ignore-unfixed: true
+          trivyignores: ./.trivyignore
+          vuln-type: "os,library"
+          exit-code: "1"
+
+      - name: Upload SARIF to code-scanning
+        if: ${{ !cancelled() }}
+        # github/codeql-action/upload-sarif v4.36.0 (SHA-pinned)
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa
+        with:
+          sarif_file: trivy-openclaw.sarif
+          category: trivy-image-openclaw
+
+      - name: Upload SARIF artifact
+        if: ${{ !cancelled() }}
+        # actions/upload-artifact v7.0.0 (SHA-pinned)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: trivy-openclaw-sarif
+          path: trivy-openclaw.sarif
+          retention-days: 30
+
+      - name: Summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "### Trivy image scan summary (openclaw)"
+            echo
+            echo "- Image: \`sergeant-openclaw-ci:latest\` (built from \`Dockerfile.openclaw\`)"
+            echo "- Severity gate: CRITICAL, HIGH (ignore-unfixed = true)"
+            echo "- SARIF artifact: \`trivy-openclaw-sarif\`"
+            echo "- Code Scanning category: \`trivy-image-openclaw\`"
           } >> "$GITHUB_STEP_SUMMARY"
