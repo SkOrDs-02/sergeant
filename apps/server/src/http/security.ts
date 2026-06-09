@@ -45,7 +45,7 @@ export function buildApiCspDirectives(): ApiCspDirectives {
  *   SPA, політика задається на CDN-рівні (Vercel headers). **NB:** після
  *   видалення Replit-режиму (2026-06-08) runtime ніколи не передає
  *   `servesFrontend: true` — `config.servesFrontend` завжди `false`; ця гілка
- *   лишається лише як generic capability (kандидат на видалення окремим PR).
+ *   лишається лише як generic capability (кандидат на видалення окремим PR).
  * - `servesFrontend: false` (дефолт) — API-only (Railway). CSP буде строгою
  *   (див. buildApiCspDirectives). `CSP_REPORT_ONLY=1` переводить її у
  *   report-only-режим — корисно під час phased-rollout: браузер логує

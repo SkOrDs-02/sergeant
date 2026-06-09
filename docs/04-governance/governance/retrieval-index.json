@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-06-09",
   "sourceHashes": {
-    "knowledge-graph": "f562cfbdc59164b12986eb2f59a0dd0bd801a17e90cab4bfe8f190fe05405729",
+    "knowledge-graph": "cdc27a3335e678e289f7bef92a2fdac3cc8c5655db8f6243d13aed145f606427",
     "symbol-index": "7ea3de138fa223ddd49af14b3e9f174bd684fb138c8837be02f8b8404fe29ba1"
   },
   "counts": {
@@ -507,8 +507,8 @@
       "title": "ADR-0047: CloudSync v1 — T₀ executed (410 Gone)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0047: CloudSync v1 — T₀ executed (410 Gone) · adr:0047 · adr · Active · 47 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Risks / Followups · Status (2026-05-06) · Amendment (2026-05-10): Final removal exit-criteria",
-      "contentHash": "bb3212f626578d1df7120ce6e7dd66df761c9723443911f56d90f91ce8507da8"
+      "text": "ADR-0047: CloudSync v1 — T₀ executed (410 Gone) · adr:0047 · adr · Active · 47 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Risks / Followups · Status (2026-05-06) · Amendment (2026-05-10): Final removal exit-criteria",
+      "contentHash": "26de821f337ce0dcd3132a0889456818bcbf1ed80cf1fd484ff2f88030c3cda9"
     },
     {
       "id": "adr:0048",
@@ -540,8 +540,8 @@
       "title": "ADR-0050: TypeScript major-version policy + `@types/node` pinning",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-06-08 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
-      "contentHash": "a1a4a3df73e13f8b206787706800e20e799a83d6ffb1b5f5955c28f1bfbdd727"
+      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-06-09 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
+      "contentHash": "f88b0f1b125a4ec2b43a95887cda6082951e93083f8a2e12581c9dccfe428768"
     },
     {
       "id": "adr:0051",
@@ -573,8 +573,8 @@
       "title": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror · adr:0053 · adr · Accepted · 53 · 2026-06-08 · ADR-0053: API versioning policy — /api/ ↔ /api/v1/ mirror · Context · Decision · Consequences · Альтернативи · Trigger to revisit · Refs",
-      "contentHash": "f4ce5d5ef08b46ef5fc74c83e453f2dfbf6502a5465a4547603928e397bc7e9f"
+      "text": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror · adr:0053 · adr · Accepted · 53 · 2026-06-09 · ADR-0053: API versioning policy — /api/ ↔ /api/v1/ mirror · Context · Decision · Consequences · Альтернативи · Trigger to revisit · Refs",
+      "contentHash": "b2d444eeca0dd68e7d0d81e46671159adfe3e0584cf15807c069950ee3d45679"
     },
     {
       "id": "adr:0054",
@@ -617,8 +617,8 @@
       "title": "ADR-0058: Knowledge graph schema and storage format",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "af9ab76a26f70f5ee71434f995bcf3499f42c4cb1c7c56fad18ee2121bcde1e3"
+      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "f9f00bfab8a89c24f2f1fd1f66366df0211e15e0adb5153becdd070437417f2e"
     },
     {
       "id": "adr:0059",
@@ -628,8 +628,8 @@
       "title": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "b874cb7fdd211e8ec25a76deff3693198e5756f363e9fdf2c53b10fef9cba25a"
+      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "d12ab611e744b3a2dd5a2f20be1b40956ba87fdcc985b72457e99da03226c20e"
     },
     {
       "id": "adr:0060",
@@ -639,8 +639,8 @@
       "title": "ADR-0060: Architecture diagrams — automation scope (workspace graph only)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "07175714cb4cb87a29aa902d47b215d0a8b27906f543e0d885ff5d52d66e7b6d"
+      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "9203d466cce937b4fc4fef8015baad221a9aba9ba65fa8e8d91c1da7f44532c5"
     },
     {
       "id": "adr:0061",
@@ -650,8 +650,8 @@
       "title": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "a15836fbe3dc1511e22ce8232106c40660d29633528e64e6bdec6d3a5815ed8a"
+      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "67e1a8970e2cc5f2628426941d4f24ead0b561b9d9e50eba807b0ddc5de880ae"
     },
     {
       "id": "adr:0062",
@@ -672,8 +672,8 @@
       "title": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "c54a9699492a1504353aca338c1ea8419bbb0fd7090e9aaa92b7f8e3dc551094"
+      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "c7513da9abf54806d19bbab41e12ce6df55e1fccff6e7a77fc77214c5853cb6c"
     },
     {
       "id": "adr:0064",
@@ -705,8 +705,8 @@
       "title": "ADR-0066: Agent semantic retrieval over the knowledge graph",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-06-08 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "5cefb9a82b19f2423ac740ad301ff75c08525c3e46ecab2513f6c16a0e2c572e"
+      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "ed17dcd7f9315d1ba5465a52feac46739a4848120b19953b539a5271b0243c64"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
