@@ -90,6 +90,11 @@ deferred, trigger-gated на перший production contract-bug:
 - Contract roundtrip tests (`tests/contract/openapi-roundtrip.test.ts`).
 - Schemathesis property-based testing (`.github/workflows/contract-tests.yml`).
 
+## Related ADRs
+
+- **[ADR-0025](./0025-openapi-generation.md)** — Introduced the `zod-to-openapi` infrastructure, generator script (`generate-openapi.mjs`), and CI freshness check that this ADR formalises as the canonical source-of-truth decision. ADR-0062 confirms and extends ADR-0025; it does not supersede it.
+- **[ADR-0053](./0053-api-versioning-policy.md)** — API versioning policy (`/api/v1/*` canonical URL scheme) that the OpenAPI spec documents.
+
 ## Links
 
 - PR-23 spec: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md)
