@@ -287,7 +287,7 @@ export default function (plop) {
   // ── hubchat-tool ───────────────────────────────────────────────────────────
   plop.setGenerator("hubchat-tool", {
     description:
-      "New HubChat tool (server tooldef stub + client action handler stub)",
+      "New OpenClaw/HubChat tool (server tooldef stub + client action handler stub)",
     prompts: [
       {
         type: "input",
