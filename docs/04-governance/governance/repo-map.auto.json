@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-06-08",
+  "generated_at": "2026-06-09",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
