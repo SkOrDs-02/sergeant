@@ -74,7 +74,7 @@ export default class ChunkErrorBoundary extends Component<
           <button
             type="button"
             onClick={this.handleReload}
-            className="px-4 py-2 rounded-xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50"
+            className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50"
           >
             {messages.actions.reload}
           </button>

@@ -846,7 +846,7 @@
       "type": "audit",
       "title": "HubSettings lazy boundaries — CLS + chunk-load follow-up",
       "path": "docs/90-work/audits/2026-05-25-hubsettings-cls-chunk-load.md",
-      "status": "Open",
+      "status": "Closed",
       "tier": "core",
       "meta": {}
     },
