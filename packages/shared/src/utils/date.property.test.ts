@@ -125,7 +125,8 @@ describe("shared/utils/date – toLocalISODate property", () => {
     for (let i = 0; i < NUM_RUNS; i++) {
       const earlier = arbitraryLocalDate();
       // Add a random positive offset (0..30 days) so `later` is always ≥ `earlier`
-      const laterMs = earlier.getTime() + Math.floor(rng() * 30 * 24 * 60 * 60 * 1000);
+      const laterMs =
+        earlier.getTime() + Math.floor(rng() * 30 * 24 * 60 * 60 * 1000);
       const later = new Date(laterMs);
       expect(toLocalISODate(earlier) <= toLocalISODate(later)).toBe(true);
     }

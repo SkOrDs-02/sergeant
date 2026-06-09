@@ -382,9 +382,7 @@ describe("no-arbitrary-text-size", () => {
     // Paired GOOD fixture for `text-sm`. Both `text-xs` and `text-sm`
     // are the common alternatives an author should reach for instead
     // of `text-[12px]` / `text-[14px]`.
-    const msgs = lint(
-      `const c = "text-sm font-medium text-fg-muted";`,
-    );
+    const msgs = lint(`const c = "text-sm font-medium text-fg-muted";`);
     assert.equal(msgs.length, 0);
   });
 
@@ -392,9 +390,7 @@ describe("no-arbitrary-text-size", () => {
     // The clsx / exempt tests use `text-[12px]` inside exempt paths.
     // Explicitly confirm `text-[11px]` is flagged in a regular module
     // component — a sub-scale size slipping in from a non-exempt context.
-    const msgs = lint(
-      `const c = "text-[11px] text-fg-muted leading-snug";`,
-    );
+    const msgs = lint(`const c = "text-[11px] text-fg-muted leading-snug";`);
     assert.equal(msgs.length, 1);
     assert.match(msgs[0].message, /text-\[11px\]/);
   });
@@ -403,9 +399,7 @@ describe("no-arbitrary-text-size", () => {
     // `text-[12px]` in a non-exempt module file: the rule bans ALL
     // arbitrary text-size literals regardless of value — authors must
     // use the Tailwind preset `text-xs` instead.
-    const msgs = lint(
-      `const c = "text-[12px] font-semibold";`,
-    );
+    const msgs = lint(`const c = "text-[12px] font-semibold";`);
     assert.equal(msgs.length, 1);
     assert.match(msgs[0].message, /text-\[12px\]/);
   });

@@ -137,8 +137,8 @@ describe("shared/utils/macros – property", () => {
       const baseTotal = macrosToTotals(base);
 
       // Add delta to kcal only; all other fields are unchanged.
-      const baseKcal = Number.isFinite(Number(base.kcal))
-        ? Math.max(0, Number(base.kcal))
+      const baseKcal = Number.isFinite(Number(base["kcal"]))
+        ? Math.max(0, Number(base["kcal"]))
         : 0;
       const augmented = { ...base, kcal: baseKcal + delta };
       const augTotal = macrosToTotals(augmented);
@@ -157,7 +157,12 @@ describe("shared/utils/macros – property", () => {
       const protein = Math.floor(rng() * 300);
       const fat = Math.floor(rng() * 200);
       const carbs = Math.floor(rng() * 400);
-      const totals = macrosToTotals({ kcal, protein_g: protein, fat_g: fat, carbs_g: carbs });
+      const totals = macrosToTotals({
+        kcal,
+        protein_g: protein,
+        fat_g: fat,
+        carbs_g: carbs,
+      });
       expect(totals.kcal).toBe(kcal);
       expect(totals.protein_g).toBe(protein);
       expect(totals.fat_g).toBe(fat);
