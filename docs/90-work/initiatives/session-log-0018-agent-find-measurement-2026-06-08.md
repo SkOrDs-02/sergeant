@@ -1,6 +1,6 @@
 # Session log — 0018 `agent:find` lexical measurement (2026-06-08)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Reference
 
 Лог одного заміру для останнього DONE-критерію [Ініціативи 0018](./0018-agent-semantic-retrieval.md):

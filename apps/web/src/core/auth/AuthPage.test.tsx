@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
 /**
  * Тести для AuthPage після міграції на `useApiForm`. Покривають:
@@ -87,7 +88,11 @@ afterEach(() => {
 
 describe("AuthPage — login mode", () => {
   it("shows zod validation errors for empty / invalid fields", async () => {
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     const submit = screen.getByRole("button", { name: /^Увійти$/ });
     fireEvent.click(submit);
@@ -100,7 +105,11 @@ describe("AuthPage — login mode", () => {
   });
 
   it("rejects malformed email", async () => {
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     const email = screen.getByLabelText("Email") as HTMLInputElement;
     const password = screen.getByLabelText("Пароль") as HTMLInputElement;
@@ -117,7 +126,11 @@ describe("AuthPage — login mode", () => {
 
   it("calls login() on valid submit and shows success toast", async () => {
     loginMock.mockResolvedValue(true);
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "alice@example.com" },
@@ -139,7 +152,11 @@ describe("AuthPage — login mode", () => {
   it("does NOT toast success when login() returns false", async () => {
     loginMock.mockResolvedValue(false);
     authErrorState = "Невірний пароль";
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "alice@example.com" },
@@ -165,7 +182,11 @@ describe("AuthPage — login mode", () => {
 
 describe("AuthPage — register mode", () => {
   it("enforces 10-char password minimum", async () => {
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
 
@@ -186,7 +207,11 @@ describe("AuthPage — register mode", () => {
 
   it("falls back to email-prefix when name is empty", async () => {
     registerMock.mockResolvedValue(true);
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
 
@@ -213,7 +238,11 @@ describe("AuthPage — register mode", () => {
 
   it("uses provided name when filled", async () => {
     registerMock.mockResolvedValue(true);
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
 
@@ -242,7 +271,11 @@ describe("AuthPage — register mode", () => {
 describe("AuthPage — mode switching", () => {
   it("clears authError when switching modes", () => {
     authErrorState = "Stale";
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
 
@@ -252,14 +285,22 @@ describe("AuthPage — mode switching", () => {
 
 describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
   it("autoFocus-ить email на login-режимі при mount-і", () => {
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     const email = screen.getByLabelText("Email") as HTMLInputElement;
     expect(document.activeElement).toBe(email);
   });
 
   it("автокомплит атрибути виставлені на login-полях", () => {
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     const email = screen.getByLabelText("Email") as HTMLInputElement;
     const password = screen.getByLabelText("Пароль") as HTMLInputElement;
@@ -269,7 +310,11 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
   });
 
   it("автокомплит атрибути виставлені на register-полях", () => {
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
 
@@ -283,7 +328,11 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
   });
 
   it("кнопка show-password перемикає type password ↔ text", () => {
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     const password = screen.getByLabelText("Пароль") as HTMLInputElement;
     expect(password.type).toBe("password");
@@ -299,7 +348,11 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
   });
 
   it("aria-describedby з'являється лише після помилки валідації", async () => {
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     const password = screen.getByLabelText("Пароль") as HTMLInputElement;
     expect(password.getAttribute("aria-describedby")).toBeNull();
@@ -314,7 +367,11 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
   });
 
   it("forgot-email отримує autoFocus при відкритті панелі", () => {
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Забули пароль/ }));
 
@@ -328,7 +385,11 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
     // Регресія для page-audit-01 F6: `LoginForm` колись читав
     // `formState.defaultValues?.email` (завжди ""), тож live-набраний email
     // губився. Тепер через `watch("email")` він пробрасується у панель.
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "user@example.com" },
@@ -349,7 +410,11 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
           resolveLogin = resolve;
         }),
     );
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "alice@example.com" },
@@ -376,7 +441,11 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
 describe("AuthPage — forgot password (UX roast 2026-Q2 A14)", () => {
   it("після успіху показує кнопку «Назад до входу», що згортає панель", async () => {
     requestPasswordResetMock.mockResolvedValue(true);
-    render(<AuthPage />);
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Забули пароль/ }));
     fireEvent.change(screen.getByLabelText("Email для скидання"), {
@@ -402,7 +471,11 @@ describe("AuthPage — forgot password (UX roast 2026-Q2 A14)", () => {
     vi.useFakeTimers();
     try {
       requestPasswordResetMock.mockResolvedValue(true);
-      render(<AuthPage />);
+      render(
+        <MemoryRouter>
+          <AuthPage />
+        </MemoryRouter>,
+      );
 
       fireEvent.click(screen.getByRole("button", { name: /Забули пароль/ }));
       fireEvent.change(screen.getByLabelText("Email для скидання"), {

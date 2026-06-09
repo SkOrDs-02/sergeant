@@ -1,6 +1,6 @@
 # 0018 — Agent semantic retrieval (agent:find)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). **Lexical before/after заміряно** ([session-log 2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md)). Залишок: **semantic** live-mode acceptance (одноразовий `pnpm agent:embed` з `VOYAGE_API_KEY` + cosine-blend заміри) — відкладено, бо ключа в середовищі немає.
 > **Agent-ready:** yes
 

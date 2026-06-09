@@ -153,11 +153,15 @@ describe("addWaterMl — day change", () => {
 
   it("starts fresh at 0 when the day changes", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-04-18T23:55:00"));
+    // AI-CONTEXT: Day keys are Europe/Kyiv (Hard Rule), so bracket a KYIV
+    // midnight using absolute UTC instants — TZ-runner-independent. April → DST
+    // (UTC+3), so Kyiv 00:00 == 21:00Z: 20:55Z is Kyiv 23:55 (04-18), 21:05Z is
+    // Kyiv 00:05 (04-19).
+    vi.setSystemTime(new Date("2026-04-18T20:55:00Z"));
     const prev = addWaterMl({}, 500);
     expect(getTodayWaterMl(prev)).toBe(500);
 
-    vi.setSystemTime(new Date("2026-04-19T00:05:00"));
+    vi.setSystemTime(new Date("2026-04-18T21:05:00Z"));
     expect(getTodayWaterMl(prev)).toBe(0);
 
     const next = addWaterMl(prev, 200);

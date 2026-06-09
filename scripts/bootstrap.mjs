@@ -164,6 +164,15 @@ function checkDocker() {
   }
   const r = tryExec("docker", ["--version"]);
   if (!r.ok) {
+    // `--check` is documented as "no docker" (verify-only mode): it never
+    // brings the DB up, so a missing Docker binary is informational, not a
+    // hard failure. The full bootstrap path still gates on it below.
+    if (CHECK_ONLY) {
+      warn(
+        "Docker не знайдено (--check: не блокую — потрібен лише для `pnpm dev:db`)",
+      );
+      return true;
+    }
     fail(
       "Docker не знайдено",
       "Встанови Docker Desktop / Docker Engine. Або запусти `pnpm bootstrap --skip-db` і підніми Postgres вручну (див. docs/02-engineering/integrations/env-vars.md).",
@@ -173,6 +182,14 @@ function checkDocker() {
   // Try `docker info` to verify daemon is running.
   const info = tryExec("docker", ["info", "--format", "{{.ServerVersion}}"]);
   if (!info.ok) {
+    // Same contract as above: a stopped daemon must not fail `--check`
+    // (e.g. CI lanes without a Docker socket) — it comes up at `pnpm dev:db`.
+    if (CHECK_ONLY) {
+      warn(
+        "Docker daemon не відповідає (--check: не блокую — підніметься при `pnpm dev:db`)",
+      );
+      return true;
+    }
     fail(
       "Docker daemon не відповідає",
       "Запусти Docker Desktop / `sudo systemctl start docker` і повтори.",

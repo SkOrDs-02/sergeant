@@ -1,6 +1,6 @@
 # Відкрита робота — єдиний дашборд
 
-> **Last validated:** 2026-06-08 by @codex. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @codex. **Next review:** 2026-09-07.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-open-work`. -->
