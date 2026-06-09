@@ -336,9 +336,10 @@ export function ConfirmModal({
 
 export interface SectionSkeletonProps {
   /**
-   * Minimum height in pixels. Mirrors the real section's collapsed-state
-   * height so the Suspense fallback does not cause Cumulative Layout
-   * Shift when the lazy chunk resolves and the real section paints.
+   * Minimum height in pixels. Matches the real section's default-expanded
+   * height (header + collapsed SubGroups + chrome padding) so the Suspense
+   * fallback does not cause Cumulative Layout Shift when the lazy chunk
+   * resolves and the real section paints.
    *
    * Per-section values are owned by the caller — each `<Suspense>`
    * boundary in `HubSettingsPage` passes the height it knows for its
@@ -358,7 +359,7 @@ export interface SectionSkeletonProps {
  * Stable height-placeholder for a `<Suspense>`-deferred `<SettingsGroup>`
  * (Initiative 0017 Sprint 1.1 — per-section lazy in HubSettingsPage).
  *
- * Shape mirrors the closed-state `<SettingsGroup>` header chrome —
+ * Shape mirrors the expanded-state `<SettingsGroup>` chrome —
  * icon badge slot + title bar + chevron — so the swap from fallback to
  * real section is visually a no-op for the user. Shimmer (not pulse)
  * matches the "premium loading" feel chosen by the design tokens, and

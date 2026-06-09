@@ -68,9 +68,9 @@ interface SettingsSection {
    * When true, the section is React.lazy() and renders inside a
    * `<Suspense>` boundary with a `<SectionSkeleton>` fallback. Used by
    * the heavy module-scoped sections (Initiative 0017 Sprint 1.1 PR-1.2).
-   * `minH` is the expected collapsed-state height in pixels — keeps the
-   * skeleton stable so the Suspense → real section swap does not cause
-   * Cumulative Layout Shift.
+   * `minH` is the expected default-expanded height in pixels (headers +
+   * collapsed SubGroups) so the skeleton occupies the same footprint as
+   * the real section, preventing Cumulative Layout Shift on lazy swap.
    */
   lazy?: { minH: number };
 }
@@ -250,14 +250,14 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
         title: "Рутина",
         keywords: "звички рутина habits streak ціль reset",
         render: () => <RoutineSection />,
-        lazy: { minH: 72 },
+        lazy: { minH: 248 },
       },
       {
         id: "fizruk",
         title: "Фізрук",
         keywords: "фізрук тренування кардіо вага workouts gym fitness",
         render: () => <FizrukSection />,
-        lazy: { minH: 72 },
+        lazy: { minH: 168 },
       },
       {
         id: "finyk",
@@ -265,7 +265,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
         keywords:
           "фінанси фінік finyk monobank privatbank token api transactions budget",
         render: () => <FinykSection />,
-        lazy: { minH: 72 },
+        lazy: { minH: 248 },
       },
       {
         id: "nutrition",
@@ -273,7 +273,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
         keywords:
           "харчування їжа nutrition meals food kбжу калорії kcal білки жири вуглеводи вода комора pantry скан штрихкод barcode",
         render: () => <NutritionSection />,
-        lazy: { minH: 72 },
+        lazy: { minH: 280 },
       },
       {
         id: "privacy",

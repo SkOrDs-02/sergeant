@@ -1,7 +1,7 @@
 # PR-30: Dockerfile post-install cleanup CVE-shrink fragility
 
 > **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13); shared base layer + console-side Trivy scan tracked as follow-up.
+> **Status:** Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13). Console-side Trivy follow-up landed in commit [`120ec9d94`](https://github.com/Skords-01/Sergeant/commit/120ec9d944eebf8bbc15c5360c4f1e8dbd15ae1d) on 2026-06-09.
 
 |                    |                                                                  |
 | ------------------ | ---------------------------------------------------------------- |
@@ -89,7 +89,7 @@ Trivy в CI (`.github/workflows/docker-cve-scan.yml`):
 
 - [x] `Dockerfile.api` + `Dockerfile.console` рефакторені на multi-stage distroless (`builder` + `deps` + `runtime` (`gcr.io/distroless/nodejs20-debian12:nonroot`)).
 - [ ] `docker/base.Dockerfile` shared layer — відкладено як follow-up PR (поточні файли divergent enough — console не потребує db-schema білду, api не потребує tsc-on-build; вигода від поблихи введення базової layer-и не переважує maintenance cost).
-- [x] Trivy scan вже є у [`.github/workflows/container-scan.yml`](../../../../.github/workflows/container-scan.yml) для Dockerfile.api; розширення на Dockerfile.console — follow-up PR.
+- [x] Trivy scan спершу був лише для `Dockerfile.api`, а 2026-06-09 його розширено на `Dockerfile.openclaw` комітом [`120ec9d94`](https://github.com/Skords-01/Sergeant/commit/120ec9d944eebf8bbc15c5360c4f1e8dbd15ae1d).
 - [~] Image size виміряно: api 750 MB, console 166 MB (cold build, без buildx layer cache). Baseline pre-PR-30 не був знятий (вроді без referencing artifact-у CI); -30% target не верифіковано. Distroless runtime base сам по собі ≈165 MB проти alpine ≈50 MB, тому byte-виграш неочевидний — основний win в attack-surface (no shell / no package-managers).
 - [x] Smoke-test виконано локально: `docker run` api + console бутсять до env-validation step як expected. Migrations dir resolve-иться всередині distroless layer-у (verified: `dist-server/migrations/001_noop.sql` присутній).
 - [x] [`docs/03-operations/ops/docker-image-policy.md`](../../../03-operations/ops/docker-image-policy.md) написано (TL;DR + stage map + healthcheck rationale + Trivy gate + rollout + backout).

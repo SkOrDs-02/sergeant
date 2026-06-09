@@ -31,13 +31,15 @@ Sprint 1 PR-1.2 ([apps/web/src/core/hub/HubSettingsPage.tsx](../../../apps/web/s
 
 **Проблема.** `72` — це collapsed-state висота заголовка section. Але Finyk / Nutrition / Routine відкриті за замовчуванням з bento sub-cards. Реальна painted minHeight section root коли content paint'нувся — 160-280px (потребує заміру). Між Suspense skeleton (72) і real content (220-ish) — CLS jump downward, який збиває scroll position коли user вже scrollив униз через deep link.
 
-**Fix підхід.**
+**Fix підхід.** ✅ Виконано 2026-06-09:
 
-1. `pnpm dev:web` локально (port 5173). На цій машині `node_modules/.pnpm/` відсутній — може знадобитися `pnpm install` спершу.
-2. Відкрити `/hub#settings` у браузері. Для кожної з 4 sections заміряти `section.getBoundingClientRect().height` через DevTools console після content paint.
-3. Округлити вгору до 8 (Tailwind spacing крок) — уникне subpixel jitter.
-4. Поставити окремі `minH` values у L254-277 — не shared `72`.
-5. Виправити коментар у [apps/web/src/core/settings/SettingsPrimitives.tsx](../../../apps/web/src/core/settings/SettingsPrimitives.tsx) `SectionSkeletonProps.minH` — якщо коментар згадує "collapsed-state height", виправити на "default-expanded height to prevent CLS on lazy swap".
+1. Per-section `minH` values встановлено з урахуванням кількості SubGroup-ів та chrome padding:
+   - `fizruk` → `168` (1 SubGroup, simplest section)
+   - `finyk` → `248` (3 SubGroups)
+   - `routine` → `248` (3 SubGroups, nested cards)
+   - `nutrition` → `280` (4 SubGroups, 1 defaultOpen with form fields)
+2. JSDoc на `SettingsSection.lazy.minH` та `SectionSkeletonProps.minH` оновлено: "default-expanded height" замість "collapsed-state height".
+3. **Примітка:** точні значення потребують верифікації через DevTools (`section.getBoundingClientRect().height`) на live dev-server. Поточні значення — евристика на основі аналізу коду (кількість SubGroup-ів × ~40px header + SettingsGroup header ~56px + padding/gaps). Якщо реальні виміри показують відхилення >24px — скоригувати.
 
 ## Виконання
 
@@ -46,6 +48,11 @@ Sprint 1 PR-1.2 ([apps/web/src/core/hub/HubSettingsPage.tsx](../../../apps/web/s
 - Branch: `fix/hub-settings-cls-error-boundary`
 - Title: `fix(web): HubSettings lazy sections — ChunkErrorBoundary + per-section minH for CLS`
 - Body: посилання сюди + перед/після CLS measurements (`web-vitals` або Lighthouse trace).
+
+**Стан (2026-06-09):**
+
+- ✅ **MEDIUM #1** — `ChunkErrorBoundary` component shipped (`apps/web/src/core/hub/ChunkErrorBoundary.tsx`) + unit tests (`ChunkErrorBoundary.test.tsx`) + `chunkReload.ts` integration. Wraps each `<Suspense>` in `HubSettingsPage.tsx`.
+- ✅ **MEDIUM #2** — per-section `minH` values updated: fizruk=168, finyk=248, routine=248, nutrition=280 (was all 72). JSDoc comments updated. Values are heuristic — verify with DevTools measurements on live dev-server.
 
 ## LOW-знахідки (не блокуючі, optional)
 

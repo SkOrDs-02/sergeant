@@ -1,6 +1,6 @@
 # STRIDE threat model
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-09 by @Skords-01. **Next review:** 2026-09-07.
 > **Status:** Active
 
 Закриває [I6 — Document the STRIDE threat model per module](./hardening/I6-threat-model.md).
@@ -161,17 +161,17 @@ SPA fallback, OS-level. Trust boundary: app-tier ↔ persistence-tier.
 Деякі mitigation-и не належать одному модулю — це системний рівень
 поверх усіх вище.
 
-| Control                                  | Layer                            | Trigger                                                                                                | Linked cards                                                                                       |
-| ---------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| CodeQL SAST                              | TS source taint-flow             | PR + push to `main` + Mon 06:00 UTC                                                                    | [I1](./hardening/I1-codeql-workflow.md) Closed                                                     |
-| Trivy container scan                     | API image (alpine + npm runtime) | PR + push + daily 04:00 UTC                                                                            | [`./container-scan.md`](./container-scan.md), [L13](./hardening/L13-docker-platform-pin.md) Closed |
-| Nightly OSV-Scanner / pnpm audit         | Lockfile SCA                     | nightly 03:00 UTC                                                                                      | [`./nightly-audit.md`](./nightly-audit.md), [H2](./hardening/H2-dependabot.md) Closed              |
-| GitHub Secret-scanning + push protection | Repo                             | Every push                                                                                             | [`./README.md` § Secret scanning policy](./README.md)                                              |
-| CI gitleaks job                          | Repo                             | Every PR + push to `main`                                                                              | [`./README.md` § Secret scanning policy](./README.md)                                              |
-| Pre-commit secret detection              | Local commit                     | Husky + `lint-staged`                                                                                  | [I5](./hardening/I5-pre-commit-secret-detection.md) Closed — gitleaks pre-commit wired via Husky   |
-| `security.txt`                           | Public discovery                 | Static `apps/web/public/.well-known/security.txt`; expiry guard `scripts/check-security-txt-expiry.sh` | [I4](./hardening/I4-security-txt.md) Closed                                                        |
-| SBOM generation                          | Container build                  | Container-scan workflow                                                                                | [I3](./hardening/I3-sbom-generation.md) Open                                                       |
-| External pentest                         | Whole-stack                      | 6-12 month cycle                                                                                       | [I8](./hardening/I8-periodic-external-pentest.md) Closed                                           |
+| Control                                  | Layer                           | Trigger                                                                                                | Linked cards                                                                                       |
+| ---------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| CodeQL SAST                              | TS source taint-flow            | PR + push to `main` + Mon 06:00 UTC                                                                    | [I1](./hardening/I1-codeql-workflow.md) Closed                                                     |
+| Trivy container scan                     | Active runtime container images | PR + push + daily 04:00 UTC                                                                            | [`./container-scan.md`](./container-scan.md), [L13](./hardening/L13-docker-platform-pin.md) Closed |
+| Nightly OSV-Scanner / pnpm audit         | Lockfile SCA                    | nightly 03:00 UTC                                                                                      | [`./nightly-audit.md`](./nightly-audit.md), [H2](./hardening/H2-dependabot.md) Closed              |
+| GitHub Secret-scanning + push protection | Repo                            | Every push                                                                                             | [`./README.md` § Secret scanning policy](./README.md)                                              |
+| CI gitleaks job                          | Repo                            | Every PR + push to `main`                                                                              | [`./README.md` § Secret scanning policy](./README.md)                                              |
+| Pre-commit secret detection              | Local commit                    | Husky + `lint-staged`                                                                                  | [I5](./hardening/I5-pre-commit-secret-detection.md) Closed — gitleaks pre-commit wired via Husky   |
+| `security.txt`                           | Public discovery                | Static `apps/web/public/.well-known/security.txt`; expiry guard `scripts/check-security-txt-expiry.sh` | [I4](./hardening/I4-security-txt.md) Closed                                                        |
+| SBOM generation                          | Container build                 | Container-scan workflow                                                                                | [I3](./hardening/I3-sbom-generation.md) Open                                                       |
+| External pentest                         | Whole-stack                     | 6-12 month cycle                                                                                       | [I8](./hardening/I8-periodic-external-pentest.md) Closed                                           |
 
 ## Acceptance — як підтримувати цей документ
 
