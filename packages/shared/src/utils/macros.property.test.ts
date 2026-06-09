@@ -125,4 +125,43 @@ describe("shared/utils/macros – property", () => {
       expect(out.protein_g).toBe(0);
     }
   });
+
+  it("macrosToTotals: monotonicity — adding a positive finite value to a field never decreases its total", () => {
+    // Property: for any base macros object, if we add a strictly
+    // positive finite amount to one field, the resulting total for
+    // that field must be ≥ the original total (it either stays the
+    // same when the base was invalid/negative, or increases).
+    for (let i = 0; i < NUM_RUNS; i++) {
+      const base = arbitraryMacros();
+      const delta = rng() * 500 + 0.001; // always > 0
+      const baseTotal = macrosToTotals(base);
+
+      // Add delta to kcal only; all other fields are unchanged.
+      const baseKcal = Number.isFinite(Number(base.kcal))
+        ? Math.max(0, Number(base.kcal))
+        : 0;
+      const augmented = { ...base, kcal: baseKcal + delta };
+      const augTotal = macrosToTotals(augmented);
+
+      expect(augTotal.kcal).toBeGreaterThanOrEqual(baseTotal.kcal);
+    }
+  });
+
+  it("macrosToTotals: integer inputs produce integer outputs (no floating-point drift)", () => {
+    // When all macro fields are non-negative integers the totals must
+    // also be integers — guards against fractional coercion bugs (e.g.
+    // a future parseFloat path that introduces .0000001 drift on
+    // whole-number kcal values stored as strings).
+    for (let i = 0; i < NUM_RUNS; i++) {
+      const kcal = Math.floor(rng() * 5000);
+      const protein = Math.floor(rng() * 300);
+      const fat = Math.floor(rng() * 200);
+      const carbs = Math.floor(rng() * 400);
+      const totals = macrosToTotals({ kcal, protein_g: protein, fat_g: fat, carbs_g: carbs });
+      expect(totals.kcal).toBe(kcal);
+      expect(totals.protein_g).toBe(protein);
+      expect(totals.fat_g).toBe(fat);
+      expect(totals.carbs_g).toBe(carbs);
+    }
+  });
 });
