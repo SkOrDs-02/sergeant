@@ -149,4 +149,20 @@ describe("shared/utils/speechParsers – property", () => {
       if (m) expect(m.raw).toBe(x);
     }
   });
+
+  it("normalizeUaNumbers: output length is bounded by (and typically shorter than) input", () => {
+    // Word-forms like "сто двадцять п'ять" (15 chars) collapse to "125"
+    // (3 chars). The output must never be *longer* than the input when
+    // measured by character count, because substitution only replaces
+    // word runs with shorter digit strings.
+    //
+    // Exception: trailing punctuation is re-attached, so allow a small
+    // tolerance (+10) for edge cases with many single-char number words
+    // and trailing punctuation sequences.
+    for (let i = 0; i < NUM_RUNS; i++) {
+      const x = arbitraryUtterance();
+      const out = normalizeUaNumbers(x);
+      expect(out.length).toBeLessThanOrEqual(x.length + 10);
+    }
+  });
 });

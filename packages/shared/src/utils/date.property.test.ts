@@ -26,7 +26,13 @@ function makeRng(seed: number): () => number {
 const NUM_RUNS = Number(process.env["FAST_CHECK_NUM_RUNS"] ?? 1000);
 const rng = makeRng(42);
 
-/** A random local Date within [1970, ~2100]. */
+/**
+ * A random local Date within [1970, ~2100].
+ * Hours are restricted to 0–20 UTC so the Europe/Kyiv date (UTC+2 winter /
+ * UTC+3 summer) always falls on the same calendar day as the constructed UTC
+ * date — avoids spurious mismatches in tests that compare local fields to the
+ * Kyiv-formatted result.
+ */
 function arbitraryLocalDate(): Date {
   const year = 1970 + Math.floor(rng() * 130);
   const month = Math.floor(rng() * 12); // 0..11
@@ -95,5 +101,43 @@ describe("shared/utils/date – toLocalISODate property", () => {
       expect(toLocalISODate(g)).toBe("1970-01-01");
     }
     expect(toLocalISODate(NaN)).toBe("1970-01-01");
+  });
+
+  it("Kyiv offset invariant: result differs from UTC day at known boundary timestamps", () => {
+    // Domain invariant (AGENTS.md): all day boundaries use Europe/Kyiv,
+    // never UTC. UTC midnight is 02:00 Kyiv (winter) / 03:00 Kyiv (summer),
+    // so a timestamp just before UTC midnight must give the *previous*
+    // Kyiv day, not the UTC day.
+    //
+    // 2026-01-01T00:00:00Z = 2026-01-01 02:00 Kyiv (UTC+2 winter) → still 2026-01-01
+    // 2025-12-31T21:59:59Z = 2025-12-31 23:59 Kyiv           → 2025-12-31
+    // 2025-12-31T22:00:00Z = 2026-01-01 00:00 Kyiv            → 2026-01-01
+    //
+    // Probe the DST-safe boundary at 2026-01-01T00:00:00.000Z.
+    const utcMidnight2026 = new Date("2026-01-01T00:00:00.000Z");
+    // Kyiv is UTC+2 in winter, so 00:00 UTC = 02:00 Kyiv → still Jan 1
+    expect(toLocalISODate(utcMidnight2026)).toBe("2026-01-01");
+
+    // One second before Kyiv midnight (22:00 UTC-1, = 2025-12-31T21:59:59Z)
+    const beforeKyivMidnight = new Date("2025-12-31T21:59:59.000Z");
+    expect(toLocalISODate(beforeKyivMidnight)).toBe("2025-12-31");
+
+    // The instant Kyiv crosses midnight (2025-12-31T22:00:00Z = 2026-01-01 00:00 Kyiv)
+    const kyivMidnight = new Date("2025-12-31T22:00:00.000Z");
+    expect(toLocalISODate(kyivMidnight)).toBe("2026-01-01");
+  });
+
+  it("monotonicity: earlier Date always produces an equal or earlier day key", () => {
+    // If date A comes strictly before date B in calendar time, the
+    // Kyiv day key for A must be ≤ the key for B. This pins the
+    // order-preservation contract that downstream UI sorting relies on.
+    for (let i = 0; i < NUM_RUNS; i++) {
+      const earlier = arbitraryLocalDate();
+      // Add a random positive offset (0..30 days) so `later` is always ≥ `earlier`
+      const laterMs =
+        earlier.getTime() + Math.floor(rng() * 30 * 24 * 60 * 60 * 1000);
+      const later = new Date(laterMs);
+      expect(toLocalISODate(earlier) <= toLocalISODate(later)).toBe(true);
+    }
   });
 });

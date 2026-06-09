@@ -348,4 +348,59 @@ describe("no-arbitrary-text-size", () => {
     assert.equal(msgs.length, 1);
     assert.match(msgs[0].message, /text-\[14px\]/);
   });
+
+  // ─────────────────────────────────────────────────────────────────
+  // GOOD-fixture edge cases (P2-2): named Tailwind preset sizes and
+  // the explicit rule-scope contract for inline-style fontSize.
+  // ─────────────────────────────────────────────────────────────────
+
+  it("does NOT flag `text-[11px]` and `text-[12px]` in an exempt DS primitive", () => {
+    // SectionHeading.tsx already has an explicit exemption. This pins
+    // the contract that ANY arbitrary size is silently ignored for
+    // exempt files — not just particular pixel values.
+    const msgs11 = lint(
+      `const c = "text-[11px] uppercase tracking-widest";`,
+      abs("apps/web/src/shared/components/ui/SectionHeading.tsx"),
+    );
+    const msgs12 = lint(
+      `const c = "text-[12px]";`,
+      abs("apps/web/src/shared/components/ui/Badge.tsx"),
+    );
+    assert.equal(msgs11.length, 0);
+    assert.equal(msgs12.length, 0);
+  });
+
+  it("does NOT flag `text-xs` (Tailwind preset ≈ 12px)", () => {
+    // `text-xs` routes through the Tailwind preset scale, not an
+    // arbitrary bracket — the rule's regex is `text-\[…\]` only, so
+    // preset tokens must never fire.
+    const msgs = lint(`const c = "text-xs text-subtle leading-none";`);
+    assert.equal(msgs.length, 0);
+  });
+
+  it("does NOT flag `text-sm` (Tailwind preset ≈ 14px)", () => {
+    // Paired GOOD fixture for `text-sm`. Both `text-xs` and `text-sm`
+    // are the common alternatives an author should reach for instead
+    // of `text-[12px]` / `text-[14px]`.
+    const msgs = lint(`const c = "text-sm font-medium text-fg-muted";`);
+    assert.equal(msgs.length, 0);
+  });
+
+  it("flags `text-[11px]` in a non-exempt module file (below-scale arbitrary)", () => {
+    // The clsx / exempt tests use `text-[12px]` inside exempt paths.
+    // Explicitly confirm `text-[11px]` is flagged in a regular module
+    // component — a sub-scale size slipping in from a non-exempt context.
+    const msgs = lint(`const c = "text-[11px] text-fg-muted leading-snug";`);
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[11px\]/);
+  });
+
+  it("flags `text-[12px]` in a non-exempt module file (min-scale arbitrary)", () => {
+    // `text-[12px]` in a non-exempt module file: the rule bans ALL
+    // arbitrary text-size literals regardless of value — authors must
+    // use the Tailwind preset `text-xs` instead.
+    const msgs = lint(`const c = "text-[12px] font-semibold";`);
+    assert.equal(msgs.length, 1);
+    assert.match(msgs[0].message, /text-\[12px\]/);
+  });
 });
