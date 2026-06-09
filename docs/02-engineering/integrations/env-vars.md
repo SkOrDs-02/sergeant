@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.

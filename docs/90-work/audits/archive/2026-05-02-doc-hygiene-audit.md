@@ -1,6 +1,6 @@
 # Sergeant — doc-hygiene аудит (2026-05-02)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Archived
 
 > Аудит виконано 2026-05-02 проти `main @ b7c629dd`. Стиль: прохід зверху-вниз, без правок коду. Фікси (ADR-0029-gap rule, audit lifecycle, agent file unification) реалізовані у PR `docs(hygiene): close audit findings — ADR gap rule, audits lifecycle, agent files`.

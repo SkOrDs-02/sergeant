@@ -1,6 +1,6 @@
 # Devin in Sergeant
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 > **Single source of truth → [AGENTS.md](./AGENTS.md).** Цей файл — тонкий вказівник із кількома Devin-specific нотатками. Repo contract, hard rules і operating system для агентів описані в `AGENTS.md`, `docs/00-start/agents/*` і `docs/00-start/playbooks/*`.

@@ -1,6 +1,6 @@
 # Round-13 Burndown Sprint — закриття KPI items #6 / #8 / #15
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Superseded — round 14 ревізія підтвердила, що всі три KPI items закриті без потреби в R13.1–R13.7 PR-послідовності, описаній нижче. Канонічне джерело статусу — [`./00-overview.md` §11.5 (round 14)](./00-overview.md#§115-залишок-роботи-до-повного-закриття-18-items-станом-на-2026-05-05-round-14).
 >
 > **Що сталося насправді:**

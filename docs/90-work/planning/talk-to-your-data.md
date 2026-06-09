@@ -1,6 +1,6 @@
 # Talk-to-your-data: план реалізації для Sergeant
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Draft
 > **Автор:** Devin (для @Skords-01)
 > **Дата:** 2026-05-05

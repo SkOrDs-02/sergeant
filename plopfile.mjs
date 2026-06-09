@@ -183,7 +183,7 @@ function appendN8nWorkflowManifest(entry) {
 
 /** Returns the next zero-padded 4-digit ADR number. */
 function nextAdrNumber() {
-  const adrDir = resolve(__dirname, "docs/04-governance/adr");
+  const adrDir = resolve(__dirname, "docs/adr");
   const files = readdirSync(adrDir);
   const nums = files
     .filter((f) => /^\d{4}-.+\.md$/.test(f))
@@ -431,13 +431,13 @@ export default function (plop) {
         type: "input",
         name: "playbook",
         message:
-          "Linked playbook (path under docs/00-start/playbooks/* OR docs/00-start/agents/agent-skills-catalog.md):",
-        default: "docs/00-start/agents/agent-skills-catalog.md",
+          "Linked playbook (path under docs/playbooks/* OR docs/agents/agent-skills-catalog.md):",
+        default: "docs/agents/agent-skills-catalog.md",
         validate: (v) =>
           /^(docs\/playbooks\/[\w./-]+|docs\/agents\/agent-skills-catalog\.md)$/.test(
             v.trim(),
           ) ||
-          "must be a docs/00-start/playbooks/<file>.md path or docs/00-start/agents/agent-skills-catalog.md",
+          "must be a docs/playbooks/<file>.md path or docs/agents/agent-skills-catalog.md",
       },
     ],
     actions: [
@@ -451,7 +451,7 @@ export default function (plop) {
       },
       () =>
         "Next steps: (1) flesh out the SKILL.md sections, " +
-        "(2) add an entry to docs/00-start/agents/agent-skills-catalog.md, " +
+        "(2) add an entry to docs/agents/agent-skills-catalog.md, " +
         "(3) run `pnpm lint:skills` to verify shape + lock integrity.",
     ],
   });
@@ -459,13 +459,13 @@ export default function (plop) {
   // ── new-playbook ───────────────────────────────────────────────────────────
   plop.setGenerator("new-playbook", {
     description:
-      "New playbook (docs/00-start/playbooks/<slug>.md with required schema + freshness header)",
+      "New playbook (docs/playbooks/<slug>.md with required schema + freshness header)",
     prompts: [
       {
         type: "input",
         name: "slug",
         message:
-          "Playbook slug (kebab-case; becomes docs/00-start/playbooks/<slug>.md):",
+          "Playbook slug (kebab-case; becomes docs/playbooks/<slug>.md):",
         validate: (v) =>
           /^[a-z][a-z0-9-]*[a-z0-9]$/.test(v) ||
           "kebab-case only (lowercase letters, digits, hyphens)",
@@ -534,12 +534,12 @@ export default function (plop) {
       return [
         {
           type: "add",
-          path: "docs/00-start/playbooks/{{slug}}.md",
+          path: "docs/playbooks/{{slug}}.md",
           templateFile: "plop-templates/new-playbook/playbook.md.hbs",
         },
         () =>
           "Next steps: (1) flesh out the Steps and Verification sections, " +
-          "(2) run `pnpm docs:gen-playbook-index` to refresh docs/00-start/playbooks/INDEX.md, " +
+          "(2) run `pnpm docs:gen-playbook-index` to refresh docs/playbooks/INDEX.md, " +
           "(3) run `pnpm lint` to verify schema + freshness + language gates.",
       ];
     },
@@ -756,100 +756,7 @@ export default function (plop) {
           `(2) declare any \`$env.<NAME>\` references in manifest.requiredEnv (validator fails otherwise); ` +
           `(3) declare credentials in manifest.requiredCredentials when nodes start using them; ` +
           `(4) \`pnpm exec node scripts/n8n/validate-n8n-workflows.mjs\` to confirm shape; ` +
-          `(5) follow docs/00-start/playbooks/modify-n8n-workflow.md for the rollout flow.`,
-      ];
-    },
-  });
-
-  // ── new-console-specialist ─────────────────────────────────────────────────
-  plop.setGenerator("new-console-specialist", {
-    description:
-      "New tools/openclaw specialist agent (tools/openclaw/src/agents/<name>.ts + .test.ts) — mirrors the ops.ts / marketing.ts pattern (system prompt + empty tools + runAgentLoop)",
-    prompts: [
-      {
-        type: "input",
-        name: "name",
-        message:
-          "Specialist name (kebab-case, becomes <name>.ts — e.g. analytics, pricing):",
-        validate: (v) => {
-          if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(v)) {
-            return "kebab-case only (lowercase letters, digits, hyphens)";
-          }
-          const filePath = resolve(
-            __dirname,
-            "tools/openclaw/src/agents",
-            `${v}.ts`,
-          );
-          if (existsSync(filePath)) {
-            return `tools/openclaw/src/agents/${v}.ts already exists`;
-          }
-          return true;
-        },
-      },
-      {
-        type: "input",
-        name: "titleName",
-        message:
-          'Title-case name for the system prompt (e.g. "Analytics", "Pricing"):',
-        validate: (v) => v.trim().length > 0 || "required",
-      },
-      {
-        type: "input",
-        name: "role",
-        message:
-          'Short role descriptor for the system prompt (e.g. "data-analytics", "pricing-strategy"):',
-        validate: (v) => v.trim().length > 0 || "required",
-      },
-      {
-        type: "input",
-        name: "roleSummary",
-        message:
-          "One-line ROLE summary for the system prompt (≤200 chars; what this agent does):",
-        validate: (v) => {
-          if (!v.trim()) return "required";
-          if (v.length > 200)
-            return `roleSummary is ${v.length} chars (max 200)`;
-          return true;
-        },
-      },
-      {
-        type: "input",
-        name: "routeCommand",
-        message:
-          "Telegram command prefix (without slash; defaults to specialist name):",
-        default: (answers) => answers.name,
-        validate: (v) =>
-          /^[a-z][a-z0-9-]*$/.test(v) ||
-          "lowercase letters, digits, hyphens only",
-      },
-    ],
-    actions: (data) => {
-      // Convert "snake-case-name" → "SnakeCaseName" for the exported function
-      // name `run<Pascal>Agent`. Done here (not via a Handlebars helper) so
-      // the same value is available for both .ts and .test.ts templates.
-      data.pascalName = data.name
-        .split("-")
-        .map((p) => p[0].toUpperCase() + p.slice(1))
-        .join("");
-      const base = "tools/openclaw/src/agents";
-      return [
-        {
-          type: "add",
-          path: `${base}/{{name}}.ts`,
-          templateFile: "plop-templates/new-console-specialist/agent.ts.hbs",
-        },
-        {
-          type: "add",
-          path: `${base}/{{name}}.test.ts`,
-          templateFile:
-            "plop-templates/new-console-specialist/agent.test.ts.hbs",
-        },
-        (answers) =>
-          `Next steps: (1) edit tools/openclaw/src/agents/${answers.name}.ts — replace the empty \`tools\` array and \`executeTool()\` stub with real surfaces; ` +
-          `(2) wire \`run${answers.pascalName}Agent\` into \`tools/openclaw/src/agents/router.ts\` (extend AgentType + parseCommand) and into \`tools/openclaw/src/index.ts\` (dispatch switch); ` +
-          `(3) extend \`tools/openclaw/src/agents/router.test.ts\` with a /\`${answers.routeCommand}\` route assertion; ` +
-          `(4) \`pnpm --filter @sergeant/openclaw test typecheck lint\` to verify; ` +
-          `(5) update docs/00-start/agents/specialists-mapping.md if this specialist needs a governance skill mapping.`,
+          `(5) follow docs/playbooks/modify-n8n-workflow.md for the rollout flow.`,
       ];
     },
   });
@@ -857,7 +764,7 @@ export default function (plop) {
   // ── adr ────────────────────────────────────────────────────────────────────
   plop.setGenerator("adr", {
     description:
-      "New Architecture Decision Record (auto-numbered from docs/04-governance/adr/)",
+      "New Architecture Decision Record (auto-numbered from docs/adr/)",
     prompts: [
       {
         type: "input",
@@ -888,7 +795,7 @@ export default function (plop) {
       return [
         {
           type: "add",
-          path: `docs/04-governance/adr/${num}-${data.title}.md`,
+          path: `docs/adr/${num}-${data.title}.md`,
           templateFile: "plop-templates/adr/adr.md.hbs",
         },
       ];

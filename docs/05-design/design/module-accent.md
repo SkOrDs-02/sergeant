@@ -1,6 +1,6 @@
 # Module-accent — канонічний reference
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 > Sergeant — 4 модулі з власним брендовим кольором. Замість того, щоб кожен компонент отримував пропс `module="finyk"` / `module="fizruk"` й мапив це у `bg-finyk` / `bg-fizruk`, ми публікуємо активний акцент як CSS-variable на дереві модуля і маємо одну Tailwind-утиліту, що тягне цей колір у будь-яку поверхню всередині модуля.

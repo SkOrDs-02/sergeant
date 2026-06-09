@@ -97,8 +97,8 @@ Pino `level()` setter dynamically swap-ається на check.
 
 `tools/openclaw` (OpenClaw DM bot) додавання `/debug-window` вимагає всіх п'яти хуків grammy + внутрішнього API:
 
-1. Реєстрація команд у [`tools/openclaw/src/openclaw/commands.ts`](../../../../tools/openclaw/src/openclaw/commands.ts) — `/debug-window`, `/debug-window-status`.
-2. Handler-и у [`tools/openclaw/src/openclaw/handler-commands.ts`](../../../../tools/openclaw/src/openclaw/handler-commands.ts) з `isFounderAllowed` + `isPrivateChat` гейтами.
+1. Реєстрація команд у `tools/openclaw/src/openclaw/commands.ts` — `/debug-window`, `/debug-window-status`.
+2. Handler-и у `tools/openclaw/src/openclaw/handler-commands.ts` з `isFounderAllowed` + `isPrivateChat` гейтами.
 3. Internal endpoint у `apps/server/src/routes/internal/debug-window.ts` з `requireInternalApiKey` (PR-27 вже merged) + виклик `enableDebugWindow`/`disableDebugWindow`.
 4. Синхронний audit-рядок у `internal_api_keys` table (PR-27 dependency).
 5. Unit-test grammy handler-ів + e2e через mock-и `postJson`.

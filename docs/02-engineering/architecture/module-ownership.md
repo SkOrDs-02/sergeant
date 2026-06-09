@@ -1,6 +1,6 @@
 # Module ownership map
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 > Per-path ownership, test stack, RQ keys factory, and conventions. Quick look-up before editing. Compact summary table lives in [`AGENTS.md § Module ownership map`](../../../AGENTS.md#module-ownership-map); deep per-path table is here so Stack-pulse PR-04 secondary-column gate (`pnpm lint:codeowners`) and the per-module CODEOWNERS coverage stay close to one another.

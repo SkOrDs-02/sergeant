@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-06-08",
+  "generated_at": "2026-06-09",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
@@ -207,42 +207,6 @@
       ],
       "testRunner": "vitest",
       "owner": "@Skords-01"
-    },
-    {
-      "name": "@sergeant/openclaw",
-      "path": "tools/openclaw",
-      "category": "tool",
-      "private": true,
-      "version": "0.1.0",
-      "type": "module",
-      "frameworkDeps": [
-        {
-          "name": "@anthropic-ai/sdk",
-          "version": "^0.95.2"
-        },
-        {
-          "name": "@sentry/node",
-          "version": "^8.55.1"
-        },
-        {
-          "name": "grammy",
-          "version": "^1.31.0"
-        },
-        {
-          "name": "tsx",
-          "version": "^4.19.2"
-        },
-        {
-          "name": "typescript",
-          "version": "^6.0.3"
-        },
-        {
-          "name": "vitest",
-          "version": "^4.1.5"
-        }
-      ],
-      "testRunner": "vitest",
-      "owner": null
     },
     {
       "name": "@sergeant/api-client",

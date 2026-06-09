@@ -1,6 +1,6 @@
 # Audit-freeze 2026-05-05 → 2026-06-02
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed
 
 > **Що це.** Тимчасова заморозка створення нових audit/initiative/governance документів. Працює як **process-level rate-limiter** на час, поки `main` повертає в баланс **product velocity ↔ docs velocity**.

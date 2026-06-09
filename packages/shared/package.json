@@ -17,9 +17,9 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
+    "test": "TZ=Europe/Kyiv vitest run",
+    "test:watch": "TZ=Europe/Kyiv vitest",
+    "test:coverage": "TZ=Europe/Kyiv vitest run --coverage",
     "mutation:utils": "stryker run stryker.utils.conf.json"
   },
   "dependencies": {

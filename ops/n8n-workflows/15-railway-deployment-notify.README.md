@@ -2,7 +2,7 @@
 
 > **Status:** Active. Live since 2026-05-03 (parse_mode=HTML cutover, Wave 1 §3.4) — production n8n workflow `CygZ4vLxTm2ltuRW`.
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > Webhook (`POST /webhook/railway-deploy`) → Telegram message in
 > `Sergeant_ops` (`⚙️ Контрол-план` topic, success → ops; failure →
 > incidents).

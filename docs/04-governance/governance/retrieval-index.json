@@ -1,17 +1,17 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-06-08",
+  "generated_at": "2026-06-09",
   "sourceHashes": {
-    "knowledge-graph": "89aac59f964fa19ebf2dbe892ec00df07992abba36b08c06d335a183c0da219f",
-    "symbol-index": "fe8c8c0f40237dc97f5599798b2392c89d91827760c8419139f92cc593096e06"
+    "knowledge-graph": "f562cfbdc59164b12986eb2f59a0dd0bd801a17e90cab4bfe8f190fe05405729",
+    "symbol-index": "7ea3de138fa223ddd49af14b3e9f174bd684fb138c8837be02f8b8404fe29ba1"
   },
   "counts": {
     "adr": 63,
     "audit": 18,
-    "export": 298,
+    "export": 297,
     "hard-rule": 26,
-    "initiative": 50,
+    "initiative": 51,
     "playbook": 61,
     "skill": 33,
     "total": 549
@@ -2655,11 +2655,11 @@
     {
       "id": "export:@sergeant/db-schema:*",
       "type": "export",
-      "path": "packages/db-schema/dist/shared/index.js",
+      "path": "packages/db-schema/src/shared/index.js",
       "title": "* (re-export-star)",
       "tier": "extended",
-      "text": "* · re-export-star · @sergeant/db-schema · packages/db-schema/dist/shared/index.js · used 0× · dead export unused",
-      "contentHash": "55712d07ee302d783c1862e8517c26efdb012763814669177177e8dc18e9588e"
+      "text": "* · re-export-star · @sergeant/db-schema · packages/db-schema/src/shared/index.js · used 0× · dead export unused",
+      "contentHash": "99ad781d880053d2991cf2d577a0550feca45573a3b20a515765afcb6419be94"
     },
     {
       "id": "export:@sergeant/design-tokens:BrandColor",
@@ -3128,15 +3128,6 @@
       "tier": "extended",
       "text": "ToolResult · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/types.js · used 0× · dead export unused",
       "contentHash": "4f6de5595aec270dfbcc012ef2fe0764b74ccf8b05fac94ac17a6aece5cae7a7"
-    },
-    {
-      "id": "export:@sergeant/openclaw:HELP_TEXT",
-      "type": "export",
-      "path": "tools/openclaw/src/help-text.js",
-      "title": "HELP_TEXT (re-export)",
-      "tier": "extended",
-      "text": "HELP_TEXT · re-export · @sergeant/openclaw · tools/openclaw/src/help-text.js · used 0× · dead export unused",
-      "contentHash": "e38651fd33be19b17e44b7e2d96366fd1e8ff6f7d9fe45ebe2b10504b8fecdcb"
     },
     {
       "id": "export:@sergeant/routine-domain:*",
@@ -3888,9 +3879,9 @@
       "line": 1,
       "title": "0015 — Docs automation for daily ops",
       "tier": "core",
-      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **Observation window 2026-06-03 → 2026-06-09 (7 consecutive cron days); progress 3/7** — daily-brief cron confirmed green 06-03 / 06-04 / 06-05; 06-06 → 06-09 still pending, and the maintainer 5/7-day usage self-report is not yet recorded. Stays In progress until both signals close; do NOT flip to Done before 2026-06-09. Not 90-day-gated; archival deferred until the observation window closes.",
-      "text": "0015 — Docs automation for daily ops · initiative:0015 · initiative · In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **Observation window 2026-06-03 → 2026-06-09 (7 consecutive cron days); progress 3/7** — daily-brief cron confirmed green 06-03 / 06-04 / 06-05; 06-06 → 06-09 still pending, and the maintainer 5/7-day usage self-report is not yet recorded. Stays In progress until both signals close; do NOT flip to Done before 2026-06-09. Not 90-day-gated; archival deferred until the observation window closes. · 15 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Bundle Alpha (committed) — ETA 2026-05-31 · Phase 2 — Bundle Beta (committed) — ETA 2026-06-30 · Критерії DONE · Phase 1 · Phase 2 · Ризики · Власник / ETA · Backlog — Можливі доповнення (NOT committed) · Bundle Zeta — External-blocker detection у today.md (~2h, proposed) · Bundle Gamma — Review Hygiene (~4h, proposed) · Bundle Delta — Surface Dashboards (~6h, proposed) · Bundle Epsilon — Audit Discipline (~3h, proposed) · Посилання",
-      "contentHash": "ebf5f1fdd2dd0755b5ca4179038eb408a6d48ac5f78cab927e0560d38d88a304"
+      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **The \"7 consecutive cron days\" streak BROKE on 2026-06-06.** Verified against GitHub Actions runs of `docs-daily-brief.yml`: green 06-03 / 06-04 / 06-05, then **failed 06-06** (run `27057370680` — the regen-and-push job died on `node adr:0062: duplicate`, i.e. a duplicate-ADR-id check, **not** on the `today.md`/trust-badge generators themselves), then green again 06-07 / 06-08. The original 06-03 → 06-09 window therefore can no longer be all-green; **current consecutive-green run = 2 (06-07 → 06-08)**, 06-09 still pending. The maintainer 5/7-day usage self-report is also still unrecorded. Stays In progress until both signals close; the 7-consecutive-green counter has **reset** and needs a fresh clean 7-day streak. Not 90-day-gated; archival deferred until the observation window closes.",
+      "text": "0015 — Docs automation for daily ops · initiative:0015 · initiative · In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **The \"7 consecutive cron days\" streak BROKE on 2026-06-06.** Verified against GitHub Actions runs of `docs-daily-brief.yml`: green 06-03 / 06-04 / 06-05, then **failed 06-06** (run `27057370680` — the regen-and-push job died on `node adr:0062: duplicate`, i.e. a duplicate-ADR-id check, **not** on the `today.md`/trust-badge generators themselves), then green again 06-07 / 06-08. The original 06-03 → 06-09 window therefore can no longer be all-green; **current consecutive-green run = 2 (06-07 → 06-08)**, 06-09 still pending. The maintainer 5/7-day usage self-report is also still unrecorded. Stays In progress until both signals close; the 7-consecutive-green counter has **reset** and needs a fresh clean 7-day streak. Not 90-day-gated; archival deferred until the observation window closes. · 15 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Bundle Alpha (committed) — ETA 2026-05-31 · Phase 2 — Bundle Beta (committed) — ETA 2026-06-30 · Критерії DONE · Phase 1 · Phase 2 · Ризики · Власник / ETA · Backlog — Можливі доповнення (NOT committed) · Bundle Zeta — External-blocker detection у today.md (~2h, proposed) · Bundle Gamma — Review Hygiene (~4h, proposed) · Bundle Delta — Surface Dashboards (~6h, proposed) · Bundle Epsilon — Audit Discipline (~3h, proposed) · Посилання",
+      "contentHash": "a5e36856356adec760a2334606b56cc9a4889361d25a418191b8b9aaaa465306"
     },
     {
       "id": "initiative:0017",
@@ -3910,9 +3901,9 @@
       "line": 1,
       "title": "0018 — Agent semantic retrieval (agent:find)",
       "tier": "core",
-      "status": "In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). Залишок: live-mode acceptance (одноразовий `pnpm agent:embed` з ключем + заміри before/after на реальних задачах).",
-      "text": "0018 — Agent semantic retrieval (agent:find) · initiative:0018 · initiative · In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). Залишок: live-mode acceptance (одноразовий `pnpm agent:embed` з ключем + заміри before/after на реальних задачах). · 18 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Lexical-кістяк (committed) — ETA TBD після погодження · Phase 2 — Семантичний шар (committed) · Phase 3 — Gates і якість (committed) · Phase 4 — MCP + промоція (committed) · Критерії DONE · Ризики · Власник / ETA · Посилання",
-      "contentHash": "25f9bba4cb3ae96fa9170b404819c37a28ae634d62f514a7dfb82c081e7ad5f4"
+      "status": "In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). **Lexical before/after заміряно** ([session-log 2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md)). Залишок: **semantic** live-mode acceptance (одноразовий `pnpm agent:embed` з `VOYAGE_API_KEY` + cosine-blend заміри) — відкладено, бо ключа в середовищі немає.",
+      "text": "0018 — Agent semantic retrieval (agent:find) · initiative:0018 · initiative · In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). **Lexical before/after заміряно** ([session-log 2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md)). Залишок: **semantic** live-mode acceptance (одноразовий `pnpm agent:embed` з `VOYAGE_API_KEY` + cosine-blend заміри) — відкладено, бо ключа в середовищі немає. · 18 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Lexical-кістяк (committed) — ETA TBD після погодження · Phase 2 — Семантичний шар (committed) · Phase 3 — Gates і якість (committed) · Phase 4 — MCP + промоція (committed) · Критерії DONE · Ризики · Власник / ETA · Посилання",
+      "contentHash": "cd78c1a3805d53caecc9e398b48b59e7e4f587428479d638cb1f97533da57e72"
     },
     {
       "id": "initiative:0019",
@@ -3921,9 +3912,9 @@
       "line": 1,
       "title": "0019 — Agent routing (`agent:route`)",
       "tier": "core",
-      "status": "In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config).",
-      "text": "0019 — Agent routing (`agent:route`) · initiative:0019 · initiative · In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config). · 19 · 0019 — Agent routing (agent:route) · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Критерії DONE · Ризики · Власник / ETA · Посилання",
-      "contentHash": "7063d0d9b82191e47a1e70598077ab865c10e5eacf427ec4938f48ec4e59e068"
+      "status": "In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config). **2026-06-08:** полагоджено регресію — `route.mjs` читав `hard-rules.json` зі старого шляху `docs/governance/` (файл переїхав у `docs/04-governance/governance/` під час docs-reorg), через що `pnpm agent:route` падав з ENOENT і 3 route-тести у `retrieval.test.mjs` були червоні. Шлях виправлено, усі 12 тестів зелені.",
+      "text": "0019 — Agent routing (`agent:route`) · initiative:0019 · initiative · In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config). **2026-06-08:** полагоджено регресію — `route.mjs` читав `hard-rules.json` зі старого шляху `docs/governance/` (файл переїхав у `docs/04-governance/governance/` під час docs-reorg), через що `pnpm agent:route` падав з ENOENT і 3 route-тести у `retrieval.test.mjs` були червоні. Шлях виправлено, усі 12 тестів зелені. · 19 · 0019 — Agent routing (agent:route) · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Критерії DONE · Ризики · Власник / ETA · Посилання",
+      "contentHash": "b4bbdfe26ba5c9730a09134cc6de48ee8f76ecb5237e318f68fd1b2926d5f9a4"
     },
     {
       "id": "initiative:0020",
@@ -3946,6 +3937,17 @@
       "status": "Active",
       "text": "Initiative follow-ups · initiative:follow-ups · initiative · Active · One-shot · Recurring · How to add a follow-up",
       "contentHash": "9f6d93c31682d38d1da44e5af524a864c69159cb29caacf1b0aaefcfcc2f7ce2"
+    },
+    {
+      "id": "initiative:session-log-0018-agent-find-measurement-2026-06-08",
+      "type": "initiative",
+      "path": "docs/90-work/initiatives/session-log-0018-agent-find-measurement-2026-06-08.md",
+      "line": 1,
+      "title": "Session log — 0018 `agent:find` lexical measurement (2026-06-08)",
+      "tier": "core",
+      "status": "Reference",
+      "text": "Session log — 0018 `agent:find` lexical measurement (2026-06-08) · initiative:session-log-0018-agent-find-measurement-2026-06-08 · initiative · Reference · Session log — 0018 agent:find lexical measurement (2026-06-08) · Середовище заміру · Healthcheck офлайн-тулінгу · Before/after на репрезентативній вибірці задач · Чому це «менше сліпих grep-ів» · Висновок і що лишається · Refs",
+      "contentHash": "439dbd4fbb78d2d84f17f6ce564252192bc70a609f956faf3f60345763bbd920"
     },
     {
       "id": "initiative:stack-pulse-2026-05/00-overview",

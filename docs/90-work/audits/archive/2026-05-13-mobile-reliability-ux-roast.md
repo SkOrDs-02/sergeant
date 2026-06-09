@@ -1,6 +1,6 @@
 # Прожарка #10/10 — Mobile (Expo + Capacitor) Reliability & UX (2026-05-13)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Archived
 > **Scope:** `apps/mobile/**` (Expo 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Jest 29) та `apps/mobile-shell/**` (Capacitor 7 wrapper + Vitest). Окрема активна ініціатива з SQLite-міграції (Stage 8/9) сюди не входить — її ведуть інші сесії. Mobile-strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md); dual-track sunset — [initiative 0002](../../initiatives/archive/_0002-mobile-platform-decision.md). Canonical mobile debt owner — [`docs/90-work/tech-debt/mobile.md`](../../tech-debt/mobile.md).
 

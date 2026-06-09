@@ -1,6 +1,6 @@
 # Domain invariants
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 > Things that bite hard if assumed wrong. Compact pointer in [`AGENTS.md § Domain invariants`](../../../AGENTS.md#domain-invariants); deep prose lives here. Treat this file as canonical when web ↔ mobile ↔ server logic disagrees.

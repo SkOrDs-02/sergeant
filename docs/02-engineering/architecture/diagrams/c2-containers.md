@@ -1,6 +1,6 @@
 # C2 — Containers
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 Деплоймент-топологія Sergeant. Кожен контейнер — окремий процес або deploy target.

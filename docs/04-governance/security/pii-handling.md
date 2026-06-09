@@ -252,7 +252,7 @@ for false-positive trade-offs.
 | Server   | [`apps/server/src/sentry.ts`](../../../apps/server/src/sentry.ts)                                 | `applyBeforeSend`         | `applyBeforeBreadcrumb` | `/api/health`, `/health`, `/favicon.ico`         |
 | Web      | [`apps/web/src/core/observability/sentry.ts`](../../../apps/web/src/core/observability/sentry.ts) | `applyWebBeforeSend`      | —                       | `/api/health`, `/health`, browser-extension URLs |
 | Mobile   | [`apps/mobile/src/lib/observability.ts`](../../../apps/mobile/src/lib/observability.ts)           | `applyMobileBeforeSend`   | —                       | —                                                |
-| OpenClaw | [`tools/openclaw/src/obs/sentry.ts`](../../../tools/openclaw/src/obs/sentry.ts)                   | `applyOpenclawBeforeSend` | —                       | `/api/health`, `/health`                         |
+| OpenClaw | `tools/openclaw/src/obs/sentry.ts`                                                                | `applyOpenclawBeforeSend` | —                       | `/api/health`, `/health`                         |
 
 All surfaces set `sendDefaultPii: false`. The shared scrubbers
 (`scrubPII`, `scrubPIIString`, `redactSensitiveQueryParams`) are

@@ -1,6 +1,6 @@
 # Voyage AI + pgvector — AI memory
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active (vendor/setup reference; behavior SSOT is architecture doc)
 
 AI memory підсистема. Canonical behavior/ownership lives in [`docs/02-engineering/architecture/ai-memory.md`](../architecture/ai-memory.md); цей файл лишається reference для Voyage/pgvector setup, env, retry/cost knobs. ADR — [`0028-pgvector-ai-memory.md`](../../04-governance/adr/0028-pgvector-ai-memory.md).

@@ -1,6 +1,6 @@
 # M15 — Confirm `CONSOLE_BOT_TOKEN` allowlist is fail-closed
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed (2026-05-04)
 
 | Field          | Value                                                                                                            |
@@ -48,7 +48,7 @@ test("CONSOLE_BOT_TOKEN allowlist fails closed when empty", () => {
 
 - `tools/openclaw/src/security.ts` — `isUserAllowed` now mirrors the
   OpenClaw `isFounderAllowed` fail-closed contract (per
-  [`tools/openclaw/src/openclaw/security.ts`](../../../../tools/openclaw/src/openclaw/security.ts)):
+  `tools/openclaw/src/openclaw/security.ts`):
   empty / undefined `ALLOWED_USER_IDS` returns `false` regardless of
   `NODE_ENV`. The previous `NODE_ENV !== "production"` fall-open path
   is removed — preview / staging deploys with a missing allowlist no

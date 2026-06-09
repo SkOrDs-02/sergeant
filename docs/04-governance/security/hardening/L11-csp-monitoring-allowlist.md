@@ -1,6 +1,6 @@
 # L11 — CSP must allowlist Sentry / PostHog `connect-src`
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed (2026-05-05)
 
 | Field          | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |

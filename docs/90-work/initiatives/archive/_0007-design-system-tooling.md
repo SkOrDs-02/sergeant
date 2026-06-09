@@ -1,6 +1,6 @@
 # 0007 — Design-system tooling: Storybook + visual regression
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Done (round-10 closed Phases 2–5 — shared/ui coverage 100% non-allowlisted, module-level stories для Finyk / Fizruk / Nutrition / Routine / Insights, Storybook GitHub Pages deploy live, [ADR-0046](../../../04-governance/adr/0046-storybook-vrt-scope.md) фіксує VRT scope, ESLint rule promoteнуто до `error`)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`

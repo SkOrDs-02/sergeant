@@ -1,6 +1,6 @@
 # Undo-патерн — soft-delete + 5-секундний undo-toast
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 > Уніфікований у Sergeant патерн для destructive-дій. Використовуйте `showUndoToast` замість `window.confirm()`, замість кастомного «Are you sure?»-діалогу і замість silent-delete. Confirmation-діалоги зарезервовані для **необоротних** flow.

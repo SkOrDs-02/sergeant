@@ -1,6 +1,6 @@
 # Журнал рішень для агентів
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 Курований, append-only журнал **усталених рішень і вподобань**, щоб агент не перепитував те, що вже вирішено, а maintainer не розжовував контекст щоразу (Initiative 0020, Tier 3 agent-OS).

@@ -1,6 +1,6 @@
 # Access Policy
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 Canonical policy for privileged access in Sergeant. This policy is optimized for a Founder+1 operating model: minimal ceremony, explicit ownership, and zero reliance on tribal memory.
