@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-06-08)</title>
+    <title>Sergeant — Knowledge Graph (2026-06-09)</title>
     <style>
       body {
         font-family:
@@ -97,21 +97,21 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-06-08 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-06-09 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
       <span class="chip chip-adr">adr: <b>63</b></span>
       <span class="chip chip-audit">audit: <b>18</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
-      <span class="chip chip-initiative">initiative: <b>50</b></span>
+      <span class="chip chip-initiative">initiative: <b>52</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
       <span class="chip chip-pr">pr: <b>164</b></span>
       <span class="chip chip-skill">skill: <b>33</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (244 core)</summary>
+      <summary>Nodes (246 core)</summary>
       <table>
         <thead>
           <tr>
@@ -1583,13 +1583,20 @@
               In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle
               Beta) shipped: skill+playbook columns + `agent-ready` field on all
               initiatives + `lint:initiative-agent-ready` gate. Remaining =
-              Phase 1 **observational acceptance only**. **Observation window
-              2026-06-03 → 2026-06-09 (7 consecutive cron days); progress 3/7**
-              — daily-brief cron confirmed green 06-03 / 06-04 / 06-05; 06-06 →
-              06-09 still pending, and the maintainer 5/7-day usage self-report
-              is not yet recorded. Stays In progress until both signals close;
-              do NOT flip to Done before 2026-06-09. Not 90-day-gated; archival
-              deferred until the observation window closes.
+              Phase 1 **observational acceptance only**. **The &quot;7
+              consecutive cron days&quot; streak BROKE on 2026-06-06.** Verified
+              against GitHub Actions runs of `docs-daily-brief.yml`: green 06-03
+              / 06-04 / 06-05, then **failed 06-06** (run `27057370680` — the
+              regen-and-push job died on `node adr:0062: duplicate`, i.e. a
+              duplicate-ADR-id check, **not** on the `today.md`/trust-badge
+              generators themselves), then green again 06-07 / 06-08. The
+              original 06-03 → 06-09 window therefore can no longer be
+              all-green; **current consecutive-green run = 2 (06-07 → 06-08)**,
+              06-09 still pending. The maintainer 5/7-day usage self-report is
+              also still unrecorded. Stays In progress until both signals close;
+              the 7-consecutive-green counter has **reset** and needs a fresh
+              clean 7-day streak. Not 90-day-gated; archival deferred until the
+              observation window closes.
             </td>
             <td>number=15</td>
           </tr>
@@ -1648,8 +1655,11 @@
               In progress — **Phases 1–4 code-complete** (lexical `agent:find` +
               manifest, Voyage semantic layer з degradation, HR#24-gate +
               golden-eval, `agent_find` MCP-tool + промоція у start-here).
-              Залишок: live-mode acceptance (одноразовий `pnpm agent:embed` з
-              ключем + заміри before/after на реальних задачах).
+              **Lexical before/after заміряно** ([session-log
+              2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md)).
+              Залишок: **semantic** live-mode acceptance (одноразовий `pnpm
+              agent:embed` з `VOYAGE_API_KEY` + cosine-blend заміри) —
+              відкладено, бо ключа в середовищі немає.
             </td>
             <td>number=18</td>
           </tr>
@@ -1664,6 +1674,12 @@
             <td>
               In progress — code-complete; залишок: live-mode acceptance (заміри
               + опційна harness-wiring у власному global config).
+              **2026-06-08:** полагоджено регресію — `route.mjs` читав
+              `hard-rules.json` зі старого шляху `docs/governance/` (файл
+              переїхав у `docs/04-governance/governance/` під час docs-reorg),
+              через що `pnpm agent:route` падав з ENOENT і 3 route-тести у
+              `retrieval.test.mjs` були червоні. Шлях виправлено, усі 12 тестів
+              зелені.
             </td>
             <td>number=19</td>
           </tr>
@@ -1684,6 +1700,18 @@
           </tr>
           <tr>
             <td>initiative</td>
+            <td><code>initiative:0021</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md"
+                >0021 — React-hooks v7 ESLint cleanup</a
+              >
+            </td>
+            <td>Proposed</td>
+            <td>number=21</td>
+          </tr>
+          <tr>
+            <td>initiative</td>
             <td><code>initiative:follow-ups</code></td>
             <td>
               <a href="../../docs/90-work/initiatives/follow-ups.md"
@@ -1691,6 +1719,23 @@
               >
             </td>
             <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:session-log-0018-agent-find-measurement-2026-06-08</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/session-log-0018-agent-find-measurement-2026-06-08.md"
+                >Session log — 0018 `agent:find` lexical measurement
+                (2026-06-08)</a
+              >
+            </td>
+            <td>Reference</td>
             <td></td>
           </tr>
           <tr>
@@ -3719,7 +3764,7 @@
     </details>
 
     <details>
-      <summary>Edges (388 total, first 500 core-to-core)</summary>
+      <summary>Edges (392 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -4327,6 +4372,42 @@
             <td><code>initiative:0020</code></td>
             <td>references</td>
             <td><code>initiative:0019</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code
+                >initiative:session-log-0018-agent-find-measurement-2026-06-08</code
+              >
+            </td>
+            <td>references</td>
+            <td><code>adr:0006</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code
+                >initiative:session-log-0018-agent-find-measurement-2026-06-08</code
+              >
+            </td>
+            <td>references</td>
+            <td><code>adr:0007</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code
+                >initiative:session-log-0018-agent-find-measurement-2026-06-08</code
+              >
+            </td>
+            <td>references</td>
+            <td><code>adr:0013</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code
+                >initiative:session-log-0018-agent-find-measurement-2026-06-08</code
+              >
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:1</code></td>
           </tr>
           <tr>
             <td><code>initiative:stack-pulse-2026-05/00-overview</code></td>
