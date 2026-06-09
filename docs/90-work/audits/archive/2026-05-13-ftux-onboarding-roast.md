@@ -1,6 +1,6 @@
 # FTUX onboarding roast — Day 0-7 (2026-05-13)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Archived
 > Прожарка #1/10 серії «10 прожарок», запущеної 2026-05-13. Скоуп — `apps/web/src/core/onboarding/**`, `apps/web/src/core/app/WelcomeScreen.tsx`, FTUX hero, peek backdrop, first-run sheets, CelebrationModal та перші 7 днів у хабі. Перспектива — продуктовий UX-аудит очима нового користувача, який дає продукту 30-60 секунд перш ніж піти.
 >

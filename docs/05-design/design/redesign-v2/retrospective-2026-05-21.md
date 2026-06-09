@@ -1,6 +1,6 @@
 # Sergeant v2 — Retrospective
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Author:** @Skords-01 (with Claude Code agent assistance)
 > **Date:** 2026-05-21
 > **Scope:** Phases 0–6 of redesign-v2 (2026-05-15 → 2026-05-21, ~7 days wall-clock)

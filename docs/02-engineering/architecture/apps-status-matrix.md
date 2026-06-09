@@ -1,6 +1,6 @@
 # Status-матриця apps і packages
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 Одна сторінка — хто живий, хто стабілізується, хто в міграції, хто legacy.
@@ -26,7 +26,7 @@
 | `@sergeant/server`       | `apps/server`       | `active`    | Node 20 / TypeScript / Express `/api/v1/*` + `/api/v2/*`, Better Auth, Postgres, Anthropic tool-use, Voyage AI memory. Нові surfaces: billing (Stripe), transcribe (Whisper), waitlist, openclaw (GitHub App), alerts, observability, topic-archive. | [`docs/02-engineering/architecture/api-v1.md`](./api-v1.md), [`docs/90-work/tech-debt/backend.md`](../../90-work/tech-debt/backend.md), [`AGENTS.md`](../../../AGENTS.md)                                                              |
 | `@sergeant/mobile`       | `apps/mobile`       | `active`    | Expo SDK 52 + Expo Router. Usе 4 модулі, native push (APNs/FCM), MMKV-офлайн. Internal dev-client.                                                                                                                                                   | [`docs/02-engineering/mobile/overview.md`](../mobile/overview.md), [`docs/02-engineering/mobile/react-native-migration.md`](../mobile/react-native-migration.md), [`docs/02-engineering/architecture/platforms.md` §2](./platforms.md) |
 | `@sergeant/mobile-shell` | `apps/mobile-shell` | `stabilize` | Capacitor 7 wrapper навколо `@sergeant/web` для Android / iOS. MVP-release флоу. Далі — лише maintenance, нові фічі уже в `@sergeant/mobile`.                                                                                                        | [`docs/02-engineering/mobile/shell.md`](../mobile/shell.md), [`docs/02-engineering/mobile/capacitor-deep-links.md`](../mobile/capacitor-deep-links.md), [`docs/02-engineering/architecture/platforms.md` §3](./platforms.md)           |
-| `@sergeant/openclaw`     | `tools/openclaw`    | `active`    | Telegram-бот (grammy + Anthropic) — host для OpenClaw co-founder bot (ADR-0031). ADR-0032 законсолідував legacy `@sergeant_console_bot` (ADR-0027) у OpenClaw; GitHub App-flow авторизація (Hard Rule #20).                                          | [`tools/openclaw/README.md`](../../../tools/openclaw/README.md), [`docs/04-governance/adr/0032-console-consolidated-into-openclaw.md`](../../04-governance/adr/0032-console-consolidated-into-openclaw.md)                             |
+| `@sergeant/openclaw`     | `tools/openclaw`    | `active`    | Telegram-бот (grammy + Anthropic) — host для OpenClaw co-founder bot (ADR-0031). ADR-0032 законсолідував legacy `@sergeant_console_bot` (ADR-0027) у OpenClaw; GitHub App-flow авторизація (Hard Rule #20).                                          | `tools/openclaw/README.md`, [`docs/04-governance/adr/0032-console-consolidated-into-openclaw.md`](../../04-governance/adr/0032-console-consolidated-into-openclaw.md)                                                                  |
 
 ### Internal tooling (non-app surfaces under `tools/`)
 

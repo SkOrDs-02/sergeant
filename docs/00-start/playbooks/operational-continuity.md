@@ -4,7 +4,7 @@ lang: en
 
 # Playbook: Operational continuity
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 > **Context:** Stack-pulse PR-04 bus-factor fix. This document answers: «що робити, якщо @Skords-01 недоступний тиждень / місяць / 6 місяців?»
 >

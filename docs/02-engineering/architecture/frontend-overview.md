@@ -1,6 +1,6 @@
 # Огляд фронтенду (Sergeant-2)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 Короткий знімок поточного фронтенду монорепо: веб (Vite PWA), мобільний (Expo), спільні пакети та модулі продукту. Детальніший статус поверхонь — [platforms.md](./platforms.md). Навмисні винятки `react-hooks/exhaustive-deps` у web — [apps-web-exhaustive-deps.md](./apps-web-exhaustive-deps.md).

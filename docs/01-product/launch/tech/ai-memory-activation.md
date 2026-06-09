@@ -1,6 +1,6 @@
 # AI Memory — activation runbook
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active (operational activation runbook; behavior SSOT is architecture doc)
 
 Як перевести pgvector AI memory підсистему з dormant у production-active після

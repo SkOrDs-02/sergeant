@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/service-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-08",
+  "generated_at": "2026-06-09",
   "surfaces": [
     {
       "id": "web-pwa",
@@ -42,16 +42,6 @@
       "railwayService": null,
       "healthcheckPath": null,
       "owner": "@Skords-01"
-    },
-    {
-      "id": "openclaw",
-      "title": "OpenClaw (Telegram bot)",
-      "workspace": "tools/openclaw",
-      "deployTarget": "railway",
-      "deployArtifact": "Dockerfile.openclaw",
-      "railwayService": null,
-      "healthcheckPath": null,
-      "owner": null
     },
     {
       "id": "openclaw-gateway",

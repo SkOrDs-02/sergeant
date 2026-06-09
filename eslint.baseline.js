@@ -128,7 +128,6 @@ export const baseline = [
           alwaysTryTypes: true,
           project: [
             "apps/web/tsconfig.json",
-            "tools/openclaw/tsconfig.json",
             "apps/mobile/tsconfig.json",
             "apps/mobile-shell/tsconfig.json",
           ],

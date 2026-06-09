@@ -1,6 +1,6 @@
 # Module structure (`apps/{web,mobile}/src/modules/<domain>/`)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 Канонічна структура продуктового модуля в `apps/web` та `apps/mobile` плюс пояснення наявних розбіжностей. Цей doc — це **explainer**, а не enforced-стандарт: межа `apps/*` ↔ `packages/*` enforced через [ADR-0024](../../04-governance/adr/0024-monorepo-apps-packages-split.md), а внутрішня форма модуля еволюціонує під його потреби. Він тут, щоб новий контриб'ютор не намагався вгадати, чому в одному модулі є `pages/`, а в іншому — `domain/`.

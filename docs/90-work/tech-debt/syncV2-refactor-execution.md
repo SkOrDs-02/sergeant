@@ -1,6 +1,6 @@
 ﻿# syncV2.ts Refactoring Plan — Stage 2: Apply Functions Extraction (execution snapshot)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Archived
 
 > **Closeout 2026-06-07.** Знятий фальшивий `<!-- AUTO-GENERATED -->` маркер —

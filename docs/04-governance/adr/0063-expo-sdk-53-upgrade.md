@@ -1,6 +1,6 @@
 # ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Accepted
 
 - **Status:** Accepted <!-- Proposed | Accepted | Deprecated | Superseded by ADR-NNNN -->

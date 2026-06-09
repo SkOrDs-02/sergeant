@@ -1,6 +1,6 @@
 # What's New — release notes content
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 Це **джерело істини** для in-product «Що нового» модала

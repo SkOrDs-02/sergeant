@@ -1,6 +1,6 @@
 # API contracts — runtime consumer-driven contract testing (Pact)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 >
 > **v2 (persona-extend) coverage:** 10 consumer interactions → 8 provider replays + 2 `it.todo` markers. Diff from PR-42 v1: +5 endpoints (`mono/sync-state`, `mono/transactions`, `coach/memory`, `barcode`, `nutrition/day-plan`).

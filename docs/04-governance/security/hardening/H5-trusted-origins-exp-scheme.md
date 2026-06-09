@@ -1,6 +1,6 @@
 # H5 — `getTrustedOrigins()` includes `exp://` in production
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed (2026-05-04 — `exp://` gated behind `NODE_ENV !== "production"`, ops override via `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES`).
 
 | Field          | Value                                                                                                                          |

@@ -1,9 +1,9 @@
 # Specialists ↔ skills mapping
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
-Цей файл — канонічний міст між **runtime specialist agents** (`SpecialistAgent` у [`tools/openclaw/src/agents/dispatcher.ts`](../../../tools/openclaw/src/agents/dispatcher.ts)), які класифікують Telegram-команди (`/assign web-ui …`), і **governance skills** ([`./agent-skills-catalog.md`](./agent-skills-catalog.md)), якими оперують Devin / Claude під час роботи в репо.
+Цей файл — канонічний міст між **runtime specialist agents** (`SpecialistAgent` у `tools/openclaw/src/agents/dispatcher.ts`), які класифікують Telegram-команди (`/assign web-ui …`), і **governance skills** ([`./agent-skills-catalog.md`](./agent-skills-catalog.md)), якими оперують Devin / Claude під час роботи в репо.
 
 > **Чому це потрібно.** До цього мепінгу runtime classification (web-ui, server-api, mobile, …) і governance skill loading (`sergeant-web-ui`, `sergeant-server-api`, `sergeant-mobile-expo`, …) існували паралельно, без явної зв’язки. Якщо Telegram-бот класифікував `/assign web-ui …`, репо-агент мусив вгадувати, який skill завантажити. Тепер mapping однозначний.
 

@@ -1,6 +1,6 @@
 # Playbook: Write or Debug a Playwright E2E Test
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 **Trigger:** «Напиши E2E-тест на сценарій X» / «smoke-тест на критичний шлях» / «a11y-снапшот для нового екрана» / падає Playwright-спека в CI, а локально зелено, і треба зрозуміти чому.

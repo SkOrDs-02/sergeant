@@ -1,6 +1,6 @@
 # Sergeant — dead-code & stale-links аудит (2026-05-05)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Archived
 
 > Аудит виконано 2026-05-05 проти `main @ f6bc64aa` як прохід по «застарілих чи мертвих елементах» репо. Скоуп — те, що автоматичні гарди (`pnpm dead-code:files`, `pnpm knip`, `pnpm docs:check-links`, `pnpm lint:tech-debt-freshness`, `pnpm lint:ai-legacy`, `pnpm docs:check-freshness-coverage`) знаходять зараз. Усі fix-able findings закриті у супровідному PR — цей файл лишається як historical record + дашборд для outstanding hints.

@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active (v2 redesign foundation merged 2026-05; backlog of per-page polish — див. [`redesign-v2/backlog.md`](./redesign-v2/backlog.md))
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,

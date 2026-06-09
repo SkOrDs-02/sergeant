@@ -1,6 +1,6 @@
 # Playbook: Прибирання dead code
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 **Trigger:** «Видали X і всі його використання» / видалення застарілого модуля, компонента, утиліти або feature flag.

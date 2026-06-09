@@ -1,6 +1,6 @@
 # 0005 — AI cost optimisation (Anthropic prompt cache + AI-ops dashboards)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Done (2026-05-04). Prompt-cache на 2 breakpoints (system + last tool), token / cost / cache-hit Prom counters, 7-panel `ai-cost` Grafana dashboard, alerts на cost / quota — усе шипнуто. Policy зафіксована у [ADR-0039](../../../04-governance/adr/0039-anthropic-prompt-cache-policy.md).
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`

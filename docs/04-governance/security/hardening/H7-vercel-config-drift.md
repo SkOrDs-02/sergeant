@@ -1,6 +1,6 @@
 # H7 — `apps/web/vercel.json` vs root `vercel.json` config drift
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed (2026-05-04 — SSOT at `apps/web/vercel.json` + CI guard, after live-rollback of an incorrect SSOT choice).
 
 | Field          | Value                                                           |

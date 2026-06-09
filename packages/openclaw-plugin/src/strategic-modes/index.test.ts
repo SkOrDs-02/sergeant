@@ -13,13 +13,11 @@
  *   - Surrounding whitespace is tolerated.
  *   - Non-slash, non-prefix, non-string inputs fall through.
  *   - Multi-line topics work (Telegram sends `/plan churn\nadditional context`).
- *   - Primer is byte-for-byte identical to the legacy console primer
- *     (drift gate — when the console bot retires in Stage 7 these tests
- *     can be deleted along with the legacy file).
+ *
+ * (The legacy-primer byte-for-byte drift-gate cases were removed 2026-06-08
+ * when the grammy console bot `tools/openclaw` was retired.)
  */
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { ANALYZE_PRIMER } from "./analyze.js";
@@ -251,32 +249,6 @@ describe("PLAN_PRIMER", () => {
     expect(PLAN_PRIMER).toContain("3) OPTIONS");
     expect(PLAN_PRIMER).toContain("4) DECISION + FOLLOWUP");
   });
-
-  it("matches the legacy console primer byte-for-byte (drift gate)", () => {
-    // The legacy primer lives in `tools/openclaw/src/agents/strategic-modes.ts`.
-    // We do NOT import it (the plugin must stay package-independent from the
-    // console workspace) — we read the file and grep for the inline literal.
-    // When the console bot retires in Stage 7, this test + the legacy file
-    // can be deleted together.
-    const legacyPath = resolve(
-      __dirname,
-      "../../../../tools/openclaw/src/agents/strategic-modes.ts",
-    );
-    const legacySource = readFileSync(legacyPath, "utf8");
-
-    // Strip outer quotes/concatenation: rebuild the multi-line constant
-    // by capturing the body between `const PLAN_PRIMER =` and the
-    // trailing `;` (the legacy file uses string concatenation across
-    // ~15 lines).
-    const blockMatch = legacySource.match(
-      /const PLAN_PRIMER =\s*([\s\S]*?);\s*\n/,
-    );
-    expect(blockMatch).not.toBeNull();
-    const reconstructed = Function(
-      "return (" + (blockMatch?.[1] ?? "''") + ")",
-    )() as string;
-    expect(PLAN_PRIMER).toBe(reconstructed);
-  });
 });
 
 describe("ANALYZE_PRIMER", () => {
@@ -287,22 +259,6 @@ describe("ANALYZE_PRIMER", () => {
     expect(ANALYZE_PRIMER).toContain("3) EVIDENCE");
     expect(ANALYZE_PRIMER).toContain("4) RANKED CONCLUSION");
   });
-
-  it("matches the legacy console primer byte-for-byte (drift gate)", () => {
-    const legacyPath = resolve(
-      __dirname,
-      "../../../../tools/openclaw/src/agents/strategic-modes.ts",
-    );
-    const legacySource = readFileSync(legacyPath, "utf8");
-    const blockMatch = legacySource.match(
-      /const ANALYZE_PRIMER =\s*([\s\S]*?);\s*\n/,
-    );
-    expect(blockMatch).not.toBeNull();
-    const reconstructed = Function(
-      "return (" + (blockMatch?.[1] ?? "''") + ")",
-    )() as string;
-    expect(ANALYZE_PRIMER).toBe(reconstructed);
-  });
 });
 
 describe("OKR_PRIMER", () => {
@@ -312,21 +268,5 @@ describe("OKR_PRIMER", () => {
     expect(OKR_PRIMER).toContain("2) PROGRESS PER KR");
     expect(OKR_PRIMER).toContain("3) BOTTLENECKS");
     expect(OKR_PRIMER).toContain("4) NEXT ACTIONS");
-  });
-
-  it("matches the legacy console primer byte-for-byte (drift gate)", () => {
-    const legacyPath = resolve(
-      __dirname,
-      "../../../../tools/openclaw/src/agents/strategic-modes.ts",
-    );
-    const legacySource = readFileSync(legacyPath, "utf8");
-    const blockMatch = legacySource.match(
-      /const OKR_PRIMER =\s*([\s\S]*?);\s*\n/,
-    );
-    expect(blockMatch).not.toBeNull();
-    const reconstructed = Function(
-      "return (" + (blockMatch?.[1] ?? "''") + ")",
-    )() as string;
-    expect(OKR_PRIMER).toBe(reconstructed);
   });
 });

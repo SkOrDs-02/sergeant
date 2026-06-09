@@ -1,6 +1,6 @@
 # 0014 — Knowledge graph & auto-generated catalogs
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Done (all 5 phases shipped; HR-24/25/26 deferred to follow-up)
 > **Priority:** P2
 > **Owner:** `@Skords-01`

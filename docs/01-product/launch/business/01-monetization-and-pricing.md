@@ -1,6 +1,6 @@
 # 01. Монетизація і ціноутворення
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 >
 > **Update 2026-05-06:** pricing v3 зафіксовано в [ADR-0051](../../../04-governance/adr/0051-pricing-v3-single-tier.md). Секції §2.2 (Plus tier з decoy), §2.3 (pay-per-feature) та альтернативна ціна ₴2999 Lifetime — **Superseded by ADR-0051** (не йдуть у код MVP). Активна модель: **Free + Pro $7/міс / $49/рік**, ₴ UA-only на старті, trial 7 днів без картки.

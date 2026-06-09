@@ -1,6 +1,6 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** In progress
 > **✅ Completed:** Phases 0, 1, 2, 3, 4.1, 4.2, 4.3, 5.1, 5.2, 6 (including 6.2 EN-locale wiring)
 > **⏳ Pending (founder-блокери only):**

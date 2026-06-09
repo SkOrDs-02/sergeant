@@ -1,6 +1,6 @@
 # Документаційний аудит — 2026-05-11
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Completed — Actions in progress
 
 Комплексний аудит документації (planning, tech-debt, initiatives, governance) виконаний 2026-05-11. Перевірено свіжість, дріфти, архівні кандидати, та carry-over items. **Всі CRITICAL дії завершено.**

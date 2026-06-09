@@ -1,6 +1,6 @@
 # Playbook: Виконання батчу planning-тасків (parallel fan-out)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 **Trigger:** «Прожени N тасків з планінгу» / «виконай батч PR-карток з `docs/90-work/planning/*`» / «закрий пачку planning-тасків і онови трекери» — коли робота охоплює кілька PR-карток одночасно й потребує паралельних агентів.
