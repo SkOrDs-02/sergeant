@@ -1,6 +1,6 @@
 # Security
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-09 by @Skords-01. **Next review:** 2026-09-07.
 > **Status:** Active
 
 Security policy, vulnerability response, audits, and recovery discipline.
@@ -11,7 +11,7 @@ Security policy, vulnerability response, audits, and recovery discipline.
 | [`access-matrix.md`](./access-matrix.md)                         | Canonical inventory of privileged surfaces                   |
 | [`secret-ownership-register.md`](./secret-ownership-register.md) | Ownership, cadence, and blast radius for secret groups       |
 | [`audit-exceptions.md`](./audit-exceptions.md)                   | Approved exceptions from automated security findings         |
-| [`container-scan.md`](./container-scan.md)                       | Trivy scanning for the API image                             |
+| [`container-scan.md`](./container-scan.md)                       | Trivy scanning for active runtime container images           |
 | [`codeql.md`](./codeql.md)                                       | CodeQL SAST taint-flow analysis for TypeScript               |
 | [`nightly-audit.md`](./nightly-audit.md)                         | Nightly dependency and audit triage                          |
 | [`threat-model.md`](./threat-model.md)                           | STRIDE threat model per module + cross-cutting controls      |
@@ -36,11 +36,11 @@ Three complementary scanners run on every PR + on a daily / weekly
 schedule. Each tool covers a different layer; together they form the
 project's full SAST + SCA coverage.
 
-| Tool                                                       | Layer                                                                               | Trigger                                                                                        | Failure mode                                            |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| **CodeQL** ([`codeql.md`](./codeql.md))                    | TypeScript source taint-flow (SQLi, XSS, SSRF, prototype pollution, path traversal) | PR + push to `main` + Mon 06:00 UTC                                                            | Reported in PR Security tab; weekly baseline ≤ 5 alerts |
-| **Trivy** ([`container-scan.md`](./container-scan.md))     | Hub API container image (alpine OS + runtime npm tree)                              | PR (touching `Dockerfile.api` / server / shared / lockfile) + push to `main` + daily 04:00 UTC | Hard-fail CI on CRITICAL / HIGH (ignore-unfixed)        |
-| **OSV-Scanner** ([`nightly-audit.md`](./nightly-audit.md)) | Lockfile dependencies (SCA across npm + transitive)                                 | nightly 03:00 UTC                                                                              | Triaged in `audit-exceptions.md`; blocker fixes via PR  |
+| Tool                                                       | Layer                                                                               | Trigger                                                                                                                  | Failure mode                                            |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| **CodeQL** ([`codeql.md`](./codeql.md))                    | TypeScript source taint-flow (SQLi, XSS, SSRF, prototype pollution, path traversal) | PR + push to `main` + Mon 06:00 UTC                                                                                      | Reported in PR Security tab; weekly baseline ≤ 5 alerts |
+| **Trivy** ([`container-scan.md`](./container-scan.md))     | Active runtime container images (Hub API + OpenClaw bot)                            | PR (touching `Dockerfile.api` / `Dockerfile.openclaw` / server / openclaw / lockfile) + push to `main` + daily 04:00 UTC | Hard-fail CI on CRITICAL / HIGH (ignore-unfixed)        |
+| **OSV-Scanner** ([`nightly-audit.md`](./nightly-audit.md)) | Lockfile dependencies (SCA across npm + transitive)                                 | nightly 03:00 UTC                                                                                                        | Triaged in `audit-exceptions.md`; blocker fixes via PR  |
 
 The wider lint pipeline also runs `eslint-plugin-security` (M11) on
 `apps/server/**` and `tools/openclaw/**` — that is a per-PR review-time

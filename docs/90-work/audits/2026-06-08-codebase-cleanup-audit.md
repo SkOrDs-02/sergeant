@@ -25,7 +25,7 @@
 
 **Розслідувано → no-action:** Dependabot/Renovate — **це НЕ дубль** (ADR-0044: Renovate primary + Dependabot security-only fallback; npm у Dependabot уже звужений до `applies-to: security-updates`; actions/docker overlap навмисний — інші CVE-фіди).
 
-**Ще НЕ зроблено (потребує окремого рішення / розкладу):** lint-suppressions без власника (react-hooks v7 ~152 — окрема ініціатива, i18n block-disables), `@removeBy 2026-09-01` tombstones (батч у вересні), `@types/node` уніфікація, `pino-loki` prod-перевірка, dormant `servesFrontend`/`frontend.ts` (follow-up), plop-генератори `hubchat-tool`/`new-console-specialist` rename (10+ doc-refs — focused-PR), service-NAME rename `sergeant-hubchat`→`sergeant-openclaw` (domain+webhook), container-scan Trivy для `Dockerfile.openclaw` (tracked follow-up).
+**Ще НЕ зроблено (потребує окремого рішення / розкладу):** lint-suppressions без власника (react-hooks v7 ~152 — окрема ініціатива, i18n block-disables), `@removeBy 2026-09-01` tombstones (батч у вересні), `@types/node` уніфікація, `pino-loki` prod-перевірка, dormant `servesFrontend`/`frontend.ts` (follow-up), plop-генератори `hubchat-tool`/`new-console-specialist` rename (10+ doc-refs — focused-PR).
 
 ## TL;DR
 
@@ -83,7 +83,7 @@
 - `commitlint.config.js:12-14` — scope `console` як «deprecated alias for back-compat» (AGENTS.md:186 = «PR-47 phase 2 removes once Dockerfile.console / railway.console.toml renamed»).
 - `docs/04-governance/governance/service-catalog.auto.json` — `"deployArtifact": "Dockerfile.console"` для сервісу `openclaw` (name-mismatch).
 - `docs/03-operations/deploy/openclaw.md:34-36`, `docs/03-operations/ops/docker-image-policy.md`, `docs/03-operations/deploy/monorepo-deploy-filtering.md` — посилаються на `Dockerfile.console`/`railway.console.toml` як канонічні.
-- **Gap:** `Dockerfile.console` НЕ покривається `container-scan.yml` (тільки `Dockerfile.api`); `docs/03-operations/ops/docker-image-policy.md:85` сам це визнає як «follow-up PR».
+- **Closed 2026-06-09:** Trivy gap закрито комітом `120ec9d94` (`ci(ci): add Dockerfile.openclaw to container-scan Trivy workflow`), тож окремого follow-up саме для `container-scan.yml` тут більше немає.
 
 > **ADR-immutable:** `ADR-0032`, `ADR-0057` (title `tools/console`) — історичні, НЕ чіпати; максимум — 1 рядок-нотатка про rename (як уже зроблено в `stack-pulse pr-39`).
 
@@ -193,7 +193,7 @@
 
 1. **PR-A `fix(config)` — battle stale `tools/console` (zero-risk, найбільший agent-clarity).** `eslint.baseline.js:131` → `tools/openclaw/tsconfig.json` + fixture-resnapshot; виправити stale-посилання в `onboarding.md:75`, `eslint-config.md:53/87/112`, коментарі. **Починати з цього.**
 2. **PR-B `docs` — doc-hygiene статуси.** Архівувати/закрити Тему 2 (audits/initiatives/plans з 0 outstanding); полагодити `docs:gen-today` cadence; ADR-0058..0061 статуси; ADR-0003 price; ADR-0025↔0062 link.
-3. **PR-C `chore(openclaw)` — завершити rename** (deploy-координація): `Dockerfile.console`→`Dockerfile.openclaw`, `railway.console.toml`, service-catalog, розширити `container-scan.yml`, прибрати scope `console` з commitlint (узгодити з open-PR).
+3. **PR-C `chore(openclaw)` — частково закрито 2026-06-09:** Trivy-розширення вже landed (`120ec9d94`), але rename/service-catalog/commitlint частина все ще потребує окремої координації.
 4. **PR-D `chore(eslint-plugins)` — promote `ai-marker-syntax` to error** + завести ініціативу react-hooks v7 cleanup (з тикетом і датою).
 5. **Рішення власника (не код, окремо):** grammy/Locked-Decision-#17 reconcile (P0 — зняти дедлайн); Replit drop; Loki active?; Dependabot dup?; `@types/node` уніфікація.
 6. **Відкладено на вересень:** `@removeBy 2026-09-01` tombstones — один батч.
