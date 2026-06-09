@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Related:**
   - [`docs/04-governance/adr/0001-monetization-architecture.md`](./0001-monetization-architecture.md) — ADR-1.1 (Stripe primary), ADR-1.8 (webhook event-id retention), ADR-1.11 (cancel-at-period-end).
-  - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md) — тіри і ціни (Pro ₴99/міс, ₴799/рік).
+  - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md) — тіри і ціни (Pro $7/міс, $49/рік). <!-- price updated 2026-06-09: ₴99/міс → $7/міс per ADR-0051 -->
   - [`docs/01-product/launch/business/06-monetization-architecture.md`](../../01-product/launch/business/06-monetization-architecture.md) — risk register #8 («нічого про refund / proration»).
 
 ---
@@ -22,8 +22,9 @@ ADR-0001 явно винісь refund / dispute flow в окремий ADR (ди
 app — Pro у юзера лишається активним, навіть якщо платіж вже відкликано; (б)
 без явної політики повернень ми порушуємо вимоги Stripe Standard Acceptable
 Use Policy (refund policy має бути доступна юзеру **до** оплати); (в) при ціні
-Pro ₴99/міс (~$2.30) комісія Stripe за один dispute (€15) повністю з'їдає
-6 місяців оплати — політика чисто-grace для disputes економічно нестійка.
+Pro $7/міс <!-- price updated 2026-06-09: ₴99/міс → $7/міс per ADR-0051 -->
+комісія Stripe за один dispute (€15) повністю з'їдає кілька місяців оплати —
+політика чисто-grace для disputes економічно нестійка.
 
 | Сценарій                       | Тригер                                    | Дія                                                                                                                            |
 | ------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -300,3 +301,5 @@ accepted.
    balance — можна замість refund-у нарахувати credit на наступний цикл.
    Менше тертя для returning-юзерів. Reopen якщо побачимо ≥30% refund-ів
    "хочу скасувати, але повернуся" (типовий churn-recovery кейс).
+
+<!-- price updated 2026-06-09: ₴99/міс → $7/міс per ADR-0051 -->
