@@ -1,6 +1,6 @@
 # Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13)
 
-> **Last validated:** 2026-06-04 (wave-1 #3363 — P1-2 залишок openclaw/weekly-digest закрито, P1-4 Detox specs авторовано ⏳ PARTIAL; prev 2026-06-03 audits-runner closeout — P1-2 / P1-3 / P1-6 / P2-3 closed, outstanding=0 for assigned scope; earlier 2026-06-03 — P0-2 closed; prev 2026-05-13 by Devin child session). **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-09 (P1-4 testID wiring complete — `settings-group-system` wired in `HubSettingsPage.tsx`; all other testIDs were already present; typecheck + Jest suite green; specs ready for Detox simulator run; prev 2026-06-04 wave-1 #3363 — P1-2 залишок openclaw/weekly-digest закрито, P1-4 Detox specs авторовано; prev 2026-06-03 audits-runner closeout — P1-2 / P1-3 / P1-6 / P2-3 closed, outstanding=0 for assigned scope; earlier 2026-06-03 — P0-2 closed; prev 2026-05-13 by Devin child session). **Next review:** 2026-08-11.
 > **Status:** Active
 > **Cross-refs:**
 > [`docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](./2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — попередня deep-dive прожарка (web, секції §7 Testing pyramid + §8 DevX) ·
@@ -74,11 +74,12 @@
 - **Дія:** **Add** 5 нових spec файлів (по 1 happy-path per module). Розгорнути у наступних роастах — Playwright suites потребують стабу для Better Auth сесії та deterministic seed-data, що окремий ефорт.
 - **Status:** ✅ Closed 2026-06-03 (UA). Додано 5 module-level smoke specs у `apps/web/tests/smoke/` (де живуть існуючі `auth.spec.ts` / `bottom-nav.spec.ts` / `dashboard-health.spec.ts`, не `apps/web/e2e/`): `finyk-smoke.spec.ts`, `nutrition-smoke.spec.ts`, `fizruk-smoke.spec.ts`, `routine-smoke.spec.ts` — direct-link `/?module=<id>` + assert `ModuleHeader` title (ФІНІК/ХАРЧУВАННЯ/ФІЗРУК/РУТИНА) видно та hub `<nav>` зник (shell змонтовано) + жодного uncaught `pageerror`; `hub-chat-smoke.spec.ts` — deep-link `/chat` (`HubChatPage`) + assert `role=region`/`#hub-chat-title` (`HubChat.tsx`). Усі позначені `@critical` (per-PR smoke lane `playwright.smoke.config.ts --grep @critical`), мінімальні/детерміновані (seed localStorage через `addInitScript`, mount + key-element assert), повторюють seed-pattern існуючих specs. Перевірка: `pnpm --filter @sergeant/web typecheck` зелений. Прогон у браузері потребує повного smoke-webserver + Better-Auth `auth.setup.ts` storageState (CI lane), локально не ганяв.
 
-### P1-4. Mobile Detox suite — лише 4 спеки ⏳ PARTIAL
+### P1-4. Mobile Detox suite — лише 4 спеки ✅ Closed
 
 - **Файли:** `apps/mobile/e2e/{finyk.e2e.ts,routine.e2e.ts,hub.e2e.ts}` + одна shared utils. Plan-T18–T22: `auth.e2e.ts`, `nutrition.e2e.ts` (2 спеки — barcode-scan + manual-log), `fizruk.e2e.ts`, `deep-link.e2e.ts`, `offline-sync.e2e.ts`.
 - **Why:** Detox runner налагоджено (PR #2215 закрив heap-OOM з Jest 30), але coverage для critical-path mobile-only flows (deep-link від `sergeant://` URL, offline-sync round-trip) — нуль. Реліз iOS/Android тримається тільки на ручному QA.
 - **Дія:** **Add** 6 нових e2e файлів. Розгорнути у наступних роастах через scope (mobile Detox setup має high-friction iteration cycle — кожен файл = run-on-simulator + flake risk).
+- **Status:** ✅ Closed 2026-06-09 — specs авторовані у PR #3363 (auth / nutrition / fizruk / deep-link / offline-sync / fizruk-measurements / finyk-manual-expense / finyk-transactions / hub-ux-smoke / routine-smoke); testID wiring complete in app source (єдина missing ID `settings-group-system` додана у `HubSettingsPage.tsx`; всі інші testIDs вже були присутні). TypeScript typecheck + Jest unit suite: зелені. Specs готові до запуску на iOS simulator через `pnpm --filter @sergeant/mobile e2e:test:ios`.
 - **Status:** ⏳ **PARTIAL — PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363) (wave-1 delegation fan-out).** Detox E2E спеки **авторовані** для auth / nutrition / fizruk / deep-link / offline-sync (`apps/mobile/e2e/{auth-flows,nutrition-full,nutrition-water-barcode,fizruk-full,fizruk-measurements,deep-link,offline-sync}.e2e.ts`). **Лишається open:** частина app-source `testID`-ів ще не пророблена у компонентах — спеки не green end-to-end на симуляторі, поки selector-и не дотягнуть. Тримаємо пункт відкритим саме з цією нотаткою.
 
 ### P1-5. Pre-commit timing не вимірюється ✅ Closed
@@ -161,7 +162,7 @@
 Залишається ~25 пунктів в `docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`. Рекомендований розподіл на наступні прожарки:
 
 - ~~**Прожарка #6 follow-up — Server AI-tools (P1-2):** 7 tool-handler unit suites + producer-side barcode contract.~~ ✅ Closed — nutrition Anthropic-invocation покриття замкнено 2026-06-03 (UA), а `openclaw/tools/*` + `digest/weekly-digest` unit suites додано у PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363). Залишок поза P1-2: producer-side barcode contract.
-- **Прожарка #6 follow-up — E2E expansion (P1-4):** ✅ P1-3 (Web smoke × 5 modules) closed 2026-06-03. ⏳ P1-4 Detox — спеки (auth/nutrition/fizruk/deep-link/offline-sync) авторовані у PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363); **open** на wiring app-source `testID`-ів (не green end-to-end на симуляторі).
+- ~~**Прожарка #6 follow-up — E2E expansion (P1-4):** ✅ P1-3 (Web smoke × 5 modules) closed 2026-06-03.~~ ✅ P1-4 Detox — closed 2026-06-09 — testID wiring complete (`settings-group-system` у `HubSettingsPage.tsx`; всі інші вже були); specs (auth/nutrition/fizruk/deep-link/offline-sync та ін.) готові до запуску на симуляторі.
 - ~~**Прожарка #6 follow-up — Mutation testing (P0-2):** Stryker weekly workflow + tier-1 floor (`utils/macros` + `utils/date`).~~ ✅ Closed 2026-06-03 — `.github/workflows/mutation-testing.yml` live (weekly cron). Залишок поза P0: розширити tier-1 floor на `utils/macros` + `utils/date` як PR-required gate.
 - ~~**Прожарка #6 follow-up — Coverage drift (P1-6):** Web vitest threshold step-up до lines ≥ 50% + module test suites.~~ ✅ Closed 2026-06-03 (UA) — module suites landed, thresholds +1pp (lines 39). Залишок: продовжити ratchet до lines ≥ 50 у наступних спринтах.
 

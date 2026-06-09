@@ -54,7 +54,7 @@ interface SettingGroup {
 
 const SETTING_GROUPS: SettingGroup[] = [
   {
-    id: "general",
+    id: "system",
     title: "Загальні",
     icon: "gear",
     sections: [GeneralSection, NotificationsSection],
@@ -81,7 +81,7 @@ const SETTING_GROUPS: SettingGroup[] = [
 
 export function HubSettingsPage() {
   const scrollRef = useRef<ScrollView>(null);
-  const [activeGroup, setActiveGroup] = useState<string>("general");
+  const [activeGroup, setActiveGroup] = useState<string>("system");
   const groupPositions = useRef<Record<string, number>>({});
 
   const handleGroupLayout = (groupId: string) => (event: LayoutChangeEvent) => {
@@ -103,7 +103,7 @@ export function HubSettingsPage() {
     const scrollY = event.nativeEvent.contentOffset.y + 80;
 
     // Find the active group based on scroll position
-    let currentGroup = "general";
+    let currentGroup = "system";
     for (const group of SETTING_GROUPS) {
       const position = groupPositions.current[group.id];
       if (position !== undefined && scrollY >= position) {
