@@ -67,9 +67,10 @@ function runCheck(root) {
 }
 
 test("--check exits 0 when prerequisites are satisfied", () => {
-  // We rely on the host having the right Node major (20) and pnpm. CI does.
-  // If pnpm or docker is missing on a contributor box, this test would fail —
-  // which is also fine: that's what the script protects against.
+  // We rely on the host having the right Node major and pnpm. CI does.
+  // Docker is intentionally NOT a prerequisite of `--check` (verify-only mode
+  // never brings the DB up), so this passes on daemon-less CI lanes; a missing
+  // pnpm would still fail here, which is what the script protects against.
   const { dir, root } = buildFixture();
   try {
     const r = runCheck(root);

@@ -9,7 +9,7 @@
     },
     {
       "skill": "sergeant-openclaw",
-      "globs": ["tools/openclaw/**"],
+      "globs": ["packages/openclaw-plugin/**", "ops/openclaw/**"],
       "keywords": ["openclaw", "gateway", "console agent", "console-agent"]
     },
     {

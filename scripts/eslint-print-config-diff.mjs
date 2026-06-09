@@ -51,7 +51,6 @@ export const FIXTURES = [
     surface: "eslint-plugin-sergeant-design",
     path: "packages/eslint-plugin-sergeant-design/index.js",
   },
-  { surface: "openclaw", path: "tools/openclaw/src/index.ts" },
 ];
 
 /**

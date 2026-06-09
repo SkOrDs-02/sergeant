@@ -1,6 +1,6 @@
 # H1 — Bearer token у мобільному shell без явного Keychain-accessibility
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed (Phase 1 — 2026-05-04). Phase 2 (TTL + device-binding) залишається відкритим, відстежується в [H3](./H3-session-revoke-and-binding.md).
 
 | Field              | Value                                                                                                   |

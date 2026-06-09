@@ -1,6 +1,6 @@
 # 0012 — Perfect TS strictness rollout (`noUncheckedIndexedAccess` + 4 opt-in flags)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed (Phase 6a/6c/6e/6f ✅ Done; Phase 6b/6d enabled у `tsconfig.base.json` з allowlist-residual у `apps/web` — tracked у [`docs/90-work/tech-debt/frontend.md` §11.1](../../tech-debt/frontend.md))
 > **Priority:** P1 (Sprint 2–4 — після 0010 revenue-first launch стабілізації)
 > **Owner:** `@Skords-01`

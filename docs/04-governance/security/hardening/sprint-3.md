@@ -1,6 +1,6 @@
 # Sprint 3 — Medium-severity backlog and SAST onboarding
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed
 
 Sprint 3 finishes the High-severity backlog (H4 encryption-key rotation —

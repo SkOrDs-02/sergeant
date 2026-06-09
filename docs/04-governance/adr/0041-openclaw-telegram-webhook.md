@@ -154,8 +154,8 @@ First activation hit a one-time race:
 
 ## Links
 
-- [`tools/openclaw/src/openclaw/webhook.ts`](../../../tools/openclaw/src/openclaw/webhook.ts) — HTTP server.
-- [`tools/openclaw/src/openclaw/bootstrap.ts`](../../../tools/openclaw/src/openclaw/bootstrap.ts) — set/delete webhook + flag parsing.
-- [`tools/openclaw/src/index.ts`](../../../tools/openclaw/src/index.ts) — boot-time mode selection.
+- `tools/openclaw/src/openclaw/webhook.ts` — HTTP server.
+- `tools/openclaw/src/openclaw/bootstrap.ts` — set/delete webhook + flag parsing.
+- `tools/openclaw/src/index.ts` — boot-time mode selection.
 - grammy [`webhookCallback("http")`](https://grammy.dev/guide/deployment-types#webhooks) docs — adapter for Node's native `http`.
 - Telegram Bot API [`setWebhook`](https://core.telegram.org/bots/api#setwebhook) — `secret_token`, `allowed_updates`, `drop_pending_updates`.

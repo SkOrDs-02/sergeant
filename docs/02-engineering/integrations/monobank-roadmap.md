@@ -1,6 +1,6 @@
 # Monobank integration — план покращень після webhook-міграції
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 **Статус документа:** plan / draft. Створено 2026-04-25 одразу після cutover (#705 → #708).

@@ -1,6 +1,6 @@
 # Sprint 2 — Session, surface and quota hardening
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed
 
 Sprint 2 closes the **High-severity backlog** that Sprint 1 left open and removes

@@ -1,6 +1,6 @@
 # Playbook: Управління привілейованим доступом (access governance)
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 **Trigger:** будь-яка подія governance привілейованого доступу в Sergeant — видача нового привілейованого доступу, його відкликання, проведення періодичного ревʼю Tier 0/1 доступів або реакція на підозру компрометації акаунта чи credential-у.

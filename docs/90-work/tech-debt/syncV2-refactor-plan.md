@@ -1,6 +1,6 @@
 ﻿# syncV2.ts Refactoring Plan — Stage 2: Apply Functions Extraction
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Archived
 
 > **Closeout 2026-06-07.** Усі кроки (1–4) завершено й верифіковано в коді

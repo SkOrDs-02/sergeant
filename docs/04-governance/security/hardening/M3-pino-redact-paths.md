@@ -1,6 +1,6 @@
 # M3 — Pino `redactPaths` is incomplete for security headers and URLs
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed (2026-05-04) — see Resolution log.
 
 | Field          | Value                                                  |

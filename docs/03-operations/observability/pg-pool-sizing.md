@@ -8,7 +8,7 @@ next_review: 2026-08-06
 # Postgres pool sizing — knobs, sizing rule, debugging
 
 > **Status:** active.
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > Виконує acceptance criteria stack-pulse PR-13
 > ([`docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md)).
 > Перетинається з [`docs/03-operations/runbooks/database-connection-pooling.md`](../runbooks/database-connection-pooling.md)

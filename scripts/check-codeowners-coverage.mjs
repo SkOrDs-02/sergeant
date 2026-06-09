@@ -235,15 +235,6 @@ const MUST_BE_OWNED = [
     reason: "habit/streak domain logic shared web ↔ mobile",
   },
 
-  // Telegram bot agents — system prompts + routing logic
-  {
-    path: "tools/openclaw/src/agents",
-    kind: "tree",
-    match: /\.ts$/,
-    reason:
-      "agent system prompts and router — accidental prompt changes affect all users",
-  },
-
   // n8n automation workflows
   {
     path: "ops/n8n-workflows",

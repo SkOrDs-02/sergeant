@@ -5,7 +5,7 @@ lang-reason: "Superseded stub kept only as historical anchor (`Status: Deprecate
 
 # Playbook: Release Expo Mobile
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Deprecated
 
 > **Superseded by:** [release.md § Expo](./release.md#3-expo) — merged 2026-05-04 (initiative [0009](../../90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 2.3).

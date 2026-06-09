@@ -78,7 +78,14 @@ async function makeApp(
   // is exercised by `routes/internal.test.ts`.
   app.use(
     createOpenClawInternalRouter({
-      pool: { query: queryMock } as never,
+      // query_app_db now runs inside a READ ONLY transaction via
+      // `pool.connect()` → client (708b763), so the mock must expose a
+      // client whose `query` is the same spy. BEGIN/SET LOCAL/COMMIT all
+      // flow through it; only the SELECT result is read back.
+      pool: {
+        query: queryMock,
+        connect: async () => ({ query: queryMock, release: () => {} }),
+      } as never,
     }),
   );
   return app;

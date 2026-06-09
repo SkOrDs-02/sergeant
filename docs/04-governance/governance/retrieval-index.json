@@ -3,18 +3,18 @@
   "version": 1,
   "generated_at": "2026-06-09",
   "sourceHashes": {
-    "knowledge-graph": "96ff3c55a1e0482e5c989355a0a8bc56ba83c8657e531c4057b9636570f90ebd",
-    "symbol-index": "71d5c428f9f5074190c877c76f3addde4e6192f0228dc5e3a0dc4e67af80430f"
+    "knowledge-graph": "f562cfbdc59164b12986eb2f59a0dd0bd801a17e90cab4bfe8f190fe05405729",
+    "symbol-index": "7ea3de138fa223ddd49af14b3e9f174bd684fb138c8837be02f8b8404fe29ba1"
   },
   "counts": {
     "adr": 63,
     "audit": 18,
-    "export": 298,
+    "export": 297,
     "hard-rule": 26,
-    "initiative": 52,
+    "initiative": 51,
     "playbook": 61,
     "skill": 33,
-    "total": 551
+    "total": 549
   },
   "chunks": [
     {
@@ -3130,15 +3130,6 @@
       "contentHash": "4f6de5595aec270dfbcc012ef2fe0764b74ccf8b05fac94ac17a6aece5cae7a7"
     },
     {
-      "id": "export:@sergeant/openclaw:HELP_TEXT",
-      "type": "export",
-      "path": "tools/openclaw/src/help-text.js",
-      "title": "HELP_TEXT (re-export)",
-      "tier": "extended",
-      "text": "HELP_TEXT · re-export · @sergeant/openclaw · tools/openclaw/src/help-text.js · used 0× · dead export unused",
-      "contentHash": "e38651fd33be19b17e44b7e2d96366fd1e8ff6f7d9fe45ebe2b10504b8fecdcb"
-    },
-    {
       "id": "export:@sergeant/routine-domain:*",
       "type": "export",
       "path": "packages/routine-domain/src/types.js",
@@ -3935,17 +3926,6 @@
       "status": "In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями).",
       "text": "0020 — Agent decisions log · initiative:0020 · initiative · In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями). · 20 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Критерії DONE · Ризики · Власник / ETA · Посилання",
       "contentHash": "602b74fb84abf1ecb7d25eb6f9907123368ccb8302bfacc36aabfc657c5a820d"
-    },
-    {
-      "id": "initiative:0021",
-      "type": "initiative",
-      "path": "docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md",
-      "line": 1,
-      "title": "0021 — React-hooks v7 ESLint cleanup",
-      "tier": "core",
-      "status": "Proposed",
-      "text": "0021 — React-hooks v7 ESLint cleanup · initiative:0021 · initiative · Proposed · 21 · Проблема · Скоуп · Acceptance criteria · Timeline",
-      "contentHash": "6819712e7c8b4e125fa3190269040c3be6396af223e971aa067b3f7c4c54753f"
     },
     {
       "id": "initiative:follow-ups",

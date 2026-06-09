@@ -2,9 +2,9 @@
   "version": 1,
   "generated_at": "2026-06-09",
   "summary": {
-    "packages": 17,
-    "totalExports": 298,
-    "totalDeadExports": 195
+    "packages": 16,
+    "totalExports": 297,
+    "totalDeadExports": 194
   },
   "packages": [
     {
@@ -1808,25 +1808,6 @@
           "name": "*",
           "kind": "re-export-star",
           "fromFile": "./mealTypes.js",
-          "usedBy": [],
-          "usageCount": 0
-        }
-      ]
-    },
-    {
-      "name": "@sergeant/openclaw",
-      "path": "tools/openclaw",
-      "entryFile": "tools/openclaw/src/index.ts",
-      "stats": {
-        "exportCount": 1,
-        "totalImporters": 0,
-        "deadExports": 1
-      },
-      "exports": [
-        {
-          "name": "HELP_TEXT",
-          "kind": "re-export",
-          "fromFile": "./help-text.js",
           "usedBy": [],
           "usageCount": 0
         }

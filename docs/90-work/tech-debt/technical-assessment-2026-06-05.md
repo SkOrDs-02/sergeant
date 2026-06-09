@@ -1,6 +1,6 @@
 ﻿# Sergeant — Технічний аудит монорепозиторію
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 > **Дата:** 2026-06-05 15:43 UTC+03:00

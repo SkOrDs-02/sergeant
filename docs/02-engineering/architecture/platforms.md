@@ -1,6 +1,6 @@
 # 🎯 Статус трьох поверхонь — Web / RN mobile / Capacitor shell
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active.  
 > **Capacitor shell:** `accepted-with-sunset` — sunset schedule див. [ADR-0010 § Sunset schedule](../../04-governance/adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule).  
 > **Initiative:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md).

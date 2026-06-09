@@ -1,6 +1,6 @@
 # `INTERNAL_API_KEY` — rotation, audit & revocation runbook
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Scaffolded.
 > **Owner:** ops + server.
 > **Related:** [`api-internal-hmac.md`](./api-internal-hmac.md), [`secret-ownership-register.md`](./secret-ownership-register.md), [`secret-rotation.md`](./secret-rotation.md), [`docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md).

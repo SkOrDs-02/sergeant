@@ -27,7 +27,6 @@ import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, posix, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import prettier from "prettier";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -211,9 +210,13 @@ function buildManifest() {
 
 // ── CLI ──────────────────────────────────────────────────────────────────────
 
-async function formatJson(obj, filepath) {
-  const opts = (await prettier.resolveConfig(filepath)) ?? {};
-  return prettier.format(JSON.stringify(obj), { ...opts, parser: "json" });
+// Deterministic JSON formatting: 2-space indent + trailing newline. This is
+// byte-for-byte what Prettier produced for this manifest (verified against the
+// committed file), but without importing `prettier` — the docs-automation CI
+// lane that runs retrieval.test.mjs has no node_modules, so a top-level
+// `import prettier` crashed the `--check` gate (ERR_MODULE_NOT_FOUND).
+function formatJson(obj) {
+  return `${JSON.stringify(obj, null, 2)}\n`;
 }
 
 async function main() {
@@ -222,7 +225,7 @@ async function main() {
   // `generated_at` is a clock value, so the committed manifest may carry a
   // different date than today; compare everything except that field.
   const manifest = buildManifest();
-  const next = await formatJson(manifest, OUT_JSON);
+  const next = formatJson(manifest);
 
   if (wantsCheck) {
     const current = readSafe(OUT_JSON);

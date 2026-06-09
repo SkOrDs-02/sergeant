@@ -1,6 +1,6 @@
 # 0020 — Agent decisions log
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями).
 > **Agent-ready:** yes
 

@@ -44,16 +44,6 @@
       "owner": "@Skords-01"
     },
     {
-      "id": "openclaw",
-      "title": "OpenClaw (Telegram bot)",
-      "workspace": "tools/openclaw",
-      "deployTarget": "railway",
-      "deployArtifact": "Dockerfile.openclaw",
-      "railwayService": null,
-      "healthcheckPath": null,
-      "owner": null
-    },
-    {
       "id": "openclaw-gateway",
       "title": "OpenClaw Gateway",
       "workspace": "ops/openclaw",

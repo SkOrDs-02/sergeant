@@ -1,6 +1,6 @@
 # M20 — `App.exitApp()` on back without unsaved-state check
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Closed
 
 | Field          | Value                                                     |

@@ -1,6 +1,6 @@
 # Sergeant — стан тестів і що покращити
 
-> **Last validated:** 2026-06-08 by @claude. **Next review:** 2026-09-06.
+> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 >
 > Repo: `Skords-01/Sergeant`. Тип: аналіз без змін у коді. Парний документ — [`2026-05-05-tests-pr-plan.md`](./2026-05-05-tests-pr-plan.md).
