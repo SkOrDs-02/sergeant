@@ -9,7 +9,7 @@
 
 1. **Runtime base:** `gcr.io/distroless/nodejs20-debian12:nonroot` — Node 20 + glibc, без shell, без package manager-ів, uid:gid `65532:65532`.
 2. **Multi-stage:** `builder` (повна збірка) → `deps` (production-only deps + cleanup) → `runtime` (distroless).
-3. **CVE budget:** Trivy gate на `HIGH/CRITICAL` у `.github/workflows/container-scan.yml` — `0` нових CVE allowed по `Dockerfile.api` (console scan додаємо follow-up PR).
+3. **CVE budget:** Trivy gate на `HIGH/CRITICAL` у `.github/workflows/container-scan.yml` — `0` нових CVE allowed по обох образах (`Dockerfile.api` і `Dockerfile.openclaw`).
 4. **Healthcheck:** немає в Dockerfile — Railway моніторить через external HTTP probe (`/health` для API) або crashloop detection (для console). Distroless не має shell-у, тож `HEALTHCHECK CMD wget …` / `pgrep …` не виконуються.
 
 ## Чому distroless
@@ -77,12 +77,12 @@ Distroless runtime НЕ містить shell-у і утиліт (`wget`, `curl`,
 
 ## Trivy gate
 
-CI workflow [`.github/workflows/container-scan.yml`](../../../.github/workflows/container-scan.yml) сканує `Dockerfile.api` через `aquasecurity/trivy-action`. Gate: fail PR при наявності `HIGH` / `CRITICAL` CVE у новому шарі.
+CI workflow [`.github/workflows/container-scan.yml`](../../../.github/workflows/container-scan.yml) сканує обидва образи через два паралельних jobs `aquasecurity/trivy-action`. Gate: fail PR при наявності `HIGH` / `CRITICAL` CVE у новому шарі.
 
-**Очікувані Trivy-метрики після PR-30:**
+**Очікувані Trivy-метрики після PR-30 + openclaw coverage (цей PR):**
 
-- `Dockerfile.api`: 0 HIGH/CRITICAL (порівняти з pre-PR baseline через CI artifacts).
-- `Dockerfile.openclaw`: Trivy scan ще не enabled у CI (follow-up PR розширить `container-scan.yml`).
+- `Dockerfile.api` (job `trivy-image`): 0 HIGH/CRITICAL; SARIF category `trivy-image`.
+- `Dockerfile.openclaw` (job `trivy-image-openclaw`): 0 HIGH/CRITICAL; SARIF category `trivy-image-openclaw`.
 
 **`.trivyignore`** — не використовуємо. Якщо в майбутньому з'явиться false-positive на known-good vendor package, рішення: (a) додати у `.trivyignore` з obligatory inline comment-justification і audit-trail, (b) preferred — upgrade-нути dep до patched версії.
 
