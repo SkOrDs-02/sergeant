@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { isValidElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -26,6 +27,9 @@ import { MemoryRouter } from "react-router-dom";
  * behaviour of individual providers (those have their own tests).
  */
 
+vi.mock("./app/RootLayout", () => ({
+  RootLayout: () => null,
+}));
 vi.mock("./app/ShellDeepLinkBridge", () => ({
   ShellDeepLinkBridge: () => null,
 }));
@@ -47,6 +51,11 @@ vi.mock("./auth/authClient", () => ({
 vi.mock("./observability/posthog", () => ({
   identifyPostHogUser: vi.fn(),
   resetPostHog: vi.fn(),
+}));
+vi.mock("./db/kvStoreBoot", () => ({
+  bootstrapKvStore: () => Promise.resolve(),
+  getActiveSqliteKvStore: () => null,
+  kvStoreBoot: { loaded: false, warmCache: new Map() },
 }));
 vi.mock("./observability/analytics", async () => {
   const real = await vi.importActual<
@@ -86,6 +95,8 @@ vi.mock("@sergeant/api-client/react", async () => {
 });
 
 import { Providers } from "./app/Providers";
+import { RootLayout } from "./app/RootLayout";
+import { RootRoute } from "./app/router";
 import { useToast } from "@shared/hooks/useToast";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { useAuth } from "./auth/AuthContext";
@@ -137,6 +148,24 @@ describe("<Providers /> — provider-tree invariant (Web deep-dive §1.1)", () =
     // invariant — `auth.status` simply must be defined, i.e.
     // `AuthProvider` is in the ancestor chain.
     expect(leaf.dataset["authStatus"]).toBeDefined();
+  });
+
+  it("mounts Providers above RootLayout so layout hooks can read auth context", () => {
+    const rootElement = RootRoute();
+
+    expect(isValidElement<{ children: unknown }>(rootElement)).toBe(true);
+    if (!isValidElement<{ children: unknown }>(rootElement)) {
+      throw new Error("RootRoute did not return a React element");
+    }
+
+    expect(rootElement.type).toBe(Providers);
+    const layoutElement = rootElement.props.children;
+
+    expect(isValidElement(layoutElement)).toBe(true);
+    if (!isValidElement(layoutElement)) {
+      throw new Error("RootRoute did not render RootLayout as child");
+    }
+    expect(layoutElement.type).toBe(RootLayout);
   });
 
   it("renders the children exactly once (no provider remounts the subtree on its own)", () => {
