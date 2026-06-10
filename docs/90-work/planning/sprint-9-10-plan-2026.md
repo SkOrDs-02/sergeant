@@ -7,15 +7,7 @@
 > Скоуп — два спринти по 10 робочих днів, ~6-8 задач на спринт, mix фічі / tech debt / docs.
 > Capacity assumption: один full-time engineer (`@Skords-01`) + child Devin-сесії для tech-debt sweep-ів.
 
----
-
-## Зміст
-
-1. [Cross-roast summary](#1-cross-roast-summary--топ-15-наскрізних-болів)
-2. [Спринт 9 (2026-07-07 – 2026-07-18)](#2-спринт-9-2026-07-07--2026-07-18)
-3. [Спринт 10 (2026-07-21 – 2026-08-01)](#3-спринт-10-2026-07-21--2026-08-01)
-4. [Backlog overflow](#4-backlog-overflow)
-5. [Risks / capacity notes](#5-risks--capacity-notes)
+> **Duplicate coverage note:** S10-T2 (T4-B continuation), S10-T3 (T5 tightening) і S10-F2 (cold-start FTUX) — carry-over з `sprint-roadmap-q2q3-2026.md`; тут вони фіксуються як S10-items, але джерелом правди є roadmap. Не вести паралельні follow-ups.
 
 ---
 

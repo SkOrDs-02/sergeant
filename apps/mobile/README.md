@@ -128,7 +128,9 @@ hot-reload JS just like Expo Go, but with our native modules available.
 simulator-friendly) and store submission (`production`, AAB for Android,
 App Store distribution for iOS). They are intentionally **not** Dev Clients.
 
-## CloudSync + офлайн-черга (Фаза 3)
+## CloudSync + офлайн-черга
+
+> **Примітка:** Раніше позначено як "Фаза 3" — наразі це де-факто **Active** (продукшн рендер у `app/_layout.tsx` через `<CloudSyncProvider>`). Лейбл "Phase 3" залишається в історичних посиланнях, але реалізація ввімбудована.
 
 Весь mobile-sync живе у `src/sync/*` і є дзеркалом
 `apps/web/src/core/cloudSync/*` з RN-специфічними адаптерами. Нічого

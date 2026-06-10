@@ -55,19 +55,11 @@ Files: `src/shortcuts/{router.ts,types.ts,index.ts}` + 17 per-shortcut definitio
 
 Кожен tool — `api.registerTool({ name, label, description, parameters: Type.Object(...), async execute(invocationId, params) { ... } })`. Параметри валідуються `typebox@1.1.x` (не Zod і не `@sinclair/typebox`). Tools проксяться через HTTP до існуючих server endpoints `/api/internal/openclaw/<endpoint>` з `Authorization: Bearer ${INTERNAL_API_KEY}` (server API не змінюється). Для write-tools додатковий server-side гейт — алловліст + `/write-audit/log` (див. `apps/server/src/routes/internal/openclaw.ts`).
 
-### Чого ще НЕ зареєстровано
+### Що залишається в роботі (Stage 5a → остання)
 
-- **Layer 1 cheap-router** (Haiku JSON-classifier) — Stage 4c (цей PR). Один ~$0.0002 Haiku-call на `before_dispatch` ПІСЛЯ Layer 0; класифікує в 5 категорій (routine*metrics / routine_recall / routine_remind / thinking / chat) і роутить: `routine*\*`→ виконати Layer 0 схорткат;`chat`→ повернути Haiku-відповідь verbatim;`thinking` → fall through до Layer 2. System prompt на volume (`ops/openclaw/cheap-router.system.md`) піднято через `OPENCLAW_CHEAP_ROUTER_PROMPT_PATH`; якщо не сконфігуровано — server fallback на embedded дефолт. Anthropic key живе на `apps/server`(Hard Rule #20); plugin POST-ить`/api/internal/openclaw/classify`. Fail-closed: HTTP error → escalate to Layer 2. Код: [`src/hooks/cheap-router.ts`](./src/hooks/cheap-router.ts), [`src/cheap-router/`](./src/cheap-router/).
-- **Per-persona tool allowlist** — Stage 5a. Зараз плоский `tools.alsoAllow` (усі 10 personas мають усі 30 tools).
 - **Strategic-modes wiring + council orchestration + morning-digest cron** — Stage 5b/5c/5d. SKILL-и є у `ops/openclaw/skills/`, копіюються на volume через `docker-entrypoint.sh`; plugin-side orchestration і slash-handlers ще не написані.
 
-## Чому існує `src/legacy/`
-
-PR-B…PR-F v3.1 plan-у (merged 2026-05-10..11) реалізовував повну функціональність (write-tools, hooks, council, strategic modes, parity harness) на **локально вгаданих** `sdk-types.ts`. При першому деплої на Railway виявилося, що `openclaw@2026.5.7` SDK має іншу форму: `definePluginEntry` приймає об'єкт, а не функцію; параметри — `typebox` (не `@sinclair/typebox`); `label` — required; config — `api.config`; entry-файл — TypeScript source.
-
-Stage 1 rewrite ([PR #2438](https://github.com/Skords-01/Sergeant/pull/2438), `14ee42e2`) перенесло увесь pre-rewrite plugin у `src/legacy/` як reference і написало мінімальний MVP (3 tools) на real SDK. Stage 2 ([PR #2449](https://github.com/Skords-01/Sergeant/pull/2449), `257ca2ef`) долив решту 22 read-tools. Stage 3 ([PR #2463](https://github.com/Skords-01/Sergeant/pull/2463), `1b68f159`) додав 5 write-tools як HTTP-проксі. Stage 4a (цей PR) реєструє 4 hook-и через `api.registerHook`: budget gate + invocation lifecycle + native approval — без копіювання legacy approval-variants логіки (вона не потрібна — native SDK підтверджено спайком).
-
-`src/legacy/` лишається у репі тільки як **довідник** при міграції Stage 3+ (write-tools, hooks, routers, council, parity). Не імпортуй з нього у `src/index.ts`. Не запускай тести у `src/legacy/**` як частину CI — вони можуть посилатися на neexistuyuche `sdk-types.ts` форму.
+> **Примітка:** `src/legacy/` — код з попередніх Stage 3+ вже не потребує референтного доступу; директорія залишається у репі для історичного контексту, але НЕ імпортується у `src/index.ts` і НЕ запускається в CI.
 
 ## Як SDK підключений
 

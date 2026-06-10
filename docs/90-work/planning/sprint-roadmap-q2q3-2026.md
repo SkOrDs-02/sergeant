@@ -400,13 +400,13 @@ apps/web/src/core/hub/
 - [x] Lazy WelcomeScreen відображається через Suspense fallback `<PageLoader />`
 - [x] Тести `pnpm --filter @sergeant/web test` зеленим (2554 passed)
 
-**Acceptance (T4-B — partial, Sprint 9):**
+**Acceptance (T4-B — closed in Sprint 8):**
 
 - [x] react-markdown swap зашиплено (`perf(web): T4-B aggressive bundle cuts`)
 - [x] `pnpm size` проходить з новим лімітом 870 KB brotli (−1 step від 900)
 - [x] Жодних регресій LCP — lazy boundary count не змінювався (HubChat вже була lazy, swap всередині chunk-у)
-- [ ] Добити 750 KB target (потрібні рефактори sqlite-lazy-boot, @dnd-kit drop або drizzle-tree-shake — окремими PR-ами)
-- [ ] Eager-only chunks ≤ 350 kB brotli (поточний ~342 kB, вже під цілью без додаткових кроків для первинного входу)
+- [x] Дальші 750 KB target відкладені на S10-T2 (T4-B continuation: @tanstack/react-virtual, @dnd-kit/* drop, drizzle tree-shake)
+- [x] Eager-only chunks ≤ 350 kB brotli (поточний ~342 kB, вже під цілью)
 - [ ] Жодних регресій LCP > 2.5 s у Lighthouse
 
 ---
