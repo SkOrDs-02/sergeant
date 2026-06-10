@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 import { RootLayout } from "./RootLayout";
+import { Providers } from "./Providers";
 
 /**
  * Root router config for `apps/web` (initiative 0006 — frontend routing).
@@ -10,7 +11,8 @@ import { RootLayout } from "./RootLayout";
  * and `useLocation()` always returns the current pathname.
  *
  * Architecture:
- *   RootLayout (providers + shared state + global effects + <Outlet />)
+ *   RootRoute (providers)
+ *    └── RootLayout (shared state + global effects + <Outlet />)
  *    ├── /finyk/*    → FinykRoute   (lazy chunk)
  *    ├── /fizruk/*   → FizrukRoute  (lazy chunk)
  *    ├── /nutrition/* → NutritionRoute (lazy chunk)
@@ -25,10 +27,18 @@ import { RootLayout } from "./RootLayout";
  * Auth contract: auth guard lives at component level (each page checks
  * `useAuth().status`), not at router level. See `AuthContext.tsx`.
  */
+export function RootRoute() {
+  return (
+    <Providers>
+      <RootLayout />
+    </Providers>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <RootLayout />,
+    element: <RootRoute />,
     children: [
       // Per-module lazy routes — each renders a DIFFERENT component,
       // fixing the mixed-shape match-object bug (see Phase 2 history above).

@@ -15,7 +15,6 @@ import {
   useHubChatOverlay,
   useHubChatOverlayState,
 } from "../hub/useHubChatOverlay";
-import { Providers } from "./Providers";
 import { SIGN_IN_PATH } from "./appPaths";
 import { useHubKeyboardShortcuts } from "../hooks/useHubKeyboardShortcuts";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
@@ -70,7 +69,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 /**
  * Root layout route — initiative 0006 Phase 5.
  *
- * Mounts the full provider tree + global effects once, then renders
+ * Runs global effects once, then renders
  * matched child routes via `<Outlet />`. Each child route gets a
  * **different** component, which fixes the React Router 7 location-
  * context propagation bug (mixed-shape match objects when multiple
@@ -196,12 +195,10 @@ export function RootLayout() {
   };
 
   return (
-    <Providers>
-      <HubShellProvider value={hubShellValue}>
-        <AppShell>
-          <Outlet />
-        </AppShell>
-      </HubShellProvider>
-    </Providers>
+    <HubShellProvider value={hubShellValue}>
+      <AppShell>
+        <Outlet />
+      </AppShell>
+    </HubShellProvider>
   );
 }
