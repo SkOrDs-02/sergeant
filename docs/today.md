@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last validated:** 2026-06-09 by docs:gen-today. **Next review:** 2026-06-16.
+> **Last validated:** 2026-06-10 by docs:gen-today. **Next review:** 2026-06-17.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -11,9 +11,11 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 
 _Нема items з `Phase X next` / `Stage X IN PROGRESS` / `Phase X blocked` маркерами. Або все закрито, або status headers потребують уточнення (Rule #10)._
 
-## Прострочений review (0)
+## Прострочений review (1)
 
-_Жодного документа не пропустило `Next review:` дату. 🎉_
+Документи, чия `Next review:` дата минула. Або bump date після швидкого re-read, або переведи в `Status: Closed`/`Archived`.
+
+- [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops _(due 2026-06-09, **1d overdue**)_
 
 ## WIP load — 🟢 healthy
 
