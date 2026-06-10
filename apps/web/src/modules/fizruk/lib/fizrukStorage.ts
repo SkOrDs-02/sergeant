@@ -1,8 +1,9 @@
 /**
  * Web-only обгортка над localStorage для Фізрука. Усі pure-шматки
- * (ключі, schema-версії, parse/serialize/merge) живуть у пакеті
- * `@sergeant/fizruk-domain`; цей файл лише додає персист через
- * `createModuleStorage` для apps/web.
+ * (ключі, schema-версії, parse/serialize/merge, payload shape guards)
+ * живуть у пакеті `@sergeant/fizruk-domain` або в `fizrukBackupShape.ts`;
+ * цей файл лише додає персист через `createModuleStorage` для apps/web
+ * та зшиває pure-валідатори з I/O-викликами.
  */
 
 import {
@@ -18,6 +19,10 @@ import {
 } from "@sergeant/fizruk-domain";
 
 import { fizrukStorage } from "./fizrukStorageInstance";
+import {
+  assertFizrukBackupShape,
+  type FizrukBackupPayload,
+} from "./fizrukBackupShape";
 
 export {
   ACTIVE_WORKOUT_KEY,
@@ -48,6 +53,7 @@ export function buildFizrukBackupPayload() {
   const customRaw = storage.readRaw(CUSTOM_EXERCISES_KEY, null);
   return {
     kind: "fizruk-backup",
+    // eslint-disable-next-line no-restricted-syntax -- exportedAt is a UTC ISO timestamp, not a day-boundary; physical export time, not user-facing calendar
     exportedAt: new Date().toISOString(),
     schemaVersion: 1,
     workouts: parseWorkoutsFromStorage(workoutsRaw),
@@ -55,20 +61,20 @@ export function buildFizrukBackupPayload() {
   };
 }
 
-interface FizrukBackupPayload {
-  kind?: string;
-  workouts?: unknown;
-  customExercises?: unknown;
-}
-
 export function applyFizrukBackupPayload(
-  data: FizrukBackupPayload | null | undefined,
+  data: unknown,
   { replace = false }: { replace?: boolean } = {},
 ) {
-  if (!data || data.kind !== "fizruk-backup")
-    throw new Error("Невірний формат файлу");
-  const w = Array.isArray(data.workouts) ? data.workouts : [];
-  const c = Array.isArray(data.customExercises) ? data.customExercises : [];
+  const payload = assertFizrukBackupShape(data);
+  return persistFizrukBackupPayload(payload, replace);
+}
+
+function persistFizrukBackupPayload(
+  payload: FizrukBackupPayload,
+  replace: boolean,
+) {
+  const w = payload.workouts;
+  const c = payload.customExercises;
   if (replace) {
     storage.writeRaw(WORKOUTS_STORAGE_KEY, serializeWorkoutsToStorage(w));
     storage.writeRaw(
@@ -105,6 +111,7 @@ export function buildFizrukFullBackupPayload() {
   return {
     kind: "fizruk-full-backup",
     schemaVersion: 1,
+    // eslint-disable-next-line no-restricted-syntax -- exportedAt is a UTC ISO timestamp, not a day-boundary; physical export time, not user-facing calendar
     exportedAt: new Date().toISOString(),
     data,
   };
@@ -112,12 +119,19 @@ export function buildFizrukFullBackupPayload() {
 
 /**
  * Імпорт повного бекапу (той самий формат, що buildFizrukFullBackupPayload, або legacy без `kind`).
+ * Original behaviour: accept any object with a `.data` object, silently filter
+ * non-string values. `isFizrukFullBackupShape` is exported from
+ * `./fizrukBackupShape` for stricter callers that want to require the
+ * `kind` discriminator.
  */
 export function applyFizrukFullBackupPayload(parsed: unknown) {
-  if (!parsed || typeof parsed !== "object")
+  if (!parsed || typeof parsed !== "object") {
     throw new Error("Невірний формат файлу");
+  }
   const d = (parsed as { data?: unknown }).data;
-  if (!d || typeof d !== "object") throw new Error("Невірний формат файлу");
+  if (!d || typeof d !== "object" || Array.isArray(d)) {
+    throw new Error("Невірний формат файлу");
+  }
   const dataObj = d as Record<string, unknown>;
   for (const k of FIZRUK_FULL_BACKUP_KEYS) {
     const v = dataObj[k];
