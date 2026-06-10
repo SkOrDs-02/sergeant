@@ -59,8 +59,6 @@ Files: `src/shortcuts/{router.ts,types.ts,index.ts}` + 17 per-shortcut definitio
 
 - **Strategic-modes wiring + council orchestration + morning-digest cron** — Stage 5b/5c/5d. SKILL-и є у `ops/openclaw/skills/`, копіюються на volume через `docker-entrypoint.sh`; plugin-side orchestration і slash-handlers ще не написані.
 
-> **Примітка:** `src/legacy/` — код з попередніх Stage 3+ вже не потребує референтного доступу; директорія залишається у репі для історичного контексту, але НЕ імпортується у `src/index.ts` і НЕ запускається в CI.
-
 ## Як SDK підключений
 
 ```ts
