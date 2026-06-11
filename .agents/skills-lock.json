@@ -111,60 +111,10 @@
       "sourceType": "local",
       "computedHash": "78794f7369dccc50279e195c5a90286c80c544825736d6594dd81c4cc1799485"
     },
-    "api-design-principles": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "8c18ed3f548689cff67d4e7313255e1e270f600b9132bcaf921cc14d0de83aa8"
-    },
-    "architecture-patterns": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "e47227a5188a87f8c4116ba869aea507e678887b9dc4000447b7eb2fd15ddfa2"
-    },
-    "cqrs-implementation": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "85ce45e0840bbc69424d353f5336705e40f04ec5ea4f4513c30d1f9d07dc6981"
-    },
-    "event-store-design": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "fe7535d22a0c44260788e7ad2fbfb331a4889727d3b445e62e280c4d38d6e5d3"
-    },
-    "microservices-patterns": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "c99ea1c65970d486f698586b1a581a8f8291d8273be8ef99dc5839324f64e807"
-    },
-    "projection-patterns": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "46b9e098a595818f8dcfd50d7535f0f8f196dbb2bff9680c02214bce46d715ae"
-    },
-    "saga-orchestration": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "7ceec52574c4f5f6e3d9134435165e02a2db8f92f83d2035da64bb26a5c67d6c"
-    },
-    "sergeant-backend-api": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "89fbe7610645c7d43c9cb8e2310ae289c634aa98c51117b36bbf26f500c1c0af"
-    },
     "sergeant-backend-architecture": {
       "source": "local",
       "sourceType": "local",
       "computedHash": "b64c2b89b3bb50650e7dcc1963e8e28f70d8ef39429ed1d5ad2afccc23a02567"
-    },
-    "temporal-python-testing": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "28ab1408b60fd42aa17c7c6555c962f74c9085b7353f93a610c8afa01d628ba9"
-    },
-    "workflow-orchestration-patterns": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "4cc8a0cd8dc6a8a60e120f3a1922577c102c2fae481c9b9579762954dd37fe44"
     }
   }
 }

@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-06-09)</title>
+    <title>Sergeant — Knowledge Graph (2026-06-11)</title>
     <style>
       body {
         font-family:
@@ -97,21 +97,21 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-06-09 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-06-11 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
       <span class="chip chip-adr">adr: <b>63</b></span>
-      <span class="chip chip-audit">audit: <b>18</b></span>
+      <span class="chip chip-audit">audit: <b>19</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
-      <span class="chip chip-initiative">initiative: <b>51</b></span>
+      <span class="chip chip-initiative">initiative: <b>52</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
-      <span class="chip chip-pr">pr: <b>164</b></span>
-      <span class="chip chip-skill">skill: <b>33</b></span>
+      <span class="chip chip-pr">pr: <b>169</b></span>
+      <span class="chip chip-skill">skill: <b>23</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (245 core)</summary>
+      <summary>Nodes (237 core)</summary>
       <table>
         <thead>
           <tr>
@@ -1120,6 +1120,18 @@
           </tr>
           <tr>
             <td>audit</td>
+            <td><code>audit:2026-06-11-fable5-independent-audit</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-06-11-fable5-independent-audit.md"
+                >Independent Audit — Sergeant — 2026-06-11</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
             <td><code>audit:2026-08-XX-openclaw-internal-roast</code></td>
             <td>
               <a
@@ -1553,8 +1565,8 @@
               `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite.
               Location-context bug resolved — each child route renders a
               DIFFERENT component via `&lt;Outlet /&gt;`. Pending: typecheck on
-              clean worktree), Playwright e2e for
-              hash-compat, manualChunks cleanup.
+              clean worktree, Playwright e2e for hash-compat, manualChunks
+              cleanup.
             </td>
             <td>number=6 · owner=@Skords-01 · priority=P1 (Sprint 2)</td>
           </tr>
@@ -1697,6 +1709,18 @@
               реально звіряється + maintainer курує між сесіями).
             </td>
             <td>number=20</td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td><code>initiative:0021</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md"
+                >0021 — React-hooks v7 ESLint cleanup</a
+              >
+            </td>
+            <td>In Progress</td>
+            <td>number=21</td>
           </tr>
           <tr>
             <td>initiative</td>
@@ -2391,8 +2415,9 @@
               Done — multi-stage distroless shipped via PR
               [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit
               [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0),
-              2026-05-13); shared base layer + console-side Trivy scan tracked
-              as follow-up.
+              2026-05-13). OpenClaw-side Trivy follow-up landed in commit
+              [`120ec9d94`](https://github.com/Skords-01/Sergeant/commit/120ec9d944eebf8bbc15c5360c4f1e8dbd15ae1d)
+              on 2026-06-09.
             </td>
             <td></td>
           </tr>
@@ -3219,38 +3244,6 @@
           </tr>
           <tr>
             <td>skill</td>
-            <td><code>skill:api-design-principles</code></td>
-            <td>
-              <a href="../../.agents/skills/api-design-principles/SKILL.md"
-                >api-design-principles</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Master REST and GraphQL API design principles to build
-              intuitive, scalable, and maintainable APIs that delight
-              developers. Use when designing new APIs, reviewing API
-              specifications, or establishing API design standards.
-            </td>
-          </tr>
-          <tr>
-            <td>skill</td>
-            <td><code>skill:architecture-patterns</code></td>
-            <td>
-              <a href="../../.agents/skills/architecture-patterns/SKILL.md"
-                >architecture-patterns</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Implement proven backend architecture patterns
-              including Clean Architecture, Hexagonal Architecture, and
-              Domain-Driven Design. Use when designing clean architecture for a
-              new microservice, when refactoring a monolith to
-            </td>
-          </tr>
-          <tr>
-            <td>skill</td>
             <td><code>skill:better-auth-best-practices</code></td>
             <td>
               <a href="../../.agents/skills/better-auth-best-practices/SKILL.md"
@@ -3263,100 +3256,6 @@
               session cookies, middleware, account lifecycle, Better Auth
               wiring; also when touching protected routes or token refresh; UA:
               правиш логін, реєстрацію, сесії, авторизацію.
-            </td>
-          </tr>
-          <tr>
-            <td>skill</td>
-            <td><code>skill:cqrs-implementation</code></td>
-            <td>
-              <a href="../../.agents/skills/cqrs-implementation/SKILL.md"
-                >cqrs-implementation</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Implement Command Query Responsibility Segregation for
-              scalable architectures. Use when separating read and write models,
-              optimizing query performance, or building event-sourced systems.
-            </td>
-          </tr>
-          <tr>
-            <td>skill</td>
-            <td><code>skill:event-store-design</code></td>
-            <td>
-              <a href="../../.agents/skills/event-store-design/SKILL.md"
-                >event-store-design</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Design and implement event stores for event-sourced
-              systems. Use when building event sourcing infrastructure, choosing
-              event store technologies, or implementing event persistence
-              patterns.
-            </td>
-          </tr>
-          <tr>
-            <td>skill</td>
-            <td><code>skill:microservices-patterns</code></td>
-            <td>
-              <a href="../../.agents/skills/microservices-patterns/SKILL.md"
-                >microservices-patterns</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Design microservices architectures with service
-              boundaries, event-driven communication, and resilience patterns.
-              Use when building distributed systems, decomposing monoliths, or
-              implementing microservices.
-            </td>
-          </tr>
-          <tr>
-            <td>skill</td>
-            <td><code>skill:projection-patterns</code></td>
-            <td>
-              <a href="../../.agents/skills/projection-patterns/SKILL.md"
-                >projection-patterns</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Build read models and projections from event streams.
-              Use when implementing CQRS read sides, building materialized
-              views, or optimizing query performance in event-sourced systems.
-            </td>
-          </tr>
-          <tr>
-            <td>skill</td>
-            <td><code>skill:saga-orchestration</code></td>
-            <td>
-              <a href="../../.agents/skills/saga-orchestration/SKILL.md"
-                >saga-orchestration</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Implement saga patterns for distributed transactions
-              and cross-aggregate workflows. Use this skill when implementing
-              distributed transactions across microservices where 2PC is
-              unavailable, designing compensating actions
-            </td>
-          </tr>
-          <tr>
-            <td>skill</td>
-            <td><code>skill:sergeant-backend-api</code></td>
-            <td>
-              <a href="../../.agents/skills/sergeant-backend-api/SKILL.md"
-                >sergeant-backend-api</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Backend API patterns for Sergeant — REST/GraphQL
-              design, Clean Architecture, Hexagonal patterns, CQRS, event
-              sourcing, Temporal workflows, saga orchestration. Covers service
-              boundaries, testing, security, performance
             </td>
           </tr>
           <tr>
@@ -3714,45 +3613,12 @@
               content; UA: пишеш або редагуєш SKILL.md.
             </td>
           </tr>
-          <tr>
-            <td>skill</td>
-            <td><code>skill:temporal-python-testing</code></td>
-            <td>
-              <a href="../../.agents/skills/temporal-python-testing/SKILL.md"
-                >temporal-python-testing</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Test Temporal workflows with pytest, time-skipping,
-              and mocking strategies. Covers unit testing, integration testing,
-              replay testing, and local development setup. Use when implementing
-              Temporal workflow tests or
-            </td>
-          </tr>
-          <tr>
-            <td>skill</td>
-            <td><code>skill:workflow-orchestration-patterns</code></td>
-            <td>
-              <a
-                href="../../.agents/skills/workflow-orchestration-patterns/SKILL.md"
-                >workflow-orchestration-patterns</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Design durable workflows with Temporal for distributed
-              systems. Covers workflow vs activity separation, saga patterns,
-              state management, and determinism constraints. Use when building
-              long-running processes, distributed
-            </td>
-          </tr>
         </tbody>
       </table>
     </details>
 
     <details>
-      <summary>Edges (392 total, first 500 core-to-core)</summary>
+      <summary>Edges (404 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -4325,6 +4191,36 @@
             <td><code>audit:2026-06-08-codebase-cleanup-audit</code></td>
             <td>references</td>
             <td><code>hard-rule:10</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-06-11-fable5-independent-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:1</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-06-11-fable5-independent-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-06-11-fable5-independent-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-06-11-fable5-independent-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-06-11-fable5-independent-audit</code></td>
+            <td>references</td>
+            <td><code>hard-rule:26</code></td>
+          </tr>
+          <tr>
+            <td><code>audit:2026-06-11-fable5-independent-audit</code></td>
+            <td>references</td>
+            <td><code>initiative:0010</code></td>
           </tr>
           <tr>
             <td><code>initiative:0003</code></td>

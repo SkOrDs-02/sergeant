@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-06-09",
+  "generated_at": "2026-06-11",
   "sourceHashes": {
-    "knowledge-graph": "cdc27a3335e678e289f7bef92a2fdac3cc8c5655db8f6243d13aed145f606427",
+    "knowledge-graph": "be848ccdc20110218bffbc61f6a8ffae56df0a90bdd6312b546a4e953c68d636",
     "symbol-index": "7ea3de138fa223ddd49af14b3e9f174bd684fb138c8837be02f8b8404fe29ba1"
   },
   "counts": {
     "adr": 63,
-    "audit": 18,
+    "audit": 19,
     "export": 297,
     "hard-rule": 26,
-    "initiative": 51,
+    "initiative": 52,
     "playbook": 61,
-    "skill": 33,
-    "total": 549
+    "skill": 23,
+    "total": 541
   },
   "chunks": [
     {
@@ -661,8 +661,8 @@
       "title": "ADR-0062: OpenAPI spec source-of-truth — code-first (Zod → OpenAPI)",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0062: OpenAPI spec source-of-truth — code-first (Zod → OpenAPI) · adr:0062 · adr · Accepted · 62 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Scope · Links",
-      "contentHash": "82dc02175b6cc1bf3e54bf00168e46baf51025f2cd60c57085d81dfa863b67d1"
+      "text": "ADR-0062: OpenAPI spec source-of-truth — code-first (Zod → OpenAPI) · adr:0062 · adr · Accepted · 62 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Scope · Related ADRs · Links",
+      "contentHash": "61793925027dae630f0b62e145ed19b14f2c4eb4bd9c39db15d7228c9b9763f3"
     },
     {
       "id": "adr:0063",
@@ -848,8 +848,8 @@
       "title": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13)",
       "tier": "core",
       "status": "Active",
-      "text": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) · audit:2026-05-13-testing-devx-roast · audit · Active · TL;DR — top-7 болів · P0 — критичне, без обхідних шляхів · P0-1. Empty .down.sql зливалися без жодної rollback-SQL — Hard Rule #4 enforcement gap · P0-2. Mutation testing — config існує, але CI gate відсутній ✅ Closed · P1 — high-impact gaps з готовим планом · P1-1. Contract-fixture pattern застосовано тільки до /api/me · P1-2. Server AI-tool handlers — coverage 0–15% ✅ Closed · P1-3. Web smoke E2E — лише 4 спеки ✅ Closed · P1-4. Mobile Detox suite — лише 4 спеки ⏳ PARTIAL · P1-5. Pre-commit timing не вимірюється ✅ Closed · P1-6. Web coverage drift не повернувся до пре-крашу ✅ Closed · P2 — nice-to-have, ризик ≤ medium · P2-1. pnpm dedupe --check не в CI ✅ Зроблено в цьому PR · P2-2. ESLint plugin coverage · P2-3. Visual regression — Argos baseline розширення ✅ Closed (частково; /settings — follow-up) · P2-4. Property-based tests для парсерів · P2-5. pnpm check не паралелизує web/mobile/server · Прогрес виконання · Outstanding після цього PR — порядок наступних роастів · Outstanding count",
-      "contentHash": "1599bd6cfa5dcf03c53d66460271139cb839860db8f584f15893d7878fb01af7"
+      "text": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) · audit:2026-05-13-testing-devx-roast · audit · Active · TL;DR — top-7 болів · P0 — критичне, без обхідних шляхів · P0-1. Empty .down.sql зливалися без жодної rollback-SQL — Hard Rule #4 enforcement gap · P0-2. Mutation testing — config існує, але CI gate відсутній ✅ Closed · P1 — high-impact gaps з готовим планом · P1-1. Contract-fixture pattern застосовано тільки до /api/me · P1-2. Server AI-tool handlers — coverage 0–15% ✅ Closed · P1-3. Web smoke E2E — лише 4 спеки ✅ Closed · P1-4. Mobile Detox suite — лише 4 спеки ✅ Closed · P1-5. Pre-commit timing не вимірюється ✅ Closed · P1-6. Web coverage drift не повернувся до пре-крашу ✅ Closed · P2 — nice-to-have, ризик ≤ medium · P2-1. pnpm dedupe --check не в CI ✅ Зроблено в цьому PR · P2-2. ESLint plugin coverage · P2-3. Visual regression — Argos baseline розширення ✅ Closed (частково; /settings — follow-up) · P2-4. Property-based tests для парсерів · P2-5. pnpm check не паралелизує web/mobile/server · Прогрес виконання · Outstanding після цього PR — порядок наступних роастів · Outstanding count",
+      "contentHash": "bc53a0bd59a01e547ff37ae7ff113738b322274bfa2de0ca0799c5b668b3e8f1"
     },
     {
       "id": "audit:2026-05-13-web-architecture-state-roast",
@@ -869,9 +869,9 @@
       "line": 1,
       "title": "HubSettings lazy boundaries — CLS + chunk-load follow-up",
       "tier": "core",
-      "status": "Open",
-      "text": "HubSettings lazy boundaries — CLS + chunk-load follow-up · audit:2026-05-25-hubsettings-cls-chunk-load · audit · Open · Контекст · Знахідки · MEDIUM #1 — chunk-load failure = white screen · MEDIUM #2 — Suspense fallback minH занижений → CLS jump · Виконання · LOW-знахідки (не блокуючі, optional) · Closure",
-      "contentHash": "ff7a7c6aafe99ef0aaa2ac161b75626318974699a74903c84f6dce3aa07ec6af"
+      "status": "Closed",
+      "text": "HubSettings lazy boundaries — CLS + chunk-load follow-up · audit:2026-05-25-hubsettings-cls-chunk-load · audit · Closed · Контекст · Знахідки · MEDIUM #1 — chunk-load failure = white screen · MEDIUM #2 — Suspense fallback minH занижений → CLS jump · Виконання · LOW-знахідки (не блокуючі, optional) · Closure",
+      "contentHash": "082936bebdef2efc6067d4272140f58262df8ac7a7bcfc76810ad1ef6b8ebab5"
     },
     {
       "id": "audit:2026-06-08-codebase-cleanup-audit",
@@ -883,6 +883,17 @@
       "status": "Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding)",
       "text": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф · audit:2026-06-08-codebase-cleanup-audit · audit · Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding) · Виконано в цьому PR (2026-06-08) · TL;DR · Тема 1 — console → openclaw rename (напів-зроблений) · 🔴 Реальний баг (не косметика) · 🟡 Stale-посилання, що збивають агентів (low-risk, high-clarity) · 🟡 Незавершений rename (потребує координації — це деплой) · Тема 2 — Audits/initiatives «Active», але робота закрита · Тема 3 — Застарілі рішення / ADR-дрейф · 🔴 P0-пастка: grammy-deletion (Locked Decision #17) — НЕ виконувати · 🟡 ADR-дрейф · Тема 4 — Lint / tech-debt suppressions без власника · Інфра / стек — інші знахідки (потребують рішення власника) · Свідома інфраструктура — НЕ чіпати · Запропонований план (окремими PR-ами за класом боргу) · Рішення власника (узгоджено 2026-06-08)",
       "contentHash": "e5b8e23e9cbfbae3cd0c3384bac4c9764cc792a40c4a28a2733f8f0353663353"
+    },
+    {
+      "id": "audit:2026-06-11-fable5-independent-audit",
+      "type": "audit",
+      "path": "docs/90-work/audits/2026-06-11-fable5-independent-audit.md",
+      "line": 1,
+      "title": "Independent Audit — Sergeant — 2026-06-11",
+      "tier": "core",
+      "status": "Active",
+      "text": "Independent Audit — Sergeant — 2026-06-11 · audit:2026-06-11-fable5-independent-audit · audit · Active · Executive summary · Audit findings by dimension · 1. Revenue & product readiness 🔴 · 2. Architecture & scalability 🟡 · 3. Code quality & tech debt 🟡 · 4. Test coverage & CI 🔴 · 5. Security posture 🟡 · 6. Observability & incident response 🟡 · 7. Outstanding audit debt 🟡 · Outstanding audit debt snapshot · 8. Documentation & governance health 🟡 · 9. Team / agent operating model 🟡 · 10. Top 3 existential risks 🔴 · Action plan draft · Bucket A — Цього тижня (revenue-gate або екзистенційне) · Bucket B — Цього спринту (high-value, не блокує) · Bucket C — Відкласти / депріоритизувати · Workflow delegation spec · What the founder should do first",
+      "contentHash": "253682d7103f901a3d9aef266bb3240ca552e329b5530d3c8de35bf0075779bc"
     },
     {
       "id": "audit:2026-08-XX-openclaw-internal-roast",
@@ -3859,7 +3870,7 @@
       "tier": "core",
       "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. Pending: typecheck on clean worktree, Playwright e2e for hash-compat, manualChunks cleanup.",
       "text": "0006 — Frontend routing migration + route-based code-split · initiative:0006 · initiative · In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. Pending: typecheck on clean worktree, Playwright e2e for hash-compat, manualChunks cleanup. · 6 · @Skords-01 · P1 (Sprint 2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — react-router setup + Hub-route (1 PR) · Фаза 2 — top-level routes per domain (4 PRs, по одному модулю) · Фаза 3 — hash-URL compat shim (1 PR) · Фаза 4 — scroll restoration + prefetch on hover (1 PR) · Фаза 5 — bundle-gate перенастройка + cleanup (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 0 — lint canary + baseline (2026-05-04) · Baseline hash-router callsites (snapshot 2026-05-04) · Phase 1 — <RouterProvider /> migration (2026-05-06) · Phase 2.a — /nutrition/ migration (2026-05-06) · Phase 2.b — /finyk/ migration (2026-05-06) · Phase 3 — hash-URL compat shim (2026-05-18) · Phase 4 (partial) — scroll restoration + prefetch (2026-05-18) · Phase 5 (partial) — bundle-gate + cleanup (2026-05-18; bundle-gate prefix fix 2026-05-24)",
-      "contentHash": "dcc7cf9eaaab90fd822eaffdb0ba9171c2eb509ebd1fda16039be792d157b306"
+      "contentHash": "af1e1a7725a184431c1bd643a1cf6a68a2b811f1d385b18b9dc9c54a19796937"
     },
     {
       "id": "initiative:0010",
@@ -3926,6 +3937,17 @@
       "status": "In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями).",
       "text": "0020 — Agent decisions log · initiative:0020 · initiative · In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями). · 20 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Критерії DONE · Ризики · Власник / ETA · Посилання",
       "contentHash": "602b74fb84abf1ecb7d25eb6f9907123368ccb8302bfacc36aabfc657c5a820d"
+    },
+    {
+      "id": "initiative:0021",
+      "type": "initiative",
+      "path": "docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md",
+      "line": 1,
+      "title": "0021 — React-hooks v7 ESLint cleanup",
+      "tier": "core",
+      "status": "In Progress",
+      "text": "0021 — React-hooks v7 ESLint cleanup · initiative:0021 · initiative · In Progress · 21 · Проблема · Скоуп · Acceptance criteria · Виконані дії (2026-06-10) · Timeline",
+      "contentHash": "20fe28072897fb82adf7e46cbb179a13b23e75d55ef16b188878f76794c2da5c"
     },
     {
       "id": "initiative:follow-ups",
@@ -4297,9 +4319,9 @@
       "line": 1,
       "title": "PR-30: Dockerfile post-install cleanup CVE-shrink fragility",
       "tier": "core",
-      "status": "Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13); shared base layer + console-side Trivy scan tracked as follow-up.",
-      "text": "PR-30: Dockerfile post-install cleanup CVE-shrink fragility · initiative:stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve · initiative · Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13); shared base layer + console-side Trivy scan tracked as follow-up. · Контекст · (приклад типового pattern-у) · Scope · 1. Multi-stage build · Build stage — full dev deps · Runtime stage — only prod deps + dist · 2. Shared base layer · 3. CVE-scan automation · 4. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "f6ce67503da014af55ad600f4bca7c0ef60fd7b67f5c16eba42d51d9052f1178"
+      "status": "Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13). OpenClaw-side Trivy follow-up landed in commit [`120ec9d94`](https://github.com/Skords-01/Sergeant/commit/120ec9d944eebf8bbc15c5360c4f1e8dbd15ae1d) on 2026-06-09.",
+      "text": "PR-30: Dockerfile post-install cleanup CVE-shrink fragility · initiative:stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve · initiative · Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13). OpenClaw-side Trivy follow-up landed in commit [`120ec9d94`](https://github.com/Skords-01/Sergeant/commit/120ec9d944eebf8bbc15c5360c4f1e8dbd15ae1d) on 2026-06-09. · Контекст · (приклад типового pattern-у) · Scope · 1. Multi-stage build · Build stage — full dev deps · Runtime stage — only prod deps + dist · 2. Shared base layer · 3. CVE-scan automation · 4. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "7bdda890e665315a226d13c6341ddc269f3d1991ad6281f477494afb3d138e21"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-31-eslint-config-split",
@@ -5072,26 +5094,6 @@
       "contentHash": "e8d2713b33ead7f02199127da6faa8e711a33320e9b1086c369caa53b1860f63"
     },
     {
-      "id": "skill:api-design-principles",
-      "type": "skill",
-      "path": ".agents/skills/api-design-principles/SKILL.md",
-      "line": 1,
-      "title": "api-design-principles",
-      "tier": "core",
-      "text": "api-design-principles · skill:api-design-principles · skill · Master REST and GraphQL API design principles to build intuitive, scalable, and maintainable APIs that delight developers. Use when designing new APIs, reviewing API specifications, or establishing API design standards. · API Design Principles · When to Use This Skill · Core Concepts · 1. RESTful Design Principles · 2. GraphQL Design Principles · 3. API Versioning Strategies · Detailed patterns and worked examples · Best Practices · REST APIs · GraphQL APIs · Common Pitfalls",
-      "contentHash": "199462c64c7b8462e7e590ea4791310c549c73f57da6db34bbb292ead492f144"
-    },
-    {
-      "id": "skill:architecture-patterns",
-      "type": "skill",
-      "path": ".agents/skills/architecture-patterns/SKILL.md",
-      "line": 1,
-      "title": "architecture-patterns",
-      "tier": "core",
-      "text": "architecture-patterns · skill:architecture-patterns · skill · Implement proven backend architecture patterns including Clean Architecture, Hexagonal Architecture, and Domain-Driven Design. Use when designing clean architecture for a new microservice, when refactoring a monolith to · Architecture Patterns · When to Use This Skill · Core Concepts · 1. Clean Architecture (Uncle Bob) · 2. Hexagonal Architecture (Ports and Adapters) · 3. Domain-Driven Design (DDD) · Detailed patterns and worked examples · Testing — In-Memory Adapters · tests/unit/testcreateuser.py · Troubleshooting · Use case tests require a running database · Circular imports between layers · Framework decorators appearing in domain entities · All logic ending up in controllers · Value objects raising errors too late · Context bleed across bounded contexts · Advanced Patterns · Related Skills",
-      "contentHash": "669f8092c5046063273c6e3bb834a9e39cb039c24028cf7a835aa819e799fdcb"
-    },
-    {
       "id": "skill:better-auth-best-practices",
       "type": "skill",
       "path": ".agents/skills/better-auth-best-practices/SKILL.md",
@@ -5100,66 +5102,6 @@
       "tier": "core",
       "text": "better-auth-best-practices · skill:better-auth-best-practices · skill · Use when editing Sergeant auth — login, signup, session cookies, middleware, account lifecycle, Better Auth wiring; also when touching protected routes or token refresh; UA: правиш логін, реєстрацію, сесії, авторизацію. · Better Auth у Sergeant · Коли використовувати цей skill · Жорсткі правила · Sergeant-чекліст · Верифікуй перед закриттям · Playbooks",
       "contentHash": "c71cb78d039bc577852f0f5edc68a02e60622dc6096a612b6bc1177820e5d161"
-    },
-    {
-      "id": "skill:cqrs-implementation",
-      "type": "skill",
-      "path": ".agents/skills/cqrs-implementation/SKILL.md",
-      "line": 1,
-      "title": "cqrs-implementation",
-      "tier": "core",
-      "text": "cqrs-implementation · skill:cqrs-implementation · skill · Implement Command Query Responsibility Segregation for scalable architectures. Use when separating read and write models, optimizing query performance, or building event-sourced systems. · CQRS Implementation · When to Use This Skill · Core Concepts · 1. CQRS Architecture · 2. Key Components · Templates and detailed worked examples · Best Practices · Do's · Don'ts",
-      "contentHash": "114ad281d538d53f426398da31e6f4fca8df40eeae72d39f4b8bf0750c3eebaf"
-    },
-    {
-      "id": "skill:event-store-design",
-      "type": "skill",
-      "path": ".agents/skills/event-store-design/SKILL.md",
-      "line": 1,
-      "title": "event-store-design",
-      "tier": "core",
-      "text": "event-store-design · skill:event-store-design · skill · Design and implement event stores for event-sourced systems. Use when building event sourcing infrastructure, choosing event store technologies, or implementing event persistence patterns. · Event Store Design · When to Use This Skill · Core Concepts · 1. Event Store Architecture · 2. Event Store Requirements · Technology Comparison · Templates and detailed worked examples · Best Practices · Do's · Don'ts",
-      "contentHash": "cfb15bccf248528cb4fbdee25efcffa444a9ea1632cafe0346b8e14b0c3a353e"
-    },
-    {
-      "id": "skill:microservices-patterns",
-      "type": "skill",
-      "path": ".agents/skills/microservices-patterns/SKILL.md",
-      "line": 1,
-      "title": "microservices-patterns",
-      "tier": "core",
-      "text": "microservices-patterns · skill:microservices-patterns · skill · Design microservices architectures with service boundaries, event-driven communication, and resilience patterns. Use when building distributed systems, decomposing monoliths, or implementing microservices. · Microservices Patterns · When to Use This Skill · Core Concepts · 1. Service Decomposition Strategies · 2. Communication Patterns · 3. Data Management · 4. Resilience Patterns · Detailed patterns and worked examples",
-      "contentHash": "3bd394d94da7e955cae8541283b25508d3971c035efb16623dd669a65ecac881"
-    },
-    {
-      "id": "skill:projection-patterns",
-      "type": "skill",
-      "path": ".agents/skills/projection-patterns/SKILL.md",
-      "line": 1,
-      "title": "projection-patterns",
-      "tier": "core",
-      "text": "projection-patterns · skill:projection-patterns · skill · Build read models and projections from event streams. Use when implementing CQRS read sides, building materialized views, or optimizing query performance in event-sourced systems. · Projection Patterns · When to Use This Skill · Core Concepts · 1. Projection Architecture · 2. Projection Types · Templates and detailed worked examples · Best Practices · Do's · Don'ts",
-      "contentHash": "702c424edf2c8a1083c18d8bee2c0a218364dccba4aded1a89d49d05c4fc50ca"
-    },
-    {
-      "id": "skill:saga-orchestration",
-      "type": "skill",
-      "path": ".agents/skills/saga-orchestration/SKILL.md",
-      "line": 1,
-      "title": "saga-orchestration",
-      "tier": "core",
-      "text": "saga-orchestration · skill:saga-orchestration · skill · Implement saga patterns for distributed transactions and cross-aggregate workflows. Use this skill when implementing distributed transactions across microservices where 2PC is unavailable, designing compensating actions · Saga Orchestration · Inputs and Outputs · When to Use This Skill · Detailed section: Core Concepts · Detailed section: Templates · Best Practices · Do's · Don'ts · Troubleshooting · Saga stuck in COMPENSATING state · Duplicate saga executions on restart · Choreography saga losing events · Timeout firing before a slow-but-valid step completes · Compensation order not matching execution order · Advanced Patterns · Related Skills",
-      "contentHash": "d5c73b1e02170d248fc81895af2e7f8bbe7b1568b426904fff8b5f0145655d9a"
-    },
-    {
-      "id": "skill:sergeant-backend-api",
-      "type": "skill",
-      "path": ".agents/skills/sergeant-backend-api/SKILL.md",
-      "line": 1,
-      "title": "sergeant-backend-api",
-      "tier": "core",
-      "text": "sergeant-backend-api · skill:sergeant-backend-api · skill · Backend API patterns for Sergeant — REST/GraphQL design, Clean Architecture, Hexagonal patterns, CQRS, event sourcing, Temporal workflows, saga orchestration. Covers service boundaries, testing, security, performance · Backend API Development у Sergeant · Коли використовувати · Core Concepts · Clean Architecture (Onion/Hexagonal) · CQRS · Event Sourcing · Temporal Workflows · Saga Orchestration · Existing Patterns в Sergeant · Best Practices",
-      "contentHash": "036f1db432240850109805c2c923b26266c21e24406906fea9e9c0ecb5407314"
     },
     {
       "id": "skill:sergeant-backend-architecture",
@@ -5380,26 +5322,6 @@
       "tier": "core",
       "text": "sergeant-writing-skills · skill:sergeant-writing-skills · skill · Use when creating, editing, or pressure-testing a `.agents/skills/*/SKILL.md` in Sergeant — applies TDD to skill content; UA: пишеш або редагуєш SKILL.md. · Як писати SKILL у Sergeant · Коли застосовувати · RED → GREEN → REFACTOR для SKILL · 1. RED — пресс-сценарій без skill · 2. GREEN — мінімальний SKILL, що адресує саме ті раціоналізації · 3. Перевірка — прогон на чистій сесії · 4. REFACTOR — закрити обхідні шляхи · Грамар Sergeant SKILL · Локальний контроль перед PR · Червоні прапорці · Anti-pattern: «це ж текст, не код» · Playbooks",
       "contentHash": "7b00481b2c192c7fb2edb840978b70021a631412c5b2e1752c8ee972b1fe8394"
-    },
-    {
-      "id": "skill:temporal-python-testing",
-      "type": "skill",
-      "path": ".agents/skills/temporal-python-testing/SKILL.md",
-      "line": 1,
-      "title": "temporal-python-testing",
-      "tier": "core",
-      "text": "temporal-python-testing · skill:temporal-python-testing · skill · Test Temporal workflows with pytest, time-skipping, and mocking strategies. Covers unit testing, integration testing, replay testing, and local development setup. Use when implementing Temporal workflow tests or · Temporal Python Testing Strategies · When to Use This Skill · Testing Philosophy · Available Resources · Unit Testing Resources · Integration Testing Resources · Replay Testing Resources · Local Development Resources · Quick Start Guide · Basic Workflow Test · Basic Activity Test · Coverage Targets · Key Testing Principles · How to Use Resources · Additional References",
-      "contentHash": "40a1c0e798056140670f4049387ae3a47addf08ff52149aa45f4d764af2c54eb"
-    },
-    {
-      "id": "skill:workflow-orchestration-patterns",
-      "type": "skill",
-      "path": ".agents/skills/workflow-orchestration-patterns/SKILL.md",
-      "line": 1,
-      "title": "workflow-orchestration-patterns",
-      "tier": "core",
-      "text": "workflow-orchestration-patterns · skill:workflow-orchestration-patterns · skill · Design durable workflows with Temporal for distributed systems. Covers workflow vs activity separation, saga patterns, state management, and determinism constraints. Use when building long-running processes, distributed · Workflow Orchestration Patterns · When to Use Workflow Orchestration · Ideal Use Cases (Source: docs.temporal.io) · When NOT to Use · Detailed patterns and worked examples · Best Practices · Workflow Design · Activity Design · Common Pitfalls · Operational Considerations · Additional Resources",
-      "contentHash": "7abbd7ae8fa307fb4a32c55f1e3763bb82590c767b93abeb672fc52fc64a68bd"
     }
   ]
 }
