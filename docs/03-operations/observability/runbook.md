@@ -1,11 +1,18 @@
 # Observability-runbook
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-11 by @Skords-01. **Next review:** 2026-09-09.
 > **Status:** Active
 
 Інструкції "що робити, коли спрацював алерт" для правил з
 [`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml). Тримай коротко:
 перший крок завжди `/metrics` + логи Pino за той же інтервал.
+
+> **Статус wiring:** алерти з `alert_rules.yml` сьогодні **не спрацьовують
+> автоматично** — правила не завантажені жодним runtime (див.
+> [`SLO.md § Статус wiring`](./SLO.md#статус-wiring-чесний-зріз-2026-06-11)).
+> До підключення Grafana Cloud цей runbook використовується reactively: вхідний
+> сигнал — Sentry-issue, скарга користувача або ручна перевірка `/metrics`;
+> сценарії нижче лишаються валідними інструкціями розслідування.
 
 Загальне:
 

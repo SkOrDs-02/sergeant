@@ -1,5 +1,10 @@
 # Alert rules, прив'язані до SLO в ../SLO.md.
 #
+# STATUS: Scaffolded / designed-for-later (2026-06-11, ws-15). Жоден runtime
+# цей файл не завантажує — Prometheus не розгорнутий, тож жоден із 24 алертів
+# не може спрацювати сьогодні. Зберігається як design-артефакт для майбутнього
+# wiring (Grafana Cloud / managed Prometheus). Див. ../SLO.md § Статус wiring.
+#
 # Пари вікон (за Google SRE Workbook Ch. 5):
 #   fast  — 1h long / 5m short / burn-rate 14.4 → page (≈2d до вичерпання 30-day бюджету)
 #   slow  — 6h long / 30m short / burn-rate 6   → ticket (≈5d до вичерпання)

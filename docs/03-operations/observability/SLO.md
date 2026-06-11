@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-11 by @Skords-01. **Next review:** 2026-09-09.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
@@ -10,6 +10,38 @@ multi-burn-rate** алерти (Google SRE Workbook, Ch. 5). Формули SLI 
 [`prometheus/recording_rules.yml`](./prometheus/recording_rules.yml), алерти —
 у [`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml). Порядок дій під
 час алерту — у [`runbook.md`](./runbook.md).
+
+## Статус wiring (чесний зріз, 2026-06-11)
+
+Цей документ — **дизайн + частково реалізація**. Що з нього реально працює в
+проді, а що — підготовлений артефакт «на потім»:
+
+**Wired сьогодні ✅**
+
+- `prom-client` метрики на сервері: `/metrics` експортує `http_requests_total`,
+  histogram-и латентності та доменні лічильники, на яких побудовані SLI-формули.
+- Sentry (errors + traces; `SENTRY_DSN` — обовʼязковий у проді) і Pino-логи в
+  Railway.
+- PostHog продуктова аналітика.
+
+**Designed for later 📐 (жоден runtime цього не вантажить)**
+
+- [`prometheus/recording_rules.yml`](./prometheus/recording_rules.yml) та всі
+  24 правила в [`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml):
+  Prometheus, який би їх evaluat-ив, не розгорнутий. Жоден алерт із цього
+  файла (включно з `BackendHealthP95High`) сьогодні **не може спрацювати**.
+- [`alertmanager.yml`](./alertmanager.yml) — legacy-fallback, Alertmanager не
+  існує як сервіс.
+- Burn-rate-механіка нижче по документу — описує цільову поведінку після
+  wiring, не поточну.
+
+**Рішення (ws-15, аудит 2026-06-11):** правила **зберігаємо** як design-артефакт
+(вони знадобляться без змін при підключенні Grafana Cloud / managed Prometheus,
+що scrape-ить `/metrics`). Видалення відхилено: правила консистентні з SLI і
+їх повторне написання дорожче за зберігання. Власне wiring (Grafana Cloud
+account + scrape config + rules sync) — founder-gated інфраструктурний крок;
+до нього зовнішній сигнал про downtime дає UptimeRobot (теж founder-дія,
+див. аудит) + Sentry.
 
 ## TL;DR
 
