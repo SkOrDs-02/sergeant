@@ -1,4 +1,4 @@
-import type { MigrationAdapter } from "../types.js";
+import { DEFAULT_MIGRATIONS_TABLE, type MigrationAdapter } from "../types.js";
 
 /**
  * SQLite adapter for the cross-platform migration runner.
@@ -54,6 +54,8 @@ export function createSqliteAdapter(
   client: SqliteMigrationClient,
 ): MigrationAdapter {
   return {
+    defaultTableName: DEFAULT_MIGRATIONS_TABLE,
+
     async ensureLedger(tableName) {
       const ident = quoteIdentifier(tableName);
       // SQLite-side shape mirrors the Postgres ledger but uses

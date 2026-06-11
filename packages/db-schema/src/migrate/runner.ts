@@ -34,7 +34,8 @@ import {
 export async function runMigrations(
   opts: RunMigrationsOptions,
 ): Promise<RunMigrationsResult> {
-  const tableName = opts.tableName ?? DEFAULT_MIGRATIONS_TABLE;
+  const tableName =
+    opts.tableName ?? opts.adapter.defaultTableName ?? DEFAULT_MIGRATIONS_TABLE;
   validateTableName(tableName);
   const files = [...opts.files];
   for (const file of files) {

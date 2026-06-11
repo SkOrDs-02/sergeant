@@ -1,4 +1,4 @@
-import type { MigrationAdapter } from "../types.js";
+import { PG_MIGRATIONS_TABLE, type MigrationAdapter } from "../types.js";
 
 /**
  * Postgres adapter for the cross-platform migration runner.
@@ -14,8 +14,9 @@ import type { MigrationAdapter } from "../types.js";
  *   `__tests__/migrate.pg.test.ts`)
  *
  * Transactional safety: each call to {@link MigrationAdapter.applyMigration}
- * runs `BEGIN` / migration SQL / `INSERT INTO __migrations` / `COMMIT`
- * inline. On any error we issue `ROLLBACK` and re-throw — leaving the
+ * runs `BEGIN` / migration SQL / `INSERT INTO <ledger>` / `COMMIT`
+ * inline (ledger defaults to `schema_migrations` for Postgres). On any
+ * error we issue `ROLLBACK` and re-throw — leaving the
  * Postgres session in a clean state and the ledger untouched for the
  * failed file.
  *
@@ -34,6 +35,8 @@ export interface PgQueryClient {
 
 export function createPgAdapter(client: PgQueryClient): MigrationAdapter {
   return {
+    defaultTableName: PG_MIGRATIONS_TABLE,
+
     async ensureLedger(tableName) {
       const ident = quoteIdentifier(tableName);
       // Postgres-side shape matches the spec: `id INTEGER PK, name TEXT,

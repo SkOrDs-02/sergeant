@@ -58,6 +58,15 @@ export interface MigrationAdapter {
    * ledger never reflects a partially applied migration.
    */
   applyMigration(tableName: string, name: string, sql: string): Promise<void>;
+  /**
+   * Dialect-appropriate default ledger table when the caller passes no
+   * explicit `tableName`. Postgres adapters return `schema_migrations`
+   * (the server's existing ledger — see {@link PG_MIGRATIONS_TABLE});
+   * SQLite adapters return `__migrations` (the client/routine ledger —
+   * see {@link DEFAULT_MIGRATIONS_TABLE}). Optional: a fake adapter that
+   * omits it falls back to {@link DEFAULT_MIGRATIONS_TABLE}.
+   */
+  readonly defaultTableName?: string;
 }
 
 /**
@@ -80,10 +89,11 @@ export interface RunMigrationsOptions {
   /** Migrations to apply, in the order they should run. */
   readonly files: readonly MigrationFile[];
   /**
-   * Override the ledger table name. Defaults to `__migrations`. The
-   * server's existing `apps/server/migrate.mjs` uses `schema_migrations`
-   * — pass that here if/when consumers wire the new runner to share the
-   * existing ledger.
+   * Override the ledger table name. When omitted, the runner uses the
+   * adapter's {@link MigrationAdapter.defaultTableName} — `schema_migrations`
+   * for Postgres (matching `apps/server`'s existing ledger) and
+   * `__migrations` for SQLite. Pass this only to target a non-default
+   * ledger (e.g. an isolated per-module history).
    */
   readonly tableName?: string;
   /** Optional sink for per-migration log events. */
@@ -99,8 +109,21 @@ export interface RunMigrationsResult {
   readonly tableName: string;
 }
 
-/** Default ledger table name. Matches PR #019's roadmap spec. */
+/**
+ * Default ledger table for SQLite consumers (routine/client schemas) and
+ * the runner's last-resort fallback when an adapter omits
+ * {@link MigrationAdapter.defaultTableName}. Matches PR #019's roadmap spec
+ * and the existing `ROUTINE_MIGRATIONS_TABLE` in `src/sqlite/migrations`.
+ */
 export const DEFAULT_MIGRATIONS_TABLE = "__migrations";
+
+/**
+ * Default ledger table for Postgres consumers. Matches the server's
+ * long-standing ledger created by `apps/server/src/db.ts`
+ * (`runPendingSqlMigrations`), so wiring the cross-platform runner into the
+ * server shares one history instead of silently creating a second table.
+ */
+export const PG_MIGRATIONS_TABLE = "schema_migrations";
 
 /**
  * Filename contract: starts with one or more digits, an underscore, a

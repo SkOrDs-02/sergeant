@@ -84,7 +84,7 @@ describe("runMigrations × pg adapter (pg-mem)", () => {
 
     // Ledger populated with one row per file, in insertion order.
     const ledger = await h.client.query(
-      'SELECT name FROM "__migrations" ORDER BY id ASC',
+      'SELECT name FROM "schema_migrations" ORDER BY id ASC',
     );
     expect(rowsToString(ledger.rows, "name")).toEqual(FILES.map((f) => f.name));
 
@@ -94,9 +94,9 @@ describe("runMigrations × pg adapter (pg-mem)", () => {
        WHERE table_schema = 'public' ORDER BY table_name`,
     );
     expect(rowsToString(tables.rows, "table_name")).toEqual([
-      "__migrations",
       "alpha",
       "beta",
+      "schema_migrations",
     ]);
 
     // Seed migration ran — verify rows exist in `alpha`.
@@ -123,7 +123,7 @@ describe("runMigrations × pg adapter (pg-mem)", () => {
     expect(Number(after.rows[0]!["count"])).toBe(2);
 
     const ledger = await h.client.query(
-      'SELECT name FROM "__migrations" ORDER BY id ASC',
+      'SELECT name FROM "schema_migrations" ORDER BY id ASC',
     );
     expect(rowsToString(ledger.rows, "name")).toEqual(FILES.map((f) => f.name));
   });
@@ -143,7 +143,7 @@ describe("runMigrations × pg adapter (pg-mem)", () => {
     // Ledger keeps the first migration; the broken one is NOT recorded
     // and the third one was never attempted.
     const ledgerAfterFail = await h.client.query(
-      'SELECT name FROM "__migrations" ORDER BY id ASC',
+      'SELECT name FROM "schema_migrations" ORDER BY id ASC',
     );
     expect(rowsToString(ledgerAfterFail.rows, "name")).toEqual([
       "001_create_alpha.sql",
@@ -156,8 +156,8 @@ describe("runMigrations × pg adapter (pg-mem)", () => {
        WHERE table_schema = 'public' ORDER BY table_name`,
     );
     expect(rowsToString(tables.rows, "table_name")).toEqual([
-      "__migrations",
       "alpha",
+      "schema_migrations",
     ]);
 
     // Retry with the file fixed — runner resumes from the broken file.
@@ -169,23 +169,31 @@ describe("runMigrations × pg adapter (pg-mem)", () => {
     expect(second.skipped).toEqual(["001_create_alpha.sql"]);
 
     const ledgerAfterFix = await h.client.query(
-      'SELECT name FROM "__migrations" ORDER BY id ASC',
+      'SELECT name FROM "schema_migrations" ORDER BY id ASC',
     );
     expect(rowsToString(ledgerAfterFix.rows, "name")).toEqual(
       FILES.map((f) => f.name),
     );
   });
 
-  it("respects a custom ledger table name", async () => {
+  it("defaults the ledger to schema_migrations (matches the server's pg ledger)", async () => {
+    const result = await runMigrations({
+      adapter: createPgAdapter(h.client),
+      files: FILES,
+    });
+    expect(result.tableName).toBe("schema_migrations");
+  });
+
+  it("respects a custom ledger table name over the pg default", async () => {
     const adapter = createPgAdapter(h.client);
     const result = await runMigrations({
       adapter,
       files: FILES,
-      tableName: "schema_migrations",
+      tableName: "custom_ledger",
     });
-    expect(result.tableName).toBe("schema_migrations");
+    expect(result.tableName).toBe("custom_ledger");
     const rows = await h.client.query(
-      'SELECT name FROM "schema_migrations" ORDER BY id ASC',
+      'SELECT name FROM "custom_ledger" ORDER BY id ASC',
     );
     expect(rowsToString(rows.rows, "name")).toEqual(FILES.map((f) => f.name));
   });
