@@ -3,7 +3,7 @@
  *
  * Запускаються через `vitest.integration.config.ts` (включається у
  * `pnpm test:integration`, не у дефолтному `pnpm test`). Реальний
- * Postgres у Testcontainers — `pgvector/pgvector:pg16` (бо інші
+ * Postgres у Testcontainers — `pgvector/pgvector:pg17` (бо інші
  * міграції залежать від `vector` extension; v2 на нього не покладається,
  * але міграція 025 застосовується перед нашою 027 у тому ж раннері).
  *
@@ -111,7 +111,7 @@ function makeReq({
 
 beforeAll(async () => {
   try {
-    container = await new GenericContainer("pgvector/pgvector:pg16")
+    container = await new GenericContainer("pgvector/pgvector:pg17")
       .withEnvironment({
         POSTGRES_USER: "hub",
         POSTGRES_PASSWORD: "hub",

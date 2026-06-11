@@ -8,7 +8,7 @@
 
 ## Статус виконання (update 2026-06-11 EOD)
 
-**Усі P0 + три P1 work-streams виконані й змерджені того ж дня:**
+**Усі P0 + усі P1 work-streams виконані й змерджені (ws-10/12/13/15 — #3514/#3515/#3516/#3519, merged 2026-06-11 крізь відомий main-CI борг при `enforce_admins=false`):**
 
 | WS       | PR                                                                                                                                                                           | Що зроблено                                                                                                                                                                                                                                                                      |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -20,10 +20,14 @@
 | ws-08    | [#3509](https://github.com/Skords-01/Sergeant/pull/3509)                                                                                                                     | Internal billing переписано на канонічну `subscriptions` (було UPDATE неіснуючої таблиці → 500); `STRIPE_ENABLED` у Zod зі строгим парсером; boot-відмова при flag=true без Stripe-ключів                                                                                        |
 | ws-09    | [#3510](https://github.com/Skords-01/Sergeant/pull/3510)                                                                                                                     | AGENTS.md routing більше не 404-ить (3 імені), фантомний tools/openclaw прибраний; pr-ledger ожив (workflow не робив install → падав на prettier 25 днів). Server max-lines (item 3) виявився вже полагодженим на main 06-09                                                     |
 | ws-11    | [#3511](https://github.com/Skords-01/Sergeant/pull/3511)                                                                                                                     | localhost-origins прибрані з production trustedOrigins (NODE_ENV-gate); CI не бігає двічі на push у PR-гілку                                                                                                                                                                     |
+| ws-10    | [#3516](https://github.com/Skords-01/Sergeant/pull/3516)                                                                                                                     | Dual-writer закрито: AI-chat money-writes тепер ідуть через `POST /api/finyk/manual-expenses`; LS-дзеркало для offline-fallback; income + undo-шляхи лишились на локальному шляху; contract-тест і api-client оновлені                                                           |
+| ws-12    | [#3515](https://github.com/Skords-01/Sergeant/pull/3515)                                                                                                                     | Audit-bookkeeping re-sync: README-лічильники виправлені, \_runner-report регенерований, phantom-open закриті, launch-readiness відмічений                                                                                                                                        |
+| ws-13    | [#3514](https://github.com/Skords-01/Sergeant/pull/3514)                                                                                                                     | 9 generic-скілів нульової релевантності + sergeant-backend-api wrapper видалені; skills-lock оновлено; pnpm lint:skills зелений                                                                                                                                                  |
+| ws-15    | [#3519](https://github.com/Skords-01/Sergeant/pull/3519)                                                                                                                     | SLO.md/runbook/alert_rules/recording_rules — «Статус wiring» секція, STATUS-заголовки; AGENTS.md фантомний Alertmanager прибраний; 24 правила збережені як design-артефакт                                                                                                       |
 
-**Лишаються founder-діями (без них revenue нема):** ФОП-реєстрація → live Stripe keys; рішення про ціну (потім pricing-PR + amend ADR-0051); `APPLE_*` env у Railway; UptimeRobot на `/health` (5 хв).
+**Лишаються founder-діями (без них revenue нема):** ФОП-реєстрація → live Stripe keys; рішення про ціну (потім pricing-PR + amend ADR-0051); `APPLE_*` env у Railway; UptimeRobot на `/health` (5 хв); enforce required checks + merge queue (1 клік).
 
-**Наступні агентські таски — § Action plan (Bucket B remaining) нижче.**
+**Агентських тасків більше немає. Черга — виключно founder-дії.**
 
 ---
 
@@ -74,26 +78,25 @@
 
 ### Відкриті (пріоритезовано — це і є черга роботи)
 
-**P1 — наступні:**
+**P1 — усі закриті (ws-10, ws-12, ws-13, ws-15 у таблиці вище).**
 
-- **ws-10 (L, web-ui):** dual-writer у фінансовому застосунку — AI-chat money-writes ідуть лише в localStorage повз канонічний sync-pipeline; server endpoint `POST /api/finyk/manual-expenses` існує з 06-06, клієнт його не викликає. `[VERIFIED HIGH]` Файли: `apps/web/src/core/lib/chatActions/finykActions*`, `apps/server/src/routes/finyk.ts`.
-- **ws-12 (M, review-and-merge):** audit-bookkeeping re-sync — README-лічильники хибні в обидва боки (finyk 2 vs «≈13»), `_runner-report` ганяє triage по закритих пунктах, launch-readiness 0/56 під свіжим штампом; Scope-04 (Hub Settings) так і не аудитований.
-- **ws-13 (S, tech-debt; ex-Bucket C, піднято):** видалити 9–10 generic-скілів нульової релевантності (temporal-python, CQRS/saga/event-sourcing тощо) + обгортку sergeant-backend-api — забруднюють routing, skills-lock (джерело main-breaking конфліктів) і поверхню Rule #22; в анамнезі — malicious imported skill.
+**P2 — закриті в P2-хвилі 2026-06-11 (PR pending):**
+
+- ✅ `visual-regression.yml` header бреше («every PR») → виправлено: top-comment чесно каже «workflow_dispatch ONLY», design-намір збережено окремо.
+- ✅ Monobank `historyFetch.ts`/`privat.ts` без тестів → додано 24 unit-тести (`privat.test.ts` — guard/path-allowlist/CRLF/upstream-mapping; `historyFetch.test.ts` — schema/buildMemoryContent/fetchAccountStatement; pure-helpers експортовані).
+- ✅ Postgres-skew: Testcontainers pg16 vs CI pg17 → усі 16 тест-контейнерів + прозові коментарі підняті до pg17 (збіг з CI service + docker-compose).
 
 **P2 — далі:**
 
 - Freshness-механіка міряє churn, не review (`bump-last-validated` штампує будь-який staged .md; 53% корпусу проштамповано одним link-rewrite комітом). Потрібен дизайн: ручний validate-маркер vs churn-bump.
-- SLO/alert-стек декоративний: 24 правила не вантажить жоден runtime; Alertmanager не існує; AGENTS.md посилається на фантомний enforcement `/health` p95. Мінімум: прибрати фантомні згадки + UptimeRobot (founder) + рішення про Grafana Cloud rules sync.
-- Merge-серіалізація: ≥3 колізії номерів міграцій на main; GitHub merge queue або timestamp-префікси.
+- SLO/alert-стек: фантомні Alertmanager-згадки прибрані + wiring-статус задокументований (ws-15, #3519). Лишається: UptimeRobot (founder) + рішення про Grafana Cloud rules sync чи видалення 24 design-правил.
+- Merge-серіалізація: ≥3 колізії номерів міграцій на main; GitHub merge queue або timestamp-префікси. (= ws-14, founder-gated)
 - Coverage-пороги двобухгалтерні (vitest-конфіги vs bash-масив у ci.yml) + web-floor 39%/32% проти цілі 50/40.
-- `visual-regression.yml`: header бреше («every PR»), фактично лише workflow_dispatch.
-- pnpm audit critical-gate без exception-path (audit-exceptions ledger не читається гейтом).
-- Monobank `historyFetch.ts`/`privat.ts` без тестів (фінансовий backfill).
+- pnpm audit critical-gate без exception-path (audit-exceptions ledger не читається гейтом; escape — лише PR-label `audit-exception` для high, не для critical).
 - Hard Rule #1 — конвенція без механізму: нема глобального pg `setTypeParser` для int8.
-- Orphan-схема: `syncV2Types.ts` (0 імпортерів, цитує неіснуючий ADR), m047/m070-072 billing-орфани (two-phase DROP post-launch), db-schema pg-runner з розбіжним ledger-default.
+- Orphan-схема: `syncV2Types.ts` (0 імпортерів; шит-маркер цитує неіснуючий ADR-0062-decomposition — номер зайнятий OpenAPI-ADR → chip `task_abed59b4`), m047/m070-072 billing-орфани (two-phase DROP post-launch), db-schema pg-runner з розбіжним ledger-default.
 - i18n: en.ts 215 рядків vs uk.ts 847; allowlist 243 файли без ratchet.
 - ESLint baselines без дедлайнів: react-hooks ~152 off-порушень, ~96 non-null assertions (burn-down «2026-Q3» без enforcement дати).
-- Postgres-skew tiers: Testcontainers pg16 vs CI service pg17.
 
 ---
 
@@ -109,10 +112,11 @@
 
 ```yaml
 audit_date: 2026-06-11
-updated: 2026-06-11T18:00+03:00
+updated: 2026-06-11T23:00+03:00
 executor_note: >
-  P0 hвиля і ws-08/09/11 виконані (див. § Статус виконання). Нижче — черга.
-  Items marked requires_founder: true need a human decision first.
+  Усі P0 і P1 work-streams виконані й змерджені: #3514 (ws-13), #3515 (ws-12),
+  #3516 (ws-10), #3519 (ws-15) — merged 2026-06-11.
+  Лишились виключно founder-gated дії (requires_founder: true).
 
 work_streams:
   - id: ws-02
@@ -136,47 +140,6 @@ work_streams:
       Founder називає число → агент вшиває в PricingPage (замість em dash),
       узгоджує uk/en копірайт, amend-ить або supersede-ить ADR-0051.
 
-  - id: ws-10
-    title: Закрити dual-writer (AI-chat money-writes повз sync)
-    priority: P1
-    requires_founder: false
-    effort: L
-    agent_hint: web-ui
-    description: >
-      Перевести finyk manual-expenses з chatActions з localStorage-only на
-      існуючий POST /api/finyk/manual-expenses, щоб AI-написані грошові рядки
-      входили в канонічний pipeline і переживали SQLite-overlay.
-    acceptance_criteria:
-      - create_transaction через чат → server-persisted рядок, видимий після reload
-      - contract-тести переписані з localStorage-асертів
-
-  - id: ws-12
-    title: Audit-bookkeeping re-sync
-    priority: P1
-    requires_founder: false
-    effort: M
-    agent_hint: review-and-merge
-    description: >
-      Перерахувати README-лічильники з per-doc closure notes, регенерувати
-      _runner-report, закрити phantom-open (ux-roast PR-1a), оживити
-      launch-readiness checklist (відмітити зроблене), запланувати Scope-04.
-    acceptance_criteria:
-      - README-лічильники збігаються з per-doc реальністю (spot-check 3 доки)
-      - _runner-report без пунктів з існуючими closure notes
-
-  - id: ws-13
-    title: Видалити generic-скіли + sergeant-backend-api wrapper
-    priority: P1
-    requires_founder: false
-    effort: S
-    agent_hint: tech-debt
-    description: >
-      Прибрати 9-10 імпортних скілів нульової релевантності стеку +
-      обгортку; оновити skills-lock, catalog, trigger-evals.
-    acceptance_criteria:
-      - .agents/skills/ без temporal/cqrs/saga/event-store/microservices/projection/api-design/architecture-patterns
-      - pnpm lint:skills зелений
-
   - id: ws-14
     title: Merge-серіалізація
     priority: P2
@@ -187,21 +150,16 @@ work_streams:
       GitHub merge queue (рекомендовано; 1 клік founder-а в branch protection)
       або timestamp-префікси міграцій. Закриває клас «3 колізії номерів
       міграцій + CI-red-on-main після парних мерджів».
-
-  - id: ws-15
-    title: Observability мінімум
-    priority: P2
-    requires_founder: false
-    effort: M
-    agent_hint: deploy
-    description: >
-      Прибрати фантомні Alertmanager-згадки з AGENTS.md/apps/server/AGENTS.md,
-      позначити SLO.md/runbook «wired today» vs «designed for later», рішення
-      про Grafana Cloud rules sync або видалення мертвих 24 правил.
 ```
 
 ---
 
 ## Що founder-у робити далі
 
-Без змін з ранкової версії: **ФОП сьогодні** (єдиний календарний блокер), **ціна** (одне число — і ws-01b закривається за годину), `APPLE_*` env, UptimeRobot (5 хв). Плюс одна нова дія на 1 клік: **увімкнути enforce для required checks / merge queue** — сітка тепер працює, хай вона і тримає.
+Агентської черги більше немає. Усе, що лишилось — founder-дії:
+
+1. **ФОП** — єдиний календарний блокер (5–10 днів до легального billing).
+2. **Ціна** — одне число → ws-01b закривається агентом за ~1 год (PricingPage + ADR-0051 amend).
+3. **Enforce required checks + merge queue** — 1 клік у branch protection. Закриває ws-14 і не дає знову мерджити крізь червоне.
+4. **APPLE\_\* env у Railway** — `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` → Sign in with Apple заробить.
+5. **UptimeRobot** — 5 хв, зовнішній uptime-сигнал до Grafana Cloud wiring.

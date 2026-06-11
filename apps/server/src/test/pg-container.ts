@@ -13,7 +13,7 @@ let pool: pg.Pool | undefined;
 let connectionUri: string | undefined;
 
 /**
- * Starts a Postgres 16 container via Testcontainers, runs all forward
+ * Starts a Postgres 17 container via Testcontainers, runs all forward
  * migrations from apps/server/src/migrations/, and returns a pg.Pool.
  *
  * Designed to be called once per Vitest `globalSetup` or inside a
@@ -23,10 +23,10 @@ export async function startPgContainer(): Promise<pg.Pool> {
   if (pool) return pool;
 
   // Use the pgvector image (matches the local-dev image called out in
-  // migration 025_ai_memories_pgvector.sql). The plain `postgres:16-alpine`
+  // migration 025_ai_memories_pgvector.sql). The plain `postgres:17-alpine`
   // image does not ship the `vector` extension, which causes that
   // migration to fail at container boot.
-  container = await new GenericContainer("pgvector/pgvector:pg16")
+  container = await new GenericContainer("pgvector/pgvector:pg17")
     .withEnvironment({
       POSTGRES_USER: "hub",
       POSTGRES_PASSWORD: "hub",

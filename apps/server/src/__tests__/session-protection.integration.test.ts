@@ -26,7 +26,7 @@
  * `getSessionUser` would test the wiring but not the live invariant:
  * "if I send an unauthenticated request to a sensitive route against a
  * real DB, do I see the H8 header?" Testcontainers spins up
- * `pgvector/pgvector:pg16`, runs the same migration set as production
+ * `pgvector/pgvector:pg17`, runs the same migration set as production
  * (the runner needs `vector` ext for migration 025), and lets us treat
  * `createApp()` as a black box. The test skips itself if Docker is not
  * available locally, matching the pattern used by
@@ -70,7 +70,7 @@ async function runMigrations(p: pg.Pool): Promise<void> {
 
 beforeAll(async () => {
   try {
-    container = await new GenericContainer("pgvector/pgvector:pg16")
+    container = await new GenericContainer("pgvector/pgvector:pg17")
       .withEnvironment({
         POSTGRES_USER: "hub",
         POSTGRES_PASSWORD: "hub",

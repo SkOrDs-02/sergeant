@@ -31,7 +31,7 @@ const CURRENCY_SYMBOL: Record<number, string> = {
   985: "zł",
 };
 
-const BackfillItemSchema = z.object({
+export const BackfillItemSchema = z.object({
   id: z.string().min(1).max(64),
   time: z.number().int().nonnegative().finite(),
   description: z.string().max(500).optional().default(""),
@@ -53,7 +53,7 @@ const BackfillItemSchema = z.object({
 });
 type BackfillItem = z.infer<typeof BackfillItemSchema>;
 
-function buildMemoryContent(
+export function buildMemoryContent(
   item: BackfillItem,
   categorySlug: string | null,
 ): string {
@@ -149,7 +149,7 @@ async function upsertTransactions(
   return inserted;
 }
 
-async function fetchAccountStatement(
+export async function fetchAccountStatement(
   token: string,
   monoAccountId: string,
   fromTs: number,
