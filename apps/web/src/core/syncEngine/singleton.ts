@@ -6,6 +6,13 @@ import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
 
 import { webKVStore } from "@shared/lib/storage/storage";
 
+// Статичний імпорт навмисно: `authClient` і так eager (статично тягнеться
+// `AuthContext`-ом у entry-chunk). Подвійний static+dynamic імпорт змушував
+// rolldown виносити `authClient` в окремий chunk із циклічною залежністю на
+// entry — у Vercel-збірці це падало TDZ-крахом (`r is not a function`) і
+// валило весь рендер у проді.
+import { getSession } from "../auth/authClient";
+
 import { classifyOutboxBootOutcome } from "./outboxBoot";
 import {
   createSyncEngineWriterRuntime,
@@ -73,7 +80,6 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     dbSchema,
     { runMigrations },
     { createSqliteAdapter },
-    { getSession },
   ] = await Promise.all([
     import("../db/sqlite"),
     import("@shared/api"),
@@ -81,7 +87,6 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     import("@sergeant/db-schema/sqlite"),
     import("@sergeant/db-schema/migrate/runner"),
     import("@sergeant/db-schema/migrate/sqlite"),
-    import("../auth/authClient"),
   ]);
 
   const db = await getSqliteDb();

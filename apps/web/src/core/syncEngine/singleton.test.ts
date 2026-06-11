@@ -2,6 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SyncEngineWriterRuntime } from "./syncEngineWriter";
 
+// `singleton.ts` статично імпортує `authClient`, який на module-load створює
+// Better Auth клієнт і читає `window.location` — у node-environment тестів
+// `window` відсутній. Тести інжектять власний `createRuntime`, тож реальний
+// authClient тут не потрібен.
+vi.mock("../auth/authClient", () => ({
+  getSession: vi.fn(async () => ({ data: null, error: null })),
+}));
+
 import {
   __resetSyncEngineWriterForTests,
   bootSyncEngineWriter,
