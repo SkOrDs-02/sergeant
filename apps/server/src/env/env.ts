@@ -1258,12 +1258,6 @@ export function assertStartupEnv(): void {
     );
   }
 
-  if (isProduction && !env.SENTRY_DSN) {
-    warnings.push(
-      "SENTRY_DSN is not set — error tracking is disabled in production.",
-    );
-  }
-
   // T2 audit finding #4 — `/metrics` exposure. Without `METRICS_TOKEN`
   // the endpoint is publicly reachable AND the `@opentelemetry/exporter-
   // prometheus` stack has a HIGH-severity advisory ("process crash via
@@ -1495,6 +1489,21 @@ export function assertStartupEnv(): void {
     warnings.push(
       "BETTER_AUTH_TOKEN_ENC_KEY is not set — OAuth tokens will be stored as plaintext (insecure; allowed in dev only).",
     );
+  }
+
+  // Independent audit 2026-06-11 (ws-06) — SENTRY_DSN enforcement. Sentry is
+  // the head of the app-exception alert chain (Sentry webhook → n8n WF-03 →
+  // Telegram): a production deploy without the DSN silently disables the
+  // operator's primary error signal while `/health` stays green. Hard-fail at
+  // boot — mirroring METRICS_TOKEN / VAPID — instead of the legacy warning.
+  // Deliberately the LAST production gate in this function: earlier gates keep
+  // emitting their own specific errors when several misconfigs coexist.
+  if (isProduction && !env.SENTRY_DSN) {
+    throw new Error(
+      "SENTRY_DSN is required in production. Without it server exceptions are invisible — the Sentry → n8n → Telegram alert chain never fires while /health stays green. Copy the DSN from sentry.io → Project Settings → Client Keys (DSN). For a deliberate no-Sentry run, unset NODE_ENV/RAILWAY_ENVIRONMENT for that run and document the reason in the runbook.",
+    );
+  } else if (!env.SENTRY_DSN) {
+    warnings.push("SENTRY_DSN is not set — error tracking is disabled.");
   }
 
   if (warnings.length > 0) {

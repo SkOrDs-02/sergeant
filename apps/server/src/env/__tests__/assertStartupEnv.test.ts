@@ -40,6 +40,9 @@ const PROD_BASELINE = {
   // path lives in its own `describe` block below (with a VAPID-less baseline).
   VAPID_PUBLIC_KEY: "d".repeat(80),
   VAPID_PRIVATE_KEY: "e".repeat(40),
+  // Independent audit 2026-06-11 ws-06 — SENTRY_DSN is required in production.
+  // Negative path lives in its own `describe` block below (DSN-less baseline).
+  SENTRY_DSN: "https://examplePublicKey@o0.ingest.sentry.io/0",
 };
 
 describe("assertStartupEnv — AI_QUOTA_DISABLED hard-block (H9)", () => {
@@ -366,6 +369,7 @@ describe("assertStartupEnv — METRICS_TOKEN hard-fail (T2 audit #4)", () => {
     // the METRICS gate instead of tripping the (later) VAPID check.
     VAPID_PUBLIC_KEY: "d".repeat(80),
     VAPID_PRIVATE_KEY: "e".repeat(40),
+    SENTRY_DSN: "https://examplePublicKey@o0.ingest.sentry.io/0",
     OPENCLAW_GITHUB_PAT: "",
     Git_PAT: "",
   };
@@ -536,6 +540,7 @@ describe("assertStartupEnv — backend-perf PR-01: VAPID keypair required in pro
     BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
     NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
     METRICS_TOKEN: "c".repeat(64),
+    SENTRY_DSN: "https://examplePublicKey@o0.ingest.sentry.io/0",
     OPENCLAW_GITHUB_PAT: "",
     Git_PAT: "",
   };
@@ -565,6 +570,59 @@ describe("assertStartupEnv — backend-perf PR-01: VAPID keypair required in pro
   });
 
   it("does NOT throw in NODE_ENV=development when VAPID keys are missing (warn-only)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
+
+describe("assertStartupEnv — SENTRY_DSN required in production (audit 2026-06-11 ws-06)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  // Prod baseline WITHOUT the DSN so the negative path reaches the SENTRY gate
+  // (it is deliberately the last production hard-fail in assertStartupEnv, so
+  // every other required var must be present here).
+  const SENTRY_MISSING_BASELINE = {
+    NODE_ENV: "production" as const,
+    DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
+    BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
+    NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
+    METRICS_TOKEN: "c".repeat(64),
+    VAPID_PUBLIC_KEY: "d".repeat(80),
+    VAPID_PRIVATE_KEY: "e".repeat(40),
+    OPENCLAW_GITHUB_PAT: "",
+    Git_PAT: "",
+  };
+
+  it("throws in production when SENTRY_DSN is missing", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv(
+      SENTRY_MISSING_BASELINE,
+    );
+    expect(() => assertStartupEnv()).toThrow(/SENTRY_DSN/);
+  });
+
+  it("throws under Railway prod even without NODE_ENV=production", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...SENTRY_MISSING_BASELINE,
+      NODE_ENV: "test",
+      RAILWAY_ENVIRONMENT: "production",
+    });
+    expect(() => assertStartupEnv()).toThrow(/SENTRY_DSN/);
+  });
+
+  it("does NOT throw in production when SENTRY_DSN is set", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...SENTRY_MISSING_BASELINE,
+      SENTRY_DSN: "https://examplePublicKey@o0.ingest.sentry.io/0",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in NODE_ENV=development when SENTRY_DSN is missing (warn-only)", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       NODE_ENV: "development",
     });
