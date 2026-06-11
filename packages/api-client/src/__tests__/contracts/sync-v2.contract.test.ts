@@ -30,9 +30,9 @@ import type { PactV4 } from "@pact-foundation/pact";
 
 import { createHttpClient } from "../../httpClient";
 import { createSyncV2Endpoints } from "../../endpoints/syncV2";
-import { createPact } from "./_pact";
+import { CONTRACT_SUITE_OPTIONS, createPact } from "./_pact";
 
-describe("contract @ POST /api/v2/sync/push", () => {
+describe("contract @ POST /api/v2/sync/push", CONTRACT_SUITE_OPTIONS, () => {
   let pact: PactV4;
   beforeAll(() => {
     pact = createPact();
@@ -305,7 +305,7 @@ describe("contract @ POST /api/v2/sync/push", () => {
   });
 });
 
-describe("contract @ GET /api/v2/sync/pull", () => {
+describe("contract @ GET /api/v2/sync/pull", CONTRACT_SUITE_OPTIONS, () => {
   let pact: PactV4;
   beforeAll(() => {
     pact = createPact();

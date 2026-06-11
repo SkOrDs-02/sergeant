@@ -41,6 +41,22 @@ export const PACT_DIR = path.resolve(
  * gymnastics, and we don't need V4-only features (sync messages,
  * GraphQL) for HTTP REST contracts.
  */
+/**
+ * Vitest suite options for every pact contract `describe`.
+ *
+ * `retry: 2` absorbs a known pact-core FFI race: under loaded CI runners
+ * the mock server occasionally reports `missing-request` ("The following
+ * request was expected but not received") even though the client received
+ * the fully matched response and every assertion passed (the error is the
+ * `Promise.reject` branch of `executeTest`, which is only reachable when
+ * the test callback resolved). The race lives in the Rust mock-server
+ * match bookkeeping, not in our request shape, and surfaces in files with
+ * several sequential interactions (the PactV4 builder is torn down and
+ * re-created between `executeTest` calls). A real contract mismatch is
+ * deterministic and still fails all three attempts.
+ */
+export const CONTRACT_SUITE_OPTIONS = { retry: 2 } as const;
+
 export function createPact(): PactV4 {
   return new PactV4({
     consumer: CONSUMER,

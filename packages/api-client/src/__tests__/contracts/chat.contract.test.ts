@@ -17,52 +17,56 @@ import type { PactV4 } from "@pact-foundation/pact";
 
 import { createHttpClient } from "../../httpClient";
 import { createChatEndpoints } from "../../endpoints/chat";
-import { createPact } from "./_pact";
+import { CONTRACT_SUITE_OPTIONS, createPact } from "./_pact";
 
-describe("contract @ POST /api/v1/chat (non-streaming)", () => {
-  let pact: PactV4;
-  beforeAll(() => {
-    pact = createPact();
-  });
-  afterAll(() => {});
+describe(
+  "contract @ POST /api/v1/chat (non-streaming)",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
 
-  it("returns assistant text for a simple user prompt (hub persona)", async () => {
-    await pact
-      .addInteraction()
-      .given(
-        "authenticated user-pact-001 with a clean conversation; Anthropic stub returns fixed assistant text",
-      )
-      .uponReceiving(
-        "a POST /api/v1/chat request without tool-calls (non-streaming)",
-      )
-      .withRequest("POST", "/api/v1/chat", (req) => {
-        req.headers({
-          accept: "application/json",
-          "content-type": "application/json",
+    it("returns assistant text for a simple user prompt (hub persona)", async () => {
+      await pact
+        .addInteraction()
+        .given(
+          "authenticated user-pact-001 with a clean conversation; Anthropic stub returns fixed assistant text",
+        )
+        .uponReceiving(
+          "a POST /api/v1/chat request without tool-calls (non-streaming)",
+        )
+        .withRequest("POST", "/api/v1/chat", (req) => {
+          req.headers({
+            accept: "application/json",
+            "content-type": "application/json",
+          });
+          req.jsonBody({
+            context: "hub",
+            messages: [{ role: "user", content: "Привіт, як справи?" }],
+            stream: false,
+          });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            text: "Все ок, що треба зробити?",
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const chat = createChatEndpoints(http);
+          const out = await chat.send({
+            context: "hub",
+            messages: [{ role: "user", content: "Привіт, як справи?" }],
+            stream: false,
+          });
+          expect(out.text).toBe("Все ок, що треба зробити?");
+          expect(out.tool_calls).toBeUndefined();
+          expect(out.error).toBeUndefined();
         });
-        req.jsonBody({
-          context: "hub",
-          messages: [{ role: "user", content: "Привіт, як справи?" }],
-          stream: false,
-        });
-      })
-      .willRespondWith(200, (res) => {
-        res.headers({ "content-type": "application/json" });
-        res.jsonBody({
-          text: "Все ок, що треба зробити?",
-        });
-      })
-      .executeTest(async (mockServer) => {
-        const http = createHttpClient({ baseUrl: mockServer.url });
-        const chat = createChatEndpoints(http);
-        const out = await chat.send({
-          context: "hub",
-          messages: [{ role: "user", content: "Привіт, як справи?" }],
-          stream: false,
-        });
-        expect(out.text).toBe("Все ок, що треба зробити?");
-        expect(out.tool_calls).toBeUndefined();
-        expect(out.error).toBeUndefined();
-      });
-  });
-});
+    });
+  },
+);
