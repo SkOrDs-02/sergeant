@@ -106,6 +106,9 @@ beforeAll(async () => {
     app = createApp();
     dockerAvailable = true;
   } catch (e) {
+    // In CI Docker MUST be available — a silent skip here would green-light
+    // the job while the route-auth regression guard never ran.
+    if (process.env["CI"]) throw e;
     skipReason = e instanceof Error ? e.message : String(e);
     console.warn(
       `[session-protection integration] Skipping: testcontainers unavailable — ${skipReason}`,

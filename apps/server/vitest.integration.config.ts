@@ -32,7 +32,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.integration.test.ts", "src/**/*.e2e.test.ts"],
-    passWithNoTests: true,
+    // The glob always matches committed suites; an empty run means the config
+    // or checkout is broken — fail instead of green-lighting zero tests.
+    passWithNoTests: false,
     // Testcontainers needs time for container startup + migrations.
     testTimeout: 60_000,
     hookTimeout: 120_000,

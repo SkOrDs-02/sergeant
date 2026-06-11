@@ -132,6 +132,9 @@ beforeAll(async () => {
     await runMigrations(testPool);
     dockerAvailable = true;
   } catch (e) {
+    // In CI Docker MUST be available — a silent skip here would green-light
+    // the job without executing a single sync-correctness test.
+    if (process.env["CI"]) throw e;
     skipReason = e instanceof Error ? e.message : String(e);
     console.warn(
       `[syncV2 integration] Skipping: testcontainers unavailable — ${skipReason}`,

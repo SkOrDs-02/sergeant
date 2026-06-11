@@ -159,6 +159,8 @@ beforeAll(async () => {
     app = createApp();
     dockerAvailable = true;
   } catch (e) {
+    // In CI Docker MUST be available — a silent skip would green-light the job.
+    if (process.env["CI"]) throw e;
     skipReason = e instanceof Error ? e.message : String(e);
     console.warn(
       `[transcribe-usd-cap e2e] Skipping: testcontainers unavailable — ${skipReason}`,

@@ -90,6 +90,8 @@ beforeAll(async () => {
     store = createPgVectorStore(pool);
     dockerAvailable = true;
   } catch (e) {
+    // In CI Docker MUST be available — a silent skip would green-light the job.
+    if (process.env["CI"]) throw e;
     skipReason = e instanceof Error ? e.message : String(e);
     console.warn(
       `[ai-memory pgvector integration] Skipping: testcontainers/pgvector unavailable — ${skipReason}`,
