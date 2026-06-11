@@ -234,6 +234,15 @@ export {
 } from "./endpoints/billing";
 
 export {
+  createFinykEndpoints,
+  ManualExpenseCreateBodySchema,
+  ManualExpenseCreateResponseBodySchema,
+  type FinykEndpoints,
+  type ManualExpenseCreateRequest,
+  type ManualExpenseCreateResponse,
+} from "./endpoints/finyk";
+
+export {
   createWeeklyDigestEndpoints,
   type WeeklyDigestEndpoints,
   type WeeklyDigestPayload,

@@ -60,3 +60,28 @@ export const ManualExpenseCreateSchema = z
   .strict();
 
 export type ManualExpenseCreate = z.infer<typeof ManualExpenseCreateSchema>;
+
+// Відповідь `POST /api/v1/finyk/manual-expenses` (201). Серіалізатор живе в
+// `apps/server/src/modules/finyk/manualExpenses.ts#serializeManualExpense`;
+// ця схема — канонічний контракт того shape для api-client (Hard Rule #3:
+// server serializer ↔ api-client types ↔ contract test рухаються разом).
+// Гроші — у КОПІЙКАХ (`amountKopiykas: number`, Hard Rule #1).
+export const ManualExpenseSchema = z.object({
+  id: z.string().min(1),
+  amountKopiykas: z.number().int().positive(),
+  category: z.string(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  note: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const ManualExpenseCreateResponseSchema = z.object({
+  ok: z.literal(true),
+  expense: ManualExpenseSchema,
+});
+
+export type ManualExpense = z.infer<typeof ManualExpenseSchema>;
+export type ManualExpenseCreateResponse = z.infer<
+  typeof ManualExpenseCreateResponseSchema
+>;

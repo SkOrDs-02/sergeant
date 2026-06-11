@@ -17,11 +17,26 @@
  */
 
 import { apiUrl } from "../../../shared/lib/api/apiUrl";
+import { apiClient } from "../../../shared/api";
+import { resolveExpenseCategoryMeta } from "../../../modules/finyk/utils";
+import {
+  flushPendingWrites,
+  getCategories,
+  getTransactions,
+  saveTransactions,
+} from "../../../modules/finyk/lib/finykStorage";
+import { createTransaction as createTransactionLocal } from "./finykActions/transactions";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type {
   RecallMemoryRequest,
   RecallMemoryResponse,
 } from "@sergeant/shared";
-import type { ChatAction, ChatActionResult, RecallMemoryAction } from "./types";
+import type {
+  ChatAction,
+  ChatActionResult,
+  CreateTransactionAction,
+  RecallMemoryAction,
+} from "./types";
 
 /**
  * Кількість мс, яку клієнт чекає на відповідь recall перш ніж скасувати
@@ -134,11 +149,83 @@ async function handleRecallMemory(action: RecallMemoryAction): Promise<string> {
 }
 
 /**
+ * `create_transaction` — витрати йдуть через `POST /api/finyk/manual-expenses`
+ * (server-of-record + локальне LS-дзеркало для миттєвого UI), доходи та
+ * offline-fallback лишаються на legacy LS-обробнику.
+ *
+ * Server-шлях не дає undo: DELETE-ендпоінта для manual-expenses ще немає,
+ * тож «скасувати» означало б розсинхрон LS ↔ DB. Fallback-шлях зберігає
+ * undo від `createTransactionLocal`.
+ */
+async function handleCreateTransaction(
+  action: CreateTransactionAction,
+): Promise<ChatActionResult> {
+  const { type, amount, category, description, date } = action.input;
+  const amt = Number(amount);
+  if (!Number.isFinite(amt) || amt <= 0) {
+    return "Некоректна сума транзакції.";
+  }
+  // Income сервер не приймає (manual-expenses — лише витрати) — пишемо локально.
+  if (type === "income") {
+    return createTransactionLocal(action);
+  }
+  try {
+    const { expense } = await apiClient.finyk.createManualExpense({
+      // LS та tool-input історично у гривнях; API — у копійках (Hard Rule #1).
+      amount: Math.round(Math.abs(amt) * 100),
+      category: category?.trim() || "other",
+      ...(description?.trim() ? { note: description.trim() } : {}),
+      ...(date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? { date } : {}),
+    });
+    // LS-дзеркало через канонічний finykStorage-wrapper: списки/статистика
+    // читають blob синхронно, без рефетчу. `amount` — у ГРИВНЯХ і legacy-поле
+    // `category` поруч із канонічним `categoryId`: blob історично тримає
+    // shape із `finykActions/transactions.ts#createTransaction`, і його
+    // читачі очікують саме його.
+    const isoDate = new Date(`${expense.date}T12:00:00`).toISOString();
+    const entry: Transaction & { category: string } = {
+      id: expense.id,
+      amount: Math.abs(amt),
+      date: isoDate,
+      categoryId: category?.trim() || "",
+      category: category?.trim() || "",
+      type: "expense",
+      source: "ai",
+      time: Math.floor(Date.parse(isoDate) / 1000),
+      description: description?.trim() || "",
+      mcc: 0,
+      accountId: null,
+      manual: true,
+      _source: "ai",
+      _accountId: null,
+      _manual: true,
+    };
+    const manualExpenses = getTransactions();
+    manualExpenses.unshift(entry);
+    saveTransactions(manualExpenses);
+    // saveTransactions — debounced; flush одразу, щоб запис не загубився
+    // при швидкому закритті вкладки після відповіді чату.
+    flushPendingWrites();
+    const meta = category?.trim()
+      ? resolveExpenseCategoryMeta(category.trim(), getCategories())
+      : undefined;
+    const label = meta?.label || category?.trim() || "";
+    return `Витрату ${amt} грн${description?.trim() ? ` "${description.trim()}"` : ""}${label ? ` (${label})` : ""} записано на сервері (id:${expense.id})`;
+  } catch {
+    // Мережа/401/5xx — не губимо запис: пишемо локально зі старим undo-шляхом.
+    const local = createTransactionLocal(action);
+    const suffix = " (сервер недоступний — записано лише локально)";
+    if (typeof local === "string") return local + suffix;
+    return { ...local, result: local.result + suffix };
+  }
+}
+
+/**
  * Async dispatcher — повертає результат, якщо action — "server-side" tool,
  * інакше `undefined` (sync-flow обробить решту).
  *
- * Зберігаємо строкову форму `ChatActionResult` (без undo): recall — read-only,
- * undo не потрібен.
+ * `recall_memory` — read-only, undo не потрібен. `create_transaction` —
+ * server-write (undo лише у offline-fallback-а).
  */
 export async function handleAsyncChatAction(
   action: ChatAction,
@@ -146,6 +233,8 @@ export async function handleAsyncChatAction(
   switch (action.name) {
     case "recall_memory":
       return handleRecallMemory(action as RecallMemoryAction);
+    case "create_transaction":
+      return handleCreateTransaction(action as CreateTransactionAction);
     default:
       return undefined;
   }
@@ -157,4 +246,5 @@ export async function handleAsyncChatAction(
  */
 export const ASYNC_CHAT_ACTION_NAMES: ReadonlySet<string> = new Set([
   "recall_memory",
+  "create_transaction",
 ]);

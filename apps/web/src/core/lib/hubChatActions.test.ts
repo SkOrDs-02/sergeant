@@ -25,6 +25,7 @@ afterEach(() => {
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 function readLS<T>(key: string, fallback: T): T {
@@ -74,16 +75,60 @@ describe("create_habit", () => {
   });
 });
 
+// ws-10: create_transaction — async/server tool (`ASYNC_CHAT_ACTION_NAMES`).
+// Витрати йдуть через `POST /api/finyk/manual-expenses`; offline-fallback та
+// доходи лишаються на legacy LS-шляху. Тому всі тести — через `executeActions`.
 describe("create_transaction", () => {
-  it("записує витрату в finyk_manual_expenses_v1", () => {
-    const msg = executeAction({
-      name: "create_transaction",
-      input: { amount: 150, category: "food", description: "кава" },
-    });
-    expect(msg).toContain("Витрату");
-    expect(msg).toContain("150");
+  function stubFetchReject(): void {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("пише витрату через сервер і дзеркалить у finyk_manual_expenses_v1", async () => {
+    const serverExpense = {
+      id: "0b7e6c3a-7e0f-4b59-9b39-2f4f7f6f9d11",
+      amountKopiykas: 15000,
+      category: "food",
+      date: "2024-06-15",
+      note: "кава",
+      createdAt: "2024-06-15T12:00:00.000Z",
+      updatedAt: "2024-06-15T12:00:00.000Z",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ ok: true, expense: serverExpense }), {
+            status: 201,
+            headers: { "content-type": "application/json" },
+          }),
+      ),
+    );
+
+    const [out] = await executeActions([
+      {
+        name: "create_transaction",
+        input: { amount: 150, category: "food", description: "кава" },
+      },
+    ]);
+    expect(out!.result).toContain("Витрату");
+    expect(out!.result).toContain("150");
+    expect(out!.result).toContain("записано на сервері");
+    expect(out!.result).toContain(serverExpense.id);
+    // Server-шлях не дає undo — DELETE-ендпоінта немає.
+    expect(out!.undo).toBeUndefined();
+
     const arr = readLS<
       Array<{
+        id: string;
         amount: number;
         category: string;
         description: string;
@@ -91,17 +136,48 @@ describe("create_transaction", () => {
       }>
     >("finyk_manual_expenses_v1", []);
     expect(arr).toHaveLength(1);
+    // LS-дзеркало: id серверний (UUID), amount у гривнях (legacy LS-shape).
+    expect(arr[0]!.id).toBe(serverExpense.id);
     expect(arr[0]!.amount).toBe(150);
     expect(arr[0]!.category).toBe("food");
     expect(arr[0]!.type).toBe("expense");
   });
 
-  it("записує дохід коли type='income'", () => {
-    const msg = executeAction({
-      name: "create_transaction",
-      input: { type: "income", amount: 5000 },
-    });
-    expect(msg).toContain("Дохід");
+  it("fallback: пише локально з undo, коли сервер недоступний", async () => {
+    stubFetchReject();
+    const [out] = await executeActions([
+      {
+        name: "create_transaction",
+        input: { amount: 150, category: "food", description: "кава" },
+      },
+    ]);
+    expect(out!.result).toContain("Витрату");
+    expect(out!.result).toContain("150");
+    expect(out!.result).toContain("записано лише локально");
+    expect(typeof out!.undo).toBe("function");
+
+    const arr = readLS<Array<{ id: string; amount: number; type: string }>>(
+      "finyk_manual_expenses_v1",
+      [],
+    );
+    expect(arr).toHaveLength(1);
+    expect(arr[0]!.id).toMatch(/^m_/);
+    expect(arr[0]!.amount).toBe(150);
+    expect(arr[0]!.type).toBe("expense");
+  });
+
+  it("записує дохід локально коли type='income' (сервер приймає лише витрати)", async () => {
+    stubFetchReject();
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    const [out] = await executeActions([
+      {
+        name: "create_transaction",
+        input: { type: "income", amount: 5000 },
+      },
+    ]);
+    expect(out!.result).toContain("Дохід");
+    // Income не має бити в API взагалі.
+    expect(fetchMock).not.toHaveBeenCalled();
     const arr = readLS<Array<{ type: string; amount: number }>>(
       "finyk_manual_expenses_v1",
       [],
@@ -110,20 +186,25 @@ describe("create_transaction", () => {
     expect(arr[0]!.amount).toBe(5000);
   });
 
-  it("відмовляє на 0 або від'ємну суму", () => {
-    expect(
-      executeAction({
-        name: "create_transaction",
-        input: { amount: 0 },
-      }),
-    ).toContain("Некоректна");
-    expect(
-      executeAction({
-        name: "create_transaction",
-        input: { amount: -5 },
-      }),
-    ).toContain("Некоректна");
+  it("відмовляє на 0 або від'ємну суму без серверного виклику", async () => {
+    stubFetchReject();
+    const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
+    const results = await executeActions([
+      { name: "create_transaction", input: { amount: 0 } },
+      { name: "create_transaction", input: { amount: -5 } },
+    ]);
+    expect(results[0]!.result).toContain("Некоректна");
+    expect(results[1]!.result).toContain("Некоректна");
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(localStorage.getItem("finyk_manual_expenses_v1")).toBeNull();
+  });
+
+  it("sync executeAction відмовляє з інструкцією про async-шлях", () => {
+    const msg = executeAction({
+      name: "create_transaction",
+      input: { amount: 150 },
+    });
+    expect(msg).toContain("вимагає async");
   });
 });
 
@@ -231,6 +312,14 @@ describe("log_water", () => {
 
 describe("executeActions — паралельне виконання", () => {
   it("повертає результати у тому ж порядку, що й input", async () => {
+    // create_transaction — async/server tool: глушимо fetch, щоб тест
+    // детерміновано пішов offline-fallback-шляхом без реальної мережі.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
     const results = await executeActions([
       { name: "create_habit", input: { name: "Пити воду" } },
       {

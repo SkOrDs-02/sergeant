@@ -39,6 +39,7 @@ import {
   createBillingEndpoints,
   type BillingEndpoints,
 } from "./endpoints/billing";
+import { createFinykEndpoints, type FinykEndpoints } from "./endpoints/finyk";
 import {
   createWeeklyDigestEndpoints,
   type WeeklyDigestEndpoints,
@@ -78,6 +79,7 @@ export interface ApiClient {
   privat: PrivatEndpoints;
   waitlist: WaitlistEndpoints;
   billing: BillingEndpoints;
+  finyk: FinykEndpoints;
   weeklyDigest: WeeklyDigestEndpoints;
   transcribe: TranscribeEndpoints;
   webVitals: WebVitalsEndpoints;
@@ -99,6 +101,7 @@ export function createApiClient(config: ApiClientConfig = {}): ApiClient {
     privat: createPrivatEndpoints(http),
     waitlist: createWaitlistEndpoints(http),
     billing: createBillingEndpoints(http),
+    finyk: createFinykEndpoints(http),
     weeklyDigest: createWeeklyDigestEndpoints(http),
     transcribe: createTranscribeEndpoints(http),
     webVitals: createWebVitalsEndpoints(http),

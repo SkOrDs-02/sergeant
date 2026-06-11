@@ -22,10 +22,17 @@ import type { ChatAction } from "./types";
  *   - empty query → не дзвонимо мережу.
  */
 
-const apiUrlMock = vi.fn((p: string) => `https://srv.test${p}`);
-vi.mock("../../../shared/lib/api/apiUrl", () => ({
-  apiUrl: (p: string) => apiUrlMock(p),
-}));
+// `vi.hoisted` — бо `serverActions.ts` тепер тягне `shared/api`, який кличе
+// `apiUrl("")` ще на module-init (до тіла цього файлу); звичайний const
+// упирався б у TDZ всередині hoisted-фабрики vi.mock.
+const apiUrlMock = vi.hoisted(() =>
+  vi.fn((p: string) => `https://srv.test${p}`),
+);
+vi.mock("../../../shared/lib/api/apiUrl", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../../shared/lib/api/apiUrl")>();
+  return { ...actual, apiUrl: (p: string) => apiUrlMock(p) };
+});
 
 const fetchMock = vi.fn();
 
