@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { NextFunction, Request, Response } from "express";
 
 const { getUserPlanMock } = vi.hoisted(() => ({
@@ -9,7 +9,20 @@ vi.mock("./getUserPlan.js", () => ({
   getUserPlan: getUserPlanMock,
 }));
 
-import { requirePlan } from "./requirePlan.js";
+/**
+ * `requirePlan` читає `env.STRIPE_ENABLED` із Zod-схеми (audit 2026-06-11
+ * ws-08), а `env/env.ts` парсить `process.env` один раз при імпорті — тому
+ * кожен кейс стабить env і пере-імпортує модуль з чистого реєстру
+ * (паттерн `env/__tests__/assertStartupEnv.test.ts`).
+ */
+async function loadRequirePlan(stripeEnabled?: string) {
+  if (stripeEnabled !== undefined) {
+    vi.stubEnv("STRIPE_ENABLED", stripeEnabled);
+  }
+  vi.resetModules();
+  const mod = await import("./requirePlan.js");
+  return mod.requirePlan;
+}
 
 function makeRes() {
   const res = {
@@ -26,31 +39,49 @@ function makeReq(userId?: string) {
 }
 
 const pool = {} as never;
-const next = vi.fn() as unknown as NextFunction;
 
 describe("requirePlan middleware", () => {
-  beforeEach(() => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
     vi.resetAllMocks();
-    delete process.env["STRIPE_ENABLED"];
   });
 
-  it("calls next() when STRIPE_ENABLED is not 'true' (billing not active)", async () => {
-    const middleware = requirePlan(pool, "pro");
-    await middleware(makeReq("user_1"), makeRes(), next);
+  it("calls next() when STRIPE_ENABLED is off (billing not active)", async () => {
+    const requirePlan = await loadRequirePlan();
+    const next = vi.fn() as unknown as NextFunction;
+    await requirePlan(pool, "pro")(makeReq("user_1"), makeRes(), next);
     expect(next).toHaveBeenCalledTimes(1);
     expect(getUserPlanMock).not.toHaveBeenCalled();
   });
 
+  it("calls next() when STRIPE_ENABLED=false explicitly", async () => {
+    const requirePlan = await loadRequirePlan("false");
+    const next = vi.fn() as unknown as NextFunction;
+    await requirePlan(pool, "pro")(makeReq("user_1"), makeRes(), next);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
   it("returns 401 when STRIPE_ENABLED=true and no session user", async () => {
-    process.env["STRIPE_ENABLED"] = "true";
+    const requirePlan = await loadRequirePlan("true");
+    const next = vi.fn() as unknown as NextFunction;
     const res = makeRes();
     await requirePlan(pool, "pro")(makeReq(undefined), res, next);
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
   });
 
+  it("enforces with STRIPE_ENABLED=1 (legacy spelling, strict parser)", async () => {
+    const requirePlan = await loadRequirePlan("1");
+    const next = vi.fn() as unknown as NextFunction;
+    const res = makeRes();
+    await requirePlan(pool, "pro")(makeReq(undefined), res, next);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
   it("calls next() when user has active pro subscription", async () => {
-    process.env["STRIPE_ENABLED"] = "true";
+    const requirePlan = await loadRequirePlan("true");
+    const next = vi.fn() as unknown as NextFunction;
     getUserPlanMock.mockResolvedValue({
       plan: "pro",
       status: "active",
@@ -62,7 +93,8 @@ describe("requirePlan middleware", () => {
   });
 
   it("returns 402 when user is on free plan", async () => {
-    process.env["STRIPE_ENABLED"] = "true";
+    const requirePlan = await loadRequirePlan("true");
+    const next = vi.fn() as unknown as NextFunction;
     getUserPlanMock.mockResolvedValue({
       plan: "free",
       status: "active",
@@ -79,7 +111,8 @@ describe("requirePlan middleware", () => {
   });
 
   it("returns 402 when subscription is inactive (expired/canceled)", async () => {
-    process.env["STRIPE_ENABLED"] = "true";
+    const requirePlan = await loadRequirePlan("true");
+    const next = vi.fn() as unknown as NextFunction;
     getUserPlanMock.mockResolvedValue({
       plan: "pro",
       status: "canceled",
@@ -89,5 +122,11 @@ describe("requirePlan middleware", () => {
     const res = makeRes();
     await requirePlan(pool, "pro")(makeReq("user_1"), res, next);
     expect(res.status).toHaveBeenCalledWith(402);
+  });
+
+  it("env module refuses to parse garbage STRIPE_ENABLED (strict flag)", async () => {
+    vi.stubEnv("STRIPE_ENABLED", "TRUE_oops");
+    vi.resetModules();
+    await expect(import("../../env/env.js")).rejects.toThrow(/STRIPE_ENABLED/);
   });
 });

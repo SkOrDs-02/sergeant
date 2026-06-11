@@ -746,6 +746,29 @@ const envSchema = z.object({
       "STRIPE_PRICE_ID_PRO_MONTHLY must match Stripe `price_*` format",
     )
     .optional(),
+  /**
+   * Master-фліп paywall-enforcement-у: коли `true`, `requirePlan` повертає
+   * 402 на gated-роутах для free-користувачів; коли `false` (default) —
+   * пропускає всіх. Audit 2026-06-11 ws-08: раніше це був raw
+   * `process.env`-read поза схемою — будь-який typo («TRUE», пробіл)
+   * мовчки вимикав монетизацію без жодного сигналу. Тут парс СТРОГИЙ:
+   * значення поза true/false/1/0 валить boot, а не тихо дефолтиться.
+   */
+  STRIPE_ENABLED: z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (v === undefined || v === "") return false;
+      const lower = v.trim().toLowerCase();
+      if (lower === "true" || lower === "1") return true;
+      if (lower === "false" || lower === "0") return false;
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "STRIPE_ENABLED must be one of true/false/1/0 — refusing to guess on a billing flag",
+      });
+      return z.NEVER;
+    }),
   // ── LiqPay billing (0010 PR-8 scaffold) ─────────────────────────────
   /**
    * Feature-flag для LiqPay як другого payment-provider-а (UA-ринок).
@@ -1348,6 +1371,16 @@ export function assertStartupEnv(): void {
   // surfaces in deploy logs instead of in the funnel. The zod schema
   // already enforces the `price_*` format on parse — this branch
   // only catches the `missing` case for prod-with-billing.
+  // Audit 2026-06-11 ws-08 — paywall-фліп без платіжних ключів означає,
+  // що free-користувачі почнуть отримувати 402 на gated-роутах, а шлях
+  // апгрейду (checkout) при цьому мертвий (503). Конфігураційно
+  // суперечливий стан — fail-loud на boot.
+  if (isProduction && env.STRIPE_ENABLED && !env.STRIPE_SECRET_KEY) {
+    throw new Error(
+      "STRIPE_ENABLED=true requires STRIPE_SECRET_KEY in production. With enforcement on and no Stripe wiring, gated routes return 402 while /api/billing/checkout returns 503 — users would be locked out with no way to upgrade. Set the key or flip STRIPE_ENABLED off.",
+    );
+  }
+
   if (isProduction && env.STRIPE_SECRET_KEY) {
     if (!env.STRIPE_WEBHOOK_SECRET) {
       throw new Error(

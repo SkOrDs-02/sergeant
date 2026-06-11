@@ -104,24 +104,49 @@ describe("/api/internal/*", () => {
     ]);
   });
 
-  it("updates billing through the internal guarded route", async () => {
+  it("upgrades billing through the internal guarded route (canonical subscriptions table)", async () => {
     const pool = makePool();
     pool.query.mockResolvedValueOnce({
-      rows: [{ id: "u_1", email: "paid@example.com" }],
+      rows: [{ id: 1, plan: "pro", status: "active", provider: "manual" }],
     });
     const { app } = await makeApp("secret", pool);
 
     const res = await request(app)
       .post("/api/internal/billing/upgrade")
       .set("Authorization", "Bearer secret")
-      .send({ stripeCustomerId: "cus_123" });
+      .send({ userId: "u_1" });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       ok: true,
-      user: { id: "u_1", email: "paid@example.com" },
+      subscription: {
+        id: 1,
+        plan: "pro",
+        status: "active",
+        provider: "manual",
+      },
     });
-    expect(pool!.query.mock.calls[0]![1]).toEqual(["cus_123"]);
+    const [sql, values] = pool.query.mock.calls[0]!;
+    // Guard проти регресії audit ws-08: попередня версія писала в
+    // неіснуючу таблицю `users` і падала 500 на проді.
+    expect(sql).toContain("INSERT INTO subscriptions");
+    expect(sql).not.toContain("UPDATE users");
+    expect(values).toEqual(["u_1"]);
+  });
+
+  it("downgrade returns 404 when the user has no active subscription", async () => {
+    const pool = makePool();
+    pool.query.mockResolvedValueOnce({ rows: [] });
+    const { app } = await makeApp("secret", pool);
+
+    const res = await request(app)
+      .post("/api/internal/billing/downgrade")
+      .set("Authorization", "Bearer secret")
+      .send({ userId: "u_ghost" });
+
+    expect(res.status).toBe(404);
+    const [sql] = pool.query.mock.calls[0]!;
+    expect(sql).toContain("UPDATE subscriptions");
   });
 
   it("rejects unsafe prompt slugs before reading from disk", async () => {

@@ -1,6 +1,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { Pool } from "pg";
 import type { BillingPlan } from "@sergeant/shared";
+import { env } from "../../env/env.js";
 import { getUserPlan } from "./getUserPlan.js";
 
 type AuthedRequest = Request & { user?: { id: string } };
@@ -9,8 +10,11 @@ type AuthedRequest = Request & { user?: { id: string } };
  * Express middleware that gates a route behind an active Pro subscription.
  * Returns 402 Payment Required when the user is on the free plan.
  *
- * Bypassed when STRIPE_ENABLED is not "true" — lets production run without
- * enforcing paywalls until live billing is activated.
+ * Bypassed while `STRIPE_ENABLED` is off — lets production run without
+ * enforcing paywalls until live billing is activated. The flag is parsed
+ * strictly by the Zod env schema (audit 2026-06-11 ws-08): a typo fails the
+ * boot instead of silently disabling monetization, and
+ * `STRIPE_ENABLED=true` without `STRIPE_SECRET_KEY` refuses to start.
  */
 export function requirePlan(
   pool: Pool,
@@ -21,7 +25,7 @@ export function requirePlan(
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
-    if (process.env["STRIPE_ENABLED"] !== "true") {
+    if (!env.STRIPE_ENABLED) {
       next();
       return;
     }

@@ -577,6 +577,46 @@ describe("assertStartupEnv — backend-perf PR-01: VAPID keypair required in pro
   });
 });
 
+describe("assertStartupEnv — STRIPE_ENABLED requires STRIPE_SECRET_KEY (audit 2026-06-11 ws-08)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("throws in production when STRIPE_ENABLED=true without STRIPE_SECRET_KEY", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      OPENCLAW_GITHUB_PAT: "",
+      Git_PAT: "",
+      STRIPE_ENABLED: "true",
+    });
+    expect(() => assertStartupEnv()).toThrow(
+      /STRIPE_ENABLED=true requires STRIPE_SECRET_KEY/,
+    );
+  });
+
+  it("does NOT throw in production when STRIPE_ENABLED=true with full Stripe wiring", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      OPENCLAW_GITHUB_PAT: "",
+      Git_PAT: "",
+      STRIPE_ENABLED: "true",
+      STRIPE_SECRET_KEY: "sk_live_xxx",
+      STRIPE_WEBHOOK_SECRET: "whsec_xxx",
+      STRIPE_PRICE_ID_PRO_MONTHLY: "price_1AbCdEf123",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("does NOT throw in NODE_ENV=development when STRIPE_ENABLED=true without keys", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      STRIPE_ENABLED: "true",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
+
 describe("assertStartupEnv — SENTRY_DSN required in production (audit 2026-06-11 ws-06)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
