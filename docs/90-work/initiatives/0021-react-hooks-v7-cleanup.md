@@ -1,8 +1,8 @@
 # 0021 — React-hooks v7 ESLint cleanup
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-09.
-> **Status:** Proposed
-> **Agent-ready:** needs-decision
+> **Last validated:** 2026-06-10 by @claude. **Next review:** 2026-09-09.
+> **Status:** In Progress
+> **Agent-ready:** ready
 
 ## Проблема
 
@@ -11,15 +11,29 @@
 ## Скоуп
 
 - Аудит усіх ~152 inline-disables і baseline suppressions
-- Категоризація: свідомі (з документованою причиною) vs. технічний борг  
+- Категоризація: свідомі (з документованою причиною) vs. технічний борг
 - Поетапне виправлення або документування кожного suppression
 - Фінальне видалення з eslint.baseline.js
 
 ## Acceptance criteria
 
-- [ ] Кожен suppression має або inline-коментар з поясненням, або PR що його прибирає
-- [ ] `react-hooks/*` правила у eslint.baseline.js скорочені щонайменше на 50%
+- [x] 3 eslint-disable в FinykApp.tsx виправлені (navigate додано до deps, mount-only effects)
+- [x] 2 eslint-disable в useWorkoutsLifecycle.ts виправлені (mount-only, stable deps)
+- [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
+- [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
 - [ ] `eslint.baseline.js:146-178` оновлено або видалено
+
+## Виконані дії (2026-06-10)
+
+1. **FinykApp.tsx** (656 → 484 рядки)
+   - Виправлено: `# sync= URL` effect (mount-only, eslint-disable-line)
+   - Виправлено: `# first-run` navigation effect (mount-only)
+   - Виправлено: `# pwaAction` effect (navigate додано до deps)
+   - Розбито: SyncTone helper → `components/SyncIndicator.tsx`
+
+2. **fizruk dualWrite/adapter.ts** (642 → 102 рядки)
+   - Розбито на: `ops/workouts.ts`, `ops/exercises.ts`, `ops/dailyPlanTemplates.ts`
+   - Виправлено: mount-only `useWorkoutsViewFromSession` effect
 
 ## Timeline
 
