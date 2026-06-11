@@ -51,9 +51,12 @@ interface Tier {
   readonly highlight: boolean;
 }
 
-// Placeholder — real price locked in pricing strategy PR (D3 § Out of scope).
-// Tracked: docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md → D3.
-const PREMIUM_PRICE_MONTHLY_PLACEHOLDER = "€X";
+// D3 § Out of scope: final price is not decided yet. Until the pricing PR
+// lands we deliberately show NO number — a fake "€X" placeholder shipped on
+// the public funnel (independent audit 2026-06-11, dimension 1, CRITICAL).
+// The cadence line under the dash carries the localized "announced at launch"
+// copy; Stripe Checkout shows the real dashboard-configured price.
+const PREMIUM_PRICE_PENDING = "—";
 
 // Defense-in-depth open-redirect guard (audit F4,
 // docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md). Backend
@@ -95,7 +98,7 @@ function buildTiers(
     {
       id: "free",
       name: pricing.tiers.freeName,
-      price: "€0",
+      price: pricing.tiers.freePrice,
       cadence: pricing.tiers.freeCadence,
       tagline: pricing.tiers.freeTagline,
       highlight: false,
@@ -121,7 +124,7 @@ function buildTiers(
     {
       id: "premium",
       name: pricing.tiers.premiumName,
-      price: PREMIUM_PRICE_MONTHLY_PLACEHOLDER,
+      price: PREMIUM_PRICE_PENDING,
       cadence: pricing.tiers.premiumCadence,
       tagline: pricing.tiers.premiumTagline,
       highlight: true,

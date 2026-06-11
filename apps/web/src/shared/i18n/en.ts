@@ -114,7 +114,7 @@ export const messagesEn: Partial<MessageCatalog> = {
         "Your data lives on your device. Cloud sync is optional (Premium) and never turns on without your confirmation.",
       noHiddenTitle: "No surprise charges",
       noHiddenBody:
-        "Free tier — forever. Premium — 7-day trial, no card required, $7/mo or UAH equivalent for UA.",
+        "Free tier — forever. Premium — one paid plan, no surprise charges. Pricing will be announced at launch.",
     },
 
     // Waitlist section
@@ -155,10 +155,11 @@ export const messagesEn: Partial<MessageCatalog> = {
     },
     tiers: {
       freeName: "Free",
+      freePrice: "₴0",
       freeCadence: "forever",
       freeTagline: "Basic limits across all 4 modules. Local-first, no cloud.",
       premiumName: "Premium",
-      premiumCadence: "/mo",
+      premiumCadence: "price announced at launch",
       premiumTagline: "Everything unlocked. One plan — no tiers, no add-ons.",
     },
     features: {
