@@ -22,7 +22,14 @@ import { GenericContainer, Wait } from "testcontainers";
 import type { StartedTestContainer } from "testcontainers";
 import type { Request, Response } from "express";
 
-import { syncV2Pull, syncV2Push } from "./syncV2.js";
+// `syncV2.js` імпортується ДИНАМІЧНО у beforeAll — після того, як
+// DATABASE_URL вказує на Testcontainers. Статичний імпорт тут тягнув
+// `../../db.js` (module-level pool, читає env при load) ДО beforeAll,
+// тож handler-и ходили на дефолтний localhost:5432 і всі 56 тестів
+// падали з ECONNREFUSED при першому реальному прогоні (audit 2026-06-11
+// ws-04). Той самий патерн — session-protection.integration.test.ts.
+let syncV2Push: typeof import("./syncV2.js").syncV2Push;
+let syncV2Pull: typeof import("./syncV2.js").syncV2Pull;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = path.resolve(__dirname, "..", "..", "migrations");
@@ -120,13 +127,12 @@ beforeAll(async () => {
     const port = container.getMappedPort(5432);
     const uri = `postgresql://hub:hub@${host}:${port}/hub_test`;
 
-    // syncV2.ts читає `pool` через імпорт `../../db.js`. Точково
-    // перевизначаємо `DATABASE_URL` ДО першого імпорту db.js — але db.js
-    // вже міг бути імпортованим транзитивно через syncV2.ts. Найбільш
-    // надійно: створити тестовий pool на той самий контейнер і інжектити
-    // через monkey-patch модуля. Для PR #021 SPIKE простіше: піднімаємо
-    // env, переконуємось, що db.js імпортує цей же URL.
+    // syncV2.ts читає `pool` через імпорт `../../db.js`, який будує
+    // module-level pg.Pool з env при ПЕРШОМУ load. Тому DATABASE_URL
+    // виставляється тут, а syncV2.js імпортується динамічно — тільки
+    // після цього db.js побачить контейнерний URI.
     process.env["DATABASE_URL"] = uri;
+    ({ syncV2Push, syncV2Pull } = await import("./syncV2.js"));
 
     testPool = new pg.Pool({ connectionString: uri, max: 5 });
     await runMigrations(testPool);
@@ -527,12 +533,13 @@ describe("syncV2Push / syncV2Pull integration", () => {
         idempotency_key: `cap-${i}`,
       }));
 
+      // parseBody кидає ValidationError (status 400) — у production її
+      // конвертує центральний errorHandler; при прямому виклику handler-а
+      // асертимо саме rejection, а не res.statusCode.
       const res = makeRes();
-      await syncV2Push(
-        makeReq({ userId: "u-cap", body: { ops: tooMany } }),
-        res,
-      );
-      expect(res.statusCode).toBe(400);
+      await expect(
+        syncV2Push(makeReq({ userId: "u-cap", body: { ops: tooMany } }), res),
+      ).rejects.toMatchObject({ status: 400 });
     },
     TIMEOUT_MS,
   );

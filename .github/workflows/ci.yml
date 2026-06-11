@@ -690,6 +690,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build @sergeant/db-schema
+        # apps/server/src/drizzle.ts imports `@sergeant/db-schema/pg`, which
+        # the package's exports map resolves to dist/ — without this build the
+        # session-protection and transcribe suites die at import with
+        # ERR_MODULE_NOT_FOUND (same step exists in critical-flow).
+        run: pnpm --filter @sergeant/db-schema build
+
       - name: Run server integration suite
         run: pnpm --filter @sergeant/server test:integration
 
