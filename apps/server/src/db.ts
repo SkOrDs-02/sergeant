@@ -13,8 +13,14 @@ import {
   dbSlowQueriesTotal,
 } from "./obs/metrics.js";
 import { elapsedMs, sleep } from "./lib/timing.js";
+import { installInt8Parser } from "./lib/pgInt8.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Hard Rule #1 на рівні драйвера: int8 → number глобально для всіх pool-ів
+// процесу (primary, replica, ad-hoc). Деталі та safe-integer guard — у
+// lib/pgInt8.ts.
+installInt8Parser();
 
 /**
  * PG Pool with centralized configuration, health checks, and retry support.
