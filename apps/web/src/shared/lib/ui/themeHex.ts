@@ -1,5 +1,5 @@
 /**
- * Hex для inline-стилів (SVG, body-highlighter), збігаються з
+ * Hex для inline-стилів SVG (теплова мапа BodyAtlas тощо), збігаються з
  * tailwind.config.js theme.extend.colors.* (success, danger, warning).
  *
  * Джерело істини — `@sergeant/design-tokens/tokens` (`statusHex`
