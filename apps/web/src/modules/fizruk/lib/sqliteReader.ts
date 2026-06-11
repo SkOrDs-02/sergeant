@@ -373,7 +373,7 @@ export async function refreshFizrukSqliteState(
       [userId],
     ),
     client.all<DailyLogRow>(
-      `SELECT id, entry_at, weight_kg, sleep_hours, energy_level, mood, note
+      `SELECT id, entry_at AS at, weight_kg, sleep_hours, energy_level, mood, note
          FROM fizruk_daily_log
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY entry_at DESC, id ASC`,
