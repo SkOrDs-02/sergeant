@@ -3,7 +3,7 @@
  * Status: Active
  */
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
-import { toIntOrNull, toRealOrNull } from "@shared/lib/dualWrite/core";
+import { toIntOrNull } from "@shared/lib/dualWrite/core";
 import type {
   FizrukCustomExerciseSnapshot,
   FizrukMeasurementSnapshot,
@@ -111,4 +111,3 @@ export async function softDeleteMeasurement(
     [clientTs, clientTs, measurementId, userId, clientTs],
   );
 }
-

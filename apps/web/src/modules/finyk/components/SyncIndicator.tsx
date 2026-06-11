@@ -1,7 +1,10 @@
 import { cn } from "@shared/lib/ui/cn";
 
+// Tolerant shape: `useUnifiedFinanceData` merges mono/privat sync
+// states, where `status` is an open string — the tone helper only
+// pattern-matches known values and falls back to "ok" styling.
 export interface SyncState {
-  status: "error" | "partial" | "loading" | "ok";
+  status?: string | undefined;
 }
 
 export interface SyncTone {

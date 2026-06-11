@@ -26,12 +26,15 @@ import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { Overview } from "./pages/Overview";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 
-// Lazy pages
+// Lazy pages. Import the concrete page modules, not the folders: the
+// `pages/{transactions,budgets}/index.ts` barrels were removed as dead
+// code in #3504 (Knip can't see dynamic directory imports), which left
+// these two imports unresolved and broke the Vercel production build.
 const Transactions = lazyImport(
-  () => import("./pages/transactions"),
+  () => import("./pages/transactions/Transactions"),
   "Transactions",
 );
-const Budgets = lazyImport(() => import("./pages/budgets"), "Budgets");
+const Budgets = lazyImport(() => import("./pages/budgets/Budgets"), "Budgets");
 const Assets = lazyImport(() => import("./pages/Assets"), "Assets");
 const Analytics = lazyImport(() => import("./pages/Analytics"), "Analytics");
 
@@ -44,7 +47,11 @@ import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
 import { useMonoTokenMigration } from "./hooks/useMonoTokenMigration";
 import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
-import { getSyncTone, SwipeProgressBar, SWIPE_THRESHOLD_PX } from "./components/SyncIndicator";
+import {
+  getSyncTone,
+  SwipeProgressBar,
+  SWIPE_THRESHOLD_PX,
+} from "./components/SyncIndicator";
 
 const PRIVAT_ENABLED = false;
 
@@ -70,8 +77,10 @@ export default function App({
   const focusLimitCategoryId = useFinykQueryParam("cat");
 
   // First-run state
-  const { firstRun: firstRunFinyk, markSeen: markFinykSeen } = useModuleFirstRun("finyk");
-  const [firstRunFinykSurface, setFirstRunFinykSurface] = useState(firstRunFinyk);
+  const { firstRun: firstRunFinyk, markSeen: markFinykSeen } =
+    useModuleFirstRun("finyk");
+  const [firstRunFinykSurface, setFirstRunFinykSurface] =
+    useState(firstRunFinyk);
   useEffect(() => {
     if (firstRunFinyk) setFirstRunFinykSurface(true);
   }, [firstRunFinyk]);
@@ -83,9 +92,13 @@ export default function App({
   const setShowBalance = storage.setShowBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
-  const [editingManualExpenseId, setEditingManualExpenseId] = useState<string | null>(null);
+  const [editingManualExpenseId, setEditingManualExpenseId] = useState<
+    string | null
+  >(null);
   const [quickAddCategory, setQuickAddCategory] = useState<string | null>(null);
-  const [quickAddDescription, setQuickAddDescription] = useState<string | null>(null);
+  const [quickAddDescription, setQuickAddDescription] = useState<string | null>(
+    null,
+  );
   const [manualOnly, setManualOnly] = useState(
     () => readRaw(FINYK_MANUAL_ONLY_KEY, "") === "1",
   );
@@ -112,13 +125,25 @@ export default function App({
     const prefill = consumePresetPrefill("finyk");
     navigate("transactions");
     setEditingManualExpenseId(null);
-    setQuickAddCategory(typeof prefill?.["category"] === "string" ? prefill["category"] : null);
+    setQuickAddCategory(
+      typeof prefill?.["category"] === "string" ? prefill["category"] : null,
+    );
     setQuickAddDescription(
-      typeof prefill?.["description"] === "string" ? prefill["description"] : null,
+      typeof prefill?.["description"] === "string"
+        ? prefill["description"]
+        : null,
     );
     setShowExpenseSheet(true);
     onPwaActionConsumed?.();
-  }, [navigate, pwaAction, onPwaActionConsumed, setEditingManualExpenseId, setQuickAddCategory, setQuickAddDescription, setShowExpenseSheet]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    navigate,
+    pwaAction,
+    onPwaActionConsumed,
+    setEditingManualExpenseId,
+    setQuickAddCategory,
+    setQuickAddDescription,
+    setShowExpenseSheet,
+  ]);
 
   const { mergedMono } = useUnifiedFinanceData({ mono, privat });
   const { frequentCategories, frequentMerchants } = useFinykPersonalization({
@@ -133,12 +158,12 @@ export default function App({
   const curPageIdx = NAV_IDS.indexOf(page);
   const swipe = useSwipeNavigation({
     onSwipeLeft: () => {
-      const next = curPageIdx + 1;
-      if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]!);
+      const next = NAV_IDS[curPageIdx + 1];
+      if (next !== undefined) navigate(next);
     },
     onSwipeRight: () => {
-      const next = curPageIdx - 1;
-      if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]!);
+      const next = NAV_IDS[curPageIdx - 1];
+      if (next !== undefined) navigate(next);
     },
     threshold: SWIPE_THRESHOLD_PX,
     atStart: curPageIdx === 0,
@@ -159,14 +184,25 @@ export default function App({
   const renderPage = () => {
     if (page === "overview") {
       return (
-        <SectionErrorBoundary key="page-overview" title="Не вдалось показати «Огляд»">
-          <Overview mono={mergedMono} storage={storage} onNavigate={navigate} showBalance={showBalance} />
+        <SectionErrorBoundary
+          key="page-overview"
+          title="Не вдалось показати «Огляд»"
+        >
+          <Overview
+            mono={mergedMono}
+            storage={storage}
+            onNavigate={navigate}
+            showBalance={showBalance}
+          />
         </SectionErrorBoundary>
       );
     }
     if (page === "transactions") {
       return (
-        <SectionErrorBoundary key="page-transactions" title="Не вдалось показати «Операції»">
+        <SectionErrorBoundary
+          key="page-transactions"
+          title="Не вдалось показати «Операції»"
+        >
           <Transactions
             mono={mergedMono}
             storage={storage}
@@ -183,7 +219,10 @@ export default function App({
     }
     if (page === "budgets") {
       return (
-        <SectionErrorBoundary key="page-budgets" title="Не вдалось показати «Планування»">
+        <SectionErrorBoundary
+          key="page-budgets"
+          title="Не вдалось показати «Планування»"
+        >
           <Budgets
             mono={mergedMono}
             storage={storage}
@@ -200,15 +239,25 @@ export default function App({
     }
     if (page === "analytics") {
       return (
-        <SectionErrorBoundary key="page-analytics" title="Не вдалось показати «Аналітику»">
+        <SectionErrorBoundary
+          key="page-analytics"
+          title="Не вдалось показати «Аналітику»"
+        >
           <Analytics mono={mergedMono} storage={storage} />
         </SectionErrorBoundary>
       );
     }
     if (page === "assets") {
       return (
-        <SectionErrorBoundary key="page-assets" title="Не вдалось показати «Активи»">
-          <Assets mono={mergedMono} storage={storage} showBalance={showBalance} />
+        <SectionErrorBoundary
+          key="page-assets"
+          title="Не вдалось показати «Активи»"
+        >
+          <Assets
+            mono={mergedMono}
+            storage={storage}
+            showBalance={showBalance}
+          />
         </SectionErrorBoundary>
       );
     }
@@ -222,16 +271,24 @@ export default function App({
       toast.success("Витрату оновлено.");
       return "updated";
     }
-    storage.addManualExpense(expense);
+    storage.addManualExpense(expense ?? {});
     toast.success("Витрату додано.");
     return "added";
   };
 
   const handlePostSavePrompt = (expense?: { category?: string }) => {
     const cat = String(expense?.category || "");
-    const promptId = cat === "cafe" ? "finyk-restaurant-to-meal" : cat === "food" ? "finyk-food-to-meal" : null;
+    const promptId =
+      cat === "cafe"
+        ? "finyk-restaurant-to-meal"
+        : cat === "food"
+          ? "finyk-food-to-meal"
+          : null;
     if (!promptId) return;
-    const msg = promptId === "finyk-restaurant-to-meal" ? "Додати прийом їжі з кафе?" : "Додати прийом їжі з продуктів?";
+    const msg =
+      promptId === "finyk-restaurant-to-meal"
+        ? "Додати прийом їжі з кафе?"
+        : "Додати прийом їжі з продуктів?";
     tryShowCrossModulePrompt(toast, {
       id: promptId,
       msg,
@@ -257,8 +314,14 @@ export default function App({
           subtitle="Monobank · бюджети"
           right={
             <div className="flex items-center gap-2">
-              <SyncPill syncTone={syncTone} showBalance={showBalance} setShowBalance={setShowBalance} />
-              {onOpenSettings && <ModuleHeaderSettingsButton onClick={onOpenSettings} />}
+              <SyncPill
+                syncTone={syncTone}
+                showBalance={showBalance}
+                setShowBalance={setShowBalance}
+              />
+              {onOpenSettings && (
+                <ModuleHeaderSettingsButton onClick={onOpenSettings} />
+              )}
             </div>
           }
         />
@@ -293,7 +356,9 @@ export default function App({
           </div>
         </div>
 
-        {(page === "overview" || page === "transactions" || page === "budgets") && (
+        {(page === "overview" ||
+          page === "transactions" ||
+          page === "budgets") && (
           <FloatingActionButton
             variant="v2-finyk"
             icon="plus"
@@ -305,7 +370,13 @@ export default function App({
           />
         )}
 
-        {mono.authError && <AuthErrorBanner authError={mono.authError} onBackToHub={onBackToHub} setAuthError={mono.setAuthError} />}
+        {mono.authError && (
+          <AuthErrorBanner
+            authError={mono.authError}
+            onBackToHub={onBackToHub}
+            setAuthError={mono.setAuthError}
+          />
+        )}
 
         <ManualExpenseSheet
           open={showExpenseSheet}
@@ -317,7 +388,9 @@ export default function App({
           }}
           initialExpense={
             editingManualExpenseId
-              ? (storage.manualExpenses || []).find((e) => String(e.id) === String(editingManualExpenseId)) || null
+              ? (storage.manualExpenses || []).find(
+                  (e) => String(e.id) === String(editingManualExpenseId),
+                ) || null
               : null
           }
           initialCategory={quickAddCategory}
@@ -378,7 +451,16 @@ function FinykHeaderIcon(): React.ReactElement {
       className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success-strong dark:text-success border border-success/15"
       aria-hidden
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <rect x="2" y="5" width="20" height="14" rx="2" />
         <line x1="2" y1="10" x2="22" y2="10" />
       </svg>
@@ -392,7 +474,11 @@ interface SyncPillProps {
   setShowBalance: (v: boolean) => void;
 }
 
-function SyncPill({ syncTone, showBalance, setShowBalance }: SyncPillProps): React.ReactElement {
+function SyncPill({
+  syncTone,
+  showBalance,
+  setShowBalance,
+}: SyncPillProps): React.ReactElement {
   return (
     <div
       className={cn(
@@ -407,7 +493,7 @@ function SyncPill({ syncTone, showBalance, setShowBalance }: SyncPillProps): Rea
       <span className="hidden sm:inline">{syncTone.text}</span>
       <button
         type="button"
-        onClick={() => setShowBalance((v) => !v)}
+        onClick={() => setShowBalance(!showBalance)}
         className="focus-ring w-11 h-11 flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
         aria-label={showBalance ? "Приховати суми" : "Показати суми"}
         title={showBalance ? "Приховати суми" : "Показати суми"}
@@ -420,7 +506,17 @@ function SyncPill({ syncTone, showBalance, setShowBalance }: SyncPillProps): Rea
 
 function EyeOpenIcon(): React.ReactElement {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -429,7 +525,17 @@ function EyeOpenIcon(): React.ReactElement {
 
 function EyeClosedIcon(): React.ReactElement {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
       <line x1="1" y1="1" x2="23" y2="23" />
     </svg>
@@ -438,11 +544,15 @@ function EyeClosedIcon(): React.ReactElement {
 
 interface AuthErrorBannerProps {
   authError: string;
-  onBackToHub?: () => void;
+  onBackToHub?: (() => void) | undefined;
   setAuthError: (msg: string) => void;
 }
 
-function AuthErrorBanner({ authError, onBackToHub, setAuthError }: AuthErrorBannerProps): React.ReactElement {
+function AuthErrorBanner({
+  authError,
+  onBackToHub,
+  setAuthError,
+}: AuthErrorBannerProps): React.ReactElement {
   return (
     <div className="fixed top-[calc(56px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto">
       <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
@@ -451,7 +561,10 @@ function AuthErrorBanner({ authError, onBackToHub, setAuthError }: AuthErrorBann
           <p className="text-style-label text-text">Токен потребує оновлення</p>
           <p className="text-xs text-muted mt-0.5">{authError}</p>
           {onBackToHub && (
-            <button onClick={onBackToHub} className="text-style-caption text-primary mt-2 hover:underline">
+            <button
+              onClick={onBackToHub}
+              className="text-style-caption text-primary mt-2 hover:underline"
+            >
               Оновити токен у Налаштуваннях Hub
             </button>
           )}

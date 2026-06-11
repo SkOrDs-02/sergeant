@@ -3,6 +3,7 @@
  * Status: Active
  */
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { logger } from "@shared/lib";
 import type { FizrukDualWriteOp } from "./diff/index.js";
 
 import {
@@ -20,12 +21,19 @@ import {
 } from "./ops/index.js";
 
 // Types re-exported for backward compatibility
-export type { ApplyDualWriteOptions, DualWriteLogger, ApplyDualWriteResult } from "@shared/lib/dualWrite/core";
+export type {
+  ApplyDualWriteOptions,
+  DualWriteLogger,
+  ApplyDualWriteResult,
+} from "@shared/lib/dualWrite/core";
 
-const DEFAULT_LOGGER = (level: "warn" | "info", message: string, meta?: Record<string, unknown>) => {
+const DEFAULT_LOGGER = (
+  level: "warn" | "info",
+  message: string,
+  meta?: Record<string, unknown>,
+) => {
   if (level === "warn") {
-    const { logger } = require("@shared/lib");
-    logger?.warn?.(`[fizruk.dualWrite] ${message}`, meta ?? {});
+    logger.warn(`[fizruk.dualWrite] ${message}`, meta ?? {});
   }
 };
 
@@ -35,7 +43,13 @@ export async function applyFizrukDualWriteOps(
   options: {
     readonly userId: string;
     readonly clientTs: string;
-    readonly logger?: (level: "warn" | "info", message: string, meta?: Record<string, unknown>) => void;
+    readonly logger?:
+      | ((
+          level: "warn" | "info",
+          message: string,
+          meta?: Record<string, unknown>,
+        ) => void)
+      | undefined;
   },
 ): Promise<{ applied: number; errored: number; skipped: number }> {
   if (ops.length === 0) {
