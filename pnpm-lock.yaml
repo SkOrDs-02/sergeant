@@ -17,6 +17,7 @@ overrides:
   esbuild@<0.25.0: '>=0.25.0'
   ajv@>=7.0.0-alpha.0 <8.18.0: '>=8.18.0'
   tmp@<0.2.6: '>=0.2.6'
+  shell-quote@<1.8.4: '>=1.8.4'
 
 patchedDependencies:
   '@expo/cli@0.22.28':
@@ -11682,8 +11683,8 @@ packages:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
 
-  shell-quote@1.8.3:
-    resolution: {integrity: sha512-ObmnIF4hXNg1BqhnHmgbDETF8dLPCggZWBjkQfhZpbszZnYur5DUljTcCHii5LC3J5E0yeO/1LIMyH+UvHQgyw==}
+  shell-quote@1.8.4:
+    resolution: {integrity: sha512-VsC6n6vz1ihYYyZZwX7YZSF5l5x36ca17OC+a69h94YqB7X6XLwf+5MOgynYir2SLFUbl8gIYvBo8K8RoNQ6bQ==}
     engines: {node: '>= 0.4'}
 
   shimmer@1.2.1:
@@ -20489,7 +20490,7 @@ snapshots:
       sanitize-filename: 1.6.4
       semver: 7.7.4
       serialize-error: 8.1.0
-      shell-quote: 1.8.3
+      shell-quote: 1.8.4
       signal-exit: 3.0.7
       stream-json: 1.9.1
       strip-ansi: 6.0.1
@@ -25059,7 +25060,7 @@ snapshots:
 
   react-devtools-core@5.3.2:
     dependencies:
-      shell-quote: 1.8.3
+      shell-quote: 1.8.4
       ws: 7.5.10
     transitivePeerDependencies:
       - bufferutil
@@ -25862,7 +25863,7 @@ snapshots:
 
   shebang-regex@3.0.0: {}
 
-  shell-quote@1.8.3: {}
+  shell-quote@1.8.4: {}
 
   shimmer@1.2.1: {}
 
