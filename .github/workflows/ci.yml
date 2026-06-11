@@ -77,16 +77,18 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Audit (critical only)
-        run: pnpm audit --audit-level=critical --prod
+      # Ledger-backed audit gate. Replaces the old blunt `audit-exception`
+      # PR-label (which suppressed *every* high advisory at once) with a
+      # per-advisory allowlist read from
+      # docs/04-governance/security/audit-exceptions.md. Critical advisories
+      # always block — there is no ledger escape for them. High/moderate
+      # advisories pass only with a dated, non-expired ledger entry.
+      # See scripts/ci/audit-exceptions.mjs.
+      - name: Audit (production, ledger-gated)
+        run: node scripts/ci/audit-exceptions.mjs --prod
 
-      - name: Audit (high, production)
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'audit-exception') }}
-        run: pnpm audit --audit-level=high --prod
-
-      - name: Audit full tree (high)
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'audit-exception') }}
-        run: pnpm audit --audit-level=high
+      - name: Audit (full tree, ledger-gated)
+        run: node scripts/ci/audit-exceptions.mjs
 
       - name: pnpm overrides single-major guard (L1)
         # Closes hardening card L1

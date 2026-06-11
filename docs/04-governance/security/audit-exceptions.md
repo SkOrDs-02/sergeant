@@ -1,14 +1,28 @@
 # Audit-винятки
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-11 by @Skords-01. **Next review:** 2026-09-09.
 > **Status:** Active
 
-> Відстежені вразливості, які тимчасово допускаються через PR-лейбл `audit-exception`,
-> а також bypass-и GitHub secret-scanning push-protection-у.
+> Відстежені вразливості, які тимчасово допускаються через машинно-читаний
+> запис у цьому файлі, а також bypass-и GitHub secret-scanning push-protection-у.
 
 ## Як цей файл працює
 
-Якщо `pnpm audit --audit-level=high` репортить про вразливість, яку не можна виправити одразу (наприклад, нема патчу, проблема upstream), задокументуй її тут, щоб команда мала видимість. Додай до PR лейбл `audit-exception`, щоб обійти блокуючий audit-step у CI.
+CI-гейт [`scripts/ci/audit-exceptions.mjs`](../../../scripts/ci/audit-exceptions.mjs)
+парсить секцію [«Поточні винятки»](#поточні-винятки) і звіряє кожен запис із
+`pnpm audit --json` (prod + full tree) **по GHSA/CVE-id**:
+
+- **`high`/`moderate`** advisory проходить гейт лише якщо тут є запис із його
+  GHSA/CVE-id **і** `Due date` ще не минув. Прострочений виняток знову блокує.
+- **`critical`** блокує **завжди** — ledger-escape-у для critical нема навмисно
+  (waiver критичної вразливості — це security-рішення, яке не має ховатися за
+  правкою доку; якщо патчу справді нема, ескалюй до owner-а, не сюди).
+- Advisory без запису (або з простроченим) — блокує.
+
+Раніше escape робився тупим PR-лейблом `audit-exception`, який глушив **усі**
+high-и одразу; тепер кожен виняток таргетований і має дедлайн. Якщо патч
+доступний — **не** додавай виняток, а підніми версію (override у
+`package.json -> pnpm.overrides` або bump consumer-а).
 
 Кожен запис має містити:
 
