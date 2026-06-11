@@ -79,8 +79,8 @@ export function PlanSection() {
           <div data-testid="plan-trial-info" className="space-y-1">
             <span className="text-style-label block">Пробний період</span>
             <p className="text-sm text-text leading-snug">
-              Закінчується {periodEnd}. Після цього спишемо $7/міс — скасуй до
-              цієї дати, якщо передумаєш.
+              Закінчується {periodEnd}. Після цього підписка стане платною за
+              тарифом з чекауту — скасуй до цієї дати, якщо передумаєш.
             </p>
           </div>
         )}

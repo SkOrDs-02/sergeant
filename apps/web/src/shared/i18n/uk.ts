@@ -734,7 +734,7 @@ export const messages = {
         "Дані живуть на твоєму пристрої. Cloud sync — опціональний (Pro), не вмикається без твого підтвердження.",
       noHiddenTitle: "Без зайвих списань",
       noHiddenBody:
-        "Free-тір — назавжди. Pro — 7 днів тріал без картки, $7/міс або ₴-еквівалент для UA.",
+        "Free-тір — назавжди. Premium — один платний план без прихованих списань. Ціну оголосимо на запуску.",
     },
 
     // Waitlist section
@@ -777,10 +777,11 @@ export const messages = {
     },
     tiers: {
       freeName: "Free",
+      freePrice: "0 ₴",
       freeCadence: "назавжди",
       freeTagline: "Базові ліміти у всіх 4 модулях. Local-first, без cloud.",
       premiumName: "Premium",
-      premiumCadence: "/міс",
+      premiumCadence: "ціну оголосимо на запуску",
       premiumTagline: "Усе розблоковано. Один план — без рівнів і доплат.",
     },
     features: {
