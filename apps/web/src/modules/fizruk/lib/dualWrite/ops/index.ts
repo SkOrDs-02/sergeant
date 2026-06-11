@@ -1,3 +1,8 @@
+/**
+ * Last validated: 2026-06-11
+ * Status: Active
+ */
+
 // Re-export all operation handlers from subdirectory modules
 export {
   upsertWorkout,

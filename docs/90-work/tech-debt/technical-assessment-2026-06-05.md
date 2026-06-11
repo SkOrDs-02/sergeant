@@ -205,7 +205,7 @@
 | INFRA-001 | **Висока**  | `Dockerfile.openclaw-gateway` працює від root       | **ВИПРАВЛЕНО:** nonroot `gateway` user (USER gateway, line 142) |
 | INFRA-002 | **Середня** | `node:24-alpine` не закріплений до патч-версії      | **ВИПРАВЛЕНО:** pinned to `node:24.16.0-alpine`                 |
 | INFRA-003 | Середня     | Devcontainer використовує Node 20, CI — Node 22     | Невідповідність версій                                          |
-| INFRA-004 | Низька      | Grafana Alloy Dockerfile використовує `alpine:3.21` | Закріпити до дайджесту                                          |
+| INFRA-004 | Низька      | Grafana Alloy Dockerfile: `FROM grafana/alloy:v1.4.2` (version tag, не digest) | Закріпити до SHA-digest для reproducible builds                 |
 
 **Метрики:** 4 Dockerfile (2 distroless nonroot, 1 root, 1 alpine), 34 GH Actions усі SHA-закріплені, всеохоплююча матриця health-ендпоінтів, метрики Grafana Cloud.
 

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-11
+ * Status: Active
+ */
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type {
   FizrukWorkoutSnapshot,
@@ -80,7 +84,7 @@ export async function upsertWorkout(
   );
 }
 
-async function upsertWorkoutItem(
+export async function upsertWorkoutItem(
   client: SqliteMigrationClient,
   item: FizrukItemSnapshot,
   workoutId: string,
@@ -149,7 +153,7 @@ async function upsertWorkoutItem(
   );
 }
 
-async function upsertWorkoutSet(
+export async function upsertWorkoutSet(
   client: SqliteMigrationClient,
   setId: string,
   workoutItemId: string,

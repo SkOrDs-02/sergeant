@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-11
+ * Status: Active
+ */
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type { FizrukDualWriteOp } from "./diff/index.js";
 

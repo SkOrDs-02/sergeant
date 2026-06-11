@@ -1,7 +1,7 @@
 # PR-30: Dockerfile post-install cleanup CVE-shrink fragility
 
 > **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13). Console-side Trivy follow-up landed in commit [`120ec9d94`](https://github.com/Skords-01/Sergeant/commit/120ec9d944eebf8bbc15c5360c4f1e8dbd15ae1d) on 2026-06-09.
+> **Status:** Done — multi-stage distroless shipped via PR [#2543](https://github.com/Skords-01/Sergeant/pull/2543) (commit [`51b6fee0`](https://github.com/Skords-01/Sergeant/commit/51b6fee0), 2026-05-13). OpenClaw-side Trivy follow-up landed in commit [`120ec9d94`](https://github.com/Skords-01/Sergeant/commit/120ec9d944eebf8bbc15c5360c4f1e8dbd15ae1d) on 2026-06-09.
 
 |                    |                                                                  |
 | ------------------ | ---------------------------------------------------------------- |
@@ -10,7 +10,7 @@
 | **Owner**          | TBD (sponsor: @Skords-01)                                        |
 | **Effort**         | 1 день                                                           |
 | **Risk**           | Low (Docker-only — runtime image build pipeline)                 |
-| **Touches**        | `Dockerfile.api` (154 lines), `Dockerfile.console` (97 lines)    |
+| **Touches**        | `Dockerfile.api` (154 lines), `Dockerfile.openclaw` (97 lines)   |
 | **Trigger**        | next dependency upgrade що змінює `node_modules` cleanup pattern |
 
 ## Контекст

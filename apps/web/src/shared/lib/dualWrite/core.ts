@@ -1,5 +1,7 @@
 /**
  * Shared dual-write framework for module SQLite adapters.
+ * Last validated: 2026-06-11
+ * Status: Active
  *
  * Stage 10 PR #070-dualwrite-refactor. Provides generic types and helpers
  * for best-effort, idempotent, LWW-guarded SQLite writes. Each module's
@@ -36,7 +38,7 @@ export const createDefaultLogger = (prefix: string): DualWriteLogger => {
   return (level, message, meta) => {
     if (level === "warn") {
       // Lazy import to avoid circular deps
-      const { logger } = require("../lib" as any);
+      const { logger } = require("@shared/lib" as any);
       logger?.warn?.(`[${prefix}] ${message}`, meta ?? {});
     }
   };

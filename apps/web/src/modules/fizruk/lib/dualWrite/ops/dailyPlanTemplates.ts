@@ -1,22 +1,14 @@
+/**
+ * Last validated: 2026-06-11
+ * Status: Active
+ */
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { toIntOrNull, toRealOrNull } from "@shared/lib/dualWrite/core";
 import type {
   FizrukDailyLogSnapshot,
   FizrukMonthlyPlanSnapshot,
   FizrukWorkoutTemplateSnapshot,
 } from "../diff/index.js";
-
-// Helpers for nullable real/int conversions (shared with exercises.ts)
-function toIntOrNull(v: unknown): number | null {
-  if (v === null || v === undefined) return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? Math.round(n) : null;
-}
-
-function toRealOrNull(v: unknown): number | null {
-  if (v === null || v === undefined) return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
 
 /**
  * Daily-log upsert for the workout session row.
