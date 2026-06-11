@@ -3808,7 +3808,14 @@ describe("syncV2Push — op='increment' engine-level gate (PR #042a)", () => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-incr-2");
 
+      // LWW-guard для routine_streaks порівнює `MAX(client_ts) >= clientTs`
+      // (tie → lww_conflict; та сама семантика була і в монолітному движку
+      // до декомпозиції). Update тому МУСИТЬ нести строго новіший
+      // client_ts за insert — перший реальний прогін suite (audit
+      // 2026-06-11 ws-04) зловив, що тест слав однаковий ts і другий op
+      // коректно відкидався движком.
       const ts = isoNow();
+      const tsLater = isoNow(1_000);
       const pushRes = makeRes();
       await syncV2Push(
         makeReq({
@@ -3834,9 +3841,9 @@ describe("syncV2Push — op='increment' engine-level gate (PR #042a)", () => {
                   user_id: "u-incr-2",
                   current_streak: 1,
                   longest_streak: 1,
-                  last_completed_at: ts,
+                  last_completed_at: tsLater,
                 },
-                client_ts: ts,
+                client_ts: tsLater,
                 idempotency_key: "incr-2-update",
               },
             ],

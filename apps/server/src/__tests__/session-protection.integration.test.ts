@@ -231,6 +231,18 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   // Public VAPID key — frontend reads this to subscribe a push
   // subscription. By design no session, no rate-limit (it's static).
   "/api/push/vapid-public",
+  // Public status page (PR-41) — unauthenticated by design, consumed by
+  // StatusPage.tsx; info-leak invariants covered by health.infoleak.test.ts.
+  "/api/status",
+  // Sync v1 — deliberate 410 Gone stubs mounted BEFORE requireSession()
+  // (T2 audit #7): deprecated clients must receive the migration signal
+  // without a session, otherwise a logged-out stale client sees 401 and
+  // retries forever instead of upgrading. The live v2 surface stays
+  // behind requireSession (`/api/v2/sync/*`). See routes/sync.ts:62-76.
+  "/api/sync/push",
+  "/api/sync/pull",
+  "/api/sync/pull-all",
+  "/api/sync/push-all",
   // Internal-only push fan-out — M14 hardening uses `requireInternalIp`
   // + `requireApiSecret("API_SECRET")` with constant-time compare. The
   // surface is not exposed to browsers (CGN range / loopback only), so
