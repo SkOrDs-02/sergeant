@@ -100,6 +100,46 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     }
   });
 
+  it("ws-11: trustedOrigins у production НЕ містять localhost-origins", async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      const { auth: prodAuth } = await import("./auth.js");
+      const options = (
+        prodAuth as unknown as { options: { trustedOrigins?: string[] } }
+      ).options;
+      const origins = options.trustedOrigins ?? [];
+      // Audit 2026-06-11 ws-11: SameSite=None cookies + /api/auth/* поза
+      // CSRF-guard-ом — сторінка на localhost жертви не повинна проходити
+      // origin-check проти прод-API.
+      expect(origins).not.toContain("http://localhost:5000");
+      expect(origins).not.toContain("http://localhost:5173");
+      expect(origins).not.toContain("http://localhost:8081");
+      // Apple callback-origin лишається завжди.
+      expect(origins).toContain("https://appleid.apple.com");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("ws-11: у dev trustedOrigins містять localhost dev-origins", async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", "development");
+    try {
+      const { auth: devAuth } = await import("./auth.js");
+      const options = (
+        devAuth as unknown as { options: { trustedOrigins?: string[] } }
+      ).options;
+      const origins = options.trustedOrigins ?? [];
+      expect(origins).toContain("http://localhost:5173");
+      expect(origins).toContain("http://localhost:8081");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
   it("H5: у dev (NODE_ENV != production) trustedOrigins містять і sergeant://, і exp://", async () => {
     vi.resetModules();
     vi.stubEnv("NODE_ENV", "development");

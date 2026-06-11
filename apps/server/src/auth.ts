@@ -555,9 +555,21 @@ function getTrustedOrigins(): string[] {
   // у 403. Список нативних схем формується у `getTrustedNativeSchemes()`
   // (див. опис вище).
   const origins: string[] = [
-    "http://localhost:5000",
-    "http://localhost:5173",
-    "http://localhost:8081",
+    // Local dev surfaces (unified-mode server :5000, Vite :5173, Metro
+    // :8081). Audit 2026-06-11 ws-11: gated on NODE_ENV — у production ці
+    // origins НЕ потрапляють у список, бо session-cookies SameSite=None і
+    // /api/auth/* виключений з X-Requested-With CSRF-guard-а: сторінка на
+    // localhost жертви (будь-який dev-сервер зі скомпрометованим npm-
+    // пакетом) інакше проходила б origin-check проти прод-API. Той самий
+    // NODE_ENV-gate, що вже застосовано до `exp://` у
+    // getTrustedNativeSchemes().
+    ...(process.env["NODE_ENV"] === "production"
+      ? []
+      : [
+          "http://localhost:5000",
+          "http://localhost:5173",
+          "http://localhost:8081",
+        ]),
     // Apple Sign-In form-posts the OAuth response from `appleid.apple.com`
     // back to our callback URL; Better Auth checks `Origin` against this
     // list and otherwise 403s the callback. Safe to leave on even when

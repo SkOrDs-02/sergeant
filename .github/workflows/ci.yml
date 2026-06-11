@@ -4,8 +4,15 @@ name: CI
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
+# Audit 2026-06-11 ws-11: bare `push:` + `pull_request:` ran the full
+# 14-job pipeline TWICE for every push to a PR branch (different
+# concurrency groups: refs/heads/* vs refs/pull/*/merge) — double the
+# Actions minutes and queue latency for a solo maintainer. PR branches
+# now run only via pull_request (merge-ref, what actually lands); pushes
+# build only on main.
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
