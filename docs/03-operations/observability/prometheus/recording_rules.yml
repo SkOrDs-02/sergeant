@@ -1,5 +1,10 @@
 # Recording rules для SLO burn-rate алертів.
 #
+# STATUS: Scaffolded / designed-for-later (2026-06-11, ws-15). Жоден runtime
+# цей файл не завантажує — Prometheus не розгорнутий. Зберігається як
+# design-артефакт для майбутнього wiring (Grafana Cloud / managed Prometheus,
+# що scrape-ить `/metrics`). Див. ../SLO.md § Статус wiring.
+#
 # Іменування: `sli:<domain>_<sli>:ratio_rate<window>` (за Google SRE Workbook).
 # Ці rules попередньо обчислюють error-ratio по різних вікнах, щоб alert-
 # rules не робили важкий `sum(rate(...))` щосекунди.
