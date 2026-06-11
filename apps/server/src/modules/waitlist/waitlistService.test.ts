@@ -2,7 +2,7 @@
 //
 // Uses the shared Testcontainers harness (`apps/server/src/test/pg-container.ts`)
 // so the same `009_waitlist.sql` migration that ships to production runs
-// against a real Postgres-16 instance. Mocks would not catch the
+// against a real Postgres-17 instance. Mocks would not catch the
 // `LOWER(email)` unique-index behaviour or the `ON CONFLICT DO NOTHING`
 // idempotency we rely on.
 //

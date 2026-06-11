@@ -10,7 +10,7 @@
 //   > then re-apply up.sql` (catch-all sanity check, що `down`
 //   > принаймні виконується).
 //
-// This test closes the gap. Per cycle, against a real Postgres-16
+// This test closes the gap. Per cycle, against a real Postgres-17
 // container:
 //   1. apply every forward migration (`NNN_*.sql`, excluding `.down.sql`)
 //   2. capture a schema fingerprint (tables + indexes + columns)
@@ -39,7 +39,7 @@ import type { StartedTestContainer } from "testcontainers";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = path.resolve(__dirname, "..");
 
-// Postgres-16-alpine boot + migrations runs ~15–30s on ubuntu-latest.
+// Postgres-17-alpine boot + migrations runs ~15–30s on ubuntu-latest.
 // Generous ceiling so a slow registry pull does not flake CI.
 const TIMEOUT_MS = 180_000;
 
@@ -58,10 +58,10 @@ let skipReason: string | null = null;
 beforeAll(async () => {
   try {
     // Use the pgvector image — migration 025_ai_memories_pgvector.sql
-    // requires the `vector` extension which `postgres:16-alpine` does not
+    // requires the `vector` extension which `postgres:17-alpine` does not
     // ship. Without this the forward-migration phase fails before the
     // rollback assertions can run.
-    container = await new GenericContainer("pgvector/pgvector:pg16")
+    container = await new GenericContainer("pgvector/pgvector:pg17")
       .withEnvironment({
         POSTGRES_USER: "hub",
         POSTGRES_PASSWORD: "hub",

@@ -117,7 +117,7 @@ beforeAll(async () => {
   }
 
   try {
-    container = await new GenericContainer("pgvector/pgvector:pg16")
+    container = await new GenericContainer("pgvector/pgvector:pg17")
       .withEnvironment({
         POSTGRES_USER: "hub",
         POSTGRES_PASSWORD: "hub",

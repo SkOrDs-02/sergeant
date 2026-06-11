@@ -2,9 +2,9 @@
  * Integration tests для `pgVectorStore` через testcontainers + pgvector.
  *
  * Чому окремий контейнер (а не shared `test/pg-container.ts`):
- *  - shared контейнер — на `postgres:16-alpine`, без pgvector extension.
+ *  - shared контейнер — на `postgres:17-alpine`, без pgvector extension.
  *  - `CREATE EXTENSION vector` у міграції `025_ai_memories_pgvector.sql`
- *    впала б на чистий postgres → потрібен `pgvector/pgvector:pg16`.
+ *    впала б на чистий postgres → потрібен `pgvector/pgvector:pg17`.
  *  - Robotні testcontainers лежать у Vitest okремому suite-і
  *    (`*.integration.test.ts`, конфіг `vitest.integration.config.ts`),
  *    щоб дефолтний `pnpm test` без Docker не падав.
@@ -68,7 +68,7 @@ async function runMigrations(p: pg.Pool): Promise<void> {
 
 beforeAll(async () => {
   try {
-    container = await new GenericContainer("pgvector/pgvector:pg16")
+    container = await new GenericContainer("pgvector/pgvector:pg17")
       .withEnvironment({
         POSTGRES_USER: "hub",
         POSTGRES_PASSWORD: "hub",

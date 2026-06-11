@@ -12,7 +12,7 @@
 //      byte-identical shape.
 //
 // Mirrors the harness style of `rollback-sanity.test.ts`: real
-// `pgvector/pgvector:pg16` testcontainer, soft-skip with console
+// `pgvector/pgvector:pg17` testcontainer, soft-skip with console
 // warning if Docker is unavailable so non-Docker dev setups stay green.
 //
 // Why a focused test in addition to the catch-all sanity sweep:
@@ -59,7 +59,7 @@ let skipReason: string | null = null;
 
 beforeAll(async () => {
   try {
-    container = await new GenericContainer("pgvector/pgvector:pg16")
+    container = await new GenericContainer("pgvector/pgvector:pg17")
       .withEnvironment({
         POSTGRES_USER: "hub",
         POSTGRES_PASSWORD: "hub",

@@ -4,10 +4,12 @@ name: Visual Regression (Argos)
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
-# Runs on every PR and push to main. Non-blocking — Argos creates its
-# own commit status check ("argos/sergeant") rather than gating the PR
-# via `needs:`. Reviewers see the visual diff directly in Argos UI and
-# in the GitHub Checks tab.
+# Current trigger: `workflow_dispatch` ONLY (see the temporary-disable
+# note below). The PR/push automation is intentionally off until the
+# Argos baseline is stabilised. When re-enabled, the design is:
+# non-blocking on every PR + push to main — Argos creates its own commit
+# status check ("argos/sergeant") rather than gating the PR via `needs:`.
+# Reviewers see the visual diff directly in Argos UI and the Checks tab.
 #
 # Setup: add ARGOS_TOKEN to repository secrets (Settings → Secrets →
 # Actions). Get the token from argos-ci.com after linking the repo.
