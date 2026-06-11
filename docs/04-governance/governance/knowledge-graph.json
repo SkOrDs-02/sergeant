@@ -1268,7 +1268,7 @@
       "type": "initiative",
       "title": "0006 — Frontend routing migration + route-based code-split",
       "path": "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md",
-      "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. Pending: typecheck on clean worktree (exFAT install issues), Playwright e2e for hash-compat, manualChunks cleanup.",
+      "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. Pending: typecheck on clean worktree, Playwright e2e for hash-compat, manualChunks cleanup.",
       "tier": "core",
       "meta": {
         "number": 6,

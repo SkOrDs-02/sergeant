@@ -139,7 +139,7 @@ Per-app lint runs паралельно (Turbo).
 
 ### 3. Snapshot-артефакти генеруються лише з робочим eslint
 
-`scripts/__fixtures__/eslint-print-config/*.json` створюються через `pnpm lint:eslint-config-diff -- --update`. CI — **checker, не generator**: він порівнює і падає, але не оновлює. Тож Phase 2 **не можна завершити на exFAT-only машині** (eslint там не резолвиться — `eslint-scope`/`@sergeant` symlinks відсутні). Виконувати в середовищі з робочим eslint (CI runner або NTFS-клон): зробити extraction → `--update` → закомітити snapshot-и разом з кодом у тому ж PR.
+`scripts/__fixtures__/eslint-print-config/*.json` створюються через `pnpm lint:eslint-config-diff -- --update`. CI — **checker, не generator**: він порівнює і падає, але не оновлює. Тож Phase 2 **не можна завершити на машині без робочого eslint** (eslint там не резолвиться — `eslint-scope`/`@sergeant` symlinks відсутні). Виконувати в середовищі з робочим eslint (CI runner або NTFS-клон): зробити extraction → `--update` → закомітити snapshot-и разом з кодом у тому ж PR.
 
 ### Рекомендований порядок (для виконавця в робочому env)
 
