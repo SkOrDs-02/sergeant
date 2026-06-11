@@ -71,8 +71,7 @@
       "ignore": [
         "src/lib/ragEval/index.ts",
         "src/modules/ai-memory/index.ts",
-        "src/modules/billing/index.ts",
-        "src/modules/sync/syncV2Types.ts"
+        "src/modules/billing/index.ts"
       ],
       "ignoreDependencies": [
         "pino-pretty",
