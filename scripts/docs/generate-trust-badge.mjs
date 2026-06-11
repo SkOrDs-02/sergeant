@@ -34,6 +34,10 @@ import { fileURLToPath } from "node:url";
 import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 import { evaluate, loadLimits } from "./check-wip-limits.mjs";
 import { pickOverdueReview } from "./generate-today.mjs";
+import {
+  isStaleIgnoringDateStamp,
+  TRUST_BADGE_DATE,
+} from "./freshness-stamp.mjs";
 
 // Scheduled workflows we treat as load-bearing for docs trust. Keep this
 // list tight — every entry costs one `gh run list` call per badge regen.
@@ -249,7 +253,10 @@ function main() {
   const next = spliceReadme(readme, renderBlock(trust));
 
   if (CHECK_MODE) {
-    if (readme !== next) {
+    // Compare ignoring the badge's `_оновлено <date>_` token (but NOT the
+    // badge status itself) — exact comparison would go red the day after
+    // every regeneration (see freshness-stamp.mjs).
+    if (isStaleIgnoringDateStamp(readme, next, [TRUST_BADGE_DATE])) {
       process.stderr.write(
         `docs:gen-trust-badge --check: docs/README.md trust badge stale. Run \`pnpm docs:gen-trust-badge\`.\n`,
       );

@@ -304,6 +304,7 @@ jobs:
             scripts/docs/__tests__/check-freshness.test.mjs \
             scripts/docs/__tests__/check-freshness-single-marker.test.mjs \
             scripts/docs/__tests__/check-playbook-3way-sync.test.mjs \
+            scripts/docs/__tests__/freshness-stamp.test.mjs \
             scripts/docs/__tests__/generate-playbook-index.test.mjs \
             scripts/docs/__tests__/generate-initiative-followups.test.mjs \
             scripts/docs/__tests__/generate-open-work.test.mjs \

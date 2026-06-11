@@ -18,6 +18,7 @@ import {
   anchorFromTitle,
   formatMarkdown,
 } from "../generate-hard-rules-matrix.mjs";
+import { isStaleIgnoringDateStamp } from "../freshness-stamp.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "../../..");
@@ -290,6 +291,30 @@ test("renderMatrix: output round-trips through formatMarkdown idempotently", asy
   const md = await renderMatrix(FIXTURE, { now: FROZEN_NOW });
   const reformatted = await formatMarkdown(md);
   assert.equal(md, reformatted);
+});
+
+// ── --check stamp tolerance (regression: gate red the day after regen) ──────
+
+test("--check: matrix regenerated the next day is NOT stale (date-only drift)", async () => {
+  const committed = await renderMatrix(FIXTURE, {
+    now: new Date("2026-06-09T00:00:00Z"),
+  });
+  const freshRender = await renderMatrix(FIXTURE, {
+    now: new Date("2026-06-11T00:00:00Z"),
+  });
+  // The raw strings DO differ (Last validated + Next review moved)…
+  assert.notEqual(committed, freshRender);
+  // …but the `--check` comparison must treat that as in-sync.
+  assert.equal(isStaleIgnoringDateStamp(committed, freshRender), false);
+});
+
+test("--check: a real registry change IS stale even on the same day", async () => {
+  const now = new Date("2026-06-11T00:00:00Z");
+  const committed = await renderMatrix(FIXTURE, { now });
+  const changed = structuredClone(FIXTURE);
+  changed.rules[1].title = "RQ keys: renamed rule";
+  const freshRender = await renderMatrix(changed, { now });
+  assert.equal(isStaleIgnoringDateStamp(committed, freshRender), true);
 });
 
 // ── On-disk registry sanity ──────────────────────────────────────────────────

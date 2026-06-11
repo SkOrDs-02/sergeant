@@ -33,6 +33,11 @@ import { fileURLToPath } from "node:url";
 
 import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 import { evaluate, loadLimits } from "./check-wip-limits.mjs";
+import {
+  isStaleIgnoringDateStamp,
+  LAST_VALIDATED_LINE,
+  RELATIVE_OVERDUE_COUNTER,
+} from "./freshness-stamp.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -316,7 +321,15 @@ async function main() {
     } catch {
       // missing file is a check failure
     }
-    if (current !== next) {
+    // Ignore the `Last validated` stamp line and the `Nd overdue` daily
+    // counters — exact comparison would go red the day after every
+    // regeneration (see freshness-stamp.mjs).
+    if (
+      isStaleIgnoringDateStamp(current, next, [
+        LAST_VALIDATED_LINE,
+        RELATIVE_OVERDUE_COUNTER,
+      ])
+    ) {
       process.stderr.write(
         `docs:gen-today --check: docs/today.md is stale. Run \`pnpm docs:gen-today\`.\n`,
       );

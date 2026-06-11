@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last validated:** 2026-06-09 by docs:gen-status. **Next review:** 2026-06-09.
+> **Last validated:** 2026-06-11 by docs:gen-status. **Next review:** 2026-06-11.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -17,8 +17,9 @@
 
 ## 🟢 Зроблено нещодавно
 
-Останні 6 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
+Останні 7 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
 
+- [#3486](https://github.com/Skords-01/Sergeant/pull/3486) — chore(server,config): hard rule #18 server max-lines, OTel align, distroless docs _(2026-06-09)_
 - [#2900](https://github.com/Skords-01/Sergeant/pull/2900) — docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) _(2026-05-15)_
 - [#2899](https://github.com/Skords-01/Sergeant/pull/2899) — feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5) _(2026-05-15)_
 - [#2898](https://github.com/Skords-01/Sergeant/pull/2898) — feat(docs): auto-gen workspace dependency diagram (Initiative 0014 Phase 4) _(2026-05-15)_
@@ -26,20 +27,21 @@
 - [#2889](https://github.com/Skords-01/Sergeant/pull/2889) — feat(docs): per-package symbol catalog (Initiative 0014 Phase 2) _(2026-05-15)_
 - [#2876](https://github.com/Skords-01/Sergeant/pull/2876) — feat(docs): knowledge graph generator (Initiative 0014 Phase 1) _(2026-05-15)_
 
-## 🔵 В роботі — 73 відкритих
+## 🔵 В роботі — 75 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 20       |
+| Ініціативи                       | 21       |
 | Планування                       | 14       |
 | Launch / запуск                  | 17       |
-| Аудити й прожарки                | 15       |
+| Аудити й прожарки                | 16       |
 | Security hardening               | 2        |
 | Техборг                          | 5        |
 | Superpowers — плани впровадження | 0        |
 
 **Найактивніше (8, за останніми PR):**
 
+- [`90-work/audits/2026-06-11-fable5-independent-audit.md`](./90-work/audits/2026-06-11-fable5-independent-audit.md) — Independent Audit — Sergeant — 2026-06-11 — Active _(Аудити й прожарки)_
 - [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
 - [`90-work/planning/pr-plan-testing-devx-2026-05.md`](./90-work/planning/pr-plan-testing-devx-2026-05.md) — PR-план Testing & DevX 2026-05 — зі зрізу 2026-05-13 — Active _(Планування)_
 - [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
@@ -47,7 +49,6 @@
 - [`90-work/audits/2026-05-13-testing-devx-roast.md`](./90-work/audits/2026-05-13-testing-devx-roast.md) — Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) — Active _(Аудити й прожарки)_
 - [`90-work/tech-debt/backend.md`](./90-work/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
 - [`90-work/tech-debt/mobile.md`](./90-work/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Техборг)_
-- [`90-work/initiatives/0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md) — 0010 — Revenue-first launch: ship paid, focus wedge — In progress _(Ініціативи)_
 
 ## ⏭️ Наступний крок / заблоковано
 

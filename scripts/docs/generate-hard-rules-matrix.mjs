@@ -22,6 +22,7 @@ import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import prettier from "prettier";
+import { isStaleIgnoringDateStamp } from "./freshness-stamp.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -407,7 +408,10 @@ if (isMain) {
     } catch {
       // missing file — treated as a diff
     }
-    if (current !== next) {
+    // Ignore the `Last validated` stamp line: the render embeds today's date,
+    // so an exact comparison goes red the day after every regeneration even
+    // when no rule changed (see freshness-stamp.mjs).
+    if (isStaleIgnoringDateStamp(current, next)) {
       console.error(
         `${MATRIX_PATH} is out of date. Run \`pnpm hard-rules:generate\` and commit.`,
       );

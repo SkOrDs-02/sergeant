@@ -36,6 +36,7 @@ import { fileURLToPath } from "node:url";
 
 import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 import { pickPriorityItems } from "./generate-today.mjs";
+import { isStaleIgnoringDateStamp } from "./freshness-stamp.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -347,7 +348,9 @@ async function main() {
   );
 
   if (CHECK_MODE) {
-    if (existing !== next) {
+    // Ignore the `Last validated` stamp line — exact comparison would go red
+    // the day after every regeneration (see freshness-stamp.mjs).
+    if (isStaleIgnoringDateStamp(existing, next)) {
       process.stderr.write(
         `docs:gen-status --check: docs/STATUS.md is stale. Run \`pnpm docs:gen-status\`.\n`,
       );

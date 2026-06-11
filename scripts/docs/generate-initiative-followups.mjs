@@ -34,6 +34,8 @@ import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isStaleIgnoringDateStamp } from "./freshness-stamp.mjs";
+
 // `prettier` is loaded lazily inside `formatMarkdown` so importing this
 // module never requires `node_modules/prettier` on disk. The
 // `Docs-automation scripts unit tests` CI job runs raw `node --test`
@@ -433,7 +435,9 @@ if (isMain) {
     } catch {
       // missing file — treated as a diff
     }
-    if (current !== next) {
+    // Ignore the `Last validated` stamp line — exact comparison would go red
+    // the day after every regeneration (see freshness-stamp.mjs).
+    if (isStaleIgnoringDateStamp(current, next)) {
       console.error(
         `${OUTPUT_PATH} is out of date. Run \`pnpm docs:gen-initiative-followups\` and commit.`,
       );

@@ -48,6 +48,8 @@ import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isStaleIgnoringDateStamp } from "./freshness-stamp.mjs";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
@@ -780,7 +782,9 @@ if (isMain) {
     } catch {
       // missing file — treated as a diff
     }
-    if (current !== next) {
+    // Ignore the `Last validated` stamp line — exact comparison would go red
+    // the day after every regeneration (see freshness-stamp.mjs).
+    if (isStaleIgnoringDateStamp(current, next)) {
       console.error(
         `${OUTPUT_PATH} is out of date. Run \`pnpm docs:gen-open-work\` and commit.`,
       );
