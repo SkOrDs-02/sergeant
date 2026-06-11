@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-11 by @Skords-01. **Next review:** 2026-09-09.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -202,7 +202,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 - **Frontend:** Vercel (preview deploy on each PR; free tier may rate-limit).
 - **Backend:** Railway via `Dockerfile.api`. Pre-deploy: `pnpm db:migrate`. Health endpoint: `/health`. Migrations require `MIGRATE_DATABASE_URL` (= public DB URL).
-- **Test users:** `I3BUW5atld8oOHM7lpFEJBIInpW1hzv7` — primary test user, 6 Monobank accounts, ~2 246 ₴ on UAH cards.
+- **Test users:** primary test-user ID живе поза репо (Railway variables / локальний `.env`-нотатник власника) — репо публічне, не комітьте реальні user ID чи фінансову топологію.
 
 ## See also
 

@@ -1,6 +1,6 @@
 # Domain invariants
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-11 by @Skords-01. **Next review:** 2026-09-09.
 > **Status:** Active
 
 > Things that bite hard if assumed wrong. Compact pointer in [`AGENTS.md § Domain invariants`](../../../AGENTS.md#domain-invariants); deep prose lives here. Treat this file as canonical when web ↔ mobile ↔ server logic disagrees.
@@ -21,7 +21,7 @@
 
 ## Identity
 
-- User IDs are Better Auth opaque strings (e.g. `I3BUW5atld8oOHM7lpFEJBIInpW1hzv7`). Do not assume UUID format. Cookies are HTTP-only; auth in tests goes via Better Auth test session helpers.
+- User IDs are Better Auth opaque strings (32 alphanumeric chars, **не UUID** — приклад синтетичного формату: `a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6`). Do not assume UUID format. Cookies are HTTP-only; auth in tests goes via Better Auth test session helpers. Реальні production user ID не комітимо — репо публічне.
 - Canonical auth surface for the server: `apps/server/src/auth.ts` (Better Auth wiring) + `apps/server/src/http/requireSession.ts` (`requireSession()` / `requireSessionSoft()` middleware). Never re-read the cookie manually — go through these.
 
 ## AI tool execution path
