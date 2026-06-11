@@ -15,6 +15,7 @@ import {
   STATUS_PATH,
   PROFILE_PATH,
   RESET_PASSWORD_PATH,
+  SIGN_IN_ALIAS_PATHS,
   SIGN_IN_PATH,
   WELCOME_PATH,
   isPathBasedModulePath,
@@ -159,6 +160,15 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
         </Suspense>
       );
     },
+  }),
+
+  // `/login`, `/signin`, `/auth` — muscle-memory / external-link
+  // aliases for the auth entry. They used to fall through to the 404
+  // page (live-deploy audit 2026-06-11); a hard redirect keeps the
+  // canonical URL shape (`/sign-in`) in history and in the URL bar.
+  defineStandaloneRoute({
+    paths: SIGN_IN_ALIAS_PATHS,
+    render: () => <RedirectTo to={SIGN_IN_PATH} />,
   }),
 
   // `/reset-password` is the Better Auth magic-link landing page. We

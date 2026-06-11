@@ -1,6 +1,5 @@
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { DEFAULT_SUBSCRIPTIONS } from "../../finyk/constants";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import {
   buildFinykSubscriptionEvents as buildFinykSubscriptionEventsPure,
@@ -16,10 +15,14 @@ const SUBS_KEY = STORAGE_KEYS.FINYK_SUBS;
 const TX_CACHE_KEY = STORAGE_KEYS.FINYK_TX_CACHE;
 const TX_LAST_GOOD_KEY = STORAGE_KEYS.FINYK_TX_CACHE_LAST_GOOD;
 
+// Fresh installs (or users who removed every subscription) get no
+// calendar events — mirrors the empty `finyk_subs` default in
+// `useFinykStorageSlots`. The old `DEFAULT_SUBSCRIPTIONS` fallback
+// injected the owner's preset catalog into new visitors' calendars
+// (live-deploy audit 2026-06-11).
 export function loadFinykSubscriptionsFromStorage() {
   const arr = safeReadLS<unknown[] | null>(SUBS_KEY, null);
-  if (arr === null) return [...DEFAULT_SUBSCRIPTIONS];
-  return Array.isArray(arr) && arr.length ? arr : [...DEFAULT_SUBSCRIPTIONS];
+  return Array.isArray(arr) ? arr : [];
 }
 
 /** Транзакції з кешу Monobank (для сум і прив’язок). */

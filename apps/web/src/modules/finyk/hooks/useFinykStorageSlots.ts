@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { DEFAULT_SUBSCRIPTIONS } from "../constants";
 import { readJSON, readRaw, finykStorageManager } from "../lib/finykStorage";
 import { useReadonlyPersist, reportSilentError } from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
@@ -95,9 +94,14 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     "finyk_budgets",
     [],
   );
+  // Fresh installs start with zero subscriptions. The old default was
+  // `DEFAULT_SUBSCRIPTIONS` (the owner's preset catalog), which made a
+  // brand-new visitor see "7 активних" підписок they never added
+  // (live-deploy audit 2026-06-11). Existing installs keep their
+  // stored `finyk_subs` value untouched.
   const [subscriptions, setSubscriptions] = useReadonlyPersist<Subscription[]>(
     "finyk_subs",
-    DEFAULT_SUBSCRIPTIONS as Subscription[],
+    [],
   );
   const [manualAssets, setManualAssets] = useReadonlyPersist<ManualAsset[]>(
     "finyk_assets",

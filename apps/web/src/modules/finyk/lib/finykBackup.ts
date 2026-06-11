@@ -13,7 +13,6 @@
  * without depending on localStorage.
  */
 
-import { DEFAULT_SUBSCRIPTIONS } from "../constants";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { readJSON, writeJSON } from "./finykStorage";
 import { getCachedFinykSqliteState } from "./sqliteReader";
@@ -50,12 +49,12 @@ export function readFinykBackupFromStorage() {
     budgets: warm
       ? cache.budgets
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.budgets, []),
+    // Cold-cache default is an empty list — exporting a backup from a
+    // fresh install must not bake the preset catalog into the file
+    // (mirrors the `finyk_subs` default in `useFinykStorageSlots`).
     subscriptions: warm
       ? cache.subscriptions
-      : readJSON(
-          FINYK_FIELD_TO_STORAGE_KEY.subscriptions,
-          DEFAULT_SUBSCRIPTIONS,
-        ),
+      : readJSON(FINYK_FIELD_TO_STORAGE_KEY.subscriptions, []),
     manualAssets: warm
       ? cache.manualAssets
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.manualAssets, []),

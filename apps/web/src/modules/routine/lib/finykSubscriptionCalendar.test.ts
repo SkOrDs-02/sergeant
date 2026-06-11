@@ -21,14 +21,6 @@ type AmountLookup = (sub: Subscription) => {
 };
 
 const deps = vi.hoisted(() => ({
-  defaultSubscriptions: [
-    {
-      id: "chatgpt",
-      name: "ChatGPT Plus",
-      billingDay: 19,
-      currency: "USD",
-    },
-  ],
   groupLabel: "Фінік · підписки",
   storageKeys: {
     FINYK_SUBS: "finyk_subs",
@@ -72,10 +64,6 @@ vi.mock("@sergeant/shared", () => ({
   STORAGE_KEYS: deps.storageKeys,
 }));
 
-vi.mock("../../finyk/constants", () => ({
-  DEFAULT_SUBSCRIPTIONS: deps.defaultSubscriptions,
-}));
-
 vi.mock("@sergeant/finyk-domain/domain/subscriptionUtils", () => ({
   getSubscriptionAmountMeta: deps.getAmountMeta,
 }));
@@ -96,13 +84,13 @@ describe("finykSubscriptionCalendar", () => {
     expect(FINYK_SUB_GROUP_LABEL).toBe(deps.groupLabel);
   });
 
-  it("loads default subscriptions when storage is missing or empty", () => {
+  it("returns an empty list when storage is missing or empty (no preset injection)", () => {
+    // Fresh installs must NOT inherit the preset catalog — the old
+    // `DEFAULT_SUBSCRIPTIONS` fallback put 7 foreign subscriptions into
+    // new visitors' calendars (live-deploy audit 2026-06-11).
     deps.safeReadLS.mockReturnValueOnce(null);
 
-    const missing = loadFinykSubscriptionsFromStorage();
-
-    expect(missing).toEqual(deps.defaultSubscriptions);
-    expect(missing).not.toBe(deps.defaultSubscriptions);
+    expect(loadFinykSubscriptionsFromStorage()).toEqual([]);
     expect(deps.safeReadLS).toHaveBeenCalledWith(
       deps.storageKeys.FINYK_SUBS,
       null,
@@ -110,9 +98,7 @@ describe("finykSubscriptionCalendar", () => {
 
     deps.safeReadLS.mockReturnValueOnce([]);
 
-    expect(loadFinykSubscriptionsFromStorage()).toEqual(
-      deps.defaultSubscriptions,
-    );
+    expect(loadFinykSubscriptionsFromStorage()).toEqual([]);
   });
 
   it("returns stored subscriptions when storage has a non-empty array", () => {

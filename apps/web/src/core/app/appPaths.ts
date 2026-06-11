@@ -15,6 +15,16 @@
 // push-notification landing pages, etc.
 export const SIGN_IN_PATH = "/sign-in";
 
+// Common external spellings of the auth entry (`/login`, `/signin`,
+// `/auth`). Live-deploy audit 2026-06-11 showed these landing on the
+// 404 page; `StandaloneRoutes.tsx` redirects each to `SIGN_IN_PATH`
+// so muscle-memory URLs and stale external links keep working.
+export const SIGN_IN_ALIAS_PATHS: ReadonlyArray<string> = [
+  "/login",
+  "/signin",
+  "/auth",
+];
+
 // Assistant capability catalogue (`/help`, Settings link, `?` button in
 // chat input all converge here). URL-addressable so it survives reload
 // and can be deep-linked from notifications / docs.
