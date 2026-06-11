@@ -102,6 +102,8 @@
 
 ### PR-1a · App-lock (base PIN-flow) [A1 — phase 1/2]
 
+> **✅ DONE (verified 2026-06-11, audit ws-12 re-sync):** імплементація існує в коді — `apps/web/src/core/security/{AppLock.tsx, AppLockContext.tsx, useAppLock.ts, lockStorage.ts}` + тести (`useAppLock.test.ts`, `lockStorage.test.ts`) + `core/settings/PrivacySection.tsx`. Маркер не був проставлений — пункт висів phantom-open і ганяв triage-runner. PR-1b (biometric) — досі open: `BiometricAdapter.ts` у коді відсутній.
+
 **Items covered:** A1 (PIN portion), частково §11.1 (privacy P0).
 **Scope:**
 

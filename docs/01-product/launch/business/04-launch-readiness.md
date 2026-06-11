@@ -1,6 +1,6 @@
 # 04. Launch readiness: legal, ops, edge cases, метрики, чеклист
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-06-11 by @Skords-01. **Next review:** 2026-09-09.
 > **Status:** Active
 
 > Pre-MVP draft. Покриває все, що треба перевірити перед запуском платного продукту.
@@ -102,10 +102,10 @@ Sergeant збирає **чутливі дані**. Класифікація по
 Better Auth вже має `deleteUser: enabled: true`
 (`apps/server/src/auth.ts:65`). Для повного GDPR потрібно більше:
 
-- [ ] **Right to access (Art. 15)** — `GET /api/me/export` → JSON/ZIP з усіма даними юзера. — _Ref:_ GDPR [Art. 15](https://gdpr-info.eu/art-15-gdpr/). _Owner:_ Dev.
-- [ ] **Right to erasure (Art. 17)** — `DELETE /api/me` → cascade delete з БД + cleanup у зовнішніх сервісах. — _Ref:_ GDPR [Art. 17](https://gdpr-info.eu/art-17-gdpr/). _Owner:_ Dev.
-- [ ] **Right to portability (Art. 20)** — `GET /api/me/export` повертає машиночитний JSON. — _Ref:_ GDPR [Art. 20](https://gdpr-info.eu/art-20-gdpr/). _Owner:_ Dev.
-- [ ] **Consent management** — `GET /api/me/preferences` → поточні consent-и; `PATCH /api/me/preferences` → оновлення. — _Ref:_ GDPR [Art. 7](https://gdpr-info.eu/art-7-gdpr/). _Owner:_ Dev.
+- [x] **Right to access (Art. 15)** — `GET /api/me/export` → JSON/ZIP з усіма даними юзера. — _Ref:_ GDPR [Art. 15](https://gdpr-info.eu/art-15-gdpr/). _Owner:_ Dev. _✅ shipped: legal pack 2026-06-06 (`apps/server/src/modules/me/dataRights.ts`); verified audit ws-12 re-sync 2026-06-11._
+- [x] **Right to erasure (Art. 17)** — `DELETE /api/me` → cascade delete з БД + cleanup у зовнішніх сервісах. — _Ref:_ GDPR [Art. 17](https://gdpr-info.eu/art-17-gdpr/). _Owner:_ Dev. _✅ route mounted (`registerRoutes` snapshot); cleanup у зовнішніх сервісах (Stripe/Sentry/PostHog) — перевірити окремо._
+- [x] **Right to portability (Art. 20)** — `GET /api/me/export` повертає машиночитний JSON. — _Ref:_ GDPR [Art. 20](https://gdpr-info.eu/art-20-gdpr/). _Owner:_ Dev. _✅ той самий export-endpoint._
+- [x] **Consent management** — `GET /api/me/preferences` → поточні consent-и; `PATCH /api/me/preferences` → оновлення. — _Ref:_ GDPR [Art. 7](https://gdpr-info.eu/art-7-gdpr/). _Owner:_ Dev. _✅ shipped: migration 076 `user_preferences` + dataRights endpoints (2026-06-06)._
 - [ ] **Data retention policy** — скільки зберігаються дані після видалення акаунту? Рекомендація: 30 днів (grace для undo), потім hard delete. — _Ref:_ GDPR [Art. 5(1)(e)](https://gdpr-info.eu/art-5-gdpr/). _Owner:_ Founder + Dev.
 
 **API endpoints що треба реалізувати:**
