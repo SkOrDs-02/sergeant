@@ -137,10 +137,7 @@ describe("shared/utils/macros – property", () => {
       const baseTotal = macrosToTotals(base);
 
       // Add delta to kcal only; all other fields are unchanged.
-      const baseKcal = Number.isFinite(Number(base["kcal"]))
-        ? Math.max(0, Number(base["kcal"]))
-        : 0;
-      const augmented = { ...base, kcal: baseKcal + delta };
+      const augmented = { ...base, kcal: (Number(base["kcal"]) || 0) + delta };
       const augTotal = macrosToTotals(augmented);
 
       expect(augTotal.kcal).toBeGreaterThanOrEqual(baseTotal.kcal);

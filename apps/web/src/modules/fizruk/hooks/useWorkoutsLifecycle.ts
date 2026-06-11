@@ -59,8 +59,8 @@ export function useWorkoutsViewFromSession(
       setView(m);
       safeRemoveSS(VIEW_FROM_SESSION_KEY);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only; setView identity is stable
-  }, []);
+    // Mount-only effect: setView is stable
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 /**
@@ -103,13 +103,13 @@ export function useLiveWorkoutTick(
   activeWorkout: Workout | null,
   setNow: Dispatch<SetStateAction<number>>,
 ): void {
+  // Mount-only effect: setNow is stable; only id/endedAt changes matter
   useEffect(
     () => {
       if (!activeWorkout || activeWorkout.endedAt) return;
       const id = setInterval(() => setNow(Date.now()), 1000);
       return () => clearInterval(id);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- достатньо id/endedAt; повний об’єкт workout змінюється часто
-    [activeWorkout?.id, activeWorkout?.endedAt],
+    [activeWorkout?.id, activeWorkout?.endedAt], // eslint-disable-line react-hooks/exhaustive-deps
   );
 }

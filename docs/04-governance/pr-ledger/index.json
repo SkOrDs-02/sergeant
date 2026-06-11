@@ -4,6 +4,17 @@
   "generated_at": "2026-05-15",
   "prs": [
     {
+      "number": 3486,
+      "title": "chore(server,config): hard rule #18 server max-lines, OTel align, distroless docs",
+      "merged_at": "2026-06-09T21:06:05Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0003-refund-and-dispute-handling.md",
+        "docs/04-governance/security/distroless-upgrade-plan.md",
+        "docs/90-work/tech-debt/technical-assessment-2026-06-05.md"
+      ]
+    },
+    {
       "number": 2900,
       "title": "docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up)",
       "merged_at": "2026-05-15T09:46:37Z",

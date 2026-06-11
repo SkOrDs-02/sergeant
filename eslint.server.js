@@ -2,6 +2,24 @@
 // `eslint.config.js`. Composed back into the root array via `...serverBlocks`
 // so `eslint --print-config` stays byte-identical (verified by
 // `pnpm lint:eslint-config-diff`). Scope: `apps/server/**` Express/Node code.
+import { readFileSync } from "node:fs";
+
+// Hard Rule #18 — server-side module-size burndown allowlist.
+// Existing files ≥600 LOC that must be decomposed before removal.
+// Each entry must have a tracking TODO(0001-module-decomposition) with
+// decomposition plan. Remove entries as files shrink below 600 LOC.
+// See docs/04-governance/governance/rules/18-module-size-discipline-600.md
+// and docs/90-work/initiatives/archive/_0001-module-decomposition.md.
+const serverMaxLinesAllowlist = JSON.parse(
+  readFileSync(
+    new URL(
+      "./apps/server/eslint.server-maxlines-allowlist.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+
 export const serverBlocks = [
   // Stack-pulse PR-07 — body-size declarative policy.
   // Inline `express.json({ limit })` / `express.raw({ ..., limit })`
@@ -74,6 +92,30 @@ export const serverBlocks = [
     ],
     rules: {
       "sergeant-design/no-bigint-string": "error",
+    },
+  },
+  // Hard Rule #18 — Module-size discipline: max-lines 600 for server.
+  // Mirrors the web-side block in eslint.web.js:431-445.
+  // Enforces decomposition: every .ts/.js file under apps/server/src/
+  // must have ≤ 600 LOC (skipBlankLines + skipComments). Tests and
+  // __tests__/ are exempt. Existing monoliths are allowlisted in
+  // apps/server/eslint.server-maxlines-allowlist.json with a
+  // TODO(0001-module-decomposition) deadline — remove entries as files
+  // shrink. See docs/04-governance/governance/rules/18-module-size-discipline-600.md
+  // and technical-assessment-2026-06-05.md Theme 2.
+  {
+    files: ["apps/server/src/**/*.{js,ts}"],
+    ignores: [
+      "apps/server/src/**/*.test.{js,ts}",
+      "apps/server/src/**/*.spec.{js,ts}",
+      "apps/server/src/**/__tests__/**",
+      ...serverMaxLinesAllowlist,
+    ],
+    rules: {
+      "max-lines": [
+        "error",
+        { max: 600, skipBlankLines: true, skipComments: true },
+      ],
     },
   },
 ];
