@@ -596,9 +596,6 @@ importers:
       better-auth:
         specifier: ^1.6.14
         version: 1.6.14(@opentelemetry/api@1.9.1)(better-sqlite3@12.9.0)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.9.0)(expo-sqlite@15.1.4(expo@52.0.49(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.29)(react@18.3.1)))(graphql@16.14.0)(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.29)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.29)(react@18.3.1))(react@18.3.1))(kysely@0.28.17)(pg@8.20.0))(pg@8.20.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(vitest@4.1.5)
-      body-highlighter:
-        specifier: ^3.0.2
-        version: 3.0.2
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -6426,10 +6423,6 @@ packages:
 
   bn.js@4.12.3:
     resolution: {integrity: sha512-fGTi3gxV/23FTYdAoUtLYp6qySe2KE3teyZitipKNRuVYcBkoP/bB3guXN/XVKUe9mxCHXnc9C4ocyz8OmgN0g==}
-
-  body-highlighter@3.0.2:
-    resolution: {integrity: sha512-1V32BDCbdEoFL/y3yr3xyO98u3SLPlcRjvbJy0/47E5gKmYezf8w+Hzsnm5M0vu92rArTOPNu0vawEdvruDhcQ==}
-    engines: {node: '>=18'}
 
   body-parser@1.20.5:
     resolution: {integrity: sha512-3grm+/2tUOvu2cjJkvsIxrv/wVpfXQW4PsQHYm7yk4vfpu7Ekl6nEsYBoJUL6qDwZUx8wUhQ8tR2qz+ad9c9OA==}
@@ -19588,8 +19581,6 @@ snapshots:
   bluebird@3.7.2: {}
 
   bn.js@4.12.3: {}
-
-  body-highlighter@3.0.2: {}
 
   body-parser@1.20.5:
     dependencies:

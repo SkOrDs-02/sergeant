@@ -1,18 +1,17 @@
 /**
  * Canonical muscle-group ids for the Fizruk BodyAtlas.
  *
- * The web client renders the atlas through the `body-highlighter` npm
- * package (web-only SVG). Its muscle keys (`chest`, `front-deltoids`,
- * `upper-back`, …) are mirrored here so the mobile `BodyAtlas` (Phase 6
- * PR-C, `react-native-svg`) can consume the very same `statusByMuscle`
- * shape that `apps/web/src/modules/fizruk/pages/Atlas.tsx` builds from
- * `useRecovery()`.
- *
- * In other words: the data layer (`useRecovery` + `mapDomainMuscleToAtlas`)
- * is platform-agnostic; only the rendering differs.
+ * The canonical muscle keys (`chest`, `front-deltoids`, `upper-back`, …)
+ * are the shared contract between the web and mobile `BodyAtlas` renderers
+ * (both draw the silhouette from `bodyAtlasGeometry.ts`), and feed the same
+ * `useRecovery()` snapshot through `mapDomainMuscleToAtlas` /
+ * `aggregateRecoveryToAtlas`. The data layer is platform-agnostic; only the
+ * SVG host (`<svg>` vs `react-native-svg`) differs.
  */
 
-/** Canonical BodyAtlas muscle ids (mirror `body-highlighter` web keys). */
+import type { MuscleState, RecoveryStatus } from "../domain/types.js";
+
+/** Canonical BodyAtlas muscle ids (the shared web/mobile keyspace). */
 export const BODY_ATLAS_MUSCLE_IDS = [
   "neck",
   "trapezius",
@@ -175,4 +174,55 @@ export function statusToIntensity(status: BodyAtlasStatus): number {
     default:
       return 0;
   }
+}
+
+/** Recovery metrics aggregated onto a single atlas muscle group. */
+export interface AtlasMuscleAggregate {
+  fatigue: number;
+  load7d: number;
+  daysSince: number | null;
+  status: RecoveryStatus;
+}
+
+function worstStatus(a: RecoveryStatus, b: RecoveryStatus): RecoveryStatus {
+  if (a === "red" || b === "red") return "red";
+  if (a === "yellow" || b === "yellow") return "yellow";
+  return "green";
+}
+
+/**
+ * Fold a list of domain `MuscleState`s onto the canonical atlas keyspace.
+ * Several domain muscles can map to one atlas group, so fatigue takes the
+ * max, volume sums, recency takes the most recent (min daysSince), and
+ * status takes the worst case. The single source of truth for both web and
+ * mobile atlas renderers — neither re-implements the domain→atlas fold.
+ */
+export function aggregateRecoveryToAtlas(
+  states: Iterable<MuscleState>,
+): Partial<Record<BodyAtlasMuscleId, AtlasMuscleAggregate>> {
+  const out: Partial<Record<BodyAtlasMuscleId, AtlasMuscleAggregate>> = {};
+  for (const m of states) {
+    const key = mapDomainMuscleToAtlas(m.id);
+    if (!key) continue;
+    const prev = out[key];
+    if (!prev) {
+      out[key] = {
+        fatigue: m.fatigue,
+        load7d: m.load7d,
+        daysSince: m.daysSince,
+        status: m.status,
+      };
+      continue;
+    }
+    prev.fatigue = Math.max(prev.fatigue, m.fatigue);
+    prev.load7d += m.load7d;
+    prev.daysSince =
+      m.daysSince == null
+        ? prev.daysSince
+        : prev.daysSince == null
+          ? m.daysSince
+          : Math.min(prev.daysSince, m.daysSince);
+    prev.status = worstStatus(prev.status, m.status);
+  }
+  return out;
 }

@@ -8,38 +8,9 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { BodyAtlas } from "./BodyAtlas";
+import { buildAtlasData } from "../lib/atlasData";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useRecovery } from "../hooks/useRecovery";
-
-function mapMuscleId(id: string | undefined | null): string | null {
-  if (!id) return null;
-  if (id === "pectoralis_major" || id === "pectoralis_minor") return "chest";
-  if (id === "latissimus_dorsi") return "upper-back";
-  if (id === "rhomboids" || id === "upper_back") return "upper-back";
-  if (id === "erector_spinae") return "lower-back";
-  if (id === "trapezius") return "trapezius";
-  if (id === "biceps") return "biceps";
-  if (id === "triceps") return "triceps";
-  if (id === "forearms") return "forearm";
-  if (id === "front_deltoid") return "front-deltoids";
-  if (id === "rear_deltoid") return "back-deltoids";
-  if (id === "rectus_abdominis") return "abs";
-  if (id === "obliques") return "obliques";
-  if (id === "quadriceps") return "quadriceps";
-  if (id === "hamstrings") return "hamstring";
-  if (id === "calves") return "calves";
-  if (id === "adductors") return "adductor";
-  if (id === "abductors") return "abductors";
-  if (id === "gluteus_maximus" || id === "gluteus_medius") return "gluteal";
-  if (id === "neck") return "neck";
-  return null;
-}
-
-function worstStatus(a: string, b: string): string {
-  if (a === "red" || b === "red") return "red";
-  if (a === "yellow" || b === "yellow") return "yellow";
-  return "green";
-}
 
 export function RecoveryFocusCard({
   onOpenAtlas,
@@ -50,15 +21,7 @@ export function RecoveryFocusCard({
   const { musclesUk } = useExerciseCatalog();
   const [open, setOpen] = useState(false);
 
-  const statusByMuscle = useMemo(() => {
-    const out: Record<string, string> = {};
-    for (const m of Object.values(rec.by || {})) {
-      const key = mapMuscleId(m.id);
-      if (!key) continue;
-      out[key] = out[key] ? worstStatus(out[key], m.status) : m.status;
-    }
-    return out;
-  }, [rec.by]);
+  const atlasData = useMemo(() => buildAtlasData(rec.by), [rec.by]);
 
   const focus = useMemo(
     () =>
@@ -156,11 +119,7 @@ export function RecoveryFocusCard({
             </div>
           )}
 
-          <BodyAtlas
-            statusByMuscle={statusByMuscle}
-            height={120}
-            showLegend={false}
-          />
+          <BodyAtlas data={atlasData} compact />
 
           <div className="mt-4 pt-3 border-t border-line">
             <SectionHeading as="p" size="xs" variant="fizruk" className="mb-2">

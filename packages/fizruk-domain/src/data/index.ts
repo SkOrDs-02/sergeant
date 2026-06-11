@@ -15,6 +15,10 @@ import type { ExerciseDef } from "../domain/types.js";
 // into by default, and the import attribute proposal is a runtime-only
 // hint that the bundled JSON emitters already honour.
 import exercisesCatalog from "./exercises.gymup.json";
+import { mapDomainMuscleToAtlas } from "./bodyAtlas.js";
+
+export * from "./bodyAtlas.js";
+export * from "./bodyAtlasGeometry.js";
 
 /** JSON-каталог «як є» (з `labels` + `exercises`). */
 export interface ExerciseCatalog {
@@ -163,6 +167,31 @@ export function mergeExerciseCatalog(
     if (!id || seen.has(id)) continue;
     seen.add(id);
     out.push(ex);
+  }
+  return out;
+}
+
+/**
+ * Up to `limit` Ukrainian exercise names whose primary muscles map to the
+ * given canonical atlas muscle id. Powers the selected-muscle card in the
+ * BodyAtlas without the web layer re-deriving the muscle→exercise join.
+ */
+export function getExerciseNamesByAtlasMuscle(
+  atlasMuscleId: string,
+  limit = 5,
+): string[] {
+  if (!atlasMuscleId) return [];
+  const out: string[] = [];
+  for (const ex of EXERCISES) {
+    const primary = ex?.muscles?.primary;
+    if (!Array.isArray(primary)) continue;
+    const hit = primary.some(
+      (m) => mapDomainMuscleToAtlas(m) === atlasMuscleId,
+    );
+    if (!hit) continue;
+    const name = ex?.name?.uk;
+    if (name && !out.includes(name)) out.push(name);
+    if (out.length >= limit) break;
   }
   return out;
 }
