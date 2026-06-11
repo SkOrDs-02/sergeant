@@ -15,20 +15,20 @@ Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, 
 
 **Routing (surface → specialist).** Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
 
-| Signal in the task                                                  | Load                           |
-| ------------------------------------------------------------------- | ------------------------------ |
-| Touches `apps/web/**`, RQ keys, design tokens, a11y                 | `sergeant-web-ui`              |
-| Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI | `sergeant-server-api`          |
-| Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS       | `sergeant-mobile`              |
-| Touches `db-schema/`, migrations, drill-down, index audit           | `sergeant-data-and-migrations` |
-| Railway / Vercel / Sentry / Alertmanager / CI workflow change       | `sergeant-deploy`              |
-| OpenClaw gateway / plugin / PAT lifecycle                           | `sergeant-openclaw`            |
-| HubChat module / HubChat reset / HubChat E2E                        | `sergeant-hubchat`             |
-| Writing or running E2E (Playwright/Vitest browser)                  | `sergeant-e2e-testing`         |
-| Security review, vuln triage, secret scan, dependency CVE           | `sergeant-security-audit`      |
-| Regression, hotfix, "this used to work"                             | `sergeant-bugfix`              |
-| Refactor, dead code, Knip baseline, eslint baseline reduction       | `sergeant-tech-debt`           |
-| PR review, squash-merge, release-cut, changelog                     | `sergeant-review-and-merge`    |
+| Signal in the task                                                  | Load                                |
+| ------------------------------------------------------------------- | ----------------------------------- |
+| Touches `apps/web/**`, RQ keys, design tokens, a11y                 | `sergeant-web-ui`                   |
+| Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI | `sergeant-server-api`               |
+| Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS       | `sergeant-mobile-expo`              |
+| Touches `db-schema/`, migrations, drill-down, index audit           | `sergeant-data-and-migrations`      |
+| Railway / Vercel / Sentry / Alertmanager / CI workflow change       | `sergeant-deploy-and-observability` |
+| OpenClaw gateway / plugin / PAT lifecycle                           | `sergeant-openclaw`                 |
+| HubChat module / HubChat reset / HubChat E2E                        | `sergeant-hubchat`                  |
+| Writing or running E2E (Playwright/Vitest browser)                  | `sergeant-e2e-testing`              |
+| Security review, vuln triage, secret scan, dependency CVE           | `sergeant-security-audit`           |
+| Regression, hotfix, "this used to work"                             | `sergeant-bugfix-and-regression`    |
+| Refactor, dead code, Knip baseline, eslint baseline reduction       | `sergeant-tech-debt`                |
+| PR review, squash-merge, release-cut, changelog                     | `sergeant-review-and-merge`         |
 
 If two surfaces overlap (e.g. web + e2e), load the **owner** first; ask the other only when blocked. Full catalog: [`docs/00-start/agents/agent-skills-catalog.md`](./docs/00-start/agents/agent-skills-catalog.md).
 
@@ -76,7 +76,7 @@ Surface-scoped quick references (commands, gotchas, specialist skill pointer) li
 ## Repo overview
 
 - **pnpm 9.15.1** (enforced via `packageManager`) + **Turborepo** monorepo, **Node 22.x** (Volta pins 22.19.0), **TypeScript 6**.
-- 4 apps (`apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`) + `tools/openclaw` (a `tools/` workspace, not under `apps/`) + 12 packages (`@sergeant/*`, `eslint-plugin-sergeant-design`, 4 domain packages).
+- 4 apps (`apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`) + 12 packages (`@sergeant/*`, `eslint-plugin-sergeant-design`, 4 domain packages).
 - Pre-commit: **Husky** runs `lint-staged` — ESLint --fix + Prettier for code, `staged-typecheck.mjs` for staged TS/TSX, `bump-last-validated.mjs` for `.md`. Pipeline matrix: [`CONTRIBUTING.md § Pre-commit hooks`](./CONTRIBUTING.md#pre-commit-hooks).
 - Deep tech-stack matrix (per-app stack, per-package purpose, build/deploy outputs): [`docs/02-engineering/architecture/repo-map.md`](./docs/02-engineering/architecture/repo-map.md).
 
@@ -89,7 +89,6 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 | `apps/web/**`                            | `@Skords-01` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
 | `apps/server/**`                         | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
 | `apps/mobile/**`, `apps/mobile-shell/**` | `@Skords-01` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
-| `tools/openclaw/**`                      | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
 | `packages/**`                            | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/02-engineering/architecture/module-ownership.md#packages)         |
 | `ops/**`, `tools/**`, `scripts/**`       | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/02-engineering/architecture/module-ownership.md#ops-surfaces) |
 
