@@ -86,15 +86,20 @@
 - ✅ Monobank `historyFetch.ts`/`privat.ts` без тестів → додано 24 unit-тести (`privat.test.ts` — guard/path-allowlist/CRLF/upstream-mapping; `historyFetch.test.ts` — schema/buildMemoryContent/fetchAccountStatement; pure-helpers експортовані).
 - ✅ Postgres-skew: Testcontainers pg16 vs CI pg17 → усі 16 тест-контейнерів + прозові коментарі підняті до pg17 (збіг з CI service + docker-compose).
 
+**P2 — закриті у другій хвилі 2026-06-12:**
+
+- ✅ Hard Rule #1 без механізму → глобальний `pg.types.setTypeParser(int8)` у `apps/server/src/lib/pgInt8.ts` (install у db.ts; safe-integer guard — fail loud замість мовчазної втрати точності; 6 unit-тестів). Серіалізатори лишаються другим рубежем.
+- ✅ Coverage-пороги двобухгалтерні → single source `coverage-thresholds.json` у корені: ci.yml-гейт читає його через jq, vitest-конфіги (web, api-client, routine-domain) і jest (mobile) імпортують `lines`-floor звідти. api-client (73) і routine-domain (74) уперше отримали локальний enforcement (раніше — тільки CI-bash). Web-floor 39→50 — окремий burn-down, не закритий.
+- ✅ Orphan `syncV2Types.ts` → видалено (#3522, chip `task_abed59b4`).
+
 **P2 — далі:**
 
 - Freshness-механіка міряє churn, не review (`bump-last-validated` штампує будь-який staged .md; 53% корпусу проштамповано одним link-rewrite комітом). Потрібен дизайн: ручний validate-маркер vs churn-bump.
 - SLO/alert-стек: фантомні Alertmanager-згадки прибрані + wiring-статус задокументований (ws-15, #3519). Лишається: UptimeRobot (founder) + рішення про Grafana Cloud rules sync чи видалення 24 design-правил.
 - Merge-серіалізація: ≥3 колізії номерів міграцій на main; GitHub merge queue або timestamp-префікси. (= ws-14, founder-gated)
-- Coverage-пороги двобухгалтерні (vitest-конфіги vs bash-масив у ci.yml) + web-floor 39%/32% проти цілі 50/40.
+- Web coverage-floor 39%/32% проти цілі 50/40 — burn-down тестами, не конфігом.
 - pnpm audit critical-gate без exception-path (audit-exceptions ledger не читається гейтом; escape — лише PR-label `audit-exception` для high, не для critical).
-- Hard Rule #1 — конвенція без механізму: нема глобального pg `setTypeParser` для int8.
-- Orphan-схема: `syncV2Types.ts` (0 імпортерів; шит-маркер цитує неіснуючий ADR-0062-decomposition — номер зайнятий OpenAPI-ADR → chip `task_abed59b4`), m047/m070-072 billing-орфани (two-phase DROP post-launch), db-schema pg-runner з розбіжним ledger-default.
+- Orphan-схема: m047/m070-072 billing-орфани (two-phase DROP post-launch), db-schema pg-runner з розбіжним ledger-default.
 - i18n: en.ts 215 рядків vs uk.ts 847; allowlist 243 файли без ratchet.
 - ESLint baselines без дедлайнів: react-hooks ~152 off-порушень, ~96 non-null assertions (burn-down «2026-Q3» без enforcement дати).
 

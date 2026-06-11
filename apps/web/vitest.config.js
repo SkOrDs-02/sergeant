@@ -1,7 +1,18 @@
+import { readFileSync } from "node:fs";
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
 import { baseCoverageConfig } from "@sergeant/config/vitest.base";
+
+// Line-floor — з кореневого coverage-thresholds.json (single source of truth,
+// той самий файл читає CI-гейт у ci.yml). branches/functions/statements
+// лишаються локальними — CI гейтить тільки lines.
+const sharedThresholds = JSON.parse(
+  readFileSync(
+    new URL("../../coverage-thresholds.json", import.meta.url),
+    "utf8",
+  ),
+).workspaces;
 
 export default defineConfig({
   plugins: [react()],
@@ -83,8 +94,9 @@ export default defineConfig({
         // Floors set ~2pp below current actuals — same pattern as
         // `apps/server/vitest.config.ts`. Raise per sprint as the idb /
         // shared-lib-ui tests land (see docs/testing/2026-05-05-tests-
-        // pr-plan.md → PR-T03 / PR-T04).
-        lines: 39,
+        // pr-plan.md → PR-T03 / PR-T04). `lines` приходить з кореневого
+        // coverage-thresholds.json — піднімай floor там.
+        lines: sharedThresholds["apps/web"],
         branches: 32,
         functions: 29,
         statements: 38,

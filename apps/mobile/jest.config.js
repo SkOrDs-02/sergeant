@@ -6,6 +6,10 @@
  * and a jsdom-free RN runtime. We run only tests under `src/**` to keep
  * Expo Router's app-directory out of Jest's test discovery.
  */
+// Line-floor — з кореневого coverage-thresholds.json (single source of truth,
+// той самий файл читає CI-гейт у ci.yml). Решта метрик — локальні.
+const sharedThresholds = require("../../coverage-thresholds.json").workspaces;
+
 module.exports = {
   preset: "jest-expo",
   testMatch: [
@@ -110,7 +114,7 @@ module.exports = {
   coverageReporters: ["text-summary", "lcov", "json", "json-summary"],
   coverageThreshold: {
     global: {
-      lines: 30,
+      lines: sharedThresholds["apps/mobile"],
       branches: 25,
       functions: 30,
       statements: 30,

@@ -411,24 +411,14 @@ jobs:
 
       - name: Check coverage threshold (≥75%)
         # Fails CI if any workspace drops below its floor.
-        # Default floor: 75%. Per-workspace overrides align the gate with
-        # the floors documented in each package's vitest.config / jest.config:
-        #   apps/web:              39  (vitest.config.js  lines: 39 — legacy idb/shared-lib-ui debt)
-        #   apps/mobile:           30  (jest.config.js    lines: 30 — React Native coverage gaps)
-        #   packages/api-client:   73  (approaching 75%; see api-client/vitest.config.ts)
-        #   packages/routine-domain: 74 (approaching 75%; see routine-domain/vitest.config.ts)
-        # Raise these floors as coverage improves in each package.
+        # Floors live in coverage-thresholds.json (single source of truth) —
+        # the same file is read by the workspace vitest/jest configs, so the
+        # local `pnpm test:coverage` run and this gate can't drift apart.
+        # Raise floors in that JSON as coverage improves.
         run: |
           set -euo pipefail
-          THRESHOLD=75
+          THRESHOLD=$(jq -r '.default' coverage-thresholds.json)
           FAILED=0
-
-          declare -A WORKSPACE_THRESHOLDS=(
-            ["apps/web"]=39
-            ["apps/mobile"]=30
-            ["packages/api-client"]=73
-            ["packages/routine-domain"]=74
-          )
 
           for summary in apps/*/coverage/coverage-summary.json packages/*/coverage/coverage-summary.json; do
             if [ ! -f "$summary" ]; then
@@ -436,7 +426,7 @@ jobs:
             fi
 
             WORKSPACE=$(echo "$summary" | sed 's|/coverage/coverage-summary.json||')
-            WS_THRESHOLD=${WORKSPACE_THRESHOLDS[$WORKSPACE]:-$THRESHOLD}
+            WS_THRESHOLD=$(jq -r --arg ws "$WORKSPACE" '.workspaces[$ws] // .default' coverage-thresholds.json)
             COVERAGE=$(jq -r '.total.lines.pct' "$summary")
 
             if [ "$COVERAGE" = "null" ] || [ -z "$COVERAGE" ]; then

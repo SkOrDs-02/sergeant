@@ -1,0 +1,10 @@
+{
+  "$comment": "Single source of truth для per-workspace coverage line-floors. Читається CI-гейтом (.github/workflows/ci.yml :: 'Check coverage threshold') і конфігами workspace-ів: vitest (apps/web, packages/api-client, packages/routine-domain) та jest (apps/mobile). Піднімай floors тут у міру росту покриття.",
+  "default": 75,
+  "workspaces": {
+    "apps/web": 39,
+    "apps/mobile": 30,
+    "packages/api-client": 73,
+    "packages/routine-domain": 74
+  }
+}
