@@ -20,9 +20,9 @@ import type { PactV4 } from "@pact-foundation/pact";
 
 import { createHttpClient } from "../../httpClient";
 import { createFoodSearchEndpoints } from "../../endpoints/foodSearch";
-import { createPact } from "./_pact";
+import { CONTRACT_SUITE_OPTIONS, createPact } from "./_pact";
 
-describe("contract @ GET /api/food-search", () => {
+describe("contract @ GET /api/food-search", CONTRACT_SUITE_OPTIONS, () => {
   let pact: PactV4;
   beforeAll(() => {
     pact = createPact();

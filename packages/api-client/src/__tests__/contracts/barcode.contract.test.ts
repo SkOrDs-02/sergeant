@@ -19,9 +19,9 @@ import type { PactV4 } from "@pact-foundation/pact";
 
 import { createHttpClient } from "../../httpClient";
 import { createBarcodeEndpoints } from "../../endpoints/barcode";
-import { createPact } from "./_pact";
+import { CONTRACT_SUITE_OPTIONS, createPact } from "./_pact";
 
-describe("contract @ GET /api/v1/barcode", () => {
+describe("contract @ GET /api/v1/barcode", CONTRACT_SUITE_OPTIONS, () => {
   let pact: PactV4;
   beforeAll(() => {
     pact = createPact();
