@@ -132,6 +132,10 @@ export function usePushNotifications(): UsePushNotificationsResult {
     enabled: supported && !native,
     staleTime: Infinity,
     gcTime: Infinity,
+    // 503 = VAPID не сконфігуровано на сервері (детермінований стан, не
+    // транзієнт) — ретраї лише множать failed-запити в консолі на кожен
+    // page load (live-deploy audit 2026-06-11).
+    retry: false,
   });
 
   const subscribeMutation = useMutation({

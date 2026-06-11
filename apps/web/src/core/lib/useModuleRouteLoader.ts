@@ -54,6 +54,10 @@ export function useModuleRouteLoader(activeModule: HubModuleId | null): void {
       queryKey: pushKeys.vapid,
       queryFn: () => pushApi.getVapidPublic(),
       staleTime: STALE_TIME,
+      // Fire-and-forget warm-up: якщо сервер без VAPID env віддає 503,
+      // ретраї тут — лише консольний шум; наступна навігація все одно
+      // спробує знову (staleTime 30s).
+      retry: false,
     });
 
     if (activeModule === "finyk") {
