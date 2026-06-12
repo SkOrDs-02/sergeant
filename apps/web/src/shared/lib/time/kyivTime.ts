@@ -19,7 +19,7 @@
  * @see docs/audits/2026-05-13-consolidated-page-audit.md § Theme 1
  */
 
-import { kyivMondayStartMs } from "@sergeant/shared/utils";
+import { kyivMondayStartMs } from "@sergeant/shared";
 
 const KYIV_TZ = "Europe/Kyiv";
 

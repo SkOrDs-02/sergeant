@@ -14,7 +14,7 @@ import { MiniLineChart } from "../components/MiniLineChart";
 import { WellbeingChart } from "../components/WellbeingChart";
 import { WeeklyVolumeChart } from "../components/WeeklyVolumeChart";
 import { epley1rm, weeklyVolumeSeriesNow } from "@sergeant/fizruk-domain";
-import { kyivMondayStartMs } from "@sergeant/shared/utils";
+import { kyivMondayStartMs } from "@sergeant/shared";
 import { statusColors } from "@shared/charts";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";

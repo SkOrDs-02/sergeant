@@ -16,7 +16,7 @@
  * helpers in `@sergeant/shared`.
  */
 
-import { kyivMondayStartMs, toLocalISODate } from "@sergeant/shared/utils";
+import { kyivMondayStartMs, toLocalISODate } from "@sergeant/shared";
 
 import {
   epley1rm,

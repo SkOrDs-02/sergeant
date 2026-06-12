@@ -17,7 +17,7 @@
  *    window (default 30 days).
  */
 
-import { kyivMondayStartMs } from "@sergeant/shared/utils";
+import { kyivMondayStartMs } from "@sergeant/shared";
 
 import type {
   DashboardKpis,

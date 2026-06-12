@@ -1,6 +1,6 @@
 /** Pure helpers for dashboard / analytics (kg, Kyiv-anchored week Mon–Sun). */
 
-import { kyivDayStartMs, kyivMondayStartMs } from "@sergeant/shared/utils";
+import { kyivDayStartMs, kyivMondayStartMs } from "@sergeant/shared";
 
 interface StatsSet {
   weightKg?: number | null | undefined;
