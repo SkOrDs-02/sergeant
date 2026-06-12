@@ -139,7 +139,7 @@ export function LogCard({
             <button
               type="button"
               className="underline font-semibold"
-              onClick={() => onTrimLog?.(365)}
+              onClick={() => setTrimConfirm(true)}
             >
               Залишити лише останні 365 днів
             </button>

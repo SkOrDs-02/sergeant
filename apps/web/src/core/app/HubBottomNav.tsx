@@ -2,7 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
@@ -68,6 +68,15 @@ interface HubBottomNavTabProps {
    * і CLS під час першого реального запису (UX-roast 2026-Q2 §7.2 / PR-23).
    */
   hiddenSlot?: boolean | undefined;
+  /**
+   * Навігаційна дія (наприклад, гостьове «Увійти» → /sign-in), а не
+   * перемикач hub-панелі. Рендериться як звичайна кнопка без
+   * `role="tab"`/`aria-selected`/`aria-controls`: AT-семантика «вкладка,
+   * не вибрано», що насправді виконує навігацію, вводить в оману
+   * screen-reader-користувачів.
+   */
+  action?: boolean | undefined;
+  onKeyDown?: ((event: KeyboardEvent<HTMLButtonElement>) => void) | undefined;
 }
 
 interface HubBottomNavItem extends HubBottomNavTabProps {
@@ -84,19 +93,27 @@ function HubBottomNavTab({
   id,
   prefetchPage,
   hiddenSlot = false,
+  action = false,
+  onKeyDown,
 }: HubBottomNavTabProps) {
   const prefetchProps =
     !hiddenSlot && prefetchPage ? getPagePrefetchProps(prefetchPage) : {};
+  const tabAria = action
+    ? {}
+    : ({
+        role: "tab",
+        "aria-selected": active,
+        "aria-controls": panelId,
+      } as const);
 
   return (
     <button
       type="button"
-      role="tab"
       id={`hub-tab-${id}`}
-      aria-selected={active}
-      aria-controls={panelId}
-      tabIndex={hiddenSlot ? -1 : active ? 0 : -1}
+      {...tabAria}
+      tabIndex={hiddenSlot ? -1 : active || action ? 0 : -1}
       onClick={hiddenSlot ? undefined : onClick}
+      onKeyDown={hiddenSlot || action ? undefined : onKeyDown}
       {...prefetchProps}
       // `visibility: hidden` (а не `aria-hidden`) — щоб accessibility-tree
       // ховала слот за computed-стилем, але RTL міг знайти його через
@@ -170,6 +187,39 @@ export function HubBottomNav({
   // тож тихо ставимо флаг і нічого не показуємо.
   const prevShowReportsRef = useRef(showReports);
   const [animateReveal, setAnimateReveal] = useState(false);
+  const tablistRef = useRef<HTMLDivElement>(null);
+
+  // Roving tabindex (інактивні таби tabIndex=-1) без стрілок робив
+  // «Звіти»/«Налаштування» недосяжними з клавіатури — WAI-ARIA tabs
+  // pattern вимагає Left/Right (+Home/End) переміщення фокуса.
+  const handleTablistKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      return;
+    }
+    const root = tablistRef.current;
+    if (!root) return;
+    const visibleTabs = Array.from(
+      root.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+    ).filter((el) => el.style.visibility !== "hidden");
+    if (visibleTabs.length === 0) return;
+    const currentIndex = visibleTabs.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
+    let nextIndex: number;
+    if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = visibleTabs.length - 1;
+    } else {
+      const delta = event.key === "ArrowRight" ? 1 : -1;
+      nextIndex =
+        currentIndex === -1
+          ? 0
+          : (currentIndex + delta + visibleTabs.length) % visibleTabs.length;
+    }
+    event.preventDefault();
+    visibleTabs[nextIndex]?.focus();
+  };
 
   useEffect(() => {
     const prevShowReports = prevShowReportsRef.current;
@@ -245,6 +295,7 @@ export function HubBottomNav({
       iconName: "user",
       prefetchPage: "auth",
       label: "Увійти",
+      action: true,
     });
   }
 
@@ -269,6 +320,7 @@ export function HubBottomNav({
     >
       <div
         role="tablist"
+        ref={tablistRef}
         className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
       >
         {tabs.map((tab) => (
@@ -283,6 +335,8 @@ export function HubBottomNav({
             className={tab.className}
             prefetchPage={tab.prefetchPage}
             hiddenSlot={tab.hiddenSlot}
+            action={tab.action}
+            onKeyDown={handleTablistKeyDown}
           />
         ))}
       </div>

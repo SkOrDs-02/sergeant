@@ -358,6 +358,7 @@
 
     /* AMBIENT loop durations — long, intentional, looped infinitely. */
     --motion-duration-loop-spin: 800ms; /* pull-to-refresh spinner */
+    --motion-duration-loop-spin-slow: 2400ms; /* passive sync indicators */
     --motion-duration-loop: 1500ms; /* shimmer */
     --motion-duration-loop-glow: 2000ms; /* glow / pulse / streak */
     --motion-duration-loop-float: 8000ms; /* ambient backdrops */

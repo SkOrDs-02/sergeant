@@ -668,6 +668,13 @@
   animation: pull-rotate var(--motion-duration-loop-spin) linear infinite;
 }
 
+/* Slow ambient spin for passive sync indicators (e.g. OfflineBanner) —
+   deliberately lazy so the loop reads as "background activity", not as a
+   loading spinner demanding attention. AMBIENT tier. */
+.animate-spin-slow {
+  animation: pull-rotate var(--motion-duration-loop-spin-slow) linear infinite;
+}
+
 /* ── Number counter (CELEBRATE / RESPONSE) ───────────────────────────── */
 
 @keyframes number-tick-up {
@@ -1009,6 +1016,7 @@
   .animate-pulse,
   .animate-pulse-soft,
   .animate-spin,
+  .animate-spin-slow,
   .animate-bounce,
   .animate-wiggle,
   .animate-fade-in-slow {
@@ -1052,6 +1060,7 @@
 .simulate-reduced-motion .animate-pulse,
 .simulate-reduced-motion .animate-pulse-soft,
 .simulate-reduced-motion .animate-spin,
+.simulate-reduced-motion .animate-spin-slow,
 .simulate-reduced-motion .animate-bounce,
 .simulate-reduced-motion .animate-wiggle,
 .simulate-reduced-motion .animate-fade-in-slow {

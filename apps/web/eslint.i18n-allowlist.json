@@ -97,7 +97,6 @@
   "apps/web/src/core/stories/components/slides/OverallSlide.tsx",
   "apps/web/src/core/stories/components/slides/RoutineSlide.tsx",
   "apps/web/src/modules/finyk/FinykApp.tsx",
-  "apps/web/src/modules/finyk/components/FinykAuthErrorBanner.tsx",
   "apps/web/src/modules/finyk/components/FinykHeaderControls.tsx",
   "apps/web/src/modules/finyk/components/FinykPageHost.tsx",
   "apps/web/src/modules/finyk/components/DebtCard.tsx",
