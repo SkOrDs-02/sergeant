@@ -2,6 +2,7 @@
  * Shared muscle-recovery computation logic used by `useRecovery` and recovery forecasts.
  */
 
+import { kyivCalendarDaysBetween } from "@sergeant/shared";
 import type {
   MuscleState,
   RecoveryStatus,
@@ -11,12 +12,6 @@ import type {
 } from "../domain/types";
 
 export type { MuscleState, RecoveryStatus };
-
-/** Number of whole days between two millisecond timestamps (`a - b`). */
-function daysBetween(aMs: number, bMs: number): number {
-  const DAY = 24 * 60 * 60 * 1000;
-  return Math.floor((aMs - bMs) / DAY);
-}
 
 /** Clamp `n` to the inclusive range `[a, b]`. */
 function clamp(n: number, a: number, b: number): number {
@@ -184,7 +179,9 @@ export function computeRecoveryBy(
 
   for (const m of Object.values(by)) {
     if (m.lastAt != null) {
-      m.daysSince = clamp(daysBetween(nowMs, m.lastAt), 0, 999);
+      // Kyiv calendar days, not elapsed 24h windows: a workout yesterday
+      // at 23:00 is "1 день тому" this morning (domain invariant).
+      m.daysSince = clamp(kyivCalendarDaysBetween(nowMs, m.lastAt), 0, 999);
     }
     const ds = m.daysSince ?? Infinity;
     if (m.lastAt == null) m.status = "green";

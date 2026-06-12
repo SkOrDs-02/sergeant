@@ -134,6 +134,11 @@ export function mapDomainMuscleToAtlas(
       return "forearm";
     case "front_deltoid":
       return "front-deltoids";
+    // The atlas has no dedicated lateral-delt region; the front shoulder
+    // cap is the closest visual anchor (otherwise lateral raises are
+    // invisible on the silhouette).
+    case "lateral_deltoid":
+      return "front-deltoids";
     case "rear_deltoid":
       return "back-deltoids";
     case "rectus_abdominis":

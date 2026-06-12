@@ -18,6 +18,7 @@ import {
   statusToIntensity,
   type BodyAtlasMuscleId,
 } from "./bodyAtlas.js";
+import { EXERCISES, MUSCLES_UK } from "./index.js";
 
 describe("BODY_ATLAS_MUSCLE_IDS", () => {
   it("covers every web body-highlighter key used by Atlas.tsx", () => {
@@ -115,6 +116,27 @@ describe("mapDomainMuscleToAtlas", () => {
     expect(mapDomainMuscleToAtlas("")).toBeNull();
     expect(mapDomainMuscleToAtlas(null)).toBeNull();
     expect(mapDomainMuscleToAtlas(undefined)).toBeNull();
+  });
+
+  it("covers every muscle id used by the exercise catalogue", () => {
+    // Muscles the atlas deliberately does NOT render (no matching
+    // silhouette region). Adding a new catalogue muscle without either a
+    // mapping or an entry here fails the test — that muscle would be
+    // silently invisible in the BodyAtlas.
+    const INTENTIONALLY_UNMAPPED = new Set(["serratus_anterior"]);
+
+    const used = new Set<string>();
+    for (const ex of EXERCISES) {
+      for (const m of ex.muscles?.primary ?? []) used.add(m);
+      for (const m of ex.muscles?.secondary ?? []) used.add(m);
+    }
+    for (const id of Object.keys(MUSCLES_UK)) used.add(id);
+
+    const unmapped = [...used]
+      .filter((id) => mapDomainMuscleToAtlas(id) === null)
+      .filter((id) => !INTENTIONALLY_UNMAPPED.has(id))
+      .sort();
+    expect(unmapped).toEqual([]);
   });
 });
 
