@@ -1071,4 +1071,3 @@ strengthen the same swap rather than extending it. Tracked у audit
   wall-clock** (1 FTE кодом ~2 тижні + рest — telemetry-watching).
 
 ---
-

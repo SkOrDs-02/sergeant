@@ -864,4 +864,3 @@ AND status='dead_letter'`. `WHERE status='dead_letter'` guard
   стабілізовано).
 
 ---
-

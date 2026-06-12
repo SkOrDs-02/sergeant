@@ -175,7 +175,7 @@ CI-гейт `lint:initiative-status-sync` (`scripts/check-initiative-status-sync
 
 ## Зведена матриця hardening-карток
 
-Швидкий огляд усіх hardening-карток (stack-pulse-2026-05 + _0008 + _0009) — що зроблено, що відкрите: [`hardening-matrix.md`](./hardening-matrix.md).
+Швидкий огляд усіх hardening-карток (stack-pulse-2026-05 + \_0008 + \_0009) — що зроблено, що відкрите: [`hardening-matrix.md`](./hardening-matrix.md).
 
 ## Джерела
 

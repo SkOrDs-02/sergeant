@@ -5,8 +5,6 @@
 
 > **Частина** [storage-roadmap](../storage-roadmap.md) · [← Overview](./01-overview.md) · [→ Stage 4](./03-stage-4.md)
 
----
-
 ## 3. PR-плани
 
 ### Stage 0 — Security hygiene (P0)
@@ -45,8 +43,8 @@
 
 - **Scope.** Cron-job (Railway scheduled task) який раз на 90 днів ротує
   `mono_connection.webhook_secret_hash`. Endpoint `POST /api/internal/mono/webhook/rotate`
-  у [../../../../apps/server/src/routes/internal/mono.ts](../../../../apps/server/src/routes/internal/mono.ts);
-  логіка у [../../../../apps/server/src/modules/mono/rotateSecret.ts](../../../../apps/server/src/modules/mono/rotateSecret.ts);
+  у [`apps/server/src/routes/internal/mono.ts`](../../../../apps/server/src/routes/internal/mono.ts);
+  логіка у [`apps/server/src/modules/mono/rotateSecret.ts`](../../../../apps/server/src/modules/mono/rotateSecret.ts);
   storage у migration `033_mono_webhook_secret_rotated_at` (стовпець `webhook_secret_rotated_at`).
 - **Risk.** Проґавити вікно ротації — Mono webhook відмовляє. Mitigation:
   Sentry warning, якщо connection > `alertAfterDays` без ротації — реалізовано у
@@ -346,7 +344,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 > code було розкомпоновано: production-critical файли (`clientMigrate.ts`,
 > `expoSqliteAdapter.ts`, `testSqlite.ts`) промоутнули у не-SPIKE-шляхи,
 > решту бібліотеки + dev-panel-і + feature flag видалили у [#1421](https://github.com/Skords-01/Sergeant/pull/1421).
-> SPIKE-нотатник архівовано: [`../../../02-engineering/notes/spikes/routine-sqlite-v2.md`](../../../02-engineering/notes/spikes/routine-sqlite-v2.md#decision-gate-metrics)
+> SPIKE-нотатник архівовано: [`docs/02-engineering/notes/spikes/routine-sqlite-v2.md`](../../../02-engineering/notes/spikes/routine-sqlite-v2.md#decision-gate-metrics)
 > (`Status: Completed & archived`). Decision-gate replication тепер
 > покривається production reads PR #025 + drop-blob PR #026 + dual-write PR #024.
 
@@ -373,7 +371,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
     дублює ~500 рядків — буде винесено у спільний пакет на Stage 5).
   - Web feature flag `feature.routine.sqlite_v2` зареєстровано у
     `apps/web/src/core/lib/featureFlags.ts` (default: off, experimental).
-  - Документ `../../../02-engineering/notes/spikes/routine-sqlite-v2.md` — кваліфікаційний
+  - Документ `docs/02-engineering/notes/spikes/routine-sqlite-v2.md` — кваліфікаційний
     нотатник із decision-gate замірами.
 - **Що ще треба для замикання SPIKE-у (наступний PR в цій гілці).**
   - Web: невелика dev-only панель у Settings → Експериментальне, щоб

@@ -24,13 +24,13 @@
 
 Монолітний документ розбито на 5 тематичних файлів у [`design-system/`](./design-system/):
 
-| Файл | Розділи | Зміст |
-| ---- | ------- | ----- |
-| [`01-tokens-colors.md`](./design-system/01-tokens-colors.md) | §1, §2, §9 | Принципи, кольорові токени, WCAG AA контраст |
-| [`02-typography.md`](./design-system/02-typography.md) | §3 | Типографічна шкала (`text-style-*`, tier-2, Prose) |
-| [`03-spacing-elevation-theming.md`](./design-system/03-spacing-elevation-theming.md) | §4, §7, §8 | Spacing, радіуси, тіні, мобільні брейкпоінти, темна тема / HC |
-| [`04-components.md`](./design-system/04-components.md) | §5, §6, §10, §11, §12, §13, §16, §18, §19 | Примітиви UI, Focus/a11y, Coding rules, Gestures, DropdownMenu, CommandPalette |
-| [`05-motion-offline-error.md`](./design-system/05-motion-offline-error.md) | §14, §15 | Motion tokens, Animation choreography, Offline/Empty/Error патерни |
+| Файл                                                                                 | Розділи                                   | Зміст                                                                          |
+| ------------------------------------------------------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------ |
+| [`01-tokens-colors.md`](./design-system/01-tokens-colors.md)                         | §1, §2, §9                                | Принципи, кольорові токени, WCAG AA контраст                                   |
+| [`02-typography.md`](./design-system/02-typography.md)                               | §3                                        | Типографічна шкала (`text-style-*`, tier-2, Prose)                             |
+| [`03-spacing-elevation-theming.md`](./design-system/03-spacing-elevation-theming.md) | §4, §7, §8                                | Spacing, радіуси, тіні, мобільні брейкпоінти, темна тема / HC                  |
+| [`04-components.md`](./design-system/04-components.md)                               | §5, §6, §10, §11, §12, §13, §16, §18, §19 | Примітиви UI, Focus/a11y, Coding rules, Gestures, DropdownMenu, CommandPalette |
+| [`05-motion-offline-error.md`](./design-system/05-motion-offline-error.md)           | §14, §15                                  | Motion tokens, Animation choreography, Offline/Empty/Error патерни             |
 
 ---
 
@@ -89,8 +89,8 @@ Hard Rules + ESLint rules.
 → [`design-system/02-typography.md`](./design-system/02-typography.md)
 
 - [§3 Типографічна шкала](./design-system/02-typography.md#3-типографічна-шкала)
-- [text-style-* tier-1](./design-system/02-typography.md#семантичні-text-style--ютиліті-tier-1-fluid)
-- [Канонічна text-* шкала tier-2](./design-system/02-typography.md#канонічна-text--шкала-tier-2--окремі-утиліти)
+- [text-style-\* tier-1](./design-system/02-typography.md#семантичні-text-style--ютиліті-tier-1-fluid)
+- [Канонічна text-\* шкала tier-2](./design-system/02-typography.md#канонічна-text--шкала-tier-2--окремі-утиліти)
 - [Prose](./design-system/02-typography.md#prose--sharedcomponentsuiprose)
 
 ### Spacing, Elevation та Theming

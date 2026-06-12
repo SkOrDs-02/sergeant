@@ -363,4 +363,3 @@ true, experimental: true` у `featureFlags.ts:62-69`. Усі інші
 dev cadence, burn-in window for PR #078 waived per user decision.
 
 ---
-

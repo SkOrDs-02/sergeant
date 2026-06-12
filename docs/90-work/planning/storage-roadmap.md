@@ -34,13 +34,13 @@ Roadmap переведення Storage & Sync у Sergeant на production-ready 
 
 ## Зміст
 
-| Файл | Зміст |
-| ---- | ----- |
-| [01-overview.md](./storage-roadmap/01-overview.md) | Definition of Done · Цільова архітектура · Stages/timeline таблиця |
-| [02-stages-0-3.md](./storage-roadmap/02-stages-0-3.md) | PR-плани: Stage 0 (Security hygiene P0) · Stage 1 (Consolidation) · Stage 2 (Foundation SQLite) · Stage 3 (SPIKE routine) |
-| [03-stage-4.md](./storage-roadmap/03-stage-4.md) | PR-плани: Stage 4 — Per-module migration (Routine, Fizruk, Nutrition, Finyk) |
-| [04-stage-5.md](./storage-roadmap/04-stage-5.md) | PR-плани: Stage 5 — Sync engine v2 hardening (op-log, CRDT, SSE, scheduler) |
-| [05-stage-6-7.md](./storage-roadmap/05-stage-6-7.md) | PR-плани: Stage 6 (Operational maturity — pgBouncer, read-replica, backup) · Stage 7 (Cleanup — drop cloudSync v1, module_data, KVStore) |
-| [06-stage-8-9.md](./storage-roadmap/06-stage-8-9.md) | PR-плани: Stage 8 (SQLite cut-over rollout — dual-write default-on, tombstones, Stages 10/11/12) · Stage 9 (KV store swap → kv_store SQLite) |
-| [07-stage-13.md](./storage-roadmap/07-stage-13.md) | PR-плани: Stage 13 — Audit findings & post-migration cleanup (PR #071–#079) |
-| [08-appendix.md](./storage-roadmap/08-appendix.md) | Зміни інфраструктури · Risk register · Decision gates · Метрики успіху · Перші кроки · Зв'язок з тех-боргом · Підсумок |
+| Файл                                                   | Зміст                                                                                                                                        |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [01-overview.md](./storage-roadmap/01-overview.md)     | Definition of Done · Цільова архітектура · Stages/timeline таблиця                                                                           |
+| [02-stages-0-3.md](./storage-roadmap/02-stages-0-3.md) | PR-плани: Stage 0 (Security hygiene P0) · Stage 1 (Consolidation) · Stage 2 (Foundation SQLite) · Stage 3 (SPIKE routine)                    |
+| [03-stage-4.md](./storage-roadmap/03-stage-4.md)       | PR-плани: Stage 4 — Per-module migration (Routine, Fizruk, Nutrition, Finyk)                                                                 |
+| [04-stage-5.md](./storage-roadmap/04-stage-5.md)       | PR-плани: Stage 5 — Sync engine v2 hardening (op-log, CRDT, SSE, scheduler)                                                                  |
+| [05-stage-6-7.md](./storage-roadmap/05-stage-6-7.md)   | PR-плани: Stage 6 (Operational maturity — pgBouncer, read-replica, backup) · Stage 7 (Cleanup — drop cloudSync v1, module_data, KVStore)     |
+| [06-stage-8-9.md](./storage-roadmap/06-stage-8-9.md)   | PR-плани: Stage 8 (SQLite cut-over rollout — dual-write default-on, tombstones, Stages 10/11/12) · Stage 9 (KV store swap → kv_store SQLite) |
+| [07-stage-13.md](./storage-roadmap/07-stage-13.md)     | PR-плани: Stage 13 — Audit findings & post-migration cleanup (PR #071–#079)                                                                  |
+| [08-appendix.md](./storage-roadmap/08-appendix.md)     | Зміни інфраструктури · Risk register · Decision gates · Метрики успіху · Перші кроки · Зв'язок з тех-боргом · Підсумок                       |
