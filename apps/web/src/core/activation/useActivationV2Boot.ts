@@ -50,13 +50,33 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
 
   // Subscribe to the React Query cache so we re-evaluate when the
   // source queries (`monoWebhookAccounts`, `monoWebhookTransactions`)
-  // change. The QueryCache emits on every query state transition;
-  // we coalesce all of them into a monotonic tick — the actual
+  // change. The QueryCache emits on every query *and observer* transition;
+  // we coalesce the data-affecting ones into a monotonic tick — the actual
   // snapshot read happens in the `useMemo` below.
+  //
+  // CRITICAL: filter to events that can actually change the activation
+  // snapshot — `added` / `removed` (a source query appeared/disappeared)
+  // and `updated` (its data/state changed). The cache ALSO emits
+  // `observerOptionsUpdated` every time any `useQuery` re-renders with a
+  // fresh options object — and bumping `cacheTick` on that event creates a
+  // self-sustaining render loop: cacheTick → RootLayout re-render → every
+  // `useQuery` re-runs `observer.setOptions()` → `observerOptionsUpdated`
+  // → cacheTick → … (~2000 renders/sec). That loop emits continuous
+  // DefaultLane updates that perpetually preempt React Router 7's
+  // navigation transition, so a clicked module route never commits (URL
+  // changes, view stays on Hub). Observer-only events (`observerAdded`,
+  // `observerRemoved`, `observerResultsUpdated`, `observerOptionsUpdated`)
+  // never change the activation inputs, so they are ignored here.
   useEffect(() => {
     const cache = queryClient.getQueryCache();
-    return cache.subscribe(() => {
-      setCacheTick((t) => t + 1);
+    return cache.subscribe((event) => {
+      if (
+        event.type === "added" ||
+        event.type === "removed" ||
+        event.type === "updated"
+      ) {
+        setCacheTick((t) => t + 1);
+      }
     });
   }, [queryClient]);
 
@@ -142,6 +162,11 @@ function countBudgetsCreated(): number {
   if (sqliteCache.refreshedAt !== null) {
     return sqliteCache.budgets.length;
   }
+  // The registered `STORAGE_KEYS.FINYK_BUDGETS` constant is banned here by
+  // `no-restricted-syntax` (retired cloud-sync key, PR #039), and the finyk
+  // SQLite wrapper isn't reachable from this core boot hook — so the raw
+  // literal is the accepted fallback (burn-down 2026-Q3).
+  // eslint-disable-next-line sergeant-design/no-raw-storage-key -- see comment above
   const localBudgets = safeReadLS<unknown[]>("finyk_budgets", []);
   return Array.isArray(localBudgets) ? localBudgets.length : 0;
 }
