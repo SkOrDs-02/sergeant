@@ -203,7 +203,7 @@ font-family:
 Hard-rule #16). `text-2xs` (10px) зарезервований під chart axis ticks і
 декоративні meta-badge-counts; **ніколи не використовувати для primary content**.
 Повний контракт + ESLint-rule `sergeant-design/no-sub-12px-utility` —
-у [`design-system.md` § 3](./design-system.md#3-типографічна-шкала).
+у [`design-system/02-typography.md` § 3](./design-system/02-typography.md#3-типографічна-шкала).
 Для семантичних use-case-ів використовуй утиліти `.text-style-*`
 (`.text-style-meta`, `.text-style-caption`, `.text-style-body-sm`, …) — вони
 прив'язані до slots, а не до сирих pixel-розмірів.
