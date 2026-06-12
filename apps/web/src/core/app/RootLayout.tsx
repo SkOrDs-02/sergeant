@@ -43,13 +43,15 @@ function NutritionBootGate() {
 
 /**
  * App shell wrapper — renders global UI (AppLock, HubChatOverlay,
- * NutritionBootGate) around the child route content.
+ * NutritionBootGate) around the child route content. The `HubChatOverlay`
+ * provider is owned by `RootLayout` (above this component) so the overlay
+ * state is shared with `RootLayout`'s own consumers — see that component's
+ * docstring.
  */
 function AppShell({ children }: { children: React.ReactNode }) {
   const appLock = useAppLockContext();
-  const chatOverlay = useHubChatOverlayState();
   return (
-    <HubChatOverlayProvider value={chatOverlay}>
+    <>
       <AppLock
         state={appLock.state}
         onUnlock={appLock.unlock}
@@ -62,24 +64,41 @@ function AppShell({ children }: { children: React.ReactNode }) {
       <NutritionBootGate />
       {children}
       <HubChatOverlay />
+    </>
+  );
+}
+
+/**
+ * Outer layout route component (initiative 0006 Phase 5).
+ *
+ * Owns the HubChat overlay state and provides it ABOVE `RootLayoutInner`, so
+ * every consumer inside the layout — the `useAppEffects` `openChat` hub-bus
+ * listener, `hubShellValue.openAssistantChat`, and the `<HubChatOverlay/>`
+ * sheet — shares one state. Previously the provider was created inside
+ * `AppShell` (a descendant of these consumers), so they bound to the noop
+ * fallback and the assistant FAB / Ctrl+/ shortcut never opened the overlay.
+ */
+export function RootLayout() {
+  const chatOverlay = useHubChatOverlayState();
+  return (
+    <HubChatOverlayProvider value={chatOverlay}>
+      <RootLayoutInner />
     </HubChatOverlayProvider>
   );
 }
 
 /**
- * Root layout route — initiative 0006 Phase 5.
- *
- * Runs global effects once, then renders
- * matched child routes via `<Outlet />`. Each child route gets a
- * **different** component, which fixes the React Router 7 location-
- * context propagation bug (mixed-shape match objects when multiple
- * routes resolve to the same `<App />`).
+ * Inner layout body. Runs global effects once, then renders matched child
+ * routes via `<Outlet />`. Each child route gets a **different** component,
+ * which fixes the React Router 7 location-context propagation bug
+ * (mixed-shape match objects when multiple routes resolve to the same
+ * `<App />`).
  *
  * Shared state (navigation, UI, PWA actions, auth) is provided via
  * `HubShellContext` so child routes don't need to call these hooks
  * independently.
  */
-export function RootLayout() {
+function RootLayoutInner() {
   const location = useLocation();
   const browserLocation = useBrowserLocation(location);
   const navigate = useNavigate();
