@@ -17,6 +17,8 @@
  *    window (default 30 days).
  */
 
+import { kyivMondayStartMs } from "@sergeant/shared";
+
 import type {
   DashboardKpis,
   DashboardMeasurementInput,
@@ -40,14 +42,6 @@ function localYmdKey(ms: number): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-function mondayStartMs(ms: number): number {
-  const d = new Date(ms);
-  d.setHours(0, 0, 0, 0);
-  const dow = (d.getDay() + 6) % 7; // 0 = Mon
-  d.setDate(d.getDate() - dow);
-  return d.getTime();
 }
 
 function isCompletedWorkout(
@@ -134,6 +128,7 @@ export function computeStreakDays(
 
 /**
  * Current Mon-first-week counts (completed workouts + volume).
+ * Week boundaries are anchored to Europe/Kyiv (domain invariant).
  */
 export function computeWeeklyTotals(
   workouts: readonly DashboardWorkoutInput[] | null | undefined,
@@ -142,8 +137,13 @@ export function computeWeeklyTotals(
   const list = Array.isArray(workouts) ? workouts : [];
   if (list.length === 0) return { count: 0, volumeKg: 0 };
 
-  const weekStart = mondayStartMs(now.getTime());
-  const weekEnd = weekStart + 7 * MS_PER_DAY;
+  const weekStart = kyivMondayStartMs(now.getTime());
+  // Не `weekStart + 7×24h`: DST-тиждень триває 167/169 год. Середина
+  // наступного понеділка (±1h DST-люфт не виводить за межі дня) → його
+  // київський старт.
+  const weekEnd = kyivMondayStartMs(
+    weekStart + 7 * MS_PER_DAY + MS_PER_DAY / 2,
+  );
 
   let count = 0;
   let volumeKg = 0;

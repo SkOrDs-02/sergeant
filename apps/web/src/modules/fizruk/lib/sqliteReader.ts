@@ -429,6 +429,7 @@ export async function refreshFizrukSqliteState(
     dailyLog,
     monthlyPlan,
     workoutTemplates,
+    // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary
     refreshedAt: new Date().toISOString(),
   };
   return cache;
@@ -453,6 +454,7 @@ export function __setFizrukSqliteCacheForTests(
 ): void {
   cache = {
     ...EMPTY_CACHE,
+    // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary
     refreshedAt: new Date().toISOString(),
     ...partial,
   };

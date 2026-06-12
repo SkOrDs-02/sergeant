@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   completedWorkoutsCount,
+  countCompletedInCurrentWeek,
   formatCompactKg,
   getExercisePR,
   personalRecordsExerciseCount,
@@ -61,9 +62,78 @@ describe("personalRecordsExerciseCount", () => {
 });
 
 describe("weeklyVolumeSeriesNow", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("returns 7 volume slots", () => {
     const { volumeKg } = weeklyVolumeSeriesNow([]);
     expect(volumeKg).toHaveLength(7);
+  });
+
+  function done(startedAt: string, weightKg: number, reps: number) {
+    return {
+      startedAt,
+      endedAt: startedAt,
+      items: [{ type: "strength", sets: [{ weightKg, reps }] }],
+    };
+  }
+
+  // Domain invariant: week boundaries are Europe/Kyiv, not the host tz.
+  // Mon 2026-06-08 00:00 Kyiv (EEST, UTC+3) = 2026-06-07T21:00:00Z.
+  it("anchors the Mon..Sun week to Europe/Kyiv regardless of host tz", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-10T12:00:00Z")); // Wed of that week
+
+    const { weekStartMs, volumeKg } = weeklyVolumeSeriesNow([
+      done("2026-06-07T20:30:00Z", 100, 1), // Sun 23:30 Kyiv → previous week
+      done("2026-06-07T21:30:00Z", 60, 5), // Mon 00:30 Kyiv → idx 0
+      done("2026-06-10T10:00:00Z", 40, 10), // Wed 13:00 Kyiv → idx 2
+    ]);
+
+    expect(weekStartMs).toBe(Date.parse("2026-06-07T21:00:00Z"));
+    expect(volumeKg).toEqual([300, 0, 400, 0, 0, 0, 0]);
+  });
+
+  // DST week: Kyiv springs forward Sun 2026-03-29 03:00 EET → 04:00 EEST,
+  // so the week Mon 2026-03-23 .. Sun 2026-03-29 is 167 hours long.
+  it("buckets days correctly across the spring-forward DST week", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-26T12:00:00Z")); // Thu of DST week
+
+    const { weekStartMs, volumeKg } = weeklyVolumeSeriesNow([
+      done("2026-03-22T22:30:00Z", 60, 5), // Mon 00:30 Kyiv (EET) → idx 0
+      done("2026-03-29T20:30:00Z", 100, 1), // Sun 23:30 Kyiv (EEST) → idx 6
+      done("2026-03-29T21:30:00Z", 999, 1), // Mon 00:30 Kyiv next week → out
+    ]);
+
+    // Mon 2026-03-23 00:00 Kyiv (EET, UTC+2) = 2026-03-22T22:00:00Z.
+    expect(weekStartMs).toBe(Date.parse("2026-03-22T22:00:00Z"));
+    expect(volumeKg).toEqual([300, 0, 0, 0, 0, 0, 100]);
+  });
+});
+
+describe("countCompletedInCurrentWeek", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("uses the Kyiv week boundary, not the host-local one", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-10T12:00:00Z"));
+
+    const mk = (startedAt: string) => ({
+      startedAt,
+      endedAt: startedAt,
+      items: [],
+    });
+    expect(
+      countCompletedInCurrentWeek([
+        mk("2026-06-07T20:30:00Z"), // Sun 23:30 Kyiv → previous week
+        mk("2026-06-07T21:30:00Z"), // Mon 00:30 Kyiv → this week
+        mk("2026-06-12T10:00:00Z"), // Fri → this week
+      ]),
+    ).toBe(2);
   });
 });
 

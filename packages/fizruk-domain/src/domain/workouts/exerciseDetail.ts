@@ -9,10 +9,14 @@
  *   - cardio (distance) trend buckets (pace / distance),
  *   - load-calculator zones (strength / hypertrophy / endurance).
  *
- * Kept DOM-free: no `window` / `localStorage` / `Intl.DateTimeFormat`
- * consumers here. Date labels are formatted via `Date#toLocaleDateString`
- * which is safe in Node and React Native runtimes.
+ * Kept DOM-free: no `window` / `localStorage` consumers here. Date labels
+ * are formatted via `Date#toLocaleDateString` (with an explicit
+ * `Europe/Kyiv` timeZone — domain invariant) which is safe in Node and
+ * React Native runtimes; week buckets come from the shared Kyiv-anchored
+ * helpers in `@sergeant/shared`.
  */
+
+import { kyivMondayStartMs, toLocalISODate } from "@sergeant/shared";
 
 import {
   epley1rm,
@@ -51,9 +55,16 @@ function toNum(v: unknown): number {
 
 function formatUkDateShort(d: Date): string {
   try {
-    return d.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
+    // Explicit Kyiv timezone: week starts are Kyiv Monday 00:00, which is
+    // still Sunday evening in UTC and westwards — rendering in the runtime
+    // timezone would shift the label a day back for those users.
+    return d.toLocaleDateString("uk-UA", {
+      day: "numeric",
+      month: "short",
+      timeZone: "Europe/Kyiv",
+    });
   } catch {
-    // Fallback for minimal ICU runtimes — YYYY-MM-DD prefix.
+    // Fallback for minimal ICU runtimes — host-local DD.MM (best effort).
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}`;
   }
@@ -228,25 +239,7 @@ export function computeExerciseBest(
 }
 
 /**
- * Start-of-Monday local-time timestamp for the given date (ms). Uses
- * the local tz, matching the web page's `getDay() - ((+6)%7)` trick.
- */
-function mondayStartLocalMs(d: Date): number {
-  const x = new Date(d);
-  const offset = (x.getDay() + 6) % 7;
-  x.setHours(0, 0, 0, 0);
-  x.setDate(x.getDate() - offset);
-  return x.getTime();
-}
-
-function weekKeyFromMondayMs(ms: number): string {
-  const d = new Date(ms);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-/**
- * Group the strength history into Monday-starting weekly buckets and
+ * Group the strength history into Monday-starting (Europe/Kyiv) weekly buckets and
  * return up to the **last 12** buckets as two aligned series:
  *  - `rmPoints.value` = round(max Epley-1RM in the week, kg);
  *  - `volPoints.value` = round(sum of `weightKg × reps`, kg).
@@ -266,8 +259,8 @@ export function computeExerciseWeeklyTrend(
     if (!iso) continue;
     const t = Date.parse(iso);
     if (!Number.isFinite(t)) continue;
-    const weekStart = mondayStartLocalMs(new Date(t));
-    const key = weekKeyFromMondayMs(weekStart);
+    const weekStart = kyivMondayStartMs(t);
+    const key = toLocalISODate(weekStart);
     const sets = Array.isArray(item.sets) ? item.sets : [];
     let maxRm = 0;
     let vol = 0;

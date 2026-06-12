@@ -1,4 +1,6 @@
-/** Pure helpers for dashboard / analytics (kg, local week Mon–Sun). */
+/** Pure helpers for dashboard / analytics (kg, Kyiv-anchored week Mon–Sun). */
+
+import { kyivCalendarDaysBetween, kyivMondayStartMs } from "@sergeant/shared";
 
 interface StatsSet {
   weightKg?: number | null | undefined;
@@ -150,36 +152,32 @@ export function personalRecordsExerciseCount(
   return Object.keys(by).length;
 }
 
-/** Початок поточного ISO-тижня (Пн 00:00) у мс. */
-export function mondayStartMs(d: number | string | Date): number {
-  const x = new Date(d);
-  const day = (x.getDay() + 6) % 7;
-  x.setHours(0, 0, 0, 0);
-  x.setDate(x.getDate() - day);
-  return x.getTime();
+/**
+ * Індекс дня (0=Пн … 6=Нд) усередині тижня, що починається з `week0`
+ * (Пн 00:00 Europe/Kyiv). Рахує перетнуті київські півночі, тому
+ * 23/25-годинні DST-дні не зсувають бакет.
+ */
+function kyivDayIndexInWeek(t: number, week0: number): number {
+  return kyivCalendarDaysBetween(t, week0);
 }
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface WeeklyVolumeSeries {
   weekStartMs: number;
   volumeKg: number[];
 }
 
-/** 7 значень (Пн…Нд) для поточного календарного тижня, кг×повторення за день. */
+/** 7 значень (Пн…Нд) для поточного календарного тижня (Europe/Kyiv), кг×повторення за день. */
 export function weeklyVolumeSeriesNow(
   workouts: readonly StatsWorkout[] | null | undefined,
 ): WeeklyVolumeSeries {
-  const week0 = mondayStartMs(Date.now());
+  const week0 = kyivMondayStartMs(Date.now());
   const vol = [0, 0, 0, 0, 0, 0, 0];
 
   for (const w of workouts || []) {
     if (!w.endedAt) continue;
     const t = w.startedAt ? Date.parse(w.startedAt) : NaN;
     if (!Number.isFinite(t)) continue;
-    const d = new Date(t);
-    const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-    const idx = Math.round((d0 - week0) / DAY_MS);
+    const idx = kyivDayIndexInWeek(t, week0);
     if (idx < 0 || idx > 6) continue;
     // Під strict-index `vol[idx]` дає `number | undefined`, хоча
     // інваріант 0..6 гарантує визначеність — narrow-имо явно через
@@ -205,15 +203,13 @@ export function completedWorkoutsCount(
 export function countCompletedInCurrentWeek(
   workouts: readonly StatsWorkout[] | null | undefined,
 ): number {
-  const week0 = mondayStartMs(Date.now());
+  const week0 = kyivMondayStartMs(Date.now());
   let n = 0;
   for (const w of workouts || []) {
     if (!w.endedAt) continue;
     const t = w.startedAt ? Date.parse(w.startedAt) : NaN;
     if (!Number.isFinite(t)) continue;
-    const d = new Date(t);
-    const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-    const idx = Math.round((d0 - week0) / DAY_MS);
+    const idx = kyivDayIndexInWeek(t, week0);
     if (idx >= 0 && idx <= 6) n += 1;
   }
   return n;

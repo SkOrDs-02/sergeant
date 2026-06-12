@@ -61,3 +61,41 @@ export function kyivCalendarDaysBetween(aMs: number, bMs: number): number {
   const b = dayKeyToUtcMidnight(toLocalISODate(bMs));
   return Math.round((a - b) / DAY_MS);
 }
+
+const KYIV_WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Europe/Kyiv",
+  weekday: "short",
+});
+
+const MONDAY_FIRST_INDEX: Record<string, number> = {
+  Mon: 0,
+  Tue: 1,
+  Wed: 2,
+  Thu: 3,
+  Fri: 4,
+  Sat: 5,
+  Sun: 6,
+};
+
+/**
+ * Start of the ISO week (Monday 00:00 **Europe/Kyiv**) containing the given
+ * instant, as a Unix-epoch millisecond timestamp.
+ *
+ * Single source of truth for "this week" bucketing per the domain invariant
+ * (AGENTS.md § Domain invariants): week boundaries are Kyiv-anchored and
+ * Monday-first, never the runtime timezone. DST-safe — stepping back to
+ * Monday goes through that day's local noon, which is immune to the ±1h
+ * wobble of 23/25-hour DST days. Returns `NaN` for unparseable input.
+ */
+export function kyivMondayStartMs(
+  d: Date | number | string = Date.now(),
+): number {
+  const ms = (d instanceof Date ? d : new Date(d)).getTime();
+  if (Number.isNaN(ms)) return NaN;
+  const dayStart = kyivDayStartMs(toLocalISODate(ms));
+  const mondayIndex =
+    MONDAY_FIRST_INDEX[KYIV_WEEKDAY_FORMATTER.format(ms)] ?? 0;
+  if (mondayIndex === 0) return dayStart;
+  const approxMondayNoon = dayStart - mondayIndex * DAY_MS + DAY_MS / 2;
+  return kyivDayStartMs(toLocalISODate(approxMondayNoon));
+}

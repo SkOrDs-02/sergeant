@@ -3,6 +3,7 @@ import {
   kyivCalendarDaysBetween,
   kyivDayEndMs,
   kyivDayStartMs,
+  kyivMondayStartMs,
   toLocalISODate,
 } from "./date";
 
@@ -46,6 +47,52 @@ describe("shared/lib/date – toLocalISODate", () => {
   it("handles year boundaries correctly", () => {
     expect(toLocalISODate(new Date(2024, 11, 31))).toBe("2024-12-31");
     expect(toLocalISODate(new Date(2025, 0, 1))).toBe("2025-01-01");
+  });
+});
+
+// All expectations below are expressed as UTC instants so they hold under
+// any host timezone — the helpers must be anchored to Europe/Kyiv only.
+describe("shared/lib/date – kyivMondayStartMs", () => {
+  // Mon 2026-06-08 00:00 Kyiv (EEST) = 2026-06-07T21:00:00Z.
+  const MON_JUN_8 = Date.parse("2026-06-07T21:00:00Z");
+
+  it("Sun 23:30 Kyiv still belongs to the previous week", () => {
+    expect(kyivMondayStartMs("2026-06-07T20:30:00Z")).toBe(
+      Date.parse("2026-05-31T21:00:00Z"), // Mon 2026-06-01 00:00 Kyiv
+    );
+  });
+
+  it("Mon 00:30 Kyiv opens the new week", () => {
+    expect(kyivMondayStartMs("2026-06-07T21:30:00Z")).toBe(MON_JUN_8);
+  });
+
+  it("is idempotent and Monday maps to itself", () => {
+    expect(kyivMondayStartMs(MON_JUN_8)).toBe(MON_JUN_8);
+    expect(kyivMondayStartMs(kyivMondayStartMs("2026-06-12T08:00:00Z"))).toBe(
+      MON_JUN_8,
+    );
+  });
+
+  it("spring-forward week (2026-03-23..29) is 167h and ends on time", () => {
+    const monBefore = Date.parse("2026-03-22T22:00:00Z"); // Mon 23.03 00:00 EET
+    const monAfter = Date.parse("2026-03-29T21:00:00Z"); // Mon 30.03 00:00 EEST
+    // Sunday late evening after the DST jump still belongs to the DST week.
+    expect(kyivMondayStartMs("2026-03-29T20:30:00Z")).toBe(monBefore);
+    // First minutes of the next Kyiv Monday open the next week.
+    expect(kyivMondayStartMs("2026-03-29T21:30:00Z")).toBe(monAfter);
+    expect(monAfter - monBefore).toBe(167 * 60 * 60 * 1000);
+  });
+
+  it("fall-back week (2026-10-19..25) is 169h and ends on time", () => {
+    const monBefore = Date.parse("2026-10-18T21:00:00Z"); // Mon 19.10 00:00 EEST
+    const monAfter = Date.parse("2026-10-25T22:00:00Z"); // Mon 26.10 00:00 EET
+    expect(kyivMondayStartMs("2026-10-25T21:30:00Z")).toBe(monBefore);
+    expect(kyivMondayStartMs("2026-10-25T22:30:00Z")).toBe(monAfter);
+    expect(monAfter - monBefore).toBe(169 * 60 * 60 * 1000);
+  });
+
+  it("returns NaN for unparseable input", () => {
+    expect(kyivMondayStartMs("not-a-date")).toBeNaN();
   });
 });
 

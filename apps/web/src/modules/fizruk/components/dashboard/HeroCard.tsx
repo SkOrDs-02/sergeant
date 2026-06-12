@@ -447,8 +447,7 @@ function EmptyState({
       <p className="mt-2 text-sm text-teal-700 dark:text-white/75">
         {state.hasTemplates
           ? "Нічого не заплановано — запусти готовий шаблон або відкрий програми."
-          :  
-            "У тебе ще немає шаблонів. Створи свій перший або обери програму."}
+          : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}
       </p>
       <div className="mt-6 flex flex-col gap-3">
         {/*
