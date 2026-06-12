@@ -1,4 +1,5 @@
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { lazyImport } from "../../core/lib/lazyImport";
 import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
@@ -92,6 +93,10 @@ export default function App({
   const setShowBalance = storage.setShowBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
+  const loginOverlayRef = useRef<HTMLDivElement>(null);
+  useDialogFocusTrap(showLoginOverlay, loginOverlayRef, {
+    onEscape: () => setShowLoginOverlay(false),
+  });
   const [editingManualExpenseId, setEditingManualExpenseId] = useState<
     string | null
   >(null);
@@ -420,6 +425,7 @@ export default function App({
 
         {showLoginOverlay && (
           <div
+            ref={loginOverlayRef}
             className="fixed inset-0 z-50 overflow-y-auto bg-bg"
             role="dialog"
             aria-modal="true"
@@ -489,10 +495,11 @@ function SyncPill({
         "transition-colors duration-200",
         syncTone.pill,
       )}
+      role="status"
       aria-label={`Стан синхронізації: ${syncTone.text}`}
     >
       <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", syncTone.dot)} />
-      <span className="hidden sm:inline">{syncTone.text}</span>
+      <span className="sr-only sm:not-sr-only">{syncTone.text}</span>
       <button
         type="button"
         onClick={() => setShowBalance(!showBalance)}
@@ -556,7 +563,10 @@ function AuthErrorBanner({
   setAuthError,
 }: AuthErrorBannerProps): React.ReactElement {
   return (
-    <div className="fixed top-[calc(56px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto">
+    <div
+      role="alert"
+      className="fixed top-[calc(56px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
+    >
       <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
         <span className="text-lg shrink-0 mt-0.5">⚠️</span>
         <div className="flex-1 min-w-0">
@@ -564,16 +574,18 @@ function AuthErrorBanner({
           <p className="text-xs text-muted mt-0.5">{authError}</p>
           {onBackToHub && (
             <button
+              type="button"
               onClick={onBackToHub}
-              className="text-style-caption text-primary mt-2 hover:underline"
+              className="focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
             >
               Оновити токен у Налаштуваннях Hub
             </button>
           )}
         </div>
         <button
+          type="button"
           onClick={() => setAuthError("")}
-          className="text-muted hover:text-text transition-colors shrink-0"
+          className="focus-ring rounded-xl text-muted hover:text-text transition-colors shrink-0"
           aria-label="Закрити"
         >
           ✕
