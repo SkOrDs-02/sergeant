@@ -48,12 +48,10 @@ describe("contract @ POST /api/v2/sync/push", CONTRACT_SUITE_OPTIONS, () => {
       .uponReceiving(
         "a POST /api/v2/sync/push with two new routine_entries insert ops",
       )
-      // The httpClient rewrites /api/v2/sync/push → /api/v1/v2/sync/push
-      // (applyApiPrefix with default prefix /api/v1). The server's
-      // apiVersionRewrite middleware strips /api/v1 back to /api on the
-      // server side, so the round trip is transparent. Pact sees the
-      // wire path the client actually sends.
-      .withRequest("POST", "/api/v1/v2/sync/push", (req) => {
+      // applyApiPrefix leaves already-versioned paths (/api/v2/...)
+      // untouched, so the wire path matches the server's v2 mount
+      // directly. Pact sees the wire path the client actually sends.
+      .withRequest("POST", "/api/v2/sync/push", (req) => {
         req.headers({
           accept: "application/json",
           "content-type": "application/json",
@@ -153,7 +151,7 @@ describe("contract @ POST /api/v2/sync/push", CONTRACT_SUITE_OPTIONS, () => {
       .uponReceiving(
         "a POST /api/v2/sync/push where one op is table_not_allowed",
       )
-      .withRequest("POST", "/api/v1/v2/sync/push", (req) => {
+      .withRequest("POST", "/api/v2/sync/push", (req) => {
         req.headers({
           accept: "application/json",
           "content-type": "application/json",
@@ -242,7 +240,7 @@ describe("contract @ POST /api/v2/sync/push", CONTRACT_SUITE_OPTIONS, () => {
       .uponReceiving(
         "a POST /api/v2/sync/push replaying an already-applied idempotency_key",
       )
-      .withRequest("POST", "/api/v1/v2/sync/push", (req) => {
+      .withRequest("POST", "/api/v2/sync/push", (req) => {
         req.headers({
           accept: "application/json",
           "content-type": "application/json",
@@ -321,7 +319,7 @@ describe("contract @ GET /api/v2/sync/pull", CONTRACT_SUITE_OPTIONS, () => {
       .uponReceiving(
         "a GET /api/v2/sync/pull?since=0&limit=2 request (first page, more data)",
       )
-      .withRequest("GET", "/api/v1/v2/sync/pull", (req) => {
+      .withRequest("GET", "/api/v2/sync/pull", (req) => {
         req.headers({ accept: "application/json" });
         req.query({ since: "0", limit: "2" });
       })
@@ -390,7 +388,7 @@ describe("contract @ GET /api/v2/sync/pull", CONTRACT_SUITE_OPTIONS, () => {
       .uponReceiving(
         "a GET /api/v2/sync/pull?since=1002 request (last page, no more data)",
       )
-      .withRequest("GET", "/api/v1/v2/sync/pull", (req) => {
+      .withRequest("GET", "/api/v2/sync/pull", (req) => {
         req.headers({ accept: "application/json" });
         req.query({ since: "1002" });
       })
@@ -439,7 +437,7 @@ describe("contract @ GET /api/v2/sync/pull", CONTRACT_SUITE_OPTIONS, () => {
       .uponReceiving(
         "a GET /api/v2/sync/pull?since=9999 request (since ahead of log)",
       )
-      .withRequest("GET", "/api/v1/v2/sync/pull", (req) => {
+      .withRequest("GET", "/api/v2/sync/pull", (req) => {
         req.headers({ accept: "application/json" });
         req.query({ since: "9999" });
       })
