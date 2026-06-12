@@ -438,8 +438,8 @@ describe("chat handler — tool_use parsing", () => {
     expect(caught).toMatchObject({
       name: "ExternalServiceError",
       status: 429,
-      message: "rate limit",
-      code: "EXTERNAL_SERVICE",
+      code: "ANTHROPIC_ERROR",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
   });
 
@@ -470,8 +470,8 @@ describe("chat handler — tool_use parsing", () => {
     expect(caught).toBeInstanceOf(ExternalServiceError);
     expect(caught).toMatchObject({
       status: 502,
-      code: "EXTERNAL_SERVICE",
-      message: "AI error",
+      code: "ANTHROPIC_ERROR",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
   });
 });

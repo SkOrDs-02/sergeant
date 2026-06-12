@@ -7,7 +7,10 @@ import type { FizrukPage } from "../shell/fizrukRoute";
 // signature — keep the import even when TS doesn't track JSDoc refs.
 
 import { safeWriteLS, safeWriteSS } from "@shared/lib/storage/storage";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import {
+  formatKyivNominativeDate,
+  getKyivGreeting,
+} from "@shared/lib/time/greeting";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -77,12 +80,9 @@ export function Dashboard({
   onStartProgramWorkout,
   onNavigate,
 }: DashboardProps) {
-  const today = new Intl.DateTimeFormat("uk-UA", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "Europe/Kyiv",
-  }).format(new Date());
+  // Use the shared nominative formatter so weekday matches HubHeader
+  // ("Пʼятниця" not "пʼятницю") and the Kyiv timezone is anchored correctly.
+  const today = useMemo(formatKyivNominativeDate, []);
   const rec = useRecovery();
   const {
     workouts,
@@ -116,12 +116,9 @@ export function Dashboard({
     return Math.round(sum / done.length);
   }, [workouts]);
 
-  const greeting = useMemo(() => {
-    const hour = getKyivDateParts().hour;
-    if (hour < 12) return "Доброго ранку";
-    if (hour < 18) return "Доброго дня";
-    return "Доброго вечора";
-  }, []);
+  // Use the shared Kyiv-anchored greeting so thresholds match HubHeader
+  // (5/12/17/22 buckets including "Доброї ночі" for 22:00–05:00).
+  const greeting = useMemo(getKyivGreeting, []);
 
   const startWorkoutFromPlan = (
     picks: RawExerciseDef[],

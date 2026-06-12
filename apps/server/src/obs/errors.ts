@@ -75,3 +75,32 @@ export class ExternalServiceError extends AppError {
 export function isOperationalError(err: unknown): err is AppError {
   return err instanceof AppError;
 }
+
+/**
+ * Безпечна обгортка над ExternalServiceError для помилок AI-провайдера.
+ * Клієнт отримує нейтральне UA-повідомлення — без сирого тексту помилки,
+ * requestId чи деталей провайдера. Справжня причина записується в `cause`
+ * і потрапляє у лог через `errorHandler → serializeError`.
+ *
+ * Використовуй замість прямого `new ExternalServiceError(data.error.message, …)`
+ * у всіх місцях, де обробляється відповідь Anthropic / OpenRouter.
+ */
+export function makeAiProviderError(opts: {
+  rawProviderMessage: string | undefined | null;
+  status: number | undefined;
+}): ExternalServiceError {
+  const err = new ExternalServiceError(
+    "Асистент тимчасово недоступний. Спробуй пізніше.",
+    {
+      // Use 502 Bad Gateway when the upstream status is absent (undefined) or
+      // not a valid HTTP status (0 from network-level glitches).
+      status: opts.status && opts.status > 0 ? opts.status : 502,
+      code: "ANTHROPIC_ERROR",
+      cause: {
+        rawProviderMessage: opts.rawProviderMessage ?? "(no message)",
+        upstreamStatus: opts.status,
+      },
+    },
+  );
+  return err;
+}

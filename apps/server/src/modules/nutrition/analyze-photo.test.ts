@@ -208,7 +208,7 @@ describe("nutrition analyze-photo handler — Anthropic invocation", () => {
       ),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "bad gateway",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
       status: 502,
       code: "ANTHROPIC_ERROR",
     });

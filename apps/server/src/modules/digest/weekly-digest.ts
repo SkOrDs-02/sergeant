@@ -7,7 +7,11 @@ import {
   type WeeklyDigestReport,
   type WeeklyDigestRequest,
 } from "../../http/schemas.js";
-import { ExternalServiceError, ValidationError } from "../../obs/errors.js";
+import {
+  ExternalServiceError,
+  ValidationError,
+  makeAiProviderError,
+} from "../../obs/errors.js";
 import { env } from "../../env.js";
 import {
   getLLMProvider,
@@ -324,9 +328,9 @@ ${dataContext}`;
 
     if (!llmResult.ok) {
       if (!fallbackOnError) {
-        throw new ExternalServiceError(llmResult.error || "AI error", {
-          status: llmResult.status || 502,
-          code: "ANTHROPIC_ERROR",
+        throw makeAiProviderError({
+          rawProviderMessage: llmResult.error,
+          status: llmResult.status,
         });
       }
       // Fail-soft: повертаємо template-звіт. invokeLLM вже поклав breadcrumb

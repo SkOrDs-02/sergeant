@@ -309,7 +309,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
-  it("ExternalServiceError 502 ANTHROPIC_ERROR коли provider !ok (fallbackOnError=false)", async () => {
+  it("ExternalServiceError ANTHROPIC_ERROR з безпечним UA-message коли provider !ok (fallbackOnError=false)", async () => {
     const { handler } = buildHandler({
       ok: false,
       error: "overloaded",
@@ -326,11 +326,11 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
       name: "ExternalServiceError",
       status: 503,
       code: "ANTHROPIC_ERROR",
-      message: "overloaded",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
   });
 
-  it("ExternalServiceError fallback status=502 коли provider !ok без status", async () => {
+  it("ExternalServiceError ANTHROPIC_ERROR безпечний UA-message status=502 коли provider !ok без status", async () => {
     const { handler } = buildHandler({
       ok: false,
       error: "AI error",
@@ -346,7 +346,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
       name: "ExternalServiceError",
       status: 502,
       code: "ANTHROPIC_ERROR",
-      message: "AI error",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
   });
 

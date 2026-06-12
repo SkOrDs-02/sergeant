@@ -166,7 +166,7 @@ describe("nutrition refine-photo handler — Anthropic invocation", () => {
 
     await expect(handler(makeReq(baseReq()), makeRes())).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "overloaded",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
       status: 503,
       code: "ANTHROPIC_ERROR",
     });

@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { RecommendRecipesSchema } from "../../http/schemas.js";
-import { ExternalServiceError } from "../../obs/errors.js";
+import { makeAiProviderError } from "../../obs/errors.js";
 import {
   anthropicMessages,
   extractAnthropicText,
@@ -93,13 +93,10 @@ ${pantrySec}
     endpoint: "recommend-recipes",
   });
   if (!response || !response.ok) {
-    throw new ExternalServiceError(
-      (data as AnthropicErrorPayload)?.error?.message || "AI error",
-      {
-        status: response?.status,
-        code: "ANTHROPIC_ERROR",
-      },
-    );
+    throw makeAiProviderError({
+      rawProviderMessage: (data as AnthropicErrorPayload)?.error?.message,
+      status: response?.status,
+    });
   }
 
   const out = extractAnthropicText(data);

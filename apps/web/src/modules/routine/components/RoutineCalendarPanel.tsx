@@ -3,7 +3,6 @@
  * Status: Active
  */
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
-import { Virtuoso } from "react-virtuoso";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
@@ -399,31 +398,41 @@ export function RoutineCalendarPanel({
           />
         )}
         {flatGroupedItems.length > 0 && (
-          <Virtuoso<GroupedListItem>
-            data={flatGroupedItems}
-            computeItemKey={(_, item) =>
-              item.kind === "header" ? `h_${item.label}` : `e_${item.e?.id}`
-            }
-            itemContent={(_, item) => {
+          // Per-day habit list is small (typically <20 items), so a plain map
+          // is simpler and avoids Virtuoso's zero-height container problem when
+          // the component lives in a normal page flow without a bounded scroll
+          // container.
+          <div>
+            {flatGroupedItems.map((item) => {
+              const key =
+                item.kind === "header" ? `h_${item.label}` : `e_${item.e?.id}`;
               if (item.kind === "header") {
                 return (
-                  <SectionHeading as="h3" size="sm" className="mb-2 mt-3">
+                  <SectionHeading
+                    key={key}
+                    as="h3"
+                    size="sm"
+                    className="mb-2 mt-3"
+                  >
                     {item.label}
                   </SectionHeading>
                 );
               }
               const e = item.e;
+              // Capture as a const so TypeScript narrows it to `string` inside
+              // the guarded closures below without a non-null assertion.
+              const habitId = e.habitId;
               return (
-                <div className="mb-2">
+                <div key={key} className="mb-2">
                   <SwipeToAction
                     onSwipeRight={
-                      e.habitId && !e.completed
-                        ? () => onToggleHabit(e.habitId!, e.date)
+                      habitId && !e.completed
+                        ? () => onToggleHabit(habitId, e.date)
                         : undefined
                     }
                     onSwipeLeft={
-                      e.habitId && e.completed
-                        ? () => onToggleHabit(e.habitId!, e.date)
+                      habitId && e.completed
+                        ? () => onToggleHabit(habitId, e.date)
                         : undefined
                     }
                     leftLabel="✓ Виконано"
@@ -512,13 +521,13 @@ export function RoutineCalendarPanel({
                               Фінік
                             </Button>
                           )}
-                          {e.habitId && (
+                          {habitId && (
                             <Button
                               iconOnly
                               size="md"
                               variant="ghost"
                               type="button"
-                              onClick={() => onToggleHabit(e.habitId!, e.date)}
+                              onClick={() => onToggleHabit(habitId, e.date)}
                               className={cn(
                                 "rounded-xl border text-style-subtitle",
                                 e.completed ? C.done : "border-line text-muted",
@@ -533,10 +542,10 @@ export function RoutineCalendarPanel({
                           )}
                         </div>
                       </div>
-                      {e.habitId &&
+                      {habitId &&
                         e.completed &&
                         (() => {
-                          const noteKey = completionNoteKey(e.habitId, e.date);
+                          const noteKey = completionNoteKey(habitId, e.date);
                           const draft = noteDrafts[noteKey];
                           const savedValue =
                             routine.completionNotes?.[noteKey] || "";
@@ -554,13 +563,13 @@ export function RoutineCalendarPanel({
                                 value={value}
                                 onChange={(ev) =>
                                   scheduleNoteFlush(
-                                    e.habitId!,
+                                    habitId,
                                     e.date,
                                     ev.target.value,
                                   )
                                 }
                                 onBlur={() => {
-                                  flushNoteDraft(e.habitId!, e.date);
+                                  flushNoteDraft(habitId, e.date);
                                   // Collapse if the user cleared the note.
                                   const flushedValue =
                                     noteDraftsRef.current[noteKey]?.value ??
@@ -595,8 +604,8 @@ export function RoutineCalendarPanel({
                   </SwipeToAction>
                 </div>
               );
-            }}
-          />
+            })}
+          </div>
         )}
       </section>
       {detailHabitId && (

@@ -224,7 +224,7 @@ describe("nutrition day-plan handler", () => {
       handler(makeReq({ pantry: [], locale: "uk-UA" }), makeRes()),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "quota exceeded",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
       status: 429,
       code: "ANTHROPIC_ERROR",
     });

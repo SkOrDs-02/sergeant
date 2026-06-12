@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { ShoppingListSchema } from "../../http/schemas.js";
-import { ValidationError, ExternalServiceError } from "../../obs/errors.js";
+import { ValidationError, makeAiProviderError } from "../../obs/errors.js";
 import {
   anthropicMessages,
   extractAnthropicText,
@@ -132,13 +132,10 @@ ${ingredientsList}
     endpoint: "shopping-list",
   });
   if (!response || !response.ok) {
-    throw new ExternalServiceError(
-      (data as AnthropicErrorPayload)?.error?.message || "AI error",
-      {
-        status: response?.status,
-        code: "ANTHROPIC_ERROR",
-      },
-    );
+    throw makeAiProviderError({
+      rawProviderMessage: (data as AnthropicErrorPayload)?.error?.message,
+      status: response?.status,
+    });
   }
 
   const out = extractAnthropicText(data);

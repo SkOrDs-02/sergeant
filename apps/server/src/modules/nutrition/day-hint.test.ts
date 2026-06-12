@@ -133,7 +133,7 @@ describe("nutrition day-hint handler", () => {
       handler(makeReq({ macros: {}, locale: "uk-UA" }), makeRes()),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "overloaded",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
       status: 503,
       code: "ANTHROPIC_ERROR",
     });

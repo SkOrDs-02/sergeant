@@ -170,7 +170,7 @@ describe("week-plan handler", () => {
       handler(makeReq({ pantry: ["гречка"], locale: "uk-UA" }), makeRes()),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "model failed",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
       status: 500,
       code: "ANTHROPIC_ERROR",
     });

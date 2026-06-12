@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from "react";
+import { pluralDays } from "@sergeant/shared";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import type { Insight } from "@shared/lib/insights/types";
 
@@ -35,6 +36,10 @@ function daysSinceLastWorkout(workouts: readonly Workout[]): number {
 
   // Truncate both sides to local-midnight so partial days don't inflate
   // the count (e.g. finished at 23:55 → next day at 00:05 ≠ 1 full day).
+  // Intentionally the device-local instant: this is a client-only
+  // re-engagement heuristic whose day boundary should follow the user's
+  // own clock (see the function docblock), not the Kyiv server anchor.
+  // eslint-disable-next-line no-restricted-syntax -- device-local day boundary by design
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   const lastStart = new Date(latestMs);
@@ -53,14 +58,18 @@ export function useRestDayOverdueInsight(
     if (!loaded) return null;
 
     const days = daysSinceLastWorkout(workouts);
-    if (days < REST_DAY_THRESHOLD) return null;
 
-    const dayLabel = Number.isFinite(days) ? days : REST_DAY_THRESHOLD;
+    // Never-trained users have no completed workouts, so `days` is Infinity.
+    // The empty-state UI already prompts them to start; showing "N днів без
+    // тренування" would be nonsensical here.
+    if (!Number.isFinite(days)) return null;
+
+    if (days < REST_DAY_THRESHOLD) return null;
 
     return {
       id: "fizruk-rest-day-overdue",
       module: "fizruk",
-      title: `${dayLabel} днів без тренування`,
+      title: `${days} ${pluralDays(days)} без тренування`,
       subtitle: "Час повернутися?",
       action: { type: "navigate", path: "/fizruk/workouts" },
       // Hub surface promoted post-Phase 5e: rest-day overdue is the canonical

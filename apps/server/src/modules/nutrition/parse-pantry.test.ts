@@ -157,7 +157,7 @@ describe("nutrition parse-pantry handler", () => {
       handler(makeReq({ text: "яблука", locale: "uk-UA" }), makeRes()),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "bad gateway",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
       status: 502,
       code: "ANTHROPIC_ERROR",
     });

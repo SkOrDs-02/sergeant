@@ -10,7 +10,7 @@ import {
   CoachInsightSchema,
   CoachMemoryPostSchema,
 } from "../../http/schemas.js";
-import { ExternalServiceError } from "../../obs/errors.js";
+import { makeAiProviderError } from "../../obs/errors.js";
 import { logger } from "../../obs/logger.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
@@ -382,8 +382,9 @@ ${snapshotText}
 
   if (!aiRes?.ok) {
     const errData = aiData as AnthropicErrorPayload | null | undefined;
-    throw new ExternalServiceError(errData?.error?.message || "AI error", {
-      status: aiRes?.status || 502,
+    throw makeAiProviderError({
+      rawProviderMessage: errData?.error?.message,
+      status: aiRes?.status,
     });
   }
 

@@ -513,10 +513,10 @@ describe("chat handler — SSE graceful degradation на continuation-помил
 describe("chat handler — SSE first-call upstream errors", () => {
   it("перший upstream !ok → кидає ExternalServiceError, БЕЗ SSE-заголовків і БЕЗ data-подій", async () => {
     // Pre-SSE upstream-помилка: SSE-заголовки ще не виставлені, тому
-    // нормалізуємо у `ExternalServiceError`. `asyncHandler` довеже до
-    // `errorHandler`, який віддасть JSON `{ error, code: EXTERNAL_SERVICE,
-    // requestId }` зі статусом 429. Перевіряємо контракт на рівні throw —
-    // обгортка `errorHandler` тестується окремо в `errorHandler.test.ts`.
+    // нормалізуємо у `makeAiProviderError`. `asyncHandler` довеже до
+    // `errorHandler`, який віддасть JSON `{ error, code: ANTHROPIC_ERROR,
+    // requestId }` зі статусом 429 і безпечним UA-message (без сирого
+    // тексту від провайдера). Перевіряємо контракт на рівні throw.
     anthropicMessagesStream.mockResolvedValueOnce({
       response: new Response(
         JSON.stringify({ error: { message: "rate limited" } }),
@@ -536,8 +536,8 @@ describe("chat handler — SSE first-call upstream errors", () => {
     expect(caught).toBeInstanceOf(ExternalServiceError);
     expect(caught).toMatchObject({
       status: 429,
-      code: "EXTERNAL_SERVICE",
-      message: "rate limited",
+      code: "ANTHROPIC_ERROR",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
     // Жодного запису у SSE-стрім (заголовки і body не задіяні).
     expect(res.writes).toHaveLength(0);
@@ -568,8 +568,8 @@ describe("chat handler — SSE first-call upstream errors", () => {
     expect(caught).toBeInstanceOf(ExternalServiceError);
     expect(caught).toMatchObject({
       status: 503,
-      code: "EXTERNAL_SERVICE",
-      message: "Service Unavailable",
+      code: "ANTHROPIC_ERROR",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
     // SSE-заголовки НЕ виставлені (помилкова гілка йде через errorHandler, а не event-stream).
     expect(res.headers["Content-Type"]).toBeUndefined();

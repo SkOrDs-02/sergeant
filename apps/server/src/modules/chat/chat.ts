@@ -19,7 +19,7 @@ import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
 import { truncateToolResults } from "./toolResultTruncation.js";
 import { wrapAndScanToolResults } from "./toolOutputWrapping.js";
 import { als } from "../../obs/requestContext.js";
-import { ExternalServiceError } from "../../obs/errors.js";
+import { makeAiProviderError } from "../../obs/errors.js";
 import {
   chatToolIterationCapHitTotal,
   chatPromptInjectionAttemptTotal,
@@ -495,8 +495,9 @@ export default async function handler(
 
     if (!response?.ok) {
       await refundQuotaOnUpstreamFailure(req);
-      throw new ExternalServiceError(data?.error?.message || "AI error", {
-        status: response?.status || 502,
+      throw makeAiProviderError({
+        rawProviderMessage: data?.error?.message,
+        status: response?.status,
       });
     }
 
@@ -557,8 +558,9 @@ export default async function handler(
 
   if (!response?.ok) {
     await refundQuotaOnUpstreamFailure(req);
-    throw new ExternalServiceError(data?.error?.message || "AI error", {
-      status: response?.status || 502,
+    throw makeAiProviderError({
+      rawProviderMessage: data?.error?.message,
+      status: response?.status,
     });
   }
 
@@ -771,13 +773,13 @@ async function streamAnthropicToSse(
       }
     }
     // Pre-SSE Anthropic upstream-помилка: жодних SSE-заголовків ще не
-    // виставлено, тож кидаємо через `ExternalServiceError`, щоб
-    // `errorHandler` уніфіковано додав `code: EXTERNAL_SERVICE`,
+    // виставлено, тож кидаємо через `makeAiProviderError`, щоб
+    // `errorHandler` уніфіковано додав `code: ANTHROPIC_ERROR`,
     // `requestId`, інкрементнув `app_errors_total{kind=operational}` і
-    // (для 5xx, де `isOperationalError(err)` — це 502 за замовчуванням)
-    // не дав Sentry повторити подію.
-    throw new ExternalServiceError(errMsg, {
-      status: firstResponse.status || 502,
+    // не витік сирий провайдерний текст у відповідь клієнту.
+    throw makeAiProviderError({
+      rawProviderMessage: errMsg,
+      status: firstResponse.status,
     });
   }
 

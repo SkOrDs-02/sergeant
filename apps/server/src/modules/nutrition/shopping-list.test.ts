@@ -233,7 +233,7 @@ describe("shopping-list handler", () => {
       ),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "quota exceeded",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
       status: 429,
       code: "ANTHROPIC_ERROR",
     });

@@ -184,7 +184,7 @@ describe("recommend-recipes handler", () => {
       handler(makeReq({ pantry: ["гречка"], locale: "uk-UA" }), makeRes()),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "anthropic overloaded",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
       status: 503,
       code: "ANTHROPIC_ERROR",
     });
