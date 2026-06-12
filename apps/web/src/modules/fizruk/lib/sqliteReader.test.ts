@@ -205,6 +205,35 @@ describe("refreshFizrukSqliteState", () => {
     expect(cache.measurements).toHaveLength(1);
     expect(cache.measurements[0]!.id).toBe("m-1");
   });
+
+  it("hydrates daily-log entries with their timestamp intact", async () => {
+    // Regression: the table column is `entry_at` while the cached shape is
+    // `at` — without the SQL alias the timestamp silently became undefined.
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "daily-log-upsert",
+        entry: {
+          id: "dl-1",
+          at: "2026-05-01T07:00:00Z",
+          weightKg: 81.2,
+          sleepHours: 7.5,
+          energyLevel: 4,
+          mood: 3,
+          note: "ранковий запис",
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS,
+      logger: silentLogger,
+    });
+
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    expect(cache.dailyLog).toHaveLength(1);
+    expect(cache.dailyLog[0]!.at).toBe("2026-05-01T07:00:00Z");
+    expect(cache.dailyLog[0]!.weightKg).toBe(81.2);
+  });
 });
 
 describe("getCachedFizrukSqliteState", () => {

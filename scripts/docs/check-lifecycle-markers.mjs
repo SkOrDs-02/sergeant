@@ -48,9 +48,9 @@ const MARKER_PATTERNS = [
   // Legacy inline: * Status: Active  or  // Status: Active
   /\*\s+Status:\s+\S+|\/\/\s+Status:\s+\S+/,
   // Last validated in JSDoc/comment: * Last validated: YYYY-MM-DD
-  /Last validated:\s+\d{4}-\d{2}-\d{2}/,
+  /Last (?:validated|touched):\s+\d{4}-\d{2}-\d{2}/,
   // Markdown-style inside TS file (rare but valid):
-  /\*\*Last validated:\*\*/,
+  /\*\*Last (?:validated|touched):\*\*/,
   /\*\*Status:\*\*/,
 ];
 

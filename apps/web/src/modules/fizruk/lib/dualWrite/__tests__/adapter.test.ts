@@ -306,14 +306,13 @@ describe("applyFizrukDualWriteOps", () => {
 
   // --- Error handling ---
 
-  it("logs errors and continues processing remaining ops", async () => {
+  it("counts every applied op in a clean batch", async () => {
     const warnings: unknown[] = [];
     const ops: FizrukDualWriteOp[] = [
       {
         kind: "measurement-upsert",
         measurement: { id: "m1", at: "2026-05-01T08:00:00Z" },
       },
-      // This will also succeed since we're just testing the counter
       {
         kind: "measurement-upsert",
         measurement: { id: "m2", at: "2026-05-01T09:00:00Z", weightKg: 75 },
@@ -327,6 +326,48 @@ describe("applyFizrukDualWriteOps", () => {
     });
     expect(result.applied).toBe(2);
     expect(result.errored).toBe(0);
+  });
+
+  it("rolls the whole batch back when one op fails", async () => {
+    const warnings: Array<{ msg: string; meta?: unknown }> = [];
+    const failingClient: typeof handle.client = {
+      ...handle.client,
+      exec: (sql) => handle.client.exec(sql),
+      all: (sql, params) => handle.client.all(sql, params),
+      run: (sql, params) => {
+        if (Array.isArray(params) && params.includes("m-fail")) {
+          throw new Error("forced failure");
+        }
+        return handle.client.run(sql, params);
+      },
+    };
+
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "measurement-upsert",
+        measurement: { id: "m-ok", at: "2026-05-01T08:00:00Z" },
+      },
+      {
+        kind: "measurement-upsert",
+        measurement: { id: "m-fail", at: "2026-05-01T09:00:00Z" },
+      },
+    ];
+
+    const result = await applyFizrukDualWriteOps(failingClient, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: (_level, msg, meta) => warnings.push({ msg, meta }),
+    });
+
+    expect(result).toEqual({ applied: 0, errored: 2, skipped: 0 });
+    expect(warnings.some((w) => w.msg.includes("rolled back"))).toBe(true);
+
+    // The successful first op must NOT survive — SQLite stays on the
+    // pre-batch state instead of a half-applied diff.
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT id FROM fizruk_measurements",
+    );
+    expect(rows).toEqual([]);
   });
 
   // --- Stage 12 / PR #070f-dualwrite — Daily log ops ---

@@ -62,8 +62,10 @@ const LABELS = ["documentation", "freshness-overdue"];
 // Legacy format (AGENTS.md-style, before PR-11.A):
 //   > Last reviewed: 2026-04-27. Reviewer: @Skords-01
 
+// Accepts the canonical `Last touched:` label and the legacy `Last validated:`
+// one (migrated on next bump — see bump-last-validated.mjs).
 const RE_CANONICAL_VALIDATED =
-  /\*\*Last validated:\*\*\s*(\d{4}-\d{2}-\d{2})\b/;
+  /\*\*Last (?:validated|touched):\*\*\s*(\d{4}-\d{2}-\d{2})\b/;
 const RE_CANONICAL_NEXT_REVIEW = /\*\*Next review:\*\*\s*(\d{4}-\d{2}-\d{2})\b/;
 const RE_LEGACY_REVIEWED = /Last reviewed:\s*(\d{4}-\d{2}-\d{2})\b/;
 

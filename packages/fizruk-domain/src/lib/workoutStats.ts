@@ -1,6 +1,6 @@
 /** Pure helpers for dashboard / analytics (kg, Kyiv-anchored week Mon–Sun). */
 
-import { kyivDayStartMs, kyivMondayStartMs } from "@sergeant/shared";
+import { kyivCalendarDaysBetween, kyivMondayStartMs } from "@sergeant/shared";
 
 interface StatsSet {
   weightKg?: number | null | undefined;
@@ -152,15 +152,13 @@ export function personalRecordsExerciseCount(
   return Object.keys(by).length;
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 /**
  * Індекс дня (0=Пн … 6=Нд) усередині тижня, що починається з `week0`
- * (Пн 00:00 Europe/Kyiv). `Math.round` навмисний — компенсує 23/25-годинні
- * DST-дні, де відстань між стартами днів не кратна рівно 24 год.
+ * (Пн 00:00 Europe/Kyiv). Рахує перетнуті київські півночі, тому
+ * 23/25-годинні DST-дні не зсувають бакет.
  */
 function kyivDayIndexInWeek(t: number, week0: number): number {
-  return Math.round((kyivDayStartMs(t) - week0) / DAY_MS);
+  return kyivCalendarDaysBetween(t, week0);
 }
 
 export interface WeeklyVolumeSeries {

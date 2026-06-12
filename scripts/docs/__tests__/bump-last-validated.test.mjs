@@ -119,9 +119,10 @@ describe("bumpHeader", () => {
       cadenceDays: 90,
     });
     assert.equal(changed, true);
+    // Legacy `Last validated:` input migrates to the honest `Last touched:`.
     assert.match(
       content,
-      /\*\*Last validated:\*\* 2026-04-30 by @new\. \*\*Next review:\*\* 2026-07-29\./,
+      /\*\*Last touched:\*\* 2026-04-30 by @new\. \*\*Next review:\*\* 2026-07-29\./,
     );
   });
 
@@ -163,8 +164,32 @@ describe("bumpHeader", () => {
     assert.equal(changed, true);
     assert.match(
       content,
-      /\*\*Last validated:\*\* 2026-04-30 by @bob\. \*\*Next review:\*\* 2026-07-29\./,
+      /\*\*Last touched:\*\* 2026-04-30 by @bob\. \*\*Next review:\*\* 2026-07-29\./,
     );
+  });
+
+  it("migrates a legacy label and preserves an already-canonical one", () => {
+    const legacy =
+      "# Doc\n\n> **Last validated:** 2026-01-01 by @old. **Next review:** 2026-04-01.\n";
+    const migrated = bumpHeader({
+      content: legacy,
+      today: "2026-04-30",
+      handle: "new",
+      cadenceDays: 90,
+    });
+    assert.match(migrated.content, /\*\*Last touched:\*\*/);
+    assert.doesNotMatch(migrated.content, /\*\*Last validated:\*\*/);
+
+    const canonical =
+      "# Doc\n\n> **Last touched:** 2026-01-01 by @old. **Next review:** 2026-04-01.\n";
+    const bumped = bumpHeader({
+      content: canonical,
+      today: "2026-04-30",
+      handle: "new",
+      cadenceDays: 90,
+    });
+    assert.equal(bumped.changed, true);
+    assert.match(bumped.content, /\*\*Last touched:\*\* 2026-04-30/);
   });
 
   it("returns unchanged when no header is found", () => {

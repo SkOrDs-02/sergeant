@@ -22,7 +22,7 @@ const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 
 export const DEFAULT_CADENCE_DAYS = 90;
-export const FRESHNESS_HEADER_RE = /^>\s*\*\*Last validated:\*\*/m;
+export const FRESHNESS_HEADER_RE = /^>\s*\*\*Last (?:validated|touched):\*\*/m;
 
 const CONFIG_PATH = resolve(__dirname, "freshness-config.json");
 const LEGACY_ALLOWLIST_PATH = resolve(__dirname, "freshness-allowlist.json");

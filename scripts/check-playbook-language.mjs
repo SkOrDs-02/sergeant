@@ -154,7 +154,7 @@ export function stripNoise(body) {
   s = s.replace(/`[^`\n]*`/g, " ");
   // The freshness header line is mandated by the schema and always carries
   // an English handle (`@<owner>`). Drop the entire line.
-  s = s.replace(/^>\s*\*\*Last validated:\*\*.*$/gm, " ");
+  s = s.replace(/^>\s*\*\*Last (?:validated|touched):\*\*.*$/gm, " ");
   // Markdown links: keep the link text, drop the URL.
   s = s.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
   // Bare URLs / autolinks.

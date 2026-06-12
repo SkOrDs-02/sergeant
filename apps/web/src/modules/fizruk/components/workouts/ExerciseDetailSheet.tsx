@@ -181,8 +181,8 @@ export function ExerciseDetailSheet({
             Підказки
           </SectionHeading>
           <ul className="space-y-1.5">
-            {tips.map((t, i) => (
-              <li key={i} className="text-sm text-text leading-relaxed">
+            {tips.map((t) => (
+              <li key={t} className="text-sm text-text leading-relaxed">
                 <span className="text-muted font-bold mr-2">•</span>
                 {t}
               </li>

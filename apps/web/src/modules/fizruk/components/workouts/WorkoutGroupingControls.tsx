@@ -34,7 +34,7 @@ export function WorkoutGroupingControls({
       {!selectMode ? (
         <button
           type="button"
-          className="text-xs px-3 py-1.5 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
+          className="min-h-[44px] text-xs px-3 py-1.5 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
           onClick={onEnterSelectMode}
         >
           ⊕ Об{"'"}єднати в суперсет
@@ -43,7 +43,7 @@ export function WorkoutGroupingControls({
         <>
           <button
             type="button"
-            className="text-xs px-3 py-1.5 rounded-xl border border-success/40 text-success bg-success/10 hover:bg-success/20 transition-colors disabled:opacity-40"
+            className="min-h-[44px] text-xs px-3 py-1.5 rounded-xl border border-success/40 text-success bg-success/10 hover:bg-success/20 transition-colors disabled:opacity-40"
             disabled={disabled}
             onClick={() => onCreateGroup("superset")}
             title="Обери 2-3 вправи"
@@ -52,7 +52,7 @@ export function WorkoutGroupingControls({
           </button>
           <button
             type="button"
-            className="text-xs px-3 py-1.5 rounded-xl border border-fizruk/40 text-fizruk bg-fizruk/10 hover:bg-fizruk/20 transition-colors disabled:opacity-40"
+            className="min-h-[44px] text-xs px-3 py-1.5 rounded-xl border border-fizruk/40 text-fizruk bg-fizruk/10 hover:bg-fizruk/20 transition-colors disabled:opacity-40"
             disabled={disabled}
             onClick={() => onCreateGroup("circuit")}
             title="Обери 2-3 вправи"
@@ -61,7 +61,7 @@ export function WorkoutGroupingControls({
           </button>
           <button
             type="button"
-            className="text-xs px-3 py-1.5 rounded-xl border border-line text-subtle hover:text-text transition-colors"
+            className="min-h-[44px] text-xs px-3 py-1.5 rounded-xl border border-line text-subtle hover:text-text transition-colors"
             onClick={onCancelSelectMode}
           >
             Скасувати

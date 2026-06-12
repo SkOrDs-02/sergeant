@@ -27,6 +27,7 @@
  * two stay in sync as the recovery formula evolves.
  */
 
+import { kyivDayEndMs } from "@sergeant/shared";
 import {
   computeRecoveryBy,
   type MuscleState,
@@ -86,40 +87,34 @@ export interface RecoveryForecastOptions {
   freshThresholdDays?: number;
 }
 
-/** Parse `"YYYY-MM-DD"` into a local-noon Date (never NaN on good input). */
-function parseDateKeyLocal(key: string): Date | null {
+/** Validate a `"YYYY-MM-DD"` key (incl. roll-over dates like Feb 30). */
+function isValidDateKey(key: string): boolean {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
-  if (!m) return null;
+  if (!m) return false;
   const y = Number(m[1]);
   const mo = Number(m[2]);
   const d = Number(m[3]);
-  if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) {
-    return null;
-  }
-  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
-  const out = new Date(y, mo - 1, d, 12, 0, 0, 0);
-  // Reject out-of-range days that silently roll over (e.g. Feb 30 → Mar 2).
-  if (
-    out.getFullYear() !== y ||
-    out.getMonth() !== mo - 1 ||
-    out.getDate() !== d
-  ) {
-    return null;
-  }
-  return out;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return false;
+  // UTC round-trip rejects out-of-range days that silently roll over
+  // (e.g. Feb 30 → Mar 2).
+  const probe = new Date(Date.UTC(y, mo - 1, d));
+  return (
+    probe.getUTCFullYear() === y &&
+    probe.getUTCMonth() === mo - 1 &&
+    probe.getUTCDate() === d
+  );
 }
 
 /**
- * End-of-day local timestamp for `dateKey` — the instant we evaluate
- * recovery at. Using 23:59:59.999 makes workouts that started that
- * very day count toward the day's load (rather than slipping into the
- * next calendar cell).
+ * End-of-day timestamp for `dateKey` in **Europe/Kyiv** — the instant we
+ * evaluate recovery at. Using 23:59:59.999 makes workouts that started
+ * that very day count toward the day's load (rather than slipping into
+ * the next calendar cell). Kyiv-anchored so the evaluation point doesn't
+ * drift with the runtime timezone (domain invariant).
  */
 function endOfLocalDateMs(dateKey: string): number | null {
-  const d = parseDateKeyLocal(dateKey);
-  if (!d) return null;
-  d.setHours(23, 59, 59, 999);
-  return d.getTime();
+  if (!isValidDateKey(dateKey)) return null;
+  return kyivDayEndMs(dateKey);
 }
 
 function toMuscleSummary(m: MuscleState): DayRecoveryMuscle {

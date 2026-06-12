@@ -373,7 +373,7 @@ export async function refreshFizrukSqliteState(
       [userId],
     ),
     client.all<DailyLogRow>(
-      `SELECT id, entry_at, weight_kg, sleep_hours, energy_level, mood, note
+      `SELECT id, entry_at AS at, weight_kg, sleep_hours, energy_level, mood, note
          FROM fizruk_daily_log
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY entry_at DESC, id ASC`,
@@ -429,6 +429,7 @@ export async function refreshFizrukSqliteState(
     dailyLog,
     monthlyPlan,
     workoutTemplates,
+    // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary
     refreshedAt: new Date().toISOString(),
   };
   return cache;
@@ -453,6 +454,7 @@ export function __setFizrukSqliteCacheForTests(
 ): void {
   cache = {
     ...EMPTY_CACHE,
+    // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary
     refreshedAt: new Date().toISOString(),
     ...partial,
   };

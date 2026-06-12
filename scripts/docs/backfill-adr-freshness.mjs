@@ -35,7 +35,8 @@ const VALIDATED_LINE = `- **Last validated:** ${LAST_VALIDATED} by ${VALIDATOR}.
  * нижче — так само як у вже-помарковані ADR (e.g. `0002-tool-lifecycle.md`).
  */
 function backfillContent(content) {
-  if (content.includes("Last validated:")) return null;
+  if (content.includes("Last validated:") || content.includes("Last touched:"))
+    return null;
   const lines = content.split("\n");
   const statusIdx = lines.findIndex((line) => /^- \*\*Status:\*\* /.test(line));
   if (statusIdx === -1) return null;
@@ -57,7 +58,10 @@ async function main() {
     const original = await readFile(path, "utf8");
     const updated = backfillContent(original);
     if (updated === null) {
-      if (original.includes("Last validated:")) {
+      if (
+        original.includes("Last validated:") ||
+        original.includes("Last touched:")
+      ) {
         skipped += 1;
       } else {
         unmatched += 1;

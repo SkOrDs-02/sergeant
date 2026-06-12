@@ -51,7 +51,7 @@ const RE_H1 = /^#\s+(.+?)\s*$/m;
 const RE_BLOCK_STATUS = /^>\s*\*\*Status:\*\*\s*(.+?)\s*$/m;
 const RE_FIELD_STATUS = /^\s*-\s*\*\*Status:\*\*\s*(.+?)\s*$/m;
 const RE_LAST_VALIDATED =
-  /^>\s*\*\*Last validated:\*\*\s*(\d{4}-\d{2}-\d{2})\b/m;
+  /^>\s*\*\*Last (?:validated|touched):\*\*\s*(\d{4}-\d{2}-\d{2})\b/m;
 const RE_OWNER = /^>\s*\*\*Owner:\*\*\s*`?(@[\w-]+)`?/m;
 const RE_PRIORITY = /^>\s*\*\*Priority:\*\*\s*([^\n]+)/m;
 const RE_ADR_SUPERSEDES =

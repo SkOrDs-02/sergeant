@@ -182,7 +182,7 @@ function checkStatusBadges() {
     const headerBlock = lines.join("\n");
 
     const hasFreshnessMarker =
-      /\*\*Last validated:\*\*/.test(headerBlock) ||
+      /\*\*Last (?:validated|touched):\*\*/.test(headerBlock) ||
       /Last reviewed:/.test(headerBlock);
 
     if (!hasFreshnessMarker) continue;
