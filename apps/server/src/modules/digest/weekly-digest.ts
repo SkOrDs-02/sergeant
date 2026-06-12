@@ -438,9 +438,15 @@ ${dataContext}`;
 
 /**
  * Default export — production handler без custom options. Читає
- * `LLM_DIGEST_PROVIDER` / `LLM_DIGEST_FALLBACK_ON_ERROR` з env.
+ * `LLM_DIGEST_PROVIDER` з env; `fallbackOnError` навмисно зафіксовано у
+ * `false`, щоб збій Anthropic (вичерпані кредити, 5xx, timeout) завжди
+ * піднімав ExternalServiceError → errorHandler → 5xx клієнту, а не
+ * повертав тихий 200 з template-звітом.
+ *
+ * Fail-soft (template замість помилки) доступний лише у тестах і scoped
+ * deployments через `createWeeklyDigestHandler({ fallbackOnError: true })`.
  * Express-роутер у `apps/server/src/routes/weekly-digest.ts` використовує
- * цей default. Тести (`weekly-digest.test.ts`) — `createWeeklyDigestHandler({...})`.
+ * цей default.
  */
-const defaultHandler = createWeeklyDigestHandler();
+const defaultHandler = createWeeklyDigestHandler({ fallbackOnError: false });
 export default defaultHandler;

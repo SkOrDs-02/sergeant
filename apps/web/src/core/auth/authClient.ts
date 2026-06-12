@@ -207,11 +207,28 @@ const signOut: SignOutFn = (async (...args) => {
   }
 }) as SignOutFn;
 
+// Module-level in-flight promise for getSession. Concurrent callers on the
+// same tick (e.g. SessionsSection + syncEngine drain) share one network round-
+// trip. The promise is cleared when it settles so a subsequent call after a
+// sign-in/sign-out goes back to the network instead of replaying a stale result.
+let _getSessionInflight: Promise<unknown> | null = null;
+
+const _rawGetSession = getSession;
+
+function deduplicatedGetSession(): ReturnType<typeof getSession> {
+  if (_getSessionInflight) {
+    return _getSessionInflight as ReturnType<typeof getSession>;
+  }
+  _getSessionInflight = _rawGetSession().finally(() => {
+    _getSessionInflight = null;
+  });
+  return _getSessionInflight as ReturnType<typeof getSession>;
+}
+
 export {
   signIn,
   signUp,
   signOut,
-  getSession,
   requestPasswordReset,
   resetPassword,
   updateUser,
@@ -223,5 +240,9 @@ export {
   sendVerificationEmail,
   changeEmail,
 };
+
+// Export the deduplicated wrapper under the original name so all callers
+// (SessionsSection, syncEngine/singleton) share one in-flight request.
+export { deduplicatedGetSession as getSession };
 
 export type { AuthResult, SessionItem };

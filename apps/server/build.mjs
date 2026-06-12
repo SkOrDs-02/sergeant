@@ -25,7 +25,12 @@ const base = {
   banner: {
     js: 'import{createRequire}from"module";const require=createRequire(import.meta.url);',
   },
-  external: ["@sergeant/*"],
+  // NOTE: workspace-пакети (@sergeant/*) МАЮТЬ бандлитись — НЕ додавай їх в
+  // `external`. Runtime-образ (Dockerfile.api deps-stage) копіює лише їхні
+  // package.json без сорсів, тож зовнішній import "@sergeant/…" у
+  // dist-server/*.js валить контейнер ERR_MODULE_NOT_FOUND ще на pre-deploy
+  // migrate. Саме це поклало всі деплої 2026-06-05…06-12 (прод застряг на
+  // образі від 05-23), коли сюди додали `external: ["@sergeant/*"]`.
 };
 
 await build({

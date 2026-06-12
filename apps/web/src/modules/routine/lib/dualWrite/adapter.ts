@@ -1,6 +1,7 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
+import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff.js";
 
 /**
@@ -130,6 +131,26 @@ async function applyOne(
          WHERE excluded.updated_at > routine_entries.updated_at`,
         [id, userId, op.habitName, clientTs, clientTs, clientTs],
       );
+      // Enqueue a sync-v2 outbox op so the server learns about this
+      // completion. Fire-and-forget: a sync failure must never break the
+      // local write (consistent with the best-effort adapter contract).
+      void enqueueOutboxUpsert(client, {
+        userId,
+        table: "routine_entries",
+        op: "insert",
+        row: {
+          id,
+          user_id: userId,
+          name: op.habitName,
+          completed_at: clientTs,
+          created_at: clientTs,
+          deleted_at: null,
+        },
+        clientTs,
+        idempotencyKey: crypto.randomUUID(),
+      }).catch(() => {
+        /* sync-enqueue failure is intentionally swallowed */
+      });
       return "applied";
     }
     case "completion-remove": {
@@ -142,6 +163,20 @@ async function applyOne(
             AND updated_at < ?`,
         [clientTs, clientTs, id, userId, clientTs],
       );
+      // Enqueue a soft-delete op so the server mirrors the removal.
+      void enqueueOutboxUpsert(client, {
+        userId,
+        table: "routine_entries",
+        op: "delete",
+        row: {
+          id,
+          user_id: userId,
+        },
+        clientTs,
+        idempotencyKey: crypto.randomUUID(),
+      }).catch(() => {
+        /* sync-enqueue failure is intentionally swallowed */
+      });
       return "applied";
     }
     case "habit-rename": {

@@ -152,7 +152,9 @@ export default function App({
   });
 
   const { clientInfo, connecting, error, authError, connect } = mono;
-  const syncTone = getSyncTone(mergedMono?.syncState);
+  // Pass `connected` so the pill does not claim "ок" when no bank account
+  // has ever been linked — clientInfo is null until the first successful sync.
+  const syncTone = getSyncTone(mergedMono?.syncState, clientInfo != null);
 
   // Swipe navigation
   const curPageIdx = NAV_IDS.indexOf(page);

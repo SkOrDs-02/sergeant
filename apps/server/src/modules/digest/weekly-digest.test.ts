@@ -969,3 +969,132 @@ describe("weekly-digest default export", () => {
     expect(typeof defaultHandler).toBe("function");
   });
 });
+
+/**
+ * Regression guard for the 200-{} bug (prod: Anthropic credits exhausted →
+ * handler silently fell back to template and returned 200 instead of 5xx).
+ *
+ * Root cause: `LLM_DIGEST_FALLBACK_ON_ERROR` env defaults to `true`, so
+ * `createWeeklyDigestHandler()` (no args) treated every provider error as
+ * a soft-fail and returned the template report as 200. Fixed by pinning the
+ * default export to `fallbackOnError: false` so production always surfaces
+ * Anthropic failures as ExternalServiceError → errorHandler → 5xx.
+ */
+describe("weekly-digest · prod regression — provider failure must not return 200", () => {
+  it("provider error → ExternalServiceError ANTHROPIC_ERROR (safe UA message, status=503)", async () => {
+    const failProvider = makeFakeProvider("anthropic", () => ({
+      ok: false as const,
+      error: "Your credit balance is too low",
+      code: "anthropic_error",
+      status: 503,
+    }));
+    // Emulate production path: fallbackOnError=false (what defaultHandler uses)
+    const handler = createWeeklyDigestHandler({
+      provider: failProvider,
+      fallbackOnError: false,
+    });
+    const res = makeRes();
+
+    await expect(
+      handler(
+        asReq({
+          anthropicKey: "k",
+          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+        }),
+        res,
+      ),
+    ).rejects.toMatchObject({
+      name: "ExternalServiceError",
+      status: 503,
+      code: "ANTHROPIC_ERROR",
+      // Safe UA message — raw provider text must NOT appear in the message
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+    });
+    // Response must not have been sent with 200
+    expect(res.statusCode).toBe(200); // unchanged sentinel — res.json was never called
+    expect(res.body).toBeUndefined();
+  });
+
+  it("provider error with no status → status defaults to 502", async () => {
+    const failProvider = makeFakeProvider("anthropic", () => ({
+      ok: false as const,
+      error: "network timeout",
+      code: "timeout",
+    }));
+    const handler = createWeeklyDigestHandler({
+      provider: failProvider,
+      fallbackOnError: false,
+    });
+
+    await expect(
+      handler(
+        asReq({
+          anthropicKey: "k",
+          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+        }),
+        makeRes(),
+      ),
+    ).rejects.toMatchObject({
+      name: "ExternalServiceError",
+      status: 502,
+      code: "ANTHROPIC_ERROR",
+      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+    });
+  });
+
+  it("raw provider text does NOT appear in the thrown error message", async () => {
+    const rawSecret = "credit_balance_exhausted_for_key_sk-ant-12345";
+    const failProvider = makeFakeProvider("anthropic", () => ({
+      ok: false as const,
+      error: rawSecret,
+      code: "anthropic_error",
+      status: 402,
+    }));
+    const handler = createWeeklyDigestHandler({
+      provider: failProvider,
+      fallbackOnError: false,
+    });
+
+    let caughtError: unknown;
+    try {
+      await handler(
+        asReq({
+          anthropicKey: "k",
+          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+        }),
+        makeRes(),
+      );
+    } catch (e) {
+      caughtError = e;
+    }
+
+    expect(caughtError).toBeDefined();
+    const err = caughtError as { message: string; cause?: unknown };
+    // The safe UA message must not contain the raw provider string
+    expect(err.message).not.toContain(rawSecret);
+    // But cause should preserve it for internal logging
+    expect(JSON.stringify(err.cause ?? "")).toContain(rawSecret);
+  });
+
+  it("success path unchanged: 200 with { report, generatedAt } shape", async () => {
+    const { handler } = buildHandler(okResult(JSON.stringify(validReport)), {
+      fallbackOnError: false,
+    });
+    const res = makeRes();
+    await handler(
+      asReq({
+        anthropicKey: "k",
+        body: {
+          weekRange: "2026-W10",
+          finyk: { totalSpent: 500, totalIncome: 2000, txCount: 5 },
+        },
+      }),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as { report: unknown; generatedAt: string };
+    expect(body.report).toEqual(validReport);
+    expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+});

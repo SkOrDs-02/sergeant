@@ -15,8 +15,21 @@ export interface SyncTone {
 
 /**
  * Returns styling for sync status indicator.
+ *
+ * Pass `connected: false` when no bank account is linked yet — this prevents
+ * the pill from claiming "ок" before any sync has ever occurred.
  */
-export function getSyncTone(syncState?: SyncState | null): SyncTone {
+export function getSyncTone(
+  syncState?: SyncState | null,
+  connected = true,
+): SyncTone {
+  if (!connected) {
+    return {
+      dot: "bg-muted",
+      text: "не підключено",
+      pill: "bg-panelHi     text-muted   border-line",
+    };
+  }
   if (syncState?.status === "error") {
     return {
       dot: "bg-danger",
