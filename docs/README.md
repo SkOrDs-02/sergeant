@@ -1,6 +1,6 @@
 # Sergeant Documentation
 
-> **Last validated:** 2026-06-11 by @claude. **Next review:** 2026-09-09.
+> **Last touched:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
 > **Status:** Active
 
 Main documentation index for Sergeant.
@@ -32,6 +32,7 @@ Main documentation index for Sergeant.
 - Repo overview: [README.md](../README.md)
 - Contributor manual: [CONTRIBUTING.md](../CONTRIBUTING.md)
 - Repo contract and hard rules: [AGENTS.md](../AGENTS.md)
+- Glossary (доменні й платформні терміни): [glossary.md](./00-start/glossary.md)
 - Agent skills catalog: [agents/agent-skills-catalog.md](./00-start/agents/agent-skills-catalog.md)
 - Playbook catalog: [playbooks/playbook-catalog.md](./00-start/playbooks/playbook-catalog.md)
 - Service catalog: [architecture/service-catalog.md](./02-engineering/architecture/service-catalog.md)
@@ -41,6 +42,8 @@ Main documentation index for Sergeant.
 ## Sections
 
 Sections are grouped by **genre** so it is obvious at a glance whether a directory is reference material you read on demand, an active tracker you update when you ship work, or a frozen archive.
+
+Кожна верхньорівнева секція має власний index-README з картою своїх піддиректорій: [`00-start/`](./00-start/README.md) · [`01-product/`](./01-product/README.md) · [`02-engineering/`](./02-engineering/README.md) · [`03-operations/`](./03-operations/README.md) · [`04-governance/`](./04-governance/README.md) · [`05-design/`](./05-design/README.md) · [`90-work/`](./90-work/README.md).
 
 > **Informational** — reference / architecture / policy. Evergreen; consult when you need context.
 > **Trackers** — multi-PR series, registries, lifecycle-managed work (`Active → Closed → Archived`). Read when you plan a PR; update when you ship.
