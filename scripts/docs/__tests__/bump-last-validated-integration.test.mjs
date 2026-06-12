@@ -51,9 +51,10 @@ describe("bumpFiles (integration)", () => {
     });
     assert.deepEqual(modified, [rel]);
     const after = readFileSync(join(dir, rel), "utf8");
+    // Legacy `Last validated:` migrates to the honest `Last touched:` on bump.
     assert.match(
       after,
-      /\*\*Last validated:\*\* 2026-04-30 by @new\. \*\*Next review:\*\* 2026-07-29\./,
+      /\*\*Last touched:\*\* 2026-04-30 by @new\. \*\*Next review:\*\* 2026-07-29\./,
     );
   });
 

@@ -3,13 +3,19 @@
 //
 // Auto-bump the canonical freshness header on staged markdown files. Wired
 // into Husky + lint-staged so a doc edit automatically refreshes
-// `> **Last validated:** YYYY-MM-DD by @handle. **Next review:** YYYY-MM-DD.`
+// `> **Last touched:** YYYY-MM-DD by @handle. **Next review:** YYYY-MM-DD.`
 // — no more "I forgot to bump the header" PRs.
+//
+// Because *any* edit bumps the date, the stamp measures last-touch, not a
+// deliberate review — so `Last touched:` is the honest label. The legacy
+// `Last validated:` label is still matched and is rewritten to `Last
+// touched:` the first time a doc is bumped (lazy corpus migration). All
+// freshness read-sites accept both labels during the transition.
 //
 // What it does for each file passed on argv:
 //   1. Skip if the path is in `excludeGlobs` (config-driven, same as
 //      check-freshness).
-//   2. Skip if the file has no canonical `> **Last validated:**` header.
+//   2. Skip if the file has no canonical freshness header (either label).
 //   3. Skip if today's date is already in the header (idempotent).
 //   4. Replace the date with today (UTC ISO).
 //   5. Replace the `by @handle` with the current committer's handle (resolved
@@ -100,8 +106,12 @@ export function resolveHandle(emailToHandle, email) {
  * the current date / handle / next-review fields it carries. Returns null
  * when no canonical header exists in the first N lines.
  */
+// Matches both the legacy `Last validated:` label and the canonical
+// `Last touched:` one. The stamp measures last-touch (any edit bumps it via
+// the lint-staged hook), so `Last touched` is the honest name; `Last
+// validated` is read for backward-compat and migrated on the next bump.
 const RE_FRESHNESS_LINE =
-  /^(?<prefix>>\s*\*\*Last validated:\*\*\s*)(?<lastValidated>\d{4}-\d{2}-\d{2})(?<midA>\s+by\s+)@(?<handle>[A-Za-z0-9_\-.]+)(?<midB>\.\s*\*\*Next review:\*\*\s*)(?<nextReview>\d{4}-\d{2}-\d{2})(?<suffix>\.?)\s*$/m;
+  /^(?<prefix>>\s*\*\*Last (?:validated|touched):\*\*\s*)(?<lastValidated>\d{4}-\d{2}-\d{2})(?<midA>\s+by\s+)@(?<handle>[A-Za-z0-9_\-.]+)(?<midB>\.\s*\*\*Next review:\*\*\s*)(?<nextReview>\d{4}-\d{2}-\d{2})(?<suffix>\.?)\s*$/m;
 
 export function findHeaderLine(content, lineLimit = HEADER_LINE_LIMIT) {
   const head = content.split("\n").slice(0, lineLimit).join("\n");
@@ -150,8 +160,12 @@ export function bumpHeader({
     ? found.nextReview
     : addDays(today, cadenceDays);
 
+  // Migrate the legacy `Last validated:` label to the honest `Last touched:`
+  // whenever we rewrite the line — whitespace is preserved.
+  const newPrefix = found.prefix.replace("Last validated:", "Last touched:");
+
   const newLine =
-    found.prefix +
+    newPrefix +
     today +
     found.midA +
     "@" +

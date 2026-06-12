@@ -94,7 +94,7 @@ export function validatePlaybook(content, opts = {}) {
   }
 
   // 2. Last validated
-  const validated = preamble.find((l) => /Last validated:/.test(l));
+  const validated = preamble.find((l) => /Last (?:validated|touched):/.test(l));
   if (!validated) {
     errors.push("missing freshness header (`> **Last validated:** …`)");
   } else {

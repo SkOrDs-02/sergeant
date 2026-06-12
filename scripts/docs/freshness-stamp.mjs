@@ -24,7 +24,8 @@
 // AI-CONTEXT: the freshness header is a single line, so masking the whole
 // line also masks the derived `**Next review:**` date that lives on it.
 // `> **Last validated:** 2026-06-09 by docs:gen-x. **Next review:** 2026-09-07.`
-export const LAST_VALIDATED_LINE = /^>\s*\*\*Last validated:\*\*.*$/gm;
+export const LAST_VALIDATED_LINE =
+  /^>\s*\*\*Last (?:validated|touched):\*\*.*$/gm;
 
 // Trust badge embeds the date mid-line next to meaningful state (the badge
 // status), so mask only the date token, not the line:

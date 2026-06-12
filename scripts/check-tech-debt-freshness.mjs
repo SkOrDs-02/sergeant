@@ -50,7 +50,7 @@ const ISO_DATE_RE = /\d{4}-\d{2}-\d{2}/;
 const MARKER_PATTERNS = [
   /^>\s*\*\*Оновлено\s+(\d{4}-\d{2}-\d{2})\b/im,
   /^>\s*\*\*Last reviewed:\s*(\d{4}-\d{2}-\d{2})\b/im,
-  /^>\s*\*\*Last validated:\*\*\s*(\d{4}-\d{2}-\d{2})\b/im,
+  /^>\s*\*\*Last (?:validated|touched):\*\*\s*(\d{4}-\d{2}-\d{2})\b/im,
   /^Last reviewed:\s*(\d{4}-\d{2}-\d{2})\b/im,
 ];
 const HEADER_LINE_LIMIT = 30;

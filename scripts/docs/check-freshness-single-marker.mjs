@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DEFAULT_ROOT = resolve(__dirname, "..", "..");
-const MARKER_RE = /^>\s*\*\*Last validated:\*\*/;
+const MARKER_RE = /^>\s*\*\*Last (?:validated|touched):\*\*/;
 const FENCE_RE = /^\s*```/;
 
 const SKIP_DIRS = new Set([

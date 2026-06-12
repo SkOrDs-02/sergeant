@@ -124,7 +124,7 @@ export function todayISO() {
 export function normaliseForCompare(s) {
   return s
     .replace(
-      /Last validated:\*\* \d{4}-\d{2}-\d{2}[^\n]*/g,
+      /Last (?:validated|touched):\*\* \d{4}-\d{2}-\d{2}[^\n]*/g,
       "Last validated:**",
     )
     .replace(/Next review:\*\* \d{4}-\d{2}-\d{2}[^\n]*/g, "Next review:**")
