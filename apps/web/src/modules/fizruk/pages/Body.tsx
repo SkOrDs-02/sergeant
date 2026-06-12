@@ -561,6 +561,18 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
             );
           })}
 
+        {[weightData, sleepData, energyData, moodData].every(
+          (d) => d.length < 2,
+        ) && (
+          <Card radius="lg" padding="lg" aria-label="Тренди ще збираються">
+            <p className="text-style-label text-text">Тренди ще збираються</p>
+            <p className="text-xs text-subtle mt-1">
+              Додай ще один запис ваги, сну чи енергії — графіки зʼявляться
+              після двох точок.
+            </p>
+          </Card>
+        )}
+
         {entries.length > 0 && (
           <JournalSection
             entries={entries.slice(0, 15)}

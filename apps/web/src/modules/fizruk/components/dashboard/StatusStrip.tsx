@@ -20,6 +20,7 @@
  */
 
 import { Card } from "@shared/components/ui/Card";
+import { pluralDays as pluralDaysUa, pluralUa } from "@sergeant/shared";
 import type { DashboardKpis } from "@sergeant/fizruk-domain/domain";
 import type { MuscleState } from "@sergeant/fizruk-domain";
 
@@ -75,30 +76,15 @@ function Chip({ label, value, tone, onClick, ariaLabel }: ChipProps) {
 }
 
 function pluralDays(n: number): string {
-  const mod100 = n % 100;
-  const mod10 = n % 10;
-  if (mod100 >= 11 && mod100 <= 14) return `${n} днів`;
-  if (mod10 === 1) return `${n} день`;
-  if (mod10 >= 2 && mod10 <= 4) return `${n} дні`;
-  return `${n} днів`;
+  return `${n} ${pluralDaysUa(n)}`;
 }
 
 function pluralWorkouts(n: number): string {
-  const mod100 = n % 100;
-  const mod10 = n % 10;
-  if (mod100 >= 11 && mod100 <= 14) return `${n} тренувань`;
-  if (mod10 === 1) return `${n} тренування`;
-  if (mod10 >= 2 && mod10 <= 4) return `${n} тренування`;
-  return `${n} тренувань`;
+  return `${n} ${pluralUa(n, { one: "тренування", few: "тренування", many: "тренувань" })}`;
 }
 
 function pluralFatiguedGroups(n: number): string {
-  const mod100 = n % 100;
-  const mod10 = n % 10;
-  if (mod100 >= 11 && mod100 <= 14) return `${n} груп втомлено`;
-  if (mod10 === 1) return `${n} група втомлена`;
-  if (mod10 >= 2 && mod10 <= 4) return `${n} групи втомлені`;
-  return `${n} груп втомлено`;
+  return `${n} ${pluralUa(n, { one: "група втомлена", few: "групи втомлені", many: "груп втомлено" })}`;
 }
 
 function formatWeightDelta(delta: number): {
