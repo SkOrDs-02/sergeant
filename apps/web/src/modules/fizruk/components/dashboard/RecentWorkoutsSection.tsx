@@ -99,9 +99,9 @@ export function RecentWorkoutsSection({
         </div>
       ) : (
         <ul className="flex flex-col gap-2">
-          {recent.map((row) => (
+          {recent.map((row, idx) => (
             <li
-              key={`${row.startedAt}-${row.endedAt ?? "na"}`}
+              key={`${row.startedAt}-${idx}`}
               className="rounded-r-lg p-3 flex items-center justify-between gap-3"
             >
               <div className="min-w-0 flex-1">

@@ -28,6 +28,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
+import { pluralDays } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -205,19 +206,10 @@ function formatDateShort(dateKey: string): string {
   }
 }
 
-/**
- * Ukrainian pluralization for "N днів / день / дні" etc. Mirrors the
- * mobile helper so identical dates render identically on both clients.
- */
 function formatDaysAway(days: number): string {
   if (days === 0) return "Сьогодні";
   if (days === 1) return "Завтра";
-  const mod100 = days % 100;
-  const mod10 = days % 10;
-  if (mod100 >= 11 && mod100 <= 14) return `За ${days} днів`;
-  if (mod10 === 1) return `За ${days} день`;
-  if (mod10 >= 2 && mod10 <= 4) return `За ${days} дні`;
-  return `За ${days} днів`;
+  return `За ${days} ${pluralDays(days)}`;
 }
 
 /**
@@ -455,7 +447,7 @@ function EmptyState({
       <p className="mt-2 text-sm text-teal-700 dark:text-white/75">
         {state.hasTemplates
           ? "Нічого не заплановано — запусти готовий шаблон або відкрий програми."
-          : // eslint-disable-next-line sergeant-design/no-bare-empty-text -- hero-card empty variant copy paired with CTA block below; HeroCard owns its own hero-tier design and cannot be swapped for <EmptyState> without breaking the hero shell layout. See docs/design/empty-states.md § Tier 1.
+          :  
             "У тебе ще немає шаблонів. Створи свій перший або обери програму."}
       </p>
       <div className="mt-6 flex flex-col gap-3">
