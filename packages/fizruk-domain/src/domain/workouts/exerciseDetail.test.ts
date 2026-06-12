@@ -175,7 +175,46 @@ describe("computeExerciseBest", () => {
 });
 
 describe("computeExerciseWeeklyTrend", () => {
-  it("buckets sessions by local Monday and caps at 12 weeks", () => {
+  // Domain invariant: week buckets are Europe/Kyiv-anchored.
+  // Mon 2026-06-08 00:00 Kyiv (EEST, UTC+3) = 2026-06-07T21:00:00Z.
+  it("splits Sun 23:30 vs Mon 00:30 (Kyiv) into separate week buckets", () => {
+    const history = [
+      {
+        // Mon 2026-06-08 00:30 Kyiv → bucket 2026-06-08
+        workout: w("w_mon", "2026-06-07T21:30:00Z", []),
+        item: strength("i_mon", "squat", [{ weightKg: 60, reps: 5 }]),
+      },
+      {
+        // Sun 2026-06-07 23:30 Kyiv → bucket 2026-06-01
+        workout: w("w_sun", "2026-06-07T20:30:00Z", []),
+        item: strength("i_sun", "squat", [{ weightKg: 100, reps: 1 }]),
+      },
+    ];
+    const { rmPoints } = computeExerciseWeeklyTrend(history);
+    expect(rmPoints.map((p) => p.weekKey)).toEqual([
+      "2026-06-01",
+      "2026-06-08",
+    ]);
+    // The label must show the Kyiv Monday's day-of-month even for users
+    // west of Kyiv (Kyiv Mon 00:00 is still Sunday in UTC and westwards).
+    expect(rmPoints[0]!.dateLabel).toMatch(/^1\s/);
+    expect(rmPoints[1]!.dateLabel).toMatch(/^8\s/);
+  });
+
+  // DST week: Kyiv springs forward Sun 2026-03-29 03:00 EET → 04:00 EEST.
+  it("keeps the spring-forward DST Sunday inside its Kyiv week bucket", () => {
+    const history = [
+      {
+        // Sun 2026-03-29 23:30 Kyiv (EEST) → bucket Mon 2026-03-23
+        workout: w("w_dst", "2026-03-29T20:30:00Z", []),
+        item: strength("i_dst", "squat", [{ weightKg: 80, reps: 3 }]),
+      },
+    ];
+    const { rmPoints } = computeExerciseWeeklyTrend(history);
+    expect(rmPoints.map((p) => p.weekKey)).toEqual(["2026-03-23"]);
+  });
+
+  it("buckets sessions by Kyiv Monday and caps at 12 weeks", () => {
     const history = [
       {
         // Wed 2026-04-08 groups with Mon 2026-04-06

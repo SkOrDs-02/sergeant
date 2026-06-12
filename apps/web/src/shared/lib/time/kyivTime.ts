@@ -19,6 +19,8 @@
  * @see docs/audits/2026-05-13-consolidated-page-audit.md § Theme 1
  */
 
+import { kyivMondayStartMs } from "@sergeant/shared/utils";
+
 const KYIV_TZ = "Europe/Kyiv";
 
 /**
@@ -177,22 +179,14 @@ export function parseKyivDate(key: string): Date | null {
  * Monday-anchored week start (00:00 Kyiv local) for the week containing
  * `input`. Matches ISO-8601 week convention used by `date.getDay()`
  * with the Monday-first remapping `(getDay() + 6) % 7`.
+ *
+ * Delegates to the monorepo-wide `kyivMondayStartMs` so packages
+ * (`fizruk-domain` weekly buckets) and web pages share one DST-safe
+ * implementation — the previous local `dayStart − N×24h` step-back drifted
+ * one hour on weeks containing a DST transition.
  */
 export function getKyivWeekStart(input?: Date | number): Date {
-  const { year, month, day, weekday } = getKyivDateParts(input);
-  // `weekday` is 0=Sun..6=Sat; offset to Monday-anchored
-  const mondayOffset = (weekday + 6) % 7;
-  const dayKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  const dayStart = parseKyivDate(dayKey);
-  if (!dayStart) {
-    // Should never happen — `getKyivDateParts` returned a valid date,
-    // so `parseKyivDate` must accept it. Fall back to host-local midnight
-    // to avoid throwing, but this is a hard logic error if it ever fires.
-    const d = coerce(input);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
-  return new Date(dayStart.getTime() - mondayOffset * 24 * 60 * 60 * 1000);
+  return new Date(kyivMondayStartMs(coerce(input)));
 }
 
 /**

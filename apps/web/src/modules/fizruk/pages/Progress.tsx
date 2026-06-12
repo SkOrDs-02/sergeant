@@ -14,18 +14,11 @@ import { MiniLineChart } from "../components/MiniLineChart";
 import { WellbeingChart } from "../components/WellbeingChart";
 import { WeeklyVolumeChart } from "../components/WeeklyVolumeChart";
 import { epley1rm, weeklyVolumeSeriesNow } from "@sergeant/fizruk-domain";
+import { kyivMondayStartMs } from "@sergeant/shared/utils";
 import { statusColors } from "@shared/charts";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Stat } from "@shared/components/ui/Stat";
-import { getKyivWeekStart } from "@shared/lib/time/kyivTime";
-
-function weekStartMs(d: number | string | Date) {
-  // Domain-correct (Kyiv) week boundary so weekly-volume bars don't
-  // shift when the user roams (consolidated page-audit § Theme 1 — 07 F1).
-  const ts = typeof d === "number" ? d : new Date(d).getTime();
-  return getKyivWeekStart(ts).getTime();
-}
 
 // F36: minimum bar width (%) so the smallest muscle-volume bar stays
 // visible and tap-able even when its value is a tiny fraction of the max.
@@ -96,7 +89,9 @@ export function Progress({ onNavigate }: ProgressProps) {
     for (const w of workouts || []) {
       const t = w.startedAt ? Date.parse(w.startedAt) : NaN;
       if (!Number.isFinite(t) || t < cutoff) continue;
-      const wk = weekStartMs(t);
+      // Domain-correct (Kyiv) week boundary so weekly-volume bars don't
+      // shift when the user roams (consolidated page-audit § Theme 1 — 07 F1).
+      const wk = kyivMondayStartMs(t);
       if (!weeks.has(wk)) weeks.set(wk, {});
       const bucket = weeks.get(wk);
       if (!bucket) continue;
