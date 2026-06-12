@@ -173,6 +173,10 @@ CI-гейт `lint:initiative-status-sync` (`scripts/check-initiative-status-sync
    - Замінити рядок у `## Нещодавно завершені` 1-рядковим redirect-stub-ом у `## Архів`: `[archive/_NNNN-slug.md] — archived YYYY-MM-DD; superseded by …` або `… (canonical rules → AGENTS.md / docs/04-governance/governance/)`.
    - Канонічні правила, що з ініціативи виросли, лишаються у `AGENTS.md` Hard Rules / `docs/04-governance/governance/`.
 
+## Зведена матриця hardening-карток
+
+Швидкий огляд усіх hardening-карток (stack-pulse-2026-05 + _0008 + _0009) — що зроблено, що відкрите: [`hardening-matrix.md`](./hardening-matrix.md).
+
 ## Джерела
 
 - [`docs/90-work/audits/`](../audits) — формальні аудити, з яких ці ініціативи виросли (зокрема `2026-04-28-sergeant-comprehensive-audit.md` та design-review від 2026-05-03).

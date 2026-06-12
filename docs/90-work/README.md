@@ -19,4 +19,6 @@
 > на правонаступника — у `archive/` переноситься лише повністю superseded
 > матеріал (див. процес у кожному tracker-README).
 
+Зведена матриця hardening-карток (stack-pulse-2026-05 + _0008 + _0009): [`initiatives/hardening-matrix.md`](./initiatives/hardening-matrix.md).
+
 Назад до кореня: [`docs/README.md`](../README.md).
