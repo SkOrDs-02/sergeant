@@ -31,6 +31,13 @@ const base = {
   // dist-server/*.js валить контейнер ERR_MODULE_NOT_FOUND ще на pre-deploy
   // migrate. Саме це поклало всі деплої 2026-06-05…06-12 (прод застряг на
   // образі від 05-23), коли сюди додали `external: ["@sergeant/*"]`.
+  //
+  // pino-сімейство — навпаки, МУСИТЬ лишатись external: worker-транспорти
+  // (pino/file + pino-loki через thread-stream) резолвлять свої runtime-файли
+  // (`worker.js`) відносно пакета на диску, і забандлені падають у контейнері
+  // з ERR_AMBIGUOUS_MODULE_SYNTAX. Це справжні npm-deps сервера — deps-stage
+  // ставить їх у node_modules образу, тож external тут безпечний.
+  external: ["pino", "pino-http", "pino-loki", "pino-pretty"],
 };
 
 await build({
