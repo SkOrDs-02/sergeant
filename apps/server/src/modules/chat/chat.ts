@@ -38,16 +38,27 @@ type WithAnthropicKey = Request & { anthropicKey?: string };
 const CHAT_TOOL_TIMEOUT_MS = 30_000;
 
 /**
- * Anthropic prompt-caching, дві кажові точки (cache breakpoints):
+ * Anthropic prompt-caching, три точки розриву (cache breakpoints). Порядок
+ * рендеру в Anthropic — `tools` → `system` → `messages`; кожен `cache_control`
+ * кешує весь префікс ДО себе включно. Мінімальний кешований префікс залежить
+ * від моделі: Haiku 4.5 (перший тур) — 4096 токенів, Sonnet 4.6 (tool-result
+ * тур) — 2048. TTL ephemeral = 5 хв. Ліміт Anthropic — max 4 breakpoint-и/запит.
  *
- * 1. **SYSTEM_PREFIX** як окремий `text`-блок з `cache_control`. Сьогодні сам префікс
- *    ~987 токенів — рівно під мінімумом Anthropic 1024 для Sonnet, тому слот
- *    фактично не реєструється. Позначаємо forward-looking: як тільки
- *    SYSTEM_PREFIX виросте понад поріг — кеш ввімкнеться автоматично.
+ * 1. **SYSTEM_PREFIX** (`buildSystem`) — окремий cached `text`-блок. Сам по собі
+ *    ~987 токенів, нижче обох мінімумів, тому власного слоту не реєструє; але
+ *    оскільки tools рендеряться ПЕРЕД system, сумарний префікс tools+SYSTEM_PREFIX
+ *    перевищує поріг і кешується.
  *
- * 2. **Останній tool** в `tools` (див. `applyToolsCacheBreakpoint`). Оскільки cache
- *    breakpoint охоплює все ДО себе в порядку system → tools → messages, це
- *    реально кешує ~6000+ токенів (system + всі 19+ tools). TTL ephemeral = 5хв.
+ * 2. **Останній tool** (`applyToolsCacheBreakpoint`) — кешує всі tools (~19 шт).
+ *    Tools + SYSTEM_PREFIX разом — стабільний блок ~6000+ токенів, спільний між
+ *    усіма запитами; основний cache-read на кожному турі.
+ *
+ * 3. **Останнє повідомлення** (`applyMessagesCacheBreakpoint`) — кешує префікс
+ *    історії діалогу. На наступному турі клієнт дошле історію як префікс, і
+ *    Anthropic віддасть її з кешу (~0.1× ціни input) замість повторного білінгу.
+ *    Застосовується ЛИШЕ на першому турі (`cleaned` несе повну історію); на
+ *    tool-result турі шлеться ефемерний one-shot (останній user + tool-раунд),
+ *    тож кеш там був би марним 1.25× write без re-read.
  *
  * Per-user `context` рендериться другим блоком system — **без** `cache_control`,
  * щоб не створювати власного cache slot per-user-ом. Але оскільки cache key
@@ -77,9 +88,9 @@ function buildSystem(context: string): AnthropicSystemBlock[] {
  * Клонує `TOOLS` і додає `cache_control: ephemeral` до останнього tool. Не
  * мутує імпортований масив, бо він реєкспортиться в інших місцях.
  *
- * Anthropic бачить останній cache_control в порядку system → tools → messages
- * як "кешуй все до цього блоку включно". Це реальний вин кешування сьогодні — без
- * цього cache_control на SYSTEM_PREFIX самостійно не ввімкнеться.
+ * Anthropic кешує весь префікс ДО цього блоку включно (порядок рендеру:
+ * tools → system → messages). Разом із cache_control на SYSTEM_PREFIX це кешує
+ * стабільний блок tools + system на кожному турі.
  */
 function applyToolsCacheBreakpoint(
   tools: typeof TOOLS,
@@ -135,6 +146,43 @@ interface AnthropicMessagesResponseData {
 interface ClientChatMessage {
   role: "user" | "assistant";
   content: string;
+}
+
+/**
+ * Message-content shape після того, як останньому повідомленню додали
+ * cache-breakpoint: або сирий string (як прийшло від клієнта), або масив
+ * content-блоків з `cache_control` на одному з них.
+ */
+type CachedMessage =
+  | { role: "user" | "assistant"; content: string }
+  | { role: "user" | "assistant"; content: Array<Record<string, unknown>> };
+
+/**
+ * Третій cache breakpoint (див. § doc вгорі): додає `cache_control: ephemeral`
+ * до ОСТАННЬОГО повідомлення, щоб префікс історії діалогу читався з кешу на
+ * наступному турі. String-content обгортається в один `text`-блок із
+ * cache_control; масив-content (tool_use / tool_result) отримує cache_control на
+ * останній блок (defensive — `cleaned` завжди має string-content, тож у проді
+ * спрацьовує перша гілка). Чистий: повертає НОВИЙ масив, вхід не мутується.
+ */
+function applyMessagesCacheBreakpoint(
+  messages: ClientChatMessage[],
+): CachedMessage[] {
+  if (messages.length === 0) return messages;
+  const out: CachedMessage[] = messages.slice();
+  const lastIdx = out.length - 1;
+  const last = messages[lastIdx]!;
+  out[lastIdx] = {
+    role: last.role,
+    content: [
+      {
+        type: "text",
+        text: last.content,
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+  };
+  return out;
 }
 
 interface StreamUsage {
@@ -542,7 +590,9 @@ export default async function handler(
         max_tokens: 1500,
         system: buildSystem(augmentedContext),
         tools: TOOLS_WITH_CACHE,
-        messages: cleaned,
+        // 3-й cache breakpoint: кешуємо префікс історії діалогу, щоб наступний
+        // тур читав попередні повідомлення з кешу замість повного re-білінгу.
+        messages: applyMessagesCacheBreakpoint(cleaned),
       },
       {
         timeoutMs: CHAT_TOOL_TIMEOUT_MS,

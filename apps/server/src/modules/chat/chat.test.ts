@@ -725,9 +725,10 @@ describe("chat handler — system payload (prompt caching)", () => {
     expect(payload!.system[0]!.cache_control).toEqual({ type: "ephemeral" });
   });
 
-  // AI-CONTEXT: SYSTEM_PREFIX сам по собі ~987 токенів, нижче Anthropic-мінімуму
-  // 1024 для Sonnet. Реальний cache hit йде через breakpoint на ОСТАННЬОМУ tool,
-  // що охоплює system + всі tools (~6000+ токенів). Без цього кеш не вмикається.
+  // AI-CONTEXT: SYSTEM_PREFIX сам по собі ~987 токенів, нижче мінімуму кешованого
+  // префіксу (Haiku 4.5 — 4096, Sonnet 4.6 — 2048). Реальний cache hit йде через
+  // breakpoint на ОСТАННЬОМУ tool: tools рендеряться перед system, тож префікс
+  // tools + SYSTEM_PREFIX (~6000+ токенів) перевищує поріг і кешується.
   it("додає cache_control: ephemeral до останнього tool (реальний cache breakpoint)", async () => {
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: true, status: 200 },
@@ -749,6 +750,92 @@ describe("chat handler — system payload (prompt caching)", () => {
     // Усі попередні tools — без cache_control (інакше марно палимо breakpoints)
     for (let i = 0; i < payload.tools.length - 1; i++) {
       expect(payload!.tools[i]!.cache_control).toBeUndefined();
+    }
+  });
+
+  // AI-CONTEXT: 3-й breakpoint — кеш історії діалогу. На першому турі останнє
+  // повідомлення обгортається в content-блок із cache_control, щоб наступний тур
+  // читав попередню історію з кешу замість повного re-білінгу input-токенів.
+  it("додає cache_control: ephemeral до останнього повідомлення першого туру (кеш історії)", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "Ок." }] },
+    });
+
+    const req = makeReq({
+      messages: [
+        { role: "user", content: "перше питання" },
+        { role: "assistant", content: "перша відповідь" },
+        { role: "user", content: "друге питання" },
+      ],
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    const payload = anthropicMessages!.mock.calls[0]![1] as {
+      messages: Array<{
+        role: string;
+        content:
+          | string
+          | Array<{
+              type: string;
+              text?: string;
+              cache_control?: { type: string };
+            }>;
+      }>;
+    };
+    const msgs = payload.messages;
+    expect(msgs.length).toBeGreaterThan(0);
+
+    // Останнє повідомлення → масив content-блоків із cache_control на text-блоці.
+    const last = msgs[msgs.length - 1]!;
+    expect(Array.isArray(last.content)).toBe(true);
+    const block = (
+      last.content as Array<{ text?: string; cache_control?: { type: string } }>
+    )[0]!;
+    expect(block.cache_control).toEqual({ type: "ephemeral" });
+    expect(block.text).toBe("друге питання");
+
+    // Попередні повідомлення лишаються сирими string-ами (без cache_control),
+    // щоб не палити зайві breakpoint-и (ліміт Anthropic — 4 на запит).
+    for (let i = 0; i < msgs.length - 1; i++) {
+      expect(typeof msgs[i]!.content).toBe("string");
+    }
+  });
+
+  it("tool-result turn НЕ кешує messages (ефемерний one-shot, кеш був би марним write)", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "Готово." }] },
+    });
+
+    const req = makeReq({
+      messages: [{ role: "user", content: "видали m_a" }],
+      tool_calls_raw: [
+        {
+          type: "tool_use",
+          id: "toolu_y",
+          name: "delete_transaction",
+          input: { tx_id: "m_a" },
+        },
+      ],
+      tool_results: [{ tool_use_id: "toolu_y", content: "ок" }],
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    const payload = anthropicMessages!.mock.calls[0]![1] as {
+      messages: Array<{
+        content: string | Array<{ cache_control?: { type: string } }>;
+      }>;
+    };
+    // Жоден блок жодного повідомлення на tool-result турі не має cache_control.
+    for (const m of payload.messages) {
+      if (Array.isArray(m.content)) {
+        for (const block of m.content) {
+          expect(block.cache_control).toBeUndefined();
+        }
+      }
     }
   });
 
@@ -1013,9 +1100,16 @@ describe("chat handler — auto-continuation на stop_reason=max_tokens", () =>
 
     expect(anthropicMessages).toHaveBeenCalledTimes(3);
     const thirdCallMessages = anthropicMessages!.mock.calls[2]![1].messages;
-    // [user, assistant("c1 c2 ")] — рівно один assistant, накопичений текст
+    // [user, assistant("c1 c2 ")] — рівно один assistant, накопичений текст.
+    // Базовий user-msg несе 3-й cache breakpoint (історія кешу), тож content —
+    // масив блоків, а не сирий string; continuation-assistant лишається string-ом.
     expect(thirdCallMessages).toHaveLength(2);
-    expect(thirdCallMessages[0]).toEqual({ role: "user", content: "запит" });
+    expect(thirdCallMessages[0]).toEqual({
+      role: "user",
+      content: [
+        { type: "text", text: "запит", cache_control: { type: "ephemeral" } },
+      ],
+    });
     expect(thirdCallMessages[1]).toEqual({
       role: "assistant",
       content: "c1 c2 ",
