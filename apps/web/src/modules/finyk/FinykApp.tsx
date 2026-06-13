@@ -363,9 +363,10 @@ export default function App({
           </div>
         </div>
 
-        {(page === "overview" ||
-          page === "transactions" ||
-          page === "budgets") && (
+        {!showLoginOverlay &&
+          (page === "overview" ||
+            page === "transactions" ||
+            page === "budgets") && (
           <FloatingActionButton
             variant="v2-finyk"
             icon="plus"
@@ -421,7 +422,7 @@ export default function App({
           module="finyk"
         />
 
-        <AIPill module="finyk" />
+        {!showLoginOverlay && <AIPill module="finyk" />}
 
         {showLoginOverlay && (
           <div

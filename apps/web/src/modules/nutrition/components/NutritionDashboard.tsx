@@ -82,8 +82,18 @@ function MiniBar({
 }) {
   const max = Math.max(targetKcal || 1, ...rows.map((r) => r.kcal || 0));
   const dayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
+  const weekSummary = rows
+    .map((r) => {
+      const dow = new Date(r.date + "T00:00:00").getDay();
+      return `${dayLabels[(dow + 6) % 7]} ${Math.round(r.kcal)} ккал`;
+    })
+    .join(", ");
   return (
-    <div className="flex items-end gap-1 h-16">
+    <div
+      className="flex items-end gap-1 h-16"
+      role="img"
+      aria-label={`Калорії за тиждень: ${weekSummary}`}
+    >
       {rows.map((r) => {
         const h = max > 0 ? Math.max(2, (r.kcal / max) * 100) : 2;
         const isToday = r.date === todayISO();

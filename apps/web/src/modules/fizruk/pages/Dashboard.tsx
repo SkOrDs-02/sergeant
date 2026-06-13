@@ -40,6 +40,8 @@ import type {
   TrainingProgramDef,
 } from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
+import { Skeleton } from "@shared/components/ui/Skeleton";
+import { useAuth } from "../../../core/auth/AuthContext";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 import { InsightCard } from "@shared/components/ui/InsightCard";
 import { useRestDayOverdueInsight } from "../hooks/useRestDayOverdueInsight";
@@ -66,9 +68,10 @@ interface DashboardProps {
    * touching `window.location.hash` — the module migrated to react-router
    * in initiative 0006 §Phase 2.c (#2541) and hash assignments became a
    * silent no-op (pathname unchanged ⇒ no re-render). Accepts the wider
-   * `FizrukPage | string` shape to mirror `useFizrukRoute().navigate` and
-   * keep the existing «План» CTA (was hash “#plan” — not a real page,
-   * silent no-op then; remains a no-op now via `parseFizrukSegments`).
+   * `FizrukPage | string` shape to mirror `useFizrukRoute().navigate`. The
+   * «План» CTA was a hash “#plan”, then a silent no-op via
+   * `parseFizrukSegments`; it now routes to the Workouts tab, which
+   * absorbed the planning surface.
    */
   onNavigate: (target: FizrukPage | string) => void;
 }
@@ -83,6 +86,7 @@ export function Dashboard({
   // Use the shared nominative formatter so weekday matches HubHeader
   // ("Пʼятниця" not "пʼятницю") and the Kyiv timezone is anchored correctly.
   const today = useMemo(formatKyivNominativeDate, []);
+  const { user } = useAuth();
   const rec = useRecovery();
   const {
     workouts,
@@ -91,7 +95,12 @@ export function Dashboard({
     addItem,
   } = useWorkouts();
   const { exercises } = useExerciseCatalog();
-  const { templates, recentlyUsed, markTemplateUsed } = useWorkoutTemplates();
+  const {
+    templates,
+    loaded: templatesLoaded,
+    recentlyUsed,
+    markTemplateUsed,
+  } = useWorkoutTemplates();
   const monthlyPlan = useMonthlyPlan();
   const { entries: measurements } = useMeasurements();
 
@@ -346,7 +355,11 @@ export function Dashboard({
     onNavigate("workouts");
   };
   const openPlan = () => {
-    onNavigate("plan");
+    // «План» tab was dissolved into the Workouts tab — "plan" is not a
+    // valid FizrukPage (parseFizrukSegments falls back to dashboard, so
+    // onNavigate("plan") was a silent no-op). Land on the Workouts home
+    // overview, which now owns the planning/schedule surface.
+    onNavigate("workouts");
   };
   const openProgress = () => {
     onNavigate("progress");
@@ -354,6 +367,32 @@ export function Dashboard({
   const openBody = () => {
     onNavigate("body");
   };
+
+  // Gate the data-derived hero/KPI body on hydration for signed-in users.
+  // The SQLite read path boots only when a userId is present
+  // (`useFizrukSqliteReadBoot`), so `workoutsLoaded` flips to true only for
+  // authed users; gating guests on it would trap them in a permanent
+  // skeleton (the empty hero is their correct, final state). For authed
+  // returning users, render a skeleton until the warm cache
+  // (`workoutsLoaded`) and templates LS read (`templatesLoaded`) settle —
+  // otherwise they see a «План порожній» / «Серія 0 днів» flash before
+  // real data lands (matches the sibling Workouts page skeleton pattern).
+  if (user?.id && (!workoutsLoaded || !templatesLoaded)) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <div
+          className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4"
+          role="status"
+          aria-live="polite"
+          aria-label="Завантаження дашборду"
+        >
+          <Skeleton className="h-44 w-full" variant="card" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto">

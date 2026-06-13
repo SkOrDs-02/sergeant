@@ -109,7 +109,7 @@ export function DailyPlanMealRow({
       {(meal.ingredients?.length ?? 0) > 0 && (
         <button
           type="button"
-          className="mt-2 text-xs text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:text-nutrition transition-colors"
+          className="mt-2 text-xs text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:hover:text-nutrition transition-colors"
           onClick={() => setExpanded((v) => !v)}
         >
           {expanded ? "▲ Сховати інгредієнти" : "▼ Інгредієнти"}

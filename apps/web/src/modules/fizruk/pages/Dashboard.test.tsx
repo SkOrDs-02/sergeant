@@ -12,6 +12,13 @@ vi.mock("../../../core/db/kvStoreBoot", () => ({
   bootstrapKvStore: () => Promise.resolve(),
 }));
 
+// Stub useAuth — the Dashboard reads `user?.id` to gate the hydration
+// skeleton (signed-in only). Guest (user: null) skips the skeleton and
+// renders the body, which is what these smoke tests assert.
+vi.mock("../../../core/auth/AuthContext", () => ({
+  useAuth: vi.fn(() => ({ user: null })),
+}));
+
 // Stub all the hooks the Dashboard wires up
 vi.mock("../hooks/useExerciseCatalog", () => ({
   useExerciseCatalog: vi.fn(() => ({
@@ -42,6 +49,7 @@ vi.mock("../hooks/useRecovery", () => ({
 vi.mock("../hooks/useWorkoutTemplates", () => ({
   useWorkoutTemplates: vi.fn(() => ({
     templates: [],
+    loaded: true,
     recentlyUsed: [],
     markTemplateUsed: vi.fn(),
   })),

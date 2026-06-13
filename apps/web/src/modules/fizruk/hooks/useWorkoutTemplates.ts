@@ -31,10 +31,16 @@ function uid() {
 
 export function useWorkoutTemplates() {
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
+  // `loaded` lets consumers distinguish "first paint before the LS read"
+  // from "read complete, genuinely empty" — without it the Dashboard
+  // computes its hero/KPI state from an empty array and flashes the
+  // empty/zero UI for returning users before hydration.
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const parsed = safeReadLS(KEY, []);
     if (Array.isArray(parsed)) setTemplates(parsed as WorkoutTemplate[]);
+    setLoaded(true);
   }, []);
 
   // Функціональний updater через setTemplates, щоб уникнути stale closure:
@@ -151,6 +157,7 @@ export function useWorkoutTemplates() {
 
   return {
     templates: sorted,
+    loaded,
     recentlyUsed,
     addTemplate,
     updateTemplate,

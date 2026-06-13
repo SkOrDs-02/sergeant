@@ -141,7 +141,7 @@ export function HubHeader({
                   "bg-brand-soft text-brand-strong border border-brand-soft-border",
                   "text-style-caption font-semibold",
                   "hover:bg-brand-soft-hover transition-colors",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
                 )}
               >
                 <Icon name="shield" size="xs" strokeWidth={2} aria-hidden />

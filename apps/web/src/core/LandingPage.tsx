@@ -169,7 +169,7 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
             onClick={tryWithoutAccount}
             className={cn(
               "text-sm text-muted hover:text-text underline-offset-4",
-              "focus-visible:outline-none focus-visible:underline",
+              "focus:outline-none focus-visible:underline focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-md",
               "transition-colors duration-150",
             )}
             data-testid="landing-skip-cta"
