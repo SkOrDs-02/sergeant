@@ -59,7 +59,6 @@ export function HubDashboard({
       <StaggerChild index={1}>
         <HubModulesGrid
           density={s.density}
-          hasRealEntry={s.hasRealEntry}
           editMode={s.editMode}
           toggleEditMode={s.toggleEditMode}
           displayOrder={s.displayOrder}

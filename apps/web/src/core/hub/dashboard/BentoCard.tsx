@@ -152,7 +152,12 @@ export const BentoCard = memo(function BentoCard({
 
         <span
           className={cn(
-            "text-xs font-semibold",
+            "font-semibold",
+            // Empty cards have no preview number, so the module name is the
+            // focal point and is sized up; once data lands the big
+            // `preview.main` number takes over as the hero and the name
+            // recedes to a caption above it.
+            hasData ? "text-xs" : "text-sm",
             inactive ? "text-muted" : "text-text",
           )}
         >
@@ -160,7 +165,7 @@ export const BentoCard = memo(function BentoCard({
         </span>
 
         {!inactive && (
-          <span className="text-style-meta text-muted truncate mt-0.5">
+          <span className="text-style-meta text-muted mt-0.5 leading-snug">
             {config.description}
           </span>
         )}
@@ -208,43 +213,13 @@ export const BentoCard = memo(function BentoCard({
               </span>
             )}
           </>
-        ) : !editMode ? (
-          // Empty-state CTA — promoted from a single inline pill (icon + label
-          // glyph) to a two-row layout with a tinted leading icon-box and an
-          // explicit «Натисни, щоб почати» helper. The richer treatment makes
-          // the card read as an *invitation* (clear affordance + verb) instead
-          // of a generic «+ Почни тут →» eyebrow that the eye skipped past.
-          // Rendered for every empty card (with or without a quick-add
-          // affordance) so the bento grid does not visibly mix two empty-
-          // state heights — the previous split between rich/simple variants
-          // produced the uneven row the IA pass is fixing.
-          <div className="mt-1.5 flex flex-col gap-1">
-            <div className="flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "w-5 h-5 rounded-xl flex items-center justify-center",
-                  config.iconClass,
-                  "opacity-60",
-                )}
-              >
-                <Icon name="plus" size="xs" strokeWidth={2.5} aria-hidden />
-              </span>
-              <span
-                className={cn(
-                  "text-xs font-semibold",
-                  config.accentClass.replace("bg-", "text-"),
-                )}
-              >
-                {config.emptyLabel}
-              </span>
-            </div>
-            <span className="text-style-caption text-subtle">
-              Натисни, щоб почати
-            </span>
-          </div>
-        ) : (
-          <span className="text-xs text-muted mt-1">{config.emptyLabel}</span>
-        )}
+        ) : null}
+        {/* Empty cards intentionally render no CTA copy: the whole tile is a
+            button (hover-lift on desktop, full tap target on touch) and the
+            quick-add `+` sits in the corner for modules that support it. The
+            module name + description carry the invitation — the previous
+            «Почни тут →» / «Натисни, щоб почати» pair was triple-redundant
+            with the card affordance and crowded the tile. */}
 
         {showProgress && (
           <div
