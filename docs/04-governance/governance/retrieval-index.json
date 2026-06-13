@@ -3,8 +3,8 @@
   "version": 1,
   "generated_at": "2026-06-13",
   "sourceHashes": {
-    "knowledge-graph": "f9847c4214551c31ba63123dc0253cadf3ad8dcd8b2f270469ce6c612af65d2a",
-    "symbol-index": "e73856fd49f26697301e4bce984966dfece2664ba685d4f744684eb7277750e9"
+    "knowledge-graph": "21396ebe425a2d6fe0788f5a3eb58871c7437d042a6220c4a833155b87e5e425",
+    "symbol-index": "6afeb40a24145e6a7d50541aecce9d2c15f36aaaf58de9091c1f2bc2fcc47f8c"
   },
   "counts": {
     "adr": 63,
@@ -47,8 +47,8 @@
       "title": "ADR-0003: Refund and dispute handling",
       "tier": "core",
       "status": "proposed",
-      "text": "ADR-0003: Refund and dispute handling · adr:0003 · adr · proposed · 3 · 0. TL;DR · ADR-3.1 — Канонічний refund-flow на MVP: manual через Stripe Dashboard · Status · Context · Decision · Consequences · Alternatives considered · ADR-3.2 — Dispute / chargeback: миттєва деградація + 90-day fraud block · ADR-3.3 — Що НЕ робимо на MVP (out of scope) · Open questions",
-      "contentHash": "dddc0b1d06d6646462440d1ef458c91218748a3e9ab2aec7d8f0a02475c384d8"
+      "text": "ADR-0003: Refund and dispute handling · adr:0003 · adr · proposed · 3 · 0. TL;DR · ADR-3.1 — Канонічний refund-flow на MVP: manual через Stripe Dashboard · Status · Context · Decision · Consequences · Alternatives considered · ADR-3.2 — Dispute / chargeback: миттєва деградація + 90-day fraud block · ADR-3.3 — Що НЕ робимо на MVP (out of scope) · Open questions · Recent PRs",
+      "contentHash": "4707304caed260d4c1277d7404496e3d9f18014eb476b5123c657bc11d993a7a"
     },
     {
       "id": "adr:0004",
@@ -2720,11 +2720,11 @@
     {
       "id": "export:@sergeant/db-schema:*",
       "type": "export",
-      "path": "packages/db-schema/src/shared/index.js",
+      "path": "packages/db-schema/dist/shared/index.js",
       "title": "* (re-export-star)",
       "tier": "extended",
-      "text": "* · re-export-star · @sergeant/db-schema · packages/db-schema/src/shared/index.js · used 0× · dead export unused",
-      "contentHash": "99ad781d880053d2991cf2d577a0550feca45573a3b20a515765afcb6419be94"
+      "text": "* · re-export-star · @sergeant/db-schema · packages/db-schema/dist/shared/index.js · used 0× · dead export unused",
+      "contentHash": "55712d07ee302d783c1862e8517c26efdb012763814669177177e8dc18e9588e"
     },
     {
       "id": "export:@sergeant/design-tokens:BrandColor",

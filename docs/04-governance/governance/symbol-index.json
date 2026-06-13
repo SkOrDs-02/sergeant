@@ -1529,7 +1529,7 @@
     {
       "name": "@sergeant/db-schema",
       "path": "packages/db-schema",
-      "entryFile": "packages/db-schema/src/index.ts",
+      "entryFile": "packages/db-schema/dist/index.d.ts",
       "stats": {
         "exportCount": 1,
         "totalImporters": 0,

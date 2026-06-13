@@ -11,11 +11,9 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 
 _Нема items з `Phase X next` / `Stage X IN PROGRESS` / `Phase X blocked` маркерами. Або все закрито, або status headers потребують уточнення (Rule #10)._
 
-## Прострочений review (1)
+## Прострочений review (0)
 
-Документи, чия `Next review:` дата минула. Або bump date після швидкого re-read, або переведи в `Status: Closed`/`Archived`.
-
-- [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops _(due 2026-06-09, **4d overdue**)_
+_Жодного документа не пропустило `Next review:` дату. 🎉_
 
 ## WIP load — 🟢 healthy
 

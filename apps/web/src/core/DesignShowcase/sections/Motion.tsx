@@ -172,6 +172,7 @@ function CelebrateTier() {
                   onChange={setChecked}
                   variant={variant}
                   size="lg"
+                  aria-label={`Чекбокс — варіант ${variant}`}
                 />
                 <span className="text-xs text-muted">{variant}</span>
               </div>

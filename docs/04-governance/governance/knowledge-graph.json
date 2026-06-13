@@ -8,7 +8,7 @@
     "hard-rule": 26,
     "initiative": 53,
     "playbook": 61,
-    "pr": 207,
+    "pr": 208,
     "skill": 23
   },
   "nodes": [
@@ -3762,6 +3762,16 @@
       }
     },
     {
+      "id": "pr:3486",
+      "type": "pr",
+      "title": "PR #3486",
+      "tier": "extended",
+      "meta": {
+        "number": 3486,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3486"
+      }
+    },
+    {
       "id": "pr:3491",
       "type": "pr",
       "title": "PR #3491",
@@ -4631,6 +4641,16 @@
     {
       "from": "adr:0002",
       "to": "pr:924",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0003",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "adr:0003",
+      "to": "pr:3486",
       "type": "touched-by"
     },
     {

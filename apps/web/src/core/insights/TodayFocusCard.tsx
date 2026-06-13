@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { StatusColor } from "@sergeant/design-tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
+import { Icon, ICON_NAMES } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import {
   openHubModuleWithAction,
@@ -229,14 +229,23 @@ export function TodayFocusCard({
         </div>
 
         <h2 className="text-base font-bold text-text leading-snug text-balance">
-          {focus.icon && (
-            <Icon
-              name={focus.icon}
-              size={16}
-              className="inline-block mr-1.5 align-middle text-muted"
-              aria-hidden
-            />
-          )}
+          {focus.icon &&
+            (ICON_NAMES.includes(focus.icon) ? (
+              // Recommendation `icon` is dual-convention: either a registered
+              // glyph name (e.g. "utensils", "wallet") → render the SVG, or a
+              // raw emoji (e.g. "📌", "🥗") → render as text. Feeding an emoji
+              // into <Icon> warns ("[Icon] unknown name") and renders nothing.
+              <Icon
+                name={focus.icon}
+                size={16}
+                className="inline-block mr-1.5 align-middle text-muted"
+                aria-hidden
+              />
+            ) : (
+              <span className="mr-1.5 align-middle" aria-hidden>
+                {focus.icon}
+              </span>
+            ))}
           {focus.title}
         </h2>
 

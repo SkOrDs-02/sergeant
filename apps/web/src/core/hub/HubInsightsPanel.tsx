@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+import { Icon, ICON_NAMES } from "@shared/components/ui/Icon";
 import type { Rec } from "../lib/recommendationEngine";
 import { messages } from "@shared/i18n/uk";
 
@@ -54,11 +54,22 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
       />
       <div className="pl-1 flex-1 min-w-0">
         <p className="text-style-label text-text leading-snug">
-          {rec.icon && (
-            <span className="mr-1" aria-hidden>
-              {rec.icon}
-            </span>
-          )}
+          {rec.icon &&
+            (ICON_NAMES.includes(rec.icon) ? (
+              // Dual-convention `icon`: registered glyph name → SVG; raw emoji
+              // → text. Rendering a glyph name as text would print the literal
+              // word (e.g. "utensils"); see TodayFocusCard for the mirror.
+              <Icon
+                name={rec.icon}
+                size={14}
+                className="inline-block mr-1 align-middle"
+                aria-hidden
+              />
+            ) : (
+              <span className="mr-1" aria-hidden>
+                {rec.icon}
+              </span>
+            ))}
           {rec.title}
         </p>
         {rec.body && (

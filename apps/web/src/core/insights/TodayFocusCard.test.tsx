@@ -91,10 +91,17 @@ vi.mock("@shared/lib/modules/moduleQuickActions", () => ({
   },
 }));
 
-// Stub Icon and SectionHeading to simplify rendering
-vi.mock("@shared/components/ui/Icon", () => ({
-  Icon: ({ name }: { name: string }) => <span data-testid={`icon-${name}`} />,
-}));
+// Stub Icon to simplify rendering, but keep the real ICON_NAMES so the
+// dual-convention branch (glyph name → <Icon>, emoji → text) behaves as in
+// production. Importing the actual module only pulls in plain path maps.
+vi.mock("@shared/components/ui/Icon", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@shared/components/ui/Icon")>();
+  return {
+    ...actual,
+    Icon: ({ name }: { name: string }) => <span data-testid={`icon-${name}`} />,
+  };
+});
 vi.mock("@shared/components/ui/SectionHeading", () => ({
   SectionHeading: ({
     children,
