@@ -5,19 +5,13 @@
 /**
  * Module bento grid for the Hub Dashboard (T1 decomposition).
  *
- * Drag-and-drop reordering, edit mode, inactive-module toggle, and
- * FTUX inline hint.
+ * Drag-and-drop reordering, edit mode, and inactive-module toggle.
  */
 
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import {
-  STORAGE_KEYS,
-  isActiveModule,
-  type DashboardModuleId,
-} from "@sergeant/shared";
+import { isActiveModule, type DashboardModuleId } from "@sergeant/shared";
 import {
   DndContext,
   closestCenter,
@@ -32,57 +26,11 @@ import type { DashboardDensity } from "./hub.types";
 import { DENSITY_BENTO_GAP } from "./hub.types";
 
 // ─────────────────────────────────────────────────────────────────────
-// FTUX inline hint
-// ─────────────────────────────────────────────────────────────────────
-
-function FtuxModulesHint() {
-  const [dismissed, setDismissed] = useLocalStorageState<boolean>(
-    STORAGE_KEYS.FTUX_MODULES_HINT_DISMISSED,
-    false,
-    { validate: (v): v is boolean => typeof v === "boolean" },
-  );
-  if (dismissed) return null;
-  return (
-    <div
-      role="note"
-      className={cn(
-        "flex items-start gap-2 rounded-2xl border border-line bg-panel/70 px-3 py-2",
-        "text-style-caption leading-snug text-muted",
-      )}
-    >
-      <Icon
-        name="info"
-        size={14}
-        strokeWidth={2}
-        aria-hidden
-        className="mt-0.5 shrink-0 text-brand-strong"
-      />
-      <p className="flex-1 min-w-0">
-        Тут усі твої розділи поруч — обери будь-який, щоб почати.
-      </p>
-      <button
-        type="button"
-        onClick={() => setDismissed(true)}
-        aria-label="Сховати підказку"
-        className={cn(
-          "shrink-0 -mr-1 -mt-0.5 w-6 h-6 touch-target inline-flex items-center justify-center rounded-md",
-          "text-muted hover:text-text hover:bg-panelHi transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
-        )}
-      >
-        <Icon name="close" size={14} strokeWidth={2} aria-hidden />
-      </button>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────
 // Props
 // ─────────────────────────────────────────────────────────────────────
 
 export interface HubModulesGridProps {
   density: DashboardDensity;
-  hasRealEntry: boolean;
   editMode: boolean;
   toggleEditMode: () => void;
   displayOrder: readonly string[];
@@ -103,7 +51,6 @@ export interface HubModulesGridProps {
 
 export function HubModulesGrid({
   density,
-  hasRealEntry,
   editMode,
   toggleEditMode,
   displayOrder,
@@ -151,8 +98,6 @@ export function HubModulesGrid({
           {editMode ? <span>Готово</span> : null}
         </button>
       </div>
-
-      {!hasRealEntry && <FtuxModulesHint />}
 
       <DndContext
         sensors={sensors}

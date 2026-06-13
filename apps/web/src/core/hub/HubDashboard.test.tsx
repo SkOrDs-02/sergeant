@@ -14,7 +14,6 @@ import {
 } from "@sergeant/shared";
 import { getModulePrimaryAction } from "@shared/lib/modules/moduleQuickActions";
 import { ToastProvider } from "@shared/hooks/useToast";
-import { MODULE_CONFIGS } from "./dashboard/moduleConfigs";
 
 type TestRec = Rec & { actionHash?: string };
 
@@ -373,9 +372,11 @@ describe("HubDashboard", () => {
     expect(screen.getByText(EXPECTED_FINYK_SUB)).toBeInTheDocument();
     expect(screen.getByText("2/4")).toBeInTheDocument();
     expect(screen.getByText(EXPECTED_ROUTINE_SUB)).toBeInTheDocument();
-    expect(screen.getAllByText(MODULE_CONFIGS.fizruk.emptyLabel)).toHaveLength(
-      2,
-    );
+    // Empty cards (fizruk, nutrition) no longer render visible «Почни тут →»
+    // CTA copy — the tile itself is the affordance. The empty-state intent
+    // is exposed only through each card's accessible name
+    // (`<label>: <emptyLabel>`), so assert both empty modules announce it.
+    expect(screen.getAllByLabelText(/Почни тут/)).toHaveLength(2);
   });
 
   it("keeps the pre-FTUX dashboard focused on first-entry guidance", () => {
