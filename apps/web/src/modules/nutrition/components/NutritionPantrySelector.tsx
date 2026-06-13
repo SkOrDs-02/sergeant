@@ -55,7 +55,7 @@ export function NutritionPantrySelector({
         type="button"
         onClick={() => pantry.setPantryManagerOpen(true)}
         disabled={busy}
-        className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 transition-colors border border-nutrition/20"
+        className="shrink-0 w-9 h-9 touch-target flex items-center justify-center rounded-xl text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:hover:text-nutrition hover:bg-nutrition/10 transition-colors border border-nutrition/20"
         aria-label="Керування складами"
         title="Склади"
       >

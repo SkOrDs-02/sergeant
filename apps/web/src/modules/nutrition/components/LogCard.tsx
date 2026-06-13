@@ -53,8 +53,7 @@ function groupByMealType(meals: Meal[]): Record<MealTypeId, Meal[]> {
     const mealType: MealTypeId = isMealTypeId(meal.mealType)
       ? meal.mealType
       : mealTypeFromLabel(meal.label);
-    if (!groups[mealType]) groups[mealType] = [];
-    groups[mealType]!.push(meal);
+    (groups[mealType] ??= []).push(meal);
   }
   return groups as Record<MealTypeId, Meal[]>;
 }
@@ -81,9 +80,7 @@ export function LogCard({
   const logSizeWarn = logBytes > 350_000;
 
   function shiftDate(delta: number) {
-    const [y, m, d] = selectedDate.split("-").map(Number);
-    const next = new Date(y!, m! - 1, d! + delta);
-    setSelectedDate(toISODate(next));
+    setSelectedDate(addDaysISODate(selectedDate, delta));
   }
 
   const previousDayIso = addDaysISODate(selectedDate, -1);
@@ -96,7 +93,7 @@ export function LogCard({
           <button
             type="button"
             onClick={() => shiftDate(-1)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
+            className="w-10 h-10 touch-target flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
             aria-label="Попередній день"
           >
             ‹
@@ -110,7 +107,7 @@ export function LogCard({
           <button
             type="button"
             onClick={() => shiftDate(1)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
+            className="w-10 h-10 touch-target flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
             aria-label="Наступний день"
           >
             ›
@@ -121,7 +118,7 @@ export function LogCard({
           <button
             type="button"
             onClick={() => setDuplicateConfirm(true)}
-            className="w-full h-10 rounded-2xl border border-line bg-panel/40 px-3 text-style-caption text-subtle hover:text-text hover:border-nutrition/50 transition-colors flex items-center justify-center gap-1.5"
+            className="w-full h-10 touch-target rounded-2xl border border-line bg-panel/40 px-3 text-style-caption text-subtle hover:text-text hover:border-nutrition/50 transition-colors flex items-center justify-center gap-1.5"
           >
             Скопіювати з попереднього дня ({previousDayIso})
           </button>
@@ -171,7 +168,7 @@ export function LogCard({
         <button
           type="button"
           onClick={onAddMeal}
-          className="text-style-label w-full h-12 min-h-[44px] rounded-2xl border-2 border-dashed border-line text-muted hover:border-nutrition/60 hover:text-nutrition-strong dark:text-nutrition transition-[border-color,color,background-color]"
+          className="text-style-label w-full h-12 min-h-[44px] rounded-2xl border-2 border-dashed border-line text-muted hover:border-nutrition/60 hover:text-nutrition-strong dark:hover:text-nutrition transition-[border-color,color,background-color]"
         >
           + Додати прийом їжі
         </button>
