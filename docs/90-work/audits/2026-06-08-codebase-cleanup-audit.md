@@ -1,6 +1,6 @@
 # Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф
 
-> **Last validated:** 2026-06-08 by Claude (cleanup-audit fan-out: 3 паралельні Explore-проходи — dead-code/markers, infra/stack, docs/decisions — + ручна верифікація 2 P0-заяв). **Next review:** 2026-07-08.
+> **Last validated:** 2026-06-13 by @claude (audit-triage reconciliation — PR-A та PR-D анотовано як shipped). **Next review:** 2026-07-08.
 >
 > **Status:** Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding)
 
@@ -61,6 +61,8 @@
 купа stale-посилань на неіснуючий `tools/console/`.
 
 ### 🔴 Реальний баг (не косметика)
+
+> **✅ Закрито 2026-06-13** (PR-A; верифіковано на поточній гілці) — у `eslint.baseline.js` більше немає жодного посилання на `tools/console`; resolver-project list містить лише web/mobile/mobile-shell. Битий шлях усунено.
 
 - **`eslint.baseline.js:131`** — у `import/resolver` TypeScript-project list стоїть
   `"tools/console/tsconfig.json"`. Каталог `tools/console/` **не існує** (підтверджено);
@@ -153,6 +155,8 @@
 **Quick win:** `sergeant-design/ai-marker-syntax` стоїть `"warn"` (`eslint.baseline.js:194`)
 з нотаткою «promote to error once clean». В source **0** `AI-LEGACY` маркерів →
 безпечно підняти до `"error"`.
+
+> **✅ Закрито 2026-06-13** (PR-D; верифіковано на поточній гілці) — `sergeant-design/ai-marker-syntax` уже `"error"` в `eslint.baseline.js:193` (promoted 2026-06-08, коментар фіксує `0 violations confirmed`). Gate-hardening застосовано.
 
 **Lingering legacy-аліаси без `@removeBy` (дрібні, але «висять»):**
 

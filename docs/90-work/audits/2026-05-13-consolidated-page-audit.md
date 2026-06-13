@@ -1,6 +1,6 @@
 # Consolidated Page Audit — 2026-05-13
 
-> **Last validated:** 2026-05-13 by Devin (parent session).
+> **Last validated:** 2026-06-13 by @claude (audit-triage reconciliation — C1/C2/Theme 2 touch-targets annotated as shipped).
 > **Status:** Active
 > **Parent session:** <https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40>
 > **Scope:** All web app pages (`apps/web`), audited by 9 parallel child Devin sessions across 12 perspectives (security, a11y, performance, UX, bugs, hard-rule compliance, TS strictness, Tailwind tokens, i18n, test coverage, AI markers, lifecycle markers).
@@ -28,6 +28,8 @@
 
 ### C1 — `useChatSend` runs `tool_calls` from the model through `executeActions` with no runtime validation
 
+> **✅ Закрито 2026-06-13** — `tool_calls` тепер валідуються через `parseToolCalls()` (Zod-схема в `./toolCallSchema`) перед диспатчем: невідповідність формату → toast + fallback на plain-text, виконання довільних дій заблоковано (`apps/web/src/core/hub/chat/useChatSend.ts:319-339`).
+
 **Scope:** 03-hub-chat-search · **File:** `apps/web/src/core/hub/chat/useChatSend.ts` · **Perspective:** security
 
 The model is allowed to emit `tool_calls[]` and those calls are dispatched through `executeActions(toolCalls, opts)` without any allow-list or schema validation. A malicious prompt-injection (or a compromised AI provider response) can invoke arbitrary actions exposed by the runtime (delete data, navigate to attacker URLs, exfiltrate via side-effects). The host page has full Better Auth cookie context.
@@ -35,6 +37,8 @@ The model is allowed to emit `tool_calls[]` and those calls are dispatched throu
 **Fix:** validate every `tool_call` against a Zod allow-list of `{ name, args }` before dispatch; route through an audited registry; reject unknown tool names with a logged event.
 
 ### C2 — `/api/*` GET responses cached across user sessions (cross-user data leak on shared device)
+
+> **✅ Закрито 2026-06-13** — SW-кеш партиціонується по користувачу: `userPartitionPlugin` (хешований `__u=` префікс), `setActiveUserKey` + `signOut → CLEAR_SW_CACHES` флаш (`apps/web/src/sw/cache.ts`). Сервер додатково монтує `cachingMiddleware({ policy: "no-store" })` на весь `/api` (`apps/server/src/app.ts:157`) — суворіше за рекомендований аудитом `Cache-Control: private`. Cross-user leak закрито.
 
 **Scope:** 10-errors-pwa-marketing · **File:** `apps/web/src/sw.ts` · **Perspective:** security
 
@@ -67,16 +71,18 @@ Eight high-severity findings ride on the same root cause: derived day/week keys 
 
 > **CI gate landed 2026-06-03 (audits-runner execute):** ESLint rule `sergeant-design/no-small-button-touch-target` added to `packages/eslint-plugin-sergeant-design/index.js` and enabled as `warn` in `eslint.config.js` for `apps/web/src/**` and `apps/mobile/src/**`. Rule flags any raw `<button>` with `h-1..h-10` / `size-1..size-10` classes that lacks a compensator (`min-h-[44px]`, `min-w-[44px]`, `touch-target`, `pointer-coarse:min-h-[44px]`). 13 unit tests pass. Per-finding status: 02 F4 closed (prev/next buttons migrated to `Button` primitive in a prior sprint).
 >
-> **✅ DONE — PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363) (wave-1 delegation fan-out):** дві high-severity поверхні приведено до ≥44×44 px — `HubChatHeader.tsx` (03 F6 — close/delete + action-кнопки тепер `min-h-[44px] min-w-[44px]`) і `PantryCard.tsx` (08 F4 — pantry ItemRow delete + rows `min-h-[44px]`). **Залишок усе ще open** (rule surfaces them as warnings для incremental burn-down): 01 F8 (5 FTUX surfaces), 05 F5 (Finyk analytics month-nav), 06 Atlas (anterior/posterior toggle).
+> **✅ DONE — PR [#3363](https://github.com/Skords-01/Sergeant/pull/3363) (wave-1 delegation fan-out):** дві high-severity поверхні приведено до ≥44×44 px — `HubChatHeader.tsx` (03 F6 — close/delete + action-кнопки тепер `min-h-[44px] min-w-[44px]`) і `PantryCard.tsx` (08 F4 — pantry ItemRow delete + rows `min-h-[44px]`).
+>
+> **✅ Закрито 2026-06-13 — увесь Theme 2 touch-targets закрито: 7 названих поверхонь ≥44×44 px.** Залишок із попередньої нотатки приведено до floor: DailyNudge (`min-w/h-[44px]`), FirstRunHintBanner (`min-h/w-[44px]`), DemoModeBanner + SoftAuthPromptCard (рендеряться через `<Button>`, що авто-застосовує 44px для `xs`/`sm`/`iconOnly`), ReEngagementCard (`Button size="sm"`) — закриває 01 F8; Finyk analytics month-nav `min-w/h-[44px]` (`apps/web/src/modules/finyk/pages/Analytics.tsx:128`) — закриває 05 F5; Fizruk Atlas anterior/posterior toggle `min-h-[44px]` (`apps/web/src/modules/fizruk/components/BodyAtlas.tsx:340/347`) — закриває 06 Atlas.
 
 Six high-severity findings + ~12 medium ones describe inline `<button>` elements with 24–32 px hit areas across FTUX, hub-chat drawer, analytics nav, pantry rows.
 
-- 01 F8 (touch-target collapse on 5 FTUX surfaces — DailyNudge / DemoModeBanner / SoftAuthPromptCard / ReEngagementCard / FirstRunHintBanner). _Still open._
+- 01 F8 (touch-target collapse on 5 FTUX surfaces — DailyNudge / DemoModeBanner / SoftAuthPromptCard / ReEngagementCard / FirstRunHintBanner). ✅ Закрито 2026-06-13 — усі 5 ≥44px (DailyNudge/FirstRunHintBanner explicit `min-w/h-[44px]`; DemoModeBanner/SoftAuthPromptCard через `<Button>`; ReEngagementCard `Button size="sm"`).
 - 02 F4 (period prev/next nav). ✅ Closed 2026-06-03.
 - 03 F6 (HubChatHistoryDrawer close/delete). ✅ Closed — `HubChatHeader.tsx` ≥44px (#3363).
-- 05 F5 (Finyk analytics month-nav). _Still open._
+- 05 F5 (Finyk analytics month-nav). ✅ Закрито 2026-06-13 — `Analytics.tsx:128` `min-w/h-[44px]`.
 - 08 F4 (Nutrition pantry ItemRow delete). ✅ Closed — `PantryCard.tsx` ≥44px (#3363).
-- 06 (Atlas anterior/posterior toggle). _Still open._
+- 06 (Atlas anterior/posterior toggle). ✅ Закрито 2026-06-13 — `BodyAtlas.tsx:340/347` `min-h-[44px]`.
 
 **Fix:** make the global `Button` primitive the _only_ way to render touch targets in non-data-cell contexts; add a code-mod that converts inline `<button class="w-6 h-6 …">` to `<Button variant="ghost" iconSize="sm">`; an ESLint custom rule that flags inline `<button>` with explicit `w-*` / `h-*` below the floor.
 

@@ -39,14 +39,17 @@ describe("i18n resolver", () => {
       expect(paywall["multi-currency"]?.["name"]).toBe("Multi-currency assets");
     });
 
-    it("falls through to uk for groups absent from en.ts", () => {
+    it("en.ts now fully covers all groups — auth resolves to EN values", () => {
       const result = getMessages("en");
-      const ukAuth = uk.auth as Record<string, string>;
       const resultAuth = result.auth as Record<string, string>;
-      // auth is NOT in en.ts → must equal uk.auth exactly (same object ref)
-      expect(resultAuth).toBe(ukAuth);
-      // And the canonical UK string survives
-      expect(resultAuth["invalidEmail"]).toBe("Невірний формат email.");
+      // auth IS in en.ts (fully translated) → EN values must be returned
+      expect(resultAuth["invalidEmail"]).toBe("Invalid email format.");
+      expect(resultAuth["genericFailure"]).toBe(
+        "Sign-in failed. Please try again.",
+      );
+      // The uk catalog itself is unchanged
+      const ukAuth = uk.auth as Record<string, string>;
+      expect(ukAuth["invalidEmail"]).toBe("Невірний формат email.");
     });
 
     it("does not mutate the uk catalog when resolving en", () => {

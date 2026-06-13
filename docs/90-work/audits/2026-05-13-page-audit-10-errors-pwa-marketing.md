@@ -1,6 +1,6 @@
 # Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing
 
-> **Last validated:** 2026-05-13 by Devin.
+> **Last validated:** 2026-06-13 by @claude (audit-triage reconciliation — F2/F3/F4 confirmed shipped on current branch).
 > **Status:** Active
 > **Auditor:** child Devin session (parent: https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40)
 > **Scope slug:** `10-errors-pwa-marketing`
@@ -100,11 +100,15 @@ This is a confidentiality breach for any multi-tenant device usage. Finik transa
 
 > **Closure note (2026-06-01, PR-5 of "9 decisions", Option C):** Resolved (parts 1 + 2). Part 1 — `apps/web/src/core/auth/AuthContext.tsx` `logout()` now calls `swClearCaches()` and `swSetActiveUser(null)` after `signOut()` (try/catch + `logger.warn`, fire-and-forget — SW failures never block logout). Part 2 — new `userPartitionPlugin` in `apps/web/src/sw/cache.ts` (`cacheKeyWillBeUsed` hook) appends `__u=<userKey>` to every cache key on the navigation + API runtime routes. The active user key lives in SW module-scope (`activeUserKey`, defaults to `"anon"`) and is updated via a new `SW_SET_USER` message from the main thread — `AuthContext` `identifyPostHogUser` effect now also posts `swSetActiveUser(currentId)`. On SW restart the key falls back to `"anon"` until next mount re-posts (acceptable: part 1 is the real security boundary). Part 3 (regression test) deferred — needs a service-worker e2e harness that does not yet exist in this repo. Threat model from F2 (shared device, user-B reading user-A's `/api/finyk/transactions`) is closed: even before next re-post, the previous user's entries live under a different key.
 
+> **✅ Підтверджено закритим 2026-06-13** (audit-triage reconciliation) — на поточній гілці `userPartitionPlugin` (хешований `__u=` префікс), `setActiveUserKey` і `signOut → CLEAR_SW_CACHES` присутні в `apps/web/src/sw/cache.ts`. Додатковий серверний шар: `cachingMiddleware({ policy: "no-store" })` змонтовано на весь `/api` (`apps/server/src/app.ts:157`) — суворіше за `Cache-Control: private`. Знято з open-бакета тріаж-репорту.
+
 ---
 
 ### F3 — Sentry Session Replay records text without `maskAllText: true` [severity: high] [perspective: security]
 
 > ✅ **Closed 2026-05-31** — `initSentry()` тепер передає `replayIntegration({ maskAllText: true, maskAllInputs: true, blockAllMedia: true })`. Free-text content (AI-chat composer, Фінік notes, nutrition diary, onboarding) маскується перед аплоадом. Додано regression-тест у `sentry.test.ts`, який зчитує `replayIntegration.mock.calls[0][0]` і фіксує всі три прапорці.
+>
+> **✅ Підтверджено закритим 2026-06-13** (audit-triage reconciliation) — `replayIntegration({ maskAllText: true, maskAllInputs: true, blockAllMedia: true })` присутній на поточній гілці (`apps/web/src/core/observability/sentry.ts:329`). Знято з open-бакета тріаж-репорту.
 
 **Page:** Observability
 **File:** `apps/web/src/core/observability/sentry.ts`
@@ -140,6 +144,8 @@ Add a unit test against the integration config in `sentry.test.ts`.
 ### F4 — `PricingPage` redirects to `checkout.url` without origin allow-list [severity: high] [perspective: security]
 
 > ✅ **Closed 2026-05-31** — module-level `ALLOWED_CHECKOUT_HOSTS` (`checkout.stripe.com`, `billing.stripe.com`) + `assertAllowedCheckoutUrl` helper парсить URL через `new URL()` і кидає, якщо host не в allow-list. `handlePremiumCta` і `handleManageSubscription` проганяють `checkout.url` / `portal.url` через helper перед `window.location.assign`; на mismatch — `captureException(err, { tags: { scope: "pricing-checkout-redirect" } })` + існуючий локалізований error без навігації.
+>
+> **✅ Підтверджено закритим 2026-06-13** (audit-triage reconciliation) — `assertAllowedCheckoutUrl()` (host allow-list) визначено в `apps/web/src/core/PricingPage.tsx:61-74` і застосовано перед `window.location.assign` на checkout (рядок 225) та portal (рядок 270). Знято з open-бакета тріаж-репорту.
 
 **Page:** Marketing / Pricing
 **File:** `apps/web/src/core/PricingPage.tsx`

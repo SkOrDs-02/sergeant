@@ -53,4 +53,67 @@ describe("parseUserAgent", () => {
       "Невідомий пристрій",
     );
   });
+
+  it("returns browser-only label when UA has a browser token but no recognisable OS", () => {
+    // A synthetic UA that contains Chrome but no OS token
+    const ua = "Mozilla/5.0 Chrome/132.0.0.0";
+    const result = parseUserAgent(ua);
+    expect(result.browser).toBe("chrome");
+    expect(result.os).toBeNull();
+    // label should be browser + version, no "на <OS>" suffix
+    expect(result.label).toBe("Chrome 132");
+  });
+
+  it("returns OS-only label when UA has a recognisable OS but no browser token", () => {
+    // A synthetic UA with a Windows token but no browser match
+    const ua = "Mozilla/5.0 (Windows NT 10.0)";
+    const result = parseUserAgent(ua);
+    expect(result.os).toBe("windows");
+    expect(result.browser).toBeNull();
+    expect(result.label).toBe("Windows");
+  });
+
+  it("parses Opera (OPR/ token) correctly", () => {
+    const ua =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 OPR/117.0.0.0";
+    const result = parseUserAgent(ua);
+    expect(result.browser).toBe("opera");
+    expect(result.browserVersion).toBe("117");
+    expect(result.os).toBe("windows");
+    expect(result.label).toBe("Opera 117 на Windows");
+  });
+
+  it("parses Chrome on Android correctly", () => {
+    const ua =
+      "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.6834.163 Mobile Safari/537.36";
+    const result = parseUserAgent(ua);
+    expect(result.browser).toBe("chrome");
+    expect(result.os).toBe("android");
+    expect(result.label).toBe("Chrome 132 на Android");
+  });
+
+  it("detects iPad before macOS (prioritisation order)", () => {
+    // iPadOS 13+ spoof Mac OS X in the UA — iPad must win
+    const ua =
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/604.1";
+    // This UA has Mac OS X but no iPad token → should be macOS
+    const result = parseUserAgent(ua);
+    expect(result.os).toBe("macos");
+
+    // Real iPadOS UA with Mac OS X in it
+    const ipadUa =
+      "Mozilla/5.0 (iPad; CPU OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1";
+    const ipadResult = parseUserAgent(ipadUa);
+    expect(ipadResult.os).toBe("ipad");
+  });
+
+  it("returns all ParsedUserAgent fields for a recognised browser", () => {
+    const ua =
+      "Mozilla/5.0 (X11; Linux x86_64; rv:122.0) Gecko/20100101 Firefox/122.0";
+    const result = parseUserAgent(ua);
+    expect(result).toHaveProperty("label");
+    expect(result).toHaveProperty("browser", "firefox");
+    expect(result).toHaveProperty("browserVersion", "122");
+    expect(result).toHaveProperty("os", "linux");
+  });
 });

@@ -91,15 +91,23 @@ export default defineConfig({
         //   throttled CI run can't dip under; raise again as the next
         //   module slices land.
         //
-        // Floors set ~2pp below current actuals — same pattern as
-        // `apps/server/vitest.config.ts`. Raise per sprint as the idb /
-        // shared-lib-ui tests land (see docs/testing/2026-05-05-tests-
-        // pr-plan.md → PR-T03 / PR-T04). `lines` приходить з кореневого
-        // coverage-thresholds.json — піднімай floor там.
+        // - 2026-06-13 (P1 #2 increment): added unit suites for
+        //   syncTone (finyk/lib), apiUrl (shared/lib/api),
+        //   dualWrite/core (shared/lib/dualWrite), greeting
+        //   (shared/lib/time), and extended userAgent edge cases.
+        //   Achieved: lines 50.24 / branches 41.75 / fns 40.92 /
+        //   statements 48.63. Ratchet: lines → 50 (in
+        //   coverage-thresholds.json), branches → 41, fns → 40,
+        //   statements → 48. ~0.2–0.75pp headroom kept for throttled CI.
+        //
+        // Floors set ~0.2–0.75pp below current actuals. Raise per sprint
+        // as more module slices land (target: lines 50→55, branches
+        // 41→40 — see docs/90-work/planning/pr-plan-testing-devx-2026-05.md).
+        // `lines` приходить з кореневого coverage-thresholds.json.
         lines: sharedThresholds["apps/web"],
-        branches: 32,
-        functions: 29,
-        statements: 38,
+        branches: 41,
+        functions: 40,
+        statements: 48,
       },
     },
   },

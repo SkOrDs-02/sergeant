@@ -2,12 +2,14 @@
 
 # Audit runner report
 
-> **Last validated:** 2026-06-11 by audit-triage routine. **Next review:** 2026-09-09.
+> **Last validated:** 2026-06-13 by audit-triage routine. **Next review:** 2026-09-09.
 > **Status:** Reference
 
-## Triage digest — 2026-06-11
+## Triage digest — 2026-06-13
 
 Source: `docs/open-work.md §Аудити й прожарки` (15 open docs) + direct reads of key audit files. Audits with `Closed` / `Archived` / `Done` / `Reference` status excluded. Sorted by impact within each bucket.
+
+Delta from 2026-06-11 pass (reconciliation): **7 findings reconciled as already-shipped** and moved out of A/B into the new «Закриті з минулого тріажу (verified shipped 2026-06-13)» section below. They were carried as OPEN in the 2026-06-11 digest but are confirmed live on the current branch (each with `file:line` evidence). The source audits were annotated inline (`✅ Закрито 2026-06-13`); no document `Status:` header was flipped, so `docs/open-work.md` does not regenerate. Items moved: consolidated C1, C2, Theme 2 touch-targets; 10-errors F3, F4; codebase-cleanup PR-A, PR-D. The C2/F2 service-worker partition pair is the same root finding tracked across both audits.
 
 Delta from 2026-06-08 pass: **3 audits removed** (`page-audit-01-auth-onboarding` + `dead-code-hard-rules-roast` archived 2026-06-08; `hubsettings-cls-chunk-load` closed 2026-06-09); **1 audit added** (`2026-06-08-codebase-cleanup-audit`); testing-devx P1-4 (Detox testIDs) closed 2026-06-09.
 
@@ -17,13 +19,7 @@ Delta from 2026-06-08 pass: **3 audits removed** (`page-audit-01-auth-onboarding
 
 Highest blast radius; fix before next release.
 
-1. **`docs/90-work/audits/2026-05-13-consolidated-page-audit.md` C1** — `useChatSend.ts` dispatches AI `tool_calls` with no allow-list or Zod schema validation; prompt injection → arbitrary action execution with full Better Auth cookie context. **Add Zod-validated tool registry; reject + log unknown tool names before dispatch.**
-
-2. **`docs/90-work/audits/2026-05-13-consolidated-page-audit.md` C2 / `docs/90-work/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md`** — Service-worker `Cache` namespace for `/api/*` keyed by URL only; after user A signs out on a shared device, user B receives A's cached API responses. **Key API cache by hashed session id; flush cache in `signOut` handler; add `Cache-Control: private` on all `/api/*` server responses.**
-
-3. **`docs/90-work/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md` F3 + F4** — Sentry Session Replay records text without `maskAllText: true` (PII leak); `PricingPage` redirects to `checkout.url` without origin allow-list (open redirect). **Add `maskAllText: true` to Sentry Replay init; validate `checkout.url` origin against an explicit allowlist before redirect.**
-
-4. **`docs/90-work/audits/2026-06-08-codebase-cleanup-audit.md` + `docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md`** — 5 write-tools (`write/strategy-doc`, `write/github-issue`, `write/post-to-topic`, `write/pause-workflow`, `write/mute-alert`) and 3 n8n-mutation routes (`n8n/trigger`, `n8n/activate`, `snapshot/refresh`) sit behind the same `INTERNAL_API_KEY` bearer token as read-only routes; approval-gate (ADR-0036) lives on Gateway-side only and is not re-verified at the HTTP layer. Additionally, `strategy-doc` / `github-issue` / `pause-workflow` / `mute-alert` handlers do not write inline audit rows — they rely on a separate `write-audit/log` call from the Gateway; if the Gateway fails to call it, an external mutation occurs with no persisted audit trail. **Schedule a full audit session against `apps/server/src/routes/internal/openclaw.ts` before the 2026-08-11 trigger window; assign a backend owner; evaluate adding server-side re-verification for write-scope routes.**
+1. **`docs/90-work/audits/2026-06-08-codebase-cleanup-audit.md` + `docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md`** — 5 write-tools (`write/strategy-doc`, `write/github-issue`, `write/post-to-topic`, `write/pause-workflow`, `write/mute-alert`) and 3 n8n-mutation routes (`n8n/trigger`, `n8n/activate`, `snapshot/refresh`) sit behind the same `INTERNAL_API_KEY` bearer token as read-only routes; approval-gate (ADR-0036) lives on Gateway-side only and is not re-verified at the HTTP layer. Additionally, `strategy-doc` / `github-issue` / `pause-workflow` / `mute-alert` handlers do not write inline audit rows — they rely on a separate `write-audit/log` call from the Gateway; if the Gateway fails to call it, an external mutation occurs with no persisted audit trail. **Schedule a full audit session against `apps/server/src/routes/internal/openclaw.ts` before the 2026-08-11 trigger window; assign a backend owner; evaluate adding server-side re-verification for write-scope routes.**
 
 ---
 
@@ -31,11 +27,27 @@ Highest blast radius; fix before next release.
 
 Low-effort, high signal-to-noise; can ship independently without cross-team coordination.
 
-1. **`docs/90-work/audits/2026-06-08-codebase-cleanup-audit.md` PR-A** — `eslint.baseline.js:131` lists `tools/console/tsconfig.json` in the TypeScript import-resolver project list; `tools/console/` does not exist (directory is `tools/openclaw/`). The resolver silently falls back to `node` mode and cannot see the openclaw workspace for import rules. **Fix path to `tools/openclaw/tsconfig.json` + re-snapshot eslint-print-config fixtures** (zero logic change, maximum agent-clarity gain).
+_All previously-listed B items (codebase-cleanup PR-A, PR-D; consolidated Theme 2 touch targets) are verified-shipped as of 2026-06-13 — see «Закриті з минулого тріажу» below. No open B-bucket items remain this pass._
 
-2. **`docs/90-work/audits/2026-06-08-codebase-cleanup-audit.md` PR-D** — `sergeant-design/ai-marker-syntax` is set to `"warn"` in `eslint.baseline.js:194` with note "promote to error once clean"; there are currently **0** `AI-LEGACY` markers in the codebase. **Promote to `"error"` in `eslint.baseline.js`** (no violation to fix, purely a gate-hardening step).
+---
 
-3. **`docs/90-work/audits/2026-05-13-consolidated-page-audit.md` Theme 2 (touch targets, partial)** — Seven surfaces remain below the 44×44 px WCAG 2.5.5 floor: 5 FTUX components (`DailyNudge`, `DemoModeBanner`, `SoftAuthPromptCard`, `ReEngagementCard`, `FirstRunHintBanner` — audit-01 F8), Finyk analytics month-nav (audit-05 F5), Fizruk Atlas anterior/posterior toggle (audit-06). **Batch-add `min-h-[44px] min-w-[44px]`** (pure CSS; ESLint `no-small-button-touch-target` already surfaces these as `warn`).
+## Закриті з минулого тріажу (verified shipped 2026-06-13)
+
+Findings carried as OPEN in the 2026-06-11 digest but confirmed already-shipped on the current branch during the 2026-06-13 reconciliation. Each source audit is annotated inline; no `Status:` header was flipped.
+
+1. **`2026-05-13-consolidated-page-audit.md` C1** — AI `tool_calls` runtime validation. ✅ `useChatSend.ts` now routes every batch through `parseToolCalls()` (Zod schema in `./toolCallSchema`); a schema mismatch drops the batch, toasts the user, and falls back to plain text before any handler runs — arbitrary action execution blocked (`apps/web/src/core/hub/chat/useChatSend.ts:319-339`).
+
+2. **`2026-05-13-consolidated-page-audit.md` C2 + `2026-05-13-page-audit-10-errors-pwa-marketing.md` F2** — cross-user SW cache leak. ✅ `apps/web/src/sw/cache.ts` partitions the runtime cache per user via `userPartitionPlugin` (hashed `__u=` prefix), `setActiveUserKey`, and a `signOut → CLEAR_SW_CACHES` flush. Server adds a stronger layer: `cachingMiddleware({ policy: "no-store" })` mounted on all `/api` (`apps/server/src/app.ts:157`) — stricter than the audit's recommended `Cache-Control: private`. Cross-user leak closed.
+
+3. **`2026-05-13-page-audit-10-errors-pwa-marketing.md` F3** — Sentry Replay PII. ✅ `replayIntegration({ maskAllText: true, maskAllInputs: true, blockAllMedia: true })` (`apps/web/src/core/observability/sentry.ts:329`); regression test asserts all three flags.
+
+4. **`2026-05-13-page-audit-10-errors-pwa-marketing.md` F4** — PricingPage open redirect. ✅ `assertAllowedCheckoutUrl()` host allow-list defined in `apps/web/src/core/PricingPage.tsx:61-74`, applied before `window.location.assign` on checkout (L225) and portal (L270).
+
+5. **`2026-06-08-codebase-cleanup-audit.md` PR-A** — `eslint.baseline.js` `tools/console` resolver path. ✅ No `tools/console` reference remains in `eslint.baseline.js`; the resolver project list is web/mobile/mobile-shell only.
+
+6. **`2026-06-08-codebase-cleanup-audit.md` PR-D** — `sergeant-design/ai-marker-syntax` warn→error. ✅ Already `"error"` at `eslint.baseline.js:193` (promoted 2026-06-08, `0 violations` confirmed in the rule comment).
+
+7. **`2026-05-13-consolidated-page-audit.md` Theme 2 touch targets (partial)** — all 7 named surfaces now ≥44×44 px. ✅ DailyNudge (`min-w/h-[44px]`), FirstRunHintBanner (`min-h/w-[44px]`), DemoModeBanner + SoftAuthPromptCard (rendered via `<Button>`, which auto-applies 44px for `xs`/`sm`/`iconOnly`), ReEngagementCard (`Button size="sm"`) — closes audit-01 F8; Finyk analytics month-nav `min-w/h-[44px]` (`apps/web/src/modules/finyk/pages/Analytics.tsx:128`) — closes audit-05 F5; Fizruk Atlas anterior/posterior toggle `min-h-[44px]` (`apps/web/src/modules/fizruk/components/BodyAtlas.tsx:340/347`) — closes audit-06 Atlas.
 
 ---
 
@@ -77,3 +89,5 @@ No immediate action possible without external input or a gating milestone.
 - **Testing devx roast P2 items** (P2-2 ESLint plugin coverage, P2-4 property-based tests): nice-to-have; not blocking any lane.
 - **Web architecture roast outstanding P2 items:** Low risk; tracked in `docs/90-work/tech-debt/frontend.md`.
 - **Codebase cleanup react-hooks v7 suppressions (~152 violations in `eslint.baseline.js:146–178`):** Legitimate debt without owner or deadline — recommend creating a dedicated initiative with a ticket and date before next triage cycle.
+  </content>
+  </invoke>
