@@ -419,7 +419,6 @@ jobs:
         # Raise floors in that JSON as coverage improves.
         run: |
           set -euo pipefail
-          THRESHOLD=$(jq -r '.default' coverage-thresholds.json)
           FAILED=0
 
           for summary in apps/*/coverage/coverage-summary.json packages/*/coverage/coverage-summary.json; do
