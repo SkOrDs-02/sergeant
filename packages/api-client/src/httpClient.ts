@@ -86,10 +86,15 @@ function normalizeApiPrefix(prefix: string): string {
  * Правила (консистентно з `apps/web/src/shared/lib/api/apiUrl.ts`):
  *   - не починається з `/api/` → повертаємо як є (fully-qualified URL, asset, ...);
  *   - `/api/auth` або `/api/auth/...` → як є (Better Auth basePath);
+ *   - уже явно версіонований (`/api/v1/...`, `/api/v2/...`, …) → як є:
+ *     v2+ маунти сервера живуть поза `${prefix}`, і переписування дало б
+ *     `/api/v1/v2/...` — 404 у проді (саме так sync-v2 push губив маршрут);
  *   - уже починається з `prefix/` або дорівнює `prefix` → як є (ідемпотентність);
  *   - `prefix === "/api"` → як є (legacy mode, нічого не робимо);
  *   - інакше: `/api<rest>` → `${prefix}<rest>`.
  */
+const API_VERSIONED_PATH_RE = /^\/api\/v\d+(\/|$)/;
+
 export function applyApiPrefix(path: string, prefix: string): string {
   const normalizedPrefix = normalizeApiPrefix(prefix);
   if (normalizedPrefix === LEGACY_API_PREFIX) return path;
@@ -99,6 +104,9 @@ export function applyApiPrefix(path: string, prefix: string): string {
     return path;
   }
   if (path === AUTH_PATH_PREFIX || path.startsWith(`${AUTH_PATH_PREFIX}/`)) {
+    return path;
+  }
+  if (API_VERSIONED_PATH_RE.test(path)) {
     return path;
   }
   if (path === normalizedPrefix || path.startsWith(`${normalizedPrefix}/`)) {

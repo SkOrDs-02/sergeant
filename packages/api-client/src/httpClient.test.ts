@@ -212,6 +212,18 @@ describe("httpClient — apiPrefix versioning", () => {
     expect(firstCall(fn)[0]).toBe("/api/v1/push/register");
   });
 
+  it("інша версія /api/v2/sync/push НЕ переписується у /api/v1/v2/… (sync-v2 e2e)", async () => {
+    const fn = mockFetchOnce(jsonResponse({ ok: true }));
+    await http.post("/api/v2/sync/push", { ops: [] });
+    expect(firstCall(fn)[0]).toBe("/api/v2/sync/push");
+  });
+
+  it("голий версіонований корінь /api/v2 — теж як є", async () => {
+    const fn = mockFetchOnce(jsonResponse({ ok: true }));
+    await http.get("/api/v2");
+    expect(firstCall(fn)[0]).toBe("/api/v2");
+  });
+
   it("не-/api/ шляхи прокидаються без змін", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await http.get("/healthz");

@@ -3,6 +3,7 @@ import {
   sweepStaleTerminalOutbox,
 } from "@sergeant/shared";
 import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
+import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { webKVStore } from "@shared/lib/storage/storage";
 
@@ -89,9 +90,6 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     import("@sergeant/db-schema/migrate/sqlite"),
   ]);
 
-  const db = await getSqliteDb();
-  const client = db.migrationClient();
-
   // `sync_op_outbox` лежить у `ROUTINE_CLIENT_MIGRATIONS` (історично —
   // створене у `001_routine_spike.sql` як перша таблиця SPIKE-у). Раніше
   // воно матеріалізувалося лише після того, як юзер відкривав routine-tab
@@ -117,95 +115,139 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   // через 30 секунд у періодичному drain-і (тег глобальний, тож
   // успадковується усіма наступними events у сесії).
 
-  // Pre-state snapshot: перед першим write-ом у схему фіксуємо що
-  // саме було на диску. Розрізняємо "вже-мігрована БД" vs "свіжий
-  // user" vs "post-002 corruption" — інакше всі три зливаються
-  // в один тег і diagnostic value губиться.
-  let hadLegacy = false;
-  try {
-    const initialTables = await client.all<{ name: string }>(
-      `SELECT name FROM sqlite_master
+  // КРИТИЧНО: клієнт НЕ можна захопити один раз на boot. `main.tsx`
+  // викликає `bootSyncEngineWriter` до того, як `AuthContext` резолвить
+  // сесію, тож boot-овий `getSqliteDb()` відкриває **anon**-партицію.
+  // Пізніше `setSqliteUser(userId)` ЗАКРИВАЄ цей handle і перемикає
+  // синглтон на per-user БД — куди dual-write і кладе outbox-рядки.
+  // Захоплений client лишався б навічно прикутим до закритої anon-БД:
+  // drain читав би порожнечу (або кидав на закритому handle) і жоден
+  // push не відбувався б. Тому кожна операція runtime-у резолвить
+  // живий handle через `resolveClient()`; підготовка схеми (repair +
+  // migrations + sweep) кешується per-handle у WeakMap і повторюється
+  // лише після зміни партиції.
+  const prepCache = new WeakMap<
+    Awaited<ReturnType<typeof getSqliteDb>>,
+    Promise<SqliteMigrationClient>
+  >();
+
+  const prepareClient = async (
+    db: Awaited<ReturnType<typeof getSqliteDb>>,
+  ): Promise<SqliteMigrationClient> => {
+    const client = db.migrationClient();
+
+    // Pre-state snapshot: перед першим write-ом у схему фіксуємо що
+    // саме було на диску. Розрізняємо "вже-мігрована БД" vs "свіжий
+    // user" vs "post-002 corruption" — інакше всі три зливаються
+    // в один тег і diagnostic value губиться.
+    let hadLegacy = false;
+    try {
+      const initialTables = await client.all<{ name: string }>(
+        `SELECT name FROM sqlite_master
          WHERE type = 'table'
            AND name IN ('sync_op_outbox', 'sync_op_outbox_legacy')`,
-    );
-    const hadOutbox = initialTables.some((r) => r.name === "sync_op_outbox");
-    hadLegacy = initialTables.some((r) => r.name === "sync_op_outbox_legacy");
-
-    const repaired = await dbSchema.repairPartialOutboxMigration(client, {
-      ledgerTable: dbSchema.ROUTINE_MIGRATIONS_TABLE,
-    });
-    if (repaired.recovered) {
-      sentry.addSentryBreadcrumb({
-        category: "storage",
-        level: "warning",
-        message: "sqlite: recovered sync_op_outbox from partial 002 migration",
-      });
-    }
-
-    await runMigrations({
-      adapter: createSqliteAdapter(client),
-      files: dbSchema.ROUTINE_CLIENT_MIGRATIONS,
-      tableName: dbSchema.ROUTINE_MIGRATIONS_TABLE,
-    });
-
-    // Post-migration smoke check: if `sync_op_outbox` is still missing
-    // after the runner returned, something deeper than the
-    // post-002 corruption is wrong (e.g. a brand-new failure mode in
-    // sqlite-wasm). Throw a typed error here so the
-    // `bootSyncEngineWriter`-owy catch-all routes it to Sentry with a
-    // breadcrumb instead of letting the periodic drain surface a raw
-    // `SQLITE_ERROR: no such table` 30s later (the original WEB-A
-    // shape).
-    const presentTables = await client.all<{ name: string }>(
-      `SELECT name FROM sqlite_master
-         WHERE type = 'table' AND name = 'sync_op_outbox'`,
-    );
-    if (presentTables.length === 0) {
-      throw new Error(
-        "sync_op_outbox missing after running ROUTINE_CLIENT_MIGRATIONS — " +
-          "client SQLite did not converge on the expected schema",
       );
+      const hadOutbox = initialTables.some((r) => r.name === "sync_op_outbox");
+      hadLegacy = initialTables.some((r) => r.name === "sync_op_outbox_legacy");
+
+      const repaired = await dbSchema.repairPartialOutboxMigration(client, {
+        ledgerTable: dbSchema.ROUTINE_MIGRATIONS_TABLE,
+      });
+      if (repaired.recovered) {
+        sentry.addSentryBreadcrumb({
+          category: "storage",
+          level: "warning",
+          message:
+            "sqlite: recovered sync_op_outbox from partial 002 migration",
+        });
+      }
+
+      await runMigrations({
+        adapter: createSqliteAdapter(client),
+        files: dbSchema.ROUTINE_CLIENT_MIGRATIONS,
+        tableName: dbSchema.ROUTINE_MIGRATIONS_TABLE,
+      });
+
+      // Post-migration smoke check: if `sync_op_outbox` is still missing
+      // after the runner returned, something deeper than the
+      // post-002 corruption is wrong (e.g. a brand-new failure mode in
+      // sqlite-wasm). Throw a typed error here so the
+      // `bootSyncEngineWriter`-owy catch-all routes it to Sentry with a
+      // breadcrumb instead of letting the periodic drain surface a raw
+      // `SQLITE_ERROR: no such table` 30s later (the original WEB-A
+      // shape).
+      const presentTables = await client.all<{ name: string }>(
+        `SELECT name FROM sqlite_master
+         WHERE type = 'table' AND name = 'sync_op_outbox'`,
+      );
+      if (presentTables.length === 0) {
+        throw new Error(
+          "sync_op_outbox missing after running ROUTINE_CLIENT_MIGRATIONS — " +
+            "client SQLite did not converge on the expected schema",
+        );
+      }
+
+      sentry.setSentryTag(
+        "outbox.boot.outcome",
+        classifyOutboxBootOutcome({ hadOutbox, recovered: repaired.recovered }),
+      );
+      sentry.setSentryTag("outbox.boot.legacy_seen", String(hadLegacy));
+    } catch (err) {
+      // Tagging *before* re-throwing is intentional: the
+      // `bootSyncEngineWriter` catch arm forwards to
+      // `captureException`, and the global tag we set here ends up on
+      // that event (and any later events in the same session). Saved
+      // search `outbox.boot.outcome:failed` therefore catches both the
+      // direct boot exception and any downstream
+      // `no such table: sync_op_outbox` surfaced by callers that ran
+      // before this boot resolved.
+      sentry.setSentryTag("outbox.boot.outcome", "failed");
+      sentry.setSentryTag("outbox.boot.legacy_seen", String(hadLegacy));
+      throw err;
     }
 
-    sentry.setSentryTag(
-      "outbox.boot.outcome",
-      classifyOutboxBootOutcome({ hadOutbox, recovered: repaired.recovered }),
-    );
-    sentry.setSentryTag("outbox.boot.legacy_seen", String(hadLegacy));
-  } catch (err) {
-    // Tagging *before* re-throwing is intentional: the
-    // `bootSyncEngineWriter` catch arm forwards to
-    // `captureException`, and the global tag we set here ends up on
-    // that event (and any later events in the same session). Saved
-    // search `outbox.boot.outcome:failed` therefore catches both the
-    // direct boot exception and any downstream
-    // `no such table: sync_op_outbox` surfaced by callers that ran
-    // before this boot resolved.
-    sentry.setSentryTag("outbox.boot.outcome", "failed");
-    sentry.setSentryTag("outbox.boot.legacy_seen", String(hadLegacy));
-    throw err;
-  }
+    // Boot-time retention sweep: drop terminal `sync_op_outbox` rows
+    // (dead_letter / rejected / quarantined) older than the TTL window so
+    // the client DLQ cannot grow unbounded on a device that never
+    // reconnects cleanly (docs/audits/2026-08-XX-sync-engine-roast.md).
+    // Best-effort — `sweepStaleTerminalOutbox` swallows purge errors so a
+    // maintenance failure never blocks the writer boot; a non-zero purge
+    // emits a `sync_op_outbox.retention` breadcrumb for the Grafana
+    // counter (same pattern as the quarantine breadcrumb below).
+    await sweepStaleTerminalOutbox({
+      purge: () =>
+        dbSchema.purgeStaleTerminalOutbox(client, {
+          olderThanDays: dbSchema.SYNC_OP_OUTBOX_STALE_TTL_DAYS,
+        }),
+      addBreadcrumb: sentry.addSentryBreadcrumb,
+      captureException: (error, context) =>
+        sentry.captureException(
+          error,
+          context !== undefined ? { extra: context } : undefined,
+        ),
+    });
 
-  // Boot-time retention sweep: drop terminal `sync_op_outbox` rows
-  // (dead_letter / rejected / quarantined) older than the TTL window so
-  // the client DLQ cannot grow unbounded on a device that never
-  // reconnects cleanly (docs/audits/2026-08-XX-sync-engine-roast.md).
-  // Best-effort — `sweepStaleTerminalOutbox` swallows purge errors so a
-  // maintenance failure never blocks the writer boot; a non-zero purge
-  // emits a `sync_op_outbox.retention` breadcrumb for the Grafana
-  // counter (same pattern as the quarantine breadcrumb below).
-  await sweepStaleTerminalOutbox({
-    purge: () =>
-      dbSchema.purgeStaleTerminalOutbox(client, {
-        olderThanDays: dbSchema.SYNC_OP_OUTBOX_STALE_TTL_DAYS,
-      }),
-    addBreadcrumb: sentry.addSentryBreadcrumb,
-    captureException: (error, context) =>
-      sentry.captureException(
-        error,
-        context !== undefined ? { extra: context } : undefined,
-      ),
-  });
+    return client;
+  };
+
+  const resolveClient = (): Promise<SqliteMigrationClient> =>
+    getSqliteDb().then((db) => {
+      let prep = prepCache.get(db);
+      if (!prep) {
+        prep = prepareClient(db);
+        prepCache.set(db, prep);
+        // A failed prep must not poison the cache — drop it so the next
+        // tick retries (mirrors the original "boot throws → next boot
+        // retries" semantics, but per partition handle).
+        prep.catch(() => prepCache.delete(db));
+      }
+      return prep;
+    });
+
+  // Boot-time prep keeps the original fail-fast contract: a broken
+  // schema still rejects `createDefaultRuntime`, so the
+  // `bootSyncEngineWriter` catch-all tags + reports it exactly as before.
+  await resolveClient();
 
   // Per-tick userId resolver. The runtime itself is user-agnostic; the
   // drain wrapper closes over `authClient.getSession()` to scope reads
@@ -261,17 +303,19 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       drain: async (options) => {
         const userId = await resolveUserId();
         if (!userId) return [];
-        return dbSchema.drainSyncOpOutbox(client, {
+        return dbSchema.drainSyncOpOutbox(await resolveClient(), {
           ...options,
           userId,
           onQuarantine: onOutboxQuarantine,
         });
       },
       push: (ops, options) => apiClient.syncV2.pushV2(ops, options),
-      markSuccess: (id) => dbSchema.markOutboxSuccess(client, id),
-      markRetry: (id, plan) => dbSchema.markOutboxRetry(client, id, plan),
-      markRejected: (id, reason) =>
-        dbSchema.markOutboxRejected(client, id, reason),
+      markSuccess: async (id) =>
+        dbSchema.markOutboxSuccess(await resolveClient(), id),
+      markRetry: async (id, plan) =>
+        dbSchema.markOutboxRetry(await resolveClient(), id, plan),
+      markRejected: async (id, reason) =>
+        dbSchema.markOutboxRejected(await resolveClient(), id, reason),
       planRetry: dbSchema.planRetry,
       now: () => new Date(),
       // Retry jitter on transient batch failures. Spreads each row's
@@ -285,9 +329,9 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     setInterval: (handler, ms) => window.setInterval(handler, ms),
     clearInterval: (handle) => window.clearInterval(handle as number),
     eventTarget: window,
-    getStatus: () => dbSchema.countOutboxByStatus(client),
-    recoverDeadLetter: (selector: RecoverDeadLetterSelector) =>
-      dbSchema.recoverDeadLetter(client, selector),
+    getStatus: async () => dbSchema.countOutboxByStatus(await resolveClient()),
+    recoverDeadLetter: async (selector: RecoverDeadLetterSelector) =>
+      dbSchema.recoverDeadLetter(await resolveClient(), selector),
     addBreadcrumb: sentry.addSentryBreadcrumb,
     captureException: (error, context) =>
       sentry.captureException(
