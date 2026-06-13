@@ -49,7 +49,7 @@ function isAllowedBackend(raw: string): URL | undefined {
 export default async function middleware(
   request: Request,
 ): Promise<Response | undefined> {
-  const backend = process.env.BACKEND_URL;
+  const backend = process.env["BACKEND_URL"];
   if (!backend) return undefined;
 
   const backendUrl = isAllowedBackend(backend);
