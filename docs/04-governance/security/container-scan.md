@@ -1,6 +1,6 @@
 # Сканування container-image — Trivy
 
-> **Last validated:** 2026-06-09 by @Skords-01. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-13 by @claude. **Next review:** 2026-09-11.
 > **Status:** Active
 
 ## Огляд
@@ -9,10 +9,14 @@ Workflow [`.github/workflows/container-scan.yml`](../../../.github/workflows/con
 збирає й сканує [Trivy](https://aquasecurity.github.io/trivy/) container-образи
 runtime-рівня на CVE рівнів **CRITICAL/HIGH**.
 
-Станом на 2026-06-09 active coverage така:
+Станом на 2026-06-13 active coverage така:
 
 - `hub-api` з [`Dockerfile.api`](../../../Dockerfile.api)
-- `sergeant-openclaw-ci` з [`Dockerfile.openclaw`](../../../Dockerfile.openclaw)
+
+Retired Telegram-бот (`Dockerfile.openclaw`) видалено у #3470 — його окрему
+Trivy-джобу прибрано разом із ним. Сканування нового OpenClaw Gateway образу
+([`Dockerfile.openclaw-gateway`](../../../Dockerfile.openclaw-gateway)) —
+окремий follow-up.
 
 Це окремий шар від [nightly-audit](./nightly-audit.md), який сканує лише
 **lockfile-залежності** (pnpm audit, OSV-Scanner, Snyk). Trivy дивиться на
@@ -20,21 +24,19 @@ runtime-рівня на CVE рівнів **CRITICAL/HIGH**.
 
 ### Тригери
 
-| Подія               | Коли запускається                                                                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pull_request`      | PR торкається `Dockerfile.api`, `Dockerfile.openclaw`, `.dockerignore`, `pnpm-lock.yaml`, серверних/openclaw пакетів, або самого workflow. |
-| `push` to `main`    | Кожен merge на main.                                                                                                                       |
-| `schedule`          | Щоденно о **04:00 UTC** (через годину після `nightly-audit`).                                                                              |
-| `workflow_dispatch` | Ручний запуск через Actions UI.                                                                                                            |
-|                     |                                                                                                                                            |
+| Подія               | Коли запускається                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pull_request`      | PR торкається `Dockerfile.api`, `.dockerignore`, `pnpm-lock.yaml`, серверних пакетів, або самого workflow. |
+| `push` to `main`    | Кожен merge на main.                                                                                       |
+| `schedule`          | Щоденно о **04:00 UTC** (через годину після `nightly-audit`).                                              |
+| `workflow_dispatch` | Ручний запуск через Actions UI.                                                                            |
+|                     |                                                                                                            |
 
 ### Результат
 
-- **GitHub Code Scanning** — SARIF завантажується окремими category
-  (`trivy-image` для API, `trivy-image-openclaw` для OpenClaw image); тренди видно в
-  `Security > Code Scanning`.
-- **Артефакти** — `trivy-image-sarif` / `trivy-openclaw-sarif` (retention 30 днів)
-  для офлайн-аналізу.
+- **GitHub Code Scanning** — SARIF завантажується під category `trivy-image`;
+  тренди видно в `Security > Code Scanning`.
+- **Артефакти** — `trivy-image-sarif` (retention 30 днів) для офлайн-аналізу.
 - **Job summary** — короткий зведений блок у Actions UI.
 
 ### Severity gate
@@ -91,7 +93,7 @@ runtime-рівня на CVE рівнів **CRITICAL/HIGH**.
 Скановані образи **завжди** будуються для `linux/amd64` — це Railway runtime
 arch (closes hardening card [L13](./hardening/L13-docker-platform-pin.md)).
 
-- `Dockerfile.api` і `Dockerfile.openclaw` мають `linux/amd64` build path у workflow.
+- `Dockerfile.api` має `linux/amd64` build path у workflow.
 - `.github/workflows/container-scan.yml` — `platforms: linux/amd64` у
   `docker/build-push-action` + `Confirm scanned image is linux/amd64`
   guard step (`docker image inspect` arch-check), який валить job якщо
@@ -136,4 +138,4 @@ trivy image \
 - [`./nightly-audit.md`](./nightly-audit.md) — dependency-only сканування.
 - [`./vulnerability-sla.md`](./vulnerability-sla.md) — SLA per severity.
 - [`./audit-exceptions.md`](./audit-exceptions.md) — задокументовані винятки.
-- [`Dockerfile.api`](../../../Dockerfile.api) і [`Dockerfile.openclaw`](../../../Dockerfile.openclaw) — active runtime-образи, які скануються.
+- [`Dockerfile.api`](../../../Dockerfile.api) — active runtime-образ, який сканується.
