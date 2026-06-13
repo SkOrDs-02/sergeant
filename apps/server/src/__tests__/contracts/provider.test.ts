@@ -226,8 +226,8 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "POST /api/v1/nutrition/day-plan",
       // sync-v2 + food-search + parse-pantry extension (4)
       "GET /api/v1/food-search",
-      "GET /api/v1/v2/sync/pull",
-      "POST /api/v1/v2/sync/push",
+      "GET /api/v2/sync/pull",
+      "POST /api/v2/sync/push",
       "POST /api/v1/nutrition/parse-pantry",
     ]);
     const actualRoutes = new Set(
