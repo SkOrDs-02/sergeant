@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last validated:** 2026-06-11 by docs:gen-status. **Next review:** 2026-06-11.
+> **Last validated:** 2026-06-13 by docs:gen-status. **Next review:** 2026-06-13.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -27,11 +27,11 @@
 - [#2889](https://github.com/Skords-01/Sergeant/pull/2889) — feat(docs): per-package symbol catalog (Initiative 0014 Phase 2) _(2026-05-15)_
 - [#2876](https://github.com/Skords-01/Sergeant/pull/2876) — feat(docs): knowledge graph generator (Initiative 0014 Phase 1) _(2026-05-15)_
 
-## 🔵 В роботі — 75 відкритих
+## 🔵 В роботі — 76 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 21       |
+| Ініціативи                       | 22       |
 | Планування                       | 14       |
 | Launch / запуск                  | 17       |
 | Аудити й прожарки                | 16       |

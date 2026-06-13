@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-06-11",
+  "generated_at": "2026-06-13",
   "sourceHashes": {
-    "knowledge-graph": "be848ccdc20110218bffbc61f6a8ffae56df0a90bdd6312b546a4e953c68d636",
-    "symbol-index": "7ea3de138fa223ddd49af14b3e9f174bd684fb138c8837be02f8b8404fe29ba1"
+    "knowledge-graph": "f9847c4214551c31ba63123dc0253cadf3ad8dcd8b2f270469ce6c612af65d2a",
+    "symbol-index": "e73856fd49f26697301e4bce984966dfece2664ba685d4f744684eb7277750e9"
   },
   "counts": {
     "adr": 63,
     "audit": 19,
-    "export": 297,
+    "export": 303,
     "hard-rule": 26,
-    "initiative": 52,
+    "initiative": 53,
     "playbook": 61,
     "skill": 23,
-    "total": 541
+    "total": 548
   },
   "chunks": [
     {
@@ -892,8 +892,8 @@
       "title": "Independent Audit — Sergeant — 2026-06-11",
       "tier": "core",
       "status": "Active",
-      "text": "Independent Audit — Sergeant — 2026-06-11 · audit:2026-06-11-fable5-independent-audit · audit · Active · Executive summary · Audit findings by dimension · 1. Revenue & product readiness 🔴 · 2. Architecture & scalability 🟡 · 3. Code quality & tech debt 🟡 · 4. Test coverage & CI 🔴 · 5. Security posture 🟡 · 6. Observability & incident response 🟡 · 7. Outstanding audit debt 🟡 · Outstanding audit debt snapshot · 8. Documentation & governance health 🟡 · 9. Team / agent operating model 🟡 · 10. Top 3 existential risks 🔴 · Action plan draft · Bucket A — Цього тижня (revenue-gate або екзистенційне) · Bucket B — Цього спринту (high-value, не блокує) · Bucket C — Відкласти / депріоритизувати · Workflow delegation spec · What the founder should do first",
-      "contentHash": "253682d7103f901a3d9aef266bb3240ca552e329b5530d3c8de35bf0075779bc"
+      "text": "Independent Audit — Sergeant — 2026-06-11 · audit:2026-06-11-fable5-independent-audit · audit · Active · Статус виконання (update 2026-06-11 EOD) · Executive summary (стан на момент аудиту, 2026-06-11 ранок) · Вердикти за вимірами · Ключові верифіковані знахідки (стиснуто) · Закриті 2026-06-11 ✅ · Відкриті (пріоритезовано — це і є черга роботи) · Top 3 existential risks (оновлено) · Workflow delegation spec (remaining) · Що founder-у робити далі",
+      "contentHash": "eb72e7caef0158a36456de6a1e0a039af48dbca32810468f9e6c73eb351b2589"
     },
     {
       "id": "audit:2026-08-XX-openclaw-internal-roast",
@@ -1224,6 +1224,15 @@
       "contentHash": "edafb8cae94c5635c605d9555cead9797975884ae4512a83cc146f19e07b34bf"
     },
     {
+      "id": "export:@sergeant/api-client:createFinykEndpoints",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/finyk",
+      "title": "createFinykEndpoints (re-export)",
+      "tier": "extended",
+      "text": "createFinykEndpoints · re-export · @sergeant/api-client · packages/api-client/src/endpoints/finyk · used 0× · dead export unused",
+      "contentHash": "dc6e209b6ced6c0ea6e878f84ad24c80af517e216a0b9fb99650ac519a4738af"
+    },
+    {
       "id": "export:@sergeant/api-client:createFoodSearchEndpoints",
       "type": "export",
       "path": "packages/api-client/src/endpoints/foodSearch",
@@ -1386,6 +1395,15 @@
       "contentHash": "7741c68f49a7847a3b79d81e517058a539bdf89818a7946977b49e975c4fa646"
     },
     {
+      "id": "export:@sergeant/api-client:FinykEndpoints",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/finyk",
+      "title": "FinykEndpoints (re-export)",
+      "tier": "extended",
+      "text": "FinykEndpoints · re-export · @sergeant/api-client · packages/api-client/src/endpoints/finyk · used 0× · dead export unused",
+      "contentHash": "7d93d3c9e3ba19446e17c0bce5d9297b82e247c8b2f8d2019e21aa1160f95873"
+    },
+    {
       "id": "export:@sergeant/api-client:FoodSearchEndpoints",
       "type": "export",
       "path": "packages/api-client/src/endpoints/foodSearch",
@@ -1483,6 +1501,42 @@
       "tier": "extended",
       "text": "isIncrementOpSupported · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2.increment · used 0× · dead export unused",
       "contentHash": "0762f1ed496689bf251df40bfad9375ac086ab01648e7dc3110d9ffbb5cccd8e"
+    },
+    {
+      "id": "export:@sergeant/api-client:ManualExpenseCreateBodySchema",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/finyk",
+      "title": "ManualExpenseCreateBodySchema (re-export)",
+      "tier": "extended",
+      "text": "ManualExpenseCreateBodySchema · re-export · @sergeant/api-client · packages/api-client/src/endpoints/finyk · used 0× · dead export unused",
+      "contentHash": "2a85c02f1351510b3fc2162252de8d1ebdb3988b86b92d62eff0ab9f7419a8dd"
+    },
+    {
+      "id": "export:@sergeant/api-client:ManualExpenseCreateRequest",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/finyk",
+      "title": "ManualExpenseCreateRequest (re-export)",
+      "tier": "extended",
+      "text": "ManualExpenseCreateRequest · re-export · @sergeant/api-client · packages/api-client/src/endpoints/finyk · used 0× · dead export unused",
+      "contentHash": "1479bf1bf57183aa7d01a4beffe883853c073c804652a7e38df528855a4a09da"
+    },
+    {
+      "id": "export:@sergeant/api-client:ManualExpenseCreateResponse",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/finyk",
+      "title": "ManualExpenseCreateResponse (re-export)",
+      "tier": "extended",
+      "text": "ManualExpenseCreateResponse · re-export · @sergeant/api-client · packages/api-client/src/endpoints/finyk · used 0× · dead export unused",
+      "contentHash": "d0f06e6a80bc84f7861cdc6bcc006b493128e0e44c86d4c98aa8666dd0305f2f"
+    },
+    {
+      "id": "export:@sergeant/api-client:ManualExpenseCreateResponseBodySchema",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/finyk",
+      "title": "ManualExpenseCreateResponseBodySchema (re-export)",
+      "tier": "extended",
+      "text": "ManualExpenseCreateResponseBodySchema · re-export · @sergeant/api-client · packages/api-client/src/endpoints/finyk · used 0× · dead export unused",
+      "contentHash": "841c2c8c371feb5726833267d9249d1e0d13be54aaa70e6aacd1e3f45bce20e1"
     },
     {
       "id": "export:@sergeant/api-client:mapDrainedRowToSyncV2PushOp",
@@ -3959,6 +4013,17 @@
       "status": "Active",
       "text": "Initiative follow-ups · initiative:follow-ups · initiative · Active · One-shot · Recurring · How to add a follow-up",
       "contentHash": "9f6d93c31682d38d1da44e5af524a864c69159cb29caacf1b0aaefcfcc2f7ce2"
+    },
+    {
+      "id": "initiative:hardening-matrix",
+      "type": "initiative",
+      "path": "docs/90-work/initiatives/hardening-matrix.md",
+      "line": 1,
+      "title": "Зведена матриця hardening-карток",
+      "tier": "core",
+      "status": "Active",
+      "text": "Зведена матриця hardening-карток · initiative:hardening-matrix · initiative · Active · Зведена статистика · Джерело 1 — stack-pulse-2026-05 · Critical (C1–C6) · High (H1–H10) · Medium (M1–M12) · Low (L1–L12) · Джерело 2 — \\0008-platform-hardening · Джерело 3 — \\0009-agent-os-hardening",
+      "contentHash": "d25591779d23697f0a873ec3fc1b53923880f5b751aa726dc73c4a3770978bbb"
     },
     {
       "id": "initiative:session-log-0018-agent-find-measurement-2026-06-08",

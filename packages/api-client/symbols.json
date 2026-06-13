@@ -1,13 +1,13 @@
 {
   "$schema": "../../docs/04-governance/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-09",
+  "generated_at": "2026-06-13",
   "package": "@sergeant/api-client",
   "entryFile": "packages/api-client/src/index.ts",
   "stats": {
-    "exportCount": 194,
+    "exportCount": 200,
     "totalImporters": 38,
-    "deadExports": 102
+    "deadExports": 108
   },
   "exports": [
     {
@@ -1313,6 +1313,48 @@
       "fromFile": "./endpoints/billing",
       "usedBy": ["apps/web/src/shared/api/index.ts"],
       "usageCount": 1
+    },
+    {
+      "name": "createFinykEndpoints",
+      "kind": "re-export",
+      "fromFile": "./endpoints/finyk",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ManualExpenseCreateBodySchema",
+      "kind": "re-export",
+      "fromFile": "./endpoints/finyk",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ManualExpenseCreateResponseBodySchema",
+      "kind": "re-export",
+      "fromFile": "./endpoints/finyk",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "FinykEndpoints",
+      "kind": "re-export",
+      "fromFile": "./endpoints/finyk",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ManualExpenseCreateRequest",
+      "kind": "re-export",
+      "fromFile": "./endpoints/finyk",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "ManualExpenseCreateResponse",
+      "kind": "re-export",
+      "fromFile": "./endpoints/finyk",
+      "usedBy": [],
+      "usageCount": 0
     },
     {
       "name": "createWeeklyDigestEndpoints",

@@ -75,7 +75,14 @@ function setupMocks(): { logger: MockedLogger } {
         /* no-op */
       }
     }
-    return { default: { Pool: FakePoolImpl }, Pool: FakePoolImpl };
+    // db.ts calls installInt8Parser() → pg.types.setTypeParser (Hard Rule #1
+    // driver-level int8 coercion); the mock must expose a no-op types API.
+    const types = { setTypeParser: vi.fn() };
+    return {
+      default: { Pool: FakePoolImpl, types },
+      Pool: FakePoolImpl,
+      types,
+    };
   });
 
   return { logger };

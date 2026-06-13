@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-11",
+  "generated_at": "2026-06-13",
   "counts": {
     "adr": 63,
     "audit": 19,
     "hard-rule": 26,
-    "initiative": 52,
+    "initiative": 53,
     "playbook": 61,
-    "pr": 169,
+    "pr": 207,
     "skill": 23
   },
   "nodes": [
@@ -1376,6 +1376,15 @@
       "meta": {}
     },
     {
+      "id": "initiative:hardening-matrix",
+      "type": "initiative",
+      "title": "Зведена матриця hardening-карток",
+      "path": "docs/90-work/initiatives/hardening-matrix.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
       "id": "initiative:session-log-0018-agent-find-measurement-2026-06-08",
       "type": "initiative",
       "title": "Session log — 0018 `agent:find` lexical measurement (2026-06-08)",
@@ -2523,6 +2532,66 @@
       }
     },
     {
+      "id": "pr:1634",
+      "type": "pr",
+      "title": "PR #1634",
+      "tier": "extended",
+      "meta": {
+        "number": 1634,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1634"
+      }
+    },
+    {
+      "id": "pr:1638",
+      "type": "pr",
+      "title": "PR #1638",
+      "tier": "extended",
+      "meta": {
+        "number": 1638,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1638"
+      }
+    },
+    {
+      "id": "pr:1639",
+      "type": "pr",
+      "title": "PR #1639",
+      "tier": "extended",
+      "meta": {
+        "number": 1639,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1639"
+      }
+    },
+    {
+      "id": "pr:1641",
+      "type": "pr",
+      "title": "PR #1641",
+      "tier": "extended",
+      "meta": {
+        "number": 1641,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1641"
+      }
+    },
+    {
+      "id": "pr:1642",
+      "type": "pr",
+      "title": "PR #1642",
+      "tier": "extended",
+      "meta": {
+        "number": 1642,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1642"
+      }
+    },
+    {
+      "id": "pr:1659",
+      "type": "pr",
+      "title": "PR #1659",
+      "tier": "extended",
+      "meta": {
+        "number": 1659,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1659"
+      }
+    },
+    {
       "id": "pr:1660",
       "type": "pr",
       "title": "PR #1660",
@@ -2530,6 +2599,126 @@
       "meta": {
         "number": 1660,
         "url": "https://github.com/Skords-01/Sergeant/pull/1660"
+      }
+    },
+    {
+      "id": "pr:1670",
+      "type": "pr",
+      "title": "PR #1670",
+      "tier": "extended",
+      "meta": {
+        "number": 1670,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1670"
+      }
+    },
+    {
+      "id": "pr:1672",
+      "type": "pr",
+      "title": "PR #1672",
+      "tier": "extended",
+      "meta": {
+        "number": 1672,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1672"
+      }
+    },
+    {
+      "id": "pr:1684",
+      "type": "pr",
+      "title": "PR #1684",
+      "tier": "extended",
+      "meta": {
+        "number": 1684,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1684"
+      }
+    },
+    {
+      "id": "pr:1687",
+      "type": "pr",
+      "title": "PR #1687",
+      "tier": "extended",
+      "meta": {
+        "number": 1687,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1687"
+      }
+    },
+    {
+      "id": "pr:1705",
+      "type": "pr",
+      "title": "PR #1705",
+      "tier": "extended",
+      "meta": {
+        "number": 1705,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1705"
+      }
+    },
+    {
+      "id": "pr:1707",
+      "type": "pr",
+      "title": "PR #1707",
+      "tier": "extended",
+      "meta": {
+        "number": 1707,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1707"
+      }
+    },
+    {
+      "id": "pr:1725",
+      "type": "pr",
+      "title": "PR #1725",
+      "tier": "extended",
+      "meta": {
+        "number": 1725,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1725"
+      }
+    },
+    {
+      "id": "pr:1728",
+      "type": "pr",
+      "title": "PR #1728",
+      "tier": "extended",
+      "meta": {
+        "number": 1728,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1728"
+      }
+    },
+    {
+      "id": "pr:1772",
+      "type": "pr",
+      "title": "PR #1772",
+      "tier": "extended",
+      "meta": {
+        "number": 1772,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1772"
+      }
+    },
+    {
+      "id": "pr:1775",
+      "type": "pr",
+      "title": "PR #1775",
+      "tier": "extended",
+      "meta": {
+        "number": 1775,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1775"
+      }
+    },
+    {
+      "id": "pr:1785",
+      "type": "pr",
+      "title": "PR #1785",
+      "tier": "extended",
+      "meta": {
+        "number": 1785,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1785"
+      }
+    },
+    {
+      "id": "pr:1788",
+      "type": "pr",
+      "title": "PR #1788",
+      "tier": "extended",
+      "meta": {
+        "number": 1788,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1788"
       }
     },
     {
@@ -2543,6 +2732,26 @@
       }
     },
     {
+      "id": "pr:1795",
+      "type": "pr",
+      "title": "PR #1795",
+      "tier": "extended",
+      "meta": {
+        "number": 1795,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1795"
+      }
+    },
+    {
+      "id": "pr:1796",
+      "type": "pr",
+      "title": "PR #1796",
+      "tier": "extended",
+      "meta": {
+        "number": 1796,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1796"
+      }
+    },
+    {
       "id": "pr:1816",
       "type": "pr",
       "title": "PR #1816",
@@ -2553,6 +2762,26 @@
       }
     },
     {
+      "id": "pr:1821",
+      "type": "pr",
+      "title": "PR #1821",
+      "tier": "extended",
+      "meta": {
+        "number": 1821,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1821"
+      }
+    },
+    {
+      "id": "pr:1828",
+      "type": "pr",
+      "title": "PR #1828",
+      "tier": "extended",
+      "meta": {
+        "number": 1828,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1828"
+      }
+    },
+    {
       "id": "pr:1848",
       "type": "pr",
       "title": "PR #1848",
@@ -2560,6 +2789,46 @@
       "meta": {
         "number": 1848,
         "url": "https://github.com/Skords-01/Sergeant/pull/1848"
+      }
+    },
+    {
+      "id": "pr:1900",
+      "type": "pr",
+      "title": "PR #1900",
+      "tier": "extended",
+      "meta": {
+        "number": 1900,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1900"
+      }
+    },
+    {
+      "id": "pr:1902",
+      "type": "pr",
+      "title": "PR #1902",
+      "tier": "extended",
+      "meta": {
+        "number": 1902,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1902"
+      }
+    },
+    {
+      "id": "pr:1910",
+      "type": "pr",
+      "title": "PR #1910",
+      "tier": "extended",
+      "meta": {
+        "number": 1910,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1910"
+      }
+    },
+    {
+      "id": "pr:1912",
+      "type": "pr",
+      "title": "PR #1912",
+      "tier": "extended",
+      "meta": {
+        "number": 1912,
+        "url": "https://github.com/Skords-01/Sergeant/pull/1912"
       }
     },
     {
@@ -3493,26 +3762,6 @@
       }
     },
     {
-      "id": "pr:3472",
-      "type": "pr",
-      "title": "PR #3472",
-      "tier": "extended",
-      "meta": {
-        "number": 3472,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3472"
-      }
-    },
-    {
-      "id": "pr:3489",
-      "type": "pr",
-      "title": "PR #3489",
-      "tier": "extended",
-      "meta": {
-        "number": 3489,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3489"
-      }
-    },
-    {
       "id": "pr:3491",
       "type": "pr",
       "title": "PR #3491",
@@ -3523,16 +3772,6 @@
       }
     },
     {
-      "id": "pr:3492",
-      "type": "pr",
-      "title": "PR #3492",
-      "tier": "extended",
-      "meta": {
-        "number": 3492,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3492"
-      }
-    },
-    {
       "id": "pr:3498",
       "type": "pr",
       "title": "PR #3498",
@@ -3540,6 +3779,156 @@
       "meta": {
         "number": 3498,
         "url": "https://github.com/Skords-01/Sergeant/pull/3498"
+      }
+    },
+    {
+      "id": "pr:3499",
+      "type": "pr",
+      "title": "PR #3499",
+      "tier": "extended",
+      "meta": {
+        "number": 3499,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3499"
+      }
+    },
+    {
+      "id": "pr:3500",
+      "type": "pr",
+      "title": "PR #3500",
+      "tier": "extended",
+      "meta": {
+        "number": 3500,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3500"
+      }
+    },
+    {
+      "id": "pr:3501",
+      "type": "pr",
+      "title": "PR #3501",
+      "tier": "extended",
+      "meta": {
+        "number": 3501,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3501"
+      }
+    },
+    {
+      "id": "pr:3502",
+      "type": "pr",
+      "title": "PR #3502",
+      "tier": "extended",
+      "meta": {
+        "number": 3502,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3502"
+      }
+    },
+    {
+      "id": "pr:3503",
+      "type": "pr",
+      "title": "PR #3503",
+      "tier": "extended",
+      "meta": {
+        "number": 3503,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3503"
+      }
+    },
+    {
+      "id": "pr:3507",
+      "type": "pr",
+      "title": "PR #3507",
+      "tier": "extended",
+      "meta": {
+        "number": 3507,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3507"
+      }
+    },
+    {
+      "id": "pr:3509",
+      "type": "pr",
+      "title": "PR #3509",
+      "tier": "extended",
+      "meta": {
+        "number": 3509,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3509"
+      }
+    },
+    {
+      "id": "pr:3510",
+      "type": "pr",
+      "title": "PR #3510",
+      "tier": "extended",
+      "meta": {
+        "number": 3510,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3510"
+      }
+    },
+    {
+      "id": "pr:3511",
+      "type": "pr",
+      "title": "PR #3511",
+      "tier": "extended",
+      "meta": {
+        "number": 3511,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3511"
+      }
+    },
+    {
+      "id": "pr:3512",
+      "type": "pr",
+      "title": "PR #3512",
+      "tier": "extended",
+      "meta": {
+        "number": 3512,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3512"
+      }
+    },
+    {
+      "id": "pr:3514",
+      "type": "pr",
+      "title": "PR #3514",
+      "tier": "extended",
+      "meta": {
+        "number": 3514,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3514"
+      }
+    },
+    {
+      "id": "pr:3515",
+      "type": "pr",
+      "title": "PR #3515",
+      "tier": "extended",
+      "meta": {
+        "number": 3515,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3515"
+      }
+    },
+    {
+      "id": "pr:3516",
+      "type": "pr",
+      "title": "PR #3516",
+      "tier": "extended",
+      "meta": {
+        "number": 3516,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3516"
+      }
+    },
+    {
+      "id": "pr:3519",
+      "type": "pr",
+      "title": "PR #3519",
+      "tier": "extended",
+      "meta": {
+        "number": 3519,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3519"
+      }
+    },
+    {
+      "id": "pr:3522",
+      "type": "pr",
+      "title": "PR #3522",
+      "tier": "extended",
+      "meta": {
+        "number": 3522,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3522"
       }
     },
     {
@@ -5396,47 +5785,12 @@
     },
     {
       "from": "audit:2026-06-11-fable5-independent-audit",
-      "to": "hard-rule:18",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-06-11-fable5-independent-audit",
-      "to": "hard-rule:20",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-06-11-fable5-independent-audit",
-      "to": "hard-rule:21",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-06-11-fable5-independent-audit",
       "to": "hard-rule:26",
       "type": "references"
     },
     {
       "from": "audit:2026-06-11-fable5-independent-audit",
-      "to": "initiative:0010",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-06-11-fable5-independent-audit",
-      "to": "pr:3472",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-06-11-fable5-independent-audit",
-      "to": "pr:3489",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-06-11-fable5-independent-audit",
       "to": "pr:3491",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-06-11-fable5-independent-audit",
-      "to": "pr:3492",
       "type": "touched-by"
     },
     {
@@ -5446,7 +5800,77 @@
     },
     {
       "from": "audit:2026-06-11-fable5-independent-audit",
-      "to": "pr:708",
+      "to": "pr:3499",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3500",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3501",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3502",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3503",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3507",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3509",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3510",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3511",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3512",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3514",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3515",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3516",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3519",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-11-fable5-independent-audit",
+      "to": "pr:3522",
       "type": "touched-by"
     },
     {
@@ -5628,6 +6052,226 @@
       "from": "initiative:0020",
       "to": "initiative:0019",
       "type": "references"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1550",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1552",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1567",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1634",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1638",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1639",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1641",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1642",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1659",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1660",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1670",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1672",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1684",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1687",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1705",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1707",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1725",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1728",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1772",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1775",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1785",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1788",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1795",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1796",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1816",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1821",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1828",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1900",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1902",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1910",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:1912",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2081",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2086",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2089",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2122",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2125",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2193",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2308",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2309",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2311",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2312",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2526",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2527",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:2543",
+      "type": "touched-by"
     },
     {
       "from": "initiative:session-log-0018-agent-find-measurement-2026-06-08",

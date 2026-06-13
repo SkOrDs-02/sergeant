@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generated_at": "2026-06-09",
+  "generated_at": "2026-06-13",
   "summary": {
     "packages": 16,
-    "totalExports": 297,
-    "totalDeadExports": 194
+    "totalExports": 303,
+    "totalDeadExports": 200
   },
   "packages": [
     {
@@ -12,9 +12,9 @@
       "path": "packages/api-client",
       "entryFile": "packages/api-client/src/index.ts",
       "stats": {
-        "exportCount": 194,
+        "exportCount": 200,
         "totalImporters": 38,
-        "deadExports": 102
+        "deadExports": 108
       },
       "exports": [
         {
@@ -1322,6 +1322,48 @@
           "usageCount": 1
         },
         {
+          "name": "createFinykEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/finyk",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ManualExpenseCreateBodySchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/finyk",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ManualExpenseCreateResponseBodySchema",
+          "kind": "re-export",
+          "fromFile": "./endpoints/finyk",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "FinykEndpoints",
+          "kind": "re-export",
+          "fromFile": "./endpoints/finyk",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ManualExpenseCreateRequest",
+          "kind": "re-export",
+          "fromFile": "./endpoints/finyk",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "ManualExpenseCreateResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/finyk",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
           "name": "createWeeklyDigestEndpoints",
           "kind": "re-export",
           "fromFile": "./endpoints/weeklyDigest",
@@ -1691,7 +1733,7 @@
       "entryFile": "packages/fizruk-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 59,
+        "totalImporters": 61,
         "deadExports": 0
       },
       "exports": [
@@ -1993,7 +2035,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 328,
+        "totalImporters": 339,
         "deadExports": 0
       },
       "exports": [
