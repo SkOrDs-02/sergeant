@@ -40,6 +40,8 @@ await pg.query(
 );
 ```
 
+All `unnest` arrays must be the **same length** — Postgres pads shorter arrays with `NULL` instead of erroring, which silently corrupts a partial import. Validate lengths in application code before the query.
+
 ## Sergeant-specific note
 
 Monobank statement imports arrive as batches — insert them in one `unnest` statement, not a per-transaction loop. `amount` is `bigint` kopiykas; keep it `bigint` end-to-end and coerce to `number` only at the serializer boundary (Hard Rule #1). For very large loads, chunk into batches of a few thousand rows to keep parameter arrays and memory bounded.

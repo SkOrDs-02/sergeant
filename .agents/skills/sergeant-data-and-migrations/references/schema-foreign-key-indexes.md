@@ -38,6 +38,18 @@ CREATE TABLE transactions (
 CREATE INDEX transactions_account_id_idx ON transactions (account_id);
 ```
 
+## Backfilling an index on a large existing table
+
+A plain `CREATE INDEX` takes a lock that blocks writes (and the FK check) for the whole build. On a table that is already large in production, use `CONCURRENTLY` so writes keep flowing:
+
+```sql
+CREATE INDEX CONCURRENTLY transactions_account_id_idx ON transactions (account_id);
+-- Runs outside a transaction block; cannot be wrapped in BEGIN/COMMIT.
+-- On failure it leaves an INVALID index — DROP it and retry.
+```
+
+For a brand-new table in the same migration, a plain `CREATE INDEX` is fine (the table is empty).
+
 ## Sergeant-specific note
 
 Every per-user table carries a Better Auth `user_id` (opaque `text`, **not** a UUID) and most child tables carry an `account_id`. Both are foreign-key-shaped access paths — index them. When a migration adds a `REFERENCES` column, add the matching `CREATE INDEX` in the **same** sequential migration file (Hard Rule #4) so the FK never ships unindexed. Monetary columns like `amount` are `bigint` kopiykas — coerce to `number` in the serializer (Hard Rule #1); indexing is unaffected.
