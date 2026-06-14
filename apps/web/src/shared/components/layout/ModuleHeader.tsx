@@ -69,7 +69,7 @@ const MODULE_HEADER_TOKENS: Record<
   finyk: {
     gradient: "from-finyk/5",
     border: "border-finyk/15",
-    subtitle: "text-finyk-strong dark:text-finyk/70",
+    subtitle: "text-finyk-strong dark:text-finyk-300/70",
     accentDot: "bg-finyk",
     accentStrip: "bg-finyk/45",
   },
@@ -83,7 +83,7 @@ const MODULE_HEADER_TOKENS: Record<
   routine: {
     gradient: "from-routine/5",
     border: "border-routine/15",
-    subtitle: "text-routine-strong dark:text-routine/70",
+    subtitle: "text-routine-strong dark:text-routine-300/70",
     accentDot: "bg-routine",
     accentStrip: "bg-routine/45",
   },

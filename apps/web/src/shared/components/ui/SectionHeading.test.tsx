@@ -58,7 +58,9 @@ describe("SectionHeading", () => {
     );
     const cls = container.querySelector("h3")!.className;
     expect(cls).toContain("text-finyk-strong");
-    expect(cls).toContain("dark:text-finyk/70");
+    // Dark subtitle rides the lighter emerald-300 tier so the de-emphasised
+    // /70 slot still clears WCAG AA on `--c-panel` (emerald-300/70 ≈ 6.05:1).
+    expect(cls).toContain("dark:text-finyk-300/70");
   });
 
   it("action prop wraps the heading in a flex-row with a trailing slot", () => {

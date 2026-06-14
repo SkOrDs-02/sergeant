@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last touched:** 2026-06-14 by @claude. **Next review:** 2026-09-12.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).
@@ -175,10 +175,12 @@ Home/End, `role="tablist"`.
 | `muted`     | `text-muted`                                   | послаблений підпис                    |
 | `text` \*   | `text-text`                                    | за замовчуванням для `md`/`lg`/`xl`   |
 | `accent`    | `text-accent`                                  | глобальний фокус/лінк (emerald)       |
-| `finyk`     | `text-finyk-strong dark:text-finyk/70`         | brand-tint у модулі ФІНІК             |
-| `fizruk`    | `text-fizruk-strong dark:text-fizruk/70`       | brand-tint у модулі ФІЗРУК            |
-| `routine`   | `text-routine-strong dark:text-routine/70`     | brand-tint у модулі Рутина            |
+| `finyk`     | `text-finyk-strong dark:text-finyk-300/70`     | brand-tint у модулі ФІНІК             |
+| `fizruk`    | `text-fizruk-strong dark:text-fizruk-300/70`   | brand-tint у модулі ФІЗРУК            |
+| `routine`   | `text-routine-strong dark:text-routine-300/70` | brand-tint у модулі Рутина            |
 | `nutrition` | `text-nutrition-strong dark:text-nutrition/70` | brand-tint у модулі Харчування        |
+
+> **Dark-mode AA (Hard Rule a11y):** де-емфазований `/70` підпис має тримати ≥4.5:1 на `--c-panel` (#201c19). `finyk`/`routine`/`fizruk` беруть світліший `-300`-тир (emerald/coral/cyan-300 @ /70 ≈ 5.5–6.3:1); `nutrition` лишається на lime-500 (/70 ≈ 4.9:1, вже AA). DEFAULT-500 у finyk/routine чистий AA лише на повній непрозорості — `-300` застосовуємо **тільки** в `dark:` `/70`-слоті підпису.
 
 Зірочкою (\*) — це значення за замовчуванням; їх можна не передавати.
 
