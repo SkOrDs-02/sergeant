@@ -1,13 +1,13 @@
 # Sergeant Documentation
 
-> **Last touched:** 2026-06-13 by @claude. **Next review:** 2026-09-11.
+> **Last touched:** 2026-06-14 by @github-actions[bot]. **Next review:** 2026-09-12.
 > **Status:** Active
 
 Main documentation index for Sergeant.
 
 <!-- TRUST-BADGE:START -->
 
-> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-06-13 via `pnpm docs:gen-trust-badge`_
+> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-06-14 via `pnpm docs:gen-trust-badge`_
 >
 > 0 stale docs · 0 WIP violations · 0 cron failures — система здорова, працюй спокійно. Деталі → [`today.md`](./today.md).
 

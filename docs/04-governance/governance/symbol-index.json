@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-13",
+  "generated_at": "2026-06-14",
   "summary": {
     "packages": 16,
     "totalExports": 303,
@@ -1529,7 +1529,7 @@
     {
       "name": "@sergeant/db-schema",
       "path": "packages/db-schema",
-      "entryFile": "packages/db-schema/dist/index.d.ts",
+      "entryFile": "packages/db-schema/src/index.ts",
       "stats": {
         "exportCount": 1,
         "totalImporters": 0,

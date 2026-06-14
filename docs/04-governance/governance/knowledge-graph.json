@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-13",
+  "generated_at": "2026-06-14",
   "counts": {
     "adr": 63,
     "audit": 19,
@@ -1360,7 +1360,7 @@
       "type": "initiative",
       "title": "0021 — React-hooks v7 ESLint cleanup",
       "path": "docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md",
-      "status": "In Progress",
+      "status": "In progress",
       "tier": "core",
       "meta": {
         "number": 21
