@@ -242,6 +242,14 @@ const preset = {
           hover: brandColors.emerald[600],
           strong: brandColors.emerald[700],
           ring: brandColors.emerald[200],
+          // Dark-mode subtitle companion. The DEFAULT emerald-500 clears AA
+          // for full-opacity dark text (≈6.7:1 on `--c-panel`), but the
+          // de-emphasised `/70` subtitle slot dips to ≈3.9:1 — sub-AA for
+          // normal text. `text-finyk-300` (emerald-300) is the lighter tier
+          // used ONLY in the `dark:` `/70` subtitle slot (emerald-300/70 ≈
+          // 6.05:1). Mirrors the `fizruk-300` precedent; do NOT use it for
+          // full-opacity finyk text — the DEFAULT already passes AA there.
+          300: brandColors.emerald[300],
           // `soft` / `soft-border` / `soft-hover` are now theme-adaptive
           // via `--c-finyk-soft*` (Wave 1b). Light values mirror the
           // legacy hex (`emerald[50]` / `[200]` / `[100]`); dark values
@@ -301,6 +309,11 @@ const preset = {
           ring: brandColors.coral[300],
           done: brandColors.coral[700],
           nav: brandColors.coral[500],
+          // Dark-mode subtitle companion — same rationale as `finyk.300`.
+          // coral-500/70 ≈ 3.6:1 (sub-AA for normal text); coral-300/70 ≈
+          // 5.5:1. Used ONLY in the `dark:` `/70` subtitle slot — the DEFAULT
+          // coral-500 already clears AA for full-opacity dark text.
+          300: brandColors.coral[300],
           // Theme-adaptive soft tint trio (Wave 1b).
           soft: "rgb(var(--c-routine-soft) / <alpha-value>)",
           "soft-border": "rgb(var(--c-routine-soft-border) / <alpha-value>)",

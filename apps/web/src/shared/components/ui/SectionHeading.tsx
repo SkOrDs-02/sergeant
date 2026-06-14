@@ -87,10 +87,13 @@ const variants: Record<SectionHeadingVariant, string> = {
   // contract test that pins the className.
   accent: "text-brand-strong",
   // Module-branded tints — normalised to /70 so callers don't drift
-  // between /70, /80, /90.
-  finyk: "text-finyk-strong dark:text-finyk/70",
+  // between /70, /80, /90. In dark mode the de-emphasised /70 subtitle
+  // must still clear WCAG AA (4.5:1) for normal text on `--c-panel`:
+  // finyk/routine/fizruk ride the lighter `-300` tier (emerald/coral/cyan-300
+  // /70 ≈ 5.5–6.3:1), while nutrition's lime-500/70 already clears AA (≈4.9:1).
+  finyk: "text-finyk-strong dark:text-finyk-300/70",
   fizruk: "text-fizruk-strong dark:text-fizruk-300/70",
-  routine: "text-routine-strong dark:text-routine/70",
+  routine: "text-routine-strong dark:text-routine-300/70",
   nutrition: "text-nutrition-strong dark:text-nutrition/70",
 };
 
