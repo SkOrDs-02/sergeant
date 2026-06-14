@@ -8,14 +8,33 @@
   /* ═══════════════════════════════════════════════════════════════════════
      FOCUS RING — consistent keyboard a11y affordance across the app.
      Apply to any interactive element that doesn't already define its own
-     focus-visible ring (Button already does). Uses the `accent` semantic
-     token so light & dark themes stay in sync automatically.
+     focus-visible ring (Button already does).
+
+     Colour/width/offset come from the theme-aware `--focus-ring-*` custom
+     properties (light/dark/high-contrast variants live in theme.css), so a
+     call-site can locally override any of them without re-declaring the ring.
+
+     Tailwind v4 note: a ring *width* utility (`ring-2`) is what emits the
+     `box-shadow` composition — `ring-<color>` alone only sets `--tw-ring-color`
+     and paints nothing. We therefore keep `focus-visible:ring-2` to trigger the
+     composition and override `--tw-ring-shadow` to drive width/colour from the
+     custom properties. The ring spread adds the offset width so the ring sits
+     *outside* the offset gap; because the box-shadow reads `var(--tw-ring-shadow)`
+     and `var(--tw-shadow)`, any existing element shadow (e.g. `shadow-card`)
+     still composes underneath the ring on focus.
      ═══════════════════════════════════════════════════════════════════════ */
-  @apply outline-hidden focus-visible:ring-accent/60
+  @apply outline-hidden focus-visible:ring-2
            focus-visible:ring-offset-surface;
   --tw-ring-offset-width: var(--focus-ring-offset, 2px);
   &:focus-visible {
-    --tw-ring-shadow: 0 0 0 var(--focus-ring-width, 3px)
+    /* Offset (gap) layer painted in the surface colour, then the ring layer
+       outside it. `ring-offset-surface` only sets `--tw-ring-offset-color`,
+       so we emit `--tw-ring-offset-shadow` ourselves to actually paint the
+       gap (the offset-*width* utility would, but the width is var-driven). */
+    --tw-ring-offset-shadow: 0 0 0 var(--focus-ring-offset, 2px)
+      var(--tw-ring-offset-color);
+    --tw-ring-shadow: 0 0 0
+      calc(var(--focus-ring-offset, 2px) + var(--focus-ring-width, 3px))
       var(--focus-ring-color, rgba(16, 185, 129, 0.4));
   }
 }
