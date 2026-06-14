@@ -51,8 +51,22 @@ const variants: Record<ButtonVariant, string> = {
   // Core variants
   primary:
     "bg-brand-strong text-white shadow-sm hover:bg-brand-800 hover:shadow-glow active:bg-brand-900 active:scale-[0.98]",
+  // `secondary` is the neutral outline button. Its fill is `bg-panel`
+  // (white in light / warm-charcoal in dark) — the SAME token as the
+  // card & sheet surfaces it most often sits on, so the fill alone
+  // can't separate it from its container, and swapping the fill can't
+  // fix it either: a white fill pops on the cream page but cards are
+  // white, while a cream fill pops on white cards but the page is cream
+  // (the two contexts are inverted). Separation therefore comes from the
+  // boundary + elevation, not the fill: `border-border-strong` is the
+  // heavier outline companion (clears ~3:1 on the dark panel where the
+  // shadow is invisible), and `shadow-e1` is the warm-tuned drop + inset
+  // top-highlight that makes the white chip read as raised on a white
+  // card. Hover lifts to `shadow-e2`, matching the interactive-Card
+  // elevation contract. AI-CONTEXT: do not revert to `border-line` /
+  // `shadow-sm` — that is the "white button on white card" regression.
   secondary:
-    "bg-panel text-text border border-line shadow-sm hover:bg-panelHi hover:border-brand-200 active:scale-[0.98]",
+    "bg-panel text-text border border-border-strong shadow-e1 hover:bg-panelHi hover:border-brand-200 hover:shadow-e2 active:scale-[0.98]",
   ghost:
     "bg-transparent text-muted hover:bg-panelHi hover:text-text active:bg-line/50",
   danger:
