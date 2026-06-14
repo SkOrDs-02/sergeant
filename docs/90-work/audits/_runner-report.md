@@ -88,6 +88,4 @@ No immediate action possible without external input or a gating milestone.
 - **Individual page audits 02 (Hub Dashboard), 05–09 (Finyk, Fizruk Part 1/2, Nutrition, Routine+Strategy):** Scanned only at consolidated-theme level this pass; individual H/M findings beyond themes 1–7 are not yet triaged (see C3 above).
 - **Testing devx roast P2 items** (P2-2 ESLint plugin coverage, P2-4 property-based tests): nice-to-have; not blocking any lane.
 - **Web architecture roast outstanding P2 items:** Low risk; tracked in `docs/90-work/tech-debt/frontend.md`.
-- **Codebase cleanup react-hooks v7 suppressions (~152 violations in `eslint.baseline.js:146–178`):** Legitimate debt without owner or deadline — recommend creating a dedicated initiative with a ticket and date before next triage cycle.
-  </content>
-  </invoke>
+- **Codebase cleanup react-hooks v7 suppressions (~152 violations in `eslint.baseline.js:146–178`):** Now tracked by [`docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`](../initiatives/0021-react-hooks-v7-cleanup.md) (Agent-ready, ETA 2026-09-09, start not-before Sprint 9 2026-07-07). Phase 0 partial (5 inline disables fixed); baseline burn-down (−50% target) outstanding.
