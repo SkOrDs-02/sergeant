@@ -9,8 +9,7 @@
       "merged_at": "2026-06-14T09:08:03Z",
       "author": "@Skords-01",
       "touchedDocs": ["docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md"]
-  "generated_at": "2026-06-13",
-  "prs": [
+    },
     {
       "number": 3555,
       "title": "fix(web): correct recommendation icon rendering and design checkbox a11y",
@@ -18,6 +17,9 @@
       "author": "@Skords-01",
       "touchedDocs": [
         "docs/04-governance/adr/0003-refund-and-dispute-handling.md"
+      ]
+    },
+    {
       "number": 3551,
       "title": "fix(ci): finish CI-on-main heal — regenerate SBOM + refresh overdue freshness stamp",
       "merged_at": "2026-06-13T16:22:36Z",

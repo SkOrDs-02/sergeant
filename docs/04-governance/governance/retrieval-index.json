@@ -5194,8 +5194,8 @@
       "line": 1,
       "title": "sergeant-data-and-migrations",
       "tier": "core",
-      "text": "sergeant-data-and-migrations · skill:sergeant-data-and-migrations · skill · Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Railway pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних. · Дані і міграції в Sergeant · Що покриває · Жорсткі правила · Postgres-правила · Верифікація · Корисні доки",
-      "contentHash": "d1ccf391b8d8af9d3da68ffdd481c5a097e4f623cbfa8b94b45406b9477b0acb"
+      "text": "sergeant-data-and-migrations · skill:sergeant-data-and-migrations · skill · Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Railway pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних. · Дані і міграції в Sergeant · Що покриває · Жорсткі правила · Postgres-правила · Performance, indexing, locking — references/ · Верифікація · Корисні доки",
+      "contentHash": "31bc7714bdb15ad7d04b21aaf51d69651f94133fb9e2921d0b1231f2468ced5e"
     },
     {
       "id": "skill:sergeant-deliver-squad",
