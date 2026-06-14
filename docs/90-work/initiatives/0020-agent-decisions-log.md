@@ -1,6 +1,6 @@
 # 0020 — Agent decisions log
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-14 by @Skords-01. **Next review:** 2026-09-12.
 > **Status:** In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями).
 > **Agent-ready:** yes
 
@@ -58,5 +58,5 @@ Tier 3 agent-OS. Курований append-only журнал [`docs/00-start/age
 ## Посилання
 
 - [`docs/00-start/agents/decisions.md`](../../00-start/agents/decisions.md) — сам журнал
-- [Initiative 0018](./0018-agent-semantic-retrieval.md), [Initiative 0019](./0019-agent-routing.md) — Tier 1/2 sibling-и
+- [Initiative 0018](./archive/_0018-agent-semantic-retrieval.md), [Initiative 0019](./0019-agent-routing.md) — Tier 1/2 sibling-и
 - [Hard Rule #15](../../04-governance/governance/rules/15-governance-and-doc-language.md) — single-source-of-truth + UA

@@ -104,14 +104,14 @@
       <span class="chip chip-adr">adr: <b>63</b></span>
       <span class="chip chip-audit">audit: <b>19</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
-      <span class="chip chip-initiative">initiative: <b>53</b></span>
+      <span class="chip chip-initiative">initiative: <b>52</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
-      <span class="chip chip-pr">pr: <b>208</b></span>
+      <span class="chip chip-pr">pr: <b>211</b></span>
       <span class="chip chip-skill">skill: <b>23</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (238 core)</summary>
+      <summary>Nodes (237 core)</summary>
       <table>
         <thead>
           <tr>
@@ -904,7 +904,7 @@
               >
             </td>
             <td>Active</td>
-            <td>number=66 · last_validated=2026-06-09</td>
+            <td>number=66 · last_validated=2026-06-14</td>
           </tr>
           <tr>
             <td>audit</td>
@@ -1656,47 +1656,6 @@
           </tr>
           <tr>
             <td>initiative</td>
-            <td><code>initiative:0018</code></td>
-            <td>
-              <a
-                href="../../docs/90-work/initiatives/0018-agent-semantic-retrieval.md"
-                >0018 — Agent semantic retrieval (agent:find)</a
-              >
-            </td>
-            <td>
-              In progress — **Phases 1–4 code-complete** (lexical `agent:find` +
-              manifest, Voyage semantic layer з degradation, HR#24-gate +
-              golden-eval, `agent_find` MCP-tool + промоція у start-here).
-              **Lexical before/after заміряно** ([session-log
-              2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md)).
-              Залишок: **semantic** live-mode acceptance (одноразовий `pnpm
-              agent:embed` з `VOYAGE_API_KEY` + cosine-blend заміри) —
-              відкладено, бо ключа в середовищі немає.
-            </td>
-            <td>number=18</td>
-          </tr>
-          <tr>
-            <td>initiative</td>
-            <td><code>initiative:0019</code></td>
-            <td>
-              <a href="../../docs/90-work/initiatives/0019-agent-routing.md"
-                >0019 — Agent routing (`agent:route`)</a
-              >
-            </td>
-            <td>
-              In progress — code-complete; залишок: live-mode acceptance (заміри
-              + опційна harness-wiring у власному global config).
-              **2026-06-08:** полагоджено регресію — `route.mjs` читав
-              `hard-rules.json` зі старого шляху `docs/governance/` (файл
-              переїхав у `docs/04-governance/governance/` під час docs-reorg),
-              через що `pnpm agent:route` падав з ENOENT і 3 route-тести у
-              `retrieval.test.mjs` були червоні. Шлях виправлено, усі 12 тестів
-              зелені.
-            </td>
-            <td>number=19</td>
-          </tr>
-          <tr>
-            <td>initiative</td>
             <td><code>initiative:0020</code></td>
             <td>
               <a
@@ -1756,6 +1715,23 @@
                 href="../../docs/90-work/initiatives/session-log-0018-agent-find-measurement-2026-06-08.md"
                 >Session log — 0018 `agent:find` lexical measurement
                 (2026-06-08)</a
+              >
+            </td>
+            <td>Reference</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>initiative</td>
+            <td>
+              <code
+                >initiative:session-log-0018-semantic-measurement-2026-06-14</code
+              >
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/initiatives/session-log-0018-semantic-measurement-2026-06-14.md"
+                >Session log — 0018 `agent:find` semantic (Voyage) measurement
+                (2026-06-14)</a
               >
             </td>
             <td>Reference</td>
@@ -3629,7 +3605,7 @@
     </details>
 
     <details>
-      <summary>Edges (457 total, first 500 core-to-core)</summary>
+      <summary>Edges (453 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -4224,34 +4200,9 @@
             <td><code>hard-rule:4</code></td>
           </tr>
           <tr>
-            <td><code>initiative:0018</code></td>
-            <td>references</td>
-            <td><code>hard-rule:24</code></td>
-          </tr>
-          <tr>
-            <td><code>initiative:0019</code></td>
-            <td>references</td>
-            <td><code>initiative:0015</code></td>
-          </tr>
-          <tr>
-            <td><code>initiative:0019</code></td>
-            <td>references</td>
-            <td><code>initiative:0018</code></td>
-          </tr>
-          <tr>
             <td><code>initiative:0020</code></td>
             <td>references</td>
             <td><code>hard-rule:15</code></td>
-          </tr>
-          <tr>
-            <td><code>initiative:0020</code></td>
-            <td>references</td>
-            <td><code>initiative:0018</code></td>
-          </tr>
-          <tr>
-            <td><code>initiative:0020</code></td>
-            <td>references</td>
-            <td><code>initiative:0019</code></td>
           </tr>
           <tr>
             <td>
@@ -4459,16 +4410,6 @@
             <td><code>skill:sergeant-server-api</code></td>
             <td>references</td>
             <td><code>hard-rule:21</code></td>
-          </tr>
-          <tr>
-            <td><code>skill:sergeant-start-here</code></td>
-            <td>references</td>
-            <td><code>initiative:0018</code></td>
-          </tr>
-          <tr>
-            <td><code>skill:sergeant-start-here</code></td>
-            <td>references</td>
-            <td><code>initiative:0019</code></td>
           </tr>
           <tr>
             <td><code>skill:sergeant-tech-debt</code></td>

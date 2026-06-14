@@ -61,7 +61,7 @@ Tier 2 поверх Initiative 0018. `agent:find` відповідає «де щ
 
 ## Посилання
 
-- [Initiative 0018 — Agent semantic retrieval](../0018-agent-semantic-retrieval.md) (Tier 1, sibling)
+- [Initiative 0018 — Agent semantic retrieval](./_0018-agent-semantic-retrieval.md) (Tier 1, sibling)
 - [ADR-0066](../../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md)
 - [`scripts/docs/skill-mapping.json`](../../../../scripts/docs/skill-mapping.json) — канонічна path→skill мапа (Initiative 0015)
 - [`docs/04-governance/governance/hard-rules.json`](../../../04-governance/governance/hard-rules.json) — scope-глоби для active-rules

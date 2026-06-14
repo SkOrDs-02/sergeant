@@ -1,12 +1,11 @@
 # 0018 — Agent semantic retrieval (agent:find)
 
 > **Last touched:** 2026-06-14 by @Skords-01. **Next review:** 2026-09-12.
-> **Status:** In progress — **Phases 1–4 code-complete; усі 7 DONE-критеріїв закриті.** **Lexical** заміряно 2026-06-08 ([session-log](./session-log-0018-agent-find-measurement-2026-06-08.md)); **semantic (Voyage)** заміряно 2026-06-14 ([session-log](./session-log-0018-semantic-measurement-2026-06-14.md)): 548 чанків ембеджено, усі 12 golden-кейсів у semantic-режимі без degradation — recall@5=1.0 (= lexical), MRR 0.917→0.958. Залишок — лише рішення про archive (як з 0019).
-> **Agent-ready:** yes
+> **Status:** Archived — code-complete (Phases 1–4, усі 7 DONE-критеріїв закриті). Архівовано 2026-06-14: lexical заміряно 2026-06-08 ([session-log](../session-log-0018-agent-find-measurement-2026-06-08.md)), semantic (Voyage) заміряно 2026-06-14 ([session-log](../session-log-0018-semantic-measurement-2026-06-14.md)) — recall@5=1.0 (= lexical), MRR 0.917→0.958, усі 12 golden-кейсів у semantic-режимі без degradation. Live-mode acceptance закрито; у репо-скоупі робити нічого.
 
 ## TL;DR
 
-Sergeant має багатий машино-читабельний індекс себе (`knowledge-graph.json`, `symbol-index.json`, 33 skills, 61 playbook, 62 ADR), але все знання — **pull**: агент мусить здогадатися, що відкрити. Будуємо один семантичний вхід `pnpm agent:find "<query>"` (+ MCP-tool `agent_find`), що повертає рейтинговані `file:line`-пойнтери з типом і freshness-tier артефакту. Перевикористовуємо Voyage + eval-harness зі стеку `ai-memory`, але як **committed build-time індекс** (decoupled від runtime-БД), з lexical-фолбеком на випадок відсутності API-ключа. Архітектура — у [ADR-0066](../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md).
+Sergeant має багатий машино-читабельний індекс себе (`knowledge-graph.json`, `symbol-index.json`, 33 skills, 61 playbook, 62 ADR), але все знання — **pull**: агент мусить здогадатися, що відкрити. Будуємо один семантичний вхід `pnpm agent:find "<query>"` (+ MCP-tool `agent_find`), що повертає рейтинговані `file:line`-пойнтери з типом і freshness-tier артефакту. Перевикористовуємо Voyage + eval-harness зі стеку `ai-memory`, але як **committed build-time індекс** (decoupled від runtime-БД), з lexical-фолбеком на випадок відсутності API-ключа. Архітектура — у [ADR-0066](../../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md).
 
 ## Чому зараз
 
@@ -78,7 +77,7 @@ Sergeant має багатий машино-читабельний індекс 
 - [x] Маніфест регенерується у `docs:gen-daily`; вектори — у gitignored cache (нуль binary-diff у git)
 - [x] Repo-retrieval golden-set + `recall@K`/`MRR` gate проходить ≥ baseline _(recall@5=1.0, MRR=0.92; гейт у docs-automation тестах)_
 - [x] MCP-tool `agent_find` доступний; `sergeant-start-here` його промотує
-- [x] Заміряно (**lexical**): на репрезентативній вибірці з 8 реальних задач `agent:find` дає правильний canonical-артефакт rank-1 у 7/8 (8/8 у топ-3), замінюючи раунд сліпих grep-ів — before/after у [session-log 2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md). Заміряно (**semantic, Voyage**) 2026-06-14: 548 чанків ембеджено (`pnpm agent:embed`), усі 12 golden-кейсів ранжуються в semantic-режимі без degradation — recall@5=1.0 (= lexical), MRR 0.917→0.958 (cosine-blend піднімає, напр., «focus visible» з rank-2 на rank-1) — [session-log 2026-06-14](./session-log-0018-semantic-measurement-2026-06-14.md). Залишковий live-mode acceptance закрито
+- [x] Заміряно (**lexical**): на репрезентативній вибірці з 8 реальних задач `agent:find` дає правильний canonical-артефакт rank-1 у 7/8 (8/8 у топ-3), замінюючи раунд сліпих grep-ів — before/after у [session-log 2026-06-08](../session-log-0018-agent-find-measurement-2026-06-08.md). Заміряно (**semantic, Voyage**) 2026-06-14: 548 чанків ембеджено (`pnpm agent:embed`), усі 12 golden-кейсів ранжуються в semantic-режимі без degradation — recall@5=1.0 (= lexical), MRR 0.917→0.958 (cosine-blend піднімає, напр., «focus visible» з rank-2 на rank-1) — [session-log 2026-06-14](../session-log-0018-semantic-measurement-2026-06-14.md). Залишковий live-mode acceptance закрито
 
 ## Ризики
 
@@ -98,9 +97,9 @@ Sergeant має багатий машино-читабельний індекс 
 
 ## Посилання
 
-- [ADR-0066 — Agent semantic retrieval over the knowledge graph](../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md)
-- [`docs/02-engineering/architecture/ai-memory.md`](../../02-engineering/architecture/ai-memory.md) — embedding-конвеєр, який перевикористовуємо
-- [`docs/02-engineering/architecture/rag-eval.md`](../../02-engineering/architecture/rag-eval.md) — eval-harness і `recall@K`/`MRR` метрики
-- [`docs/04-governance/governance/knowledge-graph.json`](../../04-governance/governance/knowledge-graph.json) — головне джерело нод для індексу
-- [`docs/04-governance/governance/symbol-index.json`](../../04-governance/governance/symbol-index.json) — export-пойнтери
-- Rule #24 [`catalog-check-generator.md`](../../04-governance/governance/rules/24-catalog-check-generator.md), Rule #25 [`auto-generated-marker.md`](../../04-governance/governance/rules/25-auto-generated-marker.md)
+- [ADR-0066 — Agent semantic retrieval over the knowledge graph](../../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md)
+- [`docs/02-engineering/architecture/ai-memory.md`](../../../02-engineering/architecture/ai-memory.md) — embedding-конвеєр, який перевикористовуємо
+- [`docs/02-engineering/architecture/rag-eval.md`](../../../02-engineering/architecture/rag-eval.md) — eval-harness і `recall@K`/`MRR` метрики
+- [`docs/04-governance/governance/knowledge-graph.json`](../../../04-governance/governance/knowledge-graph.json) — головне джерело нод для індексу
+- [`docs/04-governance/governance/symbol-index.json`](../../../04-governance/governance/symbol-index.json) — export-пойнтери
+- Rule #24 [`catalog-check-generator.md`](../../../04-governance/governance/rules/24-catalog-check-generator.md), Rule #25 [`auto-generated-marker.md`](../../../04-governance/governance/rules/25-auto-generated-marker.md)

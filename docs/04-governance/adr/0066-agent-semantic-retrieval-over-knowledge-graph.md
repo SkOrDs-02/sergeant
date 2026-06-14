@@ -1,6 +1,6 @@
 # ADR-0066: Agent semantic retrieval over the knowledge graph
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-14 by @Skords-01. **Next review:** 2026-09-12.
 > **Status:** Active
 
 - **Status:** Accepted
@@ -12,7 +12,7 @@
   - [`docs/04-governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md`](./0059-symbol-extraction-via-typescript-compiler-api.md) — `symbol-index.json` як ще одне джерело пойнтерів
   - [`docs/04-governance/adr/0028-pgvector-ai-memory.md`](./0028-pgvector-ai-memory.md) — наявний production-RAG-стек (Voyage + pgvector), який ми **не** перевикористовуємо як стор (див. Decision)
   - [`docs/02-engineering/architecture/ai-memory.md`](../../02-engineering/architecture/ai-memory.md), [`docs/02-engineering/architecture/rag-eval.md`](../../02-engineering/architecture/rag-eval.md) — embedding-конвеєр і eval-harness, який перевикористовуємо
-  - [`docs/90-work/initiatives/0018-agent-semantic-retrieval.md`](../../90-work/initiatives/0018-agent-semantic-retrieval.md) — план виконання
+  - [`docs/90-work/initiatives/0018-agent-semantic-retrieval.md`](../../90-work/initiatives/archive/_0018-agent-semantic-retrieval.md) — план виконання
 
 ---
 
@@ -87,6 +87,6 @@
 
 ## Links
 
-- [`docs/90-work/initiatives/0018-agent-semantic-retrieval.md`](../../90-work/initiatives/0018-agent-semantic-retrieval.md)
+- [`docs/90-work/initiatives/0018-agent-semantic-retrieval.md`](../../90-work/initiatives/archive/_0018-agent-semantic-retrieval.md)
 - [`docs/04-governance/adr/0058-knowledge-graph-schema.md`](./0058-knowledge-graph-schema.md)
 - [`docs/02-engineering/architecture/rag-eval.md`](../../02-engineering/architecture/rag-eval.md)

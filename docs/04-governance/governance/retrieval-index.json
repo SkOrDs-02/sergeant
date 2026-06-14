@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-06-13",
+  "generated_at": "2026-06-14",
   "sourceHashes": {
-    "knowledge-graph": "21396ebe425a2d6fe0788f5a3eb58871c7437d042a6220c4a833155b87e5e425",
-    "symbol-index": "6afeb40a24145e6a7d50541aecce9d2c15f36aaaf58de9091c1f2bc2fcc47f8c"
+    "knowledge-graph": "bd1102c182f454f04956454e098d137c0ded855b63daaca6a01a37203ea02d2f",
+    "symbol-index": "92cbd6398daba032df2a93fd8f383ab61c3d1d9cea4d5fcb3aa73d563894addc"
   },
   "counts": {
     "adr": 63,
     "audit": 19,
     "export": 303,
     "hard-rule": 26,
-    "initiative": 53,
+    "initiative": 52,
     "playbook": 61,
     "skill": 23,
-    "total": 548
+    "total": 547
   },
   "chunks": [
     {
@@ -705,8 +705,8 @@
       "title": "ADR-0066: Agent semantic retrieval over the knowledge graph",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "ed17dcd7f9315d1ba5465a52feac46739a4848120b19953b539a5271b0243c64"
+      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-06-14 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "47488d5e812da8c48771e92892321a6718876ace8e68d8d187a08c943906ddbc"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
@@ -2720,11 +2720,11 @@
     {
       "id": "export:@sergeant/db-schema:*",
       "type": "export",
-      "path": "packages/db-schema/dist/shared/index.js",
+      "path": "packages/db-schema/src/shared/index.js",
       "title": "* (re-export-star)",
       "tier": "extended",
-      "text": "* · re-export-star · @sergeant/db-schema · packages/db-schema/dist/shared/index.js · used 0× · dead export unused",
-      "contentHash": "55712d07ee302d783c1862e8517c26efdb012763814669177177e8dc18e9588e"
+      "text": "* · re-export-star · @sergeant/db-schema · packages/db-schema/src/shared/index.js · used 0× · dead export unused",
+      "contentHash": "99ad781d880053d2991cf2d577a0550feca45573a3b20a515765afcb6419be94"
     },
     {
       "id": "export:@sergeant/design-tokens:BrandColor",
@@ -3945,8 +3945,8 @@
       "title": "0015 — Docs automation for daily ops",
       "tier": "core",
       "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **The \"7 consecutive cron days\" streak BROKE on 2026-06-06.** Verified against GitHub Actions runs of `docs-daily-brief.yml`: green 06-03 / 06-04 / 06-05, then **failed 06-06** (run `27057370680` — the regen-and-push job died on `node adr:0062: duplicate`, i.e. a duplicate-ADR-id check, **not** on the `today.md`/trust-badge generators themselves), then green again 06-07 / 06-08. The original 06-03 → 06-09 window therefore can no longer be all-green; **current consecutive-green run = 2 (06-07 → 06-08)**, 06-09 still pending. The maintainer 5/7-day usage self-report is also still unrecorded. Stays In progress until both signals close; the 7-consecutive-green counter has **reset** and needs a fresh clean 7-day streak. Not 90-day-gated; archival deferred until the observation window closes.",
-      "text": "0015 — Docs automation for daily ops · initiative:0015 · initiative · In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **The \"7 consecutive cron days\" streak BROKE on 2026-06-06.** Verified against GitHub Actions runs of `docs-daily-brief.yml`: green 06-03 / 06-04 / 06-05, then **failed 06-06** (run `27057370680` — the regen-and-push job died on `node adr:0062: duplicate`, i.e. a duplicate-ADR-id check, **not** on the `today.md`/trust-badge generators themselves), then green again 06-07 / 06-08. The original 06-03 → 06-09 window therefore can no longer be all-green; **current consecutive-green run = 2 (06-07 → 06-08)**, 06-09 still pending. The maintainer 5/7-day usage self-report is also still unrecorded. Stays In progress until both signals close; the 7-consecutive-green counter has **reset** and needs a fresh clean 7-day streak. Not 90-day-gated; archival deferred until the observation window closes. · 15 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Bundle Alpha (committed) — ETA 2026-05-31 · Phase 2 — Bundle Beta (committed) — ETA 2026-06-30 · Критерії DONE · Phase 1 · Phase 2 · Ризики · Власник / ETA · Backlog — Можливі доповнення (NOT committed) · Bundle Zeta — External-blocker detection у today.md (~2h, proposed) · Bundle Gamma — Review Hygiene (~4h, proposed) · Bundle Delta — Surface Dashboards (~6h, proposed) · Bundle Epsilon — Audit Discipline (~3h, proposed) · Посилання",
-      "contentHash": "a5e36856356adec760a2334606b56cc9a4889361d25a418191b8b9aaaa465306"
+      "text": "0015 — Docs automation for daily ops · initiative:0015 · initiative · In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **The \"7 consecutive cron days\" streak BROKE on 2026-06-06.** Verified against GitHub Actions runs of `docs-daily-brief.yml`: green 06-03 / 06-04 / 06-05, then **failed 06-06** (run `27057370680` — the regen-and-push job died on `node adr:0062: duplicate`, i.e. a duplicate-ADR-id check, **not** on the `today.md`/trust-badge generators themselves), then green again 06-07 / 06-08. The original 06-03 → 06-09 window therefore can no longer be all-green; **current consecutive-green run = 2 (06-07 → 06-08)**, 06-09 still pending. The maintainer 5/7-day usage self-report is also still unrecorded. Stays In progress until both signals close; the 7-consecutive-green counter has **reset** and needs a fresh clean 7-day streak. Not 90-day-gated; archival deferred until the observation window closes. · 15 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Bundle Alpha (committed) — ETA 2026-05-31 · Phase 2 — Bundle Beta (committed) — ETA 2026-06-30 · Критерії DONE · Phase 1 · Phase 2 · Ризики · Власник / ETA · Backlog — Можливі доповнення (NOT committed) · Bundle Zeta — External-blocker detection у today.md (~2h, proposed) · Bundle Gamma — Review Hygiene (~4h, proposed) · Bundle Delta — Surface Dashboards (~6h, proposed) · Bundle Epsilon — Audit Discipline (~3h, proposed) · Посилання · Recent PRs",
+      "contentHash": "1c5c93509763c6dd28dc2582995aa356daecc23b9d234809094ba152c2c61336"
     },
     {
       "id": "initiative:0017",
@@ -3958,28 +3958,6 @@
       "status": "Closed (2026-06-08 — code-complete; Sprint 0 + Sprint 1 + Sprint 2 merged). Sprint 3 (Web Worker) is a **discrete conditional follow-up** — re-opens ТІЛЬКИ якщо post-merge PostHog `aggregateReport` P95 > 50 ms (next 30-day RUM cut); not tracked as open work here. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.",
       "text": "0017 — Hub Settings & Reports mount perf · initiative:0017 · initiative · Closed (2026-06-08 — code-complete; Sprint 0 + Sprint 1 + Sprint 2 merged). Sprint 3 (Web Worker) is a **discrete conditional follow-up** — re-opens ТІЛЬКИ якщо post-merge PostHog `aggregateReport` P95 > 50 ms (next 30-day RUM cut); not tracked as open work here. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome. · 17 · @Skords-01 · P1 (Sprint 1 candidate after [0016](./archive/_0016-changelog-release-cut.md)) · TL;DR · Чому зараз · Скоуп · Метрики успіху · План змін · Sprint 0 — Observability baseline (1 PR) — shipped 2026-05-20 · Sprint 1 — Per-section lazy у Settings (2 PR-и) · Sprint 2 — HubReports per-card lazy (1 PR) · Sprint 3 — Web Worker for aggregation (stretch, conditional) · Finalize (включається у PR-3 або окремий PR-4 якщо Sprint 3 skipped) · Sprint 3 decision (2026-06-01) · Outcome (2026-06-01, code-complete; 2026-06-02 tech-debt watchlist drained) · Carry-over → successor · Bundle-size findings 2026-06-06 · Критерії DONE · Ризики та митиґація · Власник, ревʼюери · Зв'язки",
       "contentHash": "09d06ffdb6e449208cfd83231e404011afd2f611af191aab537eb4c58907a779"
-    },
-    {
-      "id": "initiative:0018",
-      "type": "initiative",
-      "path": "docs/90-work/initiatives/0018-agent-semantic-retrieval.md",
-      "line": 1,
-      "title": "0018 — Agent semantic retrieval (agent:find)",
-      "tier": "core",
-      "status": "In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). **Lexical before/after заміряно** ([session-log 2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md)). Залишок: **semantic** live-mode acceptance (одноразовий `pnpm agent:embed` з `VOYAGE_API_KEY` + cosine-blend заміри) — відкладено, бо ключа в середовищі немає.",
-      "text": "0018 — Agent semantic retrieval (agent:find) · initiative:0018 · initiative · In progress — **Phases 1–4 code-complete** (lexical `agent:find` + manifest, Voyage semantic layer з degradation, HR#24-gate + golden-eval, `agent_find` MCP-tool + промоція у start-here). **Lexical before/after заміряно** ([session-log 2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md)). Залишок: **semantic** live-mode acceptance (одноразовий `pnpm agent:embed` з `VOYAGE_API_KEY` + cosine-blend заміри) — відкладено, бо ключа в середовищі немає. · 18 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Lexical-кістяк (committed) — ETA TBD після погодження · Phase 2 — Семантичний шар (committed) · Phase 3 — Gates і якість (committed) · Phase 4 — MCP + промоція (committed) · Критерії DONE · Ризики · Власник / ETA · Посилання",
-      "contentHash": "cd78c1a3805d53caecc9e398b48b59e7e4f587428479d638cb1f97533da57e72"
-    },
-    {
-      "id": "initiative:0019",
-      "type": "initiative",
-      "path": "docs/90-work/initiatives/0019-agent-routing.md",
-      "line": 1,
-      "title": "0019 — Agent routing (`agent:route`)",
-      "tier": "core",
-      "status": "In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config). **2026-06-08:** полагоджено регресію — `route.mjs` читав `hard-rules.json` зі старого шляху `docs/governance/` (файл переїхав у `docs/04-governance/governance/` під час docs-reorg), через що `pnpm agent:route` падав з ENOENT і 3 route-тести у `retrieval.test.mjs` були червоні. Шлях виправлено, усі 12 тестів зелені.",
-      "text": "0019 — Agent routing (`agent:route`) · initiative:0019 · initiative · In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config). **2026-06-08:** полагоджено регресію — `route.mjs` читав `hard-rules.json` зі старого шляху `docs/governance/` (файл переїхав у `docs/04-governance/governance/` під час docs-reorg), через що `pnpm agent:route` падав з ENOENT і 3 route-тести у `retrieval.test.mjs` були червоні. Шлях виправлено, усі 12 тестів зелені. · 19 · 0019 — Agent routing (agent:route) · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Критерії DONE · Ризики · Власник / ETA · Посилання",
-      "contentHash": "b4bbdfe26ba5c9730a09134cc6de48ee8f76ecb5237e318f68fd1b2926d5f9a4"
     },
     {
       "id": "initiative:0020",
@@ -3999,9 +3977,9 @@
       "line": 1,
       "title": "0021 — React-hooks v7 ESLint cleanup",
       "tier": "core",
-      "status": "In Progress",
-      "text": "0021 — React-hooks v7 ESLint cleanup · initiative:0021 · initiative · In Progress · 21 · Проблема · Скоуп · Acceptance criteria · Виконані дії (2026-06-10) · Timeline",
-      "contentHash": "20fe28072897fb82adf7e46cbb179a13b23e75d55ef16b188878f76794c2da5c"
+      "status": "In progress",
+      "text": "0021 — React-hooks v7 ESLint cleanup · initiative:0021 · initiative · In progress · 21 · Проблема · Скоуп · Acceptance criteria · Виконані дії (2026-06-10) · Timeline · Recent PRs",
+      "contentHash": "f6ea65598cb452e6f65022b8132d33f8f15eb2664eaa6bd67c168b1bb3df8d49"
     },
     {
       "id": "initiative:follow-ups",
@@ -4035,6 +4013,17 @@
       "status": "Reference",
       "text": "Session log — 0018 `agent:find` lexical measurement (2026-06-08) · initiative:session-log-0018-agent-find-measurement-2026-06-08 · initiative · Reference · Session log — 0018 agent:find lexical measurement (2026-06-08) · Середовище заміру · Healthcheck офлайн-тулінгу · Before/after на репрезентативній вибірці задач · Чому це «менше сліпих grep-ів» · Висновок і що лишається · Refs",
       "contentHash": "439dbd4fbb78d2d84f17f6ce564252192bc70a609f956faf3f60345763bbd920"
+    },
+    {
+      "id": "initiative:session-log-0018-semantic-measurement-2026-06-14",
+      "type": "initiative",
+      "path": "docs/90-work/initiatives/session-log-0018-semantic-measurement-2026-06-14.md",
+      "line": 1,
+      "title": "Session log — 0018 `agent:find` semantic (Voyage) measurement (2026-06-14)",
+      "tier": "core",
+      "status": "Reference",
+      "text": "Session log — 0018 `agent:find` semantic (Voyage) measurement (2026-06-14) · initiative:session-log-0018-semantic-measurement-2026-06-14 · initiative · Reference · Session log — 0018 agent:find semantic (Voyage) measurement (2026-06-14) · Середовище заміру · Крок 1 — ембедінг · Крок 2 — semantic vs lexical на golden-set (12 кейсів, K=5) · Висновок · Refs",
+      "contentHash": "a68cbc655109bb5fc54d1f41d6ad146b8491f69cbcc47746c9f3014f868176c3"
     },
     {
       "id": "initiative:stack-pulse-2026-05/00-overview",

@@ -1,9 +1,9 @@
 # Session log — 0018 `agent:find` lexical measurement (2026-06-08)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-14 by @Skords-01. **Next review:** 2026-09-12.
 > **Status:** Reference
 
-Лог одного заміру для останнього DONE-критерію [Ініціативи 0018](./0018-agent-semantic-retrieval.md):
+Лог одного заміру для останнього DONE-критерію [Ініціативи 0018](./archive/_0018-agent-semantic-retrieval.md):
 «на репрезентативній вибірці задач агент робить менше сліпих grep-ів (before/after)».
 Документ — рукописний (НЕ auto-generated), фіксує **лише lexical-режим** `pnpm agent:find`.
 Семантичний (Voyage) замір **відкладено** — у цьому середовищі немає `VOYAGE_API_KEY`,
@@ -112,6 +112,6 @@ playbook / export), у який і треба тицьнути носом.
 
 ## Refs
 
-- [`0018-agent-semantic-retrieval.md`](./0018-agent-semantic-retrieval.md) — ініціатива.
+- [`0018-agent-semantic-retrieval.md`](./archive/_0018-agent-semantic-retrieval.md) — ініціатива.
 - [`docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md`](../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md) — архітектура.
 - `scripts/agent/find.mjs`, `scripts/agent/eval-retrieval.mjs`, `scripts/agent/build-retrieval-index.mjs` — тулінг заміру.
