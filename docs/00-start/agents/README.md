@@ -1,6 +1,6 @@
 # Agents
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-14 by @Skords-01. **Next review:** 2026-09-12.
 > **Status:** Active
 
 Операційний розділ для AI-агентів у Sergeant — це **operating system для AI-агентів, які працюють у репо**, а не AI-фічі продукту (HubChat, AI Coach, Mono-classifier тощо живуть під `apps/web` і `apps/server` і документуються в окремих модулях). Тут навігація по repo-owned skills, decision trees для типових flow і design specs.
@@ -17,15 +17,16 @@
 
 ## Підрозділи
 
-| Підрозділ                                                      | Призначення                                                                                                |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| [`onboarding.md`](./onboarding.md)                             | Перші 30 хвилин агента в Sergeant: секрети, БД, hard-rule навігація, plop.                                 |
-| [`decisions.md`](./decisions.md)                               | Курований журнал усталених рішень/вподобань — щоб агент не перепитував вже вирішене (Initiative 0020).     |
-| [`agent-skills-catalog.md`](./agent-skills-catalog.md)         | Scenario -> skill -> what it enforces.                                                                     |
-| [`agent-workflows.md`](./agent-workflows.md)                   | Decision trees для feature, bugfix, review, migration, release.                                            |
-| [`codex-capabilities.md`](./codex-capabilities.md)             | Що Codex у цьому репо вміє, що запускається автоматично, а що потребує явної команди.                      |
-| [`specialists-mapping.md`](./specialists-mapping.md)           | Runtime `SpecialistAgent` ↔ governance skill ↔ primary playbook ↔ ADR.                                     |
-| [`skills-evolution-roadmap.md`](./skills-evolution-roadmap.md) | Discovery roadmap: запозичення з agent-skills ecosystem (anthropics, supabase, obra) — 9 PR-послідовність. |
+| Підрозділ                                                      | Призначення                                                                                                 |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [`onboarding.md`](./onboarding.md)                             | Перші 30 хвилин агента в Sergeant: секрети, БД, hard-rule навігація, plop.                                  |
+| [`decisions.md`](./decisions.md)                               | Курований журнал усталених рішень/вподобань — щоб агент не перепитував вже вирішене (Initiative 0020).      |
+| [`agent-skills-catalog.md`](./agent-skills-catalog.md)         | Scenario -> skill -> what it enforces.                                                                      |
+| [`agent-workflows.md`](./agent-workflows.md)                   | Decision trees для feature, bugfix, review, migration, release.                                             |
+| [`codex-capabilities.md`](./codex-capabilities.md)             | Що Codex у цьому репо вміє, що запускається автоматично, а що потребує явної команди.                       |
+| [`specialists-mapping.md`](./specialists-mapping.md)           | Runtime `SpecialistAgent` ↔ governance skill ↔ primary playbook ↔ ADR.                                      |
+| [`skills-evolution-roadmap.md`](./skills-evolution-roadmap.md) | Discovery roadmap: запозичення з agent-skills ecosystem (anthropics, supabase, obra) — 9 PR-послідовність.  |
+| [`skill-authoring-guide.md`](./skill-authoring-guide.md)       | Конвенція `references/` (3-tier disclosure): naming, обов'язковий frontmatter, enforcement у `lint:skills`. |
 
 ## Політика skill system
 
