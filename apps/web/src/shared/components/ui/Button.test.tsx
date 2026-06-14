@@ -129,10 +129,10 @@ describe("Button", () => {
     );
 
     it.each([
-      ["finyk", "text-finyk-strong"],
-      ["fizruk", "text-fizruk-strong"],
-      ["routine", "text-routine-strong"],
-      ["nutrition", "text-nutrition-strong"],
+      ["finyk", "text-finyk-soft-fg"],
+      ["fizruk", "text-fizruk-soft-fg"],
+      ["routine", "text-routine-soft-fg"],
+      ["nutrition", "text-nutrition-soft-fg"],
     ] as const)(
       "module=%s + variant=secondary → renders %s soft",
       (module, expectedFg) => {

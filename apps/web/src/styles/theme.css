@@ -277,6 +277,19 @@
     --c-nutrition-soft-border: 217 249 157; /* lime-200 */
     --c-nutrition-soft-hover: 239 252 203; /* lime-100 */
 
+    /* `-soft-fg` — theme-aware FOREGROUND ink for soft-fill module controls
+       (`Button` `*-soft`, soft Badges/Tabs) that pair with the `-soft`
+       surface above. Light scope = the module `-strong` ink on the pale
+       `-soft` surface (≥4.5:1 AA — identical to the prior
+       `text-<m>-strong`). The dark + HC scopes flip to a lighter accent
+       (see `.dark` / `html.hc*` below) so one `text-<m>-soft-fg` utility
+       replaces the old `text-<m>-strong dark:text-<m>` pair — the saturated
+       mid-accent in dark mode measured ~1.8:1 and was illegible. */
+    --c-finyk-soft-fg: 4 120 87; /* emerald-700 */
+    --c-fizruk-soft-fg: 21 94 117; /* cyan-800 */
+    --c-routine-soft-fg: 194 58 58; /* coral-700 */
+    --c-nutrition-soft-fg: 70 98 18; /* lime-800 */
+
     /* Celebration / gamification tokens */
     --c-celebration: 251 191 36; /* amber-400 — confetti, stars, rewards */
     --c-streak-glow: 249 112 102; /* coral-500 — streak flame glow */
@@ -499,6 +512,18 @@
     --c-nutrition-soft-border: 86 124 15; /* lime-700 */
     --c-nutrition-soft-hover: 86 124 15; /* lime-700 */
 
+    /* Soft-fill FOREGROUND (dark) — bright `-300` accent tier. The module
+       DEFAULT accent used previously (`dark:text-<m>` = emerald-500 /
+       cyan-700 / coral-500 / lime-500) sat at the SAME tone as the
+       translucent `bg-<m>/15` fill composited over the warm-charcoal panel
+       — the fizruk soft button measured ~1.77:1 on prod (a11y fail). The
+       `-300` tier clears WCAG AA with margin (≈7.9–10.3:1 on `bg-<m>/15`
+       over `--c-panel`) while staying the module's own hue. */
+    --c-finyk-soft-fg: 110 231 183; /* emerald-300 */
+    --c-fizruk-soft-fg: 103 232 249; /* cyan-300 */
+    --c-routine-soft-fg: 255 180 165; /* coral-300 */
+    --c-nutrition-soft-fg: 200 242 100; /* lime-300 */
+
     /* Chart series — brighter -400 tier for visibility on dark warm bg.
        Sync with `:root` chart vars + `chart-{module}` Tailwind palette. */
     --c-chart-finyk: 52 211 153; /* emerald-400 */
@@ -656,6 +681,15 @@
     --c-nutrition-soft: 217 249 157; /* lime-200 */
     --c-nutrition-soft-border: 63 98 18;
 
+    /* Soft-fill foreground (HC light) — deepest `-900` ink for ≥7:1 AAA on
+       the bumped `-200` soft surface. Coral is hue-capped at ≈6.4:1 (still
+       AA, and a lift over the base `-strong`): a warm coral ink can't reach
+       AAA on a coral-200 surface within the registered palette. */
+    --c-finyk-soft-fg: 6 78 59; /* emerald-900 */
+    --c-fizruk-soft-fg: 22 78 99; /* cyan-900 */
+    --c-routine-soft-fg: 134 46 46; /* coral-900 — hue-capped ≈6.4:1 (AA) */
+    --c-nutrition-soft-fg: 59 83 20; /* lime-900 */
+
     /* Chart series — HC light keeps the AA-strong tier from `:root`
        (already 5+ contrast on cream). 4 hues stay distinguishable. */
     --c-chart-finyk: 4 120 87; /* emerald-700 */
@@ -695,6 +729,13 @@
     --c-routine-soft-border: 255 140 120;
     --c-nutrition-soft: 86 124 15; /* lime-700 */
     --c-nutrition-soft-border: 176 230 54;
+
+    /* Soft-fill foreground (HC dark) — brightest `-200` accent for ≥7:1
+       AAA on the `bg-<m>/15` fill over the dark panel (≈10–12:1). */
+    --c-finyk-soft-fg: 167 243 208; /* emerald-200 */
+    --c-fizruk-soft-fg: 165 243 252; /* cyan-200 */
+    --c-routine-soft-fg: 255 212 203; /* coral-200 */
+    --c-nutrition-soft-fg: 223 249 157; /* lime-200 */
 
     /* Chart series — HC dark uses brighter -300 tier so 4 hues stay
        distinguishable against high-contrast dark bg + meet ≥7:1 AAA. */

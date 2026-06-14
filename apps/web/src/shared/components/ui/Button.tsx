@@ -87,17 +87,24 @@ const variants: Record<ButtonVariant, string> = {
     "bg-nutrition-strong text-white shadow-sm hover:bg-lime-900 hover:shadow-glow-lime active:scale-[0.98]",
 
   // Soft module variants (for secondary actions within modules).
-  // Dark mode swaps the light pastel surface for the saturated accent at
-  // low opacity so the button blends with the warm dark panel instead of
-  // reading as an acidic pastel — same convention used by Badge/Tabs.
+  // Dark mode keeps the saturated accent at low opacity for the FILL so the
+  // button blends with the warm dark panel instead of reading as an acidic
+  // pastel — same convention used by Badge/Tabs. The FOREGROUND, however,
+  // is the theme-aware `text-<m>-soft-fg` token (NOT the mid accent): in
+  // dark mode the old `dark:text-<m>` ink sat at the same tone as the
+  // `bg-<m>/15` fill and measured ~1.77:1 (fizruk) — an a11y fail.
+  // `text-<m>-soft-fg` resolves to the `-strong` ink in light and the
+  // bright `-300` accent in dark, clearing WCAG AA in both themes from a
+  // single class (see `--c-<m>-soft-fg` in theme.css). Readability wins
+  // over the blend aesthetic.
   "finyk-soft":
-    "bg-finyk-soft text-finyk-strong dark:bg-finyk/15 dark:text-finyk border border-finyk-ring/50 dark:border-finyk/30 hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.98]",
+    "bg-finyk-soft text-finyk-soft-fg dark:bg-finyk/15 border border-finyk-ring/50 dark:border-finyk/30 hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.98]",
   "fizruk-soft":
-    "bg-fizruk-soft text-fizruk-strong dark:bg-fizruk/15 dark:text-fizruk-300 border border-fizruk-ring/50 dark:border-fizruk/30 hover:bg-teal-100 dark:hover:bg-fizruk/25 active:scale-[0.98]",
+    "bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk/15 border border-fizruk-ring/50 dark:border-fizruk/30 hover:bg-teal-100 dark:hover:bg-fizruk/25 active:scale-[0.98]",
   "routine-soft":
-    "bg-routine-surface text-routine-strong dark:bg-routine/15 dark:text-routine border border-routine-ring/50 dark:border-routine/30 hover:bg-coral-100 dark:hover:bg-routine/25 active:scale-[0.98]",
+    "bg-routine-surface text-routine-soft-fg dark:bg-routine/15 border border-routine-ring/50 dark:border-routine/30 hover:bg-coral-100 dark:hover:bg-routine/25 active:scale-[0.98]",
   "nutrition-soft":
-    "bg-nutrition-soft text-nutrition-strong dark:bg-nutrition/15 dark:text-nutrition border border-nutrition-ring/50 dark:border-nutrition/30 hover:bg-lime-100 dark:hover:bg-nutrition/25 active:scale-[0.98]",
+    "bg-nutrition-soft text-nutrition-soft-fg dark:bg-nutrition/15 border border-nutrition-ring/50 dark:border-nutrition/30 hover:bg-lime-100 dark:hover:bg-nutrition/25 active:scale-[0.98]",
 
   // Sergeant v2 inverted primary — see `ButtonVariant` JSDoc above.
   // `bg-ink-strong` is emerald-900 in light + white in dark (HC: pure

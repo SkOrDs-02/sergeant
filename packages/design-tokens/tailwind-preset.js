@@ -250,6 +250,11 @@ const preset = {
           soft: "rgb(var(--c-finyk-soft) / <alpha-value>)",
           "soft-border": "rgb(var(--c-finyk-soft-border) / <alpha-value>)",
           "soft-hover": "rgb(var(--c-finyk-soft-hover) / <alpha-value>)",
+          // Theme-aware foreground for soft-fill controls (`Button`
+          // `finyk-soft`). Light = emerald-700 ink; dark = emerald-300 so
+          // text clears WCAG AA on `bg-finyk/15` over the dark panel.
+          // Backed by `--c-finyk-soft-fg` (light/dark/HC in theme.css).
+          "soft-fg": "rgb(var(--c-finyk-soft-fg) / <alpha-value>)",
         },
 
         /** Фізрук — Cyan fitness tracker (v2 redesign 2026-05; was teal). */
@@ -275,6 +280,12 @@ const preset = {
           soft: "rgb(var(--c-fizruk-soft) / <alpha-value>)",
           "soft-border": "rgb(var(--c-fizruk-soft-border) / <alpha-value>)",
           "soft-hover": "rgb(var(--c-fizruk-soft-hover) / <alpha-value>)",
+          // Theme-aware foreground for soft-fill controls (`Button`
+          // `fizruk-soft`). Light = cyan-800 ink; dark = cyan-300 so text
+          // clears WCAG AA on `bg-fizruk/15` over the dark panel/hero (the
+          // prior cyan-700 ink measured ~1.77:1). Backed by
+          // `--c-fizruk-soft-fg`.
+          "soft-fg": "rgb(var(--c-fizruk-soft-fg) / <alpha-value>)",
           // `tile` + `tile-border` — subtle stat-tile wash on the
           // fizruk hero gradient (Wave 2a). Light=teal-800,
           // dark=white. Apply with the registered opacity scale,
@@ -305,6 +316,11 @@ const preset = {
           soft: "rgb(var(--c-routine-soft) / <alpha-value>)",
           "soft-border": "rgb(var(--c-routine-soft-border) / <alpha-value>)",
           "soft-hover": "rgb(var(--c-routine-soft-hover) / <alpha-value>)",
+          // Theme-aware foreground for soft-fill controls (`Button`
+          // `routine-soft`). Light = coral-700 ink; dark = coral-300 so text
+          // clears WCAG AA on `bg-routine/15` over the dark panel. Backed by
+          // `--c-routine-soft-fg`.
+          "soft-fg": "rgb(var(--c-routine-soft-fg) / <alpha-value>)",
         },
 
         /** Харчування — Fresh lime nutrition tracker */
@@ -320,6 +336,11 @@ const preset = {
           soft: "rgb(var(--c-nutrition-soft) / <alpha-value>)",
           "soft-border": "rgb(var(--c-nutrition-soft-border) / <alpha-value>)",
           "soft-hover": "rgb(var(--c-nutrition-soft-hover) / <alpha-value>)",
+          // Theme-aware foreground for soft-fill controls (`Button`
+          // `nutrition-soft`). Light = lime-800 ink; dark = lime-300 so text
+          // clears WCAG AA on `bg-nutrition/15` over the dark panel. Backed
+          // by `--c-nutrition-soft-fg`.
+          "soft-fg": "rgb(var(--c-nutrition-soft-fg) / <alpha-value>)",
         },
 
         // ═══════════════════════════════════════════════════════════════════
