@@ -51,7 +51,7 @@ const MODULE_CONFIG: Record<
   fizruk: {
     icon: "🏋️",
     label: "Тренування",
-    colorClass: "text-fizruk-strong dark:text-fizruk",
+    colorClass: "text-fizruk-strong dark:text-fizruk-300",
     bgClass: "bg-fizruk-soft",
     borderClass: "border-fizruk-soft-border/60",
   },

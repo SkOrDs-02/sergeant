@@ -138,7 +138,7 @@ export function HubHeader({
                 aria-label={messages.privacy.chip}
                 className={cn(
                   "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full touch-target",
-                  "bg-brand-soft text-brand-strong border border-brand-soft-border",
+                  "bg-brand-soft text-brand-strong dark:text-brand-300 border border-brand-soft-border",
                   "text-style-caption font-semibold",
                   "hover:bg-brand-soft-hover transition-colors",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",

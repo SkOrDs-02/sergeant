@@ -65,7 +65,7 @@ const ACTIONS: Record<ModuleId, FirstActionEntry> = {
     icon: "dumbbell",
     title: "Увімкни розминку",
     desc: "10 хв, таймер сам.",
-    accent: "text-fizruk-strong dark:text-fizruk bg-fizruk-soft",
+    accent: "text-fizruk-strong dark:text-fizruk-300 bg-fizruk-soft",
     chipLabel: "Фізрук",
   },
 };

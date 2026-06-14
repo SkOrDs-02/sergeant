@@ -42,7 +42,7 @@ const PILL_MODULES: ModuleId[] = ["finyk", "routine", "nutrition", "fizruk"];
 // charcoal panel. See docs/design/BRANDBOOK.md → "WCAG-AA `-strong` Tier".
 const PILL_ACCENT: Record<ModuleId, string> = {
   finyk: "text-finyk-strong dark:text-finyk",
-  fizruk: "text-fizruk-strong dark:text-fizruk",
+  fizruk: "text-fizruk-strong dark:text-fizruk-300",
   routine: "text-routine-strong dark:text-routine",
   nutrition: "text-nutrition-strong dark:text-nutrition",
 };

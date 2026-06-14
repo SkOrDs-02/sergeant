@@ -261,6 +261,16 @@ const preset = {
           hover: brandColors.cyan[600],
           strong: brandColors.cyan[800],
           ring: brandColors.cyan[200],
+          // Dark-mode text companion. The v2 redesign moved fizruk's DEFAULT
+          // accent to cyan-700 (#0e7490) to disambiguate from finyk emerald,
+          // but cyan-700 is too dark to read as text on the warm-charcoal dark
+          // panel (≈3.1:1 full / ≈2.2:1 at /70 — both sub-AA). `text-fizruk-300`
+          // (cyan-300) is the light tier used only in `dark:` text slots, the
+          // same shape as `success`'s `dark:text-brand-300` (≥11:1 on
+          // `--c-panel`). The other modules keep their bright DEFAULT for dark
+          // text (emerald / coral / lime-500 already clear AA); only cyan-700
+          // needed a dedicated lighter dark-text step.
+          300: brandColors.cyan[300],
           // Theme-adaptive soft tint trio (Wave 1b).
           soft: "rgb(var(--c-fizruk-soft) / <alpha-value>)",
           "soft-border": "rgb(var(--c-fizruk-soft-border) / <alpha-value>)",

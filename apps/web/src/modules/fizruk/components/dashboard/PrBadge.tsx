@@ -75,7 +75,7 @@ export function PrBadge({ pr }: PrBadgeProps) {
       aria-hidden
       className="absolute top-3 right-3 min-h-[44px] min-w-[44px] flex items-center justify-end pointer-events-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
     >
-      <span className="inline-flex items-center gap-1 h-6 px-2 rounded-xl border whitespace-nowrap bg-fizruk-soft text-fizruk-strong border-fizruk-ring/50 dark:bg-fizruk-surface-dark/15 dark:text-fizruk dark:border-fizruk-border-dark/30 text-xs font-semibold">
+      <span className="inline-flex items-center gap-1 h-6 px-2 rounded-xl border whitespace-nowrap bg-fizruk-soft text-fizruk-strong border-fizruk-ring/50 dark:bg-fizruk-surface-dark/15 dark:text-fizruk-300 dark:border-fizruk-border-dark/30 text-xs font-semibold">
         <svg
           width={12}
           height={12}
