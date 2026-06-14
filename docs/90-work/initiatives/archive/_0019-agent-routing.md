@@ -1,8 +1,7 @@
 # 0019 — Agent routing (`agent:route`)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
-> **Status:** In progress — code-complete; залишок: live-mode acceptance (заміри + опційна harness-wiring у власному global config). **2026-06-08:** полагоджено регресію — `route.mjs` читав `hard-rules.json` зі старого шляху `docs/governance/` (файл переїхав у `docs/04-governance/governance/` під час docs-reorg), через що `pnpm agent:route` падав з ENOENT і 3 route-тести у `retrieval.test.mjs` були червоні. Шлях виправлено, усі 12 тестів зелені.
-> **Agent-ready:** yes
+> **Last touched:** 2026-06-14 by @Skords-01. **Next review:** 2026-09-12.
+> **Status:** Archived — code-complete (PR-1…3 ✅, 12/12 тестів зелені). Архівовано 2026-06-14: усі кодові критерії DONE закриті; єдиний відкритий пункт — live-mode harness-wiring у SessionStart — **свідомо поза репо** (harness config не комітиться), тож у репо-скоупі робити нічого. **2026-06-08:** полагоджено регресію — `route.mjs` читав `hard-rules.json` зі старого шляху `docs/governance/` (файл переїхав у `docs/04-governance/governance/` під час docs-reorg), через що `pnpm agent:route` падав з ENOENT і 3 route-тести у `retrieval.test.mjs` були червоні. Шлях виправлено.
 
 ## TL;DR
 
@@ -62,8 +61,8 @@ Tier 2 поверх Initiative 0018. `agent:find` відповідає «де щ
 
 ## Посилання
 
-- [Initiative 0018 — Agent semantic retrieval](./0018-agent-semantic-retrieval.md) (Tier 1, sibling)
-- [ADR-0066](../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md)
-- [`scripts/docs/skill-mapping.json`](../../../scripts/docs/skill-mapping.json) — канонічна path→skill мапа (Initiative 0015)
-- [`docs/04-governance/governance/hard-rules.json`](../../04-governance/governance/hard-rules.json) — scope-глоби для active-rules
-- [`AGENTS.md` § Harness config lives outside the repo](../../../AGENTS.md#harness-config-lives-outside-the-repo)
+- [Initiative 0018 — Agent semantic retrieval](../0018-agent-semantic-retrieval.md) (Tier 1, sibling)
+- [ADR-0066](../../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md)
+- [`scripts/docs/skill-mapping.json`](../../../../scripts/docs/skill-mapping.json) — канонічна path→skill мапа (Initiative 0015)
+- [`docs/04-governance/governance/hard-rules.json`](../../../04-governance/governance/hard-rules.json) — scope-глоби для active-rules
+- [`AGENTS.md` § Harness config lives outside the repo](../../../../AGENTS.md#harness-config-lives-outside-the-repo)
