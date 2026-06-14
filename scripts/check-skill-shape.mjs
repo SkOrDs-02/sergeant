@@ -13,6 +13,9 @@
 // 5. The body links to at least one playbook in docs/00-start/playbooks/ OR to the
 //    skill catalog (docs/00-start/agents/agent-skills-catalog.md or its successor
 //    docs/00-start/agents/agent-skills-catalog.md once that rename ships).
+// 6. If the skill has a references/ folder (3-tier progressive disclosure), every
+//    references/*.md declares title / impact (closed set) / impactDescription / tags.
+//    See docs/00-start/agents/skill-authoring-guide.md for the convention.
 //
 // This is the entrypoint for `pnpm lint:skills`. It exits non-zero with a
 // structured error report so CI logs are easy to scan.
@@ -29,6 +32,18 @@ const skillsDir = path.join(repoRoot, ".agents/skills");
 const lockPath = path.join(repoRoot, ".agents/skills-lock.json");
 
 const MAX_DESCRIPTION_LEN = 220;
+
+// Reference files (.agents/skills/<slug>/references/*.md) follow the
+// agentskills.io 3-tier convention. Their frontmatter must declare an impact
+// level from this closed set. See docs/00-start/agents/skill-authoring-guide.md.
+const REFERENCE_IMPACT_LEVELS = new Set([
+  "CRITICAL",
+  "HIGH",
+  "MEDIUM-HIGH",
+  "MEDIUM",
+  "LOW-MEDIUM",
+  "LOW",
+]);
 
 const PATH_HINT_RE =
   /(?:apps\/[\w./-]+|packages\/[\w./-]+|scripts\/[\w./-]+|docs\/[\w./-]+|\.agents\/[\w./-]+|\.github\/[\w./-]+)/;
@@ -108,6 +123,51 @@ function lintSkill(slug) {
   return errors;
 }
 
+function lintReferences(slug) {
+  // A skill may carry a references/ folder for 3-tier progressive disclosure.
+  // It is optional — skills without one are fine. When present, every *.md must
+  // declare title / impact (closed set) / impactDescription / tags (a list).
+  const refsDir = path.join(skillsDir, slug, "references");
+  let entries;
+  try {
+    entries = readdirSync(refsDir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const errors = [];
+  for (const ent of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    if (!ent.isFile() || !ent.name.endsWith(".md")) continue;
+    const ref = `${slug}/references/${ent.name}`;
+    const fm = parseFrontmatter(
+      readFileSync(path.join(refsDir, ent.name), "utf8"),
+    );
+    if (!fm) {
+      errors.push(`${ref}: missing or malformed YAML frontmatter (--- … ---)`);
+      continue;
+    }
+    if (!fm.title)
+      errors.push(`${ref}: frontmatter missing required \`title\``);
+    if (!fm.impact) {
+      errors.push(`${ref}: frontmatter missing required \`impact\``);
+    } else if (!REFERENCE_IMPACT_LEVELS.has(fm.impact)) {
+      errors.push(
+        `${ref}: \`impact: ${fm.impact}\` is not one of ${[...REFERENCE_IMPACT_LEVELS].join(", ")}`,
+      );
+    }
+    if (!fm.impactDescription) {
+      errors.push(`${ref}: frontmatter missing required \`impactDescription\``);
+    }
+    if (!fm.tags) {
+      errors.push(`${ref}: frontmatter missing required \`tags\``);
+    } else if (!/^\[.*\S.*\]$/.test(fm.tags)) {
+      errors.push(
+        `${ref}: \`tags\` must be a non-empty list, e.g. [postgres, indexes]`,
+      );
+    }
+  }
+  return errors;
+}
+
 function main() {
   let lock;
   try {
@@ -145,6 +205,7 @@ function main() {
     if (!lockedSlugs.includes(slug)) continue;
     const errors = lintSkill(slug);
     allErrors.push(...errors);
+    allErrors.push(...lintReferences(slug));
   }
 
   if (allErrors.length > 0) {
