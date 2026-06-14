@@ -14,7 +14,12 @@ import {
   recordAnthropicUsage,
 } from "../../lib/anthropic.js";
 import type { WithAiQuotaRefund } from "./aiQuota.js";
-import { TOOLS, SYSTEM_PREFIX, SYSTEM_PROMPT_VERSION } from "./tools.js";
+import { SYSTEM_PROMPT_VERSION } from "./tools.js";
+import {
+  applyMessagesCacheBreakpoint,
+  buildSystem,
+  TOOLS_WITH_CACHE,
+} from "./promptCache.js";
 import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
 import { truncateToolResults } from "./toolResultTruncation.js";
 import { wrapAndScanToolResults } from "./toolOutputWrapping.js";
@@ -37,77 +42,10 @@ type WithAnthropicKey = Request & { anthropicKey?: string };
  */
 const CHAT_TOOL_TIMEOUT_MS = 30_000;
 
-/**
- * Anthropic prompt-caching, три точки розриву (cache breakpoints). Порядок
- * рендеру в Anthropic — `tools` → `system` → `messages`; кожен `cache_control`
- * кешує весь префікс ДО себе включно. Мінімальний кешований префікс залежить
- * від моделі: Haiku 4.5 (перший тур) — 4096 токенів, Sonnet 4.6 (tool-result
- * тур) — 2048. TTL ephemeral = 5 хв. Ліміт Anthropic — max 4 breakpoint-и/запит.
- *
- * 1. **SYSTEM_PREFIX** (`buildSystem`) — окремий cached `text`-блок. Сам по собі
- *    ~987 токенів, нижче обох мінімумів, тому власного слоту не реєструє; але
- *    оскільки tools рендеряться ПЕРЕД system, сумарний префікс tools+SYSTEM_PREFIX
- *    перевищує поріг і кешується.
- *
- * 2. **Останній tool** (`applyToolsCacheBreakpoint`) — кешує всі tools (~19 шт).
- *    Tools + SYSTEM_PREFIX разом — стабільний блок ~6000+ токенів, спільний між
- *    усіма запитами; основний cache-read на кожному турі.
- *
- * 3. **Останнє повідомлення** (`applyMessagesCacheBreakpoint`) — кешує префікс
- *    історії діалогу. На наступному турі клієнт дошле історію як префікс, і
- *    Anthropic віддасть її з кешу (~0.1× ціни input) замість повторного білінгу.
- *    Застосовується ЛИШЕ на першому турі (`cleaned` несе повну історію); на
- *    tool-result турі шлеться ефемерний one-shot (останній user + tool-раунд),
- *    тож кеш там був би марним 1.25× write без re-read.
- *
- * Per-user `context` рендериться другим блоком system — **без** `cache_control`,
- * щоб не створювати власного cache slot per-user-ом. Але оскільки cache key
- * охоплює весь system, різний context між юзерами все одно фрагментує кеш (один слот
- * на user). Це ОК: юзер в межах своєї сесії (5хв) отримує багато cache_read.
- *
- * Коли `context` порожній, Anthropic API відхиляє `text`-блоки з empty `text`,
- * тому під cap-ом повертаємо лише самий cached prefix.
- */
-interface AnthropicSystemBlock {
-  type: "text";
-  text: string;
-  cache_control?: { type: "ephemeral" };
-}
-
-function buildSystem(context: string): AnthropicSystemBlock[] {
-  const cached: AnthropicSystemBlock = {
-    type: "text",
-    text: SYSTEM_PREFIX,
-    cache_control: { type: "ephemeral" },
-  };
-  if (!context) return [cached];
-  return [cached, { type: "text", text: context }];
-}
-
-/**
- * Клонує `TOOLS` і додає `cache_control: ephemeral` до останнього tool. Не
- * мутує імпортований масив, бо він реєкспортиться в інших місцях.
- *
- * Anthropic кешує весь префікс ДО цього блоку включно (порядок рендеру:
- * tools → system → messages). Разом із cache_control на SYSTEM_PREFIX це кешує
- * стабільний блок tools + system на кожному турі.
- */
-function applyToolsCacheBreakpoint(
-  tools: typeof TOOLS,
-): Array<(typeof TOOLS)[number] & { cache_control?: { type: "ephemeral" } }> {
-  if (tools.length === 0) return tools;
-  const cloned = tools.slice();
-  const last = cloned[cloned.length - 1];
-  cloned[cloned.length - 1] = {
-    ...last,
-    cache_control: { type: "ephemeral" },
-  } as typeof last & { cache_control: { type: "ephemeral" } };
-  return cloned as Array<
-    (typeof TOOLS)[number] & { cache_control?: { type: "ephemeral" } }
-  >;
-}
-
-const TOOLS_WITH_CACHE = applyToolsCacheBreakpoint(TOOLS);
+// Anthropic prompt-caching хелпери (buildSystem / TOOLS_WITH_CACHE /
+// applyMessagesCacheBreakpoint) винесені в `./promptCache.ts` — три cache
+// breakpoint-и (system prefix, останній tool, останнє повідомлення) задокументовані
+// там. Винесення тримає chat.ts під module-size cap (Hard Rule #18).
 
 /**
  * Якщо Anthropic повернув не-2xx або виклик упав (timeout/abort), викликаємо
@@ -146,43 +84,6 @@ interface AnthropicMessagesResponseData {
 interface ClientChatMessage {
   role: "user" | "assistant";
   content: string;
-}
-
-/**
- * Message-content shape після того, як останньому повідомленню додали
- * cache-breakpoint: або сирий string (як прийшло від клієнта), або масив
- * content-блоків з `cache_control` на одному з них.
- */
-type CachedMessage =
-  | { role: "user" | "assistant"; content: string }
-  | { role: "user" | "assistant"; content: Array<Record<string, unknown>> };
-
-/**
- * Третій cache breakpoint (див. § doc вгорі): додає `cache_control: ephemeral`
- * до ОСТАННЬОГО повідомлення, щоб префікс історії діалогу читався з кешу на
- * наступному турі. String-content обгортається в один `text`-блок із
- * cache_control; масив-content (tool_use / tool_result) отримує cache_control на
- * останній блок (defensive — `cleaned` завжди має string-content, тож у проді
- * спрацьовує перша гілка). Чистий: повертає НОВИЙ масив, вхід не мутується.
- */
-function applyMessagesCacheBreakpoint(
-  messages: ClientChatMessage[],
-): CachedMessage[] {
-  if (messages.length === 0) return messages;
-  const out: CachedMessage[] = messages.slice();
-  const lastIdx = out.length - 1;
-  const last = messages[lastIdx]!;
-  out[lastIdx] = {
-    role: last.role,
-    content: [
-      {
-        type: "text",
-        text: last.content,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-  };
-  return out;
 }
 
 interface StreamUsage {
