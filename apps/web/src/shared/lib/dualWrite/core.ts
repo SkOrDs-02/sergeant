@@ -8,6 +8,13 @@
  * adapter imports these and implements module-specific operation handlers.
  */
 
+// The `@shared/lib` barrel is the sanctioned source for `logger`
+// (`sergeant-design/no-flat-shared-lib` forbids deep `@shared/lib/*` imports).
+// This is cycle-free: the barrel does not re-export `shared/lib/dualWrite`, so
+// nothing in its graph imports this file back. (The previous lazy `require`
+// only resolved under Vite, never in the Vitest runner — see core.test.ts.)
+import { logger as sharedLogger } from "@shared/lib";
+
 export interface ApplyDualWriteOptions {
   readonly userId: string;
   readonly clientTs: string;
@@ -37,9 +44,7 @@ export type ApplyOutcome = "applied" | "skipped";
 export const createDefaultLogger = (prefix: string): DualWriteLogger => {
   return (level, message, meta) => {
     if (level === "warn") {
-      // Lazy import to avoid circular deps
-      const { logger } = require("@shared/lib" as any);
-      logger?.warn?.(`[${prefix}] ${message}`, meta ?? {});
+      sharedLogger.warn(`[${prefix}] ${message}`, meta ?? {});
     }
   };
 };
@@ -69,7 +74,7 @@ export async function applyDualWriteOps<T extends string>(
     } catch (err) {
       errored += 1;
       logger("warn", "dual-write op failed", {
-        op: (op as any).kind,
+        op: op.kind,
         error: err instanceof Error ? err.message : String(err),
       });
     }

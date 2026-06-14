@@ -7,13 +7,27 @@
  *
  * No browser or SQLite needed; all functions are pure / async-pure.
  */
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// `createDefaultLogger` forwards warn-level messages to the shared web logger,
+// imported from the `@shared/lib` barrel. Mock just that named export so the
+// warn branch is exercisable in the node test runner (the implementation
+// previously used a Vite-only lazy `require`, which left this branch untested).
+vi.mock("@shared/lib", () => ({
+  logger: { warn: vi.fn(), info: vi.fn(), debug: vi.fn(), error: vi.fn() },
+}));
+
+import { logger as sharedLogger } from "@shared/lib";
 import {
   applyDualWriteOps,
   createDefaultLogger,
   toIntOrNull,
   toRealOrNull,
 } from "./core";
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 // ─── toIntOrNull ─────────────────────────────────────────────────────────────
 
@@ -237,22 +251,23 @@ describe("createDefaultLogger", () => {
     expect(typeof logger).toBe("function");
   });
 
-  it("does not throw when called with info level (no-op for info)", () => {
+  it("does not forward info-level messages (no-op for info)", () => {
     const logger = createDefaultLogger("test");
     expect(() => logger("info", "some info message")).not.toThrow();
+    expect(sharedLogger.warn).not.toHaveBeenCalled();
   });
 
   it("prefixes the warn message with the supplied prefix string", () => {
-    // The lazy require inside createDefaultLogger uses `require("@shared/lib")`
-    // with a path alias that only resolves under Vite — not in the Vitest node
-    // runner. To exercise the warn branch without relying on that alias, we
-    // call the logger via DI: applyDualWriteOps accepts a logger callback,
-    // so we test warn-level behaviour there (see the applyDualWriteOps suite
-    // above). Here we just confirm the factory returns a callable function
-    // and that the "info" branch (which has no side-effects) is exercised
-    // without throwing.
     const logger = createDefaultLogger("my-prefix");
-    // info-level is a deliberate no-op in the implementation.
-    expect(() => logger("info", "startup")).not.toThrow();
+    logger("warn", "disk full", { code: 42 });
+    expect(sharedLogger.warn).toHaveBeenCalledWith("[my-prefix] disk full", {
+      code: 42,
+    });
+  });
+
+  it("defaults missing meta to an empty object on warn", () => {
+    const logger = createDefaultLogger("p");
+    logger("warn", "no meta");
+    expect(sharedLogger.warn).toHaveBeenCalledWith("[p] no meta", {});
   });
 });
