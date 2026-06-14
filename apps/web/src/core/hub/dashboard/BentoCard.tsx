@@ -165,7 +165,7 @@ export const BentoCard = memo(function BentoCard({
         </span>
 
         {!inactive && (
-          <span className="text-style-meta text-muted mt-0.5 leading-snug">
+          <span className="text-style-caption text-muted mt-0.5 leading-snug">
             {config.description}
           </span>
         )}

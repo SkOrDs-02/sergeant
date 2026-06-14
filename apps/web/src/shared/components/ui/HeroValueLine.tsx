@@ -15,7 +15,7 @@ import { cn } from "@shared/lib/ui/cn";
  *   - `ring`      — optional radial indicator (typically `<ProgressRing>` or
  *                   a `<DayProgressRing>`). Rendered on the left at ≥ sm.
  *   - `narrative` — multi-line contextual text (one or two short sentences).
- *                   Should reach for `.text-style-body-sm` / `.text-style-meta`
+ *                   Should reach for `.text-style-body-sm` / `.text-style-caption`
  *                   tokens — never raw `text-xs`.
  *   - `metric`    — the big number reveal — most commonly a `<CounterReveal>`
  *                   that uses `.text-style-display-hero` (T1 token).

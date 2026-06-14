@@ -77,7 +77,7 @@ export function RecentWorkoutsSection({
           <button
             type="button"
             onClick={onSeeAll}
-            className="text-style-caption text-fizruk-strong hover:underline active:opacity-70"
+            className="text-style-caption text-fizruk-strong hover:underline active:opacity-70 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             aria-label="Усі тренування"
           >
             Усі →

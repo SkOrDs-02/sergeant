@@ -563,10 +563,12 @@ function AuthErrorBanner({
   onBackToHub,
   setAuthError,
 }: AuthErrorBannerProps): React.ReactElement {
+  // Offset clears the in-flow ModuleHeader stack: safe-area-pt + 68px title
+  // row (min-h-[68px], ModuleHeader.tsx) + ~40px ModuleSwitcher row.
   return (
     <div
       role="alert"
-      className="fixed top-[calc(56px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
+      className="fixed top-[calc(108px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
     >
       <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
         <span className="text-lg shrink-0 mt-0.5">⚠️</span>

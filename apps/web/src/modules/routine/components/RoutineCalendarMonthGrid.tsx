@@ -198,7 +198,7 @@ export function RoutineCalendarMonthGrid({
                   className={cn(
                     "flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel/60",
                     e.completed && "opacity-70",
-                    e.fizruk && "cursor-pointer hover:bg-info/5 min-h-[44px]",
+                    e.fizruk && "cursor-pointer hover:bg-info/5 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
                   )}
                 >
                   <span
