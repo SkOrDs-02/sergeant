@@ -136,6 +136,12 @@ function lintReferences(slug) {
   }
   const errors = [];
   for (const ent of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    if (ent.isDirectory()) {
+      errors.push(
+        `${slug}/references/${ent.name}/: subdirectories are not allowed — keep references/ flat ({prefix}-{name}.md)`,
+      );
+      continue;
+    }
     if (!ent.isFile() || !ent.name.endsWith(".md")) continue;
     const ref = `${slug}/references/${ent.name}`;
     const fm = parseFrontmatter(

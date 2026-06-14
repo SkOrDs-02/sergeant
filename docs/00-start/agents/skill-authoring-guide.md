@@ -16,6 +16,7 @@
 - `references/{prefix}-{name}.md`, де `{prefix}` групує спорідненні теми.
 - Приклади з `sergeant-data-and-migrations`: `query-`, `schema-`, `data-`, `lock-`, `monitor-`. З `sergeant-e2e-testing`: тематичні імена (`selectors.md`, `auth-flow.md`).
 - Lowercase, kebab-case, без пробілів.
+- Тільки flat-файли — підтеки в `references/` gate відхиляє.
 
 ## Обов'язковий frontmatter (enforced)
 
@@ -33,7 +34,7 @@ tags: [postgres, schema, indexes, foreign-keys]
 - `title` — людиночитабельний заголовок (non-empty).
 - `impact` — рівень із **закритого набору**: `CRITICAL`, `HIGH`, `MEDIUM-HIGH`, `MEDIUM`, `LOW-MEDIUM`, `LOW`.
 - `impactDescription` — один рядок: чому це болить, якщо проігнорувати.
-- `tags` — непорожній список `[a, b, c]`.
+- `tags` — непорожній список у **flow-стилі**: `[a, b, c]`. Парсер frontmatter рядковий (без повного YAML), тож block-sequence (`tags:` із `- a` на наступних рядках) і folded-scalar (`>`) не підтримуються — пиши значення в один рядок.
 
 Це перевіряє `scripts/check-skill-shape.mjs` у складі `pnpm lint:skills` — невалідний `impact` або відсутнє поле валять гейт.
 
