@@ -367,16 +367,16 @@ export default function App({
           (page === "overview" ||
             page === "transactions" ||
             page === "budgets") && (
-          <FloatingActionButton
-            variant="v2-finyk"
-            icon="plus"
-            onClick={() => {
-              setEditingManualExpenseId(null);
-              setShowExpenseSheet(true);
-            }}
-            aria-label="Додати витрату"
-          />
-        )}
+            <FloatingActionButton
+              variant="v2-finyk"
+              icon="plus"
+              onClick={() => {
+                setEditingManualExpenseId(null);
+                setShowExpenseSheet(true);
+              }}
+              aria-label="Додати витрату"
+            />
+          )}
 
         {mono.authError && (
           <AuthErrorBanner

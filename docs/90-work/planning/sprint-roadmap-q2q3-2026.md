@@ -405,7 +405,7 @@ apps/web/src/core/hub/
 - [x] react-markdown swap зашиплено (`perf(web): T4-B aggressive bundle cuts`)
 - [x] `pnpm size` проходить з новим лімітом 870 KB brotli (−1 step від 900)
 - [x] Жодних регресій LCP — lazy boundary count не змінювався (HubChat вже була lazy, swap всередині chunk-у)
-- [x] Дальші 750 KB target відкладені на S10-T2 (T4-B continuation: @tanstack/react-virtual, @dnd-kit/* drop, drizzle tree-shake)
+- [x] Дальші 750 KB target відкладені на S10-T2 (T4-B continuation: @tanstack/react-virtual, @dnd-kit/\* drop, drizzle tree-shake)
 - [x] Eager-only chunks ≤ 350 kB brotli (поточний ~342 kB, вже під цілью)
 - [ ] Жодних регресій LCP > 2.5 s у Lighthouse
 
