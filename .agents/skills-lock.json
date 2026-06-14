@@ -14,7 +14,7 @@
     "sergeant-data-and-migrations": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "6587ec199a72c436480d0b8e6c66d232e994e167678d0b1a33cf695eb976c7c2"
+      "computedHash": "85dbec77ec854074649c81101ba33ed189594e2e6b7d800dbdec03e10d73c666"
     },
     "sergeant-deploy-and-observability": {
       "source": "local",
