@@ -100,8 +100,8 @@ export function DashboardSection() {
                 className={cn(
                   "flex-1 rounded-xl border px-3 py-2.5 text-left transition-colors",
                   d === density
-                    ? "border-brand bg-brand/8 ring-1 ring-brand/30"
-                    : "border-line bg-panel hover:bg-panelHi",
+                    ? "border-brand bg-brand/8 ring-1 ring-brand/30 shadow-soft"
+                    : "border-line bg-panel shadow-soft hover:bg-panelHi hover:border-brand/40",
                 )}
               >
                 <span
