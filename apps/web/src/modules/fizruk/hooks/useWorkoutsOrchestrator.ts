@@ -110,7 +110,7 @@ export function useWorkoutsOrchestrator() {
   const [deleteExerciseConfirm, setDeleteExerciseConfirm] = useState(false);
   const [riskyTemplateConfirm, setRiskyTemplateConfirm] =
     useState<WorkoutTemplate | null>(null);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const [retroOpen, setRetroOpen] = useState(false);
   const [quickStartOpen, setQuickStartOpen] = useState(false);
   const [retroDate, setRetroDate] = useState(() => todayLocalDateString());
