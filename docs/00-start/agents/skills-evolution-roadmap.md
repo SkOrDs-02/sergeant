@@ -1,6 +1,6 @@
 # Skills Evolution Roadmap — запозичення з ecosystem-у agent skills
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-06-14 by Claude (drift reconcile: PR 4/10/11 merged #2925; PR 7 superseded by central eval harness). **Next review:** 2026-08-11.
 > **Status:** Active (proposal — sequencing only; кожен пункт окремий PR із власним acceptance criteria)
 
 > **Що це.** Курований план, як еволюціонувати repo-owned skill-систему Sergeant (`.agents/skills/**`) запозичивши перевірені патерни з широкого agent-skills ecosystem-у — без розмиття існуючих 12 specialist-skill-ів і без імпорту generic-обгорток. Документ працює як roadmap для будь-якого AI-агента (Claude Code, Devin, Codex, Cursor, Gemini CLI), що візьметься за конкретний пункт.
@@ -43,6 +43,8 @@ PR проходить у roadmap, якщо він задовольняє всі 
 Дев'ять незалежних PR-ів, від найдешевшого до найдорожчого. Кожен — окремий branch, окремий PR, окремий verify-step. **Один PR на одну проблему** (Hard Rule #15 sub-clause). Ніяких bundled-changes.
 
 > **Drift policy.** Якщо план відстає реальності, фіксуй це errata-блоком у цій секції з датою і коротким поясненням, як у `docs/90-work/initiatives/0011-…md`. Не переписуй мовчки, не видаляй "невзяті" пункти.
+>
+> **Errata 2026-06-14 (Claude).** Reconcile зі станом репо: PR 4 / 10 / 11 змерджено одним commit `f0581fa8e` у [#2925](https://github.com/Skords-01/Sergeant/pull/2925) (2026-05-16) — статуси оновлено з «in progress» на ✅; усі три скіли (`sergeant-e2e-testing`, `sergeant-security-audit`, `sergeant-tech-debt`) уже в `.agents/skills/` і в routing-таблиці `AGENTS.md`. **PR 7 (Skill evals substring) — superseded**: централізований harness `docs/00-start/agents/skill-trigger-evals.json` + `pnpm eval:skills` уже покриває 2 trigger + 1 anti-trigger + 1 workflow-compliance prompt на **кожен** repo-owned skill (ширше за per-skill `evals/evals.json` із початкового плану) і вшитий у `pnpm lint:skills`. Окремий PR 7 не беремо. PR 8 (real-LLM runner) залежав від PR 7 → переоцінити проти наявного harness-у, а не від нуля.
 
 ### PR 1 — Pushy descriptions audit (≈30 хв, S) ✅ (merged: #2374, 2026-05-10)
 
@@ -146,7 +148,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
-### PR 4 — `sergeant-e2e-testing` skill (≈2 дні, M) ✅ (in progress: claude/review-ai-agents-templates-JQOrZ, 2026-05-16)
+### PR 4 — `sergeant-e2e-testing` skill (≈2 дні, M) ✅ (merged: #2925, 2026-05-16)
 
 **Проблема.** Sergeant використовує Playwright для E2E (див. `apps/web` test-stack), але немає specialist-skill-у про Playwright-discipline. `sergeant-web-ui` згадує a11y і design tokens, але golden-rules для Playwright (web-first assertions, fixtures over globals, traces='on-first-retry', retries=2-in-CI/0-locally, ніколи `page.waitForTimeout()`) — розкидані по PR-описах і не enforce-ні.
 
@@ -259,7 +261,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
-### PR 7 — Skill evals: quantitative trigger-testing (≈2 дні, L)
+### PR 7 — Skill evals: quantitative trigger-testing (≈2 дні, L) ⛔ superseded (див. Errata 2026-06-14 — реалізовано централізованим harness-ом)
 
 **Проблема.** Зараз ми не маємо способу перевірити **чи правильно тригериться** скіл. `pnpm lint:skills` перевіряє shape, але не behavior. Якщо хтось зламає `description:` (PR 1 робить його pushy → потім хтось downgrade-ить), не дізнаємось доки агент не помиляється у проді.
 
@@ -342,7 +344,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
-### PR 10 — `sergeant-security-audit` skill (≈1 день, M) 🔄 (in progress: claude/review-ai-agents-templates-JQOrZ, 2026-05-16)
+### PR 10 — `sergeant-security-audit` skill (≈1 день, M) ✅ (merged: #2925, 2026-05-16)
 
 **Проблема.** Sergeant має Hard Rules #20 (PAT safety), #21 (Pino redaction), #22 (skill security scan) і playbook `security-pen-test-checklist.md`, але немає specialist-skill-у, що веде агента через security review. Агент без цього skill-у системно пропускає Sergeant-specific вектори: перевірку `REDACT_KEY_NAMES` у `@sergeant/shared/lib/pii.ts`, Drizzle `sql\`...\``injection,`pnpm audit`(не`npm audit`) для workspace-монорепо.
 
@@ -371,7 +373,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
-### PR 11 — `sergeant-tech-debt` skill (≈1 день, M) 🔄 (in progress: claude/review-ai-agents-templates-JQOrZ, 2026-05-16)
+### PR 11 — `sergeant-tech-debt` skill (≈1 день, M) ✅ (merged: #2925, 2026-05-16)
 
 **Проблема.** 26 hard rules визначають taxonomy технічного боргу, але немає specialist-skill-у, що систематично веде агента через `eslint-baseline.js`, Knip, Hard Rule #18 (module-size), Hard Rule #19 (noUncheckedIndexedAccess). Агент без цього skill-у міксує різні класи боргу в один PR або видаляє код без перевірки lifecycle markers.
 
@@ -402,21 +404,21 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ## Priority matrix
 
-| #   | PR                                | Effort | Value-per-hour | Dependencies        | Status         |
-| --- | --------------------------------- | ------ | -------------- | ------------------- | -------------- |
-| 1   | Pushy descriptions audit          | S      | High           | none                | ✅ #2374       |
-| 2   | Verification gate in review skill | S      | **Highest**    | none                | ✅ #2373       |
-| 3   | Postgres references               | M      | High           | (no hard dep)       |                |
-| 4   | E2E testing skill                 | M      | Medium         | (no hard dep)       | 🔄 in progress |
-| 5   | Security body-scan in lint:skills | M      | High           | none                | ✅ #2378       |
-| 6   | References folder convention      | S      | Medium         | depends on PR 3 / 4 |                |
-| 7   | Skill evals (substring)           | L      | Medium-High    | depends on PR 1     |                |
-| 8   | Real-LLM eval runner              | L      | Medium         | depends on PR 7     |                |
-| 9   | PR template cross-link            | S      | High           | depends on PR 2     | ✅ #2375       |
-| 10  | `sergeant-security-audit` skill   | M      | High           | none                | 🔄 in progress |
-| 11  | `sergeant-tech-debt` skill        | M      | High           | none                | 🔄 in progress |
+| #   | PR                                | Effort | Value-per-hour | Dependencies        | Status        |
+| --- | --------------------------------- | ------ | -------------- | ------------------- | ------------- |
+| 1   | Pushy descriptions audit          | S      | High           | none                | ✅ #2374      |
+| 2   | Verification gate in review skill | S      | **Highest**    | none                | ✅ #2373      |
+| 3   | Postgres references               | M      | High           | (no hard dep)       |               |
+| 4   | E2E testing skill                 | M      | Medium         | (no hard dep)       | ✅ #2925      |
+| 5   | Security body-scan in lint:skills | M      | High           | none                | ✅ #2378      |
+| 6   | References folder convention      | S      | Medium         | depends on PR 3 / 4 |               |
+| 7   | Skill evals (substring)           | L      | Medium-High    | depends on PR 1     | ⛔ superseded |
+| 8   | Real-LLM eval runner              | L      | Medium         | depends on PR 7     |               |
+| 9   | PR template cross-link            | S      | High           | depends on PR 2     | ✅ #2375      |
+| 10  | `sergeant-security-audit` skill   | M      | High           | none                | ✅ #2925      |
+| 11  | `sergeant-tech-debt` skill        | M      | High           | none                | ✅ #2925      |
 
-**Recommended starting order:** PR 2 → PR 1 → PR 5 → PR 9 → PR 3 → PR 6 → PR 4 → PR 7 → PR 8.
+**Recommended starting order:** ~~PR 2 → PR 1 → PR 5 → PR 9~~ (merged) → ~~PR 4 / 10 / 11~~ (merged #2925) → **PR 3 → PR 6** (єдині відкриті) → ~~PR 7~~ (superseded) → PR 8 (переоцінити). Тобто лишилися тільки **PR 3** (Postgres references) і залежний від нього **PR 6** (references-convention governance page).
 
 **Найдешевший quality-bump:** PR 2 (Verification gate) — лінгвістична дисципліна, що ловить 60-70% "Should pass now" / "Looks correct" хибних completion claims одним прочитанням SKILL.md.
 
