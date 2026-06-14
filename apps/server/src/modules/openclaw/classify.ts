@@ -214,6 +214,7 @@ export async function classifyMessage(
     getLLMProvider({
       provider: env.LLM_READONLY_PROVIDER,
       anthropicApiKey: apiKey,
+      openrouterModel: env.OPENROUTER_READONLY_MODEL,
       stubResponse: { text: STUB_CLASSIFY_RESPONSE },
     });
 

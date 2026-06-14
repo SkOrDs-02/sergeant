@@ -1214,6 +1214,17 @@ const envSchema = z.object({
    * model IDs. Free models available at openrouter.ai/models?order=pricing-asc.
    */
   OPENROUTER_MODEL: stringWithDefault(""),
+  /**
+   * Per-path model overrides — точніший за глобальний `OPENROUTER_MODEL`.
+   * Кожен openrouter-шлях може мати власну модель: classify (тривіальна
+   * класифікація) → дешева/free, digest (user-facing) → дешева-якісна. Якщо
+   * per-path порожній, fallback на `OPENROUTER_MODEL`, далі на model самого
+   * call-site-а. Значення може бути або model-id (`openai/gpt-4o-mini`,
+   * `google/gemma-4-31b-it:free`), або `@preset/<slug>` — тоді модель і
+   * fallback-ланцюг керуються пресетом у дашборді OpenRouter (без редеплою).
+   */
+  OPENROUTER_READONLY_MODEL: stringWithDefault(""),
+  OPENROUTER_DIGEST_MODEL: stringWithDefault(""),
 });
 
 export type Env = z.infer<typeof envSchema>;

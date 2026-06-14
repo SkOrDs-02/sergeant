@@ -17,6 +17,7 @@ import {
   AnthropicProvider,
   getLLMProvider,
   invokeLLM,
+  OpenRouterProvider,
   StubProvider,
   type LLMGenerateOpts,
   type LLMGenerateResult,
@@ -411,5 +412,58 @@ describe("invokeLLM observability wrapper (PR-24)", () => {
       { addBreadcrumb: () => {} },
     );
     expect(result).toEqual(fixed);
+  });
+});
+
+// ─── OpenRouterProvider model precedence ─────────────────────────────────
+// Цей механізм (modelOverride > opts.model) — те, на що спирається per-path
+// конфіг: factory передає `OPENROUTER_READONLY_MODEL`/`OPENROUTER_DIGEST_MODEL`
+// (з fallback на `OPENROUTER_MODEL`) як modelOverride. Тут фіксуємо контракт
+// провайдера через mock-fetch, без потреби в env.
+describe("OpenRouterProvider — model precedence", () => {
+  const realFetch = global.fetch;
+  let lastBody: { model?: string } | null = null;
+
+  beforeEach(() => {
+    lastBody = null;
+    global.fetch = vi.fn(async (_url: unknown, init: unknown) => {
+      const body = (init as { body?: string }).body;
+      lastBody = body ? JSON.parse(body) : null;
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { content: "ok" } }],
+          usage: { prompt_tokens: 1, completion_tokens: 1 },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }) as typeof fetch;
+  });
+  afterEach(() => {
+    global.fetch = realFetch;
+  });
+
+  const opts: LLMGenerateOpts = {
+    model: "callsite/model",
+    messages: [{ role: "user", content: "hi" }],
+    maxTokens: 10,
+  };
+
+  it("modelOverride (per-path) перекриває model виклику", async () => {
+    const p = new OpenRouterProvider("or-key", "readonly/model");
+    const r = await p.generate(opts);
+    expect(r.ok).toBe(true);
+    expect(lastBody?.model).toBe("readonly/model");
+  });
+
+  it("порожній modelOverride → forward-иться model самого виклику", async () => {
+    const p = new OpenRouterProvider("or-key", "");
+    await p.generate(opts);
+    expect(lastBody?.model).toBe("callsite/model");
+  });
+
+  it("підтримує @preset/<slug> як model (forward as-is)", async () => {
+    const p = new OpenRouterProvider("or-key", "@preset/sergeant-digest");
+    await p.generate(opts);
+    expect(lastBody?.model).toBe("@preset/sergeant-digest");
   });
 });

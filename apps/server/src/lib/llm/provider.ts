@@ -411,6 +411,14 @@ export interface GetLLMProviderOverride {
   provider?: LLMProviderName;
   anthropicApiKey?: string;
   stubResponse?: ConstructorParameters<typeof StubProvider>[0];
+  /**
+   * Per-path OpenRouter model override. Кожен call-site передає свою env
+   * (`OPENROUTER_READONLY_MODEL` для classify, `OPENROUTER_DIGEST_MODEL` для
+   * digest); порожній → fallback на глобальний `OPENROUTER_MODEL`, далі на
+   * model самого виклику. Може бути `@preset/<slug>` (fallback керується
+   * пресетом OpenRouter). Ігнорується для не-openrouter провайдерів.
+   */
+  openrouterModel?: string;
 }
 
 export function getLLMProvider(
@@ -423,7 +431,11 @@ export function getLLMProvider(
   if (provider === "openrouter") {
     const apiKey = env.OPENROUTER_API_KEY;
     if (!apiKey) return new StubProvider(override.stubResponse);
-    return new OpenRouterProvider(apiKey, env.OPENROUTER_MODEL);
+    // Model precedence: per-path override → global OPENROUTER_MODEL → (empty →
+    // OpenRouterProvider forwards the call-site's own model id). Empty strings
+    // are falsy, so an unset per-path var falls through to the global default.
+    const modelOverride = override.openrouterModel || env.OPENROUTER_MODEL;
+    return new OpenRouterProvider(apiKey, modelOverride);
   }
   // provider === "anthropic"
   const apiKey = override.anthropicApiKey ?? env.ANTHROPIC_API_KEY;

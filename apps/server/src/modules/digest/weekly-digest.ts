@@ -307,6 +307,7 @@ ${dataContext}`;
       getLLMProvider({
         provider: env.LLM_DIGEST_PROVIDER,
         anthropicApiKey: apiKey,
+        openrouterModel: env.OPENROUTER_DIGEST_MODEL,
         stubResponse: { text: JSON.stringify(templateReport) },
       });
 
