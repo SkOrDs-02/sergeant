@@ -99,7 +99,7 @@ const VARIANT_PILL: Record<TabsVariant, string> = {
   finyk:
     "bg-finyk-soft text-finyk-strong dark:bg-finyk-surface-dark/15 dark:text-finyk",
   fizruk:
-    "bg-fizruk-soft text-fizruk-strong dark:bg-fizruk-surface-dark/15 dark:text-fizruk",
+    "bg-fizruk-soft text-fizruk-strong dark:bg-fizruk-surface-dark/15 dark:text-fizruk-300",
   routine:
     "bg-routine-surface text-routine-strong dark:bg-routine-surface-dark/15 dark:text-routine",
   nutrition:

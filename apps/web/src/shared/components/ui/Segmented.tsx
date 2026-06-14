@@ -70,7 +70,7 @@ const VARIANT_SOFT: Record<SegmentedVariant, string> = {
   brand:
     "border-brand-soft-border bg-brand-soft text-brand-strong shadow-sm dark:text-brand",
   fizruk:
-    "border-fizruk-ring bg-fizruk-surface text-fizruk-strong shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15 dark:text-fizruk",
+    "border-fizruk-ring bg-fizruk-surface text-fizruk-strong shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15 dark:text-fizruk-300",
   routine:
     "border-routine-ring bg-routine-surface text-routine-strong shadow-sm dark:border-routine-border-dark/40 dark:bg-routine-surface-dark/15 dark:text-routine",
   nutrition:

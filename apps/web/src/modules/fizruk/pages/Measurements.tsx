@@ -36,7 +36,7 @@ const inp =
 // uppercase + tracking combo is intentional here.
 const lbl =
   // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- genuine form <label> field caption, not a narrative eyebrow
-  "px-1 block text-xs uppercase tracking-wider font-bold text-fizruk-strong dark:text-fizruk/70";
+  "px-1 block text-xs uppercase tracking-wider font-bold text-fizruk-strong dark:text-fizruk-300/70";
 
 export function Measurements() {
   const { entries, addEntry, deleteEntry, restoreEntry } = useMeasurements();

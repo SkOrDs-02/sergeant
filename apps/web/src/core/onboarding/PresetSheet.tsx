@@ -134,7 +134,7 @@ const PRESETS: PresetCatalog = {
   fizruk: {
     title: "Швидкий старт",
     desc: "Відкрию старт тренування — тривалість вкажеш на фініші.",
-    accent: "text-fizruk-strong dark:text-fizruk bg-fizruk-soft",
+    accent: "text-fizruk-strong dark:text-fizruk-300 bg-fizruk-soft",
     moduleIcon: "dumbbell",
     fallback: {
       action: "start_workout",

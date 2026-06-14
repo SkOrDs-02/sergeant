@@ -14,7 +14,7 @@ import type { Hit } from "./searchTypes";
 // swatch (they are the launcher commands, not stored data).
 export const MODULE_COLORS: Record<string, string> = {
   finyk: "bg-finyk-soft text-finyk-strong dark:text-finyk",
-  fizruk: "bg-fizruk-soft text-fizruk-strong dark:text-fizruk",
+  fizruk: "bg-fizruk-soft text-fizruk-strong dark:text-fizruk-300",
   routine: "bg-routine-soft text-routine-strong dark:text-routine",
   nutrition: "bg-nutrition-soft text-nutrition-strong dark:text-nutrition",
   settings: "bg-panelHi text-muted",

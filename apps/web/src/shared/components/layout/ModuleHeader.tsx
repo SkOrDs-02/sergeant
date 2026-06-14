@@ -76,7 +76,7 @@ const MODULE_HEADER_TOKENS: Record<
   fizruk: {
     gradient: "from-fizruk/5",
     border: "border-fizruk/15",
-    subtitle: "text-fizruk-strong dark:text-fizruk/70",
+    subtitle: "text-fizruk-strong dark:text-fizruk-300/70",
     accentDot: "bg-fizruk",
     accentStrip: "bg-fizruk/45",
   },
@@ -419,7 +419,7 @@ const MODULE_SWITCHER_TOKENS: Record<
   },
   fizruk: {
     active: "bg-fizruk-strong text-white",
-    inactive: "text-fizruk-strong dark:text-fizruk hover:bg-fizruk-soft",
+    inactive: "text-fizruk-strong dark:text-fizruk-300 hover:bg-fizruk-soft",
     ring: "focus-visible:ring-fizruk",
   },
   routine: {
