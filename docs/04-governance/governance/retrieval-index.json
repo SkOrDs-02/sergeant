@@ -3,18 +3,18 @@
   "version": 1,
   "generated_at": "2026-06-15",
   "sourceHashes": {
-    "knowledge-graph": "620113bf7624cb3a59d6b66a1394d411b350c12b13978437343bd59f28c5fa9d",
+    "knowledge-graph": "2592debfefb65e6779782d49ec1d2efe92b80b0c90b1ce186b074de51191e304",
     "symbol-index": "c3647b380c08786fddc5e75c308330ecf25c555d4fecae79184243c62fd91e20"
   },
   "counts": {
     "adr": 63,
-    "audit": 19,
+    "audit": 15,
     "export": 303,
     "hard-rule": 26,
-    "initiative": 52,
+    "initiative": 51,
     "playbook": 61,
     "skill": 23,
-    "total": 547
+    "total": 542
   },
   "chunks": [
     {
@@ -753,17 +753,6 @@
       "contentHash": "7a2dd777d41626a13dde898601d065dbb6bf8d3c1e9c0a036557b9983ead9a60"
     },
     {
-      "id": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-02-hub-dashboard.md",
-      "line": 1,
-      "title": "Page Audit — Hub Dashboard, Modules Grid & App shell",
-      "tier": "core",
-      "status": "Active",
-      "text": "Page Audit — Hub Dashboard, Modules Grid & App shell · audit:2026-05-13-page-audit-02-hub-dashboard · audit · Active",
-      "contentHash": "2a9d3a509042ad71ab14c670da396c7e537021a2de4bad25b0c953a43d8081ca"
-    },
-    {
       "id": "audit:2026-05-13-page-audit-03-hub-chat-search",
       "type": "audit",
       "path": "docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md",
@@ -773,28 +762,6 @@
       "status": "Active",
       "text": "Page Audit — Hub Chat, Search & Backup panel · audit:2026-05-13-page-audit-03-hub-chat-search · audit · Active · Summary · Findings · F1 — hubChatSessions.deriveSessionTitle formats with host timezone, violating Kyiv domain invariant [severity: high] [perspective: bug] · F2 — HubChatHistoryDrawer.formatStamp uses host time for \"today\" detection and HH:MM rendering [severity: high] [perspective: bug] · F3 — useChatSend runs toolcalls from the model through executeActions with no runtime validation [severity: critical] [perspective: security] · F4 — /chat?q=…&autoSend=1 deep link auto-sends arbitrary text to the AI on render [severity: high] [perspective: security] · F5 — Voice-keyword regex auto-triggers TTS playback without user consent [severity: medium] [perspective: security] · F6 — Touch targets in HubChatHistoryDrawer (close, delete) are below 44×44 px [severity: high] [perspective: a11y] · F7 — Inline cancel pill in HubChatBody is h-7 (28 px) — below WCAG touch-target [severity: medium] [perspective: a11y] · F8 — searchTypes.localDateKey & searchSources produce non-Kyiv day keys [severity: high] [perspective: bug] · F9 — Nested interactive elements inside the session row (a11y violation) [severity: medium] [perspective: a11y] · F10 — Search dialog (HubSearch) has no focus trap; only Esc is bound [severity: medium] [perspective: a11y] · F11 — Lifecycle markers (Last validated: / Status:) missing across the entire scope [severity: medium] [perspective: lifecycle] · F12 — HubChatBody auto-scrolls to bottom on every message change, breaking \"scroll up to read history\" [severity: medium] [perspective: ux] · F13 — HubChatPage.handleClose falls back to navigate(\"/\") only when window.history.length <= 1 — unreliable signal [severity: medium] [perspective: bug] · F14 — useChatSessions title-rewrite test title.startsWith(\"Бесіда \") will steamroll legitimate user titles [severity: medium] [perspective: bug] · F15 — hubChatUtils.consumeHubChatSse accepts unbounded server SSE without per-chunk size cap [severity: medium] [perspective: perf] · F16 — searchSources.performSearch re-scans finyktxcache synchronously on every keystroke after 120 ms debounce [severity: medium] [perspective: perf] · F17 — useChatSend initial-message effect depends on initialMessage but mutates setInput/setMessages without listing them [severity: low] [perspective: bug] · F18 — chat/HubChatHeader.tsx builds a Popover trigger out of a <span role=\"button\"-less> styled with cursor-pointer select-none — non-button activation [severity: medium] [perspective: a11y] · F19 — aria-live=\"polite\" on the chat scroller is a verbosity trap during streamed responses [severity: low] [perspective: a11y] · F20 — HubBackupPanel export reuses the user's downloaded JSON without redaction of Better-Auth opaque user IDs [severity: medium] [perspective: security] · F21 — searchSources results are not sanitised before being passed into AssistantMessageBody for AI-handoff snippets [severity: medium] [perspective: security]",
       "contentHash": "15cdff90ec3a7eda86ec5bb96c5d8840df9928ddd852f24748ad861398c02504"
-    },
-    {
-      "id": "audit:2026-05-13-page-audit-05-finyk",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-05-finyk.md",
-      "line": 1,
-      "title": "Page Audit — Finyk module — 5 pages (overview/transactions/budgets/analytics/assets)",
-      "tier": "core",
-      "status": "Active",
-      "text": "Page Audit — Finyk module — 5 pages (overview/transactions/budgets/analytics/assets) · audit:2026-05-13-page-audit-05-finyk · audit · Active",
-      "contentHash": "e9dae9a0f04de439809411e2317ac42f409689476f18601b229cc25a0e3449a9"
-    },
-    {
-      "id": "audit:2026-05-13-page-audit-06-fizruk-part1",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-06-fizruk-part1.md",
-      "line": 1,
-      "title": "Page Audit — Fizruk module Part 1 (Dashboard, Atlas, Workouts, Exercise)",
-      "tier": "core",
-      "status": "Active",
-      "text": "Page Audit — Fizruk module Part 1 (Dashboard, Atlas, Workouts, Exercise) · audit:2026-05-13-page-audit-06-fizruk-part1 · audit · Active",
-      "contentHash": "b6f15ee84052d32baf1ee9c54682fda6f8618f022fe9030facfee51a10e68c6c"
     },
     {
       "id": "audit:2026-05-13-page-audit-07-fizruk-part2",
@@ -852,17 +819,6 @@
       "contentHash": "bc53a0bd59a01e547ff37ae7ff113738b322274bfa2de0ca0799c5b668b3e8f1"
     },
     {
-      "id": "audit:2026-05-13-web-architecture-state-roast",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-web-architecture-state-roast.md",
-      "line": 1,
-      "title": "Web Architecture & State Roast — 2026-05-13 (Прожарка #3/10)",
-      "tier": "core",
-      "status": "Active",
-      "text": "Web Architecture & State Roast — 2026-05-13 (Прожарка #3/10) · audit:2026-05-13-web-architecture-state-roast · audit · Active",
-      "contentHash": "63082718701a2e1464574cbd5702c2686079b8bf9e0f8c56936a4a11cbd183b2"
-    },
-    {
       "id": "audit:2026-05-25-hubsettings-cls-chunk-load",
       "type": "audit",
       "path": "docs/90-work/audits/2026-05-25-hubsettings-cls-chunk-load.md",
@@ -880,9 +836,9 @@
       "line": 1,
       "title": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф",
       "tier": "core",
-      "status": "Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding)",
-      "text": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф · audit:2026-06-08-codebase-cleanup-audit · audit · Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding) · Виконано в цьому PR (2026-06-08) · TL;DR · Тема 1 — console → openclaw rename (напів-зроблений) · 🔴 Реальний баг (не косметика) · 🟡 Stale-посилання, що збивають агентів (low-risk, high-clarity) · 🟡 Незавершений rename (потребує координації — це деплой) · Тема 2 — Audits/initiatives «Active», але робота закрита · Тема 3 — Застарілі рішення / ADR-дрейф · 🔴 P0-пастка: grammy-deletion (Locked Decision #17) — НЕ виконувати · 🟡 ADR-дрейф · Тема 4 — Lint / tech-debt suppressions без власника · Інфра / стек — інші знахідки (потребують рішення власника) · Свідома інфраструктура — НЕ чіпати · Запропонований план (окремими PR-ами за класом боргу) · Рішення власника (узгоджено 2026-06-08)",
-      "contentHash": "e5b8e23e9cbfbae3cd0c3384bac4c9764cc792a40c4a28a2733f8f0353663353"
+      "status": "Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Residual is out-of-band: plop stale-branding rename + Sept KV→SQLite tombstone batch + react-hooks burndown (Initiative 0021).",
+      "text": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф · audit:2026-06-08-codebase-cleanup-audit · audit · Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Residual is out-of-band: plop stale-branding rename + Sept KV→SQLite tombstone batch + react-hooks burndown (Initiative 0021). · Виконано в цьому PR (2026-06-08) · TL;DR · Тема 1 — console → openclaw rename (напів-зроблений) · 🔴 Реальний баг (не косметика) · 🟡 Stale-посилання, що збивають агентів (low-risk, high-clarity) · 🟡 Незавершений rename (потребує координації — це деплой) · Тема 2 — Audits/initiatives «Active», але робота закрита · Тема 3 — Застарілі рішення / ADR-дрейф · 🔴 P0-пастка: grammy-deletion (Locked Decision #17) — НЕ виконувати · 🟡 ADR-дрейф · Тема 4 — Lint / tech-debt suppressions без власника · Інфра / стек — інші знахідки (потребують рішення власника) · Свідома інфраструктура — НЕ чіпати · Запропонований план (окремими PR-ами за класом боргу) · Рішення власника (узгоджено 2026-06-08)",
+      "contentHash": "fd1eb9ea6e1637e91d58285803983f02a1347a37ca8b7e7f6c78a9bb172ed300"
     },
     {
       "id": "audit:2026-06-11-fable5-independent-audit",
@@ -3922,9 +3878,9 @@
       "line": 1,
       "title": "0006 — Frontend routing migration + route-based code-split",
       "tier": "core",
-      "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. Pending: typecheck on clean worktree, Playwright e2e for hash-compat, manualChunks cleanup.",
-      "text": "0006 — Frontend routing migration + route-based code-split · initiative:0006 · initiative · In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. Pending: typecheck on clean worktree, Playwright e2e for hash-compat, manualChunks cleanup. · 6 · @Skords-01 · P1 (Sprint 2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — react-router setup + Hub-route (1 PR) · Фаза 2 — top-level routes per domain (4 PRs, по одному модулю) · Фаза 3 — hash-URL compat shim (1 PR) · Фаза 4 — scroll restoration + prefetch on hover (1 PR) · Фаза 5 — bundle-gate перенастройка + cleanup (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 0 — lint canary + baseline (2026-05-04) · Baseline hash-router callsites (snapshot 2026-05-04) · Phase 1 — <RouterProvider /> migration (2026-05-06) · Phase 2.a — /nutrition/ migration (2026-05-06) · Phase 2.b — /finyk/ migration (2026-05-06) · Phase 3 — hash-URL compat shim (2026-05-18) · Phase 4 (partial) — scroll restoration + prefetch (2026-05-18) · Phase 5 (partial) — bundle-gate + cleanup (2026-05-18; bundle-gate prefix fix 2026-05-24)",
-      "contentHash": "af1e1a7725a184431c1bd643a1cf6a68a2b811f1d385b18b9dc9c54a19796937"
+      "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. **Reconcile 2026-06-15:** insights/settings/onboarding мігровано off the catch-all у власні path-based lazy routes (`/insights/*`, `/settings/*`, `/onboarding/*` + `core/{insights,settings,onboarding}/route.tsx`); route-count тепер 7/8 (лишається свідомо-спільний Hub чанк). Playwright hash-compat e2e додано (`tests/smoke/hash-redirect-smoke.spec.ts`). Pending: native RR7 router-level `loader:` (unblocked, optional), bundle-budget tighten на нові chunk-prefix-и.",
+      "text": "0006 — Frontend routing migration + route-based code-split · initiative:0006 · initiative · In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. **Reconcile 2026-06-15:** insights/settings/onboarding мігровано off the catch-all у власні path-based lazy routes (`/insights/*`, `/settings/*`, `/onboarding/*` + `core/{insights,settings,onboarding}/route.tsx`); route-count тепер 7/8 (лишається свідомо-спільний Hub чанк). Playwright hash-compat e2e додано (`tests/smoke/hash-redirect-smoke.spec.ts`). Pending: native RR7 router-level `loader:` (unblocked, optional), bundle-budget tighten на нові chunk-prefix-и. · 6 · @Skords-01 · P1 (Sprint 2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — react-router setup + Hub-route (1 PR) · Фаза 2 — top-level routes per domain (4 PRs, по одному модулю) · Фаза 3 — hash-URL compat shim (1 PR) · Фаза 4 — scroll restoration + prefetch on hover (1 PR) · Фаза 5 — bundle-gate перенастройка + cleanup (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 0 — lint canary + baseline (2026-05-04) · Baseline hash-router callsites (snapshot 2026-05-04) · Phase 1 — <RouterProvider /> migration (2026-05-06) · Phase 2.a — /nutrition/ migration (2026-05-06) · Phase 2.b — /finyk/ migration (2026-05-06) · Phase 3 — hash-URL compat shim (2026-05-18) · Phase 4 (partial) — scroll restoration + prefetch (2026-05-18) · Phase 5 (partial) — bundle-gate + cleanup (2026-05-18; bundle-gate prefix fix 2026-05-24)",
+      "contentHash": "5ec05644838a464b072183e4544f8145cf0a725e94f654cd2fb043957c2ad44b"
     },
     {
       "id": "initiative:0010",
@@ -3958,17 +3914,6 @@
       "status": "Closed (2026-06-08 — code-complete; Sprint 0 + Sprint 1 + Sprint 2 merged). Sprint 3 (Web Worker) is a **discrete conditional follow-up** — re-opens ТІЛЬКИ якщо post-merge PostHog `aggregateReport` P95 > 50 ms (next 30-day RUM cut); not tracked as open work here. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome.",
       "text": "0017 — Hub Settings & Reports mount perf · initiative:0017 · initiative · Closed (2026-06-08 — code-complete; Sprint 0 + Sprint 1 + Sprint 2 merged). Sprint 3 (Web Worker) is a **discrete conditional follow-up** — re-opens ТІЛЬКИ якщо post-merge PostHog `aggregateReport` P95 > 50 ms (next 30-day RUM cut); not tracked as open work here. See § Outcome / § Sprint 3 decision. **Sprint 1 done:** per-section lazy wiring landed on main — the 4 heavy module-scoped sections (`routine`/`fizruk`/`finyk`/`nutrition`) are `lazy()` + `<Suspense fallback={<SectionSkeleton minH={72}/>}>` in `HubSettingsPage.tsx` (`lazy?:{minH}` opt-in field). The 10 lightweight sections stay static **by design** (a per-chunk for a tiny section is net overhead). PR-1.2 cross-module defer landed for **Finyk only** ([#3102](https://github.com/Skords-01/Sergeant/pull/3102), `useInView` gate on the Monobank sync-state query + backfill poller) — it was the only section with off-screen _network_ cost; `fizruk`/`nutrition`/`routine` carry only local-state hydration (no `enabled:inView`-gatable queries), already mitigated by the lazy chunk. **Sprint 2 done (2026-05-24):** HubReports per-card lazy decomposition merged via [#3094](https://github.com/Skords-01/Sergeant/pull/3094) (squash on main as `5c98b41e`); remote branch `feat/0017-reports-per-card-lazy` auto-deleted. **Remaining:** Sprint 3 conditional on post-merge PostHog `aggregateReport` P95 metrics (cut window — only if > 50 ms); Finalize PR — bundle gate update + tech-debt watchlist drain + Outcome. · 17 · @Skords-01 · P1 (Sprint 1 candidate after [0016](./archive/_0016-changelog-release-cut.md)) · TL;DR · Чому зараз · Скоуп · Метрики успіху · План змін · Sprint 0 — Observability baseline (1 PR) — shipped 2026-05-20 · Sprint 1 — Per-section lazy у Settings (2 PR-и) · Sprint 2 — HubReports per-card lazy (1 PR) · Sprint 3 — Web Worker for aggregation (stretch, conditional) · Finalize (включається у PR-3 або окремий PR-4 якщо Sprint 3 skipped) · Sprint 3 decision (2026-06-01) · Outcome (2026-06-01, code-complete; 2026-06-02 tech-debt watchlist drained) · Carry-over → successor · Bundle-size findings 2026-06-06 · Критерії DONE · Ризики та митиґація · Власник, ревʼюери · Зв'язки",
       "contentHash": "09d06ffdb6e449208cfd83231e404011afd2f611af191aab537eb4c58907a779"
-    },
-    {
-      "id": "initiative:0020",
-      "type": "initiative",
-      "path": "docs/90-work/initiatives/0020-agent-decisions-log.md",
-      "line": 1,
-      "title": "0020 — Agent decisions log",
-      "tier": "core",
-      "status": "In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями).",
-      "text": "0020 — Agent decisions log · initiative:0020 · initiative · In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями). · 20",
-      "contentHash": "9c1817dff20fcc1e060fa3b729bc587e7d2e455eacf04eebb732f91be48d649f"
     },
     {
       "id": "initiative:0021",
@@ -4043,9 +3988,9 @@
       "line": 1,
       "title": "Session log — 2026-05-03 stack-pulse follow-through",
       "tier": "core",
-      "status": "Active",
-      "text": "Session log — 2026-05-03 stack-pulse follow-through · initiative:stack-pulse-2026-05/01-session-log-2026-05-03 · initiative · Active · Контекст / vendor-history · Що поїхало в production · PR-03 / C3 — bcrypt 72-byte limit ([#1550](https://github.com/Skords-01/Sergeant/pull/1550)) · PR-02 / C2 — rate-limit fail-closed на /api/auth/ ([#1552](https://github.com/Skords-01/Sergeant/pull/1552)) · PR-15 / H9 — AIQUOTADISABLED hard-block у production ([#1567](https://github.com/Skords-01/Sergeant/pull/1567)) · Post-PR-02 follow-up ([#1556](https://github.com/Skords-01/Sergeant/pull/1556)) · Що НЕ поїхало (свідомо відклав) · Carryover для наступної сесії · Інфраструктурні замітки сесії · Refs",
-      "contentHash": "958f585466a4ac122e224bc9f79efc937f138e93f9830962dbb02291ee72ee79"
+      "status": "Reference (frozen historical onboarding log of the 2026-05-03 audit's first PR waves; #1567 merged, carryover items 1/3 resolved — H9/C1/C5/C6 Closed).",
+      "text": "Session log — 2026-05-03 stack-pulse follow-through · initiative:stack-pulse-2026-05/01-session-log-2026-05-03 · initiative · Reference (frozen historical onboarding log of the 2026-05-03 audit's first PR waves; #1567 merged, carryover items 1/3 resolved — H9/C1/C5/C6 Closed). · Контекст / vendor-history · Що поїхало в production · PR-03 / C3 — bcrypt 72-byte limit ([#1550](https://github.com/Skords-01/Sergeant/pull/1550)) · PR-02 / C2 — rate-limit fail-closed на /api/auth/ ([#1552](https://github.com/Skords-01/Sergeant/pull/1552)) · PR-15 / H9 — AIQUOTADISABLED hard-block у production ([#1567](https://github.com/Skords-01/Sergeant/pull/1567)) · Post-PR-02 follow-up ([#1556](https://github.com/Skords-01/Sergeant/pull/1556)) · Що НЕ поїхало (свідомо відклав) · Carryover для наступної сесії · Інфраструктурні замітки сесії · Refs",
+      "contentHash": "15cf507b9a8592e62eac5ce64e6038df7628e4c5cb776fbe2657cb9864256f30"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-01-unify-env-modules",
@@ -4318,9 +4263,9 @@
       "line": 1,
       "title": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin",
       "tier": "core",
-      "status": "Planned",
-      "text": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin · initiative:stack-pulse-2026-05/pr-25-two-production-origins · initiative · Planned · PR-25: Consolidate fizruk.vercel.app + sergeant.vercel.app → один production origin · Контекст · Scope · 1. Decision: keep sergeant.vercel.app · 2. CORS / CSRF / OAuth cleanup · 3. Sentry releases unification · 4. Capacitor / mobile-shell · 5. ADR update · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "6e032670c31afef66ab64d989feb0770804a286cf4af0f27303d8479c34638d2"
+      "status": "Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/server/src/http/cors.ts + Google/Apple OAuth consoles) pending 30-day soak + manual OAuth-console step; ADR-0009 single-origin section TODO.",
+      "text": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin · initiative:stack-pulse-2026-05/pr-25-two-production-origins · initiative · Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/server/src/http/cors.ts + Google/Apple OAuth consoles) pending 30-day soak + manual OAuth-console step; ADR-0009 single-origin section TODO. · PR-25: Consolidate fizruk.vercel.app + sergeant.vercel.app → один production origin · Контекст · Scope · 1. Decision: keep sergeant.vercel.app · 2. CORS / CSRF / OAuth cleanup · 3. Sentry releases unification · 4. Capacitor / mobile-shell · 5. ADR update · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "8764c786b6e49cc785b524d13988778ab69f0215c01523b5071ef20fa1dd6889"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-26-csp-report-uri",
@@ -4428,9 +4373,9 @@
       "line": 1,
       "title": "PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle",
       "tier": "core",
-      "status": "Active — server-side shipped via PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423) (commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec), 2026-05-08); `tools/openclaw` `/debug-window` CLI deferred to follow-up (див. нижче — чекає першого реального debug-incident-у як trigger).",
-      "text": "PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle · initiative:stack-pulse-2026-05/pr-35-log-level-debug-window · initiative · Active — server-side shipped via PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423) (commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec), 2026-05-08); `tools/openclaw` `/debug-window` CLI deferred to follow-up (див. нижче — чекає першого реального debug-incident-у як trigger). · PR-35: LOGLEVEL=info default + 5-min debug-window toggle · Контекст · Scope · 1. Default-floor · 2. Runtime debug-window · 3. CLI command · 4. Auto-revert + Sentry alert · 5. Tests · Out of scope · Acceptance criteria (DoD) · Follow-up scope (CLI) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "cce19bfa1fa251a1bca81a39db99303f218473d54736aa3b0e8d6c5870b24d48"
+      "status": "Closed (2026-06-15) — server-side shipped (PR #2423: logger.ts debug-window + route #3096). The deferred tools/openclaw CLI follow-up is permanently moot (the grammy bot was deleted in PR #3470). Canonical home: apps/server/src/obs/logger.ts (Hard Rule #21) + docs/03-operations/observability/log-levels.md.",
+      "text": "PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle · initiative:stack-pulse-2026-05/pr-35-log-level-debug-window · initiative · Closed (2026-06-15) — server-side shipped (PR #2423: logger.ts debug-window + route #3096). The deferred tools/openclaw CLI follow-up is permanently moot (the grammy bot was deleted in PR #3470). Canonical home: apps/server/src/obs/logger.ts (Hard Rule #21) + docs/03-operations/observability/log-levels.md. · PR-35: LOGLEVEL=info default + 5-min debug-window toggle · Контекст · Scope · 1. Default-floor · 2. Runtime debug-window · 3. CLI command · 4. Auto-revert + Sentry alert · 5. Tests · Out of scope · Acceptance criteria (DoD) · Follow-up scope (CLI) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "0887ff5c0728413a6e3297a562d5feed56e466cb8618c3ed9c76babdcffb0cc9"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard",
@@ -4472,9 +4417,9 @@
       "line": 1,
       "title": "PR-39: `tools/openclaw` Anthropic SDK 0.36.3 → latest",
       "tier": "core",
-      "status": "Active — SDK вже на `^0.95.2` (міграція 0.36 → 0.95 відбулась у попередньому PR з ADR-0057); prompt caching opt-in (`ANTHROPIC_PROMPT_CACHE=1`) enable-но у `run-agent-loop`. SDK v1 GA ще не відбулась — див. ADR-0057 § SDK v1 tracking.",
-      "text": "PR-39: `tools/openclaw` Anthropic SDK 0.36.3 → latest · initiative:stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk · initiative · Active — SDK вже на `^0.95.2` (міграція 0.36 → 0.95 відбулась у попередньому PR з ADR-0057); prompt caching opt-in (`ANTHROPIC_PROMPT_CACHE=1`) enable-но у `run-agent-loop`. SDK v1 GA ще не відбулась — див. ADR-0057 § SDK v1 tracking. · PR-39: tools/openclaw Anthropic SDK 0.36.3 → latest · Контекст · Scope · 1. Pre-flight ADR (small) · 2. SDK bump · 3. Code migration · 4. Re-test · 5. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "8d915140704eb924ae0bb8ca2921de7ddbec7577a0427d3db3a2f150e92139bf"
+      "status": "Closed (2026-06-15) — SDK history captured in ADR-0057 (Accepted). The tracked surface (tools/openclaw + run-agent-loop.ts + its @anthropic-ai/sdk consumer) was deleted in PR #3470, so the v1-GA follow-up is moot. Canonical home: ADR-0057.",
+      "text": "PR-39: `tools/openclaw` Anthropic SDK 0.36.3 → latest · initiative:stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk · initiative · Closed (2026-06-15) — SDK history captured in ADR-0057 (Accepted). The tracked surface (tools/openclaw + run-agent-loop.ts + its @anthropic-ai/sdk consumer) was deleted in PR #3470, so the v1-GA follow-up is moot. Canonical home: ADR-0057. · PR-39: tools/openclaw Anthropic SDK 0.36.3 → latest · Контекст · Scope · 1. Pre-flight ADR (small) · 2. SDK bump · 3. Code migration · 4. Re-test · 5. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "eb26fb16edb61330282d5cf099569b3638dba1565f7a50f3d8fcb2819bd479bf"
     },
     {
       "id": "playbook:access-governance",
