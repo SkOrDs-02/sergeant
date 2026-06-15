@@ -53,6 +53,13 @@ export {
 // cuts visual chrome without hiding the personalised shortcuts.
 const DEFAULT_AMOUNTS = [50, 100, 200, 500];
 const MAX_AMOUNT_CHIPS = 6;
+const DAY_NOON_UTC = "T12:00:00.000Z";
+
+function toExpenseInstant(dayKey: string): string {
+  // API stores an ISO instant; UTC noon preserves the selected day key
+  // without reading the host-local timezone.
+  return new Date(Date.parse(`${dayKey}${DAY_NOON_UTC}`)).toISOString();
+}
 
 function buildAmountSuggestions(
   frequentMerchants: FrequentMerchant[] | undefined,
@@ -195,9 +202,7 @@ export function ManualExpenseSheet({
           category: slug,
           // "YYYY-MM-DD" як local date може з'їхати при toISOString() в UTC.
           // Ставимо полудень, щоб стабільно зберігати правильний день.
-          date: values.date
-            ? new Date(`${values.date}T12:00:00`).toISOString()
-            : new Date().toISOString(),
+          date: toExpenseInstant(values.date || toLocalISODate()),
         });
         onClose();
       },
@@ -239,16 +244,13 @@ export function ManualExpenseSheet({
   useEffect(() => {
     if (open) {
       if (initialExpense?.id) {
-        const d = initialExpense.date
-          ? new Date(initialExpense.date)
-          : new Date();
         reset({
           description: String(initialExpense.description || ""),
           amount:
             initialExpense.amount != null ? String(initialExpense.amount) : "",
           // upgradeCategory handles Era 1/2/3 stored values.
           category: upgradeCategory(initialExpense.category),
-          date: toLocalISODate(d),
+          date: toLocalISODate(initialExpense.date || Date.now()),
         });
       } else {
         // Пріоритет: явна initialCategory (клік з дашборду) > найчастіша
@@ -259,14 +261,17 @@ export function ManualExpenseSheet({
           startCategory = upgradeCategory(initialCategory);
         } else if (frequentCategories.length > 0) {
           const top = frequentCategories[0];
-          const topSlug =
-            top!.manualLabel && typeof top!.manualLabel === "string"
-              ? upgradeCategory(top!.manualLabel)
-              : CANONICAL_TO_MANUAL_LABEL[top!.id!]
-                ? upgradeCategory(CANONICAL_TO_MANUAL_LABEL[top!.id!])
-                : null;
-          if (topSlug && CATEGORY_SLUGS.includes(topSlug)) {
-            startCategory = topSlug;
+          if (top) {
+            const manualLabel =
+              typeof top.manualLabel === "string" ? top.manualLabel : null;
+            const canonicalLabel = top.id
+              ? CANONICAL_TO_MANUAL_LABEL[top.id]
+              : null;
+            const topSlug = manualLabel ?? canonicalLabel;
+            const upgradedTopSlug = topSlug ? upgradeCategory(topSlug) : null;
+            if (upgradedTopSlug && CATEGORY_SLUGS.includes(upgradedTopSlug)) {
+              startCategory = upgradedTopSlug;
+            }
           }
         }
         reset({
@@ -619,7 +624,7 @@ export function ManualExpenseSheet({
                     type="button"
                     onClick={() => setAiAppliedCategory(null)}
                     aria-label="Сховати AI-підказку"
-                    className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-finyk/20 transition-colors"
+                    className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-finyk/20 transition-colors touch-target"
                   >
                     <Icon name="close" size={10} aria-hidden />
                   </button>

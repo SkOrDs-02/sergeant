@@ -79,6 +79,10 @@
       "reason": "platform.openai.com gates everything behind Cloudflare anti-bot and returns 403 to non-browser User-Agents; pages render correctly in browsers. Cited в docs/90-work/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md (embeddings guide) та docs/90-work/planning/openclaw-user-guide.md (api-keys console)."
     },
     {
+      "pattern": "^https?://eu\\.posthog\\.com/shared/",
+      "reason": "PostHog public shared dashboard mirrors intermittently return 503 to CI link-checker requests while rendering for browser users. Cited in observability docs as read-only mirrors; private project insight links remain the canonical owner path."
+    },
+    {
       "pattern": "^https?://(www\\.)?codemzy\\.com(/.*)?$",
       "reason": "codemzy.com times out (ECONNABORTED) against CI runner User-Agents. Cited in docs/90-work/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md as a ChunkLoadError fix reference; page loads correctly in browsers."
     },

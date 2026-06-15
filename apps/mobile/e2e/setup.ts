@@ -21,6 +21,10 @@ import { device } from "detox";
 
 import { signInIfNeeded } from "./_helpers/auth";
 
+const DETOX_HOOK_TIMEOUT_MS = 120_000;
+
+jest.setTimeout(DETOX_HOOK_TIMEOUT_MS);
+
 beforeAll(async () => {
   await device.launchApp({
     newInstance: true,
@@ -37,9 +41,9 @@ beforeAll(async () => {
     permissions: { notifications: "YES" },
   });
   await signInIfNeeded();
-});
+}, DETOX_HOOK_TIMEOUT_MS);
 
 beforeEach(async () => {
   await device.reloadReactNative();
   await signInIfNeeded();
-});
+}, DETOX_HOOK_TIMEOUT_MS);

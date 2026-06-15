@@ -151,6 +151,10 @@ jobs:
         working-directory: apps/mobile/ios
         run: pod install --repo-update
 
+      - name: Build Detox iOS framework cache
+        working-directory: apps/mobile
+        run: pnpm exec detox build-framework-cache
+
       - name: Build Detox iOS app
         working-directory: apps/mobile
         run: pnpm e2e:build:ios

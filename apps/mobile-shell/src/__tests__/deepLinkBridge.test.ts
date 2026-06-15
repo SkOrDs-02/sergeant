@@ -88,6 +88,16 @@ function resetBridgeGlobals(): void {
   delete w.__sergeantShellDeepLinkQueue;
 }
 
+async function waitForBroadcast(
+  predicate: () => boolean,
+  timeoutMs = 2000,
+): Promise<void> {
+  const start = Date.now();
+  while (!predicate() && Date.now() - start < timeoutMs) {
+    await new Promise((r) => setTimeout(r, 5));
+  }
+}
+
 beforeEach(() => {
   vi.resetModules();
   resetBridgeGlobals();
@@ -272,18 +282,20 @@ describe("deep-link bridge — BroadcastChannel canonical path (PR-29)", () => {
     };
 
     const cb = await captureUrlOpenCallback(mocks);
-    cb({ url: "com.sergeant.shell://finyk/transactions/42" });
+    try {
+      cb({ url: "com.sergeant.shell://finyk/transactions/42" });
 
-    await new Promise((r) => setTimeout(r, 0));
+      await waitForBroadcast(() => received.length > 0);
 
-    expect(received).toHaveLength(1);
-    expect(received[0]).toEqual({
-      url: "/finyk/transactions/42",
-      source: "shell",
-      protocolVersion: 1,
-    });
-
-    bcReceiver.close();
+      expect(received).toHaveLength(1);
+      expect(received[0]).toEqual({
+        url: "/finyk/transactions/42",
+        source: "shell",
+        protocolVersion: 1,
+      });
+    } finally {
+      bcReceiver.close();
+    }
   });
 
   it("does NOT post to BroadcastChannel when `options.navigate` is provided (test-injection short-circuit)", async () => {
@@ -296,14 +308,16 @@ describe("deep-link bridge — BroadcastChannel canonical path (PR-29)", () => {
     const optionsNav = vi.fn();
 
     const cb = await captureUrlOpenCallback(mocks, { navigate: optionsNav });
-    cb({ url: "com.sergeant.shell://profile" });
+    try {
+      cb({ url: "com.sergeant.shell://profile" });
 
-    await new Promise((r) => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
 
-    expect(optionsNav).toHaveBeenCalledWith("/profile");
-    expect(received).toHaveLength(0);
-
-    bcReceiver.close();
+      expect(optionsNav).toHaveBeenCalledWith("/profile");
+      expect(received).toHaveLength(0);
+    } finally {
+      bcReceiver.close();
+    }
   });
 
   it("falls back gracefully when BroadcastChannel constructor is absent in the WebView", async () => {

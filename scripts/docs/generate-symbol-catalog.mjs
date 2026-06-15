@@ -118,13 +118,14 @@ function listWorkspaceDirs() {
 
 function resolveEntryFile(pkgDir, pkg) {
   // Resolution order:
-  // 1. exports["."].types
-  // 2. exports["."].default / exports["."] if string
-  // 3. types
-  // 4. main
-  // 5. ./src/index.ts (heuristic)
-  // 6. ./src/index.tsx
+  // 1. source entrypoints (deterministic on clean CI and built worktrees)
+  // 2. exports["."].types
+  // 3. exports["."].default / exports["."] if string
+  // 4. types
+  // 5. main
+  // 6. root index heuristic
   const candidates = [];
+  candidates.push("./src/index.ts", "./src/index.tsx");
   if (pkg.exports && typeof pkg.exports === "object") {
     const dot = pkg.exports["."];
     if (typeof dot === "string") candidates.push(dot);
@@ -136,12 +137,7 @@ function resolveEntryFile(pkgDir, pkg) {
   }
   if (typeof pkg.types === "string") candidates.push(pkg.types);
   if (typeof pkg.main === "string") candidates.push(pkg.main);
-  candidates.push(
-    "./src/index.ts",
-    "./src/index.tsx",
-    "./index.ts",
-    "./index.tsx",
-  );
+  candidates.push("./index.ts", "./index.tsx");
   for (const rel of candidates) {
     const abs = resolve(pkgDir, rel);
     if (existsSync(abs) && statSync(abs).isFile()) return abs;

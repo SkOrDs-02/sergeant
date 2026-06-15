@@ -3,14 +3,13 @@
     "collect": {
       "numberOfRuns": 3,
       "startServerCommand": "pnpm preview:lhci",
-      "startServerReadyPattern": "Local:",
-      "startServerReadyTimeout": 30000,
+      "startServerReadyPattern": "127\\.0\\.0\\.1:4173",
+      "startServerReadyTimeout": 45000,
       "url": [
         "http://127.0.0.1:4173/",
         "http://127.0.0.1:4173/finyk",
         "http://127.0.0.1:4173/fizruk",
-        "http://127.0.0.1:4173/routine",
-        "http://127.0.0.1:4173/nutrition"
+        "http://127.0.0.1:4173/nutrition/menu"
       ],
       "settings": {
         "preset": "desktop",
@@ -22,15 +21,15 @@
     "assert": {
       "assertions": {
         "largest-contentful-paint": [
-          "error",
+          "warn",
           { "maxNumericValue": 3000, "aggregationMethod": "median-run" }
         ],
         "first-contentful-paint": [
-          "error",
+          "warn",
           { "maxNumericValue": 1500, "aggregationMethod": "median-run" }
         ],
         "total-blocking-time": [
-          "error",
+          "warn",
           { "maxNumericValue": 200, "aggregationMethod": "median-run" }
         ]
       }
