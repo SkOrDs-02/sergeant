@@ -107,7 +107,22 @@ function createWebMemoryFallback(): KVStore {
   };
 }
 
-function resolveLsStore(): KVStore | null {
+/**
+ * Build a {@link KVStore} bound to **raw `window.localStorage`** — i.e. it
+ * deliberately bypasses the SQLite warm-cache overlay that {@link resolveStore}
+ * prefers post-bootstrap. Returns `null` when no `localStorage` is available.
+ *
+ * `resolveStore()` (and therefore `webKVStore`) routes reads/writes through the
+ * SQLite `kv_store` table once `bootstrapKvStore()` has run, so its `listKeys()`
+ * reflects the SQLite table — **not** the physical `localStorage` keyspace. The
+ * logout data-purge (`purgeLocalData.ts`) needs the physical keyspace so it can
+ * see and remove the LS-only fallback copies (`finyk_tx_cache`, …) and the
+ * sqlite-wasm `kvvfs-*` backing store that never travel through `webKVStore`.
+ * This accessor gives it that raw view while still going through the sanctioned
+ * `createWebKVStore` adapter (no direct `localStorage.*` calls → keeps the
+ * `sergeant-design/no-raw-local-storage` budget at 0).
+ */
+export function resolveLsStore(): KVStore | null {
   let storage: StorageLike | undefined;
   try {
     const candidate = (globalThis as { localStorage?: unknown }).localStorage;

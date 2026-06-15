@@ -6,6 +6,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
+import { SIGN_IN_PATH } from "../app/appPaths";
 import { useAuth } from "../auth/AuthContext";
 import { BiometricsSection } from "./BiometricsSection";
 import { ChangePasswordSection } from "./ChangePasswordSection";
@@ -40,7 +41,10 @@ export function ProfilePage() {
     try {
       await logout();
       toast.success("Ви вийшли з акаунта");
-      navigate("/", { replace: true });
+      // Send the signed-out user to the auth surface, not the hub root —
+      // `logout()` has already cleared the query cache so `user` is `null`,
+      // and `/sign-in` renders `AuthPage` instead of a momentary guest hub.
+      navigate(SIGN_IN_PATH, { replace: true });
     } catch {
       toast.error("Не вдалося вийти, спробуйте ще раз");
     } finally {

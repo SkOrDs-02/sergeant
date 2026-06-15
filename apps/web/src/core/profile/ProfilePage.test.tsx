@@ -12,6 +12,15 @@ import { MemoryRouter } from "react-router-dom";
 
 // ── Mocks ────────────────────────────────────────────────────
 
+const navigateMock = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual =
+    await vi.importActual<typeof import("react-router-dom")>(
+      "react-router-dom",
+    );
+  return { ...actual, useNavigate: () => navigateMock };
+});
+
 const updateUserMock =
   vi.fn<
     (d: unknown) => Promise<{ error: null } | { error: { message: string } }>
@@ -328,7 +337,7 @@ describe("ProfilePage", () => {
       expect(logoutBtn).toBeInTheDocument();
     });
 
-    it("calls logout, shows toast and navigates on click", async () => {
+    it("calls logout, shows toast and redirects to /sign-in on click", async () => {
       renderPage();
       const logoutBtn = screen.getByRole("button", { name: "Вийти" });
       fireEvent.click(logoutBtn);
@@ -336,6 +345,8 @@ describe("ProfilePage", () => {
       await waitFor(() =>
         expect(toastSuccessMock).toHaveBeenCalledWith("Ви вийшли з акаунта"),
       );
+      // Redirect to the auth surface, not the hub root (browser-QA (a)).
+      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
     });
 
     it("shows error toast when logout throws", async () => {

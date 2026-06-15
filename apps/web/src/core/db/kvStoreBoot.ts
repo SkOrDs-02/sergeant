@@ -118,13 +118,31 @@ let activeSqliteClient: SqliteKVStoreClient | null = null;
  */
 let activeSqliteKvStore: KVStore | null = null;
 
-/** Test-only escape hatch — exported so unit tests can reset the singleton. */
-export function __resetKvStoreBootForTests(): void {
+/**
+ * Drop the in-memory SQLite warm-cache and unbind the active adapter.
+ *
+ * The warm cache is a process-lifetime `Map` populated once at boot from the
+ * signed-in user's `kv_store` table. Wiping the on-disk SQLite DB on logout
+ * (`wipeSqliteDb`) and purging the LS fallback does **not** touch this Map, so
+ * without this reset a second user signing in on the same device *within the
+ * same page session* (SPA logout → login, no reload) would still read the
+ * previous user's values through `webKVStore`. Calling this on logout flips
+ * `loaded` back to `false`, so `getActiveSqliteKvStore()` returns `null` and
+ * `resolveStore()` falls through to the (also-purged) LS adapter until the next
+ * full boot re-bootstraps for the new user. The cross-tab channel is kept so a
+ * re-bootstrap reuses it.
+ */
+export function resetKvStoreBoot(): void {
   kvStoreBoot.warmCache.clear();
   kvStoreBoot.loaded = false;
-  kvStoreCrossTab = null;
   activeSqliteClient = null;
   activeSqliteKvStore = null;
+}
+
+/** Test-only escape hatch — exported so unit tests can reset the singleton. */
+export function __resetKvStoreBootForTests(): void {
+  resetKvStoreBoot();
+  kvStoreCrossTab = null;
 }
 
 /**
