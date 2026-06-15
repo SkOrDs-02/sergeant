@@ -511,7 +511,8 @@ describe("FallbackProvider", () => {
         status: 429,
       }),
       fallback: fakeProvider("anthropic", { ok: true, text: "from-fallback" }),
-      log: (_level, message, fields) => logs.push({ message, fields }),
+      log: (_level, message, fields) =>
+        logs.push(fields ? { message, fields } : { message }),
     });
 
     const result = await provider.generate(baseOpts());
