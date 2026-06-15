@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { JournalEntryCard } from "./JournalEntryCard";
 import {
   JOURNAL_OPEN_STORAGE_KEY,
@@ -44,7 +45,12 @@ export function JournalSection({
   }, []);
 
   return (
-    <Card as="section" radius="lg" padding="none" aria-label="Журнал записів">
+    <Card
+      as="section"
+      radius="lg"
+      padding="none"
+      aria-label={messages.fizruk.journal.sectionAriaLabel}
+    >
       <button
         type="button"
         onClick={toggle}
@@ -57,7 +63,7 @@ export function JournalSection({
       >
         <div className="flex-1 min-w-0 flex items-baseline gap-2">
           <SectionHeading as="h2" size="sm" className="mb-0!">
-            Журнал
+            {messages.fizruk.journal.title}
           </SectionHeading>
           <span className="text-xs text-muted tabular-nums">{totalCount}</span>
         </div>

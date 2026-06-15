@@ -1,6 +1,6 @@
 # i18n readiness — Sergeant web
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-15 by @claude. **Next review:** 2026-09-13.
 > **Status:** Active
 
 ## Контекст
@@ -140,14 +140,15 @@ cd apps/web && npx eslint . -f json 2>/dev/null \
 
 Burndown plan (один файл за PR ↦ кілька десятків PR; з round-15 — пачки через codemod):
 
-| Round | Allowlist size | Comment                                                                                                             |
-| ----- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 10    | n/a            | Foundation only (catalog created, auth migrated)                                                                    |
-| 14    | 239            | Phase 1+2+3 закрито; rule в warn-mode + allowlist                                                                   |
-| 15    | 233            | `i18n-burndown` codemod landed; 6 файлів мігровано (7 replacements)                                                 |
-| 16    | 199            | High-frequency burndown: +9 catalog-груп, codemod multi-line-import bug fixed; 34 файли мігровано (50 replacements) |
-| 17–25 | ~100           | Settings panels + showcase sections мігровані                                                                       |
-| 25–40 | 0              | Promote rule до `"error"`                                                                                           |
+| Round | Allowlist size | Comment                                                                                                                                                                                                                              |
+| ----- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 10    | n/a            | Foundation only (catalog created, auth migrated)                                                                                                                                                                                     |
+| 14    | 239            | Phase 1+2+3 закрито; rule в warn-mode + allowlist                                                                                                                                                                                    |
+| 15    | 233            | `i18n-burndown` codemod landed; 6 файлів мігровано (7 replacements)                                                                                                                                                                  |
+| 16    | 199            | High-frequency burndown: +9 catalog-груп, codemod multi-line-import bug fixed; 34 файли мігровано (50 replacements)                                                                                                                  |
+| 17–25 | ~100           | Settings panels + showcase sections мігровані                                                                                                                                                                                        |
+| 17    | 236            | Fizruk pages burndown: `Progress`, `Programs`, `Measurements`, `Body` + `Body/Journal{Section,EntryCard}` мігровано у `messages.fizruk.{progress,programs,measurements,body,journal}` (87 JSX-літералів, 6 файлів знято з allowlist) |
+| 25–40 | 0              | Promote rule до `"error"`                                                                                                                                                                                                            |
 
 Сирий мір по проекту (всі UA-strings, не тільки JSX-літерали; для
 референсу — НЕ closure-метрика):

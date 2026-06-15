@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { getKyivMondayIndex } from "@shared/lib/time/kyivTime";
 import { captureException } from "../../../core/observability/sentry";
@@ -52,7 +53,9 @@ export function Programs({
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-style-title text-text">Програми</h1>
+            <h1 className="text-style-title text-text">
+              {messages.fizruk.programs.title}
+            </h1>
             <p className="text-xs text-subtle mt-0.5">
               {activeProgram
                 ? `Активна: ${activeProgram.name}`
@@ -66,7 +69,7 @@ export function Programs({
               onClick={deactivateProgram}
               className="text-style-caption text-subtle hover:text-text"
             >
-              Зупинити
+              {messages.fizruk.programs.stop}
             </Button>
           )}
         </div>
@@ -96,11 +99,12 @@ export function Programs({
                         </h2>
                         {isActive && (
                           <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/25">
-                            Активна
+                            {messages.fizruk.programs.active}
                           </span>
                         )}
                         <span className="text-style-caption text-subtle border border-line rounded-full px-2 py-0.5">
-                          {prog.days} дн/тиждень
+                          {prog.days}{" "}
+                          {messages.fizruk.programs.daysPerWeekSuffix}
                         </span>
                       </div>
                       <p className="text-xs text-subtle mt-1.5 leading-relaxed">
@@ -147,7 +151,7 @@ export function Programs({
                         className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
                         onClick={() => activateProgram(prog.id)}
                       >
-                        Активувати
+                        {messages.fizruk.programs.activate}
                       </button>
                     ) : (
                       <>
@@ -173,12 +177,12 @@ export function Programs({
                               onStartWorkout(session, prog);
                             }}
                           >
-                            Розпочати сьогодні
+                            {messages.fizruk.programs.startToday}
                           </button>
                         )}
                         {!todaySession && (
                           <div className="flex-1 py-2.5 rounded-xl bg-panelHi text-subtle text-style-label text-center">
-                            Сьогодні відпочинок
+                            {messages.fizruk.programs.restToday}
                           </div>
                         )}
                         <button
@@ -186,7 +190,7 @@ export function Programs({
                           className="focus-ring py-2.5 px-4 rounded-xl border border-line text-subtle text-sm hover:text-text hover:bg-panelHi transition-colors"
                           onClick={deactivateProgram}
                         >
-                          Зупинити
+                          {messages.fizruk.programs.stop}
                         </button>
                       </>
                     )}
@@ -224,7 +228,7 @@ function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
   return (
     <div className="border-t border-line px-4 pb-4 pt-3 space-y-3 bg-bg/50">
       <SectionHeading as="div" size="xs" variant="fizruk">
-        Розклад та вправи
+        {messages.fizruk.programs.scheduleHeading}
       </SectionHeading>
       {prog.schedule.map((schedEntry: ProgramScheduleEntry) => {
         const session = prog.sessions[schedEntry.sessionKey];
@@ -241,7 +245,7 @@ function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
           >
             <div className="flex items-center gap-2 mb-2">
               <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-fizruk/10 text-success border border-success/20">
-                День {schedEntry.day}
+                {messages.fizruk.programs.daysPrefix} {schedEntry.day}
               </span>
               <span className="text-style-label text-text">
                 {schedEntry.name}
@@ -249,15 +253,16 @@ function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
             </div>
             <div className="flex items-center gap-3 mb-2 text-style-caption text-subtle">
               <span>
-                Відпочинок:{" "}
+                {messages.fizruk.programs.restLabel}{" "}
                 <span className="font-semibold text-text">
-                  {session.defaultRestSec}с
+                  {session.defaultRestSec}
+                  {messages.fizruk.secondsUnit}
                 </span>
               </span>
               <span>
-                Прогресія:{" "}
+                {messages.fizruk.programs.progressionLabel}{" "}
                 <span className="font-semibold text-text">
-                  +{session.progressionKg} кг
+                  +{session.progressionKg} {messages.fizruk.kgUnit}
                 </span>
               </span>
             </div>
@@ -274,8 +279,7 @@ function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
               </div>
             ) : (
               <div className="text-xs text-muted italic">
-                Вправи з програми відсутні в каталозі — додайте вправи з
-                відповідними ID вручну.
+                {messages.fizruk.programs.missingExercises}
               </div>
             )}
           </div>

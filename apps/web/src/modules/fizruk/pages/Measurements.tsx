@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { z } from "zod";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import {
@@ -113,10 +114,10 @@ export function Measurements() {
           </div>
           <div className="min-w-0">
             <SectionHeading as="div" size="sm">
-              Мануал
+              {messages.fizruk.measurements.manual}
             </SectionHeading>
             <div className="text-style-label text-success mt-0.5">
-              Як правильно робити заміри →
+              {messages.fizruk.measurements.manualLink}
             </div>
           </div>
         </a>
@@ -124,7 +125,7 @@ export function Measurements() {
         <div className="grid grid-cols-3 gap-2">
           <Card radius="lg" padding="sm">
             <Stat
-              label="Записів"
+              label={messages.fizruk.measurements.records}
               value={stats.total}
               size="sm"
               align="center"
@@ -132,7 +133,7 @@ export function Measurements() {
           </Card>
           <Card radius="lg" padding="sm">
             <Stat
-              label="Останній"
+              label={messages.fizruk.measurements.last}
               value={<span className="text-style-label">{stats.latestAt}</span>}
               size="sm"
               align="center"
@@ -140,7 +141,7 @@ export function Measurements() {
           </Card>
           <Card radius="lg" padding="sm">
             <Stat
-              label="Полів"
+              label={messages.fizruk.measurements.fields}
               value={stats.filledLatest}
               size="sm"
               align="center"
@@ -150,7 +151,7 @@ export function Measurements() {
 
         <Card radius="lg">
           <SectionHeading as="div" size="sm" className="mb-3">
-            Додати замір
+            {messages.fizruk.measurements.addHeading}
           </SectionHeading>
           <div className="grid grid-cols-2 gap-2">
             {MEASURE_FIELDS.map((f) => (
@@ -209,7 +210,7 @@ export function Measurements() {
                     if (!validation.success) {
                       const firstError =
                         validation.error.issues[0]?.message ??
-                        "Невірне значення";
+                        messages.fizruk.measurements.invalidValue;
                       // Use warning (not error) — the user simply needs to
                       // fix the input; the form stays visible so no recovery
                       // CTA is needed (toast-policy § warning = no mandatory action).
@@ -222,7 +223,7 @@ export function Measurements() {
                     );
                   }}
                 >
-                  Зберегти замір
+                  {messages.fizruk.measurements.submit}
                 </button>
               );
             })()}
@@ -234,7 +235,7 @@ export function Measurements() {
             <div className="flex items-center justify-between">
               <div>
                 <SectionHeading as="div" size="sm">
-                  Останній замір{" "}
+                  {messages.fizruk.measurements.lastEntry}{" "}
                   <span className="ml-1 normal-case tracking-normal font-medium text-subtle">
                     · {stats.latestAt}
                   </span>
@@ -282,7 +283,7 @@ export function Measurements() {
         <Card radius="lg" padding="none" className="overflow-hidden">
           <div className="px-4 py-3 bg-panelHi/60 border-b border-line">
             <SectionHeading as="div" size="sm">
-              Історія
+              {messages.fizruk.measurements.history}
             </SectionHeading>
           </div>
           {(entries || []).map((e) => (
@@ -302,7 +303,7 @@ export function Measurements() {
                   className="text-xs text-danger/80 hover:text-danger"
                   onClick={() => handleDelete(e.id)}
                 >
-                  Видалити
+                  {messages.actions.delete}
                 </button>
               </div>
               <div className="text-xs text-subtle mt-1">
@@ -319,8 +320,8 @@ export function Measurements() {
           {(entries || []).length === 0 && (
             <EmptyState
               compact
-              title="Поки замірів немає"
-              description="Додай перший запис, щоб бачити динаміку показників."
+              title={messages.fizruk.measurements.emptyTitle}
+              description={messages.fizruk.measurements.emptyDescription}
             />
           )}
         </Card>

@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useMeasurements } from "../hooks/useMeasurements";
@@ -240,7 +241,9 @@ export function Progress({ onNavigate }: ProgressProps) {
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-style-title text-text">Прогрес</h1>
+            <h1 className="text-style-title text-text">
+              {messages.fizruk.progress.title}
+            </h1>
             <p className="text-xs text-subtle mt-0.5">
               {quickStats.latestWorkoutAt !== "—"
                 ? `Останнє: ${quickStats.latestWorkoutAt} · ${quickStats.prsCount} PR`
@@ -255,7 +258,9 @@ export function Progress({ onNavigate }: ProgressProps) {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-subtle">Заміри</div>
+              <div className="text-xs text-subtle">
+                {messages.fizruk.progress.measurementsCount}
+              </div>
               <div className="text-base font-extrabold text-text tabular-nums">
                 {entries.length}
               </div>
@@ -267,8 +272,8 @@ export function Progress({ onNavigate }: ProgressProps) {
           <EmptyState
             compact
             icon="📈"
-            title="Даних ще немає"
-            description="Додай тренування або заміри — і тут зʼявиться аналітика"
+            title={messages.fizruk.progress.emptyTitle}
+            description={messages.fizruk.progress.emptyDescription}
           />
         )}
 
@@ -283,23 +288,25 @@ export function Progress({ onNavigate }: ProgressProps) {
         {hasPushupData && (
           <Card radius="lg">
             <SectionHeading as="div" size="sm" className="mb-3">
-              Активність з інших модулів
+              {messages.fizruk.progress.crossModuleHeading}
             </SectionHeading>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-fizruk/10 flex items-center justify-center shrink-0 text-base">
                 💪
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-style-label text-text">Відтискання</div>
+                <div className="text-style-label text-text">
+                  {messages.fizruk.progress.pushups}
+                </div>
                 <div className="text-xs text-subtle">
-                  за даними щоденних звичок
+                  {messages.fizruk.progress.pushupsSource}
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-bg border border-line rounded-xl p-2.5">
                 <Stat
-                  label="Сьогодні"
+                  label={messages.period.today}
                   value={pushupStats.todayCount}
                   size="sm"
                   align="center"
@@ -307,7 +314,7 @@ export function Progress({ onNavigate }: ProgressProps) {
               </div>
               <div className="bg-bg border border-line rounded-xl p-2.5">
                 <Stat
-                  label="Тиждень"
+                  label={messages.period.week}
                   value={pushupStats.week}
                   size="sm"
                   align="center"
@@ -315,7 +322,7 @@ export function Progress({ onNavigate }: ProgressProps) {
               </div>
               <div className="bg-bg border border-line rounded-xl p-2.5">
                 <Stat
-                  label="Місяць"
+                  label={messages.period.month}
                   value={pushupStats.month}
                   size="sm"
                   align="center"
@@ -336,15 +343,15 @@ export function Progress({ onNavigate }: ProgressProps) {
             <div className="grid grid-cols-2 gap-3">
               <Card radius="lg">
                 <Stat
-                  label="Вага"
+                  label={messages.fizruk.progress.weight}
                   value={
                     meas.latest?.["weightKg"] != null
-                      ? `${meas.latest["weightKg"]} кг`
+                      ? `${meas.latest["weightKg"]} ${messages.fizruk.kgUnit}`
                       : "—"
                   }
                   sublabel={
                     weightDelta == null ? (
-                      "Немає порівняння"
+                      messages.fizruk.progress.noComparison
                     ) : (
                       <span
                         className={cn(
@@ -353,7 +360,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                         )}
                       >
                         {weightDelta > 0 ? "+" : ""}
-                        {weightDelta.toFixed(1)} кг
+                        {weightDelta.toFixed(1)} {messages.fizruk.kgUnit}
                       </span>
                     )
                   }
@@ -361,7 +368,7 @@ export function Progress({ onNavigate }: ProgressProps) {
               </Card>
               <Card radius="lg">
                 <Stat
-                  label="% жиру"
+                  label={messages.fizruk.progress.bodyFat}
                   value={
                     meas.latest?.["bodyFatPct"] != null
                       ? `${meas.latest["bodyFatPct"]}%`
@@ -392,13 +399,13 @@ export function Progress({ onNavigate }: ProgressProps) {
         {weightTrend.filter((d) => d.value != null).length >= 2 && (
           <Card radius="lg">
             <SectionHeading size="sm" className="mb-3">
-              Тренд ваги
+              {messages.fizruk.progress.weightTrend}
             </SectionHeading>
             <MiniLineChart
               data={weightTrend}
-              unit="кг"
+              unit={messages.fizruk.kgUnit}
               color={statusColors.success}
-              metricLabel="вагу тіла"
+              metricLabel={messages.fizruk.progress.weightMetricLabel}
             />
           </Card>
         )}
@@ -407,13 +414,13 @@ export function Progress({ onNavigate }: ProgressProps) {
         {fatTrend.filter((d) => d.value != null).length >= 2 && (
           <Card radius="lg">
             <SectionHeading size="sm" className="mb-3">
-              Тренд % жиру
+              {messages.fizruk.progress.bodyFatTrend}
             </SectionHeading>
             <MiniLineChart
               data={fatTrend}
               unit="%"
               color={statusColors.warning}
-              metricLabel="відсоток жиру"
+              metricLabel={messages.fizruk.progress.bodyFatMetricLabel}
             />
           </Card>
         )}
@@ -422,7 +429,7 @@ export function Progress({ onNavigate }: ProgressProps) {
         {wellbeingData.length >= 2 && (
           <Card radius="lg">
             <SectionHeading size="sm" className="mb-3">
-              Самопочуття
+              {messages.fizruk.progress.wellbeing}
             </SectionHeading>
             <WellbeingChart data={wellbeingData} />
           </Card>
@@ -431,13 +438,15 @@ export function Progress({ onNavigate }: ProgressProps) {
         {/* Muscle volume bars */}
         <Card radius="lg" padding="lg">
           <SectionHeading size="sm" className="mb-3">
-            Обʼєм по мʼязах
+            {messages.fizruk.progress.muscleVolume}
           </SectionHeading>
           {weeklyByMuscle.top.length === 0 ? (
             <EmptyState
               compact
-              title="Поки що порожньо"
-              description="Немає даних за останні 4 тижні."
+              title={messages.empty.nothingYet}
+              description={
+                messages.fizruk.progress.muscleVolumeEmptyDescription
+              }
             />
           ) : (
             <div className="space-y-2">
@@ -481,11 +490,11 @@ export function Progress({ onNavigate }: ProgressProps) {
             <Card radius="lg" padding="lg">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <SectionHeading as="div" size="sm">
-                  Рекорди (PR) · {prs.length}
+                  {messages.fizruk.progress.recordsHeading} · {prs.length}
                 </SectionHeading>
                 {filtered.length !== prs.length && (
                   <div className="text-xs text-subtle">
-                    {filtered.length} показано
+                    {filtered.length} {messages.fizruk.progress.shown}
                   </div>
                 )}
               </div>
@@ -504,7 +513,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                         : "bg-panel border-line text-subtle hover:text-text",
                     )}
                   >
-                    Всі
+                    {messages.fizruk.progress.filterAll}
                   </button>
                   {muscleGroups.map((g) => (
                     <button
@@ -530,13 +539,13 @@ export function Progress({ onNavigate }: ProgressProps) {
                   compact
                   title={
                     prs.length === 0
-                      ? "Поки немає силових PR"
-                      : "Немає PR для цієї групи мʼязів"
+                      ? messages.fizruk.progress.noPrTitle
+                      : messages.fizruk.progress.noPrGroupTitle
                   }
                   description={
                     prs.length === 0
-                      ? "Заверши сети з вагою — рекорди зʼявляться тут автоматично."
-                      : "Спробуй іншу групу або скинь фільтр."
+                      ? messages.fizruk.progress.noPrDescription
+                      : messages.fizruk.progress.noPrGroupDescription
                   }
                 />
               ) : (
@@ -568,12 +577,13 @@ export function Progress({ onNavigate }: ProgressProps) {
                             </div>
                           </div>
                           <div className="shrink-0 text-style-label text-text tabular-nums">
-                            {p.best1rm.toFixed(0)} кг
+                            {p.best1rm.toFixed(0)} {messages.fizruk.kgUnit}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs text-subtle tabular-nums">
-                            {p.weightKg ?? 0} кг × {p.reps ?? 0}
+                            {p.weightKg ?? 0} {messages.fizruk.kgUnit} ×{" "}
+                            {p.reps ?? 0}
                           </span>
                           {p.at && (
                             <span className="text-xs text-muted">
