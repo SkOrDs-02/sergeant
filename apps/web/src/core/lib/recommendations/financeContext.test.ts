@@ -20,7 +20,14 @@ describe("buildFinanceContext — defaults", () => {
   it("returns sane empty defaults when no LS data is present", () => {
     const ctx = buildFinanceContext();
     expect(ctx.now.toISOString()).toBe(FIXED_NOW.toISOString());
-    expect(ctx.monthStart.toISOString()).toBe("2026-04-01T00:00:00.000Z");
+    // `monthStart` is the *local* first-of-month at 00:00 (see
+    // `startOfCurrentMonth`). Compare against a locally-constructed instant
+    // rather than a hard-coded UTC string: under the repo's domain timezone
+    // (Europe/Kyiv, +3 in summer) the UTC serialization of local April-1
+    // midnight is `2026-03-31T21:00:00.000Z`, so a fixed `…Z` literal only
+    // holds on a UTC host. `new Date(year, monthIndex, 1)` tracks the host
+    // zone the same way the SUT does, keeping this green on UTC and Kyiv.
+    expect(ctx.monthStart.getTime()).toBe(new Date(2026, 3, 1).getTime());
     expect(ctx.transactions).toEqual([]);
     expect(ctx.manualExpenses).toEqual([]);
     expect(ctx.budgets).toEqual([]);

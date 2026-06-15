@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render } from "@testing-library/react";
+import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { SHELL_DEEPLINK_CHANNEL } from "@sergeant/shared";
 
@@ -47,7 +47,19 @@ beforeEach(async () => {
   ).__sergeantShellDeepLinkQueue;
 });
 
-afterEach(() => {
+afterEach(async () => {
+  // Unmount the bridge first — its effect-cleanup unsubscribes the
+  // BroadcastChannel listener and closes the channel. Then yield one
+  // event-loop turn so any *in-flight* BroadcastChannel delivery posted by
+  // this test is flushed (and dropped, now that the listener is gone) before
+  // the next test mounts a fresh bridge on the same channel name. Without
+  // this drain a late async message from one test navigates the next test's
+  // router and flakes its assertion (the channel name is a shared constant,
+  // so messages cross test boundaries unless explicitly drained).
+  cleanup();
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
   vi.restoreAllMocks();
 });
 
@@ -80,9 +92,15 @@ describe("ShellDeepLinkBridge — BroadcastChannel listener (PR-29)", () => {
       source: "shell",
       timestamp: Date.now(),
     });
-    await new Promise((r) => setTimeout(r, 10));
-
-    expect(loc.textContent).toBe("/finyk/transactions/42");
+    // Poll instead of a fixed delay: BroadcastChannel delivery + the
+    // router re-render is async, and on a throttled CI runner a fixed
+    // 10ms wait races the navigation (the documented flake).
+    await waitFor(
+      () => expect(loc.textContent).toBe("/finyk/transactions/42"),
+      {
+        timeout: 2000,
+      },
+    );
     sender.close();
   });
 
@@ -126,10 +144,11 @@ describe("ShellDeepLinkBridge — BroadcastChannel listener (PR-29)", () => {
       source: "shell",
       timestamp: Date.now(),
     });
-    await new Promise((r) => setTimeout(r, 10));
-
+    // Wait on the observable side-effect (the rejection warning) rather than
+    // a fixed delay — that deterministically proves the message was delivered
+    // and handled before we assert that no navigation happened.
+    await waitFor(() => expect(warnSpy).toHaveBeenCalled(), { timeout: 2000 });
     expect(loc.textContent).toBe("/");
-    expect(warnSpy).toHaveBeenCalled();
     sender.close();
     warnSpy.mockRestore();
   });
@@ -153,11 +172,11 @@ describe("ShellDeepLinkBridge — backward-compat (window-global)", () => {
       window as Window & { __sergeantShellDeepLinkQueue?: string[] }
     ).__sergeantShellDeepLinkQueue = ["/welcome"];
     const loc = renderBridge();
-    // Дочекаємось React state-update після useEffect-у
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
+    // Дочекаємось React state-update після useEffect-у (poll замість
+    // фіксованої затримки — drain + re-render асинхронні).
+    await waitFor(() => expect(loc.textContent).toBe("/welcome"), {
+      timeout: 2000,
     });
-    expect(loc.textContent).toBe("/welcome");
     // Drained
     expect(
       (window as Window & { __sergeantShellDeepLinkQueue?: string[] })
@@ -179,8 +198,9 @@ describe("ShellDeepLinkBridge — coalescing window", () => {
       source: "shell",
       timestamp: ts,
     });
-    await new Promise((r) => setTimeout(r, 10));
-    expect(loc.textContent).toBe("/chat");
+    await waitFor(() => expect(loc.textContent).toBe("/chat"), {
+      timeout: 2000,
+    });
 
     // window-global with the SAME timestamp → must be coalesced.
     // (NOTE: mobile-shell sends BC with the message's `Date.now()` but
