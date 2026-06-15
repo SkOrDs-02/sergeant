@@ -52,7 +52,7 @@ function chipClassName({
   hubLike: boolean;
 }): string {
   return cn(
-    "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full whitespace-nowrap shrink-0 transition-colors",
+    "inline-flex min-h-10 items-center gap-1.5 text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-colors",
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
     active
       ? "bg-brand-500/10 border border-brand-500/40 text-brand-600 hover:bg-brand-500/15"
@@ -128,7 +128,7 @@ export function ChatQuickActions({
       role="group"
       aria-label={messages.hub.chatQuickActions}
     >
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+      <div className="flex flex-wrap gap-2">
         {topActions.map(renderChip)}
         {moreActions.length > 0 && (
           <button
