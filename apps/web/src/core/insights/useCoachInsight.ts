@@ -299,6 +299,16 @@ export function useCoachInsight(): UseCoachInsightResult {
   const query = useQuery({
     queryKey,
     queryFn: fetchCoachInsight,
+    // Не ретраїмо 429: ліміт (`api:coach` rate-limit + денна AI-квота)
+    // має годинне/добове вікно, тож негайний повтор гарантовано впаде
+    // знову, спалить ще один хіт у спільному `api:coach` бакеті й затягне
+    // спінер. Інші 4xx — теж детермінований fail. Transient network/5xx
+    // лишаємо на одну спробу.
+    retry: (failureCount, error) => {
+      if (failureCount >= 1) return false;
+      if (isApiError(error) && error.kind === "http") return false;
+      return true;
+    },
     staleTime: Infinity,
     gcTime: 24 * 60 * 60_000,
     initialData: () => loadInitialInsight(todayKey),

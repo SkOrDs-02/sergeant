@@ -84,6 +84,16 @@ export function useAnalytics({
     [categorySpendIndex, customCategories],
   );
 
+  // Authoritative expense total, rounded once from the raw index sum. The
+  // per-category `spent` values are each rounded independently, so summing
+  // them (as the donut chart did) drifts by a hryvnia from `summary.spent`
+  // (which is `Math.round` of the same raw total). Sharing this single
+  // value keeps the donut centre and the "Підсумок" card in lockstep.
+  const distributionTotal = useMemo(
+    () => Math.round(categorySpendIndex.totalSpent),
+    [categorySpendIndex],
+  );
+
   // Cache: top merchants by total spend. Depends on tx list + excludedTxIds
   // + txSplits — сплітовані транзакції (напр. оренда з поверненнями) вже
   // нормалізуються до чистої частки користувача, щоб цифри збігалися з
@@ -121,6 +131,7 @@ export function useAnalytics({
     summary,
     topCategories,
     distribution,
+    distributionTotal,
     topMerchants,
     monthlyTrend,
     comparison,

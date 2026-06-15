@@ -112,9 +112,26 @@ export function useTransactionFilters({
       .map((e) => manualExpenseToTransaction(e));
   }, [manualExpenses, selMonth]);
 
+  // The bank-side slice can carry rows outside `selMonth`: the read-overlay
+  // in `useMonobankWebhook` falls back to the full SQLite mirror on a cold
+  // start, and `historyTx` keeps the last fetched month while a new fetch is
+  // in flight. Clamp to the selected month so the rendered rows always match
+  // `monthLabel` instead of leaking adjacent-month groups under the header.
+  const monthBankTxs = useMemo(() => {
+    const monthStartSec =
+      new Date(selMonth.year, selMonth.month, 1).getTime() / 1000;
+    const monthEndSec =
+      new Date(selMonth.year, selMonth.month + 1, 1).getTime() / 1000;
+    const source = isCurrentMonth ? realTx : historyTx;
+    return source.filter((t) => {
+      const ts = t.time ?? 0;
+      return ts >= monthStartSec && ts < monthEndSec;
+    });
+  }, [isCurrentMonth, realTx, historyTx, selMonth]);
+
   const activeTx = useMemo(
-    () => [...(isCurrentMonth ? realTx : historyTx), ...manualExpenseTxs],
-    [isCurrentMonth, realTx, historyTx, manualExpenseTxs],
+    () => [...monthBankTxs, ...manualExpenseTxs],
+    [monthBankTxs, manualExpenseTxs],
   );
   const activeLoading = isCurrentMonth ? loadingTx : loadingHistory;
 

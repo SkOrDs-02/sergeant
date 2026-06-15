@@ -208,6 +208,7 @@ export function WorkoutJournalSection({
             </div>
             <div className="mt-3 flex gap-2">
               <Button
+                module="fizruk"
                 className="flex-1 h-11"
                 onClick={() => {
                   const w = createWorkout();
@@ -402,6 +403,7 @@ export function WorkoutJournalSection({
                 </div>
               </div>
               <Button
+                module="fizruk"
                 type="button"
                 className="w-full h-11"
                 onClick={submitRetroWorkout}

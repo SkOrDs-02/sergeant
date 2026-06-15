@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pluralDays, pluralUa } from "./ukrainianPlural";
+import { pluralDays, pluralTimes, pluralUa } from "./ukrainianPlural";
 
 describe("pluralDays", () => {
   it("one: 1, 21, 31, 101", () => {
@@ -36,6 +36,20 @@ describe("pluralDays", () => {
     expect(pluralDays(-1)).toBe("день");
     expect(pluralDays(-3)).toBe("дні");
     expect(pluralDays(-11)).toBe("днів");
+  });
+
+  it("pluralTimes: 1 раз / 2-4 рази / 5+ разів", () => {
+    expect(pluralTimes(1)).toBe("раз");
+    expect(pluralTimes(21)).toBe("раз");
+    expect(pluralTimes(2)).toBe("рази");
+    expect(pluralTimes(3)).toBe("рази");
+    expect(pluralTimes(4)).toBe("рази");
+    expect(pluralTimes(22)).toBe("рази");
+    expect(pluralTimes(0)).toBe("разів");
+    expect(pluralTimes(5)).toBe("разів");
+    expect(pluralTimes(11)).toBe("разів");
+    expect(pluralTimes(14)).toBe("разів");
+    expect(pluralTimes(25)).toBe("разів");
   });
 
   it("працює як загальний helper на інших формах", () => {

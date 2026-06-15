@@ -53,7 +53,7 @@ export function RoutineCalendarHero({
       module="routine"
       radius="r-2xl"
       aria-label={rangeLabel}
-      className="relative"
+      className="routine-hero relative"
     >
       {flame.visible && (
         <span

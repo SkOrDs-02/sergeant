@@ -482,9 +482,14 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               disabled={isSubmitting}
               className={cn(
                 "focus-ring w-full py-3 rounded-xl text-style-label transition-[background-color,box-shadow,opacity,transform]",
+                // WHY: the resting CTA carries the module accent (fizruk teal)
+                // for module-accent containment (Hard Rule #12) — it was
+                // emerald (`success-strong`), Finyk's accent. The confirmed
+                // state stays green because that green is success semantics
+                // (shared across modules), not a module accent.
                 submitSuccess
                   ? "bg-success-strong text-white"
-                  : "bg-success-strong text-white active:scale-[0.98]",
+                  : "bg-fizruk-strong text-white hover:bg-teal-800 active:scale-[0.98]",
                 isSubmitting && "opacity-60",
               )}
             >

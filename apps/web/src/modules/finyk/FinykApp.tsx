@@ -409,6 +409,11 @@ export default function App({
             handleExpenseSave(expense);
             handlePostSavePrompt(expense);
           }}
+          onDelete={(id) => {
+            storage.removeManualExpense(id);
+            setEditingManualExpenseId(null);
+            toast.success("Витрату видалено.");
+          }}
         />
 
         <ModuleBottomNav

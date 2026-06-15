@@ -532,6 +532,7 @@ export function Dashboard({
               Скасувати
             </Button>
             <Button
+              module="fizruk"
               className="flex-1 h-12 min-h-[44px]"
               onClick={() => {
                 const picks = pendingPicks ?? [];

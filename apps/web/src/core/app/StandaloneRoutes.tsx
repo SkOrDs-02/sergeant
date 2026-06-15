@@ -38,10 +38,12 @@ const ResetPasswordPage = lazyImport(
   () => import("../auth/ResetPasswordPage"),
   "ResetPasswordPage",
 );
-const DesignShowcase = lazyImport(
-  () => import("../DesignShowcase"),
-  "DesignShowcase",
-);
+// Internal styleguide — dev-only. The `import.meta.env.DEV` guard lets Vite
+// statically drop the `import()` (and the whole DesignShowcase chunk) from
+// the production bundle, mirroring `ReactQueryDevtools` in `main.tsx`.
+const DesignShowcase = import.meta.env.DEV
+  ? lazyImport(() => import("../DesignShowcase"), "DesignShowcase")
+  : null;
 const AssistantCataloguePage = lazyImport(
   () => import("../AssistantCataloguePage"),
   "AssistantCataloguePage",
@@ -203,13 +205,23 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     },
   }),
 
+  // `/design` is the internal Design System 2.0 styleguide — it exposes
+  // internal Hard Rules, raw tokens and per-section maturity (BETA) badges
+  // that are not meant for end users. Gate it to dev builds: `DesignShowcase`
+  // is `null` in production (see its dev-only declaration above), so the
+  // route renders the 404 page there instead of the styleguide.
   defineStandaloneRoute({
     paths: [DESIGN_PATH],
-    render: () => (
-      <Suspense fallback={<PageLoader />}>
-        <DesignShowcase />
-      </Suspense>
-    ),
+    render: () =>
+      DesignShowcase ? (
+        <Suspense fallback={<PageLoader />}>
+          <DesignShowcase />
+        </Suspense>
+      ) : (
+        <Suspense fallback={<PageLoader />}>
+          <NotFoundPage />
+        </Suspense>
+      ),
   }),
 
   // `/pricing` — Phase 0 monetization рейки: статична сторінка з тарифами

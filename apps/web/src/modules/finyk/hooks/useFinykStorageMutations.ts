@@ -1,4 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
+import { hubKeys } from "@shared/lib/api/queryKeys";
 import {
   trackEvent,
   ANALYTICS_EVENTS,
@@ -29,6 +31,7 @@ import type { FinykStorageSlots } from "./useFinykStorageSlots";
  * (initiative 0001 — module decomposition).
  */
 export function useFinykStorageMutations(slots: FinykStorageSlots) {
+  const queryClient = useQueryClient();
   const {
     setBudgets,
     setSubscriptions,
@@ -45,6 +48,14 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     setDismissedRecurring,
   } = slots;
 
+  // Manual expenses feed the Hub finyk preview (overview/networth/month
+  // aggregates). The mono webhook hook only invalidates this key on bank-tx
+  // changes, so a manual add/edit/delete must fan out the same invalidation
+  // or the Hub card stays stale until the next bank sync.
+  const invalidateFinykPreview = () => {
+    void queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
+  };
+
   const addManualExpense = (
     expense: Partial<ManualExpense> & { id?: unknown },
   ) => {
@@ -56,6 +67,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       category: expense.category || "інше",
     };
     setManualExpenses((prev) => [entry, ...prev]);
+    invalidateFinykPreview();
     // Product analytics: payload intentionally minimal (category + flag
     // whether a custom description was provided) — no amounts, no text.
     trackEvent(ANALYTICS_EVENTS.EXPENSE_ADDED, {
@@ -79,6 +91,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
 
   const removeManualExpense = (id: string) => {
     setManualExpenses((prev) => prev.filter((e) => e.id !== id));
+    invalidateFinykPreview();
     trackEvent(ANALYTICS_EVENTS.EXPENSE_DELETED, { source: "manual" });
   };
 
@@ -100,6 +113,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         return next;
       }),
     );
+    invalidateFinykPreview();
   };
 
   const toggleHideAccount = (id: string) =>

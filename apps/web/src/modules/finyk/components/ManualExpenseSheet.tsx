@@ -9,6 +9,7 @@ import { Input } from "@shared/components/ui/Input";
 import { useApiForm } from "@shared/forms/useApiForm";
 import { Label } from "@shared/components/ui/FormField";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import {
   parseExpenseSpeech,
@@ -16,7 +17,7 @@ import {
   useVisualKeyboardInset,
 } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
-import { formatMoney } from "@sergeant/shared";
+import { formatMoney, pluralTimes } from "@sergeant/shared";
 import { Icon } from "@shared/components/ui/Icon";
 import { Badge } from "@shared/components/ui/Badge";
 import {
@@ -131,6 +132,13 @@ interface ManualExpenseSheetProps {
     category: string;
     date: string;
   }) => void;
+  /**
+   * Delete the expense currently being edited. Only wired in edit mode
+   * (`initialExpense.id` present) — the desktop path has no swipe gesture,
+   * so the in-sheet "Видалити" action is the only way to remove a manual
+   * expense without a touch device.
+   */
+  onDelete?: (id: string) => void;
   initialExpense?: {
     id?: string;
     description?: string;
@@ -148,6 +156,7 @@ export function ManualExpenseSheet({
   open,
   onClose,
   onSave,
+  onDelete,
   initialExpense,
   frequentCategories = [],
   frequentMerchants = [],
@@ -225,6 +234,8 @@ export function ManualExpenseSheet({
   // чистою (description/amount/category/date).
   const [showDateField, setShowDateField] = useState(false);
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   useEffect(() => {
     if (open) {
       if (initialExpense?.id) {
@@ -273,6 +284,7 @@ export function ManualExpenseSheet({
       setCategoriesExpanded(false);
       setDescFocused(false);
       setShowDateField(false);
+      setConfirmDelete(false);
       // 6.3: clear AI-applied state when the sheet reopens — stale
       // suggestion from a previous session shouldn't carry over.
       setAiAppliedCategory(null);
@@ -341,34 +353,47 @@ export function ManualExpenseSheet({
   };
 
   return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={isEditing ? "Редагувати витрату" : "Додати витрату"}
-      kbInsetPx={kbInsetPx}
-      panelClassName="finyk-sheet"
-      bodyClassName="space-y-4"
-      footer={
-        <div className="flex gap-3">
-          <Button
-            variant="secondary"
-            className="flex-1"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            Скасувати
-          </Button>
-          <Button
-            className="flex-1"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isEditing ? "Зберегти" : "Додати"}
-          </Button>
+    <>
+      <Sheet
+        open={open}
+        onClose={onClose}
+        title={isEditing ? "Редагувати витрату" : "Додати витрату"}
+        kbInsetPx={kbInsetPx}
+        panelClassName="finyk-sheet"
+        bodyClassName="space-y-4"
+        footer={
+        <div className="space-y-2">
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Скасувати
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isEditing ? "Зберегти" : "Додати"}
+            </Button>
+          </div>
+          {isEditing && onDelete && initialExpense?.id ? (
+            <Button
+              variant="danger"
+              className="w-full"
+              onClick={() => setConfirmDelete(true)}
+              disabled={isSubmitting}
+            >
+              Видалити
+            </Button>
+          ) : null}
         </div>
-      }
-    >
-      <div className="space-y-3">
+        }
+      >
+        <div className="space-y-3">
         {/* S15: amount is the only «must-fill» field — it used to live
             under the name input, so new users had to scroll past an
             optional field before they could do the single thing that
@@ -528,7 +553,7 @@ export function ManualExpenseSheet({
                     }
                   }}
                   className="px-2.5 py-1 rounded-full text-style-caption bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors"
-                  title={`${m.count} разів · ${formatMoney(m.total)}`}
+                  title={`${m.count} ${pluralTimes(m.count)} · ${formatMoney(m.total)}`}
                 >
                   {m.name}
                 </button>
@@ -649,6 +674,20 @@ export function ManualExpenseSheet({
           </div>
         </div>
       </div>
-    </Sheet>
+      </Sheet>
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Видалити витрату?"
+        description="Цю ручну витрату буде видалено без можливості відновлення."
+        confirmLabel="Видалити"
+        cancelLabel="Скасувати"
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          if (initialExpense?.id) onDelete?.(String(initialExpense.id));
+          onClose();
+        }}
+      />
+    </>
   );
 }

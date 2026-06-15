@@ -182,7 +182,11 @@ export function WorkoutTemplatesSection({
       </div>
 
       {!editingId && (
-        <Button className="w-full h-12 min-h-[44px]" onClick={startNew}>
+        <Button
+          module="fizruk"
+          className="w-full h-12 min-h-[44px]"
+          onClick={startNew}
+        >
           + Новий шаблон
         </Button>
       )}
@@ -384,6 +388,7 @@ export function WorkoutTemplatesSection({
 
           <div className="flex gap-2">
             <Button
+              module="fizruk"
               className="flex-1 h-12 min-h-[44px]"
               onClick={save}
               disabled={!orderIds.length}

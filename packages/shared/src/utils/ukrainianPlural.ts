@@ -29,3 +29,9 @@ const DAYS_FORMS: UaPluralForms = { one: "день", few: "дні", many: "дн�
 export function pluralDays(n: number): string {
   return pluralUa(n, DAYS_FORMS);
 }
+
+const TIMES_FORMS: UaPluralForms = { one: "раз", few: "рази", many: "разів" };
+
+export function pluralTimes(n: number): string {
+  return pluralUa(n, TIMES_FORMS);
+}

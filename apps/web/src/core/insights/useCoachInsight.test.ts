@@ -79,7 +79,10 @@ function makeWrapper(qc: QueryClient) {
 function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
-      queries: { retry: false, gcTime: 0 },
+      // `retryDelay: 0` — хук задає власний `retry`-predicate, що перекриває
+      // глобальний `retry: false`; без нуль-затримки RQ-backoff (~1с) лишає
+      // query у `loading` довше за вікно `waitFor` і retry-тести флакають.
+      queries: { retry: false, retryDelay: 0, gcTime: 0 },
       mutations: { retry: false },
     },
   });
@@ -221,5 +224,44 @@ describe("useCoachInsight", () => {
 
     expect(result.current.insight).toBe("Insight without memory");
     expect(result.current.error).toBeNull();
+  });
+
+  it("does NOT retry on 429 (rate-limit / quota) — single attempt", async () => {
+    mockGetMemory.mockResolvedValue({ memory: null });
+    const rateLimited = Object.assign(new Error("Too Many Requests"), {
+      kind: "http",
+      status: 429,
+    });
+    mockPostInsight.mockRejectedValue(rateLimited);
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result } = renderHook(() => useCoachInsight(), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.insight).toBeNull();
+    expect(mockPostInsight).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries once on a transient network error", async () => {
+    mockGetMemory.mockResolvedValue({ memory: null });
+    const network = Object.assign(new Error("Failed to fetch"), {
+      kind: "network",
+    });
+    mockPostInsight.mockRejectedValue(network);
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result } = renderHook(() => useCoachInsight(), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.insight).toBeNull();
+    expect(mockPostInsight).toHaveBeenCalledTimes(2);
   });
 });

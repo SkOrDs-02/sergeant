@@ -6,6 +6,12 @@
 // that adding a new route to `StandaloneRoutes.tsx` automatically updates the
 // allowlist without a parallel edit here.
 
+// Canonical document title. Mirrors `apps/web/index.html` <title> and the
+// PWA manifest `name` (vite.config.js). Some sub-routes were observed losing
+// the static title (browser falling back to the URL), so `RootLayout` keeps
+// it pinned to this value on every navigation.
+export const APP_TITLE = "Sergeant — Твій персональний хаб життя";
+
 // Auth lives at `/sign-in` rather than as an in-page overlay. This keeps
 // the FTUX splash (`/`) as the true cold-start surface — the old
 // `showAuth` boolean meant that a first-time visitor who tapped

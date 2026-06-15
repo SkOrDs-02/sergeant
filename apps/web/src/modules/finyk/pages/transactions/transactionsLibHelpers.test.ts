@@ -102,6 +102,15 @@ describe("formatStickyDayLabel", () => {
     expect(label.length).toBeGreaterThan(0);
   });
 
+  it("uses the nominative weekday case, not the accusative", () => {
+    // As a group heading it must read "субота" (nominative), not "суботу"
+    // (accusative) — some browser CLDR builds emit the accusative form for
+    // toLocaleDateString(weekday:"long"), which this helper avoids.
+    expect(formatStickyDayLabel("2026-05-02")).toBe("субота, 2 травня");
+    expect(formatStickyDayLabel("2026-05-01")).toBe("пʼятниця, 1 травня");
+    expect(formatStickyDayLabel("2026-05-06")).toBe("середа, 6 травня");
+  });
+
   it("does not throw for a well-formed YYYY-MM-DD input", () => {
     expect(() => formatStickyDayLabel("2024-12-25")).not.toThrow();
   });

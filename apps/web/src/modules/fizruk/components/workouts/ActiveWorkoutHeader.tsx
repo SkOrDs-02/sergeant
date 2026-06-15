@@ -49,6 +49,7 @@ export function ActiveWorkoutHeader({
       <div className="flex items-center gap-2">
         {!activeWorkout.endedAt ? (
           <Button
+            module="fizruk"
             size="sm"
             className="h-9 px-4"
             type="button"

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@shared/hooks/useTheme";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
@@ -15,7 +15,7 @@ import {
   useHubChatOverlay,
   useHubChatOverlayState,
 } from "../hub/useHubChatOverlay";
-import { SIGN_IN_PATH } from "./appPaths";
+import { APP_TITLE, SIGN_IN_PATH } from "./appPaths";
 import { useHubKeyboardShortcuts } from "../hooks/useHubKeyboardShortcuts";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import { useHubNavigation } from "../hooks/useHubNavigation";
@@ -132,6 +132,17 @@ function RootLayoutInner() {
   // Global side effects
   useTheme();
   useActivationV2Boot();
+
+  // Keep the tab title pinned to the app name on every navigation. The
+  // static <title> in index.html is set once at load; some sub-routes
+  // (e.g. /nutrition/log) were observed dropping it, so the browser fell
+  // back to showing the raw URL. Re-asserting it per pathname covers all
+  // routes — module shells, standalone routes, and the 404.
+  useEffect(() => {
+    if (document.title !== APP_TITLE) {
+      document.title = APP_TITLE;
+    }
+  }, [location.pathname]);
 
   // Registers the `?` hotkey for keyboard shortcuts modal (side-effect only).
   useKeyboardShortcutsModal();

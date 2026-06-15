@@ -4,6 +4,7 @@
  */
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { pluralTimes } from "@sergeant/shared";
 
 interface MerchantStat {
   name: string;
@@ -52,7 +53,7 @@ function MerchantListComponent({
                   />
                 </div>
                 <span className="text-style-caption text-subtle shrink-0">
-                  {m.count} разів
+                  {m.count} {pluralTimes(m.count)}
                 </span>
               </div>
             </div>

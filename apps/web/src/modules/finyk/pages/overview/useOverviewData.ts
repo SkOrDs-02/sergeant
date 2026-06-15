@@ -24,7 +24,10 @@ import {
   isBudgetAlert,
   getCurrentMonthContext,
 } from "@sergeant/finyk-domain/domain/budget";
-import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
+import {
+  filterStatTransactions,
+  manualExpenseToTransaction,
+} from "@sergeant/finyk-domain/domain/transactions";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import { logger } from "@shared/lib";
@@ -104,17 +107,47 @@ export function useOverviewData({
   const now = new Date();
   const { daysInMonth, daysPassed } = getCurrentMonthContext(now);
 
+  // Manual expenses live in storage (LS + React state), not in the bank tx
+  // stream, so the spend/summary selectors must merge them in explicitly —
+  // otherwise the Overview totals ignore a manually added expense entirely
+  // and the page looks frozen after the add/edit sheet closes. Mirrors the
+  // merge pattern Transactions/Analytics already use; scoped to the current
+  // calendar month to match `getMonthlySummary`'s implicit window.
+  const manualExpenseTxs = useMemo(() => {
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const monthEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1,
+    ).getTime();
+    return manualExpenses
+      .filter((e) => {
+        const ts = new Date(e.date).getTime();
+        return ts >= monthStart && ts < monthEnd;
+      })
+      .map((e) => manualExpenseToTransaction(e));
+    // `now` is recreated each render but its month window is stable within a
+    // render pass; depend on the primitives so the memo doesn't thrash.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manualExpenses, now.getFullYear(), now.getMonth()]);
+
+  const txForStats = useMemo(
+    () =>
+      manualExpenseTxs.length > 0 ? [...realTx, ...manualExpenseTxs] : realTx,
+    [realTx, manualExpenseTxs],
+  );
+
   const statTx = useMemo(
-    () => filterStatTransactions(realTx, excludedTxIds),
-    [realTx, excludedTxIds],
+    () => filterStatTransactions(txForStats, excludedTxIds),
+    [txForStats, excludedTxIds],
   );
   const spent = useMemo(
     () => calcFinykSpendingTotal(statTx, { txSplits }),
     [statTx, txSplits],
   );
   const monthlySummary = useMemo(
-    () => getMonthlySummary(realTx, { excludedTxIds, txSplits }),
-    [realTx, excludedTxIds, txSplits],
+    () => getMonthlySummary(txForStats, { excludedTxIds, txSplits }),
+    [txForStats, excludedTxIds, txSplits],
   );
   const income = monthlySummary.income;
   const projectedSpend =
@@ -366,8 +399,13 @@ export function useOverviewData({
         ? "bg-warning"
         : "bg-success";
 
-  const spendPlanRatio = expenseTarget > 0 ? spent / expenseTarget : 0;
-  const hasExpensePlan = expenseTarget > 0;
+  // "Has a plan" must reflect a real user-set monthly plan, not the
+  // forecast fallback baked into `expenseTarget` (which is only for the
+  // day-budget math). Otherwise the plan progress bar renders "N% з плану
+  // 0 ₴" — a percentage against a zero plan — and the Hero status claims
+  // "Понад 50% запланованого" with nothing planned.
+  const hasExpensePlan = planExpense > 0;
+  const spendPlanRatio = hasExpensePlan ? spent / planExpense : 0;
 
   const dateLabel = now.toLocaleDateString("uk-UA", {
     day: "numeric",

@@ -23,6 +23,7 @@ import type {
   PantryItem,
 } from "@sergeant/nutrition-domain";
 import {
+  addDaysISODate,
   getDayMacros,
   getDaySummary,
   getMacrosForDateRange,
@@ -31,7 +32,7 @@ import {
 import { WaterTrackerCard } from "./WaterTrackerCard";
 import { useToast } from "@shared/hooks/useToast";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { getKyivDayKey, getKyivWeekStartKey } from "@shared/lib/time/kyivTime";
 
 type WeekRow = MacrosRow;
 
@@ -168,10 +169,16 @@ export function NutritionDashboard({
 
   const macros = useMemo(() => getDayMacros(log, today), [log, today]);
   const summary = useMemo(() => getDaySummary(log, today), [log, today]);
-  const weekRows = useMemo(
-    () => getMacrosForDateRange(log, today, 7),
-    [log, today],
-  );
+  // Calendar ISO week (Mon→Sun, Kyiv), not a rolling-7 window — keeps the
+  // weekly chart consistent with Routine's Monday-first week (domain
+  // invariant: week starts Monday). `getMacrosForDateRange` fills oldest→
+  // newest ending at the given day, so anchoring `endIso` on Sunday yields
+  // Mon…Sun in order.
+  const weekRows = useMemo(() => {
+    const weekStart = getKyivWeekStartKey();
+    const weekEnd = addDaysISODate(weekStart, 6);
+    return getMacrosForDateRange(log, weekEnd, 7);
+  }, [log]);
 
   const hasGoal = (prefs.dailyTargetKcal || 0) > 0;
 
