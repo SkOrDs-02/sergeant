@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { MonoAccountDto, MonoTransactionDto } from "@sergeant/shared";
 
@@ -47,6 +47,24 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [cacheTick, setCacheTick] = useState(0);
+  const tickTimerRef = useRef<number | null>(null);
+
+  const scheduleCacheTick = useCallback((): void => {
+    if (tickTimerRef.current !== null) return;
+    tickTimerRef.current = window.setTimeout(() => {
+      tickTimerRef.current = null;
+      setCacheTick((t) => t + 1);
+    }, 0);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (tickTimerRef.current !== null) {
+        window.clearTimeout(tickTimerRef.current);
+        tickTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Subscribe to the React Query cache so we re-evaluate when the
   // source queries (`monoWebhookAccounts`, `monoWebhookTransactions`)
@@ -75,16 +93,16 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
         event.type === "removed" ||
         event.type === "updated"
       ) {
-        setCacheTick((t) => t + 1);
+        scheduleCacheTick();
       }
     });
-  }, [queryClient]);
+  }, [queryClient, scheduleCacheTick]);
 
   useEffect(() => {
     return webKVStore.onChange("finyk_budgets", () => {
-      setCacheTick((t) => t + 1);
+      scheduleCacheTick();
     });
-  }, []);
+  }, [scheduleCacheTick]);
 
   const input = useMemo<ActivationInput | null>(() => {
     if (!user) return null;

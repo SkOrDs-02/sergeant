@@ -231,7 +231,7 @@ export function LegalPage({ pathname }: LegalPageProps) {
         <header className="text-center space-y-5">
           <Link
             to="/"
-            className="inline-flex justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="inline-flex min-h-11 items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             aria-label={messages.legal.homeLogoAria}
           >
             <BrandLogo size="lg" />
@@ -275,7 +275,7 @@ export function LegalPage({ pathname }: LegalPageProps) {
           <div className="flex flex-wrap items-center justify-center gap-3 text-style-body-sm">
             <Link
               to={PRICING_PATH}
-              className="text-brand-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
+              className="inline-flex min-h-11 items-center px-1 text-brand-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
             >
               {messages.legal.goToPricing}
             </Link>
@@ -284,7 +284,7 @@ export function LegalPage({ pathname }: LegalPageProps) {
             </span>
             <Link
               to={SIGN_IN_PATH}
-              className="text-brand-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
+              className="inline-flex min-h-11 items-center px-1 text-brand-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
             >
               {messages.legal.signInOrCreate}
             </Link>

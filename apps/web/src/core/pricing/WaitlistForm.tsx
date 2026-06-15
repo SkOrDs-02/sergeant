@@ -181,7 +181,12 @@ export function WaitlistForm({
     >
       <div className="space-y-3">
         <div>
-          <Label htmlFor="waitlist-email">Email</Label>
+          <Label
+            htmlFor="waitlist-email"
+            className="inline-flex min-h-11 min-w-11 items-center"
+          >
+            Email
+          </Label>
           <Input
             id="waitlist-email"
             type="email"
@@ -220,7 +225,7 @@ export function WaitlistForm({
                   htmlFor={inputId}
                   aria-label={`${opt.label} — ${opt.hint}`}
                   className={
-                    "flex items-start gap-3 rounded-2xl border p-3 cursor-pointer transition-colors " +
+                    "flex min-h-[56px] items-start gap-3 rounded-2xl border p-3 cursor-pointer transition-colors " +
                     (checked
                       ? "border-brand-500 bg-brand/10 dark:bg-brand/15"
                       : "border-line bg-panel hover:bg-panelHi")
@@ -230,10 +235,26 @@ export function WaitlistForm({
                     id={inputId}
                     type="radio"
                     value={opt.value}
-                    className="mt-1 accent-brand-strong"
+                    className="peer sr-only"
                     disabled={isSubmitting}
                     {...register("tier_interest")}
                   />
+                  <span
+                    className={
+                      "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors " +
+                      (checked
+                        ? "border-brand-500 bg-brand-500"
+                        : "border-muted bg-panel")
+                    }
+                    aria-hidden="true"
+                  >
+                    <span
+                      className={
+                        "h-2 w-2 rounded-full bg-white transition-opacity " +
+                        (checked ? "opacity-100" : "opacity-0")
+                      }
+                    />
+                  </span>
                   <span className="flex flex-col">
                     <span className="text-style-label text-text">
                       {opt.label}

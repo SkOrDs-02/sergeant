@@ -104,10 +104,10 @@ export function HubHeader({
       )}
     >
       {/* ── Row 1: Mark + Wordmark + Action icons ─────────────── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
           <BrandLogo as="span" size="lg" variant="mark" />
-          <h1 className="text-xl leading-none font-extrabold tracking-tight text-text select-none">
+          <h1 className="truncate text-xl leading-none font-extrabold tracking-tight text-text select-none">
             Sergeant
           </h1>
         </div>
@@ -137,7 +137,8 @@ export function HubHeader({
                 onClick={onOpenPrivacy}
                 aria-label={messages.privacy.chip}
                 className={cn(
-                  "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full touch-target",
+                  "inline-flex h-11 w-11 items-center justify-center rounded-xl touch-target",
+                  "min-[420px]:h-8 min-[420px]:w-auto min-[420px]:gap-1.5 min-[420px]:rounded-full min-[420px]:px-2.5",
                   "bg-brand-soft text-brand-strong dark:text-brand-300 border border-brand-soft-border",
                   "text-style-caption font-semibold",
                   "hover:bg-brand-soft-hover transition-colors",
@@ -145,7 +146,9 @@ export function HubHeader({
                 )}
               >
                 <Icon name="shield" size="xs" strokeWidth={2} aria-hidden />
-                <span>{messages.privacy.chip}</span>
+                <span className="hidden min-[420px]:inline">
+                  {messages.privacy.chip}
+                </span>
               </button>
             </Tooltip>
           )}
@@ -165,7 +168,7 @@ export function HubHeader({
               narrow phones — see bug report 2026-05-18. Settings →
               GeneralSection keeps the segmented variant where space
               allows. */}
-          <ThemeSwitcher variant="dropdown" className="mx-1" />
+          <ThemeSwitcher variant="dropdown" />
 
           {/* Sign-in entry-point for guests only. Signed-in users reach
               their account via the `Профіль` bottom-nav tab. */}

@@ -36,7 +36,7 @@ export function LegalLinks({
         <Link
           key={link.href}
           to={link.href}
-          className="text-muted underline-offset-4 transition-colors hover:text-text focus-visible:outline-none focus-visible:underline"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center px-1 text-muted underline-offset-4 transition-colors hover:text-text focus-visible:outline-none focus-visible:underline"
         >
           {link.label}
         </Link>

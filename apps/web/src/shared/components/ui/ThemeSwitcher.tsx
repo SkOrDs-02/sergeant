@@ -257,7 +257,8 @@ function DropdownSwitcher({
         aria-label={`Тема: ${fullLabel}`}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          "inline-flex items-center gap-2 h-10 px-3 rounded-2xl touch-target border border-line bg-panel text-style-label text-text hover:bg-panelHi transition-colors motion-reduce:transition-none",
+          "inline-flex h-11 w-11 items-center justify-center gap-1 rounded-xl touch-target border border-line bg-panel text-style-label text-text hover:bg-panelHi transition-colors motion-reduce:transition-none",
+          "min-[420px]:h-10 min-[420px]:w-auto min-[420px]:gap-2 min-[420px]:rounded-2xl min-[420px]:px-3",
           FOCUS_RING,
         )}
       >
@@ -281,7 +282,7 @@ function DropdownSwitcher({
           name="chevron-down"
           size="sm"
           aria-hidden="true"
-          className="text-muted"
+          className="hidden text-muted min-[420px]:block"
         />
       </button>
       {open && (
