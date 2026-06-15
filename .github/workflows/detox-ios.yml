@@ -123,6 +123,23 @@ jobs:
           brew tap wix/brew
           brew install applesimutils
 
+      # Detox 20.x ships no prebuilt `Detox.framework`. The iOS test
+      # runner expects a content-addressed copy under
+      # `~/Library/Detox/ios/framework/<hash>`, where `<hash>` is keyed
+      # on the Detox version + the runner's Xcode build. A fresh
+      # `macos-14` runner (or a bumped image / Xcode) has an empty cache,
+      # so every suite aborts in `IosSimulatorEnvValidator.validate` with
+      # "Detox.framework could not be found ... either you changed a
+      # version of Xcode or Detox postinstall script was unsuccessful."
+      # Build the framework explicitly so it exists at test time; `clean`
+      # first drops any stale/partial entry from a previous Xcode. ~2-3
+      # min, amortised by the >10 min prebuild/xcodebuild below.
+      - name: Build Detox iOS framework cache
+        working-directory: apps/mobile
+        run: |
+          pnpm exec detox clean-framework-cache
+          pnpm exec detox build-framework-cache
+
       # Detox drives the binary produced by `expo prebuild` + `xcodebuild`.
       # `--platform ios` so we don't waste macOS minutes on Android projects
       # that the matching Android workflow will regenerate anyway.

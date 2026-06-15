@@ -75,3 +75,11 @@ pnpm --filter @sergeant/mobile e2e:test:android
 - **Android** — `.github/workflows/detox-android.yml`, `ubuntu-latest` з KVM-акселерацією і action-ом `reactivecircus/android-emulator-runner`, що драйвить AVD `Pixel_5_API_34` (відповідає девайсу `emulator` у `.detoxrc.js`). Кешує pnpm-store, Gradle dependency graph і AVD-снапшот, щоб тримати cold-start під контролем.
 
 Обидва workflow-и аплоудять `apps/mobile/.detox-artifacts` на падінні (логи + скріншоти, увімкнено в `.detoxrc.js > artifacts`), щоб ран можна було діагностувати без ретраю.
+
+### iOS: framework-кеш Detox (обовʼязковий крок)
+
+Detox 20.x **не** постачає готовий `Detox.framework` — iOS test-runner очікує його в контент-адресованому кеші `~/Library/Detox/ios/framework/<hash>`, де `<hash>` залежить від версії Detox + збірки Xcode на runner-і. На свіжому `macos-14` (або після bump-у образу/Xcode) кеш порожній, тож **кожен** сьют падає у `IosSimulatorEnvValidator.validate` з `Detox.framework could not be found ... either you changed a version of Xcode or Detox postinstall script was unsuccessful`. Тому workflow має крок **`Build Detox iOS framework cache`** (`pnpm exec detox clean-framework-cache && pnpm exec detox build-framework-cache`) перед prebuild/збіркою. Локально на macOS виконай ту саму пару команд один раз після зміни версії Xcode чи Detox.
+
+### Таймаут лаунч-хука (`testTimeout`)
+
+`e2e/jest.config.js` виставляє `testTimeout: 120_000`. Кожен сьют у `setup.ts` робить `device.launchApp({ newInstance: true })` всередині `beforeAll`; cold-boot RN-додатка + Detox-handshake на CI стабільно перевищує дефолтні 5 с jest-circus (timeout застосовується і до lifecycle-хуків). Без цього на Android-лейні всі 13 сьютів падали з `Exceeded timeout of 5000 ms for a hook` ще до того, як додаток встигав надіслати `ready`. `setupTimeout` у `.detoxrc.js` та `initTimeout` у `environment.js` керують лише **внутрішнім** init-циклом Detox, а не цим user-хуком — бюджет задається саме в `jest.config.js`.
