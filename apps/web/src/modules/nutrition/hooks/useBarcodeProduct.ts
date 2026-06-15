@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiError, isApiError } from "@shared/api";

@@ -171,22 +171,14 @@ function renderStartPage(
     log?: Partial<ReturnType<typeof useNutritionLog>>;
     photo?: Partial<ReturnType<typeof usePhotoAnalysis>>;
     setActivePageAndHash?: (page: string) => void;
-    scheduleTransient?: (
-      cb: () => void,
-      delayMs: number,
-    ) => ReturnType<typeof setTimeout>;
+    onRequestAddMeal?: () => void;
     photoCardForceOpen?: boolean;
   } = {},
 ) {
   const log = makeLog(overrides.log);
   const photo = makePhoto(overrides.photo);
   const setActivePageAndHash = overrides.setActivePageAndHash ?? vi.fn();
-  const scheduleTransient =
-    overrides.scheduleTransient ??
-    vi.fn((cb) => {
-      cb();
-      return 0 as unknown as ReturnType<typeof setTimeout>;
-    });
+  const onRequestAddMeal = overrides.onRequestAddMeal ?? vi.fn();
 
   render(
     <NutritionStartPage
@@ -202,14 +194,14 @@ function renderStartPage(
       fetchDayHint={vi.fn()}
       dayHintText=""
       dayHintBusy={false}
-      scheduleTransient={scheduleTransient}
+      onRequestAddMeal={onRequestAddMeal}
       photoCardForceOpen={overrides.photoCardForceOpen ?? false}
       setPhotoCardForceOpen={vi.fn()}
       onSaveToLog={vi.fn()}
     />,
   );
 
-  return { log, photo, setActivePageAndHash, scheduleTransient };
+  return { log, photo, setActivePageAndHash, onRequestAddMeal };
 }
 
 afterEach(() => {
@@ -243,32 +235,19 @@ describe("NutritionStartPage", () => {
     expect(setActivePageAndHash).toHaveBeenCalledWith("menu");
   });
 
-  it("'Додати прийом їжі' sets selected date to today, navigates to log, and schedules sheet-open", async () => {
-    const setActivePageAndHash = vi.fn();
-    const setSelectedDate = vi.fn();
-    const setAddMealSheetOpen = vi.fn();
-    const setAddMealPhotoResult = vi.fn();
-    const scheduleTransient = vi.fn((cb: () => void) => {
-      cb();
-      return 0 as unknown as ReturnType<typeof setTimeout>;
-    });
+  it("'Додати прийом їжі' delegates to onRequestAddMeal (parent owns navigate + sheet-open)", async () => {
+    // F13: the page no longer owns the date-set / navigate / setTimeout
+    // sheet-open dance. It just requests the action; NutritionApp drives the
+    // deterministic, effect-based follow-up once the Log page has mounted.
+    const onRequestAddMeal = vi.fn();
 
-    renderStartPage({
-      log: { setSelectedDate, setAddMealSheetOpen, setAddMealPhotoResult },
-      setActivePageAndHash,
-      scheduleTransient,
-    });
+    renderStartPage({ onRequestAddMeal });
 
     await userEvent.click(
       screen.getByRole("button", { name: "Додати прийом їжі" }),
     );
 
-    expect(setSelectedDate).toHaveBeenCalledTimes(1);
-    expect(setActivePageAndHash).toHaveBeenCalledWith("log");
-    expect(scheduleTransient).toHaveBeenCalledTimes(1);
-    // The callback inside scheduleTransient clears photo result and opens the sheet
-    expect(setAddMealPhotoResult).toHaveBeenCalledWith(null);
-    expect(setAddMealSheetOpen).toHaveBeenCalledWith(true);
+    expect(onRequestAddMeal).toHaveBeenCalledTimes(1);
   });
 
   it("when user is Pro, clicking 'Аналізувати фото' calls photo.analyzePhoto", async () => {

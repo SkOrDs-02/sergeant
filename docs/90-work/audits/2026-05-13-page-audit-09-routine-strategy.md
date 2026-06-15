@@ -66,6 +66,8 @@ Wrap both `fetch` callers in a small adapter that maps `res.status` → friendly
 
 ### F3 — Routine module `setHours(12, 0, 0, 0)` derives day keys in **local device time**, not Europe/Kyiv [severity: high] [perspective: bug]
 
+> ✅ **Closed 2026-06-15** (closure recorded retroactively — fix landed earlier, never logged here). The monorepo-wide Kyiv helper module `apps/web/src/shared/lib/time/kyivTime.ts` is now the single source of truth (`getKyivDateParts` / `getKyivDayKey` / `getKyivWeekStartKey` / `parseKyivDate`), and the routine module consumes it: `useRoutineReminders.ts` derives `currentHm()` and the cleanup cutoff via `getKyivDateParts` / `getKyivDayKey`; `StrategyPage.tsx` uses `getKyivWeekStartKey`. A dedicated ESLint guard `sergeant-design/prefer-kyiv-time` (+ `no-restricted-syntax` on bare `new Date()` in domain modules) now fails any new local-clock day-boundary derivation. The remaining bare `new Date()` in the reminders scheduler is the sub-minute `setTimeout` alignment (TZ-invariant — seconds don't shift across the Kyiv whole-minute offset) and carries an inline eslint-disable + WHY. `grep` for the old `setHours(12, 0, 0, 0)` anchor pattern in the routine subtree returns zero matches.
+
 **Page:** Routine module (multiple files)
 **Files:**
 
@@ -192,6 +194,8 @@ Quiet permission loss is a UX/observability dead zone. The user toggles "Наг�
 ---
 
 ### F9 — Notification title contains habit name in plain text — no privacy opt-in [severity: medium] [perspective: security]
+
+> ✅ **Closed 2026-06-15.** Added a `routineReminderPrivacy: "full" | "minimal"` opt-in. New pure helper `apps/web/src/modules/routine/lib/reminderPrivacy.ts` (`getRoutineReminderPrivacy` + `reminderNotificationContent`): in `"minimal"` mode the in-app notification title becomes `"Нагадування"` and the body `"Час для запланованої звички"` — the habit name + emoji are withheld from the lock screen; `"full"` (the default, so the change is purely additive) keeps the existing `${emoji} ${name}` title. Wired into `apps/web/src/modules/routine/hooks/useRoutineReminders.ts` (the in-app scheduler path). The pref rides the open `[k: string]: unknown` index signature on `RoutinePrefs`, so no `@sergeant/routine-domain` type change was needed; the read coerces any non-`"minimal"` value back to `"full"` (never accidentally hides a name). Co-located unit test `reminderPrivacy.test.ts` covers the default, the opt-in, and the name-withholding (6 cases); the F19 `useRoutineReminders.test.ts` asserts the minimal-mode title/body end-to-end. **Follow-ups (out of routine-module boundary, noted, not done here):** (1) the settings toggle to flip the pref belongs in `apps/web/src/core/settings/NotificationsSection.tsx`; (2) the **service-worker** reminder renderer `apps/web/src/sw/reminders.ts` builds its own `${emoji} ${name}` title and must apply the same privacy mode (it already receives `routine.prefs` via the `ROUTINE_STATE_UPDATE` postMessage). Until both land the opt-in is wired and testable but not yet user-flippable in the UI nor honoured by the background SW path.
 
 **Page:** Routine module / Reminders hook
 **File:** `apps/web/src/modules/routine/hooks/useRoutineReminders.ts`
@@ -389,6 +393,8 @@ Add the two missing lines:
 
 ### F18 — `<button>` close button inside the storage-error banner is below the 44 px touch floor [severity: medium] [perspective: a11y]
 
+> ✅ **Closed 2026-06-15** via the finding's "(or apply ≥44px touch-target)" alternative. The banner-close `<button>` in `apps/web/src/modules/routine/RoutineTimeline.tsx` (L98–L105) now carries `min-h-[44px] min-w-[44px] flex items-center justify-center`, an explicit `aria-label="Закрити повідомлення"`, a `focus-visible:ring-2 focus-visible:ring-danger/50` ring (Rule #14), and semantic `text-danger` / `text-style-caption` tokens (no raw palette). The WCAG 2.5.5 floor is met. The full `IconButton` swap recommended as the primary option was **not** taken: `IconButton` enforces icon-only geometry, but this control is a text-label ("Закрити") affordance — keeping the labelled `<button>` with the touch-target + focus + aria treatment is the cleaner fit and satisfies the finding's stated alternative.
+
 **Page:** Routine module / Timeline body
 **File:** `apps/web/src/modules/routine/RoutineTimeline.tsx`
 **Lines:** L95–L102
@@ -405,6 +411,8 @@ Switch to `<IconButton size="sm" variant="ghost" aria-label="Закрити по
 ---
 
 ### F19 — Routine UI shell files have **no co-located tests** [severity: medium] [perspective: test]
+
+> ✅ **Closed 2026-06-15** for the two prioritised hooks called out in the recommendation. `apps/web/src/modules/routine/useRoutineDerivedData.test.ts` already existed (24 cases — `range` / `rangeLabel` / `todayKey` / `canBulkMark` across all 5 `timeMode`s, frozen on a Kyiv-offset clock `2026-06-04T09:00:00Z`). Added `apps/web/src/modules/routine/hooks/useRoutineReminders.test.ts` (8 cases): `cleanupStaleRoutineNotifyKeys` cutoff math proven Kyiv-offset (a UTC-vs-Kyiv boundary instant `2026-06-03T22:30:00Z` = `2026-06-04` Kyiv asserts the cutoff buckets on the Kyiv civil day); the scheduler fires exactly one SW `showNotification` per due habit, writes the one-shot `${habitId}_${hm}_${dk}` dedup key, never double-fires when the key exists, honours the F9 `routineReminderPrivacy: "minimal"` opt-out, and stays silent when permission ≠ granted / reminders disabled / habit completed. Fake `Notification` + `navigator.serviceWorker` + mocked storage layer, Kyiv-anchored `vi.setSystemTime`. The broader backlog (every panel + settings section + `StrategyPage.test.tsx` with MSW) remains open and is **not** claimed closed — only the two recommendation items #1 and #2 are.
 
 **Page:** Routine module — most files
 **Files:** Missing `*.test.tsx`/`*.test.ts` for:
@@ -470,6 +478,8 @@ Replace with the Kyiv-aware helper from the F3 fix: `cutoffKey = kyivDateKey(add
 ---
 
 ### F22 — Strategy page form lacks `<fieldset>` + first-input autofocus [severity: low] [perspective: a11y]
+
+> ✅ **Closed 2026-06-15** (verified-already-done in code; closure recorded now). `apps/web/src/pages/strategy/StrategyPage.tsx` wraps the persona-select + goal-textarea in a `<fieldset className="contents">` with an `sr-only` `<legend>` (so the group is announced without disturbing the layout), L229–L266. The textarea carries `aria-describedby` → the error `<p id="goal-text-error">` and `aria-invalid` when `submitError` is set (L260–L263). A `useEffect` on `submitError` moves focus to the offending textarea via `goalTextRef` (L156–L160, WCAG 3.3.1), with `personaSelectRef` reserved for future per-field validation. No code change needed this pass.
 
 **Page:** Strategy page
 **File:** `apps/web/src/pages/strategy/StrategyPage.tsx`

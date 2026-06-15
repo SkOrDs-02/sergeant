@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Pure helpers that turn the hub-level biometrics record (`hub_biometrics_v1`,
  * owned by `apps/web/src/core/profile/biometrics.ts`) into Nutrition daily
  * targets — kcal + protein/fat/carb grams.

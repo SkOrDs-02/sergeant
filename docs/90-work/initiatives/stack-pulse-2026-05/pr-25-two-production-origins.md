@@ -1,7 +1,7 @@
 # PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Planned
+> **Status:** Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/server/src/http/cors.ts + Google/Apple OAuth consoles) pending 30-day soak + manual OAuth-console step; ADR-0009 single-origin section TODO.
 
 |                    |                                                                               |
 | ------------------ | ----------------------------------------------------------------------------- |

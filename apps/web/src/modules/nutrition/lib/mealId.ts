@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Centralized meal-id generator. Replaces inline
  * `meal_${Date.now()}_${Math.random().toString(36).slice(2, N)}` sites
  * which drifted between 5- and 6-char random tails (audit F8 —

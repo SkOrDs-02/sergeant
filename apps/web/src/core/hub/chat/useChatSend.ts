@@ -39,6 +39,18 @@ const FREE_DAILY_AI_CHAT_LIMIT = 5;
 const DAILY_CHAT_COUNT_KEY = "sergeant:ai-chat:daily-count:v1";
 const AUTO_TTS_ENABLED_KEY = "sergeant:hub-chat:auto-tts:v1";
 
+/**
+ * Audit 03 F15 (perf): cap the accumulated assistant text length per stream.
+ * `consumeHubChatSse` already bounds the raw transport (256 KB total / 8 KB
+ * per line), but a runaway model can still legitimately stream many small
+ * deltas — each `acc += delta` triggers a full `setMessages(... .map ...)`
+ * rerender (chat list + markdown reparse). Beyond this many chars the answer
+ * is no longer readable on a phone anyway, so we abort the controller and let
+ * the friendly-error path surface "Відповідь занадто довга". A char is a cheap
+ * proxy for bytes here — UTF-16 code units, ~256 KB worst case for BMP text.
+ */
+const MAX_STREAM_CHARS = 256 * 1024;
+
 function isAutoTtsEnabled(): boolean {
   return safeReadLS<boolean>(AUTO_TTS_ENABLED_KEY) === true;
 }
@@ -409,6 +421,13 @@ export function useChatSend({
             if (res2.ok && ct.includes("text/event-stream")) {
               let acc = "";
               await consumeHubChatSse(res2, (delta) => {
+                if (acc.length + delta.length > MAX_STREAM_CHARS) {
+                  // Abort the in-flight controller so the reader stops pulling
+                  // chunks, then throw — the surrounding catch renders the
+                  // friendly "Відповідь занадто довга" tail on this turn.
+                  ac.abort();
+                  throw new Error("Відповідь занадто довга");
+                }
                 acc += delta;
                 setMessages((m) =>
                   m.map((x) =>

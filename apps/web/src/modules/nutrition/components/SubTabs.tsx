@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { cn } from "@shared/lib/ui/cn";
 
 interface SubTab {

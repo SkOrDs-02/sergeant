@@ -455,6 +455,21 @@ export function summaryFor(
       if (query) return query;
       return "Пошук у пам'яті";
     }
+    // Query / analytics ("talk to your data", PR1-3): the full result
+    // string is structured data that DataResultCard parses (numbers,
+    // breakdown lists, period comparisons). Return it untruncated — the
+    // card lays it out, and the plain-text path never sees it.
+    case "query_transactions":
+    case "aggregate_spending":
+    case "compare_periods":
+    case "query_workouts":
+    case "exercise_progress":
+    case "training_stats":
+    case "query_habits":
+    case "habit_correlation":
+    case "query_nutrition":
+    case "nutrition_averages":
+      return result;
     default:
       break;
   }

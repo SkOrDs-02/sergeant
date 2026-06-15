@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Єдиний екземпляр shared `createModuleStorage` для модуля Харчування.
  *
  * Імпортується з різних файлів (nutritionStorage, waterStorage,

@@ -300,7 +300,9 @@ export function Measurements() {
                   })}
                 </div>
                 <button
-                  className="text-xs text-danger/80 hover:text-danger"
+                  type="button"
+                  aria-label="Видалити замір"
+                  className="focus-ring touch-target -mr-2 px-2 inline-flex items-center justify-center rounded-full text-style-caption text-danger-strong hover:text-danger transition-colors"
                   onClick={() => handleDelete(e.id)}
                 >
                   {messages.actions.delete}

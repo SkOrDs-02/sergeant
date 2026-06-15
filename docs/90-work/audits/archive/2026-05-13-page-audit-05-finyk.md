@@ -1,7 +1,7 @@
 # Page Audit — Finyk module — 5 pages (overview/transactions/budgets/analytics/assets)
 
 > **Last validated:** 2026-05-13 by Devin.
-> **Status:** Active
+> **Status:** Archived
 > **Auditor:** child Devin session (parent: <https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40>)
 > **Pages in scope:** Огляд (Overview), Транзакції (Transactions), Бюджети (Budgets), Аналітика (Analytics), Активи (Assets) — `apps/web/src/modules/finyk/**`
 

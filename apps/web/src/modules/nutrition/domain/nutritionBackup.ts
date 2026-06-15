@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import {
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_PANTRIES_KEY,

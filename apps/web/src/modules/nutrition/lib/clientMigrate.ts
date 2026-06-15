@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import {
   NUTRITION_CLIENT_MIGRATIONS,
   NUTRITION_MIGRATIONS_TABLE,

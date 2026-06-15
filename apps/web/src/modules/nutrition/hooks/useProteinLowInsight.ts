@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Detection hook for `nutrition-protein-low` insight.
  *
  * Fires when:

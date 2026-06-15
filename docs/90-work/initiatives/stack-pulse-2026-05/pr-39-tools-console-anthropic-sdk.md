@@ -1,7 +1,7 @@
 # PR-39: `tools/openclaw` Anthropic SDK 0.36.3 → latest
 
 > **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** Active — SDK вже на `^0.95.2` (міграція 0.36 → 0.95 відбулась у попередньому PR з ADR-0057); prompt caching opt-in (`ANTHROPIC_PROMPT_CACHE=1`) enable-но у `run-agent-loop`. SDK v1 GA ще не відбулась — див. ADR-0057 § SDK v1 tracking.
+> **Status:** Closed (2026-06-15) — SDK history captured in ADR-0057 (Accepted). The tracked surface (tools/openclaw + run-agent-loop.ts + its @anthropic-ai/sdk consumer) was deleted in PR #3470, so the v1-GA follow-up is moot. Canonical home: ADR-0057.
 
 > **Path-rename note (2026-05-13):** Каталог `tools/console/` перейменовано на `tools/openclaw/` (workspace `@sergeant/console` → `@sergeant/openclaw`) через PR [#2573](https://github.com/Skords-01/Sergeant/pull/2573) (commit [`eea1ce84`](https://github.com/Skords-01/Sergeant/commit/eea1ce84)). Всі path-посилання нижче відображають **новий** layout; історичні `tools/console/...` paths у git log до травня-2026 — це той самий код.
 

@@ -118,6 +118,36 @@ describe("trackEvent", () => {
     expect(w.__hubAnalytics).toBeUndefined();
   });
 
+  it("НЕ виставляє window.__hubAnalytics у проді з налаштованим PostHog (audit F27)", async () => {
+    // Real production deploy: not DEV and VITE_POSTHOG_KEY is set. The global
+    // ring-buffer must be withheld so an XSS bug elsewhere cannot read it.
+    vi.stubEnv("DEV", false);
+    vi.stubEnv("VITE_POSTHOG_KEY", "phc_smoke_test_key");
+
+    const { trackEvent } = await import("./analytics");
+    trackEvent("demo_event", { foo: "bar" });
+
+    const w = window as Window & { __hubAnalytics?: unknown[] };
+    expect(w.__hubAnalytics).toBeUndefined();
+    // PostHog transport still fires — only the debug global is gated.
+    expect(capturePostHogEventFn).toHaveBeenCalledWith("demo_event", {
+      foo: "bar",
+    });
+  });
+
+  it("виставляє window.__hubAnalytics у prod-build БЕЗ PostHog (smoke harness, audit F27)", async () => {
+    // Smoke `vite preview`: prod build (DEV=false) but no VITE_POSTHOG_KEY.
+    // The Playwright harness reads the buffer, so it must remain exposed.
+    vi.stubEnv("DEV", false);
+    vi.stubEnv("VITE_POSTHOG_KEY", "");
+
+    const { trackEvent } = await import("./analytics");
+    trackEvent("demo_event", { foo: "bar" });
+
+    const w = window as Window & { __hubAnalytics?: unknown[] };
+    expect(w.__hubAnalytics).toHaveLength(1);
+  });
+
   it("нормалізує не-object payload у порожній обʼєкт", async () => {
     const { trackEvent } = await import("./analytics");
     // Runtime-coerce: не-object payload повинен стати {}.

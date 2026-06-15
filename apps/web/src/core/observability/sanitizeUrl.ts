@@ -1,4 +1,7 @@
 /**
+ * @status Active
+ * @owner @Skords-01
+ *
  * Стрипає чутливі query-params з URL перед відправкою у PostHog як
  * `$current_url`. Без цього magic-link токени (`?token=…`), OAuth-коди
  * (`?code=…`, `?state=…`), refresh-токени і т.п. осідали б у event-props

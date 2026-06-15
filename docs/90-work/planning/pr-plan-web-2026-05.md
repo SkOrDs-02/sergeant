@@ -16,7 +16,7 @@
 
 ## Cross-refs
 
-- [`docs/90-work/audits/2026-05-13-web-architecture-state-roast.md`](../audits/2026-05-13-web-architecture-state-roast.md) — прожарка #3/10 (architecture + state).
+- [`docs/90-work/audits/2026-05-13-web-architecture-state-roast.md`](../audits/archive/2026-05-13-web-architecture-state-roast.md) — прожарка #3/10 (architecture + state).
 - [`docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md`](../audits/archive/2026-05-13-web-frontend-ergonomics-roast.md) — прожарка #2/10 (frontend ergonomics).
 - [`docs/02-engineering/architecture/repo-map.md`](../../02-engineering/architecture/repo-map.md) — per-app stack matrix, `apps/web` runtime: Vite 8 + React 18 + TanStack Query + Tailwind 4 + size-limit gate.
 - [`docs/04-governance/governance/rules/18-module-size-discipline-600.md`](../../04-governance/governance/rules/18-module-size-discipline-600.md) — Hard Rule #18 (`max-lines: 600` для `apps/web/src/**`); декомпозиція 0013 Sprint 2 (A4 нижче) — це burndown цього правила.
@@ -40,7 +40,7 @@
 
 ## Architecture / state (cards A1–A7)
 
-Закривають outstanding-items з [`2026-05-13-web-architecture-state-roast.md § P1`](../audits/2026-05-13-web-architecture-state-roast.md) + P2-A/P2-B/P2-D/P2-E.
+Закривають outstanding-items з [`2026-05-13-web-architecture-state-roast.md § P1`](../audits/archive/2026-05-13-web-architecture-state-roast.md) + P2-A/P2-B/P2-D/P2-E.
 
 ### A1 — `feat(web): finish initiative 0006 phase 3 — useHashRouter codemod`
 

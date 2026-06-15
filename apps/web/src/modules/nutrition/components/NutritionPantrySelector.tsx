@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { Pantry } from "@sergeant/nutrition-domain";
 import type { useNutritionPantries } from "../hooks/useNutritionPantries";

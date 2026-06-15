@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { buildActionCard, isRiskyTool } from "./hubChatActionCards";
+import {
+  buildActionCard,
+  isDataResultTool,
+  isRiskyTool,
+} from "./hubChatActionCards";
 
 describe("buildActionCard", () => {
   it("повертає картку для основного tool-а (create_transaction)", () => {
@@ -299,6 +303,87 @@ describe("buildActionCard", () => {
       expect(failed?.status).toBe("failed");
       expect(failed?.title).toBe("Порівняння тижнів — не вийшло");
     });
+  });
+});
+
+describe("query / analytics tools (talk-to-your-data PR4)", () => {
+  const QUERY_TOOLS = [
+    "query_transactions",
+    "aggregate_spending",
+    "compare_periods",
+    "query_workouts",
+    "exercise_progress",
+    "training_stats",
+    "query_habits",
+    "habit_correlation",
+    "query_nutrition",
+    "nutrition_averages",
+  ] as const;
+
+  it("будує картку з data=true для кожного query-tool-а", () => {
+    for (const name of QUERY_TOOLS) {
+      const card = buildActionCard({
+        name,
+        input: {},
+        result: "Якийсь числовий результат",
+      });
+      expect(card, name).not.toBeNull();
+      expect(card?.data, name).toBe(true);
+      expect(card?.risky, name).toBeUndefined();
+      expect(card?.title.length, name).toBeGreaterThan(0);
+      // summary keeps the full result untruncated for DataResultCard.
+      expect(card?.summary, name).toBe("Якийсь числовий результат");
+    }
+  });
+
+  it("isDataResultTool розпізнає лише query-tool-и", () => {
+    for (const name of QUERY_TOOLS) {
+      expect(isDataResultTool(name), name).toBe(true);
+    }
+    expect(isDataResultTool("create_transaction")).toBe(false);
+    expect(isDataResultTool("morning_briefing")).toBe(false);
+    expect(isDataResultTool("log_meal")).toBe(false);
+  });
+
+  it("мапить query-tool-и на доменні модулі", () => {
+    expect(
+      buildActionCard({ name: "query_transactions", input: {}, result: "ok" })
+        ?.module,
+    ).toBe("finyk");
+    expect(
+      buildActionCard({ name: "query_workouts", input: {}, result: "ok" })
+        ?.module,
+    ).toBe("fizruk");
+    expect(
+      buildActionCard({ name: "query_habits", input: {}, result: "ok" })
+        ?.module,
+    ).toBe("routine");
+    expect(
+      buildActionCard({ name: "query_nutrition", input: {}, result: "ok" })
+        ?.module,
+    ).toBe("nutrition");
+  });
+
+  it("query-картка не truncate-иться навіть для довгого результату", () => {
+    const long = "Знайдено 50 транзакц. ".repeat(20).trim();
+    const card = buildActionCard({
+      name: "query_transactions",
+      input: {},
+      result: long,
+    });
+    expect(card?.summary).toBe(long);
+    expect(card?.summary.length).toBeGreaterThan(120);
+  });
+
+  it("failed query-tool — суфікс «не вийшло» у title, data лишається true", () => {
+    const card = buildActionCard({
+      name: "aggregate_spending",
+      input: {},
+      result: "Помилка: немає даних",
+    });
+    expect(card?.status).toBe("failed");
+    expect(card?.title).toMatch(/не вийшло/);
+    expect(card?.data).toBe(true);
   });
 });
 

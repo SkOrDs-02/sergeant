@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Detection hook for `nutrition-streak-7-days` insight.
  *
  * Fires when the last 7 consecutive Kyiv-local calendar days all had

@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Phase 6.6 — pantry-aware quick-add chips for Nutrition hero.
  *
  * Returns up to 5 chips representing meals the user habitually logs. Each chip

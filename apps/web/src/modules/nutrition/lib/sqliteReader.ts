@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * SQLite-backed read path for Nutrition (meals, pantries, pantry items,
  * prefs, recipes).
  *

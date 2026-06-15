@@ -34,7 +34,36 @@ export interface ChatActionCard {
    * картку, повний confirmation flow — у v2.
    */
   risky?: boolean | undefined;
+  /**
+   * Маркер "data result" — read-only query/analytics tool ("talk to
+   * your data", PR4). UI (`ChatMessage`) рендерить таку картку через
+   * `DataResultCard` (структурований розбір `summary`), а не звичайний
+   * `ActionCard`. Текстовий fallback лишається для всіх інших карток.
+   */
+  data?: boolean | undefined;
 }
+
+/**
+ * Read-only query/analytics tools ("talk to your data", PR1-3). Їхній
+ * результат — числові відповіді / агрегації / порівняння періодів, тож
+ * UI рендерить структуровану `DataResultCard` замість плоского
+ * `ActionCard`. Жоден з них не мутує дані — отже й не risky.
+ */
+const QUERY_TOOLS: ReadonlySet<string> = new Set([
+  // Finyk (PR1)
+  "query_transactions",
+  "aggregate_spending",
+  "compare_periods",
+  // Fizruk (PR2)
+  "query_workouts",
+  "exercise_progress",
+  "training_stats",
+  // Routine + Nutrition (PR3)
+  "query_habits",
+  "habit_correlation",
+  "query_nutrition",
+  "nutrition_averages",
+]);
 
 /** Tools, які класифіковані як ризикові за специфікацією §4. */
 const RISKY_TOOLS: ReadonlySet<string> = new Set([
@@ -123,6 +152,9 @@ const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "forget",
   "my_profile",
   "recall_memory",
+  // Query / analytics ("talk to your data", PR1-3) — rendered as a
+  // structured DataResultCard (see QUERY_TOOLS).
+  ...QUERY_TOOLS,
 ]);
 
 interface CardInput {
@@ -163,6 +195,7 @@ export function buildActionCard(input: CardInput): ChatActionCard | null {
   const module = moduleFor(input.name);
   const icon = iconFor(input.name);
   const risky = RISKY_TOOLS.has(input.name);
+  const data = QUERY_TOOLS.has(input.name);
 
   return {
     id: `card_${input.name}_${Math.random().toString(36).slice(2, 10)}`,
@@ -173,9 +206,18 @@ export function buildActionCard(input: CardInput): ChatActionCard | null {
     module,
     icon,
     ...(risky ? { risky: true } : {}),
+    ...(data ? { data: true } : {}),
   };
 }
 
 export function isRiskyTool(name: string): boolean {
   return RISKY_TOOLS.has(name);
+}
+
+/**
+ * `true` для read-only query/analytics tool-ів, чию картку UI рендерить
+ * як структуровану `DataResultCard` ("talk to your data", PR4).
+ */
+export function isDataResultTool(name: string): boolean {
+  return QUERY_TOOLS.has(name);
 }

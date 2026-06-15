@@ -25,7 +25,9 @@ import { QUERY_FINYK_TOOLS } from "./toolDefs/queryFinyk.js";
 import { FIZRUK_TOOLS } from "./toolDefs/fizruk.js";
 import { QUERY_FIZRUK_TOOLS } from "./toolDefs/queryFizruk.js";
 import { ROUTINE_TOOLS } from "./toolDefs/routine.js";
+import { QUERY_ROUTINE_TOOLS } from "./toolDefs/queryRoutine.js";
 import { NUTRITION_TOOLS } from "./toolDefs/nutrition.js";
+import { QUERY_NUTRITION_TOOLS } from "./toolDefs/queryNutrition.js";
 import { CROSS_MODULE_TOOLS } from "./toolDefs/crossModule.js";
 import { UTILITY_TOOLS } from "./toolDefs/utility.js";
 import { MEMORY_TOOLS } from "./toolDefs/memory.js";
@@ -37,9 +39,11 @@ export const TOOLS: AnthropicTool[] = normalizeStrictTools([
   ...FINYK_TOOLS,
   ...QUERY_FINYK_TOOLS,
   ...ROUTINE_TOOLS,
+  ...QUERY_ROUTINE_TOOLS,
   ...FIZRUK_TOOLS,
   ...QUERY_FIZRUK_TOOLS,
   ...NUTRITION_TOOLS,
+  ...QUERY_NUTRITION_TOOLS,
   ...CROSS_MODULE_TOOLS,
   ...UTILITY_TOOLS,
   ...MEMORY_TOOLS,

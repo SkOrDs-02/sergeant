@@ -1,4 +1,7 @@
 /**
+ * @status Active
+ * @owner @Skords-01
+ *
  * PostHog → AI memory sync (web side, PR-24).
  *
  * Контекст: PostHog ловить product events (`onboarding_completed`,

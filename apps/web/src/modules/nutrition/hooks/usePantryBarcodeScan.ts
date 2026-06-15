@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { isApiError } from "@shared/api";
 import { STATUS_AUTO_HIDE_MS } from "@shared/lib/ui/timeouts";

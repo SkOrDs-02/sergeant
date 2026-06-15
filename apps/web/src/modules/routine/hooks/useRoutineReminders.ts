@@ -7,11 +7,12 @@ import {
   safeRemoveLS,
   safeWriteLS,
 } from "@shared/lib/storage/storage";
-import {
-  dateKeyFromDate,
-  habitScheduledOnDate,
-} from "../lib/hubCalendarAggregate";
+import { habitScheduledOnDate } from "../lib/hubCalendarAggregate";
 import { normalizeReminderTimes } from "../lib/routineDraftUtils";
+import {
+  getRoutineReminderPrivacy,
+  reminderNotificationContent,
+} from "../lib/reminderPrivacy";
 import type { RoutineState } from "../lib/types";
 
 export const ROUTINE_NOTIFY_PREFIX = "routine_notify_";
@@ -36,7 +37,11 @@ export function cleanupStaleRoutineNotifyKeys(maxAgeDays = 45): void {
 }
 
 function todayKey() {
-  return dateKeyFromDate(new Date());
+  // Day-key for reminder-dedup must be Kyiv-local (same as the notify-key
+  // cleanup cutoff above): `dateKeyFromDate(new Date())` reads host-local
+  // civil-date and would dedup against the wrong day near Kyiv midnight for
+  // a user abroad (page-audit-09 F21, Theme 1).
+  return getKyivDayKey();
 }
 
 function currentHm() {
@@ -201,8 +206,11 @@ export function useRoutineReminders(routine: RoutineState): void {
         const storageKey = `${ROUTINE_NOTIFY_PREFIX}${h.id}_${hm}_${dk}`;
         if (safeReadStringLS(storageKey, null)) continue;
 
-        const title = `${h.emoji || "✓"} ${h.name}`;
-        showNotification(title, "Нагадування про звичку", storageKey);
+        const { title, body } = reminderNotificationContent(
+          h,
+          getRoutineReminderPrivacy(r.prefs),
+        );
+        showNotification(title, body, storageKey);
         // `safeWriteLS` keeps raw strings as-is (no JSON.stringify), so the
         // stored value matches the legacy `localStorage.setItem(_, "1")`
         // shape that `safeReadStringLS(_) → "1"` then short-circuits on
@@ -225,9 +233,11 @@ export function useRoutineReminders(routine: RoutineState): void {
 
     const scheduleNext = () => {
       if (disposed) return;
-      const now = new Date();
       // Sub-minute timer tick: секунди TZ-інваріантні (Kyiv-offset — ціла
-      // кількість хвилин), тож host-local read тут не day-boundary bug.
+      // кількість хвилин), тож host-local read тут не day-boundary bug —
+      // це справжній wall-clock instant для розрахунку msToNextMinute.
+      // eslint-disable-next-line no-restricted-syntax -- wall-clock instant for sub-minute timer alignment, not a day key
+      const now = new Date();
       // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- sub-minute scheduling, not a day key
       const secondsIntoMinute = now.getSeconds();
       const msToNextMinute =

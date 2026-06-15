@@ -432,6 +432,17 @@ export const messages = {
     workoutRest: "Відпочинок",
     // PrBadge weight-unit suffix on the Fizruk hero PR pill.
     kgUnit: "кг",
+    // Strength PR leaderboard on the Progress page (`Progress/PrBoard.tsx`).
+    prBoard: {
+      heading: "Рекорди (PR)",
+      shownSuffix: "показано",
+      filterAll: "Всі",
+      emptyTitle: "Поки немає силових PR",
+      emptyFilteredTitle: "Немає PR для цієї групи мʼязів",
+      emptyDescription:
+        "Заверши сети з вагою — рекорди зʼявляться тут автоматично.",
+      emptyFilteredDescription: "Спробуй іншу групу або скинь фільтр.",
+    },
     // Shared Fizruk unit suffixes (composed at call-site as `${n} ${unit}`).
     hoursUnit: "год",
     secondsUnit: "с",

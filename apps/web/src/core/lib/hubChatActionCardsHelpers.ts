@@ -19,7 +19,11 @@ export function moduleFor(name: string): ChatActionCardModule {
     name === "split_transaction" ||
     name === "recurring_expense" ||
     name === "export_report" ||
-    name === "import_monobank_range"
+    name === "import_monobank_range" ||
+    // Query / analytics ("talk to your data", PR1)
+    name === "query_transactions" ||
+    name === "aggregate_spending" ||
+    name === "compare_periods"
   ) {
     return "finyk";
   }
@@ -33,7 +37,10 @@ export function moduleFor(name: string): ChatActionCardModule {
     name === "set_daily_plan" ||
     name === "suggest_meal" ||
     name === "copy_meal_from_date" ||
-    name === "plan_meals_for_day"
+    name === "plan_meals_for_day" ||
+    // Query / analytics ("talk to your data", PR3)
+    name === "query_nutrition" ||
+    name === "nutrition_averages"
   ) {
     return "nutrition";
   }
@@ -49,7 +56,11 @@ export function moduleFor(name: string): ChatActionCardModule {
     name === "log_weight" ||
     name === "suggest_workout" ||
     name === "copy_workout" ||
-    name === "compare_progress"
+    name === "compare_progress" ||
+    // Query / analytics ("talk to your data", PR2)
+    name === "query_workouts" ||
+    name === "exercise_progress" ||
+    name === "training_stats"
   ) {
     return "fizruk";
   }
@@ -65,7 +76,10 @@ export function moduleFor(name: string): ChatActionCardModule {
     name === "add_calendar_event" ||
     name === "edit_habit" ||
     name === "reorder_habits" ||
-    name === "habit_stats"
+    name === "habit_stats" ||
+    // Query / analytics ("talk to your data", PR3)
+    name === "query_habits" ||
+    name === "habit_correlation"
   ) {
     return "routine";
   }
@@ -186,6 +200,20 @@ export function iconFor(name: string): string | undefined {
     case "my_profile":
       return "user";
     case "recall_memory":
+      return "search";
+    // Query / analytics ("talk to your data", PR1-3)
+    case "aggregate_spending":
+    case "training_stats":
+    case "nutrition_averages":
+    case "query_habits":
+      return "bar-chart";
+    case "compare_periods":
+    case "exercise_progress":
+    case "habit_correlation":
+      return "trending-up";
+    case "query_transactions":
+    case "query_workouts":
+    case "query_nutrition":
       return "search";
     default:
       return undefined;
@@ -330,6 +358,27 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Профіль${failedSuffix}`;
     case "recall_memory":
       return `Спогад${failedSuffix}`;
+    // Query / analytics ("talk to your data", PR1-3)
+    case "query_transactions":
+      return `Транзакції за запитом${failedSuffix}`;
+    case "aggregate_spending":
+      return `Розбивка витрат${failedSuffix}`;
+    case "compare_periods":
+      return `Порівняння періодів${failedSuffix}`;
+    case "query_workouts":
+      return `Тренування за запитом${failedSuffix}`;
+    case "exercise_progress":
+      return `Прогрес вправи${failedSuffix}`;
+    case "training_stats":
+      return `Статистика тренувань${failedSuffix}`;
+    case "query_habits":
+      return `Статистика звичок${failedSuffix}`;
+    case "habit_correlation":
+      return `Кореляція звички${failedSuffix}`;
+    case "query_nutrition":
+      return `Харчування за запитом${failedSuffix}`;
+    case "nutrition_averages":
+      return `Середнє харчування${failedSuffix}`;
     default:
       return name;
   }

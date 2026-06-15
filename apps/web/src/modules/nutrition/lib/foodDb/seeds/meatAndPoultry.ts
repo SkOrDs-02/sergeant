@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import type { SeedFood } from "./types";
 
 export const MEAT_AND_POULTRY: SeedFood[] = [

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import type { Dispatch, SetStateAction } from "react";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "./mealFormUtils";

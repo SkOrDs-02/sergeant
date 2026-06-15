@@ -1,3 +1,7 @@
+/**
+ * @status Active
+ * @owner @Skords-01
+ */
 import type { User } from "@sergeant/shared";
 import { getVibePicks, type HubModuleId } from "../onboarding/vibePicks";
 

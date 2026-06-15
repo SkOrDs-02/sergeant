@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import type { Dispatch, SetStateAction } from "react";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { showUndoToast } from "@shared/lib/ui/undoToast";

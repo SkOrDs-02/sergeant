@@ -483,6 +483,30 @@ Or use `requestIdleCallback` for the timer rearm where supported.
 
 ### F16 — `lockStorage.ts` stores PIN hash under fixed key `"v1"` with no per-user scoping [severity: medium] [perspective: security]
 
+> ✅ **Closed 2026-06-15** (per-user keying). `apps/web/src/core/security/lockStorage.ts`
+> now partitions the IDB credential record key by Better-Auth user id:
+> `v1:<userKey>`, where `userKeyFor(userId)` sanitises the opaque id to
+> `[A-Za-z0-9_-]` and defaults to `"anon"` for the signed-out partition —
+> mirroring the SQLite (`setSqliteUser`, F17) and SW-cache (`swSetActiveUser`,
+> F2) partition schemes. Every public function (`savePinHash`, `verifyPin`,
+> `verifyPinAttempt`, `hasPinSet`, `clearPinHash`) gained an optional trailing
+> `userId?` arg; `useAppLock.ts` reads `user?.id` from `useAuth()` and threads
+> it through the mount/visibility/idle cold-start checks and the unlock path,
+> and the lock state is re-evaluated against the new partition on a user-id
+> change (the "rotate on logout" boundary). `AppLock.tsx`'s setup flow writes
+> the new credential under the same partition. User B can no longer inherit
+> user A's PIN: A's credential lives under `v1:<A>`, unreachable from B's
+> session. Regression tests: `lockStorage.test.ts` (per-user isolation,
+> cross-checks, anon isolation, `userKeyFor` sanitisation) and
+> `useAppLock.test.ts` (locks only for the enrolled user's partition).
+>
+> **Deferred (follow-up):** `apps/web/src/core/settings/PrivacySection.tsx`
+> still calls `hasPinSet()` / `clearPinHash()` without a userId (reads the
+> `anon` slot), so the Settings lock toggle misreports state for an
+> authenticated user until it is threaded through too. Left out of this PR
+> because `core/settings/**` was outside the file-ownership boundary — tracked
+> as a spawned follow-up task.
+
 **Page:** Security / AppLock
 **File:** `apps/web/src/core/security/lockStorage.ts`
 **Lines:** L11–L13, L60–L78
@@ -653,6 +677,23 @@ ReactDOM.createRoot(rootEl).render(...);
 
 ### F23 — Most files in scope are missing Rule #10 lifecycle markers (`Last validated` / `Status`) [severity: medium] [perspective: lifecycle]
 
+> ✅ **Closed 2026-06-15** (observability + security surfaces). Added the
+> canonical `@status Active` / `@owner @Skords-01` JSDoc lifecycle block
+> (same format as `apps/web/src/core/errors/NotFoundPage.tsx`) to every source
+> file in the `core/observability/**` and `core/security/**` subtrees that
+> lacked one: `analytics.ts`, `containsPII.ts`, `dualWriteTelemetry.ts`,
+> `identifyTraits.ts`, `posthog.ts`, `productMemorySync.ts`, `requestId.ts`,
+> `sanitizeUrl.ts`, `sentry.ts`, `webVitals.ts`, `PageviewTracker.tsx`,
+> `RouteChangeTracker.tsx`, `lockStorage.ts`, `useAppLock.ts`, `AppLock.tsx`,
+> `AppLockContext.tsx`. (`PrivacyLockBanner.tsx` and the three error pages
+> already carried markers.) Marker-only change, no logic touched.
+>
+> **Deferred (out of boundary):** the remaining flagged files —
+> `core/PricingPage.tsx`, `status/StatusPage.tsx`, `sw.ts` + `sw/*`,
+> `core/db/*`, `core/syncEngine/*`, `core/cloudSync/*`, `core/billing/*`,
+> `middleware.ts`, `main.tsx`, `index.css` — are owned by other module agents
+> and are not part of this PR's file-ownership boundary.
+
 **Pages:** Many
 **Files (sample):**
 
@@ -768,6 +809,23 @@ Optionally `void load()` on `visibilitychange → visible` to refresh stale data
 
 ### F27 — `analytics.ts` exposes `window.__hubAnalytics` ring-buffer globally [severity: medium] [perspective: security]
 
+> ✅ **Closed 2026-06-15** — `apps/web/src/core/observability/analytics.ts`
+> now gates the `window.__hubAnalytics` assignment behind a module-level
+> `EXPOSE_RING_BUFFER = import.meta.env.DEV || !import.meta.env["VITE_POSTHOG_KEY"]`.
+> The global is withheld in the only environment where it is a real XSS-
+> exfiltration risk — the deployed production app, which always has
+> `VITE_POSTHOG_KEY` set. It remains available in DEV (dev server + vitest)
+> and in the smoke `vite preview` build (a prod-mode build with no PostHog
+> key, whose Playwright critical-flow harness reads the buffer as its
+> deterministic event signal — `apps/web/tests/smoke/onboarding-happy-path.spec.ts`).
+> Strict `import.meta.env.DEV`-only gating (as sketched in the recommendation)
+> was rejected because it would have broken that out-of-boundary smoke test,
+> which hard-asserts on `__hubAnalytics` in a production build; keying off the
+> PostHog-config signal preserves the smoke contract while still hiding the
+> global from real users. Regression tests added to `analytics.test.ts`
+> (withheld when `DEV=false` + key set; exposed when `DEV=false` + key unset).
+> PostHog remains the production analytics sink — only the debug global moved.
+
 **Page:** Observability
 **File:** `apps/web/src/core/observability/analytics.ts`
 **Lines:** L56–L62 (and adjacent ring-buffer writer)
@@ -791,6 +849,19 @@ if (import.meta.env.DEV) {
 ---
 
 ### F28 — `OfflinePage` / `ServerErrorPage` lack `aria-live` for SR announcement on mount [severity: medium] [perspective: a11y]
+
+> ✅ **Closed 2026-06-15** (verified-already-done). Both error pages already
+> ship a dedicated `sr-only` live region inside their `<main>`:
+> `apps/web/src/core/errors/OfflinePage.tsx` renders
+> `<p role="status" aria-live="polite" aria-atomic="true">` whose copy tracks
+> `useOnlineStatus` (announces offline / reconnected), and
+> `apps/web/src/core/errors/ServerErrorPage.tsx` renders
+> `<p role="alert" aria-live="assertive" aria-atomic="true">` announcing the
+> server error. So a screen-reader user hears the status change even when the
+> SW swaps the offline surface in without a route change. The audit's open
+> concern (the announcement depending solely on `<EmptyState>` internals) no
+> longer applies — the polite/assertive region is explicit on the page itself.
+> No code change needed.
 
 **Page:** Error pages
 **Files:**

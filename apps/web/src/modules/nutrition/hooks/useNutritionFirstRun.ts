@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { useEffect, useRef, useState } from "react";
 import { useModuleFirstRun } from "../../../core/onboarding/useModuleFirstRun";
 import type { NutritionPage, MenuSubTab } from "../lib/nutritionRouter";

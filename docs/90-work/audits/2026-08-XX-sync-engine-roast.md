@@ -5,11 +5,11 @@
 
 > **Owner:** TBD (backend-engineer)
 > **Trigger window:** Q3 2026 (next backend-roast cycle, аligned with `docs/90-work/planning/sprint-roadmap-q2q3-2026.md` § Спринт 8 closeout). Заплановано **2026-08-11** як baseline-date.
-> **Tracking:** [`docs/90-work/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/pr-plan-backend-perf-2026-05.md).
+> **Tracking:** [`docs/90-work/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/archive/pr-plan-backend-perf-2026-05.md).
 
 ## TL;DR
 
-`apps/server/src/modules/sync/syncV2.ts` — **3099 рядок**, найбільший single-file у репо. Файл обслуговує всі sync-engine paths (push, pull, op-log, idempotency, dead-letter). Розмір сам по собі не is-bad-news, але:
+`apps/server/src/modules/sync/syncV2.ts` — **473 рядки** (after the per-domain `applySync` extraction). Файл обслуговує всі sync-engine paths (push, pull, op-log, idempotency, dead-letter). Розмір сам по собі не is-bad-news, але:
 
 - При >3 kLOC chunkability per-handler ставиться питанням, чи можна окремо тестувати idempotency-key hot path і retry-semantics без перенавантажування fixture-bootstrap.
 - Atomic-transaction boundaries (одна `BEGIN`-у-handler чи декілька) досі не задокументовано — а це визначає, чи може half-committed batch виникнути при connection drop.
@@ -106,14 +106,14 @@ The dead-letter queue (DLQ) is **client-side only** (SQLite `sync_op_outbox` tab
 
 - **No TTL**: `dead_letter` rows are **never automatically purged**. `purgeSyncOpOutboxForUser()` (`packages/db-schema/src/sqlite/syncOpOutboxPurge.ts`) deletes only `status='pending'` rows on logout; terminal rows (`rejected`, `dead_letter`, `quarantined`) are intentionally preserved for forensic value.
 - **Recovery**: `recoverDeadLetter({ all: true })` (`packages/db-schema/src/sqlite/syncOpOutboxRecover.ts`) moves `dead_letter` → `pending` and re-queues. Both `apps/web` and `apps/mobile` singleton call this on reconnect (`syncEngineWriter.ts:176` / `syncEngineWriter.ts:185`).
-- **Implication**: On a device that never reconnects cleanly, the DLQ can grow unbounded. **RESOLVED 2026-06-07** — a TTL cleanup helper now exists: `purgeStaleTerminalOutbox()` (`packages/db-schema/src/sqlite/syncOpOutboxPurgeStale.ts`) deletes terminal rows (`dead_letter`/`rejected`/`quarantined`) older than a retention window (default `SYNC_OP_OUTBOX_STALE_TTL_DAYS = 30`), age-gated via `julianday()` and never touching `'pending'`. Remaining follow-up: wire it into the sync-engine boot path + a Grafana panel tracking dead-letter bucket size.
+- **Implication**: On a device that never reconnects cleanly, the DLQ can grow unbounded. **RESOLVED 2026-06-07** — a TTL cleanup helper now exists: `purgeStaleTerminalOutbox()` (`packages/db-schema/src/sqlite/syncOpOutboxPurgeStale.ts`) deletes terminal rows (`dead_letter`/`rejected`/`quarantined`) older than a retention window (default `SYNC_OP_OUTBOX_STALE_TTL_DAYS = 30`), age-gated via `julianday()` and never touching `'pending'`. It is already wired into the sync-engine boot path (`apps/web` + `apps/mobile` `core/syncEngine/singleton.ts`, with a covering test). Remaining follow-up: a Grafana panel tracking dead-letter bucket size.
 - **Server-side**: `sync_op_log` (server Postgres) has no DLQ concept; server-side rejections are recorded inline (status `'rejected'`). No server-side TTL purge exists in `syncV2.ts` — retention-job referenced as comment in `apps/server/src/modules/sync/audit.ts:152` but not implemented in this module. **Plan recorded in [ADR-0065](../../04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md)** — server retention is harder than the client DLQ TTL because op-log rows back cursor-based `/pull` replay and must not be purged ahead of the slowest device cursor (see ADR's cursor-safety invariant).
 
 ## Cross-refs
 
-- **Code:** [`apps/server/src/modules/sync/syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) (3099 LOC).
+- **Code:** [`apps/server/src/modules/sync/syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) (473 LOC).
 - **ADR:** [`docs/04-governance/adr/0047-cloudsync-v1-410-gone.md`](../../04-governance/adr/0047-cloudsync-v1-410-gone.md) (sunset Amendment 2026-04-27); [`docs/04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md`](../../04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md) (PR-050 plan: fan-out + retention, cursor-safety invariant).
 - **Initiative:** [`docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md`](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md) (Phases 1-6 done; Phase 7 wiring closed 2026-05-15).
 - **Storage roadmap:** [`docs/90-work/planning/storage-roadmap.md`](../planning/storage-roadmap.md) (Stage 8/9 dual-write — взаємозалежність зі sync-conflict-resolution).
-- **PR plan:** [`docs/90-work/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/pr-plan-backend-perf-2026-05.md).
+- **PR plan:** [`docs/90-work/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/archive/pr-plan-backend-perf-2026-05.md).
 - **Synthesis:** [`docs/90-work/audits/2026-05-15-deep-audit-state-of-repo.md`](./archive/2026-05-15-deep-audit-state-of-repo.md) (state-of-repo snapshot — D1-D4 trackers).

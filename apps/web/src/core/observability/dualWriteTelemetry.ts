@@ -1,4 +1,7 @@
 /**
+ * @status Active
+ * @owner @Skords-01
+ *
  * Stage 8 telemetry sink for the SQLite dual-write rollout
  * decision-gates.
  *

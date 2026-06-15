@@ -448,7 +448,7 @@ apps/web/src/core/hub/
 
 #### O8-start: Phase 3 `/plan` mode — ✅ Done (descoped from Sprint 8)
 
-**Статус:** Phase 3 (`/plan` `/analyze` `/okr`) закрита у Sprint 5 через Stage 5b PR-1..PR-4 + Stage 5a persona allowlist (founder підтвердив 2026-05-13). Strategic-modes вживі у Gateway-боті як `before_agent_start` primer-и (`PLAN_PRIMER`, `ANALYZE_PRIMER`, `OKR_PRIMER`); write-tool `commit_to_strategy_doc` вже зареєстрований (Stage 3b). Деталі — [`openclaw-migration-plan.md`](./openclaw-migration-plan.md) Stage 5a/5b/5c.
+**Статус:** Phase 3 (`/plan` `/analyze` `/okr`) закрита у Sprint 5 через Stage 5b PR-1..PR-4 + Stage 5a persona allowlist (founder підтвердив 2026-05-13). Strategic-modes вживі у Gateway-боті як `before_agent_start` primer-и (`PLAN_PRIMER`, `ANALYZE_PRIMER`, `OKR_PRIMER`); write-tool `commit_to_strategy_doc` вже зареєстрований (Stage 3b). Деталі — [`openclaw-migration-plan.md`](./archive/openclaw-migration-plan.md) Stage 5a/5b/5c.
 
 **Backlog-deferred:** "Approve all" batch (A.3), diff-preview для `commit_to_strategy_doc` (A.4), DB-persistence pending approvals (T11) — окремі ініціативи.
 

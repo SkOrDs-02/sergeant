@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import type { Dispatch, Ref, SetStateAction } from "react";
 import type { NutritionPrefs, PantryItem } from "@sergeant/nutrition-domain";
 import { Card } from "@shared/components/ui/Card";
@@ -11,7 +15,7 @@ import type { QuickChip } from "../hooks/useNutritionQuickChips";
 import type { useNutritionLog } from "../hooks/useNutritionLog";
 import type { usePhotoAnalysis } from "../hooks/usePhotoAnalysis";
 import type { NutritionPage } from "../lib/nutritionRouter";
-import { fmtMacro, todayISODate } from "../lib/nutritionFormat";
+import { fmtMacro } from "../lib/nutritionFormat";
 
 type LogController = ReturnType<typeof useNutritionLog>;
 type PhotoController = ReturnType<typeof usePhotoAnalysis>;
@@ -25,10 +29,7 @@ interface NutritionStartPageProps {
   fetchDayHint: () => void | Promise<void>;
   dayHintText: string;
   dayHintBusy: boolean;
-  scheduleTransient: (
-    cb: () => void,
-    delayMs: number,
-  ) => ReturnType<typeof setTimeout>;
+  onRequestAddMeal: () => void;
   photoCardForceOpen: boolean;
   setPhotoCardForceOpen: Dispatch<SetStateAction<boolean>>;
   onSaveToLog: () => void;
@@ -45,7 +46,7 @@ export function NutritionStartPage({
   fetchDayHint,
   dayHintText,
   dayHintBusy,
-  scheduleTransient,
+  onRequestAddMeal,
   photoCardForceOpen,
   setPhotoCardForceOpen,
   onSaveToLog,
@@ -82,14 +83,7 @@ export function NutritionStartPage({
           onFetchDayHint={fetchDayHint}
           dayHintText={dayHintText}
           dayHintBusy={dayHintBusy}
-          onAddMeal={() => {
-            log.setSelectedDate(todayISODate());
-            setActivePageAndHash("log");
-            scheduleTransient(() => {
-              log.setAddMealPhotoResult(null);
-              log.setAddMealSheetOpen(true);
-            }, 80);
-          }}
+          onAddMeal={onRequestAddMeal}
         />
         <details
           className="group"

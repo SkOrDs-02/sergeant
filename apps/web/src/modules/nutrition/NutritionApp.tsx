@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Meal } from "@sergeant/nutrition-domain";
 import { MEAL_TYPES, mealTypeByHour } from "@sergeant/nutrition-domain";
@@ -53,6 +57,7 @@ import { useNutritionPrefsState } from "./hooks/useNutritionPrefsState";
 import { buildRecipeCacheKey, readRecipeCache } from "./lib/recipeCache";
 import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
 import { newMealId } from "./lib/mealId";
+import { todayISODate } from "./lib/nutritionFormat";
 import { useToast } from "@shared/hooks/useToast";
 import { useNutritionFirstRun } from "./hooks/useNutritionFirstRun";
 
@@ -62,6 +67,13 @@ interface NutritionAppProps {
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
 }
+
+// One-shot imperative follow-ups that must run *after* a page/state change has
+// committed. Resolved by effects keyed on the relevant page/state, not timers.
+type PendingNutritionAction =
+  | { kind: "open-add-meal" }
+  | { kind: "open-photo-picker" }
+  | null;
 
 export default function NutritionApp({
   onBackToHub,
@@ -112,29 +124,23 @@ export default function NutritionApp({
   // on the next frame — no extra "Звідки страва?" detour.
   const [photoCardForceOpen, setPhotoCardForceOpen] = useState(false);
 
-  // Shared bucket for short-lived one-shot timers scheduled from imperative
-  // click / route handlers (file picker fallbacks, "Add meal" sheet open).
-  // We need to clear them on unmount so late setState / click() calls
-  // don't touch a torn-down component.
-  const transientTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(
-    new Set(),
-  );
-  const scheduleTransient = useCallback(
-    (cb: () => void, delayMs: number): ReturnType<typeof setTimeout> => {
-      const id = setTimeout(() => {
-        transientTimersRef.current.delete(id);
-        cb();
-      }, delayMs);
-      transientTimersRef.current.add(id);
-      return id;
-    },
-    [],
-  );
+  // AI-CONTEXT: Cross-page imperative follow-ups (open the add-meal sheet
+  // once the Log page is mounted, pop the file picker once the Start page's
+  // PhotoAnalyzeCard is force-open) are driven by this pending-action state
+  // machine instead of `setTimeout` timing-guesses. An effect fires the
+  // follow-up deterministically when the target page/state has committed,
+  // then clears the action — no race on cold-load / low-end devices
+  // (page-audit-08 F13). The single rAF handle is cleared on unmount so a
+  // late `.click()` never touches a torn-down input.
+  const [pendingAction, setPendingAction] =
+    useState<PendingNutritionAction>(null);
+  const pendingRafRef = useRef<number | null>(null);
   useEffect(() => {
-    const timers = transientTimersRef.current;
     return () => {
-      for (const id of timers) clearTimeout(id);
-      timers.clear();
+      if (pendingRafRef.current !== null) {
+        cancelAnimationFrame(pendingRafRef.current);
+        pendingRafRef.current = null;
+      }
     };
   }, []);
 
@@ -222,6 +228,42 @@ export default function NutritionApp({
     log.setAddMealSheetOpen(true);
   };
 
+  // "Додати прийом їжі" from the Start dashboard: jump to today + Log page,
+  // then open the add-meal sheet once that page has mounted. We request the
+  // follow-up here and let the effect below fire it when `activePage` becomes
+  // "log" — no timing guess (page-audit-08 F13).
+  const handleRequestAddMeal = useCallback(() => {
+    log.setSelectedDate(todayISODate());
+    setActivePageAndHash("log");
+    setPendingAction({ kind: "open-add-meal" });
+  }, [log, setActivePageAndHash]);
+
+  // Resolve "open-add-meal" deterministically once the Log page is committed.
+  useEffect(() => {
+    if (pendingAction?.kind !== "open-add-meal") return;
+    if (activePage !== "log") return;
+    log.setAddMealPhotoResult(null);
+    log.setAddMealSheetOpen(true);
+    setPendingAction(null);
+  }, [pendingAction, activePage, log]);
+
+  // Resolve "open-photo-picker" once the Start page + force-open disclosure
+  // have committed. One rAF lets the freshly-mounted <input> paint before we
+  // synthesise the click; the handle is cleared on unmount (effect above).
+  useEffect(() => {
+    if (pendingAction?.kind !== "open-photo-picker") return;
+    if (activePage !== "start" || !photoCardForceOpen) return;
+    pendingRafRef.current = requestAnimationFrame(() => {
+      pendingRafRef.current = null;
+      try {
+        photo.fileRef.current?.click();
+      } catch {
+        /* noop — picker may be blocked without a user gesture */
+      }
+    });
+    setPendingAction(null);
+  }, [pendingAction, activePage, photoCardForceOpen, photo.fileRef]);
+
   // Requested from inside AddMealSheet's source-step (S13). Close the
   // sheet, route to the Start page where PhotoAnalyzeCard lives, force
   // the disclosure open and pop the native file picker — mirrors the
@@ -233,21 +275,10 @@ export default function NutritionApp({
     setEditingMeal(null);
     setActivePageAndHash("start");
     setPhotoCardForceOpen(true);
-    const raf = requestAnimationFrame(() => {
-      try {
-        photo.fileRef.current?.click();
-      } catch {
-        /* noop — picker may be blocked without a user gesture */
-      }
-    });
-    scheduleTransient(() => {
-      cancelAnimationFrame(raf);
-      try {
-        photo.fileRef.current?.click();
-      } catch {
-        /* noop */
-      }
-    }, 80);
+    // The file picker is popped by the effect below once the Start page +
+    // force-open disclosure have actually committed (deterministic, no 80ms
+    // guess — see PendingNutritionAction).
+    setPendingAction({ kind: "open-photo-picker" });
   };
 
   const handlePantryBarcodeDetected = usePantryBarcodeScan({
@@ -485,7 +516,7 @@ export default function NutritionApp({
                   fetchDayHint={fetchDayHint}
                   dayHintText={dayHintText}
                   dayHintBusy={dayHintBusy}
-                  scheduleTransient={scheduleTransient}
+                  onRequestAddMeal={handleRequestAddMeal}
                   photoCardForceOpen={photoCardForceOpen}
                   setPhotoCardForceOpen={setPhotoCardForceOpen}
                   onSaveToLog={handleSaveToLog}

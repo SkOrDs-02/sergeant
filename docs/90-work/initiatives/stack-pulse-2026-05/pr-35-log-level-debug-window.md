@@ -1,7 +1,7 @@
 # PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle
 
 > **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** Active — server-side shipped via PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423) (commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec), 2026-05-08); `tools/openclaw` `/debug-window` CLI deferred to follow-up (див. нижче — чекає першого реального debug-incident-у як trigger).
+> **Status:** Closed (2026-06-15) — server-side shipped (PR #2423: logger.ts debug-window + route #3096). The deferred tools/openclaw CLI follow-up is permanently moot (the grammy bot was deleted in PR #3470). Canonical home: apps/server/src/obs/logger.ts (Hard Rule #21) + docs/03-operations/observability/log-levels.md.
 
 |                    |                                                                                 |
 | ------------------ | ------------------------------------------------------------------------------- |

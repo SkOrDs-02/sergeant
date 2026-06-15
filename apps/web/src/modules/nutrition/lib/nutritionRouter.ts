@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 // Five-tab structure after UX audit: start / pantry / log / menu
 // (merge of plan+recipes). Shopping now lives as an internal tab inside
 // pantry, so `shop` redirects to `pantry`. Legacy `plan` and `recipes`

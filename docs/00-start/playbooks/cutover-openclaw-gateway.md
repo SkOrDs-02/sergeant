@@ -1,6 +1,6 @@
 # Playbook: Cutover OpenClaw на зовнішній Gateway (Stage 7)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
 > **Status:** Active
 
 > **Мовна примітка:** назви команд, сервісів і змінних середовища залишені в оригіналі, бо це буквальні ідентифікатори рантайму; рішення, перевірки та послідовність дій описані українською.
@@ -15,7 +15,7 @@
 - Coupled surface: `tools/openclaw/src/openclaw/`, `tools/openclaw/src/agents/{openclaw,personas,strategic-modes,dispatcher}.ts`, Railway service `Sergeant` (env-vars)
 - Governing skill: `sergeant-deploy-and-observability`
 - Governing ADR: [ADR-0055](../../04-governance/adr/0055-openclaw-external-gateway.md) § cutover
-- Governing plan: [`openclaw-migration-plan.md`](../../90-work/planning/openclaw-migration-plan.md) — Locked Decision #17
+- Governing plan: [`openclaw-migration-plan.md`](../../90-work/planning/archive/openclaw-migration-plan.md) — Locked Decision #17
 
 ---
 
@@ -347,7 +347,7 @@ pnpm dead-code:files
 
 - [AGENTS.md](../../../AGENTS.md) — hard rules
 - [ADR-0055](../../04-governance/adr/0055-openclaw-external-gateway.md) — Phase 0 infra + cutover architecture
-- [`openclaw-migration-plan.md`](../../90-work/planning/openclaw-migration-plan.md) — повний Stage tracker
+- [`openclaw-migration-plan.md`](../../90-work/planning/archive/openclaw-migration-plan.md) — повний Stage tracker
 - [`rotate-openclaw-credentials.md`](./rotate-openclaw-credentials.md) — ротація GitHub App credentials
 - [`cleanup-dead-code.md`](./cleanup-dead-code.md) — generic dead-code removal process
 - [`release-web-and-api.md`](./release-web-and-api.md) — deploy process for Sergeant main service

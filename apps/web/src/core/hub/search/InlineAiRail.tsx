@@ -31,6 +31,25 @@ const STATUS_LABEL: Record<InlineAiState["status"], string> = {
 };
 
 /**
+ * Audit 03 F21 (security/phishing): `question` is user-sourced — it is the raw
+ * search query (and, via the launcher, can echo localStorage-cached titles
+ * other modules wrote). It is rendered as plain text here, never through the
+ * markdown-aware {@link AssistantMessageBody} (reserved for assistant text).
+ *
+ * React already escapes it against HTML/XSS, but a query like
+ * `` `rm -rf` `` or `[click](javascript:…)` still *looks* like a formatted
+ * AI suggestion to a sighted user and reads as a "code"/"link" token to a
+ * screen reader. We neutralise the markdown control characters so a crafted
+ * query cannot fake assistant-style emphasis, code, or links inside the rail.
+ */
+function neutralizeMarkdown(text: string): string {
+  return text
+    .replace(/[*_`[\]()#>~|\\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
  * Inline answer rail rendered under SearchInput when the user picks
  * the `ai-handoff` hit. Replaces the previous behaviour of opening
  * `HubChat` as a 92dvh overlay for what is most often a single-shot
@@ -117,7 +136,7 @@ export function InlineAiRail({
                 {STATUS_LABEL[state.status]}
               </SectionHeading>
               <div className="text-style-label text-text truncate">
-                {question}
+                {neutralizeMarkdown(question)}
               </div>
             </div>
           </div>

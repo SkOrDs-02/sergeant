@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Легасі-реекспорт macros-утиліт з `@sergeant/shared`. Цей файл залишено,
  * щоб існуючі сусідські імпорти `./macros.js` у `nutrition/lib/*` не
  * довелось переписувати всі одразу.

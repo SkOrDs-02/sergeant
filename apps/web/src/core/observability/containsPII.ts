@@ -1,4 +1,7 @@
 /**
+ * @status Active
+ * @owner @Skords-01
+ *
  * Lightweight PII detector for analytics console-log gating (S8 guard).
  *
  * Purpose: prevent `console.log("[analytics]", event)` from emitting when

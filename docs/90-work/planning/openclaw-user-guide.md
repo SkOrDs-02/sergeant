@@ -1,7 +1,9 @@
 # OpenClaw: Інструкція з встановлення та налаштування
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** після завершення міграції.
+> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-09-13.
 > **Status:** Scaffolded
+>
+> **Note (2026-06-15):** міграція завершена (Stage 7 cutover) — gateway live. Гайд лишається Scaffolded, бо публікація plugin у ClawHub ще відкладена.
 
 Ця інструкція для людини, яка хоче встановити і налаштувати зовнішній [OpenClaw](https://openclaw.ai) — персональний AI-асистент, який працює на твоїх пристроях. Він відповідає тобі у месенджерах, якими ти вже користуєшся.
 
@@ -191,10 +193,10 @@ openclaw setup imessage
 
 ### 7.1 Встанови Sergeant plugin
 
-Коли plugin буде готовий (див. [план міграції](./openclaw-migration-plan.md)):
+Коли plugin буде опубліковано в ClawHub (публікація ще відкладена; canonical surface — `packages/openclaw-plugin`, див. [архівований план міграції](./archive/openclaw-migration-plan.md)):
 
 ```bash
-openclaw plugins install @sergeant/openclaw-tools
+openclaw plugins install @sergeant/openclaw-plugin
 ```
 
 ### 7.2 Налаштуй plugin
@@ -211,7 +213,7 @@ openclaw config edit
 {
   "plugins": {
     "entries": {
-      "@sergeant/openclaw-tools": {
+      "@sergeant/openclaw-plugin": {
         "enabled": true,
         "config": {
           "serverUrl": "https://your-sergeant-server.railway.app",

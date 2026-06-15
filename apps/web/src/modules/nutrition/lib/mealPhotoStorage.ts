@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Мініатюри страв у IndexedDB (окремо від localStorage).
  * Ключ — id запису їжі.
  *

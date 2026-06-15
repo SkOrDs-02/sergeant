@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * @scaffolded
  * @owner @Skords-01
  * @nextStep Have App router import `NutritionApp` from `@nutrition` instead of

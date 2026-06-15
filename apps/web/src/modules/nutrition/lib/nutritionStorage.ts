@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Web I/O-адаптер для модуля Харчування: prefs, pantries, log.
  *
  * Stage 8 PR #057n-tombstone (`docs/planning/storage-roadmap.md`): the

@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-06-02 by Claude (audits-runner drift+archive pass). **Next review:** 2026-08-11.
 > **Status:** Archived
-> **Закрито 2026-06-02:** 14/14 actionable items відвантажено (P1-1…P1-6 + P2-1…P2-7); єдиний залишок — SQLite `sync_op_outbox` Stage 8/9 — явно поза скоупом цієї прожарки (окрема ініціатива). Completed-and-frozen → archive. Tracker: [`../planning/pr-plan-backend-perf-2026-05.md`](../../planning/pr-plan-backend-perf-2026-05.md).
+> **Закрито 2026-06-02:** 14/14 actionable items відвантажено (P1-1…P1-6 + P2-1…P2-7); єдиний залишок — SQLite `sync_op_outbox` Stage 8/9 — явно поза скоупом цієї прожарки (окрема ініціатива). Completed-and-frozen → archive. Tracker: [`../planning/pr-plan-backend-perf-2026-05.md`](../../planning/archive/pr-plan-backend-perf-2026-05.md).
 
 ## Контекст
 

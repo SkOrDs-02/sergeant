@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Boot wiring for the Nutrition SQLite read path (PR #033).
  *
  * Mirrors `apps/web/src/modules/fizruk/lib/sqliteReadBoot.ts`. Called

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { lazyDefault } from "../../core/lib/lazyImport";

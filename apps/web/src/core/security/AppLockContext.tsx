@@ -1,3 +1,7 @@
+/**
+ * @status Active
+ * @owner @Skords-01
+ */
 import { createContext, useContext, type ReactNode } from "react";
 import { useAppLock, type UseAppLockReturn } from "./useAppLock";
 

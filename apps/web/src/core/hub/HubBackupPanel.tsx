@@ -55,6 +55,12 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         Токен Monobank і кеш транзакцій не входять у файл — після імпорту
         підключи рахунок знову в Фініку.
       </p>
+      <p className="leading-relaxed text-xs">
+        Ідентифікатори акаунта прибираю автоматично, але файл усе одно містить
+        твої особисті дані: суми, назви боргів, нотатки й коментарі, які ти
+        вписував сам. Тримай його як приватний — у менеджері паролів чи
+        зашифрованій хмарі, не пересилай у відкритих чатах.
+      </p>
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="ghost"

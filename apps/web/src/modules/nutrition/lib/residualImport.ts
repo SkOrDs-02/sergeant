@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Boot-time residual-import helper for the Nutrition LS keys.
  *
  * Stage 8 PR #057n-tombstone of `docs/planning/storage-roadmap.md`.

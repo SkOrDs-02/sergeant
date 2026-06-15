@@ -1,11 +1,11 @@
 # OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
 > **Status:** Active
 
 > **Owner:** @Skords-01 (backend)
 > **Trigger date:** **2026-08-11** (locked — next backend-roast cycle baseline).
-> **Tracking:** [`docs/90-work/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/pr-plan-backend-perf-2026-05.md).
+> **Tracking:** [`docs/90-work/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/archive/pr-plan-backend-perf-2026-05.md).
 
 ## TL;DR
 
@@ -160,5 +160,5 @@ ADR-0027 (OpenClaw, Console та MCP) визначає policy: write-scopes ок
 - **Gateway ADR:** [`docs/04-governance/adr/0055-openclaw-external-gateway.md`](../../04-governance/adr/0055-openclaw-external-gateway.md) (external bot identity + plugin architecture).
 - **Strategic modes ADR:** [`docs/04-governance/adr/0033-openclaw-multi-personas-and-council.md`](../../04-governance/adr/0033-openclaw-multi-personas-and-council.md) (council + approval-gate model).
 - **Webhook ADR:** [`docs/04-governance/adr/0041-openclaw-telegram-webhook.md`](../../04-governance/adr/0041-openclaw-telegram-webhook.md) (token-rotation + idempotency).
-- **PR plan:** [`docs/90-work/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/pr-plan-backend-perf-2026-05.md).
+- **PR plan:** [`docs/90-work/planning/pr-plan-backend-perf-2026-05.md` §PR-12](../planning/archive/pr-plan-backend-perf-2026-05.md).
 - **Routing map:** [`docs/03-operations/observability/alert-bot-routing.md`](../../03-operations/observability/alert-bot-routing.md).

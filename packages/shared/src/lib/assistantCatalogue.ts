@@ -603,7 +603,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     keywords: ["stats", "статистика", "частота", "м'язи"],
   },
 
-  // ───── Рутина (12) ─────────────────────────────────────────────────────
+  // ───── Рутина (14) ─────────────────────────────────────────────────────
   {
     id: "mark_habit_done",
     module: "routine",
@@ -737,6 +737,44 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
   {
+    id: "query_habits",
+    module: "routine",
+    label: "Запит по звичці",
+    shortLabel: "Звичка",
+    icon: "bar-chart-2",
+    description:
+      "Детальна статистика звички за період: completion rate, найкращі/найгірші дні тижня, пропуски. Read-only — нічого не змінює.",
+    examples: [
+      "в які дні тижня я пропускаю медитацію",
+      "статистика по звичці вода за місяць",
+      "скільки днів я пропустив тренування",
+    ],
+    prompt: "Запит по звичці: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "read-only по днях",
+    keywords: ["query", "звичка", "completion", "пропуски", "дні тижня"],
+  },
+  {
+    id: "habit_correlation",
+    module: "routine",
+    label: "Кореляція звички",
+    shortLabel: "Кореляція",
+    icon: "activity",
+    description:
+      "Кореляція виконання звички з витратами Фініка або тренуваннями Фізрука — дні зі звичкою vs дні без. Read-only.",
+    examples: [
+      "чи менше я витрачаю коли тренуюсь",
+      "чи частіше медитую в дні тренувань",
+      "вплив бігу на витрати",
+    ],
+    prompt: "Кореляція звички: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "spending|workouts",
+    keywords: ["correlation", "кореляція", "вплив", "звичка"],
+  },
+  {
     id: "missed_this_week",
     module: "routine",
     label: "Що пропущено за тиждень",
@@ -767,7 +805,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
 
-  // ───── Харчування (9) ─────────────────────────────────────────────────
+  // ───── Харчування (11) ────────────────────────────────────────────────
   {
     id: "log_meal",
     module: "nutrition",
@@ -872,6 +910,44 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Склади меню на день: ",
     requiresInput: true,
     requiresOnline: true,
+  },
+  {
+    id: "query_nutrition",
+    module: "nutrition",
+    label: "Запит по їжі",
+    shortLabel: "Їжа",
+    icon: "search",
+    description:
+      "Пошук по журналу їжі за період з опційним фільтром за продуктом. Read-only — кількість прийомів, сумарні калорії й макроси.",
+    examples: [
+      "що я їв у понеділок",
+      "скільки разів я їв курку за тиждень",
+      "усі прийоми з рисом за квітень",
+    ],
+    prompt: "Запит по їжі: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "read-only вибірка",
+    keywords: ["query", "їжа", "журнал", "калорії", "макроси"],
+  },
+  {
+    id: "nutrition_averages",
+    module: "nutrition",
+    label: "Середнє харчування",
+    shortLabel: "Середнє",
+    icon: "bar-chart",
+    description:
+      "Середні денні калорії й макроси за період з трендом першої vs другої половини. Read-only — рахує лише дні із записами.",
+    examples: [
+      "яка моя середня калорійність за тиждень",
+      "середній білок за місяць",
+      "тренд калорій за 2 тижні",
+    ],
+    prompt: "Середнє харчування: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "середнє+тренд",
+    keywords: ["average", "середнє", "тренд", "калорії", "макроси"],
   },
 
   // ───── Кросмодульні (5) ───────────────────────────────────────────────

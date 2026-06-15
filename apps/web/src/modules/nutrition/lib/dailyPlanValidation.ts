@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Web-shim over `@sergeant/nutrition-domain/daily-plan-validation`.
  *
  * Pure-логіка (`GOAL_BOUNDS`, `calcMacroKcalMismatch`, базовий

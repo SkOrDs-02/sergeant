@@ -1,12 +1,12 @@
 # 0020 — Agent decisions log
 
-> **Last touched:** 2026-06-14 by @claude. **Next review:** 2026-09-12.
-> **Status:** In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями).
-> **Agent-ready:** yes
+> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
+> **Status:** Archived (2026-06-15) — code-complete; live-mode usage is organic, no mechanical work remains. Canonical home: docs/00-start/agents/decisions.md (curated ledger), promoted via sergeant-start-here SKILL.md + docs/00-start/agents/README.md.
+> **Agent-ready:** no
 
 ## TL;DR
 
-Tier 3 agent-OS. Курований append-only журнал [`docs/00-start/agents/decisions.md`](../../00-start/agents/decisions.md) усталених рішень/вподобань, який агент читає на старті (через `sergeant-start-here`), щоб не перепитувати вже вирішене, а maintainer не розжовував контекст щоразу. Тонкий **покажчик**, не паралельний source-of-truth: кожен рядок лінкує канон (AGENTS.md / ADR / rule), а не дублює його (Hard Rule #15).
+Tier 3 agent-OS. Курований append-only журнал [`docs/00-start/agents/decisions.md`](../../../00-start/agents/decisions.md) усталених рішень/вподобань, який агент читає на старті (через `sergeant-start-here`), щоб не перепитувати вже вирішене, а maintainer не розжовував контекст щоразу. Тонкий **покажчик**, не паралельний source-of-truth: кожен рядок лінкує канон (AGENTS.md / ADR / rule), а не дублює його (Hard Rule #15).
 
 ## Чому зараз
 
@@ -57,6 +57,6 @@ Tier 3 agent-OS. Курований append-only журнал [`docs/00-start/age
 
 ## Посилання
 
-- [`docs/00-start/agents/decisions.md`](../../00-start/agents/decisions.md) — сам журнал
-- [Initiative 0018](./archive/_0018-agent-semantic-retrieval.md), [Initiative 0019](./archive/_0019-agent-routing.md) — Tier 1/2 sibling-и
-- [Hard Rule #15](../../04-governance/governance/rules/15-governance-and-doc-language.md) — single-source-of-truth + UA
+- [`docs/00-start/agents/decisions.md`](../../../00-start/agents/decisions.md) — сам журнал
+- [Initiative 0018](./_0018-agent-semantic-retrieval.md), [Initiative 0019](./_0019-agent-routing.md) — Tier 1/2 sibling-и
+- [Hard Rule #15](../../../04-governance/governance/rules/15-governance-and-doc-language.md) — single-source-of-truth + UA

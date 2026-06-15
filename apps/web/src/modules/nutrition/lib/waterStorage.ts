@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Web I/O-адаптер для журналу води.
  *
  * Pure-логіка (`normalizeWaterLog`, `addWaterMl`, `getTodayWaterMl`,

@@ -1,3 +1,7 @@
+/**
+ * @status Active
+ * @owner @Skords-01
+ */
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { capturePostHogEvent } from "./posthog";

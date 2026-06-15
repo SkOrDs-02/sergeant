@@ -1,4 +1,7 @@
 /**
+ * @status Active
+ * @owner @Skords-01
+ *
  * Shared request-ID extraction and clipboard-copy helpers.
  *
  * Consumed by both `ErrorBoundary` (hub-level) and `ModuleErrorBoundary`

@@ -9,6 +9,7 @@ import { AssistantMessageBody } from "./AssistantMessageBody";
 import { speak } from "../lib/hubChatSpeech";
 import type { ChatMessage as ChatMessageData } from "../lib/hubChatUtils";
 import type { ChatActionCard } from "../lib/hubChatActionCards";
+import { DataResultCard } from "../hub/chat/components/DataResultCard";
 
 interface ChatMessageProps {
   message: ChatMessageData;
@@ -203,7 +204,15 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
           cards &&
           cards.length > 0 &&
           cards.map((c) =>
-            c.risky && c.status === "completed" ? (
+            c.data ? (
+              <DataResultCard
+                key={c.id}
+                toolName={c.toolName}
+                result={c.summary}
+                failed={c.status === "failed"}
+                title={c.title}
+              />
+            ) : c.risky && c.status === "completed" ? (
               <ConfirmCard key={c.id} card={c} />
             ) : (
               <ActionCard key={c.id} card={c} />

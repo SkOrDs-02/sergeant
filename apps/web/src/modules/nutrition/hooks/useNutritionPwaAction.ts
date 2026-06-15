@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { useEffect, type Dispatch, type SetStateAction } from "react";
 import type { NutritionPage } from "../lib/nutritionRouter";
 import type { useNutritionLog } from "./useNutritionLog";

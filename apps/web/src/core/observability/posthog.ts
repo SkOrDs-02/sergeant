@@ -1,3 +1,7 @@
+/**
+ * @status Active
+ * @owner @Skords-01
+ */
 import { getPlatform, isCapacitor } from "@sergeant/shared";
 
 /**

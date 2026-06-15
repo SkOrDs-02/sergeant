@@ -32,8 +32,13 @@ import {
  * v10 (2026-06-07): talk-to-your-data PR2 — у Фізрук-bullet додано read-only
  *   query-tools (query_workouts, exercise_progress, training_stats) з
  *   `QUERY_FIZRUK_TOOLS`. Знову cache-prefix invalidation.
+ * v11 (2026-06-15): talk-to-your-data PR3 — у Рутина-bullet додано read-only
+ *   query-tools (query_habits, habit_correlation) з `QUERY_ROUTINE_TOOLS`, а
+ *   у Харчування-bullet — (query_nutrition, nutrition_averages) з
+ *   `QUERY_NUTRITION_TOOLS`. Реджистр лишається джерелом істини; bullets
+ *   регенеруються автоматично. Чергова cache-prefix invalidation.
  */
-export const SYSTEM_PROMPT_VERSION = "v10";
+export const SYSTEM_PROMPT_VERSION = "v11";
 
 // AI-CONTEXT: модульний label у промпті відрізняється від `CAPABILITY_MODULE_META.title`,
 // бо UI показує "Фінік", а промпту історично подавали "Фінанси" (тон-нейтральніше для

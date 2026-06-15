@@ -1,7 +1,7 @@
 # Talk-to-your-data: план реалізації для Sergeant
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
-> **Status:** Draft
+> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
+> **Status:** Closed (2026-06-15) — PR1-4 shipped; query-tools + DataResultCard live. Canonical home: apps/server/src/modules/chat/toolDefs/query\*.ts + apps/web hub/chat.
 > **Автор:** Devin (для @Skords-01)
 > **Дата:** 2026-05-05
 
@@ -217,6 +217,25 @@ AI форматує відповідь: "За останні 3 місяці ви
 Замість: "Ви витратили 2340 грн на їжу, 1200 на транспорт..."
 Покаже: красиву табличку з числами, порівнянням з минулим місяцем, і міні-барчартом
 ```
+
+> **✅ Done (2026-06-15).** Реалізовано `DataResultCard` (структурований
+> розбір текстового результату query-tool-а: headline + metric-рядки з
+> багаторядкових результатів + breakdown-список із mini-bar-ами +
+> порівняння періодів). Card-pipeline розширено: 10 query/analytics
+> tool-ів (`query_transactions`/`aggregate_spending`/`compare_periods`,
+> `query_workouts`/`exercise_progress`/`training_stats`,
+> `query_habits`/`habit_correlation`, `query_nutrition`/`nutrition_averages`)
+> додано у `KNOWN_TOOLS` + новий `QUERY_TOOLS`-сет; `buildActionCard`
+> ставить прапорець `data: true`, `summary` для них зберігається
+> untruncated (його парсить картка). `titleFor`/`summaryFor`/`moduleFor`/
+> `iconFor` отримали кейси для всіх десяти. `ChatMessage.tsx` рендерить
+> `DataResultCard` для `card.data`-карток, інакше — звичайний
+> `ActionCard`/`ConfirmCard` (текстовий fallback лишився для всього
+> іншого). Hub-нейтральний `brand` accent (Rule #12 containment), без
+> модульних кольорів. Тести: `DataResultCard.test.tsx` (6) +
+> розширений `hubChatActionCards.test.ts` (data-flag, `isDataResultTool`,
+> module-mapping, untruncated summary, failed-suffix) — усі зелені;
+> `pnpm --filter @sergeant/web typecheck` чистий.
 
 ---
 

@@ -14,7 +14,7 @@
 
 | Tier                                     | Дія                                    | Тулзи                                                                                                                        |
 | ---------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| 🟢 **Tier 1 — зробити цього тижня**      | Низький effort, прямі реальні втрати   | `Anthropic strict: true`, UptimeRobot                                                                                        |
+| 🟢 **Tier 1 — зробити цього тижня**      | Низький effort, прямі реальні втрати   | UptimeRobot (`Anthropic strict: true` — ✅ DONE, `toolDefs/strict.ts`)                                                       |
 | 🟡 **Tier 2 — цього кварталу**           | Середній effort, відчутний DX/UX win   | CVA, chart-library, apple-health                                                                                             |
 | 🔵 **Tier 3 — reconsider при Stage 12+** | Серйозний рефактор, чекає тригер       | PGlite, CR-SQLite                                                                                                            |
 | ⚪ **Hold**                              | Ваше рішення витримало перевірку часом | Sync engines (Electric/PowerSync/Zero/Triplit), Hono, TanStack Router, Next.js, Prisma, tRPC, GraphQL, Million.js, Chromatic |
@@ -50,11 +50,11 @@ TR-26-05 §1 ставить **ElectricSQL** на топ (🔥🔥🔥, L effort,
 
 | Тулза                                         | TR-26-05 §    | Effort  | Реальний стан                                                                                                       | Чесна оцінка                                                                                                                                                                                                                        |
 | --------------------------------------------- | ------------- | ------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Anthropic `strict: true`**                  | §9, S, 🔥🔥   | години  | `grep "strict:\s*true" apps/server/src/modules/chat/` — 0 матчів                                                    | 🟢 **Real loss.** Найбільший unforced error.                                                                                                                                                                                        |
+| **Anthropic `strict: true`**                  | §9, S, 🔥🔥   | години  | ✅ **DONE** — реалізовано в `apps/server/src/modules/chat/toolDefs/strict.ts` (+ `strict.test.ts`).                 | ✅ **Closed.** Більше не Real loss.                                                                                                                                                                                                 |
 | **UptimeRobot / Better Stack**                | §10, XS, 🔥🔥 | 5 хв    | Згадане в `dev-stack-roadmap.md`, не сконфігуроване. `/health` готовий.                                             | 🟢 **Real loss.** Soromno.                                                                                                                                                                                                          |
 | **CVA**                                       | §2, S, 🔥🔥   | 1–2 дні | Не в `package.json` (жоден workspace).                                                                              | 🟡 **Mild miss.** Без неї — ручні conditional class strings у Button/Badge/Card.                                                                                                                                                    |
 | **react-email**                               | §3, S, 🔥🔥   | дні     | Не в `package.json`. У вас є Resend SDK (`apps/server/`), шаблони — імовірно raw HTML.                              | 🟡 **Modest miss.** Окуповується від 4-го листа.                                                                                                                                                                                    |
-| **Chart library (Recharts / Nivo / ECharts)** | §8, S–M, 🔥🔥 | дні     | Жодної chart-ліби в `package.json`.                                                                                 | 🟡 **Real loss, якщо у вас немає власної SVG-візуалізації.** Потребує додаткової перевірки `apps/web/src/shared/charts/` — якщо там нуль, це серйозно.                                                                              |
+| **Chart library (Recharts / Nivo / ECharts)** | §8, S–M, 🔥🔥 | дні     | Власна обгортка з'явилася: `apps/web/src/shared/charts/` (`chartTheme.ts`, `index.ts`) — scaffolded.                | 🟡 **Mild miss → scaffolded.** Власний `shared/charts/` барель існує; рішення «своя SVG-візуалізація vs зовнішня ліба» лишається відкритим, але це вже не «нуль».                                                                   |
 | **apple-health (Expo)**                       | §7, M, 🔥🔥🔥 | тижні   | Не в `apps/mobile/package.json`.                                                                                    | 🟡 **Killer-feature miss за помірну ціну.** Fizruk без HealthKit = ручний ввід кожного воркаута; iOS-юзери звикли до синхронного перегляду в інших додатках.                                                                        |
 | **PostHog Feature Flags**                     | §11, S, 🔥🔥  | години  | ✅ Адопчено (`apps/web/src/core/lib/featureFlags.ts`, `apps/mobile/src/core/lib/featureFlags.ts`, тести і wrapper). | ✅ **Done.** Не follow-up, фіксую факт.                                                                                                                                                                                             |
 | **TanStack Router**                           | §6, L         | тижні   | React Router залишається.                                                                                           | ⚪ **Hold.** Правильно відклали — XL рефактор без тригера. Reconsider при наступному великому routing-redesign.                                                                                                                     |
@@ -68,8 +68,8 @@ TR-26-05 §1 ставить **ElectricSQL** на топ (🔥🔥🔥, L effort,
 
 #### Tier 1 (зробити цього тижня)
 
-1. **Anthropic `strict: true`** на existing tool definitions у `apps/server/src/modules/chat/`. Це години, не дні. Знімає клас bug-ів `#261 "Unknown action"` (коли `max_tokens` обрізає JSON) — він явно згаданий у TR-26-05 §9 як активний irritant.
-2. **UptimeRobot** на `/health` + `/healthz` (free tier, 50 monitors, 5-min interval). Алерт у Telegram через `tools/openclaw`-bot або через webhook.
+1. ✅ **Anthropic `strict: true`** — DONE. Реалізовано в `apps/server/src/modules/chat/toolDefs/strict.ts` (+ `strict.test.ts`). Знімає клас bug-ів `#261 "Unknown action"` (коли `max_tokens` обрізає JSON).
+2. **UptimeRobot** на `/health` + `/healthz` (free tier, 50 monitors, 5-min interval). Алерт у Telegram через webhook.
 
 #### Tier 2 (цього кварталу)
 
@@ -159,15 +159,15 @@ grep -rln 'featureFlag\|isFeatureEnabled\|getFeatureFlag' apps/
 
 Результати:
 
-- **Адопчено:** PostHog Feature Flags (`apps/web/src/core/lib/featureFlags.ts`, `apps/mobile/src/core/lib/featureFlags.ts` + тести).
-- **Не адопчено:** CVA, react-email, pg-boss, TanStack Router, Hono, SQLocal/PGlite, Devcontainer, fishery+faker, apple-health, chart-library, Anthropic `strict: true`, UptimeRobot.
+- **Адопчено:** PostHog Feature Flags (`apps/web/src/core/lib/featureFlags.ts`, `apps/mobile/src/core/lib/featureFlags.ts` + тести); Anthropic `strict: true` (`apps/server/src/modules/chat/toolDefs/strict.ts`).
+- **Не адопчено:** CVA, react-email, pg-boss, TanStack Router, Hono, SQLocal/PGlite, Devcontainer, fishery+faker, apple-health, chart-library (scaffolded `shared/charts/`), UptimeRobot.
 - **У `tools/openclaw` / `apps/server`:** BullMQ + ioredis (Redis-залежність — рішення проти pg-boss).
 
 ---
 
 ## 6. Що далі
 
-- **Q3 2026 review (заплановано 2026-08-07).** До того часу: підтвердити Tier 1 (strict + UptimeRobot), почати Tier 2 (CVA, chart, apple-health).
+- **Q3 2026 review (заплановано 2026-08-07).** До того часу: закрити Tier 1 (UptimeRobot; `strict: true` уже ✅), почати Tier 2 (CVA, chart, apple-health).
 - **Storage Stage 12+ trigger.** Якщо реалізуються критерії з § 1 (MAU > 5k OR op-log compaction > 500 рядків) — re-evaluation PowerSync / CR-SQLite / PGlite як пакета.
 - **TR-26-05 update.** Додати CR-SQLite (§1.1), оновити ElectricSQL опис (нова read-only-Shapes-модель), додати § «🚫 НЕ рекомендую» з: Drizzle Kit migrations, Biome, Bun runtime.
 

@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import type { Dispatch, SetStateAction, ReactNode } from "react";
 import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
 import {

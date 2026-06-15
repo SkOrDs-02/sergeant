@@ -13,24 +13,22 @@
 
 ### Зведені роадмапи
 
-| Документ                                                       | Скоуп                                                                                                          | Статус                                                 |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [`pr-plan-2026-05.md`](./pr-plan-2026-05.md)                   | Зведений PR-план 30/60/90/180 днів зі зрізу автоматизації / n8n / Telegram / OpenClaw / AI-як-інфра (48 PR-ів) | Active                                                 |
-| [`sprint-roadmap-q2q3-2026.md`](./sprint-roadmap-q2q3-2026.md) | Єдиний спринтовий трекер платформи: продуктові фічі + технічний борг Q2–Q3 2026                                | Active                                                 |
-| [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md)       | План спринтів 9–10: продовження performance / reliability / product-surface робіт                              | Active                                                 |
-| [`dev-stack-roadmap.md`](./dev-stack-roadmap.md)               | Технічний roadmap стеку (інструменти, інтеграції, практики, CI/CD, security, performance)                      | Active (живий журнал)                                  |
-| [`storage-roadmap.md`](./storage-roadmap.md)                   | Storage & Sync roadmap до production-ready (SQLite + op-log)                                                   | Active (Stage 13 complete 9/9; Redis #045 opt-in tail) |
-| [`openclaw-migration-plan.md`](./openclaw-migration-plan.md)   | Stage-by-stage OpenClaw migration / gateway cutover / legacy deletion tracker                                  | Active                                                 |
-| [`openclaw-user-guide.md`](./openclaw-user-guide.md)           | Операційний user guide для OpenClaw / Telegram control-plane                                                   | Active                                                 |
+| Документ                                                       | Скоуп                                                                                                          | Статус                                                     |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| [`pr-plan-2026-05.md`](./pr-plan-2026-05.md)                   | Зведений PR-план 30/60/90/180 днів зі зрізу автоматизації / n8n / Telegram / OpenClaw / AI-як-інфра (48 PR-ів) | Active                                                     |
+| [`sprint-roadmap-q2q3-2026.md`](./sprint-roadmap-q2q3-2026.md) | Єдиний спринтовий трекер платформи: продуктові фічі + технічний борг Q2–Q3 2026                                | Active                                                     |
+| [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md)       | План спринтів 9–10: продовження performance / reliability / product-surface робіт                              | Active                                                     |
+| [`dev-stack-roadmap.md`](./dev-stack-roadmap.md)               | Технічний roadmap стеку (інструменти, інтеграції, практики, CI/CD, security, performance)                      | Active (живий журнал)                                      |
+| [`storage-roadmap.md`](./storage-roadmap.md)                   | Storage & Sync roadmap до production-ready (SQLite + op-log)                                                   | Reference (all 13 stages complete; Redis #045 opt-in tail) |
+| [`openclaw-user-guide.md`](./openclaw-user-guide.md)           | Операційний user guide для OpenClaw / Telegram control-plane                                                   | Active                                                     |
 
 ### PR-плани з прожарок 2026-05-13
 
-| Документ                                                                               | Скоуп                                                                       | Статус |
-| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------ |
-| [`pr-plan-backend-perf-2026-05.md`](./pr-plan-backend-perf-2026-05.md)                 | Backend/performance PR-картки: validation, observability, env, pool/latency | Active |
-| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план                                    | Active |
-| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план                                    | Active |
-| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план                        | Active |
+| Документ                                                                               | Скоуп                                                | Статус |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------ |
+| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план             | Active |
+| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план             | Active |
+| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план | Active |
 
 ### Дослідження, міграції, рішення
 
@@ -57,6 +55,8 @@
 | [`archive/pr-plan-docs-hygiene-2026-05.md`](./archive/pr-plan-docs-hygiene-2026-05.md)                               | Closed execution-план doc-hygiene прожарки 2026-05-13; усі QW+PR-01…09 ✅, запроваджені gate-и живі на `main`. Fast-forward архівація 2026-06-02 (90-day gate skipped).                                                                                               |
 | [`archive/pr-plan-security-obs-2026-05.md`](./archive/pr-plan-security-obs-2026-05.md)                               | Closed execution-план security/observability прожарки 2026-05-13; усі картки S2–S11 ✅ Виконано, verified on main (gate-и `no-console-pii`, `lint:html-sri`, `lint:pii-handling-drift` + parity-тести живі). Fast-forward архівація 2026-06-02 (90-day gate skipped). |
 | [`archive/session-2026-05-15-revenue-security-testing.md`](./archive/session-2026-05-15-revenue-security-testing.md) | Closed session-нота 2026-05-15 (revenue/paywall/security/mutation); усе shipped на `main`, «Next PR Cards» влилися у живі плани. Ефемерна нота — заархівована після споживання 2026-06-02.                                                                            |
+| [`archive/openclaw-migration-plan.md`](./archive/openclaw-migration-plan.md)                                         | Archived 2026-06-15 — migration complete (Stage 7 cutover 2026-05-12; grammy bot + `tools/openclaw` deleted PR #3470). Canonical home: ADR-0056 + `packages/openclaw-plugin` + `sergeant-openclaw` specialist.                                                        |
+| [`archive/pr-plan-backend-perf-2026-05.md`](./archive/pr-plan-backend-perf-2026-05.md)                               | Archived 2026-06-15 — усі 12 PR-ів shipped (drift reconcile 2026-06-04). Canonical homes: parseBody → Rule #27 + `eslint-plugin-sergeant-design`; metrics/SLO → `docs/03-operations/observability/`.                                                                  |
 
 ## Переїхали в інші розділи
 

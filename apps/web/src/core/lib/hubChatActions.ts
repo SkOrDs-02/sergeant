@@ -3,7 +3,9 @@ import { handleQueryFinykAction } from "./chatActions/queryFinykActions";
 import { handleFizrukAction } from "./chatActions/fizrukActions";
 import { handleQueryFizrukAction } from "./chatActions/queryFizrukActions";
 import { handleRoutineAction } from "./chatActions/routineActions";
+import { handleQueryRoutineAction } from "./chatActions/queryRoutineActions";
 import { handleNutritionAction } from "./chatActions/nutritionActions";
+import { handleQueryNutritionAction } from "./chatActions/queryNutritionActions";
 import { handleCrossAction } from "./chatActions/crossActions";
 import {
   handleAsyncChatAction,
@@ -39,7 +41,9 @@ function dispatch(action: ChatAction): ExecutedAction {
       normalize(handleFizrukAction(action)) ??
       normalize(handleQueryFizrukAction(action)) ??
       normalize(handleRoutineAction(action)) ??
+      normalize(handleQueryRoutineAction(action)) ??
       normalize(handleNutritionAction(action)) ??
+      normalize(handleQueryNutritionAction(action)) ??
       normalize(handleCrossAction(action)) ?? {
         result: `Невідома дія: ${action.name}`,
       }

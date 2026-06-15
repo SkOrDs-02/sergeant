@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { useCallback, useEffect, useState } from "react";
 import {
   loadShoppingList,

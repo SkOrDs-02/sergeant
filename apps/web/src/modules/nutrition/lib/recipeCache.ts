@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { NUTRITION_RECIPES_CACHE_KEY } from "@sergeant/nutrition-domain";
 
 import { normalizeFoodName } from "./pantryTextParser";

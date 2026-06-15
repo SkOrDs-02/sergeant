@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { useState, type Dispatch, type SetStateAction } from "react";
 
 // Recipes/week-plan/day-plan payloads come from LLM responses. Their

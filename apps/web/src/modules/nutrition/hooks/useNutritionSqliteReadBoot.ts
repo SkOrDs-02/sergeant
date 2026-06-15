@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * React hook that boots the SQLite read path for Харчування.
  *
  * PR #033 of `docs/planning/storage-roadmap.md`. When the

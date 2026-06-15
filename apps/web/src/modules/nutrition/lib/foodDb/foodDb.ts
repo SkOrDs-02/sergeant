@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import type { Macros } from "../macros";
 import type { SeedFood } from "./seedFoodsUk";
 import {

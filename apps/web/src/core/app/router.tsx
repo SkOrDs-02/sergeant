@@ -19,6 +19,9 @@ import { PageLoader } from "./PageLoader";
  *    ├── /fizruk/*   → FizrukRoute  (lazy chunk)
  *    ├── /nutrition/* → NutritionRoute (lazy chunk)
  *    ├── /routine/*  → RoutineRoute (lazy chunk)
+ *    ├── /insights/* → InsightsRoute (lazy chunk)
+ *    ├── /settings/* → SettingsRoute (lazy chunk)
+ *    ├── /onboarding/* → OnboardingRoute (lazy chunk)
  *    └── *           → HubPage      (standalone routes + 404)
  *
  * Module routes are matched first (React Router 7 trie resolver gives
@@ -75,6 +78,32 @@ export const router = createBrowserRouter([
         path: "routine/*",
         lazy: () =>
           import("../../modules/routine/route").then((m) => ({
+            Component: m.Component,
+          })),
+      },
+      // Core surfaces that used to fall through the catch-all HubPage:
+      // insights (reports), settings, and onboarding (welcome). Each now
+      // owns a top-level path-based lazy chunk, same pattern as the four
+      // domain modules above — a different Component per route keeps the
+      // React Router 7 location-context contract intact.
+      {
+        path: "insights/*",
+        lazy: () =>
+          import("../insights/route").then((m) => ({
+            Component: m.Component,
+          })),
+      },
+      {
+        path: "settings/*",
+        lazy: () =>
+          import("../settings/route").then((m) => ({
+            Component: m.Component,
+          })),
+      },
+      {
+        path: "onboarding/*",
+        lazy: () =>
+          import("../onboarding/route").then((m) => ({
             Component: m.Component,
           })),
       },

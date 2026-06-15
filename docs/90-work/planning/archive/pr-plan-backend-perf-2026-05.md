@@ -1,12 +1,12 @@
 # PR-план: Backend & Performance follow-up (з прожарки 2026-05-13)
 
 > **Last validated:** 2026-06-04 by Kilo planner (drift reconcile: 12/12 PR-ів confirmed shipped — див. header note). **Next review:** 2026-08-11.
-> **Status:** Active
+> **Status:** Archived (2026-06-15) — all 12 PRs shipped (drift reconcile 2026-06-04). Canonical homes: parseBody convention → Rule #27 + eslint-plugin-sergeant-design; metrics/SLO → docs/03-operations/observability/.
 
 > **Оновлено 2026-06-04 (drift reconcile).** Підтверджено shipped у коді: **PR-01** — `env.VAPID_*` centralized + `assertStartupEnv()` production hard-fail (`env/env.ts:486-529, 1338-1346`); **PR-02** — `process.env` DI default прибрано у `obs/tracing.ts` (`grep` → 0); **PR-03** — umbrella `./migrate` export прибрано (`grep '@sergeant/db-schema/migrate"'` → 0); **PR-04** — `metrics.md §6` має 7 `app_build_info` join PromQL; **PR-05** — bounded `pool.end()` через `lib/poolShutdown.ts:endPoolWithAbortTimeout` (env-var `POOL_DRAIN_TIMEOUT_MS` hard-coded як `SHUTDOWN_GRACE_MS / 2` — minor drift, follow-up issue); **PR-06** — `BackendHealthP95High` alert + recording rule + SLO §2.1 + runbook; **PR-07** — broad `match: "/api/internal/"` rule з `rate: 1.0` у `sentry.ts:47-52` + positive test; **PR-08** — `metrics.md §Відкриті питання` cleanup (з minor drift-line 493 — fixed 2026-06-04); **PR-09 + PR-10** — `validateBody`/`validateQuery` → `parseBody` міграція завершена (`grep validateBody apps/server/src` excl. `http/`/tests → 0); **PR-11** — `sergeant-design/prefer-parse-body-over-validate-body` ESLint rule (warn); **PR-12** — обидва audit-stub файли + README реєстрація. **Усі 12 PR-ів done.** Plan is candidate for fast-forward archive — see `§ Sequencing` lifecycle.
 
 PR-розкладка по решті open / Partial / Follow-up / Backlog items із прожарки
-[`docs/90-work/audits/archive/2026-05-13-backend-performance-roast.md`](../audits/archive/2026-05-13-backend-performance-roast.md).
+[`docs/90-work/audits/archive/2026-05-13-backend-performance-roast.md`](../../audits/archive/2026-05-13-backend-performance-roast.md).
 Скоуп: `apps/server/`, `packages/db-schema/`, `packages/shared/`,
 `docs/03-operations/observability/`. P0/P1 із самої прожарки вже закриті у її landing-PR-і
 — тут лишається передбачуваний P2-tail + дві витягнуті ініціативи з TL;DR
@@ -19,24 +19,24 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 
 ## Cross-refs
 
-- [`docs/90-work/audits/archive/2026-05-13-backend-performance-roast.md`](../audits/archive/2026-05-13-backend-performance-roast.md) — джерельна прожарка (P1-1…P1-6 закриті, P2-1…P2-8 + два TL;DR-винесення — open).
-- [`docs/90-work/tech-debt/backend.md`](../tech-debt/backend.md) — running tech-debt log (606 рядків). Особливо `Summary — per-category`, `Observability & logging review`, `Tests coverage map`.
-- [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](../audits/archive/2026-05-07-app-audit.md) — повний product audit; §10 P0/P1/P2 матриця.
-- [`docs/90-work/audits/2026-05-03-web-deep-dive/03-backend-and-performance.md`](../audits/2026-05-03-web-deep-dive/03-backend-and-performance.md) — попередній backend deep-dive (370 рядків).
-- [`docs/90-work/initiatives/stack-pulse-2026-05/`](../initiatives/stack-pulse-2026-05/README.md) — паралельна 16-PR серія; PR-01 (env-уніфікація), PR-12 (Sentry tracesSampler), PR-13 (pg-pool sizing), PR-16 (Pino redaction) — найближчі за поверхнею.
+- [`docs/90-work/audits/archive/2026-05-13-backend-performance-roast.md`](../../audits/archive/2026-05-13-backend-performance-roast.md) — джерельна прожарка (P1-1…P1-6 закриті, P2-1…P2-8 + два TL;DR-винесення — open).
+- [`docs/90-work/tech-debt/backend.md`](../../tech-debt/backend.md) — running tech-debt log (606 рядків). Особливо `Summary — per-category`, `Observability & logging review`, `Tests coverage map`.
+- [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](../../audits/archive/2026-05-07-app-audit.md) — повний product audit; §10 P0/P1/P2 матриця.
+- [`docs/90-work/audits/2026-05-03-web-deep-dive/03-backend-and-performance.md`](../../audits/2026-05-03-web-deep-dive/03-backend-and-performance.md) — попередній backend deep-dive (370 рядків).
+- [`docs/90-work/initiatives/stack-pulse-2026-05/`](../../initiatives/stack-pulse-2026-05/README.md) — паралельна 16-PR серія; PR-01 (env-уніфікація), PR-12 (Sentry tracesSampler), PR-13 (pg-pool sizing), PR-16 (Pino redaction) — найближчі за поверхнею.
 
 ### Дотичні ADR
 
-- [`docs/04-governance/adr/0015-observability-stack.md`](../../04-governance/adr/0015-observability-stack.md) — Pino + Prometheus + Sentry baseline.
-- [`docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md`](../../04-governance/adr/0035-distributed-tracing-opentelemetry.md) — tracing бутстрап у `obs/tracing.ts`.
-- [`docs/04-governance/adr/0019-push-notifications.md`](../../04-governance/adr/0019-push-notifications.md) — server-driven web-push / APNs / FCM, з якого ростуть `VAPID_*` env-vars у `modules/push/push.ts`.
-- [`docs/04-governance/adr/0013-db-migrations-conventions.md`](../../04-governance/adr/0013-db-migrations-conventions.md) — sequential / two-phase DROP — релевантно для `@sergeant/db-schema` umbrella export drop.
-- [`docs/04-governance/adr/0024-monorepo-apps-packages-split.md`](../../04-governance/adr/0024-monorepo-apps-packages-split.md) — межі між `apps/*` і `packages/*`, які треба тримати під час drop-у umbrella export.
+- [`docs/04-governance/adr/0015-observability-stack.md`](../../../04-governance/adr/0015-observability-stack.md) — Pino + Prometheus + Sentry baseline.
+- [`docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md`](../../../04-governance/adr/0035-distributed-tracing-opentelemetry.md) — tracing бутстрап у `obs/tracing.ts`.
+- [`docs/04-governance/adr/0019-push-notifications.md`](../../../04-governance/adr/0019-push-notifications.md) — server-driven web-push / APNs / FCM, з якого ростуть `VAPID_*` env-vars у `modules/push/push.ts`.
+- [`docs/04-governance/adr/0013-db-migrations-conventions.md`](../../../04-governance/adr/0013-db-migrations-conventions.md) — sequential / two-phase DROP — релевантно для `@sergeant/db-schema` umbrella export drop.
+- [`docs/04-governance/adr/0024-monorepo-apps-packages-split.md`](../../../04-governance/adr/0024-monorepo-apps-packages-split.md) — межі між `apps/*` і `packages/*`, які треба тримати під час drop-у umbrella export.
 
 ### Governance
 
-- Hard Rule #3 ([`03-api-contract-server-client-test.md`](../../04-governance/governance/rules/03-api-contract-server-client-test.md)) — будь-яка зміна форми API-відповіді у migration-PR-ах має оновити `api-client` + contract-test.
-- Hard Rule #21 ([`21-pino-redaction-policy.md`](../../04-governance/governance/rules/21-pino-redaction-policy.md)) — логування під час shutdown / pool.end / tracing-fail.
+- Hard Rule #3 ([`03-api-contract-server-client-test.md`](../../../04-governance/governance/rules/03-api-contract-server-client-test.md)) — будь-яка зміна форми API-відповіді у migration-PR-ах має оновити `api-client` + contract-test.
+- Hard Rule #21 ([`21-pino-redaction-policy.md`](../../../04-governance/governance/rules/21-pino-redaction-policy.md)) — логування під час shutdown / pool.end / tracing-fail.
 - Performance budget (`AGENTS.md § Performance budgets`) — `/health` p95 < 100 ms (informal SLO) → формалізуємо у PR-6.
 
 ---
@@ -83,7 +83,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 **Out of scope**
 
 - Зміна payload-схеми push-notification-ів.
-- APNs / FCM dispatch-логіка ([`lib/webpushSend.ts`](../../../apps/server/src/lib/webpushSend.ts) — окремий шлях).
+- APNs / FCM dispatch-логіка ([`lib/webpushSend.ts`](../../../../apps/server/src/lib/webpushSend.ts) — окремий шлях).
 - Будь-яке торкання `obs/tracing.ts` — це PR-02.
 
 **Acceptance criteria**
@@ -598,7 +598,7 @@ PR-12 (audit stubs) — паралельно з будь-яким.
 
 ## Out-of-scope для всієї цієї планувальної серії
 
-- SQLite Stage 8/9 migration (`sync_op_outbox` no-such-table fix із [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](../audits/archive/2026-05-07-app-audit.md#A1)) — окрема ініціатива.
+- SQLite Stage 8/9 migration (`sync_op_outbox` no-such-table fix із [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](../../audits/archive/2026-05-07-app-audit.md#A1)) — окрема ініціатива.
 - Decomposition `syncV2.ts` / `routes/internal/openclaw.ts` — після deep-roast-у з PR-12.
 - Будь-який frontend / mobile scope, що не задіяний у PR-03.
 - Будь-яка governance-зміна, не пов'язана з parseBody-rule (PR-11).

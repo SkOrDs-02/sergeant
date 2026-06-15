@@ -1,7 +1,7 @@
 # Page Audit — Fizruk module Part 1 (Dashboard, Atlas, Workouts, Exercise)
 
 > **Last validated:** 2026-05-13 by Devin.
-> **Status:** Active
+> **Status:** Archived
 > **Auditor:** child Devin session (parent: https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40)
 > **Pages in scope:** Dashboard, Atlas, Workouts (+ helpers + types), Exercise; shell (`FizrukApp`, `FizrukRouter`, `FizrukHeader`, `fizrukNav`, `fizrukRoute`); supporting `components/`, `hooks/`, `lib/`.
 

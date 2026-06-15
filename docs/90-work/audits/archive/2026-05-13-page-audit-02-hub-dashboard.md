@@ -5,7 +5,7 @@ render_with_liquid: false
 # Page Audit — Hub Dashboard, Modules Grid & App shell
 
 > **Last validated:** 2026-06-03 (audits-runner closeout — F4/F7/F23 closed; prev 2026-05-13 by Devin).
-> **Status:** Active
+> **Status:** Archived
 > **Auditor:** child Devin session (parent: <https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40>)
 > **Pages in scope:** Hub Dashboard container (`HubDashboard.tsx`), App shell (`App.tsx`, `app/router.tsx`), error surfaces (`ErrorBoundary.tsx`, `ModuleErrorBoundary.tsx`), Hub composition (`HubHeroBlock`, `HubInsightsBlock`, `HubInsightsPanel`, `HubReports`, `HubModulesGrid`, `ValueProgressBar`, `CrossModulePreview`), Hub state hooks (`useHubDashboardState`, `useFinykHubPreview`), Hub aggregation (`hubReports.aggregation`), Hub Bento dashboard (`dashboard/BentoCard`, `dashboard/dashboardCards`, `dashboard/moduleConfigs`, `dashboard/adaptiveSort`, `dashboard/dashboardStore`, `dashboard/useMondayAutoDigest`), shared Hub types (`hub.types.ts`), route prefetch (`lib/useRoutePrefetch`).
 

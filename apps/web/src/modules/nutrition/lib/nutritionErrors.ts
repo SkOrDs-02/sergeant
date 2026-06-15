@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { friendlyApiError as baseFriendlyApiError } from "@shared/lib/api/friendlyApiError";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 

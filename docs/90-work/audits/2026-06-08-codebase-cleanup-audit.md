@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-06-13 by @claude (audit-triage reconciliation — PR-A та PR-D анотовано як shipped). **Next review:** 2026-07-08.
 >
-> **Status:** Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding)
+> **Status:** Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Residual is out-of-band: plop stale-branding rename + Sept KV→SQLite tombstone batch + react-hooks burndown (Initiative 0021).
 
 > **Single source of truth → root [`AGENTS.md`](../../../AGENTS.md).** Цей файл —
 > аудиторський знімок на 2026-06-08. Не дублює repo policy; кожна знахідка

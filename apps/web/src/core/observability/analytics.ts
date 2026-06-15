@@ -1,3 +1,7 @@
+/**
+ * @status Active
+ * @owner @Skords-01
+ */
 // Lightweight product analytics sink.
 //
 // Подвійний transport:
@@ -28,6 +32,20 @@ export { initPostHog, identifyPostHogUser, resetPostHog } from "./posthog";
 const LOG_KEY = "hub_analytics_log_v1";
 const MAX_LOG = 200;
 const FLUSH_DEBOUNCE_MS = 500;
+
+// Audit 2026-05-13 §F27: the `window.__hubAnalytics` ring-buffer is a
+// debugging affordance, not a product surface. Exposing it globally in a
+// real production deploy is a free XSS amplifier — a single content-injection
+// bug elsewhere can read every analytics event payload. We therefore mount it
+// only when NOT in a real-telemetry production environment:
+//   - `import.meta.env.DEV` → dev server + vitest (devtools / unit reads);
+//   - PostHog key unset → the smoke `vite preview` build (a prod-mode build
+//     with no `VITE_POSTHOG_KEY`), whose Playwright harness reads the buffer
+//     as its deterministic event signal.
+// In the deployed app `VITE_POSTHOG_KEY` is set, so the global is withheld and
+// the XSS blast radius shrinks. PostHog remains the production analytics sink.
+const EXPOSE_RING_BUFFER =
+  import.meta.env.DEV || !import.meta.env["VITE_POSTHOG_KEY"];
 
 // Audit 2026-05-13 §F14: in-memory ring-buffer — джерело правди під час
 // сесії. У localStorage зливаємо batch-ами (debounce 500 мс) або
@@ -140,10 +158,12 @@ export function trackEvent(
       console.log("[analytics]", event);
     }
     appendEvent(event);
-    const analyticsWindow = window as Window & {
-      __hubAnalytics?: unknown[];
-    };
-    analyticsWindow.__hubAnalytics = memoryLog;
+    if (EXPOSE_RING_BUFFER) {
+      const analyticsWindow = window as Window & {
+        __hubAnalytics?: unknown[];
+      };
+      analyticsWindow.__hubAnalytics = memoryLog;
+    }
   } catch {}
   // Окремий try/catch — `trackEvent` контракт каже "ніколи не кидає"
   // (див. шапку файлу). `capturePostHogEvent` сам по собі захищений

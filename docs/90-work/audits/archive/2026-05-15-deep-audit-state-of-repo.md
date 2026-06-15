@@ -120,7 +120,7 @@
 
 **Чому P2:** master-switch у false, активація — manual за runbook-ом, де key явно named. Ризик низький, але обернений — за день можна додати fail-loud assertion при boot, коли обидві умови виконані.
 
-**Suggested home:** початково таргетувалось у `pr-plan-security-obs-2026-05.md`, але той план закрито й заархівовано ([`docs/90-work/planning/archive/pr-plan-security-obs-2026-05.md`](../../planning/archive/pr-plan-security-obs-2026-05.md), усі S2–S11 ✅). Нову S-size card заводити в активному [`docs/90-work/planning/pr-plan-backend-perf-2026-05.md`](../../planning/pr-plan-backend-perf-2026-05.md) (env-validation / observability track).
+**Suggested home:** початково таргетувалось у `pr-plan-security-obs-2026-05.md`, але той план закрито й заархівовано ([`docs/90-work/planning/archive/pr-plan-security-obs-2026-05.md`](../../planning/archive/pr-plan-security-obs-2026-05.md), усі S2–S11 ✅). Нову S-size card заводити в [`docs/90-work/planning/archive/pr-plan-backend-perf-2026-05.md`](../../planning/archive/pr-plan-backend-perf-2026-05.md) (env-validation / observability track; план заархівовано 2026-06-15 — усі 12 PR-ів shipped).
 
 ### D4 — ADR freshness header hygiene (P2) ✅ Closed
 

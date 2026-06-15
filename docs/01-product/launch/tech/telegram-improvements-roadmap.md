@@ -1,6 +1,6 @@
 # Telegram surfaces — план покращень
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
 > **Status:** Active
 
 > Поетапний план покращень Telegram-частини Sergeant — двох ботів
@@ -10,7 +10,7 @@
 > Цей файл — **operating roadmap для Telegram-сурфейсів**, не ADR. Конкретні
 > архітектурні рішення в межах кожної ідеї будуть оформлені окремими ADR-ами
 > (вказано у колонці "ADR" таблиці нижче).
-> OpenClaw Gateway/migration/cutover status is not tracked here; canonical owner is [`docs/90-work/planning/openclaw-migration-plan.md`](../../../90-work/planning/openclaw-migration-plan.md). OpenClaw items below are Telegram-surface UX/backlog context only.
+> OpenClaw Gateway/migration/cutover status is not tracked here; canonical owner is [`docs/90-work/planning/openclaw-migration-plan.md`](../../../90-work/planning/archive/openclaw-migration-plan.md). OpenClaw items below are Telegram-surface UX/backlog context only.
 >
 > Пов'язане:
 > [openclaw-roadmap.md](./openclaw-roadmap.md) (фази OpenClaw),

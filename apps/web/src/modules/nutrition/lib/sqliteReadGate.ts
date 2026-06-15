@@ -1,4 +1,6 @@
 /**
+ * Last validated: 2026-06-15
+ * Status: Active
  * Read-path gate + subscription for the Nutrition SQLite cutover (PR #033).
  *
  * The web Nutrition module spreads its persisted state across multiple

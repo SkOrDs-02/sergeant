@@ -1,3 +1,7 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ */
 import { useEffect, useRef, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
 import {
