@@ -14,6 +14,29 @@ function clearAll() {
   localStorage.clear();
 }
 
+// Fixed fake-clock anchor built from *local* calendar components.
+//
+// `recommendationEngine` reads the host-local wall clock directly
+// (`new Date().getHours()` / `getDay()`, and `localDateKey()` via local
+// Y/M/D), so every time-gated rule — 21:00 streak-at-risk, 13:00
+// no-meals-today, the Monday 07:00–12:00 weekly digest — depends on the
+// host timezone. CI runs in `Europe/Kyiv` (the repo's domain timezone, see
+// docs/02-engineering/architecture/domain-invariants.md), where a UTC `…Z`
+// literal lands +2/+3 h off and trips these gate boundaries (e.g. 22:00Z →
+// 01:00 Kyiv, 09:00Z → 12:00 Kyiv). Anchoring from local components keeps
+// the engine's local-time math identical in any host TZ — a UTC dev box and
+// a Kyiv CI runner both read the intended wall-clock hour. `month` is
+// 1-indexed for readability (April = 4).
+function localClock(
+  year: number,
+  month: number,
+  day: number,
+  hour = 0,
+  minute = 0,
+): Date {
+  return new Date(year, month - 1, day, hour, minute, 0, 0);
+}
+
 // ---------------------------------------------------------------------------
 // generateRecommendations – structural guarantees
 // ---------------------------------------------------------------------------
@@ -305,8 +328,8 @@ describe("generateRecommendations", () => {
 
   it("НЕ генерує fizruk_no_week_workout на початку тижня (пн/вт)", () => {
     vi.useFakeTimers();
-    // Monday 2026-04-27 10:00 UTC
-    vi.setSystemTime(new Date("2026-04-27T10:00:00Z"));
+    // Monday 2026-04-27 10:00 host-local
+    vi.setSystemTime(localClock(2026, 4, 27, 10));
 
     const old = new Date("2026-04-18T10:00:00Z");
     setLS("fizruk_workouts_v1", [
@@ -515,14 +538,14 @@ describe("generateRecommendations", () => {
 
   it("генерує streak_at_risk після 21:00 при серії 7+ і незавершених звичках", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-04-27T22:00:00Z"));
+    vi.setSystemTime(localClock(2026, 4, 27, 22));
 
     const habits = [{ id: "h1" }];
     const completions: Record<string, string[]> = {};
     completions["h1"] = [];
     // 7-day streak — today NOT completed → streak at risk
     for (let i = 1; i <= 7; i++) {
-      const d = new Date("2026-04-27T22:00:00Z");
+      const d = localClock(2026, 4, 27, 22);
       d.setDate(d.getDate() - i);
       const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       completions["h1"].push(dk);
@@ -539,13 +562,13 @@ describe("generateRecommendations", () => {
 
   it("routine_streak_at_risk використовує правильну форму множини для 1 звички", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-04-27T22:00:00Z"));
+    vi.setSystemTime(localClock(2026, 4, 27, 22));
 
     const habits = [{ id: "h1" }];
     const completions: Record<string, string[]> = {};
     completions["h1"] = [];
     for (let i = 1; i <= 7; i++) {
-      const d = new Date("2026-04-27T22:00:00Z");
+      const d = localClock(2026, 4, 27, 22);
       d.setDate(d.getDate() - i);
       const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       completions["h1"].push(dk);
@@ -562,14 +585,14 @@ describe("generateRecommendations", () => {
 
   it("routine_streak_at_risk використовує множину для >1 звичок", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-04-27T22:00:00Z"));
+    vi.setSystemTime(localClock(2026, 4, 27, 22));
 
     const habits = [{ id: "h1" }, { id: "h2" }, { id: "h3" }];
     const completions: Record<string, string[]> = {};
     for (const h of habits) {
       completions[h.id] = [];
       for (let i = 1; i <= 7; i++) {
-        const d = new Date("2026-04-27T22:00:00Z");
+        const d = localClock(2026, 4, 27, 22);
         d.setDate(d.getDate() - i);
         const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         completions[h.id]!.push(dk);
@@ -587,13 +610,13 @@ describe("generateRecommendations", () => {
 
   it("НЕ генерує streak_at_risk якщо серія < 7 днів", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-04-27T22:00:00Z"));
+    vi.setSystemTime(localClock(2026, 4, 27, 22));
 
     const habits = [{ id: "h1" }];
     const completions: Record<string, string[]> = {};
     completions["h1"] = [];
     for (let i = 1; i <= 5; i++) {
-      const d = new Date("2026-04-27T22:00:00Z");
+      const d = localClock(2026, 4, 27, 22);
       d.setDate(d.getDate() - i);
       const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       completions["h1"].push(dk);
@@ -624,7 +647,7 @@ describe("generateRecommendations", () => {
 
   it("НЕ генерує nutrition_no_meals_today до 13:00", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-04-27T10:00:00Z"));
+    vi.setSystemTime(localClock(2026, 4, 27, 10));
 
     setLS("nutrition_log_v1", {});
 
@@ -814,8 +837,8 @@ describe("generateRecommendations", () => {
 
   it("генерує weekly_digest у понеділок 7-12 якщо є дані за минулий тиждень", () => {
     vi.useFakeTimers();
-    // Monday 2026-04-27 09:00 UTC
-    vi.setSystemTime(new Date("2026-04-27T09:00:00Z"));
+    // Monday 2026-04-27 09:00 host-local
+    vi.setSystemTime(localClock(2026, 4, 27, 9));
 
     // Workout last week (Monday-Sunday: Apr 20-26)
     const lastWeek = new Date("2026-04-23T10:00:00Z");
@@ -879,7 +902,7 @@ describe("generateRecommendations", () => {
 
   it("weekly_digest включає витрати та звички", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-04-27T09:00:00Z"));
+    vi.setSystemTime(localClock(2026, 4, 27, 9));
 
     // Mon prev = Apr 20, Sun prev = Apr 26 23:59:59
     const txTime = Math.floor(
