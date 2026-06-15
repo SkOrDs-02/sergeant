@@ -207,7 +207,14 @@ describe("useTransactionFilters", () => {
 
     it("uses historyTx when navigated to non-current month", () => {
       const realTx = [mkTx("real", -100)];
-      const historyTx = [mkTx("history", -200)];
+      // history row must be dated inside the navigated-to month (May 2025):
+      // the hook clamps bank rows to selMonth (monthBankTxs), so a row dated
+      // in the current month would be correctly filtered out of May.
+      const historyTx = [
+        mkTx("history", -200, {
+          time: Math.floor(new Date("2025-05-15T09:00:00Z").getTime() / 1000),
+        }),
+      ];
       const { result } = renderHook(() =>
         useTransactionFilters(buildDefaultParams({ realTx, historyTx })),
       );
