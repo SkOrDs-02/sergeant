@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-14",
+  "generated_at": "2026-06-15",
   "summary": {
     "packages": 16,
     "totalExports": 303,
@@ -1842,7 +1842,7 @@
       "entryFile": "packages/nutrition-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 83,
+        "totalImporters": 84,
         "deadExports": 0
       },
       "exports": [
@@ -2035,7 +2035,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 339,
+        "totalImporters": 340,
         "deadExports": 0
       },
       "exports": [

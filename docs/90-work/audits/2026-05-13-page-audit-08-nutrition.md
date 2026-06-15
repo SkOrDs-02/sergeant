@@ -405,6 +405,8 @@ return { page, subTab: validSub };
 
 ### F15 — Hardcoded magic-numbers у consume-pantry без uom-conversion test [severity: medium] [perspective: bug]
 
+> ✅ **Closed 2026-06-15** — uom-конверсію винесено в DOM-free доменний модуль `packages/nutrition-domain/src/pantryConsume.ts` (`gramsToUnitQty` + грубі таблиці `DENSITY_G_PER_ML` 1.0 г/мл за замовчуванням і `PIECE_WEIGHT_G` 100 г/шт за замовчуванням, з канонізацією назви через `canonicalFoodKey`). `consumePantryItem` у `useNutritionPantries.ts` тепер списує через `gramsToUnitQty` для всіх масово-відображуваних одиниць: г/кг (1:1), мл/л (через густину), шт (через вагу штуки); `уп`/невідомі одиниці повертають `null` і лишаються без змін. Кейс H2 коректний: «200 г молока» зі «2 л» ≈ 0.19 л, а не вся пляшка. Покриття: 13 доменних unit-кейсів (`pantryConsume.test.ts`: г/кг/мл/л/шт/без-одиниці/уп/non-finite/нормалізація/канонізація) + 8 hook-інтеграційних (`useNutritionPantries.consume.test.tsx`). Таблиці навмисно грубі — розширювати лише на запит продукту щодо точнішого обліку.
+
 **Page:** Log, Menu (через `addMealFromPlan` → `wrappedSaveMeal` → consume hook)
 **File:** `apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts`
 **Lines:** 269–298

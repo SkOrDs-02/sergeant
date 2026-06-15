@@ -15,6 +15,7 @@
     "./nutrition-pantries": "./src/nutritionPantries.ts",
     "./nutrition-prefs": "./src/nutritionPrefs.ts",
     "./nutrition-types": "./src/nutritionTypes.ts",
+    "./pantry-consume": "./src/pantryConsume.ts",
     "./pantry-text-parser": "./src/pantryTextParser.ts",
     "./recipe-ids": "./src/recipeIds.ts",
     "./shopping-list": "./src/shoppingList.ts",
