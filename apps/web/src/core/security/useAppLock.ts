@@ -2,7 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
 import { useFlag } from "../lib/featureFlags";
-import { hasPinSet, verifyPinAttempt } from "./lockStorage";
+import { useAuth } from "../auth/AuthContext";
+import {
+  clearPinHash,
+  hasPinSet,
+  savePinHash,
+  verifyPinAttempt,
+} from "./lockStorage";
 
 export type LockState = "idle" | "locked" | "setup" | "change";
 
@@ -26,10 +32,28 @@ export interface UseAppLockReturn {
   finishSetup: () => void;
   /** Force-lock immediately (e.g. from PrivacySection "Lock now"). */
   lock: () => void;
+  /**
+   * Persist a new PIN hash scoped to the current user (audit F16). Called
+   * by the `AppLock` setup/change flow so the credential lands in the
+   * signed-in user's partition, not `anon`.
+   */
+  savePin: (pin: string) => Promise<void>;
+  /** Whether the current user has a PIN configured (called by PrivacySection). */
+  hasPin: () => Promise<boolean>;
+  /**
+   * Clear the current user's PIN credential (called by PrivacySection when
+   * disabling the lock). Scoped to `user?.id` so the right slot is wiped.
+   */
+  disablePin: () => Promise<void>;
 }
 
 export function useAppLock(): UseAppLockReturn {
   const enabled = useFlag("app-lock-enabled");
+  // Audit F16: the credential store is partitioned per Better-Auth user id.
+  // Resolve it once here so every storage call below — and the closures we
+  // hand to `AppLock` / `PrivacySection` — target the right partition.
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [state, setState] = useState<LockState>("idle");
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastIdleResetRef = useRef(0);
@@ -43,27 +67,27 @@ export function useAppLock(): UseAppLockReturn {
       return;
     }
     let cancelled = false;
-    hasPinSet().then((has) => {
+    hasPinSet(userId).then((has) => {
       if (!cancelled && has) setState("locked");
     });
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
+  }, [enabled, userId]);
 
   // visibilitychange → lock when tab returns to foreground while a PIN is set.
   useEffect(() => {
     if (!enabled) return;
     const handleVisibility = () => {
       if (document.visibilityState !== "visible") return;
-      hasPinSet().then((has) => {
+      hasPinSet(userId).then((has) => {
         if (has) setState("locked");
       });
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
-  }, [enabled]);
+  }, [enabled, userId]);
 
   // Idle timer — reset on any user interaction; lock after IDLE_TIMEOUT_MS.
   // Throttled by IDLE_RESET_THROTTLE_MS so capture-phase scroll/pointer
@@ -75,11 +99,11 @@ export function useAppLock(): UseAppLockReturn {
     lastIdleResetRef.current = now;
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
-      hasPinSet().then((has) => {
+      hasPinSet(userId).then((has) => {
         if (has) setState("locked");
       });
     }, IDLE_TIMEOUT_MS);
-  }, [enabled]);
+  }, [enabled, userId]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -127,7 +151,7 @@ export function useAppLock(): UseAppLockReturn {
 
   const unlock = useCallback(
     async (pin: string): Promise<boolean> => {
-      const result = await verifyPinAttempt(pin);
+      const result = await verifyPinAttempt(pin, userId);
       if (result.ok) {
         setState("idle");
         capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_SUCCESS, {
@@ -155,8 +179,28 @@ export function useAppLock(): UseAppLockReturn {
       }
       return false;
     },
-    [resetIdleTimer],
+    [resetIdleTimer, userId],
   );
 
-  return { state, startSetup, startChange, unlock, finishSetup, lock };
+  // Audit F16 closures — bind the storage helpers to the resolved `userId`
+  // so consumers (`AppLock` setup flow, `PrivacySection`) never have to
+  // know the partitioning scheme or import `lockStorage` themselves.
+  const savePin = useCallback(
+    (pin: string) => savePinHash(pin, userId),
+    [userId],
+  );
+  const hasPin = useCallback(() => hasPinSet(userId), [userId]);
+  const disablePin = useCallback(() => clearPinHash(userId), [userId]);
+
+  return {
+    state,
+    startSetup,
+    startChange,
+    unlock,
+    finishSetup,
+    lock,
+    savePin,
+    hasPin,
+    disablePin,
+  };
 }

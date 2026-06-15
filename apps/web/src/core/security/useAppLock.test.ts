@@ -28,11 +28,20 @@ vi.mock("../lib/featureFlags", () => ({
   setFlag: vi.fn(),
 }));
 
+// Mock auth — `useAppLock` reads `user?.id` to partition the credential
+// store per user (audit F16). Default to signed-out (`anon`); individual
+// tests override with a concrete user id.
+const { useAuth } = vi.hoisted(() => ({
+  useAuth: vi.fn().mockReturnValue({ user: null }),
+}));
+vi.mock("../auth/AuthContext", () => ({ useAuth }));
+
 import { useFlag } from "../lib/featureFlags";
 import { savePinHash, clearPinHash } from "./lockStorage";
 import { useAppLock } from "./useAppLock";
 
 const mockUseFlag = useFlag as unknown as MockInstance;
+const mockUseAuth = useAuth as unknown as MockInstance;
 
 const originalIndexedDB = (globalThis as { indexedDB?: unknown }).indexedDB;
 
@@ -44,6 +53,7 @@ describe("useAppLock", () => {
   beforeEach(() => {
     installFakeIDB();
     mockUseFlag.mockReturnValue(false);
+    mockUseAuth.mockReturnValue({ user: null });
   });
 
   afterEach(async () => {
@@ -143,5 +153,44 @@ describe("useAppLock", () => {
     const { result } = renderHook(() => useAppLock());
     act(() => result.current.lock());
     expect(result.current.state).toBe("locked");
+  });
+
+  describe("F16 — per-user credential partitioning", () => {
+    it("locks when the PIN belongs to the signed-in user", async () => {
+      // PIN stored in user-x's partition...
+      await savePinHash("1234", "user-x");
+      mockUseAuth.mockReturnValue({ user: { id: "user-x" } });
+      mockUseFlag.mockReturnValue(true);
+      const { result } = renderHook(() => useAppLock());
+      // ...and the hook bound to user-x sees it → locked.
+      await waitFor(() => expect(result.current.state).toBe("locked"));
+    });
+
+    it("does NOT lock when the PIN belongs to a different user", async () => {
+      await savePinHash("1234", "user-x");
+      // A different user signed in — must not inherit user-x's lock.
+      mockUseAuth.mockReturnValue({ user: { id: "user-y" } });
+      mockUseFlag.mockReturnValue(true);
+      const { result } = renderHook(() => useAppLock());
+      await act(async () => {});
+      expect(result.current.state).toBe("idle");
+    });
+
+    it("savePin / hasPin / disablePin round-trip the signed-in user's slot", async () => {
+      mockUseAuth.mockReturnValue({ user: { id: "user-z" } });
+      const { result } = renderHook(() => useAppLock());
+
+      expect(await result.current.hasPin()).toBe(false);
+      await result.current.savePin("4242");
+      expect(await result.current.hasPin()).toBe(true);
+      // The credential really landed in user-z's partition, not anon.
+      const { hasPinSet } = await import("./lockStorage");
+      expect(await hasPinSet("user-z")).toBe(true);
+      expect(await hasPinSet(null)).toBe(false);
+
+      await result.current.disablePin();
+      expect(await result.current.hasPin()).toBe(false);
+      expect(await hasPinSet("user-z")).toBe(false);
+    }, 30_000);
   });
 });

@@ -5,8 +5,14 @@
 // The hash (not the PIN) is stored so brute-force requires running PBKDF2
 // locally — no plaintext anywhere.
 //
-// IDB schema: db "sergeant_app_lock" / store "lock_cred" / key "v1"
-//   value: { salt: Uint8Array, hash: Uint8Array, v?: 1 | 2 }
+// IDB schema: db "sergeant_app_lock" / store "lock_cred"
+//   key:   "v1:<userKey>" — the credential record is partitioned per
+//          Better-Auth user id so user A's PIN is never read or cleared from
+//          user B's slot on a shared device (audit F16). `<userKey>` is the
+//          signed-in user id, or "anon" when signed out. The "v1" prefix is
+//          the *key-namespace* version (bumpable independently of the value
+//          `v` below).
+//   value: { salt: Uint8Array, hash: Uint8Array, v?: 1 | 2, failed?: number }
 //
 // `v` is the credential format version, not the IDB schema version (the
 // store layout is unchanged). `v` controls which PBKDF2 iteration count
@@ -19,7 +25,19 @@
 
 const DB_NAME = "sergeant_app_lock";
 const STORE = "lock_cred";
-const KEY = "v1";
+
+// Audit F16: per-user record-key partitioning. The "v1" prefix is the
+// key-namespace version; `<userKey>` is the Better-Auth user id (or "anon"
+// when signed out). Every public entry point takes an optional trailing
+// `userId` so callers in an authenticated context never touch the `anon`
+// slot (and vice-versa).
+const KEY_PREFIX = "v1";
+const ANON_USER_KEY = "anon";
+
+function recordKey(userId?: string | null): string {
+  const userKey = userId && userId.length > 0 ? userId : ANON_USER_KEY;
+  return `${KEY_PREFIX}:${userKey}`;
+}
 
 export const LATEST_CRED_VERSION = 2;
 export type CredVersion = 1 | 2;
@@ -110,21 +128,24 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0;
 }
 
-async function writeCred(cred: LockCredV2): Promise<void> {
+async function writeCred(cred: LockCredV2, key: string): Promise<void> {
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).put(cred, KEY);
+    tx.objectStore(STORE).put(cred, key);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
   db.close();
 }
 
-export async function savePinHash(pin: string): Promise<void> {
+export async function savePinHash(
+  pin: string,
+  userId?: string | null,
+): Promise<void> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const hash = await deriveHash(pin, salt, CURRENT_PBKDF2_ITERATIONS);
-  await writeCred({ salt, hash, v: LATEST_CRED_VERSION });
+  await writeCred({ salt, hash, v: LATEST_CRED_VERSION }, recordKey(userId));
 }
 
 /**
@@ -132,7 +153,7 @@ export async function savePinHash(pin: string): Promise<void> {
  *
  *   - Success → resets the persisted `failed` counter to 0.
  *   - Failure → increments. On the `MAX_FAILED_UNLOCK_ATTEMPTS`-th
- *     consecutive failure the credential is wiped (`clearPinHash`) and
+ *     consecutive failure the credential is wiped (`deleteCred`) and
  *     the result is `{ ok: false, wiped: true }`. The next mount of
  *     `useAppLock` will see `hasPinSet() === false` and fall through
  *     to "idle"; Settings shows the un-configured state and the user
@@ -141,6 +162,9 @@ export async function savePinHash(pin: string): Promise<void> {
  * `verifyPin` is preserved as the legacy boolean entry point for
  * `useAppLock` and the existing tests. New call sites should prefer
  * `verifyPinAttempt` so the wipe signal is observable.
+ *
+ * All reads/writes target the `userId` partition (audit F16) — the wipe
+ * therefore only ever clears the credential of the user being verified.
  */
 export interface VerifyPinResult {
   ok: boolean;
@@ -148,8 +172,12 @@ export interface VerifyPinResult {
   wiped: boolean;
 }
 
-export async function verifyPinAttempt(pin: string): Promise<VerifyPinResult> {
-  const cred = await loadCred();
+export async function verifyPinAttempt(
+  pin: string,
+  userId?: string | null,
+): Promise<VerifyPinResult> {
+  const key = recordKey(userId);
+  const cred = await loadCred(key);
   if (!cred) return { ok: false, failed: 0, wiped: false };
   const version = credVersion(cred);
   const candidate = await deriveHash(
@@ -160,15 +188,18 @@ export async function verifyPinAttempt(pin: string): Promise<VerifyPinResult> {
   const ok = timingSafeEqual(candidate, cred.hash);
   if (ok) {
     if (version < LATEST_CRED_VERSION) {
-      await migrateCredIfNeeded(pin);
+      await migrateCredIfNeeded(pin, key);
     } else if ((cred.failed ?? 0) > 0) {
       try {
-        await writeCred({
-          salt: cred.salt,
-          hash: cred.hash,
-          v: LATEST_CRED_VERSION,
-          failed: 0,
-        });
+        await writeCred(
+          {
+            salt: cred.salt,
+            hash: cred.hash,
+            v: LATEST_CRED_VERSION,
+            failed: 0,
+          },
+          key,
+        );
       } catch {
         // best-effort reset
       }
@@ -178,7 +209,7 @@ export async function verifyPinAttempt(pin: string): Promise<VerifyPinResult> {
   const nextFailed = (cred.failed ?? 0) + 1;
   if (nextFailed >= MAX_FAILED_UNLOCK_ATTEMPTS) {
     try {
-      await clearPinHash();
+      await deleteCred(key);
     } catch {
       // best-effort wipe
     }
@@ -186,12 +217,15 @@ export async function verifyPinAttempt(pin: string): Promise<VerifyPinResult> {
   }
   try {
     if (version >= LATEST_CRED_VERSION) {
-      await writeCred({
-        salt: cred.salt,
-        hash: cred.hash,
-        v: LATEST_CRED_VERSION,
-        failed: nextFailed,
-      });
+      await writeCred(
+        {
+          salt: cred.salt,
+          hash: cred.hash,
+          v: LATEST_CRED_VERSION,
+          failed: nextFailed,
+        },
+        key,
+      );
     }
     // Legacy v=1 records: skip the counter persist so the migration
     // path stays focused on the single-pass re-derive. The counter
@@ -202,45 +236,52 @@ export async function verifyPinAttempt(pin: string): Promise<VerifyPinResult> {
   return { ok: false, failed: nextFailed, wiped: false };
 }
 
-export async function verifyPin(pin: string): Promise<boolean> {
-  return (await verifyPinAttempt(pin)).ok;
+export async function verifyPin(
+  pin: string,
+  userId?: string | null,
+): Promise<boolean> {
+  return (await verifyPinAttempt(pin, userId)).ok;
 }
 
 // Re-derive an already-verified PIN at the current iteration count and
 // persist the upgraded credential. Best-effort: if the write fails we
 // swallow so a transient IDB error never blocks unlock — the next
 // successful verify will retry the migration.
-async function migrateCredIfNeeded(pin: string): Promise<void> {
+async function migrateCredIfNeeded(pin: string, key: string): Promise<void> {
   try {
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const hash = await deriveHash(pin, salt, CURRENT_PBKDF2_ITERATIONS);
-    await writeCred({ salt, hash, v: LATEST_CRED_VERSION });
+    await writeCred({ salt, hash, v: LATEST_CRED_VERSION }, key);
   } catch {
     // ignore
   }
 }
 
-export async function hasPinSet(): Promise<boolean> {
-  const cred = await loadCred();
+export async function hasPinSet(userId?: string | null): Promise<boolean> {
+  const cred = await loadCred(recordKey(userId));
   return cred !== null;
 }
 
-export async function clearPinHash(): Promise<void> {
+export async function clearPinHash(userId?: string | null): Promise<void> {
+  await deleteCred(recordKey(userId));
+}
+
+async function deleteCred(key: string): Promise<void> {
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).delete(KEY);
+    tx.objectStore(STORE).delete(key);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
   db.close();
 }
 
-async function loadCred(): Promise<LockCred | null> {
+async function loadCred(key: string): Promise<LockCred | null> {
   const db = await openDb();
   const cred = await new Promise<LockCred | null>((resolve, reject) => {
     const tx = db.transaction(STORE, "readonly");
-    const req = tx.objectStore(STORE).get(KEY);
+    const req = tx.objectStore(STORE).get(key);
     req.onsuccess = () => resolve(req.result ?? null);
     req.onerror = () => reject(req.error);
   });
@@ -249,20 +290,28 @@ async function loadCred(): Promise<LockCred | null> {
 }
 
 // Test-only: read the raw stored credential to assert migration outcome.
-export async function __readRawCredForTests(): Promise<LockCred | null> {
-  return loadCred();
+export async function __readRawCredForTests(
+  userId?: string | null,
+): Promise<LockCred | null> {
+  return loadCred(recordKey(userId));
 }
 
 // Test-only: write a legacy v=1 credential (derived with 200k iterations)
 // to seed migration tests.
-export async function __seedLegacyCredForTests(pin: string): Promise<void> {
+export async function __seedLegacyCredForTests(
+  pin: string,
+  userId?: string | null,
+): Promise<void> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const hash = await deriveHash(pin, salt, ITERATIONS_BY_VERSION[1]);
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
     // Intentionally omit `v` so the stored shape matches pre-S6 records.
-    tx.objectStore(STORE).put({ salt, hash } satisfies LockCredV1, KEY);
+    tx.objectStore(STORE).put(
+      { salt, hash } satisfies LockCredV1,
+      recordKey(userId),
+    );
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
