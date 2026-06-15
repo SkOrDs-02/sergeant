@@ -4,11 +4,11 @@
   "generated_at": "2026-06-15",
   "counts": {
     "adr": 63,
-    "audit": 19,
+    "audit": 15,
     "hard-rule": 26,
-    "initiative": 52,
+    "initiative": 51,
     "playbook": 61,
-    "pr": 211,
+    "pr": 205,
     "skill": 23
   },
   "nodes": [
@@ -752,37 +752,10 @@
       "meta": {}
     },
     {
-      "id": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "type": "audit",
-      "title": "Page Audit — Hub Dashboard, Modules Grid & App shell",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-02-hub-dashboard.md",
-      "status": "Active",
-      "tier": "core",
-      "meta": {}
-    },
-    {
       "id": "audit:2026-05-13-page-audit-03-hub-chat-search",
       "type": "audit",
       "title": "Page Audit — Hub Chat, Search & Backup panel",
       "path": "docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md",
-      "status": "Active",
-      "tier": "core",
-      "meta": {}
-    },
-    {
-      "id": "audit:2026-05-13-page-audit-05-finyk",
-      "type": "audit",
-      "title": "Page Audit — Finyk module — 5 pages (overview/transactions/budgets/analytics/assets)",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-05-finyk.md",
-      "status": "Active",
-      "tier": "core",
-      "meta": {}
-    },
-    {
-      "id": "audit:2026-05-13-page-audit-06-fizruk-part1",
-      "type": "audit",
-      "title": "Page Audit — Fizruk module Part 1 (Dashboard, Atlas, Workouts, Exercise)",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-06-fizruk-part1.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -833,15 +806,6 @@
       "meta": {}
     },
     {
-      "id": "audit:2026-05-13-web-architecture-state-roast",
-      "type": "audit",
-      "title": "Web Architecture & State Roast — 2026-05-13 (Прожарка #3/10)",
-      "path": "docs/90-work/audits/2026-05-13-web-architecture-state-roast.md",
-      "status": "Active",
-      "tier": "core",
-      "meta": {}
-    },
-    {
       "id": "audit:2026-05-25-hubsettings-cls-chunk-load",
       "type": "audit",
       "title": "HubSettings lazy boundaries — CLS + chunk-load follow-up",
@@ -855,7 +819,7 @@
       "type": "audit",
       "title": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф",
       "path": "docs/90-work/audits/2026-06-08-codebase-cleanup-audit.md",
-      "status": "Active (4 founder-decisions executed 2026-06-08; залишок — lint-debt / tombstones / інфра-питання — outstanding)",
+      "status": "Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Residual is out-of-band: plop stale-branding rename + Sept KV→SQLite tombstone batch + react-hooks burndown (Initiative 0021).",
       "tier": "core",
       "meta": {}
     },
@@ -1277,7 +1241,7 @@
       "type": "initiative",
       "title": "0006 — Frontend routing migration + route-based code-split",
       "path": "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md",
-      "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. Pending: typecheck on clean worktree, Playwright e2e for hash-compat, manualChunks cleanup.",
+      "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. **Reconcile 2026-06-15:** insights/settings/onboarding мігровано off the catch-all у власні path-based lazy routes (`/insights/*`, `/settings/*`, `/onboarding/*` + `core/{insights,settings,onboarding}/route.tsx`); route-count тепер 7/8 (лишається свідомо-спільний Hub чанк). Playwright hash-compat e2e додано (`tests/smoke/hash-redirect-smoke.spec.ts`). Pending: native RR7 router-level `loader:` (unblocked, optional), bundle-budget tighten на нові chunk-prefix-и.",
       "tier": "core",
       "meta": {
         "number": 6,
@@ -1320,17 +1284,6 @@
         "number": 17,
         "owner": "@Skords-01",
         "priority": "P1 (Sprint 1 candidate after [0016](./archive/_0016-changelog-release-cut.md))"
-      }
-    },
-    {
-      "id": "initiative:0020",
-      "type": "initiative",
-      "title": "0020 — Agent decisions log",
-      "path": "docs/90-work/initiatives/0020-agent-decisions-log.md",
-      "status": "In progress — code-complete; залишок: live-mode usage (агент реально звіряється + maintainer курує між сесіями).",
-      "tier": "core",
-      "meta": {
-        "number": 20
       }
     },
     {
@@ -1394,7 +1347,7 @@
       "type": "initiative",
       "title": "Session log — 2026-05-03 stack-pulse follow-through",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/01-session-log-2026-05-03.md",
-      "status": "Active",
+      "status": "Reference (frozen historical onboarding log of the 2026-05-03 audit's first PR waves; #1567 merged, carryover items 1/3 resolved — H9/C1/C5/C6 Closed).",
       "tier": "core",
       "meta": {}
     },
@@ -1619,7 +1572,7 @@
       "type": "initiative",
       "title": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md",
-      "status": "Planned",
+      "status": "Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/server/src/http/cors.ts + Google/Apple OAuth consoles) pending 30-day soak + manual OAuth-console step; ADR-0009 single-origin section TODO.",
       "tier": "core",
       "meta": {}
     },
@@ -1709,7 +1662,7 @@
       "type": "initiative",
       "title": "PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-35-log-level-debug-window.md",
-      "status": "Active — server-side shipped via PR [#2423](https://github.com/Skords-01/Sergeant/pull/2423) (commit [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec), 2026-05-08); `tools/openclaw` `/debug-window` CLI deferred to follow-up (див. нижче — чекає першого реального debug-incident-у як trigger).",
+      "status": "Closed (2026-06-15) — server-side shipped (PR #2423: logger.ts debug-window + route #3096). The deferred tools/openclaw CLI follow-up is permanently moot (the grammy bot was deleted in PR #3470). Canonical home: apps/server/src/obs/logger.ts (Hard Rule #21) + docs/03-operations/observability/log-levels.md.",
       "tier": "core",
       "meta": {}
     },
@@ -1745,7 +1698,7 @@
       "type": "initiative",
       "title": "PR-39: `tools/openclaw` Anthropic SDK 0.36.3 → latest",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md",
-      "status": "Active — SDK вже на `^0.95.2` (міграція 0.36 → 0.95 відбулась у попередньому PR з ADR-0057); prompt caching opt-in (`ANTHROPIC_PROMPT_CACHE=1`) enable-но у `run-agent-loop`. SDK v1 GA ще не відбулась — див. ADR-0057 § SDK v1 tracking.",
+      "status": "Closed (2026-06-15) — SDK history captured in ADR-0057 (Accepted). The tracked surface (tools/openclaw + run-agent-loop.ts + its @anthropic-ai/sdk consumer) was deleted in PR #3470, so the v1-GA follow-up is moot. Canonical home: ADR-0057.",
       "tier": "core",
       "meta": {}
     },
@@ -2479,26 +2432,6 @@
       }
     },
     {
-      "id": "pr:1601",
-      "type": "pr",
-      "title": "PR #1601",
-      "tier": "extended",
-      "meta": {
-        "number": 1601,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1601"
-      }
-    },
-    {
-      "id": "pr:1607",
-      "type": "pr",
-      "title": "PR #1607",
-      "tier": "extended",
-      "meta": {
-        "number": 1607,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1607"
-      }
-    },
-    {
       "id": "pr:1621",
       "type": "pr",
       "title": "PR #1621",
@@ -2826,16 +2759,6 @@
       "meta": {
         "number": 1953,
         "url": "https://github.com/Skords-01/Sergeant/pull/1953"
-      }
-    },
-    {
-      "id": "pr:1968",
-      "type": "pr",
-      "title": "PR #1968",
-      "tier": "extended",
-      "meta": {
-        "number": 1968,
-        "url": "https://github.com/Skords-01/Sergeant/pull/1968"
       }
     },
     {
@@ -3469,16 +3392,6 @@
       }
     },
     {
-      "id": "pr:2607",
-      "type": "pr",
-      "title": "PR #2607",
-      "tier": "extended",
-      "meta": {
-        "number": 2607,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2607"
-      }
-    },
-    {
       "id": "pr:2660",
       "type": "pr",
       "title": "PR #2660",
@@ -3679,6 +3592,16 @@
       }
     },
     {
+      "id": "pr:3096",
+      "type": "pr",
+      "title": "PR #3096",
+      "tier": "extended",
+      "meta": {
+        "number": 3096,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3096"
+      }
+    },
+    {
       "id": "pr:3102",
       "type": "pr",
       "title": "PR #3102",
@@ -3706,6 +3629,16 @@
       "meta": {
         "number": 3363,
         "url": "https://github.com/Skords-01/Sergeant/pull/3363"
+      }
+    },
+    {
+      "id": "pr:3392",
+      "type": "pr",
+      "title": "PR #3392",
+      "tier": "extended",
+      "meta": {
+        "number": 3392,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3392"
       }
     },
     {
@@ -3746,6 +3679,16 @@
       "meta": {
         "number": 3418,
         "url": "https://github.com/Skords-01/Sergeant/pull/3418"
+      }
+    },
+    {
+      "id": "pr:3470",
+      "type": "pr",
+      "title": "PR #3470",
+      "tier": "extended",
+      "meta": {
+        "number": 3470,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3470"
       }
     },
     {
@@ -4086,56 +4029,6 @@
       "meta": {
         "number": 53,
         "url": "https://github.com/Skords-01/Sergeant/pull/53"
-      }
-    },
-    {
-      "id": "pr:54",
-      "type": "pr",
-      "title": "PR #54",
-      "tier": "extended",
-      "meta": {
-        "number": 54,
-        "url": "https://github.com/Skords-01/Sergeant/pull/54"
-      }
-    },
-    {
-      "id": "pr:57",
-      "type": "pr",
-      "title": "PR #57",
-      "tier": "extended",
-      "meta": {
-        "number": 57,
-        "url": "https://github.com/Skords-01/Sergeant/pull/57"
-      }
-    },
-    {
-      "id": "pr:63",
-      "type": "pr",
-      "title": "PR #63",
-      "tier": "extended",
-      "meta": {
-        "number": 63,
-        "url": "https://github.com/Skords-01/Sergeant/pull/63"
-      }
-    },
-    {
-      "id": "pr:64",
-      "type": "pr",
-      "title": "PR #64",
-      "tier": "extended",
-      "meta": {
-        "number": 64,
-        "url": "https://github.com/Skords-01/Sergeant/pull/64"
-      }
-    },
-    {
-      "id": "pr:65",
-      "type": "pr",
-      "title": "PR #65",
-      "tier": "extended",
-      "meta": {
-        "number": 65,
-        "url": "https://github.com/Skords-01/Sergeant/pull/65"
       }
     },
     {
@@ -5361,51 +5254,6 @@
       "type": "touched-by"
     },
     {
-      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "to": "hard-rule:11",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "to": "hard-rule:12",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "to": "hard-rule:13",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "to": "hard-rule:14",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "to": "hard-rule:18",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "to": "hard-rule:19",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "to": "hard-rule:2",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "to": "hard-rule:21",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-02-hub-dashboard",
-      "to": "hard-rule:9",
-      "type": "references"
-    },
-    {
       "from": "audit:2026-05-13-page-audit-03-hub-chat-search",
       "to": "hard-rule:10",
       "type": "references"
@@ -5428,76 +5276,6 @@
     {
       "from": "audit:2026-05-13-page-audit-03-hub-chat-search",
       "to": "hard-rule:3",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-05-finyk",
-      "to": "hard-rule:10",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-05-finyk",
-      "to": "hard-rule:14",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-05-finyk",
-      "to": "hard-rule:19",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-05-finyk",
-      "to": "hard-rule:20",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-05-finyk",
-      "to": "hard-rule:21",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-05-finyk",
-      "to": "hard-rule:8",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-05-finyk",
-      "to": "hard-rule:9",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
-      "to": "hard-rule:10",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
-      "to": "hard-rule:11",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
-      "to": "hard-rule:13",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
-      "to": "hard-rule:15",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
-      "to": "hard-rule:16",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
-      "to": "hard-rule:19",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-page-audit-06-fizruk-part1",
-      "to": "hard-rule:9",
       "type": "references"
     },
     {
@@ -5711,114 +5489,19 @@
       "type": "touched-by"
     },
     {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "hard-rule:12",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "hard-rule:18",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "hard-rule:2",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "initiative:0006",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:1601",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:1607",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:1968",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:2104",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:2108",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:2541",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:2545",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:2551",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:2570",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:2607",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:52",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:53",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:54",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:57",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:63",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:64",
-      "type": "touched-by"
-    },
-    {
-      "from": "audit:2026-05-13-web-architecture-state-roast",
-      "to": "pr:65",
-      "type": "touched-by"
-    },
-    {
       "from": "audit:2026-06-08-codebase-cleanup-audit",
       "to": "hard-rule:10",
       "type": "references"
+    },
+    {
+      "from": "audit:2026-06-08-codebase-cleanup-audit",
+      "to": "initiative:0021",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-06-08-codebase-cleanup-audit",
+      "to": "pr:3470",
+      "type": "touched-by"
     },
     {
       "from": "audit:2026-06-11-fable5-independent-audit",
@@ -6069,11 +5752,6 @@
       "from": "initiative:0017",
       "to": "pr:3403",
       "type": "touched-by"
-    },
-    {
-      "from": "initiative:0020",
-      "to": "hard-rule:15",
-      "type": "references"
     },
     {
       "from": "initiative:0021",
@@ -6531,6 +6209,11 @@
       "type": "touched-by"
     },
     {
+      "from": "initiative:stack-pulse-2026-05/pr-25-two-production-origins",
+      "to": "pr:3392",
+      "type": "touched-by"
+    },
+    {
       "from": "initiative:stack-pulse-2026-05/pr-28-sw-build-id-import-meta",
       "to": "pr:2309",
       "type": "touched-by"
@@ -6562,7 +6245,22 @@
     },
     {
       "from": "initiative:stack-pulse-2026-05/pr-35-log-level-debug-window",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-35-log-level-debug-window",
       "to": "pr:2423",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-35-log-level-debug-window",
+      "to": "pr:3096",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-35-log-level-debug-window",
+      "to": "pr:3470",
       "type": "touched-by"
     },
     {
@@ -6583,6 +6281,11 @@
     {
       "from": "initiative:stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk",
       "to": "pr:2573",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk",
+      "to": "pr:3470",
       "type": "touched-by"
     },
     {
