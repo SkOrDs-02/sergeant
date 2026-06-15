@@ -285,19 +285,22 @@ export function HubBottomNav({
       prefetchPage: "profile",
       label: "Профіль",
     });
-  } else if (onShowAuth) {
-    tabs.push({
-      key: "auth",
-      id: "auth",
-      panelId: "hub-panel-profile",
-      active: false,
-      onClick: onShowAuth,
-      iconName: "user",
-      prefetchPage: "auth",
-      label: "Увійти",
-      action: true,
-    });
   }
+
+  const authAction: HubBottomNavItem | null =
+    !showProfile && onShowAuth
+      ? {
+          key: "auth",
+          id: "auth",
+          panelId: "hub-panel-profile",
+          active: false,
+          onClick: onShowAuth,
+          iconName: "user",
+          prefetchPage: "auth",
+          label: "Увійти",
+          action: true,
+        }
+      : null;
 
   tabs.push({
     key: "settings",
@@ -318,27 +321,40 @@ export function HubBottomNav({
         "bottom-nav-shell border border-line bg-panel shadow-lg",
       )}
     >
-      <div
-        role="tablist"
-        ref={tablistRef}
-        className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
-      >
-        {tabs.map((tab) => (
+      <div className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1">
+        <div role="tablist" ref={tablistRef} className="contents">
+          {tabs.map((tab) => (
+            <HubBottomNavTab
+              key={tab.key}
+              id={tab.id}
+              panelId={tab.panelId}
+              active={tab.active}
+              onClick={tab.onClick}
+              iconName={tab.iconName}
+              label={tab.label}
+              className={tab.className}
+              prefetchPage={tab.prefetchPage}
+              hiddenSlot={tab.hiddenSlot}
+              action={tab.action}
+              onKeyDown={handleTablistKeyDown}
+            />
+          ))}
+        </div>
+        {authAction && (
           <HubBottomNavTab
-            key={tab.key}
-            id={tab.id}
-            panelId={tab.panelId}
-            active={tab.active}
-            onClick={tab.onClick}
-            iconName={tab.iconName}
-            label={tab.label}
-            className={tab.className}
-            prefetchPage={tab.prefetchPage}
-            hiddenSlot={tab.hiddenSlot}
-            action={tab.action}
-            onKeyDown={handleTablistKeyDown}
+            key={authAction.key}
+            id={authAction.id}
+            panelId={authAction.panelId}
+            active={authAction.active}
+            onClick={authAction.onClick}
+            iconName={authAction.iconName}
+            label={authAction.label}
+            className={authAction.className}
+            prefetchPage={authAction.prefetchPage}
+            hiddenSlot={authAction.hiddenSlot}
+            action={authAction.action}
           />
-        ))}
+        )}
       </div>
     </nav>
   );

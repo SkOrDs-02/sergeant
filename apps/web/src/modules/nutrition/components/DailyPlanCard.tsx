@@ -90,11 +90,17 @@ export function DailyPlanCard({
           MEAL_TYPE_ORDER.indexOf(String(b.type ?? "")),
       )
     : [];
+  const weekPlanDays = Array.isArray(weekPlan?.days)
+    ? (weekPlan.days as WeekPlanDay[])
+    : [];
+  const shoppingList = Array.isArray(weekPlan?.shoppingList)
+    ? (weekPlan.shoppingList as string[])
+    : [];
 
   return (
     <Card className="p-4">
       <div className="text-style-label text-text">Денний план</div>
-      <div className="text-xs text-subtle mt-0.5">
+      <div className="text-xs text-muted mt-0.5">
         AI генерує персоналізований план прийомів їжі з урахуванням твоїх цілей
         та продуктів зі складу.
       </div>
@@ -110,7 +116,7 @@ export function DailyPlanCard({
         )}
         <div>
           <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-            <div className="text-xs text-subtle">Цілі на день</div>
+            <div className="text-xs text-muted">Цілі на день</div>
             <DailyPlanGoalSelectors
               prefs={prefs}
               setPrefs={setPrefs}
@@ -132,19 +138,19 @@ export function DailyPlanCard({
                   key: "dailyTargetProtein_g",
                   label: "Білки",
                   unit: "г",
-                  color: "text-info",
+                  color: "text-info-strong dark:text-info",
                 },
                 {
                   key: "dailyTargetFat_g",
                   label: "Жири",
                   unit: "г",
-                  color: "text-warning",
+                  color: "text-warning-strong dark:text-warning",
                 },
                 {
                   key: "dailyTargetCarbs_g",
                   label: "Вуглеводи",
                   unit: "г",
-                  color: "text-success",
+                  color: "text-success-strong dark:text-success",
                 },
               ] as const
             ).map(({ key, label, unit, color }) => (
@@ -220,17 +226,17 @@ export function DailyPlanCard({
                 </span>
               )}
               {prefs.dailyTargetProtein_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-subtle">
+                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
                   Б: {prefs.dailyTargetProtein_g}г
                 </span>
               )}
               {prefs.dailyTargetFat_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-subtle">
+                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
                   Ж: {prefs.dailyTargetFat_g}г
                 </span>
               )}
               {prefs.dailyTargetCarbs_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-subtle">
+                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
                   В: {prefs.dailyTargetCarbs_g}г
                 </span>
               )}
@@ -281,46 +287,41 @@ export function DailyPlanCard({
         </div>
 
         {pantryItems?.length === 0 && (
-          <div className="text-xs text-subtle text-center -mt-2">
+          <div className="text-xs text-muted text-center -mt-2">
             Додай продукти на склад — AI врахує їх у плані
           </div>
         )}
 
-        {(weekPlan?.days?.length ?? 0) > 0 && (
+        {weekPlanDays.length > 0 && (
           <div className="rounded-2xl border border-line bg-panel p-4 space-y-3">
             <div className="text-style-label text-text">Тижневий план</div>
-            {(weekPlan!.days as WeekPlanDay[]).map(
-              (d: WeekPlanDay, i: number) => (
-                <div
-                  key={i}
-                  className="text-sm border-b border-line/40 pb-2 last:border-0"
-                >
-                  <div className="font-semibold text-nutrition-strong dark:text-nutrition">
-                    {d.label}
-                  </div>
-                  {d.note && (
-                    <div className="text-xs text-subtle mt-0.5">{d.note}</div>
-                  )}
-                  {Array.isArray(d.meals) && d.meals.length > 0 && (
-                    <ul className="list-disc pl-4 mt-1 text-xs text-text space-y-0.5">
-                      {d.meals.map((line: string, j: number) => (
-                        <li key={j}>{line}</li>
-                      ))}
-                    </ul>
-                  )}
+            {weekPlanDays.map((d: WeekPlanDay, i: number) => (
+              <div
+                key={i}
+                className="text-sm border-b border-line/40 pb-2 last:border-0"
+              >
+                <div className="font-semibold text-nutrition-strong dark:text-nutrition">
+                  {d.label}
                 </div>
-              ),
-            )}
-            {((weekPlan!.shoppingList as string[] | undefined)?.length ?? 0) >
-              0 && (
+                {d.note && (
+                  <div className="text-xs text-muted mt-0.5">{d.note}</div>
+                )}
+                {Array.isArray(d.meals) && d.meals.length > 0 && (
+                  <ul className="list-disc pl-4 mt-1 text-xs text-text space-y-0.5">
+                    {d.meals.map((line: string, j: number) => (
+                      <li key={j}>{line}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+            {shoppingList.length > 0 && (
               <div>
-                <div className="text-xs text-subtle mb-1">Список покупок</div>
+                <div className="text-xs text-muted mb-1">Список покупок</div>
                 <ul className="list-disc pl-4 text-sm text-text space-y-0.5">
-                  {(weekPlan!.shoppingList as string[]).map(
-                    (s: string, i: number) => (
-                      <li key={i}>{s}</li>
-                    ),
-                  )}
+                  {shoppingList.map((s: string, i: number) => (
+                    <li key={i}>{s}</li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -332,7 +333,7 @@ export function DailyPlanCard({
             <summary className="cursor-pointer text-xs text-muted">
               Діагностика плану (raw)
             </summary>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-subtle max-h-48 overflow-auto">
+            <pre className="mt-2 whitespace-pre-wrap text-xs text-muted max-h-48 overflow-auto">
               {weekPlanRaw}
             </pre>
           </details>
@@ -345,7 +346,7 @@ export function DailyPlanCard({
                 Ваш план на сьогодні
               </div>
               {dayPlan?.totalKcal != null && (
-                <span className="text-xs text-subtle">
+                <span className="text-xs text-muted">
                   ~{Math.round(dayPlan.totalKcal)} ккал разом
                 </span>
               )}
@@ -353,7 +354,7 @@ export function DailyPlanCard({
 
             {dayPlan?.totalKcal != null && prefs.dailyTargetKcal != null && (
               <div className="rounded-xl bg-panel border border-line px-3 py-2">
-                <div className="flex justify-between text-xs text-subtle mb-1">
+                <div className="flex justify-between text-xs text-muted mb-1">
                   <span>Прогрес до цілі</span>
                   <span>
                     {Math.round(dayPlan.totalKcal)} / {prefs.dailyTargetKcal}{" "}
@@ -394,7 +395,7 @@ export function DailyPlanCard({
             </div>
 
             {dayPlan?.note && (
-              <div className="rounded-xl bg-panel/60 border border-line px-3 py-2 text-xs text-subtle">
+              <div className="rounded-xl bg-panel/60 border border-line px-3 py-2 text-xs text-muted">
                 {dayPlan.note}
               </div>
             )}
