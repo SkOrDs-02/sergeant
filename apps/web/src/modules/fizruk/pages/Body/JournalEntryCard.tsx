@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import {
   JOURNAL_ENTRY_OPEN_PREFIX,
   readPersistedOpen,
@@ -78,7 +79,7 @@ export function JournalEntryCard({
           type="button"
           onClick={() => onDelete(entry.id)}
           className="touch-target shrink-0 m-1 flex items-center justify-center rounded-xl text-muted hover:text-danger hover:bg-danger/10 transition-colors"
-          aria-label="Видалити запис"
+          aria-label={messages.fizruk.journal.deleteEntryAriaLabel}
         >
           <svg
             width="14"
@@ -98,25 +99,37 @@ export function JournalEntryCard({
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {entry.weightKg != null && (
               <span className="text-xs text-text">
-                <span className="text-subtle">Вага:</span>{" "}
-                <span className="font-semibold">{entry.weightKg} кг</span>
+                <span className="text-subtle">
+                  {messages.fizruk.journal.weightLabel}
+                </span>{" "}
+                <span className="font-semibold">
+                  {entry.weightKg} {messages.fizruk.kgUnit}
+                </span>
               </span>
             )}
             {entry.sleepHours != null && (
               <span className="text-xs text-text">
-                <span className="text-subtle">Сон:</span>{" "}
-                <span className="font-semibold">{entry.sleepHours} год</span>
+                <span className="text-subtle">
+                  {messages.fizruk.journal.sleepLabel}
+                </span>{" "}
+                <span className="font-semibold">
+                  {entry.sleepHours} {messages.fizruk.hoursUnit}
+                </span>
               </span>
             )}
             {entry.energyLevel != null && (
               <span className="text-xs text-text">
-                <span className="text-subtle">Енергія:</span>{" "}
+                <span className="text-subtle">
+                  {messages.fizruk.journal.energyLabel}
+                </span>{" "}
                 <span className="font-semibold">{entry.energyLevel}/5</span>
               </span>
             )}
             {entry.moodScore != null && (
               <span className="text-xs text-text">
-                <span className="text-subtle">Настрій:</span>{" "}
+                <span className="text-subtle">
+                  {messages.fizruk.journal.moodLabel}
+                </span>{" "}
                 <span className="font-semibold">{entry.moodScore}/5</span>
               </span>
             )}

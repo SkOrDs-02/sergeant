@@ -276,20 +276,26 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-style-title text-text">Тіло</h1>
+            <h1 className="text-style-title text-text">
+              {messages.fizruk.body.title}
+            </h1>
             <p className="text-xs text-subtle mt-0.5">
-              Вага · сон · самопочуття
+              {messages.fizruk.body.subtitle}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-center">
-              <div className="text-xs text-subtle">Вага</div>
+              <div className="text-xs text-subtle">
+                {messages.fizruk.body.weight}
+              </div>
               <div className="text-base font-extrabold text-text tabular-nums">
                 {stats.latestWeight != null ? `${stats.latestWeight} кг` : "—"}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-subtle">Сон</div>
+              <div className="text-xs text-subtle">
+                {messages.fizruk.body.sleep}
+              </div>
               <div className="text-base font-extrabold text-text tabular-nums">
                 {stats.avgSleep != null
                   ? `${stats.avgSleep.toFixed(1)} год`
@@ -303,20 +309,26 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
                 onClick={onOpenMeasurements}
                 className="text-style-caption text-subtle hover:text-text"
               >
-                Виміри
+                {messages.fizruk.body.measurements}
               </Button>
             )}
           </div>
         </div>
 
-        <Card as="section" radius="lg" aria-label="Записати показники">
+        <Card
+          as="section"
+          radius="lg"
+          aria-label={messages.fizruk.body.formAriaLabel}
+        >
           <SectionHeading as="h2" size="sm" className="mb-3">
-            Записати сьогодні
+            {messages.fizruk.body.formHeading}
           </SectionHeading>
           <form onSubmit={submit} noValidate className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="body-weight">Вага (кг)</Label>
+                <Label htmlFor="body-weight">
+                  {messages.fizruk.body.weightLabel}
+                </Label>
                 <input
                   id="body-weight"
                   type="number"
@@ -344,7 +356,9 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
                 )}
               </div>
               <div>
-                <Label htmlFor="body-sleep">Сон (год)</Label>
+                <Label htmlFor="body-sleep">
+                  {messages.fizruk.body.sleepLabel}
+                </Label>
                 <input
                   id="body-sleep"
                   type="number"
@@ -378,14 +392,14 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
                 variant="fizruk"
                 className="mb-2"
               >
-                Рівень енергії
+                {messages.fizruk.body.energyLevel}
               </SectionHeading>
               <div
                 ref={energyGroupRef}
                 className="flex gap-1.5"
                 role="radiogroup"
                 tabIndex={-1}
-                aria-label="Рівень енергії"
+                aria-label={messages.fizruk.body.energyLevel}
                 onKeyDown={makeScoreKeyHandler(
                   energyLevel,
                   (v) => setValue("energyLevel", v, { shouldDirty: true }),
@@ -420,14 +434,14 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
                 variant="fizruk"
                 className="mb-2"
               >
-                Настрій
+                {messages.fizruk.body.mood}
               </SectionHeading>
               <div
                 ref={moodGroupRef}
                 className="flex gap-1.5"
                 role="radiogroup"
                 tabIndex={-1}
-                aria-label="Настрій"
+                aria-label={messages.fizruk.body.mood}
                 onKeyDown={makeScoreKeyHandler(
                   moodScore,
                   (v) => setValue("moodScore", v, { shouldDirty: true }),
@@ -453,13 +467,13 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
 
             <div>
               <Label htmlFor="body-note" optional>
-                Нотатка
+                {messages.fizruk.body.note}
               </Label>
               <input
                 id="body-note"
                 type="text"
                 className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
-                placeholder="Як почуваєшся сьогодні…"
+                placeholder={messages.fizruk.body.notePlaceholder}
                 maxLength={200}
                 disabled={isSubmitting}
                 aria-invalid={noteError ? true : undefined}
@@ -569,11 +583,16 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
         {[weightData, sleepData, energyData, moodData].every(
           (d) => d.length < 2,
         ) && (
-          <Card radius="lg" padding="lg" aria-label="Тренди ще збираються">
-            <p className="text-style-label text-text">Тренди ще збираються</p>
+          <Card
+            radius="lg"
+            padding="lg"
+            aria-label={messages.fizruk.body.trendsCollecting}
+          >
+            <p className="text-style-label text-text">
+              {messages.fizruk.body.trendsCollecting}
+            </p>
             <p className="text-xs text-subtle mt-1">
-              Додай ще один запис ваги, сну чи енергії — графіки зʼявляться
-              після двох точок.
+              {messages.fizruk.body.trendsCollectingDescription}
             </p>
           </Card>
         )}
