@@ -88,6 +88,8 @@ Six high-severity findings + ~12 medium ones describe inline `<button>` elements
 
 ### Theme 3 — Tailwind tokens / palette violations (Hard Rule #11 / #13 / #9)
 
+> **✅ Closed 2026-06-15 (audit Theme 3 PR).** All listed token/palette violations are already remediated on `main`. Verified against `origin/main` (`342e83e32`): **0 `text-error`/`bg-error` Tailwind classes** remain (the only `*-error` hits are HTML `id`/`aria-describedby` attrs and `string-error` test literals — not colour utilities), and `eslint apps/web/src` reports **0 violations** for every Theme-3 rule — `sergeant-design/no-raw-dark-palette` (Rule #13), `no-foreign-module-accent` (Rule #12), `valid-tailwind-opacity` (Rule #8), `no-hex-in-classname` (Rule #11) — with **0 ESLint errors** app-wide. The `error → danger` rename (the 14 auth hits) shipped earlier (e.g. `ChangePasswordSection.tsx` uses `text-danger`); the named raw-palette findings (08 F1/F2/F3 Nutrition, 09 F5 Routine subtree) are clean. Tokens migrated this PR: **0** (work already landed). Remaining web-app warnings (676) belong to other themes — Theme 1 `prefer-kyiv-time` (246), Theme 5 `no-raw-storage-key` (156), Theme 2 touch-target (18) — and are out of Theme-3 scope.
+
 Twelve high-severity findings around invented tokens (`text-error` is dropped silently), raw saturated palette steps without `-strong` companion, foreign module accents.
 
 - 01 F1 (14 `text-error`/`bg-error` occurrences — `error` token does not exist; silently renders no colour).
