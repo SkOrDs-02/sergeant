@@ -11,6 +11,7 @@
 // власного KVStore.
 export * from "./mealTypes.js";
 export * from "./pantryTextParser.js";
+export * from "./pantryConsume.js";
 export * from "./mergeItems.js";
 export * from "./recipeIds.js";
 export * from "./foodCategories.js";
