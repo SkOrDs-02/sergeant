@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last validated:** 2026-06-14 by docs:gen-status. **Next review:** 2026-06-14.
+> **Last validated:** 2026-06-15 by docs:gen-status. **Next review:** 2026-06-15.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,14 +30,14 @@
 - [#2889](https://github.com/Skords-01/Sergeant/pull/2889) — feat(docs): per-package symbol catalog (Initiative 0014 Phase 2) _(2026-05-15)_
 - [#2876](https://github.com/Skords-01/Sergeant/pull/2876) — feat(docs): knowledge graph generator (Initiative 0014 Phase 1) _(2026-05-15)_
 
-## 🔵 В роботі — 73 відкритих
+## 🔵 В роботі — 61 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 20       |
-| Планування                       | 14       |
+| Ініціативи                       | 16       |
+| Планування                       | 10       |
 | Launch / запуск                  | 17       |
-| Аудити й прожарки                | 16       |
+| Аудити й прожарки                | 12       |
 | Security hardening               | 2        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |
@@ -47,11 +47,11 @@
 - [`90-work/initiatives/0021-react-hooks-v7-cleanup.md`](./90-work/initiatives/0021-react-hooks-v7-cleanup.md) — 0021 — React-hooks v7 ESLint cleanup — In progress _(Ініціативи)_
 - [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
 - [`90-work/audits/2026-06-11-fable5-independent-audit.md`](./90-work/audits/2026-06-11-fable5-independent-audit.md) — Independent Audit — Sergeant — 2026-06-11 — Active _(Аудити й прожарки)_
+- [`90-work/audits/2026-06-08-codebase-cleanup-audit.md`](./90-work/audits/2026-06-08-codebase-cleanup-audit.md) — Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф — Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Resi _(Аудити й прожарки)_
 - [`90-work/planning/pr-plan-testing-devx-2026-05.md`](./90-work/planning/pr-plan-testing-devx-2026-05.md) — PR-план Testing & DevX 2026-05 — зі зрізу 2026-05-13 — Active _(Планування)_
 - [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
+- [`90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md`](./90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md) — PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin — Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/se _(Ініціативи)_
 - [`90-work/audits/2026-05-13-consolidated-page-audit.md`](./90-work/audits/2026-05-13-consolidated-page-audit.md) — Consolidated Page Audit — 2026-05-13 — Active _(Аудити й прожарки)_
-- [`90-work/audits/2026-05-13-testing-devx-roast.md`](./90-work/audits/2026-05-13-testing-devx-roast.md) — Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) — Active _(Аудити й прожарки)_
-- [`90-work/tech-debt/backend.md`](./90-work/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
 
 ## ⏭️ Наступний крок / заблоковано
 
