@@ -82,7 +82,11 @@ export function WorkoutsHome({
                 {(activeWorkout?.items || []).length} вправ
               </div>
             </div>
-            <Button module="fizruk" className="h-11 px-4" onClick={onOpenSession}>
+            <Button
+              module="fizruk"
+              className="h-11 px-4"
+              onClick={onOpenSession}
+            >
               Відкрити →
             </Button>
           </div>
