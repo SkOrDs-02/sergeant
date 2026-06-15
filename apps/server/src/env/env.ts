@@ -392,6 +392,22 @@ const envSchema = z.object({
     .enum(["anthropic", "openrouter", "stub"])
     .default("anthropic"),
   /**
+   * Provider fallback chain. Коли `true` і primary provider = `openrouter`,
+   * `getLLMProvider()` обгортає результат у `FallbackProvider`, який при
+   * помилці OpenRouter (5xx, rate-limit, timeout) автоматично пробує
+   * Anthropic. Забезпечує надійність без ручного втручання — користувач
+   * не бачить помилку навіть при OpenRouter outage.
+   *
+   * Default `true` — fallback активний. Вимикаємо тільки для:
+   *   - E2E-тестів де потрібно точно знати який provider відповів;
+   *   - Incident-recovery коли хочемо жорстко форсувати конкретний provider.
+   *
+   * Fallback спрацьовує ТІЛЬКИ коли primary = openrouter І
+   * `ANTHROPIC_API_KEY` задано. Якщо Anthropic key відсутній —
+   * OpenRouter працює без fallback (як раніше).
+   */
+  LLM_FALLBACK_ENABLED: boolFromEnv(true),
+  /**
    * PR-25 — fail-soft toggle для weekly-digest. Коли `true` (default), Anthropic-
    * помилки (5xx / rate-limit / timeout) ловляться у handler-і й digest
    * повертається з template-репорту замість 502. Sentry breadcrumb level=warning

@@ -394,6 +394,97 @@ export class OpenRouterProvider implements LLMProvider {
   }
 }
 
+// ─── FallbackProvider ───────────────────────────────────────────────
+// Обгортає primary (зазвичай OpenRouter) + fallback (зазвичай Anthropic).
+// При `!ok` від primary — автоматично пробує fallback. Метрики рахують
+// обидва виклики окремо, щоб у Grafana було видно fallback-rate.
+//
+// Призначення: надійність — якщо OpenRouter має outage/rate-limit,
+// користувач не бачить помилку, бо Anthropic підхоплює. Коли primary
+// працює — Anthropic навіть не викликається ($0 fallback cost).
+
+/**
+ * Callback для логування fallback-спрацювань. За замовчуванням no-op;
+ * у production передається logger/Sentry-emit через DI.
+ */
+export type FallbackLogFn = (
+  level: "debug" | "info" | "warn",
+  message: string,
+  fields?: Record<string, unknown>,
+) => void;
+
+export interface FallbackProviderOptions {
+  primary: LLMProvider;
+  fallback: LLMProvider;
+  log?: FallbackLogFn;
+}
+
+export class FallbackProvider implements LLMProvider {
+  readonly name: LLMProviderName;
+  private readonly primary: LLMProvider;
+  private readonly fallback: LLMProvider;
+  private readonly log: FallbackLogFn;
+
+  constructor(opts: FallbackProviderOptions) {
+    this.primary = opts.primary;
+    this.fallback = opts.fallback;
+    this.log = opts.log ?? (() => undefined);
+    // Name reflects the primary — metrics label stays stable when fallback
+    // doesn't fire. Fallback usage tracked via separate counter/breadcrumb.
+    this.name = opts.primary.name;
+  }
+
+  async generate(opts: LLMGenerateOpts): Promise<LLMGenerateResult> {
+    const primaryResult = await this.primary.generate(opts);
+
+    if (primaryResult.ok) {
+      return primaryResult;
+    }
+
+    // Primary failed — try fallback.
+    this.log("warn", "llm.fallback.triggered", {
+      primary: this.primary.name,
+      fallback: this.fallback.name,
+      endpoint: opts.endpoint ?? "unknown",
+      code: primaryResult.code,
+      status: primaryResult.status,
+    });
+
+    try {
+      const fallbackResult = await this.fallback.generate(opts);
+
+      if (fallbackResult.ok) {
+        this.log("info", "llm.fallback.result", {
+          primary: this.primary.name,
+          fallback: this.fallback.name,
+          endpoint: opts.endpoint ?? "unknown",
+          outcome: "ok",
+        });
+        return fallbackResult;
+      }
+
+      // Fallback also failed — return primary's error (more relevant).
+      this.log("warn", "llm.fallback.both_failed", {
+        primary: this.primary.name,
+        fallback: this.fallback.name,
+        endpoint: opts.endpoint ?? "unknown",
+        primaryCode: primaryResult.code,
+        fallbackCode: fallbackResult.code,
+      });
+      return primaryResult;
+    } catch (err) {
+      this.log("warn", "llm.fallback.error", {
+        primary: this.primary.name,
+        fallback: this.fallback.name,
+        endpoint: opts.endpoint ?? "unknown",
+        error: err instanceof Error ? err.message : String(err),
+      });
+      // Both failed — return primary's error (more relevant).
+      return primaryResult;
+    }
+  }
+}
+
 // ─── Factory ────────────────────────────────────────────────────────
 
 /**
@@ -404,6 +495,12 @@ export class OpenRouterProvider implements LLMProvider {
  * 3. `LLM_PROVIDER=anthropic` але `ANTHROPIC_API_KEY` ПУСТИЙ → fallback на `StubProvider`
  *    (щоб local-dev / preview-env не падали з 500). У production цей шлях
  *    супроводжується warning-логом у `env.ts` на startup-і.
+ *
+ * Fallback chain:
+ *   Коли `provider === "openrouter"` І `LLM_FALLBACK_ENABLED === true` І
+ *   `ANTHROPIC_API_KEY` задано — результат обгортається у `FallbackProvider`,
+ *   який при помилці OpenRouter автоматично пробує Anthropic. Це захищає
+ *   від OpenRouter outage / rate-limit / free-tier-обмежень.
  *
  * Конкретний key override (для тестів) — через override-аргумент.
  */
@@ -419,6 +516,11 @@ export interface GetLLMProviderOverride {
    * пресетом OpenRouter). Ігнорується для не-openrouter провайдерів.
    */
   openrouterModel?: string;
+  /**
+   * Disable fallback chain for this call-site. Використовується у тестах,
+   * де caller хоче точно знати який provider відповів.
+   */
+  disableFallback?: boolean;
 }
 
 export function getLLMProvider(
@@ -435,7 +537,20 @@ export function getLLMProvider(
     // OpenRouterProvider forwards the call-site's own model id). Empty strings
     // are falsy, so an unset per-path var falls through to the global default.
     const modelOverride = override.openrouterModel || env.OPENROUTER_MODEL;
-    return new OpenRouterProvider(apiKey, modelOverride);
+    const primary = new OpenRouterProvider(apiKey, modelOverride);
+
+    // Fallback chain: OpenRouter → Anthropic when enabled + key available.
+    if (env.LLM_FALLBACK_ENABLED && !override.disableFallback) {
+      const anthropicKey =
+        override.anthropicApiKey ?? env.ANTHROPIC_API_KEY;
+      if (anthropicKey) {
+        return new FallbackProvider({
+          primary,
+          fallback: new AnthropicProvider(anthropicKey),
+        });
+      }
+    }
+    return primary;
   }
   // provider === "anthropic"
   const apiKey = override.anthropicApiKey ?? env.ANTHROPIC_API_KEY;

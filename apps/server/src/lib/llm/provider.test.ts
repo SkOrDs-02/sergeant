@@ -15,6 +15,7 @@ vi.mock("../anthropic.js", () => ({
 import { anthropicMessages as anthropicMessagesMock } from "../anthropic.js";
 import {
   AnthropicProvider,
+  FallbackProvider,
   getLLMProvider,
   invokeLLM,
   OpenRouterProvider,
@@ -465,5 +466,187 @@ describe("OpenRouterProvider — model precedence", () => {
     const p = new OpenRouterProvider("or-key", "@preset/sergeant-digest");
     await p.generate(opts);
     expect(lastBody?.model).toBe("@preset/sergeant-digest");
+  });
+});
+
+// ─── FallbackProvider ────────────────────────────────────────────────────
+describe("FallbackProvider", () => {
+  function fakeProvider(
+    name: "anthropic" | "openrouter" | "stub",
+    result: LLMGenerateResult | (() => Promise<LLMGenerateResult>),
+  ): LLMProvider {
+    return {
+      name,
+      generate:
+        typeof result === "function"
+          ? result
+          : () => Promise.resolve(result),
+    };
+  }
+
+  it("primary ok → повертає primary result, fallback НЕ викликається", async () => {
+    const fallbackGenerate = vi.fn();
+    const provider = new FallbackProvider({
+      primary: fakeProvider("openrouter", { ok: true, text: "from-primary" }),
+      fallback: fakeProvider("anthropic", fallbackGenerate as unknown as LLMGenerateResult),
+    });
+
+    const result = await provider.generate(baseOpts());
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.text).toBe("from-primary");
+    expect(fallbackGenerate).not.toHaveBeenCalled();
+    expect(provider.name).toBe("openrouter");
+  });
+
+  it("primary fail → fallback ok → повертає fallback result", async () => {
+    const logs: Array<{ message: string; fields?: Record<string, unknown> }> = [];
+    const provider = new FallbackProvider({
+      primary: fakeProvider("openrouter", {
+        ok: false,
+        error: "rate limited",
+        code: "rate_limited",
+        status: 429,
+      }),
+      fallback: fakeProvider("anthropic", { ok: true, text: "from-fallback" }),
+      log: (_level, message, fields) => logs.push({ message, fields }),
+    });
+
+    const result = await provider.generate(baseOpts());
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.text).toBe("from-fallback");
+    expect(logs.some((l) => l.message === "llm.fallback.triggered")).toBe(true);
+    expect(logs.some((l) => l.message === "llm.fallback.result")).toBe(true);
+  });
+
+  it("primary fail + fallback fail → повертає primary error", async () => {
+    const provider = new FallbackProvider({
+      primary: fakeProvider("openrouter", {
+        ok: false,
+        error: "primary-down",
+        code: "openrouter_error",
+        status: 502,
+      }),
+      fallback: fakeProvider("anthropic", {
+        ok: false,
+        error: "anthropic-down",
+        code: "anthropic_error",
+        status: 503,
+      }),
+    });
+
+    const result = await provider.generate(baseOpts());
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("primary-down");
+      expect(result.code).toBe("openrouter_error");
+    }
+  });
+
+  it("fallback throw → повертає primary error", async () => {
+    const provider = new FallbackProvider({
+      primary: fakeProvider("openrouter", {
+        ok: false,
+        error: "primary-err",
+        code: "openrouter_error",
+      }),
+      fallback: fakeProvider("anthropic", async () => {
+        throw new Error("network down");
+      }),
+    });
+
+    const result = await provider.generate(baseOpts());
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("primary-err");
+  });
+
+  it("fallback НЕ викликається при ok=true навіть якщо text порожній", async () => {
+    const fallbackGenerate = vi.fn();
+    const provider = new FallbackProvider({
+      primary: fakeProvider("openrouter", { ok: true, text: "" }),
+      fallback: fakeProvider("anthropic", fallbackGenerate as unknown as LLMGenerateResult),
+    });
+
+    const result = await provider.generate(baseOpts());
+    expect(result.ok).toBe(true);
+    expect(fallbackGenerate).not.toHaveBeenCalled();
+  });
+});
+
+// ─── getLLMProvider fallback chain ───────────────────────────────────────
+// env об'єкт парситься при import, тому vi.stubEnv не впливає на нього.
+// Для тестів fallback chain мокаємо env-модуль через vi.mock.
+describe("getLLMProvider — fallback chain", () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    // Restore process.env to original state.
+    for (const key of Object.keys(process.env)) {
+      if (!(key in originalEnv)) delete process.env[key];
+    }
+    Object.assign(process.env, originalEnv);
+    vi.restoreAllMocks();
+  });
+
+  async function importProviderWithEnv(envOverrides: Record<string, string>) {
+    // Set env vars before dynamic import so the env module picks them up.
+    for (const [k, v] of Object.entries(envOverrides)) {
+      process.env[k] = v;
+    }
+    // Dynamic re-import picks up new process.env. Vitest caches modules,
+    // so we use vi.resetModules() to force re-evaluation.
+    vi.resetModules();
+    const mod = await import("./provider.js");
+    return mod;
+  }
+
+  it("openrouter + fallback enabled + ANTHROPIC_KEY → FallbackProvider", async () => {
+    const { getLLMProvider: freshGet, FallbackProvider: FP } =
+      await importProviderWithEnv({
+        OPENROUTER_API_KEY: "or-key",
+        ANTHROPIC_API_KEY: "ant-key",
+        LLM_FALLBACK_ENABLED: "true",
+      });
+    const p = freshGet({ provider: "openrouter" });
+    expect(p).toBeInstanceOf(FP);
+  });
+
+  it("openrouter + LLM_FALLBACK_ENABLED=false → plain OpenRouterProvider", async () => {
+    const { getLLMProvider: freshGet, OpenRouterProvider: ORP } =
+      await importProviderWithEnv({
+        OPENROUTER_API_KEY: "or-key",
+        ANTHROPIC_API_KEY: "ant-key",
+        LLM_FALLBACK_ENABLED: "false",
+      });
+    const p = freshGet({ provider: "openrouter" });
+    expect(p).toBeInstanceOf(ORP);
+  });
+
+  it("openrouter + fallback enabled, але БЕЗ ANTHROPIC_KEY → plain OpenRouterProvider", async () => {
+    const { getLLMProvider: freshGet, OpenRouterProvider: ORP } =
+      await importProviderWithEnv({
+        OPENROUTER_API_KEY: "or-key",
+        ANTHROPIC_API_KEY: "",
+        LLM_FALLBACK_ENABLED: "true",
+      });
+    const p = freshGet({ provider: "openrouter" });
+    expect(p).toBeInstanceOf(ORP);
+  });
+
+  it("openrouter + disableFallback=true → plain OpenRouterProvider", async () => {
+    const { getLLMProvider: freshGet, OpenRouterProvider: ORP } =
+      await importProviderWithEnv({
+        OPENROUTER_API_KEY: "or-key",
+        ANTHROPIC_API_KEY: "ant-key",
+        LLM_FALLBACK_ENABLED: "true",
+      });
+    const p = freshGet({ provider: "openrouter", disableFallback: true });
+    expect(p).toBeInstanceOf(ORP);
+  });
+
+  it("anthropic provider ніколи не обгортається у FallbackProvider", async () => {
+    const { getLLMProvider: freshGet, AnthropicProvider: AP } =
+      await importProviderWithEnv({ LLM_FALLBACK_ENABLED: "true" });
+    const p = freshGet({ provider: "anthropic", anthropicApiKey: "key" });
+    expect(p).toBeInstanceOf(AP);
   });
 });
