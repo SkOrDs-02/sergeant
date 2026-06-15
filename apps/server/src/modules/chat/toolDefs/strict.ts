@@ -46,6 +46,27 @@ export function applyStrictModeToAll(tools: AnthropicTool[]): AnthropicTool[] {
 }
 
 /**
+ * Normalize only tools that already opted into Anthropic strict mode.
+ *
+ * This is the production-safe variant for the aggregate chat registry:
+ * `applyStrictModeToAll()` intentionally turns every tool strict (useful for
+ * tests/experiments), but the live `/api/chat` payload must stay under
+ * Anthropic's 20 strict-tool cap. Selective normalization keeps non-strict
+ * tools untouched while making every `strict: true` schema acceptable to the
+ * provider.
+ */
+export function normalizeStrictTools(tools: AnthropicTool[]): AnthropicTool[] {
+  return tools.map((tool) =>
+    tool.strict === true
+      ? {
+          ...tool,
+          input_schema: addAdditionalPropertiesFalse(tool.input_schema),
+        }
+      : tool,
+  );
+}
+
+/**
  * Recursively clone a JSON Schema fragment and ensure every `type: "object"`
  * has `additionalProperties: false`. Walks both `properties.*` (object members)
  * and `items` / `items[i]` (array element schemas). Pre-existing

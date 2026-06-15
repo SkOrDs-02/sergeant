@@ -61,26 +61,39 @@ export function buildSystem(context: string): AnthropicSystemBlock[] {
  * tools → system → messages). Разом із cache_control на SYSTEM_PREFIX це кешує
  * стабільний блок tools + system на кожному турі.
  */
-export function applyToolsCacheBreakpoint(
-  tools: typeof TOOLS,
-): Array<(typeof TOOLS)[number] & { cache_control?: { type: "ephemeral" } }> {
-  if (tools.length === 0) return tools;
-  const cloned = tools.slice();
+export function applyToolsCacheBreakpoint<T extends object>(
+  tools: readonly T[],
+): Array<T & { cache_control?: { type: "ephemeral" } }> {
+  if (tools.length === 0) return [];
+  const cloned = tools.slice() as Array<
+    T & { cache_control?: { type: "ephemeral" } }
+  >;
   const last = cloned[cloned.length - 1];
   cloned[cloned.length - 1] = {
     ...last,
     cache_control: { type: "ephemeral" },
-  } as typeof last & { cache_control: { type: "ephemeral" } };
-  return cloned as Array<
-    (typeof TOOLS)[number] & { cache_control?: { type: "ephemeral" } }
-  >;
+  } as T & { cache_control: { type: "ephemeral" } };
+  return cloned;
+}
+
+/**
+ * Anthropic strict-mode schemas currently compile reliably only for very small
+ * subsets. Keep the full registry annotated for internal validation, but send
+ * the live provider payload in non-strict mode so `/api/chat` stays available.
+ */
+export function stripStrictModeForAnthropic<T extends { strict?: unknown }>(
+  tools: readonly T[],
+): Array<Omit<T, "strict">> {
+  return tools.map(({ strict: _strict, ...tool }) => tool);
 }
 
 /**
  * Tools із cache breakpoint на останньому — обчислюється один раз при імпорті
  * модуля (TOOLS статичний), щоб не клонувати масив на кожен запит.
  */
-export const TOOLS_WITH_CACHE = applyToolsCacheBreakpoint(TOOLS);
+export const TOOLS_WITH_CACHE = applyToolsCacheBreakpoint(
+  stripStrictModeForAnthropic(TOOLS),
+);
 
 /**
  * Вхід для `applyMessagesCacheBreakpoint` — мінімальна структурна форма

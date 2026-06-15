@@ -5,7 +5,6 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
     name: "plan_workout",
     description:
       "Створити (запланувати) тренування у Фізруку на сьогодні або вказану дату/час. Можна додати список вправ із підходами/повтореннями/вагою.",
-    strict: true,
     input_schema: {
       type: "object",
       properties: {

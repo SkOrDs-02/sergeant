@@ -118,7 +118,6 @@ export const NUTRITION_TOOLS: AnthropicTool[] = [
     name: "set_daily_plan",
     description:
       "Задати/оновити щоденні цілі Харчування: ккал, білок, жири, вуглеводи, ціль по воді (мл). Можна передавати лише ті поля, які змінюються.",
-    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -134,7 +133,6 @@ export const NUTRITION_TOOLS: AnthropicTool[] = [
     name: "suggest_meal",
     description:
       "Порадити їжу на основі того що залишилось від денної цілі по макронутрієнтах. Наприклад: 'Що з'їсти щоб добити білок?'",
-    strict: true,
     input_schema: {
       type: "object",
       properties: {

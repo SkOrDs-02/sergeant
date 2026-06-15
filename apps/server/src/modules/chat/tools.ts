@@ -29,10 +29,11 @@ import { NUTRITION_TOOLS } from "./toolDefs/nutrition.js";
 import { CROSS_MODULE_TOOLS } from "./toolDefs/crossModule.js";
 import { UTILITY_TOOLS } from "./toolDefs/utility.js";
 import { MEMORY_TOOLS } from "./toolDefs/memory.js";
+import { normalizeStrictTools } from "./toolDefs/strict.js";
 
 import type { AnthropicTool } from "./toolDefs/types.js";
 
-export const TOOLS: AnthropicTool[] = [
+export const TOOLS: AnthropicTool[] = normalizeStrictTools([
   ...FINYK_TOOLS,
   ...QUERY_FINYK_TOOLS,
   ...ROUTINE_TOOLS,
@@ -42,7 +43,7 @@ export const TOOLS: AnthropicTool[] = [
   ...CROSS_MODULE_TOOLS,
   ...UTILITY_TOOLS,
   ...MEMORY_TOOLS,
-];
+]);
 
 /**
  * Validate tool registry at startup:
