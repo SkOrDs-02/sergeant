@@ -6,7 +6,7 @@
   "entryFile": "packages/fizruk-domain/src/index.ts",
   "stats": {
     "exportCount": 1,
-    "totalImporters": 61,
+    "totalImporters": 63,
     "deadExports": 0
   },
   "exports": [
