@@ -3,7 +3,6 @@ import { Button } from "@shared/components/ui/Button";
 import { meApi, type UserPreferences } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { useFlag, setFlag } from "../lib/featureFlags";
-import { clearPinHash, hasPinSet } from "../security/lockStorage";
 import { useAppLockContext } from "../security/AppLockContext";
 import { LegalLinks } from "../legal/LegalLinks";
 import { ConfirmModal, SettingsGroup, ToggleRow } from "./SettingsPrimitives";
@@ -54,7 +53,9 @@ export function PrivacySection() {
   const handleToggle = async (checked: boolean) => {
     if (checked) {
       setFlag("app-lock-enabled", true);
-      const has = await hasPinSet();
+      // Audit F16: check the *current user's* PIN partition, not `anon`.
+      // `appLock.hasPin()` closes over `user?.id` from `useAppLock`.
+      const has = await appLock.hasPin();
       if (!has) {
         appLock.startSetup();
       }
@@ -66,7 +67,8 @@ export function PrivacySection() {
   const handleDisableConfirm = async () => {
     setDisableConfirmOpen(false);
     setFlag("app-lock-enabled", false);
-    await clearPinHash();
+    // Audit F16: clear the current user's credential, not the `anon` slot.
+    await appLock.disablePin();
   };
 
   const updatePreference = async (key: PreferenceKey, checked: boolean) => {

@@ -55,6 +55,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       <AppLock
         state={appLock.state}
         onUnlock={appLock.unlock}
+        onSavePin={appLock.savePin}
         onSetupDone={appLock.finishSetup}
         onSetupCancel={() => {
           setFlag("app-lock-enabled", false);

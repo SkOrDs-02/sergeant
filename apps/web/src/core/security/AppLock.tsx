@@ -4,7 +4,6 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import { type LockState } from "./useAppLock";
-import { savePinHash } from "./lockStorage";
 
 const m = messages.privacy.lock;
 
@@ -111,9 +110,11 @@ function PinPad({
 interface PinSetupFlowProps {
   onDone: () => void;
   onCancel: () => void;
+  /** Persist the confirmed PIN — bound to the current user (audit F16). */
+  onSave: (pin: string) => Promise<void>;
 }
 
-function PinSetupFlow({ onDone, onCancel }: PinSetupFlowProps) {
+function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
   const [step, setStep] = useState<"enter" | "confirm">("enter");
   const [first, setFirst] = useState("");
   const [second, setSecond] = useState("");
@@ -134,7 +135,7 @@ function PinSetupFlow({ onDone, onCancel }: PinSetupFlowProps) {
       setSecond("");
       return;
     }
-    await savePinHash(first);
+    await onSave(first);
     onDone();
   };
 
@@ -260,6 +261,8 @@ export interface AppLockProps {
   onUnlock: (pin: string) => Promise<boolean>;
   onSetupDone: () => void;
   onSetupCancel: () => void;
+  /** Persist a new PIN, scoped to the current user (audit F16). */
+  onSavePin: (pin: string) => Promise<void>;
 }
 
 export function AppLock({
@@ -267,6 +270,7 @@ export function AppLock({
   onUnlock,
   onSetupDone,
   onSetupCancel,
+  onSavePin,
 }: AppLockProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const visible = state === "locked" || state === "setup" || state === "change";
@@ -311,7 +315,11 @@ export function AppLock({
         {state === "locked" ? (
           <UnlockScreen onUnlock={onUnlock} />
         ) : (
-          <PinSetupFlow onDone={onSetupDone} onCancel={onSetupCancel} />
+          <PinSetupFlow
+            onDone={onSetupDone}
+            onCancel={onSetupCancel}
+            onSave={onSavePin}
+          />
         )}
       </div>
     </div>

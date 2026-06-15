@@ -74,6 +74,39 @@ describe("lockStorage", () => {
     expect(await verifyPin("1234")).toBe(true);
   });
 
+  describe("F16 — per-user credential partitioning", () => {
+    it("a PIN saved for one user is invisible to another user (and to anon)", async () => {
+      await savePinHash("1234", "user-a");
+      expect(await hasPinSet("user-a")).toBe(true);
+      expect(await hasPinSet("user-b")).toBe(false);
+      expect(await hasPinSet(null)).toBe(false);
+    }, 15_000);
+
+    it("verifyPin only matches within the same user partition", async () => {
+      await savePinHash("1234", "user-a");
+      expect(await verifyPin("1234", "user-a")).toBe(true);
+      // Wrong partition → no credential there → never matches (no derive).
+      expect(await verifyPin("1234", "user-b")).toBe(false);
+    }, 15_000);
+
+    it("clearPinHash only clears the targeted user's partition", async () => {
+      await savePinHash("1234", "user-a");
+      await savePinHash("5678", "user-b");
+      await clearPinHash("user-a");
+      expect(await hasPinSet("user-a")).toBe(false);
+      expect(await hasPinSet("user-b")).toBe(true);
+      expect(await verifyPin("5678", "user-b")).toBe(true);
+    }, 30_000);
+
+    it("anon (signed-out) slot is independent of any user slot", async () => {
+      await savePinHash("0000"); // default → anon
+      await savePinHash("1111", "user-a");
+      expect(await verifyPin("0000", null)).toBe(true);
+      expect(await verifyPin("0000", "user-a")).toBe(false);
+      expect(await verifyPin("1111", "user-a")).toBe(true);
+    }, 30_000);
+  });
+
   describe("Decision #4 — 10-failed-attempts brute-force wipe", () => {
     it("MAX_FAILED_UNLOCK_ATTEMPTS is pinned at 10", () => {
       expect(MAX_FAILED_UNLOCK_ATTEMPTS).toBe(10);
