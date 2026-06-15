@@ -1,3 +1,4 @@
+/** @status Active */
 // AI-CONTEXT: PR-23 (Phase 3 reliability). Зараз код прямо викликає
 // `anthropicMessages()` з `lib/anthropic.ts`. Якщо Anthropic падає (5xx,
 // circuit-breaker open, мережевий outage) — все що використовує LLM не
@@ -541,8 +542,7 @@ export function getLLMProvider(
 
     // Fallback chain: OpenRouter → Anthropic when enabled + key available.
     if (env.LLM_FALLBACK_ENABLED && !override.disableFallback) {
-      const anthropicKey =
-        override.anthropicApiKey ?? env.ANTHROPIC_API_KEY;
+      const anthropicKey = override.anthropicApiKey ?? env.ANTHROPIC_API_KEY;
       if (anthropicKey) {
         return new FallbackProvider({
           primary,

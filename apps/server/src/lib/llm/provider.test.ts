@@ -1,3 +1,4 @@
+/** @status Active */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../anthropic.js", () => ({
@@ -478,9 +479,7 @@ describe("FallbackProvider", () => {
     return {
       name,
       generate:
-        typeof result === "function"
-          ? result
-          : () => Promise.resolve(result),
+        typeof result === "function" ? result : () => Promise.resolve(result),
     };
   }
 
@@ -488,7 +487,10 @@ describe("FallbackProvider", () => {
     const fallbackGenerate = vi.fn();
     const provider = new FallbackProvider({
       primary: fakeProvider("openrouter", { ok: true, text: "from-primary" }),
-      fallback: fakeProvider("anthropic", fallbackGenerate as unknown as LLMGenerateResult),
+      fallback: fakeProvider(
+        "anthropic",
+        fallbackGenerate as unknown as LLMGenerateResult,
+      ),
     });
 
     const result = await provider.generate(baseOpts());
@@ -499,7 +501,8 @@ describe("FallbackProvider", () => {
   });
 
   it("primary fail → fallback ok → повертає fallback result", async () => {
-    const logs: Array<{ message: string; fields?: Record<string, unknown> }> = [];
+    const logs: Array<{ message: string; fields?: Record<string, unknown> }> =
+      [];
     const provider = new FallbackProvider({
       primary: fakeProvider("openrouter", {
         ok: false,
@@ -563,7 +566,10 @@ describe("FallbackProvider", () => {
     const fallbackGenerate = vi.fn();
     const provider = new FallbackProvider({
       primary: fakeProvider("openrouter", { ok: true, text: "" }),
-      fallback: fakeProvider("anthropic", fallbackGenerate as unknown as LLMGenerateResult),
+      fallback: fakeProvider(
+        "anthropic",
+        fallbackGenerate as unknown as LLMGenerateResult,
+      ),
     });
 
     const result = await provider.generate(baseOpts());
