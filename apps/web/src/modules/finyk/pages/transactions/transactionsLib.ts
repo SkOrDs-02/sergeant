@@ -124,6 +124,22 @@ export function computeDaySummary(
   return { total, count: items.length, statCount };
 }
 
+// Nominative weekday names, indexed by `Date.getDay()` (0=Sunday).
+// As a group heading the weekday must read nominative ("субота, 2 травня").
+// `toLocaleDateString(weekday:"long")` is unreliable here: some browser
+// CLDR builds emit the accusative standalone form for uk ("суботу"), so we
+// supply the weekday ourselves and let Intl format only the day + month
+// (the genitive month "травня" is stable across engines).
+const STICKY_WEEKDAYS_NOMINATIVE = [
+  "неділя",
+  "понеділок",
+  "вівторок",
+  "середа",
+  "четвер",
+  "пʼятниця",
+  "субота",
+] as const;
+
 /**
  * Localised day label rendered inside the sticky header.
  * Today / Yesterday get word labels; everything else falls back to
@@ -139,9 +155,10 @@ export function formatStickyDayLabel(key: string): string {
   const diffDays = Math.round((t0.getTime() - d0.getTime()) / 86400000);
   if (diffDays === 0) return "Сьогодні";
   if (diffDays === 1) return "Вчора";
-  return d.toLocaleDateString("uk-UA", {
-    weekday: "long",
+  const weekday = STICKY_WEEKDAYS_NOMINATIVE[d.getDay()] ?? "";
+  const dayMonth = d.toLocaleDateString("uk-UA", {
     day: "numeric",
     month: "long",
   });
+  return `${weekday}, ${dayMonth}`;
 }

@@ -149,6 +149,7 @@ export function WorkoutFinishSheets({
                 Пропустити
               </Button>
               <Button
+                module="fizruk"
                 className="flex-1 h-12 min-h-[44px]"
                 type="button"
                 onClick={() => {

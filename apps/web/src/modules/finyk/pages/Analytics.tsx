@@ -316,10 +316,11 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
     [mono, activeTx, loading],
   );
 
-  const { summary, distribution, topMerchants } = useAnalytics({
-    mono: analyticsMono,
-    storage,
-  });
+  const { summary, distribution, distributionTotal, topMerchants } =
+    useAnalytics({
+      mono: analyticsMono,
+      storage,
+    });
 
   const comparison = useMemo(() => {
     if (!(prevKey in monthCache)) return null;
@@ -447,7 +448,11 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
             />
           ) : (
             <Suspense fallback={<ChartFallback className="h-40" />}>
-              <CategoryPieChart data={distribution} className="" />
+              <CategoryPieChart
+                data={distribution}
+                total={distributionTotal}
+                className=""
+              />
             </Suspense>
           )}
         </Section>

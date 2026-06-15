@@ -253,6 +253,7 @@ export function QuickStartSheet({
             Скасувати
           </Button>
           <Button
+            module="fizruk"
             className="h-12 min-h-[44px] sm:flex-1"
             onClick={handleConfirm}
             disabled={selectedCount === 0}

@@ -75,12 +75,20 @@ interface CategoryPieChartProps {
   data?: CategorySlice[];
   size?: number;
   className?: string;
+  /**
+   * Authoritative expense total, rounded once upstream. When omitted the
+   * chart falls back to summing per-slice `spent`, but those are each
+   * rounded independently and drift a hryvnia from the "Підсумок" card —
+   * pass the shared total to keep the donut centre in lockstep.
+   */
+  total?: number;
 }
 
 function CategoryPieChartComponent({
   data = [],
   size = 160,
   className,
+  total: totalProp,
 }: CategoryPieChartProps) {
   const [showAll, setShowAll] = useState(false);
   const hasOverflow = (data?.length ?? 0) > TOP_N;
@@ -93,7 +101,11 @@ function CategoryPieChartComponent({
   const outerR = size / 2 - 1;
   const innerR = outerR * 0.62;
 
-  const total = data.reduce((s, d) => s + d.spent, 0);
+  const sliceTotal = data.reduce((s, d) => s + d.spent, 0);
+  // Geometry uses the slice sum so sweeps still add up to 360°; only the
+  // centre label uses the authoritative total when provided.
+  const total = sliceTotal;
+  const displayTotal = totalProp ?? sliceTotal;
   if (total === 0) return null;
 
   const expanded = showAll && hasOverflow;
@@ -183,7 +195,7 @@ function CategoryPieChartComponent({
             fontWeight="600"
             className="fill-text"
           >
-            {total.toLocaleString("uk-UA")} ₴
+            {displayTotal.toLocaleString("uk-UA")} ₴
           </text>
         </svg>
 

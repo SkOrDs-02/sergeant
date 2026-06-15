@@ -731,7 +731,7 @@ export const messages = {
         "Чат, що знає твої фінанси, тренування, харчування і рутину — і пропонує наступний крок.",
       localFirstTitle: "Local-first за замовчуванням",
       localFirstBody:
-        "Дані живуть на твоєму пристрої. Cloud sync — опціональний (Pro), не вмикається без твого підтвердження.",
+        "Дані живуть на твоєму пристрої. Cloud sync — опціональний (Premium), не вмикається без твого підтвердження.",
       noHiddenTitle: "Без зайвих списань",
       noHiddenBody:
         "Free-тір — назавжди. Premium — один платний план без прихованих списань. Ціну оголосимо на запуску.",
@@ -739,7 +739,7 @@ export const messages = {
 
     // Waitlist section
     waitlistAriaLabel: "Підписатися на запуск Sergeant",
-    waitlistHeadline: "Лист, коли Pro буде готовий",
+    waitlistHeadline: "Лист, коли Premium буде готовий",
     waitlistSubcopy:
       "Залиш email для launch-апдейту. Це той самий список інтересу, але" +
       " тепер із attribution `source=landing`.",
@@ -748,7 +748,7 @@ export const messages = {
     pricingAriaLabel: "Перехід до тарифів",
     pricingHeadline: "Подивись на тарифи",
     pricingSubcopy:
-      "Free назавжди для повсякденного використання. Pro відкриває" +
+      "Free назавжди для повсякденного використання. Premium відкриває" +
       " безлімітний AI-чат, авто-Mono sync і CloudSync між пристроями.",
     pricingCta: "Дивитись тарифи",
 
@@ -834,7 +834,7 @@ export const messages = {
       subtitle: "Один лист, коли Premium стартує. Без спаму, без авто-списань.",
     },
     footer:
-      "Ціни у EUR; для UA-ринку Stripe виставляє ₴-еквівалент. Фінальна цифра — у pricing-strategy PR після market-research.",
+      "Ціни у EUR; для UA-ринку Stripe виставляє ₴-еквівалент. Точну ціну оголосимо на запуску.",
   },
 } as const satisfies MessageCatalog;
 

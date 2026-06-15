@@ -82,7 +82,7 @@ export function WorkoutsHome({
                 {(activeWorkout?.items || []).length} вправ
               </div>
             </div>
-            <Button className="h-11 px-4" onClick={onOpenSession}>
+            <Button module="fizruk" className="h-11 px-4" onClick={onOpenSession}>
               Відкрити →
             </Button>
           </div>
@@ -96,7 +96,11 @@ export function WorkoutsHome({
             Почни нове — обереш шаблон або підбереш вправи перед стартом.
           </div>
           <div className="mt-3 grid grid-cols-1 gap-2">
-            <Button className="h-12 text-base" onClick={onRequestStart}>
+            <Button
+              module="fizruk"
+              className="h-12 text-base"
+              onClick={onRequestStart}
+            >
               ▶︎ Почати тренування
             </Button>
             <Button

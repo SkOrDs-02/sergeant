@@ -250,6 +250,7 @@ export function AddExerciseSheet({
 
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
+          module="fizruk"
           className="h-12 min-h-[44px]"
           onClick={() => {
             const nameUk = (form.nameUk || "").trim();

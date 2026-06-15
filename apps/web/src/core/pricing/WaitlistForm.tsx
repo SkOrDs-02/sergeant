@@ -16,24 +16,31 @@ import {
 } from "@sergeant/shared";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 
+// User-facing labels follow the locked Free + Premium scheme (Phase 7 D3).
+// `value` maps to the server `tier_interest` enum, where the paid tier is
+// still `"pro"` under the hood — same internal name the Premium checkout
+// sends. No standalone Plus/Pro tiers exist on the public funnel.
 const TIER_OPTIONS: ReadonlyArray<{
   value: WaitlistTier;
   label: string;
   hint: string;
 }> = [
-  { value: "pro", label: "Pro", hint: "AI-чат, авто-Mono, повні звіти" },
-  { value: "plus", label: "Plus", hint: "Базовий AI + cloud sync" },
+  {
+    value: "pro",
+    label: "Premium",
+    hint: "AI-чат, авто-Mono, повні звіти, cloud sync",
+  },
   {
     value: "free",
     label: "Залишусь на Free",
     hint: "Просто слідкувати за новинами",
   },
-  { value: "unsure", label: "Ще не знаю", hint: "Розкажіть мені більше" },
+  { value: "unsure", label: "Ще не знаю", hint: "Розкажи мені більше" },
 ];
 
 /**
  * Phase 0 monetization rails: форма для збору waitlist-ів на майбутній
- * Pro-тір. Анонімна (не вимагає логіну) — основний траффік сюди йтиме з
+ * Premium-тір. Анонімна (не вимагає логіну) — основний траффік сюди йтиме з
  * `/pricing`, де неавторизовані відвідувачі мають мати змогу залишити email.
  *
  * Аналітика: `WAITLIST_SUBMITTED` шлемо тільки після успішної відповіді
@@ -132,7 +139,7 @@ export function WaitlistForm({
         created: res.created,
       });
       if (res.created) {
-        toast.success("Дякуємо! Повідомимо щойно Pro буде готовий.");
+        toast.success("Дякуємо! Повідомимо, щойно Premium буде готовий.");
       } else {
         toast.info("Ми вже памʼятаємо твій інтерес — жодних дублікатів.");
       }
@@ -177,7 +184,7 @@ export function WaitlistForm({
       onSubmit={submit}
       className={className}
       noValidate
-      aria-label="Підписатись на waitlist Pro-тіру"
+      aria-label="Підписатись на waitlist Premium-тіру"
     >
       <div className="space-y-3">
         <div>
@@ -287,9 +294,8 @@ export function WaitlistForm({
         </Button>
 
         <p className="text-xs text-muted">
-          Без спаму. Один лист, коли Pro запуститься. Ціни теж покажемо
-          фіналізовано — поки в
-          `docs/launch/business/01-monetization-and-pricing.md` лише драфт.
+          Без спаму. Один лист, коли Premium запуститься. Ціну оголосимо на
+          запуску.
         </p>
       </div>
     </form>

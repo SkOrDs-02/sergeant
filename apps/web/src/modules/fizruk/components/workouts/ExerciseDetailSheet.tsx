@@ -227,7 +227,7 @@ export function ExerciseDetailSheet({
       )}
 
       <div className="mt-5 grid grid-cols-2 gap-2">
-        <Button className="h-12" onClick={onClose}>
+        <Button variant="secondary" className="h-12" onClick={onClose}>
           Закрити
         </Button>
         <Button

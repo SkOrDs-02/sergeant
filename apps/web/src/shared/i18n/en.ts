@@ -634,6 +634,6 @@ export const messagesEn: Partial<MessageCatalog> = {
       subtitle: "One email when Premium launches. No spam, no auto-charges.",
     },
     footer:
-      "Prices in EUR; Stripe charges the UAH-equivalent for the UA market. Final number lives in the pricing-strategy PR after market research.",
+      "Prices in EUR; Stripe charges the UAH-equivalent for the UA market. The exact price will be announced at launch.",
   },
 };

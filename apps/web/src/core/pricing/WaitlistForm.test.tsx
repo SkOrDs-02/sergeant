@@ -132,7 +132,7 @@ describe("WaitlistForm — submit flow", () => {
     });
     await waitFor(() => {
       expect(toastSuccessMock).toHaveBeenCalledWith(
-        "Дякуємо! Повідомимо щойно Pro буде готовий.",
+        "Дякуємо! Повідомимо, щойно Premium буде готовий.",
       );
     });
     expect(onSuccess).toHaveBeenCalledWith(true);
@@ -144,7 +144,7 @@ describe("WaitlistForm — submit flow", () => {
         created: true,
       }),
     );
-    // Email очищено, tier лишився `pro`.
+    // Email очищено, tier лишився `pro` (user-facing label = "Premium").
     await waitFor(() => {
       expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe(
         "",
@@ -152,7 +152,7 @@ describe("WaitlistForm — submit flow", () => {
     });
     expect(
       (
-        screen.getByLabelText(/Pro — AI-чат/, {
+        screen.getByLabelText(/Premium — AI-чат/, {
           selector: "label",
         }) as HTMLLabelElement
       ).className,
