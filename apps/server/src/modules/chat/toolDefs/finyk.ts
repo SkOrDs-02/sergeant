@@ -24,7 +24,6 @@ export const FINYK_TOOLS: AnthropicTool[] = [
     name: "find_transaction",
     description:
       "Знайти транзакції у Фініку за описом/мерчантом, сумою або датою. Використовуй перед категоризацією, коли користувач каже 'знайди покупку в АТБ' або 'транзакція на 450 грн позавчора'. Не змінює дані.",
-    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -61,7 +60,6 @@ export const FINYK_TOOLS: AnthropicTool[] = [
     name: "batch_categorize",
     description:
       "Масово змінити категорію транзакцій за текстовим патерном і фільтрами. За замовчуванням dry_run=true — спершу показує preview без запису. Виконуй з dry_run=false тільки коли користувач підтвердив застосування.",
-    strict: true,
     input_schema: {
       type: "object",
       properties: {

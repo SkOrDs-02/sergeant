@@ -15,7 +15,6 @@ export const CROSS_MODULE_TOOLS: AnthropicTool[] = [
     name: "weekly_summary",
     description:
       "Тижневий підсумок по всіх модулях: фінанси, тренування, звички, харчування. Повертає текстовий звіт.",
-    strict: true,
     input_schema: {
       type: "object",
       properties: {
@@ -143,7 +142,6 @@ export const CROSS_MODULE_TOOLS: AnthropicTool[] = [
     name: "compare_weeks",
     description:
       "Порівняти два тижні по всіх модулях: витрати, вага, виконання звичок, калорії. Викликай коли користувач каже 'порівняй цей тиждень з минулим' або 'як я провів тиждень порівняно з попереднім'.",
-    strict: true,
     input_schema: {
       type: "object",
       properties: {

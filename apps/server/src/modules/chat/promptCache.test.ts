@@ -8,6 +8,7 @@ import {
   applyMessagesCacheBreakpoint,
   applyToolsCacheBreakpoint,
   buildSystem,
+  stripStrictModeForAnthropic,
   TOOLS_WITH_CACHE,
   type CacheableInputMessage,
 } from "./promptCache.js";
@@ -44,6 +45,21 @@ describe("applyToolsCacheBreakpoint", () => {
 
   it("порожній масив повертає порожній (без падіння)", () => {
     expect(applyToolsCacheBreakpoint([])).toEqual([]);
+  });
+
+  it("strips strict mode from the live Anthropic payload", () => {
+    const input = [
+      { name: "strict_tool", strict: true, input_schema: { type: "object" } },
+      { name: "regular_tool", input_schema: { type: "object" } },
+    ];
+    const snapshot = structuredClone(input);
+
+    expect(stripStrictModeForAnthropic(input)).toEqual([
+      { name: "strict_tool", input_schema: { type: "object" } },
+      { name: "regular_tool", input_schema: { type: "object" } },
+    ]);
+    expect(input).toEqual(snapshot);
+    expect(TOOLS_WITH_CACHE.some((tool) => "strict" in tool)).toBe(false);
   });
 });
 
