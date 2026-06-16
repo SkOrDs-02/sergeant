@@ -18,11 +18,16 @@ vi.mock("../onboarding/onboardingGate", () => ({
 
 const noop = () => {};
 
-function callRoute(pathname: string, user: AuthUser = null) {
+function callRoute(
+  pathname: string,
+  user: AuthUser = null,
+  storageReady = true,
+) {
   return renderStandaloneRoute({
     pathname,
     user,
     authLoading: false,
+    storageReady,
     onLeaveAuth: noop,
     onLeaveWelcome: noop,
     onOpenAuth: noop,
@@ -54,6 +59,27 @@ describe("renderStandaloneRoute()", () => {
     // CTA-bearing surface instead of the Hub shell.
     mockShouldShowOnboarding.mockReturnValueOnce(true);
     expect(callRoute("/")).not.toBeNull();
+  });
+
+  it("renders a splash for `/` while the persistent store is still booting (cold-boot race)", () => {
+    // Returning local-first user mid hard-reload: the SQLite warm-cache is
+    // empty, so `shouldShowOnboarding()` would misread them as a fresh visitor
+    // and ambush them with the marketing landing. Until storage settles we must
+    // render a loader and NOT consult the onboarding gate.
+    mockShouldShowOnboarding.mockClear();
+    const result = callRoute("/", null, /* storageReady */ false);
+    expect(result).not.toBeNull();
+    expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
+  });
+
+  it("renders a splash for `/welcome` while the persistent store is still booting", () => {
+    // A returning user who deep-links `/welcome` must not be flashed the
+    // onboarding splash before the store resolves — and the gate (which has a
+    // write side-effect) must not be consulted yet.
+    mockShouldShowOnboarding.mockClear();
+    const result = callRoute("/welcome", null, /* storageReady */ false);
+    expect(result).not.toBeNull();
+    expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
   });
 
   it("returns `null` for path-based module roots (regression: BUG #2132 follow-up)", () => {

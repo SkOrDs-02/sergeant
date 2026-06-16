@@ -3,6 +3,11 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { resetModuleFirstSeen, useModuleFirstRun } from "./useModuleFirstRun";
+import {
+  __resetStorageReadyForTests,
+  markStorageBooting,
+  markStorageReady,
+} from "../db/storageReady";
 
 /**
  * Storage key namespace lives in `useModuleFirstRun.ts` (private), so
@@ -18,9 +23,14 @@ function firstSeenKey(moduleId: string): string {
 describe("useModuleFirstRun", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    // Storage starts "ready" (optimistic default) for every existing case so
+    // the synchronous assertions below hold; the cold-boot case arms the gate
+    // explicitly.
+    __resetStorageReadyForTests();
   });
   afterEach(() => {
     window.localStorage.clear();
+    __resetStorageReadyForTests();
   });
 
   it("returns firstRun=true on first mount when no flag is stored", () => {
@@ -44,6 +54,36 @@ describe("useModuleFirstRun", () => {
 
     expect(result.current.firstRun).toBe(false);
     expect(window.localStorage.getItem(firstSeenKey("routine"))).toBe("1");
+  });
+
+  it("holds firstRun=false until the persistent store is ready, then resolves (cold-boot race)", () => {
+    // Hard reload: the SQLite warm-cache is still booting, so the seen flag is
+    // unreadable. The hook must NOT report first-run yet — otherwise a returning
+    // user is routed to the module's first-run surface (e.g. /finyk/transactions
+    // → /finyk/budgets). It resolves once the gate flips ready.
+    markStorageBooting();
+    const { result } = renderHook(() => useModuleFirstRun("nutrition"));
+    expect(result.current.firstRun).toBe(false);
+
+    act(() => {
+      markStorageReady();
+    });
+    // No seen flag stored → genuine first run, now safe to surface.
+    expect(result.current.firstRun).toBe(true);
+  });
+
+  it("stays firstRun=false for a returning user across the boot→ready transition", () => {
+    // Seen flag IS present (returning user): the hook must resolve to false the
+    // moment storage is ready — never flip true mid cold-boot.
+    window.localStorage.setItem(firstSeenKey("finyk"), "1");
+    markStorageBooting();
+    const { result } = renderHook(() => useModuleFirstRun("finyk"));
+    expect(result.current.firstRun).toBe(false);
+
+    act(() => {
+      markStorageReady();
+    });
+    expect(result.current.firstRun).toBe(false);
   });
 
   it("re-evaluates firstRun when moduleId changes", () => {

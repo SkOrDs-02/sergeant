@@ -2,9 +2,11 @@ import { useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import { shouldShowOnboarding } from "../onboarding/onboardingGate";
+import { useStorageReady } from "../db/storageReady";
 import { useHubShell } from "./HubShellContext";
 import { renderStandaloneRoute } from "./StandaloneRoutes";
 import { HubHomeView } from "./HubHomeView";
+import { PageLoader } from "./PageLoader";
 import { RedirectTo } from "./RedirectTo";
 import { SIGN_IN_PATH, WELCOME_PATH } from "./appPaths";
 
@@ -27,6 +29,13 @@ export function HubPage() {
   const searchParams = new URLSearchParams(browserLocation.search);
 
   const shell = useHubShell();
+
+  // The SQLite warm-cache that backs `shouldShowOnboarding()` boots
+  // asynchronously; on a hard reload it is still empty when this guard first
+  // runs. Gate the onboarding decision on it so a returning user is not bounced
+  // to `/welcome` before the persistent store resolves. See
+  // `core/db/storageReady.ts`.
+  const storageReady = useStorageReady();
 
   const openAuth = useCallback(() => navigate(SIGN_IN_PATH), [navigate]);
 
@@ -63,6 +72,7 @@ export function HubPage() {
     pathname: browserLocation.pathname,
     user: shell.user,
     authLoading: shell.authLoading,
+    storageReady,
     onLeaveAuth: leaveAuth,
     onLeaveWelcome: leaveWelcome,
     onOpenAuth: openAuth,
@@ -72,9 +82,18 @@ export function HubPage() {
     return <>{standalone}</>;
   }
 
-  // 3. First-time visitors → /welcome
-  if (!shell.activeModule && shouldShowOnboarding()) {
-    return <RedirectTo to={WELCOME_PATH} />;
+  // 3. First-time visitors → /welcome — but only once the persistent store has
+  //    resolved. `shouldShowOnboarding()` reads (and, when it finds existing
+  //    data, writes) the SQLite-backed warm-cache; evaluating it against the
+  //    empty pre-boot store falsely redirects a returning user to `/welcome` on
+  //    every hard reload. Render the splash until ready, then decide.
+  if (!shell.activeModule) {
+    if (!storageReady) {
+      return <PageLoader />;
+    }
+    if (shouldShowOnboarding()) {
+      return <RedirectTo to={WELCOME_PATH} />;
+    }
   }
 
   // 4. Hub home (dashboard)

@@ -36,6 +36,7 @@ import {
   safeWriteLS,
   safeRemoveLS,
 } from "@shared/lib/storage/storage";
+import { useStorageReady } from "../db/storageReady";
 
 const FIRST_SEEN_KEY_PREFIX = "sergeant.onboarding.module_first_seen.";
 const FIRST_SEEN_KEY_SUFFIX = ".v1";
@@ -71,33 +72,47 @@ export interface UseModuleFirstRun {
 /**
  * Read + write the per-module first-run flag.
  *
- * The hook resolves `firstRun` once, on mount: subsequent re-renders
- * (e.g. tab switches inside the same module) keep the original value
- * so a module that opens its goal editor on first render does not
- * snap shut after the user dismisses the banner. To explicitly close
- * out the first-run surface, call `markSeen()`.
+ * The hook resolves `firstRun` once the persistent store is ready (see
+ * {@link useStorageReady}), then keeps that value across re-renders (e.g. tab
+ * switches inside the same module) so a module that opens its goal editor on
+ * first render does not snap shut after the user dismisses the banner. To
+ * explicitly close out the first-run surface, call `markSeen()`.
+ *
+ * Storage-readiness gate: the seen flag lives in the SQLite-backed warm-cache,
+ * which is empty until `bootstrapKvStore()` settles. Reading it during the cold
+ * boot window would report EVERY returning user as "first run" and route them
+ * to the module's first-run surface on a hard reload — `/finyk/transactions` →
+ * `/finyk/budgets`, `/nutrition/start` → `/nutrition/menu`. So while
+ * `storageReady` is `false` we hold `firstRun` at `false` (no routing); the real
+ * value is resolved once, when the gate flips `true`. Consumers
+ * (`useNutritionFirstRun`, `FinykApp`) already key their one-shot routing effect
+ * on `firstRun` flipping truthy, so they pick up the async resolution for free.
  *
  * `null` `moduleId` is accepted so callers can guard their own mount
  * (e.g. while waiting for an async resolve) without juggling a nested
  * branch — it returns `firstRun: false` and a no-op `markSeen`.
  */
 export function useModuleFirstRun(moduleId: string | null): UseModuleFirstRun {
-  const [firstRun, setFirstRun] = useState<boolean>(() => {
-    if (!moduleId) return false;
-    return !readFirstSeen(moduleId);
-  });
+  const storageReady = useStorageReady();
 
-  // Re-evaluate when the caller switches modules. Intentionally
-  // ignores cross-tab edits to the seen flag — once the module is
-  // mounted, mid-session toggles must not yank the editor surface
-  // back open.
+  const [firstRun, setFirstRun] = useState<boolean>(() =>
+    moduleId !== null && storageReady ? !readFirstSeen(moduleId) : false,
+  );
+
+  // Resolve `firstRun` when the caller switches modules OR when the persistent
+  // store first becomes ready. `storageReady` is a one-way latch (false→true),
+  // so this reads the real flag exactly once per moduleId after the warm-cache
+  // settles. Intentionally ignores cross-tab edits to the seen flag — once the
+  // module is mounted, mid-session toggles must not yank the editor surface
+  // back open (the effect only re-runs on moduleId / storageReady changes, not
+  // on a plain re-render).
   useEffect(() => {
-    if (!moduleId) {
+    if (moduleId === null || !storageReady) {
       setFirstRun(false);
       return;
     }
     setFirstRun(!readFirstSeen(moduleId));
-  }, [moduleId]);
+  }, [moduleId, storageReady]);
 
   const markSeen = useCallback(() => {
     if (!moduleId) return;

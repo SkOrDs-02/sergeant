@@ -68,6 +68,14 @@ export interface StandaloneRouteArgs {
   pathname: string;
   user: AuthUser;
   authLoading: boolean;
+  /**
+   * Whether the SQLite-backed persistent store has resolved (see
+   * `core/db/storageReady.ts`). Entries that branch on `shouldShowOnboarding()`
+   * — `/` and `/welcome` — render a splash while this is `false` instead of
+   * deciding against the empty pre-boot store (which would bounce a returning
+   * user to `/welcome` / the marketing landing on a hard reload).
+   */
+  storageReady: boolean;
   onLeaveAuth: () => void;
   onLeaveWelcome: () => void;
   onOpenAuth: () => void;
@@ -128,8 +136,14 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // existing Hub composition by returning `null`.
   defineStandaloneRoute({
     paths: ["/"],
-    render: ({ user, authLoading, onLeaveWelcome }) => {
+    render: ({ user, authLoading, storageReady, onLeaveWelcome }) => {
       if (authLoading || user) return null;
+      // Anon visitor: landing-vs-Hub depends on `shouldShowOnboarding()`, which
+      // reads the SQLite-backed store. Before it resolves, a returning
+      // local-first user (who has data but no session) would be misread as a
+      // fresh visitor and ambushed by the marketing landing on every reload —
+      // splash until the store settles, then decide.
+      if (!storageReady) return <PageLoader />;
       if (!shouldShowOnboarding()) return null;
       return (
         <Suspense fallback={<PageLoader />}>
@@ -295,7 +309,14 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // the dashboard instead of being asked to re-onboard.
   defineStandaloneRoute({
     paths: [WELCOME_PATH],
-    render: ({ onLeaveWelcome, onOpenAuth }) => {
+    render: ({ storageReady, onLeaveWelcome, onOpenAuth }) => {
+      // Until the persistent store resolves we cannot tell a genuine first-time
+      // visitor (show the splash screen) from a returning user who deep-linked
+      // `/welcome` (bounce to `/`). Render a loader rather than flashing the
+      // onboarding splash at a returning user mid cold-boot.
+      if (!storageReady) {
+        return <PageLoader />;
+      }
       if (!shouldShowOnboarding()) {
         return <RedirectTo to="/" />;
       }

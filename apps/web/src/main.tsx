@@ -39,6 +39,10 @@ import { isCapacitor, getPlatform } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
 import { bootstrapKvStore } from "./core/db/kvStoreBoot.js";
+import {
+  markStorageBooting,
+  markStorageReady,
+} from "./core/db/storageReady.js";
 
 // Sergeant v2 redesign Phase 1 (M1) — flag the document root when
 // running inside the iOS Capacitor WebView so `theme.css` can swap
@@ -124,71 +128,21 @@ function shouldRenderVercelAnalytics(): boolean {
   );
 }
 
-// PR #063–#064 boot wiring: kick off SQLite warm-cache, then run the
-// storage-dependent boot steps (demo seed, `storageManager` migrations,
-// demo cleanup, sync-engine writer boot) and finally mount React. We
-// **await** bootstrap before any writes happen so there is no race
-// window between the LS-only adapter (pre-bootstrap) and the
-// SQLite-backed adapter (post-bootstrap).
+// PR #063–#064 boot wiring + cold-boot redirect-race fix.
 //
-// `bootstrapKvStore` is documented as never-throwing: every failure
-// path (SQLite init, migration runner, scan) leaves
-// `kvStoreBoot.loaded = false` and surfaces through `onError`, so the
-// IIFE's `try/catch` is belt-and-suspenders against future bugs.
-void (async () => {
-  const startedAt =
-    typeof performance !== "undefined" ? performance.now() : Date.now();
-  try {
-    const result = await bootstrapKvStore({
-      onError: (stage, err) => {
-        logger.warn(`[main] kvStoreBoot ${stage} failed`, err);
-        addSentryBreadcrumb({
-          category: "storage",
-          level: "warning",
-          message: `kvStoreBoot ${stage} failed`,
-          data: { error: err instanceof Error ? err.message : String(err) },
-        });
-      },
-    });
-    const endedAt =
-      typeof performance !== "undefined" ? performance.now() : Date.now();
-    addSentryBreadcrumb({
-      category: "storage",
-      level: "info",
-      message: "kvStoreBoot completed",
-      data: {
-        // Telemetry tags expected by the rollout dashboards. `backend`
-        // tells us whether the SQLite cut-over actually took or we are
-        // still serving the LS fallback, and `duration_ms` lets us
-        // catch boot-time regressions before they reach canary.
-        backend: result.loaded ? "sqlite" : "ls-fallback",
-        loaded: result.loaded,
-        duration_ms: Math.round(endedAt - startedAt),
-      },
-    });
-  } catch (err) {
-    addSentryBreadcrumb({
-      category: "storage",
-      level: "warning",
-      message: "kvStoreBoot threw (should be unreachable)",
-      data: { error: err instanceof Error ? err.message : String(err) },
-    });
-    logger.warn("[main] kvStoreBoot threw (should be unreachable)", err);
-  }
-
-  void maybeRunOnboarding();
-  storageManager.runAll();
-  void bootSyncEngineWriter({ captureException });
-
-  // Sentry SDK ініт-имо ДО mount, через `void` (chunk dynamic-import-иться
-  // і не блокує первинний рендер). Сенс — закрити обсерваційний gap:
-  // до цієї правки `initSentry` сидів у `requestIdleCallback` після
-  // mount-у, тому всі mount-time React invariants (#426 / #418 / #185 —
-  // саме ті, які трапляються під час першого commit-у) ніколи не
-  // доходили до Sentry. WebVitals / PostHog ініт лишаються в idle —
-  // вони не observability для крашів.
-  void initSentry();
-
+// Mount React FIRST — so route / first-run guards can render a splash while the
+// SQLite warm-cache boots — then settle storage in the background. The previous
+// build awaited `bootstrapKvStore()` before the first render: that blanked
+// `#root` during the ~700 KB sqlite-wasm cold-load AND still raced any guard
+// that read onboarding / first-run state before the cache settled (a hard
+// reload bounced returning users to `/welcome`, deep-linked module pages to
+// their first-run surface, etc.).
+//
+// `markStorageBooting()` arms the readiness gate (`core/db/storageReady.ts`)
+// before first paint; `markStorageReady()` releases it once bootstrap has
+// settled and the storage-dependent boot steps have run, so guards can tell
+// "state = not done" from "state not loaded yet".
+function mountApp(): void {
   const rootEl = document.getElementById("root");
   if (!rootEl) {
     document.body.innerHTML =
@@ -230,6 +184,73 @@ void (async () => {
       </PersistQueryClientProvider>
     </ErrorBoundary>,
   );
+}
+
+// Arm the readiness gate before the first render so guards render a splash (not
+// a redirect) while storage boots. Init Sentry before mount (via `void`, so the
+// chunk dynamic-imports without blocking first paint) so mount-time React
+// invariants (#426 / #418 / #185) stay under observability — same intent as the
+// pre-split ordering. Then mount immediately.
+markStorageBooting();
+void initSentry();
+mountApp();
+
+// Settle the SQLite warm-cache in the background, then run the storage-dependent
+// boot steps and release the readiness gate. The WRITE steps (demo seed,
+// `storageManager` migrations, sync-engine writer) still run only AFTER
+// bootstrap settles, so there is no LS→SQLite write race — only the read-only,
+// splash-gated first paint moved ahead of the boot.
+//
+// `bootstrapKvStore` is documented as never-throwing: every failure path
+// (SQLite init, migration runner, scan) leaves `kvStoreBoot.loaded = false` and
+// surfaces through `onError`, so the IIFE's `try/catch` is belt-and-suspenders.
+void (async () => {
+  const startedAt =
+    typeof performance !== "undefined" ? performance.now() : Date.now();
+  try {
+    const result = await bootstrapKvStore({
+      onError: (stage, err) => {
+        logger.warn(`[main] kvStoreBoot ${stage} failed`, err);
+        addSentryBreadcrumb({
+          category: "storage",
+          level: "warning",
+          message: `kvStoreBoot ${stage} failed`,
+          data: { error: err instanceof Error ? err.message : String(err) },
+        });
+      },
+    });
+    const endedAt =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
+    addSentryBreadcrumb({
+      category: "storage",
+      level: "info",
+      message: "kvStoreBoot completed",
+      data: {
+        // Telemetry tags expected by the rollout dashboards. `backend` tells us
+        // whether the SQLite cut-over actually took or we are still serving the
+        // LS fallback, and `duration_ms` catches boot-time regressions before
+        // they reach canary.
+        backend: result.loaded ? "sqlite" : "ls-fallback",
+        loaded: result.loaded,
+        duration_ms: Math.round(endedAt - startedAt),
+      },
+    });
+  } catch (err) {
+    addSentryBreadcrumb({
+      category: "storage",
+      level: "warning",
+      message: "kvStoreBoot threw (should be unreachable)",
+      data: { error: err instanceof Error ? err.message : String(err) },
+    });
+    logger.warn("[main] kvStoreBoot threw (should be unreachable)", err);
+  } finally {
+    void maybeRunOnboarding();
+    storageManager.runAll();
+    void bootSyncEngineWriter({ captureException });
+    // Release the gate last — after the synchronous migrations have run — so
+    // guards never observe a half-migrated store.
+    markStorageReady();
+  }
 })();
 
 // Web-vitals + PostHog збір відкладаємо до після hydration — їх chunks
