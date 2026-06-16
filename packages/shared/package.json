@@ -17,10 +17,10 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "test": "TZ=Europe/Kyiv vitest run",
-    "test:watch": "TZ=Europe/Kyiv vitest",
-    "test:coverage": "TZ=Europe/Kyiv vitest run --coverage",
-    "mutation:utils": "stryker run stryker.utils.conf.json"
+    "test": "cross-env TZ=Europe/Kyiv vitest run",
+    "test:watch": "cross-env TZ=Europe/Kyiv vitest",
+    "test:coverage": "cross-env TZ=Europe/Kyiv vitest run --coverage",
+    "mutation:utils": "cross-env TZ=Europe/Kyiv stryker run stryker.utils.conf.json"
   },
   "dependencies": {
     "@sergeant/design-tokens": "workspace:*",
@@ -33,6 +33,7 @@
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@types/node": "^20.19.41",
     "@vitest/coverage-v8": "^4.1.5",
+    "cross-env": "^10.1.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
   }

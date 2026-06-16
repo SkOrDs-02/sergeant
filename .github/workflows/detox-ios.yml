@@ -79,7 +79,10 @@ concurrency:
 jobs:
   detox-ios:
     runs-on: macos-14
-    timeout-minutes: 60
+    # Build routinely takes ~25-30 minutes on macOS runners. Keep the job
+    # timeout above the 45-minute runtime guard below so the suite can exit via
+    # its intentional non-blocking warning path instead of GitHub cancelling it.
+    timeout-minutes: 90
     env:
       EXPO_PUBLIC_E2E: "1"
       # Enables the mock-auth fetch interceptor so the new "full" suites

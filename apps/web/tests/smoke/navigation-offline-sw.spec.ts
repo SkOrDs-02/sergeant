@@ -61,39 +61,65 @@ test("@extended offline: shows OfflineBanner status", async ({
 
 test("@extended sw: debug roundtrip works (best-effort)", async ({ page }) => {
   await seedLocalStorage(page);
-  await page.goto("/?sw=debug", { waitUntil: "domcontentloaded" });
+  await page.goto("/?sw=debug", { waitUntil: "load" });
+  await expect(page.locator("#root > *").first()).toBeAttached();
 
-  const res = await page.evaluate(async () => {
-    if (!("serviceWorker" in navigator)) {
-      return { ok: false, reason: "no_service_worker" as const };
-    }
-    const reg = await navigator.serviceWorker.ready;
-    const ctl: ServiceWorker | null =
-      navigator.serviceWorker.controller || reg.active;
-    if (!ctl) return { ok: false, reason: "no_controller" as const };
+  async function debugRoundtrip() {
+    return page.evaluate(async () => {
+      if (!("serviceWorker" in navigator)) {
+        return { ok: false, reason: "no_service_worker" as const };
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const ctl: ServiceWorker | null =
+        navigator.serviceWorker.controller || reg.active;
+      if (!ctl) return { ok: false, reason: "no_controller" as const };
 
-    const requestId = `pw_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-    const snapshot = await new Promise<unknown>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        navigator.serviceWorker.removeEventListener("message", onMessage);
-        reject(new Error("timeout"));
-      }, 4000);
-      const onMessage = (event: MessageEvent) => {
-        const data = event.data as
-          | { type?: string; requestId?: string | null; snapshot?: unknown }
-          | undefined;
-        if (!data || data.type !== "SW_DEBUG_RESULT") return;
-        if ((data.requestId || null) !== requestId) return;
-        clearTimeout(timer);
-        navigator.serviceWorker.removeEventListener("message", onMessage);
-        resolve(data.snapshot);
-      };
-      navigator.serviceWorker.addEventListener("message", onMessage);
-      ctl.postMessage({ type: "SW_DEBUG", data: { requestId } });
+      const requestId = `pw_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      const snapshot = await new Promise<unknown>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          navigator.serviceWorker.removeEventListener("message", onMessage);
+          reject(new Error("timeout"));
+        }, 4000);
+        const onMessage = (event: MessageEvent) => {
+          const data = event.data as
+            | { type?: string; requestId?: string | null; snapshot?: unknown }
+            | undefined;
+          if (!data || data.type !== "SW_DEBUG_RESULT") return;
+          if ((data.requestId || null) !== requestId) return;
+          clearTimeout(timer);
+          navigator.serviceWorker.removeEventListener("message", onMessage);
+          resolve(data.snapshot);
+        };
+        navigator.serviceWorker.addEventListener("message", onMessage);
+        ctl.postMessage({ type: "SW_DEBUG", data: { requestId } });
+      });
+
+      return { ok: true, snapshot };
     });
+  }
 
-    return { ok: true, snapshot };
-  });
+  let res:
+    | Awaited<ReturnType<typeof debugRoundtrip>>
+    | { ok: false; reason: "navigation_race" };
+  try {
+    res = await debugRoundtrip();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Execution context was destroyed")) {
+      throw error;
+    }
+    await page.waitForLoadState("load").catch(() => undefined);
+    try {
+      res = await debugRoundtrip();
+    } catch (retryError) {
+      const retryMessage =
+        retryError instanceof Error ? retryError.message : String(retryError);
+      if (!retryMessage.includes("Execution context was destroyed")) {
+        throw retryError;
+      }
+      res = { ok: false, reason: "navigation_race" };
+    }
+  }
 
   if (!res.ok) {
     test.info().annotations.push({

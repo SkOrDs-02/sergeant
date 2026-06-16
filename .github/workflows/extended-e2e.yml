@@ -110,8 +110,16 @@ jobs:
         run: |
           if [ "${{ matrix.browser }}" = "mobile-safari" ]; then
             echo "binary=webkit" >> "$GITHUB_OUTPUT"
+            echo "browsers=chromium webkit" >> "$GITHUB_OUTPUT"
+            echo "cache-key=chromium-webkit" >> "$GITHUB_OUTPUT"
+          elif [ "${{ matrix.browser }}" = "webkit" ]; then
+            echo "binary=webkit" >> "$GITHUB_OUTPUT"
+            echo "browsers=chromium webkit" >> "$GITHUB_OUTPUT"
+            echo "cache-key=chromium-webkit" >> "$GITHUB_OUTPUT"
           else
             echo "binary=${{ matrix.browser }}" >> "$GITHUB_OUTPUT"
+            echo "browsers=chromium" >> "$GITHUB_OUTPUT"
+            echo "cache-key=chromium" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Get Playwright version
@@ -124,15 +132,15 @@ jobs:
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ steps.pw-version.outputs.version }}-${{ steps.pw-bin.outputs.binary }}
+          key: pw-${{ runner.os }}-${{ steps.pw-version.outputs.version }}-${{ steps.pw-bin.outputs.cache-key }}
 
       - name: Install Playwright browser
         if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter @sergeant/web exec playwright install --with-deps ${{ steps.pw-bin.outputs.binary }}
+        run: pnpm --filter @sergeant/web exec playwright install --with-deps ${{ steps.pw-bin.outputs.browsers }}
 
       - name: Install Playwright system deps (cached browsers)
         if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter @sergeant/web exec playwright install-deps ${{ steps.pw-bin.outputs.binary }}
+        run: pnpm --filter @sergeant/web exec playwright install-deps ${{ steps.pw-bin.outputs.browsers }}
 
       - name: Run database migrations
         run: pnpm --filter @sergeant/server db:migrate:dev
