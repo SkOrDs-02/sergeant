@@ -100,7 +100,7 @@
     },
     {
       "pattern": "^https?://github\\.com/Skords-01/Sergeant/pull/(1593|1594|1596|1597)$",
-      "reason": "Archived initiative docs cite these immutable 2026-05 module-decomposition PRs. GitHub intermittently returns HTTP 500 to CI link-checker requests for these historical PR pages while the pages remain browser-accessible and auditable."
+      "reason": "Архівна ініціатива цитує ці незмінні PR-и декомпозиції модулів за 2026-05. GitHub періодично повертає HTTP 500 на CI-запити markdown link checker для цих історичних PR-сторінок, хоча сторінки відкриваються у браузері й залишаються придатними для аудиту."
     },
     {
       "pattern": "^https?://security\\.stackexchange\\.com(/.*)?$",
