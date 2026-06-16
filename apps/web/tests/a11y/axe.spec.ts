@@ -43,6 +43,8 @@ const PRE_FTUX_LS: Record<string, string> = {
   }),
 };
 
+const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"];
+
 async function seedLocalStorage(
   page: Page,
   seed: Record<string, string> | null = SEEDED_LS,
@@ -58,6 +60,28 @@ async function seedLocalStorage(
       /* ignore */
     }
   }, seed);
+}
+
+function isNavigationRace(error: unknown) {
+  return (
+    error instanceof Error &&
+    error.message.includes("Execution context was destroyed")
+  );
+}
+
+async function analyzeA11y(page: Page) {
+  try {
+    return await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+  } catch (error) {
+    if (!isNavigationRace(error)) throw error;
+    await page.waitForLoadState("domcontentloaded").catch(() => {
+      /* retry after transient navigation race */
+    });
+    await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {
+      /* allow-through: some surfaces keep long-polling connections open */
+    });
+    return await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+  }
 }
 
 const SURFACES: Array<{
@@ -98,9 +122,7 @@ for (const { name, path, seed } of SURFACES) {
       .first()
       .waitFor({ state: "visible", timeout: 10_000 });
 
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
-      .analyze();
+    const results = await analyzeA11y(page);
 
     const blocking = results.violations.filter(
       (v) => v.impact === "serious" || v.impact === "critical",
