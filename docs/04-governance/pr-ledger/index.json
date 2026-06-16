@@ -1,8 +1,18 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-14",
+  "generated_at": "2026-06-16",
   "prs": [
+    {
+      "number": 3610,
+      "title": "chore(config): per-package eslint configs — PR-31 Phase 2b",
+      "merged_at": "2026-06-16T19:04:25Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/00-start/playbooks/cutover-openclaw-gateway.md",
+        "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md"
+      ]
+    },
     {
       "number": 3560,
       "title": "fix: heal governance/format drift + dualWrite logger lint debt",

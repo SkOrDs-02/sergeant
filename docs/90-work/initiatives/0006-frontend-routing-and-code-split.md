@@ -1,6 +1,6 @@
 # 0006 — Frontend routing migration + route-based code-split
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last touched:** 2026-06-16 by @github-actions[bot]. **Next review:** 2026-09-14.
 > **Status:** In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. **Reconcile 2026-06-15:** insights/settings/onboarding мігровано off the catch-all у власні path-based lazy routes (`/insights/*`, `/settings/*`, `/onboarding/*` + `core/{insights,settings,onboarding}/route.tsx`); route-count тепер 7/8 (лишається свідомо-спільний Hub чанк). Playwright hash-compat e2e додано (`tests/smoke/hash-redirect-smoke.spec.ts`). Pending: native RR7 router-level `loader:` (unblocked, optional), bundle-budget tighten на нові chunk-prefix-и.
 > **Agent-ready:** needs-decision
 > **Priority:** P1 (Sprint 2)
@@ -265,3 +265,15 @@ DOR для Phase 1 (`feat-react-router-setup`): після введення `<Ro
 - Auto-fix-ера не додано — заміна `useHashRouter()` на `useNavigate()` потребує контексту (router-context, відсутній до Phase 1); ручна міграція робиться по одному модулю на PR (Phase 2).
 - Rule НЕ покриває `apps/mobile/**` / `apps/server/**` / `tools/openclaw/**` — мобільний має React Navigation (інша stack), сервер — без DOM, console — Telegram bot.
 - Rule НЕ блокує `addEventListener("hashchange", ...)` — підписка на hashchange валідна для compat-shim Phase 3 і тестів.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                      | Merged     |
+| -------------------------------------------------------- | ---------------------------------------------------------- | ---------- |
+| [#3610](https://github.com/Skords-01/Sergeant/pull/3610) | chore(config): per-package eslint configs — PR-31 Phase 2b | 2026-06-16 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
