@@ -457,7 +457,6 @@ export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
             type="button"
             role="tab"
             aria-selected={isActive}
-            aria-current={isActive ? "page" : undefined}
             aria-label={`Перейти до модуля ${label}`}
             tabIndex={isActive ? 0 : -1}
             onClick={() => {
