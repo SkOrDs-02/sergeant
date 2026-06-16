@@ -1,6 +1,6 @@
 # L2 — Permissions-Policy could disable more APIs
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
 > **Status:** Closed (2026-05-06)
 
 | Field          | Value                                                                                                                                                                                                                                                                                                                                                |
@@ -61,6 +61,20 @@ strictest posture):
 If any of those move into use, drop the carve-out and update the test;
 if any of the disabled directives are re-enabled, document the carve-out
 in `docs/04-governance/security/audit-exceptions.md` first.
+
+## Update (2026-06-17) — `camera` + `microphone` re-enabled to `(self)`
+
+The original closure disabled `camera` and `microphone` on the premise the
+SPA never uses them. That premise was wrong: the barcode scanner
+(`useBarcodeScanner` → `getUserMedia({video})`) and voice input
+(`useGroqVoiceInput` → `getUserMedia({audio})` + `useSpeech`
+SpeechRecognition) are shipped web features, and `name=()` made them throw
+`NotAllowedError` regardless of the user's browser permission. Both are now
+`name=(self)` (own-origin only, never `*`) and moved from
+`REQUIRED_DISABLED_DIRECTIVES` to `ENABLED_SELF_DIRECTIVES` in the regression
+test. Carve-out logged in [`../audit-exceptions.md`](../audit-exceptions.md)
+§ «Permissions-Policy carve-outs». The Capacitor shell is unaffected (native
+permissions, not this header). Owner-approved 2026-06-17.
 
 ## Verification
 

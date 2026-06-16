@@ -12,18 +12,22 @@ import { resolve } from "node:path";
  * L2 — `docs/security/hardening/L2-permissions-policy-broader.md`.
  *
  * `apps/web/vercel.json` ships the `Permissions-Policy` response header
- * for the production SPA. The SPA does not need any of the powerful
- * device / sensor / clipboard / XR APIs covered below, so the header
- * must explicitly disable them with the `name=()` allowlist (empty
- * allowlist = no origin can use the feature).
+ * for the production SPA. Most powerful device / sensor / clipboard / XR
+ * APIs are not needed, so the header disables them with the `name=()`
+ * allowlist (empty allowlist = no origin can use the feature). The two
+ * exceptions are `camera` and `microphone`, enabled for the app's OWN
+ * origin (`name=(self)`) because shipped features depend on them
+ * (barcode scanner + voice input — see `ENABLED_SELF_DIRECTIVES`).
  *
  * This test is the regression guard against silent re-enablement: a
- * future contributor cannot drop a directive from the header without
- * also editing this file, which makes the policy change reviewable.
+ * future contributor cannot drop a directive, widen one to `*`, or
+ * change a self-grant without also editing this file, which makes the
+ * policy change reviewable.
  *
- * If a feature is intentionally added back (e.g. clipboard for a
- * future Pro feature), move it out of `REQUIRED_DISABLED_DIRECTIVES`
- * and document the carve-out in `docs/security/audit-exceptions.md`.
+ * If a disabled feature is intentionally added back, move it out of
+ * `REQUIRED_DISABLED_DIRECTIVES` (into `ENABLED_SELF_DIRECTIVES` when it
+ * should be self-only) and document the carve-out in
+ * `docs/04-governance/security/audit-exceptions.md`.
  */
 
 interface PermissionsPolicy {
@@ -66,8 +70,9 @@ function readVercelPermissionsPolicy(): string {
 // requires an audit-exceptions.md entry.
 const REQUIRED_DISABLED_DIRECTIVES = [
   // Device + sensor (covered by the original C2 / H7 baseline).
-  "camera",
-  "microphone",
+  // NB: `camera` + `microphone` are NOT here — they moved to
+  // `ENABLED_SELF_DIRECTIVES` below because shipped barcode-scanner and
+  // voice-input features need them. They stay locked to `(self)`.
   "geolocation",
   "magnetometer",
   "accelerometer",
@@ -90,8 +95,24 @@ const REQUIRED_DISABLED_DIRECTIVES = [
   "encrypted-media",
 ];
 
+// Directives enabled for the app's OWN origin only (`name=(self)`) — never
+// `()` (would break the feature) and never `*` (would let any cross-origin
+// iframe borrow the grant). `camera` — barcode scanner (`useBarcodeScanner`
+// getUserMedia({video}) + `BarcodeScanner.tsx`); `microphone` — voice input
+// (`useGroqVoiceInput` getUserMedia({audio}) + `useSpeech` SpeechRecognition).
+// Carve-out documented in docs/04-governance/security/audit-exceptions.md.
+const ENABLED_SELF_DIRECTIVES = ["camera", "microphone"];
+
 describe("L2: Permissions-Policy header (apps/web/vercel.json)", () => {
   const policy = parsePermissionsPolicy(readVercelPermissionsPolicy());
+
+  it.each(ENABLED_SELF_DIRECTIVES)(
+    "enables %s for the self origin only (`(self)`, not `()` or `*`)",
+    (name) => {
+      expect(policy).toHaveProperty(name);
+      expect(policy[name]).toBe("(self)");
+    },
+  );
 
   it.each(REQUIRED_DISABLED_DIRECTIVES)(
     "disables %s with empty allowlist",

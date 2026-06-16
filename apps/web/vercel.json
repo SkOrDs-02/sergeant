@@ -17,7 +17,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), clipboard-read=(), clipboard-write=(), screen-wake-lock=(), xr-spatial-tracking=(), bluetooth=(), hid=(), serial=(), midi=(), encrypted-media=()"
+          "value": "camera=(self), microphone=(self), geolocation=(), interest-cohort=(), browsing-topics=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), clipboard-read=(), clipboard-write=(), screen-wake-lock=(), xr-spatial-tracking=(), bluetooth=(), hid=(), serial=(), midi=(), encrypted-media=()"
         },
         {
           "key": "Reporting-Endpoints",
