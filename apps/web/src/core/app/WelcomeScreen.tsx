@@ -4,8 +4,12 @@
  */
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import {
+  markFirstActionPending,
+  markFirstActionStartedAt,
+  saveVibePicks,
+} from "../onboarding/vibePicks";
 import { seedDemoData } from "../onboarding/seedDemoData";
-import { saveVibePicks } from "../onboarding/vibePicks";
 import {
   isOnboardingCompletedFired,
   markOnboardingCompletedFired,
@@ -260,6 +264,8 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
         });
         markOnboardingCompletedFired();
       }
+      markFirstActionStartedAt();
+      markFirstActionPending();
       onDone(null, { intent: "preset_picker", picks });
     },
     [onDone],

@@ -1,7 +1,40 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { fireEvent, render, cleanup, screen } from "@testing-library/react";
 import { WelcomeScreen } from "./WelcomeScreen";
+
+const markFirstActionPendingMock = vi.fn();
+const markFirstActionStartedAtMock = vi.fn();
+const markOnboardingDoneMock = vi.fn();
+const saveVibePicksMock = vi.fn();
+const markOnboardingCompletedFiredMock = vi.fn();
+
+vi.mock("../onboarding/vibePicks", async () => {
+  const actual = await vi.importActual<
+    typeof import("../onboarding/vibePicks")
+  >("../onboarding/vibePicks");
+  return {
+    ...actual,
+    saveVibePicks: (...args: unknown[]) => saveVibePicksMock(...args),
+    markFirstActionPending: (...args: unknown[]) =>
+      markFirstActionPendingMock(...args),
+    markFirstActionStartedAt: (...args: unknown[]) =>
+      markFirstActionStartedAtMock(...args),
+  };
+});
+
+vi.mock("../onboarding/onboardingGate", async () => {
+  const actual = await vi.importActual<
+    typeof import("../onboarding/onboardingGate")
+  >("../onboarding/onboardingGate");
+  return {
+    ...actual,
+    markOnboardingDone: (...args: unknown[]) => markOnboardingDoneMock(...args),
+    markOnboardingCompletedFired: (...args: unknown[]) =>
+      markOnboardingCompletedFiredMock(...args),
+    isOnboardingCompletedFired: () => false,
+  };
+});
 
 /**
  * Audit-guard for the 2026-05-08 fix on `/welcome`.
@@ -90,5 +123,36 @@ describe("WelcomeScreen — /welcome scroll-layer audit-guard", () => {
     expect((innerLayer as HTMLElement).className).toMatch(
       /\bsm:items-center\b/,
     );
+  });
+});
+
+describe("WelcomeScreen — handlePicksComplete side-effects", () => {
+  afterEach(cleanup);
+
+  beforeEach(() => {
+    localStorage.clear();
+    markFirstActionPendingMock.mockClear();
+    markFirstActionStartedAtMock.mockClear();
+    markOnboardingDoneMock.mockClear();
+    saveVibePicksMock.mockClear();
+    markOnboardingCompletedFiredMock.mockClear();
+  });
+
+  it("seeds the first-action timer and pending gate on submit", () => {
+    const onDone = vi.fn();
+    render(<WelcomeScreen onDone={onDone} onOpenAuth={() => {}} />);
+
+    const cta = screen.getByRole("button", { name: "Почати" });
+    fireEvent.click(cta);
+
+    expect(saveVibePicksMock).toHaveBeenCalledTimes(1);
+    expect(markOnboardingDoneMock).toHaveBeenCalledTimes(1);
+    expect(markOnboardingCompletedFiredMock).toHaveBeenCalledTimes(1);
+    expect(markFirstActionStartedAtMock).toHaveBeenCalledTimes(1);
+    expect(markFirstActionPendingMock).toHaveBeenCalledTimes(1);
+    expect(onDone).toHaveBeenCalledWith(null, {
+      intent: "preset_picker",
+      picks: expect.any(Array),
+    });
   });
 });
