@@ -22,3 +22,9 @@
 # All CVE-2026-* for libssl3 are fixed in nodejs22-debian13:nonroot
 # (libssl3 3.0.19-1). The suppressions below are no longer needed.
 # Migrated to nodejs22-debian13:nonroot (fixed: 3.0.19-1) on 2026-06-05.
+
+# Trivy DB lists fixed form-data versions (2.5.6, 3.0.5, 4.0.6), but none are
+# published to npm as of 2026-06-16 (`pnpm view form-data versions --json`).
+# Remove this once a fixed form-data release is available and the lockfile is
+# bumped/overridden.
+CVE-2026-12143 exp:2026-06-23
