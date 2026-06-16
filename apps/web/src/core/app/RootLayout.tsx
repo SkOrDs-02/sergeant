@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@shared/hooks/useTheme";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
 import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
+import { SkipLink } from "@shared/components/ui/SkipLink";
 import { useAuth } from "../auth/AuthContext";
 import { useActivationV2Boot } from "../activation";
 import { AppLock } from "../security/AppLock";
@@ -52,6 +53,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
   const appLock = useAppLockContext();
   return (
     <>
+      {/* Single app-wide skip-link — first focusable on EVERY route
+          (hub, modules, and all standalone surfaces via <Outlet/>), so
+          keyboard/SR users jump straight to the page's <main id="main">.
+          Module/Hub shells no longer render their own (would duplicate). */}
+      <SkipLink />
       <AppLock
         state={appLock.state}
         onUnlock={appLock.unlock}

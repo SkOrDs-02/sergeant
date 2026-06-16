@@ -96,7 +96,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
         </div>
         <div className="text-right">
           <div className="text-style-caption text-subtle">Дохід</div>
-          <div className="text-hero font-bold tabular-nums mt-1 leading-tight text-success">
+          <div className="text-hero font-bold tabular-nums mt-1 leading-tight text-success-strong dark:text-success">
             {showBalance ? (
               <>
                 +

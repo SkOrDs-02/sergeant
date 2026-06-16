@@ -41,13 +41,13 @@ const SEVERITY_TONE = {
     accent: "bg-danger",
     wash: "bg-danger-soft/70 dark:bg-danger/10",
     border: "border-danger/30",
-    eyebrow: "text-danger",
+    eyebrow: "text-danger-strong dark:text-danger",
   },
   warning: {
     accent: "bg-warning",
     wash: "bg-warning-soft/70 dark:bg-warning/10",
     border: "border-warning/35",
-    eyebrow: "text-warning",
+    eyebrow: "text-warning-strong dark:text-warning",
   },
 };
 

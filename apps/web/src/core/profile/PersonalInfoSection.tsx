@@ -247,7 +247,7 @@ export function PersonalInfoSection({
                 Підтверджено
               </span>
             ) : (
-              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-warning/10 text-warning text-style-caption font-medium">
+              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-warning/10 text-warning-strong dark:text-warning text-style-caption font-medium">
                 <Icon name="alert" size={10} strokeWidth={2.5} />
                 Не підтверджено
               </span>
@@ -268,12 +268,12 @@ export function PersonalInfoSection({
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-style-caption text-danger">
+                  <span className="text-style-caption text-danger-strong dark:text-danger">
                     Видалити фото?
                   </span>
                   <button
                     type="button"
-                    className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors"
+                    className="text-xs font-semibold text-danger-strong dark:text-danger hover:text-danger/80 transition-colors"
                     onClick={handleRemoveAvatar}
                   >
                     Так
@@ -298,7 +298,7 @@ export function PersonalInfoSection({
         {!user.emailVerified && user.email && (
           <div className="px-4 py-3 flex items-center gap-3 bg-warning/5">
             <Icon name="alert" size={15} className="text-warning shrink-0" />
-            <p className="text-style-caption text-warning flex-1">
+            <p className="text-style-caption text-warning-strong dark:text-warning flex-1">
               Email не підтверджено — перевірте вашу поштову скриньку
             </p>
             <Button

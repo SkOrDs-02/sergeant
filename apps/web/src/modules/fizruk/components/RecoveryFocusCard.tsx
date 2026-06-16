@@ -110,7 +110,7 @@ export function RecoveryFocusCard({
               <span className="text-base shrink-0" aria-hidden>
                 😴
               </span>
-              <p className="text-xs text-warning leading-snug">
+              <p className="text-xs text-warning-strong dark:text-warning leading-snug">
                 {rec.wellbeingMult >= 1.3
                   ? "Поганий сон або дуже низька енергія — відновлення значно сповільнене."
                   : "Недостатній сон або низька енергія — відновлення сповільнене."}{" "}
@@ -129,7 +129,7 @@ export function RecoveryFocusCard({
               {focus.map((m) => (
                 <span
                   key={m.id}
-                  className="px-2.5 py-1 bg-success/10 text-success text-style-caption rounded-full border border-success/15"
+                  className="px-2.5 py-1 bg-success/10 text-success-strong dark:text-success text-style-caption rounded-full border border-success/15"
                 >
                   {m.label}
                   {m.daysSince == null ? "" : ` · ${m.daysSince}д без`}
@@ -143,7 +143,9 @@ export function RecoveryFocusCard({
             </div>
             {avoid.length > 0 && (
               <p className="text-xs text-muted mt-3 leading-relaxed">
-                <span className="font-semibold text-warning">Почекати:</span>{" "}
+                <span className="font-semibold text-warning-strong dark:text-warning">
+                  Почекати:
+                </span>{" "}
                 {avoid.map((x) => x.label).join(", ")}
               </p>
             )}

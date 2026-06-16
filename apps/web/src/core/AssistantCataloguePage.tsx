@@ -133,8 +133,10 @@ export function AssistantCataloguePage({
   const totalCount = ASSISTANT_CAPABILITIES.length;
 
   return (
-    <div
-      className="min-h-dvh bg-bg"
+    <main
+      id="main"
+      tabIndex={-1}
+      className="min-h-dvh bg-bg outline-none"
       style={{
         paddingTop: "max(1.25rem, env(safe-area-inset-top))",
         paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
@@ -241,7 +243,7 @@ export function AssistantCataloguePage({
         onClose={() => setDetail(null)}
         onTryInChat={handleTryFromDetail}
       />
-    </div>
+    </main>
   );
 }
 
@@ -450,10 +452,10 @@ interface BadgeChipProps {
 function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
   const cls =
     tone === "brand"
-      ? "text-brand-600 bg-brand-500/8 border-brand-500/25"
+      ? "text-brand-strong dark:text-brand bg-brand-500/8 border-brand-500/25"
       : tone === "warning"
-        ? "text-warning bg-warning/8 border-warning/25"
-        : "text-success bg-success/8 border-success/25";
+        ? "text-warning-strong dark:text-warning bg-warning/8 border-warning/25"
+        : "text-success-strong dark:text-success bg-success/8 border-success/25";
   // UX-feedback 2026-05-08: previously rendered uppercase + bold + 10px
   // tracking-wide which made the chips visually compete with the
   // capability label («оці чіпсинки про новинка чип і тд якісь

@@ -34,7 +34,7 @@ export function FizrukSection() {
                     className={cn(
                       "h-9 w-14 rounded-xl border text-xs font-semibold transition-colors",
                       typedSettings[cat] === sec
-                        ? "border-success bg-success/15 text-success"
+                        ? "border-success bg-success/15 text-success-strong dark:text-success"
                         : "border-line bg-panelHi text-subtle hover:text-text",
                     )}
                   >

@@ -156,7 +156,9 @@ export function ExerciseProgressChart({
           <span
             className={cn(
               "text-style-caption",
-              delta > 0 ? "text-success" : "text-warning",
+              delta > 0
+                ? "text-success-strong dark:text-success"
+                : "text-warning-strong dark:text-warning",
             )}
           >
             {delta > 0 ? "+" : ""}

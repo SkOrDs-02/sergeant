@@ -110,7 +110,9 @@ function MonthlyPlanCardComponent({
             <span
               className={cn(
                 "text-xs tabular-nums",
-                isOver ? "text-danger font-semibold" : "text-muted",
+                isOver
+                  ? "text-danger-strong dark:text-danger font-semibold"
+                  : "text-muted",
               )}
             >
               {isOver
@@ -151,7 +153,7 @@ function MonthlyPlanCardComponent({
               <div className="text-right text-muted">
                 {planIncome > 0 ? fmt(planIncome) : "—"}
               </div>
-              <div className="text-right text-success">
+              <div className="text-right text-success-strong dark:text-success">
                 {factIncome > 0 ? `+${fmt(factIncome)}` : "—"}
               </div>
               <div
@@ -160,8 +162,8 @@ function MonthlyPlanCardComponent({
                   planIncome === 0
                     ? "text-subtle"
                     : incomeDelta >= 0
-                      ? "text-success"
-                      : "text-warning",
+                      ? "text-success-strong dark:text-success"
+                      : "text-warning-strong dark:text-warning",
                 )}
               >
                 {planIncome > 0 ? fmtSigned(incomeDelta) : "—"}
@@ -174,7 +176,9 @@ function MonthlyPlanCardComponent({
               <div
                 className={cn(
                   "text-right",
-                  isOver ? "text-danger font-semibold" : "text-danger/80",
+                  isOver
+                    ? "text-danger-strong dark:text-danger font-semibold"
+                    : "text-danger-strong/80 dark:text-danger/80",
                 )}
               >
                 −{fmt(totalExpenseFact)}
@@ -185,8 +189,8 @@ function MonthlyPlanCardComponent({
                   planExpense === 0
                     ? "text-subtle"
                     : expenseDelta > 0
-                      ? "text-danger"
-                      : "text-success",
+                      ? "text-danger-strong dark:text-danger"
+                      : "text-success-strong dark:text-success",
                 )}
               >
                 {planExpense > 0 ? fmtSigned(expenseDelta) : "—"}
@@ -199,7 +203,9 @@ function MonthlyPlanCardComponent({
               <div
                 className={cn(
                   "text-right",
-                  factSavings >= 0 ? "text-success" : "text-danger",
+                  factSavings >= 0
+                    ? "text-success-strong dark:text-success"
+                    : "text-danger-strong dark:text-danger",
                 )}
               >
                 {fmtSigned(factSavings)}
@@ -210,8 +216,8 @@ function MonthlyPlanCardComponent({
                   planSavings === 0 && factSavings === 0
                     ? "text-subtle"
                     : savingsDelta >= 0
-                      ? "text-success"
-                      : "text-danger",
+                      ? "text-success-strong dark:text-success"
+                      : "text-danger-strong dark:text-danger",
                 )}
               >
                 {planSavings > 0 || factSavings !== 0
@@ -235,7 +241,7 @@ function MonthlyPlanCardComponent({
                   </span>
                 )}
                 {isOver && (
-                  <span className="text-danger font-semibold tabular-nums">
+                  <span className="text-danger-strong dark:text-danger font-semibold tabular-nums">
                     −{formatMoney(totalExpenseFact - planExpense)}
                   </span>
                 )}

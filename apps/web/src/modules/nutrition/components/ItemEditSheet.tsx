@@ -81,7 +81,9 @@ export function ItemEditSheet({
       </div>
 
       {itemEdit.err ? (
-        <div className="text-xs text-danger mt-2">{itemEdit.err}</div>
+        <div className="text-xs text-danger-strong dark:text-danger mt-2">
+          {itemEdit.err}
+        </div>
       ) : null}
 
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">

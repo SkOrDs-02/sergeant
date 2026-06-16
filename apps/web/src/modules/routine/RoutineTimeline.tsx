@@ -98,7 +98,7 @@ export function RoutineTimeline({
               <button
                 type="button"
                 onClick={onDismissStorageError}
-                className="shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-style-caption text-danger/80 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50"
+                className="shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center text-style-caption text-danger-strong/80 dark:text-danger/80 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50"
                 aria-label="Закрити повідомлення"
               >
                 Закрити

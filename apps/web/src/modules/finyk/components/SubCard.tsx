@@ -212,7 +212,11 @@ function SubCardComponent({
         <div
           className={cn(
             "text-xs mt-0.5",
-            veryClose ? "text-danger" : soon ? "text-warning" : "text-subtle",
+            veryClose
+              ? "text-danger-strong dark:text-danger"
+              : soon
+                ? "text-warning-strong dark:text-warning"
+                : "text-subtle",
           )}
         >
           {veryClose

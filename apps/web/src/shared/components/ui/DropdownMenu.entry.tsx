@@ -80,7 +80,7 @@ export function DropdownMenuEntryView({
           // and pointer hover share the same active state.
           focused && !entry.disabled && "bg-panelHi",
           entry.type === "item" && entry.destructive
-            ? "text-danger"
+            ? "text-danger-strong dark:text-danger"
             : "text-text",
           entry.disabled && "opacity-50 cursor-not-allowed",
         )}
@@ -207,7 +207,9 @@ function DropdownMenuSubmenuPanel({ entry, onClose }: SubmenuPanelProps) {
               "outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               "focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
               "hover:bg-panelHi focus-visible:bg-panelHi",
-              sub.destructive ? "text-danger" : "text-text",
+              sub.destructive
+                ? "text-danger-strong dark:text-danger"
+                : "text-text",
               sub.disabled && "opacity-50 cursor-not-allowed",
             )}
           >

@@ -42,8 +42,8 @@ type ChipTone = "default" | "success" | "danger";
 
 const TONE_VALUE_CLASS: Record<ChipTone, string> = {
   default: "text-text",
-  success: "text-success",
-  danger: "text-danger",
+  success: "text-success-strong dark:text-success",
+  danger: "text-danger-strong dark:text-danger",
 };
 
 interface ChipProps {

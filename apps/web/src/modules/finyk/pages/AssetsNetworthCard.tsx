@@ -43,7 +43,9 @@ export function AssetsNetworthCard({
               <span
                 className={cn(
                   "text-style-headline ml-1",
-                  isNegative ? "text-danger/60" : "text-finyk/60",
+                  isNegative
+                    ? "text-danger-strong/60 dark:text-danger/60"
+                    : "text-finyk/60",
                 )}
               >
                 ₴

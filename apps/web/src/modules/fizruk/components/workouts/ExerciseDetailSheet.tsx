@@ -94,7 +94,7 @@ export function ExerciseDetailSheet({
       zIndex={100}
     >
       {cf?.hasWarning && (
-        <div className="mb-4 rounded-2xl border border-warning/40 bg-warning/10 px-3 py-2.5 text-xs text-warning leading-snug">
+        <div className="mb-4 rounded-2xl border border-warning/40 bg-warning/10 px-3 py-2.5 text-xs text-warning-strong dark:text-warning leading-snug">
           {cf.red?.length ? (
             <div>
               <span className="font-semibold">Рано:</span>{" "}

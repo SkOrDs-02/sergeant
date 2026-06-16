@@ -247,7 +247,7 @@ export function FinykLoginScreen({
           {/* Server-level error (from useApiForm) or parent-provided error */}
           {(serverError || (error && !authError)) && (
             <p
-              className="mt-3 text-sm text-danger bg-danger/10 rounded-xl px-3 py-2"
+              className="mt-3 text-sm text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2"
               role="alert"
             >
               {serverError ?? error}

@@ -206,7 +206,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               {muscleLabels.map((m) => (
                 <span
                   key={m}
-                  className="text-style-caption px-2.5 py-1 rounded-full bg-success/10 text-success border border-success/20"
+                  className="text-style-caption px-2.5 py-1 rounded-full bg-success/10 text-success-strong dark:text-success border border-success/20"
                 >
                   {m}
                 </span>

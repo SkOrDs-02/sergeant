@@ -223,7 +223,9 @@ export function PantryManagerSheet({
               }
             />
             {pantryForm.err ? (
-              <div className="text-xs text-danger mt-2">{pantryForm.err}</div>
+              <div className="text-xs text-danger-strong dark:text-danger mt-2">
+                {pantryForm.err}
+              </div>
             ) : null}
           </div>
           {/*
@@ -295,7 +297,7 @@ export function PantryManagerSheet({
                 disabled={busy}
                 className={cn(
                   "mt-3 inline-flex items-center gap-1.5 text-style-caption",
-                  "text-danger hover:text-danger/80 disabled:opacity-50",
+                  "text-danger-strong dark:text-danger hover:text-danger/80 disabled:opacity-50",
                   "transition-colors",
                 )}
               >

@@ -208,7 +208,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-style-label tabular-nums text-success">
+            <span className="text-style-label tabular-nums text-success-strong dark:text-success">
               {showBalance
                 ? `${Number(a.amount).toLocaleString("uk-UA")} ${
                     a.currency === "UAH"

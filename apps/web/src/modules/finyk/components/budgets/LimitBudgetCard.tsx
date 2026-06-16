@@ -95,9 +95,9 @@ function LimitBudgetCardComponent({
                 className={cn(
                   "text-xs tabular-nums",
                   overLimit
-                    ? "text-danger font-semibold"
+                    ? "text-danger-strong dark:text-danger font-semibold"
                     : warnLimit
-                      ? "text-warning"
+                      ? "text-warning-strong dark:text-warning"
                       : "text-muted",
                 )}
               >
@@ -130,9 +130,9 @@ function LimitBudgetCardComponent({
             className={cn(
               "text-xs mt-2",
               overLimit
-                ? "text-danger font-medium"
+                ? "text-danger-strong dark:text-danger font-medium"
                 : warnLimit
-                  ? "text-warning"
+                  ? "text-warning-strong dark:text-warning"
                   : "text-subtle",
             )}
           >

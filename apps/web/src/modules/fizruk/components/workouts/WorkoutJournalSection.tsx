@@ -118,11 +118,11 @@ function WorkoutRow({
               Завершене
             </span>
           ) : isActive ? (
-            <span className="text-style-caption px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/20">
+            <span className="text-style-caption px-2 py-0.5 rounded-full bg-success/15 text-success-strong dark:text-success border border-success/20">
               Активне
             </span>
           ) : (
-            <span className="text-style-caption px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/20">
+            <span className="text-style-caption px-2 py-0.5 rounded-full bg-warning/10 text-warning-strong dark:text-warning border border-warning/20">
               Чернетка
             </span>
           )}

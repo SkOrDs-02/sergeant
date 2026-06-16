@@ -112,7 +112,9 @@ export function SessionsSection({ online }: { online: boolean }) {
         {loading && sessions.length === 0 ? (
           <p className="text-sm text-muted text-center py-4">{COPY.loading}</p>
         ) : error ? (
-          <p className="text-sm text-danger text-center py-4">{error}</p>
+          <p className="text-sm text-danger-strong dark:text-danger text-center py-4">
+            {error}
+          </p>
         ) : sessions.length === 0 ? (
           <p className="text-sm text-muted text-center py-4">{COPY.empty}</p>
         ) : (
@@ -131,7 +133,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm text-text truncate">{ua.label}</p>
                       {isCurrent && (
-                        <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 border border-brand-500/30">
+                        <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-strong dark:text-brand border border-brand-500/30">
                           {COPY.thisDevice}
                         </span>
                       )}
@@ -142,7 +144,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                       {`${COPY.lastSeenPrefix} ${lastSeen}`}
                     </p>
                     {isExpired && (
-                      <span className="text-style-caption text-danger font-medium">
+                      <span className="text-style-caption text-danger-strong dark:text-danger font-medium">
                         {COPY.expired}
                       </span>
                     )}

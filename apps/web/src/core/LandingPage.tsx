@@ -106,8 +106,10 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
   }
 
   return (
-    <div
-      className="min-h-dvh bg-bg"
+    <main
+      id="main"
+      tabIndex={-1}
+      className="min-h-dvh bg-bg outline-none"
       style={{
         paddingTop: "max(1.25rem, env(safe-area-inset-top))",
         paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
@@ -257,7 +259,7 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
           <LegalLinks compact />
         </footer>
       </div>
-    </div>
+    </main>
   );
 }
 

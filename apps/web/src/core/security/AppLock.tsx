@@ -97,7 +97,10 @@ function PinPad({
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-danger text-center mt-2">
+        <p
+          role="alert"
+          className="text-sm text-danger-strong dark:text-danger text-center mt-2"
+        >
           {error}
         </p>
       )}

@@ -21,7 +21,7 @@ interface ChatMessageProps {
  */
 function RiskyBadge() {
   return (
-    <span className="shrink-0 inline-flex items-center gap-0.5 text-style-caption font-semibold text-warning rounded-full bg-warning/15 px-1.5 py-0.5">
+    <span className="shrink-0 inline-flex items-center gap-0.5 text-style-caption font-semibold text-warning-strong dark:text-warning rounded-full bg-warning/15 px-1.5 py-0.5">
       <svg
         width="10"
         height="10"
@@ -96,7 +96,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="text-style-caption text-brand-500 hover:text-brand-600 mt-0.5 transition-colors"
+                className="text-style-caption text-brand-strong dark:text-brand hover:text-brand-600 mt-0.5 transition-colors"
               >
                 {expanded ? "Згорнути" : "Показати все"}
               </button>
@@ -142,10 +142,10 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
             <path d="M9 6V4h6v2" />
           </svg>
         </span>
-        <span className="text-xs font-semibold text-danger flex-1 truncate">
+        <span className="text-xs font-semibold text-danger-strong dark:text-danger flex-1 truncate">
           {card.title}
         </span>
-        <span className="shrink-0 text-style-caption font-semibold text-danger/70 rounded-full bg-danger/10 px-1.5 py-0.5">
+        <span className="shrink-0 text-style-caption font-semibold text-danger-strong/70 dark:text-danger/70 rounded-full bg-danger/10 px-1.5 py-0.5">
           Виконано
         </span>
       </div>

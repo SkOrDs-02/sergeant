@@ -103,7 +103,11 @@ function ShowcaseShell() {
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 flex gap-8">
         <ShowcaseSidebar />
-        <main className="flex-1 min-w-0 space-y-16 pb-24">
+        <main
+          id="main"
+          tabIndex={-1}
+          className="flex-1 min-w-0 space-y-16 pb-24 outline-none"
+        >
           <ColorsSection />
           <TypographySection />
           <SpacingSection />

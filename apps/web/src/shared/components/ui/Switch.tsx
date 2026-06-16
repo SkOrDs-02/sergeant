@@ -217,7 +217,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
               id={descId}
               className={cn(
                 "block text-xs mt-0.5",
-                error ? "text-danger" : "text-muted",
+                error ? "text-danger-strong dark:text-danger" : "text-muted",
               )}
             >
               {description}

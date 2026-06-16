@@ -238,7 +238,7 @@ function AddBudgetFormComponent({
             />
             {limitCategoryError && (
               <p
-                className="mt-1 text-xs text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-xs text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {limitCategoryError}
@@ -256,7 +256,7 @@ function AddBudgetFormComponent({
             />
             {limitAmountError && (
               <p
-                className="mt-1 text-xs text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-xs text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {limitAmountError}
@@ -321,7 +321,7 @@ function AddBudgetFormComponent({
             />
             {goalNameError && (
               <p
-                className="mt-1 text-xs text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-xs text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {goalNameError}
@@ -339,7 +339,7 @@ function AddBudgetFormComponent({
             />
             {goalAmountError && (
               <p
-                className="mt-1 text-xs text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-xs text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {goalAmountError}
@@ -357,7 +357,7 @@ function AddBudgetFormComponent({
             />
             {goalSavedError && (
               <p
-                className="mt-1 text-xs text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-xs text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {goalSavedError}

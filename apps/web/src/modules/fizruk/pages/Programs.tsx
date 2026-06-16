@@ -98,7 +98,7 @@ export function Programs({
                           {prog.name}
                         </h2>
                         {isActive && (
-                          <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/25">
+                          <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-success/15 text-success-strong dark:text-success border border-success/25">
                             {messages.fizruk.programs.active}
                           </span>
                         )}
@@ -134,7 +134,7 @@ export function Programs({
                             hasSession
                               ? isToday && isActive
                                 ? "bg-success-strong text-white"
-                                : "bg-success/15 text-success"
+                                : "bg-success/15 text-success-strong dark:text-success"
                               : "bg-line/30 text-subtle/40",
                           )}
                         >
@@ -244,7 +244,7 @@ function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
             className="rounded-xl bg-panel border border-line/40 p-3"
           >
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-fizruk/10 text-success border border-success/20">
+              <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-fizruk/10 text-success-strong dark:text-success border border-success/20">
                 {messages.fizruk.programs.daysPrefix} {schedEntry.day}
               </span>
               <span className="text-style-label text-text">

@@ -1,6 +1,5 @@
 import { Suspense, type ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { SkipLink } from "@shared/components/ui/SkipLink";
 import { lazyImport } from "../../core/lib/lazyImport";
 import { ActiveWorkoutBanner } from "../../core/app/ActiveWorkoutBanner";
 import { HubModals } from "../../core/app/HubModals";
@@ -52,7 +51,6 @@ export function ModuleShell({
 
   return (
     <div className="h-dvh flex flex-col bg-bg text-text overflow-hidden">
-      <SkipLink />
       <OfflineBanner />
       {moduleId !== "fizruk" && <ActiveWorkoutBanner />}
       <Tag

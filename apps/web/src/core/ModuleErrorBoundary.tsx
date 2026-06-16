@@ -106,7 +106,7 @@ export default class ModuleErrorBoundary extends Component<
             {messages.errors.generic.moduleFailed}
           </p>
           {import.meta.env.DEV && (
-            <pre className="text-xs text-danger mb-6 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word">
+            <pre className="text-xs text-danger-strong dark:text-danger mb-6 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word">
               {this.state.error.message}
             </pre>
           )}

@@ -19,7 +19,11 @@ export function LegalDocumentView({
 }: LegalDocumentViewProps) {
   return (
     <MeshBackground className="min-h-screen overflow-y-auto px-5 py-8 sm:py-12">
-      <main className="mx-auto flex w-full max-w-4xl flex-col gap-8">
+      <main
+        id="main"
+        tabIndex={-1}
+        className="mx-auto flex w-full max-w-4xl flex-col gap-8 outline-none"
+      >
         <header className="text-center space-y-5">
           <Link
             to="/"

@@ -43,7 +43,7 @@ export function WorkoutGroupingControls({
         <>
           <button
             type="button"
-            className="min-h-[44px] text-xs px-3 py-1.5 rounded-xl border border-success/40 text-success bg-success/10 hover:bg-success/20 transition-colors disabled:opacity-40"
+            className="min-h-[44px] text-xs px-3 py-1.5 rounded-xl border border-success/40 text-success-strong dark:text-success bg-success/10 hover:bg-success/20 transition-colors disabled:opacity-40"
             disabled={disabled}
             onClick={() => onCreateGroup("superset")}
             title="Обери 2-3 вправи"

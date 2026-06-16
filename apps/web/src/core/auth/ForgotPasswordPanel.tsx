@@ -75,7 +75,7 @@ export function ForgotPasswordPanel({
             <p
               id="auth-forgot-email-error"
               role="alert"
-              className="text-style-caption text-danger font-medium"
+              className="text-style-caption text-danger-strong dark:text-danger font-medium"
             >
               {authError}
             </p>

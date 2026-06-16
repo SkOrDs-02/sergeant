@@ -254,7 +254,7 @@ export function WorkoutTemplatesSection({
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    className="text-xs px-2 py-1 rounded-xl border border-success/40 text-success disabled:opacity-40"
+                    className="text-xs px-2 py-1 rounded-xl border border-success/40 text-success-strong dark:text-success disabled:opacity-40"
                     disabled={groupSelected.size < 2 || groupSelected.size > 3}
                     onClick={() => handleCreateGroup("superset")}
                     title="Обери 2-3 вправи"
@@ -331,7 +331,7 @@ export function WorkoutTemplatesSection({
                       {group && (
                         <span
                           // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Inline superset/circuit pill at text-2xs with dynamic module tint; defer Badge migration.
-                          className={`text-2xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${group.type === "circuit" ? "bg-fizruk/15 text-fizruk border border-fizruk/30" : "bg-success/15 text-success border border-success/30"}`}
+                          className={`text-2xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${group.type === "circuit" ? "bg-fizruk/15 text-fizruk border border-fizruk/30" : "bg-success/15 text-success-strong dark:text-success border border-success/30"}`}
                         >
                           {group.type === "circuit" ? "Коло" : "СС"}
                         </span>
@@ -343,7 +343,7 @@ export function WorkoutTemplatesSection({
                         >
                           <button
                             type="button"
-                            className="text-2xs text-danger/60 hover:text-danger px-1"
+                            className="text-2xs text-danger-strong/60 dark:text-danger/60 hover:text-danger px-1"
                             aria-label="Прибрати з групи"
                             onClick={() => handleRemoveGroup(group.id)}
                           >
@@ -371,7 +371,7 @@ export function WorkoutTemplatesSection({
                           </button>
                           <button
                             type="button"
-                            className="min-w-[44px] min-h-[44px] text-danger/80"
+                            className="min-w-[44px] min-h-[44px] text-danger-strong/80 dark:text-danger/80"
                             aria-label="Прибрати з шаблону"
                             onClick={() => removeAt(idx)}
                           >
@@ -438,7 +438,7 @@ export function WorkoutTemplatesSection({
                 <div className="text-xs text-subtle">
                   {(t.exerciseIds || []).length} вправ
                   {(t.groups || []).length > 0 && (
-                    <span className="ml-2 text-success">
+                    <span className="ml-2 text-success-strong dark:text-success">
                       · {(t.groups || []).length} суперсет
                       {(t.groups || []).length > 1 ? "и" : ""}
                     </span>

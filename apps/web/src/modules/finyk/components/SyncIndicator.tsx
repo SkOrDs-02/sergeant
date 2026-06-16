@@ -34,14 +34,14 @@ export function getSyncTone(
     return {
       dot: "bg-danger",
       text: "помилка",
-      pill: "bg-danger-soft  text-danger  border-danger/20",
+      pill: "bg-danger-soft  text-danger-strong dark:text-danger  border-danger/20",
     };
   }
   if (syncState?.status === "partial") {
     return {
       dot: "bg-warning",
       text: "частково",
-      pill: "bg-warning/10   text-warning border-warning/20",
+      pill: "bg-warning/10   text-warning-strong dark:text-warning border-warning/20",
     };
   }
   if (syncState?.status === "loading") {
@@ -54,7 +54,7 @@ export function getSyncTone(
   return {
     dot: "bg-success",
     text: "ок",
-    pill: "bg-success/10  text-success border-success/20",
+    pill: "bg-success/10  text-success-strong dark:text-success border-success/20",
   };
 }
 

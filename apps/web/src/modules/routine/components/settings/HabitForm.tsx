@@ -246,7 +246,10 @@ export function HabitForm({
           />
         </div>
         {errors?.name && (
-          <p id={nameErrId} className="text-xs text-danger mt-1">
+          <p
+            id={nameErrId}
+            className="text-xs text-danger-strong mt-1 dark:text-danger"
+          >
             {errors.name}
           </p>
         )}
@@ -313,7 +316,10 @@ export function HabitForm({
             }
           />
           {errors?.weekdays && (
-            <p id={weekdaysErrId} className="text-xs text-danger mt-2">
+            <p
+              id={weekdaysErrId}
+              className="text-xs text-danger-strong mt-2 dark:text-danger"
+            >
               {errors.weekdays}
             </p>
           )}

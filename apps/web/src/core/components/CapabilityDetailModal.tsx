@@ -64,7 +64,7 @@ export function CapabilityDetailModal({
           <p className="text-sm text-text">{cap.description}</p>
 
           {cap.risky && (
-            <div className="flex items-start gap-2 bg-warning/10 border border-warning/40 rounded-2xl px-3 py-2 text-xs text-warning">
+            <div className="flex items-start gap-2 bg-warning/10 border border-warning/40 rounded-2xl px-3 py-2 text-xs text-warning-strong dark:text-warning">
               <Icon name="alert-triangle" size={14} aria-hidden />
               <span>
                 Критична дія. Перевір дані перед відправкою — деякі зміни

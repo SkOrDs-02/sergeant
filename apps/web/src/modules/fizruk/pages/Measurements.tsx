@@ -116,7 +116,7 @@ export function Measurements() {
             <SectionHeading as="div" size="sm">
               {messages.fizruk.measurements.manual}
             </SectionHeading>
-            <div className="text-style-label text-success mt-0.5">
+            <div className="text-style-label text-success-strong dark:text-success mt-0.5">
               {messages.fizruk.measurements.manualLink}
             </div>
           </div>
@@ -266,7 +266,9 @@ export function Measurements() {
                       <div
                         className={cn(
                           "text-style-caption mt-1",
-                          delta > 0 ? "text-warning" : "text-success",
+                          delta > 0
+                            ? "text-warning-strong dark:text-warning"
+                            : "text-success-strong dark:text-success",
                         )}
                       >
                         {delta > 0 ? "+" : ""}

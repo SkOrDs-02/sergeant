@@ -57,7 +57,9 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
             <span
               className={cn(
                 "text-style-label tabular-nums",
-                pct >= 100 ? "text-danger" : "text-warning",
+                pct >= 100
+                  ? "text-danger-strong dark:text-danger"
+                  : "text-warning-strong dark:text-warning",
               )}
             >
               {pct}% {pct >= 100 ? "⚠ перевищено" : "· понад 60% ліміту"}

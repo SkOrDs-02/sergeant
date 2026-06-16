@@ -31,7 +31,9 @@ export function MacroKcalWarning({
   const tone = overshoot
     ? "border-danger/40 bg-danger/10"
     : "border-warn/40 bg-warn/10";
-  const iconTone = overshoot ? "text-danger" : "text-warn";
+  const iconTone = overshoot
+    ? "text-danger-strong dark:text-danger"
+    : "text-warn";
 
   return (
     <div

@@ -114,9 +114,9 @@ export function NotificationsSection() {
     unsupported: "Не підтримується",
   };
   const permColors: Record<PermStatus, string> = {
-    granted: "text-success",
-    denied: "text-danger",
-    default: "text-warning",
+    granted: "text-success-strong dark:text-success",
+    denied: "text-danger-strong dark:text-danger",
+    default: "text-warning-strong dark:text-warning",
     unsupported: "text-muted",
   };
   const permLabel = permLabels[permStatus] ?? "Невідомо";

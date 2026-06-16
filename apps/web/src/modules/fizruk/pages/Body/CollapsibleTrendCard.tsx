@@ -51,8 +51,8 @@ export function CollapsibleTrendCard({
     delta == null || delta === 0
       ? "text-muted"
       : delta > 0
-        ? "text-warning"
-        : "text-success";
+        ? "text-warning-strong dark:text-warning"
+        : "text-success-strong dark:text-success";
   const deltaLabel =
     delta == null
       ? ""

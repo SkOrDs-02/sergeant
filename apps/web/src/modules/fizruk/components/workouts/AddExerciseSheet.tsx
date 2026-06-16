@@ -114,7 +114,7 @@ export function AddExerciseSheet({
             <p
               id="add-exercise-name-error"
               role="alert"
-              className="text-style-caption mt-1.5 text-danger"
+              className="text-style-caption mt-1.5 text-danger-strong dark:text-danger"
             >
               {nameError}
             </p>

@@ -60,7 +60,7 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
       : 0;
 
   const tone = isFailed
-    ? "bg-danger/10 border-danger/30 text-danger"
+    ? "bg-danger/10 border-danger/30 text-danger-strong dark:text-danger"
     : isCompleted
       ? "bg-success/10 border-success/30 text-text"
       : "bg-panelHi border-line text-text";

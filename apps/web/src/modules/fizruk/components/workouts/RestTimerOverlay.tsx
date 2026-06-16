@@ -68,7 +68,7 @@ export function RestTimerOverlay({
             <div
               className={
                 "text-style-hero tabular-nums leading-tight " +
-                (urgent ? "text-warning" : "text-text")
+                (urgent ? "text-warning-strong dark:text-warning" : "text-text")
               }
             >
               {formatRestClock(restTimer.remaining)}

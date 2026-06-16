@@ -28,15 +28,15 @@ const MATURITY_LABEL: Record<
 > = {
   stable: {
     label: "stable",
-    tone: "bg-success-soft text-success border-success/40",
+    tone: "bg-success-soft text-success-strong dark:text-success border-success/40",
   },
   beta: {
     label: "beta",
-    tone: "bg-warning-soft text-warning border-warning/40",
+    tone: "bg-warning-soft text-warning-strong dark:text-warning border-warning/40",
   },
   experimental: {
     label: "experimental",
-    tone: "bg-info-soft text-info border-info/40",
+    tone: "bg-info-soft text-info-strong dark:text-info border-info/40",
   },
 };
 
@@ -177,13 +177,13 @@ export function DoDont({ rows }: { rows: readonly DoDontRow[] }) {
             </th>
             <th
               scope="col"
-              className="text-left text-2xs uppercase tracking-wide text-success px-3 py-2"
+              className="text-left text-2xs uppercase tracking-wide text-success-strong dark:text-success px-3 py-2"
             >
               Do
             </th>
             <th
               scope="col"
-              className="text-left text-2xs uppercase tracking-wide text-danger px-3 py-2"
+              className="text-left text-2xs uppercase tracking-wide text-danger-strong dark:text-danger px-3 py-2"
             >
               Don&apos;t
             </th>
@@ -254,7 +254,7 @@ export function RuleBadges({
           <span
             key={r.label}
             title={r.hint}
-            className="px-2 py-0.5 rounded-md text-2xs font-mono border border-info/40 bg-info/10 text-info"
+            className="px-2 py-0.5 rounded-md text-2xs font-mono border border-info/40 bg-info/10 text-info-strong dark:text-info"
           >
             {r.label}
           </span>

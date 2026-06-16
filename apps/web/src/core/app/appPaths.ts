@@ -20,16 +20,45 @@ export const APP_TITLE = "Sergeant — Твій персональний хаб 
 export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   "/status": "Sergeant — Статус системи",
   "/chat": "Sergeant — Асистент",
+  "/assistant": "Sergeant — Можливості асистента",
+  "/pricing": "Sergeant — Тарифи",
+  "/sign-in": "Sergeant — Вхід",
+  "/reset-password": "Sergeant — Скидання пароля",
+  "/welcome": "Sergeant — Ласкаво просимо",
+  "/settings": "Sergeant — Налаштування",
+  "/insights": "Sergeant — Звіти",
+  "/legal/privacy": "Sergeant — Політика приватності",
+  "/legal/terms": "Sergeant — Умови використання",
+  "/legal/cookies": "Sergeant — Політика cookies",
+  "/legal/offer": "Sergeant — Публічна оферта",
+};
+
+// Path-based module surfaces (`/finyk/...`, `/fizruk/...`) resolve their
+// tab title by first URL segment so every nested page (`/finyk/budgets`,
+// `/nutrition/log`) reads as its module instead of the generic app name.
+const MODULE_TITLES: Readonly<Record<string, string>> = {
+  finyk: "Фінік",
+  fizruk: "Фізрук",
+  nutrition: "Харчування",
+  routine: "Рутина",
 };
 
 /**
- * Resolves the document title for a pathname. Returns the route-specific
- * title from `ROUTE_TITLES` when one is registered, otherwise the canonical
- * `APP_TITLE`. Keeps the title-resolution logic in one place so both the
- * `RootLayout` effect and any future caller stay in sync.
+ * Resolves the document title for a pathname. Order: an exact
+ * `ROUTE_TITLES` entry wins; otherwise a path-based module's first
+ * segment (`/finyk/budgets` → «Фінік»); otherwise the canonical
+ * `APP_TITLE`. Keeps title resolution in one place so the `RootLayout`
+ * effect and any future caller stay in sync.
  */
 export function titleForPath(pathname: string): string {
-  return ROUTE_TITLES[pathname] ?? APP_TITLE;
+  const exact = ROUTE_TITLES[pathname];
+  if (exact) return exact;
+  const firstSegment = pathname.startsWith("/")
+    ? (pathname.slice(1).split("/", 1)[0] ?? "")
+    : "";
+  const moduleTitle = MODULE_TITLES[firstSegment];
+  if (moduleTitle) return `Sergeant — ${moduleTitle}`;
+  return APP_TITLE;
 }
 
 // Auth lives at `/sign-in` rather than as an in-page overlay. This keeps

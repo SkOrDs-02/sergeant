@@ -36,7 +36,9 @@ export const FlowRow = memo(function FlowRow({
       <div
         className={cn(
           "text-style-subtitle tabular-nums shrink-0",
-          isGreen ? "text-success" : "text-danger",
+          isGreen
+            ? "text-success-strong dark:text-success"
+            : "text-danger-strong dark:text-danger",
         )}
       >
         {showAmount

@@ -284,7 +284,7 @@ function TxRowImpl({
             </span>
           )}
           {isCreditCard && (
-            <span className="text-style-caption bg-danger/8 text-danger px-1.5 py-0.5 rounded-full font-semibold">
+            <span className="text-style-caption bg-danger/8 text-danger-strong dark:text-danger px-1.5 py-0.5 rounded-full font-semibold">
               💳 {accountName}
             </span>
           )}
@@ -488,7 +488,7 @@ function TxRowImpl({
                   onClick={() =>
                     setDraftSplits((prev) => prev.filter((_, j) => j !== i))
                   }
-                  className="text-danger/50 hover:text-danger text-sm shrink-0"
+                  className="text-danger-strong/50 dark:text-danger/50 hover:text-danger text-sm shrink-0"
                 >
                   ✕
                 </button>
@@ -498,7 +498,9 @@ function TxRowImpl({
           <div
             className={cn(
               "text-xs px-1 tabular-nums",
-              Math.abs(remaining) < 0.01 ? "text-success" : "text-warning",
+              Math.abs(remaining) < 0.01
+                ? "text-success-strong dark:text-success"
+                : "text-warning-strong dark:text-warning",
             )}
           >
             {Math.abs(remaining) < 0.01
@@ -536,7 +538,7 @@ function TxRowImpl({
                   onSplitChange(tx.id, null);
                   setSplitEditor(false);
                 }}
-                className="text-xs py-2 px-3 rounded-xl border border-danger/30 text-danger/70 hover:text-danger transition-colors"
+                className="text-xs py-2 px-3 rounded-xl border border-danger/30 text-danger-strong/70 dark:text-danger/70 hover:text-danger transition-colors"
               >
                 Видалити
               </button>
@@ -582,7 +584,7 @@ function TxRowImpl({
                 onCatChange?.(tx.id, null);
                 setCatPicker(false);
               }}
-              className="text-xs px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger/60 hover:text-danger transition-colors"
+              className="text-xs px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong/60 dark:text-danger/60 hover:text-danger transition-colors"
             >
               ✕ скинути
             </button>

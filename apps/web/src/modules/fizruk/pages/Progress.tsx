@@ -356,7 +356,9 @@ export function Progress({ onNavigate }: ProgressProps) {
                       <span
                         className={cn(
                           "font-semibold",
-                          weightDelta > 0 ? "text-warning" : "text-success",
+                          weightDelta > 0
+                            ? "text-warning-strong dark:text-warning"
+                            : "text-success-strong dark:text-success",
                         )}
                       >
                         {weightDelta > 0 ? "+" : ""}
@@ -381,7 +383,9 @@ export function Progress({ onNavigate }: ProgressProps) {
                       <span
                         className={cn(
                           "font-semibold",
-                          fatDelta > 0 ? "text-warning" : "text-success",
+                          fatDelta > 0
+                            ? "text-warning-strong dark:text-warning"
+                            : "text-success-strong dark:text-success",
                         )}
                       >
                         {fatDelta > 0 ? "+" : ""}

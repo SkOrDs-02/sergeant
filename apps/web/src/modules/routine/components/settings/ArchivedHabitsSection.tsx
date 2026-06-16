@@ -61,7 +61,7 @@ export function ArchivedHabitsSection({
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="h-9! px-3! text-xs! text-danger"
+                className="h-9! px-3! text-xs! text-danger-strong dark:text-danger"
                 onClick={() =>
                   onRequestDelete({ id: h.id, name: h.name, archived: true })
                 }

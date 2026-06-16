@@ -157,7 +157,9 @@ function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
     <span
       className={cn(
         "text-style-caption inline-flex items-center gap-0.5",
-        positive ? "text-success" : "text-danger",
+        positive
+          ? "text-success-strong dark:text-success"
+          : "text-danger-strong dark:text-danger",
       )}
     >
       <svg

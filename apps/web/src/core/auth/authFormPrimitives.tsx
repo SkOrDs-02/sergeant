@@ -17,7 +17,7 @@ export function PasswordStrengthBar({ password }: { password: string }) {
   const colors = ["bg-danger", "bg-amber-400", "bg-brand-500"];
   const labels = ["Слабкий", "Середній", "Надійний"];
   const labelColors = [
-    "text-danger",
+    "text-danger-strong dark:text-danger",
     "text-amber-500",
     "text-brand-strong dark:text-brand",
   ];
@@ -73,7 +73,11 @@ interface FieldErrorProps {
 export function FieldError({ id, message }: FieldErrorProps) {
   if (!message) return null;
   return (
-    <p id={id} className="mt-1.5 text-meta text-danger" role="alert">
+    <p
+      id={id}
+      className="mt-1.5 text-meta text-danger-strong dark:text-danger"
+      role="alert"
+    >
       {message}
     </p>
   );

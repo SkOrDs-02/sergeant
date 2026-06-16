@@ -128,7 +128,11 @@ export function ResetPasswordPage() {
         paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
       }}
     >
-      <div className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500">
+      <main
+        id="main"
+        tabIndex={-1}
+        className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 outline-none"
+      >
         <div className="text-center mb-6">
           <BrandLogo as="h1" size="md" className="justify-center" />
         </div>
@@ -197,7 +201,7 @@ export function ResetPasswordPage() {
                   <p
                     id="reset-pw-error"
                     role="alert"
-                    className="text-style-caption text-danger"
+                    className="text-style-caption text-danger-strong dark:text-danger"
                   >
                     {formState.errors.password.message}
                   </p>
@@ -228,7 +232,7 @@ export function ResetPasswordPage() {
                   <p
                     id="reset-confirm-error"
                     role="alert"
-                    className="text-style-caption text-danger"
+                    className="text-style-caption text-danger-strong dark:text-danger"
                   >
                     {formState.errors.confirm.message}
                   </p>
@@ -240,7 +244,7 @@ export function ResetPasswordPage() {
                   role={serverError ? "alert" : "status"}
                   className={
                     serverError
-                      ? "text-style-caption text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
+                      ? "text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
                       : "text-style-caption text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-2.5"
                   }
                 >
@@ -265,7 +269,7 @@ export function ResetPasswordPage() {
             </form>
           )}
         </Card>
-      </div>
+      </main>
     </MeshBackground>
   );
 }

@@ -66,7 +66,7 @@ export function StorageErrorBanner({
       <button
         type="button"
         onClick={() => setReason(null)}
-        className="shrink-0 text-xs font-semibold text-danger/80 hover:text-danger"
+        className="shrink-0 text-xs font-semibold text-danger-strong/80 dark:text-danger/80 hover:text-danger-strong dark:hover:text-danger"
         aria-label={dismissLabel}
       >
         {messages.actions.close}

@@ -259,7 +259,7 @@ function DigestContent({
 
   const errorSlot = (
     <div className="px-4 pb-3">
-      <p className="text-xs text-danger bg-danger/10 rounded-xl px-3 py-2 mb-2">
+      <p className="text-xs text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2 mb-2">
         {error}
       </p>
       {isCurrentWeek && (

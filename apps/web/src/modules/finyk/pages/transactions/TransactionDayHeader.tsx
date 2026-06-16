@@ -70,7 +70,9 @@ export function TransactionDayHeader({
         <span
           className={cn(
             "shrink-0 tabular-nums",
-            summary.total > 0 ? "text-success" : "text-text",
+            summary.total > 0
+              ? "text-success-strong dark:text-success"
+              : "text-text",
           )}
         >
           {/* fmtAmt сам додає `+`/`-` — не дублюємо префікс. */}

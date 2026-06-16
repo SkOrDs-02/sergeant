@@ -78,7 +78,11 @@ export function HubChatPage() {
   }, [navigate]);
 
   return (
-    <div className="h-dvh flex flex-col bg-bg text-text overflow-hidden safe-area-pt-pb page-enter">
+    <main
+      id="main"
+      tabIndex={-1}
+      className="h-dvh flex flex-col bg-bg text-text overflow-hidden safe-area-pt-pb page-enter outline-none"
+    >
       <SuspenseWithMinDelay fallback={<PageLoader />}>
         <HubChat
           onClose={handleClose}
@@ -87,7 +91,7 @@ export function HubChatPage() {
           onOpenCatalogue={handleOpenCatalogue}
         />
       </SuspenseWithMinDelay>
-    </div>
+    </main>
   );
 }
 

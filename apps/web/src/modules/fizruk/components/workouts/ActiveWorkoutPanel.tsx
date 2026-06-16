@@ -251,7 +251,10 @@ export function ActiveWorkoutPanel({
             items={activeWorkout.cooldown}
             onToggle={(id: string) => handleWarmupToggle("cooldown", id)}
             onInit={handleInitCooldown}
-            color={{ border: "border-info/40", text: "text-info" }}
+            color={{
+              border: "border-info/40",
+              text: "text-info-strong dark:text-info",
+            }}
           />
         </div>
 

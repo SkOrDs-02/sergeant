@@ -99,7 +99,7 @@ function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
         {messages.errors.generic.somethingWrong}
       </h2>
       {import.meta.env.DEV ? (
-        <pre className="text-xs text-danger whitespace-pre-wrap mt-2">
+        <pre className="text-xs text-danger-strong dark:text-danger whitespace-pre-wrap mt-2">
           {error?.message}
         </pre>
       ) : null}

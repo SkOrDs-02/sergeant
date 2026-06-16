@@ -1,6 +1,5 @@
 import { Suspense, type CSSProperties } from "react";
 import { type User } from "@sergeant/shared";
-import { SkipLink } from "@shared/components/ui/SkipLink";
 import { AIPill } from "@shared/components/ui/AIPill";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
@@ -115,7 +114,6 @@ export function HubHomeView(props: HubHomeViewProps) {
       className="safe-area-pt page-enter"
       style={{ "--bottom-nav-height": "60px" } as CSSProperties}
     >
-      <SkipLink />
       <HintsOrchestrator
         inFtuxSession={inFtuxSession}
         hasFirstRealEntry={hasFirstRealEntry}

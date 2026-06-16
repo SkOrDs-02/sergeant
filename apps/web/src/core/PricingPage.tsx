@@ -297,7 +297,7 @@ export function PricingPage() {
         paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
       }}
     >
-      <div className="w-full">
+      <main id="main" tabIndex={-1} className="w-full outline-none">
         <div className="max-w-5xl mx-auto px-5 pb-12 space-y-10">
           <header className="flex items-center gap-3 pt-6 pb-2">
             <Button
@@ -474,7 +474,7 @@ export function PricingPage() {
             <LegalLinks compact />
           </footer>
         </div>
-      </div>
+      </main>
     </MeshBackground>
   );
 }

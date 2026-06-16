@@ -41,7 +41,7 @@ export class SectionErrorBoundary extends Component<
           <div className="text-xs text-subtle mt-1">
             {messages.errors.generic.sectionFailed}
           </div>
-          <pre className="mt-2 text-xs text-danger whitespace-pre-wrap wrap-break-word max-h-40 overflow-auto">
+          <pre className="mt-2 text-xs text-danger-strong dark:text-danger whitespace-pre-wrap wrap-break-word max-h-40 overflow-auto">
             {String(error?.message || error)}
           </pre>
           <div className="mt-3 flex gap-2 flex-wrap">

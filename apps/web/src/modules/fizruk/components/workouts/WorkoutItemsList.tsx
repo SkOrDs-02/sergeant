@@ -173,7 +173,7 @@ export function WorkoutItemsList({
             </span>
             <button
               type="button"
-              className="text-style-caption text-danger/70 hover:text-danger px-1"
+              className="text-style-caption text-danger-strong/70 dark:text-danger/70 hover:text-danger px-1"
               onClick={() => handleRemoveGroup(group.id)}
               title="Розгрупувати"
             >
@@ -194,7 +194,7 @@ export function WorkoutItemsList({
             </SectionHeading>
             <button
               type="button"
-              className="min-h-[40px] px-3 rounded-xl border-2 border-success bg-success/10 text-style-label text-success hover:bg-success/20 transition-colors"
+              className="min-h-[40px] px-3 rounded-xl border-2 border-success bg-success/10 text-style-label text-success-strong dark:text-success hover:bg-success/20 transition-colors"
               onClick={() =>
                 setRestTimer({
                   remaining: group.restSec || 60,

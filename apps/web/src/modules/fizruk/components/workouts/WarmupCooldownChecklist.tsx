@@ -68,7 +68,7 @@ export function WarmupCooldownChecklist({
       >
         <span>{title}</span>
         <span
-          className={`ml-2 text-style-caption font-bold tabular-nums ${doneCount === total ? "text-success" : color.text}`}
+          className={`ml-2 text-style-caption font-bold tabular-nums ${doneCount === total ? "text-success-strong dark:text-success" : color.text}`}
         >
           {doneCount}/{total}
         </span>

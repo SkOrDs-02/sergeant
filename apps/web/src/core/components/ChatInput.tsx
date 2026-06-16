@@ -132,7 +132,7 @@ export function ChatInput({
             stopSpeaking();
             setSpeaking(false);
           }}
-          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-warning/15 border-warning text-warning motion-safe:animate-pulse focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-warning/15 border-warning text-warning-strong dark:text-warning motion-safe:animate-pulse focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           title="Зупинити озвучення"
           aria-label="Зупинити озвучення"
         >

@@ -26,8 +26,10 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
   const navigate = useNavigate();
   return (
     <main
+      id="main"
+      tabIndex={-1}
       // Full-bleed surface — error pages are landing-tier, not nested.
-      className="min-h-svh flex items-center justify-center bg-bg px-6"
+      className="min-h-svh flex items-center justify-center bg-bg px-6 outline-none"
     >
       <EmptyState
         size="lg"
