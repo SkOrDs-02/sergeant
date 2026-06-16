@@ -296,8 +296,8 @@ importers:
         specifier: ^12
         version: 12.9.0
       detox:
-        specifier: ^20.51.1
-        version: 20.51.1(@jest/environment@29.7.0)(@jest/types@29.6.3)(@types/bunyan@1.8.11)(expect@29.7.0)(jest-environment-jsdom@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@20.19.41))
+        specifier: ^20.51.4
+        version: 20.51.4(@jest/environment@29.7.0)(@jest/types@29.6.3)(@types/bunyan@1.8.11)(expect@29.7.0)(jest-environment-jsdom@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@20.19.41))
       jest:
         specifier: ^29
         version: 29.7.0(@types/node@20.19.41)
@@ -7126,8 +7126,8 @@ packages:
     resolution: {integrity: sha512-TLz+x/vEXm/Y7P7wn1EJFNLxYpUD4TgMosxY6fAVJUnJMbupHBOncxyWUG9OpTaH9EBD7uFI5LfEgmMOc54DsA==}
     engines: {node: '>=8'}
 
-  detox@20.51.1:
-    resolution: {integrity: sha512-SKHM445qJDSaCO0vQHZnzfStpU1nQtBgWPjMZh/R+1q/ra9F2WyvtNSQcDTb2SPC/jN4FNWaj9ZUcJTkaLEB/g==}
+  detox@20.51.4:
+    resolution: {integrity: sha512-tVes0sVV+jdr5Hp3XONRDtLqLvbTHZORfEAImY50MYdrUgtnrSHx8HsgqZqAuw3ulRdfp4kN6RH5P1s0Aoagng==}
     engines: {node: '>=14'}
     hasBin: true
     peerDependencies:
@@ -18719,10 +18719,10 @@ snapshots:
     optionalDependencies:
       expect: 29.7.0
 
-  '@wix-pilot/detox@1.0.13(@wix-pilot/core@3.4.2(expect@29.7.0))(detox@20.51.1(@jest/environment@29.7.0)(@jest/types@29.6.3)(@types/bunyan@1.8.11)(expect@29.7.0)(jest-environment-jsdom@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@20.19.41)))(expect@29.7.0)':
+  '@wix-pilot/detox@1.0.13(@wix-pilot/core@3.4.2(expect@29.7.0))(detox@20.51.4(@jest/environment@29.7.0)(@jest/types@29.6.3)(@types/bunyan@1.8.11)(expect@29.7.0)(jest-environment-jsdom@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@20.19.41)))(expect@29.7.0)':
     dependencies:
       '@wix-pilot/core': 3.4.2(expect@29.7.0)
-      detox: 20.51.1(@jest/environment@29.7.0)(@jest/types@29.6.3)(@types/bunyan@1.8.11)(expect@29.7.0)(jest-environment-jsdom@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@20.19.41))
+      detox: 20.51.4(@jest/environment@29.7.0)(@jest/types@29.6.3)(@types/bunyan@1.8.11)(expect@29.7.0)(jest-environment-jsdom@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@20.19.41))
       expect: 29.7.0
 
   '@xmldom/xmldom@0.8.13': {}
@@ -20187,10 +20187,10 @@ snapshots:
 
   detect-newline@3.1.0: {}
 
-  detox@20.51.1(@jest/environment@29.7.0)(@jest/types@29.6.3)(@types/bunyan@1.8.11)(expect@29.7.0)(jest-environment-jsdom@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@20.19.41)):
+  detox@20.51.4(@jest/environment@29.7.0)(@jest/types@29.6.3)(@types/bunyan@1.8.11)(expect@29.7.0)(jest-environment-jsdom@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@20.19.41)):
     dependencies:
       '@wix-pilot/core': 3.4.2(expect@29.7.0)
-      '@wix-pilot/detox': 1.0.13(@wix-pilot/core@3.4.2(expect@29.7.0))(detox@20.51.1(@jest/environment@29.7.0)(@jest/types@29.6.3)(@types/bunyan@1.8.11)(expect@29.7.0)(jest-environment-jsdom@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@20.19.41)))(expect@29.7.0)
+      '@wix-pilot/detox': 1.0.13(@wix-pilot/core@3.4.2(expect@29.7.0))(detox@20.51.4(@jest/environment@29.7.0)(@jest/types@29.6.3)(@types/bunyan@1.8.11)(expect@29.7.0)(jest-environment-jsdom@29.7.0)(jest-environment-node@29.7.0)(jest@29.7.0(@types/node@20.19.41)))(expect@29.7.0)
       ajv: 8.20.0
       bunyan: 1.8.15
       bunyan-debug-stream: 3.1.1(bunyan@1.8.15)
