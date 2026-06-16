@@ -123,6 +123,25 @@ function anonDailyLimit(): number | null {
 }
 
 /**
+ * Founder / internal-team Better-Auth user IDs that bypass the AI daily quota
+ * entirely — unlimited, plan-agnostic. Comma-separated in env
+ * `AI_QUOTA_FOUNDER_IDS`; empty / unset → nobody bypasses (every user stays
+ * plan-gated). Read from `process.env` directly to match the rest of this
+ * module so tests can flip it without re-importing the validated env.
+ *
+ * Distinct from a Pro plan: a founder keeps whatever billing plan they have
+ * but is never blocked by the per-user counter, so internal dogfooding and
+ * demos don't burn the free 5/day cap (which is also lower than the anon
+ * 40/day cap — the inversion that makes this bypass necessary for a real
+ * owner account). Covers both the default chat bucket and tool-use buckets.
+ */
+function isFounderUser(userId: string): boolean {
+  const raw = process.env["AI_QUOTA_FOUNDER_IDS"];
+  if (!raw) return false;
+  return raw.split(",").some((id) => id.trim() !== "" && id.trim() === userId);
+}
+
+/**
  * Plan-aware daily AI-message cap for an authenticated user (ADR-1.7).
  * Free → `FREE_LIMITS.aiRequestsPerDay` (5); Pro → `null` (unlimited).
  * Sourced from `billing/effectiveLimits` so the paid limit lives in one place.
@@ -240,6 +259,8 @@ export async function assertAiQuota(
   if (isAiQuotaDisabled()) return true;
 
   const sessionUser = await safeSessionUser(req);
+  // Founder / internal-team users are never quota-blocked (plan-agnostic).
+  if (sessionUser && isFounderUser(sessionUser.id)) return true;
   const limit = sessionUser
     ? await userDailyLimit(sessionUser.id)
     : anonDailyLimit();
@@ -354,6 +375,11 @@ export async function consumeToolQuota(
   if (isAiQuotaDisabled()) {
     return { ok: true, remaining: null, limit: null };
   }
+  const sessionUser = await safeSessionUser(req);
+  // Founder / internal-team users bypass tool-use quota too (plan-agnostic).
+  if (sessionUser && isFounderUser(sessionUser.id)) {
+    return { ok: true, remaining: null, limit: null };
+  }
   const limit = toolLimit(toolName);
   if (limit == null) {
     return { ok: true, remaining: null, limit: null };
@@ -388,7 +414,6 @@ export async function consumeToolQuota(
     };
   }
 
-  const sessionUser = await safeSessionUser(req);
   const subject = subjectFor(sessionUser, req);
   try {
     const result = await consumeQuota({

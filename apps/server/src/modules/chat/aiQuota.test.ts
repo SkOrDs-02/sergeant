@@ -67,6 +67,7 @@ const ENV_VARS = [
   "AI_QUOTA_TOOL_COST",
   "AI_QUOTA_TOOL_LIMITS",
   "AI_QUOTA_TOOL_DEFAULT_LIMIT",
+  "AI_QUOTA_FOUNDER_IDS",
   "DATABASE_URL",
 ];
 const savedEnv: Record<string, string | undefined> = {};
@@ -289,6 +290,32 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     expect(ok).toBe(true);
     expect(res.statusCode).toBe(200);
     expect(findUpsert()).toBeUndefined(); // unlimited → no ai_usage_daily write
+  });
+
+  it("bypasses quota entirely for a founder user (AI_QUOTA_FOUNDER_IDS)", async () => {
+    process.env["AI_QUOTA_FOUNDER_IDS"] = "u-founder, u-teammate";
+    getSessionUser.mockResolvedValue({ id: "u-founder" });
+    const res = makeRes();
+    const ok = await assertAiQuota(makeReq(), res);
+    expect(ok).toBe(true);
+    expect(res.statusCode).toBe(200);
+    // Founder short-circuits before the plan lookup AND the quota UPSERT.
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it("still caps a non-founder user when AI_QUOTA_FOUNDER_IDS is set", async () => {
+    process.env["AI_QUOTA_FOUNDER_IDS"] = "u-founder";
+    getSessionUser.mockResolvedValue({ id: "u-free" });
+    pool.query.mockImplementation(async (sql: string) => {
+      if (/FROM subscriptions/i.test(sql)) return { rows: [], rowCount: 0 };
+      return { rows: [{ request_count: 1 }], rowCount: 1 };
+    });
+    const res = makeRes();
+    const ok = await assertAiQuota(makeReq(), res);
+    expect(ok).toBe(true);
+    const upsert = findUpsert();
+    expect(upsert).toBeDefined();
+    expect((upsert![1] as unknown[])[4]).toBe(5); // free cap still enforced
   });
 
   it("falls back to the FREE cap when the plan lookup throws", async () => {

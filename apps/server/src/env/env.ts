@@ -503,6 +503,13 @@ const envSchema = z.object({
   AI_QUOTA_TOOL_LIMITS: z.string().optional(),
   /** Дефолтний ліміт tool-call на день, якщо tool не в AI_QUOTA_TOOL_LIMITS. */
   AI_QUOTA_TOOL_DEFAULT_LIMIT: coerceInt.nonnegative().optional(),
+  /**
+   * Comma-separated Better-Auth user IDs that bypass the AI daily quota
+   * entirely (founder / internal team — plan-agnostic unlimited). Read
+   * directly via `process.env` in `modules/chat/aiQuota.ts`; declared here so
+   * the validated-env surface stays the single inventory of `AI_QUOTA_*`.
+   */
+  AI_QUOTA_FOUNDER_IDS: z.string().optional(),
   /** Інтервал SSE heartbeat (мс). Тримає з'єднання живим через проксі. */
   SSE_HEARTBEAT_MS: coerceInt.positive().default(15_000),
 
