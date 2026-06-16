@@ -99,6 +99,10 @@
       "reason": "sigstore.dev intermittently fails with `fetch failed` from CI runners. Cited in docs/90-work/initiatives/archive/_0008-platform-hardening.md as the canonical Sigstore homepage; page loads correctly in browsers."
     },
     {
+      "pattern": "^https?://github\\.com/Skords-01/Sergeant/pull/(1593|1594|1596|1597)$",
+      "reason": "Archived initiative docs cite these immutable 2026-05 module-decomposition PRs. GitHub intermittently returns HTTP 500 to CI link-checker requests for these historical PR pages while the pages remain browser-accessible and auditable."
+    },
+    {
       "pattern": "^https?://security\\.stackexchange\\.com(/.*)?$",
       "reason": "security.stackexchange.com returns 403 (Cloudflare anti-bot) to non-browser User-Agents. Cited in docs/90-work/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md as a bcrypt max-length QA reference; page loads correctly in browsers."
     },
