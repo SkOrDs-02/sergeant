@@ -39,26 +39,60 @@ const SNAPSHOT_DIR = join(
  * Fixture set — one entry per resolvable ESLint surface in the monorepo.
  * Add an entry when introducing a new app/package boundary; remove when a
  * surface is consolidated away.
+ *
+ * `cwd` is the package directory (repo-relative) that owns a standalone
+ * `eslint.config.js` (PR-31 phase 2b). The gate runs `eslint --print-config`
+ * from that cwd so flat-config discovery resolves the *per-package* config
+ * (which `turbo run lint` also resolves) rather than walking up to the root
+ * manifest. The resolved output must stay byte-identical to the root config —
+ * the per-package files re-export it via a `basePath` wrapper. `path` stays
+ * repo-relative so snapshot filenames are unchanged across the phase-2a→2b
+ * move; the package-relative argument passed to `--print-config` is derived
+ * from `path` and `cwd`.
  */
 export const FIXTURES = [
-  { surface: "server", path: "apps/server/src/index.ts" },
-  { surface: "web", path: "apps/web/src/main.tsx" },
-  { surface: "mobile", path: "apps/mobile/app/(tabs)/index.tsx" },
-  { surface: "mobile-shell", path: "apps/mobile-shell/src/index.ts" },
-  { surface: "shared", path: "packages/shared/src/index.ts" },
-  { surface: "api-client", path: "packages/api-client/src/index.ts" },
+  { surface: "server", path: "apps/server/src/index.ts", cwd: "apps/server" },
+  { surface: "web", path: "apps/web/src/main.tsx", cwd: "apps/web" },
+  {
+    surface: "mobile",
+    path: "apps/mobile/app/(tabs)/index.tsx",
+    cwd: "apps/mobile",
+  },
+  {
+    surface: "mobile-shell",
+    path: "apps/mobile-shell/src/index.ts",
+    cwd: "apps/mobile-shell",
+  },
+  {
+    surface: "shared",
+    path: "packages/shared/src/index.ts",
+    cwd: "packages/shared",
+  },
+  {
+    surface: "api-client",
+    path: "packages/api-client/src/index.ts",
+    cwd: "packages/api-client",
+  },
   {
     surface: "eslint-plugin-sergeant-design",
     path: "packages/eslint-plugin-sergeant-design/index.js",
+    cwd: "packages/eslint-plugin-sergeant-design",
   },
 ];
 
 /**
  * Normalise resolved ESLint config so snapshots are stable across machines:
- *   - replace REPO_ROOT prefix in every string with `<repo>`
- *   - replace native path separators with `/`
+ *   - replace the REPO_ROOT prefix in absolute-path strings with `<repo>`,
+ *     emitting forward slashes so a Windows run matches a POSIX one
  *   - sort every object's keys
  *   - drop ESLint-internal keys that vary by run (`cwd`, plugin SHA blobs)
+ *
+ * The separator swap is applied **only** to strings that resolve to a path
+ * under REPO_ROOT. Other strings are returned verbatim: a blanket
+ * `split(sep).join("/")` corrupts native-backslash content on Windows —
+ * e.g. the `\\b` / `\\d` escapes inside `no-restricted-syntax` regex
+ * selectors become `/b` / `/d`, diverging from the POSIX-generated
+ * snapshots and making the gate un-passable on a Windows checkout.
  */
 export function normaliseConfig(config, repoRoot = REPO_ROOT) {
   const repoRootForward = repoRoot.split(sep).join("/");
@@ -80,7 +114,7 @@ export function normaliseConfig(config, repoRoot = REPO_ROOT) {
       if (forward.startsWith(repoRootForward)) {
         return "<repo>" + forward.slice(repoRootForward.length);
       }
-      return forward;
+      return value;
     }
     return value;
   }
@@ -100,20 +134,38 @@ export function snapshotPathFor(fixturePath) {
   return join(SNAPSHOT_DIR, slug + ".json");
 }
 
-function runEslintPrintConfig(fixturePath) {
+/**
+ * Package-relative file path for a fixture — strips the `cwd` prefix so the
+ * argument passed to `--print-config` is resolved from the package directory
+ * (e.g. `apps/web/src/main.tsx` + cwd `apps/web` → `src/main.tsx`).
+ */
+function relPathFor(fixture) {
+  if (!fixture.cwd) return fixture.path;
+  const prefix = fixture.cwd.replace(/\/?$/, "/");
+  return fixture.path.startsWith(prefix)
+    ? fixture.path.slice(prefix.length)
+    : fixture.path;
+}
+
+function runEslintPrintConfig(fixture) {
   const onWindows = process.platform === "win32";
   const command = onWindows ? "pnpm.cmd" : "pnpm";
+  // PR-31 phase 2b: run from the package cwd (not REPO_ROOT) so flat-config
+  // discovery resolves the package's own `eslint.config.js` — the same file
+  // `turbo run lint` resolves — instead of walking up to the root manifest.
+  const cwd = fixture.cwd ? join(REPO_ROOT, fixture.cwd) : REPO_ROOT;
+  const relPath = relPathFor(fixture);
   // On Windows pnpm dispatches through a `.cmd` wrapper; without an explicit
   // shell the wrapper resolves but `execFileSync` cannot find the binary
   // along PATH for `pnpm` (no extension). With `shell: true` the `cmd.exe`
   // tokeniser then strips parens like `(tabs)`, so we wrap the fixture path
   // in literal double-quotes. POSIX shells pass either form fine.
-  const arg = onWindows ? `"${fixturePath}"` : fixturePath;
+  const arg = onWindows ? `"${relPath}"` : relPath;
   const stdout = execFileSync(
     command,
     ["exec", "eslint", "--print-config", arg],
     {
-      cwd: REPO_ROOT,
+      cwd,
       encoding: "utf8",
       maxBuffer: 32 * 1024 * 1024,
       stdio: ["ignore", "pipe", "pipe"],
@@ -150,7 +202,7 @@ function main() {
 
     let config;
     try {
-      const raw = runEslintPrintConfig(fixture.path);
+      const raw = runEslintPrintConfig(fixture);
       config = normaliseConfig(raw);
     } catch (err) {
       results.push({

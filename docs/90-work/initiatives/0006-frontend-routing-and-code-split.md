@@ -1,6 +1,6 @@
 # 0006 — Frontend routing migration + route-based code-split
 
-> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
+> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
 > **Status:** In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. **Reconcile 2026-06-15:** insights/settings/onboarding мігровано off the catch-all у власні path-based lazy routes (`/insights/*`, `/settings/*`, `/onboarding/*` + `core/{insights,settings,onboarding}/route.tsx`); route-count тепер 7/8 (лишається свідомо-спільний Hub чанк). Playwright hash-compat e2e додано (`tests/smoke/hash-redirect-smoke.spec.ts`). Pending: native RR7 router-level `loader:` (unblocked, optional), bundle-budget tighten на нові chunk-prefix-и.
 > **Agent-ready:** needs-decision
 > **Priority:** P1 (Sprint 2)

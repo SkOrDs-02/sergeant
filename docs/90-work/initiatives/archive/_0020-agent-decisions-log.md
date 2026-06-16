@@ -1,6 +1,6 @@
 # 0020 — Agent decisions log
 
-> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
+> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
 > **Status:** Archived (2026-06-15) — code-complete; live-mode usage is organic, no mechanical work remains. Canonical home: docs/00-start/agents/decisions.md (curated ledger), promoted via sergeant-start-here SKILL.md + docs/00-start/agents/README.md.
 > **Agent-ready:** no
 

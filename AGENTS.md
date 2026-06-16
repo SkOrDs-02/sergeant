@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
+> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.

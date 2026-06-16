@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready (Index)
 
-> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
+> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
 > **Status:** Reference (all 13 stages complete; retained as historical reference; Redis #045 optional opt-in only).
 >
 > **Canonical current status (2026-05-19):** Stage 13 is complete (9/9 landed). Детальний стан і PR-посилання — у частинах нижче.

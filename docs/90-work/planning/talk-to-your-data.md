@@ -1,6 +1,6 @@
 # Talk-to-your-data: план реалізації для Sergeant
 
-> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
+> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
 > **Status:** Closed (2026-06-15) — PR1-4 shipped; query-tools + DataResultCard live. Canonical home: apps/server/src/modules/chat/toolDefs/query\*.ts + apps/web hub/chat.
 > **Автор:** Devin (для @Skords-01)
 > **Дата:** 2026-05-05

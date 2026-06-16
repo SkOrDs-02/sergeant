@@ -107,7 +107,11 @@ describe("snapshotPathFor — slug generation", () => {
 });
 
 describe("FIXTURES — coverage invariants", () => {
-  it("covers every monorepo surface called out in PR-31 § Spliting strategy", () => {
+  it("covers every independently-linted monorepo surface (one fixture per package that owns an eslint.config.js)", () => {
+    // `tools/openclaw` is intentionally absent: it has no `lint` script (turbo
+    // never lints it) and no standalone `eslint.config.js`, so there is no
+    // per-package config to resolve. Its security rules live in the shared
+    // cross-surface block and are exercised via the server fixture.
     const expected = [
       "server",
       "web",
@@ -116,7 +120,6 @@ describe("FIXTURES — coverage invariants", () => {
       "shared",
       "api-client",
       "eslint-plugin-sergeant-design",
-      "openclaw",
     ];
     const got = FIXTURES.map((f) => f.surface).sort();
     assert.deepEqual(got, [...expected].sort());
@@ -130,6 +133,21 @@ describe("FIXTURES — coverage invariants", () => {
   it("each fixture path uses forward slashes (cross-platform)", () => {
     for (const f of FIXTURES) {
       assert.equal(f.path.includes("\\"), false, `${f.surface}: ${f.path}`);
+    }
+  });
+
+  it("each fixture declares a cwd whose path prefixes its fixture path (PR-31 phase 2b cd-per-package)", () => {
+    for (const f of FIXTURES) {
+      assert.ok(f.cwd, `${f.surface}: missing cwd`);
+      assert.equal(
+        f.cwd.includes("\\"),
+        false,
+        `${f.surface}: cwd uses backslash`,
+      );
+      assert.ok(
+        f.path.startsWith(`${f.cwd}/`),
+        `${f.surface}: path ${f.path} is not under cwd ${f.cwd}`,
+      );
     }
   });
 });

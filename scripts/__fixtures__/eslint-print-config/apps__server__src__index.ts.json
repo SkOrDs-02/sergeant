@@ -2274,6 +2274,14 @@
     "max-len": [
       0
     ],
+    "max-lines": [
+      2,
+      {
+        "max": 600,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
     "max-statements-per-line": [
       0
     ],

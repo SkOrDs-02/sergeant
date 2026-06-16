@@ -63,37 +63,44 @@ state — поведінкова no-op, шар-1 розчищення під pha
 > 37-рядковий composition manifest. Byte-neutral, гард `lint:eslint-config-diff`
 > зелений без зміни снапшотів. Root <300 ✅.
 >
-> **Phase 2b — DEFERRED (per-package standalone configs + Turbo parallelism).**
-> Наступний крок — справжні `apps/<x>/eslint.config.js`, self-sufficient
-> (`...baseline` + cross-surface-for-X + X-only, package-relative globs), щоб
-> per-package `eslint .` (Turbo) резолвив власний конфіг замість walk-up до
-> root. Це **змінює resolution-model**: треба модифікувати diff-gate (cd
-> per-package замість print-config з кореня) + re-baseline снапшоти у CI-env.
-> Cross-surface дилема (~10 блоків) при цьому вимагає дублювання правил у
-> кожен app-конфіг (drift-ризик) — рішення приймається у 2b.
+> **Phase 2b — DONE (2026-06-15, per-package standalone configs + Turbo
+> parallelism).** Кожен linted-пакет має власний `eslint.config.js`. Замість
+> того, щоб **форкати** rule-set per-surface (self-sufficient slice → drift-
+> ризик cross-surface блоків, який оригінальний spec не вирішував), кожен
+> per-package config **re-export-ить незмінений root-manifest** через тонкий
+> `basePath`-wrapper (`eslint.per-package.js`). Root-блоки несуть repo-root-
+> relative глоби (`apps/web/src/**`, …); `basePath` повертає їх resolution до
+> кореня репозиторію, навіть коли config живе у субдиректорії. Блоки, скоупнуті
+> на інші поверхні, просто не матчать жоден файл під cwd пакета → інертні.
+> Результат — `eslint --print-config` per-package **byte-identical** до root-
+> manifest, прогнаного з кореня (гард `lint:eslint-config-diff` у cd-per-
+> package режимі). Cross-surface дилема знята: жодного дублювання, єдине
+> джерело правил лишається в root-модулях.
 
-Наведений нижче діаграма-варіант — це ціль **2b** (per-app `eslint.config.js`):
+Поточна структура **2b** (standalone per-package `eslint.config.js`):
 
 ```
-eslint.config.js                       (root — мінімум, тільки re-export
-                                        baseline + cross-surface правила
-                                        для `packages/**`)
-eslint.baseline.js                     (shared baseline)
-apps/server/eslint.config.js           (extends baseline + node + security)
-apps/web/eslint.config.js              (extends baseline + i18n + dark-mode
-                                        + module accents + `apps/web`-only)
-apps/mobile/eslint.config.js           (extends baseline + RN + nativewind)
-apps/mobile-shell/eslint.config.js     (extends baseline + capacitor)
-tools/openclaw/eslint.config.js         (extends baseline + telegram/grammy)
-packages/shared/eslint.config.js       (extends baseline + isomorphic)
-packages/api-client/eslint.config.js   (extends baseline + no-react)
-packages/eslint-plugin-sergeant-design/eslint.config.js  (extends + meta)
+eslint.config.js              (root manifest — спредить baseline + усі
+                               surface-блоки + cross-surface; джерело правил)
+eslint.baseline.js            (shared baseline)
+eslint.<surface>.js           (web / server / mobile / shell / packages /
+                               cross-surface — surface-scoped блоки)
+eslint.per-package.js         (packageConfig(basePath) — обгортає root array
+                               у defineConfig([{ basePath, extends: root }]))
+apps/{web,server,mobile,mobile-shell}/eslint.config.js   (2-line re-export)
+packages/{shared,api-client,db-schema,finyk-domain,fizruk-domain,
+          nutrition-domain,routine-domain,
+          eslint-plugin-sergeant-design}/eslint.config.js (2-line re-export)
 ```
 
-ESLint flat-config discovery walks up from the linted file to the closest
-`eslint.config.js`, тому per-app configs працюють без `extends:` ланцюжків
-або monorepo-plumbing — тільки `import { baseline } from
-"../../eslint.baseline.js"`.
+Кожен per-package файл — це `export default packageConfig("../..")`. ESLint
+flat-config discovery зупиняється на цьому файлі при лінті з cwd пакета
+(`turbo run lint`), тож config має бути self-sufficient — і він є, бо
+`packageConfig` віддає повний root-array. Правила редагуються у
+`eslint.baseline.js` / `eslint.<surface>.js`, **ніколи** у per-package
+файлах. `tools/openclaw` навмисно без власного config-у — у нього немає
+lint-скрипта (turbo його не лінтить), а cross-surface security-правила для
+нього живуть у root-manifest.
 
 ### Acceptance criteria (DoD) для phase 2
 

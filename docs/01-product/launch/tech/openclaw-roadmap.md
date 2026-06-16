@@ -1,6 +1,6 @@
 # OpenClaw — roadmap до v0 і далі
 
-> **Last touched:** 2026-06-15 by @Skords-01. **Next review:** 2026-09-13.
+> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
 > **Status:** Closed (historical grammy roadmap; canonical active owner is OpenClaw migration plan).
 > **Canonical active owner:** OpenClaw Gateway/migration work lives in [`docs/90-work/planning/openclaw-migration-plan.md`](../../../90-work/planning/archive/openclaw-migration-plan.md). This file is retained as historical context for the old `@OpenClaw_sergeant_bot` roadmap only; do not add new active migration tasks here.
 
