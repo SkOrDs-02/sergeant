@@ -1,6 +1,6 @@
 # Nightly-audit — потік triage
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
 > **Status:** Active
 
 ## Огляд
@@ -9,12 +9,12 @@ Workflow `.github/workflows/nightly-audit.yml` запускається щоно
 
 ### Job-и
 
-| Job                       | Що робить                                                                                                 | Коли fail                         |
-| ------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| **pnpm-audit-full**       | `pnpm audit --json` (повний звіт, включно з low/medium)                                                   | critical або high знайдено        |
-| **osv-scanner**           | OSV-Scanner v2.3.5: сканує lockfile + всі package.json рекурсивно. SARIF → GitHub code-scanning           | critical/high (SARIF level=error) |
-| **snyk** _(опціональний)_ | Тільки якщо є `SNYK_TOKEN` secret. `snyk test --all-projects --severity-threshold=high`                   | high+ знайдено                    |
-| **notify-failure**        | При failure будь-якого з вищих: створює/оновлює GitHub issue з labels `nightly-audit-failed` + `security` | —                                 |
+| Job                       | Що робить                                                                                                     | Коли fail                             |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **pnpm-audit-full**       | `pnpm audit --json` (повний звіт, включно з low/medium) + ledger-gate через `scripts/ci/audit-exceptions.mjs` | critical або high без чинного винятку |
+| **osv-scanner**           | OSV-Scanner v2.3.5: сканує lockfile + всі package.json рекурсивно. SARIF → GitHub code-scanning               | critical/high (SARIF level=error)     |
+| **snyk** _(опціональний)_ | Тільки якщо є `SNYK_TOKEN` secret. `snyk test --all-projects --severity-threshold=high`                       | high+ знайдено                        |
+| **notify-failure**        | При failure будь-якого з вищих: створює/оновлює GitHub issue з labels `nightly-audit-failed` + `security`     | —                                     |
 
 ### Артефакти (retention 30 днів)
 
@@ -60,7 +60,7 @@ Workflow автоматично створює/оновлює issue з title "Ni
 | **Scope**            | `--audit-level=high` (production + full) | Повний звіт (всі severity)                          |
 | **Dependency check** | Тільки pnpm registry                     | pnpm + OSV database (transitive, GitHub advisories) |
 | **SARIF**            | Ні                                       | Так (code-scanning)                                 |
-| **Escape hatch**     | `audit-exception` label                  | Документація в audit-exceptions.md                  |
+| **Escape hatch**     | Датований запис у `audit-exceptions.md`  | Датований запис у `audit-exceptions.md`             |
 
 ## Перехресні посилання
 

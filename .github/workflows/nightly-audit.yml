@@ -69,11 +69,11 @@ jobs:
           path: pnpm-audit.json
           retention-days: 30
 
-      - name: Fail on critical/high
-        if: ${{ steps.audit.outputs.critical != '0' || steps.audit.outputs.high != '0' }}
-        run: |
-          echo "::error::Found ${{ steps.audit.outputs.critical }} critical and ${{ steps.audit.outputs.high }} high vulnerabilities"
-          exit 1
+      - name: Fail on unwaived critical/high
+        # Keep nightly aligned with the PR-time audit gate: critical
+        # advisories always fail; high advisories fail unless a dated,
+        # non-expired entry exists in docs/04-governance/security/audit-exceptions.md.
+        run: node scripts/ci/audit-exceptions.mjs
 
   osv-scanner:
     name: OSV-Scanner dependency check
