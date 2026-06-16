@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-06-15)</title>
+    <title>Sergeant — Knowledge Graph (2026-06-16)</title>
     <style>
       body {
         font-family:
@@ -97,21 +97,21 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-06-15 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-06-16 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
       <span class="chip chip-adr">adr: <b>63</b></span>
-      <span class="chip chip-audit">audit: <b>19</b></span>
+      <span class="chip chip-audit">audit: <b>15</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
-      <span class="chip chip-initiative">initiative: <b>52</b></span>
+      <span class="chip chip-initiative">initiative: <b>51</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
-      <span class="chip chip-pr">pr: <b>211</b></span>
+      <span class="chip chip-pr">pr: <b>205</b></span>
       <span class="chip chip-skill">skill: <b>23</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (237 core)</summary>
+      <summary>Nodes (232 core)</summary>
       <table>
         <thead>
           <tr>
@@ -963,49 +963,11 @@
           </tr>
           <tr>
             <td>audit</td>
-            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
-            <td>
-              <a
-                href="../../docs/90-work/audits/2026-05-13-page-audit-02-hub-dashboard.md"
-                >Page Audit — Hub Dashboard, Modules Grid &amp; App shell</a
-              >
-            </td>
-            <td>Active</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>audit</td>
             <td><code>audit:2026-05-13-page-audit-03-hub-chat-search</code></td>
             <td>
               <a
                 href="../../docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md"
                 >Page Audit — Hub Chat, Search &amp; Backup panel</a
-              >
-            </td>
-            <td>Active</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>audit</td>
-            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
-            <td>
-              <a
-                href="../../docs/90-work/audits/2026-05-13-page-audit-05-finyk.md"
-                >Page Audit — Finyk module — 5 pages
-                (overview/transactions/budgets/analytics/assets)</a
-              >
-            </td>
-            <td>Active</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>audit</td>
-            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
-            <td>
-              <a
-                href="../../docs/90-work/audits/2026-05-13-page-audit-06-fizruk-part1.md"
-                >Page Audit — Fizruk module Part 1 (Dashboard, Atlas, Workouts,
-                Exercise)</a
               >
             </td>
             <td>Active</td>
@@ -1079,19 +1041,6 @@
           </tr>
           <tr>
             <td>audit</td>
-            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
-            <td>
-              <a
-                href="../../docs/90-work/audits/2026-05-13-web-architecture-state-roast.md"
-                >Web Architecture &amp; State Roast — 2026-05-13 (Прожарка
-                #3/10)</a
-              >
-            </td>
-            <td>Active</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>audit</td>
             <td><code>audit:2026-05-25-hubsettings-cls-chunk-load</code></td>
             <td>
               <a
@@ -1113,8 +1062,10 @@
               >
             </td>
             <td>
-              Active (4 founder-decisions executed 2026-06-08; залишок —
-              lint-debt / tombstones / інфра-питання — outstanding)
+              Active — all 4 audit themes executed (console-rename, grammy
+              deletion #3470, doc-status reconcile, ai-marker gate). Residual is
+              out-of-band: plop stale-branding rename + Sept KV→SQLite tombstone
+              batch + react-hooks burndown (Initiative 0021).
             </td>
             <td></td>
           </tr>
@@ -1564,9 +1515,16 @@
               `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module
               `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite.
               Location-context bug resolved — each child route renders a
-              DIFFERENT component via `&lt;Outlet /&gt;`. Pending: typecheck on
-              clean worktree, Playwright e2e for hash-compat, manualChunks
-              cleanup.
+              DIFFERENT component via `&lt;Outlet /&gt;`. **Reconcile
+              2026-06-15:** insights/settings/onboarding мігровано off the
+              catch-all у власні path-based lazy routes (`/insights/*`,
+              `/settings/*`, `/onboarding/*` +
+              `core/{insights,settings,onboarding}/route.tsx`); route-count
+              тепер 7/8 (лишається свідомо-спільний Hub чанк). Playwright
+              hash-compat e2e додано
+              (`tests/smoke/hash-redirect-smoke.spec.ts`). Pending: native RR7
+              router-level `loader:` (unblocked, optional), bundle-budget
+              tighten на нові chunk-prefix-и.
             </td>
             <td>number=6 · owner=@Skords-01 · priority=P1 (Sprint 2)</td>
           </tr>
@@ -1653,21 +1611,6 @@
               number=17 · owner=@Skords-01 · priority=P1 (Sprint 1 candidate
               after [0016](./archive/_0016-changelog-release-cut.md))
             </td>
-          </tr>
-          <tr>
-            <td>initiative</td>
-            <td><code>initiative:0020</code></td>
-            <td>
-              <a
-                href="../../docs/90-work/initiatives/0020-agent-decisions-log.md"
-                >0020 — Agent decisions log</a
-              >
-            </td>
-            <td>
-              In progress — code-complete; залишок: live-mode usage (агент
-              реально звіряється + maintainer курує між сесіями).
-            </td>
-            <td>number=20</td>
           </tr>
           <tr>
             <td>initiative</td>
@@ -1762,7 +1705,11 @@
                 >Session log — 2026-05-03 stack-pulse follow-through</a
               >
             </td>
-            <td>Active</td>
+            <td>
+              Reference (frozen historical onboarding log of the 2026-05-03
+              audit's first PR waves; #1567 merged, carryover items 1/3 resolved
+              — H9/C1/C5/C6 Closed).
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -2293,7 +2240,13 @@
                 → один production origin</a
               >
             </td>
-            <td>Planned</td>
+            <td>
+              Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect +
+              Sentry release unification); PR-2 (drop fizruk from
+              apps/server/src/http/cors.ts + Google/Apple OAuth consoles)
+              pending 30-day soak + manual OAuth-console step; ADR-0009
+              single-origin section TODO.
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -2522,12 +2475,11 @@
               >
             </td>
             <td>
-              Active — server-side shipped via PR
-              [#2423](https://github.com/Skords-01/Sergeant/pull/2423) (commit
-              [`264288ec`](https://github.com/Skords-01/Sergeant/commit/264288ec),
-              2026-05-08); `tools/openclaw` `/debug-window` CLI deferred to
-              follow-up (див. нижче — чекає першого реального debug-incident-у
-              як trigger).
+              Closed (2026-06-15) — server-side shipped (PR #2423: logger.ts
+              debug-window + route #3096). The deferred tools/openclaw CLI
+              follow-up is permanently moot (the grammy bot was deleted in PR
+              #3470). Canonical home: apps/server/src/obs/logger.ts (Hard Rule
+              #21) + docs/03-operations/observability/log-levels.md.
             </td>
             <td></td>
           </tr>
@@ -2619,10 +2571,10 @@
               >
             </td>
             <td>
-              Active — SDK вже на `^0.95.2` (міграція 0.36 → 0.95 відбулась у
-              попередньому PR з ADR-0057); prompt caching opt-in
-              (`ANTHROPIC_PROMPT_CACHE=1`) enable-но у `run-agent-loop`. SDK v1
-              GA ще не відбулась — див. ADR-0057 § SDK v1 tracking.
+              Closed (2026-06-15) — SDK history captured in ADR-0057 (Accepted).
+              The tracked surface (tools/openclaw + run-agent-loop.ts + its
+              @anthropic-ai/sdk consumer) was deleted in PR #3470, so the v1-GA
+              follow-up is moot. Canonical home: ADR-0057.
             </td>
             <td></td>
           </tr>
@@ -3605,7 +3557,7 @@
     </details>
 
     <details>
-      <summary>Edges (453 total, first 500 core-to-core)</summary>
+      <summary>Edges (415 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -3836,51 +3788,6 @@
             <td><code>hard-rule:21</code></td>
           </tr>
           <tr>
-            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
-            <td>references</td>
-            <td><code>hard-rule:11</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
-            <td>references</td>
-            <td><code>hard-rule:12</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
-            <td>references</td>
-            <td><code>hard-rule:13</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
-            <td>references</td>
-            <td><code>hard-rule:14</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
-            <td>references</td>
-            <td><code>hard-rule:18</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
-            <td>references</td>
-            <td><code>hard-rule:19</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
-            <td>references</td>
-            <td><code>hard-rule:2</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
-            <td>references</td>
-            <td><code>hard-rule:21</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-02-hub-dashboard</code></td>
-            <td>references</td>
-            <td><code>hard-rule:9</code></td>
-          </tr>
-          <tr>
             <td><code>audit:2026-05-13-page-audit-03-hub-chat-search</code></td>
             <td>references</td>
             <td><code>hard-rule:10</code></td>
@@ -3904,76 +3811,6 @@
             <td><code>audit:2026-05-13-page-audit-03-hub-chat-search</code></td>
             <td>references</td>
             <td><code>hard-rule:3</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
-            <td>references</td>
-            <td><code>hard-rule:10</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
-            <td>references</td>
-            <td><code>hard-rule:14</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
-            <td>references</td>
-            <td><code>hard-rule:19</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
-            <td>references</td>
-            <td><code>hard-rule:20</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
-            <td>references</td>
-            <td><code>hard-rule:21</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
-            <td>references</td>
-            <td><code>hard-rule:8</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-05-finyk</code></td>
-            <td>references</td>
-            <td><code>hard-rule:9</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
-            <td>references</td>
-            <td><code>hard-rule:10</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
-            <td>references</td>
-            <td><code>hard-rule:11</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
-            <td>references</td>
-            <td><code>hard-rule:13</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
-            <td>references</td>
-            <td><code>hard-rule:15</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
-            <td>references</td>
-            <td><code>hard-rule:16</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
-            <td>references</td>
-            <td><code>hard-rule:19</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-page-audit-06-fizruk-part1</code></td>
-            <td>references</td>
-            <td><code>hard-rule:9</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-05-13-page-audit-07-fizruk-part2</code></td>
@@ -4160,29 +3997,14 @@
             <td><code>hard-rule:7</code></td>
           </tr>
           <tr>
-            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
+            <td><code>audit:2026-06-08-codebase-cleanup-audit</code></td>
             <td>references</td>
-            <td><code>hard-rule:12</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
-            <td>references</td>
-            <td><code>hard-rule:18</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
-            <td>references</td>
-            <td><code>hard-rule:2</code></td>
-          </tr>
-          <tr>
-            <td><code>audit:2026-05-13-web-architecture-state-roast</code></td>
-            <td>references</td>
-            <td><code>initiative:0006</code></td>
+            <td><code>hard-rule:10</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-06-08-codebase-cleanup-audit</code></td>
             <td>references</td>
-            <td><code>hard-rule:10</code></td>
+            <td><code>initiative:0021</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-06-11-fable5-independent-audit</code></td>
@@ -4198,11 +4020,6 @@
             <td><code>initiative:0003</code></td>
             <td>references</td>
             <td><code>hard-rule:4</code></td>
-          </tr>
-          <tr>
-            <td><code>initiative:0020</code></td>
-            <td>references</td>
-            <td><code>hard-rule:15</code></td>
           </tr>
           <tr>
             <td>
@@ -4285,6 +4102,15 @@
             </td>
             <td>references</td>
             <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
+            <td>
+              <code
+                >initiative:stack-pulse-2026-05/pr-35-log-level-debug-window</code
+              >
+            </td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
           </tr>
           <tr>
             <td><code>playbook:add-hard-rule</code></td>
