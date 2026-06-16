@@ -28,7 +28,7 @@ export function PrivacyLockBanner() {
           <p className="text-style-label text-text">
             {messages.privacy.bannerTitle}
           </p>
-          <p className="text-style-caption text-muted mt-0.5">
+          <p className="text-style-caption text-text mt-0.5">
             {messages.privacy.bannerHint}
           </p>
         </div>

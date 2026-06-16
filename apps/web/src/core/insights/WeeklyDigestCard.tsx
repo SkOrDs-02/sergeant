@@ -189,6 +189,7 @@ function LoadingSpinner() {
   return (
     <div
       className="px-4 pb-4 space-y-2.5"
+      role="status"
       aria-busy="true"
       aria-live="polite"
       aria-label="Генеруємо звіт тижня"
@@ -265,7 +266,7 @@ function DigestContent({
         <button
           type="button"
           onClick={onGenerate}
-          className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+          className="w-full h-9 min-h-[44px] rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
         >
           Спробувати знову
         </button>
@@ -284,7 +285,7 @@ function DigestContent({
           <button
             type="button"
             onClick={onGenerate}
-            className="w-full h-10 rounded-xl bg-primary text-bg text-style-label hover:brightness-110 transition-[filter,opacity,transform] active:scale-[0.98]"
+            className="w-full h-10 min-h-[44px] rounded-xl bg-primary text-bg text-style-label hover:brightness-110 transition-[filter,opacity,transform] active:scale-[0.98]"
           >
             Згенерувати звіт
           </button>
@@ -375,7 +376,7 @@ function DigestContent({
                   <button
                     type="button"
                     onClick={onUpdate}
-                    className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+                    className="w-full h-9 min-h-[44px] rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
                   >
                     Оновити звіт
                   </button>
@@ -389,7 +390,7 @@ function DigestContent({
               <button
                 type="button"
                 onClick={() => setExpanded(true)}
-                className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-full h-9 min-h-[44px] rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 Переглянути звіт
               </button>
@@ -400,7 +401,7 @@ function DigestContent({
               <button
                 type="button"
                 onClick={() => setExpanded(false)}
-                className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-full h-9 min-h-[44px] rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 Згорнути
               </button>
@@ -520,7 +521,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
                 type="button"
                 onClick={onCollapse}
                 aria-label="Згорнути звіт тижня"
-                className="w-7 h-7 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-7 h-7 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 <Icon name="chevron-up" size={15} strokeWidth={2.5} />
               </button>

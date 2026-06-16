@@ -148,7 +148,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 active
                   ? cn("text-text", tokens.outline)
-                  : "text-muted border-transparent hover:text-text/70",
+                  : "text-text border-transparent hover:text-text/80",
               )}
             >
               <span

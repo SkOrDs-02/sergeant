@@ -127,7 +127,7 @@ function HubBottomNavTab({
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
         active
           ? "text-ink-strong border-ink-strong/25"
-          : "text-muted border-transparent hover:text-text/70",
+          : "text-text border-transparent hover:text-text/80",
         hiddenSlot && "invisible pointer-events-none",
         className,
       )}

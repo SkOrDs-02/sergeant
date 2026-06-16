@@ -139,7 +139,7 @@ export function HubHeader({
                 className={cn(
                   "inline-flex h-11 w-11 items-center justify-center rounded-xl touch-target",
                   "min-[420px]:h-8 min-[420px]:w-auto min-[420px]:gap-1.5 min-[420px]:rounded-full min-[420px]:px-2.5",
-                  "bg-brand-soft text-brand-strong dark:text-brand-300 border border-brand-soft-border",
+                  "bg-brand-soft text-text border border-brand-soft-border",
                   "text-style-caption font-semibold",
                   "hover:bg-brand-soft-hover transition-colors",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",

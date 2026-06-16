@@ -103,6 +103,10 @@
       "reason": "Архівна ініціатива цитує ці незмінні PR-и декомпозиції модулів за 2026-05. GitHub періодично повертає HTTP 500 на CI-запити markdown link checker для цих історичних PR-сторінок, хоча сторінки відкриваються у браузері й залишаються придатними для аудиту."
     },
     {
+      "pattern": "^https?://gdpr-info\\.eu/art-\\d+-gdpr/?$",
+      "reason": "GDPR-info.eu періодично обриває запити від CI User-Agent з помилкою `This operation was aborted`. Статті GDPR цитуються у launch-readiness документах як стабільні нормативні посилання і відкриваються у браузері."
+    },
+    {
       "pattern": "^https?://security\\.stackexchange\\.com(/.*)?$",
       "reason": "security.stackexchange.com returns 403 (Cloudflare anti-bot) to non-browser User-Agents. Cited in docs/90-work/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md as a bcrypt max-length QA reference; page loads correctly in browsers."
     },

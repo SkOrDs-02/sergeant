@@ -25,6 +25,7 @@ export const ModulePageLoader = memo(function ModulePageLoader({
         "p-4 space-y-4 motion-safe:animate-in motion-safe:fade-in skeleton-stagger",
         className,
       )}
+      role="status"
       aria-busy="true"
       aria-label={messages.status.loading}
     >

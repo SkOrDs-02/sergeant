@@ -130,12 +130,22 @@ for (const { name, path, seed } of SURFACES) {
 
     if (blocking.length > 0) {
       const summary = blocking
-        .map(
-          (v) =>
-            `- [${v.impact}] ${v.id}: ${v.help} (${v.nodes.length} node${
-              v.nodes.length === 1 ? "" : "s"
-            })\n    ${v.helpUrl}`,
-        )
+        .map((v) => {
+          const nodes = v.nodes
+            .slice(0, 3)
+            .map((node, index) => {
+              const target = node.target.join(" ");
+              const html = node.html.replace(/\s+/g, " ").slice(0, 220);
+              const failure = node.failureSummary
+                ? `\n      ${node.failureSummary.replace(/\s+/g, " ")}`
+                : "";
+              return `    ${index + 1}. ${target}\n      ${html}${failure}`;
+            })
+            .join("\n");
+          return `- [${v.impact}] ${v.id}: ${v.help} (${v.nodes.length} node${
+            v.nodes.length === 1 ? "" : "s"
+          })\n    ${v.helpUrl}\n${nodes}`;
+        })
         .join("\n");
       throw new Error(
         `axe found ${blocking.length} serious/critical violation(s) on ${path}:\n${summary}`,
