@@ -18,6 +18,7 @@ import {
   safeRemoveLS,
 } from "@shared/lib/storage/storage";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
+import { removeItem as removeFinykStorageItem } from "../../modules/finyk/lib/finykStorage";
 import { useStorage as useFinykStorage } from "../../modules/finyk/hooks/useStorage";
 import { useMonoBackfillProgress } from "../../modules/finyk/hooks/useMonoBackfillProgress";
 import { BackfillProgressPill } from "../../modules/finyk/components/BackfillProgressPill";
@@ -253,8 +254,12 @@ export function FinykSection() {
   };
 
   const clearTxCache = () => {
-    safeRemoveLS("finyk_tx_cache");
-    safeRemoveLS("finyk_tx_cache_last_good");
+    // The Mono legacy-cache keys (`finyk_tx_cache` / `_last_good`) are retired
+    // from the STORAGE_KEYS registry (PR #039, storage-roadmap), so clear them
+    // through the canonical finyk storage wrapper — the same path the owning
+    // `useMonobankWebhook` hook uses — rather than raw `safeRemoveLS`.
+    removeFinykStorageItem("finyk_tx_cache");
+    removeFinykStorageItem("finyk_tx_cache_last_good");
     queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
     queryClient.removeQueries({
       queryKey: finykKeys.monoWebhookTransactions(),
