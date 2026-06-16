@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -110,6 +110,13 @@ Tool-use квота (окремий bucket у `ai_usage_daily`). Кожен ви
 - `AI_QUOTA_TOOL_COST=3` (default).
 - `AI_QUOTA_TOOL_DEFAULT_LIMIT=60` (default).
 - `AI_QUOTA_TOOL_LIMITS={"change_category":30,"create_debt":10,"create_receivable":10,"hide_transaction":30,"set_budget_limit":10,"set_monthly_plan":5,"mark_habit_done":30,"plan_workout":10,"create_habit":10}` — JSON з лімітами на кожен tool. Tool-и, не вказані у JSON, беруть `AI_QUOTA_TOOL_DEFAULT_LIMIT` (або unlimited якщо пусто).
+
+### `CHAT_MODEL_FIRST_TURN`, `CHAT_MODEL_SYNTHESIS` _(optional)_
+
+Tiered-моделі для `/api/chat` ([`apps/server/src/modules/chat/chat.ts`](../../../apps/server/src/modules/chat/chat.ts)). Chat-шлях прибитий до Anthropic (streaming + tool-use + prompt-caching), тож значення мають лишатись Anthropic-model-id. Винесено в env, щоб ops міг ре-тирити без редеплою (env читається на startup-і → достатньо рестарту сервісу).
+
+- `CHAT_MODEL_FIRST_TURN=claude-haiku-4-5-20251001` (default) — перший тур (швидкий роутер: direct-text або tool_use-пропозиції). Haiku ~4× дешевший за Sonnet ($1 vs $3 /1M input, $5 vs $15 /1M output); якості вистачає, бо тут немає важких звітів.
+- `CHAT_MODEL_SYNTHESIS=claude-sonnet-4-6` (default) — тур синтезу tool-result (фінальні брифінги/підсумки бюджету, stream + non-stream). Sonnet за замовчуванням — тут важлива якість складних markdown-звітів. Найбільший cost-важіль: щоб ще здешевшати, push сюди Haiku.
 
 ### `LLM_PROVIDER` _(optional, default `anthropic`)_
 

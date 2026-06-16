@@ -167,6 +167,47 @@ describe("chat handler — tool_use parsing", () => {
     });
   });
 
+  it("перший тур іде на CHAT_MODEL_FIRST_TURN (Haiku default)", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "Привіт!" }] },
+    });
+
+    await handler(
+      makeReq({ messages: [{ role: "user", content: "Привіт" }] }),
+      makeRes(),
+    );
+
+    const payload = anthropicMessages!.mock.calls[0]![1] as { model: string };
+    expect(payload.model).toBe("claude-haiku-4-5-20251001");
+  });
+
+  it("тур синтезу tool-result іде на CHAT_MODEL_SYNTHESIS (Sonnet default)", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "Готово." }] },
+    });
+
+    await handler(
+      makeReq({
+        messages: [{ role: "user", content: "Видали m_abc" }],
+        tool_calls_raw: [
+          {
+            type: "tool_use",
+            id: "toolu_1",
+            name: "delete_transaction",
+            input: { tx_id: "m_abc" },
+          },
+        ],
+        tool_results: [{ tool_use_id: "toolu_1", content: "видалено" }],
+      }),
+      makeRes(),
+    );
+
+    const payload = anthropicMessages!.mock.calls[0]![1] as { model: string };
+    expect(payload.model).toBe("claude-sonnet-4-6");
+  });
+
   it("інкрементить chat_tool_invocations_total{outcome=proposed} на першому кроці", async () => {
     const { chatToolInvocationsTotal } = await import("../../obs/metrics.js");
     const before = (await chatToolInvocationsTotal.get()).values

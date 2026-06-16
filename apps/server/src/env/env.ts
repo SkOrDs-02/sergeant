@@ -349,6 +349,22 @@ const envSchema = z.object({
   /** API-ключ для Anthropic Claude. Без нього /api/chat повертає 500. */
   ANTHROPIC_API_KEY: stringWithDefault(""),
   /**
+   * Модель першого туру `/api/chat` — швидкий роутер: повертає або direct-text,
+   * або tool_use-пропозиції. За замовчуванням Haiku (~4× дешевший за Sonnet:
+   * $1 vs $3 /1M input, $5 vs $15 /1M output) — на цьому турі немає важких
+   * звітів, тож якості вистачає. Env-kerований, щоб ops міг ре-тирити (напр.
+   * штовхнути синтез теж на Haiku) без редеплою. Має лишатись Anthropic-model-id,
+   * бо chat-шлях прибитий до Anthropic streaming + tool-use + prompt-caching.
+   */
+  CHAT_MODEL_FIRST_TURN: stringWithDefault("claude-haiku-4-5-20251001"),
+  /**
+   * Модель туру синтезу tool-result (фінальний текст для юзера після того, як
+   * модель отримала дані з tool_result: брифінги, підсумки бюджету). За
+   * замовчуванням Sonnet — тут важлива якість складних markdown-звітів. Той
+   * самий payload використовується і для stream, і для non-stream відповіді.
+   */
+  CHAT_MODEL_SYNTHESIS: stringWithDefault("claude-sonnet-4-6"),
+  /**
    * PR-23 — pluggable LLM provider. `anthropic` (default) використовує
    * `AnthropicProvider`; `stub` повертає hardcoded JSON для read-only
    * OpenClaw paths-у / e2e-тестів / Anthropic-incident-recovery; `openrouter`

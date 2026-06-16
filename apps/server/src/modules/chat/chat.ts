@@ -405,7 +405,7 @@ export default async function handler(
     // посеред речення. Тримаємо із запасом — модель сама зупиниться раніше,
     // якщо контент закінчився.
     const payload = {
-      model: "claude-sonnet-4-6",
+      model: env.CHAT_MODEL_SYNTHESIS,
       max_tokens: 2500,
       system: buildSystem(context),
       tools: TOOLS_WITH_CACHE,
@@ -485,9 +485,10 @@ export default async function handler(
       // Haiku: ~4× дешевший за Sonnet на першому турі ($1 vs $3 /1M input,
       // $5 vs $15 /1M output); підтримує той самий tool-calling формат.
       // Tool-result synthesis (другий тур) лишається на Sonnet — там важлива
-      // якість складних звітів.
+      // якість складних звітів. Обидві моделі env-kеровані
+      // (CHAT_MODEL_FIRST_TURN / CHAT_MODEL_SYNTHESIS) — ре-тиринг без редеплою.
       {
-        model: "claude-haiku-4-5-20251001",
+        model: env.CHAT_MODEL_FIRST_TURN,
         max_tokens: 1500,
         system: buildSystem(augmentedContext),
         tools: TOOLS_WITH_CACHE,
