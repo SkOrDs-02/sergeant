@@ -5,6 +5,7 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 
 interface SyncStateLike {
   status?: "idle" | "loading" | "success" | "error" | "partial" | string;
@@ -24,8 +25,11 @@ function formatTs(ts: SyncStatusBadgeProps["lastUpdated"]) {
   if (!ts) return null;
   const d = new Date(ts);
   if (Number.isNaN(d.getTime())) return null;
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
+  // Use Kyiv-local hour/minute so the timestamp matches the user's
+  // day boundary (Europe/Kyiv) rather than the host system clock.
+  const parts = getKyivDateParts(d);
+  const hh = String(parts.hour).padStart(2, "0");
+  const mm = String(parts.minute).padStart(2, "0");
   return `${hh}:${mm}`;
 }
 

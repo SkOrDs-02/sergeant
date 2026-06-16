@@ -83,7 +83,11 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
           paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
         }}
       >
-        <div className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500">
+        <main
+          id="main"
+          tabIndex={-1}
+          className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500"
+        >
           <div className="text-center mb-6">
             <BrandLogo as="h1" size="md" className="justify-center" />
           </div>
@@ -130,10 +134,6 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               <ForgotPasswordPanel state={forgot} authError={authError} />
             )}
 
-            {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-            Inline "або" divider between two <span> rules — structurally
-            a delimiter, not a heading, so SectionHeading is the wrong
-            abstraction. */}
             <div className="my-6 flex items-center gap-3 text-style-overline text-muted">
               <span className="flex-1 h-px bg-line" />
               або
@@ -183,7 +183,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
           )}
 
           <LegalLinks compact className="mt-5" />
-        </div>
+        </main>
       </MeshBackground>
     </>
   );

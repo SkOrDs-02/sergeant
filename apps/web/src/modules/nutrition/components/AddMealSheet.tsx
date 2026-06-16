@@ -276,7 +276,7 @@ export function AddMealSheet({
         <button
           type="button"
           onClick={handleBacktrack}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
+          className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
           aria-label="Назад до вибору джерела"
         >
           ←
@@ -457,7 +457,9 @@ export function AddMealSheet({
             )}
 
             {form.err && (
-              <div className="text-xs text-danger mt-2">{form.err}</div>
+              <div className="text-xs text-danger-strong dark:text-danger mt-2">
+                {form.err}
+              </div>
             )}
 
             <SaveAsTemplate form={form} setForm={setForm} setPrefs={setPrefs} />

@@ -186,7 +186,7 @@ export function WorkoutItemCard({
             const redL = cf.red.map((x) => x.label).join(", ");
             const yelL = cf.yellow.map((x) => x.label).join(", ");
             return (
-              <div className="text-xs mt-1.5 rounded-xl border border-warning/40 bg-warning/10 px-2 py-1.5 text-warning leading-snug">
+              <div className="text-xs mt-1.5 rounded-xl border border-warning/40 bg-warning/10 px-2 py-1.5 text-warning-strong dark:text-warning leading-snug">
                 {cf.red.length ? (
                   <>
                     Рано навантажувати:{" "}
@@ -326,7 +326,7 @@ export function WorkoutItemCard({
               />
               <button
                 type="button"
-                className="h-10 rounded-xl border border-line text-xs text-subtle hover:text-danger hover:border-danger/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-subtle disabled:hover:border-line"
+                className="h-10 min-h-[44px] rounded-xl border border-line text-xs text-subtle hover:text-danger hover:border-danger/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-subtle disabled:hover:border-line"
                 disabled={isReadOnly}
                 onClick={() => {
                   const currentSets = it.sets || [];
@@ -412,7 +412,7 @@ export function WorkoutItemCard({
               </div>
               <button
                 type="button"
-                className="min-h-[44px] px-4 rounded-xl border-2 border-success bg-success/10 text-style-label text-success hover:bg-success/20 transition-colors"
+                className="min-h-[44px] px-4 rounded-xl border-2 border-success bg-success/10 text-style-label text-success-strong dark:text-success hover:bg-success/20 transition-colors"
                 onClick={() =>
                   setRestTimer({ remaining: defSec, total: defSec })
                 }

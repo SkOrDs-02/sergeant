@@ -1,13 +1,18 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 
 function formatDueDate(dueDate: string | null | undefined) {
   if (!dueDate) return null;
-  const now = new Date();
-  const [y, m, d] = dueDate.split("-").map(Number);
-  const date = new Date(y!, (m || 1) - 1, d || 1);
+  const parts = dueDate.split("-").map(Number);
+  const y = parts[0] ?? 0;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  const date = new Date(y, m - 1, d);
   if (Number.isNaN(date.getTime())) return null;
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Compare against Kyiv-local today to respect Europe/Kyiv day boundaries.
+  const todayParts = getKyivDateParts();
+  const today = new Date(todayParts.year, todayParts.month - 1, todayParts.day);
   const days = Math.ceil((date.getTime() - today.getTime()) / 86400000);
   if (days < 0) return `Прострочено на ${Math.abs(days)} дн`;
   if (days === 0) return "Сьогодні";
@@ -17,8 +22,11 @@ function formatDueDate(dueDate: string | null | undefined) {
 
 function formatDueDateValue(dueDate: string | null | undefined) {
   if (!dueDate) return "";
-  const [y, m, d] = dueDate.split("-").map(Number);
-  return new Date(y!, (m || 1) - 1, d || 1).toLocaleDateString("uk-UA");
+  const parts = dueDate.split("-").map(Number);
+  const y = parts[0] ?? 0;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  return new Date(y, m - 1, d).toLocaleDateString("uk-UA");
 }
 
 interface DebtCardProps {
@@ -65,7 +73,9 @@ function DebtCardComponent({
           <span
             className={cn(
               "text-style-label tabular-nums",
-              isReceivable ? "text-success" : "text-danger",
+              isReceivable
+                ? "text-success-strong dark:text-success"
+                : "text-danger-strong dark:text-danger",
             )}
           >
             {showBalance
@@ -101,7 +111,7 @@ function DebtCardComponent({
         <div
           className={cn(
             "text-xs mt-1",
-            isOverdue ? "text-danger" : "text-muted",
+            isOverdue ? "text-danger-strong dark:text-danger" : "text-muted",
           )}
         >
           📅 {formatDueDateValue(dueDate)} · {dueText}

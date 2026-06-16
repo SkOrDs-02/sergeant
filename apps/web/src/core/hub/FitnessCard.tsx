@@ -76,7 +76,7 @@ function BarChart({
     <div>
       {selected !== null && (
         <div className="text-style-caption text-center text-text mb-1 h-4">
-          {formatTooltip(dates[selected]!, vals[selected]!)}
+          {formatTooltip(dates[selected] ?? "", vals[selected] ?? 0)}
         </div>
       )}
       {selected === null && <div className="h-4 mb-1" />}
@@ -150,7 +150,9 @@ function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
     <span
       className={cn(
         "text-style-caption inline-flex items-center gap-0.5",
-        positive ? "text-success" : "text-danger",
+        positive
+          ? "text-success-strong dark:text-success"
+          : "text-danger-strong dark:text-danger",
       )}
     >
       <svg

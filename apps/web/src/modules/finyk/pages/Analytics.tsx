@@ -17,6 +17,7 @@ import { Skeleton } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
 import { signedDeltaClass } from "@shared/lib";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { CategoryPieChart } from "../components/charts/lazy";
 import { ChartFallback } from "../components/charts/ChartFallback";
@@ -98,9 +99,9 @@ const MonthNav = memo(function MonthNav({
   month,
   onChange,
 }: MonthNavProps) {
-  const now = new Date();
-  const isCurrentMonth =
-    year === now.getFullYear() && month === now.getMonth() + 1;
+  // Use Kyiv-local year/month so "current month" matches Europe/Kyiv day boundaries.
+  const nowKyiv = getKyivDateParts();
+  const isCurrentMonth = year === nowKyiv.year && month === nowKyiv.month;
   const label = new Date(year, month - 1, 1).toLocaleDateString("uk-UA", {
     month: "long",
     year: "numeric",
@@ -175,7 +176,7 @@ const ComparisonRow = memo(function ComparisonRow({
                 ? "text-muted"
                 : good
                   ? "text-success-strong dark:text-success"
-                  : "text-danger",
+                  : "text-danger-strong dark:text-danger",
             )}
           >
             {up ? "+" : ""}
@@ -188,9 +189,10 @@ const ComparisonRow = memo(function ComparisonRow({
 });
 
 export function Analytics({ mono, storage }: AnalyticsProps) {
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  // Use Kyiv-local year/month so "current month" tracks Europe/Kyiv day boundaries.
+  const nowKyiv = getKyivDateParts();
+  const [year, setYear] = useState(nowKyiv.year);
+  const [month, setMonth] = useState(nowKyiv.month);
 
   // Fire-and-forget: record that the analytics view was opened. Intentionally
   // runs once on mount (no month dep) so re-selecting months doesn't spam.
@@ -198,8 +200,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
     trackEvent(ANALYTICS_EVENTS.ANALYTICS_OPENED, { module: "finyk" });
   }, []);
 
-  const isCurrentMonth =
-    year === now.getFullYear() && month === now.getMonth() + 1;
+  const isCurrentMonth = year === nowKyiv.year && month === nowKyiv.month;
 
   // In-memory cache of fetched historical months. Keyed by "YYYY-MM".
   // No localStorage — source of truth is the server; React Query handles
@@ -362,7 +363,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
         <MonthNav year={year} month={month} onChange={handleMonthChange} />
 
         {fetchError && (
-          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger-strong dark:text-danger">
             <span>{fetchError}</span>
             <button
               type="button"
@@ -388,7 +389,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
                 <div className="text-style-caption text-subtle mb-1">
                   Витрати
                 </div>
-                <div className="text-style-label tabular-nums text-danger">
+                <div className="text-style-label tabular-nums text-danger-strong dark:text-danger">
                   {summary.spent.toLocaleString("uk-UA")} ₴
                 </div>
               </div>

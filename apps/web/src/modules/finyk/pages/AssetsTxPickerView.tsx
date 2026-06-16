@@ -4,6 +4,7 @@
  */
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
   getAccountLabel,
   getMonoDebt,
@@ -137,7 +138,7 @@ export function AssetsTxPickerView({
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
             <Card variant="flat" radius="md" className="mb-3">
               <div className="text-xs text-subtle mb-1">{label}</div>
-              <div className="text-style-hero text-danger">
+              <div className="text-style-hero text-danger-strong dark:text-danger">
                 −
                 {remaining.toLocaleString("uk-UA", {
                   maximumFractionDigits: 0,
@@ -169,7 +170,7 @@ export function AssetsTxPickerView({
               return (
                 <div key={i}>
                   {suggested && !isLinked && (
-                    <div className="text-style-caption font-semibold text-success px-1 pt-1">
+                    <div className="text-style-caption font-semibold text-success-strong dark:text-success px-1 pt-1">
                       ↑ Поповнення картки
                     </div>
                   )}
@@ -236,7 +237,7 @@ export function AssetsTxPickerView({
                 {linkedId && (
                   <button
                     type="button"
-                    className="block mt-2 text-style-label text-danger hover:underline"
+                    className="block mt-2 text-style-label text-danger-strong dark:text-danger hover:underline"
                     onClick={() => {
                       updateSubscription(sub.id, { linkedTxId: null });
                       setTxPicker(null);
@@ -259,7 +260,11 @@ export function AssetsTxPickerView({
                     if (isLinked) {
                       updateSubscription(sub.id, { linkedTxId: null });
                     } else {
-                      const bd = new Date((t.time || 0) * 1000).getDate();
+                      // Kyiv-local day-of-month so subscription billing day
+                      // stays anchored to Europe/Kyiv, not the host clock.
+                      const bd = getKyivDateParts(
+                        new Date((t.time || 0) * 1000),
+                      ).day;
                       updateSubscription(sub.id, {
                         linkedTxId: t.id,
                         billingDay: bd,
@@ -337,7 +342,9 @@ export function AssetsTxPickerView({
             <div
               className={cn(
                 "text-style-hero mt-1",
-                isDebt ? "text-danger" : "text-success",
+                isDebt
+                  ? "text-danger-strong dark:text-danger"
+                  : "text-success-strong dark:text-success",
               )}
             >
               {isDebt ? "−" : "+"}

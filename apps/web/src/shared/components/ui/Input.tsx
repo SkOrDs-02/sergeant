@@ -125,11 +125,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     maxLen !== undefined ? String(props.value ?? "").length : 0;
   const renderCounter =
     (showCharCount || maxLen !== undefined) && maxLen !== undefined;
+  const maxLenSafe = maxLen ?? 0;
   const counterColor =
-    currentLen >= maxLen!
-      ? "text-danger"
-      : currentLen / maxLen! >= 0.8
-        ? "text-warning"
+    currentLen >= maxLenSafe
+      ? "text-danger-strong dark:text-danger"
+      : maxLenSafe > 0 && currentLen / maxLenSafe >= 0.8
+        ? "text-warning-strong dark:text-warning"
         : "text-subtle";
 
   // Type-aware defaults. The caller's explicit prop always wins — these
@@ -190,7 +191,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
               role={error ? "alert" : "status"}
               className={cn(
                 "text-xs leading-snug",
-                error ? "text-danger" : "text-subtle",
+                error ? "text-danger-strong dark:text-danger" : "text-subtle",
               )}
             >
               {helperText}
