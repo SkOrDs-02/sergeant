@@ -15,7 +15,7 @@ import {
   useHubChatOverlay,
   useHubChatOverlayState,
 } from "../hub/useHubChatOverlay";
-import { APP_TITLE, SIGN_IN_PATH } from "./appPaths";
+import { SIGN_IN_PATH, titleForPath } from "./appPaths";
 import { useHubKeyboardShortcuts } from "../hooks/useHubKeyboardShortcuts";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import { useHubNavigation } from "../hooks/useHubNavigation";
@@ -134,14 +134,16 @@ function RootLayoutInner() {
   useTheme();
   useActivationV2Boot();
 
-  // Keep the tab title pinned to the app name on every navigation. The
-  // static <title> in index.html is set once at load; some sub-routes
-  // (e.g. /nutrition/log) were observed dropping it, so the browser fell
-  // back to showing the raw URL. Re-asserting it per pathname covers all
-  // routes — module shells, standalone routes, and the 404.
+  // Keep the tab title pinned per route on every navigation. The static
+  // <title> in index.html is set once at load; some sub-routes (e.g.
+  // /nutrition/log) were observed dropping it, so the browser fell back to
+  // showing the raw URL. `titleForPath` resolves a route-specific title
+  // (`/status`, `/chat`) and falls back to the generic app name for every
+  // other route — module shells, the hub home, and the 404.
   useEffect(() => {
-    if (document.title !== APP_TITLE) {
-      document.title = APP_TITLE;
+    const nextTitle = titleForPath(location.pathname);
+    if (document.title !== nextTitle) {
+      document.title = nextTitle;
     }
   }, [location.pathname]);
 

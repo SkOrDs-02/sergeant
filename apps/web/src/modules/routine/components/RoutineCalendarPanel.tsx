@@ -612,6 +612,7 @@ export function RoutineCalendarPanel({
         <HabitDetailSheet
           habitId={detailHabitId}
           routine={routine}
+          setRoutine={setRoutine}
           onClose={() => setDetailHabitId(null)}
         />
       )}

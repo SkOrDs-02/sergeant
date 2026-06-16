@@ -68,6 +68,7 @@ export const fizrukPageMessages = {
     submit: "Зберегти замір",
     lastEntry: "Останній замір",
     history: "Історія",
+    deleteAria: "Видалити замір",
     emptyTitle: "Поки замірів немає",
     emptyDescription: "Додай перший запис, щоб бачити динаміку показників.",
   },

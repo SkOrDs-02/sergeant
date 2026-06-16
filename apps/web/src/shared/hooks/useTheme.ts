@@ -25,7 +25,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   safeReadStringLS,
-  safeWriteLS,
+  safeReadStringLSDurable,
+  safeWriteStringLSDurable,
   webKVStore,
 } from "@shared/lib/storage/storage";
 
@@ -66,16 +67,24 @@ function migrateLegacyChoice(): ThemeChoice | null {
 }
 
 function readInitialChoice(): ThemeChoice {
-  const raw = safeReadStringLS(STORAGE_KEY);
+  // `…Durable` prefers the synchronous localStorage mirror so a choice whose
+  // fire-and-forget SQLite write-back was lost to a reload race is still
+  // recovered — without it, the lost write silently degraded to the `system`
+  // fallback below, flipping `<html>` to `.dark` on a dark-OS device and
+  // turning the chosen light/HC theme invisible (text-text → near-white over
+  // light surfaces). See storage.ts § Boot-critical durable helpers.
+  const raw = safeReadStringLSDurable(STORAGE_KEY);
   if (isThemeChoice(raw)) return raw;
   const legacy = migrateLegacyChoice();
   return legacy ?? "system";
 }
 
 function writeChoice(choice: ThemeChoice): void {
-  // `safeWriteLS` для рядка обходить JSON.stringify і пише raw value
-  // (див. storage.ts) — крос-табний `storage` event у такому ж форматі.
-  safeWriteLS(STORAGE_KEY, choice);
+  // Durable write: active store (SQLite warm-cache) + synchronous localStorage
+  // mirror. The mirror is what the next boot's warm-cache seed re-reads if the
+  // async SQLite upsert hasn't flushed yet. Raw string value (no JSON.stringify)
+  // keeps the cross-tab `storage` event payload in the same format.
+  safeWriteStringLSDurable(STORAGE_KEY, choice);
 }
 
 interface ResolvedTheme {

@@ -29,6 +29,23 @@ import type {
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { TxAccount } from "./Transactions";
 
+/** Typical rendered height of one `TxListItem` row, in px. Used only to
+ * seed `GroupedVirtuoso`'s `defaultItemHeight` so it skips the zero-height
+ * probe render — the real heights are measured once rows mount. */
+const ROW_HEIGHT_PX = 64;
+
+/**
+ * 1px-tall filler returned from `groupContent` / `itemContent` for an
+ * index that is briefly out of range (e.g. mid-mutation, before the new
+ * `groupCounts` / `flatItems` propagate). Returning `null` here renders a
+ * zero-height `data-index` node that react-virtuoso's resize loop measures
+ * as `offsetHeight: 0` and logs as a `Zero-sized element` error on every
+ * tick. A non-zero, visually-empty filler keeps the measurement valid.
+ */
+function ListPlaceholder() {
+  return <div aria-hidden className="h-px" />;
+}
+
 export interface TransactionListProps {
   /** Whether the underlying month is still loading (real or history). */
   loading: boolean;
@@ -200,10 +217,18 @@ export function TransactionList({
             <GroupedVirtuoso
               {...(scrollParent ? { customScrollParent: scrollParent } : {})}
               groupCounts={groupCounts}
+              // Seed measurement with a typical row height so react-virtuoso
+              // skips its zero-height "probe" render. Without it, the all-
+              // collapsed default state (every `groupCounts` entry is 0) and
+              // the brief post-mutation window (a stale index renders before
+              // the new `groupCounts`/`flatItems` settle) leave the list
+              // region measuring `offsetHeight: 0`, which virtuoso logs as a
+              // repeated `Zero-sized element` console error.
+              defaultItemHeight={ROW_HEIGHT_PX}
               increaseViewportBy={{ top: 400, bottom: 400 }}
               groupContent={(groupIndex) => {
                 const group = groupedByDate[groupIndex];
-                if (!group) return null;
+                if (!group) return <ListPlaceholder />;
                 const key = group.key;
                 const collapsed = collapsedKeys.has(key);
                 const summary = daySummaries[key] ?? {
@@ -227,7 +252,7 @@ export function TransactionList({
               }}
               itemContent={(index) => {
                 const t = flatItems[index];
-                if (!t) return null;
+                if (!t) return <ListPlaceholder />;
                 const rowTx = t as TxRowTx;
                 return (
                   <TxListItem

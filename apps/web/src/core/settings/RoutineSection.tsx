@@ -157,6 +157,7 @@ export function RoutineSection() {
         <HabitDetailSheet
           habitId={detailHabitId}
           routine={routine}
+          setRoutine={setRoutine}
           onClose={() => setDetailHabitId(null)}
         />
       )}

@@ -12,6 +12,26 @@
 // it pinned to this value on every navigation.
 export const APP_TITLE = "Sergeant — Твій персональний хаб життя";
 
+// Per-route document titles. `RootLayout` resolves the active pathname against
+// this map on every navigation and falls back to `APP_TITLE` for anything not
+// listed. Standalone surfaces (`/status`, `/chat`) get a specific title so the
+// browser tab / history entry reads meaningfully instead of the generic hub
+// name. Format mirrors `APP_TITLE`: `Sergeant — <surface>`.
+export const ROUTE_TITLES: Readonly<Record<string, string>> = {
+  "/status": "Sergeant — Статус системи",
+  "/chat": "Sergeant — Асистент",
+};
+
+/**
+ * Resolves the document title for a pathname. Returns the route-specific
+ * title from `ROUTE_TITLES` when one is registered, otherwise the canonical
+ * `APP_TITLE`. Keeps the title-resolution logic in one place so both the
+ * `RootLayout` effect and any future caller stay in sync.
+ */
+export function titleForPath(pathname: string): string {
+  return ROUTE_TITLES[pathname] ?? APP_TITLE;
+}
+
 // Auth lives at `/sign-in` rather than as an in-page overlay. This keeps
 // the FTUX splash (`/`) as the true cold-start surface — the old
 // `showAuth` boolean meant that a first-time visitor who tapped

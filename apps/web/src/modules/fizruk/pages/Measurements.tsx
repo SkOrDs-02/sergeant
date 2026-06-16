@@ -301,7 +301,7 @@ export function Measurements() {
                 </div>
                 <button
                   type="button"
-                  aria-label="Видалити замір"
+                  aria-label={messages.fizruk.measurements.deleteAria}
                   className="focus-ring touch-target -mr-2 px-2 inline-flex items-center justify-center rounded-full text-style-caption text-danger-strong hover:text-danger transition-colors"
                   onClick={() => handleDelete(e.id)}
                 >
