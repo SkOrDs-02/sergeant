@@ -31,6 +31,7 @@ interface MonthMarker {
 }
 
 function localDateKey(d: Date): string {
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- formats a Date already built from Kyiv-anchored parts at local noon; pure YYYY-MM-DD shaping, not a host-local "now" read
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
@@ -83,6 +84,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     // of Kyiv-Y/M/D so the subsequent local-TZ getters preserve the
     // calendar day across host TZ.
     const { year, month, day } = getKyivDateParts();
+    /* eslint-disable sergeant-design/prefer-kyiv-time -- every getter below reads Date objects constructed from the Kyiv-anchored parts above (pinned to local noon); this is pure calendar arithmetic for the year-long grid, not host-local "now" reads */
     const today = new Date(year, month - 1, day, 12, 0, 0, 0);
     const todayKey = localDateKey(today);
 
@@ -129,6 +131,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
       }
       weeks.push(week);
     }
+    /* eslint-enable sergeant-design/prefer-kyiv-time */
 
     return { weeks, monthMarkers };
   }, [activeHabits, completions]);
@@ -142,16 +145,24 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     return map;
   }, [weeks]);
 
-  // Roving tabIndex: most-recently focused > selected > first non-future cell
+  // Roving tabIndex: most-recently focused > selected > today > most-recent
+  // past cell. Anchoring the default tab stop on *today* (rather than the
+  // first non-future cell ~52 weeks back) means a keyboard / screen-reader
+  // user entering the year-long grid lands on the current day — announced
+  // with the current year — instead of the oldest cell, whose aria-label
+  // correctly reads a year behind and was misread as an off-by-year bug
+  // (a11y QA, 2026-06-16). The historical cell labels are unchanged.
   const rovingKey = useMemo(() => {
     if (focusedKey && cellPositions.has(focusedKey)) return focusedKey;
     if (selected && cellPositions.has(selected)) return selected;
+    let mostRecentPast: string | null = null;
     for (const week of weeks) {
       for (const cell of week) {
-        if (!cell.isFuture) return cell.key;
+        if (cell.isToday) return cell.key;
+        if (!cell.isFuture) mostRecentPast = cell.key;
       }
     }
-    return weeks[0]?.[0]?.key ?? null;
+    return mostRecentPast ?? weeks[0]?.[0]?.key ?? null;
   }, [focusedKey, selected, weeks, cellPositions]);
 
   const handleClick = useCallback((key: string) => {
