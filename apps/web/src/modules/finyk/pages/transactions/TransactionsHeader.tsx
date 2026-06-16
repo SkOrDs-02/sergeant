@@ -38,7 +38,8 @@ export function TransactionsHeader({
       <div className="flex items-center gap-1">
         <button
           onClick={() => goMonth(-1)}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors text-lg"
+          aria-label="Попередній місяць"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors text-lg"
         >
           ‹
         </button>
@@ -48,7 +49,8 @@ export function TransactionsHeader({
         <button
           onClick={() => goMonth(1)}
           disabled={isCurrentMonth}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors text-lg disabled:opacity-30"
+          aria-label="Наступний місяць"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors text-lg disabled:opacity-30"
         >
           ›
         </button>

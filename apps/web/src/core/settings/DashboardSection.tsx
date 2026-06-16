@@ -97,6 +97,7 @@ export function DashboardSection() {
                 key={d}
                 type="button"
                 onClick={() => handleDensityChange(d)}
+                aria-pressed={d === density}
                 className={cn(
                   "flex-1 rounded-xl border px-3 py-2.5 text-left transition-colors",
                   d === density

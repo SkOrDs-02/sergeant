@@ -286,6 +286,7 @@ function MonthlyPlanCardComponent({
               )}
               <Input
                 type="number"
+                aria-label="План доходу"
                 placeholder="План доходу ₴"
                 value={monthlyPlan?.income ?? ""}
                 onChange={(e) =>
@@ -297,6 +298,7 @@ function MonthlyPlanCardComponent({
               />
               <Input
                 type="number"
+                aria-label="План витрат"
                 placeholder="План витрат ₴"
                 value={monthlyPlan?.expense ?? ""}
                 onChange={(e) =>
@@ -308,6 +310,7 @@ function MonthlyPlanCardComponent({
               />
               <Input
                 type="number"
+                aria-label="План накопичень"
                 placeholder="План накопичень ₴"
                 value={monthlyPlan?.savings ?? ""}
                 onChange={(e) =>
