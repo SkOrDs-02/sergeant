@@ -271,7 +271,10 @@ export function ConfirmModal({
   onCancel,
 }: ConfirmModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  useDialogFocusTrap(open, panelRef, { onEscape: onCancel });
+  useDialogFocusTrap(open, panelRef, {
+    onEscape: onCancel,
+    inertBackground: true,
+  });
 
   if (!open) return null;
   return (

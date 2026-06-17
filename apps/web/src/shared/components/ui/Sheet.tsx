@@ -105,7 +105,10 @@ export function Sheet({
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  useDialogFocusTrap(open, panelRef, { onEscape: onClose });
+  useDialogFocusTrap(open, panelRef, {
+    onEscape: onClose,
+    inertBackground: true,
+  });
 
   // Swipe-to-dismiss — drag the panel down ≥ 80 px to close. Mirrors
   // the iOS Maps / Apple Pay sheet feel; the drag handle pill at the

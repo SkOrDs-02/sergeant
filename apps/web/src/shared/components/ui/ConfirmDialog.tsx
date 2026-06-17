@@ -36,7 +36,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const ref = useRef<HTMLDivElement>(null);
-  useDialogFocusTrap(open, ref, { onEscape: onCancel });
+  useDialogFocusTrap(open, ref, { onEscape: onCancel, inertBackground: true });
 
   // Pulling the sheet down to dismiss is the same gesture users already
   // know from <Sheet>. We treat dismiss as "cancel" — destructive

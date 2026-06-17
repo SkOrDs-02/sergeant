@@ -153,6 +153,7 @@ export function OnboardingWizard({
   }, [isTour, finish, onSecondaryAction]);
   useDialogFocusTrap(variant === "modal", panelRef, {
     onEscape: handleEscape,
+    inertBackground: true,
   });
 
   const content = useMemo(

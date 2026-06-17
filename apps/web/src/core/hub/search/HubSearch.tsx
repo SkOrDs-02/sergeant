@@ -33,7 +33,7 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
   const engine = useSearchEngine({ onClose, onOpenModule });
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  useDialogFocusTrap(true, panelRef);
+  useDialogFocusTrap(true, panelRef, { inertBackground: true });
 
   const activeHit = engine.flat[engine.activeIdx];
 

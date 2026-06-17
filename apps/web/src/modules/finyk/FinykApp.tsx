@@ -96,6 +96,7 @@ export default function App({
   const loginOverlayRef = useRef<HTMLDivElement>(null);
   useDialogFocusTrap(showLoginOverlay, loginOverlayRef, {
     onEscape: () => setShowLoginOverlay(false),
+    inertBackground: true,
   });
   const [editingManualExpenseId, setEditingManualExpenseId] = useState<
     string | null

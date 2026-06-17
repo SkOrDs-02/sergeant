@@ -48,7 +48,10 @@ export function CommandPaletteUI() {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
 
-  useDialogFocusTrap(open, panelRef, { onEscape: closePalette });
+  useDialogFocusTrap(open, panelRef, {
+    onEscape: closePalette,
+    inertBackground: true,
+  });
 
   // Reset state and focus on each open.
   useEffect(() => {

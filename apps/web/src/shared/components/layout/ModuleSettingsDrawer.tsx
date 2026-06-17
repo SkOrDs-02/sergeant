@@ -33,7 +33,10 @@ export function ModuleSettingsDrawer({
   const panelRef = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
 
-  useDialogFocusTrap(open, panelRef, { onEscape: onClose });
+  useDialogFocusTrap(open, panelRef, {
+    onEscape: onClose,
+    inertBackground: true,
+  });
   useBodyScrollLock(open);
 
   // Right-side drawers dismiss with a rightward swipe — opposite of

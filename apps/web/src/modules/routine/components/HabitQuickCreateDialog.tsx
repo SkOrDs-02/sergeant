@@ -84,7 +84,7 @@ export function HabitQuickCreateDialog({
   onDismissFirstRunHint,
 }: HabitQuickCreateDialogProps) {
   const ref = useRef<HTMLDivElement>(null);
-  useDialogFocusTrap(open, ref, { onEscape: onClose });
+  useDialogFocusTrap(open, ref, { onEscape: onClose, inertBackground: true });
   const toast = useToast();
   const [draft, setDraft] = useState<HabitDraft>(() => emptyHabitDraft());
   const [internalFocusTick, setInternalFocusTick] = useState(0);

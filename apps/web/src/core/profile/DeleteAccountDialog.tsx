@@ -25,7 +25,10 @@ export function DeleteAccountDialog({
   const descriptionId = useId();
   const passwordId = useId();
 
-  useDialogFocusTrap(open, panelRef, { onEscape: onCancel });
+  useDialogFocusTrap(open, panelRef, {
+    onEscape: onCancel,
+    inertBackground: true,
+  });
 
   useEffect(() => {
     if (!open) return;

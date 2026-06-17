@@ -85,7 +85,10 @@ export function Modal({
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descriptionId = useId();
-  useDialogFocusTrap(open, panelRef, { onEscape: onClose });
+  useDialogFocusTrap(open, panelRef, {
+    onEscape: onClose,
+    inertBackground: true,
+  });
 
   // Adaptive layout: on coarse-pointer devices (touch screens) the
   // bottom-sheet hand-off feels more native than a centered modal.

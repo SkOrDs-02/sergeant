@@ -2,7 +2,10 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { createRef } from "react";
-import { useDialogFocusTrap } from "./useDialogFocusTrap";
+import {
+  useDialogFocusTrap,
+  __resetDialogInertForTests,
+} from "./useDialogFocusTrap";
 
 /**
  * Spec: restoring focus to the dialog trigger on close is a WCAG 2.4.3
@@ -11,6 +14,7 @@ import { useDialogFocusTrap } from "./useDialogFocusTrap";
  */
 describe("useDialogFocusTrap — focus restoration", () => {
   afterEach(() => {
+    __resetDialogInertForTests();
     document.body.innerHTML = "";
   });
 
@@ -230,5 +234,220 @@ describe("useDialogFocusTrap — focus restoration", () => {
     // is left alone.
     expect(document.activeElement).not.toBe(document.body);
     unmount();
+  });
+});
+
+/**
+ * Spec: the keyboard trap above only contains Tab. The screen-reader
+ * virtual cursor ignores Tab and would otherwise wander the controls
+ * behind an open modal. With `inertBackground`, everything outside the
+ * dialog's overlay is marked `inert` + `aria-hidden` (WCAG 4.1.2 /
+ * 1.3.1). These tests lock in that the background is hidden on open,
+ * restored on close, the dialog's own scrim stays live, pre-existing
+ * inert is never clobbered, and stacked dialogs don't trap each other.
+ */
+describe("useDialogFocusTrap — background inert", () => {
+  afterEach(() => {
+    __resetDialogInertForTests();
+    document.body.innerHTML = "";
+  });
+
+  function makeRef(el: HTMLElement) {
+    const ref = createRef<HTMLElement>();
+    Object.defineProperty(ref, "current", { value: el, writable: true });
+    return ref;
+  }
+
+  it("does nothing unless inertBackground is opted in", () => {
+    const bg = document.createElement("button");
+    document.body.appendChild(bg);
+
+    const panel = document.createElement("div");
+    panel.appendChild(document.createElement("button"));
+    document.body.appendChild(panel);
+
+    const { unmount } = renderHook(() =>
+      useDialogFocusTrap(true, makeRef(panel)),
+    );
+
+    expect(bg.hasAttribute("inert")).toBe(false);
+    expect(bg.hasAttribute("aria-hidden")).toBe(false);
+    unmount();
+  });
+
+  it("marks background siblings inert + aria-hidden on open and clears them on close", () => {
+    const bg1 = document.createElement("button");
+    const bg2 = document.createElement("button");
+    document.body.append(bg1, bg2);
+
+    const panel = document.createElement("div");
+    panel.appendChild(document.createElement("button"));
+    document.body.appendChild(panel);
+
+    const { rerender, unmount } = renderHook(
+      ({ open }) =>
+        useDialogFocusTrap(open, makeRef(panel), { inertBackground: true }),
+      { initialProps: { open: true } },
+    );
+
+    // No fixed overlay in this flat fixture → the panel itself is the
+    // dialog root, so its body-level siblings are the background.
+    expect(bg1.hasAttribute("inert")).toBe(true);
+    expect(bg2.hasAttribute("inert")).toBe(true);
+    expect(bg1.getAttribute("aria-hidden")).toBe("true");
+    // The dialog itself is never inerted.
+    expect(panel.hasAttribute("inert")).toBe(false);
+
+    rerender({ open: false });
+
+    expect(bg1.hasAttribute("inert")).toBe(false);
+    expect(bg2.hasAttribute("inert")).toBe(false);
+    expect(bg1.hasAttribute("aria-hidden")).toBe(false);
+    unmount();
+  });
+
+  it("inerts outside the fixed overlay, keeping the dialog's own scrim interactive", () => {
+    const bg = document.createElement("button");
+    document.body.appendChild(bg);
+
+    // overlay (fixed) > [scrim, panel] — mirrors Sheet/Modal/ConfirmDialog.
+    const overlay = document.createElement("div");
+    overlay.style.position = "fixed";
+    const scrim = document.createElement("button");
+    const panel = document.createElement("div");
+    panel.appendChild(document.createElement("button"));
+    overlay.append(scrim, panel);
+    document.body.appendChild(overlay);
+
+    const { rerender, unmount } = renderHook(
+      ({ open }) =>
+        useDialogFocusTrap(open, makeRef(panel), { inertBackground: true }),
+      { initialProps: { open: true } },
+    );
+
+    expect(bg.hasAttribute("inert")).toBe(true);
+    // Scrim is a child of the overlay (the dialog root) — it must stay
+    // live so tap-outside-to-dismiss keeps working.
+    expect(scrim.hasAttribute("inert")).toBe(false);
+    expect(panel.hasAttribute("inert")).toBe(false);
+    expect(overlay.hasAttribute("inert")).toBe(false);
+
+    rerender({ open: false });
+    expect(bg.hasAttribute("inert")).toBe(false);
+    unmount();
+  });
+
+  it("never clears inert that was already present before the dialog opened", () => {
+    const bg = document.createElement("button");
+    bg.setAttribute("inert", "");
+    bg.setAttribute("aria-hidden", "true");
+    document.body.appendChild(bg);
+
+    const panel = document.createElement("div");
+    panel.appendChild(document.createElement("button"));
+    document.body.appendChild(panel);
+
+    const { rerender, unmount } = renderHook(
+      ({ open }) =>
+        useDialogFocusTrap(open, makeRef(panel), { inertBackground: true }),
+      { initialProps: { open: true } },
+    );
+
+    expect(bg.hasAttribute("inert")).toBe(true);
+
+    rerender({ open: false });
+    // We did not set it → we must not clear it.
+    expect(bg.hasAttribute("inert")).toBe(true);
+    expect(bg.getAttribute("aria-hidden")).toBe("true");
+    unmount();
+  });
+
+  it("un-inerts the background before restoring focus to an inerted trigger", () => {
+    const trigger = document.createElement("button");
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    const panel = document.createElement("div");
+    panel.appendChild(document.createElement("button"));
+    document.body.appendChild(panel);
+
+    const { rerender, unmount } = renderHook(
+      ({ open }) =>
+        useDialogFocusTrap(open, makeRef(panel), { inertBackground: true }),
+      { initialProps: { open: true } },
+    );
+
+    // Trigger is a background sibling → inerted while the dialog is open.
+    expect(trigger.hasAttribute("inert")).toBe(true);
+
+    rerender({ open: false });
+
+    // Cleanup un-inerts first, then restores focus (focus() is a no-op on
+    // an element still inside an inert subtree).
+    expect(trigger.hasAttribute("inert")).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+    unmount();
+  });
+
+  it("keeps a stacked dialog reachable: a second dialog releases the branch that now contains it", () => {
+    // Portaled "sheet": its fixed overlay is a direct child of <body>.
+    // Inline "confirm": its fixed overlay lives inside the app root, as a
+    // sibling of page content. This is the real Фінік/Рутина
+    // "ConfirmDialog over edit-sheet" shape.
+    const appRoot = document.createElement("div");
+    const pageBg = document.createElement("button");
+    const confirmOverlay = document.createElement("div");
+    confirmOverlay.style.position = "fixed";
+    const confirmScrim = document.createElement("button");
+    const confirmPanel = document.createElement("div");
+    confirmPanel.appendChild(document.createElement("button"));
+    confirmOverlay.append(confirmScrim, confirmPanel);
+    appRoot.append(pageBg, confirmOverlay);
+    document.body.appendChild(appRoot);
+
+    const sheetOverlay = document.createElement("div");
+    sheetOverlay.style.position = "fixed";
+    const sheetPanel = document.createElement("div");
+    sheetPanel.appendChild(document.createElement("button"));
+    sheetOverlay.appendChild(sheetPanel);
+    document.body.appendChild(sheetOverlay);
+
+    // 1) Sheet opens — the whole app root is inerted behind it.
+    const sheetHook = renderHook(
+      ({ open }) =>
+        useDialogFocusTrap(open, makeRef(sheetPanel), {
+          inertBackground: true,
+        }),
+      { initialProps: { open: true } },
+    );
+    expect(appRoot.hasAttribute("inert")).toBe(true);
+
+    // 2) Confirm opens *inside* the (currently inerted) app root.
+    const confirmHook = renderHook(
+      ({ open }) =>
+        useDialogFocusTrap(open, makeRef(confirmPanel), {
+          inertBackground: true,
+        }),
+      { initialProps: { open: true } },
+    );
+    // App root must be released (it now leads to the open confirm)…
+    expect(appRoot.hasAttribute("inert")).toBe(false);
+    // …the confirm and its scrim stay live…
+    expect(confirmPanel.hasAttribute("inert")).toBe(false);
+    expect(confirmScrim.hasAttribute("inert")).toBe(false);
+    // …but the page content beside it is inerted.
+    expect(pageBg.hasAttribute("inert")).toBe(true);
+
+    // 3) Confirm closes — app root is inerted again behind the sheet.
+    confirmHook.rerender({ open: false });
+    expect(appRoot.hasAttribute("inert")).toBe(true);
+    expect(pageBg.hasAttribute("inert")).toBe(false);
+
+    // 4) Sheet closes — everything is restored.
+    sheetHook.rerender({ open: false });
+    expect(appRoot.hasAttribute("inert")).toBe(false);
+
+    confirmHook.unmount();
+    sheetHook.unmount();
   });
 });

@@ -281,6 +281,7 @@ export function AppLock({
   // ESC intentionally disabled on locked — user cannot bypass with keyboard.
   useDialogFocusTrap(visible, panelRef, {
     onEscape: state === "locked" ? undefined : onSetupCancel,
+    inertBackground: true,
   });
 
   if (!visible) return null;

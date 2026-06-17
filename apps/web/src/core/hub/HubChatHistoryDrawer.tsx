@@ -47,7 +47,10 @@ export function HubChatHistoryDrawer({
 }: HubChatHistoryDrawerProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  useDialogFocusTrap(open, panelRef, { onEscape: onClose });
+  useDialogFocusTrap(open, panelRef, {
+    onEscape: onClose,
+    inertBackground: true,
+  });
 
   // Sort newest-first by updatedAt so a freshly-touched session jumps
   // to the top, matching iOS Messages and Telegram conventions.

@@ -67,7 +67,7 @@ export function InputDialog({
     },
   });
 
-  useDialogFocusTrap(open, ref, { onEscape: onCancel });
+  useDialogFocusTrap(open, ref, { onEscape: onCancel, inertBackground: true });
 
   useEffect(() => {
     if (open) {
