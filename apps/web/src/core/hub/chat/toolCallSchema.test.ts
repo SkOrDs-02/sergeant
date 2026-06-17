@@ -64,3 +64,55 @@ describe("parseToolCalls — name allow-list (C1)", () => {
     expect(KNOWN_TOOL_NAMES.has("recall_memory")).toBe(true);
   });
 });
+
+describe("parseToolCalls — talk-to-your-data read/query tools (regression)", () => {
+  // Regression for the prod-QA report: read/query tool-calls returned the bare
+  // "Немає відповіді." fallback while writes worked. Root cause — PR #3598
+  // added these read tools (server defs + `handleQuery*Action` executors) but
+  // never added their names to `KNOWN_TOOL_NAMES`, so `parseToolCalls` dropped
+  // the whole batch at the Step-2 name check and `useChatSend` rendered the
+  // empty-response fallback (the first-turn response carries `text: null`
+  // alongside a tool_use). Every one of these must be dispatchable.
+  const QUERY_TOOLS = [
+    "query_transactions",
+    "aggregate_spending",
+    "compare_periods",
+    "query_habits",
+    "habit_correlation",
+    "query_workouts",
+    "exercise_progress",
+    "training_stats",
+    "query_nutrition",
+    "nutrition_averages",
+  ] as const;
+
+  it.each(QUERY_TOOLS)("allow-lists the read/query tool %s", (name) => {
+    expect(KNOWN_TOOL_NAMES.has(name)).toBe(true);
+  });
+
+  it("accepts an aggregate_spending call (the 'скільки я витратив' path)", () => {
+    const result = parseToolCalls([
+      {
+        id: "t1",
+        name: "aggregate_spending",
+        input: { group_by: "category", date_from: "2026-06-01" },
+      },
+    ]);
+    expect(result.ok).toBe(true);
+  });
+
+  it("accepts a query_habits call (the 'перелічи мої звички' path)", () => {
+    const result = parseToolCalls([
+      { id: "t1", name: "query_habits", input: { period_days: 30 } },
+    ]);
+    expect(result.ok).toBe(true);
+  });
+
+  it("accepts a batch mixing a read query with a known mutator", () => {
+    const result = parseToolCalls([
+      { id: "t1", name: "query_workouts", input: { period_days: 7 } },
+      { id: "t2", name: "create_habit", input: { name: "Біг" } },
+    ]);
+    expect(result.ok).toBe(true);
+  });
+});

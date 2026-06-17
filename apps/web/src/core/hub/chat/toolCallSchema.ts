@@ -254,6 +254,30 @@ export const KNOWN_TOOL_NAMES: ReadonlySet<string> = new Set([
   "remember",
   "forget",
   "my_profile",
+  // talk-to-your-data read-only query tools (PR #3598). Defined server-side
+  // in `apps/server/src/modules/chat/toolDefs/query*.ts` and dispatched by the
+  // `handleQuery*Action` executors through `hubChatActions.dispatch`. They are
+  // read-only, so they need no `MUTATOR_INPUT_SCHEMAS` entry — the envelope
+  // firewall plus this allow-list line are sufficient. Omitting them here was a
+  // PR #3598 oversight: every read/query call failed the Step 2 name check, the
+  // whole batch was dropped, and (because the first-turn response carries
+  // `text: null` next to a tool_use) the user saw the bare "Немає відповіді."
+  // fallback in `useChatSend`. Writes worked only because they were already
+  // listed. Keep in sync with the `query*` tool defs and executors.
+  // finyk
+  "query_transactions",
+  "aggregate_spending",
+  "compare_periods",
+  // routine
+  "query_habits",
+  "habit_correlation",
+  // fizruk
+  "query_workouts",
+  "exercise_progress",
+  "training_stats",
+  // nutrition
+  "query_nutrition",
+  "nutrition_averages",
   // async (server-side) — ASYNC_CHAT_ACTION_NAMES in serverActions.ts
   "recall_memory",
 ]);

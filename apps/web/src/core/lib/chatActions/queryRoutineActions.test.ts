@@ -1,16 +1,30 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import type { Habit } from "@sergeant/routine-domain";
 import { handleQueryRoutineAction } from "./queryRoutineActions";
+import {
+  __setRoutineSqliteStateCacheForTests,
+  __setRoutineSqliteCompletionsCacheForTests,
+  clearSqliteRoutineStateCache,
+  clearSqliteCompletionsCache,
+} from "../../../modules/routine/lib/sqliteReader";
 import type { ChatAction } from "./types";
 
 beforeEach(() => {
+  // Stage 8 PR #057r-tombstone — routine state is backed by the SQLite warm
+  // cache, not the retired `hub_routine_v1` LS key. Reset both caches so each
+  // spec starts clean.
   localStorage.clear();
+  clearSqliteRoutineStateCache();
+  clearSqliteCompletionsCache();
   vi.useFakeTimers();
   // 2026-04-22 is a Wednesday (Kyiv).
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
 });
 afterEach(() => {
   localStorage.clear();
+  clearSqliteRoutineStateCache();
+  clearSqliteCompletionsCache();
   vi.useRealTimers();
 });
 
@@ -22,7 +36,12 @@ function call(action: ChatAction): string {
   return typeof out === "string" ? out : out.result;
 }
 
-/** Seed the compat `hub_routine_v1` key (read by the briefing/query handlers). */
+/**
+ * Seed the canonical SQLite-backed routine state (the source `readRoutine`
+ * now reads via `loadRoutineState`). Replaces the pre-tombstone
+ * `localStorage.setItem("hub_routine_v1", …)` round-trip — that key is deleted
+ * on boot in production, which is the bug this suite now guards against.
+ */
 function seedRoutine(
   habits: Array<{
     id: string;
@@ -33,10 +52,11 @@ function seedRoutine(
   }>,
   completions: Record<string, string[]>,
 ): void {
-  localStorage.setItem(
-    "hub_routine_v1",
-    JSON.stringify({ habits, completions }),
-  );
+  __setRoutineSqliteStateCacheForTests({
+    habits: habits as unknown as Habit[],
+    habitOrder: habits.map((h) => h.id),
+  });
+  __setRoutineSqliteCompletionsCacheForTests({ completions });
 }
 
 // ---------------------------------------------------------------------------
