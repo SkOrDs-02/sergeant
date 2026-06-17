@@ -1,5 +1,5 @@
 import { getTxStatAmount } from "../../../modules/finyk/utils";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { loadRoutineState } from "../../../modules/routine/lib/routineStorage";
 import {
   getKyivDayKey,
   getKyivMondayIndex,
@@ -7,19 +7,15 @@ import {
 } from "@shared/lib/time/kyivTime";
 import { ls } from "../hubChatUtils";
 import { readWorkouts } from "./fizrukActions/shared";
-import type {
-  ChatAction,
-  ChatActionResult,
-  HabitState,
-  Workout,
-} from "./types";
+import type { ChatAction, ChatActionResult, Workout } from "./types";
 
 /**
  * Read-only "talk to your data" виконавці для Рутини (PR3 talk-to-your-data).
  * Дзеркало серверних `QUERY_ROUTINE_TOOLS` (`toolDefs/queryRoutine.ts`). Жоден
- * з них НЕ пише — лише читають журнал звичок (`hub_routine_v1`, як у
- * `crossActions/briefingHandlers.ts`) і, для кореляцій, журнал тренувань
- * (`readWorkouts`) та банк-кеш транзакцій (`finyk_tx_cache`).
+ * з них НЕ пише — лише читають канонічний стан звичок через `loadRoutineState()`
+ * (SQLite-backed, той самий source, що й мутаційний `handleRoutineAction`) і,
+ * для кореляцій, журнал тренувань (`readWorkouts`) та банк-кеш транзакцій
+ * (`finyk_tx_cache`).
  *
  * Реєструється у `hubChatActions.ts` dispatch-chain окремою гілкою, не
  * чіпаючи мутаційний `handleRoutineAction`. Дні рахуються від `Date.now()`
@@ -66,17 +62,29 @@ interface RoutineHabit {
   paused?: boolean;
 }
 
-/** Read-only routine snapshot from the compat `hub_routine_v1` LS key. */
+/**
+ * Read-only routine snapshot from the canonical SQLite-backed state.
+ *
+ * Stage 8 PR #057r-tombstone retired the legacy `hub_routine_v1` LS key — it is
+ * deleted on boot after the one-time SQLite import (`residualImport.ts`) and
+ * `saveRoutineState()` (used by the routine write tools) no longer writes it.
+ * Reading that key here returned an empty journal in production, so
+ * `query_habits` / `habit_correlation` answered "Немає звичок" even for users
+ * with habits, and a habit just created via the `create_habit` write tool
+ * (which persists through `loadRoutineState`/`saveRoutineState`) was invisible
+ * to this read tool. We read `loadRoutineState()` — the same canonical source
+ * the routine UI and `handleRoutineAction` use — so reads and writes agree.
+ */
 function readRoutine(): {
   habits: RoutineHabit[];
   completions: Record<string, string[]>;
 } {
-  const state = ls<HabitState | null>(STORAGE_KEYS.ROUTINE, null);
-  const habits = Array.isArray(state?.habits)
+  const state = loadRoutineState();
+  const habits = Array.isArray(state.habits)
     ? (state.habits as RoutineHabit[])
     : [];
   const completions =
-    state?.completions && typeof state.completions === "object"
+    state.completions && typeof state.completions === "object"
       ? state.completions
       : {};
   return { habits, completions };
