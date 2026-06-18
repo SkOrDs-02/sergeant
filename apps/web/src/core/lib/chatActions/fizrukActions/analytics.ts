@@ -1,17 +1,15 @@
-import { ls } from "../../hubChatUtils";
-import { readWorkouts } from "./shared";
+import { readFizrukDailyLog, readFizrukWorkouts } from "./shared";
+import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
 import type {
   SuggestWorkoutAction,
   CompareProgressAction,
   WeightChartAction,
-  WorkoutItem,
-  Workout,
   ChatActionResult,
 } from "../types";
 
 export function suggestWorkout(action: SuggestWorkoutAction): ChatActionResult {
   const { focus } = action.input || {};
-  const workouts = readWorkouts();
+  const workouts = readFizrukWorkouts();
   const completed = workouts.filter((w) => w.endedAt);
   if (completed.length === 0) {
     return `Немає історії тренувань. Рекомендую почати з full-body тренування: присідання, жим лежачи, тяга, підтягування.${focus ? ` (фокус: ${focus})` : ""}`;
@@ -61,7 +59,7 @@ export function compareProgress(
   const { exercise_name, muscle_group, period_days } = action.input || {};
   const rawDays = Number(period_days);
   const days = Number.isFinite(rawDays) && rawDays > 0 ? rawDays : 30;
-  const workouts = readWorkouts();
+  const workouts = readFizrukWorkouts();
   const completed = workouts.filter((w) => w.endedAt);
   if (completed.length === 0) return "Немає завершених тренувань для аналізу.";
   const now = Date.now();
@@ -100,7 +98,10 @@ export function compareProgress(
           .reduce(
             (s, item) =>
               s +
-              item.sets.reduce((ss, set) => ss + set.weightKg * set.reps, 0),
+              (item.sets ?? []).reduce(
+                (ss, set) => ss + set.weightKg * set.reps,
+                0,
+              ),
             0,
           ),
       0,
@@ -112,7 +113,7 @@ export function compareProgress(
           max,
           ...w.items
             .filter(matchItem)
-            .flatMap((item) => item.sets.map((s) => s.weightKg)),
+            .flatMap((item) => (item.sets ?? []).map((s) => s.weightKg)),
         ),
       0,
     );
@@ -135,10 +136,7 @@ export function weightChart(action: WeightChartAction): ChatActionResult {
   const { period_days } = action.input || {};
   const rawDays = Number(period_days);
   const days = Number.isFinite(rawDays) && rawDays > 0 ? rawDays : 30;
-  const log = ls<Array<{ at?: string; weightKg?: number | null }>>(
-    "fizruk_daily_log_v1",
-    [],
-  );
+  const log = readFizrukDailyLog();
   const cutoff = Date.now() - days * 86400000;
   const entries = log
     .filter(
@@ -148,15 +146,15 @@ export function weightChart(action: WeightChartAction): ChatActionResult {
         Number.isFinite(Number(e.weightKg)) &&
         new Date(e.at).getTime() >= cutoff,
     )
-    .sort((a, b) => new Date(a.at!).getTime() - new Date(b.at!).getTime());
+    .sort((a, b) => (a.at ?? "").localeCompare(b.at ?? ""));
   if (entries.length === 0)
     return `Немає записів ваги за останні ${days} днів.`;
   const weights = entries.map((e) => e.weightKg as number);
   const min = Math.min(...weights);
   const max = Math.max(...weights);
-  const first = weights[0];
-  const last = weights[weights.length - 1];
-  const diff = last! - first!;
+  const first = weights[0] ?? 0;
+  const last = weights[weights.length - 1] ?? 0;
+  const diff = last - first;
   const parts: string[] = [
     `Вага за ${days} днів (${entries.length} записів):`,
     `Перша: ${first} кг → Остання: ${last} кг (${diff >= 0 ? "+" : ""}${diff.toFixed(1)} кг)`,
@@ -166,7 +164,7 @@ export function weightChart(action: WeightChartAction): ChatActionResult {
   if (recent.length > 1) {
     parts.push("Останні записи:");
     for (const e of recent) {
-      const d = new Date(e.at!).toLocaleDateString("uk-UA", {
+      const d = new Date(e.at ?? "").toLocaleDateString("uk-UA", {
         day: "numeric",
         month: "short",
       });

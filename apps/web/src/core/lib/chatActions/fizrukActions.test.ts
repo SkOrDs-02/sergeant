@@ -413,36 +413,32 @@ describe("copy_workout", () => {
 // ---------------------------------------------------------------------------
 describe("compare_progress", () => {
   it("happy: returns progress when workouts exist", () => {
-    localStorage.setItem(
-      "fizruk_workouts_v1",
-      JSON.stringify({
-        schemaVersion: 1,
-        workouts: [
+    mem.workouts = [
+      {
+        id: "w1",
+        startedAt: "2026-04-10T10:00:00.000Z",
+        endedAt: "2026-04-10T11:00:00.000Z",
+        items: [
           {
-            id: "w1",
-            startedAt: "2026-04-10T10:00:00.000Z",
-            endedAt: "2026-04-10T11:00:00.000Z",
-            items: [
-              {
-                id: "i1",
-                nameUk: "Жим",
-                type: "strength",
-                musclesPrimary: ["chest"],
-                musclesSecondary: [],
-                sets: [{ weightKg: 60, reps: 8 }],
-                durationSec: 0,
-                distanceM: 0,
-              },
-            ],
-            groups: [],
-            warmup: null,
-            cooldown: null,
-            note: "",
-            planned: false,
+            id: "i1",
+            exerciseId: "",
+            nameUk: "Жим",
+            primaryGroup: "",
+            type: "strength",
+            musclesPrimary: ["chest"],
+            musclesSecondary: [],
+            sets: [{ weightKg: 60, reps: 8 }],
+            durationSec: 0,
+            distanceM: 0,
           },
         ],
-      }),
-    );
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+        planned: false,
+      },
+    ];
     const out = call({
       name: "compare_progress",
       input: { exercise_name: "Жим", period_days: 30 },
@@ -458,25 +454,19 @@ describe("compare_progress", () => {
   });
 
   it("shape: result is a non-empty string", () => {
-    localStorage.setItem(
-      "fizruk_workouts_v1",
-      JSON.stringify({
-        schemaVersion: 1,
-        workouts: [
-          {
-            id: "w2",
-            startedAt: "2026-04-15T10:00:00.000Z",
-            endedAt: "2026-04-15T11:00:00.000Z",
-            items: [],
-            groups: [],
-            warmup: null,
-            cooldown: null,
-            note: "",
-            planned: false,
-          },
-        ],
-      }),
-    );
+    mem.workouts = [
+      {
+        id: "w2",
+        startedAt: "2026-04-15T10:00:00.000Z",
+        endedAt: "2026-04-15T11:00:00.000Z",
+        items: [],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+        planned: false,
+      },
+    ];
     const out = call({ name: "compare_progress", input: {} });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
