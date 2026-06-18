@@ -7,7 +7,14 @@
  * relevant keys for two weeks and asserts the returned diff string.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import type { Habit } from "@sergeant/routine-domain";
 import { handleCrossAction } from "./crossActions";
+import {
+  __setRoutineSqliteStateCacheForTests,
+  __setRoutineSqliteCompletionsCacheForTests,
+  clearSqliteRoutineStateCache,
+  clearSqliteCompletionsCache,
+} from "../../../modules/routine/lib/sqliteReader";
 import type { CompareWeeksAction } from "./types";
 
 // 2026-W17 = Mon 2026-04-20 .. Sun 2026-04-26
@@ -15,12 +22,19 @@ import type { CompareWeeksAction } from "./types";
 
 beforeEach(() => {
   localStorage.clear();
+  // Stage 8 PR #057r-tombstone — routine state is backed by the SQLite warm
+  // cache, not the retired `hub_routine_v1` LS key. Reset both caches so each
+  // spec starts clean (the "Немає активних звичок" spec relies on empty state).
+  clearSqliteRoutineStateCache();
+  clearSqliteCompletionsCache();
   vi.useFakeTimers();
   // Wednesday inside W17, so getWeekKey() picks W17 by default.
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
 });
 afterEach(() => {
   localStorage.clear();
+  clearSqliteRoutineStateCache();
+  clearSqliteCompletionsCache();
   vi.useRealTimers();
 });
 
@@ -30,6 +44,23 @@ function call(input: CompareWeeksAction["input"]): string {
     throw new Error("handler did not return a string");
   }
   return out;
+}
+
+/**
+ * Seed the canonical SQLite-backed routine state (`aggregateRoutine` reads it
+ * via `loadRoutineState`). Replaces the pre-tombstone
+ * `localStorage.setItem("hub_routine_v1", …)` round-trip — that key is deleted
+ * on boot in production, which is the bug this suite now guards against.
+ */
+function seedRoutine(
+  habits: Array<{ id: string; name?: string; archived?: boolean }>,
+  completions: Record<string, string[]>,
+): void {
+  __setRoutineSqliteStateCacheForTests({
+    habits: habits as unknown as Habit[],
+    habitOrder: habits.map((h) => h.id),
+  });
+  __setRoutineSqliteCompletionsCacheForTests({ completions });
 }
 
 describe("compare_weeks — параметри", () => {
@@ -164,24 +195,18 @@ describe("compare_weeks — Фінік diff", () => {
 
 describe("compare_weeks — Рутина diff", () => {
   it("показує % виконання звичок за обидва тижні", () => {
-    localStorage.setItem(
-      "hub_routine_v1",
-      JSON.stringify({
-        habits: [{ id: "h1", name: "Біг" }],
-        completions: {
-          h1: [
-            // W17 — 4 з 7 днів
-            "2026-04-20",
-            "2026-04-21",
-            "2026-04-23",
-            "2026-04-25",
-            // W16 — 2 з 7
-            "2026-04-13",
-            "2026-04-14",
-          ],
-        },
-      }),
-    );
+    seedRoutine([{ id: "h1", name: "Біг" }], {
+      h1: [
+        // W17 — 4 з 7 днів
+        "2026-04-20",
+        "2026-04-21",
+        "2026-04-23",
+        "2026-04-25",
+        // W16 — 2 з 7
+        "2026-04-13",
+        "2026-04-14",
+      ],
+    });
     const out = call({
       week_a: "2026-W17",
       week_b: "2026-W16",

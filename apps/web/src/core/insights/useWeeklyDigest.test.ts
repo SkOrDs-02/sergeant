@@ -15,6 +15,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
+import type { Habit } from "@sergeant/routine-domain";
+import {
+  __setRoutineSqliteStateCacheForTests,
+  __setRoutineSqliteCompletionsCacheForTests,
+  clearSqliteRoutineStateCache,
+  clearSqliteCompletionsCache,
+} from "../../modules/routine/lib/sqliteReader";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
@@ -133,6 +140,31 @@ function makeQueryClient() {
   });
 }
 
+/**
+ * Seed the canonical SQLite-backed routine state — the source `aggregateRoutine`
+ * now reads via `loadRoutineState()`. Replaces the pre-tombstone
+ * `safeReadLS("hub_routine_v1", …)` mock: that key is deleted on boot in
+ * production, which is the regression this suite guards against. `habitOrder`
+ * tracks the seeded ids so `loadRoutineState()`'s `ensureHabitOrder` pass does
+ * not need to renormalize.
+ */
+function seedRoutine(
+  habits: Array<{
+    id: string;
+    name?: string;
+    emoji?: string;
+    archived?: boolean;
+    paused?: boolean;
+  }>,
+  completions: Record<string, string[]>,
+): void {
+  __setRoutineSqliteStateCacheForTests({
+    habits: habits as unknown as Habit[],
+    habitOrder: habits.map((h) => h.id),
+  });
+  __setRoutineSqliteCompletionsCacheForTests({ completions });
+}
+
 // ── Pure helper tests — no mocks needed ───────────────────────────────────────
 
 describe("aggregateFizruk", () => {
@@ -238,28 +270,35 @@ describe("aggregateNutrition", () => {
 });
 
 describe("aggregateRoutine", () => {
-  it("returns null when no routine state in LS", async () => {
-    mockSafeReadLS.mockReturnValue(null);
+  beforeEach(() => {
+    clearSqliteRoutineStateCache();
+    clearSqliteCompletionsCache();
+  });
+  afterEach(() => {
+    clearSqliteRoutineStateCache();
+    clearSqliteCompletionsCache();
+  });
+
+  it("returns null when there is no routine state in the cache", async () => {
+    // Caches cleared above → loadRoutineState() yields defaultRoutineState()
+    // (no habits) — the same empty-journal signal the digest treats as null.
     const { aggregateRoutine } = await import("./useWeeklyDigest");
     expect(aggregateRoutine("2025-04-07")).toBeNull();
   });
 
   it("returns null when all habits are archived", async () => {
-    mockSafeReadLS.mockReturnValue({
-      habits: [{ id: "h1", archived: true }],
-      completions: {},
-    });
+    seedRoutine([{ id: "h1", name: "Стара звичка", archived: true }], {});
     const { aggregateRoutine } = await import("./useWeeklyDigest");
     expect(aggregateRoutine("2025-04-07")).toBeNull();
   });
 
   it("calculates per-habit and overall completion rates correctly", async () => {
-    mockSafeReadLS.mockReturnValue({
-      habits: [
+    seedRoutine(
+      [
         { id: "h1", name: "Медитація" },
         { id: "h2", name: "Спорт", archived: false },
       ],
-      completions: {
+      {
         h1: [
           "2025-04-07",
           "2025-04-08",
@@ -271,7 +310,7 @@ describe("aggregateRoutine", () => {
         ],
         h2: ["2025-04-07", "2025-04-08", "2025-04-09"], // 3 з 7
       },
-    });
+    );
 
     const { aggregateRoutine } = await import("./useWeeklyDigest");
     const result = aggregateRoutine("2025-04-07");
