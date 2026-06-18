@@ -1,4 +1,5 @@
-import { ls, lsSet } from "../../hubChatUtils";
+import { mirrorWeightToBiometrics } from "../../../profile/biometrics";
+import { persistFizrukDailyLog, readFizrukDailyLog } from "./shared";
 import type { LogWellbeingAction, ChatActionResult } from "../types";
 
 export function logWellbeing(action: LogWellbeingAction): ChatActionResult {
@@ -38,18 +39,21 @@ export function logWellbeing(action: LogWellbeingAction): ChatActionResult {
   }
   if (parts.length === 0 && !entry["note"])
     return "Немає жодного валідного поля для самопочуття.";
-  const existing = ls<Array<Record<string, unknown>>>(
-    "fizruk_daily_log_v1",
-    [],
-  );
-  lsSet("fizruk_daily_log_v1", [entry, ...existing]);
+  // `useDailyLog` reads LS but mirrors to SQLite; reproduce both so an
+  // AI-logged entry is visible in the UI AND synced cross-device.
+  persistFizrukDailyLog([entry, ...readFizrukDailyLog()]);
+  // Bidirectional weight sync — a Fizruk weigh-in is the canonical "current
+  // weight" for Nutrition/Profile (mirrors `useDailyLog.addEntry`).
+  if (typeof entry["weightKg"] === "number") {
+    mirrorWeightToBiometrics(entry["weightKg"], entry["at"] as string);
+  }
   const entryId = entry["id"] as string;
   return {
     result: `Самопочуття записано${parts.length ? ": " + parts.join(", ") : ""}.`,
     undo: () => {
-      const cur = ls<Array<Record<string, unknown>>>("fizruk_daily_log_v1", []);
-      const next = cur.filter((e) => e["id"] !== entryId);
-      if (next.length !== cur.length) lsSet("fizruk_daily_log_v1", next);
+      const cur = readFizrukDailyLog();
+      const next = cur.filter((e) => e.id !== entryId);
+      if (next.length !== cur.length) persistFizrukDailyLog(next);
     },
   };
 }

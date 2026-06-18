@@ -1,10 +1,21 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+// Spy on the dual-write trigger so the tombstoned measurements key (and the
+// daily-log mirror) are guarded: a regression back to raw `lsSet` would leave
+// the trigger uncalled and fail these assertions.
+vi.mock("../../../modules/fizruk/lib/dualWrite/index", () => ({
+  triggerFizrukDualWrite: vi.fn(),
+  isFizrukDualWriteRegistered: () => false,
+}));
+
 import { handleFizrukAction } from "./fizrukActions";
+import { triggerFizrukDualWrite } from "../../../modules/fizruk/lib/dualWrite/index";
 import type { ChatAction } from "./types";
 
 beforeEach(() => {
   localStorage.clear();
+  vi.clearAllMocks();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
 });
@@ -164,6 +175,13 @@ describe("finish_workout", () => {
 // log_measurement
 // ---------------------------------------------------------------------------
 describe("log_measurement", () => {
+  it("canonical: mirrors to SQLite via dual-write (tombstoned LS key)", () => {
+    call({ name: "log_measurement", input: { weight_kg: 85 } });
+    expect(triggerFizrukDualWrite).toHaveBeenCalled();
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls[0]?.[1];
+    expect(next?.measurements).toHaveLength(1);
+  });
+
   it("happy: logs body measurements", () => {
     const out = call({
       name: "log_measurement",
@@ -241,6 +259,13 @@ describe("add_program_day", () => {
 // log_wellbeing
 // ---------------------------------------------------------------------------
 describe("log_wellbeing", () => {
+  it("mirrors daily-log entry to SQLite via dual-write", () => {
+    call({ name: "log_wellbeing", input: { sleep_hours: 8 } });
+    expect(triggerFizrukDualWrite).toHaveBeenCalled();
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls[0]?.[1];
+    expect(next?.dailyLog?.length).toBeGreaterThanOrEqual(1);
+  });
+
   it("happy: logs wellbeing entries", () => {
     const out = call({
       name: "log_wellbeing",

@@ -1,10 +1,96 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+// The nutrition chat-action mutators must write through the module's canonical
+// storage wrappers (so AI writes land in the SQLite-backed source of truth and
+// stay visible in the module UI), NOT raw `lsSet`. We mock all three storage
+// modules with an in-memory store: a regression back to `lsSet` would leave
+// `mem` untouched and fail these assertions.
+const mem = vi.hoisted(() => ({
+  log: {} as Record<string, { meals: unknown[] }>,
+  prefs: {} as Record<string, unknown>,
+  pantries: null as Array<{
+    id: string;
+    name: string;
+    items: Array<{ name: string }>;
+  }> | null,
+  active: "home",
+  water: {} as Record<string, number>,
+  shopping: null as unknown,
+}));
+
+vi.mock("../../../modules/nutrition/lib/nutritionStorage", async () => {
+  const domain = await import("@sergeant/nutrition-domain");
+  return {
+    // Pure domain helpers stay real — they produce the canonical Meal shape.
+    addLogEntry: domain.addLogEntry,
+    removeLogEntry: domain.removeLogEntry,
+    loadNutritionLog: vi.fn(() => domain.normalizeNutritionLog(mem.log)),
+    persistNutritionLog: vi.fn((next: unknown) => {
+      mem.log = domain.normalizeNutritionLog(next ?? {}) as Record<
+        string,
+        { meals: unknown[] }
+      >;
+      return true;
+    }),
+    loadNutritionPrefs: vi.fn(() => ({
+      ...domain.defaultNutritionPrefs(),
+      ...mem.prefs,
+    })),
+    persistNutritionPrefs: vi.fn((p: Record<string, unknown>) => {
+      mem.prefs = p;
+      return true;
+    }),
+    loadPantries: vi.fn(() => mem.pantries ?? [domain.makeDefaultPantry()]),
+    loadActivePantryId: vi.fn(() => mem.active),
+    persistPantries: vi.fn(
+      (_k?: unknown, _ak?: unknown, p?: unknown, aid?: unknown) => {
+        if (Array.isArray(p))
+          mem.pantries = p as typeof mem.pantries extends infer T ? T : never;
+        if (aid != null) mem.active = String(aid);
+        return true;
+      },
+    ),
+  };
+});
+
+vi.mock("../../../modules/nutrition/lib/waterStorage", async () => {
+  const domain = await import("@sergeant/nutrition-domain");
+  return {
+    loadWaterLog: vi.fn(() => ({ ...mem.water })),
+    saveWaterLog: vi.fn((log: unknown) => {
+      mem.water = domain.normalizeWaterLog(log) as Record<string, number>;
+      return true;
+    }),
+  };
+});
+
+vi.mock("../../../modules/nutrition/lib/shoppingListStorage", async () => {
+  const domain = await import("@sergeant/nutrition-domain");
+  return {
+    loadShoppingList: vi.fn(() => domain.normalizeShoppingList(mem.shopping)),
+    persistShoppingList: vi.fn((list: unknown) => {
+      mem.shopping = domain.normalizeShoppingList(list);
+      return true;
+    }),
+  };
+});
+
 import { handleNutritionAction } from "./nutritionActions";
+import { persistNutritionLog } from "../../../modules/nutrition/lib/nutritionStorage";
+import { saveWaterLog } from "../../../modules/nutrition/lib/waterStorage";
+import { persistShoppingList } from "../../../modules/nutrition/lib/shoppingListStorage";
 import type { ChatAction } from "./types";
 
 beforeEach(() => {
+  mem.log = {};
+  mem.prefs = {};
+  mem.pantries = null;
+  mem.active = "home";
+  mem.water = {};
+  mem.shopping = null;
   localStorage.clear();
+  vi.clearAllMocks();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
 });
@@ -19,6 +105,10 @@ function call(action: ChatAction): string {
     throw new Error(`handler returned ${typeof out}, expected string|object`);
   }
   return typeof out === "string" ? out : out.result;
+}
+
+function dayMeals(dateKey: string): unknown[] {
+  return mem.log[dateKey]?.meals ?? [];
 }
 
 // ---------------------------------------------------------------------------
@@ -50,15 +140,17 @@ describe("log_meal", () => {
     expect(out).toContain("Без назви");
   });
 
-  it("shape: result is a non-empty string with meal id in storage", () => {
+  it("canonical: meal lands in the SQLite-backed store via persistNutritionLog", () => {
     const out = call({
       name: "log_meal",
       input: { name: "Яблуко", kcal: 50 },
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("записано");
-    const log = JSON.parse(localStorage.getItem("nutrition_log_v1")!);
-    expect(log["2026-04-22"].meals).toHaveLength(1);
+    // The fix: goes through the canonical wrapper, not raw lsSet.
+    expect(persistNutritionLog).toHaveBeenCalled();
+    expect(dayMeals("2026-04-22")).toHaveLength(1);
+    expect((dayMeals("2026-04-22")[0] as { name: string }).name).toBe("Яблуко");
   });
 });
 
@@ -66,7 +158,7 @@ describe("log_meal", () => {
 // log_water
 // ---------------------------------------------------------------------------
 describe("log_water", () => {
-  it("happy: logs water intake", () => {
+  it("happy: logs water intake via saveWaterLog", () => {
     const out = call({
       name: "log_water",
       input: { amount_ml: 500 },
@@ -74,6 +166,8 @@ describe("log_water", () => {
     expect(typeof out).toBe("string");
     expect(out).toContain("500");
     expect(out).toContain("мл");
+    expect(saveWaterLog).toHaveBeenCalled();
+    expect(mem.water["2026-04-22"]).toBe(500);
   });
 
   it("error: non-positive amount returns error", () => {
@@ -136,7 +230,7 @@ describe("add_recipe", () => {
 // add_to_shopping_list
 // ---------------------------------------------------------------------------
 describe("add_to_shopping_list", () => {
-  it("happy: adds item to shopping list", () => {
+  it("happy: adds item to shopping list via persistShoppingList", () => {
     const out = call({
       name: "add_to_shopping_list",
       input: { name: "Молоко" },
@@ -144,6 +238,7 @@ describe("add_to_shopping_list", () => {
     expect(typeof out).toBe("string");
     expect(out).toContain("Молоко");
     expect(out).toContain("додано");
+    expect(persistShoppingList).toHaveBeenCalled();
   });
 
   it("happy: updates existing item", () => {
@@ -180,12 +275,9 @@ describe("add_to_shopping_list", () => {
 // ---------------------------------------------------------------------------
 describe("consume_from_pantry", () => {
   it("happy: removes item from pantry", () => {
-    localStorage.setItem(
-      "nutrition_pantries_v1",
-      JSON.stringify([
-        { id: "home", name: "Домашня", items: [{ name: "Молоко" }] },
-      ]),
-    );
+    mem.pantries = [
+      { id: "home", name: "Домашня", items: [{ name: "Молоко" }] },
+    ];
     const out = call({
       name: "consume_from_pantry",
       input: { name: "Молоко" },
@@ -193,15 +285,11 @@ describe("consume_from_pantry", () => {
     expect(typeof out).toBe("string");
     expect(out).toContain("Молоко");
     expect(out).toContain("прибрано");
+    expect(mem.pantries[0]!.items).toHaveLength(0);
   });
 
   it("error: item not found in pantry returns error", () => {
-    localStorage.setItem(
-      "nutrition_pantries_v1",
-      JSON.stringify([
-        { id: "home", name: "Домашня", items: [{ name: "Хліб" }] },
-      ]),
-    );
+    mem.pantries = [{ id: "home", name: "Домашня", items: [{ name: "Хліб" }] }];
     const out = call({
       name: "consume_from_pantry",
       input: { name: "nonexistent" },
@@ -220,12 +308,7 @@ describe("consume_from_pantry", () => {
   });
 
   it("shape: result is a non-empty string", () => {
-    localStorage.setItem(
-      "nutrition_pantries_v1",
-      JSON.stringify([
-        { id: "home", name: "Домашня", items: [{ name: "Сир" }] },
-      ]),
-    );
+    mem.pantries = [{ id: "home", name: "Домашня", items: [{ name: "Сир" }] }];
     const out = call({
       name: "consume_from_pantry",
       input: { name: "Сир" },
@@ -258,20 +341,19 @@ describe("set_daily_plan", () => {
     expect(out).toContain("Немає");
   });
 
-  it("shape: result persists to localStorage", () => {
+  it("canonical: plan persists via persistNutritionPrefs", () => {
     const out = call({
       name: "set_daily_plan",
       input: { kcal: 2000 },
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("оновлено");
-    const prefs = JSON.parse(localStorage.getItem("nutrition_prefs_v1")!);
-    expect(prefs.dailyTargetKcal).toBe(2000);
+    expect(mem.prefs["dailyTargetKcal"]).toBe(2000);
   });
 });
 
 // ---------------------------------------------------------------------------
-// log_weight
+// log_weight  (fizruk daily-log — still on raw LS, fixed in a follow-up)
 // ---------------------------------------------------------------------------
 describe("log_weight", () => {
   it("happy: logs weight", () => {
@@ -326,10 +408,7 @@ describe("suggest_meal", () => {
   });
 
   it("shape: result always contains summary data", () => {
-    localStorage.setItem(
-      "nutrition_prefs_v1",
-      JSON.stringify({ dailyTargetKcal: 2500, dailyTargetProtein_g: 150 }),
-    );
+    mem.prefs = { dailyTargetKcal: 2500, dailyTargetProtein_g: 150 };
     const out = call({ name: "suggest_meal", input: {} });
     expect(typeof out).toBe("string");
     expect(out).toContain("ккал");
@@ -341,21 +420,17 @@ describe("suggest_meal", () => {
 // ---------------------------------------------------------------------------
 describe("copy_meal_from_date", () => {
   it("happy: copies meals from source date", () => {
-    localStorage.setItem(
-      "nutrition_log_v1",
-      JSON.stringify({
-        "2026-04-20": {
-          meals: [
-            {
-              id: "m_old",
-              name: "Сніданок",
-              macros: { kcal: 400, protein_g: 30, fat_g: 15, carbs_g: 40 },
-              addedAt: "2026-04-20T08:00:00.000Z",
-            },
-          ],
-        },
-      }),
-    );
+    mem.log = {
+      "2026-04-20": {
+        meals: [
+          {
+            id: "m_old",
+            name: "Сніданок",
+            macros: { kcal: 400, protein_g: 30, fat_g: 15, carbs_g: 40 },
+          },
+        ],
+      },
+    };
     const out = call({
       name: "copy_meal_from_date",
       input: { source_date: "2026-04-20" },
@@ -364,6 +439,7 @@ describe("copy_meal_from_date", () => {
     expect(out).toContain("Скопійовано");
     expect(out).toContain("1");
     expect(out).toContain("400");
+    expect(dayMeals("2026-04-22")).toHaveLength(1);
   });
 
   it("error: invalid date format returns error", () => {
@@ -385,21 +461,17 @@ describe("copy_meal_from_date", () => {
   });
 
   it("shape: result is a non-empty string", () => {
-    localStorage.setItem(
-      "nutrition_log_v1",
-      JSON.stringify({
-        "2026-04-20": {
-          meals: [
-            {
-              id: "m1",
-              name: "X",
-              macros: { kcal: 100, protein_g: 10, fat_g: 5, carbs_g: 15 },
-              addedAt: "2026-04-20T10:00:00.000Z",
-            },
-          ],
-        },
-      }),
-    );
+    mem.log = {
+      "2026-04-20": {
+        meals: [
+          {
+            id: "m1",
+            name: "X",
+            macros: { kcal: 100, protein_g: 10, fat_g: 5, carbs_g: 15 },
+          },
+        ],
+      },
+    };
     const out = call({
       name: "copy_meal_from_date",
       input: { source_date: "2026-04-20", meal_index: 0 },
@@ -457,14 +529,12 @@ describe("log_meal · undo", () => {
       throw new Error(`expected undoable result, got ${typeof out}`);
     }
     expect(out.result).toContain("Сніданок");
-    const before = JSON.parse(localStorage.getItem("nutrition_log_v1") || "{}");
-    expect(before["2026-04-22"].meals).toHaveLength(1);
+    expect(dayMeals("2026-04-22")).toHaveLength(1);
 
     out.undo();
 
-    const after = JSON.parse(localStorage.getItem("nutrition_log_v1") || "{}");
     // Day is removed entirely коли meals = 0 (cleanup empty days).
-    expect(after["2026-04-22"]).toBeUndefined();
+    expect(mem.log["2026-04-22"]).toBeUndefined();
   });
 
   it("undo прибирає тільки свій прийом, інші лишаються", () => {
@@ -482,11 +552,10 @@ describe("log_meal · undo", () => {
       input: { name: "Другий", kcal: 200 },
     });
 
-    first.undo();
+    first.undo!();
 
-    const after = JSON.parse(localStorage.getItem("nutrition_log_v1") || "{}");
-    expect(after["2026-04-22"].meals).toHaveLength(1);
-    expect(after["2026-04-22"].meals[0].name).toBe("Другий");
+    expect(dayMeals("2026-04-22")).toHaveLength(1);
+    expect((dayMeals("2026-04-22")[0] as { name: string }).name).toBe("Другий");
   });
 
   it("undo ідемпотентний — повторний виклик не кидає", () => {
@@ -498,7 +567,7 @@ describe("log_meal · undo", () => {
       throw new Error("expected object");
 
     out.undo();
-    expect(() => out.undo()).not.toThrow();
+    expect(() => out.undo!()).not.toThrow();
   });
 });
 
@@ -514,40 +583,24 @@ describe("log_water · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    const before = JSON.parse(
-      localStorage.getItem("nutrition_water_v1") || "{}",
-    );
-    expect(before["2025-04-29"]).toBe(250);
+    expect(mem.water["2025-04-29"]).toBe(250);
 
     out.undo();
-    const after = JSON.parse(
-      localStorage.getItem("nutrition_water_v1") || "{}",
-    );
-    expect(after["2025-04-29"]).toBeUndefined();
+    expect(mem.water["2025-04-29"]).toBeUndefined();
   });
 
   it("undo поверх існуючого значення — повертає до prev", () => {
-    localStorage.setItem(
-      "nutrition_water_v1",
-      JSON.stringify({ "2025-04-29": 500 }),
-    );
+    mem.water = { "2025-04-29": 500 };
     const out = handleNutritionAction({
       name: "log_water",
       input: { amount_ml: 200, date: "2025-04-29" },
     });
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
-    expect(
-      JSON.parse(localStorage.getItem("nutrition_water_v1") || "{}")[
-        "2025-04-29"
-      ],
-    ).toBe(700);
+    expect(mem.water["2025-04-29"]).toBe(700);
 
     out.undo();
-    const after = JSON.parse(
-      localStorage.getItem("nutrition_water_v1") || "{}",
-    );
-    expect(after["2025-04-29"]).toBe(500);
+    expect(mem.water["2025-04-29"]).toBe(500);
   });
 });
 
@@ -564,26 +617,19 @@ describe("add_to_shopping_list · undo", () => {
       throw new Error("expected object");
 
     out.undo();
-    const after = JSON.parse(
-      localStorage.getItem("nutrition_shopping_list_v1") || "{}",
-    );
-    expect(after.categories || []).toHaveLength(0);
+    const cur = mem.shopping as { categories?: unknown[] } | null;
+    expect(cur?.categories ?? []).toHaveLength(0);
   });
 
   it("оновлення існуючого item: return string без undo (no-op для undo-flow)", () => {
-    localStorage.setItem(
-      "nutrition_shopping_list_v1",
-      JSON.stringify({
-        categories: [
-          {
-            name: "Інше",
-            items: [
-              { id: "si_1", name: "Хліб", quantity: "1", checked: false },
-            ],
-          },
-        ],
-      }),
-    );
+    mem.shopping = {
+      categories: [
+        {
+          name: "Інше",
+          items: [{ id: "si_1", name: "Хліб", quantity: "1", checked: false }],
+        },
+      ],
+    };
     const out = handleNutritionAction({
       name: "add_to_shopping_list",
       input: { name: "Хліб", quantity: "2" },

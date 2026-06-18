@@ -1,4 +1,11 @@
-import { ls, lsSet } from "../../hubChatUtils";
+import { triggerFizrukDualWrite } from "../../../../modules/fizruk/lib/dualWrite/index";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractMeasurementSnapshots,
+  peekFizrukDualWriteState,
+} from "../../../../modules/fizruk/lib/fizrukDualWriteState";
+import { getCachedFizrukSqliteState } from "../../../../modules/fizruk/lib/sqliteReader";
+import type { MeasurementEntry } from "@sergeant/fizruk-domain";
 import type { LogMeasurementAction, ChatActionResult } from "../types";
 
 export function logMeasurement(action: LogMeasurementAction): ChatActionResult {
@@ -19,7 +26,7 @@ export function logMeasurement(action: LogMeasurementAction): ChatActionResult {
     calf_l_cm: "calfLCm",
     calf_r_cm: "calfRCm",
   };
-  const entry: Record<string, number | string> = {
+  const entry: MeasurementEntry = {
     id: `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
     at: new Date().toISOString(),
   };
@@ -35,10 +42,18 @@ export function logMeasurement(action: LogMeasurementAction): ChatActionResult {
     }
   }
   if (changed.length === 0) return "Немає жодного валідного поля для заміру.";
-  const existing = ls<Array<Record<string, unknown>>>(
-    "fizruk_measurements_v1",
-    [],
-  );
-  lsSet("fizruk_measurements_v1", [entry, ...existing]);
+  // AI-CONTEXT: `fizruk_measurements_v1` is tombstoned (#057f-tombstone) — the
+  // module reads from the SQLite warm-cache, not LS. Mirror through the same
+  // dual-write pipeline as `useMeasurements` so the entry is visible in the UI
+  // and synced cross-device. A raw `lsSet` here would write a key nobody reads.
+  const cache = getCachedFizrukSqliteState();
+  const existing = cache.refreshedAt === null ? [] : cache.measurements;
+  const next: MeasurementEntry[] = [entry, ...existing];
+  const prevDualWrite =
+    peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+  triggerFizrukDualWrite(prevDualWrite, {
+    ...prevDualWrite,
+    measurements: extractMeasurementSnapshots(next),
+  });
   return `Заміри записано: ${changed.join(", ")}`;
 }
