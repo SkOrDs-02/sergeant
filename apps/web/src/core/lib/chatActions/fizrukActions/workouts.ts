@@ -1,26 +1,28 @@
 import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
 import { lsSet } from "../../hubChatUtils";
-import { readWorkouts } from "./shared";
+import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { readFizrukWorkouts, persistFizrukWorkouts } from "./shared";
+import type { Workout, WorkoutItem, WorkoutSet } from "@sergeant/fizruk-domain";
 import type {
   PlanWorkoutAction,
   LogSetAction,
   StartWorkoutAction,
   FinishWorkoutAction,
   CopyWorkoutAction,
-  WorkoutSet,
-  WorkoutItem,
-  Workout,
   ChatActionResult,
 } from "../types";
 
+// AI-CONTEXT: `fizruk_workouts_v1` is tombstoned (#057f) — `useWorkouts` reads
+// the SQLite warm-cache, so these mutators read/write via `readFizrukWorkouts`/
+// `persistFizrukWorkouts` (dual-write). `fizruk_active_workout_id_v1` stays on
+// plain LS: it sits OUTSIDE the dual-write pipeline and `useWorkoutsOrchestrator`
+// resolves it against the SQLite-backed `useWorkouts` list, so an LS scalar + a
+// SQLite workout list stay consistent.
+const ACTIVE_KEY = "fizruk_active_workout_id_v1";
+
 export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
   const { date, time, note, exercises } = action.input || {};
-  const now = new Date();
-  const today = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-  ].join("-");
+  const today = getKyivDayKey();
   const targetDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
   const timeStr =
     time && /^\d{1,2}:\d{2}$/.test(String(time).trim())
@@ -51,7 +53,9 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
           }));
           return {
             id: `i_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+            exerciseId: "",
             nameUk: String(ex.name).trim(),
+            primaryGroup: "",
             type: "strength",
             musclesPrimary: [],
             musclesSecondary: [],
@@ -72,11 +76,7 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
     note: note ? String(note).trim() : "",
     planned: true,
   };
-  const existing = readWorkouts();
-  lsSet("fizruk_workouts_v1", {
-    schemaVersion: 1,
-    workouts: [newW, ...existing],
-  });
+  persistFizrukWorkouts([newW, ...readFizrukWorkouts()]);
   const exCount = items.length;
   return `Тренування заплановано на ${targetDate} о ${timeStr}${note ? ` ("${note}")` : ""}: ${exCount} вправ${exCount === 1 ? "а" : exCount >= 2 && exCount <= 4 ? "и" : ""} (id:${wid})`;
 }
@@ -97,9 +97,8 @@ export function logSet(action: LogSetAction): ChatActionResult {
     reps: repsN,
   }));
 
-  let workouts = readWorkouts();
-
-  const activeId = safeReadStringLS("fizruk_active_workout_id_v1", null);
+  const workouts = readFizrukWorkouts();
+  const activeId = safeReadStringLS(ACTIVE_KEY, null);
   const exerciseNameLower = exName.toLowerCase();
 
   let targetIdx = -1;
@@ -110,19 +109,15 @@ export function logSet(action: LogSetAction): ChatActionResult {
     targetIdx = workouts.findIndex((w) => !w.endedAt);
   }
 
-  let workout: Workout;
+  const existingWorkout = targetIdx >= 0 ? workouts[targetIdx] : undefined;
   let created = false;
-  if (targetIdx >= 0) {
-    workout = {
-      ...workouts[targetIdx]!,
-      items: [...workouts[targetIdx]!.items],
-    };
+  let workout: Workout;
+  if (existingWorkout) {
+    workout = { ...existingWorkout, items: [...existingWorkout.items] };
   } else {
     created = true;
     workout = {
-      id: `w_${Date.now().toString(36)}_${Math.random()
-        .toString(36)
-        .slice(2, 8)}`,
+      id: `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
       startedAt: new Date().toISOString(),
       endedAt: null,
       items: [],
@@ -137,16 +132,18 @@ export function logSet(action: LogSetAction): ChatActionResult {
   const itemIdx = workout.items.findIndex(
     (it) => it.nameUk.trim().toLowerCase() === exerciseNameLower,
   );
-  if (itemIdx >= 0) {
-    const item = { ...workout.items[itemIdx]! };
-    item.sets = [...item.sets!, ...newSets];
-    workout.items[itemIdx] = item;
+  const existingItem = itemIdx >= 0 ? workout.items[itemIdx] : undefined;
+  if (existingItem) {
+    workout.items[itemIdx] = {
+      ...existingItem,
+      sets: [...(existingItem.sets ?? []), ...newSets],
+    };
   } else {
     workout.items.push({
-      id: `i_${Date.now().toString(36)}_${Math.random()
-        .toString(36)
-        .slice(2, 6)}`,
+      id: `i_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      exerciseId: "",
       nameUk: exName,
+      primaryGroup: "",
       type: "strength",
       musclesPrimary: [],
       musclesSecondary: [],
@@ -156,16 +153,15 @@ export function logSet(action: LogSetAction): ChatActionResult {
     });
   }
 
+  let nextWorkouts: Workout[];
   if (created) {
-    workouts = [workout, ...workouts];
-    lsSet("fizruk_active_workout_id_v1", workout.id);
+    nextWorkouts = [workout, ...workouts];
+    lsSet(ACTIVE_KEY, workout.id);
   } else {
-    workouts[targetIdx] = workout;
+    nextWorkouts = workouts.slice();
+    nextWorkouts[targetIdx] = workout;
   }
-  lsSet("fizruk_workouts_v1", {
-    schemaVersion: 1,
-    workouts,
-  });
+  persistFizrukWorkouts(nextWorkouts);
 
   const weightLabel = weightKg > 0 ? `${weightKg} кг × ` : "";
   const setsLabel =
@@ -176,27 +172,20 @@ export function logSet(action: LogSetAction): ChatActionResult {
 
 export function startWorkout(action: StartWorkoutAction): ChatActionResult {
   const { note, date, time } = action.input || {};
-  const now = new Date();
-  const today = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-  ].join("-");
+  const today = getKyivDayKey();
   const targetDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
+  const nowParts = getKyivDateParts();
   const timeStr =
     time && /^\d{1,2}:\d{2}$/.test(String(time).trim())
       ? String(time).trim().padStart(5, "0")
-      : `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      : `${String(nowParts.hour).padStart(2, "0")}:${String(nowParts.minute).padStart(2, "0")}`;
   const startedAtTs = Date.parse(`${targetDate}T${timeStr}:00`);
   if (!Number.isFinite(startedAtTs)) {
     return "Некоректна дата або час.";
   }
   const startedAt = new Date(startedAtTs).toISOString();
-  const existingActiveId = safeReadStringLS(
-    "fizruk_active_workout_id_v1",
-    null,
-  );
-  const workouts = readWorkouts();
+  const existingActiveId = safeReadStringLS(ACTIVE_KEY, null);
+  const workouts = readFizrukWorkouts();
   if (
     existingActiveId &&
     workouts.some((w) => w.id === existingActiveId && !w.endedAt)
@@ -215,18 +204,15 @@ export function startWorkout(action: StartWorkoutAction): ChatActionResult {
     note: note ? String(note).trim() : "",
     planned: false,
   };
-  lsSet("fizruk_workouts_v1", {
-    schemaVersion: 1,
-    workouts: [newW, ...workouts],
-  });
-  lsSet("fizruk_active_workout_id_v1", wid);
+  persistFizrukWorkouts([newW, ...workouts]);
+  lsSet(ACTIVE_KEY, wid);
   return `Тренування розпочато о ${timeStr}${note ? ` ("${String(note).trim()}")` : ""} (id:${wid})`;
 }
 
 export function finishWorkout(action: FinishWorkoutAction): ChatActionResult {
   const { workout_id } = action.input || {};
-  const activeId = safeReadStringLS("fizruk_active_workout_id_v1", null);
-  const workouts = readWorkouts();
+  const activeId = safeReadStringLS(ACTIVE_KEY, null);
+  const workouts = readFizrukWorkouts();
   const targetId =
     (workout_id && String(workout_id).trim()) ||
     activeId ||
@@ -234,18 +220,18 @@ export function finishWorkout(action: FinishWorkoutAction): ChatActionResult {
     "";
   if (!targetId) return "Немає активного тренування для завершення.";
   const idx = workouts.findIndex((w) => w.id === targetId);
-  if (idx < 0) return `Тренування ${targetId} не знайдено.`;
-  if (workouts[idx]!.endedAt) {
-    if (activeId === targetId) safeRemoveLS("fizruk_active_workout_id_v1");
+  const target = idx >= 0 ? workouts[idx] : undefined;
+  if (!target) return `Тренування ${targetId} не знайдено.`;
+  if (target.endedAt) {
+    if (activeId === targetId) safeRemoveLS(ACTIVE_KEY);
     return `Тренування ${targetId} вже завершено.`;
   }
-  workouts[idx] = {
-    ...workouts[idx]!,
-    endedAt: new Date().toISOString(),
-  };
-  lsSet("fizruk_workouts_v1", { schemaVersion: 1, workouts });
-  if (activeId === targetId) safeRemoveLS("fizruk_active_workout_id_v1");
-  const setsCount = workouts[idx]!.items.reduce(
+  const finished: Workout = { ...target, endedAt: new Date().toISOString() };
+  const nextWorkouts = workouts.slice();
+  nextWorkouts[idx] = finished;
+  persistFizrukWorkouts(nextWorkouts);
+  if (activeId === targetId) safeRemoveLS(ACTIVE_KEY);
+  const setsCount = finished.items.reduce(
     (acc, it) => acc + (Array.isArray(it.sets) ? it.sets.length : 0),
     0,
   );
@@ -254,7 +240,7 @@ export function finishWorkout(action: FinishWorkoutAction): ChatActionResult {
 
 export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
   const { source_workout_id, date } = action.input || {};
-  const workouts = readWorkouts();
+  const workouts = readFizrukWorkouts();
   let source: Workout | undefined;
   if (source_workout_id) {
     source = workouts.find((w) => w.id === source_workout_id);
@@ -268,14 +254,10 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
       )[0];
     if (!source) return "Немає завершених тренувань для копіювання.";
   }
-  const now = new Date();
-  const today = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-  ].join("-");
+  const today = getKyivDayKey();
   const targetDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
-  const copyTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  const nowParts = getKyivDateParts();
+  const copyTimeStr = `${String(nowParts.hour).padStart(2, "0")}:${String(nowParts.minute).padStart(2, "0")}`;
   const copyStartedAtTs = Date.parse(`${targetDate}T${copyTimeStr}:00`);
   if (!Number.isFinite(copyStartedAtTs)) {
     return "Некоректна дата.";
@@ -284,7 +266,7 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
   const copiedItems: WorkoutItem[] = source.items.map((item, i) => ({
     ...item,
     id: `i_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 6)}`,
-    sets: item.sets.map((s) => ({ ...s })),
+    sets: (item.sets ?? []).map((s) => ({ ...s })),
   }));
   const newW: Workout = {
     id: wid,
@@ -297,9 +279,6 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
     note: source.note ? `Копія: ${source.note}` : "",
     planned: true,
   };
-  lsSet("fizruk_workouts_v1", {
-    schemaVersion: 1,
-    workouts: [newW, ...workouts],
-  });
+  persistFizrukWorkouts([newW, ...workouts]);
   return `Тренування скопійовано (${source.items.length} вправ) на ${targetDate} (id:${wid})`;
 }
