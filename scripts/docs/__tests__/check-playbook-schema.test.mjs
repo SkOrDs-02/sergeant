@@ -107,6 +107,33 @@ test("validatePlaybook flags malformed freshness header", () => {
   );
 });
 
+test("validatePlaybook accepts the `Last touched:` label (bump-hook migration alias)", () => {
+  // scripts/docs/bump-last-validated.mjs rewrites `Last validated:` →
+  // `Last touched:` on every edit, so every bumped playbook carries the
+  // `Last touched:` label. The schema check must accept it or CI goes red on
+  // the next bump. Regression for the cutover-openclaw-gateway.md drift.
+  const errors = validatePlaybook(
+    validPlaybook.replace("**Last validated:**", "**Last touched:**"),
+    { today: TODAY },
+  );
+  assert.deepEqual(errors, [], errors.join("; "));
+});
+
+test("validatePlaybook accepts a bracketed bot handle (e.g. @github-actions[bot])", () => {
+  // The bump hook resolves a bot committer email to `github-actions[bot]`
+  // (strips the `NNNN+` numeric prefix, keeps the `[bot]` suffix), so the
+  // freshness handle class must tolerate brackets. Combined with the label
+  // alias above, this is the exact header the backlinks bot wrote to the
+  // cutover playbook.
+  const errors = validatePlaybook(
+    validPlaybook
+      .replace("**Last validated:**", "**Last touched:**")
+      .replace("by @devin-ai.", "by @github-actions[bot]."),
+    { today: TODAY },
+  );
+  assert.deepEqual(errors, [], errors.join("; "));
+});
+
 test("validatePlaybook flags Next review <= Last validated", () => {
   const errors = validatePlaybook(
     validPlaybook.replace(

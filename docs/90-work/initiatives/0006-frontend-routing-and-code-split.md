@@ -154,7 +154,7 @@
 
 - Design Review 2026-05-03 — §6 Frontend UX-arch
 - [`docs/90-work/tech-debt/frontend.md`](../tech-debt/frontend.md) — запис «hash-router у вебі»
-- [react-router v7 docs](https://reactrouter.com/en/main)
+- [react-router v7 docs](https://reactrouter.com/)
 - [`apps/web/src/modules/finyk/hooks/useFinykRoute.ts`](../../../apps/web/src/modules/finyk/hooks/useFinykRoute.ts) — Phase 2.b path-router (replaces deleted `hooks/useHashRouter.ts`)
 - [`apps/web/src/modules/finyk/lib/finykRouter.ts`](../../../apps/web/src/modules/finyk/lib/finykRouter.ts) — Phase 2.b parser/builder + legacy hash-compat dictionary
 - [`apps/web/src/modules/nutrition/hooks/useNutritionRoute.ts`](../../../apps/web/src/modules/nutrition/hooks/useNutritionRoute.ts) — Phase 2.a path-router (replaces deleted `hooks/useNutritionHashRoute.ts`)

@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-16",
+  "generated_at": "2026-06-18",
   "counts": {
     "adr": 63,
     "audit": 15,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
-    "pr": 205,
+    "pr": 206,
     "skill": 23
   },
   "nodes": [
@@ -3902,6 +3902,16 @@
       }
     },
     {
+      "id": "pr:3610",
+      "type": "pr",
+      "title": "PR #3610",
+      "tier": "extended",
+      "meta": {
+        "number": 3610,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3610"
+      }
+    },
+    {
       "id": "pr:369",
       "type": "pr",
       "title": "PR #369",
@@ -5704,6 +5714,11 @@
       "type": "touched-by"
     },
     {
+      "from": "initiative:0006",
+      "to": "pr:3610",
+      "type": "touched-by"
+    },
+    {
       "from": "initiative:0010",
       "to": "pr:1792",
       "type": "touched-by"
@@ -6357,6 +6372,11 @@
       "from": "playbook:cutover-openclaw-gateway",
       "to": "hard-rule:20",
       "type": "references"
+    },
+    {
+      "from": "playbook:cutover-openclaw-gateway",
+      "to": "pr:3610",
+      "type": "touched-by"
     },
     {
       "from": "playbook:deploy-config-change",

@@ -13,6 +13,8 @@
 // Schema:
 //   1. H1 line: `# Playbook: <title>`
 //   2. Block-quote line: `> **Last validated:** YYYY-MM-DD by @<owner>. **Next review:** YYYY-MM-DD.`
+//      (the `Last touched:` label written by the bump-last-validated hook is
+//      accepted as an equivalent alias during the corpus migration.)
 //   3. Block-quote line: `> **Status:** <one of ALLOWED_STATUSES>`
 //   4. Trigger line:    `**Trigger:** <text>` (≤ 240 chars of body, after the marker)
 //   5. `## Owner surface` H2 section, containing a `Governing skill:` line
@@ -99,7 +101,14 @@ export function validatePlaybook(content, opts = {}) {
     errors.push("missing freshness header (`> **Last validated:** …`)");
   } else {
     const m = validated.match(
-      /Last validated:\*\*\s+(\d{4}-\d{2}-\d{2})\s+by\s+@([\w-]+)\.\s+\*\*Next review:\*\*\s+(\d{4}-\d{2}-\d{2})/,
+      // Accept both the legacy `Last validated:` label and the canonical
+      // `Last touched:` one — scripts/docs/bump-last-validated.mjs rewrites the
+      // former to the latter on every edit (lazy corpus migration; see its
+      // header comment), so a bumped playbook carries `Last touched:`. The
+      // handle class mirrors what that hook can emit, including bot handles
+      // like `@github-actions[bot]` (it strips the `NNNN+` numeric prefix but
+      // keeps the `[bot]` suffix), so brackets are permitted.
+      /Last (?:validated|touched):\*\*\s+(\d{4}-\d{2}-\d{2})\s+by\s+@([\w.[\]-]+)\.\s+\*\*Next review:\*\*\s+(\d{4}-\d{2}-\d{2})/,
     );
     if (!m) {
       errors.push(

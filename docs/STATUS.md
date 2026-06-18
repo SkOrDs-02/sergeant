@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last validated:** 2026-06-15 by docs:gen-status. **Next review:** 2026-06-15.
+> **Last validated:** 2026-06-18 by docs:gen-status. **Next review:** 2026-06-18.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -19,6 +19,7 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
 
+- [#3610](https://github.com/Skords-01/Sergeant/pull/3610) — chore(config): per-package eslint configs — PR-31 Phase 2b _(2026-06-16)_
 - [#3560](https://github.com/Skords-01/Sergeant/pull/3560) — fix: heal governance/format drift + dualWrite logger lint debt _(2026-06-14)_
 - [#3555](https://github.com/Skords-01/Sergeant/pull/3555) — fix(web): correct recommendation icon rendering and design checkbox a11y _(2026-06-13)_
 - [#3551](https://github.com/Skords-01/Sergeant/pull/3551) — fix(ci): finish CI-on-main heal — regenerate SBOM + refresh overdue freshness stamp _(2026-06-13)_
@@ -28,7 +29,6 @@
 - [#2898](https://github.com/Skords-01/Sergeant/pull/2898) — feat(docs): auto-gen workspace dependency diagram (Initiative 0014 Phase 4) _(2026-05-15)_
 - [#2896](https://github.com/Skords-01/Sergeant/pull/2896) — feat(docs): auto-derived repo-map + service-catalog (Initiative 0014 Phase 3) _(2026-05-15)_
 - [#2889](https://github.com/Skords-01/Sergeant/pull/2889) — feat(docs): per-package symbol catalog (Initiative 0014 Phase 2) _(2026-05-15)_
-- [#2876](https://github.com/Skords-01/Sergeant/pull/2876) — feat(docs): knowledge graph generator (Initiative 0014 Phase 1) _(2026-05-15)_
 
 ## 🔵 В роботі — 61 відкритих
 
@@ -44,6 +44,7 @@
 
 **Найактивніше (8, за останніми PR):**
 
+- [`90-work/initiatives/0006-frontend-routing-and-code-split.md`](./90-work/initiatives/0006-frontend-routing-and-code-split.md) — 0006 — Frontend routing migration + route-based code-split — In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShel _(Ініціативи)_
 - [`90-work/initiatives/0021-react-hooks-v7-cleanup.md`](./90-work/initiatives/0021-react-hooks-v7-cleanup.md) — 0021 — React-hooks v7 ESLint cleanup — In progress _(Ініціативи)_
 - [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
 - [`90-work/audits/2026-06-11-fable5-independent-audit.md`](./90-work/audits/2026-06-11-fable5-independent-audit.md) — Independent Audit — Sergeant — 2026-06-11 — Active _(Аудити й прожарки)_
@@ -51,7 +52,6 @@
 - [`90-work/planning/pr-plan-testing-devx-2026-05.md`](./90-work/planning/pr-plan-testing-devx-2026-05.md) — PR-план Testing & DevX 2026-05 — зі зрізу 2026-05-13 — Active _(Планування)_
 - [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
 - [`90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md`](./90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md) — PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin — Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/se _(Ініціативи)_
-- [`90-work/audits/2026-05-13-consolidated-page-audit.md`](./90-work/audits/2026-05-13-consolidated-page-audit.md) — Consolidated Page Audit — 2026-05-13 — Active _(Аудити й прожарки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
