@@ -10,11 +10,29 @@ import {
   clearSqliteRoutineStateCache,
 } from "../../modules/routine/lib/sqliteReader";
 import { executeAction, executeActions } from "./hubChatActions";
+import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
+
+// `fizruk_workouts_v1` is tombstoned — the workout mutators read/write the
+// SQLite cache via shared helpers, not LS. Fake those two so these integration
+// specs can assert the persisted workout list deterministically.
+const memWk = vi.hoisted(() => ({ workouts: [] as FizrukWorkout[] }));
+vi.mock("./chatActions/fizrukActions/shared", async (orig) => {
+  const actual =
+    await orig<typeof import("./chatActions/fizrukActions/shared")>();
+  return {
+    ...actual,
+    readFizrukWorkouts: vi.fn(() => memWk.workouts),
+    persistFizrukWorkouts: vi.fn((w: FizrukWorkout[]) => {
+      memWk.workouts = w;
+    }),
+  };
+});
 
 beforeEach(() => {
   // Stage 8 PR #057r-tombstone — routine state lives in the SQLite
   // warm cache, not localStorage. Reset both so each spec starts clean.
   localStorage.clear();
+  memWk.workouts = [];
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   vi.useFakeTimers();
@@ -218,21 +236,12 @@ describe("log_set", () => {
     expect(msg).toContain("80 кг");
     expect(msg).toContain("8 повторень");
 
-    const saved = readLS<{
-      workouts: Array<{
-        id: string;
-        endedAt: string | null;
-        items: Array<{
-          nameUk: string;
-          sets: Array<{ reps: number; weightKg: number }>;
-        }>;
-      }>;
-    }>("fizruk_workouts_v1", { workouts: [] });
+    const saved = { workouts: memWk.workouts };
     expect(saved.workouts).toHaveLength(1);
-    expect(saved.workouts[0]!.endedAt).toBeNull();
-    expect(saved!.workouts[0]!.items[0]!.nameUk).toBe("Жим штанги");
-    expect(saved!.workouts[0]!.items[0]!.sets).toHaveLength(1);
-    expect(saved!.workouts[0]!.items[0]!.sets[0]).toEqual({
+    expect(saved.workouts[0]?.endedAt).toBeNull();
+    expect(saved.workouts[0]?.items[0]?.nameUk).toBe("Жим штанги");
+    expect(saved.workouts[0]?.items[0]?.sets).toHaveLength(1);
+    expect(saved.workouts[0]?.items[0]?.sets?.[0]).toEqual({
       reps: 8,
       weightKg: 80,
     });
@@ -240,7 +249,7 @@ describe("log_set", () => {
     // `fizruk_active_workout_id_v1` is stored as a raw string (not JSON), so
     // read it directly via localStorage to match the production storage format.
     const activeId = localStorage.getItem("fizruk_active_workout_id_v1");
-    expect(activeId).toBe(saved.workouts[0]!.id);
+    expect(activeId).toBe(saved.workouts[0]?.id);
   });
 
   it("додає підходи до існуючої вправи у активному тренуванні", () => {
@@ -252,14 +261,10 @@ describe("log_set", () => {
       name: "log_set",
       input: { exercise_name: "Присід", reps: 10, weight_kg: 60, sets: 2 },
     });
-    const saved = readLS<{
-      workouts: Array<{
-        items: Array<{ nameUk: string; sets: unknown[] }>;
-      }>;
-    }>("fizruk_workouts_v1", { workouts: [] });
+    const saved = { workouts: memWk.workouts };
     expect(saved.workouts).toHaveLength(1);
-    expect(saved.workouts[0]!.items).toHaveLength(1);
-    expect(saved!.workouts[0]!.items[0]!.sets).toHaveLength(3);
+    expect(saved.workouts[0]?.items).toHaveLength(1);
+    expect(saved.workouts[0]?.items[0]?.sets).toHaveLength(3);
   });
 
   it("відмовляє без reps", () => {

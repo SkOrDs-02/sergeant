@@ -20,12 +20,74 @@ import {
 } from "../../modules/finyk/lib/sqliteReader";
 import type { ManualExpense } from "../../modules/finyk/hooks/useStorage.types";
 import { executeAction } from "./hubChatActions";
+import { triggerFizrukDualWrite } from "../../modules/fizruk/lib/dualWrite/index";
+import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
+
+// Tombstoned slices (workouts / measurements / pantries / prefs) live in the
+// SQLite cache, not LS. Fake the canonical helpers in-memory so these
+// integration specs assert the persisted state. LS-backed slices (water,
+// shopping, daily-log, plan-template) keep their real LS path.
+const mem = vi.hoisted(() => ({
+  workouts: [] as FizrukWorkout[],
+  pantries: null as unknown,
+  active: "home",
+  prefs: {} as Record<string, unknown>,
+}));
+
+vi.mock("../../modules/fizruk/lib/dualWrite/index", async (orig) => {
+  const actual =
+    await orig<typeof import("../../modules/fizruk/lib/dualWrite/index")>();
+  return { ...actual, triggerFizrukDualWrite: vi.fn() };
+});
+
+vi.mock("./chatActions/fizrukActions/shared", async (orig) => {
+  const actual =
+    await orig<typeof import("./chatActions/fizrukActions/shared")>();
+  return {
+    ...actual,
+    readFizrukWorkouts: vi.fn(() => mem.workouts),
+    persistFizrukWorkouts: vi.fn((w: FizrukWorkout[]) => {
+      mem.workouts = w;
+    }),
+  };
+});
+
+vi.mock("../../modules/nutrition/lib/nutritionStorage", async (orig) => {
+  const actual =
+    await orig<typeof import("../../modules/nutrition/lib/nutritionStorage")>();
+  return {
+    ...actual,
+    loadActivePantryId: vi.fn(() => mem.active),
+    loadPantries: vi.fn(() =>
+      Array.isArray(mem.pantries) ? mem.pantries : [actual.makeDefaultPantry()],
+    ),
+    persistPantries: vi.fn(
+      (_k?: unknown, _ak?: unknown, p?: unknown, aid?: unknown) => {
+        if (Array.isArray(p)) mem.pantries = p;
+        if (aid != null) mem.active = String(aid);
+        return true;
+      },
+    ),
+    loadNutritionPrefs: vi.fn(() => ({
+      ...actual.defaultNutritionPrefs(),
+      ...mem.prefs,
+    })),
+    persistNutritionPrefs: vi.fn((p: Record<string, unknown>) => {
+      mem.prefs = p;
+      return true;
+    }),
+  };
+});
 
 beforeEach(() => {
   // Stage 8 PR #057r/#057k-tombstone — routine + finyk canonical state
   // lives in the SQLite warm caches, not localStorage. Reset all so each
   // spec starts clean.
   localStorage.clear();
+  mem.workouts = [];
+  mem.pantries = null;
+  mem.active = "home";
+  mem.prefs = {};
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   clearFinykSqliteCache();
@@ -421,16 +483,14 @@ describe("start_workout / finish_workout", () => {
       input: { note: "ранкова" },
     });
     expect(msg).toContain("Тренування розпочато");
-    const saved = readLS<{
-      workouts: Array<{ id: string; endedAt: string | null; note: string }>;
-    }>("fizruk_workouts_v1", { workouts: [] });
+    const saved = { workouts: mem.workouts };
     expect(saved.workouts).toHaveLength(1);
-    expect(saved.workouts[0]!.note).toBe("ранкова");
-    expect(saved.workouts[0]!.endedAt).toBeNull();
+    expect(saved.workouts[0]?.note).toBe("ранкова");
+    expect(saved.workouts[0]?.endedAt).toBeNull();
     // `fizruk_active_workout_id_v1` is stored as a raw string (not JSON), so
     // read it directly via localStorage to match the production storage format.
     const activeId = localStorage.getItem("fizruk_active_workout_id_v1");
-    expect(activeId).toBe(saved.workouts[0]!.id);
+    expect(activeId).toBe(saved.workouts[0]?.id);
   });
 
   it("start_workout відмовляє якщо вже є активне", () => {
@@ -443,10 +503,8 @@ describe("start_workout / finish_workout", () => {
     executeAction({ name: "start_workout", input: {} });
     const msg = executeAction({ name: "finish_workout", input: {} });
     expect(msg).toContain("завершено");
-    const saved = readLS<{
-      workouts: Array<{ endedAt: string | null }>;
-    }>("fizruk_workouts_v1", { workouts: [] });
-    expect(saved.workouts[0]!.endedAt).not.toBeNull();
+    const saved = { workouts: mem.workouts };
+    expect(saved.workouts[0]?.endedAt).not.toBeNull();
     const activeId = localStorage.getItem("fizruk_active_workout_id_v1");
     expect(activeId).toBeNull();
   });
@@ -464,13 +522,13 @@ describe("log_measurement", () => {
       input: { weight_kg: 78.5, waist_cm: 82, chest_cm: 100 },
     });
     expect(msg).toContain("weightKg=78.5");
-    const arr = readLS<Array<Record<string, unknown>>>(
-      "fizruk_measurements_v1",
-      [],
-    );
+    // measurements is tombstoned — assert via the dual-write payload, not LS.
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
+    const arr = next?.measurements ?? [];
     expect(arr).toHaveLength(1);
-    expect(arr[0]!["weightKg"]).toBe(78.5);
-    expect(arr[0]!["waistCm"]).toBe(82);
+    const snap = JSON.stringify(arr[0]);
+    expect(snap).toContain('"weightKg":78.5');
+    expect(snap).toContain('"waistCm":82');
   });
 
   it("ігнорує порожні/невалідні поля, відмовляє якщо нічого", () => {
@@ -874,27 +932,22 @@ describe("add_to_shopping_list", () => {
 
 describe("consume_from_pantry", () => {
   it("видаляє продукт з активної комори", () => {
-    localStorage.setItem("nutrition_active_pantry_v1", '"home"');
-    localStorage.setItem(
-      "nutrition_pantries_v1",
-      JSON.stringify([
-        {
-          id: "home",
-          name: "Дім",
-          items: [{ name: "яйця" }, { name: "молоко" }],
-          text: "",
-        },
-      ]),
-    );
+    mem.active = "home";
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Дім",
+        items: [{ name: "яйця" }, { name: "молоко" }],
+        text: "",
+      },
+    ];
     const msg = executeAction({
       name: "consume_from_pantry",
       input: { name: "яйця" },
     });
     expect(msg).toContain("прибрано");
-    const pantries = readLS<
-      Array<{ id: string; items: Array<{ name: string }> }>
-    >("nutrition_pantries_v1", []);
-    expect(pantries[0]!.items.map((i) => i.name)).toEqual(["молоко"]);
+    const pantries = mem.pantries as Array<{ items: Array<{ name: string }> }>;
+    expect(pantries[0]?.items.map((i) => i.name)).toEqual(["молоко"]);
   });
 
   it("повертає повідомлення якщо продукт відсутній (ідемпотентність)", () => {
@@ -918,11 +971,13 @@ describe("set_daily_plan", () => {
       input: { kcal: 2200, protein_g: 150, water_ml: 2500 },
     });
     expect(msg).toContain("2200");
-    const prefs = readLS<Record<string, number>>("nutrition_prefs_v1", {});
+    const prefs = mem.prefs as Record<string, number | null | undefined>;
     expect(prefs["dailyTargetKcal"]).toBe(2200);
     expect(prefs["dailyTargetProtein_g"]).toBe(150);
     expect(prefs["waterGoalMl"]).toBe(2500);
-    expect(prefs["dailyTargetFat_g"]).toBeUndefined();
+    // Canonical write persists the full prefs object, so an untouched numeric
+    // target carries its default (null) rather than being absent.
+    expect(prefs["dailyTargetFat_g"]).toBeNull();
   });
 
   it("відмовляє якщо немає полів", () => {
