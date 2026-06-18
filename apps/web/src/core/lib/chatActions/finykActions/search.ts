@@ -1,5 +1,12 @@
+/* eslint-disable sergeant-design/no-raw-storage-key, sergeant-design/prefer-kyiv-time --
+   Chat-action executor (outside React): the bank tx cache stays on LS
+   (no SQLite canon) and the `finyk_tx_cats` write is mirrored into SQLite
+   (see `triggerTxCategorySqliteMirror`). The host-local date parts in
+   `toIsoDay` are pre-existing display/parse code. Raw-key burndown: 2026-Q3. */
 import { ls, lsSet } from "../../hubChatUtils";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
+import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import { triggerTxCategorySqliteMirror } from "../../../../modules/finyk/lib/dualWrite";
 import type {
   BatchCategorizeAction,
   ChangeCategoryAction,
@@ -14,7 +21,25 @@ export type FinykSearchTx = {
   description: string;
   category?: string | undefined;
   type?: string | undefined;
+  /**
+   * Origin of the row, tagged at read time. Manual expenses (грн) come
+   * from the SQLite `manualExpenses` slice; bank rows (kopiykas) from
+   * the `finyk_tx_cache` LS bundle. Drives kopiyka normalisation and
+   * income/expense direction — never re-derive it from the `m_` id
+   * prefix (AI/server manual expenses use a server UUID).
+   */
+  source?: "manual" | "bank" | undefined;
 };
+
+/**
+ * Resolve a row's source. Prefers the read-time `source` tag; falls
+ * back to the `type` field (manual rows carry income/expense), NOT the
+ * `m_` id prefix — AI/server-created manual expenses use a server UUID.
+ */
+export function txSourceOf(tx: FinykSearchTx): "manual" | "bank" {
+  if (tx.source) return tx.source;
+  return tx.type === "income" || tx.type === "expense" ? "manual" : "bank";
+}
 
 export function toIsoDay(value: unknown): string {
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
@@ -43,17 +68,28 @@ function normalizeText(value: unknown): string {
     .toLowerCase();
 }
 
+/**
+ * Unified read of Finyk transactions for the search/categorize tools.
+ *
+ * Manual expenses come from the canonical SQLite `manualExpenses` slice
+ * (the finyk module reads the same overlay; the legacy
+ * `finyk_manual_expenses_v1` LS key is drained + tombstoned on boot, so
+ * an AI/server-created expense would otherwise be invisible here). Bank
+ * rows stay on the `finyk_tx_cache` LS bundle — it has no SQLite canon.
+ * Per-tx category overrides and hidden-tx ids also come from SQLite.
+ */
 function readSearchTransactions(): FinykSearchTx[] {
-  const manual = ls<
-    Array<{
-      id?: string;
-      date?: string;
-      description?: string;
-      amount?: number | string;
-      category?: string;
-      type?: string;
-    }>
-  >("finyk_manual_expenses_v1", []);
+  const sqlite = getCachedFinykSqliteState();
+  const manual = sqlite.manualExpenses as ReadonlyArray<{
+    id?: string;
+    date?: string;
+    description?: string;
+    amount?: number | string;
+    category?: string;
+    type?: string;
+  }>;
+  const txCategories = sqlite.txCategories;
+  const hidden = new Set(sqlite.hiddenTransactions);
   const cached = ls<
     | Array<{
         id?: string;
@@ -83,8 +119,6 @@ function readSearchTransactions(): FinykSearchTx[] {
     : Array.isArray(cached.txs)
       ? cached.txs
       : [];
-  const txCategories = ls<Record<string, string>>("finyk_tx_cats", {});
-  const hidden = new Set(ls<string[]>("finyk_hidden_txs", []));
 
   const manualTxs = manual.map((tx): FinykSearchTx | null => {
     const id = String(tx.id || "").trim();
@@ -97,6 +131,7 @@ function readSearchTransactions(): FinykSearchTx[] {
       description: String(tx.description || ""),
       category: txCategories[id] || tx.category || "",
       type: tx.type,
+      source: "manual",
     };
   });
   const cachedTxs = bankTxs.map((tx): FinykSearchTx | null => {
@@ -110,6 +145,7 @@ function readSearchTransactions(): FinykSearchTx[] {
       description: String(tx.description || tx.merchant || ""),
       category: txCategories[id] || tx.category || "",
       type: tx.type,
+      source: "bank",
     };
   });
 
@@ -136,7 +172,7 @@ function matchesFinykSearch(
     if (!haystack.includes(query)) return false;
   }
   if (filters.amount !== undefined) {
-    const source = tx.id.startsWith("m_") ? "manual" : "bank";
+    const source = txSourceOf(tx);
     const diff = Math.abs(toDisplayAmount(tx, source) - filters.amount);
     if (diff > filters.amountTolerance) return false;
   }
@@ -156,7 +192,7 @@ function formatTxList(items: FinykSearchTx[]): string {
     .map((tx) => {
       const category = tx.category ? ` · ${tx.category}` : "";
       const desc = tx.description ? ` · ${tx.description}` : "";
-      const source = tx.id.startsWith("m_") ? "manual" : "bank";
+      const source = txSourceOf(tx);
       return `${tx.id}: ${tx.date || "без дати"} · ${toDisplayAmount(tx, source)} грн${desc}${category}`;
     })
     .join("; ");
@@ -167,7 +203,13 @@ export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
   const cats = ls<Record<string, string>>("finyk_tx_cats", {});
   cats[tx_id] = category_id;
   lsSet("finyk_tx_cats", cats);
-  const customC = ls<unknown[]>("finyk_custom_cats_v1", []);
+  // Mirror into the canonical SQLite `finyk_tx_categories` table — the
+  // migrated category read (here + financeAnalytics) overlays from
+  // SQLite, so an LS-only write would be invisible.
+  triggerTxCategorySqliteMirror([
+    { transactionId: tx_id, categoryId: category_id },
+  ]);
+  const customC = getCachedFinykSqliteState().customCategories;
   const cat = resolveExpenseCategoryMeta(category_id, customC);
   return `Категорію транзакції ${tx_id} змінено на ${cat?.label || category_id}`;
 }
@@ -244,5 +286,10 @@ export function batchCategorize(
   const cats = ls<Record<string, string>>("finyk_tx_cats", {});
   for (const tx of matches) cats[tx.id] = categoryId;
   lsSet("finyk_tx_cats", cats);
+  // Same key as `change_category` — mirror every override into SQLite so
+  // the migrated category read reflects the batch write.
+  triggerTxCategorySqliteMirror(
+    matches.map((tx) => ({ transactionId: tx.id, categoryId })),
+  );
   return `Категорію ${matches.length} транзакц. змінено на ${categoryId}: ${preview}`;
 }

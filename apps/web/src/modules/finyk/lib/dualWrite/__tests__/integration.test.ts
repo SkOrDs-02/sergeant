@@ -3,10 +3,14 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   __clearFinykDualWriteContextForTests,
   applyFinykDualWriteOps,
+  applyFinykDualWriteOpsViaContext,
   dualWriteFinykState,
   isFinykDualWriteRegistered,
   registerFinykDualWriteContext,
   triggerFinykDualWrite,
+  triggerHiddenTransactionSqliteMirror,
+  triggerManualExpenseSqliteMirror,
+  triggerTxCategorySqliteMirror,
   type FinykDualWriteContext,
   type FinykDualWriteState,
 } from "../index.js";
@@ -295,5 +299,109 @@ describe("Finyk dual-write — orchestrator (registerFinykDualWriteContext)", ()
     expect(() =>
       triggerFinykDualWrite(EMPTY_FINYK_STATE, EMPTY_FINYK_STATE),
     ).not.toThrow();
+  });
+});
+
+describe("Finyk dual-write — applyFinykDualWriteOpsViaContext + mirrors", () => {
+  // The mirror helpers are fire-and-forget; drain microtasks + one
+  // macrotask so the async apply chain settles before we read SQLite.
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it("skips when no context is registered", async () => {
+    const outcome = await applyFinykDualWriteOpsViaContext([
+      {
+        kind: "id-upsert",
+        table: "finyk_hidden_transactions",
+        entry: { id: "t-1" },
+      },
+    ]);
+    expect(outcome).toEqual({ status: "skipped", reason: "context-unset" });
+  });
+
+  it("applies a pre-built op list through the context (no diff, no parity probe)", async () => {
+    registerFinykDualWriteContext(makeCtx());
+    const outcome = await applyFinykDualWriteOpsViaContext([
+      {
+        kind: "blob-upsert",
+        table: "finyk_manual_expenses",
+        entry: {
+          id: "ai-uuid-1",
+          dataJson: JSON.stringify({
+            id: "ai-uuid-1",
+            amount: 320,
+            type: "expense",
+          }),
+        },
+      },
+    ]);
+    expect(outcome.status).toBe("applied");
+    const rows = await handle.client.all<{ id: string; data_json: string }>(
+      "SELECT id, data_json FROM finyk_manual_expenses WHERE id = ?",
+      ["ai-uuid-1"],
+    );
+    expect(rows).toHaveLength(1);
+    expect(JSON.parse(rows[0]!.data_json).amount).toBe(320);
+  });
+
+  it("triggerManualExpenseSqliteMirror upserts a manual-expense blob (грн)", async () => {
+    registerFinykDualWriteContext(makeCtx());
+    triggerManualExpenseSqliteMirror({
+      id: "m_x",
+      date: "2026-05-04",
+      description: "кава",
+      amount: 120,
+      category: "restaurant",
+      type: "expense",
+    });
+    await flush();
+    const rows = await handle.client.all<{ data_json: string }>(
+      "SELECT data_json FROM finyk_manual_expenses WHERE id = ?",
+      ["m_x"],
+    );
+    expect(rows).toHaveLength(1);
+    // Amount mirrored verbatim in грн — no ×100 (server-API-only).
+    expect(JSON.parse(rows[0]!.data_json).amount).toBe(120);
+  });
+
+  it("triggerHiddenTransactionSqliteMirror upserts a hidden-tx row", async () => {
+    registerFinykDualWriteContext(makeCtx());
+    triggerHiddenTransactionSqliteMirror("tx-hide-1");
+    await flush();
+    const rows = await handle.client.all<{ transaction_id: string }>(
+      "SELECT transaction_id FROM finyk_hidden_transactions WHERE transaction_id = ?",
+      ["tx-hide-1"],
+    );
+    expect(rows).toHaveLength(1);
+  });
+
+  it("triggerTxCategorySqliteMirror upserts per-tx category overrides", async () => {
+    registerFinykDualWriteContext(makeCtx());
+    triggerTxCategorySqliteMirror([
+      { transactionId: "tx-1", categoryId: "food" },
+      { transactionId: "tx-2", categoryId: "transport" },
+    ]);
+    await flush();
+    const rows = await handle.client.all<{
+      transaction_id: string;
+      category_id: string;
+    }>(
+      "SELECT transaction_id, category_id FROM finyk_tx_categories ORDER BY transaction_id",
+    );
+    expect(rows).toEqual([
+      { transaction_id: "tx-1", category_id: "food" },
+      { transaction_id: "tx-2", category_id: "transport" },
+    ]);
+  });
+
+  it("triggerManualExpenseSqliteMirror no-ops with no context registered", async () => {
+    expect(() =>
+      triggerManualExpenseSqliteMirror({ id: "m_none", amount: 10 }),
+    ).not.toThrow();
+    await flush();
+    const rows = await handle.client.all(
+      "SELECT id FROM finyk_manual_expenses WHERE id = ?",
+      ["m_none"],
+    );
+    expect(rows).toHaveLength(0);
   });
 });

@@ -1,5 +1,10 @@
+/* eslint-disable sergeant-design/no-raw-storage-key, sergeant-design/prefer-kyiv-time --
+   Chat-action executor (outside React): the bank tx cache + splits stay
+   on LS (no SQLite canon); the hidden-tx read moved to the SQLite cache.
+   Host-local period math is pre-existing. Raw-key burndown: 2026-Q3. */
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
+import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import type { ExportReportAction, ChatActionResult } from "../types";
 
 export function exportReport(action: ExportReportAction): ChatActionResult {
@@ -32,7 +37,7 @@ export function exportReport(action: ExportReportAction): ChatActionResult {
     const ts = (t.time || 0) * 1000;
     return ts >= fromTs && ts <= toTs;
   });
-  const hiddenTxIds = ls<string[]>("finyk_hidden_txs", []);
+  const hiddenTxIds = getCachedFinykSqliteState().hiddenTransactions;
   const filtered = txs.filter((t) => !hiddenTxIds.includes(t.id));
   const expenses = filtered.filter((t) => t.amount < 0);
   const income = filtered.filter((t) => t.amount > 0);

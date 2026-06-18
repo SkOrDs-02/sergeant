@@ -1,4 +1,10 @@
+/* eslint-disable sergeant-design/no-raw-storage-key, @typescript-eslint/no-non-null-assertion --
+   Chat-action executor (outside React): LS writes are the dual-write
+   safety net, the manual-expense write is mirrored into SQLite (see
+   `triggerManualExpenseSqliteMirror`). The non-null assertion is
+   pre-existing. Raw-key burndown tracked for 2026-Q3. */
 import { ls, lsSet } from "../../hubChatUtils";
+import { triggerManualExpenseSqliteMirror } from "../../../../modules/finyk/lib/dualWrite";
 import type {
   CreateDebtAction,
   CreateReceivableAction,
@@ -82,15 +88,19 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
       type?: string;
     }>
   >("finyk_manual_expenses_v1", []);
-  manualExpenses.unshift({
+  const payEntry = {
     id: txId,
     date: new Date().toISOString(),
     description: (note && String(note).trim()) || `Погашення: ${debt.name}`,
     amount: payAmount,
     category: "",
     type: "expense",
-  });
+  };
+  manualExpenses.unshift(payEntry);
   lsSet("finyk_manual_expenses_v1", manualExpenses);
+  // Mirror the debt-payment expense into SQLite so it shows up in the
+  // migrated manual-expense reads (amount in грн).
+  triggerManualExpenseSqliteMirror(payEntry);
   debt.linkedTxIds = [...(debt.linkedTxIds || []), txId];
   const prevPaid = debt.linkedTxIds
     .filter((lid) => lid !== txId)
