@@ -1,15 +1,22 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { handleQueryFinykAction } from "./queryFinykActions";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../../modules/finyk/lib/sqliteReader";
+import type { ManualExpense } from "../../../modules/finyk/hooks/useStorage.types";
 import type { ChatAction } from "./types";
 
 beforeEach(() => {
   localStorage.clear();
+  clearFinykSqliteCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
 });
 afterEach(() => {
   localStorage.clear();
+  clearFinykSqliteCache();
   vi.useRealTimers();
 });
 
@@ -21,11 +28,15 @@ function call(action: ChatAction): string {
   return typeof out === "string" ? out : out.result;
 }
 
-/** Seed manual (грн) + bank (kopiykas) transactions for a deterministic dataset. */
+/**
+ * Seed manual (грн) + bank (kopiykas) transactions for a deterministic
+ * dataset. Manual expenses come from the canonical SQLite warm cache
+ * (the executors read it off-React, not LS); the bank cache stays on LS
+ * (`finyk_tx_cache` — no SQLite canon).
+ */
 function seed(): void {
-  localStorage.setItem(
-    "finyk_manual_expenses_v1",
-    JSON.stringify([
+  __setFinykSqliteStateCacheForTests({
+    manualExpenses: [
       {
         id: "m_atb",
         date: "2026-04-10",
@@ -45,6 +56,7 @@ function seed(): void {
         date: "2026-04-01",
         description: "Зарплата",
         amount: 5000,
+        category: "",
         type: "income",
       },
       {
@@ -54,8 +66,8 @@ function seed(): void {
         amount: 120,
         category: "food",
       },
-    ]),
-  );
+    ] as unknown as ManualExpense[],
+  });
   localStorage.setItem(
     "finyk_tx_cache",
     JSON.stringify({
@@ -247,6 +259,45 @@ describe("compare_periods", () => {
     });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// txSource regression — AI/server manual expenses carry a server UUID id
+// (no `m_` prefix). The old prefix heuristic misclassified them as bank
+// rows, so direction came from amount-sign instead of `type`, counting an
+// expense (positive amount + type:"expense") as income.
+// ---------------------------------------------------------------------------
+describe("aggregate_spending · AI-created manual expense (UUID id)", () => {
+  it("counts a UUID-id expense as expense, not income", () => {
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
+        {
+          id: "5f3c9b2e-1a4d-4c7e-9f21-abc123def456",
+          date: "2026-04-12",
+          description: "AI витрата",
+          amount: 320,
+          category: "food",
+          type: "expense",
+        },
+      ] as unknown as ManualExpense[],
+    });
+    const expense = call({
+      name: "aggregate_spending",
+      input: {
+        type: "expense",
+        date_from: "2026-04-01",
+        date_to: "2026-04-30",
+      },
+    });
+    expect(expense).toContain("Витрати");
+    expect(expense).toMatch(/320/); // грн, not kopiyka-divided
+
+    const income = call({
+      name: "aggregate_spending",
+      input: { type: "income", date_from: "2026-04-01", date_to: "2026-04-30" },
+    });
+    expect(income).toContain("Немає доходів");
   });
 });
 

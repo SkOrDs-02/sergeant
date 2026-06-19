@@ -1,3 +1,7 @@
+/* eslint-disable sergeant-design/no-raw-storage-key --
+   Chat-action executor (outside React): the bank tx cache + splits stay
+   on LS (no SQLite canon); hidden-tx / custom-category / per-tx-category
+   reads moved to the SQLite cache. Raw-key burndown tracked for 2026-Q3. */
 import { ls } from "../../hubChatUtils";
 import {
   calcCategorySpent,
@@ -7,6 +11,7 @@ import {
   INTERNAL_TRANSFER_ID,
   mergeExpenseCategoryDefinitions,
 } from "../../../../modules/finyk/constants";
+import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import type {
   CategoryBreakdownAction,
   DetectAnomaliesAction,
@@ -29,7 +34,7 @@ export function spendingTrend(action: SpendingTrendAction): string {
     }>;
   } | null>("finyk_tx_cache", null);
   const allTxs = txCache?.txs || [];
-  const hiddenTxIds = ls<string[]>("finyk_hidden_txs", []);
+  const hiddenTxIds = getCachedFinykSqliteState().hiddenTransactions;
   const trendSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
   const txs = allTxs.filter((t) => !hiddenTxIds.includes(t.id || ""));
   const currentPeriod = txs.filter((t) => {
@@ -76,9 +81,9 @@ export function categoryBreakdown(action: CategoryBreakdownAction): string {
       mcc?: number;
     }>;
   } | null>("finyk_tx_cache", null);
-  const hiddenTxIds = ls<string[]>("finyk_hidden_txs", []);
-  const customC = ls<unknown[]>("finyk_custom_cats_v1", []);
-  const catMap = ls<Record<string, string>>("finyk_tx_cats", {});
+  const hiddenTxIds = getCachedFinykSqliteState().hiddenTransactions;
+  const customC = getCachedFinykSqliteState().customCategories;
+  const catMap = getCachedFinykSqliteState().txCategories;
   const breakdownSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
   const expenses = (txCache?.txs || []).filter((t) => {
     if (hiddenTxIds.includes(t.id || "")) return false;
@@ -129,7 +134,7 @@ export function detectAnomalies(action: DetectAnomaliesAction): string {
       mcc?: number;
     }>;
   } | null>("finyk_tx_cache", null);
-  const hiddenTxIds = ls<string[]>("finyk_hidden_txs", []);
+  const hiddenTxIds = getCachedFinykSqliteState().hiddenTransactions;
   const anomalySplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
   const expenses = (txCache?.txs || []).filter((t) => {
     if (hiddenTxIds.includes(t.id || "")) return false;

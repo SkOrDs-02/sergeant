@@ -14,6 +14,7 @@ import {
 import {
   diffFinykDualWriteOps,
   EMPTY_FINYK_STATE,
+  type FinykDualWriteOp,
   type FinykDualWriteState,
 } from "./diff.js";
 import { probeFinykParity } from "./parity.js";
@@ -173,6 +174,143 @@ export function triggerFinykDualWrite(
 ): void {
   if (!registeredContext) return;
   void Promise.resolve().then(() => dualWriteFinykState(prev, next));
+}
+
+/**
+ * Apply a pre-built op list through the registered context, SKIPPING
+ * the `prev → next` diff and the Stage 8 parity probe that
+ * {@link dualWriteFinykState} runs.
+ *
+ * Off-React callers (Hub chat-action executors) mutate a single entity
+ * and have no full LS-state snapshot to diff. Routing them through
+ * `dualWriteFinykState(EMPTY, next)` would diff against an empty state
+ * (re-emitting every row) and the parity probe would compare a partial
+ * `next` against the full SQLite table and falsely report a mismatch.
+ * This entry point hands the ops straight to the adapter instead.
+ *
+ * Best-effort: never rejects; a missing context / user id / sqlite
+ * client is a no-op. Records the terminal outcome on the shared Sentry
+ * scope like the orchestrator does.
+ */
+export async function applyFinykDualWriteOpsViaContext(
+  ops: readonly FinykDualWriteOp[],
+): Promise<DualWriteOutcome> {
+  const ctx = registeredContext;
+  if (!ctx) return { status: "skipped", reason: "context-unset" };
+  if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
+
+  const userId = ctx.getUserId();
+  if (!userId) {
+    logSafe(ctx, "warn", "dual-write skipped: user id unavailable", {
+      ops: ops.length,
+    });
+    return { status: "skipped", reason: "user-id-missing" };
+  }
+
+  let client: SqliteMigrationClient | null = null;
+  try {
+    client = await ctx.getMigrationClient();
+  } catch (err) {
+    logSafe(ctx, "warn", "dual-write skipped: sqlite unavailable", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return { status: "skipped", reason: "sqlite-unavailable" };
+  }
+  if (!client) {
+    logSafe(ctx, "warn", "dual-write skipped: sqlite returned null", {});
+    return { status: "skipped", reason: "sqlite-unavailable" };
+  }
+
+  const result = await applyFinykDualWriteOps(client, ops, {
+    userId,
+    clientTs: ctx.getNow(),
+    logger: ctx.logger,
+  });
+  const outcome: DualWriteOutcome = { status: "applied", result };
+  recordDualWriteOutcome("finyk", outcome);
+  return outcome;
+}
+
+/** Shape of a manual-expense entry as persisted in the LS bundle (грн). */
+export interface ManualExpenseMirrorEntry {
+  readonly id: string;
+  readonly date?: string;
+  readonly description?: string;
+  /** Amount in **гривні** (minor-unit ×100 is server-only — Hard Rule #1). */
+  readonly amount: number;
+  readonly category?: string;
+  readonly type?: string;
+  readonly [extra: string]: unknown;
+}
+
+/**
+ * Fire-and-forget: mirror a manual-expense create/update into the
+ * `finyk_manual_expenses` SQLite table (blob-upsert). The blob is the
+ * verbatim LS shape — amount stays in **гривні**, matching what the
+ * finyk module's own dual-write extractor writes for the same key.
+ */
+export function triggerManualExpenseSqliteMirror(
+  expense: ManualExpenseMirrorEntry,
+): void {
+  if (!registeredContext || !expense?.id) return;
+  const op: FinykDualWriteOp = {
+    kind: "blob-upsert",
+    table: "finyk_manual_expenses",
+    entry: { id: expense.id, dataJson: JSON.stringify(expense) },
+  };
+  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext([op]));
+}
+
+/**
+ * Fire-and-forget: mirror a manual-expense removal (undo / delete tool)
+ * into SQLite (blob soft-delete) so the off-React delete agrees with
+ * the create mirror and the row stops showing up in the overlay read.
+ */
+export function triggerManualExpenseDeleteSqliteMirror(id: string): void {
+  if (!registeredContext || !id) return;
+  const op: FinykDualWriteOp = {
+    kind: "blob-delete",
+    table: "finyk_manual_expenses",
+    id,
+  };
+  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext([op]));
+}
+
+/**
+ * Fire-and-forget: mirror per-tx category overrides (`finyk_tx_cats`)
+ * into SQLite (`tx-category-upsert`). Sibling of
+ * {@link triggerManualExpenseSqliteMirror} for the `change_category` /
+ * `batch_categorize` tools.
+ */
+export function triggerTxCategorySqliteMirror(
+  entries: ReadonlyArray<{ transactionId: string; categoryId: string }>,
+): void {
+  if (!registeredContext) return;
+  const ops: FinykDualWriteOp[] = [];
+  for (const e of entries) {
+    if (!e.transactionId || !e.categoryId) continue;
+    ops.push({
+      kind: "tx-category-upsert",
+      entry: { transactionId: e.transactionId, categoryId: e.categoryId },
+    });
+  }
+  if (ops.length === 0) return;
+  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext(ops));
+}
+
+/**
+ * Fire-and-forget: mirror a hide-transaction into SQLite
+ * (`id-upsert` on `finyk_hidden_transactions`) so the AI `hide` tool
+ * agrees with the migrated hidden-tx read.
+ */
+export function triggerHiddenTransactionSqliteMirror(txId: string): void {
+  if (!registeredContext || !txId) return;
+  const op: FinykDualWriteOp = {
+    kind: "id-upsert",
+    table: "finyk_hidden_transactions",
+    entry: { id: txId },
+  };
+  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext([op]));
 }
 
 export type DualWriteOutcome =

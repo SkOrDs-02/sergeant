@@ -1,15 +1,21 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { handleFinykAction } from "./finykActions";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../../modules/finyk/lib/sqliteReader";
 import type { ChatAction } from "./types";
 
 beforeEach(() => {
   localStorage.clear();
+  clearFinykSqliteCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
 });
 afterEach(() => {
   localStorage.clear();
+  clearFinykSqliteCache();
   vi.useRealTimers();
 });
 
@@ -60,9 +66,8 @@ describe("change_category", () => {
 // ---------------------------------------------------------------------------
 describe("find_transaction", () => {
   it("happy: finds transactions matching query", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
         {
           id: "m_1",
           date: "2026-04-22",
@@ -70,8 +75,8 @@ describe("find_transaction", () => {
           amount: 200,
           category: "food",
         },
-      ]),
-    );
+      ],
+    });
     const out = call({
       name: "find_transaction",
       input: { query: "АТБ" },
@@ -101,12 +106,17 @@ describe("find_transaction", () => {
 // ---------------------------------------------------------------------------
 describe("batch_categorize", () => {
   it("happy: dry-run returns preview string", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([
-        { id: "m_1", date: "2026-04-22", description: "Сільпо", amount: 100 },
-      ]),
-    );
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
+        {
+          id: "m_1",
+          date: "2026-04-22",
+          description: "Сільпо",
+          amount: 100,
+          category: "",
+        },
+      ],
+    });
     const out = call({
       name: "batch_categorize",
       input: { pattern: "Сільпо", category_id: "food" },

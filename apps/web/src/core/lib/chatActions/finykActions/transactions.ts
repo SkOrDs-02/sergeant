@@ -1,5 +1,15 @@
+/* eslint-disable sergeant-design/no-raw-storage-key --
+   Chat-action executors run outside React (the finyk `useStorage` hooks
+   are unavailable). LS writes here are kept as the dual-write safety net
+   and mirrored into SQLite alongside (see the `trigger*SqliteMirror`
+   calls). Raw-key → `STORAGE_KEYS` migration is tracked for 2026-Q3. */
 import { ls, lsSet } from "../../hubChatUtils";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
+import {
+  triggerHiddenTransactionSqliteMirror,
+  triggerManualExpenseDeleteSqliteMirror,
+  triggerManualExpenseSqliteMirror,
+} from "../../../../modules/finyk/lib/dualWrite";
 import type {
   CreateTransactionAction,
   DeleteTransactionAction,
@@ -54,6 +64,11 @@ export function createTransaction(
   };
   manualExpenses.unshift(entry);
   lsSet("finyk_manual_expenses_v1", manualExpenses);
+  // Mirror into the canonical SQLite `finyk_manual_expenses` table —
+  // the migrated reads (query/search/analytics) overlay from SQLite, so
+  // an LS-only write would be invisible to the module UI and the AI's
+  // own follow-up reads. Amount stays in грн (×100 is server-only).
+  triggerManualExpenseSqliteMirror(entry);
   const label = categoryLabel ? ` (${categoryLabel})` : "";
   const human = txType === "income" ? "Дохід" : "Витрату";
   const result = `${human} ${amt} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
@@ -69,6 +84,10 @@ export function createTransaction(
       if (next.length !== current.length) {
         lsSet("finyk_manual_expenses_v1", next);
       }
+      // Keep SQLite in step with the LS undo so the row stops showing up
+      // in the overlay read. Soft-delete is idempotent — safe to fire
+      // even if the LS entry was already removed elsewhere.
+      triggerManualExpenseDeleteSqliteMirror(manualId);
     },
   };
 }
@@ -82,6 +101,9 @@ export function hideTransaction(
     hidden.push(tx_id);
     lsSet("finyk_hidden_txs", hidden);
   }
+  // Mirror into `finyk_hidden_transactions` — the hidden-tx read
+  // (search / analytics / report) overlays from SQLite. Idempotent.
+  triggerHiddenTransactionSqliteMirror(tx_id);
   return `Транзакцію ${tx_id} приховано зі статистики`;
 }
 
@@ -100,6 +122,8 @@ export function deleteTransaction(
   const next = list.slice();
   next.splice(idx, 1);
   lsSet("finyk_manual_expenses_v1", next);
+  // Mirror the removal so the migrated manual-expense read drops it too.
+  triggerManualExpenseDeleteSqliteMirror(id);
   return `Транзакцію ${id} видалено`;
 }
 

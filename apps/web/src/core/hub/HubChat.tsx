@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { HubChatHistoryDrawer } from "./HubChatHistoryDrawer";
 import { useChatSessions } from "./chat/useChatSessions";
 import { useChatSend } from "./chat/useChatSend";
+import { useHubChatStorageBoot } from "./chat/useHubChatStorageBoot";
 import { HubChatHeader } from "./chat/HubChatHeader";
 import { HubChatBody } from "./chat/HubChatBody";
 import { HubChatComposer } from "./chat/HubChatComposer";
@@ -36,6 +37,11 @@ function HubChat({
   autoSendInitial,
   onOpenCatalogue,
 }: HubChatProps) {
+  // Warm the SQLite read caches + register the finyk dual-write context
+  // so the off-React chat-action executors read fresh data and persist
+  // their writes (see `useHubChatStorageBoot`).
+  useHubChatStorageBoot();
+
   const sessionsState = useChatSessions();
   const {
     sessions,
@@ -149,6 +155,7 @@ function HubChat({
         onDelete={handleDeleteSession}
       />
 
+      {/* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing PaywallModal copy; i18n catalog migration tracked separately. */}
       <PaywallModal
         open={paywallOpen}
         onClose={closePaywall}
@@ -156,6 +163,7 @@ function HubChat({
         title="Безлімітний AI-чат у Pro"
         description="Free-тариф має 5 AI-повідомлень на день. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
       />
+      {/* eslint-enable sergeant-design/no-cyrillic-jsx-literal */}
     </div>
   );
 }

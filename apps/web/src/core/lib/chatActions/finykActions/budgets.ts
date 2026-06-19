@@ -1,5 +1,10 @@
+/* eslint-disable sergeant-design/no-raw-storage-key --
+   Chat-action executor (outside React). Budget / monthly-plan LS writes
+   are out of this migration's scope (custom-category read moved to the
+   SQLite cache). Raw-key → `STORAGE_KEYS` burndown tracked for 2026-Q3. */
 import { ls, lsSet } from "../../hubChatUtils";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
+import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import type {
   SetBudgetLimitAction,
   SetMonthlyPlanAction,
@@ -28,7 +33,7 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
     });
   }
   lsSet("finyk_budgets", budgets);
-  const customC = ls<unknown[]>("finyk_custom_cats_v1", []);
+  const customC = getCachedFinykSqliteState().customCategories;
   const cat = resolveExpenseCategoryMeta(category_id, customC);
   return `Ліміт ${cat?.label || category_id} встановлено: ${limit} грн`;
 }
@@ -68,7 +73,7 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       });
     }
     lsSet("finyk_budgets", budgets);
-    const customC = ls<unknown[]>("finyk_custom_cats_v1", []);
+    const customC = getCachedFinykSqliteState().customCategories;
     const cat = resolveExpenseCategoryMeta(categoryId, customC);
     return `Ліміт ${cat?.label || categoryId} оновлено: ${limitN} грн`;
   }

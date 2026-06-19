@@ -14,14 +14,21 @@ import {
   clearSqliteCompletionsCache,
   clearSqliteRoutineStateCache,
 } from "../../modules/routine/lib/sqliteReader";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../modules/finyk/lib/sqliteReader";
+import type { ManualExpense } from "../../modules/finyk/hooks/useStorage.types";
 import { executeAction } from "./hubChatActions";
 
 beforeEach(() => {
-  // Stage 8 PR #057r-tombstone — routine state lives in the SQLite
-  // warm cache, not localStorage. Reset both so each spec starts clean.
+  // Stage 8 PR #057r/#057k-tombstone — routine + finyk canonical state
+  // lives in the SQLite warm caches, not localStorage. Reset all so each
+  // spec starts clean.
   localStorage.clear();
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
+  clearFinykSqliteCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
 });
@@ -29,6 +36,7 @@ afterEach(() => {
   localStorage.clear();
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
+  clearFinykSqliteCache();
   vi.useRealTimers();
 });
 
@@ -46,9 +54,8 @@ function readLS<T>(key: string, fallback: T): T {
 
 describe("find_transaction", () => {
   it("шукає ручну транзакцію за описом і сумою", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
         {
           id: "m_atb",
           amount: 450,
@@ -65,8 +72,8 @@ describe("find_transaction", () => {
           date: "2024-06-15T12:00:00.000Z",
           type: "expense",
         },
-      ]),
-    );
+      ] as unknown as ManualExpense[],
+    });
     const msg = executeAction({
       name: "find_transaction",
       input: { query: "атб", amount: 450 },
@@ -96,7 +103,8 @@ describe("find_transaction", () => {
         ],
       }),
     );
-    localStorage.setItem("finyk_hidden_txs", JSON.stringify(["mono_hidden"]));
+    // Bank tx cache stays on LS; hidden-tx ids are read from SQLite now.
+    __setFinykSqliteStateCacheForTests({ hiddenTransactions: ["mono_hidden"] });
     const msg = executeAction({
       name: "find_transaction",
       input: { query: "сільпо", amount: 125 },
@@ -108,13 +116,12 @@ describe("find_transaction", () => {
 
 describe("batch_categorize", () => {
   it("у dry-run показує preview і не пише категорії", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
         { id: "m_silpo_1", amount: 300, description: "Сільпо центр" },
         { id: "m_silpo_2", amount: 200, description: "Сільпо доставка" },
-      ]),
-    );
+      ] as unknown as ManualExpense[],
+    });
     const msg = executeAction({
       name: "batch_categorize",
       input: { pattern: "сільпо", category_id: "food" },
@@ -125,13 +132,12 @@ describe("batch_categorize", () => {
   });
 
   it("з dry_run=false записує категорію для matched транзакцій", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
         { id: "m_silpo_1", amount: 300, description: "Сільпо центр" },
         { id: "m_taxi", amount: 150, description: "Uklon" },
-      ]),
-    );
+      ] as unknown as ManualExpense[],
+    });
     const msg = executeAction({
       name: "batch_categorize",
       input: { pattern: "сільпо", category_id: "food", dry_run: false },

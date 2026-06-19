@@ -411,6 +411,7 @@ export async function refreshFinykSqliteState(
     showBalance,
     excludedStatTxIds,
     dismissedRecurring,
+    // eslint-disable-next-line no-restricted-syntax -- UTC-anchored refresh timestamp (updatedAt-style), not a Kyiv day boundary; pre-existing
     refreshedAt: new Date().toISOString(),
   };
   return cache;
@@ -429,6 +430,23 @@ function safeStringArray(raw: string | null | undefined): string[] {
 /** Reset cache — used by tests and when the flag is toggled off. */
 export function clearFinykSqliteCache(): void {
   cache = { ...EMPTY_CACHE };
+}
+
+/**
+ * Test-only seeder — overlays `partial` onto the empty cache and marks
+ * it warm (`refreshedAt`). Lets unit tests for the off-React readers
+ * (Hub chat-action executors) seed the canonical SQLite state without a
+ * real sqlite-wasm round trip. Mirrors the routine
+ * `__setRoutineSqliteStateCacheForTests` helper.
+ */
+export function __setFinykSqliteStateCacheForTests(
+  partial: Partial<SqliteFinykCache>,
+): void {
+  cache = {
+    ...EMPTY_CACHE,
+    ...partial,
+    refreshedAt: partial.refreshedAt ?? "2026-01-01T00:00:00.000Z",
+  };
 }
 
 // Suppress unused-warning for the IdRow alias kept above for future

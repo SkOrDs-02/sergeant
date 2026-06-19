@@ -1,7 +1,14 @@
+/* eslint-disable sergeant-design/no-raw-storage-key, sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
+   Cross-module briefing executor (outside React): routine now reads the
+   canonical SQLite state via `loadRoutineState()`; fizruk / nutrition /
+   bank-cache reads stay on LS (out of this migration's scope). The
+   host-local day-key and non-null assertions are pre-existing. Raw-key
+   burndown tracked for 2026-Q3. */
 import { ls } from "../../hubChatUtils";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
-import type { HabitState, NutritionDay, Workout } from "../types";
+import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
+import type { NutritionDay, Workout } from "../types";
 
 export function morningBriefing(): string {
   const now = new Date();
@@ -13,11 +20,9 @@ export function morningBriefing(): string {
   const parts: string[] = [
     `Доброго ранку! Сьогодні ${now.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long" })}`,
   ];
-  const routineState = ls<HabitState | null>("hub_routine_v1", null);
-  if (routineState?.habits) {
-    const activeHabits = routineState.habits.filter(
-      (h) => !(h as Record<string, unknown>)["archived"],
-    );
+  const routineState = loadRoutineState();
+  if (routineState.habits.length > 0) {
+    const activeHabits = routineState.habits.filter((h) => !h.archived);
     const completions = routineState.completions || {};
     const done = activeHabits.filter(
       (h) =>
@@ -77,11 +82,9 @@ export function weeklySummary(): string {
     0,
   );
   if (totalVolume > 0) parts.push(`Об'єм: ${Math.round(totalVolume)} кг×повт`);
-  const routineState = ls<HabitState | null>("hub_routine_v1", null);
-  if (routineState?.habits) {
-    const activeHabits = routineState.habits.filter(
-      (h) => !(h as Record<string, unknown>)["archived"],
-    );
+  const routineState = loadRoutineState();
+  if (routineState.habits.length > 0) {
+    const activeHabits = routineState.habits.filter((h) => !h.archived);
     const completions = routineState.completions || {};
     let totalDone = 0;
     let totalPossible = 0;

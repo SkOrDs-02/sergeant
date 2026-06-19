@@ -1,15 +1,19 @@
 /* eslint-disable sergeant-design/no-raw-storage-key --
    Chat-action executors run synchronously outside React, so the canonical
    Finyk storage wrappers (`modules/finyk/hooks/useStorage`) — which are hooks —
-   are unavailable here. We read the same localStorage keys directly, mirroring
-   the sibling reader in `finykActions/search.ts` (read-only). */
+   are unavailable here. Manual expenses / per-tx categories / hidden-tx ids
+   now read from the canonical SQLite warm cache; only the bank tx cache
+   (`finyk_tx_cache`, no SQLite canon) is still read raw from localStorage,
+   mirroring the sibling reader in `finykActions/search.ts` (read-only). */
 import { getWeekKey } from "@sergeant/shared";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/utils";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../hubChatUtils";
+import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
 import {
   toDisplayAmount,
   toIsoDay,
+  txSourceOf,
   type FinykSearchTx,
 } from "./finykActions/search";
 import type { ChatAction, ChatActionResult } from "./types";
@@ -89,18 +93,19 @@ type RawTx = {
  * `readSearchTransactions` in `finykActions/search.ts`.
  */
 function readQueryTransactions(): FinykSearchTx[] {
-  const manual = ls<RawTx[]>("finyk_manual_expenses_v1", []);
+  const sqlite = getCachedFinykSqliteState();
+  const manual = sqlite.manualExpenses as RawTx[];
   const cached = ls<RawTx[] | { txs?: RawTx[] }>("finyk_tx_cache", []);
   const bankTxs = Array.isArray(cached)
     ? cached
     : Array.isArray(cached.txs)
       ? cached.txs
       : [];
-  const txCategories = ls<Record<string, string>>("finyk_tx_cats", {});
-  const hidden = new Set(ls<string[]>("finyk_hidden_txs", []));
+  const txCategories = sqlite.txCategories;
+  const hidden = new Set(sqlite.hiddenTransactions);
 
   const map =
-    (dateField: (tx: RawTx) => unknown) =>
+    (source: "manual" | "bank", dateField: (tx: RawTx) => unknown) =>
     (tx: RawTx): FinykSearchTx | null => {
       const id = String(tx.id || "").trim();
       if (!id || hidden.has(id)) return null;
@@ -112,12 +117,13 @@ function readQueryTransactions(): FinykSearchTx[] {
         description: String(tx.description || tx.merchant || ""),
         category: txCategories[id] || tx.category || "",
         type: tx.type,
+        source,
       };
     };
 
   return [
-    ...manual.map(map((tx) => tx.date)),
-    ...bankTxs.map(map((tx) => tx.date || tx.time)),
+    ...manual.map(map("manual", (tx) => tx.date)),
+    ...bankTxs.map(map("bank", (tx) => tx.date || tx.time)),
   ].filter((tx): tx is FinykSearchTx => tx !== null);
 }
 
@@ -170,7 +176,12 @@ function normalizeMetric(value: unknown): CompareMetric {
 }
 
 function txSource(tx: FinykSearchTx): "manual" | "bank" {
-  return tx.id.startsWith("m_") ? "manual" : "bank";
+  // Classify by the read-time `source` tag / `type` field — NOT the
+  // `m_` id prefix. AI/server-created manual expenses use a server UUID
+  // (no `m_`), so the old prefix check misread them as bank rows and
+  // `txDirection` then used amount-sign instead of `type`, counting an
+  // AI expense (positive amount + type:"expense") as income.
+  return txSourceOf(tx);
 }
 
 /** Напрям транзакції: manual — за полем `type`, bank — за знаком суми. */
@@ -187,7 +198,7 @@ function txAmountGrn(tx: FinykSearchTx): number {
 }
 
 function readCustomCats(): unknown[] {
-  return ls<unknown[]>("finyk_custom_cats_v1", []);
+  return getCachedFinykSqliteState().customCategories;
 }
 
 function categoryLabel(
