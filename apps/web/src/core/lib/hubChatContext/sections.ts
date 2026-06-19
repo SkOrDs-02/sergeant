@@ -9,16 +9,16 @@ import {
 } from "@sergeant/fizruk-domain";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { fmt, ls } from "../hubChatUtils";
+import { fmt } from "../hubChatUtils";
+import { loadRoutineState } from "../../../modules/routine/lib/routineStorage";
+import {
+  loadNutritionLog,
+  loadNutritionPrefs,
+} from "../../../modules/nutrition/lib/nutritionStorage";
 import { generateRecommendations } from "../recommendationEngine";
 import { generateInsights } from "../insightsEngine";
 import { CATEGORY_META, readMemoryEntries } from "../../profile/memoryBank";
-import type {
-  HabitState,
-  NutritionDay,
-  NutritionMeal,
-  NutritionPrefs,
-} from "./types";
+import type { NutritionMeal } from "./types";
 
 /**
  * Kyiv day-key (`YYYY-MM-DD`) for `offsetDays` relative to the Europe/Kyiv
@@ -96,17 +96,17 @@ export function appendWorkoutLines(lines: string[]): void {
 
 export function appendRoutineLines(lines: string[], now: Date): void {
   try {
-    const routineState = ls<HabitState | null>("hub_routine_v1", null);
-    if (!routineState) return;
+    // Stage 8 PR #057r-tombstone retired `hub_routine_v1` — read the canonical
+    // SQLite-backed state (same source the Routine UI + queryRoutineActions use)
+    // so the AI chat context isn't blind to the user's habits.
+    const routineState = loadRoutineState();
     const habits = (routineState.habits || []).filter((h) => !h.archived);
     const completions = routineState.completions || {};
     if (habits.length === 0) return;
 
     const todayKey = getKyivDayKey(now);
-    const todayDone = habits.filter(
-      (h) =>
-        Array.isArray(completions[h.id]) &&
-        completions[h.id]!.includes(todayKey),
+    const todayDone = habits.filter((h) =>
+      (completions[h.id] ?? []).includes(todayKey),
     );
     lines.push(
       `[Рутина] ${habits.length} активних звичок, виконано сьогодні: ${todayDone.length} з ${habits.length}`,
@@ -114,9 +114,7 @@ export function appendRoutineLines(lines: string[], now: Date): void {
 
     const habitDetails = habits
       .map((h) => {
-        const done =
-          Array.isArray(completions[h.id]) &&
-          completions[h.id]!.includes(todayKey);
+        const done = (completions[h.id] ?? []).includes(todayKey);
         return `${h.emoji || ""} ${h.name} (id:${h.id}): ${done ? "✓" : "✗"}`;
       })
       .join(", ");
@@ -129,8 +127,7 @@ export function appendRoutineLines(lines: string[], now: Date): void {
       const dk = kyivDayKeyOffset(now, -dow + i);
       weekTotal += habits.length;
       for (const h of habits) {
-        if (Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk))
-          weekDone++;
+        if ((completions[h.id] ?? []).includes(dk)) weekDone++;
       }
     }
     const weekPct =
@@ -142,12 +139,7 @@ export function appendRoutineLines(lines: string[], now: Date): void {
     let streak = 0;
     for (let i = 0; i < 365; i++) {
       const dk = kyivDayKeyOffset(now, -1 - i);
-      if (
-        habits.every(
-          (h) =>
-            Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk),
-        )
-      ) {
+      if (habits.every((h) => (completions[h.id] ?? []).includes(dk))) {
         streak++;
       } else {
         break;
@@ -160,14 +152,10 @@ export function appendRoutineLines(lines: string[], now: Date): void {
 
 export function appendNutritionLines(lines: string[], now: Date): void {
   try {
-    const nutritionLog = ls<Record<string, NutritionDay>>(
-      "nutrition_log_v1",
-      {},
-    );
-    const nutritionPrefs = ls<NutritionPrefs | null>(
-      "nutrition_prefs_v1",
-      null,
-    );
+    // Tombstoned (#057n) — read the canonical nutrition cache so the AI sees
+    // today's meals + targets, not an empty LS shim.
+    const nutritionLog = loadNutritionLog();
+    const nutritionPrefs = loadNutritionPrefs();
     const todayKey = getKyivDayKey(now);
     const todayData = nutritionLog[todayKey];
 
@@ -197,9 +185,7 @@ export function appendNutritionLines(lines: string[], now: Date): void {
 
     if (nutritionPrefs) {
       const tKcal = nutritionPrefs.dailyTargetKcal;
-      const tProt =
-        nutritionPrefs.dailyTargetProtein_g ||
-        nutritionPrefs.dailyTargetProtein;
+      const tProt = nutritionPrefs.dailyTargetProtein_g;
       if (tKcal || tProt) {
         lines.push(
           `[Харчування ціль] ${tKcal ? `${tKcal} ккал/день` : ""}${tKcal && tProt ? ", " : ""}${tProt ? `білок: ${tProt}г/день` : ""}`,
