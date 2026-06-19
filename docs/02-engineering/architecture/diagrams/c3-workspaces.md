@@ -1,6 +1,6 @@
 # C3 — Workspace dependency graph
 
-> **Last validated:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last validated:** 2026-06-18 by @Skords-01. **Next review:** 2026-09-16.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-architecture-diagrams`. -->
@@ -77,10 +77,10 @@ The packages most other workspaces depend on. `Importers` = unique file count ac
 
 | Rank | Workspace                    | Importers | Exports |
 | ---- | ---------------------------- | --------- | ------- |
-| 1    | `@sergeant/shared`           | 343       | 1       |
+| 1    | `@sergeant/shared`           | 342       | 1       |
 | 2    | `@sergeant/nutrition-domain` | 84        | 1       |
-| 3    | `@sergeant/fizruk-domain`    | 63        | 1       |
-| 4    | `@sergeant/routine-domain`   | 53        | 1       |
+| 3    | `@sergeant/fizruk-domain`    | 64        | 1       |
+| 4    | `@sergeant/routine-domain`   | 56        | 1       |
 | 5    | `@sergeant/api-client`       | 38        | 200     |
 
 ## Drift detection

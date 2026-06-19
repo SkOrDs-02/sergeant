@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-16",
+  "generated_at": "2026-06-18",
   "summary": {
     "packages": 16,
     "totalExports": 303,
@@ -1733,7 +1733,7 @@
       "entryFile": "packages/fizruk-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 63,
+        "totalImporters": 64,
         "deadExports": 0
       },
       "exports": [
@@ -2005,7 +2005,7 @@
       "entryFile": "packages/routine-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 53,
+        "totalImporters": 56,
         "deadExports": 0
       },
       "exports": [
@@ -2035,7 +2035,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 343,
+        "totalImporters": 342,
         "deadExports": 0
       },
       "exports": [
