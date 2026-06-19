@@ -1,17 +1,88 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import type { Habit } from "@sergeant/routine-domain";
+import type { Workout } from "@sergeant/fizruk-domain";
+import {
+  __setRoutineSqliteStateCacheForTests,
+  __setRoutineSqliteCompletionsCacheForTests,
+  clearSqliteRoutineStateCache,
+  clearSqliteCompletionsCache,
+} from "@routine/lib/sqliteReader";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "@fizruk/lib/sqliteReader";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "@nutrition/lib/sqliteReader";
 import { generateRecommendations } from "./recommendationEngine";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
+// Stage 8 tombstone: hub_routine_v1 / fizruk_workouts_v1 / nutrition_log_v1 /
+// nutrition_prefs_v1 are drained on boot and read from the SQLite warm caches.
+// Route those seeds into the warm caches so the existing fixtures keep working
+// unchanged; every other key (finyk_*) stays real localStorage. Nutrition log +
+// prefs accumulate because the seeder replaces the whole cache on each call.
+let nutritionSeed: { log?: unknown; prefs?: unknown } = {};
+
 function setLS(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value));
+  switch (key) {
+    case "hub_routine_v1": {
+      const v = (value ?? {}) as {
+        habits?: Array<{ id: string }>;
+        completions?: Record<string, string[]>;
+      };
+      const habits = v.habits ?? [];
+      __setRoutineSqliteStateCacheForTests({
+        habits: habits as unknown as Habit[],
+        habitOrder: habits.map((h) => h.id),
+      });
+      __setRoutineSqliteCompletionsCacheForTests({
+        completions: v.completions ?? {},
+      });
+      return;
+    }
+    case "fizruk_workouts_v1": {
+      const workouts = Array.isArray(value)
+        ? value
+        : ((value as { workouts?: unknown[] } | null)?.workouts ?? []);
+      __setFizrukSqliteCacheForTests({
+        workouts: workouts as unknown as Workout[],
+      });
+      return;
+    }
+    case "nutrition_log_v1":
+      nutritionSeed.log = value;
+      __setNutritionSqliteCacheForTests(
+        nutritionSeed as unknown as Parameters<
+          typeof __setNutritionSqliteCacheForTests
+        >[0],
+      );
+      return;
+    case "nutrition_prefs_v1":
+      nutritionSeed.prefs = value;
+      __setNutritionSqliteCacheForTests(
+        nutritionSeed as unknown as Parameters<
+          typeof __setNutritionSqliteCacheForTests
+        >[0],
+      );
+      return;
+    default:
+      localStorage.setItem(key, JSON.stringify(value));
+  }
 }
 
 function clearAll() {
   localStorage.clear();
+  nutritionSeed = {};
+  clearSqliteRoutineStateCache();
+  clearSqliteCompletionsCache();
+  clearFizrukSqliteCache();
+  clearNutritionSqliteCache();
 }
 
 // Fixed fake-clock anchor built from *local* calendar components.
@@ -280,7 +351,13 @@ describe("generateRecommendations", () => {
         id: "w1",
         startedAt: old.toISOString(),
         endedAt: new Date(old.getTime() + 3600000).toISOString(),
-        items: [{ name: "Custom Ex", muscleGroups: ["glutes", "hamstrings"] }],
+        items: [
+          {
+            nameUk: "Custom Ex",
+            musclesPrimary: ["glutes"],
+            musclesSecondary: ["hamstrings"],
+          },
+        ],
       },
     ]);
 
@@ -792,27 +869,6 @@ describe("generateRecommendations", () => {
     const kcalLow = recs.find((r) => r.id === "nutrition_kcal_low");
     expect(kcalLow).toBeDefined();
     expect(kcalLow!.title).toContain("2000"); // default target
-  });
-
-  it("підтримує dailyTargetProtein (без _g) як fallback", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-04-27T17:00:00Z"));
-
-    const today = "2026-04-27";
-    setLS("nutrition_log_v1", {
-      [today]: {
-        meals: [{ macros: { kcal: 1500, protein_g: 30 } }],
-      },
-    });
-    setLS("nutrition_prefs_v1", {
-      dailyTargetKcal: 2000,
-      dailyTargetProtein: 80,
-    });
-
-    const recs = generateRecommendations();
-    const proteinLow = recs.find((r) => r.id === "nutrition_protein_low");
-    expect(proteinLow).toBeDefined();
-    expect(proteinLow!.title).toContain("80г"); // uses dailyTargetProtein
   });
 
   it("обробляє порожні/null macros", () => {

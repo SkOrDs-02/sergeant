@@ -5,9 +5,16 @@
  * Last validated: 2026-05-19
  */
 
+/* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion -- pre-existing burndown: localDateKey/daysBetween/startOfWeek read host-local date parts (kyiv-time Theme 1) and a few non-null assertions sit on already-Array.isArray-guarded index lookups; both pre-existing and out of scope for this tombstone read-source fix. */
 import { buildFinanceContext } from "./recommendations/financeContext";
 import { Recommendations } from "@sergeant/insights";
-import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
+import { loadRoutineState } from "@routine/lib/routineStorage";
+import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
+import {
+  loadNutritionLog,
+  loadNutritionPrefs,
+} from "@nutrition/lib/nutritionStorage";
 
 const { FINANCE_RULES, runRules } = Recommendations;
 export type Rec = Recommendations.Rec;
@@ -28,37 +35,8 @@ interface Exercise {
 
 interface Workout {
   startedAt: string;
-  endedAt?: string;
+  endedAt?: string | undefined;
   items?: Exercise[];
-}
-
-interface Habit {
-  id: string;
-  archived?: boolean;
-}
-
-interface RoutineState {
-  habits?: Habit[];
-  completions?: Record<string, string[]>;
-}
-
-interface Meal {
-  macros?: {
-    kcal?: number;
-    protein_g?: number;
-  };
-}
-
-interface NutritionDay {
-  meals?: Meal[];
-}
-
-type NutritionLog = Record<string, NutritionDay | undefined>;
-
-interface NutritionPrefs {
-  dailyTargetKcal?: number;
-  dailyTargetProtein_g?: number;
-  dailyTargetProtein?: number;
 }
 
 function safeLS<T>(key: string, fallback: T): T {
@@ -89,16 +67,24 @@ const MUSCLE_LABELS_UK: Record<string, string> = {
 };
 
 function parseFizrukWorkouts(): Workout[] {
-  const raw = safeReadStringLS("fizruk_workouts_v1");
-  if (!raw) return [];
-  try {
-    const p = JSON.parse(raw) as Workout[] | { workouts?: Workout[] } | null;
-    if (Array.isArray(p)) return p;
-    if (p && Array.isArray(p.workouts)) return p.workouts;
-  } catch {
-    /* ignore */
-  }
-  return [];
+  // `fizruk_workouts_v1` is tombstoned — read the canonical SQLite warm cache
+  // (the source `useWorkouts` reads). Map the domain workout onto the loose
+  // shape the muscle-balance heuristics expect; folding `musclesPrimary` +
+  // `musclesSecondary` into `muscleGroups` gives more accurate muscle
+  // detection than the legacy exercise-name regex alone.
+  const fizruk = getCachedFizrukSqliteState();
+  const workouts = fizruk.refreshedAt === null ? [] : fizruk.workouts;
+  return workouts.map((w) => ({
+    startedAt: w.startedAt,
+    endedAt: w.endedAt ?? undefined,
+    items: (w.items ?? []).map((it) => ({
+      nameUk: it.nameUk,
+      muscleGroups: [
+        ...(it.musclesPrimary ?? []),
+        ...(it.musclesSecondary ?? []),
+      ],
+    })),
+  }));
 }
 
 function getExerciseMuscles(exercise: Exercise | null | undefined): string[] {
@@ -227,11 +213,11 @@ function buildFizrukRecs(): Rec[] {
 
 function buildRoutineRecs(): Rec[] {
   const recs: Rec[] = [];
-  const state = safeLS<RoutineState | null>("hub_routine_v1", null);
-  if (!state) return recs;
+  // `hub_routine_v1` is tombstoned — read the canonical SQLite warm cache.
+  const state = loadRoutineState();
 
-  const habits = (state.habits || []).filter((h) => !h.archived);
-  const completions = state.completions || {};
+  const habits = state.habits.filter((h) => !h.archived);
+  const completions = state.completions;
   const today = localDateKey();
 
   const todayDone = habits.filter(
@@ -302,11 +288,13 @@ function buildRoutineRecs(): Rec[] {
 
 function buildNutritionRecs(): Rec[] {
   const recs: Rec[] = [];
-  const log = safeLS<NutritionLog>("nutrition_log_v1", {});
-  const prefs = safeLS<NutritionPrefs | null>("nutrition_prefs_v1", null);
+  // `nutrition_log_v1` / `nutrition_prefs_v1` are tombstoned — read the
+  // canonical SQLite warm caches.
+  const log = loadNutritionLog();
+  const prefs = loadNutritionPrefs();
   const today = localDateKey();
-  const dayData = log?.[today];
-  const meals: Meal[] = Array.isArray(dayData?.meals) ? dayData.meals : [];
+  const dayData = log[today];
+  const meals = Array.isArray(dayData?.meals) ? dayData.meals : [];
 
   let kcal = 0;
   let protein = 0;
@@ -315,9 +303,8 @@ function buildNutritionRecs(): Rec[] {
     protein += m?.macros?.protein_g ?? 0;
   }
 
-  const targetKcal = prefs?.dailyTargetKcal ?? 2000;
-  const targetProtein =
-    prefs?.dailyTargetProtein_g ?? prefs?.dailyTargetProtein ?? 120;
+  const targetKcal = prefs.dailyTargetKcal ?? 2000;
+  const targetProtein = prefs.dailyTargetProtein_g ?? 120;
 
   const hour = new Date().getHours();
 
@@ -408,30 +395,25 @@ function buildWeeklyDigestRecs(): Rec[] {
     return t >= monPrev && t <= sunPrev;
   }).length;
 
-  // Звички
-  const state = safeLS<RoutineState | null>("hub_routine_v1", null);
+  // Звички — `hub_routine_v1` is tombstoned; read the canonical SQLite cache.
+  const routineState = loadRoutineState();
   let habitPctText = "";
-  if (state) {
-    const habits = (state.habits || []).filter((h) => !h.archived);
-    const completions = state.completions || {};
-    if (habits.length > 0) {
-      let done = 0;
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(monPrev);
-        d.setDate(monPrev.getDate() + i);
-        const dk = localDateKey(d);
-        for (const h of habits) {
-          if (
-            Array.isArray(completions[h.id]) &&
-            completions[h.id]!.includes(dk)
-          )
-            done++;
-        }
+  const habits = routineState.habits.filter((h) => !h.archived);
+  const completions = routineState.completions;
+  if (habits.length > 0) {
+    let done = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monPrev);
+      d.setDate(monPrev.getDate() + i);
+      const dk = localDateKey(d);
+      for (const h of habits) {
+        if (Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk))
+          done++;
       }
-      const total = habits.length * 7;
-      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-      habitPctText = `звички ${pct}%`;
     }
+    const total = habits.length * 7;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    habitPctText = `звички ${pct}%`;
   }
 
   // Витрати минулого тижня
