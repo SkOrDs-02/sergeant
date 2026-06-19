@@ -1,5 +1,19 @@
 /** @vitest-environment jsdom */
 import { beforeEach, describe, expect, it } from "vitest";
+import type { Habit } from "@sergeant/routine-domain";
+import {
+  __setRoutineSqliteStateCacheForTests,
+  clearSqliteRoutineStateCache,
+  clearSqliteCompletionsCache,
+} from "@routine/lib/sqliteReader";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "@fizruk/lib/sqliteReader";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "@nutrition/lib/sqliteReader";
 import { performSearch } from "./searchSources";
 import type { Hit } from "./searchTypes";
 
@@ -10,10 +24,40 @@ import type { Hit } from "./searchTypes";
 // cache bleed even though those caches persist for the module's lifetime.
 beforeEach(() => {
   localStorage.clear();
+  // Routine / Fizruk / Nutrition are SQLite-cache-backed now — reset the warm
+  // caches so seeded fixtures never leak across specs.
+  clearSqliteRoutineStateCache();
+  clearSqliteCompletionsCache();
+  clearFizrukSqliteCache();
+  clearNutritionSqliteCache();
 });
 
 function finykHit(results: Hit[]): Hit | undefined {
   return results.find((r) => r.module === "finyk" && r.id.startsWith("finyk_"));
+}
+
+// Tombstoned keys (hub_routine_v1 / nutrition_log_v1 / fizruk_*_v1) are read
+// from the SQLite warm caches — seed those directly instead of localStorage.
+function seedRoutine(
+  habits: Array<{ id: string; name?: string; emoji?: string }>,
+): void {
+  __setRoutineSqliteStateCacheForTests({
+    habits: habits as unknown as Habit[],
+    habitOrder: habits.map((h) => h.id),
+  });
+}
+function seedNutrition(log: unknown): void {
+  __setNutritionSqliteCacheForTests({ log } as unknown as Parameters<
+    typeof __setNutritionSqliteCacheForTests
+  >[0]);
+}
+function seedFizruk(partial: {
+  workouts?: unknown[];
+  customExercises?: unknown[];
+}): void {
+  __setFizrukSqliteCacheForTests(
+    partial as unknown as Parameters<typeof __setFizrukSqliteCacheForTests>[0],
+  );
 }
 
 describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
@@ -68,15 +112,10 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
   });
 
   it("matches a Routine habit by name and skips non-matches", () => {
-    localStorage.setItem(
-      "hub_routine_v1",
-      JSON.stringify({
-        habits: [
-          { id: "h1", name: "Медитація", emoji: "🧘" },
-          { id: "h2", name: "Пробіжка", emoji: "🏃" },
-        ],
-      }),
-    );
+    seedRoutine([
+      { id: "h1", name: "Медитація", emoji: "🧘" },
+      { id: "h2", name: "Пробіжка", emoji: "🏃" },
+    ]);
     const results = performSearch("медитація");
     const habit = results.find((r) => r.module === "routine");
     expect(habit).toBeDefined();
@@ -85,21 +124,57 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
   });
 
   it("matches a Nutrition meal by name", () => {
-    localStorage.setItem(
-      "nutrition_log_v1",
-      JSON.stringify({
-        "2026-06-14": {
-          meals: [
-            { id: "m1", name: "Овочевий салат", macros: { kcal: 220 } },
-            { id: "m2", name: "Стейк", macros: { kcal: 600 } },
-          ],
-        },
-      }),
-    );
+    seedNutrition({
+      "2026-06-14": {
+        meals: [
+          { id: "m1", name: "Овочевий салат", macros: { kcal: 220 } },
+          { id: "m2", name: "Стейк", macros: { kcal: 600 } },
+        ],
+      },
+    });
     const results = performSearch("салат");
     const meal = results.find((r) => r.module === "nutrition");
     expect(meal).toBeDefined();
     expect(meal!.title).toBe("Овочевий салат");
+  });
+
+  it("matches a Fizruk workout by exercise name (canonical SQLite cache)", () => {
+    seedFizruk({
+      workouts: [
+        {
+          id: "w1",
+          startedAt: "2026-06-14T10:00:00.000Z",
+          endedAt: "2026-06-14T11:00:00.000Z",
+          items: [{ nameUk: "Жим лежачи" }],
+          note: "",
+        },
+      ],
+    });
+    const results = performSearch("жим лежачи");
+    const hit = results.find(
+      (r) => r.module === "fizruk" && r.id.startsWith("fizruk_w_"),
+    );
+    expect(hit).toBeDefined();
+    expect(hit!.title).toContain("Жим лежачи");
+  });
+
+  it("matches a Fizruk custom exercise by name (canonical SQLite cache)", () => {
+    seedFizruk({
+      customExercises: [
+        {
+          id: "ce1",
+          name: { uk: "Жим Арнольда", en: "Arnold press" },
+          primaryGroup: "shoulders",
+          primaryGroupUk: "Плечі",
+        },
+      ],
+    });
+    const results = performSearch("арнольда");
+    const hit = results.find(
+      (r) => r.module === "fizruk" && r.id.startsWith("fizruk_ex_"),
+    );
+    expect(hit).toBeDefined();
+    expect(hit!.title).toBe("Жим Арнольда");
   });
 
   it("always appends an ai-handoff fallback hit for a non-empty query", () => {

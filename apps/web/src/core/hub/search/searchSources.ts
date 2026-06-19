@@ -1,14 +1,12 @@
 import { FizrukData } from "@sergeant/fizruk-domain";
 import { formatMoney, formatMoneyFromKopecks } from "@sergeant/shared";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
+import { loadRoutineState } from "@routine/lib/routineStorage";
+import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
+import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
 import { tokenize } from "../hubSearchEngine";
 import { searchActions, searchAiHandoff } from "./searchActions";
-import {
-  parseFizrukCustomExercises,
-  parseFizrukWorkouts,
-  safeParseLS,
-  scoreLru,
-} from "./searchCache";
+import { safeParseLS, scoreLru } from "./searchCache";
 import { searchAssistantTools, searchSettings } from "./searchSettings";
 import { type Hit, localDateKey, pushScored } from "./searchTypes";
 
@@ -137,31 +135,28 @@ function searchFizruk(tokens: string[]): Hit[] {
     r.subtitle = `${groupUk} · з каталогу Фізрука`;
   }
 
-  const workouts = parseFizrukWorkouts(
-    // eslint-disable-next-line sergeant-design/no-raw-storage-key
-    safeReadStringLS("fizruk_workouts_v1", null),
-  );
+  // `fizruk_workouts_v1` / `fizruk_custom_exercises_v1` are tombstoned — read
+  // the canonical SQLite warm cache.
+  const fizrukCache = getCachedFizrukSqliteState();
+  const workouts = fizrukCache.refreshedAt === null ? [] : fizrukCache.workouts;
   for (const w of workouts) {
-    if (!w || typeof w !== "object") continue;
-    const itemsRaw = Array.isArray(w["items"]) ? w["items"] : [];
+    const itemsRaw = w.items;
     const exNames = itemsRaw
       .slice(0, 2)
-      .map((i) => (i && (i.exerciseName || i.name)) || "")
+      .map((i) => i.nameUk)
       .filter(Boolean);
-    const dateLabel = w["startedAt"]
-      ? localDateKey(new Date(w["startedAt"]))
-      : "";
-    const combinedTitle = w["note"] || exNames.join(", ") || "Тренування";
+    const dateLabel = w.startedAt ? localDateKey(new Date(w.startedAt)) : "";
+    const combinedTitle = w.note || exNames.join(", ") || "Тренування";
     // subtitle додатково "розширює" текст усіма вправами, щоб токен
     // типу "присідання" знайшовся навіть коли він не в `note`.
     const fullTokensText = itemsRaw
-      .map((i) => (i && (i.exerciseName || i.name)) || "")
+      .map((i) => i.nameUk)
       .filter(Boolean)
       .join(" ");
     const stop = pushScored(
       results,
       {
-        id: `fizruk_w_${w["id"]}`,
+        id: `fizruk_w_${w.id}`,
         module: "fizruk",
         moduleLabel: "Фізрук",
         title: combinedTitle,
@@ -179,22 +174,23 @@ function searchFizruk(tokens: string[]): Hit[] {
     if (stop) break;
   }
 
-  const exercises = parseFizrukCustomExercises(
-    // eslint-disable-next-line sergeant-design/no-raw-storage-key
-    safeReadStringLS("fizruk_custom_exercises_v1", null),
-  );
-  for (const e of exercises) {
-    if (!e || typeof e !== "object") continue;
+  const customExercises =
+    fizrukCache.refreshedAt === null ? [] : fizrukCache.customExercises;
+  for (const e of customExercises) {
+    const groupUk =
+      (e.primaryGroup &&
+        FizrukData.PRIMARY_GROUPS_UK[e.primaryGroup as string]) ||
+      e.primaryGroupUk ||
+      e.primaryGroup ||
+      "Власна вправа";
     const stop = pushScored(
       results,
       {
-        id: `fizruk_ex_${e["id"]}`,
+        id: `fizruk_ex_${e.id}`,
         module: "fizruk",
         moduleLabel: "Фізрук",
-        title: e["name"] || "Вправа",
-        subtitle:
-          (Array.isArray(e["muscles"]) ? e["muscles"] : []).join(", ") ||
-          "Власна вправа",
+        title: e.name?.uk || "Вправа",
+        subtitle: groupUk,
         icon: "💪",
         target: { kind: "module", moduleId: "fizruk" },
       },
@@ -207,27 +203,11 @@ function searchFizruk(tokens: string[]): Hit[] {
   return results.sort((a, b) => b._score - a._score).slice(0, 10);
 }
 
-interface RoutineHabit {
-  id?: string;
-  name?: string;
-  emoji?: string;
-  archived?: boolean;
-  recurrence?: string;
-}
-
-interface RoutineState {
-  habits?: RoutineHabit[];
-}
-
 function searchRoutine(tokens: string[]): Hit[] {
   const results: Hit[] = [];
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key
-  const state = safeParseLS<RoutineState | null>("hub_routine_v1", null);
-  if (!state) return results;
-
-  const habits = Array.isArray(state.habits) ? state.habits : [];
+  // `hub_routine_v1` is tombstoned — read the canonical SQLite warm cache.
+  const habits = loadRoutineState().habits;
   for (const h of habits) {
-    if (!h || typeof h !== "object") continue;
     const title = `${h.emoji || ""} ${h.name || "Звичка"}`.trim();
     const stop = pushScored(
       results,
@@ -248,30 +228,15 @@ function searchRoutine(tokens: string[]): Hit[] {
   return results.sort((a, b) => b._score - a._score).slice(0, 10);
 }
 
-interface NutritionMeal {
-  id?: string;
-  name?: string;
-  items?: Array<{ name?: string; emoji?: string }>;
-  note?: string;
-  type?: string;
-  macros?: { kcal?: number; protein?: number; fat?: number; carbs?: number };
-}
-
-interface NutritionDayLog {
-  meals?: NutritionMeal[];
-}
-
-type NutritionLog = Record<string, NutritionDayLog>;
-
 function searchNutrition(tokens: string[]): Hit[] {
   const results: Hit[] = [];
   const seen = new Set<string>();
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key
-  const log = safeParseLS<NutritionLog>("nutrition_log_v1", {});
+  // `nutrition_log_v1` is tombstoned — read the canonical SQLite warm cache.
+  const log = loadNutritionLog();
   const dates = Object.keys(log).sort().reverse();
 
   for (const date of dates) {
-    const dayLog = log[date] as NutritionDayLog | undefined;
+    const dayLog = log[date];
     const meals = Array.isArray(dayLog?.meals) ? dayLog.meals : [];
     for (const m of meals) {
       if (!m || typeof m !== "object") continue;
@@ -307,22 +272,27 @@ function searchNutrition(tokens: string[]): Hit[] {
  * enough that a stale hit for one keystroke is acceptable.
  */
 function storageSnapshot(): string {
-  const keys = [
-    "finyk_tx_cache",
-    "finyk_subs",
-    "fizruk_workouts_v1",
-    "fizruk_custom_exercises_v1",
-    "hub_routine_v1",
-    "nutrition_log_v1",
+  // finyk_* are still LS-backed; routine / fizruk / nutrition moved to the
+  // SQLite warm caches (their `*_v1` LS keys are tombstoned). Build the cache
+  // half from the canonical readers so the LRU still invalidates when that
+  // data changes (counts + ids + habit/meal names catch add/remove/rename).
+  const lsParts = ["finyk_tx_cache", "finyk_subs"].map((k) => {
+    const v = safeReadStringLS(k);
+    return v === null ? "0" : `${v.length}:${v.slice(0, 24)}:${v.slice(-24)}`;
+  });
+  const routine = loadRoutineState();
+  const fizruk = getCachedFizrukSqliteState();
+  const nutrition = loadNutritionLog();
+  const fizrukWarm = fizruk.refreshedAt !== null;
+  const cacheParts = [
+    `r:${routine.habits.map((h) => `${h.id}${h.name ?? ""}`).join("|")}`,
+    `w:${fizrukWarm ? fizruk.workouts.map((w) => w.id).join("|") : ""}`,
+    `x:${fizrukWarm ? fizruk.customExercises.map((e) => e.id).join("|") : ""}`,
+    `n:${Object.entries(nutrition)
+      .map(([d, day]) => `${d}#${day.meals?.length ?? 0}`)
+      .join("|")}`,
   ];
-  return keys
-    .map((k) => {
-      const v = safeReadStringLS(k);
-      // Length + head/tail slices: catches same-length edits (e.g. renaming a
-      // habit to another same-length name) that a bare length check would miss.
-      return v === null ? "0" : `${v.length}:${v.slice(0, 24)}:${v.slice(-24)}`;
-    })
-    .join(",");
+  return [...lsParts, ...cacheParts].join(",");
 }
 
 export function performSearch(query: string): Hit[] {

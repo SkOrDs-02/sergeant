@@ -90,39 +90,3 @@ export function safeParseLS<T>(key: string, fallback: T): T {
     fallback,
   );
 }
-
-// Fizruk payloads are read as loose records (parent loops access
-// `w.items`, `w.startedAt`, `e.muscles`, ...) so return them as
-// `Record<string, any>[]` to match the existing call-sites.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type LooseRecord = Record<string, any>;
-
-export function parseFizrukWorkouts(raw: string | null): LooseRecord[] {
-  return cachedParse<LooseRecord[]>(
-    "fizruk_workouts_v1",
-    "fizrukWorkouts",
-    raw,
-    (r) => {
-      const p = JSON.parse(r);
-      if (Array.isArray(p)) return p as LooseRecord[];
-      if (p && Array.isArray(p.workouts)) return p.workouts as LooseRecord[];
-      return [];
-    },
-    [],
-  );
-}
-
-export function parseFizrukCustomExercises(raw: string | null): LooseRecord[] {
-  return cachedParse<LooseRecord[]>(
-    "fizruk_custom_exercises_v1",
-    "fizrukExercises",
-    raw,
-    (r) => {
-      const p = JSON.parse(r);
-      if (Array.isArray(p)) return p as LooseRecord[];
-      if (p && Array.isArray(p.exercises)) return p.exercises as LooseRecord[];
-      return [];
-    },
-    [],
-  );
-}
