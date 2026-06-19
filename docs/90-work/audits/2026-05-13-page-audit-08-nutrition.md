@@ -5,7 +5,7 @@ render_with_liquid: false
 # Page Audit — Nutrition module — 4 pages (start/pantry/log/menu)
 
 > **Last validated:** 2026-05-13 by Devin.
-> **Status:** Active
+> **Status:** Closed — 2026-06-19: усі знахідки закриті або в tracked burn-down (reconciliation).
 > **Auditor:** child Devin session (parent: <https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40>)
 > **Pages in scope:**
 >

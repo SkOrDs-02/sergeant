@@ -5,7 +5,7 @@ render_with_liquid: false
 # Page Audit — Fizruk module Part 2 (Progress, Measurements, Programs, Body)
 
 > **Last validated:** 2026-05-13 by Devin (child session).
-> **Status:** Active
+> **Status:** Closed — 2026-06-19: усі знахідки верифіковано реалізованими/закритими в коді (reconciliation).
 > **Auditor:** child Devin session (parent: <https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40>)
 > **Scope slug:** `07-fizruk-part2`
 > **Pages in scope:**

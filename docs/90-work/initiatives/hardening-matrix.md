@@ -1,6 +1,6 @@
 # Зведена матриця hardening-карток
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last touched:** 2026-06-19 by @Skords-01. **Next review:** 2026-09-17.
 > **Status:** Active
 
 > **Попередження:** Ручний знімок станом на 2026-06-12; source of truth — самі картки, цей файл НЕ auto-generated і може дрейфувати.
@@ -13,10 +13,10 @@
 
 | Джерело                                             | Всього | Closed / Merged / Done | Open / Planned | Partial / Unknown |
 | --------------------------------------------------- | ------ | ---------------------- | -------------- | ----------------- |
-| stack-pulse-2026-05 (C1–C6, H1–H10, M1–M12, L1–L12) | 39     | 28                     | 9              | 2                 |
+| stack-pulse-2026-05 (C1–C6, H1–H10, M1–M12, L1–L12) | 39     | 32                     | 3              | 4                 |
 | \_0008-platform-hardening (фази 1–5)                | 5      | 5                      | 0              | 0                 |
 | \_0009-agent-os-hardening (PR 1.1–5.3)              | 18     | 17                     | 1              | 0                 |
-| **Разом**                                           | **62** | **50**                 | **10**         | **2**             |
+| **Разом**                                           | **62** | **54**                 | **4**          | **4**             |
 
 ---
 
@@ -52,37 +52,37 @@
 
 ### Medium (M1–M12)
 
-| ID  | Назва                                                                | Source-файл                                                                                            | Статус  | GitHub PR                                                |
-| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------- | -------------------------------------------------------- |
-| M1  | 80+ env-vars — мігрувати feature-flag-toggle у DB-таблицю            | [`pr-17-env-vars-feature-flag-toggle.md`](./stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md) | Planned | —                                                        |
-| M2  | Detox path-trigger пропускає server-shape changes                    | [`pr-18-detox-server-shape-trigger.md`](./stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md)     | Planned | —                                                        |
-| M3  | Workers без централізованого health-registry                         | [`pr-19-workers-health-registry.md`](./stack-pulse-2026-05/pr-19-workers-health-registry.md)           | Planned | —                                                        |
-| M4  | `patches/` — patch debt без README                                   | [`pr-20-patches-readme.md`](./stack-pulse-2026-05/pr-20-patches-readme.md)                             | Closed  | [#2193](https://github.com/Skords-01/Sergeant/pull/2193) |
-| M5  | Service Worker `prompt`-mode без auto-update on inactivity           | [`pr-21-sw-prompt-mode-auto-update.md`](./stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update.md)     | Closed  | [#2309](https://github.com/Skords-01/Sergeant/pull/2309) |
-| M6  | Mobile зашитий Expo SDK 52 (RN 0.76)                                 | [`pr-22-mobile-expo-sdk-53.md`](./stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md)                     | Planned | —                                                        |
-| M7  | OpenAPI-spec не contract-tested vs runtime                           | [`pr-23-openapi-contract-tests.md`](./stack-pulse-2026-05/pr-23-openapi-contract-tests.md)             | Planned | —                                                        |
-| M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | [`pr-24-embedding-vendor-abstraction.md`](./stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md) | Planned | —                                                        |
-| M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | [`pr-25-two-production-origins.md`](./stack-pulse-2026-05/pr-25-two-production-origins.md)             | Planned | —                                                        |
-| M10 | DR runbook documented                                                | [`00-overview.md`](./stack-pulse-2026-05/00-overview.md)                                               | Closed  | —                                                        |
-| M11 | CSP без `report-uri` / `report-to`                                   | [`pr-26-csp-report-uri.md`](./stack-pulse-2026-05/pr-26-csp-report-uri.md)                             | Planned | —                                                        |
-| M12 | `INTERNAL_API_KEY` без rotation-механізму                            | [`pr-27-internal-api-key-rotation.md`](./stack-pulse-2026-05/pr-27-internal-api-key-rotation.md)       | Planned | —                                                        |
+| ID  | Назва                                                                | Source-файл                                                                                            | Статус                            | GitHub PR                                                |
+| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------- | -------------------------------------------------------- |
+| M1  | 80+ env-vars — мігрувати feature-flag-toggle у DB-таблицю            | [`pr-17-env-vars-feature-flag-toggle.md`](./stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md) | Planned                           | —                                                        |
+| M2  | Detox path-trigger пропускає server-shape changes                    | [`pr-18-detox-server-shape-trigger.md`](./stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md)     | Closed                            | —                                                        |
+| M3  | Workers без централізованого health-registry                         | [`pr-19-workers-health-registry.md`](./stack-pulse-2026-05/pr-19-workers-health-registry.md)           | Partial (/health/workers shipped) | —                                                        |
+| M4  | `patches/` — patch debt без README                                   | [`pr-20-patches-readme.md`](./stack-pulse-2026-05/pr-20-patches-readme.md)                             | Closed                            | [#2193](https://github.com/Skords-01/Sergeant/pull/2193) |
+| M5  | Service Worker `prompt`-mode без auto-update on inactivity           | [`pr-21-sw-prompt-mode-auto-update.md`](./stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update.md)     | Closed                            | [#2309](https://github.com/Skords-01/Sergeant/pull/2309) |
+| M6  | Mobile зашитий Expo SDK 52 (RN 0.76)                                 | [`pr-22-mobile-expo-sdk-53.md`](./stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md)                     | Planned                           | —                                                        |
+| M7  | OpenAPI-spec не contract-tested vs runtime                           | [`pr-23-openapi-contract-tests.md`](./stack-pulse-2026-05/pr-23-openapi-contract-tests.md)             | Partial (Phase 1 shipped)         | —                                                        |
+| M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | [`pr-24-embedding-vendor-abstraction.md`](./stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md) | Closed                            | —                                                        |
+| M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | [`pr-25-two-production-origins.md`](./stack-pulse-2026-05/pr-25-two-production-origins.md)             | Partial (PR-1 shipped)            | —                                                        |
+| M10 | DR runbook documented                                                | [`00-overview.md`](./stack-pulse-2026-05/00-overview.md)                                               | Closed                            | —                                                        |
+| M11 | CSP без `report-uri` / `report-to`                                   | [`pr-26-csp-report-uri.md`](./stack-pulse-2026-05/pr-26-csp-report-uri.md)                             | Closed                            | —                                                        |
+| M12 | `INTERNAL_API_KEY` без rotation-механізму                            | [`pr-27-internal-api-key-rotation.md`](./stack-pulse-2026-05/pr-27-internal-api-key-rotation.md)       | Planned                           | —                                                        |
 
 ### Low (L1–L12)
 
-| ID  | Назва                                                         | Source-файл                                                                                                    | Статус                     | GitHub PR                                                |
-| --- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------- | -------------------------------------------------------- |
-| L1  | `__SW_BUILD_ID__` як global → `import.meta.env.VITE_BUILD_ID` | [`pr-28-sw-build-id-import-meta.md`](./stack-pulse-2026-05/pr-28-sw-build-id-import-meta.md)                   | Closed                     | [#2309](https://github.com/Skords-01/Sergeant/pull/2309) |
-| L2  | `window.__sergeantShellNavigate` global → BroadcastChannel    | [`pr-29-shell-navigate-broadcast-channel.md`](./stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md) | Partial (PR-1 shipped)     | [#2526](https://github.com/Skords-01/Sergeant/pull/2526) |
-| L3  | Dockerfile post-install cleanup для CVE-shrink                | [`pr-30-dockerfile-cleanup-cve.md`](./stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md)                     | Closed                     | [#2543](https://github.com/Skords-01/Sergeant/pull/2543) |
-| L4  | ESLint config 1073 рядки — розділити на per-app               | [`pr-31-eslint-config-split.md`](./stack-pulse-2026-05/pr-31-eslint-config-split.md)                           | Partial (Phase 1 shipped)  | —                                                        |
-| L5  | `pnpm.overrides` — стара кодова база pinning                  | [`pr-32-pnpm-overrides-cleanup.md`](./stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup.md)                     | Planned                    | —                                                        |
-| L6  | 21 hard rules — згрупувати у 5 «Hard Areas»                   | [`pr-33-hard-rules-categorization.md`](./stack-pulse-2026-05/pr-33-hard-rules-categorization.md)               | Planned                    | —                                                        |
-| L7  | `runDemoSeedFromUrl` / `runDemoCleanupOnce` — на кожному load | [`pr-34-demo-seed-cleanup-gate.md`](./stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate.md)                     | Planned                    | —                                                        |
-| L8  | `LOG_LEVEL=info` default, без 5-min debug-увімкнення в проді  | [`pr-35-log-level-debug-window.md`](./stack-pulse-2026-05/pr-35-log-level-debug-window.md)                     | Planned                    | —                                                        |
-| L9  | `lazyImport` chunk-reload без guard проти infinite-loop       | [`pr-36-lazy-import-chunk-reload-guard.md`](./stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md)     | Closed                     | [#2311](https://github.com/Skords-01/Sergeant/pull/2311) |
-| L10 | Postgres image у `docker-compose.yml` не SHA-pinned           | [`pr-37-postgres-image-sha-pin.md`](./stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md)                     | Closed                     | [#2308](https://github.com/Skords-01/Sergeant/pull/2308) |
-| L11 | PWA precache — перевірити що всі assets 1st-party             | [`pr-38-pwa-precache-first-party.md`](./stack-pulse-2026-05/pr-38-pwa-precache-first-party.md)                 | Closed                     | [#2312](https://github.com/Skords-01/Sergeant/pull/2312) |
-| L12 | `tools/openclaw` SDK Anthropic 0.36.3 outdated                | [`pr-39-tools-console-anthropic-sdk.md`](./stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md)           | Partial (partially closed) | [#2527](https://github.com/Skords-01/Sergeant/pull/2527) |
+| ID  | Назва                                                         | Source-файл                                                                                                    | Статус                 | GitHub PR                                                |
+| --- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------- |
+| L1  | `__SW_BUILD_ID__` як global → `import.meta.env.VITE_BUILD_ID` | [`pr-28-sw-build-id-import-meta.md`](./stack-pulse-2026-05/pr-28-sw-build-id-import-meta.md)                   | Closed                 | [#2309](https://github.com/Skords-01/Sergeant/pull/2309) |
+| L2  | `window.__sergeantShellNavigate` global → BroadcastChannel    | [`pr-29-shell-navigate-broadcast-channel.md`](./stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md) | Partial (PR-1 shipped) | [#2526](https://github.com/Skords-01/Sergeant/pull/2526) |
+| L3  | Dockerfile post-install cleanup для CVE-shrink                | [`pr-30-dockerfile-cleanup-cve.md`](./stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md)                     | Closed                 | [#2543](https://github.com/Skords-01/Sergeant/pull/2543) |
+| L4  | ESLint config 1073 рядки — розділити на per-app               | [`pr-31-eslint-config-split.md`](./stack-pulse-2026-05/pr-31-eslint-config-split.md)                           | Closed                 | —                                                        |
+| L5  | `pnpm.overrides` — стара кодова база pinning                  | [`pr-32-pnpm-overrides-cleanup.md`](./stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup.md)                     | Closed                 | —                                                        |
+| L6  | 21 hard rules — згрупувати у 5 «Hard Areas»                   | [`pr-33-hard-rules-categorization.md`](./stack-pulse-2026-05/pr-33-hard-rules-categorization.md)               | Closed                 | —                                                        |
+| L7  | `runDemoSeedFromUrl` / `runDemoCleanupOnce` — на кожному load | [`pr-34-demo-seed-cleanup-gate.md`](./stack-pulse-2026-05/pr-34-demo-seed-cleanup-gate.md)                     | Closed                 | —                                                        |
+| L8  | `LOG_LEVEL=info` default, без 5-min debug-увімкнення в проді  | [`pr-35-log-level-debug-window.md`](./stack-pulse-2026-05/pr-35-log-level-debug-window.md)                     | Closed                 | —                                                        |
+| L9  | `lazyImport` chunk-reload без guard проти infinite-loop       | [`pr-36-lazy-import-chunk-reload-guard.md`](./stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md)     | Closed                 | [#2311](https://github.com/Skords-01/Sergeant/pull/2311) |
+| L10 | Postgres image у `docker-compose.yml` не SHA-pinned           | [`pr-37-postgres-image-sha-pin.md`](./stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md)                     | Closed                 | [#2308](https://github.com/Skords-01/Sergeant/pull/2308) |
+| L11 | PWA precache — перевірити що всі assets 1st-party             | [`pr-38-pwa-precache-first-party.md`](./stack-pulse-2026-05/pr-38-pwa-precache-first-party.md)                 | Closed                 | [#2312](https://github.com/Skords-01/Sergeant/pull/2312) |
+| L12 | `tools/openclaw` SDK Anthropic 0.36.3 outdated                | [`pr-39-tools-console-anthropic-sdk.md`](./stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md)           | Closed                 | [#2527](https://github.com/Skords-01/Sergeant/pull/2527) |
 
 ---
 

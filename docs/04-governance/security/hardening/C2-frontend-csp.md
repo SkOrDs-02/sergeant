@@ -1,18 +1,18 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-19 by @Skords-01. **Next review:** 2026-09-17.
 > **Status:** In progress — Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; Phase 2 side-by-side enforce-mode rolled out (Report-Only retained for regression tracking); awaiting 24h soak then 7-day clean window before removing Report-Only. **Update 2026-06-01:** the 7-day clean window has elapsed by calendar (enforce rolled out 2026-05-24); the only remaining step is to confirm zero `/api/csp-report` violations over that window, then drop the Report-Only header in a follow-up — operational, not code.
 
-| Field              | Value                                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------------------- |
-| **Severity**       | **Critical** (CVSS 8.8 — Universal-XSS exfiltration vector)                                             |
-| **Sprint**         | [Sprint 1](./sprint-1.md)                                                                               |
-| **Owner**          | frontend                                                                                                |
-| **Effort**         | 0.5 person-day (Report-Only) + 1d опційно для Strict-CSP nonce-flow                                     |
-| **Status**         | Phase 1 closed — frontend Report-Only canary live; Phase 2 (strict/enforce + nonce) tracked below       |
-| **Discovered**     | 2026-05-03                                                                                              |
-| **Threat model**   | XSS Exfiltration → Account Compromise                                                                   |
-| **Affected files** | `apps/web/vercel.json`, `vercel.json` (root), `apps/web/index.html`, `apps/server/src/http/security.ts` |
+| Field              | Value                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| **Severity**       | **Critical** (CVSS 8.8 — Universal-XSS exfiltration vector)                                       |
+| **Sprint**         | [Sprint 1](./sprint-1.md)                                                                         |
+| **Owner**          | frontend                                                                                          |
+| **Effort**         | 0.5 person-day (Report-Only) + 1d опційно для Strict-CSP nonce-flow                               |
+| **Status**         | Phase 1 closed — frontend Report-Only canary live; Phase 2 (strict/enforce + nonce) tracked below |
+| **Discovered**     | 2026-05-03                                                                                        |
+| **Threat model**   | XSS Exfiltration → Account Compromise                                                             |
+| **Affected files** | `apps/web/vercel.json`, `apps/web/index.html`, `apps/server/src/http/security.ts`                 |
 
 ## Summary
 
