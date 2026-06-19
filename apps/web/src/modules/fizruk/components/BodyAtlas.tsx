@@ -217,7 +217,15 @@ export function BodyAtlas({
                   role="button"
                   tabIndex={0}
                   aria-label={BODY_ATLAS_MUSCLE_LABELS_UK[m.id]}
-                  className="cursor-pointer [&>polygon]:transition-colors"
+                  className={cn(
+                    "cursor-pointer [&>polygon]:transition-colors",
+                    // Kill the browser default SVG focus outline (renders as a
+                    // black bounding-box rect on the <g> when clicked); keep a
+                    // tidy keyboard focus-visible cue via the polygon stroke.
+                    "focus:outline-none",
+                    "[&:focus-visible>polygon]:stroke-line",
+                    "[&:focus-visible>polygon]:[stroke-width:1px]",
+                  )}
                   onClick={() => setSelected(m.id)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
