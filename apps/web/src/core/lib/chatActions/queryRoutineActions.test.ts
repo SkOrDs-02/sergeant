@@ -1,6 +1,19 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Habit } from "@sergeant/routine-domain";
+import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
+
+// `fizruk_workouts_v1` is tombstoned — `workoutsByDay` reads via
+// `readFizrukWorkouts` (SQLite cache). Fake it in-memory for the workout seed.
+const mem = vi.hoisted(() => ({ workouts: [] as unknown[] }));
+vi.mock("./fizrukActions/shared", async (orig) => {
+  const actual = await orig<typeof import("./fizrukActions/shared")>();
+  return {
+    ...actual,
+    readFizrukWorkouts: vi.fn(() => mem.workouts as FizrukWorkout[]),
+  };
+});
+
 import { handleQueryRoutineAction } from "./queryRoutineActions";
 import {
   __setRoutineSqliteStateCacheForTests,
@@ -15,6 +28,7 @@ beforeEach(() => {
   // cache, not the retired `hub_routine_v1` LS key. Reset both caches so each
   // spec starts clean.
   localStorage.clear();
+  mem.workouts = [];
   clearSqliteRoutineStateCache();
   clearSqliteCompletionsCache();
   vi.useFakeTimers();
@@ -134,17 +148,12 @@ describe("habit_correlation", () => {
   function seedWorkouts(
     items: Array<{ startedAt: string; ended: boolean }>,
   ): void {
-    localStorage.setItem(
-      "fizruk_workouts_v1",
-      JSON.stringify(
-        items.map((w, i) => ({
-          id: `w${i}`,
-          startedAt: w.startedAt,
-          endedAt: w.ended ? w.startedAt : null,
-          items: [],
-        })),
-      ),
-    );
+    mem.workouts = items.map((w, i) => ({
+      id: `w${i}`,
+      startedAt: w.startedAt,
+      endedAt: w.ended ? w.startedAt : null,
+      items: [],
+    }));
   }
 
   it("happy: correlates habit with spending (with vs without days)", () => {

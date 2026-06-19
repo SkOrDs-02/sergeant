@@ -6,8 +6,8 @@ import {
   parseKyivDate,
 } from "@shared/lib/time/kyivTime";
 import { ls } from "../hubChatUtils";
-import { readWorkouts } from "./fizrukActions/shared";
-import type { ChatAction, ChatActionResult, Workout } from "./types";
+import { readFizrukWorkouts } from "./fizrukActions/shared";
+import type { ChatAction, ChatActionResult } from "./types";
 
 /**
  * Read-only "talk to your data" виконавці для Рутини (PR3 talk-to-your-data).
@@ -256,7 +256,7 @@ function spendingByDay(days: number): Map<string, number> {
 function workoutsByDay(days: number): Map<string, number> {
   const byDay = new Map<string, number>();
   const cutoff = Date.now() - days * DAY_MS;
-  for (const w of readWorkouts() as Workout[]) {
+  for (const w of readFizrukWorkouts()) {
     if (!w.endedAt) continue;
     const ts = new Date(w.startedAt).getTime();
     if (!Number.isFinite(ts) || ts < cutoff) continue;

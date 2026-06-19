@@ -1,11 +1,7 @@
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { readWorkouts } from "./fizrukActions/shared";
-import type {
-  ChatAction,
-  ChatActionResult,
-  Workout,
-  WorkoutItem,
-} from "./types";
+import { readFizrukWorkouts } from "./fizrukActions/shared";
+import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
+import type { ChatAction, ChatActionResult } from "./types";
 
 /**
  * Read-only "talk to your data" виконавці для Фізрука (PR2 talk-to-your-data).
@@ -65,7 +61,7 @@ function startedTs(w: Workout): number {
 }
 
 function itemVolume(item: WorkoutItem): number {
-  return item.sets.reduce((s, set) => s + set.weightKg * set.reps, 0);
+  return (item.sets ?? []).reduce((s, set) => s + set.weightKg * set.reps, 0);
 }
 
 function workoutVolume(w: Workout): number {
@@ -92,7 +88,7 @@ function itemMatches(
 /** Completed workouts within the last `days`, newest first. */
 function completedSince(days: number): Workout[] {
   const cutoff = Date.now() - days * DAY_MS;
-  return readWorkouts()
+  return readFizrukWorkouts()
     .filter((w) => w.endedAt && startedTs(w) >= cutoff)
     .sort((a, b) => startedTs(b) - startedTs(a));
 }
@@ -129,7 +125,7 @@ export function queryWorkouts(action: QueryWorkoutsAction): ChatActionResult {
   const list = shown
     .map((w) => {
       const names = w.items.map((it) => it.nameUk).join(", ") || "без вправ";
-      const sets = w.items.reduce((s, it) => s + it.sets.length, 0);
+      const sets = w.items.reduce((s, it) => s + (it.sets ?? []).length, 0);
       return `${dayLabel(w)}: ${names} · ${sets} підх. · ${round(workoutVolume(w))} кг×повт`;
     })
     .join("; ");
@@ -157,10 +153,10 @@ export function exerciseProgress(
       if (items.length === 0) return null;
       const maxWeight = Math.max(
         0,
-        ...items.flatMap((it) => it.sets.map((s) => s.weightKg)),
+        ...items.flatMap((it) => (it.sets ?? []).map((s) => s.weightKg)),
       );
       const reps = items.reduce(
-        (s, it) => s + it.sets.reduce((ss, set) => ss + set.reps, 0),
+        (s, it) => s + (it.sets ?? []).reduce((ss, set) => ss + set.reps, 0),
         0,
       );
       const volume = items.reduce((s, it) => s + itemVolume(it), 0);
@@ -207,7 +203,7 @@ export function trainingStats(action: TrainingStatsAction): ChatActionResult {
   for (const w of completed) {
     for (const item of w.items) {
       exerciseFreq.set(item.nameUk, (exerciseFreq.get(item.nameUk) ?? 0) + 1);
-      totalSets += item.sets.length;
+      totalSets += (item.sets ?? []).length;
       for (const m of item.musclesPrimary) {
         muscleFreq.set(m, (muscleFreq.get(m) ?? 0) + 1);
       }

@@ -1,10 +1,24 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
+
+// `fizruk_workouts_v1` is tombstoned — `readFizrukWorkouts` reads the SQLite
+// cache. Fake it in-memory so these read-only query specs can seed workouts.
+const mem = vi.hoisted(() => ({ workouts: [] as unknown[] }));
+vi.mock("./fizrukActions/shared", async (orig) => {
+  const actual = await orig<typeof import("./fizrukActions/shared")>();
+  return {
+    ...actual,
+    readFizrukWorkouts: vi.fn(() => mem.workouts as FizrukWorkout[]),
+  };
+});
+
 import { handleQueryFizrukAction } from "./queryFizrukActions";
 import type { ChatAction } from "./types";
 
 beforeEach(() => {
   localStorage.clear();
+  mem.workouts = [];
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
 });
@@ -40,50 +54,47 @@ function item(
 
 /** Seed completed (+ one planned/incomplete) workouts relative to 2026-04-22. */
 function seed(): void {
-  localStorage.setItem(
-    "fizruk_workouts_v1",
-    JSON.stringify([
-      {
-        id: "w1",
-        startedAt: "2026-04-20T10:00:00",
-        endedAt: "2026-04-20T11:00:00",
-        items: [
-          item(
-            "Жим лежачи",
-            ["Груди"],
-            [
-              { weightKg: 80, reps: 8 },
-              { weightKg: 82.5, reps: 6 },
-            ],
-          ),
-        ],
-      },
-      {
-        id: "w2",
-        startedAt: "2026-04-15T10:00:00",
-        endedAt: "2026-04-15T11:00:00",
-        items: [item("Присідання", ["Ноги"], [{ weightKg: 100, reps: 5 }])],
-      },
-      {
-        id: "w3",
-        startedAt: "2026-04-10T10:00:00",
-        endedAt: "2026-04-10T11:00:00",
-        items: [item("Жим лежачи", ["Груди"], [{ weightKg: 75, reps: 8 }])],
-      },
-      {
-        id: "w_old",
-        startedAt: "2026-01-01T10:00:00",
-        endedAt: "2026-01-01T11:00:00",
-        items: [item("Жим лежачи", ["Груди"], [{ weightKg: 70, reps: 8 }])],
-      },
-      {
-        id: "w_planned",
-        startedAt: "2026-04-21T10:00:00",
-        endedAt: null,
-        items: [item("Жим лежачи", ["Груди"], [{ weightKg: 90, reps: 5 }])],
-      },
-    ]),
-  );
+  mem.workouts = [
+    {
+      id: "w1",
+      startedAt: "2026-04-20T10:00:00",
+      endedAt: "2026-04-20T11:00:00",
+      items: [
+        item(
+          "Жим лежачи",
+          ["Груди"],
+          [
+            { weightKg: 80, reps: 8 },
+            { weightKg: 82.5, reps: 6 },
+          ],
+        ),
+      ],
+    },
+    {
+      id: "w2",
+      startedAt: "2026-04-15T10:00:00",
+      endedAt: "2026-04-15T11:00:00",
+      items: [item("Присідання", ["Ноги"], [{ weightKg: 100, reps: 5 }])],
+    },
+    {
+      id: "w3",
+      startedAt: "2026-04-10T10:00:00",
+      endedAt: "2026-04-10T11:00:00",
+      items: [item("Жим лежачи", ["Груди"], [{ weightKg: 75, reps: 8 }])],
+    },
+    {
+      id: "w_old",
+      startedAt: "2026-01-01T10:00:00",
+      endedAt: "2026-01-01T11:00:00",
+      items: [item("Жим лежачи", ["Груди"], [{ weightKg: 70, reps: 8 }])],
+    },
+    {
+      id: "w_planned",
+      startedAt: "2026-04-21T10:00:00",
+      endedAt: null,
+      items: [item("Жим лежачи", ["Груди"], [{ weightKg: 90, reps: 5 }])],
+    },
+  ];
 }
 
 // ---------------------------------------------------------------------------
