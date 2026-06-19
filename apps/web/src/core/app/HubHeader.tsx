@@ -12,6 +12,8 @@ import { BrandLogo } from "./BrandLogo";
 import { messages } from "@shared/i18n/uk";
 import type { User } from "@sergeant/shared";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { useHubPref } from "../settings/hubPrefs";
+import { NotificationBell, type HubNotification } from "./NotificationBell";
 
 // WCAG 2.5.5 AAA «Target Size (Enhanced)» рекомендує ≥44×44 пкс для hit-areas;
 // Material 3 / iOS HIG — 48 dp / 44 pt як thumb-comfort бейзлайн. На мобільному
@@ -75,6 +77,8 @@ interface HubHeaderProps {
   authLoading?: boolean;
   onShowAuth?: () => void;
   hideAuthButton?: boolean;
+  /** System notifications (SW update / PWA install) surfaced in the bell. */
+  notifications?: readonly HubNotification[];
 }
 
 export function HubHeader({
@@ -84,6 +88,7 @@ export function HubHeader({
   authLoading,
   onShowAuth,
   hideAuthButton = false,
+  notifications,
 }: HubHeaderProps) {
   const greetingText = useMemo(() => {
     const tod = getTimeOfDay();
@@ -94,6 +99,12 @@ export function HubHeader({
 
   const dateStr = useMemo(formatUkrainianDate, []);
   const { modK } = useShortcutGlyph();
+
+  // C · Контроль: «Чистий режим» — один тап ховає весь сигнальний шар
+  // головної (інсайти, app-lock-промпт, мотиваційний футер), лишаючи модулі
+  // + AI-pill. Стан живе у HUB_PREFS і реактивно ділиться з HubDashboard
+  // через `useHubPref` (StorageEvent same-tab).
+  const [calmMode, setCalmMode] = useHubPref<boolean>("calmMode", false);
 
   return (
     <header
@@ -126,6 +137,33 @@ export function HubHeader({
               <Icon name="search" size="lg" />
             </button>
           </Tooltip>
+
+          <Tooltip
+            content={
+              calmMode
+                ? "Показати підказки та інсайти"
+                : "Чистий вигляд — сховати підказки"
+            }
+            placement="bottom-center"
+          >
+            <button
+              type="button"
+              onClick={() => setCalmMode(!calmMode)}
+              aria-pressed={calmMode}
+              aria-label={
+                calmMode ? "Чистий режим: увімкнено" : "Чистий режим: вимкнено"
+              }
+              className={cn(
+                ICON_BUTTON_CLS,
+                calmMode &&
+                  "bg-brand-soft text-brand-strong hover:bg-brand-soft",
+              )}
+            >
+              <Icon name={calmMode ? "eye-off" : "eye"} size="lg" />
+            </button>
+          </Tooltip>
+
+          <NotificationBell notifications={notifications ?? []} />
 
           {onOpenPrivacy && (
             <Tooltip

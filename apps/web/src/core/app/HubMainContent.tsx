@@ -1,9 +1,6 @@
-import { memo, useCallback, useEffect, useRef, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { type User } from "@sergeant/shared";
-import { Button } from "@shared/components/ui/Button";
-import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { HubDashboard } from "../hub/HubDashboard";
@@ -68,13 +65,6 @@ interface HubSectionFallbackProps {
   resetError: () => void;
 }
 
-interface HubChromeBannerProps {
-  iconName: string;
-  title: string;
-  description?: string;
-  children: ReactNode;
-}
-
 // Дешевий inline-fallback для секцій хаба: повідомляємо про збій і
 // даємо кнопку `reset`, щоб спробувати перемонтувати секцію без
 // перезавантаження вкладки. Шапка/таби лишаються робочими, бо
@@ -94,39 +84,7 @@ function HubSectionFallback({ resetError }: HubSectionFallbackProps) {
   );
 }
 
-function HubChromeBanner({
-  iconName,
-  title,
-  description,
-  children,
-}: HubChromeBannerProps) {
-  return (
-    <div className="px-5 max-w-lg mx-auto w-full mb-2">
-      <Card
-        variant="default"
-        radius="lg"
-        padding="none"
-        className="px-4 py-3 flex items-center gap-3"
-      >
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-          <Icon name={iconName} size={20} className="text-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-style-label text-text">{title}</p>
-          {description && <p className="text-xs text-muted">{description}</p>}
-        </div>
-        {children}
-      </Card>
-    </div>
-  );
-}
-
 export interface HubMainContentProps {
-  updateAvailable: boolean;
-  onApplyUpdate: () => void;
-  canInstall: boolean;
-  onInstall: () => Promise<void>;
-  onDismissInstall: () => void;
   onOpenModule: (
     id: string | null | undefined,
     opts?: OpenModuleOptions,
@@ -140,11 +98,6 @@ export interface HubMainContentProps {
 }
 
 export const HubMainContent = memo(function HubMainContent({
-  updateAvailable,
-  onApplyUpdate,
-  canInstall,
-  onInstall,
-  onDismissInstall,
   onOpenModule,
   iosVisible,
   onDismissIos,
@@ -197,63 +150,17 @@ export const HubMainContent = memo(function HubMainContent({
     ]);
   }, [queryClient]);
 
-  // Banner budget: at most one chrome banner above the hub content.
-  // Priority: update > install (PWA) > iOS install.
-  //
-  // During the FTUX session — between the splash and the user's first
-  // real (non-demo) entry — we suppress all three so the dashboard
-  // delivers one signal: the FirstActionRow. Otherwise a first-time
-  // install would see update + install + iOS stack three chrome rows
-  // before any data is visible, which contradicts the 30-second
-  // promise. Banners rehydrate the moment the user logs their first
-  // real entry (see `isFirstRealEntryDone`).
-  const showUpdate = !inFtuxSession && !!updateAvailable;
-  const showInstall = !inFtuxSession && !showUpdate && !!canInstall;
-  const showIos = !inFtuxSession && !showUpdate && !showInstall && iosVisible;
+  // SW-update + PWA-install chrome banners moved to the header bell
+  // (`NotificationBell`) as part of the C · Контроль home redesign — they
+  // were the loudest inline «шум» above the dashboard. The iOS-install
+  // banner keeps its inline placement (bespoke step-by-step instructions
+  // that don't compress into a bell row). Suppressed during the FTUX
+  // session so the one signal on screen stays the FirstAction CTA.
+  const showIos = !inFtuxSession && iosVisible;
 
   return (
     <>
       {!inFtuxSession && <TrialBanner />}
-
-      {showUpdate && (
-        <HubChromeBanner iconName="refresh-cw" title="Доступна нова версія">
-          <Button
-            variant="secondary"
-            size="xs"
-            onClick={onApplyUpdate}
-            className="shrink-0 font-semibold"
-          >
-            Оновити
-          </Button>
-        </HubChromeBanner>
-      )}
-
-      {showInstall && (
-        <HubChromeBanner
-          iconName="download"
-          title="Встановити додаток"
-          description="Офлайн · пуш-нагадування · ярлик на екрані"
-        >
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={onInstall}
-            className="shrink-0 font-semibold"
-          >
-            Так
-          </Button>
-          <Button
-            variant="ghost"
-            size="xs"
-            iconOnly
-            onClick={onDismissInstall}
-            aria-label="Закрити"
-            className="shrink-0 text-muted hover:text-text"
-          >
-            <Icon name="close" size={16} />
-          </Button>
-        </HubChromeBanner>
-      )}
 
       {showIos && <IOSInstallBanner onDismiss={onDismissIos} />}
 
