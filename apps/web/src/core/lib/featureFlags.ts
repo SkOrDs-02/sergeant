@@ -63,7 +63,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "ftux_outcome_card_v1",
     label: "FTUX outcome-card",
     description:
-      "РџРѕРєР°Р·СѓС” outcome-card Р·Р°РјС–СЃС‚СЊ РїСЂРѕРіСЂРµСЃСѓ РґР»СЏ cold-start cohort Р±РµР· РїРµСЂС€РѕРіРѕ Р·Р°РїРёСЃСѓ.",
+      "Показує outcome-card замість прогресу для cold-start cohort без першого запису.",
     defaultValue: false,
     experimental: true,
   },

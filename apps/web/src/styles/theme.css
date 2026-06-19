@@ -783,7 +783,12 @@
     --surface-glass: rgba(255, 255, 255, 0.82); /* default card */
     --surface-strong-glass: rgba(255, 255, 255, 0.92); /* navs, pills */
     --surface-soft-glass: rgba(255, 255, 255, 0.5); /* tinted backgrounds */
-    --surface-line: rgba(255, 255, 255, 0.55); /* card hairline (inset) */
+    /* Card hairline — warm dark edge so glass cards read against the cream
+       mesh background (and against each other) in light mode. The white
+       inset highlight that sells the "glass" look lives in --shadow-card-v2,
+       so the border can be a real visible edge here. Previously
+       rgba(255,255,255,0.55) — invisible white-on-cream (user report). */
+    --surface-line: rgba(20, 40, 30, 0.12);
 
     /* Hairlines — soft + strong dividers tuned for glass surfaces. */
     --line-v2: rgba(0, 0, 0, 0.06);
@@ -799,7 +804,7 @@
 
     /* Shadows — glass-surface recipes (inset highlight + outer drop). */
     --shadow-card-v2:
-      0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 4px 14px rgba(20, 40, 30, 0.05);
+      0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 4px 14px rgba(20, 40, 30, 0.09);
     --shadow-pill:
       0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 10px 26px rgba(20, 40, 30, 0.12);
     --shadow-nav:

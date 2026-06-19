@@ -9,6 +9,7 @@
 import { useState, useMemo, useCallback, lazy, Suspense } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
+import { Segmented } from "@shared/components/ui/Segmented";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { exportToPDF } from "@shared/lib/ui/export";
@@ -132,26 +133,21 @@ export function HubReports() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex rounded-xl overflow-hidden border border-line shrink-0">
-          {(["week", "month"] as const).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => {
-                setPeriod(p);
-                setOffset(0);
-              }}
-              className={cn(
-                "px-3 py-1.5 text-style-caption transition-colors",
-                period === p
-                  ? "bg-brand-strong text-white"
-                  : "text-muted hover:text-text hover:bg-panelHi",
-              )}
-            >
-              {p === "week" ? "Тиждень" : "Місяць"}
-            </button>
-          ))}
-        </div>
+        <Segmented<Period>
+          size="sm"
+          style="solid"
+          ariaLabel="Період звіту"
+          value={period}
+          onChange={(p) => {
+            setPeriod(p);
+            setOffset(0);
+          }}
+          items={[
+            { value: "week", label: "Тиждень" },
+            { value: "month", label: "Місяць" },
+          ]}
+          className="shrink-0"
+        />
 
         <div className="flex items-center gap-1">
           <Button

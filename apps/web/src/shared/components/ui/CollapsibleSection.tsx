@@ -109,7 +109,7 @@ export function CollapsibleSection({
           className={cn(
             "flex items-center gap-3 w-full text-left",
             "px-3.5 py-3 rounded-2xl",
-            "bg-panel/70 hover:bg-panelHi border border-line/70",
+            "bg-panel hover:bg-panelHi border border-line shadow-soft",
             "transition-colors active:scale-[0.99]",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
           )}
