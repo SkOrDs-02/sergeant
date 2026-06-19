@@ -27,14 +27,10 @@ import { safeRemoveLS } from "@shared/lib/storage/storage";
 import { JOURNAL_ENTRY_OPEN_PREFIX } from "./Body/storage";
 import { statusColors, chartSeries, chartPalette } from "@shared/charts";
 
+// Модуль фізичного щоденника: форма запису + графіки динаміки + журнал.
 interface BodyProps {
   onOpenMeasurements?: () => void;
-  /**
-   * Wired by `FizrukRouter` to navigate the shell to the Atlas page.
-   * Used by the embedded «Відновлення й фокус» preview card so the
-   * user can deep-dive into the silhouette view without us reaching
-   * into `window.location.hash` (initiative 0006 lint rule).
-   */
+  /** Navigates the shell to the Atlas silhouette page (passed in by the router to avoid hash coupling). */
   onOpenAtlas?: () => void;
 }
 
@@ -85,9 +81,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
     (id: string) => {
       const snapshot = entries.find((e) => e.id === id);
       if (!snapshot) return;
-      // F24: remove the per-entry localStorage key so it doesn't accumulate
-      // as an orphan after deletion (one key written by JournalEntryCard on
-      // every open/close toggle).
+      // Remove the per-entry open-state key so it doesn't accumulate as an orphan after deletion.
       safeRemoveLS(JOURNAL_ENTRY_OPEN_PREFIX + id);
       deleteEntry(id);
       showUndoToast(toast, {

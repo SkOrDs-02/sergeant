@@ -246,7 +246,7 @@ export function Measurements() {
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              {MEASURE_FIELDS.map((f) => (
+              {MEASURE_FIELDS.filter((f) => latest[f.id] != null).map((f) => (
                 <div
                   key={f.id}
                   className="bg-bg border border-line rounded-2xl p-3"

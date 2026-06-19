@@ -279,9 +279,10 @@ export function TypingIndicator() {
           <circle cx="12" cy="5" r="1" />
         </svg>
       </span>
+      {/* Animated dots — hidden when prefers-reduced-motion is active. */}
       <div
         aria-hidden
-        className="bg-panel border border-line rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center"
+        className="motion-safe:flex hidden bg-panel border border-line rounded-2xl rounded-bl-sm px-4 py-3 gap-1.5 items-center"
       >
         {[0, 0.15, 0.3].map((d, i) => (
           <span
@@ -290,6 +291,13 @@ export function TypingIndicator() {
             style={{ animationDelay: `${d}s` }}
           />
         ))}
+      </div>
+      {/* Static label shown only when prefers-reduced-motion is set. */}
+      <div
+        aria-hidden
+        className="motion-reduce:flex motion-safe:hidden bg-panel border border-line rounded-2xl rounded-bl-sm px-4 py-3 items-center"
+      >
+        <span className="text-sm text-muted">Думаю…</span>
       </div>
     </div>
   );

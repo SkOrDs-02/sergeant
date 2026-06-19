@@ -14,6 +14,9 @@ export const fizrukPageMessages = {
   progress: {
     title: "Прогрес",
     measurementsCount: "Заміри",
+    measurementOne: "замір",
+    measurementFew: "заміри",
+    measurementMany: "замірів",
     emptyTitle: "Даних ще немає",
     emptyDescription: "Додай тренування або заміри — і тут зʼявиться аналітика",
     crossModuleHeading: "Активність з інших модулів",

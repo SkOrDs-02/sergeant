@@ -16,6 +16,7 @@ import { WellbeingChart } from "../components/WellbeingChart";
 import { WeeklyVolumeChart } from "../components/WeeklyVolumeChart";
 import { epley1rm, weeklyVolumeSeriesNow } from "@sergeant/fizruk-domain";
 import { kyivMondayStartMs } from "@sergeant/shared";
+import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { statusColors } from "@shared/charts";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -26,14 +27,6 @@ import { Stat } from "@shared/components/ui/Stat";
 const MIN_BAR_WIDTH_PCT = 6;
 
 interface ProgressProps {
-  /**
-   * Path-based navigation injected by `FizrukRouter`. The PRs list at the
-   * bottom of the page lets the user deep-link into a single exercise
-   * detail card via `onNavigate("exercise/<id>")` — used to mutate
-   * `window.location.hash` directly but Fizruk migrated to react-router
-   * in initiative 0006 §Phase 2.c (#2541), and hash mutations after the
-   * initial mount are a silent no-op.
-   */
   onNavigate: (target: FizrukPage | string) => void;
 }
 
@@ -262,7 +255,15 @@ export function Progress({ onNavigate }: ProgressProps) {
                 {messages.fizruk.progress.measurementsCount}
               </div>
               <div className="text-base font-extrabold text-text tabular-nums">
-                {entries.length}
+                {entries.length}{" "}
+                <span className="text-style-caption">
+                  {pluralize(
+                    entries.length,
+                    messages.fizruk.progress.measurementOne,
+                    messages.fizruk.progress.measurementFew,
+                    messages.fizruk.progress.measurementMany,
+                  )}
+                </span>
               </div>
             </div>
           </div>
@@ -334,9 +335,6 @@ export function Progress({ onNavigate }: ProgressProps) {
 
         {/* Weight + fat cards */}
         {(() => {
-          // F19: hoist per-render delta values to avoid calling meas.delta()
-          // 3–4 times per field in the same render (each call recomputes the
-          // arithmetic and the non-null assertions).
           const weightDelta = meas.delta("weightKg");
           const fatDelta = meas.delta("bodyFatPct");
           return (
