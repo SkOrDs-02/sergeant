@@ -8,14 +8,13 @@ import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import { safeReadLS } from "@shared/lib/storage/storage";
+import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
 import {
   aggregateKcal,
   getPeriodRange,
   datesInRange,
   localDateKey,
   type Period,
-  type NutritionLog,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
 
@@ -200,11 +199,22 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
   const bump = useHubStorageBump();
 
   const { cur, prev, dates } = useMemo(() => {
-    const nutritionLog = safeReadLS(
-      // eslint-disable-next-line sergeant-design/no-raw-storage-key
-      "nutrition_log_v1",
-      {},
-    ) as NutritionLog | null;
+    // Canonical meal log from the SQLite warm cache — `nutrition_log_v1`
+    // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
+    // `aggregateKcal` expects the loose legacy shape; the domain `kcal` is
+    // nullable, so coerce missing values to 0.
+    const log = loadNutritionLog();
+    const nutritionLog: Record<
+      string,
+      { meals: { macros: { kcal: number } }[] }
+    > = {};
+    for (const [day, entry] of Object.entries(log)) {
+      nutritionLog[day] = {
+        meals: entry.meals.map((m) => ({
+          macros: { kcal: m.macros.kcal ?? 0 },
+        })),
+      };
+    }
     const curRange = getPeriodRange(period, offset);
     const prevRange = getPeriodRange(period, offset - 1);
     const curDates = datesInRange(curRange.start, curRange.end);

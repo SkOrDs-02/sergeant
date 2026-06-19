@@ -4,11 +4,10 @@
  * the Reports page can show this card without blocking on other domains.
  */
 import { useMemo, useState } from "react";
-import { STORAGE_KEYS } from "@sergeant/shared";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import { safeReadStringLS } from "@shared/lib/storage/storage";
+import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import {
   aggregateWorkouts,
@@ -194,10 +193,20 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
   const bump = useHubStorageBump();
 
   const { cur, prev, dates } = useMemo(() => {
-    // Intentional LS-backed hub preview read; key centralized to STORAGE_KEYS
-    // via #3209. Full SQLite-overlay migration is separate storage-roadmap work.
-    // eslint-disable-next-line no-restricted-syntax
-    const rawWorkouts = safeReadStringLS(STORAGE_KEYS.FIZRUK_WORKOUTS);
+    // Canonical workouts live in the SQLite warm cache — `fizruk_workouts_v1`
+    // is tombstoned (drained + deleted on boot). The canonical list carries
+    // ISO-string timestamps; `aggregateWorkouts` expects the legacy epoch-ms
+    // shape, so adapt before handing it over (a cold cache → null = no data).
+    const fizruk = getCachedFizrukSqliteState();
+    const rawWorkouts =
+      fizruk.refreshedAt === null
+        ? null
+        : JSON.stringify(
+            fizruk.workouts.map((w) => ({
+              startedAt: w.startedAt ? Date.parse(w.startedAt) : null,
+              endedAt: w.endedAt ? Date.parse(w.endedAt) : null,
+            })),
+          );
     const curRange = getPeriodRange(period, offset);
     const prevRange = getPeriodRange(period, offset - 1);
     const curDates = datesInRange(curRange.start, curRange.end);

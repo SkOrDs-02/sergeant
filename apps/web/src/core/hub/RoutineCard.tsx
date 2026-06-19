@@ -8,14 +8,13 @@ import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import { safeReadLS } from "@shared/lib/storage/storage";
+import { loadRoutineState } from "@routine/lib/routineStorage";
 import {
   aggregateHabits,
   getPeriodRange,
   datesInRange,
   localDateKey,
   type Period,
-  type RoutineState,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
 
@@ -200,11 +199,18 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
   const bump = useHubStorageBump();
 
   const { cur, prev, dates } = useMemo(() => {
-    const routineState = safeReadLS(
-      // eslint-disable-next-line sergeant-design/no-raw-storage-key
-      "hub_routine_v1",
-      null,
-    ) as RoutineState | null;
+    // Canonical routine state from the SQLite warm cache — `hub_routine_v1`
+    // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
+    // `aggregateHabits` expects the loose legacy shape; the domain `archived`
+    // is `boolean | undefined`, so coerce it to a strict boolean.
+    const routine = loadRoutineState();
+    const routineState = {
+      habits: routine.habits.map((h) => ({
+        id: h.id,
+        archived: h.archived ?? false,
+      })),
+      completions: routine.completions,
+    };
     const curRange = getPeriodRange(period, offset);
     const prevRange = getPeriodRange(period, offset - 1);
     const curDates = datesInRange(curRange.start, curRange.end);
