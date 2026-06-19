@@ -34,6 +34,18 @@ export function DashboardSection() {
     "adaptiveBento",
     true,
   );
+  const [showTodayFocus, setShowTodayFocus] = useHubPref<boolean>(
+    "showTodayFocus",
+    true,
+  );
+  const [showInsights, setShowInsights] = useHubPref<boolean>(
+    "showInsights",
+    true,
+  );
+  const [showMotivational, setShowMotivational] = useHubPref<boolean>(
+    "showMotivational",
+    true,
+  );
   const [density, setDensityState] = useState<DashboardDensity>(() => {
     const raw = safeReadStringLS(STORAGE_KEYS.DASHBOARD_DENSITY);
     return raw === null
@@ -86,6 +98,24 @@ export function DashboardSection() {
           description="Піднімає в топ модуль, актуальний зараз — за часом дня та сигналами. Ваш порядок зберігається."
           checked={adaptiveBento !== false}
           onChange={setAdaptiveBento}
+        />
+        <ToggleRow
+          label="Картка «Сьогодні»"
+          description="Фокус дня над модулями. Вимкни, щоб головна починалася одразу з модулів."
+          checked={showTodayFocus !== false}
+          onChange={setShowTodayFocus}
+        />
+        <ToggleRow
+          label="Інсайти та AI-поради"
+          description="Згорнутий блок з інсайтами, порадою коуча та звітом тижня внизу головної."
+          checked={showInsights !== false}
+          onChange={setShowInsights}
+        />
+        <ToggleRow
+          label="Мотиваційний підпис"
+          description="Короткий заохочувальний рядок у самому низу головної."
+          checked={showMotivational !== false}
+          onChange={setShowMotivational}
         />
         <div className="space-y-2">
           <p className="text-xs text-subtle leading-snug">

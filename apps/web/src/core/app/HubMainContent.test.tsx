@@ -34,17 +34,10 @@ vi.mock("./IOSInstallBanner", () => ({
   IOSInstallBanner: () => <section data-testid="ios-install-banner" />,
 }));
 
-const replacementCharPattern = new RegExp(String.fromCharCode(0xfffd));
-
 function props(
   overrides: Partial<HubMainContentProps> = {},
 ): HubMainContentProps {
   return {
-    updateAvailable: false,
-    onApplyUpdate: vi.fn(),
-    canInstall: false,
-    onInstall: vi.fn(async () => undefined),
-    onDismissInstall: vi.fn(),
     onOpenModule: vi.fn(),
     iosVisible: false,
     onDismissIos: vi.fn(),
@@ -55,50 +48,25 @@ function props(
   };
 }
 
-describe("HubMainContent chrome banners", () => {
+// SW-update + PWA-install chrome moved to the header `NotificationBell`
+// (C · Контроль home redesign) — their banner behaviour is covered by the
+// bell's own surface now. HubMainContent only owns the inline iOS-install
+// banner + its FTUX suppression.
+describe("HubMainContent iOS install banner", () => {
   afterEach(() => cleanup());
 
-  it("suppresses all install/update chrome while the user is in FTUX", () => {
+  it("suppresses the iOS install banner while the user is in FTUX", () => {
     renderWithClient(
-      <HubMainContent
-        {...props({
-          updateAvailable: true,
-          canInstall: true,
-          iosVisible: true,
-          inFtuxSession: true,
-        })}
-      />,
+      <HubMainContent {...props({ iosVisible: true, inFtuxSession: true })} />,
     );
 
-    expect(screen.queryByText("Доступна нова версія")).toBeNull();
-    expect(screen.queryByText("Встановити додаток")).toBeNull();
     expect(screen.queryByTestId("ios-install-banner")).toBeNull();
     expect(screen.getByTestId("hub-dashboard")).toBeInTheDocument();
   });
 
-  it("shows only the highest-priority available banner", () => {
-    renderWithClient(
-      <HubMainContent
-        {...props({
-          updateAvailable: true,
-          canInstall: true,
-          iosVisible: true,
-        })}
-      />,
-    );
+  it("shows the iOS install banner outside FTUX when iosVisible is set", () => {
+    renderWithClient(<HubMainContent {...props({ iosVisible: true })} />);
 
-    expect(screen.getByText("Доступна нова версія")).toBeInTheDocument();
-    expect(screen.queryByText("Встановити додаток")).toBeNull();
-    expect(screen.queryByTestId("ios-install-banner")).toBeNull();
-  });
-
-  it("renders clean Ukrainian install copy without replacement characters", () => {
-    renderWithClient(<HubMainContent {...props({ canInstall: true })} />);
-
-    expect(screen.getByText("Встановити додаток")).toBeInTheDocument();
-    expect(
-      screen.getByText("Офлайн · пуш-нагадування · ярлик на екрані"),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(replacementCharPattern)).toBeNull();
+    expect(screen.getByTestId("ios-install-banner")).toBeInTheDocument();
   });
 });

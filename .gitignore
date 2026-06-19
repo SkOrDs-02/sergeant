@@ -18,6 +18,8 @@ storybook-static/
 # Playwright (a11y tests)
 playwright-report/
 test-results/
+# Playwright MCP scratch (snapshots + console logs from agent browser sessions)
+.playwright-mcp/
 
 # Lighthouse CI reports (uploaded as workflow artifact + to temporary-public-storage)
 .lighthouseci/

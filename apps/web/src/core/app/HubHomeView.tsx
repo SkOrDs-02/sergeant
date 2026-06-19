@@ -5,6 +5,7 @@ import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
 import { HubBottomNav } from "./HubBottomNav";
 import { HubHeader } from "./HubHeader";
+import { type HubNotification } from "./NotificationBell";
 import { HubMainContent } from "./HubMainContent";
 import { HubModals } from "./HubModals";
 import { OfflineBanner } from "./OfflineBanner";
@@ -98,6 +99,35 @@ export function HubHomeView(props: HubHomeViewProps) {
     enabled: hasFirstRealEntry && !inFtuxSession,
   });
 
+  // C · Контроль (home redesign 2026-06): system chrome banners (SW update,
+  // PWA install) move out of the content flow into the header bell. Suppressed
+  // during the FTUX session like the old inline banners were, so the first
+  // signal stays the FirstAction CTA. iOS-install + Trial keep their inline
+  // banners (bespoke UX).
+  const notifications: HubNotification[] = [];
+  if (!inFtuxSession && updateAvailable) {
+    notifications.push({
+      id: "sw-update",
+      icon: "refresh-cw",
+      title: "Доступна нова версія",
+      actionLabel: "Оновити",
+      onAction: onApplyUpdate,
+    });
+  }
+  if (!inFtuxSession && canInstall) {
+    notifications.push({
+      id: "pwa-install",
+      icon: "download",
+      title: "Встановити додаток",
+      description: "Офлайн · пуш-нагадування · ярлик на екрані",
+      actionLabel: "Встановити",
+      onAction: () => {
+        void onInstall();
+      },
+      onDismiss: onDismissInstall,
+    });
+  }
+
   return (
     // Sergeant v2 redesign (2026-05, PR-5) — wraps the hub shell in
     // <MeshBackground> so the mesh-gradient surface (`.bg-mesh` utility
@@ -127,14 +157,10 @@ export function HubHomeView(props: HubHomeViewProps) {
         authLoading={authLoading}
         onShowAuth={onOpenAuth}
         hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
+        notifications={notifications}
       />
 
       <HubMainContent
-        updateAvailable={updateAvailable}
-        onApplyUpdate={onApplyUpdate}
-        canInstall={canInstall}
-        onInstall={onInstall}
-        onDismissInstall={onDismissInstall}
         onOpenModule={openModule}
         iosVisible={iosVisible}
         onDismissIos={onDismissIos}
