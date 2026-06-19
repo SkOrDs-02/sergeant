@@ -5,6 +5,21 @@ import { coachKeys } from "@shared/lib/api/queryKeys";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
+import {
+  loadNutritionLog,
+  loadNutritionPrefs,
+} from "@nutrition/lib/nutritionStorage";
+import { loadRoutineState } from "@routine/lib/routineStorage";
+
+/* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
+   prefer-kyiv-time: the "today" / week-window math intentionally reads
+   host-local Date parts (see the AI-NOTE on `buildDateContext`) — on the Kyiv
+   host the wall clock IS Kyiv, and `toISOString().slice(0,10)` would shift the
+   day boundary and break evening Routine streaks. Kyiv-anchoring is tracked
+   burn-down (2026-Q3), out of scope for the tombstone read-side fix.
+   no-non-null-assertion: pre-existing guarded index access (`completions[h.id]!`
+   after an `Array.isArray` check). */
 
 const CACHE_KEY = "hub_coach_insight_cache_v1";
 
@@ -129,29 +144,21 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 
   let fizruk: FizrukSnapshot | null = null;
   try {
-    const p = safeReadLS<unknown>("fizruk_workouts_v1", null);
-    if (p) {
-      const allWorkouts: Array<{
-        endedAt?: string;
-        startedAt: string;
-        exercises?: Array<{ sets?: Array<{ weight?: number; reps?: number }> }>;
-      }> = Array.isArray(p)
-        ? p
-        : ((p as { workouts?: unknown[] })?.workouts ?? []);
+    // Канонічні тренування — SQLite warm cache (`fizruk_workouts_v1`
+    // tombstoned). Холодний кеш (`refreshedAt === null`) = «немає даних».
+    // Тижневий об'єм рахуємо з domain `items[].sets[].weightKg × reps`.
+    const fizrukCache = getCachedFizrukSqliteState();
+    if (fizrukCache.refreshedAt !== null) {
+      const allWorkouts = fizrukCache.workouts;
       const weekWorkouts = allWorkouts.filter((w) => {
         if (!w.endedAt) return false;
         return new Date(w.startedAt) >= weekStart;
       });
       let totalVolume = 0;
       for (const w of weekWorkouts) {
-        if (Array.isArray(w.exercises)) {
-          for (const ex of w.exercises) {
-            totalVolume += Array.isArray(ex.sets)
-              ? ex.sets.reduce(
-                  (s, set) => s + (set.weight ?? 0) * (set.reps ?? 0),
-                  0,
-                )
-              : 0;
+        for (const item of w.items) {
+          for (const set of item.sets ?? []) {
+            totalVolume += set.weightKg * set.reps;
           }
         }
       }
@@ -180,17 +187,10 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 
   let nutrition: NutritionSnapshot | null = null;
   try {
-    const log =
-      safeReadLS<
-        Record<
-          string,
-          { meals?: Array<{ macros?: { kcal?: number; protein_g?: number } }> }
-        >
-      >("nutrition_log_v1", {}) ?? {};
-    const prefs = safeReadLS<{ dailyTargetKcal?: number } | null>(
-      "nutrition_prefs_v1",
-      null,
-    );
+    // Канонічні лог + prefs — SQLite warm cache (`nutrition_log_v1` /
+    // `nutrition_prefs_v1` tombstoned).
+    const log = loadNutritionLog();
+    const prefs = loadNutritionPrefs();
     let totalKcal = 0,
       totalProtein = 0,
       daysLogged = 0;
@@ -198,7 +198,7 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
       const d = new Date(weekStart);
       d.setDate(weekStart.getDate() + i);
       const dk = localDateKey(d);
-      const meals = Array.isArray(log?.[dk]?.meals) ? log[dk].meals : [];
+      const meals = Array.isArray(log[dk]?.meals) ? log[dk].meals : [];
       if (meals.length > 0) {
         daysLogged++;
         for (const m of meals) {
@@ -211,7 +211,7 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
       nutrition = {
         avgKcal: Math.round(totalKcal / daysLogged),
         avgProtein: Math.round(totalProtein / daysLogged),
-        targetKcal: prefs?.dailyTargetKcal ?? 2000,
+        targetKcal: prefs.dailyTargetKcal ?? 2000,
         daysLogged,
       };
     }
@@ -221,30 +221,26 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 
   let routine: RoutineSnapshot | null = null;
   try {
-    const state = safeReadLS<{
-      habits?: Array<{ id: string; archived?: boolean }>;
-      completions?: Record<string, string[]>;
-    } | null>("hub_routine_v1", null);
-    if (state) {
-      const habits = (state.habits || []).filter((h) => !h.archived);
-      const completions = state.completions ?? {};
-      if (habits.length > 0) {
-        let totalDone = 0;
-        for (let i = 0; i < 7; i++) {
-          const d = new Date(weekStart);
-          d.setDate(weekStart.getDate() + i);
-          const dk = localDateKey(d);
-          for (const h of habits) {
-            if (
-              Array.isArray(completions[h.id]) &&
-              completions[h.id]!.includes(dk)
-            )
-              totalDone++;
-          }
+    // Канонічний стан рутини — SQLite warm cache (`hub_routine_v1` tombstoned).
+    const state = loadRoutineState();
+    const habits = state.habits.filter((h) => !h.archived);
+    const completions = state.completions;
+    if (habits.length > 0) {
+      let totalDone = 0;
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        const dk = localDateKey(d);
+        for (const h of habits) {
+          if (
+            Array.isArray(completions[h.id]) &&
+            completions[h.id]!.includes(dk)
+          )
+            totalDone++;
         }
-        const overallRate = Math.round((totalDone / (habits.length * 7)) * 100);
-        routine = { habitCount: habits.length, overallRate };
       }
+      const overallRate = Math.round((totalDone / (habits.length * 7)) * 100);
+      routine = { habitCount: habits.length, overallRate };
     }
   } catch {
     /* non-fatal */
