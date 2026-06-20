@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { logger } from "@shared/lib";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
@@ -7,6 +7,10 @@ import {
   safeRemoveLS,
   safeWriteLS,
 } from "@shared/lib/storage/storage";
+import {
+  showReminderNotification,
+  useModuleReminder,
+} from "@shared/hooks/useModuleReminder";
 import { habitScheduledOnDate } from "../lib/hubCalendarAggregate";
 import { normalizeReminderTimes } from "../lib/routineDraftUtils";
 import {
@@ -36,49 +40,6 @@ export function cleanupStaleRoutineNotifyKeys(maxAgeDays = 45): void {
   }
 }
 
-function todayKey() {
-  // Day-key for reminder-dedup must be Kyiv-local (same as the notify-key
-  // cleanup cutoff above): `dateKeyFromDate(new Date())` reads host-local
-  // civil-date and would dedup against the wrong day near Kyiv midnight for
-  // a user abroad (page-audit-09 F21, Theme 1).
-  return getKyivDayKey();
-}
-
-function currentHm() {
-  // Theme 1: routine reminders fire on Kyiv-local HH:MM so a user
-  // travelling abroad still gets the same "8:00" reminder they
-  // configured in Kyiv, instead of one shifted by the host clock.
-  const { hour, minute } = getKyivDateParts(Date.now());
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-}
-
-async function showNotification(
-  title: string,
-  body: string,
-  tag: string,
-): Promise<void> {
-  try {
-    if ("serviceWorker" in navigator) {
-      const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification(title, {
-        body,
-        tag,
-        icon: "/icon-192.png",
-        badge: "/icon-192.png",
-        requireInteraction: false,
-      });
-      return;
-    }
-  } catch (err) {
-    logger.warn("[routine.reminders] sw-show-failed", err);
-  }
-  try {
-    new Notification(title, { body, tag, requireInteraction: false });
-  } catch (err) {
-    logger.warn("[routine.reminders] notification-ctor-failed", err);
-  }
-}
-
 function sendRoutineStateToSW(routine: RoutineState): void {
   try {
     if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller)
@@ -96,77 +57,8 @@ function sendRoutineStateToSW(routine: RoutineState): void {
   }
 }
 
-function readNotificationPermission(): NotificationPermission | "unsupported" {
-  if (typeof Notification === "undefined") return "unsupported";
-  return Notification.permission;
-}
-
-/**
- * Audit F8: відстежує runtime `Notification.permission` через
- * Permissions API change-event + fallback на `visibilitychange`/`focus`,
- * щоб scheduler коректно стопився на revoke і рестартував на re-grant.
- */
-function useNotificationPermission(): NotificationPermission | "unsupported" {
-  const [perm, setPerm] = useState<NotificationPermission | "unsupported">(() =>
-    readNotificationPermission(),
-  );
-
-  useEffect(() => {
-    if (typeof Notification === "undefined") return undefined;
-    let disposed = false;
-    const sync = () => {
-      if (disposed) return;
-      const next = readNotificationPermission();
-      setPerm((prev) => (prev === next ? prev : next));
-    };
-
-    sync();
-
-    let permStatus: PermissionStatus | null = null;
-    const onPermChange = () => sync();
-    try {
-      const permissions = navigator.permissions;
-      if (permissions && typeof permissions.query === "function") {
-        permissions
-          .query({ name: "notifications" as PermissionName })
-          .then((status) => {
-            if (disposed) return;
-            permStatus = status;
-            status.addEventListener("change", onPermChange);
-            sync();
-          })
-          .catch(() => {
-            /* Permissions API недоступна — лишається fallback */
-          });
-      }
-    } catch {
-      /* Safari старіших версій кидає на name="notifications" — fallback */
-    }
-
-    const onVisibility = () => sync();
-    document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("focus", onVisibility);
-
-    return () => {
-      disposed = true;
-      document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("focus", onVisibility);
-      if (permStatus) {
-        try {
-          permStatus.removeEventListener("change", onPermChange);
-        } catch {
-          /* noop */
-        }
-      }
-    };
-  }, []);
-
-  return perm;
-}
-
 export function useRoutineReminders(routine: RoutineState): void {
   const enabled = routine.prefs?.routineRemindersEnabled === true;
-  const permission = useNotificationPermission();
   const routineRef = useRef<RoutineState>(routine);
   routineRef.current = routine;
 
@@ -178,21 +70,14 @@ export function useRoutineReminders(routine: RoutineState): void {
     sendRoutineStateToSW(routine);
   }, [routine]);
 
-  useEffect(() => {
-    if (!enabled) return undefined;
-    if (permission !== "granted") return undefined;
-    let timerId: ReturnType<typeof setTimeout> | null = null;
-    let disposed = false;
-
-    const fireAndSchedule = () => {
-      if (disposed) return;
+  // `onMinuteTick` receives Kyiv-local dayKey + hm from the shared hook —
+  // that is the bug fix: fizruk/nutrition previously read host-local time here.
+  const onMinuteTick = useCallback(
+    ({ dayKey: dk, hm }: { dayKey: string; hm: string }) => {
       const r = routineRef.current;
       if (r.prefs?.routineRemindersEnabled !== true) return;
       if (typeof Notification === "undefined") return;
       if (Notification.permission !== "granted") return;
-
-      const dk = todayKey();
-      const hm = currentHm();
 
       for (const h of r.habits) {
         if (h.archived) continue;
@@ -210,7 +95,7 @@ export function useRoutineReminders(routine: RoutineState): void {
           h,
           getRoutineReminderPrivacy(r.prefs),
         );
-        showNotification(title, body, storageKey);
+        showReminderNotification(title, body, storageKey);
         // `safeWriteLS` keeps raw strings as-is (no JSON.stringify), so the
         // stored value matches the legacy `localStorage.setItem(_, "1")`
         // shape that `safeReadStringLS(_) → "1"` then short-circuits on
@@ -227,31 +112,13 @@ export function useRoutineReminders(routine: RoutineState): void {
           logger.warn("[routine.reminders] sw-sent-postmessage-failed", err);
         }
       }
+    },
+    // routineRef is intentionally not a dep — it's a stable ref that always
+    // holds the latest value, avoiding re-creating onMinuteTick on every render.
+    [],
+  );
 
-      scheduleNext();
-    };
-
-    const scheduleNext = () => {
-      if (disposed) return;
-      // Sub-minute timer tick: секунди TZ-інваріантні (Kyiv-offset — ціла
-      // кількість хвилин), тож host-local read тут не day-boundary bug —
-      // це справжній wall-clock instant для розрахунку msToNextMinute.
-      // eslint-disable-next-line no-restricted-syntax -- wall-clock instant for sub-minute timer alignment, not a day key
-      const now = new Date();
-      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- sub-minute scheduling, not a day key
-      const secondsIntoMinute = now.getSeconds();
-      const msToNextMinute =
-        (60 - secondsIntoMinute) * 1000 - now.getMilliseconds() + 50;
-      timerId = setTimeout(fireAndSchedule, msToNextMinute);
-    };
-
-    fireAndSchedule();
-
-    return () => {
-      disposed = true;
-      if (timerId) clearTimeout(timerId);
-    };
-  }, [enabled, permission]);
+  useModuleReminder({ enabled, onMinuteTick });
 }
 
 export async function requestRoutineNotificationPermission() {

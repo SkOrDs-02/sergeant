@@ -85,3 +85,13 @@ export { useReducedMotion } from "./useReducedMotion";
 export { useShortcutGlyph } from "./useShortcutGlyph";
 
 export { useInView } from "./useInView";
+
+export {
+  useNotificationPermission,
+  showReminderNotification,
+  useModuleReminder,
+} from "./useModuleReminder";
+export type {
+  ModuleReminderTick,
+  UseModuleReminderOptions,
+} from "./useModuleReminder";

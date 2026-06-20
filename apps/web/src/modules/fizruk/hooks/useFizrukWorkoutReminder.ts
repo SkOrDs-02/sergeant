@@ -1,5 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import {
+  showReminderNotification,
+  useModuleReminder,
+} from "@shared/hooks/useModuleReminder";
 
 const LAST_KEY = "fizruk_last_reminder_notif_day";
 
@@ -28,6 +32,9 @@ export function sendFizrukStateToSW(state: FizrukReminderState): void {
 /**
  * Локальне нагадування (через Notification API, якщо дозволено).
  * `enabled` — на сьогодні є запис у календарі плану.
+ *
+ * Bug fix (ADR-0067): dedup-key та due-check тепер використовують Kyiv-local
+ * dayKey + hm з `useModuleReminder`, а не host-local `new Date().getHours()`.
  */
 export function useFizrukWorkoutReminder({
   enabled,
@@ -47,6 +54,10 @@ export function useFizrukWorkoutReminder({
   // re-fire today's notification.
   const firedRef = useRef<string | null>(readLastFiredDay());
 
+  // Keep a stable ref so onMinuteTick closure doesn't need to list these as deps.
+  const configRef = useRef({ reminderHour, reminderMinute });
+  configRef.current = { reminderHour, reminderMinute };
+
   useEffect(() => {
     sendFizrukStateToSW({
       reminderEnabled,
@@ -56,73 +67,42 @@ export function useFizrukWorkoutReminder({
     });
   }, [reminderEnabled, reminderHour, reminderMinute, days]);
 
-  useEffect(() => {
-    if (!enabled) return;
-    if (!reminderEnabled) return;
+  // `onMinuteTick` receives Kyiv-local dayKey + hm — this is the bug fix:
+  // previously `new Date().getHours()` / `getMinutes()` used the host timezone.
+  const onMinuteTick = useCallback(
+    ({ dayKey, hm }: { dayKey: string; hm: string }) => {
+      const { reminderHour: rh, reminderMinute: rm } = configRef.current;
+      const targetHm = `${String(rh).padStart(2, "0")}:${String(rm).padStart(2, "0")}`;
+      if (hm !== targetHm) return;
 
-    const tick = () => {
-      const now = new Date();
-      if (
-        now.getHours() !== reminderHour ||
-        now.getMinutes() !== reminderMinute
-      )
-        return;
+      if (firedRef.current === dayKey) return;
 
-      const dayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      if (firedRef.current === dayStr) return;
-
-      if (typeof Notification === "undefined") return;
-      if (Notification.permission !== "granted") return;
-
-      // Optimistic in-memory guard so the 30s interval doesn't double-fire
+      // Optimistic in-memory guard so the per-minute tick doesn't double-fire
       // while the (async) notification is being shown. The day is persisted to
       // localStorage only AFTER a successful show — otherwise a failed
       // notification would permanently suppress today's reminder across
       // reloads. On failure we clear the in-memory guard so the next tick
       // retries.
-      firedRef.current = dayStr;
-      const persistFired = () => safeWriteLS(LAST_KEY, dayStr);
+      firedRef.current = dayKey;
+      const persistFired = () => safeWriteLS(LAST_KEY, dayKey);
       const onShowFailed = () => {
         firedRef.current = null;
       };
 
-      const title = "Фізрук — тренування";
-      const body =
-        "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.";
+      showReminderNotification(
+        "Фізрук — тренування",
+        "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.",
+        `fizruk-plan-${dayKey}`,
+      )
+        .then(persistFired)
+        .catch(onShowFailed);
+    },
+    // configRef is a stable ref — intentionally not listed.
+    [],
+  );
 
-      try {
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.ready
-            .then((reg) =>
-              reg.showNotification(title, {
-                body,
-                tag: `fizruk-plan-${dayStr}`,
-                icon: "/icon-192.png",
-                badge: "/icon-192.png",
-                requireInteraction: false,
-                data: { action: "open", module: "fizruk" },
-              }),
-            )
-            .then(persistFired)
-            .catch(() => {
-              try {
-                new Notification(title, { body, tag: "fizruk-plan" });
-                persistFired();
-              } catch {
-                onShowFailed();
-              }
-            });
-        } else {
-          new Notification(title, { body, tag: "fizruk-plan" });
-          persistFired();
-        }
-      } catch {
-        onShowFailed();
-      }
-    };
-
-    const id = setInterval(tick, 30_000);
-    tick();
-    return () => clearInterval(id);
-  }, [enabled, reminderEnabled, reminderHour, reminderMinute]);
+  useModuleReminder({
+    enabled: enabled && reminderEnabled,
+    onMinuteTick,
+  });
 }
