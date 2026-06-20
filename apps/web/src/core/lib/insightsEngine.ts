@@ -1,6 +1,7 @@
 /**
  * Cross-module insights engine.
- * Reads data from localStorage of all 4 modules and computes
+ * Reads routine / fizruk / nutrition from their canonical SQLite warm caches
+ * and Finyk from localStorage, and computes
  * correlations / patterns across weeks and months.
  *
  * Data sufficiency thresholds (per task spec):
@@ -12,9 +13,20 @@
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { getTxStatAmount } from "../../modules/finyk/utils";
-import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
+import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
+import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
 import type { IconName } from "@shared/components/ui/Icon";
+
+/* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
+   prefer-kyiv-time: this cross-module insights engine intentionally reads the
+   host-local wall clock for every week / month bucket (best-workout-day,
+   habit-month, active-weeks); on the Kyiv host the wall clock IS Kyiv. Kyiv-
+   anchoring is tracked burn-down (2026-Q3), out of scope for the tombstone
+   read-side fix. no-non-null-assertion: pre-existing guarded index accesses
+   (`dowCount[i]!`, `monthDone[mk]!`, `completions[h.id]!` after array / length
+   guards). Mirrors recommendationEngine.ts / briefingHandlers.ts. */
 
 export interface Insight {
   id: string;
@@ -37,12 +49,6 @@ interface Transaction {
   mcc?: number;
 }
 
-interface NutritionDay {
-  meals?: Array<{ macros?: { kcal?: number } }>;
-}
-
-type NutritionLog = Record<string, NutritionDay | undefined>;
-
 function safeLS<T>(key: string, fallback: T): T {
   return safeReadLS<T>(key, fallback) ?? fallback;
 }
@@ -52,16 +58,15 @@ function localDateKey(d: Date = new Date()): string {
 }
 
 function parseFizrukWorkouts(): Workout[] {
-  const raw = safeReadStringLS(STORAGE_KEYS.FIZRUK_WORKOUTS);
-  if (!raw) return [];
-  try {
-    const p = JSON.parse(raw) as Workout[] | { workouts?: Workout[] } | null;
-    if (Array.isArray(p)) return p;
-    if (p && Array.isArray(p.workouts)) return p.workouts;
-  } catch {
-    /* ignore */
-  }
-  return [];
+  // Canonical workouts — SQLite warm cache (`fizruk_workouts_v1` tombstoned).
+  // Cold cache (`refreshedAt === null`) = no data. The insights only read
+  // `startedAt` / `endedAt`, so map the domain `Workout` to the loose shape.
+  const fizruk = getCachedFizrukSqliteState();
+  if (fizruk.refreshedAt === null) return [];
+  return fizruk.workouts.map((w) => ({
+    startedAt: w.startedAt,
+    ...(w.endedAt ? { endedAt: w.endedAt } : {}),
+  }));
 }
 
 const DOW_UK = [
@@ -281,7 +286,7 @@ function bestHabitMonthInsight(): Insight | null {
  */
 function workoutKcalInsight(): Insight | null {
   const workouts = parseFizrukWorkouts().filter((w) => w.endedAt);
-  const log = safeLS<NutritionLog>(STORAGE_KEYS.NUTRITION_LOG, {});
+  const log = loadNutritionLog();
 
   const workoutDays = new Set<string>(
     workouts.map((w) => localDateKey(new Date(w.startedAt))),
@@ -334,7 +339,7 @@ function workoutKcalInsight(): Insight | null {
  */
 function habitWeeksKcalInsight(): Insight | null {
   const state = loadRoutineState();
-  const log = safeLS<NutritionLog>(STORAGE_KEYS.NUTRITION_LOG, {});
+  const log = loadNutritionLog();
   const habits = (state.habits || []).filter((h) => !h.archived);
   const completions = state.completions || {};
   if (habits.length === 0) return null;

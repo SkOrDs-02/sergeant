@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { generateInsights } from "./insightsEngine";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../../modules/fizruk/lib/sqliteReader";
+import type { Workout } from "@sergeant/fizruk-domain/domain";
 
 function createLocalStorageMock() {
   const store = new Map<string, string>();
@@ -13,12 +18,17 @@ function createLocalStorageMock() {
   };
 }
 
-function setLS(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value));
+// Canonical fizruk workouts now live in the SQLite warm cache (the
+// `fizruk_workouts_v1` LS key is tombstoned), so seed the cache directly.
+function seedFizruk(workouts: unknown[]) {
+  __setFizrukSqliteCacheForTests({
+    workouts: workouts as unknown as Workout[],
+  });
 }
 
 function clearAll() {
   localStorage.clear();
+  clearFizrukSqliteCache();
 }
 
 /** Генерує N завершених тренувань розподілених по днях тижня */
@@ -57,10 +67,7 @@ describe("generateInsights", () => {
 
   it("повертає не більше 4 інсайтів", () => {
     // Заповнюємо достатньо даних для всіх інсайтів
-    setLS("fizruk_workouts_v1", {
-      schemaVersion: 1,
-      workouts: makeWorkouts(25, 1),
-    });
+    seedFizruk(makeWorkouts(25, 1));
     const result = generateInsights();
     expect(result.length).toBeLessThanOrEqual(4);
   });
@@ -77,18 +84,14 @@ describe("generateInsights", () => {
   });
 
   it("workoutDayInsight: не генерується при < 20 тренуваннях", () => {
-    setLS("fizruk_workouts_v1", {
-      schemaVersion: 1,
-      workouts: makeWorkouts(15, 1),
-    });
+    seedFizruk(makeWorkouts(15, 1));
     const result = generateInsights();
     expect(result.find((r) => r.id === "best_workout_day")).toBeUndefined();
   });
 
   it("workoutDayInsight: генерується при ≥ 20 тренуваннях та домінантному дні", () => {
     // 22 тренування в понеділок
-    const workouts = makeWorkouts(22, 1);
-    setLS("fizruk_workouts_v1", { schemaVersion: 1, workouts });
+    seedFizruk(makeWorkouts(22, 1));
     const result = generateInsights();
     const ins = result.find((r) => r.id === "best_workout_day");
     expect(ins).toBeDefined();
@@ -97,10 +100,7 @@ describe("generateInsights", () => {
   });
 
   it("не дублює id інсайтів", () => {
-    setLS("fizruk_workouts_v1", {
-      schemaVersion: 1,
-      workouts: makeWorkouts(25, 1),
-    });
+    seedFizruk(makeWorkouts(25, 1));
     const result = generateInsights();
     const ids = result.map((r) => r.id);
     expect(new Set(ids).size).toBe(ids.length);
