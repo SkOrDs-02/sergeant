@@ -8,6 +8,8 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Habit } from "@sergeant/routine-domain";
+import type { Workout } from "@sergeant/fizruk-domain/domain";
+import type { NutritionLog } from "@sergeant/nutrition-domain";
 import { handleCrossAction } from "./crossActions";
 import {
   __setRoutineSqliteStateCacheForTests,
@@ -15,6 +17,14 @@ import {
   clearSqliteRoutineStateCache,
   clearSqliteCompletionsCache,
 } from "../../../modules/routine/lib/sqliteReader";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../../../modules/fizruk/lib/sqliteReader";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "../../../modules/nutrition/lib/sqliteReader";
 import type { CompareWeeksAction } from "./types";
 
 // 2026-W17 = Mon 2026-04-20 .. Sun 2026-04-26
@@ -22,11 +32,13 @@ import type { CompareWeeksAction } from "./types";
 
 beforeEach(() => {
   localStorage.clear();
-  // Stage 8 PR #057r-tombstone — routine state is backed by the SQLite warm
-  // cache, not the retired `hub_routine_v1` LS key. Reset both caches so each
-  // spec starts clean (the "Немає активних звичок" spec relies on empty state).
+  // Stage 8 tombstone — routine / fizruk / nutrition state is backed by the
+  // SQLite warm caches, not the retired `*_v1` LS keys. Reset every cache so
+  // each spec starts clean (the empty-state specs rely on it).
   clearSqliteRoutineStateCache();
   clearSqliteCompletionsCache();
+  clearFizrukSqliteCache();
+  clearNutritionSqliteCache();
   vi.useFakeTimers();
   // Wednesday inside W17, so getWeekKey() picks W17 by default.
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
@@ -35,6 +47,8 @@ afterEach(() => {
   localStorage.clear();
   clearSqliteRoutineStateCache();
   clearSqliteCompletionsCache();
+  clearFizrukSqliteCache();
+  clearNutritionSqliteCache();
   vi.useRealTimers();
 });
 
@@ -61,6 +75,53 @@ function seedRoutine(
     habitOrder: habits.map((h) => h.id),
   });
   __setRoutineSqliteCompletionsCacheForTests({ completions });
+}
+
+/**
+ * Seed the canonical fizruk SQLite cache — `aggregateFizruk` reads
+ * `getCachedFizrukSqliteState()` instead of `localStorage["fizruk_workouts_v1"]`.
+ * Maps the loose authoring shape onto the domain `Workout` (legacy
+ * `exercises[].name` / `sets[].weight` → `items[].nameUk` / `sets[].weightKg`).
+ */
+function seedFizruk(
+  workouts: Array<{
+    startedAt: string;
+    endedAt?: string | null;
+    items?: Array<{
+      nameUk?: string;
+      sets?: Array<{ weightKg?: number; reps?: number }>;
+    }>;
+  }>,
+): void {
+  __setFizrukSqliteCacheForTests({
+    workouts: workouts.map((w, wi) => ({
+      id: `w${wi}`,
+      startedAt: w.startedAt,
+      endedAt: w.endedAt ?? null,
+      note: "",
+      groups: [],
+      warmup: null,
+      cooldown: null,
+      items: (w.items ?? []).map((it, ii) => ({
+        id: `w${wi}i${ii}`,
+        exerciseId: "",
+        nameUk: it.nameUk ?? "",
+        primaryGroup: "",
+        musclesPrimary: [],
+        musclesSecondary: [],
+        type: "strength" as const,
+        sets: (it.sets ?? []).map((s) => ({
+          weightKg: s.weightKg ?? 0,
+          reps: s.reps ?? 0,
+        })),
+      })),
+    })) as unknown as Workout[],
+  });
+}
+
+/** Seed the canonical nutrition SQLite cache (`aggregateNutrition` reads it). */
+function seedNutrition(log: unknown): void {
+  __setNutritionSqliteCacheForTests({ log: log as NutritionLog });
 }
 
 describe("compare_weeks — параметри", () => {
@@ -231,14 +292,11 @@ describe("compare_weeks — Рутина diff", () => {
 
 describe("compare_weeks — Харчування diff", () => {
   it("обчислює середні калорії за два тижні", () => {
-    localStorage.setItem(
-      "nutrition_log_v1",
-      JSON.stringify({
-        "2026-04-21": { meals: [{ macros: { kcal: 2000 } }] },
-        "2026-04-22": { meals: [{ macros: { kcal: 2200 } }] },
-        "2026-04-14": { meals: [{ macros: { kcal: 1800 } }] },
-      }),
-    );
+    seedNutrition({
+      "2026-04-21": { meals: [{ macros: { kcal: 2000 } }] },
+      "2026-04-22": { meals: [{ macros: { kcal: 2200 } }] },
+      "2026-04-14": { meals: [{ macros: { kcal: 1800 } }] },
+    });
     const out = call({
       week_a: "2026-W17",
       week_b: "2026-W16",
@@ -263,34 +321,31 @@ describe("compare_weeks — Харчування diff", () => {
 
 describe("compare_weeks — Фізрук diff", () => {
   it("показує count і об'єм за два тижні", () => {
-    localStorage.setItem(
-      "fizruk_workouts_v1",
-      JSON.stringify([
-        {
-          startedAt: "2026-04-21T10:00:00Z",
-          endedAt: "2026-04-21T11:00:00Z",
-          exercises: [
-            {
-              name: "Жим",
-              sets: [
-                { weight: 100, reps: 5 },
-                { weight: 100, reps: 5 },
-              ],
-            },
-          ],
-        },
-        {
-          startedAt: "2026-04-23T10:00:00Z",
-          endedAt: "2026-04-23T11:00:00Z",
-          exercises: [{ name: "Присід", sets: [{ weight: 80, reps: 8 }] }],
-        },
-        {
-          startedAt: "2026-04-14T10:00:00Z",
-          endedAt: "2026-04-14T11:00:00Z",
-          exercises: [{ name: "Жим", sets: [{ weight: 100, reps: 5 }] }],
-        },
-      ]),
-    );
+    seedFizruk([
+      {
+        startedAt: "2026-04-21T10:00:00Z",
+        endedAt: "2026-04-21T11:00:00Z",
+        items: [
+          {
+            nameUk: "Жим",
+            sets: [
+              { weightKg: 100, reps: 5 },
+              { weightKg: 100, reps: 5 },
+            ],
+          },
+        ],
+      },
+      {
+        startedAt: "2026-04-23T10:00:00Z",
+        endedAt: "2026-04-23T11:00:00Z",
+        items: [{ nameUk: "Присід", sets: [{ weightKg: 80, reps: 8 }] }],
+      },
+      {
+        startedAt: "2026-04-14T10:00:00Z",
+        endedAt: "2026-04-14T11:00:00Z",
+        items: [{ nameUk: "Жим", sets: [{ weightKg: 100, reps: 5 }] }],
+      },
+    ]);
     const out = call({
       week_a: "2026-W17",
       week_b: "2026-W16",

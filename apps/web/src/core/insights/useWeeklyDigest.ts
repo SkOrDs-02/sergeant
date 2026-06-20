@@ -16,6 +16,11 @@ import { MCC_CATEGORIES, INCOME_CATEGORIES } from "@finyk/constants";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { loadRoutineState } from "@routine/lib/routineStorage";
+import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
+import {
+  loadNutritionLog,
+  loadNutritionPrefs,
+} from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
 import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
 
@@ -194,24 +199,18 @@ export interface FizrukAggregate {
 }
 
 export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key -- aggregator runs outside React; fizruk hooks are unavailable and STORAGE_KEYS.FIZRUK_* is itself banned for direct access (no-restricted-syntax, PR #030).
-  const parsed = safeReadLS<unknown>("fizruk_workouts_v1", null);
-  if (!parsed) return null;
-  const workouts: Array<{
-    endedAt?: string;
-    startedAt: string;
-    exercises?: Array<{
-      name?: string;
-      sets?: Array<{ weight?: number; reps?: number }>;
-    }>;
-  }> = Array.isArray(parsed)
-    ? parsed
-    : ((parsed as { workouts?: unknown[] })?.workouts ?? []);
-  if (!Array.isArray(workouts) || workouts.length === 0) return null;
+  // Canonical workouts — SQLite warm cache (`fizruk_workouts_v1` tombstoned).
+  // Cold cache (`refreshedAt === null`) = no data. Domain `WorkoutItem` carries
+  // `nameUk` + `sets[].weightKg` (legacy LS used `exercises[].name` /
+  // `sets[].weight`).
+  const fizruk = getCachedFizrukSqliteState();
+  if (fizruk.refreshedAt === null) return null;
+  const workouts = fizruk.workouts;
+  if (workouts.length === 0) return null;
 
   const monday = new Date(`${weekKey}T00:00:00`);
   const sunday = new Date(monday);
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for the tombstone read-side fix
   sunday.setDate(monday.getDate() + 7);
 
   const weekWorkouts = workouts.filter((w) => {
@@ -224,18 +223,15 @@ export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
   const exerciseVolumes: Record<string, number> = {};
 
   for (const w of weekWorkouts) {
-    if (Array.isArray(w.exercises)) {
-      for (const ex of w.exercises) {
-        const vol = Array.isArray(ex.sets)
-          ? ex.sets.reduce(
-              (s, set) => s + (set.weight ?? 0) * (set.reps ?? 0),
-              0,
-            )
-          : 0;
-        totalVolume += vol;
-        if (ex.name) {
-          exerciseVolumes[ex.name] = (exerciseVolumes[ex.name] ?? 0) + vol;
-        }
+    for (const item of w.items) {
+      const vol = (item.sets ?? []).reduce(
+        (s, set) => s + set.weightKg * set.reps,
+        0,
+      );
+      totalVolume += vol;
+      if (item.nameUk) {
+        exerciseVolumes[item.nameUk] =
+          (exerciseVolumes[item.nameUk] ?? 0) + vol;
       }
     }
   }
@@ -277,28 +273,11 @@ export interface NutritionAggregate {
 }
 
 export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
-  const log = safeReadLS<
-    Record<
-      string,
-      {
-        meals?: Array<{
-          macros?: {
-            kcal?: number;
-            protein_g?: number;
-            fat_g?: number;
-            carbs_g?: number;
-          };
-        }>;
-      }
-    >
-    // eslint-disable-next-line sergeant-design/no-raw-storage-key -- aggregator runs outside React; nutrition hooks are unavailable and STORAGE_KEYS.NUTRITION_* is itself banned for direct access (no-restricted-syntax, PR #034).
-  >("nutrition_log_v1", {});
-  const prefs = safeReadLS<{ dailyTargetKcal?: number } | null>(
-    // eslint-disable-next-line sergeant-design/no-raw-storage-key -- aggregator runs outside React; nutrition hooks are unavailable and STORAGE_KEYS.NUTRITION_* is itself banned for direct access (no-restricted-syntax, PR #034).
-    "nutrition_prefs_v1",
-    null,
-  );
-  const targetKcal = prefs?.dailyTargetKcal ?? 2000;
+  // Canonical log + prefs — SQLite warm cache (`nutrition_log_v1` /
+  // `nutrition_prefs_v1` tombstoned).
+  const log = loadNutritionLog();
+  const prefs = loadNutritionPrefs();
+  const targetKcal = prefs.dailyTargetKcal ?? 2000;
 
   const monday = new Date(`${weekKey}T00:00:00`);
   let totalKcal = 0,

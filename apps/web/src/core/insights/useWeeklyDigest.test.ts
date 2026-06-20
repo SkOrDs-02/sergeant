@@ -16,12 +16,22 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
 import type { Habit } from "@sergeant/routine-domain";
+import type { Workout } from "@sergeant/fizruk-domain/domain";
+import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
 import {
   __setRoutineSqliteStateCacheForTests,
   __setRoutineSqliteCompletionsCacheForTests,
   clearSqliteRoutineStateCache,
   clearSqliteCompletionsCache,
 } from "../../modules/routine/lib/sqliteReader";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../../modules/fizruk/lib/sqliteReader";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "../../modules/nutrition/lib/sqliteReader";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
@@ -74,10 +84,21 @@ vi.mock("@sergeant/finyk-domain", () => ({
   }),
 }));
 
-vi.mock("@sergeant/shared", () => ({
-  STORAGE_KEYS: { WEEKLY_DIGEST_PREFIX: "hub_weekly_digest_v1_" },
-  getWeekKey: () => "2025-04-07",
-}));
+// Spread the real module so the nutrition-domain normalizers it re-exports
+// (`normalizeMacrosNullable` etc., pulled in by `loadNutritionLog()` →
+// `normalizeNutritionLog`) stay intact; only pin the two values the suite
+// controls.
+vi.mock("@sergeant/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@sergeant/shared")>();
+  return {
+    ...actual,
+    STORAGE_KEYS: {
+      ...actual.STORAGE_KEYS,
+      WEEKLY_DIGEST_PREFIX: "hub_weekly_digest_v1_",
+    },
+    getWeekKey: () => "2025-04-07",
+  };
+});
 
 vi.mock("@shared/lib/storage/weeklyDigestStorage", () => ({
   loadDigest: vi.fn((weekKey: string) => {
@@ -165,38 +186,85 @@ function seedRoutine(
   __setRoutineSqliteCompletionsCacheForTests({ completions });
 }
 
+/**
+ * Seed the canonical fizruk SQLite cache — `aggregateFizruk` now reads
+ * `getCachedFizrukSqliteState()` instead of `safeReadLS("fizruk_workouts_v1")`.
+ * Maps the loose authoring shape onto the domain `Workout` (legacy
+ * `exercises[].name` / `sets[].weight` → `items[].nameUk` / `sets[].weightKg`).
+ */
+function seedFizruk(
+  workouts: Array<{
+    startedAt: string;
+    endedAt?: string | null;
+    items?: Array<{
+      nameUk?: string;
+      sets?: Array<{ weightKg?: number; reps?: number }>;
+    }>;
+  }>,
+): void {
+  __setFizrukSqliteCacheForTests({
+    workouts: workouts.map((w, wi) => ({
+      id: `w${wi}`,
+      startedAt: w.startedAt,
+      endedAt: w.endedAt ?? null,
+      note: "",
+      groups: [],
+      warmup: null,
+      cooldown: null,
+      items: (w.items ?? []).map((it, ii) => ({
+        id: `w${wi}i${ii}`,
+        exerciseId: "",
+        nameUk: it.nameUk ?? "",
+        primaryGroup: "",
+        musclesPrimary: [],
+        musclesSecondary: [],
+        type: "strength" as const,
+        sets: (it.sets ?? []).map((s) => ({
+          weightKg: s.weightKg ?? 0,
+          reps: s.reps ?? 0,
+        })),
+      })),
+    })) as unknown as Workout[],
+  });
+}
+
+/** Seed the canonical nutrition SQLite cache (log + optional prefs). */
+function seedNutrition(log: unknown, prefs?: unknown): void {
+  __setNutritionSqliteCacheForTests({
+    log: log as NutritionLog,
+    ...(prefs !== undefined ? { prefs: prefs as NutritionPrefs } : {}),
+  });
+}
+
 // ── Pure helper tests — no mocks needed ───────────────────────────────────────
 
 describe("aggregateFizruk", () => {
-  // These tests import the function after mocks are set up
-  it("returns null when there are no workouts in LS", async () => {
-    mockSafeReadLS.mockReturnValue(null);
+  beforeEach(clearFizrukSqliteCache);
+  afterEach(clearFizrukSqliteCache);
+
+  it("returns null when the fizruk cache is cold / empty", async () => {
+    // Cold cache (refreshedAt === null) → the digest treats it as no data.
     const { aggregateFizruk } = await import("./useWeeklyDigest");
     expect(aggregateFizruk("2025-04-07")).toBeNull();
   });
 
   it("counts only workouts in the target week (endedAt required)", async () => {
-    mockSafeReadLS.mockImplementation((key: string) => {
-      if (key === "fizruk_workouts_v1") {
-        return [
-          // у тижні 2025-04-07..2025-04-13
-          {
-            startedAt: "2025-04-08T10:00:00",
-            endedAt: "2025-04-08T11:00:00",
-            exercises: [{ name: "Bench", sets: [{ weight: 80, reps: 5 }] }],
-          },
-          // без endedAt — in-progress, не рахується
-          { startedAt: "2025-04-09T07:00:00", endedAt: null },
-          // поза тижнем
-          {
-            startedAt: "2025-04-01T10:00:00",
-            endedAt: "2025-04-01T11:00:00",
-            exercises: [],
-          },
-        ];
-      }
-      return null;
-    });
+    seedFizruk([
+      // у тижні 2025-04-07..2025-04-13
+      {
+        startedAt: "2025-04-08T10:00:00",
+        endedAt: "2025-04-08T11:00:00",
+        items: [{ nameUk: "Bench", sets: [{ weightKg: 80, reps: 5 }] }],
+      },
+      // без endedAt — in-progress, не рахується
+      { startedAt: "2025-04-09T07:00:00", endedAt: null },
+      // поза тижнем
+      {
+        startedAt: "2025-04-01T10:00:00",
+        endedAt: "2025-04-01T11:00:00",
+        items: [],
+      },
+    ]);
 
     const { aggregateFizruk } = await import("./useWeeklyDigest");
     const result = aggregateFizruk("2025-04-07");
@@ -207,21 +275,14 @@ describe("aggregateFizruk", () => {
     expect(result!.topExercises).toEqual([{ name: "Bench", totalVolume: 400 }]);
   });
 
-  it("handles wrapped fizruk shape `{ workouts: […] }`", async () => {
-    mockSafeReadLS.mockImplementation((key: string) => {
-      if (key === "fizruk_workouts_v1") {
-        return {
-          workouts: [
-            {
-              startedAt: "2025-04-10T10:00:00",
-              endedAt: "2025-04-10T11:00:00",
-              exercises: [],
-            },
-          ],
-        };
-      }
-      return null;
-    });
+  it("reads workouts from the warm SQLite cache", async () => {
+    seedFizruk([
+      {
+        startedAt: "2025-04-10T10:00:00",
+        endedAt: "2025-04-10T11:00:00",
+        items: [],
+      },
+    ]);
 
     const { aggregateFizruk } = await import("./useWeeklyDigest");
     const result = aggregateFizruk("2025-04-07");
@@ -232,32 +293,32 @@ describe("aggregateFizruk", () => {
 });
 
 describe("aggregateNutrition", () => {
+  beforeEach(clearNutritionSqliteCache);
+  afterEach(clearNutritionSqliteCache);
+
   it("returns null when no meals logged in the week", async () => {
-    mockSafeReadLS.mockReturnValue({});
     const { aggregateNutrition } = await import("./useWeeklyDigest");
     expect(aggregateNutrition("2025-04-07")).toBeNull();
   });
 
   it("averages macros over days with data (not over all 7 days)", async () => {
-    const log = {
-      "2025-04-07": {
-        meals: [
-          { macros: { kcal: 600, protein_g: 30, fat_g: 20, carbs_g: 80 } },
-          { macros: { kcal: 400, protein_g: 20, fat_g: 10, carbs_g: 60 } },
-        ],
+    seedNutrition(
+      {
+        "2025-04-07": {
+          meals: [
+            { macros: { kcal: 600, protein_g: 30, fat_g: 20, carbs_g: 80 } },
+            { macros: { kcal: 400, protein_g: 20, fat_g: 10, carbs_g: 60 } },
+          ],
+        },
+        "2025-04-09": {
+          meals: [
+            { macros: { kcal: 1500, protein_g: 60, fat_g: 40, carbs_g: 200 } },
+          ],
+        },
+        // дні без даних не потрапляють у знаменник
       },
-      "2025-04-09": {
-        meals: [
-          { macros: { kcal: 1500, protein_g: 60, fat_g: 40, carbs_g: 200 } },
-        ],
-      },
-      // дні без даних не потрапляють у знаменник
-    };
-    mockSafeReadLS.mockImplementation((key: string) => {
-      if (key === "nutrition_log_v1") return log;
-      if (key === "nutrition_prefs_v1") return { dailyTargetKcal: 2000 };
-      return null;
-    });
+      { dailyTargetKcal: 2000 },
+    );
 
     const { aggregateNutrition } = await import("./useWeeklyDigest");
     const result = aggregateNutrition("2025-04-07");
