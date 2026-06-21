@@ -919,7 +919,7 @@
 - [type-fest@5.6.0](https://github.com/sindresorhus/type-fest#readme) - (MIT OR CC0-1.0)
 - [type-is@1.6.18](https://github.com/jshttp/type-is#readme) - MIT
 - [ua-parser-js@1.0.41](https://uaparser.dev) - MIT
-- [undici@6.25.0](https://undici.nodejs.org) - MIT
+- [undici@6.27.0](https://undici.nodejs.org) - MIT
 - [undici@7.28.0](https://undici.nodejs.org) - MIT
 - [undici-types@6.21.0](https://undici.nodejs.org) - MIT
 - [unicode-canonical-property-names-ecmascript@2.0.1](https://github.com/mathiasbynens/unicode-canonical-property-names-ecmascript) - MIT
