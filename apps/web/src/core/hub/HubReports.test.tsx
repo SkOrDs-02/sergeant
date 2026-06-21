@@ -105,9 +105,10 @@ describe("HubReports — render smoke (F23)", () => {
   it("hides WeeklyDigestCard when switching to month period", async () => {
     render(<HubReports />);
 
-    // Switch to 'Місяць'
+    // Switch to 'Місяць' — the period selector is a `Segmented` control
+    // (role="tablist" with role="tab" segments), not plain buttons.
     await act(async () => {
-      screen.getByRole("button", { name: "Місяць" }).click();
+      screen.getByRole("tab", { name: "Місяць" }).click();
     });
 
     expect(
@@ -190,7 +191,7 @@ describe("HubReports — render smoke (F23)", () => {
     render(<HubReports />);
 
     act(() => {
-      screen.getByRole("button", { name: "Місяць" }).click();
+      screen.getByRole("tab", { name: "Місяць" }).click();
     });
 
     expect(
