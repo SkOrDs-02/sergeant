@@ -1,4 +1,8 @@
 import { ls, lsSet } from "../../hubChatUtils";
+import {
+  loadNutritionPrefs,
+  persistNutritionPrefs,
+} from "@nutrition/lib/nutritionStorage";
 import type { ConvertUnitsAction, SetGoalAction } from "../types";
 
 export function setGoal(action: SetGoalAction): string {
@@ -44,9 +48,10 @@ export function setGoal(action: SetGoalAction): string {
     if (Number.isFinite(dk) && dk > 0) {
       goal.dailyKcal = dk;
       parts.push(`калорії: ${dk} ккал/день`);
-      const prefs = ls<Record<string, unknown>>("nutrition_prefs_v1", {});
-      prefs["dailyTargetKcal"] = dk;
-      lsSet("nutrition_prefs_v1", prefs);
+      // Persist the kcal target through the canonical nutrition store
+      // (dual-writes to SQLite). The legacy `nutrition_prefs_v1` LS key is
+      // tombstoned — writing it raw never reached the module UI.
+      persistNutritionPrefs({ ...loadNutritionPrefs(), dailyTargetKcal: dk });
     }
   }
   if (workouts_per_week != null) {

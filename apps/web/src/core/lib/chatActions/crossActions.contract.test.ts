@@ -96,8 +96,10 @@ describe("set_goal", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("2000");
-    const prefs = JSON.parse(localStorage.getItem("nutrition_prefs_v1")!);
-    expect(prefs.dailyTargetKcal).toBe(2000);
+    // The kcal target now persists through the canonical nutrition store
+    // (persistNutritionPrefs → SQLite), not the tombstoned `nutrition_prefs_v1`
+    // LS key — assert the dead key is no longer written.
+    expect(localStorage.getItem("nutrition_prefs_v1")).toBeNull();
   });
 
   it("error: missing description returns error", () => {

@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { handleQueryNutritionAction } from "./queryNutritionActions";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "../../../modules/nutrition/lib/sqliteReader";
 import type { ChatAction } from "./types";
 
 beforeEach(() => {
@@ -10,6 +14,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   localStorage.clear();
+  clearNutritionSqliteCache();
   vi.useRealTimers();
 });
 
@@ -30,13 +35,15 @@ function meal(name: string, kcal: number, protein = 0, fat = 0, carbs = 0) {
   };
 }
 
-/** Seed `nutrition_log_v1` as Record<dayKey, { meals }>. */
+/** Seed the canonical nutrition SQLite warm cache (readLog reads it). */
 function seedLog(byDay: Record<string, ReturnType<typeof meal>[]>): void {
   const log: Record<string, { meals: ReturnType<typeof meal>[] }> = {};
   for (const [day, meals] of Object.entries(byDay)) {
     log[day] = { meals };
   }
-  localStorage.setItem("nutrition_log_v1", JSON.stringify(log));
+  __setNutritionSqliteCacheForTests({
+    log,
+  } as unknown as Parameters<typeof __setNutritionSqliteCacheForTests>[0]);
 }
 
 // ---------------------------------------------------------------------------

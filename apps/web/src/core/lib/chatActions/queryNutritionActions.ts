@@ -1,5 +1,5 @@
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { ls } from "../hubChatUtils";
+import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
 import type {
   ChatAction,
   ChatActionResult,
@@ -92,8 +92,10 @@ function resolveRange(
 }
 
 function readLog(): Record<string, NutritionDay> {
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key -- chat-action executors run outside React, so the canonical nutrition hooks (`useNutritionLog`) are unavailable; the `STORAGE_KEYS.NUTRITION_*` constant is itself banned for direct access (no-restricted-syntax, PR #034). Read-only mirror of the sibling query executors.
-  return ls<Record<string, NutritionDay>>("nutrition_log_v1", {});
+  // Canonical meal log — SQLite warm cache (`nutrition_log_v1` is tombstoned
+  // and drained on boot). Mirrors recommendationEngine / briefingHandlers,
+  // which also read via the nutritionStorage wrappers, not the dead LS key.
+  return loadNutritionLog();
 }
 
 /** Flattened meals within `[from, to]`, each tagged with its day key. */

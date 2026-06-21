@@ -7,7 +7,8 @@ import type { Dispatch, SetStateAction } from "react";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { NutritionEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
-import { estimateLogBytes, toLocalISODate } from "../lib/nutritionStorage";
+import { estimateLogBytes } from "../lib/nutritionStorage";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
   addDaysISODate,
   type Meal,
@@ -32,12 +33,8 @@ interface LogCardProps {
   onTrimLog?: (keepDays: number) => void;
 }
 
-function toISODate(d: Date): string {
-  return toLocalISODate(d);
-}
-
 function formatDate(isoDate: string): string {
-  const today = toISODate(new Date());
+  const today = getKyivDayKey();
   const yesterday = addDaysISODate(today, -1);
   const tomorrow = addDaysISODate(today, 1);
   if (isoDate === today) return "Сьогодні";
