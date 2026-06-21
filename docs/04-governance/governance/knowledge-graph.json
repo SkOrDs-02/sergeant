@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-18",
+  "generated_at": "2026-06-21",
   "counts": {
-    "adr": 63,
+    "adr": 64,
     "audit": 15,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
-    "pr": 206,
+    "pr": 211,
     "skill": 23
   },
   "nodes": [
@@ -716,6 +716,18 @@
       }
     },
     {
+      "id": "adr:0067",
+      "type": "adr",
+      "title": "ADR-0067: Standardize Hub engagement mechanisms (signals / reminders / dismiss-state)",
+      "path": "docs/04-governance/adr/0067-engagement-mechanism-standardization.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 67,
+        "last_validated": "2026-06-19"
+      }
+    },
+    {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
       "type": "audit",
       "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
@@ -756,7 +768,7 @@
       "type": "audit",
       "title": "Page Audit — Hub Chat, Search & Backup panel",
       "path": "docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md",
-      "status": "Active",
+      "status": "Closed — 2026-06-19: усі знахідки верифіковано реалізованими/закритими в коді (reconciliation).",
       "tier": "core",
       "meta": {}
     },
@@ -765,7 +777,7 @@
       "type": "audit",
       "title": "Page Audit — Fizruk module Part 2 (Progress, Measurements, Programs, Body)",
       "path": "docs/90-work/audits/2026-05-13-page-audit-07-fizruk-part2.md",
-      "status": "Active",
+      "status": "Closed — 2026-06-19: усі знахідки верифіковано реалізованими/закритими в коді (reconciliation).",
       "tier": "core",
       "meta": {}
     },
@@ -774,7 +786,7 @@
       "type": "audit",
       "title": "Page Audit — Nutrition module — 4 pages (start/pantry/log/menu)",
       "path": "docs/90-work/audits/2026-05-13-page-audit-08-nutrition.md",
-      "status": "Active",
+      "status": "Closed — 2026-06-19: усі знахідки закриті або в tracked burn-down (reconciliation).",
       "tier": "core",
       "meta": {}
     },
@@ -3912,6 +3924,46 @@
       }
     },
     {
+      "id": "pr:3653",
+      "type": "pr",
+      "title": "PR #3653",
+      "tier": "extended",
+      "meta": {
+        "number": 3653,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3653"
+      }
+    },
+    {
+      "id": "pr:3654",
+      "type": "pr",
+      "title": "PR #3654",
+      "tier": "extended",
+      "meta": {
+        "number": 3654,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3654"
+      }
+    },
+    {
+      "id": "pr:3655",
+      "type": "pr",
+      "title": "PR #3655",
+      "tier": "extended",
+      "meta": {
+        "number": 3655,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3655"
+      }
+    },
+    {
+      "id": "pr:3656",
+      "type": "pr",
+      "title": "PR #3656",
+      "tier": "extended",
+      "meta": {
+        "number": 3656,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3656"
+      }
+    },
+    {
       "id": "pr:369",
       "type": "pr",
       "title": "PR #369",
@@ -4119,6 +4171,16 @@
       "meta": {
         "number": 743,
         "url": "https://github.com/Skords-01/Sergeant/pull/743"
+      }
+    },
+    {
+      "id": "pr:75",
+      "type": "pr",
+      "title": "PR #75",
+      "tier": "extended",
+      "meta": {
+        "number": 75,
+        "url": "https://github.com/Skords-01/Sergeant/pull/75"
       }
     },
     {
@@ -4987,6 +5049,46 @@
       "from": "adr:0066",
       "to": "hard-rule:25",
       "type": "references"
+    },
+    {
+      "from": "adr:0067",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "adr:0067",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "adr:0067",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "adr:0067",
+      "to": "pr:3653",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0067",
+      "to": "pr:3654",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0067",
+      "to": "pr:3655",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0067",
+      "to": "pr:3656",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0067",
+      "to": "pr:75",
+      "type": "touched-by"
     },
     {
       "from": "audit:2026-05-06-ux-roast-pr-plan",

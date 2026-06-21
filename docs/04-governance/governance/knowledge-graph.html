@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-06-18)</title>
+    <title>Sergeant — Knowledge Graph (2026-06-21)</title>
     <style>
       body {
         font-family:
@@ -97,21 +97,21 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-06-18 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-06-21 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
-      <span class="chip chip-adr">adr: <b>63</b></span>
+      <span class="chip chip-adr">adr: <b>64</b></span>
       <span class="chip chip-audit">audit: <b>15</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>51</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
-      <span class="chip chip-pr">pr: <b>206</b></span>
+      <span class="chip chip-pr">pr: <b>211</b></span>
       <span class="chip chip-skill">skill: <b>23</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (232 core)</summary>
+      <summary>Nodes (233 core)</summary>
       <table>
         <thead>
           <tr>
@@ -907,6 +907,19 @@
             <td>number=66 · last_validated=2026-06-14</td>
           </tr>
           <tr>
+            <td>adr</td>
+            <td><code>adr:0067</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0067-engagement-mechanism-standardization.md"
+                >ADR-0067: Standardize Hub engagement mechanisms (signals /
+                reminders / dismiss-state)</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=67 · last_validated=2026-06-19</td>
+          </tr>
+          <tr>
             <td>audit</td>
             <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
             <td>
@@ -970,7 +983,10 @@
                 >Page Audit — Hub Chat, Search &amp; Backup panel</a
               >
             </td>
-            <td>Active</td>
+            <td>
+              Closed — 2026-06-19: усі знахідки верифіковано
+              реалізованими/закритими в коді (reconciliation).
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -983,7 +999,10 @@
                 Programs, Body)</a
               >
             </td>
-            <td>Active</td>
+            <td>
+              Closed — 2026-06-19: усі знахідки верифіковано
+              реалізованими/закритими в коді (reconciliation).
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -996,7 +1015,10 @@
                 (start/pantry/log/menu)</a
               >
             </td>
-            <td>Active</td>
+            <td>
+              Closed — 2026-06-19: усі знахідки закриті або в tracked burn-down
+              (reconciliation).
+            </td>
             <td></td>
           </tr>
           <tr>
@@ -3563,7 +3585,7 @@
     </details>
 
     <details>
-      <summary>Edges (417 total, first 500 core-to-core)</summary>
+      <summary>Edges (425 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -3717,6 +3739,21 @@
             <td><code>adr:0066</code></td>
             <td>references</td>
             <td><code>hard-rule:25</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0067</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0067</code></td>
+            <td>references</td>
+            <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0067</code></td>
+            <td>references</td>
+            <td><code>hard-rule:2</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
