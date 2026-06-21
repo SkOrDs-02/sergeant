@@ -17,16 +17,20 @@ import { safeReadLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
+import {
+  getKyivDateParts,
+  getKyivDayKey,
+  getKyivWeekStart,
+  getKyivWeekStartKey,
+  parseKyivDate,
+} from "@shared/lib/time/kyivTime";
 import type { IconName } from "@shared/components/ui/Icon";
 
-/* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
-   prefer-kyiv-time: this cross-module insights engine intentionally reads the
-   host-local wall clock for every week / month bucket (best-workout-day,
-   habit-month, active-weeks); on the Kyiv host the wall clock IS Kyiv. Kyiv-
-   anchoring is tracked burn-down (2026-Q3), out of scope for the tombstone
-   read-side fix. no-non-null-assertion: pre-existing guarded index accesses
-   (`dowCount[i]!`, `monthDone[mk]!`, `completions[h.id]!` after array / length
-   guards). Mirrors recommendationEngine.ts / briefingHandlers.ts. */
+/* eslint-disable @typescript-eslint/no-non-null-assertion --
+   pre-existing guarded index accesses (`dowCount[i]!`, `monthDone[mk]!`,
+   `completions[h.id]!` after array / length guards). Day / week / month
+   bucketing is Kyiv-anchored via the @shared/lib/time/kyivTime helpers
+   (domain invariant: Europe/Kyiv day boundaries). */
 
 export interface Insight {
   id: string;
@@ -51,10 +55,6 @@ interface Transaction {
 
 function safeLS<T>(key: string, fallback: T): T {
   return safeReadLS<T>(key, fallback) ?? fallback;
-}
-
-function localDateKey(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function parseFizrukWorkouts(): Workout[] {
@@ -104,7 +104,7 @@ function workoutDayInsight(): Insight | null {
 
   const dowCount = Array<number>(7).fill(0);
   for (const w of workouts) {
-    dowCount[new Date(w.startedAt).getDay()]!++;
+    dowCount[getKyivDateParts(new Date(w.startedAt)).weekday]!++;
   }
 
   const maxCount = Math.max(...dowCount);
@@ -151,29 +151,28 @@ function activeWeeksSpendingInsight(): Insight | null {
 
   if (workouts.length < 6) return null;
 
-  const now = new Date();
-  const mondayOffset = (now.getDay() + 6) % 7;
+  const DAY_MS = 86_400_000;
+  const nowMs = Date.now();
 
   const weekStats: Array<{ wCount: number; spending: number }> = [];
   for (let i = 0; i < 16; i++) {
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - mondayOffset - i * 7);
-    mon.setHours(0, 0, 0, 0);
-    const sun = new Date(mon);
-    sun.setDate(mon.getDate() + 6);
-    sun.setHours(23, 59, 59, 999);
+    // Kyiv-anchored Monday→Monday window (half-open). getKyivWeekStart is
+    // DST-safe; the +8d probe lands firmly in the next week before snapping.
+    const weekStartMs = getKyivWeekStart(nowMs - i * 7 * DAY_MS).getTime();
+    const nextWeekStartMs = getKyivWeekStart(
+      weekStartMs + 8 * DAY_MS,
+    ).getTime();
+    const inWeek = (ms: number) => ms >= weekStartMs && ms < nextWeekStartMs;
 
-    const wCount = workouts.filter((w) => {
-      const d = new Date(w.startedAt);
-      return d >= mon && d <= sun;
-    }).length;
+    const wCount = workouts.filter((w) =>
+      inWeek(new Date(w.startedAt).getTime()),
+    ).length;
 
     const spending = txs
       .filter((tx) => {
         if (hiddenSet.has(tx.id) || transferIds.has(tx.id)) return false;
         const ts = tx.time > 1e10 ? tx.time : tx.time * 1000;
-        const d = new Date(ts);
-        return d >= mon && d <= sun && (tx.amount ?? 0) < 0;
+        return inWeek(ts) && (tx.amount ?? 0) < 0;
       })
       .reduce((s, tx) => s + getTxStatAmount(tx, txSplits), 0);
 
@@ -237,11 +236,8 @@ function bestHabitMonthInsight(): Insight | null {
     for (const dk of completions[h.id] || []) {
       monthDone[dk.slice(0, 7)] = (monthDone[dk.slice(0, 7)] || 0) + 1;
       totalCompletions++;
-      const d = new Date(dk);
-      const dow = (d.getDay() + 6) % 7;
-      const mon = new Date(d);
-      mon.setDate(d.getDate() - dow);
-      weekKeys.add(localDateKey(mon));
+      const parsed = parseKyivDate(dk);
+      if (parsed) weekKeys.add(getKyivWeekStartKey(parsed));
     }
   }
 
@@ -255,7 +251,7 @@ function bestHabitMonthInsight(): Insight | null {
 
   for (const mk of months) {
     const [y, m] = mk.split("-").map(Number);
-    const daysInMonth = new Date(y!, m!, 0).getDate();
+    const daysInMonth = new Date(Date.UTC(y!, m!, 0)).getUTCDate();
     const total = habits.length * daysInMonth;
     if (total === 0) continue;
     const pct = Math.round((monthDone[mk]! / total) * 100);
@@ -289,7 +285,7 @@ function workoutKcalInsight(): Insight | null {
   const log = loadNutritionLog();
 
   const workoutDays = new Set<string>(
-    workouts.map((w) => localDateKey(new Date(w.startedAt))),
+    workouts.map((w) => getKyivDayKey(new Date(w.startedAt))),
   );
 
   const kcalWorkout: number[] = [];
@@ -344,20 +340,18 @@ function habitWeeksKcalInsight(): Insight | null {
   const completions = state.completions || {};
   if (habits.length === 0) return null;
 
-  const now = new Date();
-  const mondayOffset = (now.getDay() + 6) % 7;
+  const DAY_MS = 86_400_000;
+  const nowMs = Date.now();
   const weekStats: Array<{ habitPct: number; avgKcal: number }> = [];
 
   for (let i = 0; i < 16; i++) {
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - mondayOffset - i * 7);
-    mon.setHours(0, 0, 0, 0);
+    // Kyiv-anchored Monday start; build the 7 day keys from a midday probe of
+    // each day so a DST transition inside the week can't drift the key.
+    const weekStartMs = getKyivWeekStart(nowMs - i * 7 * DAY_MS).getTime();
 
     const dates: string[] = [];
     for (let d = 0; d < 7; d++) {
-      const dt = new Date(mon);
-      dt.setDate(mon.getDate() + d);
-      dates.push(localDateKey(dt));
+      dates.push(getKyivDayKey(weekStartMs + (d * 24 + 12) * 3_600_000));
     }
 
     let habitDone = 0;

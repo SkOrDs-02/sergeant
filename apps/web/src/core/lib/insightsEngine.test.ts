@@ -99,6 +99,28 @@ describe("generateInsights", () => {
     expect(typeof ins!.stat).toBe("string");
   });
 
+  it("workoutDayInsight: бакетує день за київським часом, не UTC", () => {
+    // 22:30 UTC у неділю 2025-06-22 = 01:30 понеділка в Києві (літо, UTC+3).
+    // На UTC-хості (CI) старий getDay() дав би «Неділя» — Kyiv-anchoring
+    // має стабільно давати «Понеділок» незалежно від часового поясу раннера.
+    const DAY = 86_400_000;
+    const base = Date.UTC(2025, 5, 22, 22, 30); // нд 22:30 UTC
+    const workouts = Array.from({ length: 22 }, (_, i) => {
+      const start = base + i * 7 * DAY;
+      return {
+        id: `kw${i}`,
+        startedAt: new Date(start).toISOString(),
+        endedAt: new Date(start + 3_600_000).toISOString(),
+        items: [],
+      };
+    });
+    seedFizruk(workouts);
+    const result = generateInsights();
+    const ins = result.find((r) => r.id === "best_workout_day");
+    expect(ins).toBeDefined();
+    expect(ins!.stat).toBe("Понеділок");
+  });
+
   it("не дублює id інсайтів", () => {
     seedFizruk(makeWorkouts(25, 1));
     const result = generateInsights();

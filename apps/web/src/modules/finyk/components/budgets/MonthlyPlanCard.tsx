@@ -181,7 +181,7 @@ function MonthlyPlanCardComponent({
                     : "text-danger-strong/80 dark:text-danger/80",
                 )}
               >
-                −{fmt(totalExpenseFact)}
+                {totalExpenseFact > 0 ? `−${fmt(totalExpenseFact)}` : "—"}
               </div>
               <div
                 className={cn(
@@ -208,7 +208,9 @@ function MonthlyPlanCardComponent({
                     : "text-danger-strong dark:text-danger",
                 )}
               >
-                {fmtSigned(factSavings)}
+                {planSavings > 0 || factSavings !== 0
+                  ? fmtSigned(factSavings)
+                  : "—"}
               </div>
               <div
                 className={cn(

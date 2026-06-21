@@ -18,7 +18,7 @@ interface FizrukReminderState {
   days: Record<string, unknown>;
 }
 
-export function sendFizrukStateToSW(state: FizrukReminderState): void {
+function sendFizrukStateToSW(state: FizrukReminderState): void {
   try {
     if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller)
       return;

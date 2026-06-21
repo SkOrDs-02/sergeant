@@ -128,6 +128,25 @@ export async function showReminderNotification(
   }
 }
 
+/**
+ * Requests OS notification permission. Notification permission is per-origin
+ * (shared across the whole app), so every module reminder toggle routes through
+ * this single request rather than keeping a per-module copy.
+ */
+export async function requestNotificationPermission(): Promise<
+  NotificationPermission | "unsupported"
+> {
+  if (typeof Notification === "undefined") return "unsupported";
+  if (Notification.permission === "granted") return "granted";
+  if (Notification.permission === "denied") return "denied";
+  try {
+    return await Notification.requestPermission();
+  } catch (err) {
+    logger.warn("[module-reminder] request-permission-failed", err);
+    return "denied";
+  }
+}
+
 // ── Per-minute scheduler ────────────────────────────────────────────────────
 
 export interface ModuleReminderTick {

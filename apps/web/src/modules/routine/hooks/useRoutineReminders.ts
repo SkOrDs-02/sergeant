@@ -120,15 +120,3 @@ export function useRoutineReminders(routine: RoutineState): void {
 
   useModuleReminder({ enabled, onMinuteTick });
 }
-
-export async function requestRoutineNotificationPermission() {
-  if (typeof Notification === "undefined") return "unsupported";
-  if (Notification.permission === "granted") return "granted";
-  if (Notification.permission === "denied") return "denied";
-  try {
-    return await Notification.requestPermission();
-  } catch (err) {
-    logger.warn("[routine.reminders] request-permission-failed", err);
-    return "denied";
-  }
-}

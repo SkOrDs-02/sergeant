@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
-import { requestRoutineNotificationPermission } from "../../modules/routine/hooks/useRoutineReminders";
+import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
 import { useMonthlyPlan } from "../../modules/fizruk/hooks/useMonthlyPlan";
 import {
@@ -62,7 +62,7 @@ export function NotificationsSection() {
 
   const handleRoutineToggle = async (checked: boolean) => {
     if (checked) {
-      const perm = await requestRoutineNotificationPermission();
+      const perm = await requestNotificationPermission();
       setPermStatus(perm);
       if (perm !== "granted") {
         toastWarning(
@@ -76,7 +76,7 @@ export function NotificationsSection() {
 
   const handleFizrukToggle = async (checked: boolean) => {
     if (checked && permStatus !== "granted") {
-      const perm = await requestRoutineNotificationPermission();
+      const perm = await requestNotificationPermission();
       setPermStatus(perm);
       if (perm !== "granted") {
         toastWarning(
@@ -90,7 +90,7 @@ export function NotificationsSection() {
 
   const handleNutritionToggle = async (checked: boolean) => {
     if (checked && permStatus !== "granted") {
-      const perm = await requestRoutineNotificationPermission();
+      const perm = await requestNotificationPermission();
       setPermStatus(perm);
       if (perm !== "granted") {
         toastWarning(
