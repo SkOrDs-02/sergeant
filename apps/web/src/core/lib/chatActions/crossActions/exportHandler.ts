@@ -1,5 +1,10 @@
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
+import {
+  loadNutritionLog,
+  loadNutritionPrefs,
+} from "../../../../modules/nutrition/lib/nutritionStorage";
+import { readFizrukWorkouts } from "../fizrukActions/shared";
 import type { ExportModuleDataAction } from "../types";
 
 export function exportModuleData(action: ExportModuleDataAction): string {
@@ -37,7 +42,9 @@ export function exportModuleData(action: ExportModuleDataAction): string {
     }
     case "fizruk": {
       const parts: string[] = ["Експорт Фізрук:"];
-      parts.push(exportData("fizruk_workouts_v1", "Тренування"));
+      // `fizruk_workouts_v1` is tombstoned — read the canonical SQLite list.
+      // `fizruk_daily_log_v1` is still LS-backed (not tombstoned).
+      parts.push(exportValue(readFizrukWorkouts(), "Тренування"));
       parts.push(exportData("fizruk_daily_log_v1", "Щоденний журнал"));
       return parts.join("\n");
     }
@@ -50,8 +57,9 @@ export function exportModuleData(action: ExportModuleDataAction): string {
     }
     case "nutrition": {
       const parts: string[] = ["Експорт Харчування:"];
-      parts.push(exportData("nutrition_log_v1", "Журнал їжі"));
-      parts.push(exportData("nutrition_prefs_v1", "Налаштування"));
+      // `nutrition_log_v1` / `nutrition_prefs_v1` are tombstoned — read canonical.
+      parts.push(exportValue(loadNutritionLog(), "Журнал їжі"));
+      parts.push(exportValue(loadNutritionPrefs(), "Налаштування"));
       return parts.join("\n");
     }
     default:

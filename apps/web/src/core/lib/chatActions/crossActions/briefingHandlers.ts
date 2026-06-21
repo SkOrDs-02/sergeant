@@ -1,14 +1,14 @@
 /* eslint-disable sergeant-design/no-raw-storage-key, sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
-   Cross-module briefing executor (outside React): routine now reads the
-   canonical SQLite state via `loadRoutineState()`; fizruk / nutrition /
-   bank-cache reads stay on LS (out of this migration's scope). The
+   Cross-module briefing executor (outside React): routine / fizruk / nutrition
+   now read canonical SQLite state (loadRoutineState / readFizrukWorkouts /
+   loadNutritionLog); only the finyk tx-cache stays on LS (not tombstoned). The
    host-local day-key and non-null assertions are pre-existing. Raw-key
    burndown tracked for 2026-Q3. */
 import { ls } from "../../hubChatUtils";
-import { safeReadLS } from "@shared/lib/storage/storage";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
-import type { NutritionDay, Workout } from "../types";
+import { loadNutritionLog } from "../../../../modules/nutrition/lib/nutritionStorage";
+import { readFizrukWorkouts } from "../fizrukActions/shared";
 
 export function morningBriefing(): string {
   const now = new Date();
@@ -31,21 +31,15 @@ export function morningBriefing(): string {
     );
     parts.push(`Звички: ${done.length}/${activeHabits.length} виконано`);
   }
-  const wParsed = safeReadLS<Workout[] | { workouts?: Workout[] } | null>(
-    "fizruk_workouts_v1",
-    null,
-  );
-  let workouts: Workout[] = [];
-  if (Array.isArray(wParsed)) workouts = wParsed;
-  else if (wParsed && Array.isArray(wParsed.workouts))
-    workouts = wParsed.workouts;
+  const workouts = readFizrukWorkouts();
   const todayWorkouts = workouts.filter(
-    (w) => w.startedAt.startsWith(todayKey) && w.planned && !w.endedAt,
+    (w) =>
+      w.startedAt.startsWith(todayKey) && w["planned"] === true && !w.endedAt,
   );
   if (todayWorkouts.length > 0) {
     parts.push(`Заплановано тренувань: ${todayWorkouts.length}`);
   }
-  const nutritionLog = ls<Record<string, NutritionDay>>("nutrition_log_v1", {});
+  const nutritionLog = loadNutritionLog();
   const todayMeals = nutritionLog[todayKey]?.meals || [];
   const todayKcal = todayMeals.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
   if (todayKcal > 0) {
@@ -59,14 +53,7 @@ export function weeklySummary(): string {
   const weekAgo = new Date(now);
   weekAgo.setDate(weekAgo.getDate() - 7);
   const parts: string[] = ["Тижневий підсумок:"];
-  const wParsed = safeReadLS<Workout[] | { workouts?: Workout[] } | null>(
-    "fizruk_workouts_v1",
-    null,
-  );
-  let workouts: Workout[] = [];
-  if (Array.isArray(wParsed)) workouts = wParsed;
-  else if (wParsed && Array.isArray(wParsed.workouts))
-    workouts = wParsed.workouts;
+  const workouts = readFizrukWorkouts();
   const weekWorkouts = workouts.filter(
     (w) => w.endedAt && new Date(w.startedAt).getTime() > weekAgo.getTime(),
   );
@@ -76,7 +63,11 @@ export function weeklySummary(): string {
       total +
       w.items.reduce(
         (s, item) =>
-          s + item.sets.reduce((ss, set) => ss + set.weightKg * set.reps, 0),
+          s +
+          (item.sets ?? []).reduce(
+            (ss, set) => ss + set.weightKg * set.reps,
+            0,
+          ),
         0,
       ),
     0,
@@ -106,7 +97,7 @@ export function weeklySummary(): string {
       totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0;
     parts.push(`Звички: ${pct}% (${totalDone}/${totalPossible})`);
   }
-  const nutritionLog = ls<Record<string, NutritionDay>>("nutrition_log_v1", {});
+  const nutritionLog = loadNutritionLog();
   const weekKcal: number[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(now);
