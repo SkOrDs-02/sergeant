@@ -28,6 +28,7 @@ import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
 import { useNutritionDualWriteBoot } from "../../modules/nutrition/hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "../../modules/nutrition/hooks/useNutritionSqliteReadBoot";
+import { useFinykDualWriteBoot } from "../../modules/finyk/hooks/useFinykDualWriteBoot";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 
 // Side-effect-only child rendered exclusively for authenticated users.
@@ -40,6 +41,20 @@ function AuthenticatedNutritionBoot() {
 function NutritionBootGate() {
   const { user } = useAuth();
   return user ? <AuthenticatedNutritionBoot /> : null;
+}
+
+// Installs the Finyk dual-write CONTEXT app-wide (not just on the Finyk
+// screen) so the hub AI assistant's chat-action mutators can mirror writes
+// into the canonical SQLite store from anywhere. The Finyk SQLite read
+// overlay + Mono mirror stay screen-scoped inside `useStorage`.
+function AuthenticatedFinykBoot() {
+  useFinykDualWriteBoot();
+  return null;
+}
+
+function FinykBootGate() {
+  const { user } = useAuth();
+  return user ? <AuthenticatedFinykBoot /> : null;
 }
 
 /**
@@ -69,6 +84,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         }}
       />
       <NutritionBootGate />
+      <FinykBootGate />
       {children}
       <HubChatOverlay />
     </>

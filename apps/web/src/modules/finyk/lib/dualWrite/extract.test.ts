@@ -1,8 +1,10 @@
 // Pure-extractor `extractFinykDualWriteState`: маппінг `FinykStorageSlots`
-// у форму `FinykDualWriteState` для diff-шару. Усі допоміжні
+// у форму `FinykDualWriteState` для diff-шару. Допоміжні
 // `blobsFromArray`, `idsFromArray`, `txCatsFromMap`, `txSplitsFromMap`,
-// `monoDebtLinksFromMap`, `networthHistoryFrom`, `serializeStringArray` —
-// приватні, тестуємо через єдиний експорт. Без LS / window / SQLite.
+// `monoDebtLinksFromMap`, `networthHistoryFrom` тепер експортовані (для
+// chat-action bridge), але тут ми тестуємо їх через `extractFinykDualWriteState`
+// — поведінка незмінна. `serializeStringArray` лишається приватним. Без
+// LS / window / SQLite.
 
 import { describe, expect, it, vi } from "vitest";
 

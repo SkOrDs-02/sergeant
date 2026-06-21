@@ -1,12 +1,11 @@
 /* eslint-disable sergeant-design/no-raw-storage-key, sergeant-design/prefer-kyiv-time --
-   Chat-action executor (outside React): the bank tx cache stays on LS
-   (no SQLite canon) and the `finyk_tx_cats` write is mirrored into SQLite
-   (see `triggerTxCategorySqliteMirror`). The host-local date parts in
-   `toIsoDay` are pre-existing display/parse code. Raw-key burndown: 2026-Q3. */
-import { ls, lsSet } from "../../hubChatUtils";
+   Chat-action executors run outside React; storage key strings are used
+   directly here. Same pattern as queryFinykActions.ts. The host-local date
+   parts in `toIsoDay` are pre-existing display/parse code. */
+import { ls } from "../../hubChatUtils";
+import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
-import { triggerTxCategorySqliteMirror } from "../../../../modules/finyk/lib/dualWrite";
 import type {
   BatchCategorizeAction,
   ChangeCategoryAction,
@@ -48,6 +47,7 @@ export function toIsoDay(value: unknown): string {
   if (typeof value === "number" && Number.isFinite(value)) {
     const ms = value > 10_000_000_000 ? value : value * 1000;
     const date = new Date(ms);
+    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- formatting an already-fixed server timestamp, not reading "today"
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   }
   return "";
@@ -202,13 +202,7 @@ export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
   const { tx_id, category_id } = action.input;
   const cats = ls<Record<string, string>>("finyk_tx_cats", {});
   cats[tx_id] = category_id;
-  lsSet("finyk_tx_cats", cats);
-  // Mirror into the canonical SQLite `finyk_tx_categories` table — the
-  // migrated category read (here + financeAnalytics) overlays from
-  // SQLite, so an LS-only write would be invisible.
-  triggerTxCategorySqliteMirror([
-    { transactionId: tx_id, categoryId: category_id },
-  ]);
+  finykChatWrite("finyk_tx_cats", cats);
   const customC = getCachedFinykSqliteState().customCategories;
   const cat = resolveExpenseCategoryMeta(category_id, customC);
   return `Категорію транзакції ${tx_id} змінено на ${cat?.label || category_id}`;
@@ -285,11 +279,6 @@ export function batchCategorize(
   }
   const cats = ls<Record<string, string>>("finyk_tx_cats", {});
   for (const tx of matches) cats[tx.id] = categoryId;
-  lsSet("finyk_tx_cats", cats);
-  // Same key as `change_category` — mirror every override into SQLite so
-  // the migrated category read reflects the batch write.
-  triggerTxCategorySqliteMirror(
-    matches.map((tx) => ({ transactionId: tx.id, categoryId })),
-  );
+  finykChatWrite("finyk_tx_cats", cats);
   return `Категорію ${matches.length} транзакц. змінено на ${categoryId}: ${preview}`;
 }

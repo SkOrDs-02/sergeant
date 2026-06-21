@@ -1,4 +1,8 @@
-import { ls, lsSet } from "../../hubChatUtils";
+/* eslint-disable sergeant-design/no-raw-storage-key --
+   Chat-action executors run outside React; storage key strings are used
+   directly here. Same pattern as queryFinykActions.ts. */
+import { ls } from "../../hubChatUtils";
+import { finykChatWrite } from "./dualWriteBridge";
 import type {
   AddAssetAction,
   RecurringExpenseAction,
@@ -15,38 +19,33 @@ export function addAsset(action: AddAssetAction): ChatActionResult {
   const cur =
     (currency && String(currency).trim().slice(0, 3).toUpperCase()) || "UAH";
   type AssetEntry = {
+    id: string;
     name: string;
     amount: number | string;
     currency?: string;
   };
   const prevAssets = ls<AssetEntry[]>("finyk_assets", []);
+  // Canonical `finyk_assets` rows are id-keyed (`ManualAsset.id`) — the
+  // manual UI's AssetsForm assigns a uuid. Generate a stable id here too
+  // so the dual-write upsert targets a real row (id-less rows are skipped
+  // by the blob extractor) and undo can delete it by id.
+  const assetId = `a_${Date.now().toString(36)}_${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
   const newEntry: AssetEntry = {
+    id: assetId,
     name: trimmed,
     amount: amt,
     currency: cur,
   };
-  lsSet("finyk_assets", [...prevAssets, newEntry]);
-  // У `finyk_assets` немає id-поля; тримаємо посилання на щойно
-  // додану entry (referential equality в pure-JS після lsSet не
-  // тримається, тож порівнюємо за повним shape). Undo прибирає
-  // _одну_ перший попавшийся matching item з кінця — досить для
-  // human-rate-у undo (5 c вікно), без переписання снапшоту.
+  finykChatWrite("finyk_assets", [...prevAssets, newEntry]);
   return {
     result: `Актив "${trimmed}" додано: ${amt} ${cur}`,
     undo: () => {
       const list = ls<AssetEntry[]>("finyk_assets", []);
-      for (let i = list.length - 1; i >= 0; i--) {
-        const e = list[i];
-        if (
-          e!.name! === newEntry.name &&
-          Number(e!.amount!) === Number(newEntry.amount) &&
-          (e!.currency! || "UAH") === (newEntry.currency || "UAH")
-        ) {
-          const next = list.slice();
-          next.splice(i, 1);
-          lsSet("finyk_assets", next);
-          return;
-        }
+      const next = list.filter((e) => e.id !== assetId);
+      if (next.length !== list.length) {
+        finykChatWrite("finyk_assets", next);
       }
     },
   };
@@ -79,6 +78,6 @@ export function recurringExpense(
     category: category?.trim() || "",
   };
   subs.push(newSub);
-  lsSet("finyk_subs", subs);
+  finykChatWrite("finyk_subs", subs);
   return `Підписку "${trimmed}" створено: ${amt} грн, ${dayN}-го числа (id:${newSub.id})`;
 }

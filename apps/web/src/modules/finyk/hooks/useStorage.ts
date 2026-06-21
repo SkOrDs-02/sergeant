@@ -4,7 +4,6 @@ import { toLocalISODate } from "@sergeant/shared";
 import { useFinykStorageSlots } from "./useFinykStorageSlots";
 import { useFinykStorageMutations } from "./useFinykStorageMutations";
 import { useFinykBackupSync } from "./useFinykBackupSync";
-import { useFinykDualWriteBoot } from "./useFinykDualWriteBoot";
 import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
 import { useFinykSqliteReadBoot } from "./useFinykSqliteReadBoot";
 import { useFinykMonoMirrorBoot } from "./useFinykMonoMirrorBoot";
@@ -55,11 +54,11 @@ export function useStorage({
   const mutations = useFinykStorageMutations(slots);
   const backupSync = useFinykBackupSync(slots, toast);
 
-  // Stage 4 PR #036 — install dual-write context once auth is
-  // available, then mirror every slot mutation into SQLite
-  // (best-effort). Stage 8 PR #056k dropped the gate; mirror is
-  // unconditional whenever a userId-scoped context is registered.
-  useFinykDualWriteBoot();
+  // Mirror every slot mutation into SQLite (best-effort). The dual-write
+  // CONTEXT itself is installed app-wide by `FinykBootGate` in
+  // `RootLayout` so the hub AI assistant can mirror chat-action writes
+  // even when the Finyk screen isn't mounted; this hook only wires the
+  // slot watcher (a no-op until that context is registered).
   useFinykDualWriteSync(slots);
 
   // Stage 4 PR #037 — boot the SQLite read overlay (idempotent, only
@@ -135,6 +134,7 @@ export function useStorage({
     }
     networthSnapshotRef.current = { date: today, value: rounded };
     writeJSON("finyk_networth_last_snap", { date: today, value: rounded });
+    // eslint-disable-next-line no-restricted-syntax, sergeant-design/prefer-kyiv-time -- YYYY-MM key for networth history snapshot; pre-existing host-local; tracked in tech-debt
     const key = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
     setNetworthHistory((prev) => {
       const filtered = prev.filter((s) => s.month !== key);

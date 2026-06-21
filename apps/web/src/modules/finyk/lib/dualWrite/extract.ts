@@ -19,6 +19,13 @@
  *     `dataJson` strings to detect changes — comparing serialised
  *     blobs avoids paying for deep equality and matches how the
  *     server-side apply-fns store the row).
+ *
+ * The per-slice helpers (`blobsFromArray`, `idsFromArray`, …) and
+ * {@link stateWithSlice} are exported so non-hook callers — the
+ * chat-action dual-write bridge in `core/lib/chatActions/finykActions`
+ * — can build a single-slice `FinykDualWriteState` from raw LS values
+ * without the React slot bundle. Mirrors the mobile extractor
+ * (`apps/mobile/src/modules/finyk/lib/dualWrite/extract.ts`).
  */
 
 import type { FinykStorageSlots } from "../../hooks/useFinykStorageSlots";
@@ -33,18 +40,18 @@ import {
   type FinykTxSplitsEntry,
 } from "./diff.js";
 
-interface FinykIdLike {
-  id?: unknown;
-}
-
-function blobsFromArray(
-  arr: ReadonlyArray<FinykIdLike> | undefined,
+/** Convert a per-row array (rows with `id`) into FinykBlobEntry[]. */
+export function blobsFromArray(
+  arr: readonly unknown[] | null | undefined,
 ): FinykBlobEntry[] {
   if (!Array.isArray(arr)) return [];
   const out: FinykBlobEntry[] = [];
   for (const row of arr) {
     if (!row || typeof row !== "object") continue;
-    const id = typeof row.id === "string" ? row.id : null;
+    const id =
+      typeof (row as { id?: unknown }).id === "string"
+        ? (row as { id: string }).id
+        : null;
     if (!id) continue;
     let dataJson: string;
     try {
@@ -59,7 +66,10 @@ function blobsFromArray(
   return out;
 }
 
-function idsFromArray(arr: readonly string[] | undefined): FinykIdEntry[] {
+/** Convert a string-array LS key into FinykIdEntry[]. */
+export function idsFromArray(
+  arr: readonly unknown[] | null | undefined,
+): FinykIdEntry[] {
   if (!Array.isArray(arr)) return [];
   const out: FinykIdEntry[] = [];
   for (const v of arr) {
@@ -68,8 +78,9 @@ function idsFromArray(arr: readonly string[] | undefined): FinykIdEntry[] {
   return out;
 }
 
-function txCatsFromMap(
-  map: Record<string, string | undefined> | undefined,
+/** Convert a tx-id → categoryId map into FinykTxCategoryEntry[]. */
+export function txCatsFromMap(
+  map: Record<string, unknown> | null | undefined,
 ): FinykTxCategoryEntry[] {
   if (!map || typeof map !== "object") return [];
   const out: FinykTxCategoryEntry[] = [];
@@ -82,8 +93,9 @@ function txCatsFromMap(
   return out;
 }
 
-function txSplitsFromMap(
-  map: Record<string, unknown> | undefined,
+/** Convert a tx-id → splits[] map into FinykTxSplitsEntry[]. */
+export function txSplitsFromMap(
+  map: Record<string, unknown> | null | undefined,
 ): FinykTxSplitsEntry[] {
   if (!map || typeof map !== "object") return [];
   const out: FinykTxSplitsEntry[] = [];
@@ -102,8 +114,9 @@ function txSplitsFromMap(
   return out;
 }
 
-function monoDebtLinksFromMap(
-  map: Record<string, string[]> | undefined,
+/** Convert a tx-id → debtIds[] map into FinykMonoDebtLinkEntry[]. */
+export function monoDebtLinksFromMap(
+  map: Record<string, unknown> | null | undefined,
 ): FinykMonoDebtLinkEntry[] {
   if (!map || typeof map !== "object") return [];
   const out: FinykMonoDebtLinkEntry[] = [];
@@ -122,20 +135,22 @@ function monoDebtLinksFromMap(
   return out;
 }
 
-function networthHistoryFrom(
-  arr: ReadonlyArray<{ month?: unknown; networth?: unknown }> | undefined,
+/** Convert a NetworthEntry[] LS array into FinykNetworthEntry[]. */
+export function networthHistoryFrom(
+  arr: readonly unknown[] | null | undefined,
 ): FinykNetworthEntry[] {
   if (!Array.isArray(arr)) return [];
   const out: FinykNetworthEntry[] = [];
   for (const row of arr) {
     if (!row || typeof row !== "object") continue;
+    const r = row as { month?: unknown; networth?: unknown };
     const month =
-      typeof row.month === "string" && /^\d{4}-\d{2}$/.test(row.month)
-        ? row.month
+      typeof r.month === "string" && /^\d{4}-\d{2}$/.test(r.month)
+        ? r.month
         : null;
     const networth =
-      typeof row.networth === "number" && Number.isFinite(row.networth)
-        ? row.networth
+      typeof r.networth === "number" && Number.isFinite(r.networth)
+        ? r.networth
         : null;
     if (!month || networth === null) continue;
     out.push({ month, networth });
@@ -166,34 +181,14 @@ export function extractFinykDualWriteState(
     hiddenAccounts: idsFromArray(slots.hiddenAccounts),
     hiddenTransactions: idsFromArray(slots.hiddenTxIds),
     budgets: blobsFromArray(slots.budgets),
-    subscriptions: blobsFromArray(
-      slots.subscriptions as ReadonlyArray<
-        FinykIdLike & Record<string, unknown>
-      >,
-    ),
-    assets: blobsFromArray(
-      slots.manualAssets as ReadonlyArray<
-        FinykIdLike & Record<string, unknown>
-      >,
-    ),
-    debts: blobsFromArray(
-      slots.manualDebts as ReadonlyArray<FinykIdLike & Record<string, unknown>>,
-    ),
-    receivables: blobsFromArray(
-      slots.receivables as ReadonlyArray<FinykIdLike & Record<string, unknown>>,
-    ),
-    customCategories: blobsFromArray(
-      slots.customCategories as ReadonlyArray<
-        FinykIdLike & Record<string, unknown>
-      >,
-    ),
-    manualExpenses: blobsFromArray(
-      slots.manualExpenses as ReadonlyArray<
-        FinykIdLike & Record<string, unknown>
-      >,
-    ),
+    subscriptions: blobsFromArray(slots.subscriptions),
+    assets: blobsFromArray(slots.manualAssets),
+    debts: blobsFromArray(slots.manualDebts),
+    receivables: blobsFromArray(slots.receivables),
+    customCategories: blobsFromArray(slots.customCategories),
+    manualExpenses: blobsFromArray(slots.manualExpenses),
     txCategories: txCatsFromMap(slots.txCategories),
-    txSplits: txSplitsFromMap(slots.txSplits as Record<string, unknown>),
+    txSplits: txSplitsFromMap(slots.txSplits),
     monoDebtLinks: monoDebtLinksFromMap(slots.monoDebtLinkedTxIds),
     networthHistory: networthHistoryFrom(slots.networthHistory),
     prefs: {
@@ -203,6 +198,19 @@ export function extractFinykDualWriteState(
       dismissedRecurringJson,
     },
   };
+}
+
+/**
+ * Build a FinykDualWriteState that contains ONLY the given slice. Used
+ * by non-hook callers (the chat-action dual-write bridge) so each write
+ * diffs a single-slice `prev → next` pair without reading every other LS
+ * key. Mirrors the mobile MMKV-store usage.
+ */
+export function stateWithSlice<K extends keyof FinykDualWriteState>(
+  key: K,
+  value: FinykDualWriteState[K],
+): FinykDualWriteState {
+  return { ...EMPTY_FINYK_STATE, [key]: value };
 }
 
 function serializeStringArray(value: readonly unknown[] | undefined): string {

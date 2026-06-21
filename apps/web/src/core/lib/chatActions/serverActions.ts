@@ -25,8 +25,8 @@ import {
   getTransactions,
   saveTransactions,
 } from "../../../modules/finyk/lib/finykStorage";
-import { triggerManualExpenseSqliteMirror } from "../../../modules/finyk/lib/dualWrite";
 import { createTransaction as createTransactionLocal } from "./finykActions/transactions";
+import { finykChatMirrorManualExpenses } from "./finykActions/dualWriteBridge";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type {
   RecallMemoryRequest,
@@ -201,16 +201,17 @@ async function handleCreateTransaction(
       _accountId: null,
       _manual: true,
     };
-    const manualExpenses = getTransactions();
-    manualExpenses.unshift(entry);
-    saveTransactions(manualExpenses);
+    const prevManual = getTransactions();
+    const nextManual = [entry, ...prevManual];
+    saveTransactions(nextManual);
     // saveTransactions — debounced; flush одразу, щоб запис не загубився
     // при швидкому закритті вкладки після відповіді чату.
     flushPendingWrites();
-    // `saveTransactions` пише лише LS; дзеркалимо у канонічний SQLite,
-    // щоб витрата була видима у модульному UI та власних read-tool-ах AI
-    // (amount у грн — ×100 лише для серверного API вище, Hard Rule #1).
-    triggerManualExpenseSqliteMirror(entry);
+    // Mirror into the SQLite dual-write store so the canonical Finyk read
+    // path (module UI overlay) shows the AI-created expense — the LS mirror
+    // alone never reaches the structured `finyk_manual_expenses` table the
+    // UI reads post-cutover.
+    finykChatMirrorManualExpenses(prevManual, nextManual);
     const meta = category?.trim()
       ? resolveExpenseCategoryMeta(category.trim(), getCategories())
       : undefined;

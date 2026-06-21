@@ -1,14 +1,12 @@
 /* eslint-disable sergeant-design/no-raw-storage-key --
-   Chat-action executors run outside React (the finyk `useStorage` hooks
-   are unavailable). LS writes here are kept as the dual-write safety net
-   and mirrored into SQLite alongside (see the `trigger*SqliteMirror`
-   calls). Raw-key → `STORAGE_KEYS` migration is tracked for 2026-Q3. */
-import { ls, lsSet } from "../../hubChatUtils";
+   Chat-action executors run outside React; storage key strings are used
+   directly here. Same pattern as queryFinykActions.ts. */
+import { ls } from "../../hubChatUtils";
+import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import {
   triggerHiddenTransactionSqliteMirror,
   triggerManualExpenseDeleteSqliteMirror,
-  triggerManualExpenseSqliteMirror,
 } from "../../../../modules/finyk/lib/dualWrite";
 import type {
   CreateTransactionAction,
@@ -63,12 +61,7 @@ export function createTransaction(
     type: txType,
   };
   manualExpenses.unshift(entry);
-  lsSet("finyk_manual_expenses_v1", manualExpenses);
-  // Mirror into the canonical SQLite `finyk_manual_expenses` table —
-  // the migrated reads (query/search/analytics) overlay from SQLite, so
-  // an LS-only write would be invisible to the module UI and the AI's
-  // own follow-up reads. Amount stays in грн (×100 is server-only).
-  triggerManualExpenseSqliteMirror(entry);
+  finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
   const label = categoryLabel ? ` (${categoryLabel})` : "";
   const human = txType === "income" ? "Дохід" : "Витрату";
   const result = `${human} ${amt} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
@@ -82,7 +75,7 @@ export function createTransaction(
       const current = ls<Array<{ id: string }>>("finyk_manual_expenses_v1", []);
       const next = current.filter((tx) => tx.id !== manualId);
       if (next.length !== current.length) {
-        lsSet("finyk_manual_expenses_v1", next);
+        finykChatWrite("finyk_manual_expenses_v1", next);
       }
       // Keep SQLite in step with the LS undo so the row stops showing up
       // in the overlay read. Soft-delete is idempotent — safe to fire
@@ -99,7 +92,7 @@ export function hideTransaction(
   const hidden = ls<string[]>("finyk_hidden_txs", []);
   if (!hidden.includes(tx_id)) {
     hidden.push(tx_id);
-    lsSet("finyk_hidden_txs", hidden);
+    finykChatWrite("finyk_hidden_txs", hidden);
   }
   // Mirror into `finyk_hidden_transactions` — the hidden-tx read
   // (search / analytics / report) overlays from SQLite. Idempotent.
@@ -121,8 +114,7 @@ export function deleteTransaction(
   if (idx < 0) return `Транзакцію ${id} не знайдено (вже видалена).`;
   const next = list.slice();
   next.splice(idx, 1);
-  lsSet("finyk_manual_expenses_v1", next);
-  // Mirror the removal so the migrated manual-expense read drops it too.
+  finykChatWrite("finyk_manual_expenses_v1", next);
   triggerManualExpenseDeleteSqliteMirror(id);
   return `Транзакцію ${id} видалено`;
 }
@@ -144,7 +136,7 @@ export function splitTransaction(
     amount: Math.abs(Number(p.amount) || 0),
   }));
   splits[id] = newSplits;
-  lsSet("finyk_tx_splits", splits);
+  finykChatWrite("finyk_tx_splits", splits);
   const desc = newSplits
     .map((s) => {
       const cat = resolveExpenseCategoryMeta(s.categoryId, customC);

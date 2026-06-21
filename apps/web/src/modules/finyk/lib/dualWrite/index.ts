@@ -86,6 +86,34 @@ export function isFinykDualWriteRegistered(): boolean {
 }
 
 /**
+ * Non-hook accessor for the registered context's identity + SQLite
+ * resolver. Returns `null` when no context is registered or the user
+ * id is unavailable.
+ *
+ * Used by the chat-action dual-write bridge
+ * (`core/lib/chatActions/finykActions/dualWriteBridge.ts`), which runs
+ * synchronously outside React and therefore cannot read `useAuth()` or
+ * the React Query `me` cache. The registered context's `getUserId()` is
+ * the canonical source of the real Better-Auth id the `finyk_*` tables
+ * key on (NOT the sanitised SQLite partition key in `core/db/sqlite`).
+ */
+export function getFinykDualWriteRuntime(): {
+  readonly userId: string;
+  readonly getMigrationClient: () => Promise<SqliteMigrationClient | null>;
+  readonly getNow: () => string;
+} | null {
+  const ctx = registeredContext;
+  if (!ctx) return null;
+  const userId = ctx.getUserId();
+  if (!userId) return null;
+  return {
+    userId,
+    getMigrationClient: ctx.getMigrationClient,
+    getNow: ctx.getNow,
+  };
+}
+
+/**
  * Run the dual-write pipeline for a `prev → next` LS-state transition.
  *
  * The function is `async` but the LS-write call site fires it

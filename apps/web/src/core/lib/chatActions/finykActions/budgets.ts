@@ -1,8 +1,8 @@
 /* eslint-disable sergeant-design/no-raw-storage-key --
-   Chat-action executor (outside React). Budget / monthly-plan LS writes
-   are out of this migration's scope (custom-category read moved to the
-   SQLite cache). Raw-key → `STORAGE_KEYS` burndown tracked for 2026-Q3. */
-import { ls, lsSet } from "../../hubChatUtils";
+   Chat-action executors run outside React; storage key strings are used
+   directly here. Same pattern as queryFinykActions.ts. */
+import { ls } from "../../hubChatUtils";
+import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import type {
@@ -32,7 +32,7 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
       limit: Number(limit),
     });
   }
-  lsSet("finyk_budgets", budgets);
+  finykChatWrite("finyk_budgets", budgets);
   const customC = getCachedFinykSqliteState().customCategories;
   const cat = resolveExpenseCategoryMeta(category_id, customC);
   return `Ліміт ${cat?.label || category_id} встановлено: ${limit} грн`;
@@ -45,7 +45,7 @@ export function setMonthlyPlan(action: SetMonthlyPlanAction): ChatActionResult {
   if (income != null && income !== "") next.income = String(income);
   if (expense != null && expense !== "") next.expense = String(expense);
   if (savings != null && savings !== "") next.savings = String(savings);
-  lsSet("finyk_monthly_plan", next);
+  finykChatWrite("finyk_monthly_plan", next);
   return `Фінплан місяця оновлено: дохід ${next.income ?? "—"} / витрати ${next.expense ?? "—"} / заощадження ${next.savings ?? "—"} грн/міс`;
 }
 
@@ -72,7 +72,7 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
         limit: limitN,
       });
     }
-    lsSet("finyk_budgets", budgets);
+    finykChatWrite("finyk_budgets", budgets);
     const customC = getCachedFinykSqliteState().customCategories;
     const cat = resolveExpenseCategoryMeta(categoryId, customC);
     return `Ліміт ${cat?.label || categoryId} оновлено: ${limitN} грн`;
@@ -106,7 +106,7 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
         savedAmount: saved,
       });
     }
-    lsSet("finyk_budgets", budgets);
+    finykChatWrite("finyk_budgets", budgets);
     return `Ціль "${goalName}" оновлено: ${saved}/${target} грн`;
   }
   return "Невідомий scope для update_budget (очікую 'limit' або 'goal').";

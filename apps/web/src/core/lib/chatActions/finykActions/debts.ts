@@ -1,10 +1,9 @@
 /* eslint-disable sergeant-design/no-raw-storage-key, @typescript-eslint/no-non-null-assertion --
-   Chat-action executor (outside React): LS writes are the dual-write
-   safety net, the manual-expense write is mirrored into SQLite (see
-   `triggerManualExpenseSqliteMirror`). The non-null assertion is
-   pre-existing. Raw-key burndown tracked for 2026-Q3. */
-import { ls, lsSet } from "../../hubChatUtils";
-import { triggerManualExpenseSqliteMirror } from "../../../../modules/finyk/lib/dualWrite";
+   Chat-action executors run outside React; storage key strings are used
+   directly here. Same pattern as queryFinykActions.ts. The non-null
+   assertion is pre-existing. */
+import { ls } from "../../hubChatUtils";
+import { finykChatWrite } from "./dualWriteBridge";
 import type {
   CreateDebtAction,
   CreateReceivableAction,
@@ -26,14 +25,14 @@ export function createDebt(action: CreateDebtAction): ChatActionResult {
     linkedTxIds: [],
   };
   debts.push(newDebt);
-  lsSet("finyk_debts", debts);
+  finykChatWrite("finyk_debts", debts);
   const debtId = newDebt.id;
   return {
     result: `Борг "${name}" на ${amount} грн створено (id:${debtId})`,
     undo: () => {
       const cur = ls<Debt[]>("finyk_debts", []);
       const next = cur.filter((d) => d.id !== debtId);
-      if (next.length !== cur.length) lsSet("finyk_debts", next);
+      if (next.length !== cur.length) finykChatWrite("finyk_debts", next);
     },
   };
 }
@@ -50,14 +49,14 @@ export function createReceivable(
     linkedTxIds: [],
   };
   recv.push(newRecv);
-  lsSet("finyk_recv", recv);
+  finykChatWrite("finyk_recv", recv);
   const recvId = newRecv.id;
   return {
     result: `Дебіторку "${name}" на ${amount} грн додано (id:${recvId})`,
     undo: () => {
       const cur = ls<Receivable[]>("finyk_recv", []);
       const next = cur.filter((r) => r.id !== recvId);
-      if (next.length !== cur.length) lsSet("finyk_recv", next);
+      if (next.length !== cur.length) finykChatWrite("finyk_recv", next);
     },
   };
 }
@@ -69,6 +68,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   const debts = ls<Debt[]>("finyk_debts", []);
   const idx = debts.findIndex((d) => d.id === id);
   if (idx < 0) return `Борг ${id} не знайдено.`;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- idx ≥ 0 confirmed above; noUncheckedIndexedAccess makes [idx] T|undefined
   const debt = { ...debts[idx]! };
   const payAmount =
     amount != null && Number.isFinite(Number(amount))
@@ -97,10 +97,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
     type: "expense",
   };
   manualExpenses.unshift(payEntry);
-  lsSet("finyk_manual_expenses_v1", manualExpenses);
-  // Mirror the debt-payment expense into SQLite so it shows up in the
-  // migrated manual-expense reads (amount in грн).
-  triggerManualExpenseSqliteMirror(payEntry);
+  finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
   debt.linkedTxIds = [...(debt.linkedTxIds || []), txId];
   const prevPaid = debt.linkedTxIds
     .filter((lid) => lid !== txId)
@@ -115,6 +112,6 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   } else {
     debts[idx] = debt;
   }
-  lsSet("finyk_debts", debts);
+  finykChatWrite("finyk_debts", debts);
   return `Погашено ${payAmount} грн з "${debt.name}"${closed ? " — борг закрито" : ""} (tx:${txId})`;
 }
