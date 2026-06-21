@@ -7,6 +7,7 @@ import {
   type SetStateAction,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -104,6 +105,13 @@ export function HabitForm({
   const weekdaysRef = useRef<HTMLDivElement | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiWrapRef = useRef<HTMLDivElement | null>(null);
+  const emojiPickerRef = useRef<HTMLDivElement | null>(null);
+  // role="dialog" popover: keyboard parity with the mousedown
+  // outside-click below — Escape closes, Tab cycles inside, and focus
+  // returns to the toggle on close. Non-modal, so no inertBackground.
+  useDialogFocusTrap(showEmojiPicker, emojiPickerRef, {
+    onEscape: () => setShowEmojiPicker(false),
+  });
   useEffect(() => {
     if (!showEmojiPicker) return;
     const handleOutside = (e: MouseEvent) => {
@@ -188,6 +196,7 @@ export function HabitForm({
             </button>
             {showEmojiPicker && (
               <div
+                ref={emojiPickerRef}
                 role="dialog"
                 aria-label="Обрати емодзі"
                 className={cn(

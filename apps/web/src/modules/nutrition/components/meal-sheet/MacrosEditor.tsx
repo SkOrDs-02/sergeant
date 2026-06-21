@@ -2,8 +2,9 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ChangeEvent, Dispatch, SetStateAction } from "react";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
@@ -72,6 +73,14 @@ export function MacrosEditor({
   };
 
   const cancelUnlink = () => setPendingUnlink(null);
+
+  // role="alertdialog" inline panel: move focus into the warning when it
+  // opens, let Escape cancel, and restore focus on close. Non-modal
+  // (no backdrop), so no inertBackground / aria-modal.
+  const unlinkPanelRef = useRef<HTMLDivElement | null>(null);
+  useDialogFocusTrap(Boolean(pendingUnlink), unlinkPanelRef, {
+    onEscape: cancelUnlink,
+  });
 
   return (
     <div className="mb-1">
@@ -142,6 +151,7 @@ export function MacrosEditor({
       )}
       {pendingUnlink && (
         <div
+          ref={unlinkPanelRef}
           role="alertdialog"
           aria-label="Підтвердити відʼєднання продукту"
           className="mt-3 rounded-2xl border border-warning/40 bg-warning/10 p-3 text-xs text-text space-y-2"
