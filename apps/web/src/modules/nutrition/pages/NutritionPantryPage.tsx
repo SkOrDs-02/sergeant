@@ -60,6 +60,7 @@ export function NutritionPantryPage({
       title="Не вдалось показати «Комора»"
     >
       <>
+        <h1 className="sr-only">Комора</h1>
         <SubTabs
           value={pantrySubTab}
           onChange={(id) => setPantrySubTab(id as PantrySubTab)}

@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useMemo } from "react";
+import { pluralExercises } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { computeWorkoutSummary } from "@sergeant/fizruk-domain/domain";
@@ -79,7 +80,8 @@ export function WorkoutsHome({
               <div className="mt-1 text-sm text-text">
                 <span className="font-bold">{activeDuration ?? "00:00"}</span>
                 {" · "}
-                {(activeWorkout?.items || []).length} вправ
+                {(activeWorkout?.items || []).length}{" "}
+                {pluralExercises((activeWorkout?.items || []).length)}
               </div>
             </div>
             <Button
@@ -251,7 +253,8 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
     month: "short",
   });
   const parts: string[] = [];
-  if (summary.itemCount > 0) parts.push(`${summary.itemCount} вправ`);
+  if (summary.itemCount > 0)
+    parts.push(`${summary.itemCount} ${pluralExercises(summary.itemCount)}`);
   if (summary.setCount > 0) parts.push(`${summary.setCount} сетів`);
   const durMin = summary.durationSec
     ? Math.max(1, Math.round(summary.durationSec / 60))

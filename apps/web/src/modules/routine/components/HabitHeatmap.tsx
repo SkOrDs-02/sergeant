@@ -271,7 +271,9 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                     data-cell-key={cell.key}
                     onClick={() => handleClick(cell.key)}
                     onKeyDown={(e) => handleCellKeyDown(e, cell.key)}
-                    aria-label={`${cell.key}: ${cell.cnt} з ${cell.total} звичок`}
+                    aria-label={`${cell.key}: ${cell.cnt} з ${cell.total} ${
+                      cell.total === 1 ? "звички" : "звичок"
+                    }`}
                     aria-pressed={cell.key === selected}
                     className={cn(
                       "rounded-sm transition-opacity focus-visible:outline focus-visible:outline-2",
@@ -306,7 +308,9 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                 ? "ще не настало"
                 : selectedCell.total === 0
                   ? "немає звичок"
-                  : `${selectedCell.cnt} з ${selectedCell.total} звичок виконано`}
+                  : `${selectedCell.cnt} з ${selectedCell.total} ${
+                      selectedCell.total === 1 ? "звички" : "звичок"
+                    } виконано`}
             </span>
           </div>
         ) : (

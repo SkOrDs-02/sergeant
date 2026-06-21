@@ -359,10 +359,11 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
 
   return (
     <div className="flex-1 overflow-y-auto">
+      <h1 className="sr-only">Аналітика</h1>
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
         <MonthNav year={year} month={month} onChange={handleMonthChange} />
 
-        {fetchError && (
+        {fetchError && activeTx.length === 0 && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger-strong dark:text-danger">
             <span>{fetchError}</span>
             <button

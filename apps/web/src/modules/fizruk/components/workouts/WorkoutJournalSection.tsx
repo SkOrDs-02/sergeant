@@ -4,6 +4,7 @@
  */
 import { useCallback, useRef } from "react";
 import { Virtuoso } from "react-virtuoso";
+import { pluralExercises } from "@sergeant/shared";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -111,7 +112,7 @@ function WorkoutRow({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-subtle">
-            {(w.items || []).length} вправ
+            {(w.items || []).length} {pluralExercises((w.items || []).length)}
           </span>
           {isEnded ? (
             <span className="text-style-caption px-2 py-0.5 rounded-full bg-panelHi text-subtle border border-line">

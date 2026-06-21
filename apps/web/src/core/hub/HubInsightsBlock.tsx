@@ -88,16 +88,18 @@ export function HubInsightsBlock({
         coachLoading
           ? "Готую AI-пораду…"
           : coachError
-            ? "Не вдалось отримати AI-пораду"
-            : rest.length > 0
-              ? // Show first actionable insight title verbatim so the collapsed
-                // pill carries real value instead of a generic count.
-                rest[0]!.title
-              : digestFresh
+            ? // AI-порада недоступна (anon/quota/мережа). Не лякаємо
+              // «збоєм» — показуємо реальні інсайти, якщо є, інакше
+              // спокійний нейтральний підпис.
+              (rest[0]?.title ?? "AI-порада зараз недоступна")
+            : // Show first actionable insight title verbatim so the collapsed
+              // pill carries real value instead of a generic count.
+              (rest[0]?.title ??
+              (digestFresh
                 ? "AI-порада + свіжий дайджест"
                 : activeNudge && !reengagementShow
                   ? "AI-порада + нагадування"
-                  : "AI-порада на день"
+                  : "AI-порада на день"))
       }
     >
       {moduleInsights.length > 0 && (

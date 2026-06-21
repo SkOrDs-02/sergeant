@@ -84,6 +84,7 @@ export function RoutineTimeline({
         contentClassName="page-tabbar-pad routine-main-pad"
       >
         <div className="max-w-4xl mx-auto w-full pt-4 space-y-4">
+          <h1 className="sr-only">Рутина</h1>
           {storageErrorMsg && (
             <Banner
               variant="danger"

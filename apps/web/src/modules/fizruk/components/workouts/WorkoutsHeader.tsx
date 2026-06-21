@@ -1,3 +1,4 @@
+import { pluralExercises } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import type { Workout } from "@sergeant/fizruk-domain";
 import type { WorkoutsView } from "../../pages/Workouts.types";
@@ -36,7 +37,9 @@ export function WorkoutsHeader({
 
   const homeSubtitle =
     activeWorkout && !activeWorkout.endedAt
-      ? `Активне · ${(activeWorkout.items || []).length} вправ`
+      ? `Активне · ${(activeWorkout.items || []).length} ${pluralExercises(
+          (activeWorkout.items || []).length,
+        )}`
       : finishedCount > 0
         ? `Завершено: ${finishedCount}`
         : "Перше тренування — попереду";
@@ -46,7 +49,7 @@ export function WorkoutsHeader({
       {view !== "home" ? (
         <button
           type="button"
-          className="w-9 h-9 -ml-1 rounded-xl flex items-center justify-center text-text/80 hover:bg-surface-2"
+          className="w-9 h-9 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] -ml-1 rounded-xl flex items-center justify-center text-text/80 hover:bg-surface-2"
           onClick={onBack}
           aria-label="Повернутись до тренувань"
         >

@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { memo, useState } from "react";
+import { pluralDays } from "@sergeant/shared";
 import { daysUntil, fmtDate } from "../utils";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
@@ -223,7 +224,7 @@ function SubCardComponent({
             ? "⚠️ Завтра"
             : soon
               ? `⏰ Через ${days} дні`
-              : `📅 Через ${days} днів`}{" "}
+              : `📅 Через ${days} ${pluralDays(days)}`}{" "}
           · {sub.billingDay}-го
         </div>
         {sub.linkedTxId && lastTx && (

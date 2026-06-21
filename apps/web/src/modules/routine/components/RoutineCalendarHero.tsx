@@ -2,6 +2,7 @@
  * Last validated: 2026-05-19
  * Status: Active
  */
+import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { HeroValueLine } from "@shared/components/ui/HeroValueLine";
 import { KpiRowCompact } from "@shared/components/ui/KpiRowCompact";
@@ -43,7 +44,8 @@ export function RoutineCalendarHero({
   currentStreak,
   onOpenDayReport,
 }: RoutineCalendarHeroProps) {
-  const narrative = `${headlineDate} · ${dayProgress.completed} з ${dayProgress.scheduled} звичок · Серія ${currentStreak} днів`;
+  const habitsGenitive = dayProgress.scheduled === 1 ? "звички" : "звичок";
+  const narrative = `${headlineDate} · ${dayProgress.completed} з ${dayProgress.scheduled} ${habitsGenitive} · Серія ${currentStreak} ${pluralDays(currentStreak)}`;
   const flame = useStreakFlame(currentStreak);
 
   return (

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { pluralExercises } from "@sergeant/shared";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
@@ -436,7 +437,8 @@ export function WorkoutTemplatesSection({
                   {t.name}
                 </div>
                 <div className="text-xs text-subtle">
-                  {(t.exerciseIds || []).length} вправ
+                  {(t.exerciseIds || []).length}{" "}
+                  {pluralExercises((t.exerciseIds || []).length)}
                   {(t.groups || []).length > 0 && (
                     <span className="ml-2 text-success-strong dark:text-success">
                       · {(t.groups || []).length} суперсет

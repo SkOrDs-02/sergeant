@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { pluralDays, pluralTimes, pluralUa } from "./ukrainianPlural";
+import {
+  pluralDays,
+  pluralExercises,
+  pluralHabits,
+  pluralTimes,
+  pluralUa,
+} from "./ukrainianPlural";
 
 describe("pluralDays", () => {
   it("one: 1, 21, 31, 101", () => {
@@ -50,6 +56,26 @@ describe("pluralDays", () => {
     expect(pluralTimes(11)).toBe("разів");
     expect(pluralTimes(14)).toBe("разів");
     expect(pluralTimes(25)).toBe("разів");
+  });
+
+  it("pluralExercises: 1 вправа / 2-4 вправи / 5+ вправ", () => {
+    expect(pluralExercises(1)).toBe("вправа");
+    expect(pluralExercises(21)).toBe("вправа");
+    expect(pluralExercises(2)).toBe("вправи");
+    expect(pluralExercises(4)).toBe("вправи");
+    expect(pluralExercises(0)).toBe("вправ");
+    expect(pluralExercises(5)).toBe("вправ");
+    expect(pluralExercises(11)).toBe("вправ");
+  });
+
+  it("pluralHabits: 1 звичка / 2-4 звички / 5+ звичок", () => {
+    expect(pluralHabits(1)).toBe("звичка");
+    expect(pluralHabits(21)).toBe("звичка");
+    expect(pluralHabits(2)).toBe("звички");
+    expect(pluralHabits(4)).toBe("звички");
+    expect(pluralHabits(0)).toBe("звичок");
+    expect(pluralHabits(5)).toBe("звичок");
+    expect(pluralHabits(13)).toBe("звичок");
   });
 
   it("працює як загальний helper на інших формах", () => {

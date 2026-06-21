@@ -28,7 +28,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
-import { pluralDays } from "@sergeant/shared";
+import { pluralDays, pluralExercises } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -282,7 +282,7 @@ function ActiveState({
   const elapsedSec = useElapsedSec(state.startedAtIso);
   const meta =
     state.itemsCount != null && state.itemsCount > 0
-      ? `${state.itemsCount} вправ у сесії`
+      ? `${state.itemsCount} ${pluralExercises(state.itemsCount)} у сесії`
       : "Сесія відкрита — підходи й таймер чекають";
   return (
     <HeroShell ariaLabel="Активне тренування" cornerSlot={cornerSlot}>
@@ -336,7 +336,9 @@ function TodayState({
   readonly onStartToday: () => void;
   readonly cornerSlot?: ReactNode;
 }) {
-  const metaParts: string[] = [`${state.exerciseCount} вправ`];
+  const metaParts: string[] = [
+    `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
+  ];
   if (state.estimatedMin) metaParts.push(`~${state.estimatedMin} хв`);
   if (state.hint) metaParts.push(state.hint);
   return (
@@ -394,7 +396,9 @@ function UpcomingState({
     formatDateShort(state.dateKey),
   ];
   if (state.exerciseCount != null && state.exerciseCount > 0) {
-    metaParts.push(`${state.exerciseCount} вправ`);
+    metaParts.push(
+      `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
+    );
   }
   return (
     <HeroShell ariaLabel="Наступне тренування" cornerSlot={cornerSlot}>

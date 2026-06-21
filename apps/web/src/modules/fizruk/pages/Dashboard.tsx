@@ -7,6 +7,7 @@ import type { FizrukPage } from "../shell/fizrukRoute";
 // signature — keep the import even when TS doesn't track JSDoc refs.
 
 import { safeWriteLS, safeWriteSS } from "@shared/lib/storage/storage";
+import { pluralExercises } from "@sergeant/shared";
 import {
   formatKyivNominativeDate,
   getKyivGreeting,
@@ -484,7 +485,9 @@ export function Dashboard({
                           </div>
                           <div className="text-xs text-subtle mt-0.5">
                             {picks.length > 0
-                              ? `${picks.length} вправ`
+                              ? `${picks.length} ${pluralExercises(
+                                  picks.length,
+                                )}`
                               : "Немає вправ у каталозі"}
                           </div>
                         </div>

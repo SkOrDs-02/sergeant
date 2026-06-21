@@ -466,7 +466,7 @@ export function ManualExpenseSheet({
                 placeholder="0"
                 min="0"
                 step="0.01"
-                aria-invalid={amountError ? true : undefined}
+                error={!!amountError}
                 disabled={isSubmitting}
                 helperText={amountError ?? undefined}
                 {...register("amount")}

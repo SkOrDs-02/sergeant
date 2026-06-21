@@ -35,3 +35,23 @@ const TIMES_FORMS: UaPluralForms = { one: "раз", few: "рази", many: "ра
 export function pluralTimes(n: number): string {
   return pluralUa(n, TIMES_FORMS);
 }
+
+const EXERCISES_FORMS: UaPluralForms = {
+  one: "вправа",
+  few: "вправи",
+  many: "вправ",
+};
+
+export function pluralExercises(n: number): string {
+  return pluralUa(n, EXERCISES_FORMS);
+}
+
+const HABITS_FORMS: UaPluralForms = {
+  one: "звичка",
+  few: "звички",
+  many: "звичок",
+};
+
+export function pluralHabits(n: number): string {
+  return pluralUa(n, HABITS_FORMS);
+}

@@ -6,7 +6,7 @@ import { memo, useEffect, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
-import { formatMoney } from "@sergeant/shared";
+import { formatMoney, pluralDays } from "@sergeant/shared";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
 
 interface GoalBudgetInput {
@@ -120,7 +120,7 @@ function GoalBudgetCardComponent({
               {pct}% ·{" "}
               {daysLeft !== null
                 ? daysLeft > 0
-                  ? `${daysLeft} днів до мети`
+                  ? `${daysLeft} ${pluralDays(daysLeft)} до мети`
                   : "⏰ Термін минув!"
                 : "Без дедлайну"}
             </div>

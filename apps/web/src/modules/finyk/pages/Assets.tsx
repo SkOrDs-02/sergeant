@@ -33,6 +33,8 @@ export function Assets({
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-1">
+        {/* eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- sr-only a11y page heading, UA-only surface */}
+        <h1 className="sr-only">Активи</h1>
         <AssetsTable state={state} />
       </div>
     </div>

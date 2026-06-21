@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useState } from "react";
+import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
@@ -115,7 +116,9 @@ export function ShoppingListCard({
               <div>Тижневий план</div>
               <div className="text-style-caption opacity-70 mt-0.5">
                 {hasWeekPlan
-                  ? `${weekPlan?.days?.length ?? 0} днів`
+                  ? `${weekPlan?.days?.length ?? 0} ${pluralDays(
+                      weekPlan?.days?.length ?? 0,
+                    )}`
                   : "немає плану"}
               </div>
             </button>
@@ -190,7 +193,7 @@ export function ShoppingListCard({
             )}
 
             <div className="space-y-3">
-              {shoppingList!.categories.map((cat: ShoppingCategory) => (
+              {shoppingList?.categories.map((cat: ShoppingCategory) => (
                 <div
                   key={cat.name}
                   className="rounded-2xl border border-line bg-bg/30 overflow-hidden"

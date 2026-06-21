@@ -205,6 +205,7 @@ export function TransactionList({
 
   const content = (
     <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
+      <h1 className="sr-only">Операції</h1>
       {header}
       <DataState
         query={txQuery}

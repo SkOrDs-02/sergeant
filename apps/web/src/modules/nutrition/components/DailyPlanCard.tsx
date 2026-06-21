@@ -203,6 +203,7 @@ export function DailyPlanCard({
                       return next;
                     });
                   }}
+                  aria-label={unit ? `${label} (${unit})` : label}
                   placeholder="—"
                   disabled={busy || dayPlanBusy}
                 />

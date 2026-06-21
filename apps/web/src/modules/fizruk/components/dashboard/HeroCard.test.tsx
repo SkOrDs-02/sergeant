@@ -59,7 +59,7 @@ describe("HeroCard · active state", () => {
     expect(screen.getByText(/Доброго дня/i)).toBeInTheDocument();
     expect(screen.getByText("1:05")).toBeInTheDocument();
     expect(screen.getByText(/Тренування триває/i)).toBeInTheDocument();
-    expect(screen.getByText(/3 вправ у сесії/i)).toBeInTheDocument();
+    expect(screen.getByText(/3 вправи у сесії/i)).toBeInTheDocument();
 
     const resumeBtn = screen.getByLabelText(
       /Повернутись до активного тренування/i,
