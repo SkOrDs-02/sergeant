@@ -62,14 +62,32 @@ let scheduledTimerId: ReturnType<typeof setTimeout> | null = null;
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
+// Europe/Kyiv day-key + HH:MM. MUST match the main-thread reminder tick
+// (`useModuleReminder` → `getKyivDayKey` / `getKyivDateParts`) so the
+// `routine_notify_<dayKey>` dedup set agrees across the SW and the page.
+// Host-local time here caused duplicate reminders (SW old-date + page
+// new-Kyiv-date) east of Kyiv and missed reminders to the west. The SW is a
+// standalone bundle, so the Kyiv formatting is inlined via Intl rather than
+// importing `@shared/lib/time/kyivTime`.
 function todayKey() {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Kyiv",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 function currentHm() {
-  const n = new Date();
-  return `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Kyiv",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const h = Number(parts.find((p) => p.type === "hour")?.value ?? "0") % 24;
+  const m = parts.find((p) => p.type === "minute")?.value ?? "00";
+  return `${String(h).padStart(2, "0")}:${m}`;
 }
 
 function habitScheduledOnDateSW(h: SwRoutineHabit, dk: string) {
@@ -81,6 +99,7 @@ function habitScheduledOnDateSW(h: SwRoutineHabit, dk: string) {
   if (rec === "once") return dk === h.startDate;
   if (rec === "weekly") {
     const d = new Date(dk + "T12:00:00");
+    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- weekday of a fixed `YYYY-MM-DD` (parsed at noon-local) is calendar-invariant across timezones; not a wall-clock day-boundary read.
     const wd = (d.getDay() + 6) % 7;
     return Array.isArray(h.weekdays) && h.weekdays.includes(wd);
   }
@@ -96,6 +115,7 @@ function habitScheduledOnDateSW(h: SwRoutineHabit, dk: string) {
       : 1;
     const dkDay = parseInt(dk.split("-")[2] ?? "01", 10);
     const [y = 0, m = 0] = dk.split("-").map(Number);
+    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- last calendar day of month `m` is timezone-invariant; not a wall-clock read.
     const lastDay = new Date(y, m, 0).getDate();
     return startDay > lastDay ? dkDay === lastDay : dkDay === startDay;
   }
@@ -225,8 +245,9 @@ export function checkReminders(): void {
 function scheduleNextCheck(): void {
   if (scheduledTimerId) clearTimeout(scheduledTimerId);
   const now = new Date();
-  const msToNextMinute =
-    (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 50;
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- sub-minute timer alignment (seconds until the next wall-clock minute), not a day boundary.
+  const seconds = now.getSeconds();
+  const msToNextMinute = (60 - seconds) * 1000 - now.getMilliseconds() + 50;
   scheduledTimerId = setTimeout(() => {
     checkReminders();
     scheduleNextCheck();

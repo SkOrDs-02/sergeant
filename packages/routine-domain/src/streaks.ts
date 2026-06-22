@@ -145,20 +145,24 @@ export function completionRateForRange(
   };
 }
 
+/**
+ * Per-habit completion rate over an explicit inclusive `[startKey, endKey]`
+ * day-key window. The range is passed in (Kyiv-anchored by the caller via
+ * `getKyivDayKey`) rather than read from the host clock — the previous
+ * `new Date()`-based rolling window silently drifted by timezone.
+ */
 export function habitCompletionRate(
   habit: Habit,
   completions: string[] | undefined,
-  days: number,
+  startKey: string,
+  endKey: string,
 ): CompletionRateResult {
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  const start = new Date(today);
-  start.setDate(start.getDate() - (days - 1));
-
   const dateList: string[] = [];
-  const d = new Date(start);
+  const d = parseDateKey(startKey);
+  const end = parseDateKey(endKey);
   d.setHours(12, 0, 0, 0);
-  while (d <= today) {
+  end.setHours(12, 0, 0, 0);
+  while (d <= end) {
     dateList.push(dateKeyFromDate(d));
     d.setDate(d.getDate() + 1);
   }
