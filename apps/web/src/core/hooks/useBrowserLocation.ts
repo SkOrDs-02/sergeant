@@ -41,12 +41,16 @@ export interface BrowserLocationSnapshot {
   hash: string;
 }
 
-export function useBrowserLocation(
+/**
+ * Pure decision: given the native-event `snapshot` string and React
+ * Router's current location, return the location the app should act on.
+ * Extracted from the hook so the staleness logic is unit-testable without
+ * driving `useSyncExternalStore` + window events.
+ */
+export function resolveBrowserLocation(
+  snapshot: string,
   routerLocation?: BrowserLocationSnapshot,
 ): BrowserLocationSnapshot {
-  // snapshot is "" until the first popstate/hashchange event fires
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => "");
-
   if (!snapshot && routerLocation) {
     // No native location event yet — defer to React Router's own location
     // (the normal case for all pushState-driven navigations).
@@ -61,10 +65,40 @@ export function useBrowserLocation(
   const pathname =
     searchIndex >= 0 ? withoutHash.slice(0, searchIndex) : withoutHash;
   const search = searchIndex >= 0 ? withoutHash.slice(searchIndex) : "";
-
-  return {
+  const parsed: BrowserLocationSnapshot = {
     pathname: pathname || "/",
     search,
     hash,
   };
+
+  // The snapshot is frozen at the last popstate/hashchange and is NOT
+  // advanced by pushState. Once any native event has armed it, a later
+  // React Router navigation (Link/`navigate`, e.g. tapping a bottom-nav
+  // tab) updates `routerLocation` but leaves the snapshot stale — which
+  // would otherwise pin every subsequent route to that frozen URL and
+  // keep `activeModule` stuck on a module the user already left (the
+  // "tabs redirect back to the nutrition overview" bug, armed by the
+  // browser-back popstate out of `/pricing`). React Router owns
+  // pathname+search for both pushState and popstate, so when it disagrees
+  // with the snapshot it is the fresher source of truth. The snapshot is
+  // only needed for direct `window.location.hash` mutations (legacy
+  // hash-router modules) that never reach the router, i.e. when the
+  // pathname+search still match.
+  if (
+    routerLocation &&
+    (routerLocation.pathname !== parsed.pathname ||
+      routerLocation.search !== parsed.search)
+  ) {
+    return routerLocation;
+  }
+
+  return parsed;
+}
+
+export function useBrowserLocation(
+  routerLocation?: BrowserLocationSnapshot,
+): BrowserLocationSnapshot {
+  // snapshot is "" until the first popstate/hashchange event fires
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => "");
+  return resolveBrowserLocation(snapshot, routerLocation);
 }
