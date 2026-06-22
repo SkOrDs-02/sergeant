@@ -81,9 +81,10 @@ export const ConfirmDialog = memo(function ConfirmDialog({
       {/* Sheet */}
       <div
         ref={ref}
-        role="dialog"
+        role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
+        aria-describedby={description ? "confirm-desc" : undefined}
         style={
           swipe.dragging
             ? ({
@@ -119,7 +120,10 @@ export const ConfirmDialog = memo(function ConfirmDialog({
           {title}
         </h2>
         {description && (
-          <p className="text-sm text-muted leading-relaxed mb-5">
+          <p
+            id="confirm-desc"
+            className="text-sm text-muted leading-relaxed mb-5"
+          >
             {description}
           </p>
         )}
