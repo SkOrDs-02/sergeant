@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { habitCompletionRate } from "../lib/streaks";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import type { Habit, RoutineState } from "../lib/types";
@@ -17,9 +18,18 @@ export function HabitLeadersBlock({
     const active = habits.filter((h) => !h.archived);
     if (active.length === 0) return { best: null, worst: null };
 
+    // Kyiv-anchored inclusive 30-day window (today + 29 days back).
+    const endKey = getKyivDayKey();
+    const startKey = getKyivDayKey(Date.now() - 29 * 86_400_000);
+
     const rates = active
       .map((h) => {
-        const r = habitCompletionRate(h, completions[h.id] || [], 30);
+        const r = habitCompletionRate(
+          h,
+          completions[h.id] || [],
+          startKey,
+          endKey,
+        );
         return { habit: h, ...r };
       })
       .filter((r) => r.scheduled > 0);
@@ -30,7 +40,7 @@ export function HabitLeadersBlock({
     const best = rates[0];
     const worst = rates.length > 1 ? rates[rates.length - 1] : null;
 
-    if (worst && worst.habit.id === best!.habit.id!)
+    if (best && worst && worst.habit.id === best.habit.id)
       return { best, worst: null };
 
     return { best, worst };

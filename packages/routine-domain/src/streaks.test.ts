@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   completionRateForRange,
   habitCompletionRate,
@@ -151,14 +151,12 @@ describe("routine-domain/streaks", () => {
     ).toBe(2);
   });
 
-  it("habitCompletionRate calculates a rolling range ending today", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 0, 10, 9, 0, 0, 0));
-
+  it("habitCompletionRate counts scheduled/completed across an explicit Kyiv range", () => {
     const r = habitCompletionRate(
       dailyHabit("h"),
       ["2026-01-08", "2026-01-10"],
-      3,
+      "2026-01-08",
+      "2026-01-10",
     );
 
     expect(r).toEqual({
@@ -166,7 +164,5 @@ describe("routine-domain/streaks", () => {
       completed: 2,
       rate: 2 / 3,
     });
-
-    vi.useRealTimers();
   });
 });
