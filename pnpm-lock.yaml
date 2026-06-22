@@ -465,7 +465,7 @@ importers:
         specifier: ^11.0.0
         version: 11.0.0
       pino-loki:
-        specifier: ^2.4.0
+        specifier: ^2.6.0
         version: 2.6.0
       prom-client:
         specifier: ^15.1.3
