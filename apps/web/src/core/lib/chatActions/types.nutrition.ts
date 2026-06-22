@@ -95,7 +95,11 @@ export interface NutritionMeal {
     fat_g: number;
     carbs_g: number;
   };
-  addedAt: string;
+  // Optional: meals loaded from the canonical SQLite store (domain `Meal`) do
+  // not carry `addedAt` — only locally-constructed / test meals set it, and no
+  // chat-action executor reads it. Required here previously broke the
+  // `loadNutritionLog()` read path after the tombstone migration.
+  addedAt?: string;
 }
 
 export interface NutritionDay {
