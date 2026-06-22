@@ -13,6 +13,29 @@
       ]
     },
     {
+      "number": 3638,
+      "title": "Audit triage digest (auto, twice-weekly)",
+      "merged_at": "2026-06-19T06:52:35Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/00-start/playbooks/cutover-openclaw-gateway.md"]
+    },
+    {
+      "number": 3649,
+      "title": "chore(root): fizruk a11y/UX tidy + reconcile stale tracked-task docs",
+      "merged_at": "2026-06-19T06:51:04Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/90-work/initiatives/hardening-matrix.md"]
+    },
+    {
+      "number": 3640,
+      "title": "fix(docs): accept \"Last touched\" label + bot handles in playbook schema check",
+      "merged_at": "2026-06-18T17:59:09Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md"
+      ]
+    },
+    {
       "number": 3610,
       "title": "chore(config): per-package eslint configs — PR-31 Phase 2b",
       "merged_at": "2026-06-16T19:04:25Z",
@@ -20,6 +43,42 @@
       "touchedDocs": [
         "docs/00-start/playbooks/cutover-openclaw-gateway.md",
         "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md"
+      ]
+    },
+    {
+      "number": 3611,
+      "title": "fix(web): clear a11y gate",
+      "merged_at": "2026-06-16T07:25:39Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/00-start/playbooks/cutover-openclaw-gateway.md"]
+    },
+    {
+      "number": 3577,
+      "title": "fix(docs): heal CI-on-main drift — pr-ledger JSON, archived links, regen generated docs",
+      "merged_at": "2026-06-14T21:05:10Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/90-work/initiatives/0020-agent-decisions-log.md"]
+    },
+    {
+      "number": 3573,
+      "title": "docs(agents): archive initiative 0018 (agent:find, code-complete)",
+      "merged_at": "2026-06-14T20:27:13Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md",
+        "docs/90-work/initiatives/0020-agent-decisions-log.md",
+        "docs/90-work/initiatives/session-log-0018-agent-find-measurement-2026-06-08.md",
+        "docs/90-work/initiatives/session-log-0018-semantic-measurement-2026-06-14.md"
+      ]
+    },
+    {
+      "number": 3567,
+      "title": "docs(agents): record 0018 semantic measurement + drop orphan 0019 README row",
+      "merged_at": "2026-06-14T15:50:24Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/90-work/initiatives/0018-agent-semantic-retrieval.md",
+        "docs/90-work/initiatives/session-log-0018-semantic-measurement-2026-06-14.md"
       ]
     },
     {
@@ -45,6 +104,17 @@
       "author": "@Skords-01",
       "touchedDocs": [
         "docs/90-work/initiatives/0015-docs-automation-daily-ops.md"
+      ]
+    },
+    {
+      "number": 3536,
+      "title": "docs(docs): doc-layer wave 2 — genre contract, monolith splits, hardening matrix",
+      "merged_at": "2026-06-12T11:11:37Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/governance/rules/16-typography-scale-12px-floor.md",
+        "docs/04-governance/governance/rules/17-animation-budget.md",
+        "docs/90-work/initiatives/hardening-matrix.md"
       ]
     },
     {

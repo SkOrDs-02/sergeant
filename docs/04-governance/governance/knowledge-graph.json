@@ -8,7 +8,7 @@
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
-    "pr": 211,
+    "pr": 219,
     "skill": 23
   },
   "nodes": [
@@ -712,7 +712,7 @@
       "tier": "core",
       "meta": {
         "number": 66,
-        "last_validated": "2026-06-14"
+        "last_validated": "2026-06-22"
       }
     },
     {
@@ -724,7 +724,7 @@
       "tier": "core",
       "meta": {
         "number": 67,
-        "last_validated": "2026-06-19"
+        "last_validated": "2026-06-20"
       }
     },
     {
@@ -3884,6 +3884,16 @@
       }
     },
     {
+      "id": "pr:3536",
+      "type": "pr",
+      "title": "PR #3536",
+      "tier": "extended",
+      "meta": {
+        "number": 3536,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3536"
+      }
+    },
+    {
       "id": "pr:3551",
       "type": "pr",
       "title": "PR #3551",
@@ -3914,6 +3924,26 @@
       }
     },
     {
+      "id": "pr:3567",
+      "type": "pr",
+      "title": "PR #3567",
+      "tier": "extended",
+      "meta": {
+        "number": 3567,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3567"
+      }
+    },
+    {
+      "id": "pr:3573",
+      "type": "pr",
+      "title": "PR #3573",
+      "tier": "extended",
+      "meta": {
+        "number": 3573,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3573"
+      }
+    },
+    {
       "id": "pr:3610",
       "type": "pr",
       "title": "PR #3610",
@@ -3921,6 +3951,46 @@
       "meta": {
         "number": 3610,
         "url": "https://github.com/Skords-01/Sergeant/pull/3610"
+      }
+    },
+    {
+      "id": "pr:3611",
+      "type": "pr",
+      "title": "PR #3611",
+      "tier": "extended",
+      "meta": {
+        "number": 3611,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3611"
+      }
+    },
+    {
+      "id": "pr:3638",
+      "type": "pr",
+      "title": "PR #3638",
+      "tier": "extended",
+      "meta": {
+        "number": 3638,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3638"
+      }
+    },
+    {
+      "id": "pr:3640",
+      "type": "pr",
+      "title": "PR #3640",
+      "tier": "extended",
+      "meta": {
+        "number": 3640,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3640"
+      }
+    },
+    {
+      "id": "pr:3649",
+      "type": "pr",
+      "title": "PR #3649",
+      "tier": "extended",
+      "meta": {
+        "number": 3649,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3649"
       }
     },
     {
@@ -3961,6 +4031,16 @@
       "meta": {
         "number": 3656,
         "url": "https://github.com/Skords-01/Sergeant/pull/3656"
+      }
+    },
+    {
+      "id": "pr:3665",
+      "type": "pr",
+      "title": "PR #3665",
+      "tier": "extended",
+      "meta": {
+        "number": 3665,
+        "url": "https://github.com/Skords-01/Sergeant/pull/3665"
       }
     },
     {
@@ -5051,6 +5131,11 @@
       "type": "references"
     },
     {
+      "from": "adr:0066",
+      "to": "pr:3573",
+      "type": "touched-by"
+    },
+    {
       "from": "adr:0067",
       "to": "hard-rule:15",
       "type": "references"
@@ -5083,6 +5168,11 @@
     {
       "from": "adr:0067",
       "to": "pr:3656",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0067",
+      "to": "pr:3665",
       "type": "touched-by"
     },
     {
@@ -5821,6 +5911,11 @@
       "type": "touched-by"
     },
     {
+      "from": "initiative:0006",
+      "to": "pr:3640",
+      "type": "touched-by"
+    },
+    {
       "from": "initiative:0010",
       "to": "pr:1792",
       "type": "touched-by"
@@ -6096,6 +6191,16 @@
       "type": "touched-by"
     },
     {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:3536",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:3649",
+      "type": "touched-by"
+    },
+    {
       "from": "initiative:session-log-0018-agent-find-measurement-2026-06-08",
       "to": "adr:0006",
       "type": "references"
@@ -6114,6 +6219,21 @@
       "from": "initiative:session-log-0018-agent-find-measurement-2026-06-08",
       "to": "hard-rule:1",
       "type": "references"
+    },
+    {
+      "from": "initiative:session-log-0018-agent-find-measurement-2026-06-08",
+      "to": "pr:3573",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:session-log-0018-semantic-measurement-2026-06-14",
+      "to": "pr:3567",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:session-log-0018-semantic-measurement-2026-06-14",
+      "to": "pr:3573",
+      "type": "touched-by"
     },
     {
       "from": "initiative:stack-pulse-2026-05/00-overview",
@@ -6478,6 +6598,16 @@
     {
       "from": "playbook:cutover-openclaw-gateway",
       "to": "pr:3610",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:cutover-openclaw-gateway",
+      "to": "pr:3611",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:cutover-openclaw-gateway",
+      "to": "pr:3638",
       "type": "touched-by"
     },
     {

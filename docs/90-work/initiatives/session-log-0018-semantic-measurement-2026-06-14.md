@@ -1,6 +1,6 @@
 # Session log — 0018 `agent:find` semantic (Voyage) measurement (2026-06-14)
 
-> **Last touched:** 2026-06-14 by @Skords-01. **Next review:** 2026-09-12.
+> **Last touched:** 2026-06-22 by @claude. **Next review:** 2026-09-20.
 > **Status:** Reference
 
 Комплемент до [lexical-логу 2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md):
@@ -83,3 +83,16 @@ Per-case ранги (`lexRank` → `semRank`; нижче = краще, 1 = ід�
 - [`session-log-0018-agent-find-measurement-2026-06-08.md`](./session-log-0018-agent-find-measurement-2026-06-08.md) — lexical-замір (sibling).
 - [`docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md`](../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md) — архітектура / out-of-git вектори.
 - `scripts/agent/find.mjs`, `scripts/agent/embed-chunks.mjs`, `scripts/agent/voyage.mjs` — тулінг заміру.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                        | Merged     |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------- | ---------- |
+| [#3573](https://github.com/Skords-01/Sergeant/pull/3573) | docs(agents): archive initiative 0018 (agent:find, code-complete)            | 2026-06-14 |
+| [#3567](https://github.com/Skords-01/Sergeant/pull/3567) | docs(agents): record 0018 semantic measurement + drop orphan 0019 README row | 2026-06-14 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

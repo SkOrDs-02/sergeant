@@ -42,3 +42,15 @@ Rules:
 
 - **external** — https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html
 - **agents** — #17
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                            | Merged     |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------- |
+| [#3536](https://github.com/Skords-01/Sergeant/pull/3536) | docs(docs): doc-layer wave 2 — genre contract, monolith splits, hardening matrix | 2026-06-12 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

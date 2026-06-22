@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-06-22",
   "sourceHashes": {
-    "knowledge-graph": "49bfef2dbcbe5196806a0fef187e2bc8e94eee3ddb74062bee8cff229371bbcf",
+    "knowledge-graph": "01078d438a827eb828bb5b352a2175b2817988eb6cff3a9e085f33c8257edcc4",
     "symbol-index": "342f96ffaeb45ee4b211eac1907c6245cb67c9f42839cf3c5145a85a1fad6f63"
   },
   "counts": {
@@ -705,8 +705,8 @@
       "title": "ADR-0066: Agent semantic retrieval over the knowledge graph",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-06-14 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "47488d5e812da8c48771e92892321a6718876ace8e68d8d187a08c943906ddbc"
+      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-06-22 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "613e6745d6258c7ff27cff6496698993962027159ea4329ae3813592a509f704"
     },
     {
       "id": "adr:0067",
@@ -716,8 +716,8 @@
       "title": "ADR-0067: Standardize Hub engagement mechanisms (signals / reminders / dismiss-state)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0067: Standardize Hub engagement mechanisms (signals / reminders / dismiss-state) · adr:0067 · adr · Active · 67 · 2026-06-19 · Context and Problem Statement · Шар 1 — compute (engagement-сигнали) · Шар 2 — reminders (планування нотифікацій) · Шар 3 — dismiss / snooze state · Чому це ADR, а не просто рефактор · Considered Options · Decision · Цільова архітектура (3 шари) · Поетапність (4 кроки, кожен окремим PR) · Що НЕ чіпаємо (явні non-goals) · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "fa28a021d0843e0648f1ead98d24333dafee13d87541dddea817041880f74354"
+      "text": "ADR-0067: Standardize Hub engagement mechanisms (signals / reminders / dismiss-state) · adr:0067 · adr · Active · 67 · 2026-06-20 · Context and Problem Statement · Шар 1 — compute (engagement-сигнали) · Шар 2 — reminders (планування нотифікацій) · Шар 3 — dismiss / snooze state · Чому це ADR, а не просто рефактор · Considered Options · Decision · Цільова архітектура (3 шари) · Поетапність (4 кроки, кожен окремим PR) · Що НЕ чіпаємо (явні non-goals) · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "f84d30c0b1c1cebcd1dc28a742568ff96905d2a931bbad71c2bee79d7ab31013"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
@@ -3956,8 +3956,8 @@
       "title": "Зведена матриця hardening-карток",
       "tier": "core",
       "status": "Active",
-      "text": "Зведена матриця hardening-карток · initiative:hardening-matrix · initiative · Active · Зведена статистика · Джерело 1 — stack-pulse-2026-05 · Critical (C1–C6) · High (H1–H10) · Medium (M1–M12) · Low (L1–L12) · Джерело 2 — \\0008-platform-hardening · Джерело 3 — \\0009-agent-os-hardening",
-      "contentHash": "d25591779d23697f0a873ec3fc1b53923880f5b751aa726dc73c4a3770978bbb"
+      "text": "Зведена матриця hardening-карток · initiative:hardening-matrix · initiative · Active · Зведена статистика · Джерело 1 — stack-pulse-2026-05 · Critical (C1–C6) · High (H1–H10) · Medium (M1–M12) · Low (L1–L12) · Джерело 2 — \\0008-platform-hardening · Джерело 3 — \\0009-agent-os-hardening · Recent PRs",
+      "contentHash": "cc6dcb906a6a4a52414eaed47090d27f4fa7fe70e05f1f33386d3da8dd75fad6"
     },
     {
       "id": "initiative:session-log-0018-agent-find-measurement-2026-06-08",
@@ -3967,8 +3967,8 @@
       "title": "Session log — 0018 `agent:find` lexical measurement (2026-06-08)",
       "tier": "core",
       "status": "Reference",
-      "text": "Session log — 0018 `agent:find` lexical measurement (2026-06-08) · initiative:session-log-0018-agent-find-measurement-2026-06-08 · initiative · Reference · Session log — 0018 agent:find lexical measurement (2026-06-08) · Середовище заміру · Healthcheck офлайн-тулінгу · Before/after на репрезентативній вибірці задач · Чому це «менше сліпих grep-ів» · Висновок і що лишається · Refs",
-      "contentHash": "439dbd4fbb78d2d84f17f6ce564252192bc70a609f956faf3f60345763bbd920"
+      "text": "Session log — 0018 `agent:find` lexical measurement (2026-06-08) · initiative:session-log-0018-agent-find-measurement-2026-06-08 · initiative · Reference · Session log — 0018 agent:find lexical measurement (2026-06-08) · Середовище заміру · Healthcheck офлайн-тулінгу · Before/after на репрезентативній вибірці задач · Чому це «менше сліпих grep-ів» · Висновок і що лишається · Refs · Recent PRs",
+      "contentHash": "ec8559cdd5f1dca0284b80f95fccd24dee17fef6db11f21e3b7659bd67d0773e"
     },
     {
       "id": "initiative:session-log-0018-semantic-measurement-2026-06-14",
@@ -3978,8 +3978,8 @@
       "title": "Session log — 0018 `agent:find` semantic (Voyage) measurement (2026-06-14)",
       "tier": "core",
       "status": "Reference",
-      "text": "Session log — 0018 `agent:find` semantic (Voyage) measurement (2026-06-14) · initiative:session-log-0018-semantic-measurement-2026-06-14 · initiative · Reference · Session log — 0018 agent:find semantic (Voyage) measurement (2026-06-14) · Середовище заміру · Крок 1 — ембедінг · Крок 2 — semantic vs lexical на golden-set (12 кейсів, K=5) · Висновок · Refs",
-      "contentHash": "a68cbc655109bb5fc54d1f41d6ad146b8491f69cbcc47746c9f3014f868176c3"
+      "text": "Session log — 0018 `agent:find` semantic (Voyage) measurement (2026-06-14) · initiative:session-log-0018-semantic-measurement-2026-06-14 · initiative · Reference · Session log — 0018 agent:find semantic (Voyage) measurement (2026-06-14) · Середовище заміру · Крок 1 — ембедінг · Крок 2 — semantic vs lexical на golden-set (12 кейсів, K=5) · Висновок · Refs · Recent PRs",
+      "contentHash": "e0fc93e732787f5d78495be16c49a08fcb6a81e93d2eb2af7e49efc984fff3d0"
     },
     {
       "id": "initiative:stack-pulse-2026-05/00-overview",
