@@ -414,23 +414,26 @@ const MODULE_SWITCHER_TOKENS: Record<
 > = {
   finyk: {
     active: "bg-finyk-strong text-white",
-    inactive: "text-finyk-strong dark:text-finyk hover:bg-finyk-soft",
+    inactive:
+      "bg-surface-soft-glass border-surface-line text-finyk-strong dark:text-finyk hover:bg-finyk-soft hover:border-finyk-soft-border",
     ring: "focus-visible:ring-finyk",
   },
   fizruk: {
     active: "bg-fizruk-strong text-white",
-    inactive: "text-fizruk-strong dark:text-fizruk-300 hover:bg-fizruk-soft",
+    inactive:
+      "bg-surface-soft-glass border-surface-line text-fizruk-strong dark:text-fizruk-300 hover:bg-fizruk-soft hover:border-fizruk-soft-border",
     ring: "focus-visible:ring-fizruk",
   },
   routine: {
     active: "bg-routine-strong text-white",
-    inactive: "text-routine-strong dark:text-routine hover:bg-routine-soft",
+    inactive:
+      "bg-surface-soft-glass border-surface-line text-routine-strong dark:text-routine hover:bg-routine-soft hover:border-routine-soft-border",
     ring: "focus-visible:ring-routine",
   },
   nutrition: {
     active: "bg-nutrition-strong text-white",
     inactive:
-      "text-nutrition-strong dark:text-nutrition hover:bg-nutrition-soft",
+      "bg-surface-soft-glass border-surface-line text-nutrition-strong dark:text-nutrition hover:bg-nutrition-soft hover:border-nutrition-soft-border",
     ring: "focus-visible:ring-nutrition",
   },
 };
@@ -465,7 +468,7 @@ export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
               openHubModule(id);
             }}
             className={cn(
-              "flex-1 inline-flex items-center justify-center gap-1.5 h-8 pointer-coarse:h-9 px-2 rounded-xl text-style-caption font-semibold transition-colors",
+              "flex-1 inline-flex items-center justify-center gap-1.5 h-8 pointer-coarse:h-9 px-2 rounded-xl text-style-caption font-semibold border border-transparent transition-colors",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
               isActive ? tokens.active : tokens.inactive,
               tokens.ring,

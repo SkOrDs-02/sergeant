@@ -224,10 +224,15 @@ export function Tabs<V extends string = string>({
                   : "border-transparent text-fg-muted hover:text-fg",
               )
             : cn(
-                "rounded-xl",
+                // `border border-transparent` keeps active/inactive on an
+                // equal border-box (no width shift); inactive pills get a
+                // resting `border-surface-line` hairline so each segment
+                // reads as a chip at rest, not bare text on the track
+                // (mirrors the ModuleSwitcher treatment).
+                "rounded-xl border border-transparent",
                 isActive
                   ? VARIANT_PILL[variant]
-                  : "text-fg-muted hover:text-fg hover:bg-surface",
+                  : "border-surface-line text-fg-muted hover:text-fg hover:bg-surface",
               );
 
         return (

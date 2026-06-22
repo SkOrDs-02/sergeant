@@ -111,7 +111,13 @@ export function SettingsGroup({
       prominence="glass"
       radius="r-lg"
       padding="none"
-      className="overflow-hidden"
+      // `shadow-e1` drop-shadow: the glass surface's own `shadow-card-v2`
+      // is an inset top-highlight only (no drop shadow), so near-white
+      // (0.82α) section cards floated flat on the warm light-theme page
+      // and read as borderless (user report 2026-06-22). A real elevation
+      // lifts them off the background; on dark surfaces the shadow is
+      // naturally imperceptible and the glass hairline carries separation.
+      className="overflow-hidden shadow-e1"
     >
       <button
         type="button"
@@ -173,7 +179,7 @@ export function SettingsSubGroup({
 }: SettingsSubGroupProps) {
   const [open, setOpen] = useState<boolean>(defaultOpen);
   return (
-    <div className="rounded-xl bg-surface-soft-glass border border-surface-line overflow-hidden">
+    <div className="rounded-xl bg-surface-soft-glass border border-surface-line shadow-soft overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
