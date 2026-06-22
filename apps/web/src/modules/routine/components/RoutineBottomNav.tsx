@@ -3,6 +3,7 @@ import {
   ModuleBottomNav,
   type ModuleBottomNavItem,
 } from "@shared/components/ui/ModuleBottomNav";
+import { messages } from "@shared/i18n/uk";
 
 export type RoutineMainTab = "calendar" | "stats";
 
@@ -85,7 +86,7 @@ export function RoutineBottomNav({
         onChange={(id) => onSelectTab(id as RoutineMainTab)}
         module="routine"
         role="tablist"
-        ariaLabel="Розділи Рутини"
+        ariaLabel={messages.nav.routineSections}
       />
       {onAddHabit && (
         <button

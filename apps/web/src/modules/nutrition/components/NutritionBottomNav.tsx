@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
+import { messages } from "@shared/i18n/uk";
 
 const NAV = [
   {
@@ -111,6 +112,7 @@ export function NutritionBottomNav({
       activeId={activePage}
       onChange={setActivePage}
       module="nutrition"
+      ariaLabel={messages.nav.nutritionSections}
     />
   );
 }

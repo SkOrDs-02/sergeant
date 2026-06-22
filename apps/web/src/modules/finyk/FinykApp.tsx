@@ -8,6 +8,7 @@ import { useStorage } from "./hooks/useStorage";
 import { readRaw } from "./lib/finykStorage";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
+import { messages } from "@shared/i18n/uk";
 import { AIPill } from "@shared/components/ui/AIPill";
 import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
 import {
@@ -426,6 +427,7 @@ export default function App({
           activeId={page}
           onChange={navigate}
           module="finyk"
+          ariaLabel={messages.nav.finykSections}
         />
 
         {!showLoginOverlay && <AIPill module="finyk" />}
