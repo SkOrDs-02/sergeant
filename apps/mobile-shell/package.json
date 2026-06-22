@@ -33,10 +33,10 @@
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^7.1.6",
     "@capacitor-mlkit/barcode-scanning": "^7.5.0",
-    "@capacitor/android": "^7.6.2",
+    "@capacitor/android": "^7.6.7",
     "@capacitor/app": "^7.1.2",
-    "@capacitor/core": "^7.6.2",
-    "@capacitor/ios": "^7.6.2",
+    "@capacitor/core": "^7.6.7",
+    "@capacitor/ios": "^7.6.7",
     "@capacitor/keyboard": "^7.0.6",
     "@capacitor/preferences": "^7.0.4",
     "@capacitor/push-notifications": "^7.0.6",
@@ -45,7 +45,7 @@
     "@sergeant/shared": "workspace:*"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.6.2",
+    "@capacitor/cli": "^7.6.7",
     "@sergeant/config": "workspace:*",
     "@vitest/coverage-v8": "^4.1.5",
     "jsdom": "^29.1.1",
