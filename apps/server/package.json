@@ -17,8 +17,8 @@
     "reencrypt:tokens": "node --env-file-if-exists=.env --import tsx scripts/token-reencrypt-rollover.ts"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "^1.6.14",
-    "@better-auth/expo": "^1.6.14",
+    "@better-auth/drizzle-adapter": "^1.6.20",
+    "@better-auth/expo": "^1.6.20",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/auto-instrumentations-node": "^0.76.0",
     "@opentelemetry/core": "^2.8.0",
@@ -33,7 +33,7 @@
     "@sergeant/finyk-domain": "workspace:*",
     "@sergeant/shared": "workspace:*",
     "@types/compression": "^1.8.1",
-    "better-auth": "^1.6.14",
+    "better-auth": "^1.6.20",
     "bullmq": "^5.0.0",
     "compression": "^1.8.1",
     "drizzle-orm": "^0.45.2",
