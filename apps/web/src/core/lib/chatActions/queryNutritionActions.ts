@@ -94,8 +94,25 @@ function resolveRange(
 function readLog(): Record<string, NutritionDay> {
   // Canonical meal log — SQLite warm cache (`nutrition_log_v1` is tombstoned
   // and drained on boot). Mirrors recommendationEngine / briefingHandlers,
-  // which also read via the nutritionStorage wrappers, not the dead LS key.
-  return loadNutritionLog();
+  // which read via the nutritionStorage wrappers, not the dead LS key.
+  // Normalize the domain `Meal` shape (nullable macros, no `addedAt`) into the
+  // local query shape — macro nulls collapse to 0 (executors only sum macros).
+  const out: Record<string, NutritionDay> = {};
+  for (const [day, data] of Object.entries(loadNutritionLog())) {
+    out[day] = {
+      meals: (data?.meals ?? []).map((m) => ({
+        id: m.id,
+        name: m.name,
+        macros: {
+          kcal: m.macros?.kcal ?? 0,
+          protein_g: m.macros?.protein_g ?? 0,
+          fat_g: m.macros?.fat_g ?? 0,
+          carbs_g: m.macros?.carbs_g ?? 0,
+        },
+      })),
+    };
+  }
+  return out;
 }
 
 /** Flattened meals within `[from, to]`, each tagged with its day key. */
