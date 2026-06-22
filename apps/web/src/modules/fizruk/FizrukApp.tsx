@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { ModuleShell, StorageErrorBanner } from "@shared/components/layout";
 import { AIPill } from "@shared/components/ui/AIPill";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
+import { messages } from "@shared/i18n/uk";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import { useFizrukRoute } from "./hooks/useFizrukRoute";
 import { usePwaAction } from "@shared/hooks/usePwaAction";
@@ -156,6 +157,7 @@ export default function FizrukApp({
               activeId={page}
               onChange={(id) => navigate(id)}
               module="fizruk"
+              ariaLabel={messages.nav.fizrukSections}
             />
           ) : null
         }
