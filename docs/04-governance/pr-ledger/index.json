@@ -1,8 +1,17 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-16",
+  "generated_at": "2026-06-20",
   "prs": [
+    {
+      "number": 3665,
+      "title": "docs(web): add ADR-0067 engagement mechanism standardization",
+      "merged_at": "2026-06-20T19:11:34Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0067-engagement-mechanism-standardization.md"
+      ]
+    },
     {
       "number": 3610,
       "title": "chore(config): per-package eslint configs — PR-31 Phase 2b",
