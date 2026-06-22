@@ -29,9 +29,19 @@ import { createTestSqlite, type TestSqliteHandle } from "./testSqlite.js";
 const USER_ID = "u-1";
 
 let handle: TestSqliteHandle;
+// Monotonic clock. The soft-delete LWW guard applies only when
+// `updated_at < clientTs` (strictly newer — see adapter.ts). A rapid
+// insert→delete pair driven by wall-clock `new Date()` can land both ops in
+// the same millisecond, which silently drops the delete and leaves the row
+// active — a flake that only surfaces under parallel load. A counter hands
+// each op a strictly-increasing timestamp, so ordering is deterministic
+// regardless of scheduling, matching the real world where distinct user
+// actions never share a millisecond.
+let clockMs = 0;
 
 beforeEach(async () => {
   handle = await createTestSqlite();
+  clockMs = Date.parse("2026-05-04T12:00:00.000Z");
   __clearFinykDualWriteContextForTests();
   clearFinykSqliteCache();
   __resetFinykSqliteReadGateForTests();
@@ -49,7 +59,7 @@ function register(): void {
   const ctx: FinykDualWriteContext = {
     getUserId: () => USER_ID,
     getMigrationClient: async () => handle.client,
-    getNow: () => new Date().toISOString(),
+    getNow: () => new Date(clockMs++).toISOString(),
   };
   registerFinykDualWriteContext(ctx);
 }
