@@ -70,6 +70,9 @@ artifacts/
 .claude/worktrees/
 
 # Local analysis artifacts & sibling worktree (do not commit)
+# understand-anything knowledge/domain graphs — generated, per-developer, never committed
+.understand-anything/
+.playwright-mcp/
 /knip-report.txt
 /lint-report.txt
 /..wt-0017-s2-reports/

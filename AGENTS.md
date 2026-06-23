@@ -1,17 +1,17 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last touched:** 2026-06-23 by @Skords-01. **Next review:** 2026-09-21.
 > **Status:** Active
 
-> **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
+> **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
 
 ## Agent harnesses & routing
 
 Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, Devin, Cursor — drives this repo through the same shared primitives: harness-neutral skills in `.agents/skills/`, this `AGENTS.md` as the policy source of truth, and the surface→specialist routing table below. **Harness-specific config (models, permissions, MCP wiring, custom agents, commands) lives outside the checkout**, in each tool's own global config directory — the repo itself carries no tool config.
 
 - **Source of truth.** For all project / policy / hard-rules questions, this file (`AGENTS.md`) wins. `CLAUDE.md` and `DEVIN.md` are thin wrappers that add only runtime/tool notes and must not duplicate policy.
-- **Skills.** Load the skill for the touched surface — start with `.agents/skills/sergeant-start-here/SKILL.md`, then exactly one specialist. Catalog: `docs/00-start/agents/agent-skills-catalog.md`. Skills are plain SKILL.md files; each harness loads them through its own skill loader — prefer that loader over reading SKILL.md by hand when one exists.
-- **Specialists.** 12 Sergeant specialists own the routing below (web-ui, server-api, mobile, data-and-migrations, deploy, openclaw, hubchat, e2e-testing, security-audit, bugfix, tech-debt, review-and-merge). Each harness ships its own agent definitions in its global config; the surface→specialist mapping is what they all share.
+- **Skills.** Load the skill for the touched surface — start with `.agents/skills/sergeant-start-here/SKILL.md`, then choose the primary owner skill from the table below. Catalog: `docs/00-start/agents/agent-skills-catalog.md`. Skills are plain SKILL.md files; each harness loads them through its own skill loader — prefer that loader over reading SKILL.md by hand when one exists.
+- **Specialists.** Sergeant owner skills cover product surfaces, cross-cutting disciplines, and explicit multi-agent workflows. Keep one primary owner in mind for a task; add a second skill only when the catalog/workflow says the handoff is intentional (for example feature delivery + web, auth + touched surface, or review-squad). Each harness ships its own agent definitions in its global config; the surface→specialist mapping is what they all share.
 
 **Routing (surface → specialist).** Pick the smallest specialist that owns the touched surface; escalate to `sergeant-review-and-merge` only at PR-boundary.
 
@@ -26,11 +26,21 @@ Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, 
 | HubChat module / HubChat reset / HubChat E2E                        | `sergeant-hubchat`                  |
 | Writing or running E2E (Playwright/Vitest browser)                  | `sergeant-e2e-testing`              |
 | Security review, vuln triage, secret scan, dependency CVE           | `sergeant-security-audit`           |
+| New feature, new screen, endpoint, workflow, behavior change        | `sergeant-feature-delivery`         |
+| Unsure where code belongs, shared extraction, package boundary      | `sergeant-monorepo-boundaries`      |
+| Backend architecture, CQRS, Temporal, Saga, service boundary design | `sergeant-backend-architecture`     |
+| Auth/session/cookie/account lifecycle                               | `better-auth-best-practices`        |
 | Regression, hotfix, "this used to work"                             | `sergeant-bugfix-and-regression`    |
 | Refactor, dead code, Knip baseline, eslint baseline reduction       | `sergeant-tech-debt`                |
+| Creating or editing `.agents/skills/**/SKILL.md`                    | `sergeant-writing-skills`           |
 | PR review, squash-merge, release-cut, changelog                     | `sergeant-review-and-merge`         |
+| PR review touching 3+ governed surfaces                             | `sergeant-review-squad`             |
+| Feature across 2+ surfaces with contract dependencies               | `sergeant-deliver-squad`            |
+| Full QA across all surfaces in parallel                             | `sergeant-qa-squad`                 |
+| Founder needs multi-perspective product/strategy/UX advice          | `sergeant-council`                  |
+| Execute a batch of planning tasks via parallel agents               | `sergeant-planning-batch`           |
 
-If two surfaces overlap (e.g. web + e2e), load the **owner** first; ask the other only when blocked. Full catalog: [`docs/00-start/agents/agent-skills-catalog.md`](./docs/00-start/agents/agent-skills-catalog.md).
+If two surfaces overlap (e.g. web + e2e), load the **owner** first; add the other only when the workflow requires it or when blocked. Full catalog: [`docs/00-start/agents/agent-skills-catalog.md`](./docs/00-start/agents/agent-skills-catalog.md).
 
 ### Harness config lives outside the repo
 

@@ -36,6 +36,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 | Ревʼю PR, готовність до merge, pre-merge-перевірки               | `sergeant-review-and-merge`        |
 | Web-UI, PWA-shell, Tailwind, accessibility                       | `sergeant-web-ui`                  |
 | Server-роути, серіалізатори, api-client, контракти               | `sergeant-server-api`              |
+| Backend-архітектура, CQRS, Temporal, Saga, service boundaries    | `sergeant-backend-architecture`    |
 | SQL, схема, дизайн запитів, міграції, Railway DB rollout         | `sergeant-data-and-migrations`     |
 | Expo, React Native, mobile-shell, MMKV, deep-link-и              | `sergeant-mobile-expo`             |
 | HubChat tool-defs, executors, prompt cache, action cards         | `sergeant-hubchat`                 |

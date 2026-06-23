@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-06-14 by @Skords-01. **Next review:** 2026-09-12.
+> **Last touched:** 2026-06-23 by @Skords-01. **Next review:** 2026-09-21.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -30,6 +30,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`sergeant-review-and-merge`](../../../.agents/skills/sergeant-review-and-merge/SKILL.md)                 | PR review, merge readiness                                       | Safety review, contract checks, docs freshness, commit scope               |
 | [`sergeant-web-ui`](../../../.agents/skills/sergeant-web-ui/SKILL.md)                                     | `apps/web`, PWA, Tailwind, a11y                                  | Opacity scale, `-strong` fills, storage wrappers, query keys               |
 | [`sergeant-server-api`](../../../.agents/skills/sergeant-server-api/SKILL.md)                             | `apps/server`, `packages/api-client`                             | Bigint coercion, contract triplet, Kyiv time rules                         |
+| [`sergeant-backend-architecture`](../../../.agents/skills/sergeant-backend-architecture/SKILL.md)         | Backend architecture, CQRS, Temporal, Saga, service boundaries   | Clean/hexagonal architecture, domain events, idempotent orchestration      |
 | [`sergeant-data-and-migrations`](../../../.agents/skills/sergeant-data-and-migrations/SKILL.md)           | SQL, Postgres, migrations, rollout safety                        | Generator usage, sequential numbering, two-phase DROP                      |
 | [`sergeant-mobile-expo`](../../../.agents/skills/sergeant-mobile-expo/SKILL.md)                           | `apps/mobile`, `apps/mobile-shell`                               | Expo Router boundaries, NativeWind, MMKV, no DOM leakage                   |
 | [`sergeant-hubchat`](../../../.agents/skills/sergeant-hubchat/SKILL.md)                                   | HubChat tools and executors                                      | Tool/executor coordination, prompt cache, risky actions                    |
@@ -53,6 +54,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | -------------------------------------------- | ------------------------------------------------------------------------------------- |
 | Add a new web feature or screen              | `sergeant-feature-delivery` + `sergeant-web-ui`                                       |
 | Fix a broken API response                    | `sergeant-bugfix-and-regression` + `sergeant-server-api`                              |
+| Design a new backend module or workflow      | `sergeant-backend-architecture` + `sergeant-server-api`                               |
 | Add a DB column safely                       | `sergeant-feature-delivery` + `sergeant-data-and-migrations`                          |
 | Review PR touching server + `api-client`     | `sergeant-review-and-merge` + `sergeant-server-api`                                   |
 | Add or change a HubChat tool                 | `sergeant-feature-delivery` + `sergeant-hubchat`                                      |
