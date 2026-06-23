@@ -7,6 +7,7 @@ import {
   type SetStateAction,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
@@ -132,7 +133,7 @@ export function HabitForm({
     if (!errors?.weekdays) return;
     const el = weekdaysRef.current;
     if (el && typeof el.scrollIntoView === "function") {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.scrollIntoView({ behavior: motionScrollBehavior(), block: "center" });
     }
   }, [errors?.weekdays]);
   // Minimal-first UX: emoji + name + regularity are visible on first
@@ -150,7 +151,10 @@ export function HabitForm({
     const section = sectionRef.current;
     const name = nameRef.current;
     if (section && typeof section.scrollIntoView === "function") {
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
+      section.scrollIntoView({
+        behavior: motionScrollBehavior(),
+        block: "start",
+      });
     }
     if (name && typeof name.focus === "function") {
       // Defer to the next frame so the scroll-into-view doesn't steal

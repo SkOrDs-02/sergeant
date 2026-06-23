@@ -12,6 +12,7 @@ import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tabs } from "@shared/components/ui/Tabs";
+import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import { SectionSkeleton } from "../settings/SettingsPrimitives";
@@ -339,7 +340,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
     if (!hashSectionId) return;
     const el = refs.current[hashSectionId];
     if (!el) return;
-    el.scrollIntoView({ block: "start", behavior: "smooth" });
+    el.scrollIntoView({ block: "start", behavior: motionScrollBehavior() });
   }, [hashSectionId, visibleSectionKey]);
 
   return (

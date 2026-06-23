@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useRef } from "react";
 import { Icon } from "@shared/components/ui/Icon";
+import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -62,14 +63,18 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
       const el = root.querySelector<HTMLElement>(
         `[data-hit-idx="${activeIdx}"]`,
       );
-      if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      if (el)
+        el.scrollIntoView({
+          block: "nearest",
+          behavior: motionScrollBehavior(),
+        });
     }, [activeIdx]);
 
     const grouped = results.reduce<
       Record<string, { label: string; items: Hit[] }>
     >((acc, r) => {
-      if (!acc[r.module]) acc[r.module] = { label: r.moduleLabel, items: [] };
-      acc[r.module]!.items.push(r);
+      const group = (acc[r.module] ??= { label: r.moduleLabel, items: [] });
+      group.items.push(r);
       return acc;
     }, {});
 
@@ -113,7 +118,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                   key={r}
                   type="button"
                   onClick={() => onPickRecent(r)}
-                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-panelHi border border-line text-sm text-text hover:bg-line/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                  className="inline-flex items-center gap-1.5 px-3 h-8 pointer-coarse:min-h-[44px] rounded-full bg-panelHi border border-line text-sm text-text hover:bg-line/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 >
                   <svg
                     width="12"

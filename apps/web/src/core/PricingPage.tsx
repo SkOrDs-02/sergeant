@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@shared/lib/ui/cn";
+import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
@@ -232,7 +233,10 @@ export function PricingPage() {
       setCheckoutError(t.errors.checkoutUnavailable);
       const anchor = document.getElementById("waitlist-anchor");
       if (anchor && typeof anchor.scrollIntoView === "function") {
-        anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+        anchor.scrollIntoView({
+          behavior: motionScrollBehavior(),
+          block: "start",
+        });
       }
     } finally {
       setCheckoutPlan(null);

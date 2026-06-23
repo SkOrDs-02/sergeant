@@ -7,6 +7,7 @@ import {
 } from "../utils";
 import { filterVisibleAccounts } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { computeFinykSchedule, startOfToday } from "../lib/upcomingSchedule";
+import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 
@@ -196,7 +197,7 @@ export function useAssetsState({
     if (!showAssetForm || !open.assets) return;
     const frame = requestAnimationFrame(() => {
       assetFormRef.current?.scrollIntoView({
-        behavior: "smooth",
+        behavior: motionScrollBehavior(),
         block: "start",
       });
       try {
@@ -212,7 +213,7 @@ export function useAssetsState({
     if (!showDebtForm || !open.liabilities) return;
     const frame = requestAnimationFrame(() => {
       debtFormRef.current?.scrollIntoView({
-        behavior: "smooth",
+        behavior: motionScrollBehavior(),
         block: "start",
       });
       try {
