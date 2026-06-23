@@ -74,6 +74,9 @@ describe("Segmented", () => {
     );
     const active = getAllByRole("tab")[0];
     expect(active!.className!).toContain("bg-routine-surface");
-    expect(active!.className!).toContain("text-routine-strong");
+    // Soft active label uses the theme-aware `-soft-fg` token (deep on the
+    // pale light/HC surface, bright on dark) instead of the static
+    // `text-routine-strong` hex that went sub-AA in HC. See VARIANT_SOFT.
+    expect(active!.className!).toContain("text-routine-soft-fg");
   });
 });
