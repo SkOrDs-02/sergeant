@@ -4,6 +4,7 @@
  */
 import { useState, useCallback, useRef, type ReactNode } from "react";
 import { cn } from "../../lib/ui/cn";
+import { motionScrollBehavior } from "../../lib/ui/motion";
 import { Icon } from "./Icon";
 import { SectionHeading, type SectionHeadingSize } from "./SectionHeading";
 import { safeReadLS, safeWriteLS } from "../../lib/storage/storage";
@@ -72,7 +73,7 @@ export function CollapsibleSection({
         // After CSS transition (200ms) scroll so expanded content is visible.
         setTimeout(() => {
           sectionRef.current?.scrollIntoView({
-            behavior: "smooth",
+            behavior: motionScrollBehavior(),
             block: "nearest",
           });
         }, 210);
