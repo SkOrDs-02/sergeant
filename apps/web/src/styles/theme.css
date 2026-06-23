@@ -285,6 +285,7 @@
        (see `.dark` / `html.hc*` below) so one `text-<m>-soft-fg` utility
        replaces the old `text-<m>-strong dark:text-<m>` pair — the saturated
        mid-accent in dark mode measured ~1.8:1 and was illegible. */
+    --c-brand-soft-fg: 4 120 87; /* emerald-700 — brand accent on brand-soft */
     --c-finyk-soft-fg: 4 120 87; /* emerald-700 */
     --c-fizruk-soft-fg: 21 94 117; /* cyan-800 */
     --c-routine-soft-fg: 194 58 58; /* coral-700 */
@@ -528,6 +529,7 @@
        — the fizruk soft button measured ~1.77:1 on prod (a11y fail). The
        `-300` tier clears WCAG AA with margin (≈7.9–10.3:1 on `bg-<m>/15`
        over `--c-panel`) while staying the module's own hue. */
+    --c-brand-soft-fg: 110 231 183; /* emerald-300 — brand accent on brand-soft */
     --c-finyk-soft-fg: 110 231 183; /* emerald-300 */
     --c-fizruk-soft-fg: 103 232 249; /* cyan-300 */
     --c-routine-soft-fg: 255 180 165; /* coral-300 */
@@ -702,6 +704,7 @@
        the bumped `-200` soft surface. Coral is hue-capped at ≈6.4:1 (still
        AA, and a lift over the base `-strong`): a warm coral ink can't reach
        AAA on a coral-200 surface within the registered palette. */
+    --c-brand-soft-fg: 6 78 59; /* emerald-900 — brand accent on brand-soft (AAA) */
     --c-finyk-soft-fg: 6 78 59; /* emerald-900 */
     --c-fizruk-soft-fg: 22 78 99; /* cyan-900 */
     --c-routine-soft-fg: 134 46 46; /* coral-900 — hue-capped ≈6.4:1 (AA) */
@@ -758,6 +761,7 @@
 
     /* Soft-fill foreground (HC dark) — brightest `-200` accent for ≥7:1
        AAA on the `bg-<m>/15` fill over the dark panel (≈10–12:1). */
+    --c-brand-soft-fg: 167 243 208; /* emerald-200 — brand accent on brand-soft (AAA) */
     --c-finyk-soft-fg: 167 243 208; /* emerald-200 */
     --c-fizruk-soft-fg: 165 243 252; /* cyan-200 */
     --c-routine-soft-fg: 255 212 203; /* coral-200 */

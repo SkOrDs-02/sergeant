@@ -94,16 +94,20 @@ const VARIANT_UNDERLINE: Record<TabsVariant, string> = {
   nutrition: "border-nutrition",
 };
 
+// Active-pill ink uses the theme-aware `-soft-fg` token (deep on the pale
+// light/HC `-soft` surface, bright accent on the deep dark surface) instead
+// of the static `text-{c}-strong dark:text-{c}` pair. The fixed `-strong`
+// hex went sub-AA once HC bumped the `-soft` surface a step darker (the
+// settings group switcher measured 4.28:1 in HC). Module variants keep
+// their dark surface-tint override; only the text token changes.
 const VARIANT_PILL: Record<TabsVariant, string> = {
-  brand: "bg-brand-soft text-brand-strong dark:text-brand",
-  finyk:
-    "bg-finyk-soft text-finyk-strong dark:bg-finyk-surface-dark/15 dark:text-finyk",
-  fizruk:
-    "bg-fizruk-soft text-fizruk-strong dark:bg-fizruk-surface-dark/15 dark:text-fizruk-300",
+  brand: "bg-brand-soft text-brand-soft-fg",
+  finyk: "bg-finyk-soft text-finyk-soft-fg dark:bg-finyk-surface-dark/15",
+  fizruk: "bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk-surface-dark/15",
   routine:
-    "bg-routine-surface text-routine-strong dark:bg-routine-surface-dark/15 dark:text-routine",
+    "bg-routine-surface text-routine-soft-fg dark:bg-routine-surface-dark/15",
   nutrition:
-    "bg-nutrition-soft text-nutrition-strong dark:bg-nutrition-surface-dark/15 dark:text-nutrition",
+    "bg-nutrition-soft text-nutrition-soft-fg dark:bg-nutrition-surface-dark/15",
 };
 
 // `brand` tabs use the semantic `ring-focus` token so the keyboard focus
