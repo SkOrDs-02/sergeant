@@ -17,17 +17,30 @@
    set a 44×44 / 48×48 floor on coarse pointers. The CSS rule below is a
    defence-in-depth guarantee for any interactive element that was added
    without a min-size — it raises the floor to 44×44 on touch devices for
-   every `<button>`, anchor with `role="button"`, and `role="tab"` element
-   that is not explicitly opted out via the `data-compact` attribute.
+   every `<button>`, any `role="button"` host (incl. `<div>`/`<span>`
+   triggers), `role="tab"`, and menu/listbox items (`role="menuitem"`,
+   `role="menuitemradio"`, `role="option"`) that is not explicitly opted
+   out via the `data-compact` attribute.
+
+   Toggle-style controls (`role="switch"` / `checkbox` / `radio`) are
+   intentionally excluded: their visual control is small by design and the
+   tap area comes from the wrapping label, so a forced 44×44 would distort
+   compact toggle layouts. Wrap those in a `touch-target` label instead.
 
    Use `data-compact` on heatmap cells, dense data grid handles, inline
    chips inside paragraphs, and any element where 44×44 would crowd the
    surrounding layout. The opt-out is intentional and per-element.
+   (Note: CSS min-size does not apply to SVG `<g>`/`<path>` hosts, so
+   in-SVG `role="button"` regions like the Fizruk body atlas are unaffected
+   by this rule and keep their anatomical geometry.)
    ═══════════════════════════════════════════════════════════════════════ */
 @media (pointer: coarse) {
   button:not([data-compact]):not(:disabled),
-  a[role="button"]:not([data-compact]),
-  [role="tab"]:not([data-compact]) {
+  [role="button"]:not([data-compact]):not(:disabled),
+  [role="tab"]:not([data-compact]),
+  [role="menuitem"]:not([data-compact]),
+  [role="menuitemradio"]:not([data-compact]),
+  [role="option"]:not([data-compact]) {
     min-height: 44px;
     min-width: 44px;
   }
