@@ -209,6 +209,11 @@ const preset = {
         "brand-soft": "rgb(var(--c-brand-soft) / <alpha-value>)",
         "brand-soft-border": "rgb(var(--c-brand-soft-border) / <alpha-value>)",
         "brand-soft-hover": "rgb(var(--c-brand-soft-hover) / <alpha-value>)",
+        // Theme-aware FOREGROUND ink for brand soft-tinted controls (soft
+        // Tabs/Badges/Buttons on `bg-brand-soft`). Mirrors the module
+        // `-soft-fg` contract: deep ink on the pale light/HC surface, bright
+        // accent on the deep dark surface. Backed by `--c-brand-soft-fg`.
+        "brand-soft-fg": "rgb(var(--c-brand-soft-fg) / <alpha-value>)",
         // WCAG-AA companions: `text-{c}-strong` on cream / soft surfaces,
         // `bg-{c}-strong text-white` on solid fills (Buttons, Badges, Tabs).
         "success-strong": brandColors.emerald[700], // #047857 — 5.23:1 on cream / 5.48:1 on white
