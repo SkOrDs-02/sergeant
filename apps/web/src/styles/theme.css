@@ -290,6 +290,15 @@
     --c-routine-soft-fg: 194 58 58; /* coral-700 */
     --c-nutrition-soft-fg: 70 98 18; /* lime-800 */
 
+    /* Status `-soft-fg` — deep ink on the pale `-100` status surfaces
+       (≥4.5:1 AA), matching the prior static `text-{c}-strong`. The
+       dark + HC scopes below flip to a bright/deep tier so one
+       `text-{c}-soft-fg` utility stays legible across themes. */
+    --c-success-soft-fg: 4 120 87; /* emerald-700 on emerald-100 */
+    --c-warning-soft-fg: 180 83 9; /* amber-700 on amber-100 */
+    --c-danger-soft-fg: 185 28 28; /* red-700 on red-100 */
+    --c-info-soft-fg: 7 89 133; /* sky-800 on sky-100 */
+
     /* Celebration / gamification tokens */
     --c-celebration: 251 191 36; /* amber-400 — confetti, stars, rewards */
     --c-streak-glow: 249 112 102; /* coral-500 — streak flame glow */
@@ -524,6 +533,14 @@
     --c-routine-soft-fg: 255 180 165; /* coral-300 */
     --c-nutrition-soft-fg: 200 242 100; /* lime-300 */
 
+    /* Status `-soft-fg` (dark) — bright `-300` ink on the deep `-800/-900`
+       status surfaces (≈7–10:1). Keeps the prior dark badge look
+       (`dark:text-amber-300` / `-red-300` / `-blue-300`). */
+    --c-success-soft-fg: 110 231 183; /* emerald-300 */
+    --c-warning-soft-fg: 252 211 77; /* amber-300 */
+    --c-danger-soft-fg: 252 165 165; /* red-300 */
+    --c-info-soft-fg: 125 211 252; /* sky-300 */
+
     /* Chart series — brighter -400 tier for visibility on dark warm bg.
        Sync with `:root` chart vars + `chart-{module}` Tailwind palette. */
     --c-chart-finyk: 52 211 153; /* emerald-400 */
@@ -690,6 +707,15 @@
     --c-routine-soft-fg: 134 46 46; /* coral-900 — hue-capped ≈6.4:1 (AA) */
     --c-nutrition-soft-fg: 59 83 20; /* lime-900 */
 
+    /* Status `-soft-fg` (HC light) — deepest `-900` ink for ≥7:1 AAA on the
+       HC-bumped `-200/-300` status surfaces. This is the spot the static
+       `text-{c}-strong` (amber-700/sky-800/…) went sub-AA on: HC darkened
+       the soft surface a step but the fixed-hex ink couldn't follow. */
+    --c-success-soft-fg: 6 78 59; /* emerald-900 on emerald-200 */
+    --c-warning-soft-fg: 120 53 15; /* amber-900 on amber-300 */
+    --c-danger-soft-fg: 127 29 29; /* red-900 on red-200 */
+    --c-info-soft-fg: 12 74 110; /* sky-900 on sky-200 */
+
     /* Chart series — HC light keeps the AA-strong tier from `:root`
        (already 5+ contrast on cream). 4 hues stay distinguishable. */
     --c-chart-finyk: 4 120 87; /* emerald-700 */
@@ -736,6 +762,13 @@
     --c-fizruk-soft-fg: 165 243 252; /* cyan-200 */
     --c-routine-soft-fg: 255 212 203; /* coral-200 */
     --c-nutrition-soft-fg: 223 249 157; /* lime-200 */
+
+    /* Status `-soft-fg` (HC dark) — brightest `-200` ink for ≥7:1 AAA on
+       the `-700` status surfaces. */
+    --c-success-soft-fg: 167 243 208; /* emerald-200 on emerald-700 */
+    --c-warning-soft-fg: 253 230 138; /* amber-200 on amber-700 */
+    --c-danger-soft-fg: 254 202 202; /* red-200 on red-700 */
+    --c-info-soft-fg: 186 230 253; /* sky-200 on sky-700 */
 
     /* Chart series — HC dark uses brighter -300 tier so 4 hues stay
        distinguishable against high-contrast dark bg + meet ≥7:1 AAA. */

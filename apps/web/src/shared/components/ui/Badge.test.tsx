@@ -48,6 +48,25 @@ describe("Badge", () => {
     expect(el.className).toContain("border-finyk/60");
   });
 
+  it("soft status variants use the theme-aware -soft-fg ink (HC AA fix)", () => {
+    // The static `text-{c}-strong` hex went sub-AA once HC bumped the
+    // `-soft` surface a step darker. `-soft-fg` resolves per theme so the
+    // ink follows the surface. Lock the wiring so a revert is caught.
+    const cases = [
+      ["success", "bg-success-soft", "text-success-soft-fg"],
+      ["warning", "bg-warning-soft", "text-warning-soft-fg"],
+      ["danger", "bg-danger-soft", "text-danger-soft-fg"],
+      ["info", "bg-info-soft", "text-info-soft-fg"],
+    ] as const;
+    for (const [variant, bg, fg] of cases) {
+      const { container } = render(<Badge variant={variant}>x</Badge>);
+      const el = container.querySelector("span")!;
+      expect(el.className).toContain(bg);
+      expect(el.className).toContain(fg);
+      cleanup();
+    }
+  });
+
   it("renders an aria-hidden dot when dot=true", () => {
     const { container } = render(<Badge dot>Live</Badge>);
     const dot = container.querySelector("span > span[aria-hidden]");
