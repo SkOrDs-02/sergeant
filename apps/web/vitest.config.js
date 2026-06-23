@@ -100,14 +100,26 @@ export default defineConfig({
         //   coverage-thresholds.json), branches → 41, fns → 40,
         //   statements → 48. ~0.2–0.75pp headroom kept for throttled CI.
         //
-        // Floors set ~0.2–0.75pp below current actuals. Raise per sprint
-        // as more module slices land (target: lines 50→55, branches
-        // 41→40 — see docs/90-work/planning/pr-plan-testing-devx-2026-05.md).
+        // - 2026-06-23 (web-test-coverage-75 push): landed ~160 new unit
+        //   suites across finyk/fizruk/nutrition/routine modules,
+        //   core/lib (hubChat*, insightsEngine, chatActions),
+        //   core/hub cards + search/chat hooks, shared components/hooks/lib
+        //   and core settings/onboarding/security. Measured (CI worker cap,
+        //   full suite green — 562 files / 5530 tests):
+        //     lines 77.65 / branches 65.67 / fns 66.01 / statements 75.68.
+        //   Ratchet: lines → 75 (in coverage-thresholds.json — meets the
+        //   repo-wide default floor), branches → 63, fns → 64,
+        //   statements → 73. ~2–2.7pp headroom kept for throttled CI.
+        //
+        // Floors set ~2–2.7pp below current actuals. Raise per sprint
+        // as more component shells land (next targets: FinykApp,
+        // NutritionApp, useRoutineAppState, CommandPaletteUI,
+        // HabitDetailSheet — the heavy orchestration shells still at 0%).
         // `lines` приходить з кореневого coverage-thresholds.json.
         lines: sharedThresholds["apps/web"],
-        branches: 41,
-        functions: 40,
-        statements: 48,
+        branches: 63,
+        functions: 64,
+        statements: 73,
       },
     },
   },

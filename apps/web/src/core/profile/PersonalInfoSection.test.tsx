@@ -189,6 +189,78 @@ describe("PersonalInfoSection — email change", () => {
   });
 });
 
+describe("PersonalInfoSection — avatar", () => {
+  function avatarInput(): HTMLInputElement {
+    return document.querySelector(
+      'input[type="file"][accept="image/*"]',
+    ) as HTMLInputElement;
+  }
+
+  it("uploads a compressed avatar on file change (happy path)", async () => {
+    updateUserMock.mockResolvedValue({ data: { ok: true }, error: null });
+    const { onRefresh } = renderSection();
+
+    const file = new File(["x"], "a.png", { type: "image/png" });
+    fireEvent.change(avatarInput(), { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(updateUserMock).toHaveBeenCalledWith({
+        image: "data:image/png;base64,stub",
+      });
+    });
+    await waitFor(() => {
+      expect(toastSuccessMock).toHaveBeenCalledWith("Аватар оновлено");
+      expect(onRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it("surfaces an updateUser error toast on avatar upload failure", async () => {
+    updateUserMock.mockResolvedValue({
+      error: { code: "BAD", message: "nope" },
+    });
+    renderSection();
+
+    const file = new File(["x"], "a.png", { type: "image/png" });
+    fireEvent.change(avatarInput(), { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(toastErrorMock).toHaveBeenCalled();
+    });
+    expect(toastSuccessMock).not.toHaveBeenCalled();
+  });
+
+  it("confirm + remove avatar calls updateUser({image:null})", async () => {
+    updateUserMock.mockResolvedValue({ data: { ok: true }, error: null });
+    renderSection({ image: "data:image/png;base64,existing" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Видалити фото" }));
+    fireEvent.click(screen.getByRole("button", { name: "Так" }));
+
+    await waitFor(() => {
+      expect(updateUserMock).toHaveBeenCalledWith({ image: null });
+    });
+    await waitFor(() => {
+      expect(toastSuccessMock).toHaveBeenCalledWith("Аватар видалено");
+    });
+  });
+
+  it("can cancel the avatar-remove confirmation", () => {
+    renderSection({ image: "data:image/png;base64,existing" });
+    fireEvent.click(screen.getByRole("button", { name: "Видалити фото" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ні" }));
+    expect(
+      screen.getByRole("button", { name: "Видалити фото" }),
+    ).toBeInTheDocument();
+    expect(updateUserMock).not.toHaveBeenCalled();
+  });
+
+  it("renders the name initial when no avatar image is set", () => {
+    renderSection({ image: null, name: "Олег" });
+    // Hero shows the uppercased first letter as a fallback avatar.
+    expect(screen.getByText("О")).toBeInTheDocument();
+  });
+});
+
 describe("PersonalInfoSection — email verification", () => {
   it("unverified user sees the banner; Надіслати calls sendVerificationEmail", async () => {
     sendVerificationEmailMock.mockResolvedValue({ error: null });

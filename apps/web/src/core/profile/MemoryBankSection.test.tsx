@@ -47,8 +47,14 @@ vi.mock("@shared/lib/ui/undoToast", () => ({
   showUndoToast: (...args: unknown[]) => showUndoToastMock(...args),
 }));
 
+const toastSuccessMock = vi.fn();
+const toastErrorMock = vi.fn();
 vi.mock("@shared/hooks/useToast", () => ({
-  useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }),
+  useToast: () => ({
+    success: toastSuccessMock,
+    error: toastErrorMock,
+    info: vi.fn(),
+  }),
 }));
 
 import { MemoryBankSection } from "./MemoryBankSection";
@@ -59,6 +65,8 @@ beforeEach(() => {
   removeMemoryEntryMock.mockClear();
   emitHubBusMock.mockReset();
   showUndoToastMock.mockReset();
+  toastSuccessMock.mockReset();
+  toastErrorMock.mockReset();
 });
 
 afterEach(() => {
@@ -113,5 +121,76 @@ describe("MemoryBankSection — populated", () => {
     expect((payload as { message: string }).message).not.toBe(
       "ONBOARDING_PROMPT",
     );
+  });
+});
+
+describe("MemoryBankSection — export", () => {
+  it("exports entries to a downloadable JSON blob", () => {
+    storedEntries = [ENTRY];
+    const createObjectURL = vi.fn(() => "blob:fake");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    render(<MemoryBankSection />);
+    fireEvent.click(screen.getByRole("button", { name: "Експорт пам'яті" }));
+
+    expect(createObjectURL).toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalled();
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:fake");
+    expect(toastSuccessMock).toHaveBeenCalledWith("Експорт завершено");
+
+    clickSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("MemoryBankSection — import", () => {
+  function importFile(content: string) {
+    // The empty-state import button is the simplest entry point.
+    render(<MemoryBankSection />);
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File([content], "mem.json", {
+      type: "application/json",
+    });
+    // jsdom's FileReader.readAsText reads File contents; provide text().
+    Object.defineProperty(file, "text", {
+      value: () => Promise.resolve(content),
+    });
+    fireEvent.change(input, { target: { files: [file] } });
+    return input;
+  }
+
+  it("imports a valid array of entries and merges new ones", async () => {
+    const entries = [{ id: "n1", fact: "Веган", category: "diet" }];
+    importFile(JSON.stringify(entries));
+
+    await vi.waitFor(() => {
+      expect(writeMemoryEntriesMock).toHaveBeenCalled();
+    });
+    await vi.waitFor(() => {
+      expect(toastSuccessMock).toHaveBeenCalledWith(
+        expect.stringContaining("Імпортовано"),
+      );
+    });
+  });
+
+  it("rejects a non-array payload", async () => {
+    importFile(JSON.stringify({ not: "an array" }));
+    await vi.waitFor(() => {
+      expect(toastErrorMock).toHaveBeenCalledWith("Невалідний формат файлу");
+    });
+    expect(writeMemoryEntriesMock).not.toHaveBeenCalled();
+  });
+
+  it("reports a parse failure on malformed JSON", async () => {
+    importFile("{ broken json");
+    await vi.waitFor(() => {
+      expect(toastErrorMock).toHaveBeenCalledWith("Не вдалося прочитати файл");
+    });
   });
 });

@@ -48,6 +48,26 @@ describe("bootSyncEngineWriter", () => {
     expect(getSyncEngineWriter()).toBe(runtime);
   });
 
+  it("shares one in-flight boot across concurrent callers", async () => {
+    const runtime = makeRuntime();
+    let resolveCreate: (r: SyncEngineWriterRuntime) => void = () => {};
+    const createRuntime = vi.fn(
+      () =>
+        new Promise<SyncEngineWriterRuntime>((res) => {
+          resolveCreate = res;
+        }),
+    );
+
+    const p1 = bootSyncEngineWriter({ createRuntime });
+    const p2 = bootSyncEngineWriter({ createRuntime });
+    resolveCreate(runtime);
+    const [r1, r2] = await Promise.all([p1, p2]);
+
+    expect(r1).toBe(runtime);
+    expect(r2).toBe(runtime);
+    expect(createRuntime).toHaveBeenCalledTimes(1);
+  });
+
   it("does not throw when boot dependencies are unavailable", async () => {
     const captureException = vi.fn();
     const createRuntime = vi.fn().mockRejectedValue(new Error("sqlite down"));
