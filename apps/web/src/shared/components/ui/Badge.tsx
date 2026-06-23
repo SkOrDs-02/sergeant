@@ -49,21 +49,20 @@ const solidVariants: Record<BadgeVariant, string> = {
 };
 
 // Wave 1b: the soft-wash variants collapse onto preset-owned tokens
-// (`-soft`, `-soft-border`, `-strong`) — no more hand-rolled `dark:`
-// palette patches. `text-amber-700 dark:text-amber-300` retained for
-// warning/info because the `-strong` companion is tuned for cream/white
-// backgrounds and the dark-mode text remains palette-driven.
+// (`-soft`, `-soft-border`, `-soft-fg`) — no more hand-rolled `dark:`
+// palette patches. The status `-soft-fg` ink is theme-aware (deep on the
+// pale light/HC `-soft` surface, bright on the deep dark `-soft` surface),
+// so a single utility replaces the old `text-{c}-strong dark:text-…` pair.
+// The static `-strong` hex went sub-AA once HC bumped the `-soft` surface
+// a step darker — `-soft-fg` follows the surface per theme. See theme.css.
 const softVariants: Record<BadgeVariant, string> = {
   neutral: "bg-surface-muted text-fg-muted border-line",
   accent:
     "bg-brand-soft text-brand-strong border-brand-soft-border/60 dark:text-brand",
-  success:
-    "bg-brand-soft text-brand-strong border-brand-soft-border/60 dark:text-brand",
-  warning:
-    "bg-warning-soft text-warning-strong border-warning/30 dark:text-amber-300",
-  danger:
-    "bg-danger-soft text-danger-strong border-danger/30 dark:text-red-200",
-  info: "bg-info-soft text-info-strong border-info/30 dark:text-blue-300",
+  success: "bg-success-soft text-success-soft-fg border-success/30",
+  warning: "bg-warning-soft text-warning-soft-fg border-warning/30",
+  danger: "bg-danger-soft text-danger-soft-fg border-danger/30",
+  info: "bg-info-soft text-info-soft-fg border-info/30",
   finyk:
     "bg-finyk-soft text-finyk-strong border-finyk-ring/50 dark:bg-finyk-surface-dark/15 dark:text-finyk dark:border-finyk-border-dark/30",
   fizruk:

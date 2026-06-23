@@ -202,6 +202,18 @@ const preset = {
         "warning-soft": "rgb(var(--c-warning-soft) / <alpha-value>)",
         "danger-soft": "rgb(var(--c-danger-soft) / <alpha-value>)",
         "info-soft": "rgb(var(--c-info-soft) / <alpha-value>)",
+        // `-soft-fg` — theme-aware FOREGROUND ink for status soft fills
+        // (soft Badges/Banners). Mirrors the brand/module `-soft-fg`
+        // contract: a single utility resolves to a deep ink on the pale
+        // light/HC `-soft` surface and a bright `-300/-200` accent on the
+        // deep dark `-soft` surface. Replaces the static `text-{c}-strong`
+        // (emerald-700/amber-700/…) whose fixed hex went sub-AA once HC
+        // bumped the `-soft` surface a step darker. Backed by
+        // `--c-{c}-soft-fg` in theme.css (light/dark/HC).
+        "success-soft-fg": "rgb(var(--c-success-soft-fg) / <alpha-value>)",
+        "warning-soft-fg": "rgb(var(--c-warning-soft-fg) / <alpha-value>)",
+        "danger-soft-fg": "rgb(var(--c-danger-soft-fg) / <alpha-value>)",
+        "info-soft-fg": "rgb(var(--c-info-soft-fg) / <alpha-value>)",
         // Brand soft tint trio (Wave 1b). Theme-adaptive via `--c-brand-soft*`
         // in `apps/web/src/index.css`. Call-sites that previously wrote
         // `bg-brand-50 dark:bg-brand-500/15` collapse to a single
