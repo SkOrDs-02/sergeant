@@ -125,34 +125,32 @@ const NEUTRAL_TONE: TonePalette = {
   eyebrow: "bg-panelHi text-subtle border border-line",
 };
 
-// `-strong` companions on the chip text keep contrast at ≥4.5:1 on the
-// `-soft` background per Hard Rule #9 — the saturated brand surfaces
-// underneath chip text always pair with `-strong` foregrounds.
+// The chip text uses the theme-aware `text-{c}-soft-fg` token (deep ink on
+// the pale light/HC `-soft` surface, bright accent on the deep dark
+// surface) instead of the static `text-{c}-strong dark:text-{palette}-100`
+// pair — the fixed `-strong` hex went sub-AA once HC bumped the `-soft`
+// surface a step darker. See `--c-{c}-soft-fg` in theme.css.
 const VARIANT_TONE: Record<EmptyStateVariant, TonePalette> = {
   neutral: NEUTRAL_TONE,
   info: {
-    container: "bg-info-soft border-info/30 text-info-strong",
-    icon: "text-info-strong/80",
-    eyebrow:
-      "bg-info-soft text-info-strong border border-info/30 dark:text-sky-100",
+    container: "bg-info-soft border-info/30 text-info-soft-fg",
+    icon: "text-info-soft-fg/80",
+    eyebrow: "bg-info-soft text-info-soft-fg border border-info/30",
   },
   success: {
-    container: "bg-success-soft border-success/30 text-success-strong",
-    icon: "text-success-strong/80",
-    eyebrow:
-      "bg-success-soft text-success-strong border border-success/30 dark:text-emerald-100",
+    container: "bg-success-soft border-success/30 text-success-soft-fg",
+    icon: "text-success-soft-fg/80",
+    eyebrow: "bg-success-soft text-success-soft-fg border border-success/30",
   },
   warning: {
-    container: "bg-warning-soft border-warning/30 text-warning-strong",
-    icon: "text-warning-strong/80",
-    eyebrow:
-      "bg-warning-soft text-warning-strong border border-warning/30 dark:text-amber-100",
+    container: "bg-warning-soft border-warning/30 text-warning-soft-fg",
+    icon: "text-warning-soft-fg/80",
+    eyebrow: "bg-warning-soft text-warning-soft-fg border border-warning/30",
   },
   danger: {
-    container: "bg-danger-soft border-danger/30 text-danger-strong",
-    icon: "text-danger-strong/80",
-    eyebrow:
-      "bg-danger-soft text-danger-strong border border-danger/30 dark:text-red-100",
+    container: "bg-danger-soft border-danger/30 text-danger-soft-fg",
+    icon: "text-danger-soft-fg/80",
+    eyebrow: "bg-danger-soft text-danger-soft-fg border border-danger/30",
   },
 };
 
