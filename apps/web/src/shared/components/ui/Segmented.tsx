@@ -66,17 +66,21 @@ const VARIANT_SOLID: Record<SegmentedVariant, string> = {
   finyk: "bg-finyk-strong text-white border-finyk",
 };
 
+// Soft mode active label uses the theme-aware `text-{c}-soft-fg` token
+// (deep ink on the pale light/HC surface, bright accent on the deep dark
+// surface) instead of the static `text-{c}-strong dark:text-{c}` pair —
+// the fixed `-strong` hex went sub-AA once HC bumped the `-soft` surface a
+// step darker. Module variants keep their dark surface/border tint.
 const VARIANT_SOFT: Record<SegmentedVariant, string> = {
-  brand:
-    "border-brand-soft-border bg-brand-soft text-brand-strong shadow-sm dark:text-brand",
+  brand: "border-brand-soft-border bg-brand-soft text-brand-soft-fg shadow-sm",
   fizruk:
-    "border-fizruk-ring bg-fizruk-surface text-fizruk-strong shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15 dark:text-fizruk-300",
+    "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15",
   routine:
-    "border-routine-ring bg-routine-surface text-routine-strong shadow-sm dark:border-routine-border-dark/40 dark:bg-routine-surface-dark/15 dark:text-routine",
+    "border-routine-ring bg-routine-surface text-routine-soft-fg shadow-sm dark:border-routine-border-dark/40 dark:bg-routine-surface-dark/15",
   nutrition:
-    "border-nutrition-ring bg-nutrition-surface text-nutrition-strong shadow-sm dark:border-nutrition-border-dark/40 dark:bg-nutrition-surface-dark/15 dark:text-nutrition",
+    "border-nutrition-ring bg-nutrition-surface text-nutrition-soft-fg shadow-sm dark:border-nutrition-border-dark/40 dark:bg-nutrition-surface-dark/15",
   finyk:
-    "border-finyk-ring bg-finyk-surface text-finyk-strong shadow-sm dark:border-finyk-border-dark/40 dark:bg-finyk-surface-dark/15 dark:text-finyk",
+    "border-finyk-ring bg-finyk-surface text-finyk-soft-fg shadow-sm dark:border-finyk-border-dark/40 dark:bg-finyk-surface-dark/15",
 };
 
 const INACTIVE =

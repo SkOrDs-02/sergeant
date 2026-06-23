@@ -11,19 +11,16 @@ export type BannerVariant = StatusColor;
 // declarations were applied in *both* modes, which collapsed contrast to
 // ~1.05:1 on the light-theme rendering.
 // Wave 1b: status variants collapse onto preset-owned `{status}-soft` /
-// `{status}-strong` pairs; the `--c-{status}-soft` CSS variables carry
-// the light/dark swap so `dark:` palette patches are no longer needed.
-// `dark:text-{palette}-100` retained because the `-strong` companion is
-// tuned for cream/white backgrounds and reads too dim on the dark soft
-// surface — the lighter `-100` shade keeps body copy legible there.
+// `{status}-soft-fg` pairs. The foreground is the theme-aware
+// `text-{status}-soft-fg` token — deep ink on the pale light/HC surface,
+// bright accent on the deep dark surface — replacing the static
+// `text-{status}-strong dark:text-{palette}-100` pair (the fixed `-strong`
+// hex went sub-AA once HC bumped the `-soft` surface a step darker).
 const variants: Record<BannerVariant, string> = {
   info: "border-line bg-panelHi/60 text-text",
-  success:
-    "border-success/30 bg-success-soft text-success-strong dark:text-emerald-100",
-  warning:
-    "border-warning/30 bg-warning-soft text-warning-strong dark:text-amber-100",
-  danger:
-    "border-danger/30 bg-danger-soft text-danger-strong dark:text-red-100",
+  success: "border-success/30 bg-success-soft text-success-soft-fg",
+  warning: "border-warning/30 bg-warning-soft text-warning-soft-fg",
+  danger: "border-danger/30 bg-danger-soft text-danger-soft-fg",
 };
 
 export interface BannerProps extends HTMLAttributes<HTMLDivElement> {

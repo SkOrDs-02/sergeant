@@ -70,11 +70,11 @@ const variants: Record<ButtonVariant, string> = {
   ghost:
     "bg-transparent text-muted hover:bg-panelHi hover:text-text active:bg-line/50",
   danger:
-    "bg-danger-soft text-danger-strong border border-danger/30 hover:bg-danger/15 hover:border-danger/50 dark:text-red-200 active:scale-[0.98]",
+    "bg-danger-soft text-danger-soft-fg border border-danger/30 hover:bg-danger/15 hover:border-danger/50 active:scale-[0.98]",
   destructive:
     "bg-danger-strong text-white shadow-sm hover:brightness-110 hover:shadow-[0_0_0_3px_rgba(239,68,68,0.15)] active:scale-[0.98]",
   success:
-    "bg-brand-soft text-brand-strong border border-brand-soft-border/50 hover:bg-brand-soft-hover dark:text-brand-300 active:scale-[0.98]",
+    "bg-brand-soft text-brand-soft-fg border border-brand-soft-border/50 hover:bg-brand-soft-hover active:scale-[0.98]",
 
   // Module-specific branded buttons
   finyk:
