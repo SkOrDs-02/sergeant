@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   BASE — Reset, body, scrollbar, selection, reduced-motion, iOS input
-   zoom fix. Extracted from index.css per
+   BASE — Reset, body, scrollbar, selection, iOS input zoom fix.
+   (Reduced-motion lives in styles/animations.css — see note below.)
+   Extracted from index.css per
    docs/diagnostics/2026-05-03-web-deep-dive §1.4.
    ═══════════════════════════════════════════════════════════════════════ */
 
@@ -146,18 +147,15 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
-     REDUCED MOTION — respect OS-level preference (WCAG 2.3.3)
+     REDUCED MOTION — owned solely by `styles/animations.css` (the designed
+     Hard-Rule-#17 strategy: RESPONSE/CELEBRATE collapse to a 100ms
+     `rm-opacity-fade`, AMBIENT loops pause in place, `scroll-behavior: auto`).
+     A previous blanket `animation-duration: 0.01ms !important` lived here in
+     the same `base` layer and, because base.css is imported *after*
+     animations.css, silently won the equal-specificity `*` cascade and
+     flattened the graceful fade to an invisible instant flash. Removed so
+     animations.css is the single source of truth (WCAG 2.3.3 still satisfied).
      ═══════════════════════════════════════════════════════════════════════ */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
