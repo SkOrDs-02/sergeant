@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Skeleton, SkeletonBudgetBar } from "@shared/components/ui/Skeleton";
 import { HIGHLIGHT_CLEAR_MS } from "@shared/lib/ui/timeouts";
+import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import {
   DataState,
   type DataStateQueryLike,
@@ -235,7 +236,10 @@ export function Budgets({
     const raf = requestAnimationFrame(() => {
       const node = limitCardRefs.current.get(focusLimitCategoryId);
       if (node) {
-        node.scrollIntoView({ behavior: "smooth", block: "center" });
+        node.scrollIntoView({
+          behavior: motionScrollBehavior(),
+          block: "center",
+        });
         setHighlightedCategoryId(focusLimitCategoryId);
       }
     });

@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { type User } from "@sergeant/shared";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
+import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { HubDashboard } from "../hub/HubDashboard";
 import { lazyImport } from "../lib/lazyImport";
@@ -121,7 +122,10 @@ export const HubMainContent = memo(function HubMainContent({
   }, []);
   useEffect(() => {
     if (prevHubViewRef.current !== null && prevHubViewRef.current !== hubView) {
-      scrollElRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      scrollElRef.current?.scrollTo({
+        top: 0,
+        behavior: motionScrollBehavior(),
+      });
     }
     prevHubViewRef.current = hubView;
   }, [hubView]);
