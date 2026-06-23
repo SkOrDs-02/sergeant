@@ -1,12 +1,12 @@
 {
   "$schema": "../../docs/04-governance/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-22",
+  "generated_at": "2026-06-23",
   "package": "@sergeant/shared",
   "entryFile": "packages/shared/src/index.ts",
   "stats": {
     "exportCount": 1,
-    "totalImporters": 349,
+    "totalImporters": 351,
     "deadExports": 0
   },
   "exports": [

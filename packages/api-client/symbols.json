@@ -1,12 +1,12 @@
 {
   "$schema": "../../docs/04-governance/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-22",
+  "generated_at": "2026-06-23",
   "package": "@sergeant/api-client",
   "entryFile": "packages/api-client/src/index.ts",
   "stats": {
     "exportCount": 200,
-    "totalImporters": 38,
+    "totalImporters": 39,
     "deadExports": 108
   },
   "exports": [
@@ -138,8 +138,11 @@
       "name": "ApiErrorInit",
       "kind": "re-export",
       "fromFile": "./ApiError",
-      "usedBy": ["apps/web/src/shared/api/index.ts"],
-      "usageCount": 1
+      "usedBy": [
+        "apps/web/src/core/hub/search/useInlineAiRail.test.tsx",
+        "apps/web/src/shared/api/index.ts"
+      ],
+      "usageCount": 2
     },
     {
       "name": "ApiErrorKind",

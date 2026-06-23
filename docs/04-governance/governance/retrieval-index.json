@@ -4,7 +4,7 @@
   "generated_at": "2026-06-23",
   "sourceHashes": {
     "knowledge-graph": "d0213f269fe04391b5bf72b30d27c1d632a2c4174d0b92958769a32fd0dc3908",
-    "symbol-index": "342f96ffaeb45ee4b211eac1907c6245cb67c9f42839cf3c5145a85a1fad6f63"
+    "symbol-index": "01eca6cd4f4582a2e21fc9c87ff80eb9853ebb7d2762451304b790b92a6d423f"
   },
   "counts": {
     "adr": 64,
@@ -917,8 +917,8 @@
       "path": "packages/api-client/src/ApiError",
       "title": "ApiErrorInit (re-export)",
       "tier": "extended",
-      "text": "ApiErrorInit · re-export · @sergeant/api-client · packages/api-client/src/ApiError · used 1×",
-      "contentHash": "6eae6927d1abfb2cab97318ab01fd76fd18a4ed63b98c38facbf2c0163152236"
+      "text": "ApiErrorInit · re-export · @sergeant/api-client · packages/api-client/src/ApiError · used 2×",
+      "contentHash": "156fc4acb5f83fe97c2158e43f79dcab533be297d4d53965e6b79e365de1f9e1"
     },
     {
       "id": "export:@sergeant/api-client:ApiErrorKind",
