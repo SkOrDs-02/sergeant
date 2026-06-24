@@ -54,6 +54,12 @@ export default defineConfig({
         "src/sw.ts",
         "src/sw/**",
         "src/main.tsx",
+        // Storybook fixtures and the dev-only visual catalog are not product
+        // logic — they ship no runtime behaviour worth unit-testing and only
+        // skewed the coverage denominator. Excluded so the line floor reflects
+        // real app code. (Stories are still exercised via Storybook/visual.)
+        "src/**/*.stories.{ts,tsx}",
+        "src/core/DesignShowcase/**",
       ],
       thresholds: {
         // Drift log (cumulative — keep all entries so the next sprint can
