@@ -3,6 +3,7 @@ import {
   parseLocalDate,
   getNextBillingDate,
   formatRelativeDue,
+  formatShortDate,
   startOfToday,
   computeFinykSchedule,
 } from "./upcomingSchedule";
@@ -116,6 +117,149 @@ describe("computeFinykSchedule — paid current cycle", () => {
     });
     expect(nextCharge?.dueDate.getMonth()).toBe(3); // квітень (сьогодні)
     expect(nextCharge?.dueDate.getDate()).toBe(26);
+  });
+});
+
+describe("formatShortDate", () => {
+  it("formats a date as a short uk-UA day + month", () => {
+    const label = formatShortDate(new Date(2026, 5, 30));
+    expect(label).toContain("30");
+  });
+});
+
+describe("computeFinykSchedule — aggregation branches", () => {
+  const todayStart = new Date(2026, 5, 1); // 2026-06-01
+
+  it("sums only UAH subscriptions into subsMonthly and skips non-UAH", () => {
+    // Amount + currency are derived from the matched transaction
+    // (`getSubscriptionAmountMeta`), so each sub needs a keyword-matching tx.
+    const uahSub = {
+      id: "s-uah",
+      name: "Spotify",
+      billingDay: 10,
+      keyword: "spotify",
+      currency: "UAH",
+    };
+    const usdSub = {
+      id: "s-usd",
+      name: "GitHub",
+      billingDay: 12,
+      keyword: "github",
+      currency: "USD",
+    };
+    const uahTx = {
+      id: "tx-uah",
+      amount: -19900, // 199 ₴
+      time: new Date(2026, 4, 10, 12, 0).getTime(),
+      description: "spotify premium",
+      currencyCode: CURRENCY.UAH,
+    };
+    const usdTx = {
+      id: "tx-usd",
+      amount: -400,
+      time: new Date(2026, 4, 12, 12, 0).getTime(),
+      description: "github copilot",
+      currencyCode: CURRENCY.USD,
+    };
+    const { subsMonthly, subsCount, nextCharge } = computeFinykSchedule({
+      subscriptions: [uahSub, usdSub],
+      manualDebts: [],
+      receivables: [],
+      transactions: [uahTx, usdTx],
+      todayStart,
+    });
+    // Only the UAH subscription contributes to the monthly total.
+    expect(subsMonthly).toBe(199);
+    // subsCount counts every subscription, currency-agnostic.
+    expect(subsCount).toBe(2);
+    // The only upcoming UAH charge becomes nextCharge (USD is excluded).
+    expect(nextCharge?.label).toBe("Spotify");
+    expect(nextCharge?.sign).toBe("-");
+  });
+
+  it("includes manual debts and receivables with dueDate + remaining in nextCharge", () => {
+    const debt = {
+      id: "d-1",
+      name: "Кредит",
+      totalAmount: 5000,
+      dueDate: "2026-06-05",
+    };
+    const recv = {
+      id: "r-1",
+      name: "Повернення",
+      amount: 1000,
+      dueDate: "2026-06-03",
+    };
+    const { nextCharge, urgentLiability } = computeFinykSchedule({
+      subscriptions: [],
+      manualDebts: [debt],
+      receivables: [recv],
+      transactions: [],
+      todayStart,
+    });
+    // The receivable is due earliest (06-03) → it is the next charge.
+    expect(nextCharge?.label).toBe("Повернення");
+    expect(nextCharge?.sign).toBe("+");
+    // Urgent liability is the largest debt with a dueDate.
+    expect(urgentLiability?.name).toBe("Кредит");
+    expect(urgentLiability?.remaining).toBe(5000);
+  });
+
+  it("picks the largest debt as urgentLiability, not the soonest", () => {
+    const small = {
+      id: "d-small",
+      name: "Дрібний",
+      totalAmount: 100,
+      dueDate: "2026-06-02",
+    };
+    const big = {
+      id: "d-big",
+      name: "Великий",
+      totalAmount: 9000,
+      dueDate: "2026-06-20",
+    };
+    const { urgentLiability } = computeFinykSchedule({
+      subscriptions: [],
+      manualDebts: [small, big],
+      receivables: [],
+      transactions: [],
+      todayStart,
+    });
+    expect(urgentLiability?.name).toBe("Великий");
+    expect(urgentLiability?.remaining).toBe(9000);
+  });
+
+  it("skips debts without a dueDate or with nothing remaining", () => {
+    const noDue = { id: "d-no-due", name: "Без дати", totalAmount: 500 };
+    const settled = {
+      id: "d-settled",
+      name: "Закрито",
+      totalAmount: 0,
+      dueDate: "2026-06-05",
+    };
+    const { urgentLiability, nextCharge } = computeFinykSchedule({
+      subscriptions: [],
+      manualDebts: [noDue, settled],
+      receivables: [],
+      transactions: [],
+      todayStart,
+    });
+    expect(urgentLiability).toBeNull();
+    expect(nextCharge).toBeNull();
+  });
+
+  it("returns null nextCharge / urgentLiability for empty input", () => {
+    const result = computeFinykSchedule({
+      subscriptions: [],
+      manualDebts: [],
+      receivables: [],
+      transactions: [],
+      todayStart,
+    });
+    expect(result.subsMonthly).toBe(0);
+    expect(result.subsCount).toBe(0);
+    expect(result.nextCharge).toBeNull();
+    expect(result.urgentLiability).toBeNull();
   });
 });
 
