@@ -15,7 +15,7 @@ import { SLIDE_MS } from "./constants";
 import { renderSlide } from "./components/slides";
 import { StoriesProgressHeader } from "./components/StoriesProgressHeader";
 import { StoryNavHints } from "./components/StoryNavHints";
-import { useBodyScrollLock } from "./hooks/useBodyScrollLock";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useStoriesAutoplay } from "./hooks/useStoriesAutoplay";
 import { useStoriesKeyboard } from "./hooks/useStoriesKeyboard";
 import { useStoriesNavigation } from "./hooks/useStoriesNavigation";
@@ -81,6 +81,7 @@ export function WeeklyDigestStories({
   if (typeof document === "undefined") return null;
 
   const slide = slides[nav.index];
+  if (!slide) return null;
 
   // Portal to <body> so the modal escapes every ancestor stacking context.
   // Without this, the `page-enter` animation on the hub root (which keeps
@@ -104,13 +105,13 @@ export function WeeklyDigestStories({
         className="absolute inset-0 transition-[transform,opacity] duration-150 ease-out touch-none"
         {...gestures}
       >
-        {renderSlide(slide!)}
+        {renderSlide(slide)}
         <StoriesProgressHeader
           slides={slides}
           currentIndex={nav.index}
           progress={progress}
           paused={pause.isPaused}
-          activeLabel={slide!.label!}
+          activeLabel={slide.label}
           weekRange={weekRange}
           onClose={handleClose}
         />
