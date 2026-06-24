@@ -11,6 +11,7 @@ import { useAppLockContext } from "../security/AppLockContext";
 import { setFlag, useFlag } from "../lib/featureFlags";
 import { useDemoCommands } from "./useDemoCommands";
 import { HubChatOverlay } from "../hub/HubChatOverlay";
+import { DemoModeBadge } from "../onboarding/DemoModeBadge";
 import {
   HubChatOverlayProvider,
   useHubChatOverlay,
@@ -85,6 +86,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       />
       <NutritionBootGate />
       <FinykBootGate />
+      <DemoModeBadge />
       {children}
       <HubChatOverlay />
     </>
