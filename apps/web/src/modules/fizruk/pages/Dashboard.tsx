@@ -86,7 +86,7 @@ export function Dashboard({
 }: DashboardProps) {
   // Use the shared nominative formatter so weekday matches HubHeader
   // ("Пʼятниця" not "пʼятницю") and the Kyiv timezone is anchored correctly.
-  const today = useMemo(formatKyivNominativeDate, []);
+  const today = useMemo(() => formatKyivNominativeDate(), []);
   const { user } = useAuth();
   const rec = useRecovery();
   const {
@@ -128,7 +128,7 @@ export function Dashboard({
 
   // Use the shared Kyiv-anchored greeting so thresholds match HubHeader
   // (5/12/17/22 buckets including "Доброї ночі" for 22:00–05:00).
-  const greeting = useMemo(getKyivGreeting, []);
+  const greeting = useMemo(() => getKyivGreeting(), []);
 
   const startWorkoutFromPlan = (
     picks: RawExerciseDef[],

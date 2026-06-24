@@ -97,7 +97,7 @@ export function HubHeader({
     return name ? `${base}, ${name}` : base;
   }, [user?.name]);
 
-  const dateStr = useMemo(formatUkrainianDate, []);
+  const dateStr = useMemo(() => formatUkrainianDate(), []);
   const { modK } = useShortcutGlyph();
 
   // C · Контроль: «Чистий режим» — один тап ховає весь сигнальний шар

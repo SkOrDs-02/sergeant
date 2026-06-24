@@ -160,7 +160,7 @@ export const baseline = [
       // Current scoreboard (2026-05-16 sweep across apps/web, apps/mobile,
       // apps/mobile-shell, apps/server, tools/openclaw):
       //   static-components            — 0 ✅ promoted to "error" below
-      //   use-memo                     — 4 (apps/web)
+      //   use-memo                     — 0 ✅ promoted to "error" below
       //   immutability                 — 7 (web 3 + mobile 4)
       //   preserve-manual-memoization  — 9 (web 7 + mobile 2)
       //   purity                       — 17 (apps/web)
@@ -175,7 +175,12 @@ export const baseline = [
       // inside the body of another component. Promoted from "off" to
       // "error" so the baseline holds; next regression fails lint loudly.
       "react-hooks/static-components": "error",
-      "react-hooks/use-memo": "off",
+      // `use-memo` cleared apps/web — a 2026-06-24 re-measure found 8 sites
+      // across 3 files (HubHeader, fizruk Dashboard, finyk useOverviewData),
+      // migrated to inline function expressions + simple-expression dependency
+      // arrays. Promoted from "off" to "error" so the next regression fails
+      // lint loudly.
+      "react-hooks/use-memo": "error",
       // Design-system guardrail — the canonical eyebrow label must go
       // through <SectionHeading> (or <Label>) so tone/size changes stay
       // in one place. Add the file-scoped override below for the DS

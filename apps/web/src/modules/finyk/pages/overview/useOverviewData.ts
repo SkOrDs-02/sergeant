@@ -272,6 +272,9 @@ export function useOverviewData({
   );
 
   const todayStart = new Date(kyivYear, kyivMonth, kyivDay);
+  // Hoist the epoch primitive so the memo dependency arrays below stay simple
+  // expressions (react-hooks/use-memo) rather than `todayStart.getTime()` calls.
+  const todayStartMs = todayStart.getTime();
 
   const subscriptionFlows = useMemo(
     () =>
@@ -301,7 +304,7 @@ export function useOverviewData({
         };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [subscriptions, transactions, todayStart.getTime()],
+    [subscriptions, transactions, todayStartMs],
   );
 
   const debtOutFlows = useMemo(
@@ -327,7 +330,7 @@ export function useOverviewData({
           };
         }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [manualDebts, transactions, todayStart.getTime()],
+    [manualDebts, transactions, todayStartMs],
   );
 
   const debtInFlows = useMemo(
@@ -356,7 +359,7 @@ export function useOverviewData({
           };
         }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [receivables, transactions, todayStart.getTime()],
+    [receivables, transactions, todayStartMs],
   );
 
   const plannedFlows = useMemo(
