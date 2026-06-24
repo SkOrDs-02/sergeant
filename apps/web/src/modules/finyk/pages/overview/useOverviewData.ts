@@ -28,6 +28,7 @@ import {
   filterStatTransactions,
   manualExpenseToTransaction,
 } from "@sergeant/finyk-domain/domain/transactions";
+import { kyivCalendarDaysBetween } from "@sergeant/shared";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDateParts, getDaysInMonth } from "@shared/lib/time/kyivTime";
 import { THEME_HEX } from "@shared/lib/ui/themeHex";
@@ -288,8 +289,9 @@ export function useOverviewData({
           month: kyivMonth,
           day: kyivDay,
         });
-        const daysLeft = Math.ceil(
-          (dueDate.getTime() - todayStart.getTime()) / 86400000,
+        const daysLeft = kyivCalendarDaysBetween(
+          dueDate.getTime(),
+          todayStartMs,
         );
         return {
           id: `sub-${sub.id}`,
@@ -313,9 +315,9 @@ export function useOverviewData({
         .map((d) => ({ ...d, remaining: calcDebtRemaining(d, transactions) }))
         .filter((d) => d.dueDate && d.remaining > 0)
         .map((d) => {
-          const daysLeft = Math.ceil(
-            (parseLocalDate(d.dueDate).getTime() - todayStart.getTime()) /
-              86400000,
+          const daysLeft = kyivCalendarDaysBetween(
+            parseLocalDate(d.dueDate).getTime(),
+            todayStartMs,
           );
           return {
             id: `debt-${d.id}`,
@@ -329,7 +331,6 @@ export function useOverviewData({
             dueDate: parseLocalDate(d.dueDate),
           };
         }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [manualDebts, transactions, todayStartMs],
   );
 
@@ -342,9 +343,9 @@ export function useOverviewData({
         }))
         .filter((r) => r.dueDate && r.remaining > 0)
         .map((r) => {
-          const daysLeft = Math.ceil(
-            (parseLocalDate(r.dueDate).getTime() - todayStart.getTime()) /
-              86400000,
+          const daysLeft = kyivCalendarDaysBetween(
+            parseLocalDate(r.dueDate).getTime(),
+            todayStartMs,
           );
           return {
             id: `recv-${r.id}`,
@@ -358,7 +359,6 @@ export function useOverviewData({
             dueDate: parseLocalDate(r.dueDate),
           };
         }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [receivables, transactions, todayStartMs],
   );
 

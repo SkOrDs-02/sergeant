@@ -2,6 +2,7 @@
 // Тут немає React-хуків і немає доступу до localStorage — кожна функція є
 // чистою проєкцією вхідних даних. Усі UI/хуки мають викликати саме ці
 // функції, а не дублювати формули.
+import { toLocalISODate } from "@sergeant/shared";
 import { getTxStatAmount, calcMonthlyNeeded } from "../utils";
 import type {
   Budget,
@@ -197,13 +198,16 @@ export function getGoalMonthlyLabel(
 // усі сумарні метрики Budgets/Overview. `daysLeft` не включає сьогодні,
 // `daysPassed` включає.
 export function getCurrentMonthContext(now: Date = new Date()) {
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const daysInMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-  ).getDate();
-  const daysPassed = now.getDate();
+  // Anchor the month window to Europe/Kyiv (domain invariant) rather than
+  // host-local Date getters, so daysPassed/daysLeft don't drift off-by-one on
+  // a non-Kyiv device. `toLocalISODate` returns the Kyiv civil date as
+  // `YYYY-MM-DD`; `month` is 1-based here.
+  const [year = 1970, month = 1, day = 1] = toLocalISODate(now)
+    .split("-")
+    .map(Number);
+  const monthStart = new Date(year, month - 1, 1);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const daysPassed = day;
   const daysLeft = daysInMonth - daysPassed;
   return { monthStart, daysInMonth, daysPassed, daysLeft };
 }

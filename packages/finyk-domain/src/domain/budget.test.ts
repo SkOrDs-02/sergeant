@@ -146,6 +146,16 @@ describe("budget: month context and totals", () => {
     expect(ctx.daysLeft).toBe(21);
   });
 
+  it("getCurrentMonthContext anchors the day window to Europe/Kyiv", () => {
+    // 2024-03-10 23:30 UTC is already 2024-03-11 01:30 in Kyiv (UTC+2), so the
+    // month context must report the Kyiv civil day (11), not the UTC day (10).
+    // Absolute-instant input → assertion holds regardless of the host timezone.
+    const ctx = getCurrentMonthContext(new Date("2024-03-10T23:30:00Z"));
+    expect(ctx.daysPassed).toBe(11);
+    expect(ctx.daysInMonth).toBe(31);
+    expect(ctx.daysLeft).toBe(20);
+  });
+
   it("calculateTotalExpenseFact sums absolute expenses in UAH", () => {
     // tx.amount is stored in minor units (копійки) and may be negative for expenses.
     const txs = [
