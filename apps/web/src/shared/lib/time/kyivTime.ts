@@ -242,3 +242,17 @@ export function formatKyivLongDate(
     day: "numeric",
   }).format(date);
 }
+
+/**
+ * Number of days in the given calendar month. `month` is 0-based to match
+ * the `Date` constructor convention (0 = January, 11 = December); values
+ * outside 0–11 roll over the same way `new Date(year, month, …)` does.
+ *
+ * The day-count of a month is timezone-independent, but this lives in the
+ * time-utils module so callers route through it instead of the raw
+ * `new Date(y, m + 1, 0).getDate()` idiom that the `prefer-kyiv-time`
+ * lint rule flags everywhere else.
+ */
+export function getDaysInMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}

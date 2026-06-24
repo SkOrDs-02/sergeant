@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatKyivLongDate,
+  getDaysInMonth,
   getKyivDayKey,
   getKyivDateParts,
   getKyivMondayIndex,
@@ -190,6 +191,24 @@ describe("kyivTime", () => {
 
     it("returns null for an unparseable string", () => {
       expect(formatKyivLongDate("not-a-date")).toBeNull();
+    });
+  });
+
+  describe("getDaysInMonth", () => {
+    it("returns the correct length for 0-based months", () => {
+      expect(getDaysInMonth(2026, 0)).toBe(31); // January
+      expect(getDaysInMonth(2026, 3)).toBe(30); // April
+      expect(getDaysInMonth(2026, 11)).toBe(31); // December
+    });
+
+    it("handles February in leap and non-leap years", () => {
+      expect(getDaysInMonth(2026, 1)).toBe(28); // 2026 is not a leap year
+      expect(getDaysInMonth(2024, 1)).toBe(29); // 2024 is a leap year
+    });
+
+    it("rolls month overflow over like the Date constructor", () => {
+      // month 12 (0-based) === January of the next year → 31 days
+      expect(getDaysInMonth(2026, 12)).toBe(31);
     });
   });
 });

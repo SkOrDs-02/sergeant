@@ -29,6 +29,7 @@ import {
   manualExpenseToTransaction,
 } from "@sergeant/finyk-domain/domain/transactions";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { getKyivDateParts, getDaysInMonth } from "@shared/lib/time/kyivTime";
 import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import { logger } from "@shared/lib";
 
@@ -39,7 +40,7 @@ type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
 
 const parseLocalDate = (isoDate: string | null | undefined): Date => {
   const [y, m, d] = (isoDate || "").split("-").map(Number);
-  return new Date(y!, (m || 1) - 1, d || 1);
+  return new Date(y ?? 0, (m || 1) - 1, d || 1);
 };
 
 const formatDaysLeft = (days: number): string => {
@@ -49,16 +50,17 @@ const formatDaysLeft = (days: number): string => {
   return `через ${days} дн`;
 };
 
-const getNextBillingDate = (billingDay: number, now: Date): Date => {
-  const y = now.getFullYear(),
-    m = now.getMonth();
-  let d = new Date(y, m, Math.min(billingDay, new Date(y, m + 1, 0).getDate()));
-  if (d < new Date(y, m, now.getDate()))
-    d = new Date(
-      y,
-      m + 1,
-      Math.min(billingDay, new Date(y, m + 2, 0).getDate()),
-    );
+// `today` carries the Kyiv-anchored calendar parts of "now" (year, 0-based
+// month, day) so the billing rollover math stays on the Europe/Kyiv day
+// boundary regardless of the device timezone.
+const getNextBillingDate = (
+  billingDay: number,
+  today: { year: number; month: number; day: number },
+): Date => {
+  const { year: y, month: m, day } = today;
+  let d = new Date(y, m, Math.min(billingDay, getDaysInMonth(y, m)));
+  if (d < new Date(y, m, day))
+    d = new Date(y, m + 1, Math.min(billingDay, getDaysInMonth(y, m + 1)));
   return d;
 };
 
@@ -104,7 +106,20 @@ export function useOverviewData({
     manualExpenses = [],
   } = storage;
 
+  // The raw current instant is captured once and immediately routed through
+  // Kyiv helpers (getKyivDateParts below + getCurrentMonthContext), so no
+  // host-local day boundary ever leaks out of this hook.
+  // eslint-disable-next-line no-restricted-syntax -- routed through Kyiv helpers
   const now = new Date();
+  // Anchor every calendar-window computation below to Europe/Kyiv (the
+  // domain time invariant) instead of host-local Date getters, so month and
+  // day boundaries never drift off-by-one on a non-Kyiv device. getKyivDateParts
+  // returns month as 1-12; convert to the 0-based form the Date constructor and
+  // the window math expect.
+  const kyivToday = getKyivDateParts(now);
+  const kyivYear = kyivToday.year;
+  const kyivMonth = kyivToday.month - 1;
+  const kyivDay = kyivToday.day;
   const { daysInMonth, daysPassed } = getCurrentMonthContext(now);
 
   // Manual expenses live in storage (LS + React state), not in the bank tx
@@ -114,22 +129,17 @@ export function useOverviewData({
   // merge pattern Transactions/Analytics already use; scoped to the current
   // calendar month to match `getMonthlySummary`'s implicit window.
   const manualExpenseTxs = useMemo(() => {
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const monthEnd = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      1,
-    ).getTime();
+    const monthStart = new Date(kyivYear, kyivMonth, 1).getTime();
+    const monthEnd = new Date(kyivYear, kyivMonth + 1, 1).getTime();
     return manualExpenses
       .filter((e) => {
         const ts = new Date(e.date).getTime();
         return ts >= monthStart && ts < monthEnd;
       })
       .map((e) => manualExpenseToTransaction(e));
-    // `now` is recreated each render but its month window is stable within a
-    // render pass; depend on the primitives so the memo doesn't thrash.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manualExpenses, now.getFullYear(), now.getMonth()]);
+    // Depend on the Kyiv month primitives (stable within a render pass) so the
+    // memo doesn't thrash on `now` being recreated each render.
+  }, [manualExpenses, kyivYear, kyivMonth]);
 
   const txForStats = useMemo(
     () =>
@@ -261,7 +271,7 @@ export function useOverviewData({
     [limitBudgets, statTx, txCategories, txSplits, customCategories],
   );
 
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayStart = new Date(kyivYear, kyivMonth, kyivDay);
 
   const subscriptionFlows = useMemo(
     () =>
@@ -270,7 +280,11 @@ export function useOverviewData({
           sub,
           transactions,
         );
-        const dueDate = getNextBillingDate(Number(sub.billingDay) || 1, now);
+        const dueDate = getNextBillingDate(Number(sub.billingDay) || 1, {
+          year: kyivYear,
+          month: kyivMonth,
+          day: kyivDay,
+        });
         const daysLeft = Math.ceil(
           (dueDate.getTime() - todayStart.getTime()) / 86400000,
         );
@@ -356,8 +370,8 @@ export function useOverviewData({
   const planExpense = Number(monthlyPlan?.expense || 0);
   const remainingDays = Math.max(1, daysInMonth - daysPassed + 1);
   const expenseTarget = planExpense > 0 ? planExpense : projectedSpend;
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
+  const currentYear = kyivYear;
+  const currentMonth = kyivMonth;
   const monthFlows = useMemo(
     () =>
       [...subscriptionFlows, ...debtOutFlows, ...debtInFlows].filter(
@@ -408,6 +422,7 @@ export function useOverviewData({
   const spendPlanRatio = hasExpensePlan ? spent / planExpense : 0;
 
   const dateLabel = now.toLocaleDateString("uk-UA", {
+    timeZone: "Europe/Kyiv",
     day: "numeric",
     month: "long",
   });
