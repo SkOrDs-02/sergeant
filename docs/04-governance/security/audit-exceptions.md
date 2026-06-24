@@ -1,6 +1,6 @@
 # Audit-винятки
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last touched:** 2026-06-24 by @claude. **Next review:** 2026-09-22.
 > **Status:** Active
 
 > Відстежені вразливості, які тимчасово допускаються через машинно-читаний
@@ -42,19 +42,6 @@ high-и одразу; тепер кожен виняток таргетован�
 > тільки з dated exception нижче. `moderate` записи зі щоночного full-репорту
 > (`pnpm audit` без `--audit-level=high` + OSV-Scanner SARIF) трекаються тут
 > окремо, не як blocker для CI.
-
-### form-data CRLF injection in multipart field names (GHSA-hmw2-7cc7-3qxx)
-
-| Field      | Value                                                                                                                                                                                                                                                                                                             |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Advisory   | https://github.com/advisories/GHSA-hmw2-7cc7-3qxx (CVE-2026-12143)                                                                                                                                                                                                                                                |
-| Package    | `form-data@3.0.4` / `form-data@4.0.5` (vulnerable range `<=4.0.5`; Trivy lists fixed versions `2.5.6`, `3.0.5`, `4.0.6`)                                                                                                                                                                                          |
-| Severity   | high — CRLF injection through attacker-controlled multipart field names / filenames                                                                                                                                                                                                                               |
-| Path       | Transitive production dependency reported by `pnpm audit --prod` and Trivy image scan; exact consumer is registry-derived and can move with lockfile refreshes.                                                                                                                                                   |
-| Reason     | Patch is announced but not yet published to npm (`pnpm view form-data versions --json` on 2026-06-16 still lists `4.0.5` as latest and has no `2.5.6` / `3.0.5` / `4.0.6`). Cannot bump or override until a fixed package is available.                                                                           |
-| Mitigation | Sergeant server code does not construct outbound multipart requests from attacker-controlled field names or filenames. Existing upload paths validate inbound uploads and do not forward user-supplied multipart part names to another backend. `.trivyignore` suppresses `CVE-2026-12143` only until 2026-06-23. |
-| Due date   | 2026-06-23 (one-week registry follow-up; if still unpublished, re-check advisory and upstream package status).                                                                                                                                                                                                    |
-| Owner      | @Skords-01                                                                                                                                                                                                                                                                                                        |
 
 ### ajv ReDoS via expo-dev-launcher (CVE-2025-69873)
 
