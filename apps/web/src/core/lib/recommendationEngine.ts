@@ -364,7 +364,7 @@ function buildNutritionRecs(): Rec[] {
           priority: 88,
           icon: "award",
           title: "Після тренування — час поповнити білок!",
-          body: "У вас є ~30 хвилин на протеїновий прийом для кращого відновлення.",
+          body: "У тебе є ~30 хвилин на протеїновий прийом для кращого відновлення.",
           action: "nutrition",
           pwaAction: "add_meal",
         });

@@ -39,8 +39,8 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
     );
     const spendHint =
       thisMonthSpend > 0
-        ? `Цього місяця вже ${thisMonthSpend.toLocaleString("uk-UA")} ₴ — поставте ліміт, щоб тримати руку на пульсі.`
-        : `Використано ${best.count} разів — встановіть ліміт, щоб тримати все під контролем.`;
+        ? `Цього місяця вже ${thisMonthSpend.toLocaleString("uk-UA")} ₴ — постав ліміт, щоб тримати руку на пульсі.`
+        : `Використано ${best.count} разів — встанови ліміт, щоб тримати все під контролем.`;
 
     return [
       {
@@ -48,7 +48,7 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
         module: "finyk" as const,
         priority: 55,
         icon: "📌",
-        title: `"${label}" — ваша найчастіша категорія без ліміту`,
+        title: `"${label}" — твоя найчастіша категорія без ліміту`,
         body: spendHint,
         action: "finyk",
       },
