@@ -29,3 +29,12 @@ export const FINYK_QUICK_STATS_KEY = "finyk_quick_stats";
 export const FIZRUK_QUICK_STATS_KEY = "fizruk_quick_stats";
 export const ROUTINE_QUICK_STATS_KEY = "routine_quick_stats";
 export const NUTRITION_QUICK_STATS_KEY = "nutrition_quick_stats";
+
+// Per-module FTUX checklist state (`<moduleId>_checklist_v1`). The demo
+// seeds these as fully completed so a ~14-day-active demo user doesn't
+// see new-user "Перші кроки" checklists. Key format mirrors
+// `storageKey()` in `@sergeant/shared` moduleChecklist.
+export const FINYK_CHECKLIST_KEY = "finyk_checklist_v1";
+export const FIZRUK_CHECKLIST_KEY = "fizruk_checklist_v1";
+export const ROUTINE_CHECKLIST_KEY = "routine_checklist_v1";
+export const NUTRITION_CHECKLIST_KEY = "nutrition_checklist_v1";

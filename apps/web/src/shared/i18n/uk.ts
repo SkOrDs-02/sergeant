@@ -358,6 +358,14 @@ export const messages = {
       "Обери головне — Sergeant підбере розділ, з якого почнемо.",
     goalFirstSkipLabel: "Подивитись усе",
     goalFirstAriaLabel: "Цілі онбордингу",
+
+    // Persistent demo-mode badge (DemoModeBadge) — a global, always-on
+    // marker rendered on every route while the store holds a demo
+    // payload. The reset CTA lives in DemoModeBanner on the hub home.
+    demoBadgeText: "Демо",
+    demoBadgeLabel: "Демонстраційні дані — приклад, не твої записи",
+    demoBadgeTitle:
+      "Демонстраційні дані. Кнопка «Створити свій» — на головній.",
   },
 
   // Phase 7 D4 — WelcomeScreen preset picker. The 2x2 module grid that

@@ -19,6 +19,7 @@
 import {
   DEMO_CLEANUP_DONE_KEY,
   DEMO_FLAG_KEY,
+  FINYK_CHECKLIST_KEY,
   FINYK_CUSTOM_CATS_KEY,
   FINYK_MANUAL_EXPENSES_KEY,
   FINYK_MANUAL_ONLY_KEY,
@@ -27,17 +28,21 @@ import {
   FINYK_TX_CACHE_KEY,
   FINYK_TX_CACHE_LAST_GOOD_KEY,
   FIRST_REAL_ENTRY_KEY,
+  FIZRUK_CHECKLIST_KEY,
   FIZRUK_MEASUREMENTS_KEY,
   FIZRUK_QUICK_STATS_KEY,
   FIZRUK_WORKOUTS_KEY,
+  NUTRITION_CHECKLIST_KEY,
   NUTRITION_LOG_KEY,
   NUTRITION_PREFS_KEY,
   NUTRITION_QUICK_STATS_KEY,
   NUTRITION_WATER_KEY,
   ONBOARDING_DONE_KEY,
+  ROUTINE_CHECKLIST_KEY,
   ROUTINE_QUICK_STATS_KEY,
   ROUTINE_STATE_KEY,
 } from "./seedDemoData/keys";
+import { seedChecklists } from "./seedDemoData/seedChecklists";
 import { seedFinyk } from "./seedDemoData/seedFinyk";
 import { seedFizruk } from "./seedDemoData/seedFizruk";
 import { seedHubQuickStats } from "./seedDemoData/seedHubQuickStats";
@@ -68,6 +73,10 @@ const SEEDED_KEYS = [
   FIZRUK_QUICK_STATS_KEY,
   ROUTINE_QUICK_STATS_KEY,
   NUTRITION_QUICK_STATS_KEY,
+  FINYK_CHECKLIST_KEY,
+  FIZRUK_CHECKLIST_KEY,
+  ROUTINE_CHECKLIST_KEY,
+  NUTRITION_CHECKLIST_KEY,
   ONBOARDING_DONE_KEY,
   FIRST_REAL_ENTRY_KEY,
   DEMO_CLEANUP_DONE_KEY,
@@ -88,6 +97,7 @@ export function seedDemoData(): void {
   seedRoutine();
   seedNutrition();
   seedHubQuickStats();
+  seedChecklists();
 
   safeWriteLS(DEMO_FLAG_KEY, "1");
 }
@@ -95,6 +105,21 @@ export function seedDemoData(): void {
 /** Wipe everything the seeder writes. */
 export function resetDemoData(): void {
   for (const k of SEEDED_KEYS) safeRemoveLS(k);
+}
+
+/**
+ * Cold-start drift reset. While the store is in demo mode, wipe the
+ * seeded payload and write it fresh so any example the visitor edited
+ * during the previous session reverts to the canonical sample on the
+ * next boot. The demo stays fully editable *within* a session — this
+ * only restores a clean example on each cold-start. Called from
+ * `maybeRunOnboarding` whenever `isDemoMode()` is already true and the
+ * URL carries no explicit `?demo` handshake. The `reset` precedes the
+ * `seed` so keys dropped from a newer demo build don't linger.
+ */
+export function reseedDemoData(): void {
+  resetDemoData();
+  seedDemoData();
 }
 
 /**
