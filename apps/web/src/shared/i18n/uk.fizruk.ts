@@ -63,6 +63,7 @@ export const fizrukPageMessages = {
   measurements: {
     manual: "Мануал",
     manualLink: "Як правильно робити заміри →",
+    manualLinkNewTab: "(відкриється в новій вкладці)",
     records: "Записів",
     last: "Останній",
     fields: "Полів",

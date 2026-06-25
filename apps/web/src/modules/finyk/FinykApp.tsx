@@ -594,7 +594,9 @@ function AuthErrorBanner({
       className="fixed top-[calc(108px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
     >
       <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
-        <span className="text-lg shrink-0 mt-0.5">⚠️</span>
+        <span className="text-lg shrink-0 mt-0.5" aria-hidden>
+          ⚠️
+        </span>
         <div className="flex-1 min-w-0">
           <p className="text-style-label text-text">Токен потребує оновлення</p>
           <p className="text-xs text-muted mt-0.5">{authError}</p>
