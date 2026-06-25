@@ -16,6 +16,7 @@ vi.mock("../onboarding/vibePicks", () => ({
 }));
 vi.mock("../onboarding/onboardingGate", () => ({
   shouldShowOnboarding: gates.shouldShowOnboarding,
+  isDemoActive: () => false,
 }));
 
 vi.mock("../whatsNew", () => ({

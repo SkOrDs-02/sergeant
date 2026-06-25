@@ -16,6 +16,7 @@ import { useState } from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import type { FizrukData } from "@sergeant/fizruk-domain";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { AddExerciseSheet, type AddExerciseForm } from "./AddExerciseSheet";
 
 const PRIMARY_GROUPS_UK: Record<string, string> = {
@@ -62,16 +63,18 @@ function Harness({
 }) {
   const [form, setForm] = useState<AddExerciseForm>(initial);
   return (
-    <AddExerciseSheet
-      open={open}
-      onClose={onClose}
-      form={form}
-      setForm={setForm}
-      primaryGroupsUk={PRIMARY_GROUPS_UK}
-      musclesUk={MUSCLES_UK}
-      musclesByPrimaryGroup={MUSCLES_BY_GROUP}
-      addExercise={addExercise}
-    />
+    <ToastProvider>
+      <AddExerciseSheet
+        open={open}
+        onClose={onClose}
+        form={form}
+        setForm={setForm}
+        primaryGroupsUk={PRIMARY_GROUPS_UK}
+        musclesUk={MUSCLES_UK}
+        musclesByPrimaryGroup={MUSCLES_BY_GROUP}
+        addExercise={addExercise}
+      />
+    </ToastProvider>
   );
 }
 
