@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-24",
+  "generated_at": "2026-06-25",
   "summary": {
     "packages": 16,
     "totalExports": 303,
@@ -1736,7 +1736,7 @@
       "entryFile": "packages/fizruk-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 81,
+        "totalImporters": 82,
         "deadExports": 0
       },
       "exports": [
@@ -1845,7 +1845,7 @@
       "entryFile": "packages/nutrition-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 87,
+        "totalImporters": 90,
         "deadExports": 0
       },
       "exports": [
@@ -2008,7 +2008,7 @@
       "entryFile": "packages/routine-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 62,
+        "totalImporters": 63,
         "deadExports": 0
       },
       "exports": [
@@ -2038,7 +2038,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 351,
+        "totalImporters": 358,
         "deadExports": 0
       },
       "exports": [

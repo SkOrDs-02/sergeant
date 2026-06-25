@@ -24,6 +24,11 @@ name: Storybook deploy
 on:
   push:
     branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/design-tokens/**"
+      - ".github/workflows/storybook-deploy.yml"
+      - "mockups/**"
   pull_request:
     paths:
       - "apps/web/**"

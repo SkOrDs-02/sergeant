@@ -1,22 +1,36 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { Mock } from "vitest";
 
+const harness = vi.hoisted(() => ({
+  pool: { connect: vi.fn(), query: vi.fn() },
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  enqueueMemoryIngest: vi.fn(),
+  categorizeMcc: vi.fn(() => null),
+  decryptAndLazyReencrypt: vi.fn(),
+}));
+
 // historyFetch.ts pulls the pg pool + queue + logger at module load; stub them
 // so the pure helpers can be imported without a database or env.
-vi.mock("../../db.js", () => ({ pool: {} }));
+vi.mock("../../db.js", () => ({ pool: harness.pool }));
 vi.mock("../../obs/logger.js", () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  logger: harness.logger,
 }));
 vi.mock("../ai-memory/ingestQueue.js", () => ({
-  enqueueMemoryIngest: vi.fn(),
+  enqueueMemoryIngest: harness.enqueueMemoryIngest,
 }));
-vi.mock("./mccCategories.js", () => ({ categorizeMcc: () => null }));
-vi.mock("./tokenStore.js", () => ({ decryptAndLazyReencrypt: vi.fn() }));
+vi.mock("./mccCategories.js", () => ({
+  categorizeMcc: harness.categorizeMcc,
+}));
+vi.mock("./tokenStore.js", () => ({
+  decryptAndLazyReencrypt: harness.decryptAndLazyReencrypt,
+}));
 
 import {
   BackfillItemSchema,
   buildMemoryContent,
   fetchAccountStatement,
+  runMonoHistoryBackfill,
+  scheduleHistoryBackfill,
 } from "./historyFetch.js";
 
 // 2023-11-14T22:13:20Z — fixed epoch so the date slice is deterministic.
@@ -125,6 +139,7 @@ describe("buildMemoryContent", () => {
 describe("fetchAccountStatement", () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
+    vi.clearAllMocks();
   });
 
   it("returns only schema-valid items, dropping malformed ones", async () => {
@@ -171,5 +186,153 @@ describe("fetchAccountStatement", () => {
     );
     const out = await fetchAccountStatement("token", "acc1", 0, TS);
     expect(out).toEqual([]);
+  });
+});
+
+describe("runMonoHistoryBackfill", () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+    vi.clearAllMocks();
+    harness.decryptAndLazyReencrypt.mockResolvedValue("mono-token");
+    harness.pool.query.mockResolvedValue({ rows: [] });
+  });
+
+  function makeClient() {
+    return {
+      query: vi.fn().mockResolvedValue({ rows: [{ inserted: true }] }),
+      release: vi.fn(),
+    };
+  }
+
+  it("decrypts the token, fetches statements, upserts inserted rows, and enqueues memory", async () => {
+    const client = makeClient();
+    harness.pool.connect.mockResolvedValue(client);
+    harness.categorizeMcc.mockReturnValue("food" as never);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [
+          {
+            id: "tx1",
+            time: TS,
+            amount: -4200,
+            operationAmount: -4200,
+            currencyCode: 980,
+            description: "Coffee",
+            mcc: 5814,
+          },
+        ],
+      }),
+    );
+
+    await runMonoHistoryBackfill(
+      "user_1",
+      [{ id: "acc1" }],
+      {
+        token_ciphertext: "cipher",
+        token_iv: "iv",
+        token_tag: "tag",
+        token_key_version: "v1",
+      } as never,
+      {} as never,
+    );
+
+    expect(harness.decryptAndLazyReencrypt).toHaveBeenCalledTimes(1);
+    expect(client.query).toHaveBeenCalledWith("BEGIN");
+    expect(client.query).toHaveBeenCalledWith("COMMIT");
+    expect(client.release).toHaveBeenCalledTimes(1);
+    expect(harness.enqueueMemoryIngest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user_1",
+        source: "finyk",
+        sourceRef: "tx1",
+        content: expect.stringContaining("Coffee"),
+        metadata: expect.objectContaining({
+          monoAccountId: "acc1",
+          categorySlug: "food",
+        }),
+      }),
+    );
+    expect(harness.pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("UPDATE mono_connection"),
+      ["user_1"],
+    );
+  });
+
+  it("rolls back a failed transaction and continues to completion logging", async () => {
+    const client = makeClient();
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockRejectedValueOnce(new Error("insert failed")) // INSERT
+      .mockResolvedValueOnce({ rows: [] }); // ROLLBACK
+    harness.pool.connect.mockResolvedValue(client);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [
+          {
+            id: "tx1",
+            time: TS,
+            amount: -100,
+            operationAmount: -100,
+            currencyCode: 980,
+          },
+        ],
+      }),
+    );
+
+    await runMonoHistoryBackfill(
+      "user_1",
+      [{ id: "acc1" }],
+      {
+        token_ciphertext: "cipher",
+        token_iv: "iv",
+        token_tag: "tag",
+        token_key_version: "v1",
+      } as never,
+      {} as never,
+    );
+
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK");
+    expect(harness.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "mono_backfill_account_error",
+        monoAccountId: "acc1",
+      }),
+    );
+    expect(harness.logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "mono_backfill_complete",
+        totalInserted: 0,
+      }),
+    );
+  });
+});
+
+describe("scheduleHistoryBackfill", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    harness.pool.query.mockResolvedValue({
+      rows: [],
+    });
+    harness.decryptAndLazyReencrypt.mockResolvedValue("mono-token");
+  });
+
+  it("does nothing when there are no accounts", () => {
+    scheduleHistoryBackfill("user_1", [], {} as never);
+    expect(harness.pool.query).not.toHaveBeenCalled();
+  });
+
+  it("loads the encrypted token row on the next tick", async () => {
+    scheduleHistoryBackfill("user_1", ["acc1"], {} as never);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(harness.pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("SELECT token_ciphertext"),
+      ["user_1"],
+    );
   });
 });

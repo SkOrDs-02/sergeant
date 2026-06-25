@@ -14,6 +14,32 @@ import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
+  recallCofounderMemoryMock,
+  forgetByIdMock,
+  forgetByTopicMock,
+  forgetSinceMock,
+  previewForgetMock,
+  confirmForgetMock,
+  cancelForgetMock,
+  readStrategyDocMock,
+  readGithubMock,
+  readWorkflowLogsMock,
+  readTelegramTopicHistoryMock,
+  recordDecisionMock,
+  listRecentDecisionsMock,
+  checkDailyBudgetMock,
+  buildAiCostSummaryMock,
+  buildPerfSnapshotMock,
+  openInvocationMock,
+  finalizeInvocationMock,
+  getStripeMetricsMock,
+  getSentryIssuesMock,
+  getServerStatsMock,
+  getPostHogStatsMock,
+  getGithubReleasesMock,
+  assembleMorningBriefingMock,
+  assembleWeeklyReviewMock,
+  assembleMonthlyOkrReviewMock,
   listRecentWriteAuditsMock,
   recordWriteAuditMock,
   listRecentInvocationsMock,
@@ -28,7 +54,46 @@ const {
   getFounderMuteMock,
   isFounderMutedMock,
   lookupWhoisMock,
+  githubSearchMock,
+  githubTreeMock,
+  githubDiffMock,
+  githubPrsMock,
+  seoGscQueryMock,
+  seoPsiAuditMock,
+  seoSerpLookupMock,
+  setReminderMock,
+  listDueRemindersMock,
+  markReminderSentMock,
+  markReminderFailedMock,
+  markReminderCancelledMock,
+  listFounderRemindersMock,
 } = vi.hoisted(() => ({
+  recallCofounderMemoryMock: vi.fn(),
+  forgetByIdMock: vi.fn(),
+  forgetByTopicMock: vi.fn(),
+  forgetSinceMock: vi.fn(),
+  previewForgetMock: vi.fn(),
+  confirmForgetMock: vi.fn(),
+  cancelForgetMock: vi.fn(),
+  readStrategyDocMock: vi.fn(),
+  readGithubMock: vi.fn(),
+  readWorkflowLogsMock: vi.fn(),
+  readTelegramTopicHistoryMock: vi.fn(),
+  recordDecisionMock: vi.fn(),
+  listRecentDecisionsMock: vi.fn(),
+  checkDailyBudgetMock: vi.fn(),
+  buildAiCostSummaryMock: vi.fn(),
+  buildPerfSnapshotMock: vi.fn(),
+  openInvocationMock: vi.fn(),
+  finalizeInvocationMock: vi.fn(),
+  getStripeMetricsMock: vi.fn(),
+  getSentryIssuesMock: vi.fn(),
+  getServerStatsMock: vi.fn(),
+  getPostHogStatsMock: vi.fn(),
+  getGithubReleasesMock: vi.fn(),
+  assembleMorningBriefingMock: vi.fn(),
+  assembleWeeklyReviewMock: vi.fn(),
+  assembleMonthlyOkrReviewMock: vi.fn(),
   listRecentWriteAuditsMock: vi.fn(),
   recordWriteAuditMock: vi.fn(),
   listRecentInvocationsMock: vi.fn(),
@@ -43,6 +108,19 @@ const {
   getFounderMuteMock: vi.fn(),
   isFounderMutedMock: vi.fn(),
   lookupWhoisMock: vi.fn(),
+  githubSearchMock: vi.fn(),
+  githubTreeMock: vi.fn(),
+  githubDiffMock: vi.fn(),
+  githubPrsMock: vi.fn(),
+  seoGscQueryMock: vi.fn(),
+  seoPsiAuditMock: vi.fn(),
+  seoSerpLookupMock: vi.fn(),
+  setReminderMock: vi.fn(),
+  listDueRemindersMock: vi.fn(),
+  markReminderSentMock: vi.fn(),
+  markReminderFailedMock: vi.fn(),
+  markReminderCancelledMock: vi.fn(),
+  listFounderRemindersMock: vi.fn(),
 }));
 
 vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
@@ -50,6 +128,26 @@ vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
     await importOriginal<typeof import("../../modules/openclaw/index.js")>();
   return {
     ...actual,
+    recallCofounderMemory: recallCofounderMemoryMock,
+    readStrategyDoc: readStrategyDocMock,
+    readGithub: readGithubMock,
+    readWorkflowLogs: readWorkflowLogsMock,
+    readTelegramTopicHistory: readTelegramTopicHistoryMock,
+    recordDecision: recordDecisionMock,
+    listRecentDecisions: listRecentDecisionsMock,
+    checkDailyBudget: checkDailyBudgetMock,
+    buildAiCostSummary: buildAiCostSummaryMock,
+    buildPerfSnapshot: buildPerfSnapshotMock,
+    openInvocation: openInvocationMock,
+    finalizeInvocation: finalizeInvocationMock,
+    getStripeMetrics: getStripeMetricsMock,
+    getSentryIssues: getSentryIssuesMock,
+    getServerStats: getServerStatsMock,
+    getPostHogStats: getPostHogStatsMock,
+    getGithubReleases: getGithubReleasesMock,
+    assembleMorningBriefing: assembleMorningBriefingMock,
+    assembleWeeklyReview: assembleWeeklyReviewMock,
+    assembleMonthlyOkrReview: assembleMonthlyOkrReviewMock,
     listRecentWriteAudits: listRecentWriteAuditsMock,
     recordWriteAudit: recordWriteAuditMock,
     listRecentInvocations: listRecentInvocationsMock,
@@ -64,6 +162,33 @@ vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
     getFounderMute: getFounderMuteMock,
     isFounderMuted: isFounderMutedMock,
     lookupWhois: lookupWhoisMock,
+    githubSearch: githubSearchMock,
+    githubTree: githubTreeMock,
+    githubDiff: githubDiffMock,
+    githubPrs: githubPrsMock,
+    seoGscQuery: seoGscQueryMock,
+    seoPsiAudit: seoPsiAuditMock,
+    seoSerpLookup: seoSerpLookupMock,
+    setReminder: setReminderMock,
+    listDueReminders: listDueRemindersMock,
+    markReminderSent: markReminderSentMock,
+    markReminderFailed: markReminderFailedMock,
+    markReminderCancelled: markReminderCancelledMock,
+    listFounderReminders: listFounderRemindersMock,
+  };
+});
+
+vi.mock("../../modules/ai-memory/forget.js", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../../modules/ai-memory/forget.js")>();
+  return {
+    ...actual,
+    forgetById: forgetByIdMock,
+    forgetByTopic: forgetByTopicMock,
+    forgetSince: forgetSinceMock,
+    previewForget: previewForgetMock,
+    confirmForget: confirmForgetMock,
+    cancelForget: cancelForgetMock,
   };
 });
 
@@ -90,6 +215,538 @@ async function makeApp(
   );
   return app;
 }
+
+describe("/api/internal/openclaw core read tools", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("forwards recall requests to the memory service", async () => {
+    recallCofounderMemoryMock.mockResolvedValueOnce({
+      memories: [{ id: 1, content: "launch note" }],
+    });
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/openclaw/recall")
+      .send({ founderUserId: "f_1", query: "launch", topK: 3 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.memories).toHaveLength(1);
+    expect(recallCofounderMemoryMock).toHaveBeenCalledWith("f_1", {
+      query: "launch",
+      topK: 3,
+    });
+  }, 60_000);
+
+  it("dispatches forget modes and confirm/cancel helpers", async () => {
+    forgetByIdMock.mockResolvedValueOnce({ deleted: 1 });
+    previewForgetMock.mockResolvedValueOnce({ token: "tok", preview: [] });
+    confirmForgetMock.mockResolvedValueOnce({ deleted: 2 });
+    cancelForgetMock.mockReturnValueOnce(true);
+    const app = await makeApp();
+
+    const byId = await request(app).post("/api/internal/openclaw/forget").send({
+      mode: "byId",
+      founderUserId: "f_1",
+      founderTgUserId: 111,
+      rawCommand: "/forget 42",
+      memoryId: 42,
+    });
+    expect(byId.status).toBe(200);
+    expect(forgetByIdMock).toHaveBeenCalledWith(expect.anything(), {
+      founderUserId: "f_1",
+      founderTgUserId: 111,
+      rawCommand: "/forget 42",
+      memoryId: 42,
+    });
+
+    const preview = await request(app)
+      .post("/api/internal/openclaw/forget")
+      .send({
+        mode: "previewQuery",
+        founderUserId: "f_1",
+        founderTgUserId: 111,
+        rawCommand: "/forget about launch",
+        query: "launch",
+        topK: 5,
+      });
+    expect(preview.status).toBe(200);
+    expect(previewForgetMock).toHaveBeenCalledWith({
+      founderUserId: "f_1",
+      founderTgUserId: 111,
+      rawCommand: "/forget about launch",
+      query: "launch",
+      topK: 5,
+    });
+
+    const token = "11111111-1111-4111-8111-111111111111";
+    const confirm = await request(app)
+      .post("/api/internal/openclaw/forget/confirm")
+      .send({
+        founderUserId: "f_1",
+        founderTgUserId: 111,
+        rawCommand: "/forget confirm",
+        token,
+      });
+    expect(confirm.status).toBe(200);
+    expect(confirmForgetMock).toHaveBeenCalledWith(expect.anything(), {
+      founderUserId: "f_1",
+      founderTgUserId: 111,
+      rawCommand: "/forget confirm",
+      token,
+    });
+
+    const cancel = await request(app)
+      .post("/api/internal/openclaw/forget/cancel")
+      .send({ founderUserId: "f_1", token });
+    expect(cancel.body).toEqual({ cancelled: true });
+  });
+
+  it("routes strategy/github/workflow/telegram/decision read tools", async () => {
+    readStrategyDocMock.mockResolvedValueOnce({
+      path: "docs/x.md",
+      text: "ok",
+    });
+    readGithubMock.mockResolvedValueOnce({ mode: "file", content: "file" });
+    readWorkflowLogsMock.mockResolvedValueOnce({ logs: ["green"] });
+    readTelegramTopicHistoryMock.mockResolvedValueOnce({ messages: ["hi"] });
+    recordDecisionMock.mockResolvedValueOnce({ id: 9 });
+    listRecentDecisionsMock.mockResolvedValueOnce([{ id: 9 }]);
+    const app = await makeApp();
+
+    expect(
+      (
+        await request(app)
+          .post("/api/internal/openclaw/strategy")
+          .send({ path: "docs/strategy.md" })
+      ).status,
+    ).toBe(200);
+    expect(readStrategyDocMock).toHaveBeenCalledWith({
+      path: "docs/strategy.md",
+    });
+
+    await request(app).post("/api/internal/openclaw/github").send({
+      mode: "file",
+      repo: "owner/repo",
+      filePath: "README.md",
+      ref: "main",
+    });
+    expect(readGithubMock).toHaveBeenCalledWith({
+      mode: "file",
+      repo: "owner/repo",
+      filePath: "README.md",
+      ref: "main",
+      number: undefined,
+    });
+
+    await request(app)
+      .post("/api/internal/openclaw/workflow")
+      .send({ workflowId: "ci.yml", since: "2026-06-01", limit: 10 });
+    expect(readWorkflowLogsMock).toHaveBeenCalledWith({
+      workflowId: "ci.yml",
+      since: "2026-06-01",
+      limit: 10,
+    });
+
+    await request(app)
+      .post("/api/internal/openclaw/telegram")
+      .send({ topic: "ops", limit: 5 });
+    expect(readTelegramTopicHistoryMock).toHaveBeenCalledWith(
+      expect.anything(),
+      { topic: "ops", limit: 5 },
+    );
+
+    await request(app).post("/api/internal/openclaw/decision").send({
+      founderUserId: "f_1",
+      topic: "launch",
+      context: "ctx",
+      decision: "ship",
+      rationale: "ready",
+    });
+    expect(recordDecisionMock).toHaveBeenCalledWith(expect.anything(), {
+      founderUserId: "f_1",
+      topic: "launch",
+      context: "ctx",
+      decision: "ship",
+      rationale: "ready",
+    });
+
+    const list = await request(app)
+      .post("/api/internal/openclaw/decisions/list")
+      .send({ founderUserId: "f_1", limit: 7 });
+    expect(list.body.decisions).toEqual([{ id: 9 }]);
+    expect(listRecentDecisionsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "f_1",
+      7,
+    );
+  });
+
+  it("maps github and workflow service errors to 400 payloads", async () => {
+    readGithubMock.mockRejectedValueOnce(new Error("bad ref"));
+    readWorkflowLogsMock.mockRejectedValueOnce(new Error("workflow missing"));
+    const app = await makeApp();
+
+    const github = await request(app)
+      .post("/api/internal/openclaw/github")
+      .send({ mode: "pr", number: 1 });
+    expect(github.status).toBe(400);
+    expect(github.body).toEqual({
+      error: "github_error",
+      message: "bad ref",
+    });
+
+    const workflow = await request(app)
+      .post("/api/internal/openclaw/workflow")
+      .send({ workflowId: "missing.yml" });
+    expect(workflow.status).toBe(400);
+    expect(workflow.body).toEqual({
+      error: "workflow_error",
+      message: "workflow missing",
+    });
+  });
+});
+
+describe("/api/internal/openclaw operational read tools", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it("routes budget, cost, perf, and invocation lifecycle endpoints", async () => {
+    checkDailyBudgetMock.mockResolvedValueOnce({ allowed: true });
+    buildAiCostSummaryMock.mockResolvedValueOnce({ today: { totalUsd: 1.25 } });
+    buildPerfSnapshotMock.mockResolvedValueOnce({ uptimeSec: 12 });
+    openInvocationMock.mockResolvedValueOnce(44);
+    finalizeInvocationMock.mockResolvedValueOnce(undefined);
+    const app = await makeApp();
+
+    const budget = await request(app)
+      .post("/api/internal/openclaw/budget")
+      .send({ founderUserId: "f_1", tzName: "Europe/Kyiv" });
+    expect(budget.body).toEqual({ allowed: true });
+    expect(checkDailyBudgetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "f_1",
+      "Europe/Kyiv",
+    );
+
+    await request(app)
+      .post("/api/internal/openclaw/ai-cost-summary")
+      .send({ trendDays: 7 });
+    expect(buildAiCostSummaryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pool: expect.anything(),
+        trendDays: 7,
+      }),
+    );
+
+    await request(app).post("/api/internal/openclaw/perf-snapshot").send({});
+    expect(buildPerfSnapshotMock).toHaveBeenCalledTimes(1);
+
+    const opened = await request(app)
+      .post("/api/internal/openclaw/invocations/open")
+      .send({
+        founderUserId: "f_1",
+        founderTgUserId: 111,
+        trigger: "dm",
+        userMessage: "status",
+        metadata: { source: "test" },
+      });
+    expect(opened.body).toEqual({ invocationId: 44 });
+    expect(openInvocationMock).toHaveBeenCalledWith(expect.anything(), {
+      founderUserId: "f_1",
+      founderTgUserId: 111,
+      trigger: "dm",
+      userMessage: "status",
+      metadata: { source: "test" },
+    });
+
+    const finalized = await request(app)
+      .post("/api/internal/openclaw/invocations/finalize")
+      .send({
+        invocationId: 44,
+        status: "success",
+        assistantResponse: "done",
+        toolCalls: [
+          {
+            tool: "recall_memory",
+            input: {},
+            output_chars: 2,
+            output_preview: "ok",
+            status: "ok",
+            duration_ms: 3,
+          },
+        ],
+        costUsd: 0.01,
+        durationMs: 120,
+        iterations: 1,
+        toneMode: "direct",
+      });
+    expect(finalized.body).toEqual({ ok: true });
+    expect(finalizeInvocationMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        invocationId: 44,
+        status: "success",
+        assistantResponse: "done",
+        toneMode: "direct",
+      }),
+    );
+  });
+
+  it("routes metrics and briefing ritual aggregators", async () => {
+    getStripeMetricsMock.mockResolvedValueOnce({ revenueUsd: 10 });
+    getSentryIssuesMock.mockResolvedValueOnce({ issues: [] });
+    getServerStatsMock.mockResolvedValueOnce({ health: "ok" });
+    getPostHogStatsMock.mockResolvedValueOnce({ activeUsers: 3 });
+    getGithubReleasesMock.mockResolvedValueOnce({ releases: [] });
+    assembleMorningBriefingMock.mockResolvedValueOnce({ markdown: "morning" });
+    isFounderMutedMock.mockResolvedValueOnce({ muted: false });
+    assembleWeeklyReviewMock.mockResolvedValueOnce({ markdown: "weekly" });
+    assembleMonthlyOkrReviewMock.mockResolvedValueOnce({ markdown: "monthly" });
+    const app = await makeApp();
+
+    await request(app)
+      .post("/api/internal/openclaw/metrics/stripe")
+      .send({ days: 14 });
+    expect(getStripeMetricsMock).toHaveBeenCalledWith({ days: 14 });
+
+    await request(app)
+      .post("/api/internal/openclaw/metrics/sentry")
+      .send({ level: "error", limit: 5 });
+    expect(getSentryIssuesMock).toHaveBeenCalledWith({
+      level: "error",
+      limit: 5,
+    });
+
+    await request(app).post("/api/internal/openclaw/metrics/server").send({});
+    expect(getServerStatsMock).toHaveBeenCalledTimes(1);
+
+    await request(app)
+      .post("/api/internal/openclaw/metrics/posthog")
+      .send({ days: 30 });
+    expect(getPostHogStatsMock).toHaveBeenCalledWith({ days: 30 });
+
+    await request(app)
+      .post("/api/internal/openclaw/github/releases")
+      .send({ repo: "owner/repo", limit: 3 });
+    expect(getGithubReleasesMock).toHaveBeenCalledWith({
+      repo: "owner/repo",
+      limit: 3,
+    });
+
+    const morning = await request(app)
+      .post("/api/internal/openclaw/briefing/morning")
+      .send({
+        windowDays: 3,
+        githubRepo: "owner/repo",
+        sentryLimit: 4,
+        prLimit: 8,
+        includeProposals: false,
+        founderUserId: "f_1",
+      });
+    expect(morning.body).toEqual({
+      markdown: "morning",
+      mute: { muted: false },
+    });
+    expect(assembleMorningBriefingMock).toHaveBeenCalledWith({
+      windowDays: 3,
+      githubRepo: "owner/repo",
+      sentryLimit: 4,
+      prLimit: 8,
+      includeProposals: false,
+    });
+    expect(isFounderMutedMock).toHaveBeenCalledWith(expect.anything(), {
+      founderUserId: "f_1",
+    });
+
+    await request(app).post("/api/internal/openclaw/ritual/weekly").send({
+      windowDays: 7,
+      staleDays: 10,
+      githubRepo: "owner/repo",
+      sentryLimit: 2,
+      prLimit: 5,
+    });
+    expect(assembleWeeklyReviewMock).toHaveBeenCalledWith({
+      windowDays: 7,
+      staleDays: 10,
+      githubRepo: "owner/repo",
+      sentryLimit: 2,
+      prLimit: 5,
+    });
+
+    await request(app).post("/api/internal/openclaw/ritual/monthly").send({
+      githubRepo: "owner/repo",
+      prLimit: 4,
+      staleDays: 45,
+      sentryLevel: "warning",
+    });
+    expect(assembleMonthlyOkrReviewMock).toHaveBeenCalledWith({
+      githubRepo: "owner/repo",
+      prLimit: 4,
+      staleDays: 45,
+      sentryLevel: "warning",
+    });
+  });
+
+  it("routes github code tools and SEO tools", async () => {
+    githubSearchMock.mockResolvedValueOnce({ items: [] });
+    githubTreeMock.mockResolvedValueOnce({ tree: [] });
+    githubDiffMock.mockResolvedValueOnce({ files: [] });
+    githubPrsMock.mockResolvedValueOnce({ items: [] });
+    seoGscQueryMock.mockResolvedValueOnce({ rows: [] });
+    seoPsiAuditMock.mockResolvedValueOnce({ score: 0.9 });
+    seoSerpLookupMock.mockResolvedValueOnce({ results: [] });
+    const app = await makeApp();
+
+    await request(app)
+      .post("/api/internal/openclaw/github/search")
+      .send({ scope: "code", query: "OpenClaw", repo: "owner/repo" });
+    expect(githubSearchMock).toHaveBeenCalledWith({
+      scope: "code",
+      query: "OpenClaw",
+      repo: "owner/repo",
+    });
+
+    await request(app)
+      .post("/api/internal/openclaw/github/tree")
+      .send({ ref: "main", repo: "owner/repo", recursive: true });
+    expect(githubTreeMock).toHaveBeenCalledWith({
+      ref: "main",
+      repo: "owner/repo",
+      recursive: true,
+    });
+
+    await request(app)
+      .post("/api/internal/openclaw/github/diff")
+      .send({ base: "main", head: "feature", repo: "owner/repo" });
+    expect(githubDiffMock).toHaveBeenCalledWith({
+      base: "main",
+      head: "feature",
+      repo: "owner/repo",
+    });
+
+    await request(app)
+      .post("/api/internal/openclaw/github/prs")
+      .send({ state: "open", sort: "updated", perPage: 10 });
+    expect(githubPrsMock).toHaveBeenCalledWith({
+      state: "open",
+      sort: "updated",
+      perPage: 10,
+    });
+
+    await request(app)
+      .post("/api/internal/openclaw/seo/gsc")
+      .send({ days: 28, dimension: "page", rowLimit: 20 });
+    expect(seoGscQueryMock).toHaveBeenCalledWith({
+      days: 28,
+      dimension: "page",
+      rowLimit: 20,
+    });
+
+    await request(app)
+      .post("/api/internal/openclaw/seo/lighthouse")
+      .send({ url: "https://example.com", strategy: "mobile" });
+    expect(seoPsiAuditMock).toHaveBeenCalledWith({
+      url: "https://example.com",
+      strategy: "mobile",
+    });
+
+    await request(app)
+      .post("/api/internal/openclaw/seo/serp")
+      .send({ query: "sergeant app", hl: "uk", gl: "ua", num: 5 });
+    expect(seoSerpLookupMock).toHaveBeenCalledWith({
+      query: "sergeant app",
+      hl: "uk",
+      gl: "ua",
+      num: 5,
+    });
+  });
+
+  it("routes reminder CRUD and delivery state endpoints", async () => {
+    const reminder = { id: 1, founder_user_id: "f_1", status: "pending" };
+    setReminderMock.mockResolvedValueOnce(reminder);
+    listDueRemindersMock.mockResolvedValueOnce([reminder]);
+    markReminderSentMock.mockResolvedValueOnce({ ...reminder, status: "sent" });
+    markReminderFailedMock.mockResolvedValueOnce({
+      ...reminder,
+      status: "failed",
+    });
+    markReminderCancelledMock.mockResolvedValueOnce({
+      ...reminder,
+      status: "cancelled",
+    });
+    listFounderRemindersMock.mockResolvedValueOnce([reminder]);
+    const app = await makeApp();
+
+    await request(app)
+      .post("/api/internal/openclaw/reminders/set")
+      .send({
+        founderUserId: "f_1",
+        reminderText: "ship report",
+        dueAtIso: "2026-06-25T09:00:00+03:00",
+        persona: "ops",
+        topic: "daily",
+        channel: "telegram",
+        sourceInvocationId: 44,
+        metadata: { source: "test" },
+      });
+    expect(setReminderMock).toHaveBeenCalledWith(expect.anything(), {
+      founderUserId: "f_1",
+      reminderText: "ship report",
+      dueAtIso: "2026-06-25T09:00:00+03:00",
+      persona: "ops",
+      topic: "daily",
+      channel: "telegram",
+      sourceInvocationId: 44,
+      metadata: { source: "test" },
+    });
+
+    await request(app)
+      .post("/api/internal/openclaw/reminders/list-due")
+      .send({ limit: 5, nowIso: "2026-06-25T09:00:00+03:00" });
+    expect(listDueRemindersMock).toHaveBeenCalledWith(expect.anything(), {
+      limit: 5,
+      nowIso: "2026-06-25T09:00:00+03:00",
+    });
+
+    await request(app)
+      .post("/api/internal/openclaw/reminders/mark-sent")
+      .send({ reminderId: 1 });
+    expect(markReminderSentMock).toHaveBeenCalledWith(expect.anything(), 1);
+
+    await request(app)
+      .post("/api/internal/openclaw/reminders/mark-failed")
+      .send({ reminderId: 1, reason: "telegram down" });
+    expect(markReminderFailedMock).toHaveBeenCalledWith(
+      expect.anything(),
+      1,
+      "telegram down",
+    );
+
+    await request(app)
+      .post("/api/internal/openclaw/reminders/cancel")
+      .send({ reminderId: 1, founderUserId: "f_1" });
+    expect(markReminderCancelledMock).toHaveBeenCalledWith(
+      expect.anything(),
+      1,
+      "f_1",
+    );
+
+    await request(app)
+      .post("/api/internal/openclaw/reminders/list")
+      .send({
+        founderUserId: "f_1",
+        statuses: ["pending", "sent"],
+        limit: 20,
+      });
+    expect(listFounderRemindersMock).toHaveBeenCalledWith(expect.anything(), {
+      founderUserId: "f_1",
+      statuses: ["pending", "sent"],
+      limit: 20,
+    });
+  });
+});
 
 describe("/api/internal/openclaw/query", () => {
   beforeEach(() => {

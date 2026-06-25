@@ -264,4 +264,117 @@ describe("enqueueAuthMail — BullMQ path", () => {
 
     vi.doUnmock("bullmq");
   });
+
+  it("queue.add failure: logs enqueue_error and falls back to direct dispatcher", async () => {
+    const { createBullConnection } = await import("./connection.js");
+    vi.mocked(createBullConnection).mockReturnValue({} as never);
+
+    const addMock = vi.fn().mockRejectedValue(new Error("redis down"));
+    function MockQueue(this: unknown) {
+      return { add: addMock, on: vi.fn(), close: vi.fn() };
+    }
+    function MockWorker(this: unknown) {
+      return { on: vi.fn(), close: vi.fn() };
+    }
+    vi.doMock("bullmq", () => ({
+      Queue: MockQueue,
+      Worker: MockWorker,
+    }));
+
+    vi.resetModules();
+    const mod = await import("./authMail.js");
+    const metrics = await import("../../obs/metrics.js");
+    const inc = (
+      metrics.authMailJobsEnqueuedTotal as unknown as {
+        inc: ReturnType<typeof vi.fn>;
+      }
+    ).inc;
+    const dispatcher = vi.fn().mockResolvedValue(undefined);
+    mod.__resetAuthMailQueueForTesting();
+    mod.registerAuthMailDispatcher(dispatcher);
+
+    await mod.enqueueAuthMail(sample);
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(addMock).toHaveBeenCalledTimes(1);
+    expect(inc).toHaveBeenCalledWith({ mode: "enqueue_error" });
+    expect(dispatcher).toHaveBeenCalledWith(sample);
+
+    vi.doUnmock("bullmq");
+  });
+
+  it("startAuthMailWorker creates Worker and close shuts down worker connection", async () => {
+    const queueConnection = {
+      quit: vi.fn().mockResolvedValue(undefined),
+      disconnect: vi.fn(),
+    };
+    const workerConnection = {
+      quit: vi.fn().mockResolvedValue(undefined),
+      disconnect: vi.fn(),
+    };
+    const { createBullConnection } = await import("./connection.js");
+    vi.mocked(createBullConnection).mockImplementation((name: string) =>
+      name === "auth-mail-worker"
+        ? (workerConnection as never)
+        : (queueConnection as never),
+    );
+
+    const workerOnMock = vi.fn();
+    const workerCloseMock = vi.fn().mockResolvedValue(undefined);
+    const queueCloseMock = vi.fn().mockResolvedValue(undefined);
+    const getJobCountsMock = vi.fn().mockResolvedValue({
+      waiting: 2,
+      active: 1,
+      delayed: 0,
+      failed: 3,
+    });
+    let workerArgs: unknown[] | null = null;
+    function MockQueue(this: unknown) {
+      return {
+        add: vi.fn().mockResolvedValue({ id: "1" }),
+        on: vi.fn(),
+        close: queueCloseMock,
+        getJobCounts: getJobCountsMock,
+      };
+    }
+    function MockWorker(this: unknown, ...args: unknown[]) {
+      workerArgs = args;
+      return { on: workerOnMock, close: workerCloseMock };
+    }
+    vi.doMock("bullmq", () => ({
+      Queue: MockQueue,
+      Worker: MockWorker,
+    }));
+
+    vi.useFakeTimers();
+    vi.resetModules();
+    const mod = await import("./authMail.js");
+    mod.__resetAuthMailQueueForTesting();
+
+    await mod.enqueueAuthMail(sample);
+    const started = mod.startAuthMailWorker();
+    await vi.advanceTimersByTimeAsync(30_000);
+    await started?.close();
+
+    expect(started).not.toBeNull();
+    expect(workerArgs?.[0]).toBe("auth-mail");
+    expect(workerArgs?.[2]).toMatchObject({
+      prefix: "sergeant",
+      concurrency: 5,
+    });
+    expect(workerOnMock).toHaveBeenCalledWith("failed", expect.any(Function));
+    expect(getJobCountsMock).toHaveBeenCalledWith(
+      "waiting",
+      "active",
+      "delayed",
+      "failed",
+    );
+    expect(workerCloseMock).toHaveBeenCalledTimes(1);
+    expect(queueCloseMock).toHaveBeenCalledTimes(1);
+    expect(workerConnection.quit).toHaveBeenCalledTimes(1);
+    expect(queueConnection.quit).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
+    vi.doUnmock("bullmq");
+  });
 });

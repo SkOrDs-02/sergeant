@@ -472,4 +472,13 @@ describe("summaryFor", () => {
   it("default: short result returned as-is", () => {
     expect(summaryFor("unknown_tool", {}, "short")).toBe("short");
   });
+
+  it("utility tools fall through when required fields are absent", () => {
+    expect(summaryFor("calculate_1rm", {}, "fallback")).toBe("fallback");
+    expect(summaryFor("convert_units", { from_unit: "kg" }, "fallback")).toBe(
+      "fallback",
+    );
+    expect(summaryFor("save_note", {}, "fallback")).toBe("fallback");
+    expect(summaryFor("remember", {}, "fallback")).toBe("fallback");
+  });
 });

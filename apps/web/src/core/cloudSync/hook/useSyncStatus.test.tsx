@@ -233,6 +233,35 @@ describe("useSyncStatus", () => {
     });
   });
 
+  it("returns a referentially stable object across re-renders when counts are unchanged", async () => {
+    const getStatus = vi.fn().mockResolvedValue({
+      pending: 2,
+      rejected: 0,
+      dead_letter: 1,
+    });
+    mockedGetSyncEngineWriter.mockReturnValue(makeRuntime(getStatus));
+
+    const { result, rerender } = renderHook(() => useSyncStatus(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.syncV2PendingCount).toBe(2);
+    });
+
+    const first = result.current;
+    rerender();
+    rerender();
+
+    // Same count values → same object reference. An unstable object literal
+    // here is exactly what fed the `Maximum update depth exceeded` loop on
+    // the hub home (regression guard).
+    expect(result.current).toBe(first);
+    expect(result.current.retrySyncV2DeadLetters).toBe(
+      first.retrySyncV2DeadLetters,
+    );
+  });
+
   it("retrySyncV2DeadLetters proxies to the runtime", async () => {
     const recover = vi.fn().mockResolvedValue({ recovered: 0, failed: 0 });
     const getStatus = vi.fn().mockResolvedValue({

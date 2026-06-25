@@ -1,4 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import type { Mock } from "vitest";
+
+async function flushMicrotasks(): Promise<void> {
+  for (let i = 0; i < 5; i++) await Promise.resolve();
+}
 
 /**
  * Module-load testing strategy (env-single-source companion sweep 2026-06-01):
@@ -136,5 +141,170 @@ describe("pingSecurityRoom — I7 boot reachability heartbeat", () => {
     expect(result.ok).toBe(false);
     expect(result.reason).toContain("ENOTFOUND");
     expect(incMock).toHaveBeenCalledWith({ reason: "fetch_error" });
+  });
+});
+
+describe("registerSecurityEventsRoom - Telegram push listener", () => {
+  beforeEach(() => {
+    incMock.mockClear();
+    vi.resetModules();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("registers a listener and sends high-severity events to Telegram", async () => {
+    vi.stubEnv("SERGEANT_ALERT_BOT_TOKEN", "room-token");
+    vi.stubEnv("SERGEANT_OPS_CHAT_ID", "ops-room");
+    vi.stubEnv("TELEGRAM_TOPIC_ENGINEERING", "42");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { registerSecurityEventsRoom } =
+      await import("./securityEventsRoom.js");
+    const { emitSecurityEvent, _listenerCount } =
+      await import("./securityEvents.js");
+
+    const unsubscribe = registerSecurityEventsRoom();
+    expect(_listenerCount()).toBe(1);
+
+    emitSecurityEvent({
+      event: "prompt_injection_attempt",
+      severity: "high",
+      userIdHash: "abc123def4567890",
+      details: "tool prompt override blocked",
+      timestamp: "2026-06-25T10:00:00.000Z",
+    });
+    await flushMicrotasks();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.telegram.org/botroom-token/sendMessage",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    const body = JSON.parse(
+      (fetchMock as Mock).mock.calls[0]?.[1]?.body as string,
+    ) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      chat_id: "ops-room",
+      disable_notification: false,
+      message_thread_id: 42,
+    });
+    expect(body["text"]).toContain("[HIGH] security_event");
+    expect(body["text"]).toContain("Event: prompt_injection_attempt");
+    expect(body["text"]).toContain("UserHash: abc123def4567890");
+    expect(incMock).not.toHaveBeenCalled();
+
+    unsubscribe();
+    expect(_listenerCount()).toBe(0);
+  });
+
+  it("suppresses Telegram send when security events are muted", async () => {
+    vi.stubEnv("SECURITY_EVENTS_MUTED", "1");
+    vi.stubEnv("SERGEANT_ALERT_BOT_TOKEN", "room-token");
+    vi.stubEnv("SERGEANT_OPS_CHAT_ID", "ops-room");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { registerSecurityEventsRoom } =
+      await import("./securityEventsRoom.js");
+    const { emitSecurityEvent } = await import("./securityEvents.js");
+
+    const unsubscribe = registerSecurityEventsRoom();
+    emitSecurityEvent({
+      event: "chat_tool_cap_hit",
+      severity: "low",
+      details: "soft cap reached",
+      timestamp: "2026-06-25T10:00:00.000Z",
+    });
+    await flushMicrotasks();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(incMock).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it("skips silently when Telegram credentials are incomplete", async () => {
+    vi.stubEnv("SERGEANT_ALERT_BOT_TOKEN", "room-token");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { registerSecurityEventsRoom } =
+      await import("./securityEventsRoom.js");
+    const { emitSecurityEvent } = await import("./securityEvents.js");
+
+    const unsubscribe = registerSecurityEventsRoom();
+    emitSecurityEvent({
+      event: "mono_webhook_bad_payload",
+      severity: "medium",
+      details: "missing signature",
+      timestamp: "2026-06-25T10:00:00.000Z",
+    });
+    await flushMicrotasks();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(incMock).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it("bumps http reason counter when Telegram send returns non-2xx", async () => {
+    vi.stubEnv("SERGEANT_ALERT_BOT_TOKEN", "room-token");
+    vi.stubEnv("SERGEANT_OPS_CHAT_ID", "ops-room");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        text: vi.fn().mockResolvedValue("rate limited"),
+      }),
+    );
+
+    const { registerSecurityEventsRoom } =
+      await import("./securityEventsRoom.js");
+    const { emitSecurityEvent } = await import("./securityEvents.js");
+
+    const unsubscribe = registerSecurityEventsRoom();
+    emitSecurityEvent({
+      event: "stripe_webhook_bad_sig",
+      severity: "critical",
+      details: "bad signature",
+      timestamp: "2026-06-25T10:00:00.000Z",
+    });
+    await flushMicrotasks();
+
+    expect(incMock).toHaveBeenCalledWith({ reason: "http_4xx" });
+    unsubscribe();
+  });
+
+  it("bumps fetch_error counter when Telegram fetch rejects", async () => {
+    vi.stubEnv("SERGEANT_ALERT_BOT_TOKEN", "room-token");
+    vi.stubEnv("SERGEANT_OPS_CHAT_ID", "ops-room");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("network down")),
+    );
+
+    const { registerSecurityEventsRoom } =
+      await import("./securityEventsRoom.js");
+    const { emitSecurityEvent } = await import("./securityEvents.js");
+
+    const unsubscribe = registerSecurityEventsRoom();
+    emitSecurityEvent({
+      event: "auth_session_ua_drift",
+      severity: "high",
+      details: "UA mismatch",
+      timestamp: "2026-06-25T10:00:00.000Z",
+    });
+    await flushMicrotasks();
+
+    expect(incMock).toHaveBeenCalledWith({ reason: "fetch_error" });
+    unsubscribe();
   });
 });

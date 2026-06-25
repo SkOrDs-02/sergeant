@@ -1,12 +1,12 @@
 {
   "$schema": "../../docs/04-governance/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-24",
+  "generated_at": "2026-06-25",
   "package": "@sergeant/fizruk-domain",
   "entryFile": "packages/fizruk-domain/src/index.ts",
   "stats": {
     "exportCount": 1,
-    "totalImporters": 81,
+    "totalImporters": 82,
     "deadExports": 0
   },
   "exports": [

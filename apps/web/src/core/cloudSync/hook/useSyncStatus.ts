@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { syncKeys } from "@shared/lib/api/queryKeys";
@@ -116,11 +116,23 @@ export function useSyncStatus(): SyncStatusState {
 
   const counts = data ?? EMPTY_COUNTS;
 
-  return {
-    isOnline,
-    syncV2PendingCount: counts.pending,
-    syncV2RejectedCount: counts.rejected,
-    syncV2DeadLetterCount: counts.dead_letter,
-    retrySyncV2DeadLetters,
-  };
+  // Stabilise the return reference. The query runs with `staleTime: 0` and
+  // hands React Query a fresh options object every render, so `OfflineBanner`
+  // (and any future consumer) re-renders often; returning a fresh object
+  // literal each time would propagate that churn into consumers' dependency
+  // arrays and feed the RootLayout cache-tick loop that `useActivationV2Boot`
+  // already guards against (see its `event.type` filter). `retrySyncV2DeadLetters`
+  // is a module-level constant, so memoising on the three count primitives plus
+  // `isOnline` yields a referentially stable object whenever the values are
+  // unchanged.
+  return useMemo<SyncStatusState>(
+    () => ({
+      isOnline,
+      syncV2PendingCount: counts.pending,
+      syncV2RejectedCount: counts.rejected,
+      syncV2DeadLetterCount: counts.dead_letter,
+      retrySyncV2DeadLetters,
+    }),
+    [isOnline, counts.pending, counts.rejected, counts.dead_letter],
+  );
 }

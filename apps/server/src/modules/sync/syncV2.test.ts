@@ -15,7 +15,13 @@ vi.mock("./syncV2Stream.js", () => ({
   notifySyncV2OpsApplied: vi.fn(),
 }));
 
+vi.mock("./routine/applySync.js", () => ({
+  applyRoutineEntries: vi.fn(async () => ({ status: "applied" })),
+  applyRoutineStreaks: vi.fn(async () => ({ status: "applied" })),
+}));
+
 import _pool from "../../db.js";
+import { applyRoutineEntries as _applyRoutineEntries } from "./routine/applySync.js";
 import {
   APPLY_REJECT_REASONS,
   ENGINE_REJECT_REASONS,
@@ -42,6 +48,7 @@ const dbModule = (await import("../../db.js")) as unknown as {
 };
 const client = dbModule.__client;
 const notify = _notify as unknown as Mock;
+const applyRoutineEntries = _applyRoutineEntries as unknown as Mock;
 
 interface TestRes {
   statusCode: number;
@@ -93,6 +100,8 @@ beforeEach(() => {
   client.query.mockReset();
   client.release.mockReset();
   notify.mockReset();
+  applyRoutineEntries.mockReset();
+  applyRoutineEntries.mockResolvedValue({ status: "applied" });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -304,6 +313,200 @@ describe("syncV2Push · idempotency replay (duplicate-only)", () => {
     expect(client.release).toHaveBeenCalledTimes(1);
     // notifySyncV2OpsApplied НЕ викликається на failed-COMMIT.
     expect(notify).not.toHaveBeenCalled();
+  });
+});
+
+describe("syncV2Push · new-op apply path", () => {
+  function validOp(idempotency_key: string) {
+    return {
+      table: "routine_entries",
+      op: "insert" as const,
+      row: { id: "entry-1", title: "Morning" },
+      client_ts: "2026-01-01T00:00:00.000Z",
+      idempotency_key,
+    };
+  }
+
+  function op(
+    idempotency_key: string,
+    overrides: Record<string, unknown> = {},
+  ) {
+    return { ...validOp(idempotency_key), ...overrides };
+  }
+
+  function mockInsertPath(insertedId: string, serverTs: Date) {
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT
+      .mockResolvedValueOnce({
+        rows: [{ id: insertedId, server_ts: serverTs }],
+      })
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+  }
+
+  it("applies a supported op, writes sync_op_log, and notifies the stream", async () => {
+    const serverTs = new Date("2026-01-01T00:00:05.000Z");
+    mockInsertPath("41", serverTs);
+
+    const req = makeReq({
+      body: { ops: [op("new-applied")] },
+      headers: { "x-origin-device-id": "device-A" },
+    });
+    const res = makeRes();
+
+    await syncV2Push(req, res);
+
+    expect(applyRoutineEntries).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({ idempotency_key: "new-applied" }),
+      "u_1",
+      new Date("2026-01-01T00:00:00.000Z"),
+    );
+    expect(res.body).toEqual({
+      accepted: 1,
+      last_op_id: 41,
+      results: [{ idempotency_key: "new-applied", status: "applied" }],
+    });
+    expect(notify).toHaveBeenCalledWith("u_1", [
+      {
+        id: 41,
+        table: "routine_entries",
+        op: "insert",
+        row: { id: "entry-1", title: "Morning" },
+        client_ts: "2026-01-01T00:00:00.000Z",
+        server_ts: serverTs.toISOString(),
+        origin_device_id: "device-A",
+      },
+    ]);
+  });
+
+  it("rejects unknown tables before apply", async () => {
+    const serverTs = new Date("2026-01-01T00:00:05.000Z");
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [{ id: "42", server_ts: serverTs }] })
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const req = makeReq({
+      body: {
+        ops: [
+          op("unknown-table", {
+            table: "not_allowed",
+          }),
+        ],
+      },
+    });
+    const res = makeRes();
+
+    await syncV2Push(req, res);
+
+    expect(applyRoutineEntries).not.toHaveBeenCalled();
+    expect(res.body).toEqual({
+      accepted: 0,
+      last_op_id: 42,
+      results: [
+        {
+          idempotency_key: "unknown-table",
+          status: "rejected",
+          reason: "table_not_allowed",
+        },
+      ],
+    });
+  });
+
+  it("rejects unsupported increment ops without calling the table apply function", async () => {
+    const serverTs = new Date("2026-01-01T00:00:05.000Z");
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [{ id: "43", server_ts: serverTs }] })
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const req = makeReq({
+      body: {
+        ops: [
+          op("unsupported-increment", {
+            op: "increment",
+            row: { id: "entry-1", delta: 1 },
+          }),
+        ],
+      },
+    });
+    const res = makeRes();
+
+    await syncV2Push(req, res);
+
+    expect(applyRoutineEntries).not.toHaveBeenCalled();
+    expect(res.body).toMatchObject({
+      accepted: 0,
+      results: [
+        {
+          idempotency_key: "unsupported-increment",
+          status: "rejected",
+          reason: "op_not_supported",
+        },
+      ],
+    });
+  });
+
+  it("persists apply-level rejections from the table apply function", async () => {
+    applyRoutineEntries.mockResolvedValueOnce({
+      status: "rejected",
+      reason: "lww_conflict",
+    });
+    mockInsertPath("44", new Date("2026-01-01T00:00:05.000Z"));
+
+    const req = makeReq({ body: { ops: [op("apply-rejected")] } });
+    const res = makeRes();
+
+    await syncV2Push(req, res);
+
+    expect(res.body).toMatchObject({
+      accepted: 0,
+      last_op_id: 44,
+      results: [
+        {
+          idempotency_key: "apply-rejected",
+          status: "rejected",
+          reason: "lww_conflict",
+        },
+      ],
+    });
+  });
+
+  it("turns apply exceptions into apply_failed rejections and continues the batch", async () => {
+    applyRoutineEntries.mockRejectedValueOnce(new Error("apply boom"));
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT
+      .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT
+      .mockResolvedValueOnce({
+        rows: [{ id: "45", server_ts: new Date("2026-01-01T00:00:05.000Z") }],
+      })
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const req = makeReq({ body: { ops: [op("apply-throws")] } });
+    const res = makeRes();
+
+    await syncV2Push(req, res);
+
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK TO SAVEPOINT op_apply");
+    expect(res.body).toMatchObject({
+      accepted: 0,
+      last_op_id: 45,
+      results: [
+        {
+          idempotency_key: "apply-throws",
+          status: "rejected",
+          reason: "apply_failed",
+        },
+      ],
+    });
   });
 });
 

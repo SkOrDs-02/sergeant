@@ -8,7 +8,7 @@
  * у буфер; idempotency.
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Mock } from "vitest";
 import type { Pool } from "pg";
 
@@ -48,7 +48,10 @@ import {
   currentBufferSize,
   type UnknownMccItem,
 } from "../../lib/mcc/unknownQueue.js";
-import { runMccBatchTick } from "./batchEnrichmentWorker.js";
+import {
+  runMccBatchTick,
+  startMonoMccBatchWorker,
+} from "./batchEnrichmentWorker.js";
 import { monoMccBatchProcessedTotal } from "../../obs/metrics.js";
 
 const processedInc = (monoMccBatchProcessedTotal as unknown as { inc: Mock })
@@ -157,6 +160,38 @@ describe("runMccBatchTick — happy path", () => {
     // Буфер після ok-tick-у — пустий, items не повертаються.
     expect(currentBufferSize()).toBe(0);
   });
+
+  it("requeues an item when write-back fails after a successful batch parse", async () => {
+    enqueueUnknownMcc(mkItem({ queueId: 77, monoTxId: "write-fails" }), 100);
+
+    const pool = makePool();
+    (pool.query as Mock)
+      .mockRejectedValueOnce(new Error("write failed"))
+      .mockResolvedValueOnce({ rowCount: 1 });
+
+    const anthropic = vi.fn().mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: {
+        content: [
+          {
+            type: "text",
+            text: '[{"i":0,"c":"groceries","conf":0.9}]',
+          },
+        ],
+      },
+    });
+
+    const result = await runMccBatchTick(pool, {
+      anthropic: anthropic as never,
+    });
+
+    expect(result.ok).toBe(0);
+    expect(result.requeued).toBe(1);
+    const calls = (pool.query as Mock).mock.calls;
+    expect(calls[0]?.[0]).toMatch(/UPDATE mono_transaction/);
+    expect(calls[1]?.[0]).toMatch(/SET status = 'pending'/);
+    expect(calls[1]?.[1]).toEqual([77, "write failed"]);
+  });
 });
 
 describe("runMccBatchTick — Anthropic fail → requeue all", () => {
@@ -211,6 +246,21 @@ describe("runMccBatchTick — Anthropic fail → requeue all", () => {
     });
     expect(result.requeued).toBe(1);
     expect(result.ok).toBe(0);
+  });
+
+  it("counts failedTotal when requeue itself fails", async () => {
+    enqueueUnknownMcc(mkItem({ queueId: 404 }), 100);
+    const pool = makePool();
+    (pool.query as Mock).mockRejectedValue(new Error("retry write failed"));
+    const anthropic = vi.fn().mockRejectedValueOnce(new Error("ETIMEDOUT"));
+
+    const result = await runMccBatchTick(pool, {
+      anthropic: anthropic as never,
+    });
+
+    expect(result.requeued).toBe(0);
+    expect(result.failedTotal).toBe(1);
+    expect(processedInc).toHaveBeenCalledWith({ outcome: "failed" });
   });
 });
 
@@ -301,5 +351,64 @@ describe("runMccBatchTick — idempotency", () => {
       });
     }
     expect(anthropic).not.toHaveBeenCalled();
+  });
+});
+
+describe("startMonoMccBatchWorker", () => {
+  beforeEach(() => {
+    __resetForTests();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("schedules non-overlapping ticks and stops cleanly", async () => {
+    const pool = makePool();
+    const anthropic = vi.fn();
+
+    const worker = startMonoMccBatchWorker(pool, {
+      intervalMs: 10,
+      anthropic: anthropic as never,
+    });
+
+    await vi.advanceTimersByTimeAsync(10);
+    await worker.stop();
+    await vi.advanceTimersByTimeAsync(30);
+
+    expect(anthropic).not.toHaveBeenCalled();
+    expect((pool.query as Mock).mock.calls).toHaveLength(0);
+  });
+
+  it("lets stop wait for an in-flight tick", async () => {
+    enqueueUnknownMcc(mkItem({ queueId: 88 }), 100);
+    const pool = makePool();
+    (pool.query as Mock).mockResolvedValue({ rowCount: 1 });
+    const anthropic = vi.fn().mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: {
+        content: [
+          {
+            type: "text",
+            text: '[{"i":0,"c":"groceries","conf":0.9}]',
+          },
+        ],
+      },
+    });
+
+    const worker = startMonoMccBatchWorker(pool, {
+      intervalMs: 10,
+      anthropic: anthropic as never,
+    });
+
+    const stopPromise = vi
+      .advanceTimersByTimeAsync(10)
+      .then(() => worker.stop());
+    await stopPromise;
+
+    expect(anthropic).toHaveBeenCalledOnce();
+    expect((pool.query as Mock).mock.calls.length).toBeGreaterThan(0);
   });
 });
