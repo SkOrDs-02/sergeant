@@ -123,6 +123,26 @@ export function reseedDemoData(): void {
 }
 
 /**
+ * Canonical "leave demo" action, shared by `DemoModeBanner`'s
+ * «Створити свій» CTA and the global `DemoModeBadge`. Wipes the demo
+ * payload and hard-navigates to `/welcome` so the regular onboarding
+ * flow takes over against an empty store. The hard `assign` (full
+ * reload) is deliberate: it rebuilds the React Router tree from
+ * scratch, so it never desyncs the `useHubNavigation` FSM the way an
+ * in-app `navigate()` would. Fires `DEMO_TO_WIZARD_CONFIRMED` first so
+ * the event survives the navigation.
+ */
+export function exitDemoToWizard(): void {
+  trackEvent(ANALYTICS_EVENTS.DEMO_TO_WIZARD_CONFIRMED);
+  resetDemoData();
+  try {
+    window.location.assign("/welcome");
+  } catch {
+    /* jsdom / hardened env — store is already reset, nav is best-effort. */
+  }
+}
+
+/**
  * `true` when the local store currently holds a demo payload. Read
  * synchronously from localStorage so the boot path can fork before
  * React mounts. Used by the FTUX-banner (S4.1) to surface the

@@ -360,12 +360,14 @@ export const messages = {
     goalFirstAriaLabel: "Цілі онбордингу",
 
     // Persistent demo-mode badge (DemoModeBadge) — a global, always-on
-    // marker rendered on every route while the store holds a demo
-    // payload. The reset CTA lives in DemoModeBanner on the hub home.
+    // marker + exit, rendered on every route while the store holds a
+    // demo payload. Clicking runs the same action as DemoModeBanner's
+    // «Створити свій», so it's the always-available way out of demo.
     demoBadgeText: "Демо",
-    demoBadgeLabel: "Демонстраційні дані — приклад, не твої записи",
-    demoBadgeTitle:
-      "Демонстраційні дані. Кнопка «Створити свій» — на головній.",
+    demoBadgeExit: "Вийти",
+    demoBadgeLabel:
+      "Демонстраційні дані — натисни, щоб вийти і створити свій профіль",
+    demoBadgeTitle: "Демо. Натисни, щоб вийти й почати з чистого аркуша.",
   },
 
   // Phase 7 D4 — WelcomeScreen preset picker. The 2x2 module grid that
