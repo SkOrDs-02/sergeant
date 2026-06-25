@@ -56,6 +56,21 @@ const webServer = process.env["PW_SKIP_WEBSERVER"]
           process.env["VITE_API_BASE_URL"] || "http://127.0.0.1:3000",
         ALLOWED_ORIGINS:
           process.env["ALLOWED_ORIGINS"] || "http://127.0.0.1:4173",
+        // Better Auth derives cookie domain from baseURL. Without this,
+        // baseURL falls back to `http://localhost:3000`, which sets cookies
+        // for `localhost`. The web preview and API both run on 127.0.0.1,
+        // and browsers make XHR/fetch to http://127.0.0.1:3000 (via
+        // VITE_API_BASE_URL). Chromium treats `localhost` and `127.0.0.1`
+        // as the same loopback host and sends the cookie either way; WebKit
+        // does not — it enforces strict hostname-based cookie scoping, so a
+        // `localhost` cookie is never sent to `127.0.0.1:3000`. After
+        // page.reload(), the session fetch returns 401 and WebKit redirects
+        // back to /sign-in. Pinning BETTER_AUTH_URL to the 127.0.0.1 address
+        // ensures the Set-Cookie hostname matches the fetch hostname on all
+        // browser engines. Prod is unaffected: BETTER_AUTH_URL is already set
+        // to the Railway URL in production env.
+        BETTER_AUTH_URL:
+          process.env["BETTER_AUTH_URL"] || "http://127.0.0.1:3000",
       },
     };
 

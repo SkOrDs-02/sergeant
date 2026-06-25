@@ -78,6 +78,13 @@ jobs:
       AI_QUOTA_DISABLED: "1"
       VITE_API_BASE_URL: http://127.0.0.1:3000
       ALLOWED_ORIGINS: http://127.0.0.1:4173
+      # Pins Better Auth's cookie domain to 127.0.0.1. Without this, Better
+      # Auth falls back to `http://localhost:3000` as baseURL, which sets
+      # cookies scoped to `localhost`. WebKit (unlike Chromium) does NOT treat
+      # `localhost` and `127.0.0.1` as the same host — so session cookies set
+      # for `localhost` are never sent to `http://127.0.0.1:3000`, causing
+      # auth failures after page.reload() on WebKit/mobile-safari.
+      BETTER_AUTH_URL: http://127.0.0.1:3000
 
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
