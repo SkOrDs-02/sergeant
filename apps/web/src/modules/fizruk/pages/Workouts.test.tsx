@@ -6,6 +6,7 @@
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import { ToastProvider } from "@shared/hooks/useToast";
 
 // Stub kvStoreBoot (requires @sergeant/db-schema/sqlite WASM artefact)
 vi.mock("../../../core/db/kvStoreBoot", () => ({
@@ -133,6 +134,15 @@ vi.mock("../context/RestTimerContext", () => ({
 
 import { Workouts } from "./Workouts";
 
+// The page mounts AddExerciseSheet, which calls useToast() — wrap every
+// render in a ToastProvider so the hook resolves its context.
+const renderWorkouts = () =>
+  render(
+    <ToastProvider>
+      <Workouts />
+    </ToastProvider>,
+  );
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -140,30 +150,30 @@ afterEach(() => {
 
 describe("Workouts page smoke tests", () => {
   it("mounts without crashing in home view", () => {
-    expect(() => render(<Workouts />)).not.toThrow();
+    expect(() => renderWorkouts()).not.toThrow();
   });
 
   it("renders the WorkoutsHome default state (no active workout)", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByText("Немає активного тренування")).toBeInTheDocument();
   });
 
   it("renders the 'Почати тренування' button in home view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(
       screen.getByRole("button", { name: /Почати тренування/i }),
     ).toBeInTheDocument();
   });
 
   it("renders the 'Внести проведене заняття' retro button", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(
       screen.getByRole("button", { name: /Внести проведене заняття/i }),
     ).toBeInTheDocument();
   });
 
   it("renders recent workouts section", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByLabelText("Останні тренування")).toBeInTheDocument();
   });
 });

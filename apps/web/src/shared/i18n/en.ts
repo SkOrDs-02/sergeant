@@ -144,6 +144,7 @@ export const messagesEn: Partial<MessageCatalog> = {
 
   nav: {
     hubSections: "Hub sections",
+    reports: "Reports",
     openAssistant: "Open AI assistant",
     globalSearch: "Global search",
     searchPlaceholder: "Search across all modules…",

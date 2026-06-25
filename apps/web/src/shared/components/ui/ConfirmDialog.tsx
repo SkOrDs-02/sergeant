@@ -6,6 +6,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useSwipeToDismiss } from "@shared/hooks/useSwipeToDismiss";
 import { cn } from "@shared/lib/ui/cn";
@@ -56,6 +57,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
   }, [open]);
 
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
   const handleScrimKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -64,7 +66,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-200 flex items-end justify-center sm:items-center"
       role="presentation"
@@ -144,6 +146,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 });

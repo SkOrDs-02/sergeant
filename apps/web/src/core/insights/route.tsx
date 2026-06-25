@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
+import { messages } from "@shared/i18n/uk";
 import { lazyImport } from "../lib/lazyImport";
 import { PageLoader } from "../app/PageLoader";
 
@@ -23,6 +24,17 @@ export function Component() {
       tabIndex={-1}
       className="max-w-lg mx-auto w-full px-5 pt-3 pb-28 outline-none page-enter"
     >
+      {/*
+        Page heading for the standalone `/insights` route. `HubReports`
+        leads with the period control and ships no heading of its own
+        (it also renders as the "Звіти" tab on Hub home, so the title
+        lives here at the route level rather than inside the shared
+        component — adding it there would emit a duplicate h1 on the Hub).
+        Visually hidden: the design intentionally leads with the period
+        segmented control, but screen-reader users still get a labelled
+        landmark + an h1 to navigate by.
+      */}
+      <h1 className="sr-only">{messages.nav.reports}</h1>
       <SuspenseWithMinDelay fallback={<PageLoader />}>
         <HubReports />
       </SuspenseWithMinDelay>

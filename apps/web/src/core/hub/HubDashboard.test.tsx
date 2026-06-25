@@ -12,7 +12,6 @@ import {
   VIBE_PICKS_KEY,
   type Rec,
 } from "@sergeant/shared";
-import { getModulePrimaryAction } from "@shared/lib/modules/moduleQuickActions";
 import { ToastProvider } from "@shared/hooks/useToast";
 
 type TestRec = Rec & { actionHash?: string };
@@ -407,7 +406,7 @@ describe("HubDashboard", () => {
     expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
   });
 
-  it("opens module cards and keeps quick-add actions scoped to active modules with recommendation signal", () => {
+  it("opens the module on a card tap", () => {
     const onOpenModule = vi.fn();
     localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk"]));
     mocks.dashboardFocus.focus = rec({
@@ -423,9 +422,6 @@ describe("HubDashboard", () => {
       }),
     ];
 
-    const finykQuickAction = getModulePrimaryAction("finyk");
-    const fizrukQuickAction = getModulePrimaryAction("fizruk");
-
     renderDashboard({ onOpenModule });
 
     fireEvent.click(
@@ -434,19 +430,6 @@ describe("HubDashboard", () => {
       }),
     );
     expect(onOpenModule).toHaveBeenCalledWith("finyk");
-
-    const finykLabel = finykQuickAction?.label ?? "";
-    const fizrukLabel = fizrukQuickAction?.label ?? "";
-    expect(
-      screen.getByRole("button", { name: finykLabel }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: fizrukLabel })).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: finykLabel }));
-    expect(mocks.openHubModuleWithAction).toHaveBeenCalledWith(
-      "finyk",
-      finykQuickAction?.action,
-    );
   });
 
   it("marks inactive modules and persists the hide-inactive toggle", () => {

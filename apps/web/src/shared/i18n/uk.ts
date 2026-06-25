@@ -201,6 +201,7 @@ export const messages = {
     // accessibility-strings часто переписуються на product-ревізії,
     // і централізація економить grep-час на наступних round-ах.
     hubSections: "Розділи хабу",
+    reports: "Звіти",
     finykSections: "Розділи Фініка",
     fizrukSections: "Розділи Фізрука",
     routineSections: "Розділи Рутини",

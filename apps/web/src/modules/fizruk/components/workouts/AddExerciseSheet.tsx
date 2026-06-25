@@ -6,6 +6,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
 import { useVisualKeyboardInset } from "@sergeant/shared";
+import { useToast } from "@shared/hooks/useToast";
 
 const EQUIPMENT_OPTIONS = [
   { id: "bodyweight", label: "Власна вага" },
@@ -65,6 +66,7 @@ export function AddExerciseSheet({
   addExercise,
 }: AddExerciseSheetProps) {
   const kbInsetPx = useVisualKeyboardInset(open);
+  const toast = useToast();
   // Inline validation message shown below «Назва (укр)» when the user
   // taps «Зберегти» with the field empty. Without it the click was
   // silently swallowed (just `if (!nameUk) return;`) and the user was
@@ -279,6 +281,7 @@ export function AddExerciseSheet({
               description: (form.description || "").trim(),
               source: "manual",
             });
+            toast.success("Вправу додано.");
             setNameError(null);
             onClose();
             setForm({

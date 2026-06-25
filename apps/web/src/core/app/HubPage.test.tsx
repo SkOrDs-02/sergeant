@@ -26,6 +26,7 @@ vi.mock("react-router-dom", async () => {
 const mockShouldShowOnboarding = vi.fn<() => boolean>(() => false);
 vi.mock("../onboarding/onboardingGate", () => ({
   shouldShowOnboarding: () => mockShouldShowOnboarding(),
+  isDemoActive: () => false,
 }));
 
 vi.mock("./StandaloneRoutes", () => ({
