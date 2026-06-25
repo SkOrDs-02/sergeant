@@ -6,24 +6,22 @@ import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
-import { isDemoMode } from "./seedDemoData";
+import { isDemoMode, exitDemoToWizard } from "./seedDemoData";
 
 /**
- * Persistent demo-mode marker. Unlike `DemoModeBanner` (a dismissible
- * CTA card that only lives on the hub home), this badge mounts in the
- * global `AppShell`, so it stays visible on EVERY route — including the
- * module screens (Finyk / Fizruk / Nutrition / Routine) where the
- * banner never showed. That closes the awareness gap: once the visitor
- * dismisses the banner or navigates into a module, this is what keeps
- * reminding them the numbers aren't real.
+ * Persistent demo-mode marker + exit. Unlike `DemoModeBanner` (a
+ * dismissible CTA card that only lives on the hub home), this badge
+ * mounts in the global `AppShell`, so it stays visible on EVERY route —
+ * including the module screens where the banner never showed. It is the
+ * always-available way out of demo mode: once the visitor dismisses the
+ * banner or wanders into a module, the badge is the only remaining exit
+ * until a cold-start would bring the banner back.
  *
- * Intentionally a non-interactive status marker, not a button. The
- * "Створити свій" reset CTA lives in `DemoModeBanner` on the hub home.
- * An earlier version navigated to "/" on click, but routing via raw
- * `navigate()` from here (outside the `useHubNavigation` FSM that owns
- * `activeModule`) desynced the FSM and broke subsequent module
- * navigation. A plain label has no such failure mode and matches the
- * semantics — it reports state, it doesn't perform an action.
+ * Clicking runs the shared `exitDemoToWizard()` — same action as the
+ * banner's «Створити свій». It hard-navigates (`window.location.assign`)
+ * rather than using the router, so it rebuilds the tree from scratch and
+ * never desyncs the `useHubNavigation` FSM (an earlier in-app
+ * `navigate()` version broke subsequent module navigation).
  */
 export function DemoModeBadge() {
   // Synchronous read so the badge forks on first render. The demo flag
@@ -34,20 +32,27 @@ export function DemoModeBadge() {
   if (!demo) return null;
 
   return (
-    <div
-      role="status"
+    <button
+      type="button"
+      onClick={exitDemoToWizard}
       aria-label={messages.onboarding.demoBadgeLabel}
       title={messages.onboarding.demoBadgeTitle}
       className={cn(
-        "fixed top-2 left-1/2 -translate-x-1/2 z-300 safe-area-pt",
-        "inline-flex items-center gap-1.5 h-8 px-3 rounded-full pointer-events-none select-none",
+        "fixed top-2 left-1/2 -translate-x-1/2 z-300 safe-area-pt select-none",
+        "inline-flex items-center gap-1.5 h-8 pl-3 pr-2.5 rounded-full",
         "bg-brand-500/10 border border-brand-500/30 text-brand-strong dark:text-brand",
         "text-style-caption font-semibold shadow-soft backdrop-blur-sm",
+        "hover:bg-brand-500/20 transition-colors",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         "motion-safe:animate-fade-in",
       )}
     >
       <Icon name="sparkles" size="xs" strokeWidth={2} aria-hidden />
       <span>{messages.onboarding.demoBadgeText}</span>
-    </div>
+      <span aria-hidden className="opacity-70">
+        ·
+      </span>
+      <span>{messages.onboarding.demoBadgeExit}</span>
+    </button>
   );
 }

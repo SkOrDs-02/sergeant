@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
-import { isDemoMode, resetDemoData } from "./seedDemoData";
+import { isDemoMode, exitDemoToWizard } from "./seedDemoData";
 
 const SESSION_DISMISS_KEY = "hub_demo_banner_dismissed_session";
 
@@ -53,21 +53,17 @@ export function DemoModeBanner() {
   };
 
   const goToWizard = () => {
-    trackEvent(ANALYTICS_EVENTS.DEMO_TO_WIZARD_CONFIRMED);
-    resetDemoData();
     try {
       window.sessionStorage.removeItem(SESSION_DISMISS_KEY);
     } catch {
       /* noop */
     }
-    // Hard navigation: the empty-store assumptions across React
-    // Query caches, MMKV-web, and PWA prefetch are easier to reset
-    // by reloading onto `/welcome` than by tearing them down in JS.
-    try {
-      window.location.assign("/welcome");
-    } catch {
-      /* noop */
-    }
+    // Shared exit: fires DEMO_TO_WIZARD_CONFIRMED, wipes the demo
+    // payload, and hard-navigates to `/welcome`. Hard navigation is
+    // deliberate — the empty-store assumptions across React Query
+    // caches, MMKV-web, and PWA prefetch are easier to reset by
+    // reloading than by tearing them down in JS.
+    exitDemoToWizard();
   };
 
   return (
