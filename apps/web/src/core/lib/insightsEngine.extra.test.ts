@@ -224,9 +224,10 @@ describe("generateInsights — cross-module insights", () => {
       {};
 
     // Span ~6 recent weeks of calendar days so the engine's Kyiv week buckets
-    // are fully populated. Days in the most-recent ~18 days are 100% completed
-    // (high-habit weeks); older days have no completions (low-habit weeks).
-    // kcal is higher on completed days so the correlation is non-trivial.
+    // are fully populated. Days in the most-recent ~18 days are completed
+    // (high-habit weeks); older weeks get sparse completions so they stay below
+    // 70% but are not discarded by the engine's `habitDone === 0` sufficiency
+    // guard. kcal is higher on high-habit days so the correlation is non-trivial.
     for (let daysAgo = 0; daysAgo < 42; daysAgo++) {
       const dk = dayKey(daysAgo);
       const high = daysAgo < 18;
@@ -234,6 +235,9 @@ describe("generateInsights — cross-module insights", () => {
         completions.h1.push(dk);
         log[dk] = { meals: [{ macros: { kcal: 2800 } }] };
       } else {
+        if (daysAgo % 7 === 0) {
+          completions.h1.push(dk);
+        }
         log[dk] = { meals: [{ macros: { kcal: 2000 } }] };
       }
     }
