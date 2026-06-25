@@ -42,6 +42,14 @@ vi.mock("web-push", () => ({
 }));
 vi.mock("../../db.js", () => ({ default: { query: vi.fn() } }));
 vi.mock("../../lib/webpushSend.js", () => ({ sendWebPush: vi.fn() }));
+vi.mock("../../push/send.js", () => ({ sendToUser: vi.fn() }));
+vi.mock("./audit.js", () => ({ logPushSend: vi.fn() }));
+vi.mock("../../http/rateLimit.js", () => ({
+  getIp: vi.fn(() => "203.0.113.7"),
+  getPerTargetRateLimit: vi.fn(() =>
+    Promise.resolve({ ok: true, remaining: 9, resetAt: Date.now() + 60_000 }),
+  ),
+}));
 
 describe("resolveVapidEmail", () => {
   beforeEach(() => {
@@ -295,5 +303,246 @@ describe("env.ts — push-related fields (P2-1 migration)", () => {
     vi.stubEnv("PUSH_INTERNAL_ALLOWED_IPS", "100.64.0.0/10,10.0.0.5");
     const { env } = await import("../../env/env.js");
     expect(env.PUSH_INTERNAL_ALLOWED_IPS).toBe("100.64.0.0/10,10.0.0.5");
+  });
+});
+
+describe("push handlers", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
+    vi.stubEnv("VAPID_PRIVATE_KEY", "BPRIV");
+    vi.stubEnv("VAPID_EMAIL", "mailto:admin@example.org");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  function makeRes() {
+    return {
+      statusCode: 200,
+      body: null as unknown,
+      headers: {} as Record<string, string>,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      setHeader(name: string, value: string) {
+        this.headers[name] = value;
+        return this;
+      },
+      json(obj: unknown) {
+        this.body = obj;
+        return this;
+      },
+    };
+  }
+
+  async function loadHandlerMocks() {
+    const db = (await import("../../db.js")).default as unknown as {
+      query: ReturnType<typeof vi.fn>;
+    };
+    const webPush = await import("../../lib/webpushSend.js");
+    const pushSend = await import("../../push/send.js");
+    const rateLimit = await import("../../http/rateLimit.js");
+    const audit = await import("./audit.js");
+    return {
+      db,
+      sendWebPush: webPush.sendWebPush as ReturnType<typeof vi.fn>,
+      sendToUser: pushSend.sendToUser as ReturnType<typeof vi.fn>,
+      getPerTargetRateLimit: rateLimit.getPerTargetRateLimit as ReturnType<
+        typeof vi.fn
+      >,
+      logPushSend: audit.logPushSend as ReturnType<typeof vi.fn>,
+    };
+  }
+
+  it("registers and unregisters web and native push targets", async () => {
+    const mocks = await loadHandlerMocks();
+    mocks.db.query.mockResolvedValue({ rows: [] });
+    const { register, unregister, subscribe, unsubscribe } =
+      await import("./push.js");
+
+    await register(
+      {
+        user: { id: "u1" },
+        body: {
+          platform: "web",
+          token: "https://push.example/sub",
+          keys: { p256dh: "p256", auth: "auth" },
+        },
+      } as never,
+      makeRes() as never,
+    );
+    await register(
+      {
+        user: { id: "u1" },
+        body: { platform: "ios", token: "apns-token" },
+      } as never,
+      makeRes() as never,
+    );
+    await subscribe(
+      {
+        user: { id: "u1" },
+        body: {
+          endpoint: "https://push.example/legacy",
+          keys: { p256dh: "p256", auth: "auth" },
+        },
+      } as never,
+      makeRes() as never,
+    );
+    await unregister(
+      {
+        user: { id: "u1" },
+        body: { platform: "web", endpoint: "https://push.example/sub" },
+      } as never,
+      makeRes() as never,
+    );
+    await unregister(
+      {
+        user: { id: "u1" },
+        body: { platform: "android", token: "fcm" },
+      } as never,
+      makeRes() as never,
+    );
+    await unsubscribe(
+      {
+        user: { id: "u1" },
+        body: { endpoint: "https://push.example/sub" },
+      } as never,
+      makeRes() as never,
+    );
+
+    expect(mocks.db.query).toHaveBeenCalledTimes(6);
+    expect(mocks.db.query.mock.calls[0]?.[1]).toEqual([
+      "u1",
+      "https://push.example/sub",
+      "p256",
+      "auth",
+    ]);
+    expect(mocks.db.query.mock.calls[1]?.[1]).toEqual([
+      "u1",
+      "ios",
+      "apns-token",
+    ]);
+    expect(mocks.db.query.mock.calls[2]?.[1]).toEqual([
+      "u1",
+      "https://push.example/legacy",
+      "p256",
+      "auth",
+    ]);
+    expect(mocks.db.query.mock.calls[4]?.[1]).toEqual(["u1", "android", "fcm"]);
+  });
+
+  it("sendPush rate-limits before reading subscriptions", async () => {
+    const mocks = await loadHandlerMocks();
+    mocks.getPerTargetRateLimit.mockResolvedValueOnce({
+      ok: false,
+      retryAfterSec: 17,
+    });
+    const { sendPush } = await import("./push.js");
+    const res = makeRes();
+
+    await sendPush(
+      {
+        body: { userId: "u2", title: "Hi", body: "Body", module: "finyk" },
+      } as never,
+      res as never,
+    );
+
+    expect(res.statusCode).toBe(429);
+    expect(res.headers["Retry-After"]).toBe("17");
+    expect(mocks.db.query).not.toHaveBeenCalled();
+  });
+
+  it("sendPush handles empty subscriptions and mixed fan-out outcomes", async () => {
+    const mocks = await loadHandlerMocks();
+    mocks.db.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          { endpoint: "https://push.example/ok", p256dh: "p1", auth: "a1" },
+          { endpoint: "https://push.example/stale", p256dh: "p2", auth: "a2" },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+    mocks.sendWebPush
+      .mockResolvedValueOnce({ outcome: "ok" })
+      .mockResolvedValueOnce({ outcome: "invalid_endpoint" });
+    const { sendPush } = await import("./push.js");
+
+    const emptyRes = makeRes();
+    await sendPush(
+      { body: { userId: "u2", title: "Hi", body: "Body" } } as never,
+      emptyRes as never,
+    );
+    expect(emptyRes.body).toEqual({ sent: 0 });
+
+    const fanoutRes = makeRes();
+    await sendPush(
+      {
+        body: {
+          userId: "u2",
+          title: "Hi",
+          body: "Body",
+          module: "finyk",
+          tag: "daily",
+        },
+      } as never,
+      fanoutRes as never,
+    );
+
+    expect(fanoutRes.body).toEqual({ sent: 1, stale: 1 });
+    expect(mocks.sendWebPush).toHaveBeenCalledTimes(2);
+    expect(mocks.db.query.mock.calls[2]?.[1]).toEqual([
+      ["https://push.example/stale"],
+    ]);
+    expect(mocks.logPushSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        callerIp: "203.0.113.7",
+        targetUserId: "u2",
+        subsCount: 2,
+        sentCount: 1,
+      }),
+    );
+  });
+
+  it("pushTest delegates to sendToUser and returns its summary", async () => {
+    const mocks = await loadHandlerMocks();
+    const summary = {
+      delivered: { ios: 1, android: 0, web: 1 },
+      cleaned: 0,
+      errors: [],
+    };
+    mocks.sendToUser.mockResolvedValueOnce(summary);
+    const { pushTest } = await import("./push.js");
+    const res = makeRes();
+
+    await pushTest(
+      {
+        user: { id: "u1" },
+        body: {
+          title: "Test",
+          body: "Body",
+          data: { source: "spec" },
+          url: "sergeant://finyk",
+          silent: true,
+        },
+      } as never,
+      res as never,
+    );
+
+    expect(mocks.sendToUser).toHaveBeenCalledWith("u1", {
+      title: "Test",
+      body: "Body",
+      data: { source: "spec" },
+      url: "sergeant://finyk",
+      silent: true,
+    });
+    expect(res.body).toEqual(summary);
   });
 });

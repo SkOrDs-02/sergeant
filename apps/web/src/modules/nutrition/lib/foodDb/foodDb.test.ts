@@ -22,7 +22,10 @@ vi.mock("./seedFoodsUk", () => ({
   ],
 }));
 
-import { __resetSergeantDbForTests } from "../../../../shared/lib/idb/sergeantDb";
+import {
+  __resetSergeantDbForTests,
+  openSergeantDb,
+} from "../../../../shared/lib/idb/sergeantDb";
 import {
   bindBarcodeToFood,
   ensureSeedFoods,
@@ -117,6 +120,20 @@ describe("upsertFood + listFoods", () => {
     const list = await listFoods(1);
     expect(list).toHaveLength(1);
   });
+
+  it("falls back safely when IndexedDB transactions fail", async () => {
+    const db = await openSergeantDb();
+    expect(db).not.toBeNull();
+    vi.spyOn(db!, "transaction").mockImplementation(() => {
+      throw new Error("transaction failed");
+    });
+
+    expect(await listFoods()).toEqual([]);
+    expect(await upsertFood({ name: "Broken" })).toEqual({
+      ok: false,
+      error: "Не вдалося зберегти продукт",
+    });
+  });
 });
 
 describe("searchFoods", () => {
@@ -162,6 +179,17 @@ describe("barcode binding + lookup", () => {
   it("returns null for an unbound but well-formed barcode", async () => {
     expect(await lookupFoodByBarcode("4820000000099")).toBeNull();
   });
+
+  it("returns safe fallbacks when barcode transactions fail", async () => {
+    const db = await openSergeantDb();
+    expect(db).not.toBeNull();
+    vi.spyOn(db!, "transaction").mockImplementation(() => {
+      throw new Error("transaction failed");
+    });
+
+    expect(await bindBarcodeToFood("4820000000001", "food_1")).toBe(false);
+    expect(await lookupFoodByBarcode("4820000000001")).toBeNull();
+  });
 });
 
 describe("replaceAllFoodsFromList", () => {
@@ -180,6 +208,16 @@ describe("replaceAllFoodsFromList", () => {
   it("handles non-array input as empty", async () => {
     expect(await replaceAllFoodsFromList(null)).toBe(true);
     expect(await listFoods()).toEqual([]);
+  });
+
+  it("returns false when replace transaction fails", async () => {
+    const db = await openSergeantDb();
+    expect(db).not.toBeNull();
+    vi.spyOn(db!, "transaction").mockImplementation(() => {
+      throw new Error("transaction failed");
+    });
+
+    expect(await replaceAllFoodsFromList([{ name: "New" }])).toBe(false);
   });
 });
 

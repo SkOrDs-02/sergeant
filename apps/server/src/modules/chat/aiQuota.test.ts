@@ -17,6 +17,7 @@ import {
   consumeToolQuota,
   __aiQuotaTestHooks,
 } from "./aiQuota.js";
+import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 
 const getSessionUser = _getSessionUser as unknown as ReturnType<typeof vi.fn>;
 const pool = _pool as unknown as {
@@ -75,9 +76,11 @@ const savedEnv: Record<string, string | undefined> = {};
 beforeEach(() => {
   for (const k of ENV_VARS) savedEnv[k] = process.env[k];
   vi.clearAllMocks();
+  aiQuotaCircuitBreaker.reset();
 });
 
 afterEach(() => {
+  aiQuotaCircuitBreaker.reset();
   for (const k of ENV_VARS) {
     if (savedEnv[k] === undefined) delete process.env[k];
     else process.env[k] = savedEnv[k];
@@ -237,6 +240,68 @@ describe("assertAiQuota (default bucket)", () => {
     expect(values[2]).toBe("default");
     expect(values[3]).toBe(1); // cost for plain chat
     expect(values[4]).toBe(10); // limit
+  });
+
+  it("fails closed with 503 when the quota circuit breaker is open", async () => {
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
+    getSessionUser.mockResolvedValue(null);
+    for (let i = 0; i < 20; i += 1) {
+      aiQuotaCircuitBreaker.recordFailure(new Error(`db down ${i}`));
+    }
+
+    const res = makeRes();
+    const ok = await assertAiQuota(makeReq(), res);
+
+    expect(ok).toBe(false);
+    expect(res.statusCode).toBe(503);
+    expect(res.headers["Retry-After"]).toBeDefined();
+    expect((res.body as { code?: string }).code).toBe("AI_QUOTA_DB_DOWN");
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it("attaches an idempotent refund that decrements consumed quota once", async () => {
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
+    process.env["AI_DAILY_ANON_LIMIT"] = "10";
+    getSessionUser.mockResolvedValue(null);
+    pool.query.mockResolvedValue({ rows: [{ request_count: 1 }], rowCount: 1 });
+    const req = makeReq() as Request & {
+      aiQuotaRefund?: () => Promise<void>;
+    };
+
+    const ok = await assertAiQuota(req, makeRes());
+    await req.aiQuotaRefund?.();
+    await req.aiQuotaRefund?.();
+
+    expect(ok).toBe(true);
+    expect(pool.query).toHaveBeenCalledTimes(2);
+    expect(pool.query.mock.calls[1]![0]).toMatch(/UPDATE ai_usage_daily/);
+    expect(pool.query.mock.calls[1]![1]).toEqual([
+      "ip:unknown",
+      expect.any(String),
+      __aiQuotaTestHooks.DEFAULT_BUCKET,
+      1,
+    ]);
+  });
+});
+
+describe("refundConsumed test hook", () => {
+  it("swallows refund store errors", async () => {
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    pool.query.mockRejectedValue(
+      Object.assign(new Error("refund write failed"), { code: "EWRITE" }),
+    );
+
+    await expect(
+      __aiQuotaTestHooks.refundConsumed({
+        subject: "u:test",
+        day: "2026-01-01",
+        bucket: "default",
+        cost: 2,
+      }),
+    ).resolves.toBeUndefined();
+    expect(pool.query).toHaveBeenCalledOnce();
   });
 });
 

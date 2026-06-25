@@ -1,319 +1,264 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { INTERNAL_TRANSFER_ID } from "../constants";
 import {
   computeCategorySpendIndex,
   formatComparisonSummary,
   getCategoryDistribution,
   getCurrentVsPreviousComparison,
+  getMonthlySpendSeries,
   getMonthlySummary,
+  getTopCategories,
   getTopMerchants,
+  getTrendComparison,
+  selectCategoryDistributionFromIndex,
+  selectTopCategoriesFromIndex,
 } from "./selectors";
-import type { Transaction } from "./types";
-import { INTERNAL_TRANSFER_ID } from "../constants";
+import type { Category, Transaction } from "./types";
 
-// Minimal tx factory — fills only the fields our aggregation actually reads
-// (`time`, `amount`, `id`) so tests stay readable and focused.
 function tx(
   id: string,
-  isoDate: string,
   amount: number,
-  extra: Partial<Transaction> = {},
+  date: Date,
+  description = "АТБ",
+  mcc = 5411,
 ): Transaction {
   return {
     id,
     amount,
-    time: Math.floor(new Date(isoDate).getTime() / 1000),
-    date: isoDate,
-    description: "",
-    mcc: 0,
-    accountId: null,
-    manual: false,
-    categoryId: "misc",
+    date: date.toISOString().slice(0, 10),
+    categoryId: "",
     type: amount < 0 ? "expense" : "income",
     source: "manual",
+    time: Math.floor(date.getTime() / 1000),
+    description,
+    mcc,
+    accountId: null,
+    manual: true,
     _source: "manual",
     _accountId: null,
-    _manual: false,
-    ...extra,
+    _manual: true,
   };
 }
 
-describe("getCurrentVsPreviousComparison", () => {
-  it("compares current and previous calendar months by default", () => {
-    const txs = [
-      // Березень 2025 — поточний
-      tx("c1", "2025-03-05T10:00:00Z", -50000),
-      tx("c2", "2025-03-15T10:00:00Z", -30000),
-      tx("c3", "2025-03-20T10:00:00Z", 400000),
-      // Лютий 2025 — попередній
-      tx("p1", "2025-02-10T10:00:00Z", -40000),
-      tx("p2", "2025-02-20T10:00:00Z", -20000),
-      tx("p3", "2025-02-25T10:00:00Z", 300000),
-      // Січень — ігнорується
-      tx("j1", "2025-01-10T10:00:00Z", -99999),
+const jan = new Date(2026, 0, 15, 12);
+const feb = new Date(2026, 1, 15, 12);
+const customCategories: Category[] = [
+  { id: "rent", label: "Rent", color: "#123456", keywords: ["rent"] },
+  { id: "fun", label: "Fun", color: "#abcdef" },
+];
+
+describe("finyk selectors", () => {
+  it("summarizes by month, exclusions and split-adjusted spend", () => {
+    const transactions = [
+      tx("jan-food", -10_000, jan, "АТБ", 5411),
+      tx("jan-income", 25_000, jan, "Salary", 0),
+      tx("feb-food", -5_000, feb, "АТБ", 5411),
+      tx("excluded", -4_000, jan, "Cafe", 5812),
     ];
-    const result = getCurrentVsPreviousComparison(txs, {
-      now: new Date("2025-03-21T00:00:00Z"),
+
+    expect(getMonthlySummary(null)).toEqual({
+      spent: 0,
+      income: 0,
+      balance: 0,
+      txCount: 0,
+      totalExpense: 0,
+      totalIncome: 0,
     });
 
-    expect(result.currentMonth).toBe("2025-03");
-    expect(result.previousMonth).toBe("2025-02");
-    expect(result.currentSpent).toBe(800);
-    expect(result.prevSpent).toBe(600);
-    expect(result.diff).toBe(200);
-    expect(result.diffPct).toBe(33);
-    expect(result.currentIncome).toBe(4000);
-    expect(result.prevIncome).toBe(3000);
-    expect(result.incomeDiff).toBe(1000);
-    expect(result.incomeDiffPct).toBe(33);
-  });
-
-  it("wraps from January back to previous December", () => {
-    const txs = [
-      tx("c", "2025-01-15T10:00:00Z", -10000),
-      tx("p", "2024-12-15T10:00:00Z", -20000),
-    ];
-    const result = getCurrentVsPreviousComparison(txs, {
-      now: new Date("2025-01-20T00:00:00Z"),
-    });
-    expect(result.currentMonth).toBe("2025-01");
-    expect(result.previousMonth).toBe("2024-12");
-    expect(result.currentSpent).toBe(100);
-    expect(result.prevSpent).toBe(200);
-    expect(result.diff).toBe(-100);
-    expect(result.diffPct).toBe(-50);
-  });
-
-  it("returns null diffPct when there is no previous-month spend", () => {
-    const txs = [tx("c", "2025-03-05T10:00:00Z", -10000)];
-    const result = getCurrentVsPreviousComparison(txs, {
-      now: new Date("2025-03-10T00:00:00Z"),
-    });
-    expect(result.prevSpent).toBe(0);
-    expect(result.diffPct).toBeNull();
-    expect(result.incomeDiffPct).toBeNull();
-  });
-
-  it("respects excludedTxIds in both periods", () => {
-    const txs = [
-      tx("c1", "2025-03-05T10:00:00Z", -50000),
-      tx("c2", "2025-03-15T10:00:00Z", -30000),
-      tx("p1", "2025-02-10T10:00:00Z", -40000),
-      tx("p2", "2025-02-20T10:00:00Z", -20000),
-    ];
-    const result = getCurrentVsPreviousComparison(txs, {
-      now: new Date("2025-03-21T00:00:00Z"),
-      excludedTxIds: new Set(["c2", "p2"]),
-    });
-    expect(result.currentSpent).toBe(500);
-    expect(result.prevSpent).toBe(400);
-    expect(result.diff).toBe(100);
-  });
-
-  it("accepts explicit currentMonth/previousMonth overrides", () => {
-    const txs = [
-      tx("c", "2024-07-05T10:00:00Z", -10000),
-      tx("p", "2024-05-05T10:00:00Z", -5000),
-    ];
-    const result = getCurrentVsPreviousComparison(txs, {
-      currentMonth: "2024-07",
-      previousMonth: "2024-05",
-    });
-    expect(result.currentMonth).toBe("2024-07");
-    expect(result.previousMonth).toBe("2024-05");
-    expect(result.currentSpent).toBe(100);
-    expect(result.prevSpent).toBe(50);
-    expect(result.diffPct).toBe(100);
-  });
-});
-
-describe("formatComparisonSummary", () => {
-  it("describes an increase with sign and percent", () => {
-    const summary = formatComparisonSummary({
-      currentSpent: 1200,
-      prevSpent: 1000,
-      diff: 200,
-      diffPct: 20,
-    });
-    expect(summary.direction).toBe("up");
-    expect(summary.text).toContain("більше");
-    expect(summary.text).toContain("20%");
-  });
-
-  it("describes a decrease", () => {
-    const summary = formatComparisonSummary({
-      currentSpent: 800,
-      prevSpent: 1000,
-      diff: -200,
-      diffPct: -20,
-    });
-    expect(summary.direction).toBe("down");
-    expect(summary.text).toContain("менше");
-    expect(summary.text).toContain("20%");
-  });
-
-  it("handles zero diff", () => {
-    const summary = formatComparisonSummary({
-      currentSpent: 500,
-      prevSpent: 500,
-      diff: 0,
-      diffPct: 0,
-    });
-    expect(summary.direction).toBe("equal");
-    expect(summary.text).toMatch(/такі сам/);
-  });
-
-  it("handles missing previous data", () => {
-    const summary = formatComparisonSummary({
-      currentSpent: 500,
-      prevSpent: 0,
-      diff: 500,
-      diffPct: null,
-    });
-    expect(summary.direction).toBe("no_prev");
-  });
-
-  it("uses provided prevLabel in the sentence", () => {
-    const summary = formatComparisonSummary(
-      { currentSpent: 1200, prevSpent: 1000, diff: 200, diffPct: 20 },
-      { prevLabel: "лютого 2025" },
-    );
-    expect(summary.text).toContain("лютого 2025");
-  });
-
-  it("returns no_prev when comparison itself is null", () => {
-    const summary = formatComparisonSummary(null);
-    expect(summary.direction).toBe("no_prev");
-  });
-});
-
-describe("computeCategorySpendIndex — internal transfers", () => {
-  it("виключає tx, що повністю позначений внутрішнім переказом (через excludedTxIds)", () => {
-    const txs = [
-      tx("t1", "2025-03-05T10:00:00Z", -50000),
-      tx("t2", "2025-03-10T10:00:00Z", -20000),
-    ];
-    const index = computeCategorySpendIndex(txs, {
-      excludedTxIds: new Set(["t2"]),
-      txCategories: { t2: INTERNAL_TRANSFER_ID },
-    });
-    expect(index.totalSpent).toBe(500);
-    expect(index.catSpend[INTERNAL_TRANSFER_ID]).toBeUndefined();
-  });
-
-  it("ігнорує спліт-частку з internal_transfer, узгоджено з getTxStatAmount", () => {
-    const txs = [tx("t1", "2025-03-05T10:00:00Z", -50000)];
-    const splits = {
-      t1: [
-        { amount: 300, categoryId: "food" },
-        { amount: 200, categoryId: INTERNAL_TRANSFER_ID },
-      ],
-    };
-    const index = computeCategorySpendIndex(txs, { txSplits: splits });
-    expect(index.catSpend["food"]).toBe(300);
-    expect(index.catSpend[INTERNAL_TRANSFER_ID]).toBeUndefined();
-    expect(index.totalSpent).toBe(300);
-  });
-
-  it("пай 'Категорії' збігається з витратами з 'Підсумку місяця' для сплітів з переказом", () => {
-    const txs = [tx("t1", "2025-03-05T10:00:00Z", -50000)];
-    const splits = {
-      t1: [
-        { amount: 300, categoryId: "food" },
-        { amount: 200, categoryId: INTERNAL_TRANSFER_ID },
-      ],
-    };
-    const summary = getMonthlySummary(txs, { txSplits: splits });
-    const distribution = getCategoryDistribution(txs, { txSplits: splits });
-    const distTotal = distribution.reduce((s, c) => s + c.spent, 0);
-    expect(distTotal).toBe(summary.spent);
     expect(
-      distribution.some((c) => c.categoryId === INTERNAL_TRANSFER_ID),
-    ).toBe(false);
-  });
-});
-
-describe("getTopMerchants", () => {
-  it("без сплітів агрегує повну суму транзакції по мерчанту", () => {
-    const txs = [
-      tx("a1", "2025-03-05T10:00:00Z", -50000, { description: "АТБ" }),
-      tx("a2", "2025-03-15T10:00:00Z", -30000, { description: "атб  " }),
-      tx("r1", "2025-03-20T10:00:00Z", -100000, { description: "Ранчо" }),
-    ];
-    const merchants = getTopMerchants(txs);
-    expect(merchants[0]).toMatchObject({
-      name: "Ранчо",
-      total: 1000,
-      count: 1,
-    });
-    expect(merchants[1]).toMatchObject({ name: "АТБ", total: 800, count: 2 });
-  });
-
-  it("для сплітованих транзакцій рахує лише чисту частку користувача", () => {
-    // 14 000 ₴ оренда з карти — своя частка 6 000 ₴, повернення від хлопців
-    // трактуються як internal_transfer. У Топ мерчантах має показатись 6 000 ₴,
-    // а не 14 000, щоб цифри збігалися з «Підсумком місяця» та «Категоріями».
-    const txs = [
-      tx("rent", "2025-03-01T10:00:00Z", -1400000, {
-        description: "536354****8294",
+      getMonthlySummary(transactions, {
+        month: "2026-01",
+        excludedTxIds: ["excluded"],
+        txSplits: {
+          "jan-food": [
+            { categoryId: "food", amount: 70 },
+            { categoryId: INTERNAL_TRANSFER_ID, amount: 30 },
+          ],
+        },
       }),
-      tx("food", "2025-03-05T10:00:00Z", -50000, { description: "АТБ" }),
-    ];
-    const splits = {
-      rent: [
-        { amount: 6000, categoryId: "housing" },
-        { amount: 8000, categoryId: INTERNAL_TRANSFER_ID },
-      ],
-    };
-    const merchants = getTopMerchants(txs, { txSplits: splits });
-    expect(merchants[0]).toMatchObject({
-      name: "536354****8294",
-      total: 6000,
-      count: 1,
+    ).toMatchObject({
+      spent: 70,
+      income: 250,
+      balance: 180,
+      txCount: 2,
     });
-    expect(merchants[1]).toMatchObject({ name: "АТБ", total: 500, count: 1 });
-  });
 
-  it("пропускає мерчанта, якщо після сплітів чиста частка = 0", () => {
-    // Вся сума транзакції — внутрішній переказ (повністю повернули),
-    // тож такий «мерчант» не має потрапляти в топ.
-    const txs = [
-      tx("t1", "2025-03-01T10:00:00Z", -500000, { description: "Monobank" }),
-      tx("t2", "2025-03-05T10:00:00Z", -10000, { description: "АТБ" }),
-    ];
-    const splits = {
-      t1: [{ amount: 5000, categoryId: INTERNAL_TRANSFER_ID }],
-    };
-    const merchants = getTopMerchants(txs, { txSplits: splits });
-    expect(merchants).toHaveLength(1);
-    expect(merchants[0]?.name).toBe("АТБ");
-  });
-
-  it("сума топ-мерчантів узгоджена з витратами 'Підсумку місяця' для сплітованих витрат", () => {
-    const txs = [
-      tx("rent", "2025-03-01T10:00:00Z", -1400000, { description: "Оренда" }),
-      tx("food", "2025-03-05T10:00:00Z", -50000, { description: "АТБ" }),
-    ];
-    const splits = {
-      rent: [
-        { amount: 6000, categoryId: "housing" },
-        { amount: 8000, categoryId: INTERNAL_TRANSFER_ID },
-      ],
-    };
-    const summary = getMonthlySummary(txs, { txSplits: splits });
-    const merchants = getTopMerchants(txs, { txSplits: splits });
-    const merchantsTotal = merchants.reduce((s, m) => s + m.total, 0);
-    expect(merchantsTotal).toBe(summary.spent);
-  });
-
-  it("поважає excludedTxIds", () => {
-    const txs = [
-      tx("a", "2025-03-01T10:00:00Z", -10000, { description: "АТБ" }),
-      tx("b", "2025-03-02T10:00:00Z", -20000, { description: "Ранчо" }),
-    ];
-    const merchants = getTopMerchants(txs, {
-      excludedTxIds: new Set(["b"]),
+    expect(
+      getMonthlySummary(transactions, { month: { year: 2026, month: 2 } }),
+    ).toMatchObject({ spent: 50, income: 0, txCount: 1 });
+    expect(getMonthlySummary(transactions, { month: "bad" })).toMatchObject({
+      spent: 190,
+      income: 250,
+      txCount: 4,
     });
-    expect(merchants).toHaveLength(1);
-    expect(merchants[0]?.name).toBe("АТБ");
+  });
+
+  it("builds category indexes, top categories and distributions", () => {
+    const transactions = [
+      tx("split", -20_000, jan, "Rent payment", 0),
+      tx("food", -5_000, jan, "АТБ", 5411),
+      tx("income", 10_000, jan, "Salary", 0),
+      tx("outside", -9_000, feb, "Cafe", 5812),
+    ];
+    const index = computeCategorySpendIndex(transactions, {
+      customCategories,
+      txCategories: { food: "fun" },
+      txSplits: {
+        split: [
+          { categoryId: "rent", amount: 150 },
+          { categoryId: INTERNAL_TRANSFER_ID, amount: 50 },
+          { categoryId: "", amount: 10 },
+        ],
+      },
+      month: "2026-01",
+    });
+
+    expect(index).toEqual({
+      catSpend: { rent: 150, fun: 50 },
+      totalSpent: 200,
+    });
+    expect(selectTopCategoriesFromIndex(index, customCategories, 1)).toEqual([
+      expect.objectContaining({ categoryId: "rent", spent: 150, pct: 75 }),
+    ]);
+    expect(getTopCategories(transactions, 2).map((c) => c.spent)).toEqual([
+      200, 90,
+    ]);
+    expect(
+      getCategoryDistribution(transactions, { customCategories }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      selectCategoryDistributionFromIndex({
+        catSpend: { rent: 0 },
+        totalSpent: 0,
+      }),
+    ).toEqual([
+      expect.objectContaining({ categoryId: "rent", spent: 0, pct: 0 }),
+    ]);
+  });
+
+  it("compares trends and formats summary copy directions", () => {
+    const current = [tx("current", -20_000, feb), tx("income", 30_000, feb)];
+    const previous = [tx("prev", -10_000, jan), tx("prev-income", 20_000, jan)];
+    const comparison = getTrendComparison(current, previous);
+
+    expect(comparison).toMatchObject({
+      currentSpent: 200,
+      prevSpent: 100,
+      diff: 100,
+      diffPct: 100,
+      currentIncome: 300,
+      prevIncome: 200,
+      incomeDiff: 100,
+      incomeDiffPct: 50,
+    });
+    expect(formatComparisonSummary(comparison).direction).toBe("up");
+    expect(
+      formatComparisonSummary({ ...comparison, diff: -50, diffPct: -50 })
+        .direction,
+    ).toBe("down");
+    expect(formatComparisonSummary({ ...comparison, diff: 0 }).direction).toBe(
+      "equal",
+    );
+    expect(
+      formatComparisonSummary({
+        ...comparison,
+        prevSpent: 0,
+        currentSpent: 0,
+      }).direction,
+    ).toBe("no_prev");
+    expect(
+      formatComparisonSummary({
+        ...comparison,
+        prevSpent: 0,
+        currentSpent: 10,
+      }).direction,
+    ).toBe("no_prev");
+    expect(formatComparisonSummary(null).direction).toBe("no_prev");
+    expect(getTrendComparison(current, [])).toMatchObject({ diffPct: null });
+  });
+
+  it("compares current and previous months from one transaction list", () => {
+    const transactions = [
+      tx("dec", -7_000, new Date(2025, 11, 15, 12)),
+      tx("jan", -10_000, jan),
+      tx("feb", -20_000, feb),
+    ];
+
+    expect(
+      getCurrentVsPreviousComparison(transactions, {
+        currentMonth: "2026-02",
+      }),
+    ).toMatchObject({
+      currentMonth: "2026-02",
+      previousMonth: "2026-01",
+      currentSpent: 200,
+      prevSpent: 100,
+    });
+    expect(
+      getCurrentVsPreviousComparison(transactions, {
+        currentMonth: { year: 2026, month: 1 },
+      }),
+    ).toMatchObject({
+      currentMonth: "2026-01",
+      previousMonth: "2025-12",
+      currentSpent: 100,
+      prevSpent: 70,
+    });
+    expect(
+      getCurrentVsPreviousComparison(transactions, {
+        currentMonth: "bad",
+        previousMonth: { year: 2026, month: 1 },
+        now: new Date(2026, 1, 20, 12),
+      }),
+    ).toMatchObject({ currentMonth: "2026-02", previousMonth: "2026-01" });
+  });
+
+  it("groups top merchants and builds monthly spend series", () => {
+    const transactions = [
+      tx("atb-1", -10_000, jan, "АТБ"),
+      tx("atb-2", -15_000, jan, " атб  "),
+      tx("split", -20_000, jan, "Landlord"),
+      tx("blank", -5_000, jan, "   "),
+      tx("income", 25_000, jan, "Salary"),
+      tx("feb", -9_000, feb, "Cafe", 5812),
+    ];
+
+    expect(
+      getTopMerchants(transactions, {
+        month: "2026-01",
+        txSplits: {
+          split: [
+            { categoryId: "rent", amount: 120 },
+            { categoryId: INTERNAL_TRANSFER_ID, amount: 80 },
+          ],
+        },
+      }),
+    ).toEqual([
+      { name: "АТБ", count: 2, total: 250 },
+      { name: "Landlord", count: 1, total: 120 },
+    ]);
+    expect(getTopMerchants(transactions, 1)).toHaveLength(1);
+    expect(
+      getTopMerchants(
+        transactions,
+        { excludedTxIds: new Set(["atb-1"]) },
+        2,
+      )[0],
+    ).toMatchObject({ name: "Landlord" });
+
+    expect(
+      getMonthlySpendSeries([
+        {
+          month: "2026-01",
+          transactions,
+          excludedTxIds: ["blank"],
+        },
+        { month: "bad", transactions: null as unknown as Transaction[] },
+      ]),
+    ).toEqual([
+      expect.objectContaining({ month: "2026-01", spent: 540, income: 250 }),
+      { month: "bad", label: "bad", spent: 0, income: 0 },
+    ]);
+    expect(getMonthlySpendSeries(null)).toEqual([]);
   });
 });

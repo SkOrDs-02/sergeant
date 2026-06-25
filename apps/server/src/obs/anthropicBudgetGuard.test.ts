@@ -1,14 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-const { captureMessageMock } = vi.hoisted(() => ({
+const { captureMessageMock, getRedisMock, redisSetMock } = vi.hoisted(() => ({
   captureMessageMock: vi.fn(),
+  getRedisMock: vi.fn(),
+  redisSetMock: vi.fn(),
 }));
 vi.mock("../sentry.js", () => ({
   Sentry: { captureMessage: captureMessageMock },
 }));
+vi.mock("../lib/redis.js", () => ({
+  getRedis: getRedisMock,
+}));
 
 import {
   AnthropicBudgetGuard,
+  isAnthropicBudgetHardExceeded,
   type AnthropicBudgetRedisClient,
   type AnthropicBudgetCaptureInput,
 } from "./anthropicBudgetGuard.js";
@@ -41,6 +47,9 @@ beforeEach(() => {
   // Скидаємо counter ПЕРЕД instantiate-ом, щоб baseline-snapshot стартував з 0.
   aiCostEstimateUsd.reset();
   captureMessageMock.mockClear();
+  getRedisMock.mockReset();
+  getRedisMock.mockReturnValue(null);
+  redisSetMock.mockReset();
 });
 
 afterEach(() => {
@@ -136,6 +145,90 @@ describe("AnthropicBudgetGuard — thresholds", () => {
     const result = await guard.runBudgetCheckTick();
     expect(result.spendUsd).toBeCloseTo(3.25, 5);
     expect(result.softFired).toBe(true);
+  });
+});
+
+describe("AnthropicBudgetGuard - production wiring", () => {
+  it("starts and stops the interval loop idempotently", () => {
+    vi.useFakeTimers();
+    const guard = createGuard({ redis: null });
+
+    guard.start();
+    guard.start();
+    expect(vi.getTimerCount()).toBe(1);
+
+    guard.stop();
+    guard.stop();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("uses the default Sentry capture for hard alerts", async () => {
+    const guard = createGuard({ redis: null });
+
+    recordSpend(5.5);
+    const result = await guard.runBudgetCheckTick();
+
+    expect(result.hardFired).toBe(true);
+    expect(captureMessageMock).toHaveBeenCalledWith(
+      expect.stringContaining("anthropic_budget_hard_alert"),
+      expect.objectContaining({
+        level: "error",
+        tags: expect.objectContaining({
+          module: "obs",
+          op: "anthropic_budget_alert",
+          threshold: "hard",
+          provider: "anthropic",
+        }),
+        extra: expect.objectContaining({
+          spendUsd: 5.5,
+          thresholdUsd: 5,
+        }),
+      }),
+    );
+  });
+
+  it("keeps default capture fail-open when Sentry throws", async () => {
+    captureMessageMock.mockImplementationOnce(() => {
+      throw new Error("sentry unavailable");
+    });
+    const guard = createGuard({ redis: null });
+
+    recordSpend(3.5);
+
+    await expect(guard.runBudgetCheckTick()).resolves.toMatchObject({
+      softFired: true,
+    });
+  });
+
+  it("uses getRedis() when no Redis override is provided", async () => {
+    redisSetMock.mockResolvedValue("OK");
+    getRedisMock.mockReturnValue({ set: redisSetMock });
+    const captures: AnthropicBudgetCaptureInput[] = [];
+    const guard = createGuard({
+      capture: (input) => {
+        captures.push(input);
+      },
+    });
+
+    recordSpend(3.5);
+    const result = await guard.runBudgetCheckTick();
+
+    expect(result.softFired).toBe(true);
+    expect(captures).toHaveLength(1);
+    expect(getRedisMock).toHaveBeenCalled();
+    expect(redisSetMock).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /^anthropic_budget_alert_v1:\d{4}-\d{2}-\d{2}:soft$/,
+      ),
+      "1",
+      "EX",
+      36 * 60 * 60,
+      "NX",
+    );
+  });
+
+  it("exposes the production singleton hard-breach helper", () => {
+    expect(isAnthropicBudgetHardExceeded()).toBe(false);
   });
 });
 

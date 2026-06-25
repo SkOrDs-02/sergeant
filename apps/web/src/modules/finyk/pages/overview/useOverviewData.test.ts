@@ -11,7 +11,7 @@
  * or fire analytics — those are side-effecting branches exercised by e2e.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { useOverviewData } from "./useOverviewData";
 import type { UseOverviewDataParams } from "./useOverviewData";
 
@@ -243,6 +243,93 @@ describe("useOverviewData", () => {
       );
       expect(result.current.plannedFlows).toHaveLength(0);
     });
+
+    it("combines subscriptions, debts, and receivables into planned and monthly flows", () => {
+      const transactions = [
+        {
+          id: "tx-spotify",
+          amount: -19900,
+          time: new Date(2026, 4, 10, 12, 0).getTime(),
+          date: "2026-05-10",
+          description: "spotify premium",
+          categoryId: "subscriptions",
+          type: "expense",
+          source: "monobank",
+          accountId: null,
+          manual: false,
+          _source: "monobank",
+          _accountId: null,
+          _manual: false,
+          currencyCode: 980,
+        },
+      ] as unknown as UseOverviewDataParams["mono"]["transactions"];
+      const storage = buildStorage({
+        monthlyPlan: { income: 0, expense: 1000, savings: 0 },
+        subscriptions: [
+          {
+            id: "sub-spotify",
+            emoji: "S",
+            name: "Spotify",
+            billingDay: 6,
+            keyword: "spotify",
+            currency: "UAH",
+          },
+          {
+            id: "sub-unknown",
+            emoji: "?",
+            name: "No amount yet",
+            billingDay: 8,
+            keyword: "",
+            currency: "UAH",
+          },
+          {
+            id: "sub-next-month",
+            emoji: "N",
+            name: "Already billed",
+            billingDay: 1,
+            keyword: "",
+            currency: "UAH",
+          },
+        ],
+        manualDebts: [
+          {
+            id: "debt-1",
+            emoji: "D",
+            name: "Loan",
+            amount: 500,
+            totalAmount: 500,
+            dueDate: "2026-06-07",
+          },
+        ],
+        receivables: [
+          {
+            id: "recv-1",
+            emoji: "R",
+            name: "Refund",
+            amount: 120,
+            dueDate: "2026-06-09",
+          },
+        ],
+      });
+
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({ transactions }),
+          storage,
+        }),
+      );
+
+      expect(result.current.plannedFlows.map((f) => f.id)).toEqual([
+        "sub-sub-spotify",
+        "debt-debt-1",
+        "sub-sub-unknown",
+        "recv-recv-1",
+      ]);
+      expect(result.current.recurringOutThisMonth).toBe(699);
+      expect(result.current.recurringInThisMonth).toBe(120);
+      expect(result.current.unknownOutCount).toBe(1);
+      expect(result.current.dayBudget).toBeGreaterThan(0);
+    });
   });
 
   describe("first-insight banner", () => {
@@ -309,6 +396,22 @@ describe("useOverviewData", () => {
       );
       expect(result.current.hasAnyData).toBe(false);
     });
+
+    it("handleSetBudgetFromInsight dismisses the banner and navigates to budgets", () => {
+      const onNavigate = vi.fn();
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono(),
+          storage: buildStorage(),
+          onNavigate,
+        }),
+      );
+
+      act(() => result.current.handleSetBudgetFromInsight());
+
+      expect(result.current.showFirstInsight).toBe(false);
+      expect(onNavigate).toHaveBeenCalledWith("budgets");
+    });
   });
 
   describe("projection and plan", () => {
@@ -333,6 +436,23 @@ describe("useOverviewData", () => {
       );
       // daysPassed = 0 at start of month → showMonthForecast = false
       expect(result.current.showMonthForecast).toBe(false);
+    });
+
+    it("adds only UAH manual assets to networth and counts excluded non-UAH assets", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono(),
+          storage: buildStorage({
+            manualAssets: [
+              { id: "asset-uah", amount: 300, currency: "UAH" },
+              { id: "asset-usd", amount: 999, currency: "USD" },
+            ],
+          }),
+        }),
+      );
+
+      expect(result.current.networth).toBe(300);
+      expect(result.current.nonUahManualAssetCount).toBe(1);
     });
   });
 
