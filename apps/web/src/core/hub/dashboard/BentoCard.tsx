@@ -18,13 +18,12 @@ import {
 export interface BentoCardProps {
   config: ModuleConfig;
   onClick: () => void;
-  onQuickAdd?: { label: string; run: () => void } | null | undefined;
   /**
    * Ref/props applied to the inner primary `<button>` so dnd-kit can use it
    * as the drag activator. Keeping the activator on the primary button (not
-   * the wrapper) allows the quick-add button to live as a sibling instead of
-   * a nested interactive control — see the `nested-interactive` axe rule
-   * (#839).
+   * the wrapper) keeps the drag-handle a sibling of the primary button
+   * rather than a nested interactive control — see the `nested-interactive`
+   * axe rule (#839).
    */
   primaryRef?: ((node: HTMLButtonElement | null) => void) | undefined;
   primaryProps?: Record<string, unknown> | undefined;
@@ -32,14 +31,13 @@ export interface BentoCardProps {
   /**
    * When `true`, the card is rendered in a muted/greyed-out state
    * because the user did not mark this module as important during
-   * onboarding. Quick-add is suppressed and a hint pointing at Hub
-   * Settings is shown in place of the preview numbers.
+   * onboarding. A hint pointing at Hub Settings is shown in place of
+   * the preview numbers.
    */
   inactive?: boolean | undefined;
   /**
    * When `true`, the card is in dashboard "edit mode": it wiggles to
-   * signal it is draggable, exposes a visible top-right grip handle, and
-   * suppresses quick-add (since the primary affordance is now reorder).
+   * signal it is draggable and exposes a visible top-right grip handle.
    * The grip handle uses `handleRef` / `handleProps` as the dnd-kit
    * activator so the whole card body can keep navigating to the module
    * on tap.
@@ -61,14 +59,14 @@ export interface BentoCardProps {
  * the module emoji + label, latest preview numbers (`main`/`sub`) and a
  * progress bar when the module has a daily goal (`hasGoal`).
  *
- * The card itself is the primary `<button>`; the small `+` quick-add affordance
- * is rendered as an absolutely-positioned sibling button. They are siblings —
- * not parent/child — so axe's `nested-interactive` rule passes.
+ * The whole card is the primary `<button>` (tap → open module). In edit
+ * mode a drag-handle is rendered as an absolutely-positioned sibling
+ * button — sibling, not parent/child, so axe's `nested-interactive`
+ * rule passes.
  */
 export const BentoCard = memo(function BentoCard({
   config,
   onClick,
-  onQuickAdd,
   primaryRef,
   primaryProps,
   isDragging,
@@ -85,12 +83,6 @@ export const BentoCard = memo(function BentoCard({
     preview.progress !== undefined &&
     preview.progress > 0;
   const hasData = !!(preview.main || preview.sub);
-  // Inactive modules suppress quick-add to avoid implying parity with
-  // active modules — the user has to reactivate them in Hub Settings
-  // before a quick-add affordance reappears.
-  // In edit mode quick-add is also suppressed so the only top-right
-  // affordance is the drag handle.
-  const showQuickAdd = !inactive && !editMode && !!onQuickAdd;
   const showHandle = !!editMode;
 
   return (
@@ -142,12 +134,10 @@ export const BentoCard = memo(function BentoCard({
             {config.icon}
           </div>
 
-          {/* Layout placeholder for the absolutely-positioned quick-add /
-              edit-handle sibling — keeps the label centred consistently
-              regardless of whether either affordance is currently rendered. */}
-          {(showQuickAdd || showHandle) && (
-            <span aria-hidden className="w-6 h-6 shrink-0" />
-          )}
+          {/* Layout placeholder for the absolutely-positioned edit-handle
+              sibling — keeps the label centred consistently regardless of
+              whether the handle is currently rendered. */}
+          {showHandle && <span aria-hidden className="w-6 h-6 shrink-0" />}
         </div>
 
         <span
@@ -237,36 +227,6 @@ export const BentoCard = memo(function BentoCard({
         )}
       </button>
 
-      {showQuickAdd && onQuickAdd && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onQuickAdd.run();
-          }}
-          aria-label={onQuickAdd.label}
-          title={onQuickAdd.label}
-          className={cn(
-            "absolute top-3.5 right-3.5 pointer-coarse:top-4 pointer-coarse:right-4",
-            // WCAG 2.5.5 / HIG: ≥44×44 on coarse pointers. The visual
-            // glyph stays at 28 px on desktop; a `touch-target` floor
-            // expands the hit area to 44×44 on touch without bumping
-            // the visible icon size to 44 (which would crowd the card
-            // header against the module label).
-            "w-7 h-7 touch-target",
-            // CONTROL tier (12 px) per the 3-tier radius system in
-            // `tailwind-preset.js` — `rounded-xl` matches Button
-            // iconSizes.xs/sm and supersedes the legacy `rounded-lg` (8 px).
-            "rounded-xl flex items-center justify-center",
-            "text-text bg-panel/80 hover:bg-primary hover:text-bg",
-            "transition-colors active:scale-95",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 focus-visible:ring-offset-1",
-          )}
-        >
-          <Icon name="plus" size="sm" strokeWidth={2.5} />
-        </button>
-      )}
-
       {showHandle && (
         <button
           ref={handleRef}
@@ -276,10 +236,11 @@ export const BentoCard = memo(function BentoCard({
           title="Перетягнути для зміни порядку"
           className={cn(
             "absolute top-3.5 right-3.5 pointer-coarse:top-4 pointer-coarse:right-4",
-            // Match the quick-add affordance: visible 28 px glyph,
-            // 44×44 hit area on coarse pointers via `touch-target`.
+            // Visible 28 px glyph; 44×44 hit area on coarse pointers via
+            // `touch-target`.
             "w-7 h-7 touch-target",
-            // CONTROL tier (12 px) — see quick-add button above.
+            // CONTROL tier (12 px) per the 3-tier radius system in
+            // `tailwind-preset.js` — matches Button iconSizes.xs/sm.
             "rounded-xl flex items-center justify-center",
             "text-muted bg-panel/90 hover:text-text hover:bg-panelHi",
             "transition-colors cursor-grab active:cursor-grabbing touch-none",
@@ -296,7 +257,6 @@ export const BentoCard = memo(function BentoCard({
 export interface SortableCardProps {
   id: ModuleId;
   onOpenModule: (id: ModuleId) => void;
-  quickAdd?: { label: string; run: () => void } | null;
   inactive?: boolean;
   /**
    * When `true`, dnd-kit listeners attach to the visible drag handle
@@ -318,7 +278,6 @@ export interface SortableCardProps {
 export const SortableCard = memo(function SortableCard({
   id,
   onOpenModule,
-  quickAdd,
   inactive,
   editMode,
   adaptiveReason,
@@ -390,7 +349,6 @@ export const SortableCard = memo(function SortableCard({
       <BentoCard
         config={cfg}
         onClick={handleClick}
-        onQuickAdd={quickAdd}
         primaryRef={editMode ? undefined : setActivatorNodeRef}
         primaryProps={primaryProps}
         handleRef={editMode ? setActivatorNodeRef : undefined}

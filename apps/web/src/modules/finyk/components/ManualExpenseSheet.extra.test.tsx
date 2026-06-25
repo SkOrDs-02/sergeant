@@ -4,7 +4,7 @@
  * the primary spec leaves uncovered: amount-suggestion chips (personal +
  * default), merchant suggestions + the silent AI-category application + badge
  * dismiss, the category picker (pick + expand/collapse), the amount hero
- * preview, the "change date" reveal, and edit-mode delete via ConfirmDialog.
+ * preview, the "change date" reveal, and edit-mode optimistic delete.
  *
  * Money is integer kopiykas / hryvnia number; jsdom supplies no Web Speech so
  * the mic button is absent (the component returns null for it).
@@ -190,7 +190,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       expect(screen.getByLabelText("Дата")).toBeInTheDocument();
     });
 
-    it("confirms a delete via the ConfirmDialog", async () => {
+    it("deletes immediately via onDelete + closes (undo lives in the toast)", async () => {
       const onDelete = vi.fn();
       const onClose = vi.fn();
       render(
@@ -202,35 +202,27 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
           initialExpense={initialExpense}
         />,
       );
+      // No confirmation gate any more — the destructive action is optimistic
+      // and recoverable via the undo toast wired by the parent (FinykApp).
       fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
-      // ConfirmDialog opens; confirm inside the alertdialog scope
-      await screen.findByText("Видалити витрату?");
-      const dialog = screen.getByRole("alertdialog");
-      fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
       await waitFor(() => {
         expect(onDelete).toHaveBeenCalledWith("exp-1");
       });
       expect(onClose).toHaveBeenCalled();
     });
 
-    it("cancels the delete confirmation", async () => {
-      const onDelete = vi.fn();
+    it("hides the delete button when onDelete is not provided", () => {
       render(
         <ManualExpenseSheet
           open
           onClose={() => {}}
           onSave={() => {}}
-          onDelete={onDelete}
           initialExpense={initialExpense}
         />,
       );
-      fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
-      await screen.findByText("Видалити витрату?");
-      const dialog = screen.getByRole("alertdialog");
-      fireEvent.click(
-        within(dialog).getByRole("button", { name: "Скасувати" }),
-      );
-      expect(onDelete).not.toHaveBeenCalled();
+      expect(
+        screen.queryByRole("button", { name: "Видалити" }),
+      ).not.toBeInTheDocument();
     });
   });
 });

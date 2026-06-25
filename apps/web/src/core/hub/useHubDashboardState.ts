@@ -26,11 +26,7 @@ import {
   type DashboardDensity,
   type DashboardModuleId,
 } from "@sergeant/shared";
-import {
-  openHubModule,
-  openHubModuleWithAction,
-} from "@shared/lib/modules/hubNav";
-import { getModulePrimaryAction } from "@shared/lib/modules/moduleQuickActions";
+import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useDashboardFocus } from "../insights/TodayFocusCard";
 import { hasLiveWeeklyDigest } from "../insights/WeeklyDigestCard";
 import { useCoachInsight } from "../insights/useCoachInsight";
@@ -170,10 +166,6 @@ export interface HubDashboardState {
     active: { id: string | number };
     over: { id: string | number } | null;
   }) => void;
-  quickAddByModule: Record<
-    string,
-    { label: string; run: () => void } | undefined
-  >;
   adaptive: { liftedId: ModuleId | null; reason: string | null };
 
   // Focus / Insights
@@ -391,26 +383,6 @@ export function useHubDashboardState(props: {
   );
   const { announce } = useAnnounce();
 
-  const quickAddByModule = useMemo(() => {
-    const map: Record<string, { label: string; run: () => void } | undefined> =
-      {};
-    const localActiveSet = new Set<string>(activeModules);
-    for (const id of modulesWithSignal) {
-      if (!localActiveSet.has(id)) continue;
-      const quick = getModulePrimaryAction(id);
-      if (!quick) continue;
-      map[id] = {
-        label: quick.label,
-        run: () =>
-          openHubModuleWithAction(
-            id as Parameters<typeof openHubModuleWithAction>[0],
-            quick.action,
-          ),
-      };
-    }
-    return map;
-  }, [modulesWithSignal, activeModules]);
-
   const handleDragStart = useCallback(
     (event: { active: { id: string | number } }) => {
       const activeId = String(event.active.id) as ModuleId;
@@ -518,7 +490,6 @@ export function useHubDashboardState(props: {
     sensors,
     handleDragStart,
     handleDragEnd,
-    quickAddByModule,
     adaptive,
     focus,
     rest,

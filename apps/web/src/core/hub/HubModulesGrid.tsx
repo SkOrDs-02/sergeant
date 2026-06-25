@@ -38,10 +38,6 @@ export interface HubModulesGridProps {
   handleDragStart: (event: DragStartEvent) => void;
   handleDragEnd: (event: DragEndEvent) => void;
   onOpenModule: (module: string) => void;
-  quickAddByModule: Record<
-    string,
-    { label: string; run: () => void } | undefined
-  >;
   activeModules: readonly string[];
   adaptive: { liftedId: ModuleId | null; reason: string | null };
   hasInactive: boolean;
@@ -58,7 +54,6 @@ export function HubModulesGrid({
   handleDragStart,
   handleDragEnd,
   onOpenModule,
-  quickAddByModule,
   activeModules,
   adaptive,
   hasInactive,
@@ -120,7 +115,6 @@ export function HubModulesGrid({
                 key={id}
                 id={id as ModuleId}
                 onOpenModule={onOpenModule}
-                quickAdd={quickAddByModule[id] || null}
                 inactive={
                   !isActiveModule(
                     activeModules as DashboardModuleId[],

@@ -80,7 +80,6 @@ export function HubDashboard({
         handleDragStart={s.handleDragStart}
         handleDragEnd={s.handleDragEnd}
         onOpenModule={onOpenModule}
-        quickAddByModule={s.quickAddByModule}
         activeModules={s.activeModules}
         adaptive={s.adaptive}
         hasInactive={s.hasInactive}

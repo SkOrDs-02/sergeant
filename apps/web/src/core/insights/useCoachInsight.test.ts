@@ -32,6 +32,14 @@ vi.mock("@shared/api", () => ({
     typeof err === "object" && err !== null && "kind" in err,
 }));
 
+// `useCoachInsight` now gates its fetch on an authenticated session
+// (skips the guaranteed 401 for anon/demo). These tests exercise the
+// authenticated fetch path, so stub `useAuth` to a logged-in status —
+// a minimal mock avoids pulling the real AuthProvider + auth client.
+vi.mock("../auth/AuthContext", () => ({
+  useAuth: () => ({ status: "authenticated" }),
+}));
+
 const mockSafeReadLS = vi.fn<(key: string) => unknown>();
 const mockSafeWriteLS = vi.fn<(key: string, value: unknown) => void>();
 

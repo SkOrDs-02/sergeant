@@ -23,6 +23,7 @@ import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpens
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { tryShowCrossModulePrompt } from "@shared/lib/modules/crossModulePrompt";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { Overview } from "./pages/Overview";
@@ -412,9 +413,23 @@ export default function App({
             handlePostSavePrompt(expense);
           }}
           onDelete={(id) => {
+            // Capture the full expense BEFORE deleting so undo can
+            // re-insert it faithfully. `addManualExpense` preserves the
+            // original id when the snapshot carries one, so the restored
+            // record keeps its id/amount/category/date.
+            const snapshot = (storage.manualExpenses || []).find(
+              (e) => String(e.id) === String(id),
+            );
             storage.removeManualExpense(id);
             setEditingManualExpenseId(null);
-            toast.success("Витрату видалено.");
+            if (snapshot) {
+              showUndoToast(toast, {
+                msg: "Видалив витрату",
+                onUndo: () => storage.addManualExpense(snapshot),
+              });
+            } else {
+              toast.success("Видалив витрату");
+            }
           }}
         />
 

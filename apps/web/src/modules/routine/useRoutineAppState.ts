@@ -314,8 +314,22 @@ export function useRoutineAppState({
       // Wrap in startTransition so React can commit the haptic + checkbox
       // visual change at high priority while deferring the full list
       // re-render + localStorage persist to a lower-priority lane.
+      //
+      // Compute the next state EAGERLY (from fresh LS, mirroring
+      // `useRoutinePushups.addReps`) rather than inside a `setRoutine`
+      // updater. `toggleHabitCompletion` persists + dispatches
+      // `ROUTINE_EVENT` synchronously; running that as a state-updater
+      // would fire those side effects during React's render phase, whose
+      // re-entrant `ROUTINE_EVENT` listeners (e.g. `PushupsWidget`) then
+      // `setState` mid-render → "Cannot update a component while rendering
+      // a different component". Persisting in the handler keeps updaters pure.
       startHabitTransition(() => {
-        setRoutine((prev) => toggleHabitCompletion(prev, habitId, dateKey));
+        const next = toggleHabitCompletion(
+          loadRoutineState(),
+          habitId,
+          dateKey,
+        );
+        setRoutine(next);
       });
     },
     [setRoutine, startHabitTransition],
@@ -324,7 +338,11 @@ export function useRoutineAppState({
   const onBulkMarkDay = useCallback(() => {
     const dk = derived.range.startKey;
     if (derived.range.startKey !== derived.range.endKey) return;
-    setRoutine((s) => markAllScheduledHabitsComplete(s, dk));
+    // Eager compute + persist outside the updater — see `onToggleHabit`
+    // for why `markAllScheduledHabitsComplete` (which persists + emits
+    // `ROUTINE_EVENT`) must not run as a render-phase state-updater.
+    const next = markAllScheduledHabitsComplete(loadRoutineState(), dk);
+    setRoutine(next);
     hapticSuccess();
   }, [derived.range.startKey, derived.range.endKey, setRoutine]);
 

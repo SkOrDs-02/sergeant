@@ -12,7 +12,10 @@ import { OfflineBanner } from "./OfflineBanner";
 import { HintsOrchestrator } from "../hints/HintsOrchestrator";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
-import { shouldShowOnboarding } from "../onboarding/onboardingGate";
+import {
+  shouldShowOnboarding,
+  isDemoActive,
+} from "../onboarding/onboardingGate";
 import { useWhatsNew } from "../whatsNew";
 import { lazyImport } from "../lib/lazyImport";
 import type { HubNavigation } from "../hooks/useHubNavigation";
@@ -95,8 +98,14 @@ export function HubHomeView(props: HubHomeViewProps) {
   // консистентно з §3.3 acceptance метрики PR-18:
   // `d7_returning_user_engagement_with_whats_new`. Юзера на cold-start
   // нічого не повинно витискати з outcome-card flow.
+  //
+  // Demo-режим теж глушимо: `hasAnyRealEntry()` рахує demo-seeded
+  // записи як «справжні», тож без цього гейта модал «Що нового»
+  // вискакував би одразу при вході в demo («Подивитись приклад») —
+  // юзеру, що тільки відкрив приклад і ще нічого не робив, changelog
+  // недоречний.
   const whatsNew = useWhatsNew({
-    enabled: hasFirstRealEntry && !inFtuxSession,
+    enabled: hasFirstRealEntry && !inFtuxSession && !isDemoActive(),
   });
 
   // C · Контроль (home redesign 2026-06): system chrome banners (SW update,
