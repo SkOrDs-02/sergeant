@@ -11,12 +11,6 @@ import {
 } from "./AssetsForm";
 import { createRef, type ReactNode } from "react";
 
-// `usePlan` (reached via `useFeatureGate`) now reads `useAuth().status` to gate
-// the billing query. Stub an authenticated session so the query runs as before.
-vi.mock("../../../core/auth/AuthContext", () => ({
-  useAuth: () => ({ status: "authenticated" }),
-}));
-
 // AssetForm uses `useFeatureGate("multi-currency")` (Phase 7 D2) which calls
 // react-query via usePlan; renders of it need a QueryClientProvider. It also
 // renders <PaywallModal>, which calls useNavigate() and therefore needs a

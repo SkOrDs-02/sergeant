@@ -6,26 +6,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import type { BillingStatusResponse } from "@sergeant/shared";
 
-const { statusMock, authStatusMock } = vi.hoisted(() => ({
+const { statusMock } = vi.hoisted(() => ({
   statusMock:
     vi.fn<
       (opts?: { signal?: AbortSignal }) => Promise<BillingStatusResponse>
     >(),
-  authStatusMock: {
-    value: "authenticated" as "loading" | "authenticated" | "unauthenticated",
-  },
 }));
 
 vi.mock("@shared/api", () => ({
   billingApi: { status: statusMock, createCheckout: vi.fn() },
-}));
-
-// `usePlan` now gates its billing query on an authenticated session — anon /
-// demo visitors are always "free" and never fire `/billing/status`. Stub
-// `useAuth` so the existing tests run the query (authenticated by default);
-// `authStatusMock.value` lets a test flip to anonymous to assert the gate.
-vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({ status: authStatusMock.value }),
 }));
 
 import { usePlan } from "./usePlan";
@@ -44,7 +33,6 @@ function makeWrapper() {
 describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
   beforeEach(() => {
     statusMock.mockReset();
-    authStatusMock.value = "authenticated";
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -105,26 +93,5 @@ describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
     expect(result.current.isPro).toBe(false);
     // retry=false in the hook contract — the mock fires exactly once.
     expect(statusMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("never fires /billing/status when unauthenticated — defaults to free", async () => {
-    authStatusMock.value = "unauthenticated";
-    statusMock.mockResolvedValue({
-      subscription: {
-        id: 42,
-        provider: "stripe",
-        plan: "pro",
-        status: "active",
-        active: true,
-        currentPeriodEnd: "2026-06-01T00:00:00.000Z",
-      },
-    });
-    const { result } = renderHook(() => usePlan(), { wrapper: makeWrapper() });
-    // Disabled query: no network call, no perpetual loading, plan stays free
-    // even though the (never-called) mock would have reported "pro".
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(statusMock).not.toHaveBeenCalled();
-    expect(result.current.plan).toBe("free");
-    expect(result.current.isPro).toBe(false);
   });
 });

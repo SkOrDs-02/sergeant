@@ -2,7 +2,6 @@ import { useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { coachApi, isApiError } from "@shared/api";
 import { coachKeys } from "@shared/lib/api/queryKeys";
-import { useAuth } from "../auth/AuthContext";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
@@ -290,20 +289,12 @@ interface UseCoachInsightResult {
 
 export function useCoachInsight(): UseCoachInsightResult {
   const queryClient = useQueryClient();
-  const { status } = useAuth();
-  // `/coach/memory` + `/coach/insight` are authenticated AI endpoints.
-  // Anonymous / demo visitors get a guaranteed 401, so gate the fetch on a
-  // real session instead of firing it and swallowing the error — removes the
-  // console/network noise on the hub. `loading` is gated too (a disabled
-  // query stays `isPending`, which would otherwise pin a perpetual spinner).
-  const enabled = status === "authenticated";
   const todayKey = localDateKey();
   const queryKey = coachInsightQueryKey(todayKey);
 
   const query = useQuery({
     queryKey,
     queryFn: fetchCoachInsight,
-    enabled,
     // Не ретраїмо 429: ліміт (`api:coach` rate-limit + денна AI-квота)
     // має годинне/добове вікно, тож негайний повтор гарантовано впаде
     // знову, спалить ще один хіт у спільному `api:coach` бакеті й затягне
@@ -349,7 +340,7 @@ export function useCoachInsight(): UseCoachInsightResult {
 
   return {
     insight: query.data ?? null,
-    loading: enabled && (query.isPending || query.isFetching),
+    loading: query.isPending || query.isFetching,
     error: query.error
       ? isApiError(query.error) && query.error.kind === "http"
         ? query.error.serverMessage || "Помилка генерації інсайту"

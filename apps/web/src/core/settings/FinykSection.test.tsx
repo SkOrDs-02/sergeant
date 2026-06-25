@@ -49,14 +49,6 @@ vi.mock("../../modules/finyk/utils", () => ({
   getAccountLabel: (acc: { id: string }) => `Account ${acc.id}`,
 }));
 
-// FinykSection reaches `usePlan` (via `useFeatureGate`), which now reads
-// `useAuth().status` to gate the billing query. Stub an authenticated session
-// so the query runs as before — these tests assert Finyk settings UI, not the
-// auth gate.
-vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({ status: "authenticated" }),
-}));
-
 import { billingApi, monoWebhookApi } from "@shared/api";
 import { FinykSection } from "./FinykSection";
 

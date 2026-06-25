@@ -33,12 +33,6 @@ vi.mock("@shared/api", () => ({
   },
 }));
 
-// `usePlan` (rendered by PlanSection) now reads `useAuth().status` to gate the
-// billing query. Stub an authenticated session so the query runs as before.
-vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({ status: "authenticated" }),
-}));
-
 import { PlanSection } from "./PlanSection";
 
 function renderSection() {

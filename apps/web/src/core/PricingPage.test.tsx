@@ -98,13 +98,6 @@ vi.mock("./observability/analytics", async () => {
   };
 });
 
-// `usePlan` (rendered by PricingPage) now reads `useAuth().status` to gate the
-// billing query. Stub an authenticated session so the query runs as before —
-// these tests assert pricing/checkout behaviour, not the auth gate itself.
-vi.mock("./auth/AuthContext", () => ({
-  useAuth: () => ({ status: "authenticated" }),
-}));
-
 import { PricingPage } from "./PricingPage";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 

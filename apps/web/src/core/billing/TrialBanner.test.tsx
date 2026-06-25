@@ -18,13 +18,6 @@ vi.mock("@shared/api", () => ({
   billingApi: { status: statusMock, createCheckout: vi.fn() },
 }));
 
-// `usePlan` (rendered by TrialBanner) now reads `useAuth().status` to gate the
-// billing query. Stub an authenticated session so the query runs exactly as
-// before — these tests assert billing/trial states, not the auth gate itself.
-vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({ status: "authenticated" }),
-}));
-
 import { TrialBanner } from "./TrialBanner";
 
 function LocationProbe({ onChange }: { onChange: (path: string) => void }) {
