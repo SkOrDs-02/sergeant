@@ -105,6 +105,7 @@ jobs:
             docs/open-work.md
             docs/90-work/initiatives/follow-ups.md
             docs/today.md
+            docs/STATUS.md
             docs/README.md
             docs/04-governance/governance/hard-rules-matrix.md
             docs/04-governance/governance/freshness-dashboard.html
@@ -114,6 +115,7 @@ jobs:
             docs/04-governance/governance/symbol-index.html
             docs/04-governance/governance/repo-map.auto.json
             docs/04-governance/governance/service-catalog.auto.json
+            docs/04-governance/governance/retrieval-index.json
             docs/02-engineering/architecture/diagrams/c3-workspaces.md
           )
           # Per-workspace symbol-index snapshots — globbed because the

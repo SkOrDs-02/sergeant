@@ -3,14 +3,14 @@
 
 # Audit runner report
 
-> **Last validated:** 2026-06-22 by audits-runner workflow. **Next review:** 2026-09-20.
+> **Last validated:** 2026-06-25 by audits-runner workflow. **Next review:** 2026-09-23.
 > **Status:** Reference
 
-## Triage digest — 2026-06-22
+## Triage digest — 2026-06-25
 
 Source: `docs/open-work.md §Аудити й прожарки` (9 open audits) + direct reads of all audit files. Audits with `Closed` / `Archived` / `Done` / `Reference` status excluded. Sorted by impact within each bucket.
 
-Delta from 2026-06-18 pass: PRs **#3665–#3687** landed since last triage — notably #3678 ("resolve UI/UX audit findings — plurals, a11y, anon error states"), #3682 (Kyiv-anchored insights, Finyk empty-state), #3687 (nutrition AI chat canonical reads/writes via SQLite). These likely close additional items in `2026-05-13-consolidated-page-audit.md` and `2026-05-13-page-audit-10-errors-pwa-marketing.md`; per-finding reconciliation deferred to next full audit session. ADR-0067 (engagement mechanism standardization) added via #3665. No new audit files added this pass.
+Delta from 2026-06-22 pass: PRs **#3688–#3721** landed since last triage. Notable: **#3711** raises web test coverage to 75% line floor (closes the web coverage floor concern previously tracked from the fable5 audit and testing-devx-roast); **#3717** closes the react-hooks/use-memo baseline entry (burn-down progressing); **#3709** extends touch-target enforcement to `role=button/menuitem/option`; **#3702–#3707** close HC AA accessibility items (theme-aware ink for buttons, badges, tabs, dialog roles, landmarks) from `consolidated-page-audit`. No new audit files added this pass.
 
 ---
 
@@ -76,8 +76,8 @@ No immediate agent action possible without external input or a gating milestone.
 
 - **Audit-04 (Hub Settings / Profile / Assistant Catalogue):** never completed — active blind spot estimated at 30–40 H/M findings. Highest-priority coverage gap in the 10-scope matrix (see C2 above).
 - **Individual page audit H/M findings (05 Finyk, 06 Fizruk Part 1, 07 Fizruk Part 2, 08 Nutrition, 09 Routine/Strategy):** items beyond closed themes 1–7 are not yet individually triaged; Fizruk Part 2 alone has 50 findings.
-- **PRs #3665–#3687 (since 2026-06-18):** may close additional items in consolidated-page-audit and page-audit-10; per-finding reconciliation pending next full session.
-- **react-hooks v7 suppressions (~152 baseline violations):** tracked by initiative `0021-react-hooks-v7-cleanup.md` (agent-ready 🟢, start not-before Sprint 9 2026-07-07).
-- **ESLint baselines without enforcement dates (react-hooks ~152, non-null ~96):** no CI enforcement until count reaches zero.
-- **Web coverage floor:** 39% lines / 32% branches vs targets 50/40 — burn-down in progress.
+- **PRs #3688–#3721 (since 2026-06-22):** #3711 raises web coverage floor to 75% lines (closes the coverage-floor concern from testing-devx-roast and fable5 audit); #3717 closes react-hooks/use-memo baseline entry; HC AA + touch-target items continue to close. Per-finding reconciliation deferred to next full audit session.
+- **react-hooks v7 baseline violations:** burn-down progressing via initiative 0021 (🟢 agent-ready, not-before Sprint 9 2026-07-07); use-memo entry closed #3717.
+- **ESLint baselines without enforcement dates (react-hooks ~151+, non-null ~96):** no CI enforcement until count reaches zero.
 - **Orphan billing schemas (m047/m070-072):** two-phase DROP candidates post-launch — not actionable until billing is live.
+- **server-side `sync_op_log` retention (ADR-0065):** retention-job not implemented in `syncV2.ts`; design plan recorded but deferred to 2026-08-11 audit cycle per ADR cursor-safety invariant.

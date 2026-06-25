@@ -197,3 +197,208 @@ describe("processFtuxDripJob (worker)", () => {
     ).rejects.toThrow(/Resend HTTP 503/);
   });
 });
+
+describe("enqueueFtuxDripMail / startFtuxDripWorker (BullMQ path)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.doUnmock("bullmq");
+    vi.doUnmock("./connection.js");
+  });
+
+  it("queues immediate and delayed drip jobs with stable ids and delay config", async () => {
+    const addMock = vi.fn().mockResolvedValue({ id: "1" });
+    function MockQueue(this: unknown) {
+      return { add: addMock, on: vi.fn(), close: vi.fn() };
+    }
+    function MockWorker(this: unknown) {
+      return { on: vi.fn(), close: vi.fn() };
+    }
+    vi.doMock("bullmq", () => ({
+      Queue: MockQueue,
+      Worker: MockWorker,
+    }));
+    vi.doMock("./connection.js", async () => {
+      const actual =
+        await vi.importActual<typeof import("./connection.js")>(
+          "./connection.js",
+        );
+      return {
+        ...actual,
+        createBullConnection: vi.fn(() => ({ quit: vi.fn() })),
+      };
+    });
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-25T12:00:30.000Z"));
+    vi.resetModules();
+    const mod = await import("./ftuxDrip.js");
+    mod.__resetFtuxDripQueueForTesting();
+
+    await mod.enqueueFtuxDripMail({
+      kind: "ftux_drip",
+      day: "day_0",
+      userId: "u1",
+      email: "u1@example.com",
+      delayMs: 0,
+    });
+    await mod.enqueueFtuxDripMail({
+      kind: "ftux_drip",
+      day: "day_1",
+      userId: "u1",
+      email: "u1@example.com",
+      delayMs: 86_400_000,
+    });
+
+    expect(addMock).toHaveBeenCalledTimes(2);
+    expect(addMock.mock.calls[0]).toEqual([
+      "day_0",
+      expect.objectContaining({ day: "day_0", userId: "u1" }),
+      expect.objectContaining({ jobId: "day_0:u1:29706480" }),
+    ]);
+    expect(addMock.mock.calls[1]).toEqual([
+      "day_1",
+      expect.objectContaining({ day: "day_1", userId: "u1" }),
+      expect.objectContaining({
+        jobId: "day_1:u1",
+        delay: 86_400_000,
+      }),
+    ]);
+  });
+
+  it("queue.add failure falls back only for Day 0", async () => {
+    const addMock = vi.fn().mockRejectedValue(new Error("redis write failed"));
+    function MockQueue(this: unknown) {
+      return { add: addMock, on: vi.fn(), close: vi.fn() };
+    }
+    function MockWorker(this: unknown) {
+      return { on: vi.fn(), close: vi.fn() };
+    }
+    vi.doMock("bullmq", () => ({
+      Queue: MockQueue,
+      Worker: MockWorker,
+    }));
+    vi.doMock("./connection.js", async () => {
+      const actual =
+        await vi.importActual<typeof import("./connection.js")>(
+          "./connection.js",
+        );
+      return {
+        ...actual,
+        createBullConnection: vi.fn(() => ({ quit: vi.fn() })),
+      };
+    });
+
+    vi.resetModules();
+    const mod = await import("./ftuxDrip.js");
+    const dispatcher = vi.fn().mockResolvedValue(undefined);
+    mod.__resetFtuxDripQueueForTesting();
+    mod.registerFtuxDripDispatcher(dispatcher);
+
+    await mod.enqueueFtuxDripMail({
+      kind: "ftux_drip",
+      day: "day_0",
+      userId: "u1",
+      email: "u1@example.com",
+      delayMs: 0,
+    });
+    await mod.enqueueFtuxDripMail({
+      kind: "ftux_drip",
+      day: "day_3",
+      userId: "u1",
+      email: "u1@example.com",
+      delayMs: 259_200_000,
+    });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(addMock).toHaveBeenCalledTimes(2);
+    expect(dispatcher).toHaveBeenCalledTimes(1);
+    expect(dispatcher).toHaveBeenCalledWith(
+      expect.objectContaining({ day: "day_0" }),
+    );
+  });
+
+  it("worker lifecycle samples depth and closes worker plus queue connections", async () => {
+    const queueConnection = {
+      quit: vi.fn().mockResolvedValue(undefined),
+      disconnect: vi.fn(),
+    };
+    const workerConnection = {
+      quit: vi.fn().mockResolvedValue(undefined),
+      disconnect: vi.fn(),
+    };
+    const addMock = vi.fn().mockResolvedValue({ id: "1" });
+    const queueCloseMock = vi.fn().mockResolvedValue(undefined);
+    const workerCloseMock = vi.fn().mockResolvedValue(undefined);
+    const workerOnMock = vi.fn();
+    const getJobCountsMock = vi.fn().mockResolvedValue({
+      waiting: 1,
+      active: 2,
+      delayed: 3,
+      failed: 4,
+    });
+    let workerArgs: unknown[] | null = null;
+    function MockQueue(this: unknown) {
+      return {
+        add: addMock,
+        on: vi.fn(),
+        close: queueCloseMock,
+        getJobCounts: getJobCountsMock,
+      };
+    }
+    function MockWorker(this: unknown, ...args: unknown[]) {
+      workerArgs = args;
+      return { on: workerOnMock, close: workerCloseMock };
+    }
+    vi.doMock("bullmq", () => ({
+      Queue: MockQueue,
+      Worker: MockWorker,
+    }));
+    vi.doMock("./connection.js", async () => {
+      const actual =
+        await vi.importActual<typeof import("./connection.js")>(
+          "./connection.js",
+        );
+      return {
+        ...actual,
+        createBullConnection: vi.fn((name: string) =>
+          name === "ftux-drip-worker" ? workerConnection : queueConnection,
+        ),
+      };
+    });
+
+    vi.useFakeTimers();
+    vi.resetModules();
+    const mod = await import("./ftuxDrip.js");
+    mod.__resetFtuxDripQueueForTesting();
+
+    await mod.enqueueFtuxDripMail({
+      kind: "ftux_drip",
+      day: "day_1",
+      userId: "u1",
+      email: "u1@example.com",
+      delayMs: 86_400_000,
+    });
+    const started = mod.startFtuxDripWorker();
+    const secondStart = mod.startFtuxDripWorker();
+    await vi.advanceTimersByTimeAsync(30_000);
+    await secondStart?.close();
+
+    expect(started).not.toBeNull();
+    expect(workerArgs?.[0]).toBe("ftux-drip");
+    expect(workerArgs?.[2]).toMatchObject({
+      prefix: "sergeant",
+      concurrency: 3,
+    });
+    expect(workerOnMock).toHaveBeenCalledWith("failed", expect.any(Function));
+    expect(getJobCountsMock).toHaveBeenCalledWith(
+      "waiting",
+      "active",
+      "delayed",
+      "failed",
+    );
+    expect(workerCloseMock).toHaveBeenCalledTimes(1);
+    expect(queueCloseMock).toHaveBeenCalledTimes(1);
+    expect(workerConnection.quit).toHaveBeenCalledTimes(1);
+    expect(queueConnection.quit).toHaveBeenCalledTimes(1);
+  });
+});

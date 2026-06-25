@@ -136,6 +136,26 @@ describe("coachMemoryPost blob-size guard", () => {
     expect(insertCall[1][0]).toBe("user_1");
   });
 
+  it("прокидає не-size помилки з saveMemory", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockRejectedValueOnce(new Error("insert failed"));
+
+    const req = {
+      user: { id: "user_1" },
+      body: {
+        weeklyDigest: {
+          weekKey: "2026-W02",
+          weekRange: "8-14 Jan",
+        },
+      },
+    };
+
+    await expect(coachMemoryPost(asReq(req), makeRes())).rejects.toThrow(
+      "insert failed",
+    );
+  });
+
   it("невалідне body (weeklyDigest без weekKey) → ValidationError з cause.details", async () => {
     const req = {
       user: { id: "user_1" },
@@ -415,6 +435,73 @@ describe("coachInsight", () => {
     const user = payload!.messages[0]!.content;
     expect(user).toContain("ФІНАНСИ ЦЬОГО ТИЖНЯ");
     expect(user).toContain("5000");
+  });
+
+  it("prompt includes non-empty memory summary and all product snapshot sections", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "ok" }] },
+    });
+
+    const res = makeRes();
+    await coachInsight(
+      makeReq({
+        snapshot: {
+          finyk: {
+            totalSpent: 4200,
+            totalIncome: 9000,
+            txCount: 12,
+            topCategories: [{ name: "Groceries", amount: 1700 }],
+          },
+          fizruk: {
+            workoutsCount: 3,
+            totalVolume: 12_500,
+            recoveryLabel: "green",
+          },
+          nutrition: {
+            avgKcal: 2100,
+            targetKcal: 2200,
+            avgProtein: 130,
+            daysLogged: 6,
+          },
+          routine: {
+            overallRate: 82,
+            habitCount: 5,
+          },
+        },
+        memory: {
+          weeklyDigests: [
+            {
+              weekKey: "2026-W10",
+              weekRange: "2-8 Mar",
+              generatedAt: "2026-03-08T00:00:00.000Z",
+              finyk: { summary: "finyk summary" },
+              fizruk: { summary: "fizruk summary" },
+              nutrition: { summary: "nutrition summary" },
+              routine: { summary: "routine summary" },
+              overallRecommendations: ["drink water", "lift steady"],
+            },
+          ],
+        },
+      }),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    const [, payload] = anthropicMessages.mock.calls[0] as [
+      unknown,
+      { messages: { content: string }[] },
+    ];
+    const prompt = payload!.messages[0]!.content;
+    expect(prompt).toContain("finyk summary");
+    expect(prompt).toContain("fizruk summary");
+    expect(prompt).toContain("nutrition summary");
+    expect(prompt).toContain("routine summary");
+    expect(prompt).toContain("drink water");
+    expect(prompt).toContain("Groceries 1700");
+    expect(prompt).toContain("12500");
+    expect(prompt).toContain("2100");
+    expect(prompt).toContain("82%");
   });
 
   it("invalid body (snapshot.finyk з неправильним типом) → ValidationError", async () => {

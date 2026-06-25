@@ -50,6 +50,20 @@ test("@extended offline: shows OfflineBanner status", async ({
   await page.goto("/", { waitUntil: "load" });
   await expect(page.locator("#root > *").first()).toBeAttached();
 
+  // HubPage renders <PageLoader aria-busy="true"> while bootstrapKvStore()
+  // is in flight (markStorageBooting() arms the gate before first paint;
+  // markStorageReady() releases it once the SQLite warm-cache — a ~700 KB
+  // dynamic import — has settled). If we drop the network while that WASM
+  // chunk fetch is still in-flight it fails with ERR_INTERNET_DISCONNECTED,
+  // bootstrapKvStore never resolves, markStorageReady() is never called, and
+  // HubHomeView (which hosts OfflineBanner) is never mounted.
+  // Wait for HubBottomNav — the nav element unique to HubHomeView — to be
+  // attached: this proves storageReady flipped true and HubHomeView is in the
+  // DOM before we drop the network.
+  await expect(page.locator("nav[aria-label='Розділи хабу']")).toBeAttached({
+    timeout: 15_000,
+  });
+
   await context.setOffline(true);
 
   await expect(

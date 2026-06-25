@@ -1,5 +1,61 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const bullmqMocks = vi.hoisted(() => ({
+  queueAdd: vi.fn(),
+  queueClose: vi.fn(),
+  queueGetJobCounts: vi.fn(),
+  queueInstances: [] as Array<{
+    handlers: Record<string, (...args: unknown[]) => unknown>;
+  }>,
+  workerClose: vi.fn(),
+  workerInstances: [] as Array<{
+    handlers: Record<string, (...args: unknown[]) => unknown>;
+  }>,
+}));
+
+vi.mock("bullmq", () => ({
+  Queue: class FakeQueue {
+    handlers: Record<string, (...args: unknown[]) => unknown> = {};
+
+    constructor() {
+      bullmqMocks.queueInstances.push(this);
+    }
+
+    add(...args: unknown[]) {
+      return bullmqMocks.queueAdd(...args);
+    }
+
+    close() {
+      return bullmqMocks.queueClose();
+    }
+
+    getJobCounts(...args: unknown[]) {
+      return bullmqMocks.queueGetJobCounts(...args);
+    }
+
+    on(event: string, handler: (...args: unknown[]) => unknown) {
+      this.handlers[event] = handler;
+      return this;
+    }
+  },
+  Worker: class FakeWorker {
+    handlers: Record<string, (...args: unknown[]) => unknown> = {};
+
+    constructor() {
+      bullmqMocks.workerInstances.push(this);
+    }
+
+    close() {
+      return bullmqMocks.workerClose();
+    }
+
+    on(event: string, handler: (...args: unknown[]) => unknown) {
+      this.handlers[event] = handler;
+      return this;
+    }
+  },
+}));
+
 // Mock metrics — тести перевіряють контракт, не лічильники.
 vi.mock("../../obs/metrics.js", () => ({
   aiMemoryIngestEnqueuedTotal: { inc: vi.fn() },
@@ -69,6 +125,7 @@ import {
 import { MissingVoyageApiKeyError, VoyageHttpError } from "./embeddings.js";
 import type { AiMemoryService } from "./service.js";
 import { recordIngestDlq as _recordIngestDlq } from "./dlq.js";
+import { createBullConnection as _createBullConnection } from "../../lib/jobs/connection.js";
 
 const recordIngestDlqMock = _recordIngestDlq as unknown as ReturnType<
   typeof vi.fn
@@ -82,6 +139,9 @@ const processedInc = (
 const durationObserve = (
   _duration as unknown as { observe: ReturnType<typeof vi.fn> }
 ).observe;
+const createBullConnectionMock = _createBullConnection as unknown as ReturnType<
+  typeof vi.fn
+>;
 
 const samplePayload: MemoryIngestPayload = {
   userId: "u1",
@@ -101,6 +161,34 @@ function makeFakeService(
     forgetSource: vi.fn(),
     health: vi.fn(),
   } as unknown as AiMemoryService;
+}
+
+function resetBullmqMocks(): void {
+  bullmqMocks.queueAdd.mockReset();
+  bullmqMocks.queueClose.mockReset();
+  bullmqMocks.queueGetJobCounts.mockReset();
+  bullmqMocks.workerClose.mockReset();
+  bullmqMocks.queueInstances.length = 0;
+  bullmqMocks.workerInstances.length = 0;
+  createBullConnectionMock.mockReset();
+  createBullConnectionMock.mockReturnValue(null);
+}
+
+async function loadFreshMemoryIngestModule() {
+  vi.resetModules();
+  const connectionMod = await import("../../lib/jobs/connection.js");
+  const metricsMod = await import("../../obs/metrics.js");
+  const mod = await import("./ingestQueue.js");
+  return {
+    mod,
+    createBullConnectionMock:
+      connectionMod.createBullConnection as unknown as ReturnType<typeof vi.fn>,
+    enqueuedInc: (
+      metricsMod.aiMemoryIngestEnqueuedTotal as unknown as {
+        inc: ReturnType<typeof vi.fn>;
+      }
+    ).inc,
+  };
 }
 
 describe("isRetryableIngestError", () => {
@@ -517,5 +605,137 @@ describe("enqueueMemoryIngest — MONO_AI_MEMORY_INGEST_ENABLED (PR-19)", () => 
     ).not.toHaveBeenCalledWith(
       expect.objectContaining({ mode: "source_disabled" }),
     );
+  });
+});
+
+describe("memory ingest BullMQ lifecycle and stats", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetBullmqMocks();
+    __resetMemoryIngestQueueForTesting();
+    process.env["AI_MEMORY_ENABLED"] = "true";
+    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "true";
+  });
+
+  afterEach(() => {
+    __resetMemoryIngestQueueForTesting();
+    delete process.env["AI_MEMORY_ENABLED"];
+    delete process.env["MONO_AI_MEMORY_INGEST_ENABLED"];
+  });
+
+  it("queues via BullMQ with a stable jobId when Redis is available", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    const connection = { quit: vi.fn(), disconnect: vi.fn() };
+    fresh.createBullConnectionMock.mockReturnValue(connection);
+    bullmqMocks.queueAdd.mockResolvedValue({ id: "job-1" });
+
+    await fresh.mod.enqueueMemoryIngest(samplePayload);
+
+    expect(bullmqMocks.queueInstances).toHaveLength(1);
+    expect(bullmqMocks.queueAdd).toHaveBeenCalledWith("finyk", samplePayload, {
+      jobId: "u1__finyk__tx-1",
+    });
+    expect(fresh.enqueuedInc).toHaveBeenCalledWith({
+      mode: "queued",
+      source: "finyk",
+    });
+  });
+
+  it("queues payloads without sourceRef without a jobId override", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    fresh.createBullConnectionMock.mockReturnValue({
+      quit: vi.fn(),
+      disconnect: vi.fn(),
+    });
+    bullmqMocks.queueAdd.mockResolvedValue({ id: "job-2" });
+    const payload = { ...samplePayload, sourceRef: null };
+
+    await fresh.mod.enqueueMemoryIngest(payload);
+
+    expect(bullmqMocks.queueAdd).toHaveBeenCalledWith("finyk", payload, {});
+  });
+
+  it("records enqueue_error when BullMQ add fails", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    fresh.createBullConnectionMock.mockReturnValue({
+      quit: vi.fn(),
+      disconnect: vi.fn(),
+    });
+    bullmqMocks.queueAdd.mockRejectedValue(new Error("redis write failed"));
+
+    await expect(
+      fresh.mod.enqueueMemoryIngest(samplePayload),
+    ).resolves.toBeUndefined();
+
+    expect(fresh.enqueuedInc).toHaveBeenCalledWith({
+      mode: "enqueue_error",
+      source: "finyk",
+    });
+  });
+
+  it("reports queue counts and gracefully degrades when count sampling fails", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    fresh.createBullConnectionMock.mockReturnValue({
+      quit: vi.fn(),
+      disconnect: vi.fn(),
+    });
+    bullmqMocks.queueAdd.mockResolvedValue({ id: "job-1" });
+    bullmqMocks.queueGetJobCounts.mockResolvedValue({
+      waiting: 2,
+      active: 1,
+      delayed: 3,
+      failed: 4,
+    });
+    await fresh.mod.enqueueMemoryIngest(samplePayload);
+
+    await expect(fresh.mod.getMemoryIngestWorkerStats()).resolves.toMatchObject(
+      {
+        enabled: true,
+        started: false,
+        fallbackMode: true,
+        jobCounts: { waiting: 2, active: 1, delayed: 3, failed: 4 },
+      },
+    );
+
+    bullmqMocks.queueGetJobCounts.mockRejectedValueOnce(
+      new Error("redis unavailable"),
+    );
+    await expect(fresh.mod.getMemoryIngestWorkerStats()).resolves.toMatchObject(
+      {
+        jobCounts: null,
+        error: "redis unavailable",
+      },
+    );
+  });
+
+  it("starts, reuses, and closes the worker without leaking connections", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    const connection = { quit: vi.fn(), disconnect: vi.fn() };
+    fresh.createBullConnectionMock.mockReturnValue(connection);
+    bullmqMocks.workerClose.mockResolvedValue(undefined);
+
+    const worker = fresh.mod.startMemoryIngestWorker();
+    expect(worker).not.toBeNull();
+    expect(bullmqMocks.workerInstances).toHaveLength(1);
+
+    const sameWorker = fresh.mod.startMemoryIngestWorker();
+    expect(sameWorker).not.toBeNull();
+    expect(bullmqMocks.workerInstances).toHaveLength(1);
+
+    await worker?.close();
+
+    expect(bullmqMocks.workerClose).toHaveBeenCalledOnce();
+    expect(connection.quit).toHaveBeenCalledOnce();
+  });
+
+  it("skips worker startup when disabled or Redis is unavailable", async () => {
+    process.env["AI_MEMORY_ENABLED"] = "false";
+    const disabled = await loadFreshMemoryIngestModule();
+    expect(disabled.mod.startMemoryIngestWorker()).toBeNull();
+
+    process.env["AI_MEMORY_ENABLED"] = "true";
+    const noRedis = await loadFreshMemoryIngestModule();
+    noRedis.createBullConnectionMock.mockReturnValue(null);
+    expect(noRedis.mod.startMemoryIngestWorker()).toBeNull();
   });
 });

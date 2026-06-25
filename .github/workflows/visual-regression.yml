@@ -36,6 +36,10 @@ name: Visual Regression (Argos)
 # "Argos snapshot strategy" follow-up in the open-work tracker.
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - "packages/design-tokens/**"
 
 permissions:
   contents: read
@@ -49,6 +53,10 @@ jobs:
     name: Visual regression (Argos)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Non-blocking: Argos creates its own commit status ("argos/sergeant");
+    # this job may be flaky until the baseline is bulk-approved in Argos UI.
+    # Re-enable continue-on-error: false once 0-diff green baseline is stable.
+    continue-on-error: true
 
     services:
       # pgvector/pgvector:pg17 — Postgres 17 + the `vector` extension
