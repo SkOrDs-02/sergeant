@@ -1,6 +1,6 @@
 # 🏗️ Architecture
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.
@@ -24,11 +24,11 @@ System architecture and runtime surface inventory for Sergeant.
 | [`diagrams/`](./diagrams/README.md)                                  | C4 model (System → Containers → Components) + sequence flows (Mermaid)     | 2026-05-13 ✅ |
 | [`diagrams/c1-system-context.md`](./diagrams/c1-system-context.md)   | User ↔ Sergeant Web / Mobile / Shell ↔ external systems                    | 2026-05-05    |
 | [`diagrams/c2-containers.md`](./diagrams/c2-containers.md)           | Deployment topology: apps/web (Vercel), apps/server (Railway), apps/mobile | 2026-05-05    |
-| [`diagrams/c3-cloudsync.md`](./diagrams/c3-cloudsync.md)             | Internal CloudSync: dirtyMap → offlineQueue → sync → conflict resolution   | 2026-05-05    |
+| [`diagrams/c3-cloudsync.md`](./diagrams/c3-cloudsync.md)             | Internal sync engine v2 (op-log outbox → `/api/v2/sync/push`); v1 retired  | 2026-06-09    |
 | [`diagrams/c3-chat-tool-use.md`](./diagrams/c3-chat-tool-use.md)     | HubChat tool-use loop with Anthropic streaming                             | 2026-05-05    |
 | [`diagrams/c3-workspaces.md`](./diagrams/c3-workspaces.md)           | Workspace-level `@sergeant/*` import-edge dependency graph (auto-gen)      | 2026-06-01    |
 | [`diagrams/flow-signin.md`](./diagrams/flow-signin.md)               | Better Auth sign-in flow (email + password)                                | 2026-05-05    |
-| [`diagrams/flow-cloudsync.md`](./diagrams/flow-cloudsync.md)         | Push/pull sync between web ↔ `/api/sync` ↔ Postgres                        | 2026-05-05    |
+| [`diagrams/flow-cloudsync.md`](./diagrams/flow-cloudsync.md)         | Sync v2 push/pull: web ↔ `/api/v2/sync/push` ↔ Postgres; v1 → 410 Gone     | 2026-06-09    |
 | [`diagrams/flow-chat-tool-use.md`](./diagrams/flow-chat-tool-use.md) | Runtime tool-use cycle within a chat session                               | 2026-05-05    |
 | [`diagrams/flow-reminder-fire.md`](./diagrams/flow-reminder-fire.md) | n8n cron → server push → APNs/FCM → device                                 | 2026-05-05    |
 

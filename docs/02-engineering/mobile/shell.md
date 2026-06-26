@@ -1,6 +1,6 @@
 # Mobile-білди — команди для локальної розробки
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active. Capacitor shell is the primary mobile product per [ADR-0052](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md); the old ADR-0010 sunset schedule below is historical reference only.
 
 > Короткий operator-oriented довідник по Capacitor-shell-у (`@sergeant/mobile-shell`). Дизайн-обґрунтування, список плагінів і історію shell-а — див. [`apps/mobile-shell/README.md`](../../../apps/mobile-shell/README.md). Для Expo / React Native застосунку (`@sergeant/mobile`) — див. [`apps/mobile/README.md`](../../../apps/mobile/README.md) і [`overview.md`](./overview.md).
@@ -37,7 +37,7 @@ Capacitor-shell обгортає існуючий Vite-бандл `@sergeant/web
 
 | Інструмент        | Версія             | Нотатки                                                        |
 | ----------------- | ------------------ | -------------------------------------------------------------- |
-| Node.js           | 20.x (див. .nvmrc) | `nvm install 20 && nvm use 20`                                 |
+| Node.js           | 22.x (див. .nvmrc) | `nvm install 22 && nvm use 22`                                 |
 | pnpm              | 9.15.1             | `corepack enable && corepack prepare pnpm@9.15.1 --activate`   |
 | JDK               | 21 (Temurin)       | потрібен для Capacitor 7.6+ (компілює у VERSION_21) / AGP 8    |
 | Android SDK       | API 35             | `compileSdk=35`, `minSdk=23` (Android Studio або `sdkmanager`) |
