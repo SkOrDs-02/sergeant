@@ -4,7 +4,7 @@
 > **Status:** Active — research deliverable for the parent launch program.
 > **Owner surface:** `apps/mobile-shell` (Capacitor 7 shell over `apps/web`).
 > **Strategy anchor:** [ADR-0052 — Capacitor primary, Expo parallel](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md).
-> **Sibling phases:** Phase 1 — Web (`01-web-launch-with-users.md`), Phase 3 — Native Expo (`03-native-expo-launch.md`), Phase 0 — audit (`00-readiness-audit.md`).
+> **Sibling phases:** Phase 1 — Web (`01-web-launch-with-users.md`), Phase 0 — audit (`00-readiness-audit.md`). Phase 3 (Native Expo) — conditional decision gate, описаний inline у [`README.md § Phase 3`](./README.md#phase-3--native-expo--conditional).
 > **Scope:** як запустити Capacitor-shell на TestFlight + Play Internal Testing і провести цикл бета-тестування з реальними людьми до GA.
 
 ---
@@ -733,7 +733,7 @@ Phase 3 (Native Expo) стартує **якщо хоча б одне з:**
 
 - Зафіксувати ADR-0053 «Expo becomes primary», що supersedes ADR-0052.
 - Capacitor shell входить у formal sunset за оригінальним T₀/T₁/T₂ scheduling (з reset дат на актуальну точку часу).
-- Phase 3 roadmap — окремий документ (`03-native-expo-launch.md`).
+- Phase 3 roadmap — conditional decision gate в [`README.md § Phase 3`](./README.md#phase-3--native-expo--conditional) (сценарії A/B/C).
 
 ---
 
