@@ -1,18 +1,18 @@
 # Observability-runbook
 
-> **Last validated:** 2026-06-11 by @Skords-01. **Next review:** 2026-09-09.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 Інструкції "що робити, коли спрацював алерт" для правил з
 [`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml). Тримай коротко:
 перший крок завжди `/metrics` + логи Pino за той же інтервал.
 
-> **Статус wiring:** алерти з `alert_rules.yml` сьогодні **не спрацьовують
-> автоматично** — правила не завантажені жодним runtime (див.
-> [`SLO.md § Статус wiring`](./SLO.md#статус-wiring-чесний-зріз-2026-06-11)).
-> До підключення Grafana Cloud цей runbook використовується reactively: вхідний
-> сигнал — Sentry-issue, скарга користувача або ручна перевірка `/metrics`;
-> сценарії нижче лишаються валідними інструкціями розслідування.
+> **Статус wiring:** алерти з `alert_rules.yml` **залиті в Grafana Cloud Mimir
+> і оцінюються в реальному часі** (28 alert + 25 recording rules; див.
+> [`SLO.md § Статус wiring`](./SLO.md#статус-wiring-чесний-зріз-2026-06-26)).
+> Сигнал приходить автоматично (Grafana managed alerting → Telegram), а також
+> через Sentry-issue, скаргу користувача чи ручну перевірку `/metrics`;
+> сценарії нижче — валідні інструкції розслідування незалежно від джерела сигналу.
 
 Загальне:
 
@@ -649,63 +649,21 @@ treat kill-switch як advisory (env-flag залишається authoritative).
 - `runtime_kill_switch_activations_total{switch,outcome}` — counter
   (outcome ∈ {activate, reactivate, deactivate}).
 
-## OpenTelemetry traces (server-side OTLP)
+## OpenTelemetry traces — ВИДАЛЕНО (2026-06-26)
 
-**Звідки:** [ADR-0035](../../04-governance/adr/0035-distributed-tracing-opentelemetry.md) shipped 2026-05-05 (initiative [0004 Phase 2 + 4](../../90-work/initiatives/archive/_0004-server-observability.md)). Server `apps/server/src/obs/{tracing,spans,sampler}.ts` — NodeSDK + auto-instrumentation для `http`, `express`, `pg`, `redis`, `undici`. Web `packages/api-client/src/httpClient.ts` додає `traceparent` header у кожний fetch.
+OTel-стек (server NodeSDK, `obs/tracing.ts`, `obs/sampler.ts`, OTLP-export,
+`OTEL_*` env, `@opentelemetry/*` пакети) **видалено** — див.
+[ADR-0035 § Reversal](../../04-governance/adr/0035-distributed-tracing-opentelemetry.md).
+Він лишався dormant (без `OTEL_EXPORTER_OTLP_ENDPOINT` у проді), але платив
+require-ціну на cold-start без користі.
 
-### Ввімкнення
-
-OTel SDK реєструється тільки коли `OTEL_EXPORTER_OTLP_ENDPOINT` (або `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`) встановлений. Без env-у — `aiSpan`/`dbSpan` працюють як no-op-обгортки (NoopTracer).
-
-```bash
-# Honeycomb
-railway variables set OTEL_EXPORTER_OTLP_TRACES_ENDPOINT='https://api.honeycomb.io:443/v1/traces'
-railway variables set OTEL_EXPORTER_OTLP_TRACES_HEADERS='x-honeycomb-team=hcaik_***,x-honeycomb-dataset=sergeant-prod'
-
-# Grafana Cloud Tempo
-railway variables set OTEL_EXPORTER_OTLP_TRACES_ENDPOINT='https://otlp-gateway-prod-eu-north-0.grafana.net/otlp/v1/traces'
-railway variables set OTEL_EXPORTER_OTLP_TRACES_HEADERS='Authorization=Basic <base64(instanceId:apiKey)>'
-
-# Tempo self-hosted
-railway variables set OTEL_EXPORTER_OTLP_TRACES_ENDPOINT='http://tempo:4318/v1/traces'
-
-# Опційно — після ввімкнення, щоб не платити двічі за server-side latency
-railway variables set SENTRY_TRACES_SAMPLE_RATE='0'
-```
-
-Інші env-vars:
-
-- `OTEL_SERVICE_NAME` — default `sergeant-api`.
-- `OTEL_SERVICE_VERSION` — explicit; fallback на `SENTRY_RELEASE` → `RAILWAY_GIT_COMMIT_SHA` → `VERCEL_GIT_COMMIT_SHA` → `GITHUB_SHA`.
-- `OTEL_TRACES_SAMPLE_RATE` — default 0.1 (10% для GET-non-AI). Health-routes завжди 0%, AI/write — завжди 100% (див. `apps/server/src/obs/sampler.ts`).
-
-### Sampling матриця
-
-| Маршрут                                                                                   | Decision                  | Чому                                                  |
-| ----------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------- |
-| `/livez`, `/readyz`, `/healthz`, `/startupz`                                              | 0%                        | Здоров'я-перевірки шумлять, нульова цінність у trace. |
-| `/api/chat/**`, `/api/coach/**`, `/api/nutrition/**`, `/api/digest/**`, `/api/v1/chat/**` | 100%                      | AI-cost-візуалізація + p95 latency debug.             |
-| `POST/PUT/PATCH/DELETE` на будь-якому маршруті                                            | 100%                      | Writes — критично для audit-trail-у.                  |
-| `GET` на не-AI-маршруті                                                                   | `OTEL_TRACES_SAMPLE_RATE` | Default 0.1; configurable.                            |
-| Будь-який маршрут із sampled-парентом                                                     | inherit (parent-based)    | W3C Trace Context — повага до upstream-decision-у.    |
-
-### Privacy
-
-`apps/server/src/obs/tracing.ts` має `HEADER_DENYLIST`: authorization, cookie, set-cookie, x-api-key, x-token, x-csrf-token, x-mono-webhook-secret, x-openclaw-webhook-secret, x-api-secret, x-internal-token, proxy-authorization. Auto-instrumentation редактує ці headers перед export. `aiSpan` НЕ пише prompt text у attributes — лише `gen_ai.system`, `gen_ai.request.model`, optional tokens та outcome.
-
-### Troubleshooting
-
-**Q: SDK init-лог є, але trace-и не приходять у backend.**
-A: Перевірити `OTEL_EXPORTER_OTLP_TRACES_HEADERS` (чи правильні API-ключі). `BatchSpanProcessor` має internal-buffer — flush при graceful shutdown (`SIGTERM`/`SIGINT`); поки сервер живий, trace-и можуть затриматись на ~5 сек. Локально для debug — `OTEL_LOG_LEVEL=debug` env-var.
-
-**Q: Pino logs показують `traceId`, але немає span-tree у backend.**
-A: ALS-bridge у `apps/server/src/http/traceContext.ts` бере `traceId` навіть коли OTel SDK не запущений (із header `traceparent` або x-trace-id). Якщо є логи з `traceId` але немає span-у — означає, що OTel SDK не зареєструвавсь (env не виставлено) або sampler вирішив `NOT_RECORD`. Перевірити sampler-decision: `/livez` і `GET /api/finyk/transactions?` (при default rate) можуть НЕ семплюватись.
-
-**Q: Sentry і OTel показують різні latency-картинки.**
-A: Sentry web tracing і OTel server tracing — окремі трекери. Sentry використовує browser Performance API; OTel використовує express middleware. Розбіжність 5–15ms — нормально (різні точки вимірювання). Для unified-картинки — `SENTRY_TRACES_SAMPLE_RATE=0` на сервері + покладатись на OTel (Sentry web error-tracking залишається).
-
-**Q: Anthropic-spans порожні (немає tokens, prompt_cache_hit).**
-A: `aiSpan` отримує meta з `[result, meta]` tuple inner-функції. Якщо upstream API повернув error до того як `usage` був доступний — meta порожній. Перевірити `error.message` у span-status — там буде причина.
+Поточне покриття: **Sentry** (errors + performance traces), **Prometheus →
+Grafana Cloud** (метрики), **Loki** (логи). `obs/spans.ts::aiSpan` лишився як
+passthrough-обгортка — token/latency-атрибуція живе у Prometheus
+(`ai_request_duration_ms`, `ai_tokens_total`, `ai_cost_estimate_usd_total`).
+Web `traceparent` (api-client) лишається для cross-boundary correlation у
+Sentry. Якщо distributed tracing знадобиться — відновити OTel з git history
+ADR-0035.
 
 ## WF-25 — Morning briefing cron (07:00 Kyiv → founder DM)
 
