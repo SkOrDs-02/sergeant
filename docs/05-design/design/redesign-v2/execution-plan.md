@@ -1,8 +1,8 @@
 # Sergeant v2 — Execution Plan (post-foundation polish + UX layer)
 
-> **Last validated:** 2026-05-18 by council-v4 (alignment audit corrections applied — D1 P4.1 staleness).
-> **Next review:** 2026-08-14.
-> **Status:** Ready to execute (Phase 0+1 ✅ shipped, Phase 2 Wave 1 shipped, Phase 2+ next).
+> **Last touched:** 2026-05-18 by council-v4 (alignment audit corrections applied — D1 P4.1 staleness).
+> **Next review:** v2 закрито — план не переглядається.
+> **Status:** Reference — цей intent-план **виконано**. Redesign-v2 (Phases 0–6) fully closed 2026-05-21; фактичний результат і відхилення плану від реальності — у [`execution-status.md`](./execution-status.md). Тримається як історія наміру, не як активний to-do.
 > **Companion docs:** [`governance.md`](./governance.md) (governance) · [`execution-status.md`](./execution-status.md) (live progress) · [`execution-brief.md`](./execution-brief.md) (orchestration contract) · [`backlog.md`](./backlog.md) (raw polish items) · [`migration.md`](./migration.md) (BEFORE/AFTER patterns) · [`handoff-package/`](./handoff-package) (canvas mockups + locked decisions) · [`design-system.md`](../design-system.md) (canonical contract).
 
 ## How to use this document
@@ -162,7 +162,7 @@ Primitives існують. Wire layer відсутній.
 ### Phase 2 — Polish migration (4-5 PR)
 
 - **2.1 Hub CRITICAL**: C1+C2+C5 (BentoCard + HubReports + HubSettings tile body) + extension `dashboardCards.tsx` + Storybook stories cleanup (`PullToRefresh.stories.tsx` v1 wraps + `AssistantAdviceCard` + `TodayFocusCard`, per 2026-05-17 audit) — ~6 файлів
-- **2.2 Module Hero**: C3+C4 + Routine V1 + Nutrition V2 (4 паралельних sub-PR — locked у [`handoff-package/Handoff for Claude Code.md`](./handoff-package/Handoff%20for%20Claude%20Code.md) §2). Finyk Overview hero — 2-storey default + single-storey behind PostHog flag `finyk.hero.single-storey` через TweaksPanel A/B (locked decision 2026-05-17).
+- **2.2 Module Hero**: C3+C4 + Routine V1 + Nutrition V2 (4 паралельних sub-PR — locked у [`handoff-package/handoff-for-claude-code.md`](./handoff-package/handoff-for-claude-code.md) §2). Finyk Overview hero — 2-storey default + single-storey behind PostHog flag `finyk.hero.single-storey` через TweaksPanel A/B (locked decision 2026-05-17).
 - **2.3 Module lists codemod**: усі MAJOR з Polish gaps section — ~15 файлів
 - **2.4 Onboarding cards**: CrossModulePreview + WeeklyDigest + ReEngagement + FirstAction + DailyNudge — ~6 файлів
 - **2.5 ModuleBottomNav v2 full migration** (NEW PR, locked 2026-05-17) — shared `ModuleBottomNav.tsx` + 4 module wires (`finykNav` / `fizrukNav` / `RoutineBottomNav` / `NutritionBottomNav`) + Storybook + оновити [`unified-bottom-nav.md`](../unified-bottom-nav.md) (застаріле твердження про «однакову форму»). **Routine special-case:** center FAB як sibling, не nested. **Не chrome-lift** — full v2 glass-pill shape з module-tinted active pill (`bg-{module}-strong`). Розмір M.

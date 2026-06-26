@@ -1,10 +1,15 @@
 # Sergeant v2 redesign — canvas handoff
 
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Status:** Reference
+
 > **Призначення:** короткий бриф для Claude Code / агента що буде закривати наступні PR-и
 > redesign-v2 polish. Споживається разом з канвою (4 HTML файли поруч).
 > **Створено з канви:** 2026-05-17 на основі `../execution-plan.md`,
 > `../backlog.md`, `../migration.md`, фактичного коду `apps/web/src/modules/{4}`.
-> **Статус:** Pending review. Перед першим PR — pass через @Skords-01.
+> **Статус:** Reference (historical) — redesign-v2 (Phases 0–6) fully closed 2026-05-21.
+> Цей бриф виконав свою місію (orchestration наступних PR-ів); тримається як історія.
+> Фактичний результат — у [`../execution-status.md`](../execution-status.md).
 
 ---
 

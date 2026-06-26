@@ -185,7 +185,7 @@ generated_by: council-v4 (5 ролей)
 
 ### Q6 — 10 speculative tech-debt gaps triage
 
-**Text:** `handoff-package/Hidden tech-debt audit.md` (2026-05-17) флагнув 10 speculative gaps (form controls on glass, Toast/Tooltip/Popover surface, Banner, WelcomeScreen, AuthPage, etc.) — потребують 5-min code-review кожен. Не верифіковано.
+**Text:** `handoff-package/hidden-tech-debt-audit.md` (2026-05-17) флагнув 10 speculative gaps (form controls on glass, Toast/Tooltip/Popover surface, Banner, WelcomeScreen, AuthPage, etc.) — потребують 5-min code-review кожен. Не верифіковано.
 **Blocks:** Phase 3 friction work.
 **Resolver:** redesign-v2-planner.
 **Deadline-proxy:** before Phase 3 starts.
@@ -212,7 +212,7 @@ generated_by: council-v4 (5 ролей)
 **Resolver:** redesign-v2-planner.
 **Deadline-proxy:** before Phase 4.
 
-**RESOLVED 2026-05-18 (grep verified):** Не два components — один. `apps/web/src/shared/components/ui/KpiRowCompact.tsx` shipped у PR #2969 (Phase 2.0) як «P2 primitive». `KpiRow` (без `Compact`) — це **aspirational name** у `handoff-package/Hidden tech-debt audit.md:216` («KPI mini-grid... сьогодні inline в 4 модулях»). Tech-debt audit написаний **до** P2 primitives bundle shipping; `KpiRow` як «primitive proposal» був superseded шипленням `KpiRowCompact`. Treat names as aliases — `KpiRowCompact` є канонічна реалізація. Tech-debt audit doc оновлено clarification note. Phase 4 wiring використовує `KpiRowCompact` без амбівалентності.
+**RESOLVED 2026-05-18 (grep verified):** Не два components — один. `apps/web/src/shared/components/ui/KpiRowCompact.tsx` shipped у PR #2969 (Phase 2.0) як «P2 primitive». `KpiRow` (без `Compact`) — це **aspirational name** у `handoff-package/hidden-tech-debt-audit.md:216` («KPI mini-grid... сьогодні inline в 4 модулях»). Tech-debt audit написаний **до** P2 primitives bundle shipping; `KpiRow` як «primitive proposal» був superseded шипленням `KpiRowCompact`. Treat names as aliases — `KpiRowCompact` є канонічна реалізація. Tech-debt audit doc оновлено clarification note. Phase 4 wiring використовує `KpiRowCompact` без амбівалентності.
 
 ### Q8 — 5 code orphans: wire or deprecate?
 

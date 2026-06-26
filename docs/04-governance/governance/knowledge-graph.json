@@ -379,7 +379,7 @@
       "type": "adr",
       "title": "ADR-0035: Distributed tracing — web→server via OpenTelemetry",
       "path": "docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md",
-      "status": "accepted",
+      "status": "superseded — reverted 2026-06-26 (OpenTelemetry видалено; див. banner нижче)",
       "tier": "core",
       "meta": {
         "number": 35

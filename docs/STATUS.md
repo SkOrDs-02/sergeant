@@ -30,13 +30,13 @@
 - [#3567](https://github.com/Skords-01/Sergeant/pull/3567) — docs(agents): record 0018 semantic measurement + drop orphan 0019 README row _(2026-06-14)_
 - [#3560](https://github.com/Skords-01/Sergeant/pull/3560) — fix: heal governance/format drift + dualWrite logger lint debt _(2026-06-14)_
 
-## 🔵 В роботі — 57 відкритих
+## 🔵 В роботі — 56 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 16       |
 | Планування                       | 9        |
-| Launch / запуск                  | 17       |
+| Launch / запуск                  | 16       |
 | Аудити й прожарки                | 9        |
 | Security hardening               | 2        |
 | Техборг                          | 4        |
