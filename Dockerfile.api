@@ -47,7 +47,7 @@
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Stage 1: builder — full dev deps + pnpm build
-FROM --platform=linux/amd64 node:22.16.0-alpine AS builder
+FROM --platform=linux/amd64 node:26.4.0-alpine AS builder
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
@@ -89,7 +89,7 @@ RUN pnpm build
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Stage 2: deps — production-only node_modules + CVE-cleanup (potrebuje shell)
-FROM --platform=linux/amd64 node:22.16.0-alpine AS deps
+FROM --platform=linux/amd64 node:26.4.0-alpine AS deps
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate

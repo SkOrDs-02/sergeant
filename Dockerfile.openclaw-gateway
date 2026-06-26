@@ -15,7 +15,7 @@
 
 # Pinned to a patch version (INFRA-002, supply-chain). Bump via Renovate.
 # `--platform=linux/amd64` selects the amd64 build on multi-arch hosts.
-FROM --platform=linux/amd64 node:24.16.0-alpine AS plugin-builder
+FROM --platform=linux/amd64 node:26.4.0-alpine AS plugin-builder
 WORKDIR /build
 
 # Enable pnpm via corepack (lockfile pinned in repo root).
@@ -50,7 +50,7 @@ RUN pnpm --filter @sergeant/openclaw-plugin build
 
 # ---- Runtime stage -----------------------------------------------------------
 # Pinned to a patch version (INFRA-002) — same as plugin-builder.
-FROM --platform=linux/amd64 node:24.16.0-alpine
+FROM --platform=linux/amd64 node:26.4.0-alpine
 WORKDIR /app
 
 # Bump via Renovate PR (Locked decision #2 — no auto-merge).
