@@ -125,6 +125,10 @@
     {
       "pattern": "^https?://docs\\.railway\\.app/reference/security$",
       "reason": "Cited in docs/04-governance/security/secret-rotation.md as a Railway security reference. Railway reorganized their docs tree and this path now returns 404; the citation is preserved as a historical reference to Railway's security practices at the time of writing."
+    },
+    {
+      "pattern": "^https?://github\\.com/[Ss]kords-01/[Ss]ergeant/",
+      "reason": "Historical PR/commit backlinks to the pre-migration GitHub repo Skords-01/Sergeant, suspended during the 2026-06-26 account migration to SkOrDs-02. They reference real PRs/commits from the old repo that no longer resolve (the old PR numbers do not exist on the new repo, which started fresh — so they cannot be rewritten to the new handle either); preserved verbatim in CHANGELOG.md, AGENTS.md, and per-app READMEs as an immutable historical record. New backlinks point at SkOrDs-02/sergeant."
     }
   ]
 }
