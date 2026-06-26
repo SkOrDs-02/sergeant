@@ -1,8 +1,13 @@
 # Hidden tech-debt audit — поза backlog'ом
 
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Status:** Reference
+
 > **Створено:** 2026-05-17 з канви + grep по `apps/web/src/`.
 > **Призначення:** Знайти v1 поверхні які НЕ зафіксовано в `../backlog.md` /
 > `../execution-plan.md`. Скеровано на zero-cost-to-add polish items + structural gaps.
+> **Статус:** Reference (historical) — findings triage-нуто у [`../backlog.md`](../backlog.md)
+> (§ Hidden tech-debt gaps) під час v2 close-out 2026-05-21; тримається як audit-trail.
 
 Кожен пункт має:
 

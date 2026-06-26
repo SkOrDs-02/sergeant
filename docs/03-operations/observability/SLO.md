@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last validated:** 2026-06-11 by @Skords-01. **Next review:** 2026-09-09.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
@@ -11,37 +11,41 @@ multi-burn-rate** алерти (Google SRE Workbook, Ch. 5). Формули SLI 
 у [`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml). Порядок дій під
 час алерту — у [`runbook.md`](./runbook.md).
 
-## Статус wiring (чесний зріз, 2026-06-11)
+## Статус wiring (чесний зріз, 2026-06-26)
 
-Цей документ — **дизайн + частково реалізація**. Що з нього реально працює в
-проді, а що — підготовлений артефакт «на потім»:
+Раніше (2026-06-11) цей документ був «дизайн на потім» — Prometheus не був
+розгорнутий. **Станом на 2026-06-26 wiring завершено** (перевірено прямими
+запитами до Grafana Cloud): метрики, логи, помилки й алерти реально працюють
+у проді.
 
 **Wired сьогодні ✅**
 
-- `prom-client` метрики на сервері: `/metrics` експортує `http_requests_total`,
-  histogram-и латентності та доменні лічильники, на яких побудовані SLI-формули.
-- Sentry (errors + traces; `SENTRY_DSN` — обовʼязковий у проді) і Pino-логи в
-  Railway.
-- PostHog продуктова аналітика.
+- **Метрики → Grafana Cloud Prometheus.** Сервіс `grafana-alloy` (Railway-проєкт
+  `SERGEANT_N8N`) скрейпить `/metrics` сервера (кожні 15s, bearer `METRICS_TOKEN`)
+  і n8n (30s), `remote_write`-ить у Grafana Cloud
+  (`prometheus-prod-39-prod-eu-north-0`). `up{project="sergeant"}=1` для обох
+  targets, ~374 active series. Конфіг — [`ops/grafana-alloy/config.alloy`](../../../ops/grafana-alloy/config.alloy).
+- **Recording + alert rules → Grafana Cloud Mimir.** [`recording_rules.yml`](./prometheus/recording_rules.yml)
+  і [`alert_rules.yml`](./prometheus/alert_rules.yml) залиті в Grafana Cloud
+  (13 груп, 28 alerting + 25 recording rules, evaluating). Burn-rate-алерти
+  реально оцінюються (на момент перевірки 0 firing / 0 pending — здоровий стан).
+- **Логи → Grafana Cloud Loki.** Pino-transport [`obs/lokiTransport.ts`](../../../apps/server/src/obs/lokiTransport.ts)
+  (gated на `GRAFANA_CLOUD_LOKI_{URL,USERNAME,TOKEN}` — усі задані в проді).
+- **Помилки + performance traces → Sentry** (`SENTRY_DSN`, per-route sampling).
+- **Продуктова аналітика → PostHog EU.**
 
-**Designed for later 📐 (жоден runtime цього не вантажить)**
+**Ще не зроблено / поза runtime 📐**
 
-- [`prometheus/recording_rules.yml`](./prometheus/recording_rules.yml) та всі
-  24 правила в [`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml):
-  Prometheus, який би їх evaluat-ив, не розгорнутий. Жоден алерт із цього
-  файла (включно з `BackendHealthP95High`) сьогодні **не може спрацювати**.
-- [`alertmanager.yml`](./alertmanager.yml) — legacy-fallback, Alertmanager не
-  існує як сервіс.
-- Burn-rate-механіка нижче по документу — описує цільову поведінку після
-  wiring, не поточну.
+- **Alertmanager не використовується.** [`alertmanager.yml`](./alertmanager.yml) —
+  legacy-артефакт; маршрутизація алертів іде через Grafana Cloud managed alerting
+  (contact point — Telegram через n8n), не через self-hosted Alertmanager.
+- **Імпорт дашбордів** ([`dashboards/`](./dashboards/)) у Grafana Cloud — ручний
+  крок (`Dashboards → Import`); підтвердження статусу — у Grafana UI.
+- **UptimeRobot** (зовнішній blackbox-сигнал downtime, доповнює internal-метрики) —
+  досі founder-gated.
 
-**Рішення (ws-15, аудит 2026-06-11):** правила **зберігаємо** як design-артефакт
-(вони знадобляться без змін при підключенні Grafana Cloud / managed Prometheus,
-що scrape-ить `/metrics`). Видалення відхилено: правила консистентні з SLI і
-їх повторне написання дорожче за зберігання. Власне wiring (Grafana Cloud
-account + scrape config + rules sync) — founder-gated інфраструктурний крок;
-до нього зовнішній сигнал про downtime дає UptimeRobot (теж founder-дія,
-див. аудит) + Sentry.
+> **Примітка:** burn-rate-механіка нижче по документу тепер описує **поточну**
+> (а не цільову) поведінку — Prometheus її оцінює в реальному часі.
 
 ## TL;DR
 

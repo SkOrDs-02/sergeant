@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -420,25 +420,14 @@ Base URL Railway-API, який [`apps/web/middleware.ts`](../../../apps/web/midd
 
 ---
 
-## 13.5. OpenTelemetry traces (server-side OTLP) _(optional, currently dormant)_
+## 13.5. OpenTelemetry traces — ВИДАЛЕНО (2026-06-26)
 
-> **Стан:** Dormant — жоден з `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` не заданий у production. Активний live tracer — **Sentry** (`apps/server/src/sentry.ts`). Код `tracing.ts` повністю написаний і готовий до ввімкнення; він є clean no-op поки endpoint не задано (SDK не реєструється, `aiSpan`/`dbSpan` — прозорі callback-обгортки без overhead). Щоб увімкнути OTel: задай `OTEL_EXPORTER_OTLP_ENDPOINT` на Railway і виставь `SENTRY_TRACES_SAMPLE_RATE=0` щоб уникнути подвійного server-side latency sampling.
-
-Деталі: [ADR-0035](../../04-governance/adr/0035-distributed-tracing-opentelemetry.md), runbook [`observability/runbook.md` § «OpenTelemetry traces»](../../03-operations/observability/runbook.md).
-
-| Змінна                               | Default        | Опис                                                                                                                                                                             |
-| ------------------------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`        | _empty_        | OTLP/HTTP collector base-endpoint. Якщо порожній — OTel SDK no-op.                                                                                                               |
-| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | _empty_        | Override лише для traces (наприклад `https://api.honeycomb.io:443/v1/traces`, `https://otlp-gateway-prod-eu-north-0.grafana.net/otlp/v1/traces`, `http://tempo:4318/v1/traces`). |
-| `OTEL_EXPORTER_OTLP_HEADERS`         | _empty_        | Comma-separated `k=v` headers (e.g. `Authorization=Basic ...`). SECRET-значення (API keys) — через secrets manager, **НЕ** комітити у `.env.example`.                            |
-| `OTEL_EXPORTER_OTLP_TRACES_HEADERS`  | _empty_        | Як `OTEL_EXPORTER_OTLP_HEADERS`, але лише для traces (override). Honeycomb: `x-honeycomb-team=hcaik_***,x-honeycomb-dataset=sergeant-prod`.                                      |
-| `OTEL_SERVICE_NAME`                  | `sergeant-api` | `service.name` resource attribute.                                                                                                                                               |
-| `OTEL_SERVICE_VERSION`               | _empty_        | Override service.version. Default fallback: `SENTRY_RELEASE` → `RAILWAY_GIT_COMMIT_SHA` → `VERCEL_GIT_COMMIT_SHA` → `GITHUB_SHA`.                                                |
-| `OTEL_TRACES_SAMPLE_RATE`            | `0.1`          | Default sample-rate для GET-non-AI-маршрутів. Range `0.0..1.0` (clamped). Health-routes завжди 0%, AI/write — 100% (див. `apps/server/src/obs/sampler.ts`).                      |
-
-> **Web-бандл:** `apps/web` НЕ підтягує OTel SDK (~50KB gzip). Замість цього `packages/api-client/src/httpClient.ts` генерує W3C `traceparent` header вручну (через `crypto.getRandomValues`). Сервер підхоплює traceId і будує від нього span-tree. RUM-spans на клієнті — окрема P1 ініціатива (0006-rum-spans-web).
-
-> **Sentry співіснування:** Sentry web tracing і server OTel НЕ конфліктують у prod-і. Коли OTLP-endpoint увімкнено, можна виставити `SENTRY_TRACES_SAMPLE_RATE=0`, щоб не платити двічі за server-side latency tracking. Sentry error tracking залишається як було.
+> OTel-стек видалено (`OTEL_*` env, `obs/tracing.ts`, `obs/sampler.ts`, 8
+> `@opentelemetry/*` пакетів). Причина й деталі — [ADR-0035 § Reversal](../../04-governance/adr/0035-distributed-tracing-opentelemetry.md).
+> Server tracing більше немає; error + performance tracing покриває **Sentry**,
+> метрики — **Prometheus → Grafana Cloud**, логи — **Loki**. Web `traceparent`
+> (`packages/api-client`) лишається для cross-boundary correlation у Sentry.
+> Відновити OTel — з git history ADR-0035.
 
 ---
 

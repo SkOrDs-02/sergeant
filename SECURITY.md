@@ -1,6 +1,6 @@
 # Security Policy
 
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-08-11.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 ## Supported Versions
@@ -11,7 +11,7 @@ Only the latest version on the `main` branch is actively maintained and receives
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Report vulnerabilities via [GitHub Security Advisories](https://github.com/skords-01/sergeant/security/advisories/new).
+Report vulnerabilities via [GitHub Security Advisories](https://github.com/SkOrDs-02/sergeant/security/advisories/new).
 
 Include:
 
