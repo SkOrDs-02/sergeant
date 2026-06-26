@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-06-23 by @Skords-01. **Next review:** 2026-09-21.
+> **Last touched:** 2026-06-26 by @Skords-01. **Next review:** 2026-09-24.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -96,11 +96,11 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 
 | Path                                     | Owner        | Secondary ¹             | Deep map                                                                                                    |
 | ---------------------------------------- | ------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `apps/web/**`                            | `@Skords-01` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
-| `apps/server/**`                         | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
-| `apps/mobile/**`, `apps/mobile-shell/**` | `@Skords-01` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
-| `packages/**`                            | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/02-engineering/architecture/module-ownership.md#packages)         |
-| `ops/**`, `tools/**`, `scripts/**`       | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/02-engineering/architecture/module-ownership.md#ops-surfaces) |
+| `apps/web/**`                            | `@SkOrDs-02` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
+| `apps/server/**`                         | `@SkOrDs-02` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
+| `apps/mobile/**`, `apps/mobile-shell/**` | `@SkOrDs-02` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
+| `packages/**`                            | `@SkOrDs-02` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/02-engineering/architecture/module-ownership.md#packages)         |
+| `ops/**`, `tools/**`, `scripts/**`       | `@SkOrDs-02` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/02-engineering/architecture/module-ownership.md#ops-surfaces) |
 
 > ¹ Secondary is the bus-factor backup reviewer (real GitHub handle preferred; `TBD (<role>)` placeholders are accepted while delegation is in flight). L2 escalation when owner is unreachable: [`docs/00-start/playbooks/operational-continuity.md`](./docs/00-start/playbooks/operational-continuity.md). Empty Secondary cells fail `pnpm lint:codeowners`.
 

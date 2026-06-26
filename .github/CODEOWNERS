@@ -3,83 +3,83 @@
 # Coverage of this file is enforced by `pnpm lint:codeowners`.
 #
 # Secondary owners are placeholders (stack-pulse PR-04 bus-factor fix).
-# Replace with real engineers when hired. @Skords-01 remains final-approver
+# Replace with real engineers when hired. @SkOrDs-02 remains final-approver
 # for all paths until delegation is complete.
 
 # ── Governance & repo-root ───────────────────────────────────────────────────
-/AGENTS.md                 @Skords-01
-/CLAUDE.md                 @Skords-01
-/DEVIN.md                  @Skords-01
-/CONTRIBUTING.md           @Skords-01
-/README.md                 @Skords-01
+/AGENTS.md                 @SkOrDs-02
+/CLAUDE.md                 @SkOrDs-02
+/DEVIN.md                  @SkOrDs-02
+/CONTRIBUTING.md           @SkOrDs-02
+/README.md                 @SkOrDs-02
 
 # ── Documentation (governance paths: no secondary — intentional) ─────────────
-/docs/*.md                 @Skords-01
-/docs/04-governance/adr/                 @Skords-01
-/docs/02-engineering/api/                 @Skords-01
-/docs/02-engineering/architecture/        @Skords-01
-/docs/90-work/audits/              @Skords-01
-/docs/03-operations/deploy/              @Skords-01
-/docs/05-design/design/              @Skords-01
-/docs/04-governance/governance/          @Skords-01
-/docs/02-engineering/integrations/        @Skords-01
-/docs/01-product/launch/              @Skords-01
-/docs/02-engineering/mobile/              @Skords-01
-/docs/02-engineering/notes/               @Skords-01
-/docs/03-operations/observability/       @Skords-01
-/docs/90-work/planning/            @Skords-01
-/docs/00-start/playbooks/           @Skords-01
-/docs/03-operations/postmortems/         @Skords-01
-/docs/04-governance/security/            @Skords-01
-/docs/00-start/agents/              @Skords-01
-/docs/90-work/tech-debt/           @Skords-01
+/docs/*.md                 @SkOrDs-02
+/docs/04-governance/adr/                 @SkOrDs-02
+/docs/02-engineering/api/                 @SkOrDs-02
+/docs/02-engineering/architecture/        @SkOrDs-02
+/docs/90-work/audits/              @SkOrDs-02
+/docs/03-operations/deploy/              @SkOrDs-02
+/docs/05-design/design/              @SkOrDs-02
+/docs/04-governance/governance/          @SkOrDs-02
+/docs/02-engineering/integrations/        @SkOrDs-02
+/docs/01-product/launch/              @SkOrDs-02
+/docs/02-engineering/mobile/              @SkOrDs-02
+/docs/02-engineering/notes/               @SkOrDs-02
+/docs/03-operations/observability/       @SkOrDs-02
+/docs/90-work/planning/            @SkOrDs-02
+/docs/00-start/playbooks/           @SkOrDs-02
+/docs/03-operations/postmortems/         @SkOrDs-02
+/docs/04-governance/security/            @SkOrDs-02
+/docs/00-start/agents/              @SkOrDs-02
+/docs/90-work/tech-debt/           @SkOrDs-02
 
 # ── CI / scripts (no secondary — high blast radius) ──────────────────────────
-/.github/CODEOWNERS        @Skords-01
-/.github/workflows/        @Skords-01
-/.github/PULL_REQUEST_TEMPLATE.md @Skords-01
-/scripts/                  @Skords-01
+/.github/CODEOWNERS        @SkOrDs-02
+/.github/workflows/        @SkOrDs-02
+/.github/PULL_REQUEST_TEMPLATE.md @SkOrDs-02
+/scripts/                  @SkOrDs-02
 
-/.agents/skills/           @Skords-01
-/.agents/skills-lock.json  @Skords-01
+/.agents/skills/           @SkOrDs-02
+/.agents/skills-lock.json  @SkOrDs-02
 
-/ops/n8n-workflows/        @Skords-01
+/ops/n8n-workflows/        @SkOrDs-02
 
 # ── TypeScript config (no secondary — affects all apps) ──────────────────────
-apps/web/tsconfig.json                  @Skords-01
-apps/server/tsconfig.json               @Skords-01
-packages/config/tsconfig.base.json      @Skords-01
-packages/config/tsconfig.node.json      @Skords-01
-packages/config/tsconfig.react.json     @Skords-01
-scripts/check-tsconfig-strict.mjs       @Skords-01
+apps/web/tsconfig.json                  @SkOrDs-02
+apps/server/tsconfig.json               @SkOrDs-02
+packages/config/tsconfig.base.json      @SkOrDs-02
+packages/config/tsconfig.node.json      @SkOrDs-02
+packages/config/tsconfig.react.json     @SkOrDs-02
+scripts/check-tsconfig-strict.mjs       @SkOrDs-02
 
 # ── Database / migrations (placeholder secondary: data-engineer) ─────────────
 # placeholder — replace with real data-engineer when hired
-/apps/server/src/migrations/             @Skords-01
-/packages/db-schema/                     @Skords-01
+/apps/server/src/migrations/             @SkOrDs-02
+/packages/db-schema/                     @SkOrDs-02
 
 # ── Backend server (placeholder secondary: backend-engineer) ─────────────────
 # placeholder — replace with real backend-engineer when hired
-/apps/server/                            @Skords-01
+/apps/server/                            @SkOrDs-02
 
 # ── Frontend web (placeholder secondary: frontend-engineer) ──────────────────
 # placeholder — replace with real frontend-engineer when hired
-/apps/web/                               @Skords-01
+/apps/web/                               @SkOrDs-02
 
 # ── Mobile (placeholder secondary: mobile-engineer) ──────────────────────────
 # placeholder — replace with real mobile-engineer when hired
-/apps/mobile/                            @Skords-01
-/apps/mobile-shell/                      @Skords-01
+/apps/mobile/                            @SkOrDs-02
+/apps/mobile-shell/                      @SkOrDs-02
 
 # ── Shared packages ───────────────────────────────────────────────────────────
-/packages/api-client/                    @Skords-01
-/packages/config/                        @Skords-01
-/packages/design-tokens/                 @Skords-01
-/packages/eslint-plugin-sergeant-design/ @Skords-01
-/packages/finyk-domain/                  @Skords-01
-/packages/fizruk-domain/                 @Skords-01
-/packages/insights/                      @Skords-01
-/packages/nutrition-domain/              @Skords-01
-/packages/routine-domain/               @Skords-01
-/packages/shared/                        @Skords-01
-/packages/openclaw-plugin/               @Skords-01
+/packages/api-client/                    @SkOrDs-02
+/packages/config/                        @SkOrDs-02
+/packages/design-tokens/                 @SkOrDs-02
+/packages/eslint-plugin-sergeant-design/ @SkOrDs-02
+/packages/finyk-domain/                  @SkOrDs-02
+/packages/fizruk-domain/                 @SkOrDs-02
+/packages/insights/                      @SkOrDs-02
+/packages/nutrition-domain/              @SkOrDs-02
+/packages/routine-domain/               @SkOrDs-02
+/packages/shared/                        @SkOrDs-02
+/packages/openclaw-plugin/               @SkOrDs-02
