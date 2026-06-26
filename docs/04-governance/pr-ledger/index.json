@@ -1,8 +1,15 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-20",
+  "generated_at": "2026-06-26",
   "prs": [
+    {
+      "number": 10,
+      "title": "docs: актуалізувати 01-product + 05-design + 02-engineering",
+      "merged_at": "2026-06-26T20:40:03Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": ["docs/00-start/playbooks/release.md"]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
