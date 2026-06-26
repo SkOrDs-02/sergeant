@@ -1,6 +1,6 @@
 # C3 — Workspace dependency graph
 
-> **Last validated:** 2026-06-25 by @Skords-01. **Next review:** 2026-09-23.
+> **Last validated:** 2026-06-26 by @Skords-01. **Next review:** 2026-09-24.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-architecture-diagrams`. -->
