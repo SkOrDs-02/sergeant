@@ -137,61 +137,85 @@ async function main() {
     `Manifest "${manifest.key}" → project ${PROJECT} @ ${HOST}${DRY ? " (DRY RUN)" : ""}`,
   );
 
-  // 1. Dashboard — reuse by name or create.
+  // 1. Dashboard — reuse by name or create; sync description (UA preferred).
+  const dashDescription = (
+    manifest.description_uk ??
+    manifest.description ??
+    ""
+  ).slice(0, 400);
   const dashList = await api(`/dashboards/?limit=200`);
   let dash = (dashList.results || []).find((d) => d.name === dashName);
   if (dash) {
     console.log(`  dashboard "${dashName}" exists → #${dash.id} (reuse)`);
+    if (!DRY) {
+      await api(`/dashboards/${dash.id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ description: dashDescription }),
+      });
+    }
   } else if (DRY) {
     console.log(`  would CREATE dashboard "${dashName}"`);
     dash = { id: "<new>" };
   } else {
     dash = await api(`/dashboards/`, {
       method: "POST",
-      body: JSON.stringify({
-        name: dashName,
-        description: manifest.description?.slice(0, 400) || "",
-      }),
+      body: JSON.stringify({ name: dashName, description: dashDescription }),
     });
     console.log(`  created dashboard "${dashName}" → #${dash.id}`);
   }
 
-  // 2. Insights — one per panel, reuse by name.
+  // 2. Insights — one per panel. Matched by a stable per-panel tag
+  // (`fp:<key>`) so renames / UA-description updates PATCH in place instead of
+  // creating duplicates. Falls back to the (English) name for insights created
+  // by an earlier run that pre-dates the per-panel tag.
   const insList = await api(`/insights/?limit=300`);
-  const byName = new Map(
-    (insList.results || []).map((i) => [i.name || i.derived_name, i]),
-  );
+  const byTag = new Map();
+  const byName = new Map();
+  for (const i of insList.results || []) {
+    if (i.name) byName.set(i.name, i);
+    for (const t of i.tags || []) {
+      if (t.startsWith("fp:")) byTag.set(t, i);
+    }
+  }
 
   for (const panel of manifest.panels) {
-    const existing = byName.get(panel.name);
-    if (existing) {
-      console.log(
-        `  insight "${panel.name}" exists → [${existing.short_id}] (skip)`,
-      );
-      continue;
-    }
+    const name = panel.name_uk ?? panel.name;
+    const description = (
+      panel.description_uk ?? `${panel.description}\n\n${panel.rationale}`
+    ).slice(0, 400);
+    const tag = `fp:${panel.key}`;
+    const tags = ["founder-pulse", "managed-by-manifest", tag];
+    const existing = byTag.get(tag) ?? byName.get(panel.name);
+
     if (DRY) {
-      console.log(`  would CREATE insight "${panel.name}" (${panel.type})`);
+      console.log(
+        `  would ${existing ? "UPDATE" : "CREATE"} insight "${name}" (${panel.type})`,
+      );
       continue;
     }
     try {
       const query = buildQuery(panel);
-      const created = await api(`/insights/`, {
-        method: "POST",
-        body: JSON.stringify({
-          name: panel.name,
-          description: `${panel.description}\n\n${panel.rationale}`.slice(
-            0,
-            400,
-          ),
-          query,
-          dashboards: [dash.id],
-          tags: ["founder-pulse", "managed-by-manifest"],
-        }),
-      });
-      console.log(`  created insight "${panel.name}" → [${created.short_id}]`);
+      if (existing) {
+        await api(`/insights/${existing.id}/`, {
+          method: "PATCH",
+          body: JSON.stringify({ name, description, query, tags }),
+        });
+        console.log(`  updated insight "${name}" → [${existing.short_id}]`);
+      } else {
+        const created = await api(`/insights/`, {
+          method: "POST",
+          body: JSON.stringify({
+            name,
+            description,
+            query,
+            dashboards: [dash.id],
+            tags,
+          }),
+        });
+        console.log(`  created insight "${name}" → [${created.short_id}]`);
+      }
     } catch (err) {
-      console.error(`  ✗ FAILED "${panel.name}": ${err.message}`);
+      console.error(`  ✗ FAILED "${name}": ${err.message}`);
     }
   }
 

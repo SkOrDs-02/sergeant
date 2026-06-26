@@ -4,6 +4,7 @@
   "key": "founder-pulse",
   "name": "Founder Pulse",
   "description": "WF-60 growth-funnel overview for founder/on-call. Aggregates DAU/WAU/MAU, signup→onboarding→first_action activation funnel (overall + per module), MRR / new-subscriptions, D1/D7/D30 retention and activation rate from the canonical events declared in packages/shared/src/lib/analyticsEvents.ts. Runbook: docs/03-operations/observability/posthog-founder-pulse.md.",
+  "description_uk": "Зведений growth-пульс продукту для засновника: активні користувачі, воронка активації (загальна + по модулях), рівень активації, нові підписки/MRR, утримання D1/D7/D30 і канарка нулів. На ранній стадії дані рідкі — панелі оживуть із трафіком. У кожної панелі є опис (наведи курсор на ℹ️), що вона означає, як читати й до якого числа прагнемо.",
   "timezone": "Europe/Kyiv",
   "events_contract": {
     "signup_completed": {
@@ -49,6 +50,8 @@
     {
       "key": "active-users",
       "name": "Active users — DAU / WAU / MAU",
+      "name_uk": "Активні користувачі — DAU / WAU / MAU",
+      "description_uk": "Скільки унікальних людей користувалися застосунком за день (DAU), тиждень (WAU) і місяць (MAU). Головний пульс продукту. Ціль: DAU росте тиждень-до-тижня; «липкість» WAU/DAU ≥ 0.35.",
       "type": "trends",
       "size": "wide",
       "description": "Rolling unique-user counts over yesterday-anchored 1d / 7d / 30d windows. Cohort is `any event in window`, not just `$pageview`, so backend-only events (Stripe webhook → `subscription_started`) still count the user as active.",
@@ -71,6 +74,8 @@
     {
       "key": "wf60-funnel-overall",
       "name": "WF-60 activation funnel — signup → onboarding → first_action",
+      "name_uk": "Воронка активації: реєстрація → онбординг → перша дія → підписка",
+      "description_uk": "Скільки нових користувачів проходять увесь шлях до активації за 7 днів. Один графік відповідає на питання «чи стають реєстрації активними користувачами?». Ціль: реєстрація→онбординг ≥ 70%, онбординг→перша дія ≥ 60%.",
       "type": "funnel",
       "size": "wide",
       "description": "Strict-sequence funnel over the four canonical activation milestones. Conversion window: 7 days from signup. Time range: last 28 days. Use to spot WoW regressions in any single step.",
@@ -96,6 +101,8 @@
     {
       "key": "wf60-funnel-per-module",
       "name": "WF-60 activation funnel per module",
+      "name_uk": "Воронка активації по модулях",
+      "description_uk": "Та сама воронка, але розбита по модулях (фінік / фізрук / рутина / харчування) — видно, де люди реально роблять першу дію. Якщо один модуль ловить >70%, а інший <10% — рекомендації онбордингу перекошені.",
       "type": "funnel",
       "size": "wide",
       "description": "Same funnel as `wf60-funnel-overall` but breaks down step 3 (`first_action_completed`) by the event-payload `module` field. Returns four funnels — one per Hub module (finyk, fizruk, routine, nutrition).",
@@ -118,6 +125,8 @@
     {
       "key": "activation-rate",
       "name": "Activation rate (D1)",
+      "name_uk": "Рівень активації (D1)",
+      "description_uk": "Частка користувачів, що зробили першу реальну дію протягом 24 год після реєстрації. Стискає всю воронку в одне число — чи виконана обіцянка продукту на першій сесії. Ціль: ≥ 30%; падіння на ≥ 10 п.п. за тиждень — тривога.",
       "type": "hogql",
       "size": "narrow",
       "description": "Share of users who completed any `first_action_completed` event within 24h of `signup_completed`. Computed daily for the last 28 days and plotted as a line — the curve is the canary for onboarding regressions.",
@@ -134,6 +143,8 @@
     {
       "key": "new-subscriptions",
       "name": "New subscriptions — count + new MRR",
+      "name_uk": "Нові підписки + новий MRR",
+      "description_uk": "Скільки нових підписок щодня і скільки нового щомісячного доходу (MRR) вони приносять. Річні підписки нормалізовано /12, щоб були на одній осі з місячними. Ціль: ≥ $50/міс нового MRR; 0 підписок 7 днів при наявному трафіку — поломка Stripe-вебхука.",
       "type": "hogql",
       "size": "wide",
       "description": "Daily count of `subscription_started` events plus the new-MRR contribution (monthly-equivalent revenue) split by cadence. PostHog `$revenue` super-property is set in `apps/server/src/modules/billing/stripe.ts` and stores the major-unit amount.",
@@ -150,6 +161,8 @@
     {
       "key": "retention-d1-d7-d30",
       "name": "Cohort retention — D1 / D7 / D30",
+      "name_uk": "Утримання когорт — D1 / D7 / D30",
+      "description_uk": "Скільки людей повертаються через 1 / 7 / 30 днів після реєстрації — форма «дірявого відра». D1: повернувся взагалі; D7: обіцянка втрималася далі цікавості; D30: вікно конверсії в підписку. Цілі: D1 ≥ 35%, D7 ≥ 15%, D30 ≥ 8%.",
       "type": "retention",
       "size": "wide",
       "description": "Retention from `signup_completed` cohort. Returning event = any event (matches DAU contract). Cohort granularity = day, period = 30 days back, 30 days forward.",
@@ -172,6 +185,8 @@
     {
       "key": "funnel-zeroes-canary",
       "name": "Funnel ZEROES — per-step daily count",
+      "name_uk": "Канарка воронки — щоденні нулі",
+      "description_uk": "Щоденна кількість кожної з 4 подій воронки за 14 днів. Раннє попередження: якщо будь-яка подія раптом падає в 0 при ненульових попередніх днях — зламався трекінг (деплой зачепив trackEvent). Дешевий сигнал, що ловить мовчазні поломки за години, а не за тижні.",
       "type": "hogql",
       "size": "narrow",
       "description": "Daily count of each canonical funnel event over the last 14 days. Single-tile early-warning for `count() = 0` regressions on any of the four steps.",
