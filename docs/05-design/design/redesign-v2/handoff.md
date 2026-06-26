@@ -14,8 +14,8 @@ Mockups were moved from `handoff-package/` to the unified `mockups/product/` tre
 
 ## Rationale docs (stay in `handoff-package/`)
 
-- [`Handoff for Claude Code.md`](./handoff-package/Handoff%20for%20Claude%20Code.md) — agent brief, phase sequence, locked decisions
-- [`Hidden tech-debt audit.md`](./handoff-package/Hidden%20tech-debt%20audit.md) — pre-existing debt inventory
+- [`handoff-for-claude-code.md`](./handoff-package/handoff-for-claude-code.md) — agent brief, phase sequence, locked decisions
+- [`hidden-tech-debt-audit.md`](./handoff-package/hidden-tech-debt-audit.md) — pre-existing debt inventory
 
 ## Shared CSS
 

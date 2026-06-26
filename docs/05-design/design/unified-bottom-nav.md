@@ -1,12 +1,20 @@
 # Unified Bottom Navigation
 
-> **Last validated:** 2026-05-17 by @Skords-01 (post-PR-5 form divergence noted). **Next review:** 2026-08-15.
-> **Status:** Active — **form unification pending PR-8 (ModuleBottomNav full v2 migration)**.
+> **Last validated:** 2026-06-26 by @claude (form unification verified in code — divergence closed). **Next review:** 2026-09-24.
+> **Status:** Active — **form unified**. `HubBottomNav` і `ModuleBottomNav` ділять один shell.
 
 > **TL;DR:** Хаб і 4 модулі живуть під **одним** навігаційним патерном —
 > `bottom-nav`. Hybrid «top-tabs у хабі + bottom-nav у модулях» більше немає.
 >
-> ⚠ **Form divergence active (2026-05-17):** PR-5 мігрував `HubBottomNav` на v2 floating glass pill (`mx-3 mb-3 rounded-r-2xl shadow-nav bg-surface-strong-glass`). `ModuleBottomNav` лишається на v1 flat panel (`bg-panel/95 backdrop-blur-xl border-t border-line` + top-pill 4px indicator). Decision locked 2026-05-17: **full v2 migration** для ModuleBottomNav — див. [`redesign-v2/handoff-package/Handoff for Claude Code.md`](./redesign-v2/handoff-package/Handoff%20for%20Claude%20Code.md) §3.2 + [`redesign-v2/execution-plan.md`](./redesign-v2/execution-plan.md) §Phase 2.5. Цей doc оновиться у тому ж PR.
+> ✅ **Form unified (verified 2026-06-26).** Обидва nav використовують ІДЕНТИЧНИЙ
+> shell — `bottom-nav-shell border border-line bg-panel shadow-lg` (floating pill:
+> `mx-3`, `rounded-3xl`, `mb-[calc(env(safe-area-inset-bottom)+0.5rem)]`), і однаковий
+> active-indicator — rounded **outline** (`rounded-2xl border`, не sliding top-pill).
+> Module identity несе **колір outline**: `HubBottomNav` → `border-ink-strong/25`
+> (brand-agnostic), `ModuleBottomNav` → `border-{module}/40` (module-tinted).
+> Це і є target-стан, що раніше трекався як «pending PR-8» — закрито у redesign-v2
+> (Phases 0–6, fully closed 2026-05-21). Реалізована форма відрізняється від раннього
+> ескізу (`bg-panel` shell, не `bg-surface-strong-glass`; `rounded-3xl`, не `rounded-r-2xl`).
 
 ## Було → Стало
 
@@ -55,32 +63,31 @@
 
 ## `HubBottomNav` vs `ModuleBottomNav`
 
-**Поточна реальність (2026-05-17):** **різні форми**, виправлення locked у Phase 2.5 PR. Контракт нижче — це **target state після Phase 2.5** (full v2). Поточний `ModuleBottomNav` ще на v1 — фактичні відмінності див. block нижче.
+**Поточна реальність (verified 2026-06-26):** **одна форма.** Обидва nav ділять
+shell `bottom-nav-shell` і outline-indicator; різниця лише в кольорі outline
+(identity carrier). Контракт нижче — фактичний стан коду.
 
-### Target state (після Phase 2.5 ModuleBottomNav v2 PR)
+### Уніфікований контракт (shipped)
 
-|                  | `HubBottomNav` (v2, since PR-5)               | `ModuleBottomNav` (v2, target)                                                                  |
-| ---------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Items            | 2-3 (Головна / Звіти? / Налаштування)         | 4 per module (finyk/fizruk/routine/nutrition)                                                   |
-| Shell shape      | `mx-3 mb-3 rounded-r-2xl shadow-nav`          | `mx-3 mb-3 rounded-r-2xl shadow-nav` (identical)                                                |
-| Surface          | `bg-surface-strong-glass backdrop-blur-md`    | `bg-surface-strong-glass backdrop-blur-md` (identical)                                          |
-| Active pill      | `bg-ink-strong` (brand-agnostic)              | `bg-{module}-strong` (module-tinted — identity carrier)                                         |
-| `safe-area-pb`   | ✓ (через wrapper `padding-bottom: calc(...)`) | ✓                                                                                               |
-| `role="tablist"` | ✓                                             | ✓ (опційно; за замовчуванням nav)                                                               |
-| Висота           | 60 px / 64 px coarse                          | 60 px / 64 px coarse                                                                            |
-| FAB integration  | N/A                                           | Routine special-case: center FAB як sibling (z-index >, top: -22 above pill); інші модулі — N/A |
+|                  | `HubBottomNav`                                           | `ModuleBottomNav`                                                                    |
+| ---------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Items            | 2-3 (Головна / Звіти? / Налаштування)                    | 4 per module (finyk/fizruk/routine/nutrition)                                        |
+| Shell            | `bottom-nav-shell border border-line bg-panel shadow-lg` | `bottom-nav-shell border border-line bg-panel shadow-lg` (identical)                 |
+| Shell shape      | `mx-3`, `rounded-3xl`, safe-area `mb`                    | identical (через `bottom-nav-shell` utility)                                         |
+| Active indicator | rounded **outline** `rounded-2xl border`                 | rounded **outline** `rounded-2xl border` (identical mechanism)                       |
+| Active tint      | `border-ink-strong/25` (brand-agnostic)                  | `border-{module}/40` (module-tinted — **identity carrier**)                          |
+| `safe-area-pb`   | ✓ (через `bottom-nav-shell`)                             | ✓                                                                                    |
+| `role`           | tablist                                                  | nav (default; tablist опційно)                                                       |
+| Висота           | items `min-h-[48px]` / `pointer-coarse:52px`             | identical                                                                            |
+| FAB integration  | N/A                                                      | Routine special-case: center FAB як sibling (z-index >, над pill); інші модулі — N/A |
 
-> **Module identity transfer:** до Phase 2.5 module identity несе icon glow + top-pill gradient. Після Phase 2.5 — `bg-{module}-strong` pill background. Icon glow можна прибрати (redundant).
+> **Module identity:** несе **колір outline** активного таба (`border-{module}/40`),
+> а не окрема форма. Hub лишається brand-agnostic (`border-ink-strong/25`). Це
+> уніфікація без втрати модульної ідентичності.
 
-### Поточний state divergence (до Phase 2.5)
-
-`ModuleBottomNav` ще використовує v1 shape:
-
-- `bg-panel/95 motion-safe:backdrop-blur-xl border-t border-line` (flat panel)
-- Sliding top-pill 4px indicator + drop-shadow icon glow
-- Без `mx-3 mb-3 rounded-r-2xl shadow-nav`
-
-Один екран бачить v2 mesh + glass cards + AIPill зверху і v1 flat nav знизу — **mosaic**. Це закрите рішенням PR-8 у локед послідовності.
+> **PWA standalone vs browser:** `bottom-nav-shell` docks edge-to-edge у standalone
+> (rounded лише зверху, фон заповнює safe-area) і floating-pill у браузері — деталі
+> в JSDoc обох компонентів (`HubBottomNav.tsx`, `ModuleBottomNav.tsx`).
 
 ## Тестовий рецепт
 
