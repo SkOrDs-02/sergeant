@@ -1,6 +1,6 @@
 # Grafana Alloy — Phase 2 metrics scraper
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 Лёгкий scrape-only агент, який ходить по `/metrics` n8n + apps/server і пушить
@@ -92,3 +92,52 @@ Alert rules у [`docs/03-operations/observability/prometheus/alert_rules.yml`](.
   без scope `metrics:write` або зіпсувався при копіюванні.
 - **`429 Too Many Requests`** — впираєшся у rate limit free tier (10K
   active series). Зменш `scrape_interval` до 60s або упрости labels.
+
+## Міграція: перенести у проєкт `Sergeant` (план)
+
+> **Чому.** Зараз сервіс живе у Railway-проєкті `SERGEANT_N8N`, тому скрейпить
+> `apps/server` через **публічний** домен (`SERGEANT_SERVER_TARGET=sergeant-production.up.railway.app:443`,
+> https + `METRICS_TOKEN`). Railway private network (`*.railway.internal`)
+> працює **лише в межах одного проєкту**, тож internal-scrape API звідси
+> неможливий. Перенесення Alloy у проєкт `Sergeant` дозволяє скрейпити API
+> приватно (`<server>.railway.internal:3000`, http, без публічного egress) —
+> Tier-1 метрики (15s, найбільше серій) не покидають VPC. Платою стає
+> публічний scrape n8n (рідший, 30s, менш критичний — лишається у `SERGEANT_N8N`).
+
+**Передумови:** доступ до Railway dashboard обох проєктів; під рукою значення
+`GRAFANA_CLOUD_PROMETHEUS_{URL,USERNAME,API_KEY}` + `METRICS_TOKEN` (ті самі, що
+вже на поточному сервісі).
+
+1. **Новий сервіс у проєкті `Sergeant`.** Railway → проєкт `Sergeant` → New
+   Service → Deploy from GitHub Repo (`SkOrDs-02/sergeant`), **Root Directory:**
+   `ops/grafana-alloy`, Build: Dockerfile (auto). Назви `grafana-alloy`.
+2. **Env нового сервісу:**
+   | Змінна | Значення |
+   | --- | --- |
+   | `GRAFANA_CLOUD_PROMETHEUS_URL` | (як на старому) |
+   | `GRAFANA_CLOUD_PROMETHEUS_USERNAME` | (як на старому) |
+   | `GRAFANA_CLOUD_PROMETHEUS_API_KEY` | (як на старому) |
+   | `METRICS_TOKEN` | той самий, що в сервісі `Sergeant` (можна Reference-змінною) |
+   | `SERGEANT_SERVER_TARGET` | **`<server>.railway.internal:3000`** (private — резолвиться у тому ж проєкті) |
+   | `SERGEANT_SERVER_SCHEME` | **`http`** (private network, без TLS) |
+   | `N8N_METRICS_TARGET` | `n8n-production.up.railway.app:443` (тепер cross-project → **публічний** домен n8n) + `N8N_METRICS_SCHEME=https`, якщо config це підтримує; інакше тимчасово лишити n8n-scrape на старому сервісі |
+3. **Parallel run.** Не вимикати старий сервіс одразу. Обидва remote_write-ять
+   у той самий Grafana Cloud з `external_labels.project="sergeant"` → дублікати
+   серій короткочасно (Mimir дедуплікує по labels+timestamp; сплеск active
+   series у межах free-tier 10K прийнятний на кілька хвилин).
+4. **Verify cutover.** У Grafana Cloud Explore: `up{job="sergeant-server"}` має
+   бути `1` з нового сервісу (перевір `instance`-лейбл — internal host). Лог
+   нового Alloy: `Alloy started` + 2 (або 1) healthy targets.
+5. **Teardown.** Коли новий стабільний — у старому сервісі (`SERGEANT_N8N`)
+   або прибрати `prometheus.scrape "sergeant_server"` (лишити лише n8n-scrape
+   через internal), або вимкнути сервіс цілком, якщо n8n-scrape перенесено.
+6. **Rollback.** Якщо `up==0` з нового — лишити старий працювати (він не
+   чіпався), видалити новий сервіс, розслідувати `METRICS_TOKEN`/internal-DNS.
+
+> **Тонкість config.alloy.** Поточний [`config.alloy`](./config.alloy) хардкодить
+> n8n-target через `N8N_METRICS_TARGET` без окремого scheme (n8n у тому ж
+> проєкті був http-internal). Для cross-project n8n-scrape по HTTPS треба додати
+> `scheme = sys.env("N8N_METRICS_SCHEME")` у блок `prometheus.scrape "n8n"`
+> (дзеркально до `sergeant_server`). Якщо не хочеться ускладнювати — лишити
+> n8n-scrape на сервісі у `SERGEANT_N8N`, а новий Alloy у `Sergeant` робить
+> лише API-scrape.
