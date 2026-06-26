@@ -408,6 +408,17 @@ const envSchema = z.object({
     .enum(["anthropic", "openrouter", "stub"])
     .default("anthropic"),
   /**
+   * Окремий provider для coach-insight (`POST /api/coach/insight`). Перемикає
+   * генерацію проактивного коуч-повідомлення на OpenRouter (model-eval
+   * 2026-06-26: gpt-5.1 ≥ Sonnet 4.6 за −33% output на цій задачі), НЕ зачіпаючи
+   * chat/nutrition (`LLM_PROVIDER`), classify (`LLM_READONLY_PROVIDER`) чи digest
+   * (`LLM_DIGEST_PROVIDER`). Anthropic лишається фолбеком через
+   * `LLM_FALLBACK_ENABLED` (default true). Stub → детермінований тест/incident.
+   */
+  LLM_COACH_PROVIDER: z
+    .enum(["anthropic", "openrouter", "stub"])
+    .default("anthropic"),
+  /**
    * Provider fallback chain. Коли `true` і primary provider = `openrouter`,
    * `getLLMProvider()` обгортає результат у `FallbackProvider`, який при
    * помилці OpenRouter (5xx, rate-limit, timeout) автоматично пробує
@@ -1238,6 +1249,7 @@ const envSchema = z.object({
    */
   OPENROUTER_READONLY_MODEL: stringWithDefault(""),
   OPENROUTER_DIGEST_MODEL: stringWithDefault(""),
+  OPENROUTER_COACH_MODEL: stringWithDefault(""),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -1292,6 +1304,7 @@ export function assertStartupEnv(): void {
     env.LLM_PROVIDER,
     env.LLM_READONLY_PROVIDER,
     env.LLM_DIGEST_PROVIDER,
+    env.LLM_COACH_PROVIDER,
   ];
   if (openrouterProviders.includes("openrouter") && !env.OPENROUTER_API_KEY) {
     warnings.push(
