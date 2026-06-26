@@ -29,12 +29,20 @@
   "id": null,
   "links": [
     {
-      "title": "Sentry — помилки/краші",
+      "title": "Sentry · API (бекенд)",
       "type": "link",
       "icon": "bolt",
-      "url": "https://sentry.io",
+      "url": "https://dima-dk.sentry.io/issues/?project=4511311028879440",
       "targetBlank": true,
-      "tooltip": "Що зламалось + stack trace + session replay"
+      "tooltip": "Помилки/краші бекенду + stack trace"
+    },
+    {
+      "title": "Sentry · Web (фронтенд)",
+      "type": "link",
+      "icon": "bolt",
+      "url": "https://dima-dk.sentry.io/issues/?project=4511311094480976",
+      "targetBlank": true,
+      "tooltip": "Помилки/краші web + session replay"
     },
     {
       "title": "PostHog — поведінка юзерів",
@@ -76,7 +84,7 @@
       "id": 1,
       "options": {
         "mode": "markdown",
-        "content": "## 🧭 Куди йти за чим\n\n| Твоє питання | Сервіс (відкрий) |\n| --- | --- |\n| Метрики · логи · алерти (повільно? витрати? сигналки?) | **Grafana** — ти вже тут ↓ |\n| Що зламалось? (stack trace, краш у юзера) | **[Sentry ↗](https://sentry.io)** |\n| Скільки людей · де відвалюються (воронки) | **[PostHog ↗](https://eu.posthog.com/project/167740)** |\n| Деплой бекенду · Postgres · env-змінні | **[Railway ↗](https://railway.com/project/eaa696f9-e197-4b76-9645-0e62ce51bb18)** |\n| Деплой фронтенду · web build · preview | **[Vercel ↗](https://vercel.com/skords-01s-projects/sergeant)** |\n\n> Кнопки переходу також угорі дашборда (панель **Links** ☝️). Логи — у Grafana зліва: **Explore → Loki**."
+        "content": "## 🧭 Куди йти за чим\n\n| Твоє питання | Сервіс (відкрий) |\n| --- | --- |\n| Метрики · логи · алерти (повільно? витрати? сигналки?) | **Grafana** — ти вже тут ↓ |\n| Що зламалось? (stack trace, краш у юзера) | **[Sentry · API ↗](https://dima-dk.sentry.io/issues/?project=4511311028879440)** · **[Web ↗](https://dima-dk.sentry.io/issues/?project=4511311094480976)** |\n| Скільки людей · де відвалюються (воронки) | **[PostHog ↗](https://eu.posthog.com/project/167740)** |\n| Деплой бекенду · Postgres · env-змінні | **[Railway ↗](https://railway.com/project/eaa696f9-e197-4b76-9645-0e62ce51bb18)** |\n| Деплой фронтенду · web build · preview | **[Vercel ↗](https://vercel.com/skords-01s-projects/sergeant)** |\n\n> Кнопки переходу також угорі дашборда (панель **Links** ☝️). Логи — у Grafana зліва: **Explore → Loki**."
       },
       "title": "Швидка навігація",
       "type": "text",
