@@ -1,6 +1,6 @@
 # Оцінка стеку інфраструктури, авторизації та вартості Sergeant
 
-> **Last validated:** 2026-06-26 by @Skords-01. **Next review:** 2026-09-24.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 ## Питання
@@ -41,14 +41,14 @@ Anthropic usage-tier, щоб зняти 50 RPM.
 
 ### 1. Правильність вибору стеку
 
-| Компонент | Вердикт | Нюанс / ризик |
-| --- | --- | --- |
-| **Railway** (API, OpenClaw gateway, n8n, Postgres, Redis) | ✅ доречно | Усе в одному провайдері — просто, але 3 сервіси + БД + Redis накопичують usage-cost швидше за headline-ліміти. |
-| **Vercel** (фронт + Edge Middleware proxy `/api/*`) | ✅ доречно | I/O-wait (стрімінг Claude, запити в БД) **не** тарифікується як active CPU → cross-provider hop Vercel→Railway додає **латентність (UX), а не вартість**. |
-| **Better Auth** (self-hosted, cookie+bearer, OAuth, AES-256-GCM) | ✅ розумно для solo | ⚠️ зрілість vs Clerk/Auth0 **не верифікована** в цьому прогоні (див. «Невідоме»). Self-host = повний контроль + нуль per-MAU плати, ціна — own-ops. |
-| **Postgres 17 + pgvector** на Railway | ✅ доречно | ⚠️ **бекапи opt-in і не-ретроактивні** (див. §2) — головна durability-діра. |
-| **Redis на Railway** (ioredis + BullMQ) | ⚠️ ок, але | Self-managing Redis = більше ops, ніж serverless. На B→C — кандидат №1 на Upstash. |
-| **Anthropic Claude** | ✅ ядро продукту | Домінантна вартість; керується model-tiering + caching. |
+| Компонент                                                        | Вердикт             | Нюанс / ризик                                                                                                                                             |
+| ---------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Railway** (API, OpenClaw gateway, n8n, Postgres, Redis)        | ✅ доречно          | Усе в одному провайдері — просто, але 3 сервіси + БД + Redis накопичують usage-cost швидше за headline-ліміти.                                            |
+| **Vercel** (фронт + Edge Middleware proxy `/api/*`)              | ✅ доречно          | I/O-wait (стрімінг Claude, запити в БД) **не** тарифікується як active CPU → cross-provider hop Vercel→Railway додає **латентність (UX), а не вартість**. |
+| **Better Auth** (self-hosted, cookie+bearer, OAuth, AES-256-GCM) | ✅ розумно для solo | ⚠️ зрілість vs Clerk/Auth0 **не верифікована** в цьому прогоні (див. «Невідоме»). Self-host = повний контроль + нуль per-MAU плати, ціна — own-ops.       |
+| **Postgres 17 + pgvector** на Railway                            | ✅ доречно          | ⚠️ **бекапи opt-in і не-ретроактивні** (див. §2) — головна durability-діра.                                                                               |
+| **Redis на Railway** (ioredis + BullMQ)                          | ⚠️ ок, але          | Self-managing Redis = більше ops, ніж serverless. На B→C — кандидат №1 на Upstash.                                                                        |
+| **Anthropic Claude**                                             | ✅ ядро продукту    | Домінантна вартість; керується model-tiering + caching.                                                                                                   |
 
 ### 2. Ліміти й вузькі місця (що впреться першим A→B→C)
 
@@ -73,15 +73,15 @@ Anthropic usage-tier, щоб зняти 50 RPM.
 
 ### 3. Прогноз вартості ($/міс)
 
-| Сервіс | A — personal | B — бета 10–500 | C — SaaS 1k–10k+ |
-| --- | --- | --- | --- |
-| Railway (API+gateway+n8n+PG+Redis) | $5 (Hobby) | ~$20–60 (Pro + usage) | usage-scaled, сотні $ |
-| Vercel | $0 (Hobby) | $20+ (Pro, commercial) | $20 + bandwidth/invocations |
-| **Anthropic Claude** | кілька $ | **домінує (десятки–сотні $)** | **домінує (×активні users)** |
-| Sentry | $0 (Developer) | $26 (Team) | $26 + overage |
-| PostHog | $0 | $0 → usage | usage |
-| Resend / Stripe | $0 / % | free-tier / % | tier / % |
-| **Разом (порядок)** | **$5–25** | **$150–800** | **Claude-dominated** |
+| Сервіс                             | A — personal   | B — бета 10–500               | C — SaaS 1k–10k+             |
+| ---------------------------------- | -------------- | ----------------------------- | ---------------------------- |
+| Railway (API+gateway+n8n+PG+Redis) | $5 (Hobby)     | ~$20–60 (Pro + usage)         | usage-scaled, сотні $        |
+| Vercel                             | $0 (Hobby)     | $20+ (Pro, commercial)        | $20 + bandwidth/invocations  |
+| **Anthropic Claude**               | кілька $       | **домінує (десятки–сотні $)** | **домінує (×активні users)** |
+| Sentry                             | $0 (Developer) | $26 (Team)                    | $26 + overage                |
+| PostHog                            | $0             | $0 → usage                    | usage                        |
+| Resend / Stripe                    | $0 / %         | free-tier / %                 | tier / %                     |
+| **Разом (порядок)**                | **$5–25**      | **$150–800**                  | **Claude-dominated**         |
 
 **Claude на активного користувача:** при 50 req/день, ~2–5k input + ~500–1k output
 токенів/запит на **Sonnet** ($3/$15 за MTok) — **~$5–25/user/міс без кешу**; на

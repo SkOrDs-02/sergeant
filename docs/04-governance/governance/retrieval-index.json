@@ -3,8 +3,8 @@
   "version": 1,
   "generated_at": "2026-06-26",
   "sourceHashes": {
-    "knowledge-graph": "d6c2c052882703726f67063fd14cb53f26148c8dce00fe8eb427a4ab696329aa",
-    "symbol-index": "9850bdb543a99a4b994b629dd02dfc51a4708b9043e2b4bb65c5c20cf69a8fbc"
+    "knowledge-graph": "8a4674ef8bee341ae29034440af63ebbe91f06a2c633579550a1816774acf8d7",
+    "symbol-index": "7f81b312418c70410aac8ff73257b27ff20cf652820cd20896dade440c436a00"
   },
   "counts": {
     "adr": 64,
@@ -385,9 +385,9 @@
       "line": 1,
       "title": "ADR-0035: Distributed tracing — web→server via OpenTelemetry",
       "tier": "core",
-      "status": "accepted",
-      "text": "ADR-0035: Distributed tracing — web→server via OpenTelemetry · adr:0035 · adr · accepted · 35 · 0. TL;DR · 1. Context and Problem Statement · 2. Considered Options · Backend (де trace-data live): · Tracer SDK (як спрямувати): · 3. Decision · 3.1. Backend: Honeycomb (free tier). · 3.2. SDK: @opentelemetry/ packages. · 3.3. Sentry tracing на web вимикаємо. · 3.4. Trace propagation. · 3.5. Mobile (apps/mobile). · 4. Rationale · 5. Consequences · Positive · Negative · Neutral · 6. Compliance · 7. Implementation status · 7.1 Shipped (2026-05-05) · 7.2 Чого НЕ робимо зараз · 7.3 Roadmap-факт · 8. Links",
-      "contentHash": "6f83a6aa02a0e84db29ab9cf391e0e76c1d4bf1afeb8a5111f382bbdd762e316"
+      "status": "superseded — reverted 2026-06-26 (OpenTelemetry видалено; див. banner нижче)",
+      "text": "ADR-0035: Distributed tracing — web→server via OpenTelemetry · adr:0035 · adr · superseded — reverted 2026-06-26 (OpenTelemetry видалено; див. banner нижче) · 35 · 0. TL;DR · 1. Context and Problem Statement · 2. Considered Options · Backend (де trace-data live): · Tracer SDK (як спрямувати): · 3. Decision · 3.1. Backend: Honeycomb (free tier). · 3.2. SDK: @opentelemetry/ packages. · 3.3. Sentry tracing на web вимикаємо. · 3.4. Trace propagation. · 3.5. Mobile (apps/mobile). · 4. Rationale · 5. Consequences · Positive · Negative · Neutral · 6. Compliance · 7. Implementation status · 7.1 Shipped (2026-05-05) · 7.2 Чого НЕ робимо зараз · 7.3 Roadmap-факт · 8. Links",
+      "contentHash": "1e2a1b5ca3e71de7cfdff34bf2343e46f1772192450303d114947c527c23aeac"
     },
     {
       "id": "adr:0036",

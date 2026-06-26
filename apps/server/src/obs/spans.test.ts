@@ -1,13 +1,12 @@
 import { describe, it, expect } from "vitest";
 
-import { aiSpan, dbSpan, getActiveTraceId } from "./spans.js";
+import { aiSpan } from "./spans.js";
 
-// Без OTel SDK (`OTEL_EXPORTER_OTLP_ENDPOINT` не set у тестовому env) —
-// `@opentelemetry/api` роздає NoopTracer. Усі ці тести перевіряють,
-// що наші wrapper-и нічого не ламають у no-op режимі: callback-логіка
-// проходить, exception-и пропагуються, повертається повне value.
+// spans.ts — passthrough після видалення OpenTelemetry. Тести перевіряють
+// контракт обгортки: callback-логіка проходить, `[value, meta]`-tuple
+// розпаковується у `value`, exception-и пропагуються.
 
-describe("aiSpan (no-op tracer)", () => {
+describe("aiSpan (passthrough)", () => {
   it("повертає value з callback", async () => {
     const result = await aiSpan("anthropic.messages", async () => "hello", {
       provider: "anthropic",
@@ -48,34 +47,5 @@ describe("aiSpan (no-op tracer)", () => {
         promptVersion: "v3",
       }),
     ).resolves.toBe(1);
-  });
-});
-
-describe("dbSpan (no-op tracer)", () => {
-  it("повертає value з callback", async () => {
-    const result = await dbSpan("users.lookup", async () => ({ id: 42 }), {
-      table: "users",
-      operation: "select",
-    });
-    expect(result).toEqual({ id: 42 });
-  });
-
-  it("пропагує exception", async () => {
-    await expect(
-      dbSpan("users.lookup", async () => {
-        throw new Error("db down");
-      }),
-    ).rejects.toThrow("db down");
-  });
-
-  it("працює без attrs", async () => {
-    const result = await dbSpan("ad-hoc.tx", async () => 7);
-    expect(result).toBe(7);
-  });
-});
-
-describe("getActiveTraceId (no-op tracer)", () => {
-  it("повертає null коли немає активного span-у", () => {
-    expect(getActiveTraceId()).toBeNull();
   });
 });
