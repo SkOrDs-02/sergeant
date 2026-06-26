@@ -189,3 +189,15 @@ Total: ~3 working days (замість оригінальних 5) — секо�
 - OTel JS docs: <https://opentelemetry.io/docs/languages/js/>.
 - Honeycomb OTLP: <https://docs.honeycomb.io/getting-data-in/otel-collector/>.
 - W3C Trace Context: <https://www.w3.org/TR/trace-context/>.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                 | Title                                                                               | Merged     |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
+| [#9](https://github.com/Skords-01/Sergeant/pull/9) | chore(server): remove dormant OpenTelemetry + sync observability docs to live state | 2026-06-26 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

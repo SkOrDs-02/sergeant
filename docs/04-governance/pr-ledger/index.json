@@ -1,8 +1,17 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-20",
+  "generated_at": "2026-06-26",
   "prs": [
+    {
+      "number": 9,
+      "title": "chore(server): remove dormant OpenTelemetry + sync observability docs to live state",
+      "merged_at": "2026-06-26T20:30:15Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md"
+      ]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
