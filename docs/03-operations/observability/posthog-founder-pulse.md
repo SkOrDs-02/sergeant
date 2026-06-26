@@ -28,7 +28,9 @@ funnel breakdown, D1/D7/D30 retention, activation rate, new-MRR і
 
 > **Status (2026-06-26):** ✅ Dashboard + 7 insights створено через [`scripts/posthog/import-founder-pulse.mjs`](../../../scripts/posthog/import-founder-pulse.mjs) (project `167740`, dashboard `777283`). Live short_id-и: active-users `XBRWeTrn`, funnel-overall `9T025rBs`, funnel-per-module `WPf62Cq6`, activation-rate `bC6ZbB3v`, new-subscriptions `7SSCvzEA`, retention `k0pjSfoY`, funnel-zeroes `vMEk4MKL`.
 >
-> ⚠️ **Дані поки рідкі** (рання стадія): за 30д `signup_completed`≈1, `first_action_completed`=0, `subscription_started`=0 — тому активаційна воронка, activation-rate і new-MRR панелі майже порожні; оживуть з трафіком. **Окремий прапор:** `first_action_completed`=0 при `onboarding_first_action_shown`=23 і `expense_added`=6 натякає на дірку в інструментації (подія не emit-иться) — варто перевірити, бо вона load-bearing для обох воронок (FTUX + Founder Pulse).
+> **Українізовано (2026-06-26):** display-назви й описи панелей — українською через manifest-поля `name_uk` / `description_uk`. Importer матчить наявні insights за стабільним тегом `fp:<key>` (fallback на англ-назву), тож re-run оновлює їх на місці, без дублів. Англ `name` / `description` лишаються в manifest як контракт §2–§3.
+>
+> ⚠️ **Дані поки рідкі** (рання стадія): за 30д `signup_completed`≈1, `subscription_started`=0 — тому активаційна воронка, activation-rate і new-MRR панелі майже порожні; оживуть з трафіком. **`first_action_completed` gap — ВИПРАВЛЕНО** (PR #14): подія не emit-илась, бо `detectFirstActionCompletedPerModule()` ніколи не викликався на рендер-шляху; додано виклик у `useHubDashboardState`.
 
 ---
 
