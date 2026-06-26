@@ -31,6 +31,7 @@ import { useDashboardFocus } from "../insights/TodayFocusCard";
 import { hasLiveWeeklyDigest } from "../insights/WeeklyDigestCard";
 import { useCoachInsight } from "../insights/useCoachInsight";
 import {
+  detectFirstActionCompletedPerModule,
   detectFirstRealEntry,
   getFirstRealEntryModule,
 } from "../onboarding/firstRealEntry";
@@ -208,6 +209,10 @@ export function useHubDashboardState(props: {
   useMondayAutoDigest();
 
   const hasRealEntry = detectFirstRealEntry();
+  // Fire `first_action_completed { module }` once per module that just got its
+  // first non-demo entry — must run alongside detectFirstRealEntry on the render
+  // path, else the event never emits and the activation funnel stays at 0%.
+  detectFirstActionCompletedPerModule();
   const celebration = useFirstEntryCelebration(hasRealEntry);
   const [sessionDays, setSessionDays] = useState(-1);
   useEffect(() => {
