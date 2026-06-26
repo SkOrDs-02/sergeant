@@ -58,7 +58,16 @@ Manifest — наш власний portable shape, **не** raw PostHog dashboar
 
 ## Імпорт у PostHog
 
-Поки що — manual via PostHog UI (Insights → SQL editor → paste `query.query`, save, pin to dashboard). Для кожного `panel`:
+**Auto-import (рекомендовано):** [`scripts/posthog/import-founder-pulse.mjs`](../../scripts/posthog/import-founder-pulse.mjs) створює всі insights + umbrella dashboard через REST API. Idempotent — повторний запуск reuse-ить dashboard і insights за `name`:
+
+```bash
+POSTHOG_API_KEY=phx_… node scripts/posthog/import-founder-pulse.mjs \
+  [--project 167740] [--host https://eu.posthog.com] [--dry-run]
+```
+
+Funnel-панелі → native `FunnelsQuery`, retention → `RetentionQuery`, решта → HogQL SQL-insights. `--dry-run` друкує план без запису.
+
+**Manual (fallback)** — via PostHog UI (Insights → SQL editor → paste `query.query`, save, pin to dashboard). Для кожного `panel`:
 
 1. **PostHog → Default project (`167740`) → Data exploration → SQL editor.**
 2. Вставити `panel.query.query` (HogQL). Перевірити `LIMIT 100` для контракту.
@@ -66,7 +75,7 @@ Manifest — наш власний portable shape, **не** raw PostHog dashboar
 4. Pin to **Dashboards → Founder Pulse** (створити, якщо немає).
 5. Cross-check у runbook (`docs/03-operations/observability/posthog-founder-pulse.md`) — додати live insight `short_id` після збереження.
 
-Auto-import (бажано) — окремий PR під WF-16 (`ops/n8n-workflows/16-posthog-daily-metrics.json`) розширюється або з'являється нова `import-posthog-dashboard.mjs` CLI-команда. Покривається [PR-11 з pr-plan-2026-05](../../docs/90-work/planning/pr-plan-2026-05.md).
+✅ Auto-import реалізовано (2026-06-26): [`scripts/posthog/import-founder-pulse.mjs`](../../scripts/posthog/import-founder-pulse.mjs) — закриває PR-11. Опційний наступний крок — cron-обгортка (WF-16) для періодичного re-sync drift-detection.
 
 ## Контракт із canonical events
 
