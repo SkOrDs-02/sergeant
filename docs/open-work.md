@@ -1,6 +1,6 @@
 # Відкрита робота — єдиний дашборд
 
-> **Last validated:** 2026-06-22 by @codex. **Next review:** 2026-09-20.
+> **Last validated:** 2026-06-26 by @codex. **Next review:** 2026-09-24.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-open-work`. -->
@@ -11,7 +11,7 @@
 
 **Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.
 
-**Усього відкритих документів:** **57** — Ініціативи: **16** · Планування: **9** · Launch / запуск: **17** · Аудити й прожарки: **9** · Security hardening: **2** · Техборг: **4** · Superpowers — плани впровадження: **0**.
+**Усього відкритих документів:** **56** — Ініціативи: **16** · Планування: **9** · Launch / запуск: **16** · Аудити й прожарки: **9** · Security hardening: **2** · Техборг: **4** · Superpowers — плани впровадження: **0**.
 
 ## Ініціативи (16)
 
@@ -52,7 +52,7 @@
 | [`tools-research-2026-05-followup.md`](./90-work/planning/tools-research-2026-05-followup.md) | Active                                                                                                                                                                               | [#50](https://github.com/Skords-01/Sergeant/pull/50) [#70](https://github.com/Skords-01/Sergeant/pull/70) [#261](https://github.com/Skords-01/Sergeant/pull/261) [#2279](https://github.com/Skords-01/Sergeant/pull/2279) [#2280](https://github.com/Skords-01/Sergeant/pull/2280)                                                                                                                                                                                                                                                                                                            |
 | [`tools-research-2026-05.md`](./90-work/planning/tools-research-2026-05.md)                   | Active                                                                                                                                                                               | [#261](https://github.com/Skords-01/Sergeant/pull/261)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
-## Launch / запуск (17)
+## Launch / запуск (16)
 
 > GTM, монетизація, FTUX delivery і product-surface roadmap-и. Source: [`docs/01-product/launch/`](./01-product/launch/README.md).
 

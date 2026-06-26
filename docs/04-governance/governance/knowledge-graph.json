@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-25",
+  "generated_at": "2026-06-26",
   "counts": {
     "adr": 64,
     "audit": 15,
