@@ -17,7 +17,11 @@ import {
   markOnboardingDone as sharedMarkOnboardingDone,
   shouldShowOnboarding as sharedShouldShowOnboarding,
 } from "@sergeant/shared";
-import { safeReadStringLS, webKVStore } from "@shared/lib/storage/storage";
+import {
+  safeReadStringLS,
+  safeRemoveLS,
+  webKVStore,
+} from "@shared/lib/storage/storage";
 import { DEMO_FLAG_KEY } from "./seedDemoData/keys";
 
 /**
@@ -67,6 +71,20 @@ export function isOnboardingCompletedFired(): boolean {
  */
 export function isDemoActive(): boolean {
   return safeReadStringLS(DEMO_FLAG_KEY) === "1";
+}
+
+/**
+ * Drop the demo flag so the app is never simultaneously in demo mode AND
+ * authenticated. Called on sign-in / sign-up success: a visitor who opens
+ * the auth surface from inside the demo would otherwise stay flagged as
+ * demo, which leaves the post-logout transition wedged in the demo render
+ * path and hangs the "Виходжу…" spinner (QA D-004). Light flag-only remove
+ * (no heavy seeder import) — leftover seeded LS is purged by the logout
+ * `purgeAppOwnedLocalData` sweep; clearing the flag is enough to unmix the
+ * demo+auth state.
+ */
+export function clearDemoFlag(): void {
+  safeRemoveLS(DEMO_FLAG_KEY);
 }
 
 /**

@@ -22,6 +22,7 @@ import { swClearCaches, swSetActiveUser } from "../app/swControl";
 import { logger } from "@shared/lib";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
+import { clearDemoFlag } from "../onboarding/onboardingGate";
 import { messages } from "../../shared/i18n/uk";
 
 /**
@@ -215,6 +216,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setAuthError(translateAuthError(result.error, "Помилка входу"));
           return false;
         }
+        // Leaving demo on auth prevents the demo+authenticated mixed state
+        // that wedges the post-logout transition (QA D-004).
+        clearDemoFlag();
         await invalidateMe();
         return true;
       } catch (err) {
@@ -303,6 +307,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // помилки і ніколи не кидає. Викликаємо до `invalidateMe`, щоб
         // ивент полетів навіть якщо рефетч `me` зависне.
         trackEvent(ANALYTICS_EVENTS.SIGNUP_COMPLETED, { method: "email" });
+        // Leaving demo on auth prevents the demo+authenticated mixed state
+        // that wedges the post-logout transition (QA D-004).
+        clearDemoFlag();
         await invalidateMe();
         return true;
       } catch (err) {
