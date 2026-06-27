@@ -32,6 +32,7 @@
  * по Kyiv-добі.
  */
 
+import { toLocalISODate } from "@sergeant/shared";
 import pool from "../db.js";
 import { logger } from "../obs/logger.js";
 import {
@@ -44,15 +45,6 @@ export const ANTHROPIC_PROVIDER_SUBJECT = "provider:anthropic";
 
 /** Префікс bucket-у — узгоджений із CHECK-constraint-ом у міграції 059. */
 const ANTHROPIC_BUCKET_PREFIX = "anthropic:";
-
-function todayKyiv(): string {
-  // sv-SE locale → yyyy-mm-dd; той самий патерн, що у `transcribe/usdCap.ts`
-  // (єдиний централізований Kyiv-helper-а у репо ще немає — PR-12 не
-  // розширює scope).
-  return new Date().toLocaleDateString("sv-SE", {
-    timeZone: "Europe/Kyiv",
-  });
-}
 
 function toNonNegativeInt(value: unknown): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0;
@@ -95,7 +87,7 @@ export async function recordAnthropicUsageToDb(
   // у DEFAULT 0.
   const estCost = estimateAnthropicCostUsd(model, usage) ?? 0;
 
-  const day = todayKyiv();
+  const day = toLocalISODate();
   const bucket = bucketFor(model);
 
   try {
@@ -140,7 +132,7 @@ export async function recordAnthropicUsageToDb(
 
 /** Експорти для тестів (без зміни public surface). */
 export const __testing = {
-  todayKyiv,
+  todayKyiv: toLocalISODate,
   bucketFor,
   ANTHROPIC_BUCKET_PREFIX,
 };

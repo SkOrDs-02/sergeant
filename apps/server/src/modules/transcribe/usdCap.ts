@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { toLocalISODate } from "@sergeant/shared";
 import pool from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import { transcribeUsdCapEventsTotal } from "../../obs/metrics.js";
@@ -73,16 +74,6 @@ function bucketKey(model: string): string {
   return `transcribe:${model}`;
 }
 
-function todayKyiv(): string {
-  // Kyiv-day boundary за вимогою AGENTS.md "Domain invariants" — щоб
-  // 23:00 UTC = 02:00 Kyiv, тобто всередині наступного "локального" дня
-  // юзер не дискриміновувався при рості кепу. Реалізація через
-  // toLocaleDateString-у з sv-SE locale (yyyy-mm-dd).
-  return new Date().toLocaleDateString("sv-SE", {
-    timeZone: "Europe/Kyiv",
-  });
-}
-
 interface AuthedReqUser {
   user?: { id?: string };
 }
@@ -131,7 +122,7 @@ export async function assertTranscribeUsdCap(
   }
 
   const estimate = estimateMicros(audioBytes);
-  const day = todayKyiv();
+  const day = toLocalISODate();
   const bucket = bucketKey(model);
 
   let spent = 0;
@@ -225,7 +216,7 @@ export async function recordTranscribeUsdSpend(
 ): Promise<void> {
   const subject = subjectFor(req);
   if (!subject) return; // не повинно статись після requireSession()
-  const day = todayKyiv();
+  const day = toLocalISODate();
   const bucket = bucketKey(model);
   const cost = estimateMicros(audioBytes);
   if (cost <= 0) return;

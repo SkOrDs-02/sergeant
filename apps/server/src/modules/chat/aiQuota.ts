@@ -8,6 +8,7 @@ import {
   aiQuotaFailOpenTotal,
   aiCostConsumedTotal,
 } from "../../obs/metrics.js";
+import { toLocalISODate } from "@sergeant/shared";
 import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
 import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
@@ -142,17 +143,6 @@ const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
 
 function tierModel(tier: ProTier, endpoint: ProEndpoint): string {
   return PRO_TIER_MODEL[tier][endpoint]();
-}
-
-/**
- * Київ-локальна дата `YYYY-MM-DD` для tier-відер. Окремо від `today()` (UTC),
- * який лишається для Free/Anon-відер — не міняємо їхню поведінку. `sv`-локаль
- * дає ISO-подібний формат, `timeZone` зсуває до київської цивільної доби.
- */
-function todayKyiv(): string {
-  return new Date()
-    .toLocaleString("sv", { timeZone: "Europe/Kyiv" })
-    .slice(0, 10);
 }
 
 function setTierHeader(res: Response, tier: ProTier): void {
@@ -603,7 +593,9 @@ export async function resolveProTier(
   if (!aiQuotaCircuitBreaker.isAllowing()) return premium();
 
   const subject = subjectFor(sessionUser, req);
-  const day = todayKyiv();
+  // Tier buckets use the Kyiv civil day; Free/Anon buckets stay on `today()`
+  // (UTC) — see `today()` below. Don't unify the two.
+  const day = toLocalISODate();
   const premiumLimit = parseLimit(
     "AI_PRO_PREMIUM_DAILY_LIMIT",
     DEFAULT_PREMIUM_LIMIT,
