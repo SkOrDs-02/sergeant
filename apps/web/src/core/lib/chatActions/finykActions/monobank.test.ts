@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { ImportMonobankRangeAction } from "../types";
 import { importMonobankRange } from "./monobank";
 
 vi.mock("@shared/lib/storage/storage", () => ({
   safeRemoveLS: vi.fn(),
 }));
 
+// Loose params on purpose — several tests pass invalid dates (null, "",
+// malformed) to exercise the handler's validation, so cast the fixture.
 function makeAction(from: unknown, to: unknown) {
   return {
-    type: "import_monobank_range" as const,
+    name: "import_monobank_range",
     input: { from, to },
-  };
+  } as ImportMonobankRangeAction;
 }
 
 describe("importMonobankRange", () => {

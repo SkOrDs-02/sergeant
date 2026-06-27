@@ -24,7 +24,7 @@ beforeEach(() => {
 describe("createDebt", () => {
   it("returns result with debt name and amount", () => {
     const out = createDebt({
-      type: "create_debt",
+      name: "create_debt",
       input: { name: "Аренда", amount: 5000 },
     });
     expect(out).toMatchObject({ result: expect.stringContaining("Аренда") });
@@ -33,7 +33,7 @@ describe("createDebt", () => {
 
   it("persists the new debt via finykChatWrite", () => {
     createDebt({
-      type: "create_debt",
+      name: "create_debt",
       input: { name: "Позика", amount: 1000 },
     });
     expect(mockWrite).toHaveBeenCalledWith(
@@ -45,7 +45,7 @@ describe("createDebt", () => {
   });
 
   it("uses 💸 emoji by default", () => {
-    createDebt({ type: "create_debt", input: { name: "X", amount: 100 } });
+    createDebt({ name: "create_debt", input: { name: "X", amount: 100 } });
     expect(mockWrite).toHaveBeenCalledWith(
       "finyk_debts",
       expect.arrayContaining([expect.objectContaining({ emoji: "💸" })]),
@@ -54,7 +54,7 @@ describe("createDebt", () => {
 
   it("uses provided emoji", () => {
     createDebt({
-      type: "create_debt",
+      name: "create_debt",
       input: { name: "X", amount: 100, emoji: "🏠" },
     });
     expect(mockWrite).toHaveBeenCalledWith(
@@ -75,14 +75,14 @@ describe("createDebt", () => {
       },
     ];
     mockLs.mockReturnValueOnce(existing);
-    createDebt({ type: "create_debt", input: { name: "New", amount: 300 } });
+    createDebt({ name: "create_debt", input: { name: "New", amount: 300 } });
     const written = mockWrite.mock.calls[0]![1] as unknown[];
     expect(written).toHaveLength(2);
   });
 
   it("undo removes the created debt", () => {
     const result = createDebt({
-      type: "create_debt",
+      name: "create_debt",
       input: { name: "Тест", amount: 200 },
     }) as { result: string; undo: () => void };
     const written = mockWrite.mock.calls[0]![1] as Array<{ id: string }>;
@@ -110,7 +110,7 @@ describe("createDebt", () => {
 describe("createReceivable", () => {
   it("returns result with debtor name and amount", () => {
     const out = createReceivable({
-      type: "create_receivable",
+      name: "create_receivable",
       input: { name: "Іванченко", amount: 2500 },
     });
     expect(out).toMatchObject({ result: expect.stringContaining("Іванченко") });
@@ -119,7 +119,7 @@ describe("createReceivable", () => {
 
   it("persists via finykChatWrite on finyk_recv key", () => {
     createReceivable({
-      type: "create_receivable",
+      name: "create_receivable",
       input: { name: "X", amount: 100 },
     });
     expect(mockWrite).toHaveBeenCalledWith("finyk_recv", expect.any(Array));
@@ -127,7 +127,7 @@ describe("createReceivable", () => {
 
   it("undo removes the created receivable", () => {
     const result = createReceivable({
-      type: "create_receivable",
+      name: "create_receivable",
       input: { name: "Y", amount: 500 },
     }) as { result: string; undo: () => void };
     const written = mockWrite.mock.calls[0]![1] as Array<{ id: string }>;
@@ -148,7 +148,7 @@ describe("createReceivable", () => {
 describe("markDebtPaid", () => {
   it("returns error for empty debt_id", () => {
     const result = markDebtPaid({
-      type: "mark_debt_paid",
+      name: "mark_debt_paid",
       input: { debt_id: "", amount: 100 },
     });
     expect(result).toContain("debt_id");
@@ -157,7 +157,7 @@ describe("markDebtPaid", () => {
   it("returns error when debt not found", () => {
     mockLs.mockReturnValue([]);
     const result = markDebtPaid({
-      type: "mark_debt_paid",
+      name: "mark_debt_paid",
       input: { debt_id: "d_999", amount: 100 },
     });
     expect(result).toContain("не знайдено");
@@ -174,7 +174,7 @@ describe("markDebtPaid", () => {
     };
     mockLs.mockReturnValue([debt]);
     const result = markDebtPaid({
-      type: "mark_debt_paid",
+      name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 0 },
     });
     expect(result).toContain("додатною");
@@ -191,7 +191,7 @@ describe("markDebtPaid", () => {
     };
     mockLs.mockReturnValueOnce([debt]).mockReturnValueOnce([]);
     const result = markDebtPaid({
-      type: "mark_debt_paid",
+      name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 300 },
     }) as string;
     expect(result).toContain("300");
@@ -210,7 +210,7 @@ describe("markDebtPaid", () => {
     };
     mockLs.mockReturnValueOnce([debt]).mockReturnValueOnce([]);
     const result = markDebtPaid({
-      type: "mark_debt_paid",
+      name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 500 },
     }) as string;
     expect(result).toContain("закрито");
@@ -227,7 +227,7 @@ describe("markDebtPaid", () => {
     };
     mockLs.mockReturnValueOnce([debt]).mockReturnValueOnce([]);
     const result = markDebtPaid({
-      type: "mark_debt_paid",
+      name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 300 },
     }) as string;
     expect(result).not.toContain("закрито");
@@ -244,7 +244,7 @@ describe("markDebtPaid", () => {
     };
     mockLs.mockReturnValueOnce([debt]).mockReturnValueOnce([]);
     markDebtPaid({
-      type: "mark_debt_paid",
+      name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 200, note: "Part 1" },
     });
     const expensesCall = mockWrite.mock.calls[0]!;

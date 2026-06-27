@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { SaveNoteAction, ListNotesAction } from "../types";
 import { saveNote, listNotes } from "./noteHandlers";
 
 const store: Record<string, unknown> = {};
@@ -10,18 +11,21 @@ vi.mock("../../hubChatUtils", () => ({
   }),
 }));
 
+// Helpers intentionally accept loose/invalid input to exercise the
+// handlers' runtime validation, so the built fixture is cast to the
+// action type rather than constrained at the parameter level.
 function makeSaveAction(text: unknown, tag?: string) {
   return {
-    type: "save_note" as const,
+    name: "save_note",
     input: { text, tag },
-  };
+  } as SaveNoteAction;
 }
 
 function makeListAction(tag?: string, limit?: number) {
   return {
-    type: "list_notes" as const,
+    name: "list_notes",
     input: { tag, limit },
-  };
+  } as ListNotesAction;
 }
 
 describe("saveNote", () => {
