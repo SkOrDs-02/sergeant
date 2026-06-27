@@ -1,11 +1,13 @@
 # 06. Архітектура монетизації (технічний скелетон v2)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-27 by @dimastahov16012003. **Next review:** 2026-09-27.
 > **Status:** Active (architecture reference; delivery status lives in revenue PR plan)
+
+> **Update 2026-06-27:** цінові параметри і trial-механіка зафіксовані в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) (Supersedes ADR-0051). Активна модель: **₴199/міс / ₴1490/рік**, **reverse trial 7 днів** (автоматичний Pro → downgrade), Free AI 15 msg/day, Free cloud-sync 2 пристрої. Якщо нижче зустрічаєте `$7/міс`, `$49/рік`, `₴99/міс` або «trial без картки» (opt-in) — це **Superseded by ADR-0068**, historical context only.
 
 > Pre-MVP draft. Розширення [01 — Монетизація і ціноутворення](./01-monetization-and-pricing.md) в бік реальної імплементації: розбивка на PR-и, ADR-рішення, risk register, rollout-plan.
 > Canonical delivery owner: [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../../90-work/planning/pr-plan-revenue-2026-05.md). PR tables below are architecture context, not the live execution tracker.
-> Канонічний implementation snapshot (2026-05-19): shipped contract names — `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/stripe-webhook`, `billingKeys.status`, `STRIPE_ENABLED`. Старі приклади нижче з `GET /api/billing/plan`, `billingKeys.plan()`, `/create-checkout`, `/create-portal`, `PAYWALL_ENABLED` або 14-day trial — історичний architecture context, доки цей reference повністю не переписано під ADR-0051 і поточний код.
+> Канонічний implementation snapshot (2026-05-19): shipped contract names — `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/stripe-webhook`, `billingKeys.status`, `STRIPE_ENABLED`. Старі приклади нижче з `GET /api/billing/plan`, `billingKeys.plan()`, `/create-checkout`, `/create-portal`, `PAYWALL_ENABLED` або 14-day trial — історичний architecture context, доки цей reference повністю не переписано під ADR-0068 і поточний код.
 >
 > **Diff проти v1 (skeleton-attachment):** виправлені 5 red flags (idempotency, period_end semantics, cache-invalidation, grandfather policy, aiQuota×requirePlan). Розбивка PR розширена з 6 до 10. Додано: ADR-список рішень, risk register, rollout-план з feature-flag, env-template, контракт-тести.
 >
@@ -37,18 +39,18 @@
 
 > Перший PR серії — **`docs/04-governance/adr/0001-monetization-architecture.md`**. Без цього ADR не починаємо код. ADR прописує:
 
-| Рішення                                       | Варіант                                                                                                          | Статус   |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | -------- |
-| ADR-1.1: Provider                             | Stripe primary, LiqPay (Україна) phase 2                                                                         | accepted |
-| ADR-1.2: Single-table vs subscription-history | Single-row-per-user (поточна підписка); audit trail через `subscription_events` log                              | accepted |
-| ADR-1.3: Plan-cache TTL                       | RQ `staleTime: 60s`, server `effectiveLimits` LRU `ttl: 300s` + invalidation on `subscription_changed`           | accepted |
-| ADR-1.4: Grandfather policy для CloudSync     | Користувачі з `created_at < 2026-05-01` → 90 днів trial-Pro free. Після цього — paywall з 14-day trial extension | accepted |
-| ADR-1.5: Trial flow (нові юзери)              | 14 днів Pro trial при реєстрації, без payment method. По закінченню → free + paywall на Pro-features             | accepted |
-| ADR-1.6: AI ліміт для free                    | 5 chat msg/day, 3 photo/day. Якщо юзер вибрав ліміт — banner "перейди на Pro" замість 429                        | accepted |
-| ADR-1.7: Coordination with `requireAiQuota`   | `requireAiQuota` читає план, `requirePlan` — для не-AI gates тільки                                              | accepted |
-| ADR-1.8: Webhook event-id store retention     | 90 днів (cron-based purge у `015_purge_webhook_events.sql` як phase 2)                                           | accepted |
-| ADR-1.9: Currency                             | UAH primary, USD secondary (через Stripe Multi-currency). На MVP — UAH only                                      | accepted |
-| ADR-1.10: Tax handling                        | Stripe Tax automatic + ФОП на 3 групі окремо (operations, не код)                                                | external |
+| Рішення                                       | Варіант                                                                                                                                                | Статус                |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- |
+| ADR-1.1: Provider                             | Stripe primary, LiqPay (Україна) phase 2                                                                                                               | accepted              |
+| ADR-1.2: Single-table vs subscription-history | Single-row-per-user (поточна підписка); audit trail через `subscription_events` log                                                                    | accepted              |
+| ADR-1.3: Plan-cache TTL                       | RQ `staleTime: 60s`, server `effectiveLimits` LRU `ttl: 300s` + invalidation on `subscription_changed`                                                 | accepted              |
+| ADR-1.4: Grandfather policy для CloudSync     | Користувачі з `created_at < 2026-05-01` → 90 днів trial-Pro free. Після цього — paywall з 14-day trial extension                                       | accepted              |
+| ADR-1.5: Trial flow (нові юзери)              | ~~14 днів Pro trial, без payment method~~ → **Superseded by ADR-0068**: reverse trial 7 днів (автоматичний Pro → downgrade після 7 днів без підписки)  | superseded (ADR-0068) |
+| ADR-1.6: AI ліміт для free                    | ~~5 chat msg/day~~ → **Superseded by ADR-0068**: 15 chat msg/day. Фото-AI — тільки Pro. Якщо юзер вичерпав ліміт — banner "перейди на Pro" замість 429 | superseded (ADR-0068) |
+| ADR-1.7: Coordination with `requireAiQuota`   | `requireAiQuota` читає план, `requirePlan` — для не-AI gates тільки                                                                                    | accepted              |
+| ADR-1.8: Webhook event-id store retention     | 90 днів (cron-based purge у `015_purge_webhook_events.sql` як phase 2)                                                                                 | accepted              |
+| ADR-1.9: Currency                             | UAH primary, USD secondary (через Stripe Multi-currency). На MVP — UAH only                                                                            | accepted              |
+| ADR-1.10: Tax handling                        | Stripe Tax automatic + ФОП на 3 групі окремо (operations, не код)                                                                                      | external              |
 
 **Дія:** перед PR #1 розгорнути цей ADR як живий файл у репо, апрувити з тобою.
 
