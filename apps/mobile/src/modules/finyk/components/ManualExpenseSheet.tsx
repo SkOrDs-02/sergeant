@@ -20,6 +20,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
+import { toLocalISODate } from "@sergeant/shared";
+
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Sheet } from "@/components/ui/Sheet";
@@ -76,13 +78,6 @@ function stripEmoji(label: string): string {
   let i = 0;
   while (i < str.length && !/[\p{L}\p{N}]/u.test(str[i] ?? "")) i++;
   return str.slice(i).trim();
-}
-
-function toLocalISODate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }
 
 export interface ManualExpenseInput {
