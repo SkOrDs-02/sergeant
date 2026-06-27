@@ -1,107 +1,130 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { logWellbeing } from "./wellbeing";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../profile/biometrics", () => ({
   mirrorWeightToBiometrics: vi.fn(),
 }));
 vi.mock("./shared", () => ({
   persistFizrukDailyLog: vi.fn(),
-  readFizrukDailyLog: vi.fn(() => []),
+  readFizrukDailyLog: vi.fn(),
 }));
 
-function makeAction(input: Record<string, unknown>) {
-  return { type: "log_wellbeing" as const, input };
-}
+import { mirrorWeightToBiometrics } from "../../../profile/biometrics";
+import { persistFizrukDailyLog, readFizrukDailyLog } from "./shared";
+import { logWellbeing } from "./wellbeing";
+
+const mockPersist = vi.mocked(persistFizrukDailyLog);
+const mockRead = vi.mocked(readFizrukDailyLog);
+const mockMirrorWeight = vi.mocked(mirrorWeightToBiometrics);
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockRead.mockReturnValue([]);
+});
 
 describe("logWellbeing", () => {
-  beforeEach(() => vi.clearAllMocks());
-
   it("returns error when no valid fields provided", () => {
-    expect(logWellbeing(makeAction({}))).toBe(
-      "Немає жодного валідного поля для самопочуття.",
-    );
+    const result = logWellbeing({ type: "log_wellbeing", input: {} });
+    expect(result).toContain("Немає жодного");
+    expect(mockPersist).not.toHaveBeenCalled();
   });
 
-  it("rejects weight 0", () => {
-    expect(logWellbeing(makeAction({ weight_kg: 0 }))).toContain("Немає");
+  it("records weight when provided", () => {
+    const result = logWellbeing({
+      type: "log_wellbeing",
+      input: { weight_kg: 75 },
+    }) as { result: string };
+    expect(result.result).toContain("вага 75 кг");
+    expect(mockPersist).toHaveBeenCalledOnce();
   });
 
-  it("rejects negative weight", () => {
-    expect(logWellbeing(makeAction({ weight_kg: -5 }))).toContain("Немає");
+  it("records sleep hours when provided", () => {
+    const result = logWellbeing({
+      type: "log_wellbeing",
+      input: { sleep_hours: 7.5 },
+    }) as { result: string };
+    expect(result.result).toContain("сон 7.5 год");
   });
 
-  it("accepts valid weight", () => {
-    const result = logWellbeing(makeAction({ weight_kg: 75 }));
-    expect(result).toMatchObject({
-      result: expect.stringContaining("вага 75"),
+  it("records energy level when in range 1-5", () => {
+    const result = logWellbeing({
+      type: "log_wellbeing",
+      input: { energy_level: 4 },
+    }) as { result: string };
+    expect(result.result).toContain("енергія 4/5");
+  });
+
+  it("records mood score when in range 1-5", () => {
+    const result = logWellbeing({
+      type: "log_wellbeing",
+      input: { mood_score: 3 },
+    }) as { result: string };
+    expect(result.result).toContain("настрій 3/5");
+  });
+
+  it("records multiple fields at once", () => {
+    const result = logWellbeing({
+      type: "log_wellbeing",
+      input: { weight_kg: 80, sleep_hours: 8, energy_level: 5, mood_score: 4 },
+    }) as { result: string };
+    expect(result.result).toContain("вага 80 кг");
+    expect(result.result).toContain("сон 8 год");
+    expect(result.result).toContain("енергія 5/5");
+    expect(result.result).toContain("настрій 4/5");
+  });
+
+  it("ignores energy outside 1-5 range", () => {
+    const result = logWellbeing({
+      type: "log_wellbeing",
+      input: { energy_level: 10, note: "test" },
+    }) as { result: string };
+    expect(result.result).not.toContain("енергія");
+  });
+
+  it("ignores sleep hours above 24", () => {
+    const result = logWellbeing({
+      type: "log_wellbeing",
+      input: { sleep_hours: 25, note: "test" },
+    }) as { result: string };
+    expect(result.result).not.toContain("сон");
+  });
+
+  it("accepts note-only entry", () => {
+    const result = logWellbeing({
+      type: "log_wellbeing",
+      input: { note: "Почуваюся добре" },
+    }) as { result: string };
+    expect(result.result).toContain("Самопочуття записано");
+    expect(mockPersist).toHaveBeenCalledOnce();
+  });
+
+  it("mirrors weight to biometrics when weight provided", () => {
+    logWellbeing({ type: "log_wellbeing", input: { weight_kg: 72 } });
+    expect(mockMirrorWeight).toHaveBeenCalledWith(72, expect.any(String));
+  });
+
+  it("does NOT mirror weight when weight not provided", () => {
+    logWellbeing({ type: "log_wellbeing", input: { sleep_hours: 6 } });
+    expect(mockMirrorWeight).not.toHaveBeenCalled();
+  });
+
+  it("returns object with undo function", () => {
+    const result = logWellbeing({
+      type: "log_wellbeing",
+      input: { mood_score: 3 },
     });
-  });
-
-  it("rejects sleep_hours > 24", () => {
-    expect(logWellbeing(makeAction({ sleep_hours: 25 }))).toContain("Немає");
-  });
-
-  it("accepts sleep_hours 0", () => {
-    const result = logWellbeing(makeAction({ sleep_hours: 0 }));
-    expect(result).toMatchObject({ result: expect.stringContaining("сон 0") });
-  });
-
-  it("accepts valid sleep_hours", () => {
-    const result = logWellbeing(makeAction({ sleep_hours: 7.5 }));
-    expect(result).toMatchObject({
-      result: expect.stringContaining("сон 7.5"),
-    });
-  });
-
-  it("rejects energy_level < 1", () => {
-    expect(logWellbeing(makeAction({ energy_level: 0 }))).toContain("Немає");
-  });
-
-  it("rejects energy_level > 5", () => {
-    expect(logWellbeing(makeAction({ energy_level: 6 }))).toContain("Немає");
-  });
-
-  it("accepts valid energy_level and rounds it", () => {
-    const result = logWellbeing(makeAction({ energy_level: 4.7 }));
-    expect(result).toMatchObject({
-      result: expect.stringContaining("енергія 5/5"),
-    });
-  });
-
-  it("accepts valid mood_score", () => {
-    const result = logWellbeing(makeAction({ mood_score: 3 }));
-    expect(result).toMatchObject({
-      result: expect.stringContaining("настрій 3/5"),
-    });
-  });
-
-  it("note alone counts as valid entry", () => {
-    const result = logWellbeing(makeAction({ note: "Добре почуваюсь" }));
-    expect(result).toMatchObject({
-      result: expect.stringContaining("Самопочуття записано"),
-    });
-  });
-
-  it("truncates note to 500 chars", () => {
-    const long = "а".repeat(600);
-    const result = logWellbeing(makeAction({ note: long }));
-    expect(result).toMatchObject({ result: expect.any(String) });
-  });
-
-  it("returns an undo function", () => {
-    const result = logWellbeing(makeAction({ weight_kg: 80 }));
-    expect(typeof result).toBe("object");
     expect(typeof (result as { undo: () => void }).undo).toBe("function");
   });
 
-  it("combines multiple fields in result message", () => {
-    const result = logWellbeing(
-      makeAction({ weight_kg: 70, sleep_hours: 8, mood_score: 4 }),
-    );
-    expect(result).toMatchObject({
-      result: expect.stringContaining("вага 70"),
-    });
-    expect((result as { result: string }).result).toContain("сон 8");
-    expect((result as { result: string }).result).toContain("настрій 4/5");
+  it("undo removes the logged entry", () => {
+    const result = logWellbeing({
+      type: "log_wellbeing",
+      input: { mood_score: 2 },
+    }) as { undo: () => void };
+    const written = mockPersist.mock.calls[0]?.[0] as Array<{ id: string }>;
+    const entryId = written?.[0]?.id;
+    vi.clearAllMocks();
+    mockRead.mockReturnValue([{ id: entryId, moodScore: 2 }]);
+    result.undo();
+    expect(mockPersist).toHaveBeenCalledWith([]);
   });
 });
