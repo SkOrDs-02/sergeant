@@ -19,12 +19,21 @@
 
 import { useEffect, useRef } from "react";
 import { useAuth } from "../../../core/auth/AuthContext";
+import {
+  DEMO_LOCAL_USER_ID,
+  isDemoActive,
+} from "../../../core/onboarding/onboardingGate";
 import { bootNutritionSqliteReadPath } from "../lib/sqliteReadBoot";
 import { notifyNutritionSqliteCacheRefresh } from "../lib/sqliteReadGate";
 
 export function useNutritionSqliteReadBoot(): void {
   const { user } = useAuth();
-  const userId = user?.id ?? null;
+  // AI-CONTEXT: demo mode bypasses auth (no user id), but the SQLite
+  // read-boot + residual `nutrition_*` LS->SQLite drain are
+  // userId-gated. Falling back to a synthetic demo id lets the seeded
+  // demo payload reach the read cache, so the Nutrition module is not
+  // empty while the hub card shows the seeded kcal/goal stats (QA D-002).
+  const userId = user?.id ?? (isDemoActive() ? DEMO_LOCAL_USER_ID : null);
   const didBoot = useRef(false);
 
   useEffect(() => {

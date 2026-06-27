@@ -69,4 +69,19 @@ export function isDemoActive(): boolean {
   return safeReadStringLS(DEMO_FLAG_KEY) === "1";
 }
 
+/**
+ * Synthetic user id used to scope SQLite rows for a demo session.
+ *
+ * Demo mode bypasses auth, so `useAuth().user?.id` is `null`. The
+ * per-module SQLite read-boot hooks (and the residual `*_v1` LS ->
+ * SQLite drain they run) are `userId`-gated, so without a stand-in id
+ * the demo payload `seedDemoData()` writes to LS never reaches the
+ * SQLite cache the migrated modules read — the modules render empty
+ * while the hub cards show the seeded quick-stats. Booting the read
+ * path under this stable id lets the residual import warm the global
+ * read cache. Isolated from any real account id (real users read under
+ * their own id and never see these rows).
+ */
+export const DEMO_LOCAL_USER_ID = "demo-local";
+
 export { sharedBuildFinalPicks as buildFinalPicks };
