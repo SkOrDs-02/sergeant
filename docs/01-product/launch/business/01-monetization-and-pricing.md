@@ -1,10 +1,13 @@
 # 01. Монетизація і ціноутворення
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-27 by @dimastahov16012003. **Next review:** 2026-09-27.
 > **Status:** Active
 >
-> **Update 2026-05-06:** pricing v3 зафіксовано в [ADR-0051](../../../04-governance/adr/0051-pricing-v3-single-tier.md). Секції §2.2 (Plus tier з decoy), §2.3 (pay-per-feature) та альтернативна ціна ₴2999 Lifetime — **Superseded by ADR-0051** (не йдуть у код MVP). Активна модель: **Free + Pro $7/міс / $49/рік**, ₴ UA-only на старті, trial 7 днів без картки.
-> **Канон 2026-05-19:** delivery-статус живе у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../../90-work/planning/pr-plan-revenue-2026-05.md). Pricing tables і LiqPay/native-IAP варіанти нижче — історичний decision context, якщо ADR-0051 явно не лишає їх активними. Поточний billing-контракт у коді: `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/stripe-webhook`; live rollout/env/legal readiness лишається в Initiative 0010.
+> **Update 2026-06-27:** pricing v4 зафіксовано в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). **Активна модель: Free + Pro ₴199/міс / ₴1490/рік**, reverse trial 7 днів (автоматичний Pro → downgrade), Free AI 15 повідомлень/день + cloud-sync 2 пристрої. USD-ціни ($7/міс / $49/рік) із ADR-0051 — **Superseded by ADR-0068**. Класичний trial «7 днів без картки» із ADR-0051 — **Superseded by ADR-0068** (замінено на reverse trial).
+>
+> **Update 2026-05-06:** pricing v3 зафіксовано в [ADR-0051](../../../04-governance/adr/0051-pricing-v3-single-tier.md) — **Superseded by ADR-0068**. Секції §2.2 (Plus tier з decoy), §2.3 (pay-per-feature) та альтернативна ціна ₴2999 Lifetime — не йдуть у код MVP (залишаються як historical context нижче).
+>
+> **Канон 2026-05-19:** delivery-статус живе у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../../90-work/planning/pr-plan-revenue-2026-05.md). Pricing tables і LiqPay/native-IAP варіанти нижче — історичний decision context. Поточний billing-контракт у коді: `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/stripe-webhook`; live rollout/env/legal readiness лишається в Initiative 0010.
 
 > Pricing model лишається орієнтиром для A/B-тестів, але базовий Stripe MVP уже має серверний contract:
 > `POST /api/billing/checkout`, `GET /api/billing/status`, `POST /api/billing/stripe-webhook`.
@@ -90,15 +93,15 @@ Freemium — найкращий вибір для Sergeant, бо:
 >
 > Курс: **₴1 ≈ $0.023** ([НБУ, квітень 2026](https://bank.gov.ua/ua/markets/exchangerates), ~₴44/$1). Тобто ₴99 ≈ **$2.25**, ₴799/рік ≈ **$18.16**.
 
-| Конкурент             | Ціна                      | Що дає                        | Джерело          | Перевірено |
-| --------------------- | ------------------------- | ----------------------------- | ---------------- | ---------- |
-| MyFitnessPal Premium  | $19.99/міс або $79.99/рік | Тільки їжа+фітнес             | myfitnesspal.com | 2026-02    |
-| MyFitnessPal Premium+ | $24.99/міс або $99.99/рік | +Meal Planner                 | myfitnesspal.com | 2026-02    |
-| YNAB                  | $14.99/міс або $109/рік   | Тільки фінанси (0 free tier)  | ynab.com         | 2026-02    |
-| Fabulous Premium      | ~$3.33/міс або $39.99/рік | Тільки звички                 | thefabulous.co   | 2026-02    |
-| Streaks               | $5.99 one-time            | Тільки звички (iOS)           | App Store        | 2026-02    |
-| Fealthy (UA)          | Безкоштовно               | Фін-освіта + трекер           | fealthy.com.ua   | 2026-02    |
-| **Sergeant Pro**      | **₴99/міс (~$2.25)**      | **Все разом (4 модулі + AI)** | —                | —          |
+| Конкурент             | Ціна                                    | Що дає                        | Джерело          | Перевірено |
+| --------------------- | --------------------------------------- | ----------------------------- | ---------------- | ---------- |
+| MyFitnessPal Premium  | $19.99/міс або $79.99/рік               | Тільки їжа+фітнес             | myfitnesspal.com | 2026-02    |
+| MyFitnessPal Premium+ | $24.99/міс або $99.99/рік               | +Meal Planner                 | myfitnesspal.com | 2026-02    |
+| YNAB                  | $14.99/міс або $109/рік                 | Тільки фінанси (0 free tier)  | ynab.com         | 2026-02    |
+| Fabulous Premium      | ~$3.33/міс або $39.99/рік               | Тільки звички                 | thefabulous.co   | 2026-02    |
+| Streaks               | $5.99 one-time                          | Тільки звички (iOS)           | App Store        | 2026-02    |
+| Fealthy (UA)          | Безкоштовно                             | Фін-освіта + трекер           | fealthy.com.ua   | 2026-02    |
+| **Sergeant Pro**      | **₴199/міс (~$4.52)** або **₴1490/рік** | **Все разом (4 модулі + AI)** | — (ADR-0068)     | 2026-06-27 |
 
 > **Конкурентна перевага:** за ~$2.25/міс юзер отримує те, за що в окремих додатках платив би $50+/міс (MFP Premium + YNAB + Fabulous). Гривневі ціни знижують поріг для UA-ринку.
 
