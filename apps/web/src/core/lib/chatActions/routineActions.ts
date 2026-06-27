@@ -3,6 +3,7 @@ import {
   loadRoutineState,
   saveRoutineState,
 } from "../../../modules/routine/lib/routineStorage";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type {
   MarkHabitDoneAction,
   CreateHabitAction,
@@ -92,14 +93,7 @@ export function handleRoutineAction(
       const completions: Record<string, string[]> = {
         ...routineState.completions,
       };
-      const now = new Date();
-      const targetDate =
-        habitDate ||
-        [
-          now.getFullYear(),
-          String(now.getMonth() + 1).padStart(2, "0"),
-          String(now.getDate()).padStart(2, "0"),
-        ].join("-");
+      const targetDate = habitDate || getKyivDayKey();
       const prevArr = Array.isArray(completions[habitId])
         ? completions[habitId].slice()
         : [];
@@ -459,20 +453,14 @@ export function handleRoutineAction(
       const habitCompletions = Array.isArray(completions[id])
         ? completions[id]
         : [];
-      const now = new Date();
+      const nowTs = Date.now();
       let doneCount = 0;
       let streak = 0;
       let maxStreak = 0;
       let currentStreak = 0;
       const missedDates: string[] = [];
       for (let i = 0; i < days; i++) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        const dk = [
-          d.getFullYear(),
-          String(d.getMonth() + 1).padStart(2, "0"),
-          String(d.getDate()).padStart(2, "0"),
-        ].join("-");
+        const dk = getKyivDayKey(nowTs - i * 86_400_000);
         if (habitCompletions.includes(dk)) {
           doneCount++;
           currentStreak++;
@@ -507,7 +495,7 @@ export function handleRoutineAction(
         : state.habits.filter((h) => !h.archived);
       if (habits.length === 0) return `Звичку ${habit_id} не знайдено.`;
       const completions = state.completions;
-      const now = new Date();
+      const nowTs = Date.now();
       const weeks = Math.ceil(days / 7);
       const weeklyData: number[] = [];
       for (let w = 0; w < weeks; w++) {
@@ -516,13 +504,7 @@ export function handleRoutineAction(
         for (let d = 0; d < 7; d++) {
           const dayOffset = w * 7 + d;
           if (dayOffset >= days) break;
-          const dt = new Date(now);
-          dt.setDate(dt.getDate() - dayOffset);
-          const dk = [
-            dt.getFullYear(),
-            String(dt.getMonth() + 1).padStart(2, "0"),
-            String(dt.getDate()).padStart(2, "0"),
-          ].join("-");
+          const dk = getKyivDayKey(nowTs - dayOffset * 86_400_000);
           for (const h of habits) {
             possible++;
             if (
