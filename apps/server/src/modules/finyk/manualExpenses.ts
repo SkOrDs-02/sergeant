@@ -50,7 +50,7 @@ interface ManualExpenseRow {
  * не змішує одиниці. `data_json.amount` зберігається у гривнях (LS-парність),
  * тож множимо на 100 і `Math.round`-имо, щоб прибрати float-дрейф (0.1+0.2).
  */
-function serializeManualExpense(row: ManualExpenseRow): {
+export function serializeManualExpense(row: ManualExpenseRow): {
   id: string;
   amountKopiykas: number;
   category: string;
