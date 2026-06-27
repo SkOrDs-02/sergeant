@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-06-26",
+  "generated_at": "2026-06-27",
   "sourceHashes": {
-    "knowledge-graph": "8a4674ef8bee341ae29034440af63ebbe91f06a2c633579550a1816774acf8d7",
-    "symbol-index": "7f81b312418c70410aac8ff73257b27ff20cf652820cd20896dade440c436a00"
+    "knowledge-graph": "60dbd0df6b2e79e7b59ae8acd455b2c112ee34b85f451c4c6fd40b1a9d3fcdbe",
+    "symbol-index": "fb12a39423eac93bcfeca910ad627756167807ad60f7d6e88b61dc491db0a565"
   },
   "counts": {
     "adr": 64,
