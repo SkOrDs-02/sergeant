@@ -410,3 +410,15 @@ accepted.
 3. **Coach pre-warming.** Якщо coach-insight генерується щовечора в
    фіксований час, можна попередньо викликати Anthropic-API "пустим"
    запитом, щоб прогріти cache. Marginal economy; розглянемо при cost > $300/міс.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                   | Title                                                              | Merged     |
+| ---------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
+| [#17](https://github.com/Skords-01/Sergeant/pull/17) | feat(server): pro tiered model degradation + prod llm env defaults | 2026-06-27 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

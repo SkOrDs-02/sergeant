@@ -1,8 +1,17 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-20",
+  "generated_at": "2026-06-27",
   "prs": [
+    {
+      "number": 17,
+      "title": "feat(server): pro tiered model degradation + prod llm env defaults",
+      "merged_at": "2026-06-27T01:19:29Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/04-governance/adr/0005-anthropic-model-selection-and-prompt-caching.md"
+      ]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
