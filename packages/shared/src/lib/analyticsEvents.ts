@@ -261,6 +261,24 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // is active; absent on production rollout once a winner is picked.
   ACTIVATION_V2_HIT: "activation_v2_hit",
 
+  // Multi-module activation — cross-module breadth signal (Tier 2).
+  // Complements `activation_v2` (Finyk-only depth) with the breadth the
+  // growth funnel actually needs: how many users touch ≥2 modules, not
+  // just deep-activate one. Fired exactly once per browser profile the
+  // moment the count of modules with a `first_action_completed` flag
+  // first reaches `MULTI_MODULE_ACTIVATION_THRESHOLD` (2). Idempotent
+  // through the `hub_multi_module_activated_v1` localStorage flag.
+  // Payload contract:
+  //
+  //   MULTI_MODULE_ACTIVATED { module_count: number,
+  //                            modules: DashboardModuleId[],
+  //                            days_since_first_action: number | null }
+  //
+  // `modules` is in `DASHBOARD_MODULE_IDS` order. `days_since_first_action`
+  // is whole days from the FTUX clock origin (`hub_first_action_started_at_v1`),
+  // or `null` when that stamp is missing (e.g. data restored via sync).
+  MULTI_MODULE_ACTIVATED: "multi_module_activated",
+
   // Landing page (initiative 0010 Phase 6.1). Fired from `/` + `/pricing`
   // public surfaces. Payload contracts:
   //
