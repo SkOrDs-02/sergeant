@@ -3,7 +3,7 @@ import { calculate1rm } from "./calculator";
 
 function makeAction(weight_kg: number, reps: number, exercise_name?: string) {
   return {
-    type: "calculate_1rm" as const,
+    name: "calculate_1rm" as const,
     input: { weight_kg, reps, ...(exercise_name ? { exercise_name } : {}) },
   };
 }

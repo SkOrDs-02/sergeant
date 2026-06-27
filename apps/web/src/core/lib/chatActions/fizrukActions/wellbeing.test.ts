@@ -10,7 +10,7 @@ vi.mock("./shared", () => ({
 }));
 
 function makeAction(input: Record<string, unknown>) {
-  return { type: "log_wellbeing" as const, input };
+  return { name: "log_wellbeing" as const, input };
 }
 
 describe("logWellbeing", () => {
