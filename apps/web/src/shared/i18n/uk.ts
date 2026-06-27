@@ -815,12 +815,17 @@ export const messages = {
       freeName: "Free",
       freePrice: "0 ₴",
       freeCadence: "назавжди",
-      freeTagline: "Базові ліміти у всіх 4 модулях. Local-first, без cloud.",
+      freeTagline:
+        "Усі модулі, ручний трекінг без лімітів. AI — 15 повідомлень/день.",
       premiumName: "Premium",
-      premiumCadence: "ціну оголосимо на запуску",
+      premiumCadence: "/ місяць, або ₴1490 / рік (≈₴124/міс, −37%)",
       premiumTagline: "Усе розблоковано. Один план — без рівнів і доплат.",
     },
     features: {
+      allModules: "Усі 4 модулі — повний функціонал",
+      manualTracking: "Ручний трекінг без числових лімітів",
+      aiChat: "AI-чат",
+      cloudSync2Devices: "Cloud-sync на 2 пристрої",
       expensesFinyk: "Витрати у Фініку",
       aiPhotoFood: "AI-фото їжі у Харчуванні",
       aiPhotoFoodShort: "AI-фото їжі",
@@ -831,12 +836,14 @@ export const messages = {
       habits: "Звички",
       pdfExport: "PDF-експорт звітів",
       multiCurrency: "Мульти-валютні рахунки",
+      monoAutoSync: "Авто-синхронізація з Monobank",
       cloudSync: "CloudSync між пристроями",
     },
     limits: {
       // Leading space intentional — composes як `${N} / місяць`.
       perMonth: " / місяць",
       unlimited: "без ліміту",
+      aiChatPerDay: "15 / день",
     },
     cta: {
       tryPremium: "Спробувати Premium",
@@ -870,7 +877,7 @@ export const messages = {
       subtitle: "Один лист, коли Premium стартує. Без спаму, без авто-списань.",
     },
     footer:
-      "Ціни у EUR; для UA-ринку Stripe виставляє ₴-еквівалент. Точну ціну оголосимо на запуску.",
+      "Ціни у гривні. При оплаті через Stripe можливе конвертування відповідно до налаштувань твого банку.",
   },
 } as const satisfies MessageCatalog;
 
