@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import pool from "../../db.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { env } from "../../env/env.js";
+import { resolveProTier } from "./aiQuota.js";
 import { sendToUserQuietly } from "../../push/send.js";
 import { parseBody } from "../../http/validate.js";
 import {
@@ -364,6 +365,13 @@ ${snapshotText}
 
 Відповідай ТІЛЬКИ текстом повідомлення, без вітань, без підписів, без лапок.`;
 
+  // Pro tiered degradation: resolveProTier picks the OpenRouter model for this
+  // Pro user's daily tier (premium gpt-5.1 → standard gemini-lite → floor free).
+  // For Free/Anon/founder/flag-off it returns the premium model = current
+  // behaviour (env.OPENROUTER_COACH_MODEL via the premium-tier default), so the
+  // factory wiring below is unchanged in the common case.
+  const tier = await resolveProTier(req, res, "coach");
+
   // Routed through the LLMProvider factory so coach can be re-targeted off
   // Sonnet via env (LLM_COACH_PROVIDER / OPENROUTER_COACH_MODEL) without a
   // redeploy; Anthropic stays the fallback. `claude-sonnet-4-6` is the model
@@ -371,7 +379,7 @@ ${snapshotText}
   const provider = getLLMProvider({
     provider: env.LLM_COACH_PROVIDER,
     anthropicApiKey: apiKey,
-    openrouterModel: env.OPENROUTER_COACH_MODEL,
+    openrouterModel: tier.model,
   });
   const aiResult = await invokeLLM(provider, {
     model: "claude-sonnet-4-6",

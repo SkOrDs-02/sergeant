@@ -14,6 +14,43 @@
 
 ---
 
+> **⚠️ Update 2026-06-26 — реальність розійшлася з ADR-5.1/5.4/5.5.** Рішення нижче
+> зафіксовані як історичні (MVP-стан 2026-04), але код відтоді еволюціонував.
+> Поточний стан моделей/провайдерів:
+>
+> - **Two-tier chat, не single-tier.** `/api/chat` перший тур (роутер: text або
+>   `tool_use`) іде на **Haiku** `claude-haiku-4-5-20251001`
+>   ([`CHAT_MODEL_FIRST_TURN`](../../../apps/server/src/env/env.ts), default), а тур
+>   синтезу tool-result — на **Sonnet** `claude-sonnet-4-6`
+>   ([`CHAT_MODEL_SYNTHESIS`](../../../apps/server/src/env/env.ts)). Обидва env-керовані.
+>   Mono MCC batch-enrichment теж на Haiku
+>   ([`batchEnrichmentWorker.ts`](../../../apps/server/src/modules/mono/batchEnrichmentWorker.ts)).
+>   Усі nutrition-шляхи + weekly-digest + coach лишилися на Sonnet **за замовчуванням**.
+>   Тобто теза ADR-5.1 «жодних haiku-fallback-ів, єдиний tier» **більше не дійсна** —
+>   Haiku обраний свідомо для дешевого роутер-туру (≈4× дешевший).
+> - **Multi-vendor вже в коді** (PR-23/24/25 + coach у GitHub PR #11), попри ADR-5.5
+>   «multi-vendor — Phase 6+». [`lib/llm/provider.ts`](../../../apps/server/src/lib/llm/provider.ts)
+>   дає pluggable `LLMProvider` (Anthropic / OpenRouter / Stub) + `FallbackProvider`
+>   (OpenRouter→Anthropic). Env-перемикачі per-path: `LLM_PROVIDER`, `LLM_READONLY_PROVIDER`
+>   (OpenClaw classify), `LLM_DIGEST_PROVIDER` (weekly-digest), `LLM_COACH_PROVIDER` +
+>   `OPENROUTER_COACH_MODEL` (coach-insight — GitHub PR #11), `LLM_FALLBACK_ENABLED`.
+>   **Важливо:** chat/nutrition/mono **прибиті до Anthropic напряму** (streaming +
+>   tool-use + prompt-cache), повз factory; через factory ходять classify, digest
+>   **і тепер coach**. Default усіх трьох — `anthropic`, тож prod лишається на Sonnet,
+>   доки env не перемкне (напр. `LLM_COACH_PROVIDER=openrouter` +
+>   `OPENROUTER_COACH_MODEL=openai/gpt-5.1` — backed by eval 2026-06-26: gpt-5.1
+>   matched-or-beat Sonnet 4.6 на coach-quality при ≈−33% output-cost, strict 2-judge panel).
+> - **Env-flag для моделі існує** (`CHAT_MODEL_FIRST_TURN`/`CHAT_MODEL_SYNTHESIS`,
+>   `OPENROUTER_*_MODEL`), всупереч ADR-5.4 «env-var ANTHROPIC_MODEL — зайве».
+>   Централізованого `ANTHROPIC_MODEL`-const усе ще немає — Sonnet прописаний
+>   inline у coach/nutrition (ADR-5.4 лишається `proposed`).
+> - **Решта ADR-5.2 (prompt-cache) і ADR-5.3 (version-bump) — актуальні.**
+>
+> Канонічне джерело конфігурації моделей/провайдерів на сьогодні — Zod-схема в
+> [`apps/server/src/env/env.ts`](../../../apps/server/src/env/env.ts) (секція «AI»).
+> Цей ADR не переписуємо (історія рішень), але новий model/vendor-tiering варто
+> зафіксувати окремим ADR-supersede, коли стабілізується.
+
 ## 0. TL;DR
 
 ADR-0002 (`ADR-2.8: Не-цілі`) явно винесв model selection і version bumps у
