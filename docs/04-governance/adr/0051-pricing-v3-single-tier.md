@@ -86,3 +86,15 @@
 - [`docs/90-work/initiatives/0010-revenue-first-launch.md` § Phase 1.1](../../90-work/initiatives/0010-revenue-first-launch.md)
 - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md)
 - [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](../../90-work/audits/archive/2026-05-04-revenue-and-marketing-roast.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                   | Title                                                                       | Merged     |
+| ---------------------------------------------------- | --------------------------------------------------------------------------- | ---------- |
+| [#38](https://github.com/Skords-01/Sergeant/pull/38) | docs(docs): add ADR-0068 pricing v4 (₴ + reverse trial), supersede ADR-0051 | 2026-06-27 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

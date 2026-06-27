@@ -1,8 +1,18 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-20",
+  "generated_at": "2026-06-27",
   "prs": [
+    {
+      "number": 38,
+      "title": "docs(docs): add ADR-0068 pricing v4 (₴ + reverse trial), supersede ADR-0051",
+      "merged_at": "2026-06-27T22:40:40Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/04-governance/adr/0051-pricing-v3-single-tier.md",
+        "docs/04-governance/adr/0068-pricing-v4-uah-reverse-trial.md"
+      ]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
