@@ -581,12 +581,17 @@ export const messagesEn: Partial<MessageCatalog> = {
       freeName: "Free",
       freePrice: "₴0",
       freeCadence: "forever",
-      freeTagline: "Basic limits across all 4 modules. Local-first, no cloud.",
+      freeTagline:
+        "All modules, unlimited manual tracking. AI — 15 messages/day.",
       premiumName: "Premium",
-      premiumCadence: "price announced at launch",
+      premiumCadence: "/ month, or ₴1,490 / year (≈₴124/mo, −37%)",
       premiumTagline: "Everything unlocked. One plan — no tiers, no add-ons.",
     },
     features: {
+      allModules: "All 4 modules — full access",
+      manualTracking: "Manual tracking with no numeric limits",
+      aiChat: "AI chat",
+      cloudSync2Devices: "Cloud sync on 2 devices",
       expensesFinyk: "Finyk expenses",
       aiPhotoFood: "AI meal photo in Nutrition",
       aiPhotoFoodShort: "AI meal photo",
@@ -597,12 +602,14 @@ export const messagesEn: Partial<MessageCatalog> = {
       habits: "Habits",
       pdfExport: "PDF report export",
       multiCurrency: "Multi-currency accounts",
+      monoAutoSync: "Monobank auto-sync",
       cloudSync: "Cross-device CloudSync",
     },
     limits: {
       // Leading space matches uk — composes as `${N} / month`.
       perMonth: " / month",
       unlimited: "unlimited",
+      aiChatPerDay: "15 / day",
     },
     cta: {
       tryPremium: "Try Premium",
@@ -635,6 +642,6 @@ export const messagesEn: Partial<MessageCatalog> = {
       subtitle: "One email when Premium launches. No spam, no auto-charges.",
     },
     footer:
-      "Prices in EUR; Stripe charges the UAH-equivalent for the UA market. The exact price will be announced at launch.",
+      "Prices in UAH. Stripe may apply currency conversion depending on your bank's settings.",
   },
 };
