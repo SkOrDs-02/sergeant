@@ -110,6 +110,33 @@ describe("requirePlan middleware", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
+  it("founder bypasses the paywall regardless of plan (next, no plan lookup)", async () => {
+    vi.stubEnv("AI_QUOTA_FOUNDER_IDS", "founder_1,founder_2");
+    const requirePlan = await loadRequirePlan("true");
+    const next = vi.fn() as unknown as NextFunction;
+    const res = makeRes();
+    await requirePlan(pool, "pro")(makeReq("founder_1"), res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(getUserPlanMock).not.toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it("non-founder still gated even when founder list is set", async () => {
+    vi.stubEnv("AI_QUOTA_FOUNDER_IDS", "founder_1");
+    const requirePlan = await loadRequirePlan("true");
+    const next = vi.fn() as unknown as NextFunction;
+    getUserPlanMock.mockResolvedValue({
+      plan: "free",
+      status: "active",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+    });
+    const res = makeRes();
+    await requirePlan(pool, "pro")(makeReq("user_99"), res, next);
+    expect(res.status).toHaveBeenCalledWith(402);
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it("returns 402 when subscription is inactive (expired/canceled)", async () => {
     const requirePlan = await loadRequirePlan("true");
     const next = vi.fn() as unknown as NextFunction;
