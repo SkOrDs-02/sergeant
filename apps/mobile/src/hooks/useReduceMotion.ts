@@ -30,20 +30,25 @@ export function useReduceMotion(): boolean {
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
-    // Get initial value
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      setReduceMotion(enabled);
-    });
+    let mounted = true;
+    // Get initial value. The `mounted` guard + `.catch` avoid a
+    // set-state-after-unmount warning and an unhandled rejection when the
+    // accessibility probe never settles under test (see the flaky-tests
+    // note in apps/mobile/AGENTS.md).
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => {
+        if (mounted) setReduceMotion(enabled);
+      })
+      .catch(() => {});
 
     // Listen for changes
     const subscription = AccessibilityInfo.addEventListener(
       "reduceMotionChanged",
-      (enabled) => {
-        setReduceMotion(enabled);
-      },
+      (enabled) => setReduceMotion(enabled),
     );
 
     return () => {
+      mounted = false;
       subscription.remove();
     };
   }, []);
