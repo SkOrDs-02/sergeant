@@ -71,3 +71,6 @@
 
 ## FIZRUK recovery cluster CLOSED (live-backend, real workout history): logged Присідання 100×5 via retroactive entry → unblocked FIZ-05 (exercise detail/PR/load-calc), FIZ-16 (muscle atlas + recovery readiness), FIZ-20 (last-session hint), FIZ-24 (recovery conflict 'Рано навантажувати'), FIZ-28 (recovery focus), FIZ-10/11 retests. Fizruk now only FIZ-19 (voice/mic) + FIZ-30 (SW-sync) BLOCKED.
 ## TALLY after fizruk: PASS 73 · RENDER 87 · BLOCKED 37 · FAIL 3 · Phase4 44.
+
+## MONOBANK cluster CLOSED (real token + cloudflared tunnel): user provided real Mono token. Webhook-based connect needs public URL → spun up cloudflared quick-tunnel → PUBLIC_API_BASE_URL=tunnel → connect SUCCESS (mono_connected accountsCount=6). FIN-01 PASS (connect), FIN-27 PASS (6 accounts + credit detection: black 40k limit → −39999₴ debt, cards +1378₴), FIN-30 PASS (error UI), FIN-15 PASS (net worth −38621₴), FIN-35 RENDER (backfill running, Monobank rate-limit 1/60s). SECURITY: tunnel torn down, PUBLIC_API_BASE_URL reverted, mono_connection row + stored token WIPED from test DB after. User to revoke token in Monobank app.
+## TALLY after Monobank: PASS 77 · RENDER 88 · BLOCKED 32 · FAIL 3 · Phase4 50. BLOCKED now overwhelmingly: voice/mic (4), camera (2), SW-sync (4), OAuth (2), Resend-email auth (ACC-03/04), push (ROU-31), FTUX edge (ACC-14/15/16/17/23/24), misc edge.
