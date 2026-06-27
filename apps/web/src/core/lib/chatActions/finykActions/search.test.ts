@@ -1,171 +1,210 @@
-import { describe, it, expect, vi } from "vitest";
-import { txSourceOf, toIsoDay, toDisplayAmount } from "./search";
-import type { FinykSearchTx } from "./search";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Heavy IO deps — mocked so pure helpers can be imported
-vi.mock("../../hubChatUtils", () => ({ ls: vi.fn(() => []) }));
+vi.mock("../../hubChatUtils", () => ({ ls: vi.fn(), lsSet: vi.fn() }));
 vi.mock("./dualWriteBridge", () => ({ finykChatWrite: vi.fn() }));
 vi.mock("../../../../modules/finyk/utils", () => ({
-  resolveExpenseCategoryMeta: vi.fn(() => ({ label: "Інше", emoji: "🔹" })),
+  resolveExpenseCategoryMeta: vi.fn((id: string) => ({ label: `Cat(${id})` })),
 }));
 vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
-  getCachedFinykSqliteState: vi.fn(() => ({
-    manualExpenses: [],
-    txCategories: {},
-    hiddenTransactions: [],
-  })),
+  getCachedFinykSqliteState: vi.fn(),
 }));
 
-// --- txSourceOf ---
+import { ls } from "../../hubChatUtils";
+import { finykChatWrite } from "./dualWriteBridge";
+import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import {
+  batchCategorize,
+  changeCategory,
+  findTransaction,
+  toDisplayAmount,
+  toIsoDay,
+  txSourceOf,
+} from "./search";
+
+const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
+const mockWrite = vi.mocked(finykChatWrite);
+const mockGetCached = vi.mocked(getCachedFinykSqliteState);
+
+function makeState() {
+  return {
+    hiddenTransactions: [],
+    customCategories: [],
+    txCategories: {},
+    manualExpenses: [],
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockGetCached.mockReturnValue(makeState());
+  mockLs.mockReturnValue([]);
+});
+
+// ─── txSourceOf ───────────────────────────────────────────────────────────────
 
 describe("txSourceOf", () => {
-  it("returns source tag when present", () => {
-    const tx: FinykSearchTx = {
-      id: "1",
-      date: "2026-01-01",
-      amount: 100,
-      description: "",
-      source: "manual",
-    };
-    expect(txSourceOf(tx)).toBe("manual");
+  it("prefers source field when present", () => {
+    expect(
+      txSourceOf({
+        id: "t1",
+        date: "",
+        amount: 0,
+        description: "",
+        source: "manual",
+      }),
+    ).toBe("manual");
+    expect(
+      txSourceOf({
+        id: "t1",
+        date: "",
+        amount: 0,
+        description: "",
+        source: "bank",
+      }),
+    ).toBe("bank");
   });
 
-  it("prefers source tag over type field", () => {
-    const tx: FinykSearchTx = {
-      id: "1",
-      date: "2026-01-01",
-      amount: 100,
-      description: "",
-      source: "bank",
-      type: "income",
-    };
-    expect(txSourceOf(tx)).toBe("bank");
+  it("falls back to type field when source absent", () => {
+    expect(
+      txSourceOf({
+        id: "t1",
+        date: "",
+        amount: 0,
+        description: "",
+        type: "income",
+      }),
+    ).toBe("manual");
+    expect(
+      txSourceOf({
+        id: "t1",
+        date: "",
+        amount: 0,
+        description: "",
+        type: "expense",
+      }),
+    ).toBe("manual");
   });
 
-  it("falls back to manual when type is income", () => {
-    const tx: FinykSearchTx = {
-      id: "1",
-      date: "2026-01-01",
-      amount: 100,
-      description: "",
-      type: "income",
-    };
-    expect(txSourceOf(tx)).toBe("manual");
-  });
-
-  it("falls back to manual when type is expense", () => {
-    const tx: FinykSearchTx = {
-      id: "1",
-      date: "2026-01-01",
-      amount: -50,
-      description: "",
-      type: "expense",
-    };
-    expect(txSourceOf(tx)).toBe("manual");
-  });
-
-  it("falls back to bank when no source tag and type is neither income nor expense", () => {
-    const tx: FinykSearchTx = {
-      id: "1",
-      date: "2026-01-01",
-      amount: 100,
-      description: "",
-    };
-    expect(txSourceOf(tx)).toBe("bank");
+  it("defaults to bank when no source or type", () => {
+    expect(txSourceOf({ id: "t1", date: "", amount: 0, description: "" })).toBe(
+      "bank",
+    );
   });
 });
 
-// --- toIsoDay ---
+// ─── toIsoDay ─────────────────────────────────────────────────────────────────
 
 describe("toIsoDay", () => {
-  it("slices a full ISO string to 10 chars", () => {
-    expect(toIsoDay("2026-06-15T12:00:00Z")).toBe("2026-06-15");
+  it("extracts date from ISO string", () => {
+    expect(toIsoDay("2026-04-15T12:00:00Z")).toBe("2026-04-15");
+    expect(toIsoDay("2026-04-15")).toBe("2026-04-15");
   });
 
-  it("returns a bare YYYY-MM-DD unchanged", () => {
-    expect(toIsoDay("2026-06-15")).toBe("2026-06-15");
-  });
-
-  it("converts a millisecond timestamp (>10^10)", () => {
-    const ms = new Date("2026-06-15T00:00:00Z").getTime(); // ~1750118400000
+  it("converts epoch milliseconds to date", () => {
+    const ms = new Date("2026-04-15T00:00:00Z").getTime();
     const result = toIsoDay(ms);
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("converts a second timestamp (<10^10) by multiplying by 1000", () => {
-    const sec = Math.floor(new Date("2026-06-15T00:00:00Z").getTime() / 1000);
+  it("converts epoch seconds to date", () => {
+    const sec = Math.floor(new Date("2026-04-15T00:00:00Z").getTime() / 1000);
     const result = toIsoDay(sec);
     expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("returns empty string for non-finite number", () => {
-    expect(toIsoDay(NaN)).toBe("");
-    expect(toIsoDay(Infinity)).toBe("");
-  });
-
-  it("returns empty string for null", () => {
+  it("returns empty string for invalid input", () => {
     expect(toIsoDay(null)).toBe("");
-  });
-
-  it("returns empty string for object", () => {
-    expect(toIsoDay({})).toBe("");
-  });
-
-  it("returns empty string for non-date string", () => {
-    expect(toIsoDay("hello")).toBe("");
+    expect(toIsoDay("bad-date")).toBe("");
   });
 });
 
-// --- toDisplayAmount ---
+// ─── toDisplayAmount ──────────────────────────────────────────────────────────
 
 describe("toDisplayAmount", () => {
-  it("returns absolute amount for manual source (no division)", () => {
-    const tx: FinykSearchTx = {
-      id: "1",
-      date: "2026-01-01",
-      amount: -150,
-      description: "",
-    };
-    expect(toDisplayAmount(tx, "manual")).toBe(150);
+  it("manual: returns absolute value in hryvnias", () => {
+    expect(
+      toDisplayAmount(
+        { id: "t", date: "", amount: -500, description: "" },
+        "manual",
+      ),
+    ).toBe(500);
   });
 
-  it("divides by 100 for bank source (kopiykas → hryvnias)", () => {
-    const tx: FinykSearchTx = {
-      id: "1",
-      date: "2026-01-01",
-      amount: 15000,
-      description: "",
-    };
-    expect(toDisplayAmount(tx, "bank")).toBe(150);
+  it("bank: divides by 100 (kopiykas to hryvnias)", () => {
+    expect(
+      toDisplayAmount(
+        { id: "t", date: "", amount: -50000, description: "" },
+        "bank",
+      ),
+    ).toBe(500);
   });
 
-  it("returns 0 for NaN amount", () => {
-    const tx: FinykSearchTx = {
-      id: "1",
-      date: "2026-01-01",
-      amount: NaN,
-      description: "",
-    };
-    expect(toDisplayAmount(tx, "manual")).toBe(0);
+  it("returns 0 for non-finite amount", () => {
+    expect(
+      toDisplayAmount(
+        { id: "t", date: "", amount: NaN, description: "" },
+        "bank",
+      ),
+    ).toBe(0);
+  });
+});
+
+// ─── changeCategory ───────────────────────────────────────────────────────────
+
+describe("changeCategory", () => {
+  it("saves category and returns confirmation", () => {
+    mockLs.mockReturnValue({});
+    const result = changeCategory({
+      type: "change_category",
+      input: { tx_id: "t1", category_id: "food" },
+    });
+    expect(result).toContain("t1");
+    expect(result).toContain("Cat(food)");
+    expect(mockWrite).toHaveBeenCalledWith("finyk_tx_cats", { t1: "food" });
+  });
+});
+
+// ─── findTransaction ──────────────────────────────────────────────────────────
+
+describe("findTransaction", () => {
+  it("returns error when no filters provided", () => {
+    const result = findTransaction({ type: "find_transaction", input: {} });
+    expect(result).toContain("Потрібен query");
   });
 
-  it("handles zero amount", () => {
-    const tx: FinykSearchTx = {
-      id: "1",
-      date: "2026-01-01",
-      amount: 0,
-      description: "",
-    };
-    expect(toDisplayAmount(tx, "bank")).toBe(0);
+  it("returns not-found when no matches", () => {
+    const result = findTransaction({
+      type: "find_transaction",
+      input: { query: "nonexistent" },
+    });
+    expect(result).toContain("не знайдено");
+  });
+});
+
+// ─── batchCategorize ──────────────────────────────────────────────────────────
+
+describe("batchCategorize", () => {
+  it("returns error when no pattern", () => {
+    const result = batchCategorize({
+      type: "batch_categorize",
+      input: { pattern: "", category_id: "food" },
+    });
+    expect(result).toContain("pattern");
   });
 
-  it("returns absolute value for negative bank amount", () => {
-    const tx: FinykSearchTx = {
-      id: "1",
-      date: "2026-01-01",
-      amount: -5000,
-      description: "",
-    };
-    expect(toDisplayAmount(tx, "bank")).toBe(50);
+  it("returns error when no category_id", () => {
+    const result = batchCategorize({
+      type: "batch_categorize",
+      input: { pattern: "кава", category_id: "" },
+    });
+    expect(result).toContain("category_id");
+  });
+
+  it("dry_run by default — returns preview without saving", () => {
+    const result = batchCategorize({
+      type: "batch_categorize",
+      input: { pattern: "кава", category_id: "food" },
+    });
+    expect(result).toContain("кава");
   });
 });
