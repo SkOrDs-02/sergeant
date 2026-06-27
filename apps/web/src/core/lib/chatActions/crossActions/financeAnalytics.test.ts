@@ -32,7 +32,11 @@ const mockGetTxAmount = vi.mocked(getTxStatAmount);
 const RECENT_SEC = Math.floor((Date.now() - 3600 * 1000) / 1000);
 
 function makeState() {
-  return { hiddenTransactions: [], customCategories: [], txCategories: {} };
+  return {
+    hiddenTransactions: [],
+    customCategories: [],
+    txCategories: {},
+  } as unknown as ReturnType<typeof getCachedFinykSqliteState>;
 }
 
 beforeEach(() => {
@@ -51,7 +55,7 @@ beforeEach(() => {
 
 describe("spendingTrend", () => {
   it("returns formatted report with header", () => {
-    const result = spendingTrend({ type: "spending_trend", input: {} });
+    const result = spendingTrend({ name: "spending_trend", input: {} });
     expect(result).toContain("Тренд витрат");
     expect(result).toContain("Витрати:");
     expect(result).toContain("Дохід:");
@@ -59,18 +63,18 @@ describe("spendingTrend", () => {
   });
 
   it("shows 0 when no transactions", () => {
-    const result = spendingTrend({ type: "spending_trend", input: {} });
+    const result = spendingTrend({ name: "spending_trend", input: {} });
     expect(result).toContain("Витрати: 0 грн");
   });
 
   it("uses default 30-day period", () => {
-    const result = spendingTrend({ type: "spending_trend", input: {} });
+    const result = spendingTrend({ name: "spending_trend", input: {} });
     expect(result).toContain("30 днів");
   });
 
   it("respects custom period_days", () => {
     const result = spendingTrend({
-      type: "spending_trend",
+      name: "spending_trend",
       input: { period_days: 7 },
     });
     expect(result).toContain("7 днів");
@@ -92,7 +96,7 @@ describe("spendingTrend", () => {
       }
       return {};
     });
-    const result = spendingTrend({ type: "spending_trend", input: {} });
+    const result = spendingTrend({ name: "spending_trend", input: {} });
     expect(result).toContain("Транзакцій: 1");
   });
 });
@@ -107,7 +111,7 @@ describe("detectAnomalies", () => {
       }
       return {};
     });
-    const result = detectAnomalies({ type: "detect_anomalies", input: {} });
+    const result = detectAnomalies({ name: "detect_anomalies", input: {} });
     expect(result).toContain("Недостатньо");
   });
 
@@ -124,7 +128,7 @@ describe("detectAnomalies", () => {
       }
       return {};
     });
-    const result = detectAnomalies({ type: "detect_anomalies", input: {} });
+    const result = detectAnomalies({ name: "detect_anomalies", input: {} });
     expect(result).toContain("аномалій не виявлено");
   });
 
@@ -152,7 +156,7 @@ describe("detectAnomalies", () => {
       }
       return {};
     });
-    const result = detectAnomalies({ type: "detect_anomalies", input: {} });
+    const result = detectAnomalies({ name: "detect_anomalies", input: {} });
     expect(result).toContain("Аномальні витрати");
     expect(result).toContain("Великий платіж");
   });
@@ -162,13 +166,13 @@ describe("detectAnomalies", () => {
 
 describe("categoryBreakdown", () => {
   it("returns formatted header with period", () => {
-    const result = categoryBreakdown({ type: "category_breakdown", input: {} });
+    const result = categoryBreakdown({ name: "category_breakdown", input: {} });
     expect(result).toContain("30 днів");
     expect(result).toContain("грн)");
   });
 
   it("returns empty breakdown when no expenses", () => {
-    const result = categoryBreakdown({ type: "category_breakdown", input: {} });
+    const result = categoryBreakdown({ name: "category_breakdown", input: {} });
     expect(result).toContain("0 грн");
   });
 });

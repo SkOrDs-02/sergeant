@@ -34,10 +34,15 @@ beforeEach(() => {
 
 describe("remember", () => {
   it("writes fact and returns success message with id", () => {
-    const entry = { id: "e1", fact: "Люблю каву", category: "personal" };
+    const entry = {
+      id: "e1",
+      fact: "Люблю каву",
+      category: "personal",
+      createdAt: "",
+    };
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: true });
     const result = remember({
-      type: "remember",
+      name: "remember",
       input: { fact: "Люблю каву" },
     }) as { result: string };
     expect(result.result).toContain("Запам'ятав");
@@ -46,27 +51,42 @@ describe("remember", () => {
   });
 
   it("uses 'Оновив' when entry existed", () => {
-    const entry = { id: "e1", fact: "Не люблю горіхи", category: "personal" };
+    const entry = {
+      id: "e1",
+      fact: "Не люблю горіхи",
+      category: "personal",
+      createdAt: "",
+    };
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: false });
     const result = remember({
-      type: "remember",
+      name: "remember",
       input: { fact: "Не люблю горіхи" },
     }) as { result: string };
     expect(result.result).toContain("Оновив");
   });
 
   it("returns object with undo function", () => {
-    const entry = { id: "e2", fact: "Тест", category: "personal" };
+    const entry = {
+      id: "e2",
+      fact: "Тест",
+      category: "personal",
+      createdAt: "",
+    };
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: true });
-    const result = remember({ type: "remember", input: { fact: "Тест" } });
+    const result = remember({ name: "remember", input: { fact: "Тест" } });
     expect(typeof (result as { undo: () => void }).undo).toBe("function");
   });
 
   it("undo: deletes entry when created=true", () => {
-    const entry = { id: "e3", fact: "Undo test", category: "personal" };
+    const entry = {
+      id: "e3",
+      fact: "Undo test",
+      category: "personal",
+      createdAt: "",
+    };
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: true });
     const result = remember({
-      type: "remember",
+      name: "remember",
       input: { fact: "Undo test" },
     }) as { undo: () => void };
     mockRead.mockReturnValue([entry]);
@@ -76,12 +96,22 @@ describe("remember", () => {
   });
 
   it("undo: restores previous entry when updated", () => {
-    const prev = { id: "e4", fact: "Old fact", category: "personal" };
+    const prev = {
+      id: "e4",
+      fact: "Old fact",
+      category: "personal",
+      createdAt: "",
+    };
     mockRead.mockReturnValueOnce([prev]);
-    const entry = { id: "e4", fact: "New fact", category: "personal" };
+    const entry = {
+      id: "e4",
+      fact: "New fact",
+      category: "personal",
+      createdAt: "",
+    };
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: false });
     const result = remember({
-      type: "remember",
+      name: "remember",
       input: { fact: "New fact" },
     }) as { undo: () => void };
     mockRead.mockReturnValue([entry]);
@@ -93,14 +123,14 @@ describe("remember", () => {
     mockUpsert.mockImplementation(() => {
       throw new Error("Storage full");
     });
-    const result = remember({ type: "remember", input: { fact: "X" } });
+    const result = remember({ name: "remember", input: { fact: "X" } });
     expect(result).toBe("Storage full");
   });
 
   it("converts non-string fact to empty string", () => {
-    const entry = { id: "e5", fact: "", category: "personal" };
+    const entry = { id: "e5", fact: "", category: "personal", createdAt: "" };
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: true });
-    remember({ type: "remember", input: { fact: null as unknown as string } });
+    remember({ name: "remember", input: { fact: null as unknown as string } });
     expect(mockUpsert).toHaveBeenCalledWith([], "", undefined);
   });
 });
@@ -109,22 +139,27 @@ describe("remember", () => {
 
 describe("forget", () => {
   it("returns error for empty fact_id", () => {
-    const result = forget({ type: "forget", input: { fact_id: "" } });
+    const result = forget({ name: "forget", input: { fact_id: "" } });
     expect(result).toContain("id факту");
   });
 
   it("returns error when fact not found", () => {
     mockRead.mockReturnValue([]);
-    mockRemove.mockReturnValue({ entries: [], removed: undefined });
-    const result = forget({ type: "forget", input: { fact_id: "nope" } });
+    mockRemove.mockReturnValue({ entries: [], removed: null });
+    const result = forget({ name: "forget", input: { fact_id: "nope" } });
     expect(result).toContain("не знайдено");
   });
 
   it("removes and returns confirmation with fact text", () => {
-    const entry = { id: "e1", fact: "Стара нотатка", category: "personal" };
+    const entry = {
+      id: "e1",
+      fact: "Стара нотатка",
+      category: "personal",
+      createdAt: "",
+    };
     mockRead.mockReturnValue([entry]);
     mockRemove.mockReturnValue({ entries: [], removed: entry });
-    const result = forget({ type: "forget", input: { fact_id: "e1" } });
+    const result = forget({ name: "forget", input: { fact_id: "e1" } });
     expect(result).toContain("Забув");
     expect(result).toContain("Стара нотатка");
     expect(mockWrite).toHaveBeenCalledOnce();
@@ -136,27 +171,37 @@ describe("forget", () => {
 describe("myProfile", () => {
   it("returns empty profile message when no entries", () => {
     mockRead.mockReturnValue([]);
-    const result = myProfile({ type: "my_profile", input: {} });
+    const result = myProfile({ name: "my_profile", input: {} });
     expect(result).toContain("порожній");
   });
 
   it("lists all entries when no category filter", () => {
     mockRead.mockReturnValue([
-      { id: "e1", fact: "Люблю каву", category: "personal" },
-      { id: "e2", fact: "Вегетаріанець", category: "preference" },
+      { id: "e1", fact: "Люблю каву", category: "personal", createdAt: "" },
+      {
+        id: "e2",
+        fact: "Вегетаріанець",
+        category: "preference",
+        createdAt: "",
+      },
     ]);
-    const result = myProfile({ type: "my_profile", input: {} });
+    const result = myProfile({ name: "my_profile", input: {} });
     expect(result).toContain("Люблю каву");
     expect(result).toContain("Вегетаріанець");
   });
 
   it("filters by category", () => {
     mockRead.mockReturnValue([
-      { id: "e1", fact: "Люблю каву", category: "personal" },
-      { id: "e2", fact: "Вегетаріанець", category: "preference" },
+      { id: "e1", fact: "Люблю каву", category: "personal", createdAt: "" },
+      {
+        id: "e2",
+        fact: "Вегетаріанець",
+        category: "preference",
+        createdAt: "",
+      },
     ]);
     const result = myProfile({
-      type: "my_profile",
+      name: "my_profile",
       input: { category: "personal" },
     });
     expect(result).toContain("Люблю каву");
@@ -165,10 +210,10 @@ describe("myProfile", () => {
 
   it("returns 'no records for category' when filter yields empty", () => {
     mockRead.mockReturnValue([
-      { id: "e1", fact: "Каву п'ю", category: "personal" },
+      { id: "e1", fact: "Каву п'ю", category: "personal", createdAt: "" },
     ]);
     const result = myProfile({
-      type: "my_profile",
+      name: "my_profile",
       input: { category: "preference" },
     });
     expect(result).toContain("немає записів");
@@ -176,17 +221,17 @@ describe("myProfile", () => {
 
   it("shows category label from CATEGORY_META", () => {
     mockRead.mockReturnValue([
-      { id: "e1", fact: "Тест", category: "personal" },
+      { id: "e1", fact: "Тест", category: "personal", createdAt: "" },
     ]);
-    const result = myProfile({ type: "my_profile", input: {} });
+    const result = myProfile({ name: "my_profile", input: {} });
     expect(result).toContain("Особисте");
   });
 
   it("includes entry id in output", () => {
     mockRead.mockReturnValue([
-      { id: "abc123", fact: "Щось", category: "personal" },
+      { id: "abc123", fact: "Щось", category: "personal", createdAt: "" },
     ]);
-    const result = myProfile({ type: "my_profile", input: {} });
+    const result = myProfile({ name: "my_profile", input: {} });
     expect(result).toContain("abc123");
   });
 });

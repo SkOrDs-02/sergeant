@@ -28,10 +28,13 @@ const mockWorkouts = vi.mocked(readFizrukWorkouts);
 beforeEach(() => {
   vi.clearAllMocks();
   mockLs.mockReturnValue(null);
-  mockRoutine.mockReturnValue({ habits: [], completions: {} } as ReturnType<
-    typeof loadRoutineState
-  >);
-  mockNutrition.mockReturnValue({} as ReturnType<typeof loadNutritionLog>);
+  mockRoutine.mockReturnValue({
+    habits: [],
+    completions: {},
+  } as unknown as ReturnType<typeof loadRoutineState>);
+  mockNutrition.mockReturnValue(
+    {} as unknown as ReturnType<typeof loadNutritionLog>,
+  );
   mockWorkouts.mockReturnValue([]);
 });
 
@@ -47,7 +50,7 @@ describe("morningBriefing", () => {
     mockRoutine.mockReturnValue({
       habits: [{ id: "h1", name: "Медитація", archived: false }],
       completions: {},
-    } as ReturnType<typeof loadRoutineState>);
+    } as unknown as ReturnType<typeof loadRoutineState>);
     const result = morningBriefing();
     expect(result).toContain("Звички: 0/1");
   });
@@ -57,7 +60,7 @@ describe("morningBriefing", () => {
     mockRoutine.mockReturnValue({
       habits: [{ id: "h1", name: "Медитація", archived: false }],
       completions: { h1: [todayKey] },
-    } as ReturnType<typeof loadRoutineState>);
+    } as unknown as ReturnType<typeof loadRoutineState>);
     const result = morningBriefing();
     expect(result).toContain("Звички: 1/1");
   });
@@ -71,7 +74,7 @@ describe("morningBriefing", () => {
     const todayKey = new Date().toISOString().slice(0, 10);
     mockNutrition.mockReturnValue({
       [todayKey]: { meals: [{ macros: { kcal: 500 } }] },
-    } as ReturnType<typeof loadNutritionLog>);
+    } as unknown as ReturnType<typeof loadNutritionLog>);
     const result = morningBriefing();
     expect(result).toContain("500 ккал");
   });
@@ -89,7 +92,7 @@ describe("weeklySummary", () => {
     const recent = new Date(Date.now() - 2 * 86400000).toISOString();
     mockWorkouts.mockReturnValue([
       { startedAt: recent, endedAt: recent, items: [] },
-    ] as ReturnType<typeof readFizrukWorkouts>);
+    ] as unknown as ReturnType<typeof readFizrukWorkouts>);
     const result = weeklySummary();
     expect(result).toContain("Тренувань: 1");
   });
@@ -98,7 +101,7 @@ describe("weeklySummary", () => {
     const recent = new Date(Date.now() - 2 * 86400000).toISOString();
     mockWorkouts.mockReturnValue([
       { startedAt: recent, endedAt: null, items: [] },
-    ] as ReturnType<typeof readFizrukWorkouts>);
+    ] as unknown as ReturnType<typeof readFizrukWorkouts>);
     const result = weeklySummary();
     expect(result).toContain("Тренувань: 0");
   });

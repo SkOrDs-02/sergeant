@@ -20,7 +20,7 @@ beforeEach(() => {
 describe("addAsset", () => {
   it("returns error for empty name", () => {
     const result = addAsset({
-      type: "add_asset",
+      name: "add_asset",
       input: { name: "", amount: 1000 },
     });
     expect(result).toContain("назва");
@@ -28,7 +28,7 @@ describe("addAsset", () => {
 
   it("returns error for zero amount", () => {
     const result = addAsset({
-      type: "add_asset",
+      name: "add_asset",
       input: { name: "Квартира", amount: 0 },
     });
     expect(result).toContain("додатною");
@@ -36,7 +36,7 @@ describe("addAsset", () => {
 
   it("returns error for negative amount", () => {
     const result = addAsset({
-      type: "add_asset",
+      name: "add_asset",
       input: { name: "Квартира", amount: -100 },
     });
     expect(result).toContain("додатною");
@@ -44,7 +44,7 @@ describe("addAsset", () => {
 
   it("persists new asset with UAH default currency", () => {
     const result = addAsset({
-      type: "add_asset",
+      name: "add_asset",
       input: { name: "Авто", amount: 500000 },
     }) as { result: string };
     expect(result.result).toContain("Авто");
@@ -64,7 +64,7 @@ describe("addAsset", () => {
 
   it("normalizes currency to uppercase 3-char", () => {
     addAsset({
-      type: "add_asset",
+      name: "add_asset",
       input: { name: "Депозит", amount: 1000, currency: "usd" },
     });
     expect(mockWrite).toHaveBeenCalledWith(
@@ -75,7 +75,7 @@ describe("addAsset", () => {
 
   it("trims currency to 3 chars", () => {
     addAsset({
-      type: "add_asset",
+      name: "add_asset",
       input: { name: "X", amount: 100, currency: "EURUSD" },
     });
     expect(mockWrite).toHaveBeenCalledWith(
@@ -87,14 +87,14 @@ describe("addAsset", () => {
   it("appends to existing assets", () => {
     const existing = [{ id: "a1", name: "Old", amount: 100, currency: "UAH" }];
     mockLs.mockReturnValue(existing);
-    addAsset({ type: "add_asset", input: { name: "New", amount: 200 } });
+    addAsset({ name: "add_asset", input: { name: "New", amount: 200 } });
     const written = mockWrite.mock.calls[0]![1] as unknown[];
     expect(written).toHaveLength(2);
   });
 
   it("returns object with undo function", () => {
     const result = addAsset({
-      type: "add_asset",
+      name: "add_asset",
       input: { name: "Test", amount: 100 },
     });
     expect(typeof (result as { undo: () => void }).undo).toBe("function");
@@ -102,7 +102,7 @@ describe("addAsset", () => {
 
   it("undo removes the created asset", () => {
     const result = addAsset({
-      type: "add_asset",
+      name: "add_asset",
       input: { name: "Undo Test", amount: 300 },
     }) as { undo: () => void };
     const written = mockWrite.mock.calls[0]![1] as Array<{ id: string }>;
@@ -119,7 +119,7 @@ describe("addAsset", () => {
 describe("recurringExpense", () => {
   it("returns error for empty name", () => {
     const result = recurringExpense({
-      type: "recurring_expense",
+      name: "recurring_expense",
       input: { name: "", amount: 100 },
     });
     expect(result).toContain("назва");
@@ -128,13 +128,13 @@ describe("recurringExpense", () => {
   it("returns error for zero or negative amount", () => {
     expect(
       recurringExpense({
-        type: "recurring_expense",
+        name: "recurring_expense",
         input: { name: "Netflix", amount: 0 },
       }),
     ).toContain("додатною");
     expect(
       recurringExpense({
-        type: "recurring_expense",
+        name: "recurring_expense",
         input: { name: "Netflix", amount: -5 },
       }),
     ).toContain("додатною");
@@ -142,7 +142,7 @@ describe("recurringExpense", () => {
 
   it("creates subscription and returns confirmation with id", () => {
     const result = recurringExpense({
-      type: "recurring_expense",
+      name: "recurring_expense",
       input: { name: "Netflix", amount: 199, day_of_month: 15 },
     }) as string;
     expect(result).toContain("Netflix");
@@ -152,7 +152,7 @@ describe("recurringExpense", () => {
 
   it("defaults day_of_month to 1 when not provided", () => {
     recurringExpense({
-      type: "recurring_expense",
+      name: "recurring_expense",
       input: { name: "Gym", amount: 500 },
     });
     const written = mockWrite.mock.calls[0]![1] as Array<{
@@ -163,7 +163,7 @@ describe("recurringExpense", () => {
 
   it("clamps out-of-range day_of_month to 1", () => {
     recurringExpense({
-      type: "recurring_expense",
+      name: "recurring_expense",
       input: { name: "X", amount: 100, day_of_month: 45 },
     });
     const written = mockWrite.mock.calls[0]![1] as Array<{
@@ -174,7 +174,7 @@ describe("recurringExpense", () => {
 
   it("stores category when provided", () => {
     recurringExpense({
-      type: "recurring_expense",
+      name: "recurring_expense",
       input: { name: "Gym", amount: 500, category: "health" },
     });
     const written = mockWrite.mock.calls[0]![1] as Array<{ category: string }>;
@@ -183,7 +183,7 @@ describe("recurringExpense", () => {
 
   it("persists to finyk_subs key", () => {
     recurringExpense({
-      type: "recurring_expense",
+      name: "recurring_expense",
       input: { name: "Gym", amount: 500 },
     });
     expect(mockWrite).toHaveBeenCalledWith("finyk_subs", expect.any(Array));

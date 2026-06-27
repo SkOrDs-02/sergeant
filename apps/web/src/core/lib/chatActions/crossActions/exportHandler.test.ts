@@ -32,10 +32,14 @@ const mockWorkouts = vi.mocked(readFizrukWorkouts);
 beforeEach(() => {
   vi.clearAllMocks();
   mockReadLS.mockReturnValue(null);
-  mockRoutine.mockReturnValue({} as ReturnType<typeof loadRoutineState>);
-  mockNutritionLog.mockReturnValue([]);
+  mockRoutine.mockReturnValue(
+    {} as unknown as ReturnType<typeof loadRoutineState>,
+  );
+  mockNutritionLog.mockReturnValue(
+    {} as unknown as ReturnType<typeof loadNutritionLog>,
+  );
   mockNutritionPrefs.mockReturnValue(
-    {} as ReturnType<typeof loadNutritionPrefs>,
+    {} as unknown as ReturnType<typeof loadNutritionPrefs>,
   );
   mockWorkouts.mockReturnValue([]);
 });
@@ -43,7 +47,7 @@ beforeEach(() => {
 describe("exportModuleData", () => {
   it("returns error for unknown module", () => {
     const result = exportModuleData({
-      type: "export_module_data",
+      name: "export_module_data",
       input: { module: "unknown" },
     });
     expect(result).toContain("Невідомий модуль");
@@ -53,7 +57,7 @@ describe("exportModuleData", () => {
   it("exports finyk module", () => {
     mockReadLS.mockReturnValue('{"txs":[]}');
     const result = exportModuleData({
-      type: "export_module_data",
+      name: "export_module_data",
       input: { module: "finyk" },
     });
     expect(result).toContain("Експорт Фінік");
@@ -61,18 +65,19 @@ describe("exportModuleData", () => {
 
   it("exports fizruk module", () => {
     const result = exportModuleData({
-      type: "export_module_data",
+      name: "export_module_data",
       input: { module: "fizruk" },
     });
     expect(result).toContain("Експорт Фізрук");
   });
 
   it("exports routine module", () => {
-    mockRoutine.mockReturnValue({ habits: [], completions: {} } as ReturnType<
-      typeof loadRoutineState
-    >);
+    mockRoutine.mockReturnValue({
+      habits: [],
+      completions: {},
+    } as unknown as ReturnType<typeof loadRoutineState>);
     const result = exportModuleData({
-      type: "export_module_data",
+      name: "export_module_data",
       input: { module: "routine" },
     });
     expect(result).toContain("Експорт Рутина");
@@ -81,9 +86,9 @@ describe("exportModuleData", () => {
   it("exports nutrition module", () => {
     mockNutritionLog.mockReturnValue([
       { date: "2026-06-01", items: [] },
-    ] as ReturnType<typeof loadNutritionLog>);
+    ] as unknown as ReturnType<typeof loadNutritionLog>);
     const result = exportModuleData({
-      type: "export_module_data",
+      name: "export_module_data",
       input: { module: "nutrition" },
     });
     expect(result).toContain("Експорт Харчування");
@@ -92,7 +97,7 @@ describe("exportModuleData", () => {
   it("returns JSON format when requested", () => {
     mockReadLS.mockReturnValue('{"txs":[]}');
     const result = exportModuleData({
-      type: "export_module_data",
+      name: "export_module_data",
       input: { module: "finyk", format: "json" },
     });
     expect(result).toContain("(JSON)");
@@ -101,7 +106,7 @@ describe("exportModuleData", () => {
   it("returns no-data message for finyk when cache is empty", () => {
     mockReadLS.mockReturnValue(null);
     const result = exportModuleData({
-      type: "export_module_data",
+      name: "export_module_data",
       input: { module: "finyk" },
     });
     expect(result).toContain("немає даних");

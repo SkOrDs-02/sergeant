@@ -13,10 +13,6 @@ const mockReadLog = vi.mocked(readFizrukDailyLog);
 
 const RECENT = new Date(Date.now() - 1000 * 60 * 60).toISOString();
 
-function _makeWorkout(startedAt: string, endedAt: string, items = []) {
-  return { startedAt, endedAt, items };
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
   mockReadWorkouts.mockReturnValue([]);
@@ -27,13 +23,13 @@ beforeEach(() => {
 
 describe("suggestWorkout", () => {
   it("returns beginner recommendation when no history", () => {
-    const result = suggestWorkout({ type: "suggest_workout", input: {} });
+    const result = suggestWorkout({ name: "suggest_workout", input: {} });
     expect(result).toContain("full-body");
   });
 
   it("includes focus when provided with no history", () => {
     const result = suggestWorkout({
-      type: "suggest_workout",
+      name: "suggest_workout",
       input: { focus: "спина" },
     }) as string;
     expect(result).toContain("спина");
@@ -53,9 +49,9 @@ describe("suggestWorkout", () => {
           },
         ],
       },
-    ] as ReturnType<typeof readFizrukWorkouts>);
+    ] as unknown as ReturnType<typeof readFizrukWorkouts>);
     const result = suggestWorkout({
-      type: "suggest_workout",
+      name: "suggest_workout",
       input: {},
     }) as string;
     expect(result).toContain("Всього завершених: 1");
@@ -64,8 +60,8 @@ describe("suggestWorkout", () => {
   it("skips ongoing workouts (no endedAt)", () => {
     mockReadWorkouts.mockReturnValue([
       { startedAt: RECENT, endedAt: null, items: [] },
-    ] as ReturnType<typeof readFizrukWorkouts>);
-    const result = suggestWorkout({ type: "suggest_workout", input: {} });
+    ] as unknown as ReturnType<typeof readFizrukWorkouts>);
+    const result = suggestWorkout({ name: "suggest_workout", input: {} });
     expect(result).toContain("full-body");
   });
 });
@@ -74,7 +70,7 @@ describe("suggestWorkout", () => {
 
 describe("compareProgress", () => {
   it("returns error when no completed workouts", () => {
-    const result = compareProgress({ type: "compare_progress", input: {} });
+    const result = compareProgress({ name: "compare_progress", input: {} });
     expect(result).toContain("Немає завершених");
   });
 
@@ -106,9 +102,9 @@ describe("compareProgress", () => {
           },
         ],
       },
-    ] as ReturnType<typeof readFizrukWorkouts>);
+    ] as unknown as ReturnType<typeof readFizrukWorkouts>);
     const result = compareProgress({
-      type: "compare_progress",
+      name: "compare_progress",
       input: { period_days: 30 },
     }) as string;
     expect(result).toContain("Прогрес");
@@ -120,7 +116,7 @@ describe("compareProgress", () => {
 
 describe("weightChart", () => {
   it("returns no-data message when no entries", () => {
-    const result = weightChart({ type: "weight_chart", input: {} });
+    const result = weightChart({ name: "weight_chart", input: {} });
     expect(result).toContain("Немає записів ваги");
   });
 
@@ -130,9 +126,9 @@ describe("weightChart", () => {
     mockReadLog.mockReturnValue([
       { id: "d1", at: recent2, weightKg: 78 },
       { id: "d2", at: recent, weightKg: 77 },
-    ] as ReturnType<typeof readFizrukDailyLog>);
+    ] as unknown as ReturnType<typeof readFizrukDailyLog>);
     const result = weightChart({
-      type: "weight_chart",
+      name: "weight_chart",
       input: { period_days: 30 },
     }) as string;
     expect(result).toContain("Вага за 30 днів");

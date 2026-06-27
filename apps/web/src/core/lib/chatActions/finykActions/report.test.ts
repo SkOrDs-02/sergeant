@@ -24,7 +24,9 @@ function makeCache(txs: Array<{ id: string; amount: number; time?: number }>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetCached.mockReturnValue({ hiddenTransactions: [] });
+  mockGetCached.mockReturnValue({
+    hiddenTransactions: [],
+  } as unknown as ReturnType<typeof getCachedFinykSqliteState>);
   mockLs.mockImplementation((key: string) => {
     if (key === "finyk_tx_cache") return makeCache([]);
     if (key === "finyk_tx_splits") return {};
@@ -34,7 +36,7 @@ beforeEach(() => {
 
 describe("exportReport", () => {
   it("returns a formatted report with header line", () => {
-    const result = exportReport({ type: "export_report", input: {} }) as string;
+    const result = exportReport({ name: "export_report", input: {} }) as string;
     expect(result).toContain("Звіт за");
     expect(result).toContain("Дохід:");
     expect(result).toContain("Витрати:");
@@ -43,7 +45,7 @@ describe("exportReport", () => {
   });
 
   it("reports 0 income/expense for empty cache", () => {
-    const result = exportReport({ type: "export_report", input: {} }) as string;
+    const result = exportReport({ name: "export_report", input: {} }) as string;
     expect(result).toContain("Дохід: 0 грн");
     expect(result).toContain("Витрати: 0 грн");
     expect(result).toContain("Баланс: 0 грн");
@@ -60,7 +62,7 @@ describe("exportReport", () => {
       return {};
     });
     const result = exportReport({
-      type: "export_report",
+      name: "export_report",
       input: { period: "week" },
     }) as string;
     expect(result).toContain("Витрати: 80 грн");
@@ -74,14 +76,16 @@ describe("exportReport", () => {
       return {};
     });
     const result = exportReport({
-      type: "export_report",
+      name: "export_report",
       input: { period: "week" },
     }) as string;
     expect(result).toContain("Дохід: 100 грн");
   });
 
   it("excludes hidden transactions", () => {
-    mockGetCached.mockReturnValue({ hiddenTransactions: ["t_hidden"] });
+    mockGetCached.mockReturnValue({
+      hiddenTransactions: ["t_hidden"],
+    } as unknown as ReturnType<typeof getCachedFinykSqliteState>);
     mockLs.mockImplementation((key: string) => {
       if (key === "finyk_tx_cache") {
         return makeCache([
@@ -92,14 +96,14 @@ describe("exportReport", () => {
       return {};
     });
     const result = exportReport({
-      type: "export_report",
+      name: "export_report",
       input: { period: "week" },
     }) as string;
     expect(result).toContain("Транзакцій: 1");
   });
 
   it("uses current month range by default", () => {
-    const result = exportReport({ type: "export_report", input: {} }) as string;
+    const result = exportReport({ name: "export_report", input: {} }) as string;
     const year = new Date().getFullYear().toString();
     expect(result).toContain(year);
   });
@@ -110,7 +114,7 @@ describe("exportReport", () => {
       return {};
     });
     const result = exportReport({
-      type: "export_report",
+      name: "export_report",
       input: { period: "custom", from: "2026-04-01", to: "2026-04-30" },
     }) as string;
     expect(result).toContain("Звіт за");
@@ -127,7 +131,7 @@ describe("exportReport", () => {
       return {};
     });
     const result = exportReport({
-      type: "export_report",
+      name: "export_report",
       input: { period: "week" },
     }) as string;
     expect(result).toContain("Транзакцій: 2 (витрат: 1, доходів: 1)");
