@@ -379,6 +379,7 @@ ${snapshotText}
     messages: [{ role: "user", content: systemPrompt }],
     timeoutMs: 20_000,
     endpoint: "coach-insight",
+    userId: (req as WithSessionUser).user?.id,
   });
 
   if (!aiResult.ok) {
