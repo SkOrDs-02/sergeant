@@ -46,11 +46,11 @@ import {
 
 import { mobileKVStore } from "@/lib/storage";
 import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
+import { useReduceMotion } from "@/hooks/useReduceMotion";
 
 import { GoalsStep } from "./onboarding/GoalsStep";
 import { ModulesStep } from "./onboarding/ModulesStep";
 import { StepIndicator } from "./onboarding/StepIndicator";
-import { useReduceMotion } from "./onboarding/useReduceMotion";
 import { WelcomeStep } from "./onboarding/WelcomeStep";
 import { wizardReducer } from "./onboarding/wizardState";
 

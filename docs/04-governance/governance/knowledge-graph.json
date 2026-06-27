@@ -1,9 +1,9 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-26",
+  "generated_at": "2026-06-27",
   "counts": {
-    "adr": 64,
+    "adr": 65,
     "audit": 15,
     "hard-rule": 26,
     "initiative": 51,
@@ -547,7 +547,7 @@
       "type": "adr",
       "title": "ADR-0051: Pricing v3 — Free + Pro, single paid tier",
       "path": "docs/04-governance/adr/0051-pricing-v3-single-tier.md",
-      "status": "Accepted",
+      "status": "Superseded by ADR-0068",
       "tier": "core",
       "meta": {
         "number": 51
@@ -725,6 +725,17 @@
       "meta": {
         "number": 67,
         "last_validated": "2026-06-20"
+      }
+    },
+    {
+      "id": "adr:0068",
+      "type": "adr",
+      "title": "ADR-0068: Pricing v4 — ₴199/міс, зворотній trial, уточнені ліміти Free/Pro",
+      "path": "docs/04-governance/adr/0068-pricing-v4-uah-reverse-trial.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 68
       }
     },
     {

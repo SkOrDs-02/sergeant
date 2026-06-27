@@ -7,8 +7,8 @@ export interface EffectiveLimits {
 }
 
 const FREE_LIMITS: EffectiveLimits = {
-  aiRequestsPerDay: 5,
-  cloudSyncDevices: 0,
+  aiRequestsPerDay: 15,
+  cloudSyncDevices: 2,
   monoAutoSync: false,
 };
 

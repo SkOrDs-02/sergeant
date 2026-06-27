@@ -19,6 +19,9 @@ import type {
   ChatAction,
   ChatActionResult,
 } from "./types";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+
+const DAY_MS = 86_400_000;
 
 // Mon-first 0..6 — matches `@sergeant/routine-domain` `isoWeekdayFromDateKey`
 // and `WEEKDAY_LABELS`. Both English short names and Ukrainian short names
@@ -69,14 +72,7 @@ export function handleRoutineAction(
       const completions: Record<string, string[]> = {
         ...routineState.completions,
       };
-      const now = new Date();
-      const targetDate =
-        habitDate ||
-        [
-          now.getFullYear(),
-          String(now.getMonth() + 1).padStart(2, "0"),
-          String(now.getDate()).padStart(2, "0"),
-        ].join("-");
+      const targetDate = habitDate || getKyivDayKey();
       const prevArr = Array.isArray(completions[habit_id])
         ? completions[habit_id].slice()
         : [];
@@ -187,17 +183,19 @@ export function handleRoutineAction(
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
       if (hIdx < 0) return `Звичку ${id} не знайдено.`;
-      const reminders = Array.isArray(habits[hIdx]!.reminderTimes)
-        ? [...habits[hIdx]!.reminderTimes]
+      const habit = habits[hIdx];
+      if (!habit) return `Звичку ${id} не знайдено.`;
+      const reminders = Array.isArray(habit.reminderTimes)
+        ? [...habit.reminderTimes]
         : [];
       if (reminders.includes(normTime)) {
-        return `Нагадування ${normTime} для "${habits[hIdx]!.name || id}" вже існує.`;
+        return `Нагадування ${normTime} для "${habit.name || id}" вже існує.`;
       }
       reminders.push(normTime);
       reminders.sort();
-      habits[hIdx] = { ...habits[hIdx]!, reminderTimes: reminders };
+      habits[hIdx] = { ...habit, reminderTimes: reminders };
       saveRoutineState({ ...state, habits });
-      const habitName = habits[hIdx]!.name || id;
+      const habitName = habit.name || id;
       return {
         result: `Нагадування ${normTime} додано до "${habitName}"`,
         undo: () => {
@@ -205,10 +203,12 @@ export function handleRoutineAction(
           const curHabits = cur.habits.slice();
           const i = curHabits.findIndex((h) => h.id === id);
           if (i < 0) return;
-          const list = Array.isArray(curHabits[i]!.reminderTimes)
-            ? curHabits[i]!.reminderTimes.filter((x) => x !== normTime)
+          const target = curHabits[i];
+          if (!target) return;
+          const list = Array.isArray(target.reminderTimes)
+            ? target.reminderTimes.filter((x) => x !== normTime)
             : [];
-          curHabits[i] = { ...curHabits[i]!, reminderTimes: list };
+          curHabits[i] = { ...target, reminderTimes: list };
           saveRoutineState({ ...cur, habits: curHabits });
         },
       };
@@ -282,12 +282,14 @@ export function handleRoutineAction(
       const habits = state.habits.slice();
       const idx = habits.findIndex((h) => h.id === id);
       if (idx < 0) return `Звичку ${id} не знайдено.`;
-      if (!!habits[idx]!.archived === doArchive) {
-        return `Звичку "${habits[idx]!.name || id}" вже ${doArchive ? "заархівовано" : "активна"}.`;
+      const habit = habits[idx];
+      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!!habit.archived === doArchive) {
+        return `Звичку "${habit.name || id}" вже ${doArchive ? "заархівовано" : "активна"}.`;
       }
-      habits[idx] = { ...habits[idx]!, archived: doArchive };
+      habits[idx] = { ...habit, archived: doArchive };
       saveRoutineState({ ...state, habits });
-      return `Звичку "${habits[idx]!.name || id}" ${doArchive ? "заархівовано" : "повернуто з архіву"}`;
+      return `Звичку "${habit.name || id}" ${doArchive ? "заархівовано" : "повернуто з архіву"}`;
     }
     case "add_calendar_event": {
       const { name, date, time, emoji } = (action as AddCalendarEventAction)
@@ -323,7 +325,9 @@ export function handleRoutineAction(
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
       if (hIdx < 0) return `Звичку ${id} не знайдено.`;
-      const updated = { ...habits[hIdx]! };
+      const habit = habits[hIdx];
+      if (!habit) return `Звичку ${id} не знайдено.`;
+      const updated = { ...habit };
       const changes: string[] = [];
       if (name && name.trim()) {
         updated.name = name.trim();
@@ -377,14 +381,16 @@ export function handleRoutineAction(
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
       if (hIdx < 0) return `Звичку ${id} не знайдено.`;
+      const habit = habits[hIdx];
+      if (!habit) return `Звичку ${id} не знайдено.`;
       habits[hIdx] = {
-        ...habits[hIdx]!,
+        ...habit,
         recurrence: "weekly",
         weekdays: normalized,
       };
       saveRoutineState({ ...state, habits });
       const labels = normalized.map((n) => WEEKDAY_LABEL_UK[n]).join(", ");
-      return `Розклад звички "${habits[hIdx]!.name || id}" — ${labels}`;
+      return `Розклад звички "${habit.name || id}" — ${labels}`;
     }
     case "pause_habit": {
       const { habit_id, paused } = (action as PauseHabitAction).input;
@@ -395,14 +401,16 @@ export function handleRoutineAction(
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
       if (hIdx < 0) return `Звичку ${id} не знайдено.`;
-      const current = habits[hIdx]!.paused === true;
-      const habitName = habits[hIdx]!.name || id;
+      const habit = habits[hIdx];
+      if (!habit) return `Звичку ${id} не знайдено.`;
+      const current = habit.paused === true;
+      const habitName = habit.name || id;
       if (current === target) {
         return target
           ? `Звичка "${habitName}" вже на паузі.`
           : `Звичка "${habitName}" вже активна.`;
       }
-      habits[hIdx] = { ...habits[hIdx]!, paused: target };
+      habits[hIdx] = { ...habit, paused: target };
       saveRoutineState({ ...state, habits });
       return target
         ? `Звичку "${habitName}" поставлено на паузу.`
@@ -437,20 +445,14 @@ export function handleRoutineAction(
       const habitCompletions = Array.isArray(completions[id])
         ? completions[id]
         : [];
-      const now = new Date();
+      const now = Date.now();
       let doneCount = 0;
       let streak = 0;
       let maxStreak = 0;
       let currentStreak = 0;
       const missedDates: string[] = [];
       for (let i = 0; i < days; i++) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        const dk = [
-          d.getFullYear(),
-          String(d.getMonth() + 1).padStart(2, "0"),
-          String(d.getDate()).padStart(2, "0"),
-        ].join("-");
+        const dk = getKyivDayKey(now - i * DAY_MS);
         if (habitCompletions.includes(dk)) {
           doneCount++;
           currentStreak++;
@@ -485,7 +487,7 @@ export function handleRoutineAction(
         : state.habits.filter((h) => !h.archived);
       if (habits.length === 0) return `Звичку ${habit_id} не знайдено.`;
       const completions = state.completions;
-      const now = new Date();
+      const now = Date.now();
       const weeks = Math.ceil(days / 7);
       const weeklyData: number[] = [];
       for (let w = 0; w < weeks; w++) {
@@ -494,20 +496,11 @@ export function handleRoutineAction(
         for (let d = 0; d < 7; d++) {
           const dayOffset = w * 7 + d;
           if (dayOffset >= days) break;
-          const dt = new Date(now);
-          dt.setDate(dt.getDate() - dayOffset);
-          const dk = [
-            dt.getFullYear(),
-            String(dt.getMonth() + 1).padStart(2, "0"),
-            String(dt.getDate()).padStart(2, "0"),
-          ].join("-");
+          const dk = getKyivDayKey(now - dayOffset * DAY_MS);
           for (const h of habits) {
             possible++;
-            if (
-              Array.isArray(completions[h.id]) &&
-              completions[h.id]!.includes(dk)
-            )
-              done++;
+            const hist = completions[h.id];
+            if (Array.isArray(hist) && hist.includes(dk)) done++;
           }
         }
         weeklyData.push(possible > 0 ? Math.round((done / possible) * 100) : 0);
@@ -521,11 +514,11 @@ export function handleRoutineAction(
       }
       const first = weeklyData[0];
       const last = weeklyData[weeklyData.length - 1];
-      if (weeklyData.length >= 2) {
+      if (weeklyData.length >= 2 && first !== undefined && last !== undefined) {
         const trend =
-          last! > first!
+          last > first
             ? "покращується"
-            : last! < first!
+            : last < first
               ? "погіршується"
               : "стабільно";
         parts.push(`Тренд: ${trend} (${first}% → ${last}%)`);

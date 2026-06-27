@@ -532,14 +532,14 @@ const envSchema = z.object({
   AI_QUOTA_FOUNDER_IDS: z.string().optional(),
 
   // ── Pro tiered model degradation (premium → standard → floor) ───────
-  // Master-flag для трирівневої деградації моделі у Pro-юзерів. Коли `false`
-  // (default), `resolveProTier()` завжди повертає premium-tier без жодного
-  // DB-roundtrip → поведінка як зараз (Sonnet завжди). Коли `true` — Pro
-  // отримує premium-модель перші `AI_PRO_PREMIUM_DAILY_LIMIT` запитів/добу,
-  // далі standard, далі floor (майже-безкоштовна). Pro НІКОЛИ не бачить 429.
+  // Master-flag для трирівневої деградації моделі у Pro-юзерів. Коли `true`
+  // (default), Pro отримує premium-модель перші `AI_PRO_PREMIUM_DAILY_LIMIT`
+  // запитів/добу, далі standard, далі floor (майже-безкоштовна). Коли `false`,
+  // `resolveProTier()` завжди повертає premium-tier без жодного DB-roundtrip.
+  // Pro НІКОЛИ не бачить 429.
   // Читається у `modules/chat/aiQuota.ts` через `process.env` (як решта
   // AI_QUOTA_*), оголошено тут щоб validated-env лишався single inventory.
-  AI_TIERED_PRO_ENABLED: boolFromEnv(false),
+  AI_TIERED_PRO_ENABLED: boolFromEnv(true),
   /** Скільки premium-запитів (дорога модель) на добу для Pro до деградації. */
   AI_PRO_PREMIUM_DAILY_LIMIT: coerceInt.nonnegative().default(20),
   /**

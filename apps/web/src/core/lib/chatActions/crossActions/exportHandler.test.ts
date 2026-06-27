@@ -36,10 +36,10 @@ beforeEach(() => {
     {} as unknown as ReturnType<typeof loadRoutineState>,
   );
   mockNutritionLog.mockReturnValue(
-    {} as unknown as ReturnType<typeof loadNutritionLog>,
+    [] as unknown as ReturnType<typeof loadNutritionLog>,
   );
   mockNutritionPrefs.mockReturnValue(
-    {} as unknown as ReturnType<typeof loadNutritionPrefs>,
+    {} as ReturnType<typeof loadNutritionPrefs>,
   );
   mockWorkouts.mockReturnValue([]);
 });

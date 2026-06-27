@@ -114,6 +114,41 @@ export function isFirstActionCompletedForModule(
   );
 }
 
+/**
+ * Tier 2 — cross-module activation. Distinct modules a user has
+ * completed a first action in count toward the breadth signal that
+ * `activation_v2` (Finyk-only depth) misses. Returns the flagged
+ * modules in `ALL_MODULES` order.
+ */
+export function getModulesWithFirstAction(store: KVStore): DashboardModuleId[] {
+  return ALL_MODULES.filter((moduleId) =>
+    isFirstActionCompletedForModule(store, moduleId),
+  );
+}
+
+/**
+ * Distinct-module count at which a user counts as "multi-module
+ * activated". Two is the smallest count that proves the cross-module
+ * promise landed — the user did not stay inside a single tracker.
+ */
+export const MULTI_MODULE_ACTIVATION_THRESHOLD = 2;
+
+/** Idempotency flag for the once-per-profile `multi_module_activated` event. */
+export const MULTI_MODULE_ACTIVATED_FIRED_KEY = "hub_multi_module_activated_v1";
+
+export function markMultiModuleActivatedFired(store: KVStore): void {
+  store.setString(MULTI_MODULE_ACTIVATED_FIRED_KEY, "1");
+}
+
+export function isMultiModuleActivatedFired(store: KVStore): boolean {
+  return store.getString(MULTI_MODULE_ACTIVATED_FIRED_KEY) === "1";
+}
+
+/** Inverse of {@link markMultiModuleActivatedFired} — for tests and the Settings → «Restart onboarding» reset. */
+export function clearMultiModuleActivatedFired(store: KVStore): void {
+  store.remove(MULTI_MODULE_ACTIVATED_FIRED_KEY);
+}
+
 export function isSoftAuthDismissed(store: KVStore): boolean {
   return store.getString(SOFT_AUTH_DISMISSED_KEY) === "1";
 }

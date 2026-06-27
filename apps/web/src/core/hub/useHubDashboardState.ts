@@ -15,6 +15,7 @@ import {
   getActiveModules,
   getActiveNudge,
   getHideInactiveModules,
+  getModulesWithFirstAction,
   getOnboardingGoals,
   getVibePicks,
   hasSeenCrossModulePreview,
@@ -253,6 +254,7 @@ export function useHubDashboardState(props: {
     if (nudgeDismissed || sessionDays < 2) return null;
     return getActiveNudge(localStorageStore, sessionDays, {
       picks: getVibePicks(localStorageStore),
+      modulesWithEntries: new Set(getModulesWithFirstAction(localStorageStore)),
     });
   }, [sessionDays, nudgeDismissed]);
 

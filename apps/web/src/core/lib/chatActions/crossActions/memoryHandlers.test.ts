@@ -19,6 +19,7 @@ import {
   writeMemoryEntries,
 } from "../../../profile/memoryBank";
 import { forget, myProfile, remember } from "./memoryHandlers";
+import type { MemoryEntry } from "../../../profile/types";
 
 const mockRead = vi.mocked(readMemoryEntries);
 const mockWrite = vi.mocked(writeMemoryEntries);
@@ -38,8 +39,7 @@ describe("remember", () => {
       id: "e1",
       fact: "Люблю каву",
       category: "personal",
-      createdAt: "",
-    };
+    } as MemoryEntry;
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: true });
     const result = remember({
       name: "remember",
@@ -55,8 +55,7 @@ describe("remember", () => {
       id: "e1",
       fact: "Не люблю горіхи",
       category: "personal",
-      createdAt: "",
-    };
+    } as MemoryEntry;
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: false });
     const result = remember({
       name: "remember",
@@ -70,8 +69,7 @@ describe("remember", () => {
       id: "e2",
       fact: "Тест",
       category: "personal",
-      createdAt: "",
-    };
+    } as MemoryEntry;
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: true });
     const result = remember({ name: "remember", input: { fact: "Тест" } });
     expect(typeof (result as { undo: () => void }).undo).toBe("function");
@@ -82,8 +80,7 @@ describe("remember", () => {
       id: "e3",
       fact: "Undo test",
       category: "personal",
-      createdAt: "",
-    };
+    } as MemoryEntry;
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: true });
     const result = remember({
       name: "remember",
@@ -100,15 +97,13 @@ describe("remember", () => {
       id: "e4",
       fact: "Old fact",
       category: "personal",
-      createdAt: "",
-    };
+    } as MemoryEntry;
     mockRead.mockReturnValueOnce([prev]);
     const entry = {
       id: "e4",
       fact: "New fact",
       category: "personal",
-      createdAt: "",
-    };
+    } as MemoryEntry;
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: false });
     const result = remember({
       name: "remember",
@@ -128,7 +123,7 @@ describe("remember", () => {
   });
 
   it("converts non-string fact to empty string", () => {
-    const entry = { id: "e5", fact: "", category: "personal", createdAt: "" };
+    const entry = { id: "e5", fact: "", category: "personal" } as MemoryEntry;
     mockUpsert.mockReturnValue({ entries: [entry], entry, created: true });
     remember({ name: "remember", input: { fact: null as unknown as string } });
     expect(mockUpsert).toHaveBeenCalledWith([], "", undefined);
@@ -155,8 +150,7 @@ describe("forget", () => {
       id: "e1",
       fact: "Стара нотатка",
       category: "personal",
-      createdAt: "",
-    };
+    } as MemoryEntry;
     mockRead.mockReturnValue([entry]);
     mockRemove.mockReturnValue({ entries: [], removed: entry });
     const result = forget({ name: "forget", input: { fact_id: "e1" } });
@@ -177,14 +171,9 @@ describe("myProfile", () => {
 
   it("lists all entries when no category filter", () => {
     mockRead.mockReturnValue([
-      { id: "e1", fact: "Люблю каву", category: "personal", createdAt: "" },
-      {
-        id: "e2",
-        fact: "Вегетаріанець",
-        category: "preference",
-        createdAt: "",
-      },
-    ]);
+      { id: "e1", fact: "Люблю каву", category: "personal" },
+      { id: "e2", fact: "Вегетаріанець", category: "preference" },
+    ] as MemoryEntry[]);
     const result = myProfile({ name: "my_profile", input: {} });
     expect(result).toContain("Люблю каву");
     expect(result).toContain("Вегетаріанець");
@@ -192,14 +181,9 @@ describe("myProfile", () => {
 
   it("filters by category", () => {
     mockRead.mockReturnValue([
-      { id: "e1", fact: "Люблю каву", category: "personal", createdAt: "" },
-      {
-        id: "e2",
-        fact: "Вегетаріанець",
-        category: "preference",
-        createdAt: "",
-      },
-    ]);
+      { id: "e1", fact: "Люблю каву", category: "personal" },
+      { id: "e2", fact: "Вегетаріанець", category: "preference" },
+    ] as MemoryEntry[]);
     const result = myProfile({
       name: "my_profile",
       input: { category: "personal" },
@@ -210,8 +194,8 @@ describe("myProfile", () => {
 
   it("returns 'no records for category' when filter yields empty", () => {
     mockRead.mockReturnValue([
-      { id: "e1", fact: "Каву п'ю", category: "personal", createdAt: "" },
-    ]);
+      { id: "e1", fact: "Каву п'ю", category: "personal" },
+    ] as MemoryEntry[]);
     const result = myProfile({
       name: "my_profile",
       input: { category: "preference" },
@@ -221,16 +205,16 @@ describe("myProfile", () => {
 
   it("shows category label from CATEGORY_META", () => {
     mockRead.mockReturnValue([
-      { id: "e1", fact: "Тест", category: "personal", createdAt: "" },
-    ]);
+      { id: "e1", fact: "Тест", category: "personal" },
+    ] as MemoryEntry[]);
     const result = myProfile({ name: "my_profile", input: {} });
     expect(result).toContain("Особисте");
   });
 
   it("includes entry id in output", () => {
     mockRead.mockReturnValue([
-      { id: "abc123", fact: "Щось", category: "personal", createdAt: "" },
-    ]);
+      { id: "abc123", fact: "Щось", category: "personal" },
+    ] as MemoryEntry[]);
     const result = myProfile({ name: "my_profile", input: {} });
     expect(result).toContain("abc123");
   });
