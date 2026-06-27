@@ -4,15 +4,15 @@ import { effectiveLimits } from "./effectiveLimits.js";
 describe("effectiveLimits", () => {
   it("returns free limits for 'free' plan", () => {
     const limits = effectiveLimits("free");
-    expect(limits.aiRequestsPerDay).toBe(5);
-    expect(limits.cloudSyncDevices).toBe(0);
+    expect(limits.aiRequestsPerDay).toBe(15);
+    expect(limits.cloudSyncDevices).toBe(2);
     expect(limits.monoAutoSync).toBe(false);
   });
 
   it("returns free limits for 'plus' plan (not pro)", () => {
     const limits = effectiveLimits("plus");
-    expect(limits.aiRequestsPerDay).toBe(5);
-    expect(limits.cloudSyncDevices).toBe(0);
+    expect(limits.aiRequestsPerDay).toBe(15);
+    expect(limits.cloudSyncDevices).toBe(2);
     expect(limits.monoAutoSync).toBe(false);
   });
 
