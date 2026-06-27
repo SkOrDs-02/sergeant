@@ -136,7 +136,7 @@ const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
   floor: {
     chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", "claude-3-haiku-20240307"),
     coach: () =>
-      envStr("AI_PRO_FLOOR_COACH_MODEL", "nvidia/nemotron-3-ultra:free"),
+      envStr("AI_PRO_FLOOR_COACH_MODEL", "google/gemini-2.5-flash-lite"),
   },
 };
 

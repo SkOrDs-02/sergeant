@@ -561,10 +561,15 @@ const envSchema = z.object({
     "google/gemini-2.5-flash-lite",
   ),
   /**
-   * Coach floor-модель — справді безкоштовна OpenRouter-модель (coach ходить
-   * через factory, тож free-модель тут можлива). Налаштовується env-ом.
+   * Coach floor-модель. Дефолт — `gemini-2.5-flash-lite` (= standard): cost-sim
+   * 2026-06-27 показав, що OpenRouter free-моделі (nemotron-3-ultra:free)
+   * стабільно падають на rate-limit, а fallback на Anthropic тут не рятує —
+   * factory передає OpenRouter-model-id, який Anthropic не приймає, тож coach
+   * лишився б без відповіді. Gemini Flash Lite коштує ~$0.0002/виклик —
+   * практично безкоштовно, але надійно. Справді-free модель можна вказати
+   * env-ом, якщо її стабільність влаштовує.
    */
-  AI_PRO_FLOOR_COACH_MODEL: stringWithDefault("nvidia/nemotron-3-ultra:free"),
+  AI_PRO_FLOOR_COACH_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
 
   /** Інтервал SSE heartbeat (мс). Тримає з'єднання живим через проксі. */
   SSE_HEARTBEAT_MS: coerceInt.positive().default(15_000),
