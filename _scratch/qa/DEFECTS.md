@@ -44,3 +44,11 @@ D-001/D-002 BLOCK live-testing of ~25 display/history-heavy stories (charts, hea
 
 ## ENV NOTE (2026-06-27)
 - Original ephemeral worktree `gifted-snyder-a3f621` was de-registered from git (pruned) and gutted mid-run by an external process; QA artifacts lost from disk and rebuilt here in fresh worktree `qa-feature-audit` (branch worktree-qa-feature-audit, from clean origin/main). All Phase-1/2 results reconstructed from session context.
+## D-004 — Logout spinner hangs indefinitely in demo+authenticated mixed state [CONFIRMED, Medium]
+- **Severity:** Medium (UX dead-end; server-side logout DOES succeed, only the client transition hangs).
+- **Surface:** account / auth (`apps/web` profile → Вийти). Affects ACC-07 (logout).
+- **Repro:** Enter demo (`/?demo=1`) → header "Увійти в акаунт" → sign-up real account (now demo flag still active AND authenticated) → Профіль tab → "Вийти".
+- **Observed:** Button switches to "Виходжу… / Завантаження…" (disabled) and STAYS there indefinitely (>5s, never resolves). Network: `POST /api/auth/sign-out` → **200 OK** (server session cleared), `GET /api/auth/get-session` → 200 after. So the logout succeeds server-side; the React handler never completes the post-logout state transition (no redirect to /sign-in, spinner never clears).
+- **Root-cause hypothesis:** logout handler awaits an auth-state flip / redirect that is gated or starved by the still-active demo mode (`isDemoActive()` true). The demo overlay keeps the app in a pseudo-authenticated render path, so the `signOut().then(redirect)` continuation either never fires or the demo gate swallows the navigation. Likely the handler should also clear the demo flag (or the demo+auth combination should be impossible — entering auth from demo should exit demo first).
+- **Trigger condition:** ONLY in the demo→sign-up→logout path. A clean (non-demo) sign-in→logout likely works (untested here because the session started in demo). Worth verifying the pure-auth logout path separately.
+- **Fix direction (Phase 3):** (a) on successful real sign-up/sign-in from demo, exit demo mode (clear demo flag) so the app is never simultaneously demo+authed; OR (b) the logout handler must clear the demo flag + force-navigate to /sign-in regardless of demo state; OR (c) guard the logout continuation so it doesn't await a demo-gated condition.
