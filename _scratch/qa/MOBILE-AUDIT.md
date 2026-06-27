@@ -55,6 +55,40 @@ iPhone 15 + Pixel 7. Перевіряє не лише статичний DOM, а
 
 Жодного horizontal-overflow після будь-якої взаємодії. AI-sheet, bottom-nav, StatusScrip-навігація працюють на мобільному viewport.
 
+## Touch-interaction дефекти (репорт власника, 2026-06-28)
+
+Власник тестував на реальному телефоні — автопрохід їх не зловив, бо Playwright `.tap()`
+не відтворює touch-drag та scroll-фокус так, як живий палець. Обидва — від занадто
+агресивної обробки дотику; обидва верифіковано справжніми touch/CDP-жестами.
+
+### M-006 — будь-який дотик до картки модуля «рухає» її (P1, touch)
+
+- **Де:** `core/hub/useHubDashboardState.ts` — dnd-kit сенсори.
+- **Корінь:** `PointerSensor` (distance:8, без delay) + `TouchSensor` (delay:250) разом.
+  На тачскріні дотик генерує і `pointerdown`, і `touchstart`; PointerSensor спрацьовує
+  на перших 8px руху раніше за 250ms TouchSensor'а → будь-який свайп/неточний тап по
+  тілу картки (drag-listeners навішані на тіло поза editMode) стартує reorder, ламаючи
+  скрол і «рухаючи» модуль.
+- **Фікс:** `PointerSensor → MouseSensor`. Миша — миттєвий 8px drag; тач — лише TouchSensor
+  (тап <250ms → відкрити модуль, свайп → скрол, hold ≥250ms → reorder).
+- **Верифіковано:** touchscreen-тап «Фінік» → `/`→`budgets` (відкрив, не зрушив);
+  drag активується (mid-drag `dragging:2` + dnd aria-announce) → reorder цілий.
+
+### M-007 — «поле вводу для чату виникає саме по собі» (P1, touch)
+
+- **Де:** `shared/components/ui/AIPill.tsx` — `useCollapseOnScroll`.
+- **Корінь:** асиметрія guard'ів. Collapse мав `dy > 4`, expand — ні (`else if (y <= threshold)`).
+  Тож скрол **вниз** крізь верхню смугу (y≤80) розгортав широкий pill із плейсхолдером
+  «Запитай Sergeant…» (виглядає як інпут) під час звичайного читання — «виникало само по собі».
+- **Фікс:** симетричний `dy < -4` на expand → pill розгортається лише при навмисному
+  скролі **вгору** до верху (документований намір «restore when scroll back up»).
+- **Верифіковано:** initial=collapsed; скрол вниз біля верху=collapsed (фікс); past=collapsed;
+  скрол угору=expanded (restore збережено).
+
+> Перевірено на той самий пітфол усю кодову базу: інших кастомних dnd-kit сенсорів немає;
+> `routine/HabitListItem` використовує нативний HTML5 `draggable` (десктоп-only, тап на тачі
+> не перехоплює) — не зачеплено.
+
 ## Дефекти
 
 ### M-001 — Demo-pill «Демо · Вийти» перекриває хедер на мобілці (P1 — onboarding-конверсія, mobile)
