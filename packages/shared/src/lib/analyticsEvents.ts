@@ -200,6 +200,35 @@ export const ANALYTICS_EVENTS = Object.freeze({
   SUBSCRIPTION_CANCELED: "subscription_canceled",
   SUBSCRIPTION_RENEWED: "subscription_renewed",
 
+  // Billing failures (billing-observability — ADR-0001 §ADR-1.16). Fired
+  // server-side from the Stripe webhook handler
+  // (`apps/server/src/modules/billing/stripe.ts`) on every NEGATIVE payment
+  // signal, so PostHog can measure checkout drop-rate і 3DS-fail rate без
+  // експорту card data. ONE event, розрізнюваний полем `kind`; ніколи не
+  // несе PAN / CVC / raw error blob. Payload-контракт:
+  //
+  //   PAYMENT_FAILED {
+  //     kind: "payment_intent" | "invoice" | "charge" | "checkout_expired",
+  //     source: "stripe_webhook",
+  //     stripe_event_id: string,
+  //     user_resolved: boolean,        // false → distinctId анонімний
+  //     // kind="payment_intent":
+  //     error_code?: string | null,           // last_payment_error.code
+  //     decline_code?: string | null,         // last_payment_error.decline_code
+  //     is_3ds?: boolean,                      // code === "payment_intent_authentication_failure"
+  //     // kind="invoice":
+  //     attempt_count?: number | null,
+  //     next_payment_attempt?: string | null,  // ISO-8601 (Stripe unix→ISO)
+  //     // kind="charge":
+  //     failure_code?: string | null,
+  //     network_decline_code?: string | null,  // outcome.network_decline_code
+  //   }
+  //
+  // distinctId резолвиться через customer → subscriptions.provider_customer_id
+  // → user_id; на miss — fallback `stripe_customer:<id>` / `stripe_event:<id>`
+  // (анонімно), щоб aggregate drop-rate лишався countable.
+  PAYMENT_FAILED: "payment_failed",
+
   // Pricing / waitlist. Очікувані payload-контракти:
   //
   //   PRICING_VIEWED         { source?: "settings" | "paywall" | "direct" }
