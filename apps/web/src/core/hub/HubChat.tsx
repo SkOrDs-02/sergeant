@@ -161,7 +161,7 @@ function HubChat({
         onClose={closePaywall}
         surface="ai_chat_limit"
         title="Безлімітний AI-чат у Pro"
-        description="Free-тариф має 5 AI-повідомлень на день. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
+        description="Free-тариф має 10 AI-повідомлень на день. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
       />
       {/* eslint-enable sergeant-design/no-cyrillic-jsx-literal */}
     </div>

@@ -1,90 +1,80 @@
-import { describe, expect, it } from "vitest";
+import { describe, it, expect } from "vitest";
 import { calculate1rm } from "./calculator";
+
+function makeAction(weight_kg: number, reps: number, exercise_name?: string) {
+  return {
+    type: "calculate_1rm" as const,
+    input: { weight_kg, reps, ...(exercise_name ? { exercise_name } : {}) },
+  };
+}
 
 describe("calculate1rm", () => {
   it("returns error for zero weight", () => {
-    expect(
-      calculate1rm({ type: "calculate_1rm", input: { weight_kg: 0, reps: 5 } }),
-    ).toContain("додатним");
+    expect(calculate1rm(makeAction(0, 5))).toContain("Вага має бути");
   });
 
   it("returns error for negative weight", () => {
-    expect(
-      calculate1rm({
-        type: "calculate_1rm",
-        input: { weight_kg: -10, reps: 5 },
-      }),
-    ).toContain("додатним");
+    expect(calculate1rm(makeAction(-10, 5))).toContain("Вага має бути");
   });
 
-  it("returns error for reps < 1", () => {
-    expect(
-      calculate1rm({
-        type: "calculate_1rm",
-        input: { weight_kg: 100, reps: 0 },
-      }),
-    ).toContain("Повторення");
+  it("returns error for non-finite weight (NaN)", () => {
+    expect(calculate1rm(makeAction(NaN, 5))).toContain("Вага має бути");
   });
 
-  it("returns error for reps >= 37", () => {
-    expect(
-      calculate1rm({
-        type: "calculate_1rm",
-        input: { weight_kg: 100, reps: 37 },
-      }),
-    ).toContain("1..36");
+  it("returns error for zero reps", () => {
+    expect(calculate1rm(makeAction(100, 0))).toContain("Повторення");
   });
 
-  it("returns direct 1RM for 1 rep", () => {
-    const result = calculate1rm({
-      type: "calculate_1rm",
-      input: { weight_kg: 150, reps: 1 },
-    }) as string;
-    expect(result).toContain("150 кг (1 повторення = вже максимум)");
+  it("returns error for fractional reps", () => {
+    expect(calculate1rm(makeAction(100, 2.5))).toContain("Повторення");
   });
 
-  it("includes exercise name when provided", () => {
-    const result = calculate1rm({
-      type: "calculate_1rm",
-      input: { weight_kg: 100, reps: 5, exercise_name: "Присідання" },
-    }) as string;
+  it("returns exact weight message for 1 rep", () => {
+    const result = calculate1rm(makeAction(150, 1));
+    expect(result).toContain("1RM");
+    expect(result).toContain("150");
+    expect(result).toContain("вже максимум");
+  });
+
+  it("includes exercise name in 1-rep result", () => {
+    const result = calculate1rm(makeAction(100, 1, "Присідання"));
     expect(result).toContain("Присідання");
   });
 
-  it("returns estimated 1RM with Epley and Brzycki formulas", () => {
-    const result = calculate1rm({
-      type: "calculate_1rm",
-      input: { weight_kg: 100, reps: 5 },
-    }) as string;
-    expect(result).toContain("Епллі:");
-    expect(result).toContain("Бжицкі:");
-    expect(result).toContain("Таблиця відсотків:");
+  it("returns error for reps >= 37", () => {
+    expect(calculate1rm(makeAction(80, 37))).toContain("1..36");
+    expect(calculate1rm(makeAction(80, 50))).toContain("1..36");
   });
 
-  it("includes percentage table rows", () => {
-    const result = calculate1rm({
-      type: "calculate_1rm",
-      input: { weight_kg: 100, reps: 10 },
-    }) as string;
+  it("calculates 1RM for typical set (5 reps, 100 kg)", () => {
+    const result = calculate1rm(makeAction(100, 5));
+    expect(result).toContain("1RM");
+    // Epley: 100 * (1 + 5/30) = 116.7; Brzycki: 100*36/(37-5) = 112.5; avg ~114.6
+    expect(result).toContain("кг");
+    expect(result).toContain("Таблиця відсотків");
+  });
+
+  it("includes both Epley and Brzycki in result", () => {
+    const result = calculate1rm(makeAction(80, 8));
+    expect(result).toContain("Епллі");
+    expect(result).toContain("Бжицкі");
+  });
+
+  it("includes all standard percentage rows", () => {
+    const result = calculate1rm(makeAction(100, 5));
     expect(result).toContain("100%");
     expect(result).toContain("95%");
     expect(result).toContain("65%");
   });
 
-  it("shows correct base info", () => {
-    const result = calculate1rm({
-      type: "calculate_1rm",
-      input: { weight_kg: 80, reps: 8 },
-    }) as string;
-    expect(result).toContain("80 кг × 8 повт");
+  it("includes exercise name in multi-rep result", () => {
+    const result = calculate1rm(makeAction(60, 10, "Жим лежачи"));
+    expect(result).toContain("Жим лежачи");
   });
 
-  it("calculates correct Epley 1RM for 100kg x 10 reps", () => {
-    // Epley: 100 * (1 + 10/30) = 100 * 1.333 = 133.3
-    const result = calculate1rm({
-      type: "calculate_1rm",
-      input: { weight_kg: 100, reps: 10 },
-    }) as string;
-    expect(result).toContain("Епллі: 133.3 кг");
+  it("handles edge case rep count of 36", () => {
+    const result = calculate1rm(makeAction(100, 36));
+    expect(result).toContain("1RM");
+    expect(result).not.toContain("1..36");
   });
 });

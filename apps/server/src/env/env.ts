@@ -390,7 +390,10 @@ const envSchema = z.object({
    */
   LLM_READONLY_PROVIDER: z
     .enum(["anthropic", "openrouter", "stub"])
-    .default("anthropic"),
+    // Default = PROD (Railway, 2026-06-27): classify живе на OpenRouter. Без
+    // OPENROUTER_API_KEY factory деградує у Stub (`{"class":"chat"}`) — для
+    // local-dev/CI на Anthropic вистав `LLM_READONLY_PROVIDER=anthropic`.
+    .default("openrouter"),
   /**
    * PR-25 — окремий provider для weekly-digest (`POST /api/weekly-digest`,
    * WF-08 ingest). Дозволяє перемкнути digest-генерацію у `stub`-mode, який
@@ -406,7 +409,10 @@ const envSchema = z.object({
    */
   LLM_DIGEST_PROVIDER: z
     .enum(["anthropic", "openrouter", "stub"])
-    .default("anthropic"),
+    // Default = PROD (Railway, 2026-06-27): weekly-digest на OpenRouter. Без
+    // OPENROUTER_API_KEY factory деградує у Stub (template-звіт без LLM-коментарів);
+    // для local-dev/CI на Anthropic вистав `LLM_DIGEST_PROVIDER=anthropic`.
+    .default("openrouter"),
   /**
    * Окремий provider для coach-insight (`POST /api/coach/insight`). Перемикає
    * генерацію проактивного коуч-повідомлення на OpenRouter (model-eval
@@ -417,7 +423,10 @@ const envSchema = z.object({
    */
   LLM_COACH_PROVIDER: z
     .enum(["anthropic", "openrouter", "stub"])
-    .default("anthropic"),
+    // Default = PROD (Railway, 2026-06-27): coach-insight на OpenRouter (gpt-5.1).
+    // Без OPENROUTER_API_KEY factory деградує у Stub; для local-dev/CI на Anthropic
+    // вистав `LLM_COACH_PROVIDER=anthropic`. Anthropic — фолбек (LLM_FALLBACK_ENABLED).
+    .default("openrouter"),
   /**
    * Provider fallback chain. Коли `true` і primary provider = `openrouter`,
    * `getLLMProvider()` обгортає результат у `FallbackProvider`, який при
@@ -521,6 +530,47 @@ const envSchema = z.object({
    * the validated-env surface stays the single inventory of `AI_QUOTA_*`.
    */
   AI_QUOTA_FOUNDER_IDS: z.string().optional(),
+
+  // ── Pro tiered model degradation (premium → standard → floor) ───────
+  // Master-flag для трирівневої деградації моделі у Pro-юзерів. Коли `false`
+  // (default), `resolveProTier()` завжди повертає premium-tier без жодного
+  // DB-roundtrip → поведінка як зараз (Sonnet завжди). Коли `true` — Pro
+  // отримує premium-модель перші `AI_PRO_PREMIUM_DAILY_LIMIT` запитів/добу,
+  // далі standard, далі floor (майже-безкоштовна). Pro НІКОЛИ не бачить 429.
+  // Читається у `modules/chat/aiQuota.ts` через `process.env` (як решта
+  // AI_QUOTA_*), оголошено тут щоб validated-env лишався single inventory.
+  AI_TIERED_PRO_ENABLED: boolFromEnv(false),
+  /** Скільки premium-запитів (дорога модель) на добу для Pro до деградації. */
+  AI_PRO_PREMIUM_DAILY_LIMIT: coerceInt.nonnegative().default(20),
+  /**
+   * Скільки standard-запитів (дешевша модель) на добу для Pro після вичерпання
+   * premium. Понад це — floor-рівень (∞, майже-безкоштовна модель). Лічильник
+   * у bucket `standard`; разом із premium-bucket дають каскад.
+   */
+  AI_PRO_STANDARD_DAILY_LIMIT: coerceInt.nonnegative().default(80),
+  /** Chat standard-модель (Anthropic — tool-use працює). Haiku 4.5 за замовч. */
+  AI_PRO_STANDARD_CHAT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
+  /**
+   * Chat floor-модель. Anthropic Haiku 3 (~$0.25/$1.25 за 1M, ~12× дешевше
+   * Sonnet) — лишається Anthropic, бо chat прибитий до streaming + tool-use +
+   * prompt-cache, а безкоштовні OpenRouter-моделі tool-use не підтримують.
+   */
+  AI_PRO_FLOOR_CHAT_MODEL: stringWithDefault("claude-3-haiku-20240307"),
+  /** Coach standard-модель (через factory/OpenRouter). Gemini Flash Lite. */
+  AI_PRO_STANDARD_COACH_MODEL: stringWithDefault(
+    "google/gemini-2.5-flash-lite",
+  ),
+  /**
+   * Coach floor-модель. Дефолт — `gemini-2.5-flash-lite` (= standard): cost-sim
+   * 2026-06-27 показав, що OpenRouter free-моделі (nemotron-3-ultra:free)
+   * стабільно падають на rate-limit, а fallback на Anthropic тут не рятує —
+   * factory передає OpenRouter-model-id, який Anthropic не приймає, тож coach
+   * лишився б без відповіді. Gemini Flash Lite коштує ~$0.0002/виклик —
+   * практично безкоштовно, але надійно. Справді-free модель можна вказати
+   * env-ом, якщо її стабільність влаштовує.
+   */
+  AI_PRO_FLOOR_COACH_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+
   /** Інтервал SSE heartbeat (мс). Тримає з'єднання живим через проксі. */
   SSE_HEARTBEAT_MS: coerceInt.positive().default(15_000),
 
@@ -1247,9 +1297,12 @@ const envSchema = z.object({
    * `google/gemma-4-31b-it:free`), або `@preset/<slug>` — тоді модель і
    * fallback-ланцюг керуються пресетом у дашборді OpenRouter (без редеплою).
    */
-  OPENROUTER_READONLY_MODEL: stringWithDefault(""),
-  OPENROUTER_DIGEST_MODEL: stringWithDefault(""),
-  OPENROUTER_COACH_MODEL: stringWithDefault(""),
+  // Defaults = PROD (Railway, 2026-06-27). Застосовуються лише коли відповідний
+  // `LLM_*_PROVIDER=openrouter`; за порожнього значення fallback на `OPENROUTER_MODEL`,
+  // далі на model самого call-site-а.
+  OPENROUTER_READONLY_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+  OPENROUTER_DIGEST_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+  OPENROUTER_COACH_MODEL: stringWithDefault("openai/gpt-5.1"),
 });
 
 export type Env = z.infer<typeof envSchema>;

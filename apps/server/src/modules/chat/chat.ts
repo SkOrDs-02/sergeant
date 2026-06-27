@@ -14,6 +14,7 @@ import {
   recordAnthropicUsage,
 } from "../../lib/anthropic.js";
 import type { WithAiQuotaRefund } from "./aiQuota.js";
+import { resolveProTier } from "./aiQuota.js";
 import { SYSTEM_PROMPT_VERSION } from "./tools.js";
 import {
   applyMessagesCacheBreakpoint,
@@ -404,8 +405,16 @@ export default async function handler(
     // легко займають 1.5–2k токенів; нижчі значення обрізали відповідь
     // посеред речення. Тримаємо із запасом — модель сама зупиниться раніше,
     // якщо контент закінчився.
+    // Pro tiered degradation: the tool-result synthesis is the expensive
+    // Sonnet turn, so it carries the tier. `resolveProTier` returns the
+    // Anthropic model for this Pro user's daily tier (premium Sonnet →
+    // standard Haiku 4.5 → floor Haiku 3 — all Anthropic, so streaming +
+    // tool-use + prompt-cache keep working). Free/Anon/founder/flag-off get
+    // the premium model = `CHAT_MODEL_SYNTHESIS` (unchanged behaviour). The
+    // first-turn Haiku router below is intentionally left untiered.
+    const proTier = await resolveProTier(req, res, "chat");
     const payload = {
-      model: env.CHAT_MODEL_SYNTHESIS,
+      model: proTier.model,
       max_tokens: 2500,
       system: buildSystem(context),
       tools: TOOLS_WITH_CACHE,
