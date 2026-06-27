@@ -68,3 +68,6 @@
 - iter 4: routine tested; FOUND D-001 (root-caused). hub/account batch.
 - iter 5: confirmed D-002 (fizruk+nutrition empty in demo). Triage batch -> 115/200 statused.
 - iter 6 (ENV RECOVERY): original worktree pruned/gutted mid-run; QA artifacts lost. Created fresh worktree qa-feature-audit, rebuilt all artifacts (CSV+DEFECTS+PROGRESS+script) from context. Reinstalling to resume.
+
+## FIZRUK recovery cluster CLOSED (live-backend, real workout history): logged Присідання 100×5 via retroactive entry → unblocked FIZ-05 (exercise detail/PR/load-calc), FIZ-16 (muscle atlas + recovery readiness), FIZ-20 (last-session hint), FIZ-24 (recovery conflict 'Рано навантажувати'), FIZ-28 (recovery focus), FIZ-10/11 retests. Fizruk now only FIZ-19 (voice/mic) + FIZ-30 (SW-sync) BLOCKED.
+## TALLY after fizruk: PASS 73 · RENDER 87 · BLOCKED 37 · FAIL 3 · Phase4 44.
