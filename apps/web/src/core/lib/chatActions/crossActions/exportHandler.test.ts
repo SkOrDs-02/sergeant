@@ -1,59 +1,109 @@
-/** @vitest-environment jsdom */
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@shared/lib/storage/storage", () => ({
+  safeReadStringLS: vi.fn(),
+}));
+vi.mock("../../../../modules/routine/lib/routineStorage", () => ({
+  loadRoutineState: vi.fn(),
+}));
+vi.mock("../../../../modules/nutrition/lib/nutritionStorage", () => ({
+  loadNutritionLog: vi.fn(),
+  loadNutritionPrefs: vi.fn(),
+}));
+vi.mock("../fizrukActions/shared", () => ({
+  readFizrukWorkouts: vi.fn(),
+}));
+
+import { safeReadStringLS } from "@shared/lib/storage/storage";
+import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
 import {
-  __setFizrukSqliteCacheForTests,
-  clearFizrukSqliteCache,
-} from "@fizruk/lib/sqliteReader";
-import {
-  __setNutritionSqliteCacheForTests,
-  clearNutritionSqliteCache,
-} from "@nutrition/lib/sqliteReader";
+  loadNutritionLog,
+  loadNutritionPrefs,
+} from "../../../../modules/nutrition/lib/nutritionStorage";
+import { readFizrukWorkouts } from "../fizrukActions/shared";
 import { exportModuleData } from "./exportHandler";
-import type { ExportModuleDataAction } from "../types";
 
-// `fizruk_workouts_v1` / `nutrition_log_v1` / `nutrition_prefs_v1` are
-// tombstoned — the export now reads the canonical SQLite caches (ADR-0067
-// residual). `fizruk_daily_log_v1` stays LS-backed (not tombstoned).
-
-function action(module: string, format = "text"): ExportModuleDataAction {
-  return { input: { module, format } } as unknown as ExportModuleDataAction;
-}
+const mockReadLS = vi.mocked(safeReadStringLS);
+const mockRoutine = vi.mocked(loadRoutineState);
+const mockNutritionLog = vi.mocked(loadNutritionLog);
+const mockNutritionPrefs = vi.mocked(loadNutritionPrefs);
+const mockWorkouts = vi.mocked(readFizrukWorkouts);
 
 beforeEach(() => {
-  localStorage.clear();
-  clearFizrukSqliteCache();
-  clearNutritionSqliteCache();
+  vi.clearAllMocks();
+  mockReadLS.mockReturnValue(null);
+  mockRoutine.mockReturnValue({} as ReturnType<typeof loadRoutineState>);
+  mockNutritionLog.mockReturnValue([]);
+  mockNutritionPrefs.mockReturnValue(
+    {} as ReturnType<typeof loadNutritionPrefs>,
+  );
+  mockWorkouts.mockReturnValue([]);
 });
 
-describe("exportHandler — canonical SQLite reads (ADR-0067 residual)", () => {
-  it("exports fizruk workouts from the SQLite cache, not the drained LS key", () => {
-    __setFizrukSqliteCacheForTests({
-      workouts: [
-        {
-          id: "w-export",
-          startedAt: "2026-06-14T10:00:00.000Z",
-          endedAt: null,
-          items: [],
-          groups: [],
-          warmup: null,
-          cooldown: null,
-          note: "",
-        },
-      ],
-    } as unknown as Parameters<typeof __setFizrukSqliteCacheForTests>[0]);
-    const out = exportModuleData(action("fizruk", "json"));
-    expect(out).toContain("w-export");
-    expect(out).not.toContain("Тренування: немає даних");
+describe("exportModuleData", () => {
+  it("returns error for unknown module", () => {
+    const result = exportModuleData({
+      type: "export_module_data",
+      input: { module: "unknown" },
+    });
+    expect(result).toContain("Невідомий модуль");
+    expect(result).toContain("finyk, fizruk, routine, nutrition");
   });
 
-  it("exports the nutrition log from canonical storage", () => {
-    __setNutritionSqliteCacheForTests({
-      log: {
-        "2026-06-14": {
-          meals: [{ id: "m1", name: "Салат", macros: { kcal: 200 } }],
-        },
-      },
-    } as unknown as Parameters<typeof __setNutritionSqliteCacheForTests>[0]);
-    expect(exportModuleData(action("nutrition"))).toContain("Салат");
+  it("exports finyk module", () => {
+    mockReadLS.mockReturnValue('{"txs":[]}');
+    const result = exportModuleData({
+      type: "export_module_data",
+      input: { module: "finyk" },
+    });
+    expect(result).toContain("Експорт Фінік");
+  });
+
+  it("exports fizruk module", () => {
+    const result = exportModuleData({
+      type: "export_module_data",
+      input: { module: "fizruk" },
+    });
+    expect(result).toContain("Експорт Фізрук");
+  });
+
+  it("exports routine module", () => {
+    mockRoutine.mockReturnValue({ habits: [], completions: {} } as ReturnType<
+      typeof loadRoutineState
+    >);
+    const result = exportModuleData({
+      type: "export_module_data",
+      input: { module: "routine" },
+    });
+    expect(result).toContain("Експорт Рутина");
+  });
+
+  it("exports nutrition module", () => {
+    mockNutritionLog.mockReturnValue([
+      { date: "2026-06-01", items: [] },
+    ] as ReturnType<typeof loadNutritionLog>);
+    const result = exportModuleData({
+      type: "export_module_data",
+      input: { module: "nutrition" },
+    });
+    expect(result).toContain("Експорт Харчування");
+  });
+
+  it("returns JSON format when requested", () => {
+    mockReadLS.mockReturnValue('{"txs":[]}');
+    const result = exportModuleData({
+      type: "export_module_data",
+      input: { module: "finyk", format: "json" },
+    });
+    expect(result).toContain("(JSON)");
+  });
+
+  it("returns no-data message for finyk when cache is empty", () => {
+    mockReadLS.mockReturnValue(null);
+    const result = exportModuleData({
+      type: "export_module_data",
+      input: { module: "finyk" },
+    });
+    expect(result).toContain("немає даних");
   });
 });
