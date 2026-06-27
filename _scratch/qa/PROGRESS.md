@@ -47,7 +47,9 @@
 
 ## ENV: now in worktree qa-feature-audit (E:\.claude\Sergeant\.claude\worktrees\qa-feature-audit), branch worktree-qa-feature-audit. Reinstalling deps + db-schema, then restart vite :5173.
 
-## Live tally: BLOCKED 56 · PASS 34 · RENDER 22 · FAIL 3(fixed) · pending 85 | Phase4 retested 19
+## Live tally: 160/200 statused — PASS 45 · RENDER 57 · BLOCKED 55 · FAIL 3(fixed) · pending 40 | Phase4 retested 20
+## Covered this push: hub settings (all 3 tabs → HUB-09/10/11/14/15/24/25/26/33/38/39/40 + ROU-32/33/34), finyk Overview/Assets (FIN-12/14/15/16/17/26), nutrition Журнал+AddMealSheet (NUT-02/04/13/15/16/22/23/24/26/32/33), fizruk WorkoutsHome (FIZ-02/03/04/06/11/17/18/27), routine (ROU-04/07/14/21).
+## Remaining 40 pending: mostly auth-flow (ACC create/onboarding), finyk create (FIN-04/06/13/18/22/25/28/34), routine create (ROU-06/08/09/10/30/37), fizruk body/measure create (FIZ-07/08/09/10/12/13/21/22/23), nutrition (NUT-03... AI), hub (HUB-04/18/31/32/36).
 ## Defects: D-001 FIXED, D-002 FIXED, D-003 (mixed-lang exercise/muscle labels, pre-existing catalog, low-pri, logged not fixed).
 ## Phase-4 retest PASS: routine stats/heatmap/leaders (ROU-11/12/13), fizruk progress/PR/recent (FIZ-14/15/26).
 ## Remaining: 85 pending Phase-2 create-flows (finyk display FIN-12..18, hub settings HUB-09..40, nutrition/fizruk create) + nutrition display retest (NUT-25/26/29).
