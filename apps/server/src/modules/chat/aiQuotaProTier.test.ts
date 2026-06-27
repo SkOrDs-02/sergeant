@@ -149,11 +149,11 @@ describe("resolveProTier — Pro cascade premium → standard → floor", () => 
     expect(r.model).toBe("openai/gpt-5.1");
   });
 
-  it("coach floor → free OpenRouter model", async () => {
+  it("coach floor → reliable cheap OpenRouter model (gemini-flash-lite)", async () => {
     pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(full());
     const r = await resolveProTier(makeReq(), makeRes(), "coach");
     expect(r.tier).toBe("floor");
-    expect(r.model).toBe("nvidia/nemotron-3-ultra:free");
+    expect(r.model).toBe("google/gemini-2.5-flash-lite");
   });
 });
 
