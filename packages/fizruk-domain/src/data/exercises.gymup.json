@@ -1207,7 +1207,7 @@
     },
     {
       "id": "sumo_deadlift",
-      "name": { "uk": "Становая тяга сумо", "en": "Sumo Deadlift" },
+      "name": { "uk": "Станова тяга сумо", "en": "Sumo Deadlift" },
       "primaryGroup": "glutes",
       "muscles": {
         "primary": ["gluteus_maximus", "adductors"],
@@ -1356,7 +1356,7 @@
 
     {
       "id": "deadlift",
-      "name": { "uk": "Становая тяга", "en": "Deadlift" },
+      "name": { "uk": "Станова тяга", "en": "Deadlift" },
       "primaryGroup": "full_body",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus", "erector_spinae"],
