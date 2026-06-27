@@ -171,7 +171,7 @@ export function NotificationsSection() {
             <span className="text-subtle">Час</span>
             <input
               type="time"
-              className="bg-bg border border-line rounded-xl px-3 py-2 text-sm text-text"
+              className="bg-bg border border-line rounded-xl px-3 py-2 text-sm text-text touch-target"
               value={`${String(monthlyPlan.reminderHour).padStart(2, "0")}:${String(monthlyPlan.reminderMinute).padStart(2, "0")}`}
               onChange={(e) => {
                 const [h, m] = e.target.value.split(":").map(Number);
@@ -196,7 +196,7 @@ export function NotificationsSection() {
               type="number"
               min={0}
               max={23}
-              className="w-16 h-9 rounded-xl bg-panel border border-line px-2 text-sm text-text"
+              className="w-16 h-9 touch-target rounded-xl bg-panel border border-line px-2 text-sm text-text"
               value={nutritionPrefs.reminderHour ?? 12}
               onChange={(e) => {
                 const next: NutritionPrefs = {

@@ -38,7 +38,12 @@ export function DemoModeBadge() {
       aria-label={messages.onboarding.demoBadgeLabel}
       title={messages.onboarding.demoBadgeTitle}
       className={cn(
-        "fixed top-2 left-1/2 -translate-x-1/2 z-300 safe-area-pt select-none",
+        // Mobile: drop below the header band — full-width headers (module
+        // title, settings search) leave no free top-center slot, so a
+        // top-pinned pill obscured them. Desktop headers are narrow → keep
+        // the original top-center placement from `sm:` up.
+        "fixed top-16 left-1/2 -translate-x-1/2 z-300 select-none",
+        "sm:top-2 sm:safe-area-pt",
         "inline-flex items-center gap-1.5 h-8 pl-3 pr-2.5 rounded-full",
         "bg-brand-500/10 border border-brand-500/30 text-brand-strong dark:text-brand",
         "text-style-caption font-semibold shadow-soft backdrop-blur-sm",
