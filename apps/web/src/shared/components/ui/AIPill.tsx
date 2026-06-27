@@ -167,13 +167,16 @@ function useCollapseOnScroll(threshold = 80) {
         }
         const dy = y - lastY.current;
         // Collapse on any meaningful downward scroll past the threshold.
-        // Expand ONLY when the user has returned close to the top — not on
-        // every small upward delta. iOS rubber-band and finger-jitter near
-        // the pill's vertical level produced tiny negative `dy` values that
-        // were flipping the pill open during scroll, even though the user
-        // had never tapped it (user report 2026-05-26 / `ui-layout-styling-fixes`).
+        // Expand ONLY on a deliberate upward gesture back near the top —
+        // matching the documented "restore when they scroll back up" intent.
+        // The expand branch previously had no direction guard, so scrolling
+        // DOWN through the top band (y ≤ threshold) flashed the wide
+        // input-like pill open during ordinary reading — it "appeared by
+        // itself" before y even passed the threshold (mobile report
+        // 2026-06-28). The symmetric `dy < -4` guard keeps it a pip until
+        // the user actually scrolls up toward the assistant.
         if (y > threshold && dy > 4) setCollapsed(true);
-        else if (y <= threshold) setCollapsed(false);
+        else if (y <= threshold && dy < -4) setCollapsed(false);
         lastY.current = y;
         ticking.current = false;
       });
