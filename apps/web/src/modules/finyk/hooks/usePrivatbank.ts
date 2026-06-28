@@ -3,6 +3,7 @@ import { privatApi, isApiError } from "@shared/api";
 import { logger } from "@shared/lib";
 import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
   readRaw,
   writeRaw,
@@ -259,13 +260,12 @@ export function usePrivatbank(enabled = true) {
     setLoadingTx(true);
     setSyncState((s) => ({ ...s, status: "loading", source: "none" }));
     try {
-      const now = new Date();
-      const startDate = fmtDate(
-        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`,
-      );
-      const endDate = fmtDate(
-        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
-      );
+      // Kyiv-anchored month window so users outside EET fetch the correct
+      // month's statements (domain invariant: day boundaries in Europe/Kyiv).
+      const { year, month, day } = getKyivDateParts();
+      const mm = String(month).padStart(2, "0");
+      const startDate = fmtDate(`${year}-${mm}-01`);
+      const endDate = fmtDate(`${year}-${mm}-${String(day).padStart(2, "0")}`);
 
       const allTxs: PrivatTransaction[] = [];
       for (const acc of accs) {
@@ -308,6 +308,9 @@ export function usePrivatbank(enabled = true) {
 
       setTransactions(unique);
       saveTxCache(unique);
+      // UTC-anchored wall-clock instant: the moment this sync completed
+      // (lastUpdated / lastSuccess), not a day boundary — Kyiv anchoring N/A.
+      // eslint-disable-next-line no-restricted-syntax
       const now2 = new Date();
       setLastUpdated(now2);
       setSyncState({
