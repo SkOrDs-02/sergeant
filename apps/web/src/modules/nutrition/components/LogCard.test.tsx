@@ -31,6 +31,7 @@ vi.mock("../lib/nutritionStorage", async () => {
 import { estimateLogBytes } from "../lib/nutritionStorage";
 import { LogCard } from "./LogCard";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { addDaysISODate } from "@sergeant/nutrition-domain";
 
 const today = getKyivDayKey();
 
@@ -82,11 +83,9 @@ describe("LogCard", () => {
 
   it("shows and confirms the duplicate-yesterday flow", () => {
     const onDuplicateYesterday = vi.fn();
-    const yesterday = (() => {
-      const d = new Date(today + "T00:00:00");
-      d.setDate(d.getDate() - 1);
-      return d.toISOString().slice(0, 10);
-    })();
+    // Use the same date helper the component uses (addDaysISODate) so the key
+    // matches its `previousDayIso` regardless of host timezone.
+    const yesterday = addDaysISODate(today, -1);
     renderLog({
       onDuplicateYesterday,
       log: {

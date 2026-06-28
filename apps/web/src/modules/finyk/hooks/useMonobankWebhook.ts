@@ -254,6 +254,10 @@ export function useMonobankWebhook({
   useEffect(() => {
     if (!mirrorEnabled || !userId || accounts.length === 0) return;
     let cancelled = false;
+    // UTC-anchored wall-clock instant: the exact moment this account snapshot
+    // is written, not a day boundary — a true timestamp, so Kyiv anchoring
+    // does not apply here.
+    // eslint-disable-next-line no-restricted-syntax
     const snapshotAt = new Date().toISOString();
     void (async () => {
       try {
@@ -357,8 +361,18 @@ export function useMonobankWebhook({
       if (!isConnected) throw new Error("monobank not connected");
       setLoadingHistory(true);
       try {
-        const from = new Date(year, month, 1).toISOString();
-        const to = new Date(year, month + 1, 1).toISOString();
+        // Kyiv-anchored month boundaries (consistent with the current-month
+        // logic above) so historical drill-down isn't off-by-hours for users
+        // outside EET. `month` is 0-based; shift to 1-based for the ISO string.
+        const m1 = month + 1;
+        const from = new Date(
+          `${year}-${String(m1).padStart(2, "0")}-01T00:00:00+03:00`,
+        ).toISOString();
+        const toYear = m1 === 12 ? year + 1 : year;
+        const toMonth = m1 === 12 ? 1 : m1 + 1;
+        const to = new Date(
+          `${toYear}-${String(toMonth).padStart(2, "0")}-01T00:00:00+03:00`,
+        ).toISOString();
         const key = `${from}|${to}`;
 
         const data = await queryClient.fetchQuery({

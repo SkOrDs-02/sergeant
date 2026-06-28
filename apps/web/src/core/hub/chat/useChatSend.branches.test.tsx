@@ -148,13 +148,13 @@ describe("useChatSend — guard branches", () => {
 
   it("free-tier user is paywalled after the daily limit is reached", async () => {
     flags.isPro = false;
-    // Seed today's counter at the limit.
+    // Seed today's counter at the free daily limit (FREE_DAILY_AI_CHAT_LIMIT = 15).
     const { getKyivDayKey } = await vi.importActual<
       typeof import("@shared/lib/time/kyivTime")
     >("@shared/lib/time/kyivTime");
     localStorage.setItem(
       "sergeant:ai-chat:daily-count:v1",
-      JSON.stringify({ day: getKyivDayKey(), count: 5 }),
+      JSON.stringify({ day: getKyivDayKey(), count: 15 }),
     );
     const { result } = renderWithCapture();
     await act(async () => {

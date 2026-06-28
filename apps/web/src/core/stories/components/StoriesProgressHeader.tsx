@@ -74,7 +74,7 @@ export function StoriesProgressHeader({
             onClose();
           }}
           aria-label="Закрити"
-          className="w-9 h-9 rounded-full bg-white/15 border border-white/20 text-white hover:bg-white/25 flex items-center justify-center transition-colors"
+          className="w-9 h-9 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-white/15 border border-white/20 text-white hover:bg-white/25 flex items-center justify-center transition-colors"
         >
           <Icon name="close" size={16} strokeWidth={2.5} />
         </button>
