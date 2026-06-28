@@ -571,6 +571,45 @@ describe("AnthropicBudgetGuard — monthly projection", () => {
     expect(captures.filter((c) => c.threshold === "monthly")).toHaveLength(1);
   });
 
+  it("uses a month-scoped Redis TTL for monthly (not the 36h daily TTL)", async () => {
+    const calls: { key: string; ttl: number }[] = [];
+    const redis = {
+      set: async (
+        key: string,
+        _v: string,
+        _m: "EX",
+        ttl: number,
+        _nx: "NX",
+      ): Promise<"OK" | null> => {
+        calls.push({ key, ttl });
+        return "OK";
+      },
+    };
+    // 2026-05-13T12:00Z. Hard ($5) + monthly ($50) both breach at spend $5.5.
+    const mockNow = new Date("2026-05-13T12:00:00Z").getTime();
+    const guard = createGuard({
+      now: () => mockNow,
+      redis,
+      capture: () => {},
+      monthlyBudgetUsd: () => 50,
+    });
+    recordSpend(5.5);
+    await guard.runBudgetCheckTick();
+
+    const THIRTY_SIX_H = 36 * 60 * 60;
+    const monthly = calls.find((c) => c.key.endsWith(":monthly"));
+    const daily = calls.find(
+      (c) => c.key.endsWith(":hard") || c.key.endsWith(":soft"),
+    );
+    expect(monthly).toBeDefined();
+    expect(daily).toBeDefined();
+    // Daily stays at the fixed 36h TTL…
+    expect(daily?.ttl).toBe(THIRTY_SIX_H);
+    // …monthly spans the rest of the month (~18.5 days) + 36h buffer, so it
+    // survives a mid-month restart/other-pod without re-firing.
+    expect(monthly?.ttl).toBeGreaterThan(15 * 24 * 60 * 60);
+  });
+
   it("does not re-fire after a day rollover within the same month", async () => {
     const captures: AnthropicBudgetCaptureInput[] = [];
     let mockNow = new Date("2026-05-13T12:00:00Z").getTime();

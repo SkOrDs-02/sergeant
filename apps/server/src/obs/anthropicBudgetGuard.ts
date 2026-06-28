@@ -489,7 +489,7 @@ export class AnthropicBudgetGuard {
           key,
           "1",
           "EX",
-          ALERT_FLAG_TTL_SECONDS,
+          this.flagTtlSeconds(threshold),
           "NX",
         );
         if (result === "OK") {
@@ -510,6 +510,31 @@ export class AnthropicBudgetGuard {
     }
     this.state.firedAlerts.add(key);
     return true;
+  }
+
+  /**
+   * TTL Redis-прапора за threshold-ом. Daily (soft/hard) → 36h (переживає
+   * DST/clock-skew у межах доби). Monthly → **до кінця поточного UTC-місяця
+   * + 36h буфер**, інакше спільний 36h-TTL прострочився б усередині місяця і
+   * на іншому поді / після рестарту (порожній in-memory `firedAlerts`)
+   * monthly projection стрельнув би вдруге. Місячний ключ — `YYYY-MM`, тож
+   * наступний місяць однаково отримує свіжий ключ.
+   */
+  private flagTtlSeconds(threshold: AnthropicBudgetThreshold): number {
+    if (threshold !== "monthly") return ALERT_FLAG_TTL_SECONDS;
+    const nowMs = this.now();
+    const d = new Date(nowMs);
+    const startOfNextMonthMs = Date.UTC(
+      d.getUTCFullYear(),
+      d.getUTCMonth() + 1,
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
+    const untilMonthEnd = Math.ceil((startOfNextMonthMs - nowMs) / 1000);
+    return Math.max(untilMonthEnd, 0) + ALERT_FLAG_TTL_SECONDS;
   }
 
   private resolveRedisClient(): AnthropicBudgetRedisClient | null {
