@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
   getWeekKey,
   loadDigest,
@@ -29,7 +30,9 @@ export function useMondayAutoDigest() {
     if (!enabled) return;
 
     const now = new Date();
-    const isMonday = now.getDay() === 1;
+    // Kyiv-anchored weekday so the Monday auto-digest fires on Kyiv's Monday,
+    // not the host-local one (domain invariant: day boundaries in Europe/Kyiv).
+    const isMonday = getKyivDateParts(now).weekday === 1;
     if (!isMonday) return;
 
     const weekKey = getWeekKey(now);

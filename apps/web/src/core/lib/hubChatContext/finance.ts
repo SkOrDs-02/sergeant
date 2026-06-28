@@ -14,19 +14,20 @@ import {
   resolveExpenseCategoryMeta,
 } from "../../../modules/finyk/utils";
 import { fmt } from "../hubChatUtils";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { AllData, BudgetGoal, BudgetLimit, CategoryDef } from "./types";
 
 function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
-  const dayOfMonth = now.getDate();
-  const daysInMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-  ).getDate();
+  const { year, month, day } = getKyivDateParts(now);
+  const dayOfMonth = day;
+  // days-in-month: calendar arithmetic on the Kyiv-resolved year/month;
+  // .getDate() here yields the month length, not a host-local day boundary.
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time
+  const daysInMonth = new Date(year, month, 0).getDate();
   const daysLeft = daysInMonth - dayOfMonth;
 
   lines.push(
-    `[Сьогодні] ${now.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}`,
+    `[Сьогодні] ${now.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Kyiv" })}`,
   );
   lines.push(
     `[День місяця] ${dayOfMonth} з ${daysInMonth} (залишилось ${daysLeft} днів)`,
@@ -63,12 +64,11 @@ function appendBalanceLines(lines: string[], d: AllData): void {
 
 function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
   if (d.statTx.length === 0) return;
-  const dayOfMonth = now.getDate();
-  const daysInMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-  ).getDate();
+  const { year, month, day } = getKyivDateParts(now);
+  const dayOfMonth = day;
+  // days-in-month: calendar arithmetic on the Kyiv-resolved year/month (see above).
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time
+  const daysInMonth = new Date(year, month, 0).getDate();
   const spent = d.statTx
     .filter((t) => t.amount < 0)
     .reduce((s, t) => s + getTxStatAmount(t, d.txSplits), 0);
