@@ -5,18 +5,17 @@ import { AIPill } from "./AIPill";
 /**
  * `AIPill` — persistent AI affordance що сидить над bottom-nav.
  *
- * Введений у Sergeant v2 редизайн (PR-7a / 2026-05). Це pull-surface
- * для chat: primary tap → /chat, mic → voice input. Контекстний
- * placeholder per module (`finyk` → "Запитай про витрати…", тощо).
+ * Введений у Sergeant v2 редизайн (PR-7a / 2026-05). Compact sparkle-FAB:
+ * tap → відкриває chat sheet (`emitHubBus("openChat")`). Голосовий ввід
+ * живе всередині самого чату, не в пілі.
  *
- * **A11y note:** outer контейнер це `<div role="group">`, а primary
- * + mic — two sibling `<button>` elements. Не nested-buttons.
+ * **A11y note:** один `<button>` з `aria-label` — без nested-interactive.
  */
 const meta: Meta<typeof AIPill> = {
   title: "UI / AIPill (v2 redesign)",
   component: AIPill,
-  // Wrap у MemoryRouter, бо AIPill уживає useNavigate. Centered layout
-  // не підходить для fixed-position pill — використовуємо `fullscreen`.
+  // Wrap у MemoryRouter, бо контекст роутера очікується вище по дереву.
+  // Centered layout не підходить для fixed-position FAB — `fullscreen`.
   parameters: { layout: "fullscreen" },
   decorators: [
     (Story) => (
@@ -29,15 +28,11 @@ const meta: Meta<typeof AIPill> = {
   ],
   tags: ["autodocs"],
   argTypes: {
-    module: {
-      control: "select",
-      options: [null, "finyk", "fizruk", "routine", "nutrition"],
-    },
-    placeholder: { control: "text" },
+    standalone: { control: "boolean" },
     bottom: { control: "number" },
   },
   args: {
-    module: null,
+    standalone: true,
     bottom: 96,
   },
 };
@@ -45,27 +40,13 @@ export default meta;
 
 type Story = StoryObj<typeof AIPill>;
 
-/** Hub level (no module accent) — default placeholder "Запитай Sergeant…". */
+/** Hub level — standalone primary FAB anchored in the bottom-right corner. */
 export const Hub: Story = {};
 
-/** Finyk context — placeholder "Запитай про витрати…". */
-export const Finyk: Story = { args: { module: "finyk" } };
-
-/** Fizruk context — placeholder "Що сьогодні робити?". */
-export const Fizruk: Story = { args: { module: "fizruk" } };
-
-/** Routine context — placeholder "Запитай про звички…". */
-export const Routine: Story = { args: { module: "routine" } };
-
-/** Nutrition context — placeholder "Що приготувати?". */
-export const Nutrition: Story = { args: { module: "nutrition" } };
-
-/** Custom placeholder override — caller may force a specific copy. */
-export const CustomPlaceholder: Story = {
-  args: { placeholder: "Як зменшити витрати на каву?" },
-};
-
-/** Above ModuleBottomNav offset — pill sits at `bottom: 84` to clear the 60 px nav. */
+/**
+ * Module shell — compact 44px pip offset `right-[4.5rem]` so it sits beside
+ * the module FloatingActionButton, at `bottom: 84` to clear the 60px nav.
+ */
 export const ModulePosition: Story = {
-  args: { module: "finyk", bottom: 84 },
+  args: { standalone: false, bottom: 84 },
 };

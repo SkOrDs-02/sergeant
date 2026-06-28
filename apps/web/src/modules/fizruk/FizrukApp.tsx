@@ -181,7 +181,7 @@ export default function FizrukApp({
             Rendered inside ModuleShell children; AIPill is `fixed`
             positioned so it escapes the surrounding flex column and
             anchors to the viewport. */}
-        <AIPill module="fizruk" />
+        <AIPill />
       </ModuleShell>
     </RestTimerProvider>
   );

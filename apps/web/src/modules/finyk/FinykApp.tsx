@@ -445,7 +445,7 @@ export default function App({
           ariaLabel={messages.nav.finykSections}
         />
 
-        {!showLoginOverlay && <AIPill module="finyk" />}
+        {!showLoginOverlay && <AIPill />}
 
         {showLoginOverlay && (
           <div

@@ -221,15 +221,15 @@ export function HubHomeView(props: HubHomeViewProps) {
       </Suspense>
 
       {/* Sergeant v2 redesign (2026-05, PR-7b) — persistent AI-assistant
-          pill replaces the previous sparkle FAB. Shown only on the
+          FAB (tap → opens chat sheet via the hub bus). Shown only on the
           dashboard tab + hidden during FTUX so the first-action signal
-          stays the single CTA. `bottom={96}` lifts the pill above the
+          stays the single CTA. `bottom={96}` lifts the FAB above the
           floating glass HubBottomNav (which sits at `mb-3` with ~60px
-          inner height). `module={null}` selects the hub-level
-          placeholder copy ("Запитай Sergeant…"). AIPill itself owns the
-          navigate(CHAT_PATH) handler — caller doesn't need to plumb it. */}
+          inner height). `standalone` anchors it in the bottom-right
+          corner — on the hub there is no competing module FAB, so it
+          takes the canonical primary-FAB slot. */}
       {ui.hubView === "dashboard" && !inFtuxSession && (
-        <AIPill module={null} bottom={96} />
+        <AIPill standalone bottom={96} />
       )}
     </MeshBackground>
   );
