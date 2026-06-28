@@ -1,9 +1,9 @@
-/* eslint-disable sergeant-design/no-raw-storage-key, sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
+/* eslint-disable sergeant-design/no-raw-storage-key, @typescript-eslint/no-non-null-assertion --
    Cross-module briefing executor (outside React): routine / fizruk / nutrition
    now read canonical SQLite state (loadRoutineState / readFizrukWorkouts /
    loadNutritionLog); only the finyk tx-cache stays on LS (not tombstoned). The
-   host-local day-key and non-null assertions are pre-existing. Raw-key
-   burndown tracked for 2026-Q3. */
+   non-null assertions are pre-existing. Raw-key burndown tracked for 2026-Q3. */
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
@@ -12,14 +12,14 @@ import { readFizrukWorkouts } from "../fizrukActions/shared";
 
 export function morningBriefing(): string {
   const now = new Date();
-  const todayKey = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-  ].join("-");
-  const parts: string[] = [
-    `Доброго ранку! Сьогодні ${now.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long" })}`,
-  ];
+  const todayKey = getKyivDayKey(now);
+  const dateLabel = new Intl.DateTimeFormat("uk-UA", {
+    timeZone: "Europe/Kyiv",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(now);
+  const parts: string[] = [`Доброго ранку! Сьогодні ${dateLabel}`];
   const routineState = loadRoutineState();
   if (routineState.habits.length > 0) {
     const activeHabits = routineState.habits.filter((h) => !h.archived);
@@ -50,8 +50,7 @@ export function morningBriefing(): string {
 
 export function weeklySummary(): string {
   const now = new Date();
-  const weekAgo = new Date(now);
-  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgo = new Date(now.getTime() - 7 * 86400000);
   const parts: string[] = ["Тижневий підсумок:"];
   const workouts = readFizrukWorkouts();
   const weekWorkouts = workouts.filter(
@@ -80,13 +79,7 @@ export function weeklySummary(): string {
     let totalDone = 0;
     let totalPossible = 0;
     for (let i = 0; i < 7; i++) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dk = [
-        d.getFullYear(),
-        String(d.getMonth() + 1).padStart(2, "0"),
-        String(d.getDate()).padStart(2, "0"),
-      ].join("-");
+      const dk = getKyivDayKey(new Date(now.getTime() - i * 86400000));
       totalPossible += activeHabits.length;
       for (const h of activeHabits) {
         if (Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk))
@@ -100,13 +93,7 @@ export function weeklySummary(): string {
   const nutritionLog = loadNutritionLog();
   const weekKcal: number[] = [];
   for (let i = 0; i < 7; i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const dk = [
-      d.getFullYear(),
-      String(d.getMonth() + 1).padStart(2, "0"),
-      String(d.getDate()).padStart(2, "0"),
-    ].join("-");
+    const dk = getKyivDayKey(new Date(now.getTime() - i * 86400000));
     const dayMeals = nutritionLog[dk]?.meals || [];
     const k = dayMeals.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
     if (k > 0) weekKcal.push(k);
