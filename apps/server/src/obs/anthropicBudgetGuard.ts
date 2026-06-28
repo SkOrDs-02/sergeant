@@ -46,7 +46,7 @@ const ANTHROPIC_PROVIDER_LABEL = "anthropic";
 const ALERT_FLAG_TTL_SECONDS = 36 * 60 * 60;
 const ALERT_FLAG_KEY_PREFIX = "anthropic_budget_alert_v1";
 
-export type AnthropicBudgetThreshold = "soft" | "hard";
+export type AnthropicBudgetThreshold = "soft" | "hard" | "monthly";
 
 export interface AnthropicBudgetGuardDeps {
   /** Source-of-time для тестів. Default — `Date.now`. */
@@ -58,13 +58,25 @@ export interface AnthropicBudgetGuardDeps {
    * `null` → forced in-memory fallback.
    */
   redis?: AnthropicBudgetRedisClient | null;
+  /**
+   * Override монтлі-envelope (USD) для тестів. Default читає
+   * `env.ANTHROPIC_MONTHLY_BUDGET_USD` (за замовчуванням `0` = projection
+   * вимкнено). Винесено в dep, бо env читається at-load і не змінюється
+   * без рестарту.
+   */
+  monthlyBudgetUsd?: () => number;
 }
 
 export interface AnthropicBudgetCaptureInput {
   threshold: AnthropicBudgetThreshold;
+  /** Денний spend (soft/hard) або today-spend (monthly projection). */
   spendUsd: number;
+  /** Поріг: daily soft/hard USD, або monthly-envelope USD для projection. */
   thresholdUsd: number;
+  /** `YYYY-MM-DD` для soft/hard; `YYYY-MM` для monthly. */
   day: string;
+  /** Лише monthly: спроєктований місячний spend (`today × днів-у-місяці`). */
+  projectedUsd?: number;
 }
 
 /**
@@ -109,6 +121,19 @@ function makeFlagKey(day: string, threshold: AnthropicBudgetThreshold): string {
   return `${ALERT_FLAG_KEY_PREFIX}:${day}:${threshold}`;
 }
 
+/** `YYYY-MM` для поточної UTC-доби (monthly idempotency key). */
+function utcMonth(now: () => number): string {
+  return new Date(now()).toISOString().slice(0, 7);
+}
+
+/** Скільки днів у місяці поточної UTC-доби (для projection: today × днів). */
+function daysInUtcMonth(now: () => number): number {
+  const d = new Date(now());
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+}
+
 /**
  * Окремий клас (а не модуль-singleton зі стейтом) щоб:
  *   1) тести створювали independent instance-и через `new` без global-reset;
@@ -121,6 +146,7 @@ export class AnthropicBudgetGuard {
   private readonly now: () => number;
   private readonly capture: (input: AnthropicBudgetCaptureInput) => void;
   private readonly redisOverride: AnthropicBudgetRedisClient | null | undefined;
+  private readonly monthlyBudgetUsd: () => number;
   private state: AnthropicBudgetState;
   private timer: NodeJS.Timeout | null = null;
 
@@ -128,6 +154,8 @@ export class AnthropicBudgetGuard {
     this.now = deps.now ?? Date.now;
     this.capture = deps.capture ?? defaultCapture;
     this.redisOverride = deps.redis;
+    this.monthlyBudgetUsd =
+      deps.monthlyBudgetUsd ?? (() => env.ANTHROPIC_MONTHLY_BUDGET_USD);
     this.state = this.makeInitialState();
   }
 
@@ -163,6 +191,7 @@ export class AnthropicBudgetGuard {
     hardUsd: number;
     softFired: boolean;
     hardFired: boolean;
+    monthlyFired: boolean;
     day: string;
   }> {
     const softUsd = Number.isFinite(env.ANTHROPIC_BUDGET_SOFT_USD)
@@ -189,6 +218,7 @@ export class AnthropicBudgetGuard {
         hardUsd,
         softFired: false,
         hardFired: false,
+        monthlyFired: false,
         day,
       };
     }
@@ -219,7 +249,48 @@ export class AnthropicBudgetGuard {
       });
     }
 
-    return { spendUsd, softUsd, hardUsd, softFired, hardFired, day };
+    // Monthly projection — окрема гілка (не залежить від soft/hard). Run-rate
+    // `today × днів-у-місяці` ≥ envelope → 1 warning на місяць. Це краща за
+    // фіксований денний поріг відповідь на «ліміт замалий на масштабі»: alert
+    // прив'язаний до фактичного run-rate, тож не false-fire-ить, поки місячна
+    // проекція реально не загрожує envelope-у.
+    const monthlyFired = await this.fireMonthlyProjectionIfNeeded(spendUsd);
+
+    return {
+      spendUsd,
+      softUsd,
+      hardUsd,
+      softFired,
+      hardFired,
+      monthlyFired,
+      day,
+    };
+  }
+
+  /**
+   * Спроєктувати місячний spend з today-run-rate і fire-нути warning раз на
+   * місяць, якщо проекція ≥ `ANTHROPIC_MONTHLY_BUDGET_USD`. Дзеркалить
+   * `modules/ai-memory/voyageBudget.ts` (Voyage monthly projection). Вимкнено,
+   * коли envelope `<= 0` або today-spend `<= 0`. Idempotency key — `YYYY-MM`
+   * (переживає day-rollover, бо `rolloverIfDayChanged` зберігає `:monthly`).
+   */
+  private async fireMonthlyProjectionIfNeeded(
+    todaySpendUsd: number,
+  ): Promise<boolean> {
+    const monthly = this.monthlyBudgetUsd();
+    if (!Number.isFinite(monthly) || monthly <= 0 || todaySpendUsd <= 0) {
+      return false;
+    }
+    const daysInMonth = daysInUtcMonth(this.now);
+    const projected = todaySpendUsd * daysInMonth;
+    if (projected < monthly) return false;
+    const monthKey = utcMonth(this.now);
+    return this.fireOnce("monthly", {
+      spendUsd: todaySpendUsd,
+      thresholdUsd: monthly,
+      day: monthKey,
+      projectedUsd: projected,
+    });
   }
 
   /** Start setInterval-loop. Idempotent — повторні виклики no-op. */
@@ -295,10 +366,18 @@ export class AnthropicBudgetGuard {
       from: this.state.day,
       to: today,
     });
+    // Зберігаємо `:monthly`-ключі через day-rollover, інакше monthly
+    // projection re-fire-нувся б щодня (1×/день замість 1×/місяць). Daily
+    // soft/hard-ключі скидаємо — новий день, нові пороги. (Дзеркалить
+    // prune-логіку Voyage monthly projection.)
+    const carriedMonthly = new Set<string>();
+    for (const key of this.state.firedAlerts) {
+      if (key.endsWith(":monthly")) carriedMonthly.add(key);
+    }
     this.state = {
       day: today,
       dailyBaseline: await this.readCounterSnapshot(),
-      firedAlerts: new Set<string>(),
+      firedAlerts: carriedMonthly,
       hardBreached: false,
     };
   }
@@ -356,7 +435,12 @@ export class AnthropicBudgetGuard {
 
   private async fireOnce(
     threshold: AnthropicBudgetThreshold,
-    payload: { spendUsd: number; thresholdUsd: number; day: string },
+    payload: {
+      spendUsd: number;
+      thresholdUsd: number;
+      day: string;
+      projectedUsd?: number;
+    },
   ): Promise<boolean> {
     const flagKey = makeFlagKey(payload.day, threshold);
     if (this.state.firedAlerts.has(flagKey)) return false;
@@ -368,6 +452,9 @@ export class AnthropicBudgetGuard {
         spendUsd: payload.spendUsd,
         thresholdUsd: payload.thresholdUsd,
         day: payload.day,
+        ...(payload.projectedUsd !== undefined
+          ? { projectedUsd: payload.projectedUsd }
+          : {}),
       });
     } catch (err) {
       logger.warn({
@@ -402,7 +489,7 @@ export class AnthropicBudgetGuard {
           key,
           "1",
           "EX",
-          ALERT_FLAG_TTL_SECONDS,
+          this.flagTtlSeconds(threshold),
           "NX",
         );
         if (result === "OK") {
@@ -425,6 +512,31 @@ export class AnthropicBudgetGuard {
     return true;
   }
 
+  /**
+   * TTL Redis-прапора за threshold-ом. Daily (soft/hard) → 36h (переживає
+   * DST/clock-skew у межах доби). Monthly → **до кінця поточного UTC-місяця
+   * + 36h буфер**, інакше спільний 36h-TTL прострочився б усередині місяця і
+   * на іншому поді / після рестарту (порожній in-memory `firedAlerts`)
+   * monthly projection стрельнув би вдруге. Місячний ключ — `YYYY-MM`, тож
+   * наступний місяць однаково отримує свіжий ключ.
+   */
+  private flagTtlSeconds(threshold: AnthropicBudgetThreshold): number {
+    if (threshold !== "monthly") return ALERT_FLAG_TTL_SECONDS;
+    const nowMs = this.now();
+    const d = new Date(nowMs);
+    const startOfNextMonthMs = Date.UTC(
+      d.getUTCFullYear(),
+      d.getUTCMonth() + 1,
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
+    const untilMonthEnd = Math.ceil((startOfNextMonthMs - nowMs) / 1000);
+    return Math.max(untilMonthEnd, 0) + ALERT_FLAG_TTL_SECONDS;
+  }
+
   private resolveRedisClient(): AnthropicBudgetRedisClient | null {
     if (this.redisOverride !== undefined) return this.redisOverride;
     const client = getRedis();
@@ -444,23 +556,36 @@ export class AnthropicBudgetGuard {
 
 function defaultCapture(input: AnthropicBudgetCaptureInput): void {
   const isHard = input.threshold === "hard";
+  const isMonthly = input.threshold === "monthly";
+  // Monthly projection — warning-level (як soft): сигнал «run-rate загрожує
+  // місячному envelope-у», не критичний breach.
   const level = isHard ? "error" : "warning";
-  const message = isHard
-    ? `anthropic_budget_hard_alert: spend $${input.spendUsd.toFixed(2)} ≥ $${input.thresholdUsd.toFixed(2)} (day ${input.day})`
-    : `anthropic_budget_soft_alert: spend $${input.spendUsd.toFixed(2)} ≥ $${input.thresholdUsd.toFixed(2)} (day ${input.day})`;
+  const message = isMonthly
+    ? `anthropic_budget_monthly_projection: projected $${(input.projectedUsd ?? 0).toFixed(2)} ≥ $${input.thresholdUsd.toFixed(2)} (today $${input.spendUsd.toFixed(4)}, month ${input.day})`
+    : isHard
+      ? `anthropic_budget_hard_alert: spend $${input.spendUsd.toFixed(2)} ≥ $${input.thresholdUsd.toFixed(2)} (day ${input.day})`
+      : `anthropic_budget_soft_alert: spend $${input.spendUsd.toFixed(2)} ≥ $${input.thresholdUsd.toFixed(2)} (day ${input.day})`;
   try {
     Sentry.captureMessage(message, {
       level,
       tags: {
         module: "obs",
-        op: "anthropic_budget_alert",
+        op: isMonthly
+          ? "anthropic_monthly_projection_alert"
+          : "anthropic_budget_alert",
         threshold: input.threshold,
         provider: ANTHROPIC_PROVIDER_LABEL,
+        ...(isMonthly
+          ? { error_signature: "anthropic-monthly-budget-projection" }
+          : {}),
       },
       extra: {
         spendUsd: input.spendUsd,
         thresholdUsd: input.thresholdUsd,
         day: input.day,
+        ...(input.projectedUsd !== undefined
+          ? { projectedUsd: input.projectedUsd }
+          : {}),
       },
     });
   } catch (err) {
@@ -470,10 +595,17 @@ function defaultCapture(input: AnthropicBudgetCaptureInput): void {
     });
   }
   logger.info({
-    msg: isHard ? "anthropic_budget_hard_alert" : "anthropic_budget_soft_alert",
+    msg: isMonthly
+      ? "anthropic_budget_monthly_projection_alert"
+      : isHard
+        ? "anthropic_budget_hard_alert"
+        : "anthropic_budget_soft_alert",
     spendUsd: input.spendUsd,
     thresholdUsd: input.thresholdUsd,
     day: input.day,
+    ...(input.projectedUsd !== undefined
+      ? { projectedUsd: input.projectedUsd }
+      : {}),
   });
 }
 
