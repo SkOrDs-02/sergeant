@@ -11,6 +11,7 @@
 | Файл | Для чого | Як юзати |
 | --- | --- | --- |
 | [`google-form-generator.gs`](./google-form-generator.gs) | згенерувати **живу Google-форму** опитування зі skip-логікою одним запуском | див. § «Шлях A» нижче |
+| [`analyze-responses.gs`](./analyze-responses.gs) | прочитати відповіді форми й побудувати **дашборд зрізів** (сегменти, H1–H4, pain-score, waitlist) | впиши `FORM_ID` → Run; звіт у Logs + Google-таблиця |
 | [`tally-build-spec.md`](./tally-build-spec.md) | зібрати ту саму форму в **Tally** вручну (блок-за-блоком + logic jumps) | див. § «Шлях B» |
 | [`interview-runsheet.md`](./interview-runsheet.md) | друкований сценарій інтервʼю з місцем під нотатки | роздрукуй / тримай у вкладці на кожну розмову |
 | [`interview-notes-template.md`](./interview-notes-template.md) | шаблон нотаток на одного респондента | копіюй файл під кожне інтервʼю |
@@ -28,7 +29,8 @@
 3. АНАЛІЗ QUAL    → analysis-affinity-tracker.csv: витягни болі/цитати, постав теги
 4. ОПИТУВАННЯ     → Шлях A (Google) або Шлях B (Tally), питання з реальної мови інтервʼю
                      → роздай у спільнотах + мережі, ціль n ≥ 50
-5. ВИСНОВОК       → insights-scoreboard.md: познач H1–H4, порахуй метрики, 1 сторінка рішень
+5. АНАЛІЗ QUANT   → analyze-responses.gs: впиши FORM_ID, Run → дашборд зрізів (сегменти, H1–H4, pain-score, waitlist)
+6. ВИСНОВОК       → insights-scoreboard.md: перенеси цифри з дашборду, познач H1–H4, 1 сторінка рішень
 ```
 
 > Порядок жорсткий: **інтервʼю → потім форма**. Варіанти відповідей у формі бери з того,
