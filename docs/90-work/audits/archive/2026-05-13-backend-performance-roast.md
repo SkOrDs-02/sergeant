@@ -163,7 +163,7 @@ migration), поза скоупом цієї прожарки.
 
 ### P2-2. `obs/tracing.ts` `process.env` reads (через дефолтний argument) ✅ Closed 2026-06-01
 
-- **File:** [`apps/server/src/obs/tracing.ts:55,386`](../../../../apps/server/src/obs/tracing.ts#L55).
+- **File:** `apps/server/src/obs/tracing.ts:55,386` (файл видалено разом із dormant-OpenTelemetry у `f447a18`; згадка збережена як історичний запис).
 - **Why виносимо (initial):** `env: NodeJS.ProcessEnv = process.env` — це
   injection-pattern для тестів, рефактор у `env.ts` зламає DI. Окрема
   розмова чи переписувати чи лишити.
