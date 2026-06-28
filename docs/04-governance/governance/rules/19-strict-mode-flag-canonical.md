@@ -1,6 +1,6 @@
 # Rule 19 — Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo
 
-> **Category:** `active-initiative`
+> **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
 > **Last validated:** 2026-05-13 by @Skords-01
 > **Next review:** 2026-08-11
@@ -17,11 +17,11 @@
 
 - **ci** — node tools/tsconfig-guard/check.mjs (run by pnpm lint)
 - **convention** — tools/tsconfig-guard/allowlist.json — every override of a GUARDED strict-family flag MUST have an entry with path/option/value/reason/expires/owner
-- **doc** — docs/90-work/initiatives/\_0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)
+- **doc** — docs/90-work/initiatives/archive/\_0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)
 
 ## Why / What is enforced
 
-> Why a hard rule? Sergeant — strict-TS-first monorepo. Прапори strict-сімейства (`strict`, `noImplicitAny`, `strictNullChecks`, `noUncheckedIndexedAccess`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noUnusedLocals`, `noUnusedParameters`, `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature`) — `true` у `packages/config/tsconfig.base.json` за замовчуванням. Per-app `tsconfig.json` MUST NOT silently override їх до `false`. Після рoll-out-у Initiative 0012 (Phase 6a/6c/6e ✅ Done; 6b/6d ✅ enabled, allowlist-residual `apps/web` `expires: 2026-09-30`) — drift = регресія в strict coverage, яка раніше коштувала кварталів roll-out-у.
+> Why a hard rule? Sergeant — strict-TS-first monorepo. Прапори strict-сімейства (`strict`, `noImplicitAny`, `strictNullChecks`, `noUncheckedIndexedAccess`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noUnusedLocals`, `noUnusedParameters`, `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature`) — `true` у `packages/config/tsconfig.base.json` за замовчуванням. Per-app `tsconfig.json` MUST NOT silently override їх до `false`. Після рoll-out-у Initiative 0012 (всі фази ✅ Done, ініціатива closed; `tools/tsconfig-guard/allowlist.json` порожній — жодного residual override) — drift = регресія в strict coverage, яка раніше коштувала кварталів roll-out-у.
 
 **Rule.** Будь-який `apps/{app}/tsconfig.json` або `packages/{pkg}/tsconfig.json`, що задає `false` для одного з 10 strict-family прапорів вище, має бути:
 
@@ -30,7 +30,7 @@
 
 CI запускає `node tools/tsconfig-guard/check.mjs` (через `pnpm lint`). Будь-який неавторизований override ламає білд. Allowlist-entries без активної ініціативи — скоро `expires`, після чого CI знов падає.
 
-**Coverage tracking.** [`scripts/strict-coverage.mjs`](../../../../scripts/strict-coverage.mjs) пише markdown-таблицю в `$GITHUB_STEP_SUMMARY` з per-flag-coverage статистикою (12 / 12 = 100% — мета). Status: `noUncheckedIndexedAccess`, `noImplicitReturns`, `noUnusedLocals` = 100%; `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature` = 11 / 12 = 92% (residual `apps/web` deferred to Sprint 5+).
+**Coverage tracking.** [`scripts/strict-coverage.mjs`](../../../../scripts/strict-coverage.mjs) пише markdown-таблицю в `$GITHUB_STEP_SUMMARY` з per-flag-coverage статистикою (12 / 12 = 100% — мета). Status: усі 10 strict-family прапорів = 12 / 12 = 100% (residual `apps/web` для `exactOptionalPropertyTypes` / `noPropertyAccessFromIndexSignature` знятий; `allowlist.json` = `[]`).
 
 **Що блокує:**
 
@@ -47,6 +47,6 @@ Tracked у [Initiative 0012 — Perfect TS strictness rollout](../../../90-work/
 
 ## Related
 
-- **doc** — docs/90-work/initiatives/\_0012-perfect-strictness-rollout.md
+- **doc** — docs/90-work/initiatives/archive/\_0012-perfect-strictness-rollout.md
 - **doc** — docs/90-work/tech-debt/frontend.md
 - **agents** — #19
