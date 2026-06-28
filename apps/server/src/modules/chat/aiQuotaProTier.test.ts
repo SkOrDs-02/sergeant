@@ -7,15 +7,20 @@ vi.mock("../../db.js", () => {
   return { default: pool, pool };
 });
 vi.mock("../billing/getUserPlan.js", () => ({ getUserPlan: vi.fn() }));
+vi.mock("../../obs/anthropicBudgetGuard.js", () => ({
+  isAnthropicBudgetHardExceeded: vi.fn(() => false),
+}));
 
 import { getSessionUser as _getSessionUser } from "../../auth.js";
 import _pool from "../../db.js";
 import { getUserPlan as _getUserPlan } from "../billing/getUserPlan.js";
+import { isAnthropicBudgetHardExceeded as _isHardExceeded } from "../../obs/anthropicBudgetGuard.js";
 import { resolveProTier } from "./aiQuota.js";
 import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 
 const getSessionUser = _getSessionUser as unknown as ReturnType<typeof vi.fn>;
 const getUserPlan = _getUserPlan as unknown as ReturnType<typeof vi.fn>;
+const isHardExceeded = _isHardExceeded as unknown as ReturnType<typeof vi.fn>;
 const pool = _pool as unknown as { query: ReturnType<typeof vi.fn> };
 
 function makeReq(): Request {
@@ -48,6 +53,7 @@ const ENV = [
   "DATABASE_URL",
   "CHAT_MODEL_SYNTHESIS",
   "OPENROUTER_COACH_MODEL",
+  "ANTHROPIC_BUDGET_HARD_DEGRADE_ALL",
 ];
 const saved: Record<string, string | undefined> = {};
 
@@ -61,6 +67,8 @@ beforeEach(() => {
   delete process.env["AI_QUOTA_FOUNDER_IDS"];
   delete process.env["CHAT_MODEL_SYNTHESIS"];
   delete process.env["OPENROUTER_COACH_MODEL"];
+  delete process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"];
+  isHardExceeded.mockReturnValue(false);
   getSessionUser.mockResolvedValue({ id: "u1" });
   getUserPlan.mockResolvedValue({ plan: "pro" });
 });
@@ -175,5 +183,52 @@ describe("resolveProTier — fail-open never blocks a paying user", () => {
     delete process.env["DATABASE_URL"];
     const r = await resolveProTier(makeReq(), makeRes(), "chat");
     expect(r.tier).toBe("premium");
+  });
+});
+
+describe("resolveProTier — catastrophic-cost circuit-breaker (degrade-all)", () => {
+  it("flag on + hard breached → floor for a Pro user, no DB roundtrip", async () => {
+    process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"] = "true";
+    isHardExceeded.mockReturnValue(true);
+    const res = makeRes();
+    const r = await resolveProTier(makeReq(), res, "chat");
+    expect(r.tier).toBe("floor");
+    expect(res.headers["X-AI-Tier"]).toBe("floor");
+    // Degrade short-circuits before any bucket consume.
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it("flag on + hard breached → floor for a Free user too (Free dominates COGS)", async () => {
+    process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"] = "true";
+    isHardExceeded.mockReturnValue(true);
+    getUserPlan.mockResolvedValue({ plan: "free" });
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("floor");
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it("flag on but NOT breached → normal tiering (premium)", async () => {
+    process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"] = "true";
+    isHardExceeded.mockReturnValue(false);
+    pool.query.mockResolvedValueOnce(ok());
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("premium");
+  });
+
+  it("breached but flag OFF (default) → normal tiering, breaker is opt-in", async () => {
+    isHardExceeded.mockReturnValue(true); // breached…
+    // …but ANTHROPIC_BUDGET_HARD_DEGRADE_ALL unset → no degrade.
+    pool.query.mockResolvedValueOnce(ok());
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("premium");
+  });
+
+  it("founder is never degraded even when flag on + breached", async () => {
+    process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"] = "true";
+    process.env["AI_QUOTA_FOUNDER_IDS"] = "u1";
+    isHardExceeded.mockReturnValue(true);
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("premium");
+    expect(pool.query).not.toHaveBeenCalled();
   });
 });

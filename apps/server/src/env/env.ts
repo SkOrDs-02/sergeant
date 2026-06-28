@@ -1240,6 +1240,22 @@ const envSchema = z.object({
    */
   ANTHROPIC_BUDGET_ALERT_ENABLED: boolFromEnv(true),
   /**
+   * Catastrophic-cost circuit-breaker (opt-in, default `false`). Коли
+   * `true` І денний глобальний Anthropic-spend перевищив hard-поріг
+   * (`isAnthropicBudgetHardExceeded()`), `resolveProTier()` деградує
+   * **усіх** не-founder юзерів (Free + Pro) на floor-модель — не лише тих,
+   * хто вичерпав власну добову квоту. Це справжня стеля вартості, якої
+   * per-user tiering сам не дає: Free-юзери отримують premium-модель
+   * (обмежені лише КІЛЬКІСТЮ), тож на масштабі домінують в AI-COGS —
+   * деградація саме їх згинає криву витрат.
+   *
+   * Default `false` → нормальна робота лишає поточну alert-only поведінку
+   * (hard alert сигналить, але AI-роути відкриті). Вмикати, коли AI-COGS
+   * треба жорстко обмежити (catastrophic runaway / бюджет вичерпано).
+   * Founder (`AI_QUOTA_FOUNDER_IDS`) ніколи не деградує.
+   */
+  ANTHROPIC_BUDGET_HARD_DEGRADE_ALL: boolFromEnv(false),
+  /**
    * Voyage soft daily-usage cap (USD), enforced in-process (PR-38).
    * Track-имо USD-витрати за поточну UTC-добу у in-memory лічильнику
    * (`modules/ai-memory/voyageBudget.ts`); коли sum > cap — emit
