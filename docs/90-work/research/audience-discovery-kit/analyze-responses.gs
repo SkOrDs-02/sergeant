@@ -190,10 +190,10 @@ function analyzeResponses() {
   const hot = (Number(annoy['4']) || 0) + (Number(annoy['5']) || 0);
   line('  Роздратування (Q10), середнє: ' + (mean('Наскільки тебе дратує') || 0).toFixed(2));
   line('  → PROBLEM PREVALENCE (оцінка 4–5): ' + hot + ' з ' + annoyBase + ' (' + pct(hot, annoyBase) + ')');
-  const interest = tally('наскільки це цікаво');
-  const intBase = answered('наскільки це цікаво').length;
+  const interest = tally('наскільки цікаво');
+  const intBase = answered('наскільки цікаво').length;
   const intHot = (Number(interest['4']) || 0) + (Number(interest['5']) || 0);
-  line('  Інтерес до рішення (Q11), середнє: ' + (mean('наскільки це цікаво') || 0).toFixed(2));
+  line('  Інтерес до рішення (Q11), середнє: ' + (mean('наскільки цікаво') || 0).toFixed(2));
   line('  → інтерес 4–5: ' + intHot + ' з ' + intBase + ' (' + pct(intHot, intBase) + ')');
   line('');
 
