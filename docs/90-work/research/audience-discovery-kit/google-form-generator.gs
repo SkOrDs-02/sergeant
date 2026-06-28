@@ -16,8 +16,8 @@ function buildAudienceSurvey() {
   const form = FormApp.create('Трекери: як ти ведеш облік — 5 хв')
     .setDescription(
       'Коротке опитування про те, як люди відстежують гроші, їжу, спорт і звички. ' +
-        '5–7 хв. Відповіді анонімні, поки ти не залишиш пошту в самому кінці — ' +
-        'її ми збираємо окремо й лише для раннього доступу. Дякую, що допомагаєш!',
+        '5–7 хв. Опитування анонімне — єдиний виняток це необовʼязкове поле пошти в кінці, ' +
+        'яке заповнюєш лише якщо сам хочеш ранній доступ. Дякую, що допомагаєш!',
     )
     .setProgressBar(true)
     .setAllowResponseEdits(false)
@@ -154,10 +154,12 @@ function buildAudienceSurvey() {
 
   form.addTextItem().setTitle('Рід занять / сфера').setRequired(false);
 
+  const emailValidation = FormApp.createTextValidation().requireTextIsEmail().build();
   form
     .addTextItem()
     .setTitle('Пошта — якщо хочеш ранній доступ (необовʼязково)')
     .setHelpText('Залишиш — потрапиш у список раннього доступу. Не залишиш — нічого страшного.')
+    .setValidation(emailValidation)
     .setRequired(false);
 
   // ===== Навігація =====
