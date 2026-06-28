@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { shouldShowOnboarding as sharedShouldShowOnboarding } from "./onboardingGate";
 import { WelcomeOneScreen } from "./WelcomeOneScreen";
 import { GoalFirstScreen } from "./GoalFirstScreen";
@@ -232,7 +233,15 @@ export function OnboardingWizard({
   //   - коли overflow — зовнішній шар прокручується, відкриваючи і
   //     верх (логотип), і низ (CTA + «Згорнути»). `overscroll-contain`
   //     гасить body-bounce на iOS.
-  return (
+  // Portal to `document.body` so the `fixed inset-0` overlay positions
+  // against the viewport, not a `backdrop-filter`/`transform` ancestor.
+  // The modal mounts inline at its call-sites (e.g. Settings → tour
+  // replay, where the host card carries `backdrop-blur-md`), and any
+  // such ancestor establishes a containing block for `position: fixed`,
+  // which clamped the overlay to the narrow card instead of the screen
+  // (bug 2026-06-28). `ConfirmDialog` portals for the same reason.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
       className="fixed inset-0 z-500 overflow-y-auto overscroll-contain"
       role="dialog"
@@ -251,6 +260,7 @@ export function OnboardingWizard({
           {content}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
