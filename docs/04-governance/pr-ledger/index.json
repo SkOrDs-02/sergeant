@@ -1,8 +1,17 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-20",
+  "generated_at": "2026-06-28",
   "prs": [
+    {
+      "number": 43,
+      "title": "docs(governance): clear dangling OTel source refs blocking governance-sync gate",
+      "merged_at": "2026-06-28T12:05:27Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md"
+      ]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
