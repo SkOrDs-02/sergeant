@@ -1,7 +1,7 @@
-/* eslint-disable sergeant-design/no-raw-storage-key, sergeant-design/prefer-kyiv-time --
+/* eslint-disable sergeant-design/no-raw-storage-key --
    Chat-action executors run outside React; storage key strings are used
-   directly here. Same pattern as queryFinykActions.ts. The host-local date
-   parts in `toIsoDay` are pre-existing display/parse code. */
+   directly here. Same pattern as queryFinykActions.ts. */
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
@@ -46,9 +46,9 @@ export function toIsoDay(value: unknown): string {
   }
   if (typeof value === "number" && Number.isFinite(value)) {
     const ms = value > 10_000_000_000 ? value : value * 1000;
-    const date = new Date(ms);
-    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- formatting an already-fixed server timestamp, not reading "today"
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    // Bucket the transaction instant by its Europe/Kyiv calendar day so
+    // date filters compare against the user's civil day, not the host's.
+    return getKyivDayKey(new Date(ms));
   }
   return "";
 }
