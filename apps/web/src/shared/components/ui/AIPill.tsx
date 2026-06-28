@@ -24,11 +24,19 @@
  * `fixed … bottom-[…]` + `z-sticky` (над content/dropdowns, під modals).
  * `safe-area-inset-bottom` додається до bottom offset для iOS.
  *
- * - **`standalone`** (hub): пілу — єдиний FAB на поверхні, тож сідає в
- *   канонічний нижній-правий кут (`right-5`, 56px) тим самим positioning-
- *   language, що й модульний `FloatingActionButton`.
- * - **default** (модульні shell-и): компактний 44px pip, зсунутий
- *   `right-[4.5rem]` ліворуч від модульного FAB-а, щоб вони не накладались.
+ * Placement (right-offset) and size — два незалежні виміри:
+ *
+ * - **size** — `standalone` дає 56px primary-FAB (hub, де пілу єдиний FAB);
+ *   за замовчуванням 44px compact pip.
+ * - **right-offset** — за замовчуванням пілу прилягає до правого краю
+ *   (`right-5`, той самий канон, що й модульний `FloatingActionButton`).
+ *   `besideFab` зсуває його на `right-[4.5rem]`, щоб звільнити кут під
+ *   сусідній модульний FAB (наприклад finyk на сторінках з кнопкою
+ *   «Додати витрату»). Fizruk / nutrition не мають правого FAB-а, а
+ *   routine — центральний, тож там пілу лишається flush до краю.
+ *
+ * Розв'язка placement↔size прибирає баг, коли compact pip висів зсунутим
+ * від краю на поверхнях без сусіднього FAB-а (CodeRabbit, 2026-06-28).
  *
  * ## Hide-on conditions
  *
@@ -54,17 +62,25 @@ export interface AIPillProps {
    */
   bottom?: number;
   /**
-   * Render as the standalone primary FAB anchored in the bottom-right
-   * corner (hub — no competing module FAB). Default `false` keeps the
-   * compact pip offset `right-[4.5rem]` so it sits beside a module FAB.
+   * Render as the larger 56px primary FAB (hub — the AI pill is the only
+   * FAB on the surface). Default `false` keeps the compact 44px pip.
    */
   standalone?: boolean;
+  /**
+   * Offset the pill left of the screen edge (`right-[4.5rem]`) to clear a
+   * sibling module FAB anchored in the bottom-right corner (finyk's
+   * "Додати витрату" pages). Default `false` keeps the pill flush to the
+   * edge — correct for the hub and for module shells without a right-edge
+   * FAB (fizruk, nutrition, routine).
+   */
+  besideFab?: boolean;
   className?: string;
 }
 
 export function AIPill({
   bottom = 84,
   standalone = false,
+  besideFab = false,
   className,
 }: AIPillProps) {
   const openChat = () => {
@@ -91,11 +107,13 @@ export function AIPill({
         "motion-reduce:transition-none",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         "focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-        // Standalone (hub): canonical corner FAB, matching FloatingActionButton.
-        // Default (modules): compact pip left of the module FAB.
-        standalone
-          ? "right-[max(1.25rem,env(safe-area-inset-right,0px))] w-14 h-14"
-          : "right-[4.5rem] w-11 h-11",
+        // Size: standalone = 56px primary FAB (hub); else 44px compact pip.
+        standalone ? "w-14 h-14" : "w-11 h-11",
+        // Right-offset: flush to the edge (canonical FloatingActionButton
+        // position) unless `besideFab` reserves the corner for a sibling FAB.
+        besideFab
+          ? "right-[4.5rem]"
+          : "right-[max(1.25rem,env(safe-area-inset-right,0px))]",
         className,
       )}
     >

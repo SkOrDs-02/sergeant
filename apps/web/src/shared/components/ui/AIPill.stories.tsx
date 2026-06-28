@@ -29,10 +29,12 @@ const meta: Meta<typeof AIPill> = {
   tags: ["autodocs"],
   argTypes: {
     standalone: { control: "boolean" },
+    besideFab: { control: "boolean" },
     bottom: { control: "number" },
   },
   args: {
     standalone: true,
+    besideFab: false,
     bottom: 96,
   },
 };
@@ -40,13 +42,21 @@ export default meta;
 
 type Story = StoryObj<typeof AIPill>;
 
-/** Hub level — standalone primary FAB anchored in the bottom-right corner. */
+/** Hub level — 56px primary FAB flush in the bottom-right corner. */
 export const Hub: Story = {};
 
 /**
- * Module shell — compact 44px pip offset `right-[4.5rem]` so it sits beside
- * the module FloatingActionButton, at `bottom: 84` to clear the 60px nav.
+ * Module shell without a right-edge FAB (fizruk / nutrition / routine) —
+ * compact 44px pip, flush to the edge, at `bottom: 84` to clear the 60px nav.
  */
-export const ModulePosition: Story = {
+export const ModuleFlush: Story = {
   args: { standalone: false, bottom: 84 },
+};
+
+/**
+ * Module shell beside a right-edge FAB (finyk's "Додати витрату" pages) —
+ * compact 44px pip offset `right-[4.5rem]` so it clears the sibling FAB.
+ */
+export const ModuleBesideFab: Story = {
+  args: { standalone: false, besideFab: true, bottom: 84 },
 };

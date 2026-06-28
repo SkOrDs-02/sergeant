@@ -445,7 +445,15 @@ export default function App({
           ariaLabel={messages.nav.finykSections}
         />
 
-        {!showLoginOverlay && <AIPill />}
+        {!showLoginOverlay && (
+          <AIPill
+            besideFab={
+              page === "overview" ||
+              page === "transactions" ||
+              page === "budgets"
+            }
+          />
+        )}
 
         {showLoginOverlay && (
           <div

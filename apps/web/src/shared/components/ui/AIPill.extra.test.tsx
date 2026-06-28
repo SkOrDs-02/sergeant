@@ -67,23 +67,37 @@ describe("AIPill", () => {
     expect(button.getAttribute("style")).toContain("120px");
   });
 
-  it("standalone anchors the FAB at the corner; default keeps the offset pip", () => {
+  it("standalone renders the 56px size; default is the 44px compact pip", () => {
     const { rerender } = renderPill({ standalone: true });
-    const standaloneBtn = screen.getByRole("button", {
-      name: "Відкрити AI-асистента",
-    });
-    expect(standaloneBtn.className).toContain("w-14");
-    expect(standaloneBtn.className).not.toContain("right-[4.5rem]");
+    expect(
+      screen.getByRole("button", { name: "Відкрити AI-асистента" }).className,
+    ).toContain("w-14");
 
     rerender(
       <MemoryRouter>
         <AIPill />
       </MemoryRouter>,
     );
-    const pipBtn = screen.getByRole("button", {
+    expect(
+      screen.getByRole("button", { name: "Відкрити AI-асистента" }).className,
+    ).toContain("w-11");
+  });
+
+  it("is flush to the edge by default; besideFab offsets it to clear a sibling FAB", () => {
+    const { rerender } = renderPill();
+    const flushBtn = screen.getByRole("button", {
       name: "Відкрити AI-асистента",
     });
-    expect(pipBtn.className).toContain("right-[4.5rem]");
-    expect(pipBtn.className).toContain("w-11");
+    // Default placement clears the edge, not the FAB corner.
+    expect(flushBtn.className).not.toContain("right-[4.5rem]");
+
+    rerender(
+      <MemoryRouter>
+        <AIPill besideFab />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("button", { name: "Відкрити AI-асистента" }).className,
+    ).toContain("right-[4.5rem]");
   });
 });
