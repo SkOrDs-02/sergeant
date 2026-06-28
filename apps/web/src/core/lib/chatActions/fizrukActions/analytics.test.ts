@@ -126,7 +126,7 @@ describe("weightChart", () => {
     mockReadLog.mockReturnValue([
       { id: "d1", at: recent2, weightKg: 78 },
       { id: "d2", at: recent, weightKg: 77 },
-    ] as ReturnType<typeof readFizrukDailyLog>);
+    ] as unknown as ReturnType<typeof readFizrukDailyLog>);
     const result = weightChart({
       name: "weight_chart",
       input: { period_days: 30 },
