@@ -8,17 +8,17 @@
 
 ## Що всередині
 
-| Файл | Для чого | Як юзати |
-| --- | --- | --- |
-| [`google-form-generator.gs`](./google-form-generator.gs) | згенерувати **живу Google-форму** опитування зі skip-логікою одним запуском | див. § «Шлях A» нижче |
-| [`analyze-responses.gs`](./analyze-responses.gs) | прочитати відповіді форми й побудувати **дашборд зрізів** (сегменти, H1–H4, pain-score, waitlist) | впиши `FORM_ID` → Run; звіт у Logs + Google-таблиця |
-| [`tally-build-spec.md`](./tally-build-spec.md) | зібрати ту саму форму в **Tally** вручну (блок-за-блоком + logic jumps) | див. § «Шлях B» |
-| [`interview-runsheet.md`](./interview-runsheet.md) | друкований сценарій інтервʼю з місцем під нотатки | роздрукуй / тримай у вкладці на кожну розмову |
-| [`interview-notes-template.md`](./interview-notes-template.md) | шаблон нотаток на одного респондента | копіюй файл під кожне інтервʼю |
-| [`recruitment-tracker.csv`](./recruitment-tracker.csv) | вирва рекрутингу: хто, сегмент, статус, канал | імпорт у Sheets / Notion |
-| [`interview-tracker.csv`](./interview-tracker.csv) | розклад і статус інтервʼю + сигнал saturation | імпорт у Sheets / Notion |
-| [`analysis-affinity-tracker.csv`](./analysis-affinity-tracker.csv) | тегування болів через усі інтервʼю (affinity) | імпорт у Sheets / Notion |
-| [`insights-scoreboard.md`](./insights-scoreboard.md) | табло гіпотез H1–H4 + метрики | заповнюєш по ходу, фінальний висновок |
+| Файл                                                               | Для чого                                                                                          | Як юзати                                            |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| [`google-form-generator.gs`](./google-form-generator.gs)           | згенерувати **живу Google-форму** опитування зі skip-логікою одним запуском                       | див. § «Шлях A» нижче                               |
+| [`analyze-responses.gs`](./analyze-responses.gs)                   | прочитати відповіді форми й побудувати **дашборд зрізів** (сегменти, H1–H4, pain-score, waitlist) | впиши `FORM_ID` → Run; звіт у Logs + Google-таблиця |
+| [`tally-build-spec.md`](./tally-build-spec.md)                     | зібрати ту саму форму в **Tally** вручну (блок-за-блоком + logic jumps)                           | див. § «Шлях B»                                     |
+| [`interview-runsheet.md`](./interview-runsheet.md)                 | друкований сценарій інтервʼю з місцем під нотатки                                                 | роздрукуй / тримай у вкладці на кожну розмову       |
+| [`interview-notes-template.md`](./interview-notes-template.md)     | шаблон нотаток на одного респондента                                                              | копіюй файл під кожне інтервʼю                      |
+| [`recruitment-tracker.csv`](./recruitment-tracker.csv)             | вирва рекрутингу: хто, сегмент, статус, канал                                                     | імпорт у Sheets / Notion                            |
+| [`interview-tracker.csv`](./interview-tracker.csv)                 | розклад і статус інтервʼю + сигнал saturation                                                     | імпорт у Sheets / Notion                            |
+| [`analysis-affinity-tracker.csv`](./analysis-affinity-tracker.csv) | тегування болів через усі інтервʼю (affinity)                                                     | імпорт у Sheets / Notion                            |
+| [`insights-scoreboard.md`](./insights-scoreboard.md)               | табло гіпотез H1–H4 + метрики                                                                     | заповнюєш по ходу, фінальний висновок               |
 
 ## Воркфлоу від нуля до висновку
 
