@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { isIOS, isStandalonePWA } from "@shared/lib/platform/iosStandalone";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { PROMO_BANNER_REVEAL_MS } from "@shared/lib/ui/timeouts";
 import { trackEvent } from "../observability/analytics";
@@ -20,14 +21,9 @@ export function useIosInstallBanner() {
   useEffect(() => {
     if (safeReadStringLS(IOS_BANNER_DISMISSED_KEY) === "1") return undefined;
 
-    const isIOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as Navigator & { standalone?: boolean }).standalone ===
-        true;
-    if (isIOS && !isStandalone) {
+    // Канонічна iOS + standalone детекція — спільний helper
+    // (`@shared/lib/platform/iosStandalone`), переюзаний voice-стеком.
+    if (isIOS() && !isStandalonePWA()) {
       const timer = setTimeout(() => setVisible(true), PROMO_BANNER_REVEAL_MS);
       return () => clearTimeout(timer);
     }
