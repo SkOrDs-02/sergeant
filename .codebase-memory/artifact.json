@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "commit": "",
+  "indexed_at": "2026-06-28T15:51:49Z",
+  "project": "D-Sergeant",
+  "nodes": 61300,
+  "edges": 133400,
+  "original_size": 70189056,
+  "compressed_size": 13834202,
+  "compression_level": 9
+}
