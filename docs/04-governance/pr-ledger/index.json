@@ -1,8 +1,18 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-20",
+  "generated_at": "2026-06-28",
   "prs": [
+    {
+      "number": 41,
+      "title": "docs(agents): promote hard rules #18/#19 to lint-enforced-convention",
+      "merged_at": "2026-06-28T12:04:42Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/04-governance/governance/rules/18-module-size-discipline-600.md",
+        "docs/04-governance/governance/rules/19-strict-mode-flag-canonical.md"
+      ]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
