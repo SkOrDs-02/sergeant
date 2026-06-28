@@ -331,6 +331,14 @@ const MODULE_SWITCHER_ORDER: HubModuleId[] = [
   "nutrition",
 ];
 
+// Compact chip labels for the equal-width switcher tabs. Only modules whose
+// full `MODULE_LABELS` name overflows the ~51px tab on a phone need an entry;
+// the rest fall back to the full label. Full names stay in each tab's
+// `aria-label`, so screen readers are unaffected.
+const MODULE_SWITCHER_SHORT_LABELS: Partial<Record<HubModuleId, string>> = {
+  nutrition: "Їжа",
+};
+
 // SVG glyphs are inlined to avoid pulling the full Icon registry into
 // every module header — chip icons are tiny and don't change.
 const MODULE_SWITCHER_ICONS: Record<HubModuleId, ReactNode> = {
@@ -454,6 +462,10 @@ export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
         const isActive = id === active;
         const tokens = MODULE_SWITCHER_TOKENS[id];
         const label = MODULE_LABELS[id];
+        // Four equal `flex-1` tabs leave ~51px for the label on a 393px
+        // phone — long names ("Харчування") truncated to "Харчув…". Show a
+        // compact label in the chip; the full name stays in `aria-label`.
+        const chipLabel = MODULE_SWITCHER_SHORT_LABELS[id] ?? label;
         return (
           <button
             key={id}
@@ -477,7 +489,7 @@ export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
             <span aria-hidden className="shrink-0">
               {MODULE_SWITCHER_ICONS[id]}
             </span>
-            <span className="truncate">{label}</span>
+            <span className="truncate">{chipLabel}</span>
           </button>
         );
       })}

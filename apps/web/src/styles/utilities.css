@@ -206,9 +206,12 @@
 
 @utility page-tabbar-pad {
   /* ═══════════════════════════════════════════════════════════════════════
-     SAFE AREA PADDING — iOS notch & home indicator
+     BOTTOM CLEARANCE — floating bottom-nav + AIPill FAB + iOS home indicator
+     132px clears the AIPill (bottom: 84px + h-11 = 128px top) so module
+     content can always scroll above the floating assistant pill instead of
+     parking under it (mobile audit M-005a). Was 88px — cleared only the nav.
      ═══════════════════════════════════════════════════════════════════════ */
-  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px));
 }
 
 @utility routine-main-pad {

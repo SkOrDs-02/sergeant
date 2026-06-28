@@ -47,7 +47,7 @@ import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
 import {
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -379,8 +379,16 @@ export function useHubDashboardState(props: {
     [visibleOrder, adaptive.liftedId],
   );
 
+  // MouseSensor (not PointerSensor) for the desktop pointer + a separate
+  // TouchSensor for coarse pointers. PointerSensor handles touch-pointer
+  // events too, but with its distance-only activation (no delay) the first
+  // few px of a finger scroll or an imprecise tap on a card body started a
+  // reorder drag — hijacking scroll and "moving" the module on every touch.
+  // Splitting the sensors lets touch require a deliberate 250ms long-press
+  // (tap → open module, swipe → scroll, hold → drag) while the mouse keeps
+  // its instant 8px drag threshold.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, {
       activationConstraint: { delay: 250, tolerance: 5 },
     }),

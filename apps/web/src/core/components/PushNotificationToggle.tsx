@@ -31,8 +31,15 @@ export function PushNotificationToggle({
         type="button"
         disabled={loading || blocked}
         onClick={subscribed ? unsubscribe : subscribe}
+        // `data-compact` opts the 24px track out of the global ≥44px
+        // touch-target safety-net (which would otherwise stretch this
+        // `rounded-full` switch into a 44px-tall capsule). The WCAG tap
+        // target is restored via the centered `before:` pseudo below, which
+        // extends the hit area to 44×44 without changing the visual size.
+        data-compact
         className={cn(
           "relative w-11 h-6 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+          "before:content-[''] before:absolute before:left-1/2 before:top-1/2 before:h-11 before:w-11 before:-translate-x-1/2 before:-translate-y-1/2",
           subscribed ? "bg-primary" : "bg-line",
           (loading || blocked) && "opacity-50 cursor-not-allowed",
         )}
