@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 vi.mock("../../hubChatUtils", () => ({ ls: vi.fn() }));
 vi.mock("../../../../modules/finyk/utils", () => ({
@@ -27,6 +28,11 @@ const mockWorkouts = vi.mocked(readFizrukWorkouts);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Freeze to a fixed Kyiv midday so day-key assertions are deterministic
+  // regardless of the wall-clock hour the suite runs at (no UTC/Kyiv
+  // boundary flake — see domain invariant: day boundaries are Europe/Kyiv).
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-06-15T12:00:00+03:00"));
   mockLs.mockReturnValue(null);
   mockRoutine.mockReturnValue({
     habits: [],
@@ -34,6 +40,10 @@ beforeEach(() => {
   } as unknown as ReturnType<typeof loadRoutineState>);
   mockNutrition.mockReturnValue({} as ReturnType<typeof loadNutritionLog>);
   mockWorkouts.mockReturnValue([]);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 // ─── morningBriefing ──────────────────────────────────────────────────────────
@@ -54,7 +64,7 @@ describe("morningBriefing", () => {
   });
 
   it("shows completed habits for today", () => {
-    const todayKey = new Date().toISOString().slice(0, 10);
+    const todayKey = getKyivDayKey();
     mockRoutine.mockReturnValue({
       habits: [{ id: "h1", name: "Медитація", archived: false }],
       completions: { h1: [todayKey] },
@@ -69,7 +79,7 @@ describe("morningBriefing", () => {
   });
 
   it("shows calories when today has meals", () => {
-    const todayKey = new Date().toISOString().slice(0, 10);
+    const todayKey = getKyivDayKey();
     mockNutrition.mockReturnValue({
       [todayKey]: { meals: [{ macros: { kcal: 500 } }] },
     } as unknown as ReturnType<typeof loadNutritionLog>);
