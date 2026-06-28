@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-06-26",
+  "generated_at": "2026-06-28",
   "sourceHashes": {
-    "knowledge-graph": "8a4674ef8bee341ae29034440af63ebbe91f06a2c633579550a1816774acf8d7",
-    "symbol-index": "7f81b312418c70410aac8ff73257b27ff20cf652820cd20896dade440c436a00"
+    "knowledge-graph": "fe7055c7d6e61ac8b6c3da13d21bdb731c63915e59e472caf035d242ce4295e7",
+    "symbol-index": "05129fd3b0ef5f6e700aeeafeb66fcd4d1f5a686a82e14bb80ca3694a72a0b24"
   },
   "counts": {
-    "adr": 64,
+    "adr": 65,
     "audit": 15,
     "export": 303,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
     "skill": 23,
-    "total": 543
+    "total": 544
   },
   "chunks": [
     {
@@ -550,9 +550,9 @@
       "line": 1,
       "title": "ADR-0051: Pricing v3 — Free + Pro, single paid tier",
       "tier": "core",
-      "status": "Accepted",
-      "text": "ADR-0051: Pricing v3 — Free + Pro, single paid tier · adr:0051 · adr · Accepted · 51 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "8fa95a96ef2ea3c37d7bf5af557622b939843d520c1f21ae9f6087e2352413f2"
+      "status": "Superseded by ADR-0068",
+      "text": "ADR-0051: Pricing v3 — Free + Pro, single paid tier · adr:0051 · adr · Superseded by ADR-0068 · 51 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "75e10fa32344a7f993b4ec323f98959e7ab1e4a48a636bb56b5f14dc2ed6cc37"
     },
     {
       "id": "adr:0052",
@@ -718,6 +718,17 @@
       "status": "Active",
       "text": "ADR-0067: Standardize Hub engagement mechanisms (signals / reminders / dismiss-state) · adr:0067 · adr · Active · 67 · 2026-06-20 · Context and Problem Statement · Шар 1 — compute (engagement-сигнали) · Шар 2 — reminders (планування нотифікацій) · Шар 3 — dismiss / snooze state · Чому це ADR, а не просто рефактор · Considered Options · Decision · Цільова архітектура (3 шари) · Поетапність (4 кроки, кожен окремим PR) · Що НЕ чіпаємо (явні non-goals) · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
       "contentHash": "f84d30c0b1c1cebcd1dc28a742568ff96905d2a931bbad71c2bee79d7ab31013"
+    },
+    {
+      "id": "adr:0068",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0068-pricing-v4-uah-reverse-trial.md",
+      "line": 1,
+      "title": "ADR-0068: Pricing v4 — ₴199/міс, зворотній trial, уточнені ліміти Free/Pro",
+      "tier": "core",
+      "status": "Accepted",
+      "text": "ADR-0068: Pricing v4 — ₴199/міс, зворотній trial, уточнені ліміти Free/Pro · adr:0068 · adr · Accepted · 68 · Context and Problem Statement · Considered Options · Decision · Ціна · Trial — reverse trial · Ліміти тірів · Tiered-деградація моделі (незмінна передумова) · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "fb06157ed730db3d2fe86a06cea44a5a26e6dab006d3ed2881209670678e556f"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
