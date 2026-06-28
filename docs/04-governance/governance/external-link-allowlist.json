@@ -131,24 +131,24 @@
       "reason": "Historical PR/commit backlinks to the pre-migration GitHub repo Skords-01/Sergeant, suspended during the 2026-06-26 account migration to SkOrDs-02. They reference real PRs/commits from the old repo that no longer resolve (the old PR numbers do not exist on the new repo, which started fresh — so they cannot be rewritten to the new handle either); preserved verbatim in CHANGELOG.md, AGENTS.md, and per-app READMEs as an immutable historical record. New backlinks point at SkOrDs-02/sergeant."
     },
     {
-      "pattern": "^https?://help\\.hevyapp\\.com/hc/.*",
-      "reason": "Hevy help-centre (Zendesk-hosted) returns 403 to non-browser User-Agents but renders correctly in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the canonical export-data instructions for the Hevy workout tracker (CSV-import source mapping)."
+      "pattern": "^https?://help\\.hevyapp\\.com/hc/en-us/articles/38001424401943(-.*)?$",
+      "reason": "Hevy help-centre article 38001424401943 (export-data instructions, Zendesk-hosted) returns 403 to non-browser User-Agents but renders in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the Hevy CSV-export source mapping. Scoped to the cited article ID so other Hevy help links still get checked."
     },
     {
-      "pattern": "^https?://support\\.myfitnesspal\\.com/hc/.*",
-      "reason": "MyFitnessPal help-centre (Zendesk-hosted) returns 403 to non-browser User-Agents but renders correctly in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the canonical Data-Export FAQ for the MyFitnessPal nutrition tracker (CSV-import source mapping)."
+      "pattern": "^https?://support\\.myfitnesspal\\.com/hc/en-us/articles/360032273352(-.*)?$",
+      "reason": "MyFitnessPal help-centre article 360032273352 (Data-Export FAQ, Zendesk-hosted) returns 403 to non-browser User-Agents but renders in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the MFP CSV-export source mapping. Scoped to the cited article ID."
     },
     {
-      "pattern": "^https?://support\\.budgetbakers\\.com/hc/.*",
-      "reason": "BudgetBakers (Wallet) help-centre (Zendesk-hosted) returns 403 to non-browser User-Agents but renders correctly in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the canonical export-transactions guide for the Wallet finance tracker (CSV-import source mapping)."
+      "pattern": "^https?://support\\.budgetbakers\\.com/hc/en-us/articles/7151606064018(-.*)?$",
+      "reason": "BudgetBakers (Wallet) help-centre article 7151606064018 (export-transactions guide, Zendesk-hosted) returns 403 to non-browser User-Agents but renders in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the Wallet CSV-export source mapping. Scoped to the cited article ID."
     },
     {
-      "pattern": "^https?://help\\.monarchmoney\\.com/hc/.*",
-      "reason": "Monarch Money help-centre (Zendesk-hosted) returns 403 to non-browser User-Agents but renders correctly in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the canonical manual-import guide for the Monarch finance tracker (CSV-import source mapping)."
+      "pattern": "^https?://help\\.monarchmoney\\.com/hc/en-us/articles/4409682789908(-.*)?$",
+      "reason": "Monarch Money help-centre article 4409682789908 (manual-import guide, Zendesk-hosted) returns 403 to non-browser User-Agents but renders in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the Monarch CSV-import source mapping. Scoped to the cited article ID."
     },
     {
-      "pattern": "^https?://habitica\\.fandom\\.com/wiki/.*",
-      "reason": "Habitica Fandom wiki returns 403 to non-browser User-Agents (Fandom anti-bot) but renders correctly in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the Data-Export reference for the Habitica habit tracker (deferred CSV-import source)."
+      "pattern": "^https?://habitica\\.fandom\\.com/wiki/Data_Export$",
+      "reason": "Habitica Fandom wiki Data_Export page returns 403 to non-browser User-Agents (Fandom anti-bot) but renders in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the Habitica Data-Export reference (deferred CSV-import source). Scoped to the single cited page."
     },
     {
       "pattern": "^https?://diia\\.gov\\.ua(/.*)?$",
