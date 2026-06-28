@@ -149,6 +149,10 @@
     {
       "pattern": "^https?://habitica\\.fandom\\.com/wiki/.*",
       "reason": "Habitica Fandom wiki returns 403 to non-browser User-Agents (Fandom anti-bot) but renders correctly in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the Data-Export reference for the Habitica habit tracker (deferred CSV-import source)."
+    },
+    {
+      "pattern": "^https?://diia\\.gov\\.ua(/.*)?$",
+      "reason": "diia.gov.ua (Ukrainian government services portal) aborts connections from CI runner User-Agents with 'This operation was aborted' (consistent across runs, same anti-bot behaviour as cabinet.tax.gov.ua / gdpr-info.eu / eur-lex.europa.eu already listed). Cited in docs/01-product/launch/business/04-launch-readiness.md as the canonical Diia portal; the page loads correctly in browsers and the gov URL is citation-stable."
     }
   ]
 }
