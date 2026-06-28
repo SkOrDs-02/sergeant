@@ -1,12 +1,12 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-27",
+  "generated_at": "2026-06-28",
   "counts": {
     "adr": 65,
-    "audit": 15,
+    "audit": 16,
     "hard-rule": 26,
-    "initiative": 51,
+    "initiative": 52,
     "playbook": 61,
     "pr": 219,
     "skill": 23
@@ -379,7 +379,7 @@
       "type": "adr",
       "title": "ADR-0035: Distributed tracing — web→server via OpenTelemetry",
       "path": "docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md",
-      "status": "superseded — reverted 2026-06-26 (OpenTelemetry видалено; див. banner нижче)",
+      "status": "deprecated <!-- reverted 2026-06-26: OpenTelemetry видалено (PR #9); див. banner + Note нижче -->",
       "tier": "core",
       "meta": {
         "number": 35
@@ -856,6 +856,15 @@
       "meta": {}
     },
     {
+      "id": "audit:2026-06-28-financial-launch-monetization-audit",
+      "type": "audit",
+      "title": "Фінансовий аудит — старт, утримання, беззбитковість Sergeant — 2026-06-28",
+      "path": "docs/90-work/audits/2026-06-28-financial-launch-monetization-audit.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
       "id": "audit:2026-08-XX-openclaw-internal-roast",
       "type": "audit",
       "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`",
@@ -1009,7 +1018,7 @@
       "meta": {
         "number": 18,
         "severity": "blocker",
-        "category": "active-initiative",
+        "category": "lint-enforced-convention",
         "scope": ["apps/web/src/**", "apps/server/src/**"]
       }
     },
@@ -1022,7 +1031,7 @@
       "meta": {
         "number": 19,
         "severity": "blocker",
-        "category": "active-initiative",
+        "category": "lint-enforced-convention",
         "scope": ["apps/**/tsconfig.json", "packages/**/tsconfig.json"]
       }
     },
@@ -1318,6 +1327,19 @@
       "tier": "core",
       "meta": {
         "number": 21
+      }
+    },
+    {
+      "id": "initiative:0022",
+      "type": "initiative",
+      "title": "0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding)",
+      "path": "docs/90-work/initiatives/0022-import-from-external-trackers.md",
+      "status": "Proposed (2026-06-28) — драфт плану; не почато. Чекає на founder-greenlight по скоупу Фази 1 + рішення по валютній нормалізації та dedup-стратегії (див. § Відкриті рішення).",
+      "tier": "core",
+      "meta": {
+        "number": 22,
+        "owner": "@SkOrDs-02",
+        "priority": "P2 (growth / activation lever — не блокер launch-у 0010)"
       }
     },
     {
@@ -5980,6 +6002,26 @@
       "from": "initiative:0021",
       "to": "pr:3560",
       "type": "touched-by"
+    },
+    {
+      "from": "initiative:0022",
+      "to": "hard-rule:1",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0022",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0022",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0022",
+      "to": "hard-rule:4",
+      "type": "references"
     },
     {
       "from": "initiative:hardening-matrix",

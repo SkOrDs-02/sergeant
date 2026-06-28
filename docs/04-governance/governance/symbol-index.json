@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-26",
+  "generated_at": "2026-06-28",
   "summary": {
     "packages": 16,
     "totalExports": 303,
@@ -1554,7 +1554,7 @@
       "entryFile": "packages/design-tokens/index.d.ts",
       "stats": {
         "exportCount": 21,
-        "totalImporters": 21,
+        "totalImporters": 20,
         "deadExports": 19
       },
       "exports": [
@@ -1569,7 +1569,6 @@
             "apps/web/src/shared/components/layout/ModuleAccentProvider.tsx",
             "apps/web/src/shared/components/layout/ModuleHeader.tsx",
             "apps/web/src/shared/components/layout/ModuleShell.tsx",
-            "apps/web/src/shared/components/ui/AIPill.tsx",
             "apps/web/src/shared/components/ui/Button.tsx",
             "apps/web/src/shared/components/ui/EmptyState.tsx",
             "apps/web/src/shared/components/ui/Skeleton.tsx",
@@ -1581,7 +1580,7 @@
             "packages/insights/src/recommendations/types.ts",
             "packages/shared/src/lib/recommendations.ts"
           ],
-          "usageCount": 18
+          "usageCount": 17
         },
         {
           "name": "ModuleSoftAccent",
@@ -1736,7 +1735,7 @@
       "entryFile": "packages/fizruk-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 82,
+        "totalImporters": 83,
         "deadExports": 0
       },
       "exports": [
@@ -1845,7 +1844,7 @@
       "entryFile": "packages/nutrition-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 90,
+        "totalImporters": 91,
         "deadExports": 0
       },
       "exports": [
@@ -2008,7 +2007,7 @@
       "entryFile": "packages/routine-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 63,
+        "totalImporters": 64,
         "deadExports": 0
       },
       "exports": [
@@ -2038,7 +2037,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 358,
+        "totalImporters": 364,
         "deadExports": 0
       },
       "exports": [

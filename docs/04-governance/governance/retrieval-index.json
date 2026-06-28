@@ -3,18 +3,18 @@
   "version": 1,
   "generated_at": "2026-06-28",
   "sourceHashes": {
-    "knowledge-graph": "4efcded695527de56f949d2afdced303a977a98745fb1333f12e3dd06b44a73a",
-    "symbol-index": "7f81b312418c70410aac8ff73257b27ff20cf652820cd20896dade440c436a00"
+    "knowledge-graph": "446ee0d099277951cd44690a485de88ff3cded16c533135cbf4de65f60fe84a7",
+    "symbol-index": "f0cb7372db2f28b20b800ce6f9791e719145eadd9d45a9f5b49a70c743281dd2"
   },
   "counts": {
     "adr": 65,
-    "audit": 15,
+    "audit": 16,
     "export": 303,
     "hard-rule": 26,
-    "initiative": 51,
+    "initiative": 52,
     "playbook": 61,
     "skill": 23,
-    "total": 544
+    "total": 546
   },
   "chunks": [
     {
@@ -385,9 +385,9 @@
       "line": 1,
       "title": "ADR-0035: Distributed tracing — web→server via OpenTelemetry",
       "tier": "core",
-      "status": "superseded — reverted 2026-06-26 (OpenTelemetry видалено; див. banner нижче)",
-      "text": "ADR-0035: Distributed tracing — web→server via OpenTelemetry · adr:0035 · adr · superseded — reverted 2026-06-26 (OpenTelemetry видалено; див. banner нижче) · 35 · 0. TL;DR · 1. Context and Problem Statement · 2. Considered Options · Backend (де trace-data live): · Tracer SDK (як спрямувати): · 3. Decision · 3.1. Backend: Honeycomb (free tier). · 3.2. SDK: @opentelemetry/ packages. · 3.3. Sentry tracing на web вимикаємо. · 3.4. Trace propagation. · 3.5. Mobile (apps/mobile). · 4. Rationale · 5. Consequences · Positive · Negative · Neutral · 6. Compliance · 7. Implementation status · 7.1 Shipped (2026-05-05) · 7.2 Чого НЕ робимо зараз · 7.3 Roadmap-факт · 8. Links",
-      "contentHash": "1e2a1b5ca3e71de7cfdff34bf2343e46f1772192450303d114947c527c23aeac"
+      "status": "deprecated <!-- reverted 2026-06-26: OpenTelemetry видалено (PR #9); див. banner + Note нижче -->",
+      "text": "ADR-0035: Distributed tracing — web→server via OpenTelemetry · adr:0035 · adr · deprecated <!-- reverted 2026-06-26: OpenTelemetry видалено (PR #9); див. banner + Note нижче --> · 35 · 0. TL;DR · 1. Context and Problem Statement · 2. Considered Options · Backend (де trace-data live): · Tracer SDK (як спрямувати): · 3. Decision · 3.1. Backend: Honeycomb (free tier). · 3.2. SDK: @opentelemetry/ packages. · 3.3. Sentry tracing на web вимикаємо. · 3.4. Trace propagation. · 3.5. Mobile (apps/mobile). · 4. Rationale · 5. Consequences · Positive · Negative · Neutral · 6. Compliance · 7. Implementation status · 7.1 Shipped (2026-05-05) · 7.2 Чого НЕ робимо зараз · 7.3 Roadmap-факт · 8. Links",
+      "contentHash": "6a61edf7f00c263e390888777350f921b6d7effceffbb6c02f6c8b6017cd63f5"
     },
     {
       "id": "adr:0036",
@@ -872,6 +872,17 @@
       "status": "Active",
       "text": "Independent Audit — Sergeant — 2026-06-11 · audit:2026-06-11-fable5-independent-audit · audit · Active · Статус виконання (update 2026-06-11 EOD) · Executive summary (стан на момент аудиту, 2026-06-11 ранок) · Вердикти за вимірами · Ключові верифіковані знахідки (стиснуто) · Закриті 2026-06-11 ✅ · Відкриті (пріоритезовано — це і є черга роботи) · Top 3 existential risks (оновлено) · Workflow delegation spec (remaining) · Що founder-у робити далі",
       "contentHash": "eb72e7caef0158a36456de6a1e0a039af48dbca32810468f9e6c73eb351b2589"
+    },
+    {
+      "id": "audit:2026-06-28-financial-launch-monetization-audit",
+      "type": "audit",
+      "path": "docs/90-work/audits/2026-06-28-financial-launch-monetization-audit.md",
+      "line": 1,
+      "title": "Фінансовий аудит — старт, утримання, беззбитковість Sergeant — 2026-06-28",
+      "tier": "core",
+      "status": "Active",
+      "text": "Фінансовий аудит — старт, утримання, беззбитковість Sergeant — 2026-06-28 · audit:2026-06-28-financial-launch-monetization-audit · audit · Active · TL;DR · 1. Що коштує запустити (one-time) · 2. Що коштує утримувати (recurring, $/міс) · 3. Активна модель монетизації (ADR-0068) · 4. Беззбитковість (перерахунок на активну ціну ₴199) · 4.1 Юніт-економіка одного Pro · 4.2 Точка беззбитковості · 4.3 Скільки треба MAU, щоб зібрати ~20 Pro · 5. Сценарії виходу в прибуток · 6. Альтернативні / додаткові шляхи монетизації · 7. Рекомендації (P0/P1/P2) · 8. Найбільші ризики моделі · Посилання",
+      "contentHash": "1b3d45427b07f3fb9299c525a9e1fdb91cc958201cdaa2c59c3f4dc1f8aa7d3a"
     },
     {
       "id": "audit:2026-08-XX-openclaw-internal-roast",
@@ -2791,8 +2802,8 @@
       "path": "packages/design-tokens/index.d.ts",
       "title": "ModuleAccent (type)",
       "tier": "extended",
-      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 18×",
-      "contentHash": "c18594d0840e5417653e3bc44547dd130666e0359659d8b5e9e331573c8a4781"
+      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 17×",
+      "contentHash": "b8fc95cfb164a7458365df1ae05032e108b1bcd2dabc7ee534ee57ee762d5822"
     },
     {
       "id": "export:@sergeant/design-tokens:moduleAccentRgb",
@@ -3719,8 +3730,8 @@
       "line": 1,
       "title": "Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS",
       "tier": "core",
-      "text": "Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS · hard-rule:18 · hard-rule · 18 · blocker · active-initiative · apps/web/src/**,apps/server/src/**",
-      "contentHash": "0f09b323a6c83020342ecc7d03e4c846b3d994c62cd95db1d57980f38be59707"
+      "text": "Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS · hard-rule:18 · hard-rule · 18 · blocker · lint-enforced-convention · apps/web/src/**,apps/server/src/**",
+      "contentHash": "e888874c780e42d8d6f7c644ffa90b08a784a9f1d47a97f6035bdc4b767965b5"
     },
     {
       "id": "hard-rule:19",
@@ -3729,8 +3740,8 @@
       "line": 1,
       "title": "Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo",
       "tier": "core",
-      "text": "Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo · hard-rule:19 · hard-rule · 19 · blocker · active-initiative · apps/**/tsconfig.json,packages/**/tsconfig.json",
-      "contentHash": "a9c6be4689a121febb635c6218ae9517cf53706fe435f791bbd3111c07c70829"
+      "text": "Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo · hard-rule:19 · hard-rule · 19 · blocker · lint-enforced-convention · apps/**/tsconfig.json,packages/**/tsconfig.json",
+      "contentHash": "5e08a047cf660d82826384413e40531afd82977f62615b0d27a0144d6ef61711"
     },
     {
       "id": "hard-rule:2",
@@ -3947,6 +3958,17 @@
       "status": "In progress",
       "text": "0021 — React-hooks v7 ESLint cleanup · initiative:0021 · initiative · In progress · 21 · Проблема · Скоуп · Acceptance criteria · Виконані дії (2026-06-10) · Timeline · Recent PRs",
       "contentHash": "f6ea65598cb452e6f65022b8132d33f8f15eb2664eaa6bd67c168b1bb3df8d49"
+    },
+    {
+      "id": "initiative:0022",
+      "type": "initiative",
+      "path": "docs/90-work/initiatives/0022-import-from-external-trackers.md",
+      "line": 1,
+      "title": "0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding)",
+      "tier": "core",
+      "status": "Proposed (2026-06-28) — драфт плану; не почато. Чекає на founder-greenlight по скоупу Фази 1 + рішення по валютній нормалізації та dedup-стратегії (див. § Відкриті рішення).",
+      "text": "0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding) · initiative:0022 · initiative · Proposed (2026-06-28) — драфт плану; не почато. Чекає на founder-greenlight по скоупу Фази 1 + рішення по валютній нормалізації та dedup-стратегії (див. § Відкриті рішення). · 22 · @SkOrDs-02 · P2 (growth / activation lever — не блокер launch-у 0010) · TL;DR · Чому зараз · Скоуп · Метрики успіху · План змін · Фаза 1 — Спільний конвеєр + силові трекери (Strong + Hevy) — P0 для ініціативи · Фаза 2 — Харчування (Cronometer → MyFitnessPal) → nutritionmeals · Фаза 3 — Фінанси (універсальний column-mapper) → finykmanualexpenses · Фаза 4 (опційно) — Apple Health XML як агрегатор · Критерії DONE (Фаза 1) · Ризики та митиґація · Відкриті рішення (потребують founder/owner) · Зв'язки · Джерела (export-можливості, станом на 2026-06)",
+      "contentHash": "bd2bf3e9f95bb87ca9133f6da3324257e392acc5c9dc8f0097a32eaa3a97fb55"
     },
     {
       "id": "initiative:follow-ups",
