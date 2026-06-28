@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Pool } from "pg";
 import {
   asyncHandler,
   rateLimitExpress,
@@ -7,6 +8,7 @@ import {
   requireSession,
   setModule,
 } from "../http/index.js";
+import { requirePlan } from "../modules/billing/requirePlan.js";
 import analyzePhoto from "../modules/nutrition/analyze-photo.js";
 import parsePantry from "../modules/nutrition/parse-pantry.js";
 import refinePhoto from "../modules/nutrition/refine-photo.js";
@@ -27,8 +29,16 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
  * Per-endpoint rate-limit + AI-guards навішуємо нижче: backup-endpoint-и не
  * ходять у Anthropic і не мають тратити квоту, тому `requireAnthropicKey` /
  * `requireAiQuota` до них не застосовуємо.
+ *
+ * Vision-endpoint-и (`analyze-photo` / `refine-photo`) додатково гейтяться за
+ * Pro-планом: вони йдуть через Sonnet 4.6 Vision (cost=3) — найдорожчий
+ * AI-шлях. Решта nutrition-AI лишається метрованою (free отримує
+ * `effectiveLimits.aiRequestsPerDay`), що збігається з клієнтським
+ * `useFeatureGate("ai-photo-analysis")` та ADR-0051. `requirePlan` стоїть
+ * ПЕРЕД `requireAnthropicKey`/`requireAiQuota`, щоб free-юзер отримав 402 до
+ * витрати денної квоти; при `STRIPE_ENABLED=false` middleware — no-op.
  */
-export function createNutritionRouter(): Router {
+export function createNutritionRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
   r.use("/api/nutrition", setModule("nutrition"));
   r.use(
@@ -50,6 +60,7 @@ export function createNutritionRouter(): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
+    requirePlan(pool, "pro"),
     ...ai,
     asyncHandler(analyzePhoto),
   );
@@ -72,6 +83,7 @@ export function createNutritionRouter(): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
+    requirePlan(pool, "pro"),
     ...ai,
     asyncHandler(refinePhoto),
   );
