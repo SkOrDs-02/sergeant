@@ -59,3 +59,43 @@ test("@critical hub-chat: cold-load mounts the /chat assistant surface", async (
 
   expect(errors, "Uncaught page errors on /chat cold load").toEqual([]);
 });
+
+test("@critical hub-chat: chat API failure renders a retryable assistant message", async ({
+  page,
+}) => {
+  await seedLocalStorage(page);
+
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+
+  await page.goto("/chat", { waitUntil: "domcontentloaded" });
+
+  const chatRegion = page
+    .getByRole("region")
+    .filter({ has: page.locator("#hub-chat-title") });
+  await expect(chatRegion).toBeVisible({ timeout: 10_000 });
+
+  const input = page.getByLabel("Повідомлення асистенту");
+  await input.fill("Production readiness degraded-chat smoke ping.");
+
+  const chatResponse = page.waitForResponse(
+    (response) => {
+      const url = new URL(response.url());
+      return (
+        url.pathname.endsWith("/chat") && response.request().method() === "POST"
+      );
+    },
+    { timeout: 30_000 },
+  );
+
+  await page.getByRole("button", { name: "Надіслати" }).click();
+
+  const response = await chatResponse;
+  expect(response.status(), "POST /api/chat degraded status").toBe(503);
+  await expect(chatRegion).toContainText(/Помилка|сервер|AI|503/i, {
+    timeout: 15_000,
+  });
+  await expect(input).toBeEnabled({ timeout: 10_000 });
+
+  expect(errors, "Uncaught page errors on degraded /chat send").toEqual([]);
+});
