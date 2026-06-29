@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 
 /**
  * Renders an assistant chat reply as React nodes.
@@ -38,11 +38,22 @@ export interface AssistantMessageBodyProps {
 /** Allow only safe URL schemes — blocks `javascript:`, `data:`, etc. */
 function isSafeHref(href: string | undefined): boolean {
   if (!href) return false;
-  return /^(https?:\/\/|\/|#)/i.test(href);
+  return HREF_SAFE_RE.test(href);
 }
 
 const INLINE_TOKEN_RE =
   /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+const HREF_SAFE_RE = /^(https?:\/\/|\/|#)/i;
+const LINK_TOKEN_RE = /^\[([^\]]+)\]\(([^)]+)\)$/;
+const H4_RE = /^####\s+(.*)$/;
+const H3_RE = /^###\s+(.*)$/;
+const ULIST_RE = /^\s*[-*+]\s+/;
+const ULIST_STRIP_RE = /^\s*[-*+]\s+/;
+const OLIST_RE = /^\s*\d+\.\s+/;
+const OLIST_STRIP_RE = /^\s*\d+\.\s+/;
+const QUOTE_RE = /^\s*>\s?/;
+const QUOTE_STRIP_RE = /^\s*>\s?/;
+const BLOCK_START_RE = /^(#{3,4})\s+|^\s*[-*+]\s+|^\s*\d+\.\s+|^\s*>\s?/;
 
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
   if (!text) return [];
@@ -66,7 +77,7 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
     } else if (tok.startsWith("`") && tok.endsWith("`")) {
       parts.push(<code key={k}>{tok.slice(1, -1)}</code>);
     } else if (tok.startsWith("[")) {
-      const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(tok);
+      const linkMatch = LINK_TOKEN_RE.exec(tok);
       const label = linkMatch?.[1];
       const href = linkMatch?.[2];
       if (linkMatch && label !== undefined && href !== undefined) {
@@ -131,40 +142,40 @@ function parseBlocks(text: string): ParsedBlock[] {
       i += 1;
       continue;
     }
-    const h4 = /^####\s+(.*)$/.exec(line);
+    const h4 = H4_RE.exec(line);
     if (h4) {
       blocks.push({ type: "heading-4", lines: [h4[1] ?? ""] });
       i += 1;
       continue;
     }
-    const h3 = /^###\s+(.*)$/.exec(line);
+    const h3 = H3_RE.exec(line);
     if (h3) {
       blocks.push({ type: "heading-3", lines: [h3[1] ?? ""] });
       i += 1;
       continue;
     }
-    if (/^\s*[-*+]\s+/.test(line)) {
+    if (ULIST_RE.test(line)) {
       const items: string[] = [];
-      while (i < rawLines.length && /^\s*[-*+]\s+/.test(rawLines[i] ?? "")) {
-        items.push((rawLines[i] ?? "").replace(/^\s*[-*+]\s+/, ""));
+      while (i < rawLines.length && ULIST_RE.test(rawLines[i] ?? "")) {
+        items.push((rawLines[i] ?? "").replace(ULIST_STRIP_RE, ""));
         i += 1;
       }
       blocks.push({ type: "ulist", lines: items });
       continue;
     }
-    if (/^\s*\d+\.\s+/.test(line)) {
+    if (OLIST_RE.test(line)) {
       const items: string[] = [];
-      while (i < rawLines.length && /^\s*\d+\.\s+/.test(rawLines[i] ?? "")) {
-        items.push((rawLines[i] ?? "").replace(/^\s*\d+\.\s+/, ""));
+      while (i < rawLines.length && OLIST_RE.test(rawLines[i] ?? "")) {
+        items.push((rawLines[i] ?? "").replace(OLIST_STRIP_RE, ""));
         i += 1;
       }
       blocks.push({ type: "olist", lines: items });
       continue;
     }
-    if (/^\s*>\s?/.test(line)) {
+    if (QUOTE_RE.test(line)) {
       const quoted: string[] = [];
-      while (i < rawLines.length && /^\s*>\s?/.test(rawLines[i] ?? "")) {
-        quoted.push((rawLines[i] ?? "").replace(/^\s*>\s?/, ""));
+      while (i < rawLines.length && QUOTE_RE.test(rawLines[i] ?? "")) {
+        quoted.push((rawLines[i] ?? "").replace(QUOTE_STRIP_RE, ""));
         i += 1;
       }
       blocks.push({ type: "blockquote", lines: quoted });
@@ -176,13 +187,7 @@ function parseBlocks(text: string): ParsedBlock[] {
     while (i < rawLines.length) {
       const next = rawLines[i] ?? "";
       if (!next.trim()) break;
-      if (
-        /^(#{3,4})\s+/.test(next) ||
-        /^\s*[-*+]\s+/.test(next) ||
-        /^\s*\d+\.\s+/.test(next) ||
-        /^\s*>\s?/.test(next)
-      )
-        break;
+      if (BLOCK_START_RE.test(next)) break;
       para.push(next);
       i += 1;
     }
@@ -192,7 +197,7 @@ function parseBlocks(text: string): ParsedBlock[] {
 }
 
 function AssistantMessageBodyImpl({ text }: AssistantMessageBodyProps) {
-  const blocks = parseBlocks(text);
+  const blocks = useMemo(() => parseBlocks(text), [text]);
   return (
     <div className={PROSE_CLASS_NAME}>
       {blocks.map((block, idx) => {
