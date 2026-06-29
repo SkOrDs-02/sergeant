@@ -66,7 +66,9 @@
 
 ## Handoff notes (for review session)
 
-- **What changed:**
+- **PR:** https://github.com/SkOrDs-02/sergeant/pull/73 (DRAFT, not merged)
+- **Branch:** `devin/1782764360-agent-snapshot` (worktree `D:\sergeant-wt\agent-snapshot`)
+- **Last commit:** `283a815a0 docs(agents): note scope deviation in worklog`
   - `tools/agent-snapshot/snapshot.mjs` (new, ~570 lines) — zero-dep Node script.
   - `tools/agent-snapshot/README.md` (new) — usage.
   - `.agents/skills/sergeant-start-here/SKILL.md` — new §0.1 Dynamic context.
