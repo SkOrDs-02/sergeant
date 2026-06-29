@@ -9,6 +9,7 @@ import {
 } from "../../lib/anthropic.js";
 import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
+import { resolveProTier, type WithAiQuotaRefund } from "../chat/aiQuota.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -166,8 +167,11 @@ ${pantrySec}
 
 ${regenStr}`;
 
+  // Pro tiered degradation: premium→standard→floor by daily count (text-plan
+  // path; vision stays Sonnet). Free/Anon & flag-off → premium (Sonnet).
+  const proTier = await resolveProTier(req, res, "nutrition");
   const payload = {
-    model: "claude-sonnet-4-6",
+    model: proTier.model,
     max_tokens: 1500,
     temperature: 0.3,
     system: SYSTEM,
@@ -179,6 +183,10 @@ ${regenStr}`;
     endpoint: "day-plan",
   });
   if (!response || !response.ok) {
+    // Don't burn the tier bucket for a failed upstream call.
+    await (req as Request & WithAiQuotaRefund)
+      .aiQuotaRefund?.()
+      .catch(() => {});
     throw makeAiProviderError({
       rawProviderMessage: (data as AnthropicErrorPayload)?.error?.message,
       status: response?.status,

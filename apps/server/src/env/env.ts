@@ -565,6 +565,17 @@ const envSchema = z.object({
    * через factory, тож free-модель тут можлива). Налаштовується env-ом.
    */
   AI_PRO_FLOOR_COACH_MODEL: stringWithDefault("nvidia/nemotron-3-ultra:free"),
+  /**
+   * Nutrition standard-модель для text-планів (day/week-plan, recommend-recipes).
+   * Haiku 4.5 за замовч. — output там великий (week-plan ~4k токенів), тож
+   * деградація дає найбільшу економію (~−70%). Vision (analyze/refine-photo)
+   * НЕ tier-иться: лишається Sonnet (якість розпізнавання страв критична).
+   */
+  AI_PRO_STANDARD_NUTRITION_MODEL: stringWithDefault(
+    "claude-haiku-4-5-20251001",
+  ),
+  /** Nutrition floor-модель — Anthropic Haiku 3 (найдешевша, structured-JSON ок). */
+  AI_PRO_FLOOR_NUTRITION_MODEL: stringWithDefault("claude-3-haiku-20240307"),
 
   /** Інтервал SSE heartbeat (мс). Тримає з'єднання живим через проксі. */
   SSE_HEARTBEAT_MS: coerceInt.positive().default(15_000),

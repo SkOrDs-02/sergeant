@@ -100,7 +100,7 @@ const DEFAULT_STANDARD_LIMIT = 80;
 /** Рівень моделі для Pro у поточну добу. */
 export type ProTier = "premium" | "standard" | "floor";
 /** Поверхня, що споживає tier (різні дефолтні моделі). */
-export type ProEndpoint = "chat" | "coach";
+export type ProEndpoint = "chat" | "coach" | "nutrition";
 
 export interface ProTierResult {
   tier: ProTier;
@@ -126,17 +126,25 @@ const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
   premium: {
     chat: () => envStr("CHAT_MODEL_SYNTHESIS", "claude-sonnet-4-6"),
     coach: () => envStr("OPENROUTER_COACH_MODEL", "openai/gpt-5.1"),
+    // Vision-шляхи (analyze/refine-photo) лишаються поза tiering-ом — завжди
+    // Sonnet; tiering торкається лише text-планів (day/week-plan, recipes), де
+    // Haiku прийнятний за якістю, а output великий → найбільша економія.
+    nutrition: () => "claude-sonnet-4-6",
   },
   standard: {
     chat: () =>
       envStr("AI_PRO_STANDARD_CHAT_MODEL", "claude-haiku-4-5-20251001"),
     coach: () =>
       envStr("AI_PRO_STANDARD_COACH_MODEL", "google/gemini-2.5-flash-lite"),
+    nutrition: () =>
+      envStr("AI_PRO_STANDARD_NUTRITION_MODEL", "claude-haiku-4-5-20251001"),
   },
   floor: {
     chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", "claude-3-haiku-20240307"),
     coach: () =>
       envStr("AI_PRO_FLOOR_COACH_MODEL", "nvidia/nemotron-3-ultra:free"),
+    nutrition: () =>
+      envStr("AI_PRO_FLOOR_NUTRITION_MODEL", "claude-3-haiku-20240307"),
   },
 };
 
