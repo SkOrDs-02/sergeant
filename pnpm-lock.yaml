@@ -569,8 +569,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(react@18.3.1)
       '@zxing/browser':
-        specifier: ^0.1.5
-        version: 0.1.5(@zxing/library@0.21.3)
+        specifier: ^0.2.0
+        version: 0.2.0(@zxing/library@0.21.3)
       '@zxing/library':
         specifier: ^0.21.3
         version: 0.21.3
@@ -5367,10 +5367,10 @@ packages:
   '@xtuc/long@4.2.2':
     resolution: {integrity: sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==}
 
-  '@zxing/browser@0.1.5':
-    resolution: {integrity: sha512-4Lmrn/il4+UNb87Gk8h1iWnhj39TASEHpd91CwwSJtY5u+wa0iH9qS0wNLAWbNVYXR66WmT5uiMhZ7oVTrKfxw==}
+  '@zxing/browser@0.2.0':
+    resolution: {integrity: sha512-+ORhrLva0vm6ck74NDCmvYNW3XLoAG81Mu90qfcssN1PBKJjQadxZGeMCcIk+BdJbD/zEAjjHDXOwEK1QCmRtw==}
     peerDependencies:
-      '@zxing/library': ^0.21.0
+      '@zxing/library': ^0.22.0
 
   '@zxing/library@0.21.3':
     resolution: {integrity: sha512-hZHqFe2JyH/ZxviJZosZjV+2s6EDSY0O24R+FQmlWZBZXP9IqMo7S3nb3+2LBWxodJQkSurdQGnqE7KXqrYgow==}
@@ -7055,6 +7055,10 @@ packages:
     resolution: {integrity: sha512-SkE2t82KlkkxQRVMVLAGKxLfORGQfrkx5dkj+vlgXRVNEdPc4eZcR+J/Fvj8C+yKSFH5L0q3NFlyufOVQnCcYQ==}
     engines: {node: '>=10.13.0'}
 
+  enhanced-resolve@5.24.1:
+    resolution: {integrity: sha512-7DdUaTjmNwMcH2gLr1qycesKII3BK4RLy/mdAb7x10Lq7bR4aNKHt1BR1ZALSv0rPM/hF5wYF0PhGop/rJm8vw==}
+    engines: {node: '>=10.13.0'}
+
   enquirer@2.4.1:
     resolution: {integrity: sha512-rRqJg/6gd538VHvR3PSrdRBb/1Vy2YfzHqzvbhGIQpDRKIa4FgV/54b5Q1xYSxOOwKvjXweS26E0Q+nAMwp2pQ==}
     engines: {node: '>=8.6'}
@@ -7992,6 +7996,7 @@ packages:
   git-raw-commits@5.0.1:
     resolution: {integrity: sha512-Y+csSm2GD/PCSh6Isd/WiMjNAydu0VBiG9J7EdQsNA5P9uXvLayqjmTsNlK5Gs9IhblFZqOU0yid5Il5JPoLiQ==}
     engines: {node: '>=18'}
+    deprecated: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
     hasBin: true
 
   github-from-package@0.0.0:
@@ -11093,8 +11098,8 @@ packages:
     resolution: {integrity: sha512-3NnuWfM6vBYoy5gZFvHiYsVbafvI9vZv/+jlIigFn4oP4zjNPK3LhcY0xSCgeb1a5L8jO71Mit9LlNoi2UfDDQ==}
     engines: {node: '>=10'}
 
-  serialize-javascript@7.0.5:
-    resolution: {integrity: sha512-F4LcB0UqUl1zErq+1nYEEzSHJnIwb3AF2XWB94b+afhrekOUijwooAYqFyRbjYkm2PAKBabx6oYv/xDxNi8IBw==}
+  serialize-javascript@7.0.6:
+    resolution: {integrity: sha512-ATTK5Q4gFVg0YDp1my2vqygyvhcklD/UV5GIlYHooGTn/NogJqIzpetkD6E5kmuVULqz/S9inUL25XcAgDRJQg==}
     engines: {node: '>=20.0.0'}
 
   serve-static@1.16.3:
@@ -16383,7 +16388,7 @@ snapshots:
 
   '@rollup/plugin-terser@1.0.0(rollup@4.62.2)':
     dependencies:
-      serialize-javascript: 7.0.5
+      serialize-javascript: 7.0.6
       smob: 1.6.2
       terser: 5.48.0
     optionalDependencies:
@@ -17818,7 +17823,7 @@ snapshots:
 
   '@xtuc/long@4.2.2': {}
 
-  '@zxing/browser@0.1.5(@zxing/library@0.21.3)':
+  '@zxing/browser@0.2.0(@zxing/library@0.21.3)':
     dependencies:
       '@zxing/library': 0.21.3
     optionalDependencies:
@@ -19495,6 +19500,11 @@ snapshots:
       once: 1.4.0
 
   enhanced-resolve@5.24.0:
+    dependencies:
+      graceful-fs: 4.2.11
+      tapable: 2.3.3
+
+  enhanced-resolve@5.24.1:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3
@@ -24525,7 +24535,7 @@ snapshots:
     dependencies:
       type-fest: 0.20.2
 
-  serialize-javascript@7.0.5: {}
+  serialize-javascript@7.0.6: {}
 
   serve-static@1.16.3:
     dependencies:
@@ -26061,7 +26071,7 @@ snapshots:
       acorn-import-phases: 1.0.4(acorn@8.17.0)
       browserslist: 4.28.2
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.24.0
+      enhanced-resolve: 5.24.1
       es-module-lexer: 2.1.0
       eslint-scope: 5.1.1
       events: 3.3.0
