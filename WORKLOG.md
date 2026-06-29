@@ -27,6 +27,7 @@
 - 2026-06-30 00:55 — All `execFileSync` calls get an explicit `timeout` (8s default, 5s for Lighthouse list) so a stuck `git grep` or `gh api` cannot hang the script (Windows NTFS dirent scan of a 5k-file monorepo is the realistic worst case).
 - 2026-06-30 00:55 — Argv parsing: only non-`--` args are treated as output paths. `pnpm snapshot --refresh` is the supported form; `pnpm snapshot -- --refresh` is rejected.
 - 2026-06-30 00:55 — Added `.kilocode/` to `.gitignore` so the per-machine cache is not committed.
+- 2026-06-30 02:47 — Commit scope changed from `tools` (per plan §0.6) to `agents` because `commitlint.config.js` does not include `tools` in the scope enum (Hard Rule #5, plan §0.3 forbids extending the enum without an ADR). `agents` is the closest existing match — the snapshot is consumed by the `sergeant-start-here` skill and the script lives under `tools/` only because the `tools/` namespace exists physically; the change is semantically about agent harness. Follow-up ADR can add `tools` to the enum if §1/§3/§4 also land there.
 
 ## Blockers / open questions
 
