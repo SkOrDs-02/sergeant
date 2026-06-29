@@ -3,8 +3,8 @@
   "version": 1,
   "generated_at": "2026-06-29",
   "counts": {
-    "adr": 64,
-    "audit": 16,
+    "adr": 65,
+    "audit": 18,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
@@ -379,7 +379,7 @@
       "type": "adr",
       "title": "ADR-0035: Distributed tracing — web→server via OpenTelemetry",
       "path": "docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md",
-      "status": "superseded",
+      "status": "deprecated <!-- reverted 2026-06-26: OpenTelemetry видалено (PR #9); див. banner + Note нижче -->",
       "tier": "core",
       "meta": {
         "number": 35
@@ -547,7 +547,7 @@
       "type": "adr",
       "title": "ADR-0051: Pricing v3 — Free + Pro, single paid tier",
       "path": "docs/04-governance/adr/0051-pricing-v3-single-tier.md",
-      "status": "Accepted",
+      "status": "Superseded by ADR-0068",
       "tier": "core",
       "meta": {
         "number": 51
@@ -728,6 +728,17 @@
       }
     },
     {
+      "id": "adr:0068",
+      "type": "adr",
+      "title": "ADR-0068: Pricing v4 — ₴199/міс, зворотній trial, уточнені ліміти Free/Pro",
+      "path": "docs/04-governance/adr/0068-pricing-v4-uah-reverse-trial.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 68
+      }
+    },
+    {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
       "type": "audit",
       "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
@@ -845,6 +856,15 @@
       "meta": {}
     },
     {
+      "id": "audit:2026-06-28-financial-launch-monetization-audit",
+      "type": "audit",
+      "title": "Фінансовий аудит — старт, утримання, беззбитковість Sergeant — 2026-06-28",
+      "path": "docs/90-work/audits/2026-06-28-financial-launch-monetization-audit.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
       "id": "audit:2026-08-XX-openclaw-internal-roast",
       "type": "audit",
       "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`",
@@ -859,6 +879,15 @@
       "title": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)",
       "path": "docs/90-work/audits/2026-08-XX-sync-engine-roast.md",
       "status": "Draft",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:production-readiness-testing-loop",
+      "type": "audit",
+      "title": "Production readiness testing loop",
+      "path": "docs/90-work/audits/production-readiness-testing-loop.md",
+      "status": "Active",
       "tier": "core",
       "meta": {}
     },
@@ -1007,7 +1036,7 @@
       "meta": {
         "number": 18,
         "severity": "blocker",
-        "category": "active-initiative",
+        "category": "lint-enforced-convention",
         "scope": ["apps/web/src/**", "apps/server/src/**"]
       }
     },
@@ -1020,7 +1049,7 @@
       "meta": {
         "number": 19,
         "severity": "blocker",
-        "category": "active-initiative",
+        "category": "lint-enforced-convention",
         "scope": ["apps/**/tsconfig.json", "packages/**/tsconfig.json"]
       }
     },

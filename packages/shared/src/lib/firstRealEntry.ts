@@ -13,12 +13,16 @@
 
 import {
   FIRST_ACTION_STARTED_AT_KEY,
+  MULTI_MODULE_ACTIVATION_THRESHOLD,
   TTV_MS_KEY,
   getFirstActionStartedAt,
+  getModulesWithFirstAction,
   isFirstActionCompletedForModule,
   isFirstRealEntryDone,
+  isMultiModuleActivatedFired,
   markFirstActionCompletedForModule,
   markFirstRealEntryDone,
+  markMultiModuleActivatedFired,
   saveTimeToValueMs,
 } from "./vibePicks";
 import { ANALYTICS_EVENTS } from "./analyticsEvents";
@@ -352,10 +356,17 @@ export function detectFirstRealEntry(
 export interface DetectFirstActionCompletedPerModuleOptions {
   /**
    * Fire-and-forget analytics callback. Called once per module that
-   * just flipped from "no real entry" → "has real entry". Implementations
-   * should not throw.
+   * just flipped from "no real entry" → "has real entry", and once more
+   * with `multi_module_activated` the first time the distinct-module
+   * count crosses {@link MULTI_MODULE_ACTIVATION_THRESHOLD}.
+   * Implementations should not throw.
    */
   trackEvent?: (name: string, payload?: Record<string, unknown>) => void;
+  /**
+   * Override "now" for the `multi_module_activated` payload's
+   * `days_since_first_action` stamp. Defaults to `Date.now`.
+   */
+  now?: () => number;
 }
 
 /**
@@ -380,7 +391,7 @@ export function detectFirstActionCompletedPerModule(
   store: KVStore,
   options: DetectFirstActionCompletedPerModuleOptions = {},
 ): DashboardModuleId[] {
-  const { trackEvent } = options;
+  const { trackEvent, now = Date.now } = options;
   const flipped: DashboardModuleId[] = [];
 
   for (const moduleId of DASHBOARD_MODULE_IDS) {
@@ -390,6 +401,28 @@ export function detectFirstActionCompletedPerModule(
     markFirstActionCompletedForModule(store, moduleId);
     flipped.push(moduleId);
     trackEvent?.(ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED, { module: moduleId });
+  }
+
+  // Tier 2 — cross-module breadth. Only a freshly-flipped module can push
+  // the distinct-module count over the threshold, so the steady-state
+  // no-op path (nothing flipped) skips the scan and the fired-flag read
+  // entirely. Fires once per profile, after the per-module events so the
+  // PostHog funnel reads `first_action_completed` ≥ `multi_module_activated`.
+  if (flipped.length > 0 && !isMultiModuleActivatedFired(store)) {
+    const activatedModules = getModulesWithFirstAction(store);
+    if (activatedModules.length >= MULTI_MODULE_ACTIVATION_THRESHOLD) {
+      markMultiModuleActivatedFired(store);
+      const startedAt = getFirstActionStartedAt(store);
+      const daysSinceFirstAction =
+        startedAt === null
+          ? null
+          : Math.max(0, Math.floor((now() - startedAt) / 86_400_000));
+      trackEvent?.(ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED, {
+        module_count: activatedModules.length,
+        modules: activatedModules,
+        days_since_first_action: daysSinceFirstAction,
+      });
+    }
   }
 
   return flipped;

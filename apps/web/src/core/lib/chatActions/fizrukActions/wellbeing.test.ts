@@ -10,8 +10,8 @@ vi.mock("./shared", () => ({
   readFizrukDailyLog: vi.fn(() => []),
 }));
 
-function makeAction(input: Record<string, unknown>) {
-  return { name: "log_wellbeing", input } as LogWellbeingAction;
+function makeAction(input: LogWellbeingAction["input"]): LogWellbeingAction {
+  return { name: "log_wellbeing", input };
 }
 
 describe("logWellbeing", () => {

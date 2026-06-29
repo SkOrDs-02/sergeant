@@ -1,6 +1,7 @@
 # ADR-0035: Distributed tracing — web→server via OpenTelemetry
 
-- **Status:** superseded
+- **Status:** deprecated <!-- reverted 2026-06-26: OpenTelemetry видалено (PR #9); див. banner + Note нижче -->
+- **Note:** Історичний запис — цей ADR було реалізовано (2026-05-05) і потім відкочено (OpenTelemetry-стек видалено, PR #9). Inline file-refs нижче на `apps/server/src/obs/tracing.ts` і `apps/server/src/obs/sampler.ts` описують видалений на той час код і лишаються як історичний опис прийнятого рішення, а не як контракт на наявні файли.
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-05-03 (proposed) / 2026-05-05 (accepted)
 - **Deciders:** @Skords-01

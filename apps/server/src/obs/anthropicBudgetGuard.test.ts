@@ -39,6 +39,7 @@ function createGuard(opts?: {
   now?: () => number;
   capture?: (input: AnthropicBudgetCaptureInput) => void;
   redis?: AnthropicBudgetRedisClient | null;
+  monthlyBudgetUsd?: () => number;
 }): AnthropicBudgetGuard {
   return new AnthropicBudgetGuard(opts);
 }
@@ -503,5 +504,129 @@ describe("AnthropicBudgetGuard — baseline drift handling", () => {
     const result = await guard.runBudgetCheckTick();
     expect(result.spendUsd).toBe(0);
     expect(captures).toHaveLength(1);
+  });
+});
+
+describe("AnthropicBudgetGuard — monthly projection", () => {
+  it("does not fire when envelope is 0 (disabled)", async () => {
+    const captures: AnthropicBudgetCaptureInput[] = [];
+    const guard = createGuard({
+      capture: (i) => captures.push(i),
+      redis: null,
+      monthlyBudgetUsd: () => 0,
+    });
+    recordSpend(2); // below soft → no daily alert either
+    const r = await guard.runBudgetCheckTick();
+    expect(r.monthlyFired).toBe(false);
+    expect(captures).toHaveLength(0);
+  });
+
+  it("fires when today × days-in-month ≥ envelope", async () => {
+    const captures: AnthropicBudgetCaptureInput[] = [];
+    // 2026-05 has 31 days. today $2 × 31 = $62 ≥ $50 envelope.
+    const mockNow = new Date("2026-05-13T12:00:00Z").getTime();
+    const guard = createGuard({
+      now: () => mockNow,
+      capture: (i) => captures.push(i),
+      redis: null,
+      monthlyBudgetUsd: () => 50,
+    });
+    recordSpend(2);
+    const r = await guard.runBudgetCheckTick();
+    expect(r.monthlyFired).toBe(true);
+    const monthly = captures.find((c) => c.threshold === "monthly");
+    expect(monthly).toBeDefined();
+    expect(monthly?.day).toBe("2026-05");
+    expect(monthly?.projectedUsd).toBeCloseTo(62, 5);
+    expect(monthly?.thresholdUsd).toBe(50);
+  });
+
+  it("does not fire when projection stays under envelope", async () => {
+    const captures: AnthropicBudgetCaptureInput[] = [];
+    const mockNow = new Date("2026-05-13T12:00:00Z").getTime();
+    const guard = createGuard({
+      now: () => mockNow,
+      capture: (i) => captures.push(i),
+      redis: null,
+      monthlyBudgetUsd: () => 200, // $2 × 31 = $62 < $200
+    });
+    recordSpend(2);
+    const r = await guard.runBudgetCheckTick();
+    expect(r.monthlyFired).toBe(false);
+    expect(captures.find((c) => c.threshold === "monthly")).toBeUndefined();
+  });
+
+  it("fires once per month — idempotent across same-day ticks", async () => {
+    const captures: AnthropicBudgetCaptureInput[] = [];
+    const mockNow = new Date("2026-05-13T12:00:00Z").getTime();
+    const guard = createGuard({
+      now: () => mockNow,
+      capture: (i) => captures.push(i),
+      redis: null,
+      monthlyBudgetUsd: () => 50,
+    });
+    recordSpend(2);
+    await guard.runBudgetCheckTick();
+    await guard.runBudgetCheckTick();
+    expect(captures.filter((c) => c.threshold === "monthly")).toHaveLength(1);
+  });
+
+  it("uses a month-scoped Redis TTL for monthly (not the 36h daily TTL)", async () => {
+    const calls: { key: string; ttl: number }[] = [];
+    const redis = {
+      set: async (
+        key: string,
+        _v: string,
+        _m: "EX",
+        ttl: number,
+        _nx: "NX",
+      ): Promise<"OK" | null> => {
+        calls.push({ key, ttl });
+        return "OK";
+      },
+    };
+    // 2026-05-13T12:00Z. Hard ($5) + monthly ($50) both breach at spend $5.5.
+    const mockNow = new Date("2026-05-13T12:00:00Z").getTime();
+    const guard = createGuard({
+      now: () => mockNow,
+      redis,
+      capture: () => {},
+      monthlyBudgetUsd: () => 50,
+    });
+    recordSpend(5.5);
+    await guard.runBudgetCheckTick();
+
+    const THIRTY_SIX_H = 36 * 60 * 60;
+    const monthly = calls.find((c) => c.key.endsWith(":monthly"));
+    const daily = calls.find(
+      (c) => c.key.endsWith(":hard") || c.key.endsWith(":soft"),
+    );
+    expect(monthly).toBeDefined();
+    expect(daily).toBeDefined();
+    // Daily stays at the fixed 36h TTL…
+    expect(daily?.ttl).toBe(THIRTY_SIX_H);
+    // …monthly spans the rest of the month (~18.5 days) + 36h buffer, so it
+    // survives a mid-month restart/other-pod without re-firing.
+    expect(monthly?.ttl).toBeGreaterThan(15 * 24 * 60 * 60);
+  });
+
+  it("does not re-fire after a day rollover within the same month", async () => {
+    const captures: AnthropicBudgetCaptureInput[] = [];
+    let mockNow = new Date("2026-05-13T12:00:00Z").getTime();
+    const guard = createGuard({
+      now: () => mockNow,
+      capture: (i) => captures.push(i),
+      redis: null,
+      monthlyBudgetUsd: () => 50,
+    });
+    recordSpend(2);
+    await guard.runBudgetCheckTick();
+    expect(captures.filter((c) => c.threshold === "monthly")).toHaveLength(1);
+
+    // Next UTC day, still May → monthly flag must survive the rollover.
+    mockNow = new Date("2026-05-14T00:01:00Z").getTime();
+    recordSpend(2); // fresh same-day spend so projection would breach again
+    await guard.runBudgetCheckTick();
+    expect(captures.filter((c) => c.threshold === "monthly")).toHaveLength(1);
   });
 });

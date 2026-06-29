@@ -532,14 +532,14 @@ const envSchema = z.object({
   AI_QUOTA_FOUNDER_IDS: z.string().optional(),
 
   // ── Pro tiered model degradation (premium → standard → floor) ───────
-  // Master-flag для трирівневої деградації моделі у Pro-юзерів. Коли `false`
-  // (default), `resolveProTier()` завжди повертає premium-tier без жодного
-  // DB-roundtrip → поведінка як зараз (Sonnet завжди). Коли `true` — Pro
-  // отримує premium-модель перші `AI_PRO_PREMIUM_DAILY_LIMIT` запитів/добу,
-  // далі standard, далі floor (майже-безкоштовна). Pro НІКОЛИ не бачить 429.
+  // Master-flag для трирівневої деградації моделі у Pro-юзерів. Коли `true`
+  // (default), Pro отримує premium-модель перші `AI_PRO_PREMIUM_DAILY_LIMIT`
+  // запитів/добу, далі standard, далі floor (майже-безкоштовна). Коли `false`,
+  // `resolveProTier()` завжди повертає premium-tier без жодного DB-roundtrip.
+  // Pro НІКОЛИ не бачить 429.
   // Читається у `modules/chat/aiQuota.ts` через `process.env` (як решта
   // AI_QUOTA_*), оголошено тут щоб validated-env лишався single inventory.
-  AI_TIERED_PRO_ENABLED: boolFromEnv(false),
+  AI_TIERED_PRO_ENABLED: boolFromEnv(true),
   /** Скільки premium-запитів (дорога модель) на добу для Pro до деградації. */
   AI_PRO_PREMIUM_DAILY_LIMIT: coerceInt.nonnegative().default(20),
   /**
@@ -561,10 +561,15 @@ const envSchema = z.object({
     "google/gemini-2.5-flash-lite",
   ),
   /**
-   * Coach floor-модель — справді безкоштовна OpenRouter-модель (coach ходить
-   * через factory, тож free-модель тут можлива). Налаштовується env-ом.
+   * Coach floor-модель. Дефолт — `gemini-2.5-flash-lite` (= standard): cost-sim
+   * 2026-06-27 показав, що OpenRouter free-моделі (nemotron-3-ultra:free)
+   * стабільно падають на rate-limit, а fallback на Anthropic тут не рятує —
+   * factory передає OpenRouter-model-id, який Anthropic не приймає, тож coach
+   * лишився б без відповіді. Gemini Flash Lite коштує ~$0.0002/виклик —
+   * практично безкоштовно, але надійно. Справді-free модель можна вказати
+   * env-ом, якщо її стабільність влаштовує.
    */
-  AI_PRO_FLOOR_COACH_MODEL: stringWithDefault("nvidia/nemotron-3-ultra:free"),
+  AI_PRO_FLOOR_COACH_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
 
   /** Інтервал SSE heartbeat (мс). Тримає з'єднання живим через проксі. */
   SSE_HEARTBEAT_MS: coerceInt.positive().default(15_000),
@@ -1234,6 +1239,22 @@ const envSchema = z.object({
    * Default `true`.
    */
   ANTHROPIC_BUDGET_ALERT_ENABLED: boolFromEnv(true),
+  /**
+   * Catastrophic-cost circuit-breaker (opt-in, default `false`). Коли
+   * `true` І денний глобальний Anthropic-spend перевищив hard-поріг
+   * (`isAnthropicBudgetHardExceeded()`), `resolveProTier()` деградує
+   * **усіх** не-founder юзерів (Free + Pro) на floor-модель — не лише тих,
+   * хто вичерпав власну добову квоту. Це справжня стеля вартості, якої
+   * per-user tiering сам не дає: Free-юзери отримують premium-модель
+   * (обмежені лише КІЛЬКІСТЮ), тож на масштабі домінують в AI-COGS —
+   * деградація саме їх згинає криву витрат.
+   *
+   * Default `false` → нормальна робота лишає поточну alert-only поведінку
+   * (hard alert сигналить, але AI-роути відкриті). Вмикати, коли AI-COGS
+   * треба жорстко обмежити (catastrophic runaway / бюджет вичерпано).
+   * Founder (`AI_QUOTA_FOUNDER_IDS`) ніколи не деградує.
+   */
+  ANTHROPIC_BUDGET_HARD_DEGRADE_ALL: boolFromEnv(false),
   /**
    * Voyage soft daily-usage cap (USD), enforced in-process (PR-38).
    * Track-имо USD-витрати за поточну UTC-добу у in-memory лічильнику

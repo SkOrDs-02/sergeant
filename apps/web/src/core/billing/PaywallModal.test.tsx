@@ -40,7 +40,7 @@ function renderModal(open: boolean) {
                 onClose={() => {}}
                 surface="ai_chat_limit"
                 title="AI-чат на ліміті"
-                description="Free план: 5 повідомлень/день."
+                description="Free план: 10 повідомлень/день."
               />
             </>
           }
@@ -91,7 +91,7 @@ describe("PaywallModal", () => {
   it("renders the headline + description and a primary Pro CTA when open", () => {
     renderModal(true);
     expect(screen.getByText("AI-чат на ліміті")).toBeTruthy();
-    expect(screen.getByText("Free план: 5 повідомлень/день.")).toBeTruthy();
+    expect(screen.getByText("Free план: 10 повідомлень/день.")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Перейти до Pro/ })).toBeTruthy();
   });
 

@@ -13,14 +13,14 @@ vi.mock("../../../../modules/fizruk/lib/sqliteReader", () => ({
 }));
 
 import { triggerFizrukDualWrite } from "../../../../modules/fizruk/lib/dualWrite/index";
+import type { FizrukDualWriteState } from "../../../../modules/fizruk/lib/dualWrite/index";
 import {
   extractMeasurementSnapshots,
   peekFizrukDualWriteState,
 } from "../../../../modules/fizruk/lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../../../../modules/fizruk/lib/sqliteReader";
-import { logMeasurement } from "./measurements";
-import type { FizrukDualWriteState } from "../../../../modules/fizruk/lib/dualWrite/diff/index";
 import type { SqliteFizrukCache } from "../../../../modules/fizruk/lib/sqliteReader";
+import { logMeasurement } from "./measurements";
 import type { LogMeasurementAction } from "../types.fizruk";
 
 const mockTriggerDualWrite = vi.mocked(triggerFizrukDualWrite);

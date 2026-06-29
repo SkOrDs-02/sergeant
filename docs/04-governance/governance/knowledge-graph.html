@@ -101,8 +101,8 @@
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
-      <span class="chip chip-adr">adr: <b>64</b></span>
-      <span class="chip chip-audit">audit: <b>16</b></span>
+      <span class="chip chip-adr">adr: <b>65</b></span>
+      <span class="chip chip-audit">audit: <b>18</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>51</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
@@ -111,7 +111,7 @@
     </div>
 
     <details open>
-      <summary>Nodes (234 core)</summary>
+      <summary>Nodes (237 core)</summary>
       <table>
         <thead>
           <tr>
@@ -537,7 +537,10 @@
                 >ADR-0035: Distributed tracing — web→server via OpenTelemetry</a
               >
             </td>
-            <td>superseded</td>
+            <td>
+              deprecated &lt;!-- reverted 2026-06-26: OpenTelemetry видалено (PR
+              #9); див. banner + Note нижче --&gt;
+            </td>
             <td>number=35</td>
           </tr>
           <tr>
@@ -725,7 +728,7 @@
                 >ADR-0051: Pricing v3 — Free + Pro, single paid tier</a
               >
             </td>
-            <td>Accepted</td>
+            <td>Superseded by ADR-0068</td>
             <td>number=51</td>
           </tr>
           <tr>
@@ -920,6 +923,19 @@
             <td>number=67 · last_validated=2026-06-20</td>
           </tr>
           <tr>
+            <td>adr</td>
+            <td><code>adr:0068</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0068-pricing-v4-uah-reverse-trial.md"
+                >ADR-0068: Pricing v4 — ₴199/міс, зворотній trial, уточнені
+                ліміти Free/Pro</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=68</td>
+          </tr>
+          <tr>
             <td>audit</td>
             <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
             <td>
@@ -1105,6 +1121,21 @@
           </tr>
           <tr>
             <td>audit</td>
+            <td>
+              <code>audit:2026-06-28-financial-launch-monetization-audit</code>
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-06-28-financial-launch-monetization-audit.md"
+                >Фінансовий аудит — старт, утримання, беззбитковість Sergeant —
+                2026-06-28</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
             <td><code>audit:2026-08-XX-openclaw-internal-roast</code></td>
             <td>
               <a
@@ -1127,6 +1158,18 @@
               >
             </td>
             <td>Draft</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:production-readiness-testing-loop</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/production-readiness-testing-loop.md"
+                >Production readiness testing loop</a
+              >
+            </td>
+            <td>Active</td>
             <td></td>
           </tr>
           <tr>
@@ -1280,7 +1323,7 @@
             </td>
             <td></td>
             <td>
-              number=18 · severity=blocker · category=active-initiative ·
+              number=18 · severity=blocker · category=lint-enforced-convention ·
               scope=[&quot;apps/web/src/**&quot;,&quot;apps/server/src/**&quot;]
             </td>
           </tr>
@@ -1295,7 +1338,7 @@
             </td>
             <td></td>
             <td>
-              number=19 · severity=blocker · category=active-initiative ·
+              number=19 · severity=blocker · category=lint-enforced-convention ·
               scope=[&quot;apps/**/tsconfig.json&quot;,&quot;packages/**/tsconfig.json&quot;]
             </td>
           </tr>

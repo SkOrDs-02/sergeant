@@ -222,7 +222,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
             {DAY_LABELS.map((lbl, i) => (
               <div
                 key={i}
-                style={{ height: 12, fontSize: 8, lineHeight: "12px" }}
+                style={{ height: 12, fontSize: 10, lineHeight: "12px" }}
                 className="text-subtle/70 text-right pr-1 select-none"
               >
                 {lbl}
@@ -244,7 +244,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                   aria-hidden="true"
                   style={{
                     height: 14,
-                    fontSize: 8,
+                    fontSize: 10,
                     lineHeight: "14px",
                     whiteSpace: "nowrap",
                   }}

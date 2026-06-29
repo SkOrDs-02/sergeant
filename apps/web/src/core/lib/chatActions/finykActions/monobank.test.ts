@@ -6,6 +6,8 @@ vi.mock("@shared/lib/storage/storage", () => ({
   safeRemoveLS: vi.fn(),
 }));
 
+// Loose params on purpose — several tests pass invalid dates (null, "",
+// malformed) to exercise the handler's validation, so cast the fixture.
 function makeAction(from: unknown, to: unknown) {
   return {
     name: "import_monobank_range",

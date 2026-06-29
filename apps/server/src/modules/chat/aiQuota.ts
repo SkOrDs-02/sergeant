@@ -8,9 +8,11 @@ import {
   aiQuotaFailOpenTotal,
   aiCostConsumedTotal,
 } from "../../obs/metrics.js";
+import { toLocalISODate } from "@sergeant/shared";
 import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
 import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
+import { isAnthropicBudgetHardExceeded } from "../../obs/anthropicBudgetGuard.js";
 
 type SessionUser = { id: string } | null;
 
@@ -116,6 +118,18 @@ function tieredProEnabled(): boolean {
   return v === "1" || v === "true";
 }
 
+/**
+ * Opt-in catastrophic-cost circuit-breaker. Коли увімкнено І денний глобальний
+ * Anthropic-spend перевищив hard-поріг — `resolveProTier` деградує всіх
+ * не-founder юзерів на floor-модель (див. `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL`
+ * у env.ts). Default off. Читаємо `process.env` (а не cached `env`-обʼєкт) для
+ * консистентності з `tieredProEnabled()` і простоти тестування.
+ */
+function hardBreachDegradeAllEnabled(): boolean {
+  const v = process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"]?.toLowerCase();
+  return v === "1" || v === "true";
+}
+
 function envStr(name: string, fallback: string): string {
   const v = process.env[name];
   return v === undefined || v === "" ? fallback : v;
@@ -136,23 +150,12 @@ const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
   floor: {
     chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", "claude-3-haiku-20240307"),
     coach: () =>
-      envStr("AI_PRO_FLOOR_COACH_MODEL", "nvidia/nemotron-3-ultra:free"),
+      envStr("AI_PRO_FLOOR_COACH_MODEL", "google/gemini-2.5-flash-lite"),
   },
 };
 
 function tierModel(tier: ProTier, endpoint: ProEndpoint): string {
   return PRO_TIER_MODEL[tier][endpoint]();
-}
-
-/**
- * Київ-локальна дата `YYYY-MM-DD` для tier-відер. Окремо від `today()` (UTC),
- * який лишається для Free/Anon-відер — не міняємо їхню поведінку. `sv`-локаль
- * дає ISO-подібний формат, `timeZone` зсуває до київської цивільної доби.
- */
-function todayKyiv(): string {
-  return new Date()
-    .toLocaleString("sv", { timeZone: "Europe/Kyiv" })
-    .slice(0, 10);
 }
 
 function setTierHeader(res: Response, tier: ProTier): void {
@@ -584,6 +587,24 @@ export async function resolveProTier(
   // Founder — never degraded (plan-agnostic).
   if (isFounderUser(sessionUser.id)) return premium();
 
+  // Catastrophic-cost circuit-breaker (opt-in, default off). Коли денний
+  // глобальний Anthropic-spend перевищив hard-поріг І
+  // `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL=true` — деградуємо КОЖНОГО не-founder
+  // юзера (Free + Pro) на floor-модель, не лише тих, хто вичерпав власну
+  // квоту. Це справжня стеля вартості: Free отримує premium-модель (cap-иться
+  // лише КІЛЬКІСТЮ через assertAiQuota), тож на масштабі домінує в AI-COGS —
+  // деградація саме його згинає криву. Sync-флаг, без DB-залежності → працює
+  // навіть при db-outage. Floor нічого не списує (no refund).
+  if (hardBreachDegradeAllEnabled() && isAnthropicBudgetHardExceeded()) {
+    setTierHeader(res, "floor");
+    return {
+      tier: "floor",
+      model: tierModel("floor", endpoint),
+      remaining: 0,
+      limit: 0,
+    };
+  }
+
   let plan: "free" | "pro" = "free";
   try {
     plan =
@@ -603,7 +624,9 @@ export async function resolveProTier(
   if (!aiQuotaCircuitBreaker.isAllowing()) return premium();
 
   const subject = subjectFor(sessionUser, req);
-  const day = todayKyiv();
+  // Tier buckets use the Kyiv civil day; Free/Anon buckets stay on `today()`
+  // (UTC) — see `today()` below. Don't unify the two.
+  const day = toLocalISODate();
   const premiumLimit = parseLimit(
     "AI_PRO_PREMIUM_DAILY_LIMIT",
     DEFAULT_PREMIUM_LIMIT,

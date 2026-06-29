@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
 import {
@@ -24,8 +25,9 @@ interface MonthlyPlanState {
 }
 
 function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  // Kyiv-anchored day key so the plan's "today" doesn't drift for users whose
+  // host clock is outside Europe/Kyiv (domain invariant: day boundaries in Kyiv).
+  return getKyivDayKey();
 }
 
 const DEFAULT_STATE: MonthlyPlanState = {

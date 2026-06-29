@@ -11,6 +11,9 @@ vi.mock("../../hubChatUtils", () => ({
   }),
 }));
 
+// Helpers intentionally accept loose/invalid input to exercise the
+// handlers' runtime validation, so the built fixture is cast to the
+// action type rather than constrained at the parameter level.
 function makeSaveAction(text: unknown, tag?: string) {
   return {
     name: "save_note",

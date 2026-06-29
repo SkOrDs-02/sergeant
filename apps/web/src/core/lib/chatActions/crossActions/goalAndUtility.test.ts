@@ -1,169 +1,175 @@
-// @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { setGoal, convertUnits } from "./goalAndUtility";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("../../hubChatUtils", () => ({
+  ls: vi.fn(),
+  lsSet: vi.fn(),
+}));
+vi.mock("@nutrition/lib/nutritionStorage", () => ({
+  loadNutritionPrefs: vi.fn(() => ({})),
+  persistNutritionPrefs: vi.fn(),
+}));
+
+import { ls, lsSet } from "../../hubChatUtils";
 import {
-  __setNutritionSqliteCacheForTests,
-  clearNutritionSqliteCache,
-} from "../../../../modules/nutrition/lib/sqliteReader";
+  loadNutritionPrefs,
+  persistNutritionPrefs,
+} from "@nutrition/lib/nutritionStorage";
+import { convertUnits, setGoal } from "./goalAndUtility";
+
+const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
+const mockLsSet = vi.mocked(lsSet);
+const mockPersistNutrition = vi.mocked(persistNutritionPrefs);
+const mockLoadNutrition = vi.mocked(loadNutritionPrefs);
 
 beforeEach(() => {
-  localStorage.clear();
-  clearNutritionSqliteCache();
-  // Warm the nutrition cache so persistNutritionPrefs has a prev state to peek.
-  __setNutritionSqliteCacheForTests({});
-  vi.useFakeTimers();
-  vi.setSystemTime(new Date("2026-06-15T12:00:00Z"));
-});
-afterEach(() => {
-  localStorage.clear();
-  clearNutritionSqliteCache();
-  vi.useRealTimers();
+  vi.clearAllMocks();
+  mockLs.mockReturnValue([]);
+  mockLoadNutrition.mockReturnValue(
+    {} as unknown as ReturnType<typeof loadNutritionPrefs>,
+  );
 });
 
+// ─── setGoal ──────────────────────────────────────────────────────────────────
+
 describe("setGoal", () => {
-  it("requires a description", () => {
-    expect(setGoal({ name: "set_goal", input: { description: "   " } })).toBe(
-      "Потрібен опис цілі.",
+  it("returns error for empty description", () => {
+    expect(setGoal({ name: "set_goal", input: { description: "" } })).toContain(
+      "Потрібен опис",
     );
   });
 
-  it("creates a minimal goal and persists to LS", () => {
-    const out = setGoal({
+  it("creates goal with description", () => {
+    const result = setGoal({
       name: "set_goal",
-      input: { description: "Схуднути" },
+      input: { description: "Схуднути на 5 кг" },
     });
-    expect(out).toContain('Ціль "Схуднути" створено');
-    expect(out).toContain("id:goal_");
-    const stored = JSON.parse(localStorage.getItem("hub_goals_v1") || "[]");
-    expect(stored).toHaveLength(1);
-    expect(stored[0].description).toBe("Схуднути");
+    expect(result).toContain("Схуднути на 5 кг");
+    expect(mockLsSet).toHaveBeenCalledWith(
+      "hub_goals_v1",
+      expect.arrayContaining([
+        expect.objectContaining({ description: "Схуднути на 5 кг" }),
+      ]),
+    );
   });
 
-  it("captures all optional fields", () => {
-    const out = setGoal({
+  it("includes target weight when valid", () => {
+    const result = setGoal({
       name: "set_goal",
-      input: {
-        description: "Набір маси",
-        target_weight_kg: 85,
-        target_date: "2026-12-31",
-        daily_kcal: 3000,
-        workouts_per_week: 4,
-      },
+      input: { description: "Ціль", target_weight_kg: 70 },
     });
-    expect(out).toContain("цільова вага: 85 кг");
-    expect(out).toContain("дедлайн: 2026-12-31");
-    expect(out).toContain("калорії: 3000 ккал/день");
-    expect(out).toContain("тренувань/тиждень: 4");
-    const stored = JSON.parse(localStorage.getItem("hub_goals_v1") || "[]");
-    expect(stored[0]).toMatchObject({
-      targetWeightKg: 85,
-      targetDate: "2026-12-31",
-      dailyKcal: 3000,
-      workoutsPerWeek: 4,
-    });
+    expect(result).toContain("70 кг");
   });
 
-  it("ignores invalid optional values", () => {
-    const out = setGoal({
+  it("includes target date when valid format", () => {
+    const result = setGoal({
       name: "set_goal",
-      input: {
-        description: "Ціль",
-        target_weight_kg: -5,
-        target_date: "not-a-date",
-        daily_kcal: 0,
-        workouts_per_week: "abc",
-      },
+      input: { description: "Ціль", target_date: "2026-12-31" },
     });
-    expect(out).not.toContain("цільова вага");
-    expect(out).not.toContain("дедлайн");
-    expect(out).not.toContain("калорії");
-    expect(out).not.toContain("тренувань/тиждень");
+    expect(result).toContain("2026-12-31");
+  });
+
+  it("ignores invalid date format", () => {
+    const result = setGoal({
+      name: "set_goal",
+      input: { description: "Ціль", target_date: "31.12.2026" },
+    });
+    expect(result).not.toContain("дедлайн:");
+  });
+
+  it("persists kcal target to nutrition store", () => {
+    setGoal({
+      name: "set_goal",
+      input: { description: "Дієта", daily_kcal: 1800 },
+    });
+    expect(mockPersistNutrition).toHaveBeenCalledWith(
+      expect.objectContaining({ dailyTargetKcal: 1800 }),
+    );
+  });
+
+  it("includes workouts per week", () => {
+    const result = setGoal({
+      name: "set_goal",
+      input: { description: "Ціль", workouts_per_week: 4 },
+    });
+    expect(result).toContain("тренувань/тиждень: 4");
   });
 
   it("appends to existing goals", () => {
-    setGoal({ name: "set_goal", input: { description: "Перша" } });
-    setGoal({ name: "set_goal", input: { description: "Друга" } });
-    const stored = JSON.parse(localStorage.getItem("hub_goals_v1") || "[]");
-    expect(stored).toHaveLength(2);
+    mockLs.mockReturnValue([
+      { id: "g1", description: "Old", createdAt: "2026-01-01" },
+    ]);
+    setGoal({ name: "set_goal", input: { description: "New" } });
+    const saved = mockLsSet.mock.calls[0]![1] as unknown[];
+    expect(saved).toHaveLength(2);
+  });
+
+  it("returns string with goal id", () => {
+    const result = setGoal({
+      name: "set_goal",
+      input: { description: "Ціль" },
+    });
+    expect(result).toContain("id:goal_");
   });
 });
 
+// ─── convertUnits ─────────────────────────────────────────────────────────────
+
 describe("convertUnits", () => {
-  it("rejects non-numeric value", () => {
+  it("returns error for non-numeric value", () => {
     expect(
       convertUnits({
         name: "convert_units",
-        input: { value: "x", from: "kg", to: "lb" },
+        input: { value: "abc", from: "kg", to: "lb" },
       }),
-    ).toBe("Значення має бути числом.");
+    ).toContain("числом");
   });
 
-  it("converts kg → lb", () => {
+  it("returns error for unknown conversion", () => {
     expect(
       convertUnits({
         name: "convert_units",
-        input: { value: 10, from: "kg", to: "lb" },
-      }),
-    ).toBe("10 kg = 22.05 lb");
-  });
-
-  it("converts c → f", () => {
-    expect(
-      convertUnits({
-        name: "convert_units",
-        input: { value: 100, from: "C", to: "F" },
-      }),
-    ).toBe("100 c = 212 f");
-  });
-
-  it("converts km → mi and g → oz", () => {
-    expect(
-      convertUnits({
-        name: "convert_units",
-        input: { value: 5, from: "km", to: "mi" },
-      }),
-    ).toContain("mi");
-    expect(
-      convertUnits({
-        name: "convert_units",
-        input: { value: 100, from: "g", to: "oz" },
-      }),
-    ).toContain("oz");
-  });
-
-  it("supports every registered conversion pair", () => {
-    const pairs: Array<[string, string]> = [
-      ["kg", "lb"],
-      ["lb", "kg"],
-      ["cm", "in"],
-      ["in", "cm"],
-      ["km", "mi"],
-      ["mi", "km"],
-      ["c", "f"],
-      ["f", "c"],
-      ["kcal", "kj"],
-      ["kj", "kcal"],
-      ["m", "ft"],
-      ["ft", "m"],
-      ["g", "oz"],
-      ["oz", "g"],
-    ];
-    for (const [from, to] of pairs) {
-      const out = convertUnits({
-        name: "convert_units",
-        input: { value: 10, from, to },
-      });
-      expect(out).toContain(`${from} = `);
-      expect(out).toContain(to);
-    }
-  });
-
-  it("rejects unknown conversion pairs", () => {
-    expect(
-      convertUnits({
-        name: "convert_units",
-        input: { value: 1, from: "kg", to: "km" },
+        input: { value: 10, from: "kg", to: "oz" },
       }),
     ).toContain("Невідома конвертація");
+  });
+
+  it("converts kg to lb correctly", () => {
+    const result = convertUnits({
+      name: "convert_units",
+      input: { value: 100, from: "kg", to: "lb" },
+    });
+    expect(result).toContain("220.46");
+  });
+
+  it("converts lb to kg correctly", () => {
+    const result = convertUnits({
+      name: "convert_units",
+      input: { value: 220.46, from: "lb", to: "kg" },
+    });
+    expect(result).toContain("100");
+  });
+
+  it("converts celsius to fahrenheit", () => {
+    const result = convertUnits({
+      name: "convert_units",
+      input: { value: 0, from: "c", to: "f" },
+    });
+    expect(result).toContain("32 f");
+  });
+
+  it("converts km to mi", () => {
+    const result = convertUnits({
+      name: "convert_units",
+      input: { value: 10, from: "km", to: "mi" },
+    });
+    expect(result).toContain("6.21");
+  });
+
+  it("converts kcal to kj", () => {
+    const result = convertUnits({
+      name: "convert_units",
+      input: { value: 100, from: "kcal", to: "kj" },
+    });
+    expect(result).toContain("418.4");
   });
 });

@@ -12,6 +12,8 @@ import {
   moduleHasRealEntry,
   TTV_MS_KEY,
 } from "./firstRealEntry";
+import { ANALYTICS_EVENTS } from "./analyticsEvents";
+import { MULTI_MODULE_ACTIVATED_FIRED_KEY } from "./vibePicks";
 
 function writeJson(
   store: ReturnType<typeof createMemoryKVStore>,
@@ -154,12 +156,92 @@ describe("first real entry detection", () => {
       "routine",
       "nutrition",
     ]);
-    expect(trackEvent).toHaveBeenCalledTimes(4);
+    // 4 per-module events + 1 multi-module event (count 4 ≥ threshold 2).
+    expect(trackEvent).toHaveBeenCalledTimes(5);
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED,
+      {
+        module_count: 4,
+        modules: ["finyk", "fizruk", "routine", "nutrition"],
+        days_since_first_action: null,
+      },
+    );
 
     trackEvent.mockClear();
     expect(detectFirstActionCompletedPerModule(store, { trackEvent })).toEqual(
       [],
     );
     expect(trackEvent).not.toHaveBeenCalled();
+  });
+
+  it("does not fire multi_module_activated for a single activated module", () => {
+    const store = createMemoryKVStore();
+    const trackEvent = vi.fn();
+    writeJson(store, FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL, [{ id: "m1" }]);
+
+    expect(detectFirstActionCompletedPerModule(store, { trackEvent })).toEqual([
+      "finyk",
+    ]);
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED,
+      { module: "finyk" },
+    );
+    expect(trackEvent).not.toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED,
+      expect.anything(),
+    );
+    expect(store.getString(MULTI_MODULE_ACTIVATED_FIRED_KEY)).toBeNull();
+  });
+
+  it("fires multi_module_activated once when the second module crosses the threshold", () => {
+    const store = createMemoryKVStore();
+    const trackEvent = vi.fn();
+    const day = 24 * 60 * 60 * 1000;
+    // Non-zero stamp: getFirstActionStartedAt rejects "0" (n > 0 guard).
+    store.setString(FIRST_ACTION_STARTED_AT_KEY, String(day));
+    writeJson(store, FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL, [{ id: "m1" }]);
+
+    // First module — below threshold, no multi-module event.
+    detectFirstActionCompletedPerModule(store, { trackEvent });
+    expect(trackEvent).not.toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED,
+      expect.anything(),
+    );
+
+    // Second module three days later — crosses the threshold.
+    trackEvent.mockClear();
+    writeJson(store, FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS, {
+      workouts: [{ id: "w1" }],
+    });
+    expect(
+      detectFirstActionCompletedPerModule(store, {
+        trackEvent,
+        now: () => 4 * day,
+      }),
+    ).toEqual(["fizruk"]);
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED,
+      {
+        module_count: 2,
+        modules: ["finyk", "fizruk"],
+        days_since_first_action: 3,
+      },
+    );
+    expect(store.getString(MULTI_MODULE_ACTIVATED_FIRED_KEY)).toBe("1");
+
+    // Third module later — flag already set, no second multi-module event.
+    trackEvent.mockClear();
+    writeJson(store, FIRST_REAL_ENTRY_SOURCES.ROUTINE, {
+      habits: [{ id: "h1" }],
+    });
+    expect(detectFirstActionCompletedPerModule(store, { trackEvent })).toEqual([
+      "routine",
+    ]);
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).not.toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED,
+      expect.anything(),
+    );
   });
 });

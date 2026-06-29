@@ -121,7 +121,7 @@ describe("logSet", () => {
     });
     expect(result).not.toContain("Нове тренування");
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
-    expect(persisted[0]!.items[0]!.sets!.length).toBe(2);
+    expect(persisted[0]?.items[0]?.sets?.length).toBe(2);
   });
 
   it("sets new active key when creating new workout", () => {
@@ -144,7 +144,7 @@ describe("logSet", () => {
       input: { exercise_name: "Bench", reps: 10, weight_kg: 80, sets: 100 },
     });
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
-    expect(persisted[0]!.items[0]!.sets!.length).toBeLessThanOrEqual(20);
+    expect(persisted[0]?.items[0]?.sets?.length).toBeLessThanOrEqual(20);
   });
 
   it("uses 0kg when weight is absent/negative", () => {
@@ -154,7 +154,7 @@ describe("logSet", () => {
       input: { exercise_name: "Squat", reps: 10, weight_kg: -50, sets: 1 },
     });
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
-    expect(persisted[0]!.items[0]!.sets![0]?.weightKg).toBe(0);
+    expect(persisted[0]?.items[0]?.sets?.[0]?.weightKg).toBe(0);
   });
 });
 

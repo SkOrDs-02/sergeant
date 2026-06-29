@@ -10,6 +10,8 @@ vi.mock("../../hubChatUtils", () => ({
   }),
 }));
 
+// Loose params on purpose — tests pass invalid weekday/name/exercises to
+// exercise the handler's validation, so cast the built fixture.
 function makeAction(weekday: unknown, name: unknown, exercises?: unknown) {
   return {
     name: "add_program_day",
