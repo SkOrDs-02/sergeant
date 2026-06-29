@@ -1,6 +1,6 @@
 <!-- AUTO-GENERATED: false - authored production-readiness loop -->
 
-# Web-first production readiness loop
+# Production readiness testing loop
 
 > **Last validated:** 2026-06-29 by Codex. **Next review:** 2026-07-13.
 > **Status:** Active
@@ -8,38 +8,10 @@
 ## Мета
 
 Провести production-readiness тестування Sergeant перед роботою з реальними
-користувачами, не розмиваючи фокус на нативний mobile/Capacitor. Цей loop
-можна давати наступній AI-сесії як стартову інструкцію: вона має виконувати
-групи по черзі, фіксувати evidence, створювати regression-тести для знайдених
-дефектів і не оголошувати readiness без свіжої верифікації.
-
-## Продуктове рішення
-
-**Web first.** Нативний mobile, Expo-shell і Capacitor-shell залишаються
-відкладеними планами. Їх не треба тягнути у launch-readiness gate, доки web не
-працює стабільно і немає реальних користувачів/traction.
-
-Повертаємося до нативки або Capacitor тільки після виконання усіх умов:
-
-- web має стабільні core-флоу без P0/P1 дефектів;
-- є реальні користувачі або чіткий acquisition канал;
-- зрозуміло, які mobile-only сценарії web/PWA не закриває;
-- є окремий capacity на native QA, store/build pipeline і device matrix.
-
-## Орієнтир ціни інфраструктури
-
-Це planning estimate, не billing commitment. Перед реальною міграцією треба
-перерахувати по фактичному регіону, трафіку, retention logs і розміру БД.
-
-| Рівень                  |            Орієнтир | Що входить                                                                                                                |
-| ----------------------- | ------------------: | ------------------------------------------------------------------------------------------------------------------------- |
-| Lean production         |   $120-250 / місяць | CDN/static web, 1-2 маленькі API tasks, managed Postgres single-AZ, мінімальний Redis/Valkey, базові logs/alerts          |
-| Normal production floor |   $300-700 / місяць | 2+ API tasks, окремий worker, managed Postgres Multi-AZ, managed Redis/Valkey, ALB/reverse proxy, backups, Sentry/metrics |
-| Growth buffer           | $800-2000+ / місяць | autoscaling API/workers, більша БД, довший log retention, load-test headroom, WAF/security add-ons                        |
-
-Рекомендована ціль до перших платних або публічних користувачів: **normal
-production floor**, але без Kubernetes. Web/static окремо від API; API і worker
-як Docker services; Postgres і Redis/Valkey як managed services.
+користувачами. Цей loop можна давати наступній AI-сесії як стартову інструкцію:
+вона має виконувати групи по черзі, фіксувати evidence, створювати
+regression-тести для знайдених дефектів і не оголошувати readiness без свіжої
+верифікації.
 
 ## Групи тестування
 
@@ -221,8 +193,6 @@ suite, якщо знайдено launch-blocker. На blocker перейти у 
 
 8. **Launch decision**
    - Web launch можна рекомендувати тільки якщо A-D без open P0/P1.
-   - Native/Capacitor не входять у decision; вони залишаються parked until web
-     traction.
 
 ## Evidence формат
 
@@ -244,12 +214,12 @@ suite, якщо знайдено launch-blocker. На blocker перейти у 
 ## Handoff prompt для наступної сесії
 
 ```text
-Продовж web-first production readiness loop у Sergeant.
+Продовж production readiness testing loop у Sergeant.
 
 Контекст:
-- Репо: E:\.claude\Sergeant\.claude\worktrees\qa-feature-audit
-- Док: docs/90-work/audits/web-first-production-readiness-loop.md
-- Web-first рішення: native mobile / Expo / Capacitor parked until web traction.
+- Репо: поточний Sergeant checkout/worktree, який дав користувач або в якому
+  запущена сесія.
+- Док: docs/90-work/audits/production-readiness-testing-loop.md
 - Працюй групами A -> B -> C -> D: Chat resilience/load, DB/migrations/restore,
   Security launch audit, Observability/incident drill.
 
