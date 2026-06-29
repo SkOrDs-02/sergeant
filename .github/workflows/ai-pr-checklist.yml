@@ -1,0 +1,166 @@
+name: AI-PR Checklist Guard
+
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Doc context: docs/04-governance/governance/ai-pr-checklist.md
+# ADR: docs/04-governance/adr/0069-ai-pr-checklist.md
+#
+# Behaviour:
+#   1. Detect AI authorship on the PR (Co-authored-by trailer in commit
+#      messages, "Generated with" marker in commits, or AI markers in
+#      changed files).
+#   2. If detected AND the PR body does NOT contain the human bypass
+#      "N/A — human-authored", enforce the six checklist items from
+#      .github/PULL_REQUEST_TEMPLATE.md § "AI-Generation Signals".
+#   3. If no AI signals are detected, bypass silently (human-only PR).
+#
+# Failure mode is informational: the job posts a `core.setFailed` with
+# the exact missing items. Reviewers can apply `ai-pr/override` label to
+# bypass.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to test the guard against (workflow_dispatch only)"
+        required: false
+        type: string
+
+permissions:
+  pull-requests: read
+  contents: read
+
+concurrency:
+  group: ai-pr-checklist-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Validate AI-PR checklist
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request
+    steps:
+      - name: Resolve PR number
+        id: pr
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "number=${{ github.event.inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - name: Checkout PR head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 50
+
+      - name: Detect AI signals in commits
+        id: detect
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+
+          # 1. Co-authored-by trailers in commit messages of this PR.
+          #    Works for direct push AND squash-merged previews — we read
+          #    commits reachable from HEAD on the PR branch only.
+          COAUTHOR_COUNT=$(git log --pretty=%B -n 50 \
+            | grep -ciE '^[[:space:]]*Co-authored-by:.*(Claude|GPT|Codex|Cursor|Kilo|Devin|Anthropic|OpenAI|noreply@anthropic)' || true)
+
+          # 2. "Generated with" markers (Claude Code, Codex, etc.).
+          GENERATED_COUNT=$(git log --pretty=%B -n 50 \
+            | grep -ciE '^[[:space:]]*Generated with' || true)
+
+          # 3. AI markers in changed files (AI-NOTE/AI-CONTEXT/AI-DANGER/AI-LEGACY).
+          MARKER_COUNT=$(git log --pretty= --name-only -n 50 \
+            | grep -v '^$' \
+            | xargs -I{} grep -lE 'AI-(NOTE|CONTEXT|DANGER|LEGACY|GENERATED)' "{}" 2>/dev/null \
+            | wc -l || true)
+
+          TOTAL=$((COAUTHOR_COUNT + GENERATED_COUNT))
+
+          {
+            echo "coauthor_hits=$COAUTHOR_COUNT"
+            echo "generated_hits=$GENERATED_COUNT"
+            echo "marker_file_hits=$MARKER_COUNT"
+            if [ "$TOTAL" -gt 0 ]; then
+              echo "ai_signals=true"
+            else
+              echo "ai_signals=false"
+            fi
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Co-authored-by hits: $COAUTHOR_COUNT"
+          echo "Generated-with hits: $GENERATED_COUNT"
+          echo "AI-marker file hits: $MARKER_COUNT"
+          echo "=> ai_signals=$([ "$TOTAL" -gt 0 ] && echo true || echo false)"
+
+      # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
+      - name: Enforce checklist on AI-authored PRs
+        if: steps.detect.outputs.ai_signals == 'true'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            if (!prNumber) {
+              core.info("workflow_dispatch without pr_number — nothing to enforce.");
+              return;
+            }
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            const body = pr.body || '';
+            const labels = pr.labels.map((l) => l.name);
+
+            if (labels.includes('ai-pr/override')) {
+              core.info('Override label present — bypassing checklist enforcement.');
+              return;
+            }
+            if (/N\/A\s*[—-]\s*human-authored/i.test(body)) {
+              core.info('PR body contains "N/A — human-authored" — bypassing.');
+              return;
+            }
+
+            // Each required substring matches a checkbox label from the template.
+            const required = [
+              'No unnecessary abstraction',
+              'No defensive',
+              'No duplicate helpers',
+              'Documentation',
+              'AI markers',
+              'AI-LEGACY',
+            ];
+            const missing = required.filter((s) => !body.includes(s));
+            if (missing.length) {
+              await core.summary
+                .addHeading('AI-PR checklist incomplete')
+                .addRaw(
+                  `This PR has AI authorship signals (Co-authored-by trailer / Generated-with marker / AI-NOTE–style file markers) but is missing the following required sections from \`.github/PULL_REQUEST_TEMPLATE.md\` § *AI-Generation Signals*:\n\n` +
+                  missing.map((m) => `- \`${m}\``).join('\n') +
+                  `\n\nTick the boxes in the PR description or add \`N/A — human-authored\` if this PR is genuinely human-authored. Maintainers can apply \`ai-pr/override\` to bypass.`,
+                  true,
+                )
+                .write();
+              core.setFailed(
+                `AI-PR checklist incomplete. Missing sections: ${missing.join(', ')}. ` +
+                `Tick the boxes in the PR description or add 'N/A — human-authored'.`,
+              );
+              return;
+            }
+            await core.summary
+              .addHeading('AI-PR checklist: PASS')
+              .addRaw('All required AI-Generation Signals sections are present.', true)
+              .write();
+            core.info('AI-PR checklist complete.');
+
+      - name: Bypass — no AI signals
+        if: steps.detect.outputs.ai_signals == 'false'
+        run: |
+          echo "No AI authorship signals detected in commits. Skipping checklist."
+          echo "This is a human-authored PR — AI-Generation Signals section is not required."
