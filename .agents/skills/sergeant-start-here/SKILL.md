@@ -18,6 +18,23 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 - Прочитай `docs/README.md` для repo-доків і `docs/00-start/agents/agent-skills-catalog.md` для skill-роутингу.
 - Sergeant — це `pnpm` + Turborepo monorepo з `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/openclaw` і спільними packages.
 
+## 0.1 Dynamic context (always)
+
+Before loading any specialist skill, run:
+
+```bash
+pnpm snapshot           # writes .kilocode/snapshot.md
+```
+
+Read `.kilocode/snapshot.md` and react:
+
+- Red CI on `main` → stop, investigate before opening a new PR.
+- Bundle budgets breached (>95%) or Lighthouse failing → load `sergeant-deploy-and-observability`.
+- Open entropy-janitor issues mentioning the touched surface → load `sergeant-tech-debt`.
+- Hard-rule drift warnings or upcoming TODO deadlines (≤30d) → re-read the named rule / initiative file before acting.
+
+The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections that need GitHub). Cache TTL is 15 min; force-refresh via `pnpm snapshot --refresh`. See ADR-0067 for layout and rationale.
+
 ## Не-узгоджувані правила
 
 - Coerce Postgres-`bigint` поля у `number` усередині server-серіалізаторів.
