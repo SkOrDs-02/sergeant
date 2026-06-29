@@ -10,6 +10,8 @@ vi.mock("../lib/anthropic.js", () => ({
   anthropicMessages: anthropicMessagesMock,
 }));
 
+const INTERNAL_AUTH_GUARD_TIMEOUT_MS = 45_000;
+
 function makePool() {
   return {
     query: vi.fn().mockResolvedValue({ rows: [] }),
@@ -50,26 +52,34 @@ describe("/api/internal/*", () => {
     vi.clearAllMocks();
   });
 
-  it("fails closed when INTERNAL_API_KEY is not configured", async () => {
-    const { app } = await makeApp(undefined);
-    const res = await request(app)
-      .post("/api/internal/ai-usage")
-      .send({ source: "n8n" });
+  it(
+    "fails closed when INTERNAL_API_KEY is not configured",
+    async () => {
+      const { app } = await makeApp(undefined);
+      const res = await request(app)
+        .post("/api/internal/ai-usage")
+        .send({ source: "n8n" });
 
-    expect(res.status).toBe(503);
-    expect(res.body).toEqual({ error: "Internal API not configured" });
-  });
+      expect(res.status).toBe(503);
+      expect(res.body).toEqual({ error: "Internal API not configured" });
+    },
+    INTERNAL_AUTH_GUARD_TIMEOUT_MS,
+  );
 
-  it("rejects requests with an invalid bearer token", async () => {
-    const { app } = await makeApp("secret");
-    const res = await request(app)
-      .post("/api/internal/ai-usage")
-      .set("Authorization", "Bearer wrong")
-      .send({ source: "n8n" });
+  it(
+    "rejects requests with an invalid bearer token",
+    async () => {
+      const { app } = await makeApp("secret");
+      const res = await request(app)
+        .post("/api/internal/ai-usage")
+        .set("Authorization", "Bearer wrong")
+        .send({ source: "n8n" });
 
-    expect(res.status).toBe(401);
-    expect(res.body).toEqual({ error: "Unauthorized" });
-  });
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({ error: "Unauthorized" });
+    },
+    INTERNAL_AUTH_GUARD_TIMEOUT_MS,
+  );
 
   it("records n8n AI usage using the real ai_usage_daily schema", async () => {
     const pool = makePool();

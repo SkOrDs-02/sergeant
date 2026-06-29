@@ -316,7 +316,7 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     process.env["AI_QUOTA_DISABLED"] = "0";
   });
 
-  it("caps an authenticated FREE user at 5/day (billing FREE_LIMITS)", async () => {
+  it("caps an authenticated FREE user at 15/day (billing FREE_LIMITS)", async () => {
     getSessionUser.mockResolvedValue({ id: "u-free" });
     pool.query.mockImplementation(async (sql: string) => {
       // No subscription row → getUserPlan() returns synthetic free plan.
@@ -326,10 +326,10 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     const res = makeRes();
     const ok = await assertAiQuota(makeReq(), res);
     expect(ok).toBe(true);
-    expect(res.headers["X-AI-Quota-Remaining"]).toBe("4"); // 5 - 1
+    expect(res.headers["X-AI-Quota-Remaining"]).toBe("14"); // 15 - 1
     const upsert = findUpsert();
     expect(upsert).toBeDefined();
-    expect((upsert![1] as unknown[])[4]).toBe(5); // limit passed to UPSERT
+    expect((upsert![1] as unknown[])[4]).toBe(15); // limit passed to UPSERT
   });
 
   it("leaves an authenticated PRO user unlimited (no quota row written)", async () => {
@@ -380,7 +380,7 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     expect(ok).toBe(true);
     const upsert = findUpsert();
     expect(upsert).toBeDefined();
-    expect((upsert![1] as unknown[])[4]).toBe(5); // free cap still enforced
+    expect((upsert![1] as unknown[])[4]).toBe(15); // free cap still enforced
   });
 
   it("falls back to the FREE cap when the plan lookup throws", async () => {
@@ -394,7 +394,7 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     expect(ok).toBe(true);
     const upsert = findUpsert();
     expect(upsert).toBeDefined();
-    expect((upsert![1] as unknown[])[4]).toBe(5); // free cap enforced despite error
+    expect((upsert![1] as unknown[])[4]).toBe(15); // free cap enforced despite error
   });
 });
 

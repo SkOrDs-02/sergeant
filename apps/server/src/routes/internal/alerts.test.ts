@@ -75,6 +75,8 @@ vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
   };
 });
 
+const ALERT_ROUTE_COLD_IMPORT_TIMEOUT_MS = 60_000;
+
 async function makeApp(options?: {
   telegramClient?: import("../../modules/alerts/index.js").TelegramApiClient;
 }) {
@@ -108,59 +110,75 @@ describe("/api/internal/alerts/post", () => {
     recordAlertPostMock.mockResolvedValue({ id: 1, alreadyPosted: false });
   });
 
-  it("forwards a P0 incident post and returns id + flag", async () => {
-    const app = await makeApp();
-    const res = await request(app)
-      .post("/api/internal/alerts/post")
-      .send({
+  it(
+    "forwards a P0 incident post and returns id + flag",
+    async () => {
+      const app = await makeApp();
+      const res = await request(app)
+        .post("/api/internal/alerts/post")
+        .send({
+          alertId: "wf-15:42",
+          topic: "control_plane",
+          severity: "P1",
+          summary: "Railway deploy fail",
+          metadata: { exec: 42 },
+        });
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ ok: true, id: 1, alreadyPosted: false });
+      expect(recordAlertPostMock).toHaveBeenCalledTimes(1);
+      const arg = recordAlertPostMock.mock.calls[0]?.[1];
+      expect(arg).toEqual({
         alertId: "wf-15:42",
         topic: "control_plane",
         severity: "P1",
         summary: "Railway deploy fail",
         metadata: { exec: 42 },
       });
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, id: 1, alreadyPosted: false });
-    expect(recordAlertPostMock).toHaveBeenCalledTimes(1);
-    const arg = recordAlertPostMock.mock.calls[0]?.[1];
-    expect(arg).toEqual({
-      alertId: "wf-15:42",
-      topic: "control_plane",
-      severity: "P1",
-      summary: "Railway deploy fail",
-      metadata: { exec: 42 },
-    });
-  });
+    },
+    ALERT_ROUTE_COLD_IMPORT_TIMEOUT_MS,
+  );
 
-  it("surfaces alreadyPosted=true on retry", async () => {
-    recordAlertPostMock.mockResolvedValueOnce({ id: 7, alreadyPosted: true });
-    const app = await makeApp();
-    const res = await request(app)
-      .post("/api/internal/alerts/post")
-      .send({ alertId: "wf-15:42", topic: "control_plane", severity: "P1" });
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true, id: 7, alreadyPosted: true });
-  });
+  it(
+    "surfaces alreadyPosted=true on retry",
+    async () => {
+      recordAlertPostMock.mockResolvedValueOnce({ id: 7, alreadyPosted: true });
+      const app = await makeApp();
+      const res = await request(app)
+        .post("/api/internal/alerts/post")
+        .send({ alertId: "wf-15:42", topic: "control_plane", severity: "P1" });
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ ok: true, id: 7, alreadyPosted: true });
+    },
+    ALERT_ROUTE_COLD_IMPORT_TIMEOUT_MS,
+  );
 
-  it("rejects unknown severity tier with 400 (Zod schema)", async () => {
-    const app = await makeApp();
-    const res = await request(app)
-      .post("/api/internal/alerts/post")
-      .send({ alertId: "x", topic: "incidents", severity: "P5" });
-    expect(res.status).toBe(400);
-    expect(recordAlertPostMock).not.toHaveBeenCalled();
-  });
+  it(
+    "rejects unknown severity tier with 400 (Zod schema)",
+    async () => {
+      const app = await makeApp();
+      const res = await request(app)
+        .post("/api/internal/alerts/post")
+        .send({ alertId: "x", topic: "incidents", severity: "P5" });
+      expect(res.status).toBe(400);
+      expect(recordAlertPostMock).not.toHaveBeenCalled();
+    },
+    ALERT_ROUTE_COLD_IMPORT_TIMEOUT_MS,
+  );
 
-  it("rejects unknown extra field via .strict()", async () => {
-    const app = await makeApp();
-    const res = await request(app).post("/api/internal/alerts/post").send({
-      alertId: "x",
-      topic: "incidents",
-      severity: "P0",
-      weirdField: 1,
-    });
-    expect(res.status).toBe(400);
-  });
+  it(
+    "rejects unknown extra field via .strict()",
+    async () => {
+      const app = await makeApp();
+      const res = await request(app).post("/api/internal/alerts/post").send({
+        alertId: "x",
+        topic: "incidents",
+        severity: "P0",
+        weirdField: 1,
+      });
+      expect(res.status).toBe(400);
+    },
+    ALERT_ROUTE_COLD_IMPORT_TIMEOUT_MS,
+  );
 });
 
 describe("/api/internal/alerts/ack", () => {

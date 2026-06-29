@@ -102,6 +102,29 @@ async function waitForPostgresHealth() {
   throw new Error(`hub-postgres did not become healthy: ${lastStatus}`);
 }
 
+async function waitForHttp(url, label, child) {
+  const deadline = Date.now() + 60_000;
+  let lastStatus = "unknown";
+
+  while (Date.now() < deadline) {
+    if (child && child.exitCode !== null) {
+      throw new Error(`${label} exited before becoming ready`);
+    }
+
+    try {
+      const response = await fetch(url);
+      lastStatus = `${response.status} ${response.statusText}`;
+      if (response.ok) return;
+    } catch (err) {
+      lastStatus = err instanceof Error ? err.message : String(err);
+    }
+
+    await new Promise((resolveWait) => setTimeout(resolveWait, 1_000));
+  }
+
+  throw new Error(`${label} did not become ready at ${url}: ${lastStatus}`);
+}
+
 function stopChildren() {
   for (const child of [...children].reverse()) {
     if (!child.killed) child.kill();
@@ -121,8 +144,10 @@ process.on("exit", stopChildren);
 try {
   await runOnce(["db:up"]);
   await waitForPostgresHealth();
+  await runOnce(["--filter", "@sergeant/db-schema", "build"]);
   await runOnce(["--filter", "@sergeant/server", "db:migrate:dev"]);
-  spawnLogged(["--filter", "@sergeant/server", "dev"]);
+  const api = spawnLogged(["--filter", "@sergeant/server", "dev"]);
+  await waitForHttp("http://127.0.0.1:3000/health", "API server", api);
   await runOnce(["--filter", "@sergeant/web", "build"]);
   const preview = spawnLogged([
     "--filter",
