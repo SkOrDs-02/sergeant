@@ -1,5 +1,5 @@
 import { render } from "@testing-library/react-native";
-import { AccessibilityInfo } from "react-native";
+import { AccessibilityInfo, Animated } from "react-native";
 
 import { SyncStatusIndicator } from "./SyncStatusIndicator";
 import { SyncStatusOverlay } from "./SyncStatusOverlay";
@@ -42,6 +42,14 @@ function stubAccessibility() {
   jest
     .spyOn(AccessibilityInfo, "addEventListener")
     .mockImplementation(() => ({ remove: () => {} }) as never);
+  jest.spyOn(Animated, "loop").mockImplementation(
+    () =>
+      ({
+        reset: jest.fn(),
+        start: jest.fn(),
+        stop: jest.fn(),
+      }) as never,
+  );
 }
 
 describe("SyncStatusIndicator", () => {

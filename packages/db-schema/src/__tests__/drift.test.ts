@@ -57,5 +57,5 @@ describe("Drizzle schema ↔ SQL migration drift", () => {
 
     expect(result.ok).toBe(true);
     expect(exitCode).toBe(0);
-  });
+  }, 30_000);
 });

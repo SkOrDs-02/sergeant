@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-06-27)</title>
+    <title>Sergeant — Knowledge Graph (2026-06-29)</title>
     <style>
       body {
         font-family:
@@ -97,12 +97,12 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-06-27 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-06-29 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
       <span class="chip chip-adr">adr: <b>65</b></span>
-      <span class="chip chip-audit">audit: <b>15</b></span>
+      <span class="chip chip-audit">audit: <b>18</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>51</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
@@ -111,7 +111,7 @@
     </div>
 
     <details open>
-      <summary>Nodes (234 core)</summary>
+      <summary>Nodes (237 core)</summary>
       <table>
         <thead>
           <tr>
@@ -538,8 +538,8 @@
               >
             </td>
             <td>
-              superseded — reverted 2026-06-26 (OpenTelemetry видалено; див.
-              banner нижче)
+              deprecated &lt;!-- reverted 2026-06-26: OpenTelemetry видалено (PR
+              #9); див. banner + Note нижче --&gt;
             </td>
             <td>number=35</td>
           </tr>
@@ -1121,6 +1121,21 @@
           </tr>
           <tr>
             <td>audit</td>
+            <td>
+              <code>audit:2026-06-28-financial-launch-monetization-audit</code>
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/2026-06-28-financial-launch-monetization-audit.md"
+                >Фінансовий аудит — старт, утримання, беззбитковість Sergeant —
+                2026-06-28</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
             <td><code>audit:2026-08-XX-openclaw-internal-roast</code></td>
             <td>
               <a
@@ -1143,6 +1158,29 @@
               >
             </td>
             <td>Draft</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:production-readiness-testing-loop</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/production-readiness-testing-loop.md"
+                >Production readiness testing loop</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:user-story-loop</code></td>
+            <td>
+              <a href="../../docs/90-work/audits/user-story-loop.md"
+                >User Story QA Loop</a
+              >
+            </td>
+            <td>Active</td>
             <td></td>
           </tr>
           <tr>
@@ -1285,7 +1323,7 @@
             </td>
             <td></td>
             <td>
-              number=18 · severity=blocker · category=active-initiative ·
+              number=18 · severity=blocker · category=lint-enforced-convention ·
               scope=[&quot;apps/web/src/**&quot;,&quot;apps/server/src/**&quot;]
             </td>
           </tr>
@@ -1300,7 +1338,7 @@
             </td>
             <td></td>
             <td>
-              number=19 · severity=blocker · category=active-initiative ·
+              number=19 · severity=blocker · category=lint-enforced-convention ·
               scope=[&quot;apps/**/tsconfig.json&quot;,&quot;packages/**/tsconfig.json&quot;]
             </td>
           </tr>

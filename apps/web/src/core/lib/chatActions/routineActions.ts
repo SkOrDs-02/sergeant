@@ -3,6 +3,7 @@ import {
   loadRoutineState,
   saveRoutineState,
 } from "../../../modules/routine/lib/routineStorage";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type {
   MarkHabitDoneAction,
   CreateHabitAction,
@@ -19,7 +20,6 @@ import type {
   ChatAction,
   ChatActionResult,
 } from "./types";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 const DAY_MS = 86_400_000;
 
@@ -61,27 +61,49 @@ function normalizeDayToken(token: unknown): number | null {
   return typeof idx === "number" ? idx : null;
 }
 
+/**
+ * Normalize a habit id from LLM tool input. The model frequently echoes ids
+ * with an `id:` prefix because list/query results elsewhere render entities as
+ * `Name (id:hab-…)`. Strip that prefix (and whitespace) so the id matches the
+ * canonical `habit.id`. Without this, completion writes land under a phantom
+ * key and never surface in the module (QA D-005).
+ */
+function normalizeHabitId(raw: unknown): string {
+  return String(raw ?? "")
+    .trim()
+    .replace(/^id:\s*/i, "")
+    .trim();
+}
+
 export function handleRoutineAction(
   action: ChatAction,
 ): ChatActionResult | undefined {
   switch (action.name) {
     case "mark_habit_done": {
-      const { habit_id, date: habitDate } = (action as MarkHabitDoneAction)
-        .input;
+      const { habit_id: rawHabitId, date: habitDate } = (
+        action as MarkHabitDoneAction
+      ).input;
+      const habitId = normalizeHabitId(rawHabitId);
       const routineState = loadRoutineState();
+      const habit = routineState.habits.find((h) => h.id === habitId);
+      // Validate before writing: an unmatched id (model passed a stale or
+      // `id:`-prefixed value) must not silently write a phantom completion
+      // key and then claim success (QA D-005).
+      if (!habit) {
+        return `Не знайшов звичку "${habitId || String(rawHabitId ?? "")}" — перевір список звичок.`;
+      }
       const completions: Record<string, string[]> = {
         ...routineState.completions,
       };
       const targetDate = habitDate || getKyivDayKey();
-      const prevArr = Array.isArray(completions[habit_id])
-        ? completions[habit_id].slice()
+      const prevArr = Array.isArray(completions[habitId])
+        ? completions[habitId].slice()
         : [];
       const alreadyDone = prevArr.includes(targetDate);
       const arr = alreadyDone ? prevArr : [...prevArr, targetDate];
-      completions[habit_id] = arr;
+      completions[habitId] = arr;
       saveRoutineState({ ...routineState, completions });
-      const habit = routineState.habits.find((h) => h.id === habit_id);
-      const result = `Звичку "${habit?.name || habit_id}" відмічено як виконану (${targetDate})`;
+      const result = `Звичку "${habit.name || habitId}" відмічено як виконану (${targetDate})`;
       // Якщо звичка вже була в completions до виклику — undo нічого не
       // робить (no-op); інакше прибираємо `targetDate` зі списку.
       if (alreadyDone) {
@@ -92,13 +114,13 @@ export function handleRoutineAction(
         undo: () => {
           const cur = loadRoutineState();
           const curCompletions = { ...cur.completions };
-          const list = Array.isArray(curCompletions[habit_id])
-            ? curCompletions[habit_id].filter((d) => d !== targetDate)
+          const list = Array.isArray(curCompletions[habitId])
+            ? curCompletions[habitId].filter((d) => d !== targetDate)
             : [];
           if (list.length > 0) {
-            curCompletions[habit_id] = list;
+            curCompletions[habitId] = list;
           } else {
-            delete curCompletions[habit_id];
+            delete curCompletions[habitId];
           }
           saveRoutineState({ ...cur, completions: curCompletions });
         },
@@ -174,7 +196,7 @@ export function handleRoutineAction(
     }
     case "create_reminder": {
       const { habit_id, time } = (action as CreateReminderAction).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       const t = String(time || "").trim();
       if (!id) return "Потрібен habit_id.";
       if (!/^\d{1,2}:\d{2}$/.test(t)) return "Час має бути у форматі HH:MM.";
@@ -217,7 +239,7 @@ export function handleRoutineAction(
       const { habit_id, date, completed } = (
         action as CompleteHabitForDateAction
       ).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       const d = String(date || "").trim();
       if (!id) return "Потрібен habit_id.";
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d))
@@ -275,7 +297,7 @@ export function handleRoutineAction(
     }
     case "archive_habit": {
       const { habit_id, archived } = (action as ArchiveHabitAction).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       const doArchive = archived !== false;
       if (!id) return "Потрібен habit_id.";
       const state = loadRoutineState();
@@ -319,7 +341,7 @@ export function handleRoutineAction(
       const { habit_id, name, emoji, recurrence, weekdays } = (
         action as EditHabitAction
       ).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       if (!id) return "Потрібен habit_id.";
       const state = loadRoutineState();
       const habits = state.habits.slice();
@@ -357,7 +379,7 @@ export function handleRoutineAction(
     }
     case "set_habit_schedule": {
       const { habit_id, days } = (action as SetHabitScheduleAction).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       if (!id) return "Потрібен habit_id.";
       if (!Array.isArray(days) || days.length === 0)
         return "Потрібен непорожній масив days.";
@@ -394,7 +416,7 @@ export function handleRoutineAction(
     }
     case "pause_habit": {
       const { habit_id, paused } = (action as PauseHabitAction).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       if (!id) return "Потрібен habit_id.";
       const target = paused !== false;
       const state = loadRoutineState();
@@ -435,7 +457,7 @@ export function handleRoutineAction(
     }
     case "habit_stats": {
       const { habit_id, period_days } = (action as HabitStatsAction).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       if (!id) return "Потрібен habit_id.";
       const days = Number(period_days) || 30;
       const state = loadRoutineState();

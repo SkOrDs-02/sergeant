@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-06-26",
+  "generated_at": "2026-06-29",
   "sourceHashes": {
-    "knowledge-graph": "8a4674ef8bee341ae29034440af63ebbe91f06a2c633579550a1816774acf8d7",
-    "symbol-index": "7f81b312418c70410aac8ff73257b27ff20cf652820cd20896dade440c436a00"
+    "knowledge-graph": "fc6efd75b9a0c5d7e22f8b830a34e664058435db832c9e8d15da593aa482fc00",
+    "symbol-index": "0da672f03c69da0e6f6e554294eba3d08e53c819e1dc5da3e37ef027cb599227"
   },
   "counts": {
     "adr": 64,
-    "audit": 15,
+    "audit": 16,
     "export": 303,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
     "skill": 23,
-    "total": 543
+    "total": 544
   },
   "chunks": [
     {
@@ -385,9 +385,9 @@
       "line": 1,
       "title": "ADR-0035: Distributed tracing — web→server via OpenTelemetry",
       "tier": "core",
-      "status": "superseded — reverted 2026-06-26 (OpenTelemetry видалено; див. banner нижче)",
-      "text": "ADR-0035: Distributed tracing — web→server via OpenTelemetry · adr:0035 · adr · superseded — reverted 2026-06-26 (OpenTelemetry видалено; див. banner нижче) · 35 · 0. TL;DR · 1. Context and Problem Statement · 2. Considered Options · Backend (де trace-data live): · Tracer SDK (як спрямувати): · 3. Decision · 3.1. Backend: Honeycomb (free tier). · 3.2. SDK: @opentelemetry/ packages. · 3.3. Sentry tracing на web вимикаємо. · 3.4. Trace propagation. · 3.5. Mobile (apps/mobile). · 4. Rationale · 5. Consequences · Positive · Negative · Neutral · 6. Compliance · 7. Implementation status · 7.1 Shipped (2026-05-05) · 7.2 Чого НЕ робимо зараз · 7.3 Roadmap-факт · 8. Links",
-      "contentHash": "1e2a1b5ca3e71de7cfdff34bf2343e46f1772192450303d114947c527c23aeac"
+      "status": "superseded",
+      "text": "ADR-0035: Distributed tracing — web→server via OpenTelemetry · adr:0035 · adr · superseded · 35 · 0. TL;DR · 1. Context and Problem Statement · 2. Considered Options · Backend (де trace-data live): · Tracer SDK (як спрямувати): · 3. Decision · 3.1. Backend: Honeycomb (free tier). · 3.2. SDK: @opentelemetry/ packages. · 3.3. Sentry tracing на web вимикаємо. · 3.4. Trace propagation. · 3.5. Mobile (apps/mobile). · 4. Rationale · 5. Consequences · Positive · Negative · Neutral · 6. Compliance · 7. Implementation status · 7.1 Shipped (2026-05-05) · 7.2 Чого НЕ робимо зараз · 7.3 Roadmap-факт · 8. Links",
+      "contentHash": "1fceeb89bc164299c71a6bcb7aad0e6e284e468fcc4c03be592f91389c7067b0"
     },
     {
       "id": "adr:0036",
@@ -883,6 +883,17 @@
       "status": "Draft",
       "text": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub) · audit:2026-08-XX-sync-engine-roast · audit · Draft · Sync Engine Deep Roast — apps/server/src/modules/sync/syncV2.ts (stub) · TL;DR · Scope · Methodology hints · Transaction-boundary trace (2026-06-06 code read) · Handler: syncV2Push (POST /api/v2/sync/push) · Handler: syncV2Pull (GET /api/v2/sync/pull) · DLQ-row TTL note · Cross-refs",
       "contentHash": "f4c38dc725703b69696931342f5a289d7ff5eae771b878bb61b1c540d1ead316"
+    },
+    {
+      "id": "audit:user-story-loop",
+      "type": "audit",
+      "path": "docs/90-work/audits/user-story-loop.md",
+      "line": 1,
+      "title": "User Story QA Loop",
+      "tier": "core",
+      "status": "Active",
+      "text": "User Story QA Loop · audit:user-story-loop · audit · Active · Goal · Loop State Machine · Guardrails · Execution Notes · Exit Conditions",
+      "contentHash": "3e044ceb430d71b201ff3c0d7ec3995f13c085c036752bec2a95d9a981ec4a9d"
     },
     {
       "id": "export:@sergeant/api-client:ApiClient",

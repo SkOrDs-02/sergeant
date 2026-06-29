@@ -1,6 +1,6 @@
 # Журнал рішень для агентів
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last touched:** 2026-06-29 by Codex. **Next review:** 2026-09-27.
 > **Status:** Active
 
 Курований, append-only журнал **усталених рішень і вподобань**, щоб агент не перепитував те, що вже вирішено, а maintainer не розжовував контекст щоразу (Initiative 0020, Tier 3 agent-OS).
@@ -17,13 +17,14 @@
 
 ## Рішення
 
-| Дата       | Рішення                                                                                                                   | Скоуп              | Канон / джерело                                                                                                                                                                |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-06-08 | Harness-config (SessionStart-хуки, MCP-wiring, агент-дефи) **не комітимо в репо** — живе в global config харнеса          | agent-OS / repo    | [`AGENTS.md` § Harness config lives outside the repo](../../../AGENTS.md#harness-config-lives-outside-the-repo)                                                                |
-| 2026-06-08 | Орієнтація перед роботою: спершу `pnpm agent:route` + `pnpm agent:find`, а не сліпий grep                                 | agent-OS           | [`0019-agent-routing.md`](../../90-work/initiatives/archive/_0019-agent-routing.md), [ADR-0066](../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md) |
-| 2026-06-08 | `agent:where <symbol>` окремо **не робимо** — субсумовано `pnpm agent:find --type export`                                 | agent-OS           | [`0019-agent-routing.md` § Out of scope](../../90-work/initiatives/archive/_0019-agent-routing.md)                                                                             |
-| 2026-06-08 | Agent-retrieval — **build-time committed індекс**, decoupled від runtime-стору `ai_memories` (per-user, потребує сервера) | agent-OS / server  | [ADR-0066 § Rationale](../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md)                                                                          |
-| 2026-06-08 | Перевага **нуль нових залежностей** для agent-tooling (ручний JSON-RPC у MCP-сервері; TS-compiler замість ts-morph)       | agent-OS / scripts | [ADR-0059](../../04-governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md)                                                                                      |
+| Дата       | Рішення                                                                                                                                                             | Скоуп              | Канон / джерело                                                                                                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-06-29 | Web-first до traction: native mobile, Expo-shell і Capacitor-shell не тягнемо в launch-readiness; повертаємось до них після стабільного web і реальних користувачів | product / launch   | maintainer decision; testing loop: [`production-readiness-testing-loop.md`](../../90-work/audits/production-readiness-testing-loop.md)                                         |
+| 2026-06-08 | Harness-config (SessionStart-хуки, MCP-wiring, агент-дефи) **не комітимо в репо** — живе в global config харнеса                                                    | agent-OS / repo    | [`AGENTS.md` § Harness config lives outside the repo](../../../AGENTS.md#harness-config-lives-outside-the-repo)                                                                |
+| 2026-06-08 | Орієнтація перед роботою: спершу `pnpm agent:route` + `pnpm agent:find`, а не сліпий grep                                                                           | agent-OS           | [`0019-agent-routing.md`](../../90-work/initiatives/archive/_0019-agent-routing.md), [ADR-0066](../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md) |
+| 2026-06-08 | `agent:where <symbol>` окремо **не робимо** — субсумовано `pnpm agent:find --type export`                                                                           | agent-OS           | [`0019-agent-routing.md` § Out of scope](../../90-work/initiatives/archive/_0019-agent-routing.md)                                                                             |
+| 2026-06-08 | Agent-retrieval — **build-time committed індекс**, decoupled від runtime-стору `ai_memories` (per-user, потребує сервера)                                           | agent-OS / server  | [ADR-0066 § Rationale](../../04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md)                                                                          |
+| 2026-06-08 | Перевага **нуль нових залежностей** для agent-tooling (ручний JSON-RPC у MCP-сервері; TS-compiler замість ts-morph)                                                 | agent-OS / scripts | [ADR-0059](../../04-governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md)                                                                                      |
 
 ## Що сюди НЕ пишемо
 

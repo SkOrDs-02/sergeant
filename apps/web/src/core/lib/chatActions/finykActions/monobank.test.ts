@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ImportMonobankRangeAction } from "../types";
 import { importMonobankRange } from "./monobank";
+import type { ImportMonobankRangeAction } from "../types.finyk";
 
 vi.mock("@shared/lib/storage/storage", () => ({
   safeRemoveLS: vi.fn(),

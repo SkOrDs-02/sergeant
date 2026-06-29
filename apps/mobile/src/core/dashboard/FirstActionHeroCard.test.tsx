@@ -9,6 +9,15 @@ import {
 import { FirstActionHeroCard } from "./FirstActionHeroCard";
 import { _getMMKVInstance } from "@/lib/storage";
 
+jest.mock("@/lib/analytics", () => ({
+  ANALYTICS_EVENTS: {
+    FTUX_PRESET_CUSTOM: "ftux_preset_custom",
+    FTUX_PRESET_PICKED: "ftux_preset_picked",
+    FTUX_PRESET_SHEET_SHOWN: "ftux_preset_sheet_shown",
+  },
+  trackEvent: jest.fn(),
+}));
+
 function resetStore() {
   const mmkv = _getMMKVInstance();
   mmkv.clearAll();

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { SaveNoteAction, ListNotesAction } from "../types";
 import { saveNote, listNotes } from "./noteHandlers";
+import type { ListNotesAction, SaveNoteAction } from "../types.cross";
 
 const store: Record<string, unknown> = {};
 

@@ -19,6 +19,12 @@ import {
   type Habit,
 } from "@sergeant/routine-domain";
 
+jest.mock("../../lib/sqliteReadGate", () => ({
+  __resetRoutineSqliteReadGateForTests: jest.fn(),
+  notifyRoutineSqliteCacheRefresh: jest.fn(),
+  useRoutineSqliteReadTick: () => 0,
+}));
+
 import { _getMMKVInstance } from "@/lib/storage";
 import {
   __setRoutineSqliteCompletionsCacheForTests,

@@ -21,28 +21,51 @@ import {
 import { getCachedFizrukSqliteState } from "../../../../modules/fizruk/lib/sqliteReader";
 import type { SqliteFizrukCache } from "../../../../modules/fizruk/lib/sqliteReader";
 import { logMeasurement } from "./measurements";
+import type { LogMeasurementAction } from "../types.fizruk";
 
 const mockTriggerDualWrite = vi.mocked(triggerFizrukDualWrite);
 const mockPeekState = vi.mocked(peekFizrukDualWriteState);
 const mockExtract = vi.mocked(extractMeasurementSnapshots);
 const mockGetCached = vi.mocked(getCachedFizrukSqliteState);
 
-// Complete empty SQLite cache — the code under test only reads
-// `.measurements`, but the type requires every shard, so spread this base
-// and override the slice a test cares about.
-const baseFizrukCache: SqliteFizrukCache = {
-  workouts: [],
-  customExercises: [],
-  measurements: [],
-  dailyLog: [],
-  monthlyPlan: null,
-  workoutTemplates: [],
-  refreshedAt: null,
-};
+function emptyCache(
+  overrides: Partial<SqliteFizrukCache> = {},
+): SqliteFizrukCache {
+  return {
+    workouts: [],
+    customExercises: [],
+    measurements: [],
+    dailyLog: [],
+    monthlyPlan: null,
+    workoutTemplates: [],
+    refreshedAt: null,
+    ...overrides,
+  };
+}
+
+function emptyDualWriteState(
+  overrides: Partial<FizrukDualWriteState> = {},
+): FizrukDualWriteState {
+  return {
+    workouts: [],
+    customExercises: [],
+    measurements: [],
+    dailyLog: [],
+    monthlyPlan: null,
+    workoutTemplates: [],
+    ...overrides,
+  };
+}
+
+function makeAction(
+  input: LogMeasurementAction["input"],
+): LogMeasurementAction {
+  return { name: "log_measurement", input };
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGetCached.mockReturnValue(baseFizrukCache);
+  mockGetCached.mockReturnValue(emptyCache());
   mockPeekState.mockReturnValue(null);
   mockExtract.mockReturnValue([]);
 });
@@ -103,12 +126,13 @@ describe("logMeasurement", () => {
     const existing = [
       { id: "m1", at: "2026-04-01T09:00:00.000Z", weightKg: 79 },
     ];
-    mockGetCached.mockReturnValue({
-      ...baseFizrukCache,
-      refreshedAt: new Date().toISOString(),
-      measurements: existing,
-    });
-    logMeasurement({ name: "log_measurement", input: { weight_kg: 80 } });
+    mockGetCached.mockReturnValue(
+      emptyCache({
+        refreshedAt: "2026-04-01T09:00:00.000Z",
+        measurements: existing,
+      }),
+    );
+    logMeasurement(makeAction({ weight_kg: 80 }));
     const extractArg = mockExtract.mock.calls[0]![0] as unknown[];
     expect(extractArg.length).toBe(2);
     expect((extractArg[1] as { id: string }).id).toBe("m1");
@@ -116,17 +140,19 @@ describe("logMeasurement", () => {
 
   it("uses EMPTY state when peekFizrukDualWriteState returns null", () => {
     mockPeekState.mockReturnValue(null);
-    logMeasurement({ name: "log_measurement", input: { weight_kg: 75 } });
+    logMeasurement(makeAction({ weight_kg: 75 }));
     const [prevDw] = mockTriggerDualWrite.mock.calls[0]!;
     expect(prevDw).toEqual({ measurements: [] });
   });
 
   it("passes existing dual-write state when peek returns non-null", () => {
-    const existing = {
-      measurements: [{ id: "s1", at: "…", weightKg: 70 }],
-    } as unknown as FizrukDualWriteState;
+    const existing = emptyDualWriteState({
+      measurements: [
+        { id: "s1", at: "2026-04-01T09:00:00.000Z", weightKg: 70 },
+      ],
+    });
     mockPeekState.mockReturnValue(existing);
-    logMeasurement({ name: "log_measurement", input: { weight_kg: 75 } });
+    logMeasurement(makeAction({ weight_kg: 75 }));
     const [prevDw] = mockTriggerDualWrite.mock.calls[0]!;
     expect(prevDw).toBe(existing);
   });

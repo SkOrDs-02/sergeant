@@ -95,6 +95,31 @@ describe("mark_habit_done", () => {
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
   });
+
+  it("D-005: strips `id:` prefix the model echoes — completion lands under canonical key", () => {
+    seedHabit("hab-xyz", "Вода");
+    const out = call({
+      name: "mark_habit_done",
+      input: { habit_id: "id:hab-xyz" },
+    });
+    expect(out).toContain("Вода");
+    expect(out).toContain("виконану");
+    // Completion must land under the canonical id, not a phantom "id:hab-xyz" key.
+    const state = loadRoutineState();
+    expect(state.completions["hab-xyz"]).toContain("2026-04-22");
+    expect(state.completions["id:hab-xyz"]).toBeUndefined();
+  });
+
+  it("D-005: unknown habit id returns error and writes no phantom completion", () => {
+    const before = loadRoutineState();
+    const out = handleRoutineAction({
+      name: "mark_habit_done",
+      input: { habit_id: "hab-does-not-exist" },
+    });
+    const result = typeof out === "string" ? out : out?.result;
+    expect(result).toContain("Не знайшов");
+    expect(loadRoutineState().completions).toEqual(before.completions);
+  });
 });
 
 // ---------------------------------------------------------------------------

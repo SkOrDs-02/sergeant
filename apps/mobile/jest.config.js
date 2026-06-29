@@ -12,10 +12,11 @@ const sharedThresholds = require("../../coverage-thresholds.json").workspaces;
 
 module.exports = {
   preset: "jest-expo",
-  testMatch: [
-    "<rootDir>/src/**/*.test.{ts,tsx}",
-    "<rootDir>/plugins/**/*.test.{ts,tsx}",
+  testRegex: [
+    "[/\\\\]src[/\\\\].*\\.test\\.(ts|tsx)$",
+    "[/\\\\]plugins[/\\\\].*\\.test\\.(ts|tsx)$",
   ],
+  testPathIgnorePatterns: ["node_modules"],
   setupFiles: ["<rootDir>/jest.setup.js"],
   // Bound Jest's worker fan-out so the mobile suite doesn't run out of
   // heap on default CI runners. With ~110 suites the default

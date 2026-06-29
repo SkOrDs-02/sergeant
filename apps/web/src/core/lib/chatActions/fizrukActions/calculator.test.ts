@@ -1,9 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { calculate1rm } from "./calculator";
+import type { Calculate1rmAction } from "../types.fizruk";
 
-function makeAction(weight_kg: number, reps: number, exercise_name?: string) {
+function makeAction(
+  weight_kg: number,
+  reps: number,
+  exercise_name?: string,
+): Calculate1rmAction {
   return {
-    name: "calculate_1rm" as const,
+    name: "calculate_1rm",
     input: { weight_kg, reps, ...(exercise_name ? { exercise_name } : {}) },
   };
 }

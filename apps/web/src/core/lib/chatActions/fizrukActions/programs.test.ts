@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { AddProgramDayAction } from "../types";
 import { addProgramDay } from "./programs";
+import type { AddProgramDayAction } from "../types.fizruk";
 
 const mockLsData: Record<string, unknown> = {};
 vi.mock("../../hubChatUtils", () => ({
