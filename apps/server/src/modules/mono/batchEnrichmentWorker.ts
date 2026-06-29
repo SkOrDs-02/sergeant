@@ -159,6 +159,10 @@ export async function runMccBatchTick(
         // Більший timeout ніж per-row (15s), бо output довший. Все ще
         // менший за `intervalMs / 6` для типового 1h-tick-у.
         timeoutMs: 60_000,
+        // AI-NOTE: НЕ передаємо `userId` навмисно. Один batch-виклик
+        // класифікує транзакції БАГАТЬОХ юзерів (`item.userId` різний
+        // per-item), тож приписати його cost одному юзеру було б хибним
+        // обліком. Лишаємо лише global-aggregate (`provider:anthropic`).
       },
     );
 

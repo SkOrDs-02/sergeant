@@ -12,7 +12,10 @@ import { normalizeRecipes } from "../../lib/nutritionResponse.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
-type WithAnthropicKey = Request & { anthropicKey?: string };
+type WithAnthropicKey = Request & {
+  anthropicKey?: string;
+  user?: { id: string };
+};
 
 const SYSTEM = `Ти шеф-кухар і нутріціолог. Відповідай ТІЛЬКИ українською.
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
@@ -47,6 +50,7 @@ export default async function handler(
   res: Response,
 ): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
 
   const { pantry: pantryIn, preferences } = parseBody(
     RecommendRecipesSchema,
@@ -91,6 +95,7 @@ ${pantrySec}
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.recommendRecipes,
     endpoint: "recommend-recipes",
+    ...(userId ? { userId } : {}),
   });
   if (!response || !response.ok) {
     throw makeAiProviderError({
