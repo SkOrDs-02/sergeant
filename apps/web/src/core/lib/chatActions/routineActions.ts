@@ -426,7 +426,8 @@ export function handleRoutineAction(
       const reordered = habit_ids
         .map((id) => habitMap.get(id))
         .filter((h): h is (typeof habits)[0] => h != null);
-      const remaining = habits.filter((h) => !habit_ids.includes(h.id));
+      const idSet = new Set(habit_ids);
+      const remaining = habits.filter((h) => !idSet.has(h.id));
       saveRoutineState({
         ...state,
         habits: [...reordered, ...remaining],
@@ -442,9 +443,10 @@ export function handleRoutineAction(
       const habit = state.habits.find((h) => h.id === id);
       if (!habit) return `Звичку ${id} не знайдено.`;
       const completions = state.completions;
-      const habitCompletions = Array.isArray(completions[id])
+      const habitCompletionsArr = Array.isArray(completions[id])
         ? completions[id]
         : [];
+      const habitCompletions = new Set(habitCompletionsArr);
       const now = Date.now();
       let doneCount = 0;
       let streak = 0;
@@ -453,7 +455,7 @@ export function handleRoutineAction(
       const missedDates: string[] = [];
       for (let i = 0; i < days; i++) {
         const dk = getKyivDayKey(now - i * DAY_MS);
-        if (habitCompletions.includes(dk)) {
+        if (habitCompletions.has(dk)) {
           doneCount++;
           currentStreak++;
           if (i === 0 || i === streak) streak = currentStreak;
@@ -487,6 +489,11 @@ export function handleRoutineAction(
         : state.habits.filter((h) => !h.archived);
       if (habits.length === 0) return `Звичку ${habit_id} не знайдено.`;
       const completions = state.completions;
+      const histSets = new Map<string, Set<string>>();
+      for (const h of habits) {
+        const arr = Array.isArray(completions[h.id]) ? completions[h.id] : [];
+        histSets.set(h.id, new Set(arr));
+      }
       const now = Date.now();
       const weeks = Math.ceil(days / 7);
       const weeklyData: number[] = [];
@@ -499,8 +506,8 @@ export function handleRoutineAction(
           const dk = getKyivDayKey(now - dayOffset * DAY_MS);
           for (const h of habits) {
             possible++;
-            const hist = completions[h.id];
-            if (Array.isArray(hist) && hist.includes(dk)) done++;
+            const hist = histSets.get(h.id);
+            if (hist && hist.has(dk)) done++;
           }
         }
         weeklyData.push(possible > 0 ? Math.round((done / possible) * 100) : 0);
