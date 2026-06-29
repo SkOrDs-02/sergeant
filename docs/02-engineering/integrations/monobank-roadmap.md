@@ -402,7 +402,7 @@ async function rotateWebhookSecret(req, res) {
 - **Retention policy для `mono_transaction`.** На горизонті 2-3 років таблиця може стати великою. Партиціонування по `time` або archiving у cold storage — окрема задача.
 - **MIGRATE_DATABASE_URL** через Railway internal DNS — залежить від змін у Railway, не у нас.
 - **Phase out `useMonoTokenMigration`** — через 1-2 місяці після того як cleanup PR-А зайде, коли впевнені що ніхто не має старих `finyk_token` у localStorage.
-- **MonoCorporate API.** Окрема інтеграція, окрема задача.
+- **MonoCorporate / Provider API** («натисни → підтверди доступ у застосунку Монобанк», як у сторонніх трекерах). Окрема інтеграція, окрема задача — повний план, передумови й декомпозиція на PR-и у [`monobank-provider-api-plan.md`](./monobank-provider-api-plan.md). Блокована зовнішнім схваленням провайдера від Монобанку.
 - **Розширити push-нотифікації** на інші модулі (Routine reminders, Coach, weekly digest) — окремий PR після D.
 
 ---
