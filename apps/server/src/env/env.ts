@@ -508,6 +508,14 @@ const envSchema = z.object({
   AI_DAILY_USER_LIMIT: coerceInt.nonnegative().optional(),
   /** Денний ліміт AI-запитів для анонімного юзера. */
   AI_DAILY_ANON_LIMIT: coerceInt.nonnegative().optional(),
+  /**
+   * Місячний fair-use ліміт AI-повідомлень для Pro (ADR-0060 — amendment до
+   * ADR-0051). Unset → Pro лишається безлімітним (фіча no-op). Enforced на
+   * вікні Europe/Kyiv-місяця у `modules/chat/aiQuota.ts → resolveUserQuota`
+   * (bucket `monthly`). Число навмисно НЕ зашите в код — виставляється
+   * операційно (Railway env) після виміру реального Anthropic-cost.
+   */
+  AI_MONTHLY_PRO_LIMIT: coerceInt.nonnegative().optional(),
   /** Вартість tool-call у одиницях квоти (default 3). */
   AI_QUOTA_TOOL_COST: coerceInt.nonnegative().optional(),
   /** JSON `{"tool_name": maxPerDay}` для per-tool лімітів. */

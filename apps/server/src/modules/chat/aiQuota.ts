@@ -59,10 +59,13 @@ interface ConsumeQuotaReturn {
 }
 
 /**
- * Денна AI-квота. Зберігається в `ai_usage_daily` як лічильник по (subject, day,
- * bucket). Є два типи bucket-ів: `default` — звичайний chat/coach/digest/nutrition
- * (cost=1), `tool:<name>` — окремий tool-use виклик (cost = AI_QUOTA_TOOL_COST,
- * default 3 — див. `toolCost`).
+ * AI-квота для plain chat. Зберігається в `ai_usage_daily` як лічильник по
+ * (subject, day, bucket). Типи bucket-ів для plain chat: `default` — денне вікно
+ * (звичайний chat/coach/digest/nutrition, cost=1, period = `today()`); `monthly`
+ * — МІСЯЧНЕ вікно для Pro fair-use cap (ADR-0060, period = `monthKeyKyiv()`,
+ * limit = `AI_MONTHLY_PRO_LIMIT`). Денний і місячний — взаємовиключні per-запит
+ * (див. `resolveUserQuota`). Окремо: `tool:<name>` — tool-use виклик
+ * (cost = AI_QUOTA_TOOL_COST, default 3 — див. `toolCost`).
  *
  * Cost vs. limit — два незалежні важелі (детальніше в docstring-ах `toolCost`
  * і `toolLimit`):
@@ -84,6 +87,7 @@ interface ConsumeQuotaReturn {
  */
 
 const DEFAULT_BUCKET = "default";
+const MONTHLY_BUCKET = "monthly";
 const TOOL_BUCKET_PREFIX = "tool:";
 const DEFAULT_TOOL_COST = 3;
 
@@ -142,20 +146,66 @@ function isFounderUser(userId: string): boolean {
 }
 
 /**
- * Plan-aware daily AI-message cap for an authenticated user (ADR-1.7).
- * Free → `FREE_LIMITS.aiRequestsPerDay` (5); Pro → `null` (unlimited).
- * Sourced from `billing/effectiveLimits` so the paid limit lives in one place.
+ * Перший день поточного місяця за Europe/Kyiv як `YYYY-MM-01` (DATE-ready).
  *
- * On a plan-lookup error we fall back to the FREE cap — never silently grant
- * unlimited (the monetization-safe default). A full DB outage is still
- * absorbed by the `consumeQuota` fail-open path downstream, so a transient
- * blip degrades to "free cap", not "blocked".
- *
- * No plan cache: the lookup is a single indexed point-read on `subscriptions`
- * and is dwarfed by the upstream Anthropic call. Add a short-TTL cache here
- * (ADR-1.7) only if profiling shows it matters.
+ * Дзеркалить `todayKyiv()` у `lib/anthropicUsageStore.ts` (`sv-SE` locale →
+ * `yyyy-mm-dd`), але обрізає до місяця. СВІДОМО не через денний `today()`
+ * (той — UTC): помилка в межах доби на стику місяця зсунула б цілий
+ * платіж-цикл. `slice(0,7)` дає `YYYY-MM`, `+ "-01"` — канонічний month-start,
+ * який і є ключем `usage_day` для bucket-а `monthly`.
  */
-async function userDailyLimit(userId: string): Promise<number | null> {
+function monthKeyKyiv(): string {
+  const ymd = new Date().toLocaleDateString("sv-SE", {
+    timeZone: "Europe/Kyiv",
+  });
+  return `${ymd.slice(0, 7)}-01`;
+}
+
+/**
+ * Pro fair-use місячний cap (ADR-0051 amendment / ADR-0060). Operative число —
+ * env `AI_MONTHLY_PRO_LIMIT`; дефолт — декларативний `PRO_LIMITS.aiRequestsPerMonth`
+ * (наразі `null` = вимкнено). `null` означає «Pro лишається безлімітним», тож
+ * фіча no-op до моменту, коли власник виставить env після виміру cost.
+ *
+ * Читає `process.env` напряму (як `anonDailyLimit`/`toolLimit`), щоб тести
+ * могли крутити значення без re-import валідованого env.
+ */
+function monthlyProLimit(): number | null {
+  return parseLimit(
+    "AI_MONTHLY_PRO_LIMIT",
+    planLimits("pro").aiRequestsPerMonth,
+  );
+}
+
+/** Резолвлений quota-важіль для одного запиту: ліміт + bucket + період-ключ. */
+interface ResolvedQuota {
+  limit: number | null;
+  bucket: string;
+  period: string;
+}
+
+/**
+ * Plan-aware quota resolution для автентифікованого юзера (ADR-1.7 + ADR-0060).
+ *
+ *   - Free → денний bucket `default`, period = `today()`, limit = 5.
+ *   - Pro + `AI_MONTHLY_PRO_LIMIT` задано → МІСЯЧНИЙ bucket `monthly`,
+ *     period = `monthKeyKyiv()`, limit = monthly cap. Денний bucket для Pro
+ *     при цьому НЕ пишеться — місячне вікно зберігає відчуття безлімітності
+ *     в межах доби.
+ *   - Pro без env-cap → `limit = null` (unlimited; жодного інкременту), як було
+ *     до ADR-0060.
+ *
+ * Day/month — взаємовиключні: один запит списується рівно з одного bucket-а.
+ *
+ * На plan-lookup error → фолбек на FREE денний cap (monetization-safe default):
+ * ніколи не видаємо unlimited тихо. Повний DB-outage поглинає fail-open у
+ * `consumeQuota` нижче, тож transient-blip деградує до «free cap», не «blocked».
+ *
+ * No plan cache: lookup — single indexed point-read на `subscriptions`, dwarfed
+ * upstream Anthropic-викликом. Short-TTL cache (ADR-1.7) — лише якщо профайл
+ * покаже, що це матерія.
+ */
+async function resolveUserQuota(userId: string): Promise<ResolvedQuota> {
   let plan: "free" | "pro" = "free";
   try {
     plan = (await getUserPlan(pool, userId)).plan === "pro" ? "pro" : "free";
@@ -165,7 +215,19 @@ async function userDailyLimit(userId: string): Promise<number | null> {
       err: { message: (e as Error)?.message || String(e) },
     });
   }
-  return planLimits(plan).aiRequestsPerDay;
+
+  if (plan === "pro") {
+    const monthly = monthlyProLimit();
+    if (monthly != null) {
+      return { limit: monthly, bucket: MONTHLY_BUCKET, period: monthKeyKyiv() };
+    }
+  }
+
+  return {
+    limit: planLimits(plan).aiRequestsPerDay,
+    bucket: DEFAULT_BUCKET,
+    period: today(),
+  };
 }
 
 /**
@@ -261,9 +323,10 @@ export async function assertAiQuota(
   const sessionUser = await safeSessionUser(req);
   // Founder / internal-team users are never quota-blocked (plan-agnostic).
   if (sessionUser && isFounderUser(sessionUser.id)) return true;
-  const limit = sessionUser
-    ? await userDailyLimit(sessionUser.id)
-    : anonDailyLimit();
+  const quota = sessionUser
+    ? await resolveUserQuota(sessionUser.id)
+    : { limit: anonDailyLimit(), bucket: DEFAULT_BUCKET, period: today() };
+  const limit = quota.limit;
 
   if (limit == null) return true;
 
@@ -295,14 +358,14 @@ export async function assertAiQuota(
 
   const subject = subjectFor(sessionUser, req);
   try {
-    const day = today();
+    const day = quota.period;
     const cost = 1;
     const result = await consumeQuota({
       subject,
       day,
       limit,
       cost,
-      bucket: DEFAULT_BUCKET,
+      bucket: quota.bucket,
     });
     aiQuotaCircuitBreaker.recordSuccess();
     if (!result.ok) {
@@ -312,7 +375,10 @@ export async function assertAiQuota(
         /* ignore */
       }
       res.status(429).json({
-        error: "Денний ліміт AI вичерпано. Спробуй завтра.",
+        error:
+          quota.bucket === MONTHLY_BUCKET
+            ? "Місячний ліміт AI вичерпано. Спробуй наступного місяця."
+            : "Денний ліміт AI вичерпано. Спробуй завтра.",
         code: "AI_QUOTA",
         limit: result.limit,
       });
@@ -327,7 +393,7 @@ export async function assertAiQuota(
     } catch {
       /* ignore */
     }
-    attachRefund(req, { subject, day, bucket: DEFAULT_BUCKET, cost });
+    attachRefund(req, { subject, day, bucket: quota.bucket, cost });
     setRemainingHeader(res, String(result.remaining));
     return true;
   } catch (e) {
