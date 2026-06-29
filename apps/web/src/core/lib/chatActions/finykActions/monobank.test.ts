@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { importMonobankRange } from "./monobank";
+import type { ImportMonobankRangeAction } from "../types.finyk";
 
 vi.mock("@shared/lib/storage/storage", () => ({
   safeRemoveLS: vi.fn(),
@@ -7,9 +8,9 @@ vi.mock("@shared/lib/storage/storage", () => ({
 
 function makeAction(from: unknown, to: unknown) {
   return {
-    type: "import_monobank_range" as const,
+    name: "import_monobank_range",
     input: { from, to },
-  };
+  } as ImportMonobankRangeAction;
 }
 
 describe("importMonobankRange", () => {

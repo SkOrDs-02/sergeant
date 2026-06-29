@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { saveNote, listNotes } from "./noteHandlers";
+import type { ListNotesAction, SaveNoteAction } from "../types.cross";
 
 const store: Record<string, unknown> = {};
 
@@ -12,16 +13,16 @@ vi.mock("../../hubChatUtils", () => ({
 
 function makeSaveAction(text: unknown, tag?: string) {
   return {
-    type: "save_note" as const,
+    name: "save_note",
     input: { text, tag },
-  };
+  } as SaveNoteAction;
 }
 
 function makeListAction(tag?: string, limit?: number) {
   return {
-    type: "list_notes" as const,
+    name: "list_notes",
     input: { tag, limit },
-  };
+  } as ListNotesAction;
 }
 
 describe("saveNote", () => {

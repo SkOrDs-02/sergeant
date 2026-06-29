@@ -59,7 +59,7 @@ beforeEach(() => {
 describe("logSet", () => {
   it("returns error for empty exercise name", () => {
     const result = logSet({
-      type: "log_set",
+      name: "log_set",
       input: { exercise_name: "", reps: 10, weight_kg: 0, sets: 1 },
     });
     expect(result).toContain("назва");
@@ -67,7 +67,7 @@ describe("logSet", () => {
 
   it("returns error for invalid reps", () => {
     const result = logSet({
-      type: "log_set",
+      name: "log_set",
       input: { exercise_name: "Squat", reps: -5, weight_kg: 0, sets: 1 },
     });
     expect(result).toContain("повторень");
@@ -75,7 +75,7 @@ describe("logSet", () => {
 
   it("returns error for zero reps", () => {
     const result = logSet({
-      type: "log_set",
+      name: "log_set",
       input: { exercise_name: "Squat", reps: 0, weight_kg: 0, sets: 1 },
     });
     expect(result).toContain("повторень");
@@ -85,7 +85,7 @@ describe("logSet", () => {
     mockReadWorkouts.mockReturnValue([]);
     mockReadLS.mockReturnValue(null);
     const result = logSet({
-      type: "log_set",
+      name: "log_set",
       input: { exercise_name: "Push-up", reps: 12, weight_kg: 0, sets: 2 },
     });
     expect(typeof result).toBe("string");
@@ -116,19 +116,19 @@ describe("logSet", () => {
     mockReadWorkouts.mockReturnValue([existing]);
     mockReadLS.mockReturnValue("w_active");
     const result = logSet({
-      type: "log_set",
+      name: "log_set",
       input: { exercise_name: "Squat", reps: 5, weight_kg: 100, sets: 1 },
     });
     expect(result).not.toContain("Нове тренування");
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
-    expect(persisted[0]?.items[0]?.sets.length).toBe(2);
+    expect(persisted[0]!.items[0]!.sets!.length).toBe(2);
   });
 
   it("sets new active key when creating new workout", () => {
     mockReadWorkouts.mockReturnValue([]);
     mockReadLS.mockReturnValue(null);
     logSet({
-      type: "log_set",
+      name: "log_set",
       input: { exercise_name: "Run", reps: 1, weight_kg: 0, sets: 1 },
     });
     expect(mockLsSet).toHaveBeenCalledWith(
@@ -140,21 +140,21 @@ describe("logSet", () => {
   it("caps sets at 20", () => {
     mockReadWorkouts.mockReturnValue([]);
     logSet({
-      type: "log_set",
+      name: "log_set",
       input: { exercise_name: "Bench", reps: 10, weight_kg: 80, sets: 100 },
     });
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
-    expect(persisted[0]?.items[0]?.sets.length).toBeLessThanOrEqual(20);
+    expect(persisted[0]!.items[0]!.sets!.length).toBeLessThanOrEqual(20);
   });
 
   it("uses 0kg when weight is absent/negative", () => {
     mockReadWorkouts.mockReturnValue([]);
     logSet({
-      type: "log_set",
+      name: "log_set",
       input: { exercise_name: "Squat", reps: 10, weight_kg: -50, sets: 1 },
     });
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
-    expect(persisted[0]?.items[0]?.sets[0]?.weightKg).toBe(0);
+    expect(persisted[0]!.items[0]!.sets![0]?.weightKg).toBe(0);
   });
 });
 
@@ -164,7 +164,7 @@ describe("startWorkout", () => {
   it("creates a new workout and stores active id", () => {
     mockReadWorkouts.mockReturnValue([]);
     mockReadLS.mockReturnValue(null);
-    const result = startWorkout({ type: "start_workout", input: {} });
+    const result = startWorkout({ name: "start_workout", input: {} });
     expect(typeof result).toBe("string");
     expect(mockPersist).toHaveBeenCalledOnce();
     expect(mockLsSet).toHaveBeenCalled();
@@ -174,7 +174,7 @@ describe("startWorkout", () => {
     const active = makeWorkout({ id: "w_existing", endedAt: null });
     mockReadWorkouts.mockReturnValue([active]);
     mockReadLS.mockReturnValue("w_existing");
-    const result = startWorkout({ type: "start_workout", input: {} });
+    const result = startWorkout({ name: "start_workout", input: {} });
     expect(result).toContain("активне тренування");
     expect(mockPersist).not.toHaveBeenCalled();
   });
@@ -183,7 +183,7 @@ describe("startWorkout", () => {
     mockReadWorkouts.mockReturnValue([]);
     mockReadLS.mockReturnValue(null);
     startWorkout({
-      type: "start_workout",
+      name: "start_workout",
       input: { date: "2026-06-01", time: "18:30" },
     });
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
@@ -193,7 +193,7 @@ describe("startWorkout", () => {
   it("includes note in new workout when provided", () => {
     mockReadWorkouts.mockReturnValue([]);
     mockReadLS.mockReturnValue(null);
-    startWorkout({ type: "start_workout", input: { note: "Chest day" } });
+    startWorkout({ name: "start_workout", input: { note: "Chest day" } });
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
     expect(persisted[0]?.note).toBe("Chest day");
   });
@@ -205,14 +205,14 @@ describe("finishWorkout", () => {
   it("returns error when no active workout exists", () => {
     mockReadWorkouts.mockReturnValue([]);
     mockReadLS.mockReturnValue(null);
-    const result = finishWorkout({ type: "finish_workout", input: {} });
+    const result = finishWorkout({ name: "finish_workout", input: {} });
     expect(result).toContain("Немає активного");
   });
 
   it("returns error when specified workout id not found", () => {
     mockReadWorkouts.mockReturnValue([]);
     const result = finishWorkout({
-      type: "finish_workout",
+      name: "finish_workout",
       input: { workout_id: "nope" },
     });
     expect(result).toContain("не знайдено");
@@ -222,7 +222,7 @@ describe("finishWorkout", () => {
     const w = makeWorkout({ id: "w1", endedAt: null });
     mockReadWorkouts.mockReturnValue([w]);
     mockReadLS.mockReturnValue("w1");
-    const result = finishWorkout({ type: "finish_workout", input: {} });
+    const result = finishWorkout({ name: "finish_workout", input: {} });
     expect(result).toContain("завершено");
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
     expect(persisted[0]?.endedAt).not.toBeNull();
@@ -232,7 +232,7 @@ describe("finishWorkout", () => {
     const w = makeWorkout({ id: "w1", endedAt: "2026-04-20T10:00:00.000Z" });
     mockReadWorkouts.mockReturnValue([w]);
     mockReadLS.mockReturnValue("w1");
-    const result = finishWorkout({ type: "finish_workout", input: {} });
+    const result = finishWorkout({ name: "finish_workout", input: {} });
     expect(result).toContain("вже завершено");
     expect(mockPersist).not.toHaveBeenCalled();
   });
@@ -241,7 +241,7 @@ describe("finishWorkout", () => {
     const w = makeWorkout({ id: "w1", endedAt: null });
     mockReadWorkouts.mockReturnValue([w]);
     mockReadLS.mockReturnValue("w1");
-    finishWorkout({ type: "finish_workout", input: {} });
+    finishWorkout({ name: "finish_workout", input: {} });
     expect(mockRemoveLS).toHaveBeenCalled();
   });
 
@@ -269,7 +269,7 @@ describe("finishWorkout", () => {
     });
     mockReadWorkouts.mockReturnValue([w]);
     mockReadLS.mockReturnValue("w1");
-    const result = finishWorkout({ type: "finish_workout", input: {} });
+    const result = finishWorkout({ name: "finish_workout", input: {} });
     expect(result).toContain("2");
   });
 });
@@ -280,7 +280,7 @@ describe("planWorkout", () => {
   it("creates planned workout with items from exercises array", () => {
     mockReadWorkouts.mockReturnValue([]);
     const result = planWorkout({
-      type: "plan_workout",
+      name: "plan_workout",
       input: {
         date: "2026-05-01",
         time: "07:00",
@@ -290,14 +290,14 @@ describe("planWorkout", () => {
     expect(typeof result).toBe("string");
     expect(mockPersist).toHaveBeenCalledOnce();
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
-    expect(persisted[0]?.planned).toBe(true);
+    expect(persisted[0]?.["planned"]).toBe(true);
     expect(persisted[0]?.items.length).toBe(1);
   });
 
   it("filters exercises without a name", () => {
     mockReadWorkouts.mockReturnValue([]);
     planWorkout({
-      type: "plan_workout",
+      name: "plan_workout",
       input: {
         exercises: [
           { name: "", sets: 2 },
@@ -312,7 +312,7 @@ describe("planWorkout", () => {
 
   it("creates planned workout with 0 items when exercises not provided", () => {
     mockReadWorkouts.mockReturnValue([]);
-    planWorkout({ type: "plan_workout", input: {} });
+    planWorkout({ name: "plan_workout", input: {} });
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
     expect(persisted[0]?.items).toHaveLength(0);
   });
@@ -320,7 +320,7 @@ describe("planWorkout", () => {
   it("falls back to today and 09:00 when date/time absent", () => {
     mockReadWorkouts.mockReturnValue([]);
     mockDayKey.mockReturnValue("2026-04-20");
-    planWorkout({ type: "plan_workout", input: { exercises: [] } });
+    planWorkout({ name: "plan_workout", input: { exercises: [] } });
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
     expect(persisted[0]?.startedAt).toContain("2026-04-20");
   });

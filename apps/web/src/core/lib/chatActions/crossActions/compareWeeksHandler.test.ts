@@ -50,12 +50,26 @@ function defaultMocks() {
   mockGetWeekKey.mockReturnValue("2026-04-20");
   mockFinyk.mockReturnValue({
     totalSpent: 1000,
+    totalIncome: 0,
     txCount: 5,
     topCategories: [],
+    monthlyBudget: null,
   });
-  mockFizruk.mockReturnValue({ workoutsCount: 3, totalVolume: 1500 });
-  mockRoutine.mockReturnValue({ overallRate: 80, habitCount: 4 });
-  mockNutrition.mockReturnValue({ avgKcal: 2000, daysLogged: 7 });
+  mockFizruk.mockReturnValue({
+    workoutsCount: 3,
+    totalVolume: 1500,
+    recoveryLabel: "",
+    topExercises: [],
+  });
+  mockRoutine.mockReturnValue({ overallRate: 80, habitCount: 4, habits: [] });
+  mockNutrition.mockReturnValue({
+    avgKcal: 2000,
+    avgProtein: 0,
+    avgFat: 0,
+    avgCarbs: 0,
+    targetKcal: 0,
+    daysLogged: 7,
+  });
 }
 
 beforeEach(() => {
@@ -67,7 +81,7 @@ describe("compareWeeks", () => {
   it("returns error for invalid week_a label", () => {
     mockWeekLabel.mockReturnValue(null);
     const result = compareWeeks({
-      type: "compare_weeks",
+      name: "compare_weeks",
       input: { week_a: "bad", modules: ["finyk"] },
     });
     expect(result).toContain("Некоректний week_a");
@@ -77,7 +91,7 @@ describe("compareWeeks", () => {
     mockWeekLabel.mockReturnValueOnce("2026-04-20");
     mockWeekLabel.mockReturnValueOnce(null);
     const result = compareWeeks({
-      type: "compare_weeks",
+      name: "compare_weeks",
       input: { week_a: "2026-W17", week_b: "bad", modules: ["finyk"] },
     });
     expect(result).toContain("Некоректний week_b");
@@ -85,14 +99,14 @@ describe("compareWeeks", () => {
 
   it("returns error when no valid modules provided", () => {
     const result = compareWeeks({
-      type: "compare_weeks",
+      name: "compare_weeks",
       input: { modules: ["unknown_module" as "finyk"] },
     });
     expect(result).toContain("жодного валідного модуля");
   });
 
   it("uses all modules by default when modules not specified", () => {
-    const result = compareWeeks({ type: "compare_weeks", input: {} });
+    const result = compareWeeks({ name: "compare_weeks", input: {} });
     expect(result).toContain("Фінік");
     expect(result).toContain("Фізрук");
     expect(result).toContain("Рутина");
@@ -101,7 +115,7 @@ describe("compareWeeks", () => {
 
   it("includes only finyk section when modules=[finyk]", () => {
     const result = compareWeeks({
-      type: "compare_weeks",
+      name: "compare_weeks",
       input: { modules: ["finyk"] },
     });
     expect(result).toContain("Фінік");
@@ -113,7 +127,7 @@ describe("compareWeeks", () => {
   it("shows 'no workouts' message when fizruk aggregates are both null", () => {
     mockFizruk.mockReturnValue(null);
     const result = compareWeeks({
-      type: "compare_weeks",
+      name: "compare_weeks",
       input: { modules: ["fizruk"] },
     });
     expect(result).toContain("Немає тренувань");
@@ -122,7 +136,7 @@ describe("compareWeeks", () => {
   it("shows 'no habits' message when routine aggregates are both null", () => {
     mockRoutine.mockReturnValue(null);
     const result = compareWeeks({
-      type: "compare_weeks",
+      name: "compare_weeks",
       input: { modules: ["routine"] },
     });
     expect(result).toContain("Немає активних звичок");
@@ -131,7 +145,7 @@ describe("compareWeeks", () => {
   it("shows 'no food logs' message when nutrition aggregates are both null", () => {
     mockNutrition.mockReturnValue(null);
     const result = compareWeeks({
-      type: "compare_weeks",
+      name: "compare_weeks",
       input: { modules: ["nutrition"] },
     });
     expect(result).toContain("Немає логів їжі");
@@ -140,7 +154,7 @@ describe("compareWeeks", () => {
   it("formats header with week range labels", () => {
     mockFormatRange.mockImplementation((k: string) => `Week(${k})`);
     const result = compareWeeks({
-      type: "compare_weeks",
+      name: "compare_weeks",
       input: { week_a: "2026-W17", modules: ["finyk"] },
     });
     expect(result).toContain("Week(2026-04-20)");
@@ -149,21 +163,27 @@ describe("compareWeeks", () => {
   it("shows top category when finyk returns one", () => {
     mockFinyk.mockReturnValue({
       totalSpent: 2000,
+      totalIncome: 0,
       txCount: 8,
       topCategories: [{ name: "Їжа", amount: 800 }],
+      monthlyBudget: null,
     });
     mockFinyk.mockReturnValueOnce({
       totalSpent: 2000,
+      totalIncome: 0,
       txCount: 8,
       topCategories: [{ name: "Їжа", amount: 800 }],
+      monthlyBudget: null,
     });
     mockFinyk.mockReturnValueOnce({
       totalSpent: 1500,
+      totalIncome: 0,
       txCount: 5,
       topCategories: [{ name: "Транспорт", amount: 400 }],
+      monthlyBudget: null,
     });
     const result = compareWeeks({
-      type: "compare_weeks",
+      name: "compare_weeks",
       input: { modules: ["finyk"] },
     });
     expect(result).toContain("Топ категорія");
@@ -171,7 +191,7 @@ describe("compareWeeks", () => {
 
   it("uses previous week for bKey when week_b not specified", () => {
     compareWeeks({
-      type: "compare_weeks",
+      name: "compare_weeks",
       input: { week_a: "2026-W17", modules: ["finyk"] },
     });
     expect(mockPrevWeek).toHaveBeenCalledWith("2026-04-20");

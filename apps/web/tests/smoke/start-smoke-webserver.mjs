@@ -5,13 +5,18 @@ import { dirname, resolve } from "node:path";
 const here = dirname(fileURLToPath(import.meta.url));
 const webRoot = resolve(here, "../..");
 const repoRoot = resolve(webRoot, "../..");
-const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const isWindows = process.platform === "win32";
+const pnpm = isWindows ? "pnpm.cmd" : "pnpm";
 
 /** @type {import("node:child_process").ChildProcess[]} */
 const children = [];
 
 function spawnLogged(args, options = {}) {
-  const child = spawn(pnpm, args, {
+  const command = isWindows ? "cmd.exe" : pnpm;
+  const commandArgs = isWindows
+    ? ["/d", "/s", "/c", ["pnpm", ...args].join(" ")]
+    : args;
+  const child = spawn(command, commandArgs, {
     cwd: repoRoot,
     env: process.env,
     stdio: "inherit",
@@ -42,6 +47,61 @@ function runOnce(args) {
   });
 }
 
+function runCapture(command, args) {
+  return new Promise((resolveRun, reject) => {
+    const child = spawn(command, args, {
+      cwd: repoRoot,
+      env: process.env,
+      windowsHide: true,
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout?.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr?.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("exit", (code, signal) => {
+      if (code === 0) {
+        resolveRun(stdout.trim());
+        return;
+      }
+      reject(
+        new Error(
+          `${command} ${args.join(" ")} exited with ${
+            code ?? signal ?? "unknown"
+          }: ${stderr.trim()}`,
+        ),
+      );
+    });
+    child.on("error", reject);
+  });
+}
+
+async function waitForPostgresHealth() {
+  const deadline = Date.now() + 60_000;
+  let lastStatus = "unknown";
+
+  while (Date.now() < deadline) {
+    try {
+      lastStatus = await runCapture("docker", [
+        "inspect",
+        "--format",
+        "{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}",
+        "hub-postgres",
+      ]);
+      if (lastStatus === "healthy") return;
+    } catch (err) {
+      lastStatus = err instanceof Error ? err.message : String(err);
+    }
+
+    await new Promise((resolveWait) => setTimeout(resolveWait, 1_000));
+  }
+
+  throw new Error(`hub-postgres did not become healthy: ${lastStatus}`);
+}
+
 function stopChildren() {
   for (const child of [...children].reverse()) {
     if (!child.killed) child.kill();
@@ -60,6 +120,7 @@ process.on("exit", stopChildren);
 
 try {
   await runOnce(["db:up"]);
+  await waitForPostgresHealth();
   await runOnce(["--filter", "@sergeant/server", "db:migrate:dev"]);
   spawnLogged(["--filter", "@sergeant/server", "dev"]);
   await runOnce(["--filter", "@sergeant/web", "build"]);

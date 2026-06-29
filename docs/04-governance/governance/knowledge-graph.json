@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-26",
+  "generated_at": "2026-06-29",
   "counts": {
     "adr": 64,
-    "audit": 15,
+    "audit": 16,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
@@ -379,7 +379,7 @@
       "type": "adr",
       "title": "ADR-0035: Distributed tracing — web→server via OpenTelemetry",
       "path": "docs/04-governance/adr/0035-distributed-tracing-opentelemetry.md",
-      "status": "superseded — reverted 2026-06-26 (OpenTelemetry видалено; див. banner нижче)",
+      "status": "superseded",
       "tier": "core",
       "meta": {
         "number": 35
@@ -859,6 +859,15 @@
       "title": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)",
       "path": "docs/90-work/audits/2026-08-XX-sync-engine-roast.md",
       "status": "Draft",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:user-story-loop",
+      "type": "audit",
+      "title": "User Story QA Loop",
+      "path": "docs/90-work/audits/user-story-loop.md",
+      "status": "Active",
       "tier": "core",
       "meta": {}
     },

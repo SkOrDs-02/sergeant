@@ -1,6 +1,6 @@
 # ADR-0035: Distributed tracing — web→server via OpenTelemetry
 
-- **Status:** superseded — reverted 2026-06-26 (OpenTelemetry видалено; див. banner нижче)
+- **Status:** superseded
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-05-03 (proposed) / 2026-05-05 (accepted)
 - **Deciders:** @Skords-01

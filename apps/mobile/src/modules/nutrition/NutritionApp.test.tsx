@@ -14,6 +14,10 @@ import { fireEvent, render } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiClientProvider, apiQueryKeys } from "@sergeant/api-client/react";
 import { createApiClient } from "@sergeant/api-client";
+import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
@@ -21,6 +25,19 @@ import { _getMMKVInstance } from "@/lib/storage";
 import { ToastProvider } from "@/components/ui/Toast";
 
 import { NutritionApp } from "./NutritionApp";
+
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.error,
+  strict: false,
+});
+
+jest.mock("./hooks/useNutritionDualWriteBoot", () => ({
+  useNutritionDualWriteBoot: jest.fn(),
+}));
+
+jest.mock("./hooks/useNutritionSqliteReadBoot", () => ({
+  useNutritionSqliteReadBoot: jest.fn(),
+}));
 
 // `NutritionApp` mounts `useNutritionDualWriteBoot` (and the Dashboard
 // page mounts more `useUser`-backed hooks). All of them go through

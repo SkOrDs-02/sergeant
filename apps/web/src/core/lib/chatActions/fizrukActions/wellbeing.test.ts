@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { logWellbeing } from "./wellbeing";
+import type { LogWellbeingAction } from "../types.fizruk";
 
 vi.mock("../../../profile/biometrics", () => ({
   mirrorWeightToBiometrics: vi.fn(),
@@ -10,7 +11,7 @@ vi.mock("./shared", () => ({
 }));
 
 function makeAction(input: Record<string, unknown>) {
-  return { type: "log_wellbeing" as const, input };
+  return { name: "log_wellbeing", input } as LogWellbeingAction;
 }
 
 describe("logWellbeing", () => {

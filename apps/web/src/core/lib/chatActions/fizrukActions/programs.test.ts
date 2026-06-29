@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { addProgramDay } from "./programs";
+import type { AddProgramDayAction } from "../types.fizruk";
 
 const mockLsData: Record<string, unknown> = {};
 vi.mock("../../hubChatUtils", () => ({
@@ -11,9 +12,9 @@ vi.mock("../../hubChatUtils", () => ({
 
 function makeAction(weekday: unknown, name: unknown, exercises?: unknown) {
   return {
-    type: "add_program_day" as const,
+    name: "add_program_day",
     input: { weekday, name, exercises },
-  };
+  } as AddProgramDayAction;
 }
 
 describe("addProgramDay", () => {
