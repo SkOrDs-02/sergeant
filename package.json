@@ -146,7 +146,11 @@
     "eval:rag:weekly": "node scripts/rag-eval-weekly.mjs",
     "eval:rag:test": "node --test scripts/__tests__/eval-rag-recall.test.mjs scripts/__tests__/rag-eval-weekly.test.mjs",
     "eval:skills": "node scripts/eval-skill-triggers.mjs",
-    "eval:skills:test": "node --test scripts/__tests__/eval-skill-triggers.test.mjs"
+    "eval:skills:test": "node --test scripts/__tests__/eval-skill-triggers.test.mjs",
+    "janitors:doc-drift": "pnpm --filter @sergeant/entropy-janitors doc-drift",
+    "janitors:dead-code": "pnpm --filter @sergeant/entropy-janitors dead-code",
+    "janitors:dep-cycles": "pnpm --filter @sergeant/entropy-janitors dep-cycles",
+    "janitors:all": "pnpm run janitors:doc-drift && pnpm run janitors:dead-code && pnpm run janitors:dep-cycles"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",

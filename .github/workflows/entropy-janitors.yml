@@ -1,0 +1,51 @@
+name: Entropy Janitors
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mon 06:00 UTC = 09:00 Europe/Kyiv
+  workflow_dispatch: # manual debug
+
+permissions:
+  contents: read
+  issues: write # create issues
+
+jobs:
+  janitors:
+    name: Scheduled entropy janitors
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      JANITORS_OUT_DIR: dist/entropy-janitors
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run doc-drift
+        run: pnpm --filter @sergeant/entropy-janitors doc-drift --root "$GITHUB_WORKSPACE" --out-dir "$JANITORS_OUT_DIR"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run dead-code
+        run: pnpm --filter @sergeant/entropy-janitors dead-code --root "$GITHUB_WORKSPACE" --out-dir "$JANITORS_OUT_DIR"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run dep-cycles
+        run: pnpm --filter @sergeant/entropy-janitors dep-cycles --root "$GITHUB_WORKSPACE" --out-dir "$JANITORS_OUT_DIR"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entropy-janitor-reports
+          path: ${{ env.JANITORS_OUT_DIR }}
+          if-no-files-found: ignore
+          retention-days: 30
