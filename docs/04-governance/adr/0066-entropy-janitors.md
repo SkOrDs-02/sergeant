@@ -107,3 +107,15 @@ Ship three independent janitors as a single workspace package
   sessions can preload context about open entropy issues.
 - Consider promoting `dep-cycles` to a hard-rule lint check once the
   hand-rolled resolver has a track record.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                           | Merged  |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------- | ------- |
+| [#4521](https://github.com/Skords-01/Sergeant/pull/4521) | feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) | PENDING |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

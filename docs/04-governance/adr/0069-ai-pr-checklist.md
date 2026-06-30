@@ -1,6 +1,6 @@
 # ADR-0069: AI-PR Checklist and validation workflow
 
-> **Last touched:** 2026-06-29 by @Kilo-session. **Next review:** 2026-09-27.
+> **Last touched:** 2026-06-30 by @github-actions[bot]. **Next review:** 2026-09-28.
 > **Status:** Proposed
 
 - **Status:** Proposed
@@ -179,3 +179,15 @@ GitHub-ом і ставляться автоматично.
 - **Чи варто додати окремий label `ai-pr/incomplete`?** Поки що
   workflow тільки fail-ить check — це дає автору можливість самому
   виправити PR body без публічного shaming-label.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                   | Title                                                            | Merged     |
+| ---------------------------------------------------- | ---------------------------------------------------------------- | ---------- |
+| [#84](https://github.com/Skords-01/Sergeant/pull/84) | fix(ci): apply Prettier formatting to close CI format:check gate | 2026-06-30 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
