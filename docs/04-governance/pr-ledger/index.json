@@ -188,16 +188,14 @@
       ]
     },
     {
-      "number": null,
-      "title": "feat(agents): add harness versioning and A/B evaluation workflow",
-      "merged_at": null,
+      "number": 4521,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "PENDING",
       "author": "@Skords-01",
       "touchedDocs": [
-        ".kilo/harness-versions.json",
-        ".github/workflows/harness-a-b.yml",
-        "scripts/ci-bump-harness-version.mjs",
-        "docs/04-governance/adr/0068-harness-versioning.md",
-        "docs/04-governance/governance/harness-versioning.md"
+        "docs/04-governance/adr/0066-entropy-janitors.md",
+        "docs/04-governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     }
   ]

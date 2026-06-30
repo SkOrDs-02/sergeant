@@ -1,0 +1,23 @@
+{
+  "name": "@sergeant/entropy-janitors",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "entropy-janitors": "./dist/index.js"
+  },
+  "scripts": {
+    "doc-drift": "tsx src/doc-drift/index.ts",
+    "dead-code": "tsx src/dead-code/index.ts",
+    "dep-cycles": "tsx src/dep-cycles/index.ts",
+    "all": "tsx src/doc-drift/index.ts && tsx src/dead-code/index.ts && tsx src/dep-cycles/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test --import tsx src/__tests__/**/*.test.ts"
+  },
+  "devDependencies": {
+    "knip": "*",
+    "tsx": "*",
+    "typescript": "*"
+  }
+}
