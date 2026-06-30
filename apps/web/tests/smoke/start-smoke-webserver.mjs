@@ -7,6 +7,8 @@ const webRoot = resolve(here, "../..");
 const repoRoot = resolve(webRoot, "../..");
 const isWindows = process.platform === "win32";
 const pnpm = isWindows ? "pnpm.cmd" : "pnpm";
+const POSTGRES_HEALTH_TIMEOUT_MS = 60_000;
+const API_HEALTH_TIMEOUT_MS = 180_000;
 
 /** @type {import("node:child_process").ChildProcess[]} */
 const children = [];
@@ -80,7 +82,7 @@ function runCapture(command, args) {
 }
 
 async function waitForPostgresHealth() {
-  const deadline = Date.now() + 60_000;
+  const deadline = Date.now() + POSTGRES_HEALTH_TIMEOUT_MS;
   let lastStatus = "unknown";
 
   while (Date.now() < deadline) {
@@ -102,8 +104,13 @@ async function waitForPostgresHealth() {
   throw new Error(`hub-postgres did not become healthy: ${lastStatus}`);
 }
 
-async function waitForHttp(url, label, child) {
-  const deadline = Date.now() + 60_000;
+async function waitForHttp(
+  url,
+  label,
+  child,
+  timeoutMs = API_HEALTH_TIMEOUT_MS,
+) {
+  const deadline = Date.now() + timeoutMs;
   let lastStatus = "unknown";
 
   while (Date.now() < deadline) {
