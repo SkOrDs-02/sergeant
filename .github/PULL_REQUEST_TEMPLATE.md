@@ -30,6 +30,25 @@ Additional checks:
 - [ ] Local smoke / manual validation completed
 - [ ] Surface-specific checks completed
 
+## AI-Generation Signals
+
+If this PR was authored or substantially co-authored by an AI agent
+(Claude Code, Kilo Code, Codex, Cursor, Devin, or similar), tick all that apply.
+A guard workflow (`.github/workflows/ai-pr-checklist.yml`) auto-detects these
+signals via `Co-authored-by:` trailers / `Generated with` markers and enforces
+this section — see [`docs/04-governance/governance/ai-pr-checklist.md`](../docs/04-governance/governance/ai-pr-checklist.md).
+
+- [ ] No unnecessary abstraction was added — new code follows existing patterns in this surface
+- [ ] No defensive `try/catch` around internal-only calls (Hard Rule "no error handling for impossible scenarios")
+- [ ] No duplicate helpers — searched for similar functions in `@shared/*`, `@finyk/*`, etc.
+- [ ] Documentation referenced in code (`AGENTS.md`, skills, hard rules) is up to date with this change
+- [ ] AI markers (`AI-NOTE` / `AI-CONTEXT` / `AI-DANGER`) are placed where future agents need hints
+- [ ] No new `AI-LEGACY` marker added (or, if added, expiry date is ≤ 90 days from today and tracked in the PR description)
+
+If this PR is human-only and has no AI involvement, write exactly:
+`N/A — human-authored`
+The guard workflow bypasses checklist enforcement in that case.
+
 ## Docs and Governance
 
 - [ ] I updated docs that changed with the behavior, contract, workflow, or rollout.
