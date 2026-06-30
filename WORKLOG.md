@@ -15,7 +15,7 @@
 - [x] AC-7: `pnpm check` partial — own files green, repo-wide pre-existing failures on out-of-scope files (documented in Verification runs)
 - [x] AC-8: `pnpm lint:hard-rules-registry` green
 - [x] AC-9: `pnpm lint:codeowners` green
-- [ ] AC-10: Draft PR created (NOT merged)
+- [x] AC-10: Draft PR created (NOT merged) → https://github.com/SkOrDs-02/sergeant/pull/79
 
 ## Decisions log
 - 2026-06-30 16:36 — Confirmed all 4 PRs (#72-#75) merged in origin/main after user re-check.
