@@ -86,6 +86,9 @@ export const baselineIgnores = {
     // They reference `React` as a CDN global, use catch-param stubs, and are
     // never bundled — linting them produces only false positives.
     "mockups/_shared/components/**",
+    // Agent Manager worktrees — not part of the committed codebase;
+    // prevents lint from hanging on large generated trees.
+    ".kilo/worktrees/**",
   ],
 };
 

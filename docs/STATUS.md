@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last validated:** 2026-06-28 by docs:gen-status. **Next review:** 2026-06-28.
+> **Last validated:** 2026-06-30 by docs:gen-status. **Next review:** 2026-06-30.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -19,6 +19,7 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
 
+- [#4521](https://github.com/Skords-01/Sergeant/pull/4521) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(PENDING)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 - [#3638](https://github.com/Skords-01/Sergeant/pull/3638) — Audit triage digest (auto, twice-weekly) _(2026-06-19)_
 - [#3649](https://github.com/Skords-01/Sergeant/pull/3649) — chore(root): fizruk a11y/UX tidy + reconcile stale tracked-task docs _(2026-06-19)_
@@ -28,16 +29,15 @@
 - [#3577](https://github.com/Skords-01/Sergeant/pull/3577) — fix(docs): heal CI-on-main drift — pr-ledger JSON, archived links, regen generated docs _(2026-06-14)_
 - [#3573](https://github.com/Skords-01/Sergeant/pull/3573) — docs(agents): archive initiative 0018 (agent:find, code-complete) _(2026-06-14)_
 - [#3567](https://github.com/Skords-01/Sergeant/pull/3567) — docs(agents): record 0018 semantic measurement + drop orphan 0019 README row _(2026-06-14)_
-- [#3560](https://github.com/Skords-01/Sergeant/pull/3560) — fix: heal governance/format drift + dualWrite logger lint debt _(2026-06-14)_
 
-## 🔵 В роботі — 57 відкритих
+## 🔵 В роботі — 63 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 16       |
-| Планування                       | 9        |
+| Планування                       | 10       |
 | Launch / запуск                  | 16       |
-| Аудити й прожарки                | 10       |
+| Аудити й прожарки                | 15       |
 | Security hardening               | 2        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |
@@ -46,12 +46,12 @@
 
 - [`90-work/initiatives/hardening-matrix.md`](./90-work/initiatives/hardening-matrix.md) — Зведена матриця hardening-карток — Active _(Ініціативи)_
 - [`90-work/initiatives/0006-frontend-routing-and-code-split.md`](./90-work/initiatives/0006-frontend-routing-and-code-split.md) — 0006 — Frontend routing migration + route-based code-split — In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShel _(Ініціативи)_
+- [`90-work/planning/harness-engineering-v1.md`](./90-work/planning/harness-engineering-v1.md) — Harness Engineering v1 — Rollout Summary — Active _(Планування)_
 - [`90-work/initiatives/0021-react-hooks-v7-cleanup.md`](./90-work/initiatives/0021-react-hooks-v7-cleanup.md) — 0021 — React-hooks v7 ESLint cleanup — In progress _(Ініціативи)_
 - [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
 - [`90-work/audits/2026-06-11-fable5-independent-audit.md`](./90-work/audits/2026-06-11-fable5-independent-audit.md) — Independent Audit — Sergeant — 2026-06-11 — Active _(Аудити й прожарки)_
 - [`90-work/audits/2026-06-08-codebase-cleanup-audit.md`](./90-work/audits/2026-06-08-codebase-cleanup-audit.md) — Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф — Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Resi _(Аудити й прожарки)_
 - [`90-work/planning/pr-plan-testing-devx-2026-05.md`](./90-work/planning/pr-plan-testing-devx-2026-05.md) — PR-план Testing & DevX 2026-05 — зі зрізу 2026-05-13 — Active _(Планування)_
-- [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
 
 ## ⏭️ Наступний крок / заблоковано
 
