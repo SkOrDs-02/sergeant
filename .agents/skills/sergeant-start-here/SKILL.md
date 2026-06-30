@@ -33,7 +33,7 @@ Read `.kilocode/snapshot.md` and react:
 - Open entropy-janitor issues mentioning the touched surface → load `sergeant-tech-debt`.
 - Hard-rule drift warnings or upcoming TODO deadlines (≤30d) → re-read the named rule / initiative file before acting.
 
-The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections that need GitHub). Cache TTL is 15 min; force-refresh via `pnpm snapshot --refresh`. See ADR-0067 for layout and rationale.
+The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections that need GitHub). Cache TTL is 15 min; force-refresh via `pnpm snapshot --refresh`. See ADR-0067 for layout and rationale, and [docs/04-governance/governance/snapshot.md](../../../docs/04-governance/governance/snapshot.md) for the full §0.1 contract (incl. interaction with `codebase-memory-mcp` for code-structure questions).
 
 ## Не-узгоджувані правила
 
