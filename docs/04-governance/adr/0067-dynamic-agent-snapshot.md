@@ -114,3 +114,15 @@ gets the static sections.
 ## Links
 
 - Source plan: `E:\Temp\kilo\harness-plan.md` §2 (Dynamic Snapshot)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                 | Title                                                                                                                | Merged     |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#0](https://github.com/Skords-01/Sergeant/pull/0) | feat(tools): add dynamic agent snapshot for harness context (placeholder — replaced by update-pr-backlinks on merge) | 2026-06-29 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
