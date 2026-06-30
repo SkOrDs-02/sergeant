@@ -123,6 +123,29 @@ describe("usePullToRefresh", () => {
     expect(result.current.pullDistance).toBe(0);
   });
 
+  it("resets without refreshing when the browser cancels the gesture", async () => {
+    // Real devices fire `touchcancel` (not `touchend`) when their own
+    // overscroll / native pull-to-refresh takes the gesture over. Before
+    // the handler existed the state stayed frozen mid-pull and the
+    // indicator hung forever.
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+    const { result } = setup({ onRefresh, pullThreshold: 80 });
+    act(() => el.dispatchEvent(makeTouchEvent("touchstart", 100)));
+    act(() => el.dispatchEvent(makeTouchEvent("touchmove", 220)));
+    expect(result.current.canRefresh).toBe(true);
+    await act(async () => {
+      el.dispatchEvent(new Event("touchcancel"));
+    });
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(result.current).toEqual({
+      isPulling: false,
+      isRefreshing: false,
+      pullDistance: 0,
+      pullProgress: 0,
+      canRefresh: false,
+    });
+  });
+
   it("ignores the gesture when not at the top of the scroll container", () => {
     setScrollTop(el, 50);
     const { result } = setup();

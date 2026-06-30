@@ -123,7 +123,14 @@ export function PullToRefresh({
       <PullToRefreshIndicator state={state} variant={variant} />
       <div
         ref={setScrollEl}
-        className={cn("flex-1 overflow-y-auto min-h-0", contentClassName)}
+        // `overscroll-y-contain` stops the browser's own overscroll gesture
+        // (iOS rubber-band, Chrome/PWA native pull-to-refresh) from kicking
+        // in at scrollTop 0 and hijacking the pull — which fires a
+        // `touchcancel` and used to leave the custom indicator stuck.
+        className={cn(
+          "flex-1 overflow-y-auto min-h-0 overscroll-y-contain",
+          contentClassName,
+        )}
       >
         {children}
       </div>

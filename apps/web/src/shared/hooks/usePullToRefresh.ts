@@ -83,8 +83,9 @@ export function usePullToRefresh(
       if (!scrollElement) return;
 
       // Only activate if at top of scroll
-      if (scrollElement.scrollTop <= 0) {
-        touchStartY.current = e.touches[0]!.clientY;
+      const touch = e.touches[0];
+      if (touch && scrollElement.scrollTop <= 0) {
+        touchStartY.current = touch.clientY;
         touchStartScrollTop.current = scrollElement.scrollTop;
       }
     },
@@ -99,7 +100,9 @@ export function usePullToRefresh(
       const scrollElement = scrollRef.current;
       if (!scrollElement) return;
 
-      const currentY = e.touches[0]!.clientY;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const currentY = touch.clientY;
       const deltaY = currentY - touchStartY.current;
 
       // Only handle pull-down when at top
@@ -138,6 +141,25 @@ export function usePullToRefresh(
       resistance,
     ],
   );
+
+  // Cancel resets the gesture WITHOUT refreshing. Browsers fire
+  // `touchcancel` (not `touchend`) whenever they take the touch sequence
+  // over for their own scrolling — iOS rubber-band overscroll, Chrome
+  // Android's native pull-to-refresh, the PWA shell. Without this handler
+  // the state stayed frozen on its last `touchmove` value, so the spinner
+  // hung mid-pull forever and never refreshed (it only ever reset on a
+  // clean `touchend`, which a cancelled gesture never delivers).
+  const handleTouchCancel = useCallback(() => {
+    if (touchStartY.current === null) return;
+    touchStartY.current = null;
+    setState({
+      isPulling: false,
+      isRefreshing: false,
+      pullDistance: 0,
+      pullProgress: 0,
+      canRefresh: false,
+    });
+  }, []);
 
   const handleTouchEnd = useCallback(async () => {
     if (!enabled || touchStartY.current === null) return;
@@ -200,13 +222,24 @@ export function usePullToRefresh(
     scrollElement.addEventListener("touchend", handleTouchEnd, {
       passive: true,
     });
+    scrollElement.addEventListener("touchcancel", handleTouchCancel, {
+      passive: true,
+    });
 
     return () => {
       scrollElement.removeEventListener("touchstart", handleTouchStart);
       scrollElement.removeEventListener("touchmove", handleTouchMove);
       scrollElement.removeEventListener("touchend", handleTouchEnd);
+      scrollElement.removeEventListener("touchcancel", handleTouchCancel);
     };
-  }, [scrollRef, enabled, handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, [
+    scrollRef,
+    enabled,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    handleTouchCancel,
+  ]);
 
   return state;
 }
