@@ -186,6 +186,19 @@
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
       ]
+    },
+    {
+      "number": null,
+      "title": "feat(agents): add harness versioning and A/B evaluation workflow",
+      "merged_at": null,
+      "author": "@Skords-01",
+      "touchedDocs": [
+        ".kilo/harness-versions.json",
+        ".github/workflows/harness-a-b.yml",
+        "scripts/ci-bump-harness-version.mjs",
+        "docs/04-governance/adr/0068-harness-versioning.md",
+        "docs/04-governance/governance/harness-versioning.md"
+      ]
     }
   ]
 }
