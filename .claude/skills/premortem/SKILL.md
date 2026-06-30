@@ -106,7 +106,7 @@ Take every failure reason from step 2 and spawn one sub-agent per reason, all in
 
 **Sub-agent prompt template:**
 
-```
+```text
 You are an investigator in a premortem analysis. You've been assigned one specific failure reason to analyze in depth.
 
 The plan:
@@ -177,7 +177,7 @@ Save the full premortem transcript as `premortem-transcript-[timestamp].md` in t
 
 Every premortem session produces two files:
 
-```
+```text
 premortem-report-[timestamp].html    # visual report for scanning
 premortem-transcript-[timestamp].md  # full transcript for reference
 ```
@@ -188,7 +188,7 @@ Also provide a concise summary in the chat: the most likely failure, the hidden 
 
 ---
 
-## example: premortming a product launch
+## example: premortem for a product launch
 
 **User:** "premortem this: I'm about to launch a $297 live workshop on how to use Claude Cowork for marketing teams. 50 seats. Targeting marketing managers at companies with 10-50 employees."
 
