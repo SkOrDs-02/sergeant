@@ -224,3 +224,13 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 - [`docs/04-governance/governance/freshness-dashboard.html`](docs/04-governance/governance/freshness-dashboard.html) — generated `Last validated` / `Next review` dashboard for tracked docs.
 - [`docs/04-governance/security/audit-exceptions.md`](docs/04-governance/security/audit-exceptions.md) — tracked vulnerabilities with no available fix.
 - [`docs/90-work/tech-debt/frontend.md`](docs/90-work/tech-debt/frontend.md), [`docs/90-work/tech-debt/backend.md`](docs/90-work/tech-debt/backend.md).
+
+## Harness version
+
+The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-plugin-sergeant-design`, pre-commit hooks, `.kilocode/snapshot.md`) is versioned in [`.kilo/harness-versions.json`](.kilo/harness-versions.json). Follow [the governance doc](docs/04-governance/governance/harness-versioning.md) for bump rules and the [ADR-0068](docs/04-governance/adr/0068-harness-versioning.md) for rationale.
+
+- **Schema:** `schemaVersion: 1` (bump on backward-incompatible layout changes).
+- **Current:** see `current` field in `.kilo/harness-versions.json`.
+- **A/B experiments:** tracked under `abExperiments` (empty until a treatment is added).
+- **How to bump:** run `node scripts/ci-bump-harness-version.mjs` locally before opening a PR that touches AGENTS.md, a skill, a Hard Rule, or an ESLint design rule; the script auto-detects `patch` / `minor` / `major` from the diff and updates the file in place.
+- **Cross-read:** on session start, if `current` differs from the version noted in the previous session summary, re-read the linked governance doc and the latest `versions.<x.y.z>.changes` entry.

@@ -188,11 +188,17 @@
       ]
     },
     {
-      "number": 0,
-      "title": "feat(tools): add dynamic agent snapshot for harness context (placeholder — replaced by update-pr-backlinks on merge)",
-      "merged_at": "2026-06-29T20:55:00Z",
+      "number": null,
+      "title": "feat(agents): add harness versioning and A/B evaluation workflow",
+      "merged_at": null,
       "author": "@Skords-01",
-      "touchedDocs": ["docs/04-governance/adr/0067-dynamic-agent-snapshot.md"]
+      "touchedDocs": [
+        ".kilo/harness-versions.json",
+        ".github/workflows/harness-a-b.yml",
+        "scripts/ci-bump-harness-version.mjs",
+        "docs/04-governance/adr/0068-harness-versioning.md",
+        "docs/04-governance/governance/harness-versioning.md"
+      ]
     }
   ]
 }
