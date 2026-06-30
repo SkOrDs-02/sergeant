@@ -5,7 +5,7 @@ name: Storybook deploy
 #
 # Builds the @sergeant/web Storybook on every push to `main` and publishes
 # the static output to GitHub Pages so reviewers + designers always have a
-# canonical playground at https://skords-01.github.io/Sergeant/.
+# canonical playground at https://skords-02.github.io/sergeant/.
 #
 # PR builds run the same `pnpm build-storybook` step (no deploy) — that
 # way a broken story is caught at PR time, not after merge. PR builds
@@ -14,7 +14,7 @@ name: Storybook deploy
 #
 # Repo prerequisite: GitHub Pages must be enabled (Settings → Pages →
 # Source = "GitHub Actions") for the deploy job to succeed. The first
-# successful run will provision `https://skords-01.github.io/Sergeant/`.
+# successful run will provision `https://skords-02.github.io/sergeant/`.
 #
 # Triage: if the deploy fails, the GitHub Pages site keeps the previous
 # build. False-positive runs → close the auto-issue with a comment;
