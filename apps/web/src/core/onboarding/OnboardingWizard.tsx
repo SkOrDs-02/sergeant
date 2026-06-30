@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { shouldShowOnboarding as sharedShouldShowOnboarding } from "./onboardingGate";
 import { WelcomeOneScreen } from "./WelcomeOneScreen";
 import { GoalFirstScreen } from "./GoalFirstScreen";
@@ -232,7 +233,18 @@ export function OnboardingWizard({
   //   - коли overflow — зовнішній шар прокручується, відкриваючи і
   //     верх (логотип), і низ (CTA + «Згорнути»). `overscroll-contain`
   //     гасить body-bounce на iOS.
-  return (
+  //
+  // 2026-06-30 — modal-варіант порталиться у `document.body`. Tour-replay
+  // (Settings → «Екскурсія») рендериться всередині `SettingsGroup`, а та —
+  // `Card prominence="glass"` із `backdrop-blur-md` + `overflow-hidden`.
+  // `backdrop-filter` робить картку containing-block-ом для `position:fixed`
+  // нащадків (CSS spec), тож `fixed inset-0` бекдроп замикався в межах
+  // glass-картки і обрізався `overflow-hidden` — модалка відкривалась
+  // маленьким заблюреним віконцем усередині налаштувань (user report
+  // 2026-06-30). Портал у body виводить overlay з-під трансформованого/
+  // backdrop-filter предка — той самий патерн, що `Modal`/`ConfirmDialog`/
+  // `CommandPalette` уже використовують.
+  const overlay = (
     <div
       className="fixed inset-0 z-500 overflow-y-auto overscroll-contain"
       role="dialog"
@@ -253,4 +265,8 @@ export function OnboardingWizard({
       </div>
     </div>
   );
+
+  return typeof document === "undefined"
+    ? overlay
+    : createPortal(overlay, document.body);
 }

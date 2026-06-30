@@ -308,7 +308,7 @@
 - [detect-libc@1.0.3](https://github.com/lovell/detect-libc#readme) - Apache-2.0
 - [detect-libc@2.1.2](https://github.com/lovell/detect-libc#readme) - Apache-2.0
 - [dir-glob@3.0.1](https://github.com/kevva/dir-glob#readme) - MIT
-- [dompurify@3.4.2](https://github.com/cure53/DOMPurify) - (MPL-2.0 OR Apache-2.0)
+- [dompurify@3.4.11](https://github.com/cure53/DOMPurify) - (MPL-2.0 OR Apache-2.0)
 - [dotenv@16.4.7](https://github.com/motdotla/dotenv#readme) - BSD-2-Clause
 - [dotenv@16.6.1](https://github.com/motdotla/dotenv#readme) - BSD-2-Clause
 - [dotenv-expand@11.0.7](https://github.com/motdotla/dotenv-expand#readme) - BSD-2-Clause
@@ -476,8 +476,8 @@
 - [jose@6.2.3](https://github.com/panva/jose) - MIT
 - [js-tokens@10.0.0](https://github.com/lydell/js-tokens#readme) - MIT
 - [js-tokens@4.0.0](https://github.com/lydell/js-tokens#readme) - MIT
-- [js-yaml@3.14.2](https://github.com/nodeca/js-yaml#readme) - MIT
-- [js-yaml@4.1.1](https://github.com/nodeca/js-yaml#readme) - MIT
+- [js-yaml@3.15.0](https://github.com/nodeca/js-yaml#readme) - MIT
+- [js-yaml@4.2.0](https://github.com/nodeca/js-yaml#readme) - MIT
 - [jsc-safe-url@0.2.4](https://github.com/robhogan/jsc-safe-url#readme) - 0BSD
 - [jscodeshift@0.14.0](https://github.com/facebook/jscodeshift#readme) - MIT
 - [jsdom@29.1.1](https://github.com/jsdom/jsdom#readme) - MIT
@@ -676,7 +676,7 @@
 - [pump@3.0.4](https://github.com/mafintosh/pump#readme) - MIT
 - [punycode@2.3.1](https://mths.be/punycode) - MIT
 - [qrcode-terminal@0.11.0](https://github.com/gtanner/qrcode-terminal) - Apache 2.0
-- [qs@6.15.1](https://github.com/ljharb/qs) - BSD-3-Clause
+- [qs@6.15.2](https://github.com/ljharb/qs) - BSD-3-Clause
 - [query-selector-shadow-dom@1.0.1](https://github.com/webdriverio/query-selector-shadow-dom#readme) - MIT
 - [queue@6.0.2](https://github.com/jessetane/queue#readme) - MIT
 - [queue-microtask@1.2.3](https://github.com/feross/queue-microtask) - MIT
