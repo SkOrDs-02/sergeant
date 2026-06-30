@@ -6,6 +6,7 @@
 > Source plan: E:\Temp\kilo\harness-plan.md §5.5
 
 ## Acceptance criteria checklist
+
 - [x] AC-1: All 4 upstream PR verified merged in origin/main (#72, #73, #74, #75)
 - [x] AC-2: WORKLOG.md created first
 - [x] AC-3: All 4 ADRs cross-read (0066, 0067, 0068, 0069)
@@ -18,14 +19,17 @@
 - [x] AC-10: Draft PR created (NOT merged) → https://github.com/SkOrDs-02/sergeant/pull/79
 
 ## Decisions log
+
 - 2026-06-30 16:36 — Confirmed all 4 PRs (#72-#75) merged in origin/main after user re-check.
 - 2026-06-30 16:40 — `git worktree add` based on local main; manually `git reset --hard origin/main` to capture the merge commits (local trunk was stale).
 - 2026-06-30 16:42 — `pnpm install --frozen-lockfile` failed (lockfile drift from entropy-janitors merge); running plain `pnpm install`.
 
 ## Blockers / open questions
+
 - (none)
 
 ## Sub-tasks status
+
 - [x] 16:36 — re-fetch origin, verify all 4 PR merged
 - [x] 16:40 — create worktree D:\sergeant-wt\harness-v1-summary, branch devin/1782826662-harness-v1-summary
 - [x] 16:41 — reset worktree to origin/main
@@ -41,6 +45,7 @@
 - [ ] commit, push, open draft PR
 
 ## Verification runs
+
 - ✅ `pnpm lint:hard-rules-registry` — green (26 rules in sync)
 - ✅ `pnpm lint:codeowners` — green (35 paths covered)
 - ✅ `pnpm --filter @sergeant/entropy-janitors typecheck` — green
@@ -60,6 +65,7 @@
   `packages/openclaw-plugin/`, unrelated to harness-engineering work).
 
 ## Handoff notes (for review session)
+
 - 4 upstream PRs in scope:
   - #72 — feat(agents): add AI-PR checklist and validation workflow
   - #73 — feat(agents): add dynamic agent snapshot for harness context

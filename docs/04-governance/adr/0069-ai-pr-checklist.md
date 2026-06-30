@@ -9,9 +9,9 @@
 - **Supersedes:** —
 - **Related:**
   - [`docs/04-governance/governance/ai-pr-checklist.md`](../governance/ai-pr-checklist.md) — user-facing doc
-  - `.github/PULL_REQUEST_TEMPLATE.md` § *AI-Generation Signals* — checklist section
+  - `.github/PULL_REQUEST_TEMPLATE.md` § _AI-Generation Signals_ — checklist section
   - `.github/workflows/ai-pr-checklist.yml` — guard workflow
-  - `AGENTS.md` § *AI markers* — AI-NOTE / AI-CONTEXT / AI-DANGER convention
+  - `AGENTS.md` § _AI markers_ — AI-NOTE / AI-CONTEXT / AI-DANGER convention
   - Source plan: `E:\Temp\kilo\harness-plan.md` §4 (NxCode "Harness-инженерия")
   - PR template spec: `.github/PULL_REQUEST_TEMPLATE.md` § "Verification gate"
   - Hard Rule #15 (read governance before coding)
@@ -38,6 +38,7 @@ AI-генерований код має інші патерни помилок, 
 **розрізняти**.
 
 Станом на сьогодні:
+
 - AI markers (`AI-NOTE` / `AI-CONTEXT` / `AI-DANGER` / `AI-LEGACY`)
   enforced by `eslint-plugin-sergeant-design/ai-marker-syntax`.
 - `AGENTS.md` описує marker convention, але **не** перевіряє їх наявність.
@@ -104,7 +105,7 @@ reopened]` + має `workflow_dispatch` для ручного debug.
 ### Neutral
 
 - **Workflow permissions:** тільки `pull-requests: read` + `contents:
-  read`. Не пише в PR, не ставить labels, не залишає коментарі —
+read`. Не пише в PR, не ставить labels, не залишає коментарі —
   мінімальний scope за принципом «Trust internal code».
 - **Без **`size/override`** style exception.** Maintainer може
   bypass-ити через `ai-pr/override` label, але workflow його

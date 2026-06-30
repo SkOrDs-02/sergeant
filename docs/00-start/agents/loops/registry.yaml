@@ -19,7 +19,8 @@ loops:
     name: PR Review Babysitter
     file: LOOP.md#pr-review
     owner_skill: sergeant-review-and-merge
-    related_skills: [sergeant-review-squad, sergeant-server-api, sergeant-security-audit]
+    related_skills:
+      [sergeant-review-squad, sergeant-server-api, sergeant-security-audit]
     goal: React to open PRs with safety review, contract checks, docs freshness, commit scope
     cadence: 5m-15m
     risk: medium
@@ -44,7 +45,8 @@ loops:
     name: Tech-Debt Sweeper
     file: LOOP.md#tech-debt-sweep
     owner_skill: sergeant-tech-debt
-    related_skills: [sergeant-server-api, sergeant-web-ui, sergeant-review-and-merge]
+    related_skills:
+      [sergeant-server-api, sergeant-web-ui, sergeant-review-and-merge]
     goal: Discover dead code, Knip findings, ESLint baseline drift, module-size violations
     cadence: 6h-1d
     risk: low
@@ -69,7 +71,8 @@ loops:
     name: Security Audit Sweeper
     file: LOOP.md#security-audit
     owner_skill: sergeant-security-audit
-    related_skills: [sergeant-openclaw, sergeant-server-api, better-auth-best-practices]
+    related_skills:
+      [sergeant-openclaw, sergeant-server-api, better-auth-best-practices]
     goal: pnpm audit, secret scan, Pino redaction check, Drizzle SQL injection review, CVE triage
     cadence: 1d
     risk: medium
@@ -77,7 +80,8 @@ loops:
     skills: [sergeant-security-audit]
     state: null
     phases: [scan, triage-risk, patch-safe, verify-worktree, escalate-risky]
-    human_gates: [high-sev-cve, denylisted-packages, auth-cookie-changes, prod-pat]
+    human_gates:
+      [high-sev-cve, denylisted-packages, auth-cookie-changes, prod-pat]
     hard_rules_ref: ["#20", "#21", "#22"]
     starter: null
     week_one_mode: L1
@@ -169,7 +173,8 @@ loops:
     name: PR Review Squad (Parallel)
     file: LOOP.md#review-squad-parallel
     owner_skill: sergeant-review-squad
-    related_skills: [sergeant-review-and-merge, sergeant-security-audit, sergeant-tech-debt]
+    related_skills:
+      [sergeant-review-and-merge, sergeant-security-audit, sergeant-tech-debt]
     goal: Parallel lens coverage (contract, design, security, docs) for PRs touching 3+ governed surfaces
     cadence: per-pr
     risk: medium
@@ -194,7 +199,13 @@ loops:
     name: QA Squad (Parallel)
     file: LOOP.md#qa-squad-parallel
     owner_skill: sergeant-qa-squad
-    related_skills: [sergeant-web-ui, sergeant-server-api, sergeant-mobile-expo, sergeant-data-and-migrations]
+    related_skills:
+      [
+        sergeant-web-ui,
+        sergeant-server-api,
+        sergeant-mobile-expo,
+        sergeant-data-and-migrations,
+      ]
     goal: Per-surface test + typecheck across all 4 surfaces before synthesis; full QA fan-out
     cadence: per-pr
     risk: low
@@ -219,7 +230,12 @@ loops:
     name: Council Advisory
     file: LOOP.md#council-advisory
     owner_skill: sergeant-council
-    related_skills: [sergeant-feature-delivery, sergeant-backend-architecture, sergeant-web-ui]
+    related_skills:
+      [
+        sergeant-feature-delivery,
+        sergeant-backend-architecture,
+        sergeant-web-ui,
+      ]
     goal: Multi-perspective product/strategy/UX advice for ambiguous decisions and tradeoffs
     cadence: per-decision
     risk: low
