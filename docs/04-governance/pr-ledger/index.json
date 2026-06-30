@@ -1,8 +1,22 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-06-30",
   "prs": [
+    {
+      "number": 73,
+      "title": "feat(agents): add dynamic agent snapshot for harness context",
+      "merged_at": "2026-06-30T13:16:29Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": ["docs/04-governance/adr/0067-dynamic-agent-snapshot.md"]
+    },
+    {
+      "number": 0,
+      "title": "feat(tools): add dynamic agent snapshot for harness context (placeholder — replaced by update-pr-backlinks on merge)",
+      "merged_at": "2026-06-29T20:55:00Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/04-governance/adr/0067-dynamic-agent-snapshot.md"]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
@@ -186,13 +200,6 @@
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
       ]
-    },
-    {
-      "number": 0,
-      "title": "feat(tools): add dynamic agent snapshot for harness context (placeholder — replaced by update-pr-backlinks on merge)",
-      "merged_at": "2026-06-29T20:55:00Z",
-      "author": "@Skords-01",
-      "touchedDocs": ["docs/04-governance/adr/0067-dynamic-agent-snapshot.md"]
     }
   ]
 }
