@@ -186,6 +186,7 @@ export function useRoutineAppState({
     if (location.hash) return;
     if (persistedTab === "calendar") return;
     route.navigate(persistedTab);
+    // Mount-only — guarded by `restoredFromPersistRef`, see block comment above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const setMainTab: Dispatch<SetStateAction<RoutineMainTab>> = useCallback(
@@ -285,6 +286,7 @@ export function useRoutineAppState({
     } catch {
       /* noop */
     }
+    // Mount-only deep-link consumption — intentional one-shot, see block comment above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

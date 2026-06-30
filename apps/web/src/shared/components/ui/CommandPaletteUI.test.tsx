@@ -44,6 +44,7 @@ function HarnessInner({
   if (onOpenRef) onOpenRef.current = controls.open;
   useEffect(() => {
     controls.open();
+    // Mount-only test bootstrap — open the palette once harness mounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <CommandPaletteUI />;

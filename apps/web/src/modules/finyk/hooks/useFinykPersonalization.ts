@@ -58,6 +58,8 @@ export function useFinykPersonalization({
     if (!rawExcludedTxIds || rawExcludedTxIds.size === 0) return "";
     return Array.from(rawExcludedTxIds).sort().join("|");
   }, [rawExcludedTxIds]);
+  // Re-create the Set only when the canonical key (sorted id list) changes;
+  // comparing the Set reference itself would re-allocate on every parent render.
   const excludedTxIds = useMemo<Set<string> | undefined>(
     () => rawExcludedTxIds || undefined,
     // eslint-disable-next-line react-hooks/exhaustive-deps
