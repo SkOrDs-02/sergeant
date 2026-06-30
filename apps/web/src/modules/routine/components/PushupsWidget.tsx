@@ -9,7 +9,7 @@ import { Sheet } from "@shared/components/ui/Sheet";
 import { Card } from "@shared/components/ui/Card";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import { useRoutinePushups } from "../hooks/useRoutinePushups";
-import { dateKeyFromDate } from "../lib/hubCalendarAggregate";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 const C = {
   primary: "bg-routine-strong! hover:bg-routine-hover! text-white! border-0",
@@ -70,15 +70,28 @@ export function PushupsWidget() {
             <p className="text-style-caption text-subtle mb-2">
               Останні 7 днів
             </p>
-            <div className="flex items-end gap-1 h-10">
+            <div
+              className="flex items-end gap-1 h-10"
+              role="img"
+              aria-label={`Відтискання за останні 7 днів: ${recentHistory
+                .map(
+                  (d) =>
+                    `${new Date(`${d.date}T12:00:00`).toLocaleDateString(
+                      "uk-UA",
+                      { weekday: "short" },
+                    )}: ${d.total}`,
+                )
+                .join(", ")}`}
+            >
               {recentHistory.map((d) => {
                 const max = Math.max(...recentHistory.map((x) => x.total), 1);
-                const isToday = d.date === dateKeyFromDate(new Date());
+                const isToday = d.date === getKyivDayKey();
                 const pct = d.total / max;
                 return (
                   <div
                     key={d.date}
                     className="flex-1 flex flex-col items-center gap-0.5"
+                    aria-hidden
                   >
                     <div
                       className={cn(
@@ -121,7 +134,6 @@ export function PushupsWidget() {
                 addReps(n);
                 setOpen(false);
               }}
-              // eslint-disable-next-line sergeant-design/prefer-text-style -- TODO(T5): responsive sm:text-sm override differs from fluid clamp() in text-style-caption; keep manual ramp.
               className="min-h-[44px] rounded-2xl border border-routine-line/80 dark:border-routine-border-dark/30 bg-routine-surface dark:bg-routine-surface-dark/10 px-1 py-2.5 text-center text-xs font-bold text-routine-strong dark:text-routine transition-colors active:opacity-90 sm:px-2 sm:text-sm"
             >
               +{n}

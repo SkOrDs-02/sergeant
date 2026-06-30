@@ -36,6 +36,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pkgPath = join(repoRoot, "package.json");
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
 const overrides = pkg.pnpm?.overrides ?? {};
+const pnpmNeedsShell = process.platform === "win32";
 
 const overrideNames = Object.keys(overrides);
 if (overrideNames.length === 0) {
@@ -88,6 +89,7 @@ for (const key of overrideNames) {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       maxBuffer: 64 * 1024 * 1024,
+      shell: pnpmNeedsShell,
     });
   } catch (err) {
     // `pnpm why` exits non-zero when no workspace package depends on
