@@ -130,6 +130,7 @@
     "lint:html-sri": "node scripts/lint-html-sri.mjs",
     "lint:secrets": "node scripts/pre-commit-gitleaks.mjs",
     "lint:pnpm-overrides": "node scripts/check-pnpm-overrides.mjs",
+    "snapshot": "node tools/agent-snapshot/snapshot.mjs",
     "lint:overrides": "node scripts/check-pnpm-overrides-staleness.mjs",
     "lint:pwa-precache": "node scripts/check-pwa-precache-1st-party.mjs",
     "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs",

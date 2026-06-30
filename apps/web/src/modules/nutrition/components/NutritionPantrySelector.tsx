@@ -31,7 +31,7 @@ export function NutritionPantrySelector({
         >
           Активний склад
         </SectionHeading>
-        <div className="text-base font-extrabold text-text leading-tight">
+        <div className="text-base font-extrabold text-text leading-tight truncate">
           {pantry.activePantry?.name || "Склад"}
         </div>
         <div className="text-xs text-subtle mt-0.5">
@@ -45,7 +45,7 @@ export function NutritionPantrySelector({
           value={pantry.activePantry?.id || pantry.activePantryId || ""}
           onChange={(e) => pantry.setActivePantryId(e.target.value)}
           disabled={busy}
-          className="input-focus-nutrition min-h-[44px] rounded-xl bg-panel/60 border border-nutrition/30 px-3 text-sm text-text max-w-[36vw]"
+          className="input-focus-nutrition min-h-[44px] rounded-xl bg-panel/60 border border-nutrition/30 px-3 text-sm text-text max-w-[40%]"
           aria-label="Обрати склад"
         >
           {pantries.map((p) => (

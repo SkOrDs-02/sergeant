@@ -99,6 +99,7 @@ export function Measurements() {
         >
           <div className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
             <svg
+              aria-hidden
               width="20"
               height="20"
               viewBox="0 0 24 24"
@@ -120,6 +121,9 @@ export function Measurements() {
               {messages.fizruk.measurements.manualLink}
             </div>
           </div>
+          <span className="sr-only">
+            {messages.fizruk.measurements.manualLinkNewTab}
+          </span>
         </a>
 
         <div className="grid grid-cols-3 gap-2">

@@ -62,6 +62,7 @@ export function NutritionPantryPage({
       <>
         <h1 className="sr-only">Комора</h1>
         <SubTabs
+          ariaLabel="Розділи комори"
           value={pantrySubTab}
           onChange={(id) => setPantrySubTab(id as PantrySubTab)}
           tabs={[
