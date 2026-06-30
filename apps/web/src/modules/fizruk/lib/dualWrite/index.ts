@@ -6,6 +6,8 @@ import {
   recordParityCheck,
   recordReadFallback,
 } from "../../../../core/observability/dualWriteTelemetry.js";
+import { refreshFizrukSqliteState } from "../sqliteReader.js";
+import { notifyFizrukSqliteCacheRefresh } from "../sqliteReadGate.js";
 import {
   applyFizrukDualWriteOps,
   type ApplyDualWriteResult,
@@ -141,6 +143,18 @@ async function runDualWriteFizrukState(
     logger: ctx.logger,
   });
 
+  try {
+    await refreshFizrukSqliteState(client, userId);
+    notifyFizrukSqliteCacheRefresh();
+  } catch (err) {
+    recordReadFallback(
+      "fizruk",
+      err instanceof Error
+        ? `cache-refresh-failed: ${err.message}`
+        : "cache-refresh-failed",
+    );
+  }
+
   // Stage 8 parity probe — best-effort: never throws, never disturbs
   // the dual-write outcome. A failed probe-read is tagged distinctly
   // (`recordReadFallback`) so triage can tell `SELECT failing` apart
@@ -170,8 +184,15 @@ export function triggerFizrukDualWrite(
   prev: FizrukDualWriteState,
   next: FizrukDualWriteState,
 ): void {
-  if (!registeredContext) return;
-  void Promise.resolve().then(() => dualWriteFizrukState(prev, next));
+  const ctx = registeredContext;
+  if (!ctx) return;
+  globalThis.setTimeout(() => {
+    void dualWriteFizrukState(prev, next).catch((err) => {
+      logSafe(ctx, "warn", "dual-write task failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  }, 0);
 }
 
 export type DualWriteOutcome =

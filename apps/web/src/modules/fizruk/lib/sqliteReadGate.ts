@@ -57,6 +57,22 @@ export function notifyFizrukSqliteCacheRefresh(): void {
       /* noop — listeners must never break notify */
     }
   }
+  try {
+    const target = globalThis as typeof globalThis & {
+      __sergeantSqliteRefreshCounts?: Record<string, number>;
+    };
+    target.__sergeantSqliteRefreshCounts = {
+      ...(target.__sergeantSqliteRefreshCounts ?? {}),
+      fizruk: (target.__sergeantSqliteRefreshCounts?.["fizruk"] ?? 0) + 1,
+    };
+    globalThis.dispatchEvent?.(
+      new CustomEvent("sergeant:sqlite-cache-refresh", {
+        detail: { module: "fizruk" },
+      }),
+    );
+  } catch {
+    /* noop — browser-test signal must never break refresh notify */
+  }
   // Notify same-tab Hub consumers so Hub Reports / Dashboard re-aggregate
   // without waiting for a cross-tab storage event.
   emitHubBus("storageUpdated", undefined);

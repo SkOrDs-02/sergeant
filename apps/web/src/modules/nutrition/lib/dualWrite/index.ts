@@ -183,15 +183,22 @@ async function runDualWriteNutritionState(
 
 /**
  * Fire-and-forget entry point used by Nutrition LS-write hooks.
- * Resolves immediately so the LS-write call site doesn't pay any
- * latency on the happy path.
+ * Schedule on a macrotask so input handlers can finish and the UI can
+ * commit before SQLite/parity work starts.
  */
 export function triggerNutritionDualWrite(
   prev: NutritionDualWriteState,
   next: NutritionDualWriteState,
 ): void {
-  if (!registeredContext) return;
-  void Promise.resolve().then(() => dualWriteNutritionState(prev, next));
+  const ctx = registeredContext;
+  if (!ctx) return;
+  globalThis.setTimeout(() => {
+    void dualWriteNutritionState(prev, next).catch((err) => {
+      logSafe(ctx, "warn", "dual-write task failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  }, 0);
 }
 
 export type DualWriteOutcome =

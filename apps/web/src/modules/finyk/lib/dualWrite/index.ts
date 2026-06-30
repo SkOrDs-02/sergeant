@@ -6,6 +6,8 @@ import {
   recordParityCheck,
   recordReadFallback,
 } from "../../../../core/observability/dualWriteTelemetry.js";
+import { refreshFinykSqliteState } from "../sqliteReader.js";
+import { notifyFinykSqliteCacheRefresh } from "../sqliteReadGate.js";
 import {
   applyFinykDualWriteOps,
   type ApplyDualWriteResult,
@@ -171,6 +173,18 @@ async function runDualWriteFinykState(
     logger: ctx.logger,
   });
 
+  try {
+    await refreshFinykSqliteState(client, userId);
+    notifyFinykSqliteCacheRefresh();
+  } catch (err) {
+    recordReadFallback(
+      "finyk",
+      err instanceof Error
+        ? `cache-refresh-failed: ${err.message}`
+        : "cache-refresh-failed",
+    );
+  }
+
   // Stage 8 parity probe — best-effort: never throws, never disturbs
   // the dual-write outcome. A failed probe-read is tagged distinctly
   // (`recordReadFallback`) so triage can tell `SELECT failing` apart
@@ -200,8 +214,15 @@ export function triggerFinykDualWrite(
   prev: FinykDualWriteState,
   next: FinykDualWriteState,
 ): void {
-  if (!registeredContext) return;
-  void Promise.resolve().then(() => dualWriteFinykState(prev, next));
+  const ctx = registeredContext;
+  if (!ctx) return;
+  globalThis.setTimeout(() => {
+    void dualWriteFinykState(prev, next).catch((err) => {
+      logSafe(ctx, "warn", "dual-write task failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  }, 0);
 }
 
 /**
