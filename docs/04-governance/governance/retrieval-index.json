@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-06-30",
   "sourceHashes": {
-    "knowledge-graph": "fc6efd75b9a0c5d7e22f8b830a34e664058435db832c9e8d15da593aa482fc00",
-    "symbol-index": "0da672f03c69da0e6f6e554294eba3d08e53c819e1dc5da3e37ef027cb599227"
+    "knowledge-graph": "98e662930d6842982270788ce5958f0c129756baee00f7a97b1448977382a372",
+    "symbol-index": "f90a5024ac8bfe0d73dd4587681c13e925fae84c2a2fe9d5a4d02b998ceda082"
   },
   "counts": {
-    "adr": 64,
-    "audit": 16,
+    "adr": 65,
+    "audit": 19,
     "export": 303,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
     "skill": 23,
-    "total": 544
+    "total": 548
   },
   "chunks": [
     {
@@ -385,9 +385,9 @@
       "line": 1,
       "title": "ADR-0035: Distributed tracing — web→server via OpenTelemetry",
       "tier": "core",
-      "status": "superseded",
-      "text": "ADR-0035: Distributed tracing — web→server via OpenTelemetry · adr:0035 · adr · superseded · 35 · 0. TL;DR · 1. Context and Problem Statement · 2. Considered Options · Backend (де trace-data live): · Tracer SDK (як спрямувати): · 3. Decision · 3.1. Backend: Honeycomb (free tier). · 3.2. SDK: @opentelemetry/ packages. · 3.3. Sentry tracing на web вимикаємо. · 3.4. Trace propagation. · 3.5. Mobile (apps/mobile). · 4. Rationale · 5. Consequences · Positive · Negative · Neutral · 6. Compliance · 7. Implementation status · 7.1 Shipped (2026-05-05) · 7.2 Чого НЕ робимо зараз · 7.3 Roadmap-факт · 8. Links",
-      "contentHash": "1fceeb89bc164299c71a6bcb7aad0e6e284e468fcc4c03be592f91389c7067b0"
+      "status": "deprecated <!-- reverted 2026-06-26: OpenTelemetry видалено (PR #9); див. banner + Note нижче -->",
+      "text": "ADR-0035: Distributed tracing — web→server via OpenTelemetry · adr:0035 · adr · deprecated <!-- reverted 2026-06-26: OpenTelemetry видалено (PR #9); див. banner + Note нижче --> · 35 · 0. TL;DR · 1. Context and Problem Statement · 2. Considered Options · Backend (де trace-data live): · Tracer SDK (як спрямувати): · 3. Decision · 3.1. Backend: Honeycomb (free tier). · 3.2. SDK: @opentelemetry/ packages. · 3.3. Sentry tracing на web вимикаємо. · 3.4. Trace propagation. · 3.5. Mobile (apps/mobile). · 4. Rationale · 5. Consequences · Positive · Negative · Neutral · 6. Compliance · 7. Implementation status · 7.1 Shipped (2026-05-05) · 7.2 Чого НЕ робимо зараз · 7.3 Roadmap-факт · 8. Links",
+      "contentHash": "6a61edf7f00c263e390888777350f921b6d7effceffbb6c02f6c8b6017cd63f5"
     },
     {
       "id": "adr:0036",
@@ -550,9 +550,9 @@
       "line": 1,
       "title": "ADR-0051: Pricing v3 — Free + Pro, single paid tier",
       "tier": "core",
-      "status": "Accepted",
-      "text": "ADR-0051: Pricing v3 — Free + Pro, single paid tier · adr:0051 · adr · Accepted · 51 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "8fa95a96ef2ea3c37d7bf5af557622b939843d520c1f21ae9f6087e2352413f2"
+      "status": "Superseded by ADR-0068",
+      "text": "ADR-0051: Pricing v3 — Free + Pro, single paid tier · adr:0051 · adr · Superseded by ADR-0068 · 51 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "75e10fa32344a7f993b4ec323f98959e7ab1e4a48a636bb56b5f14dc2ed6cc37"
     },
     {
       "id": "adr:0052",
@@ -720,6 +720,17 @@
       "contentHash": "f84d30c0b1c1cebcd1dc28a742568ff96905d2a931bbad71c2bee79d7ab31013"
     },
     {
+      "id": "adr:0068",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0068-pricing-v4-uah-reverse-trial.md",
+      "line": 1,
+      "title": "ADR-0068: Pricing v4 — ₴199/міс, зворотній trial, уточнені ліміти Free/Pro",
+      "tier": "core",
+      "status": "Accepted",
+      "text": "ADR-0068: Pricing v4 — ₴199/міс, зворотній trial, уточнені ліміти Free/Pro · adr:0068 · adr · Accepted · 68 · Context and Problem Statement · Considered Options · Decision · Ціна · Trial — reverse trial · Ліміти тірів · Tiered-деградація моделі (незмінна передумова) · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "fb06157ed730db3d2fe86a06cea44a5a26e6dab006d3ed2881209670678e556f"
+    },
+    {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
       "type": "audit",
       "path": "docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md",
@@ -863,6 +874,17 @@
       "contentHash": "eb72e7caef0158a36456de6a1e0a039af48dbca32810468f9e6c73eb351b2589"
     },
     {
+      "id": "audit:2026-06-28-financial-launch-monetization-audit",
+      "type": "audit",
+      "path": "docs/90-work/audits/2026-06-28-financial-launch-monetization-audit.md",
+      "line": 1,
+      "title": "Фінансовий аудит — старт, утримання, беззбитковість Sergeant — 2026-06-28",
+      "tier": "core",
+      "status": "Active",
+      "text": "Фінансовий аудит — старт, утримання, беззбитковість Sergeant — 2026-06-28 · audit:2026-06-28-financial-launch-monetization-audit · audit · Active · TL;DR · 1. Що коштує запустити (one-time) · 2. Що коштує утримувати (recurring, $/міс) · 3. Активна модель монетизації (ADR-0068) · 4. Беззбитковість (перерахунок на активну ціну ₴199) · 4.1 Юніт-економіка одного Pro · 4.2 Точка беззбитковості · 4.3 Скільки треба MAU, щоб зібрати ~20 Pro · 5. Сценарії виходу в прибуток · 6. Альтернативні / додаткові шляхи монетизації · 7. Рекомендації (P0/P1/P2) · 8. Найбільші ризики моделі · Посилання",
+      "contentHash": "1b3d45427b07f3fb9299c525a9e1fdb91cc958201cdaa2c59c3f4dc1f8aa7d3a"
+    },
+    {
       "id": "audit:2026-08-XX-openclaw-internal-roast",
       "type": "audit",
       "path": "docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md",
@@ -883,6 +905,28 @@
       "status": "Draft",
       "text": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub) · audit:2026-08-XX-sync-engine-roast · audit · Draft · Sync Engine Deep Roast — apps/server/src/modules/sync/syncV2.ts (stub) · TL;DR · Scope · Methodology hints · Transaction-boundary trace (2026-06-06 code read) · Handler: syncV2Push (POST /api/v2/sync/push) · Handler: syncV2Pull (GET /api/v2/sync/pull) · DLQ-row TTL note · Cross-refs",
       "contentHash": "f4c38dc725703b69696931342f5a289d7ff5eae771b878bb61b1c540d1ead316"
+    },
+    {
+      "id": "audit:production-readiness-execution-2026-06-29",
+      "type": "audit",
+      "path": "docs/90-work/audits/production-readiness-execution-2026-06-29.md",
+      "line": 1,
+      "title": "Production Readiness Execution — 2026-06-29",
+      "tier": "core",
+      "status": "Active",
+      "text": "Production Readiness Execution — 2026-06-29 · audit:production-readiness-execution-2026-06-29 · audit · Active · Context · Evidence Log · Findings · Open Questions / External Inputs",
+      "contentHash": "054af65a3bd2199d39f4fa123ddd4065925a8608c5208d09a935d4b5a90e5cb6"
+    },
+    {
+      "id": "audit:production-readiness-testing-loop",
+      "type": "audit",
+      "path": "docs/90-work/audits/production-readiness-testing-loop.md",
+      "line": 1,
+      "title": "Production readiness testing loop",
+      "tier": "core",
+      "status": "Active",
+      "text": "Production readiness testing loop · audit:production-readiness-testing-loop · audit · Active · Мета · Групи тестування · Група A — Chat resilience and load · Група B — Data, migrations, backup restore · Група C — Security launch audit · Група D — Observability and incident drill · Основний loop виконання · Evidence формат · Handoff prompt для наступної сесії",
+      "contentHash": "2387758bbc3898cf60762c1817b27b4f323c799aded1061a13c501d79fe9e8f1"
     },
     {
       "id": "audit:user-story-loop",
@@ -2791,8 +2835,8 @@
       "path": "packages/design-tokens/index.d.ts",
       "title": "ModuleAccent (type)",
       "tier": "extended",
-      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 18×",
-      "contentHash": "c18594d0840e5417653e3bc44547dd130666e0359659d8b5e9e331573c8a4781"
+      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 17×",
+      "contentHash": "b8fc95cfb164a7458365df1ae05032e108b1bcd2dabc7ee534ee57ee762d5822"
     },
     {
       "id": "export:@sergeant/design-tokens:moduleAccentRgb",
@@ -3719,8 +3763,8 @@
       "line": 1,
       "title": "Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS",
       "tier": "core",
-      "text": "Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS · hard-rule:18 · hard-rule · 18 · blocker · active-initiative · apps/web/src/**,apps/server/src/**",
-      "contentHash": "0f09b323a6c83020342ecc7d03e4c846b3d994c62cd95db1d57980f38be59707"
+      "text": "Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS · hard-rule:18 · hard-rule · 18 · blocker · lint-enforced-convention · apps/web/src/**,apps/server/src/**",
+      "contentHash": "e888874c780e42d8d6f7c644ffa90b08a784a9f1d47a97f6035bdc4b767965b5"
     },
     {
       "id": "hard-rule:19",
@@ -3729,8 +3773,8 @@
       "line": 1,
       "title": "Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo",
       "tier": "core",
-      "text": "Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo · hard-rule:19 · hard-rule · 19 · blocker · active-initiative · apps/**/tsconfig.json,packages/**/tsconfig.json",
-      "contentHash": "a9c6be4689a121febb635c6218ae9517cf53706fe435f791bbd3111c07c70829"
+      "text": "Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo · hard-rule:19 · hard-rule · 19 · blocker · lint-enforced-convention · apps/**/tsconfig.json,packages/**/tsconfig.json",
+      "contentHash": "5e08a047cf660d82826384413e40531afd82977f62615b0d27a0144d6ef61711"
     },
     {
       "id": "hard-rule:2",
