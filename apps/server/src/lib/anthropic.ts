@@ -30,6 +30,12 @@ export interface AnthropicCallOptions {
    * per-request лічильник cache hit/miss.
    */
   promptVersion?: string | undefined;
+  /**
+   * Better Auth user-id для per-user cost-ledger у `ai_usage_daily`. Якщо
+   * передано — `recordUsage` пише додатковий per-user рядок поряд із global
+   * aggregate. `undefined` (anon / machine-caller) → лише global.
+   */
+  userId?: string | undefined;
 }
 
 /**
@@ -142,9 +148,10 @@ export function recordAnthropicUsage(
   endpoint: string,
   usage: AnthropicUsage | null | undefined,
   promptVersion?: string,
+  userId?: string,
 ): void {
   if (!usage) return;
-  recordUsage(model, endpoint, { usage }, promptVersion);
+  recordUsage(model, endpoint, { usage }, promptVersion, userId);
 }
 
 function recordUsage(
@@ -152,6 +159,7 @@ function recordUsage(
   endpoint: string,
   data: AnthropicResponseData | null,
   promptVersion?: string,
+  userId?: string,
 ): void {
   try {
     const usage = data?.usage;
@@ -214,7 +222,7 @@ function recordUsage(
     // ledger-failure НЕ ламає Anthropic-flow. `void` навмисно, щоб eslint
     // no-floating-promises не репортив (recordAnthropicUsageToDb сам
     // ковтає рантайм-помилки).
-    void recordAnthropicUsageToDb(model, usage);
+    void recordAnthropicUsageToDb(model, usage, userId);
   } catch {
     /* ignore */
   }
@@ -228,6 +236,7 @@ export async function anthropicMessages(
     endpoint = "unknown",
     signal: externalSignal,
     promptVersion,
+    userId,
   }: AnthropicCallOptions = {},
 ): Promise<AnthropicMessagesResult> {
   const model = (payload?.["model"] as string) || "unknown";
@@ -237,7 +246,7 @@ export async function anthropicMessages(
       anthropicMessagesInner(
         apiKey,
         payload,
-        { timeoutMs, endpoint, signal: externalSignal, promptVersion },
+        { timeoutMs, endpoint, signal: externalSignal, promptVersion, userId },
         model,
       ),
     {
@@ -257,6 +266,7 @@ async function anthropicMessagesInner(
     endpoint = "unknown",
     signal: externalSignal,
     promptVersion,
+    userId,
   }: AnthropicCallOptions,
   model: string,
 ): Promise<[AnthropicMessagesResult, AiSpanResultMeta]> {
@@ -320,7 +330,7 @@ async function anthropicMessagesInner(
       const meta = buildSpanMeta(data, response.ok, response.status);
       if (response.ok) {
         recordOutcome("ok", { model, endpoint, ms });
-        recordUsage(model, endpoint, data, promptVersion);
+        recordUsage(model, endpoint, data, promptVersion, userId);
       } else {
         recordOutcome(response.status === 429 ? "rate_limited" : "error", {
           model,

@@ -3,7 +3,8 @@
 > **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
-Дизайн-філософія Sergeant — **Soft & Organic** з Emerald/Teal-акцентом.
+Дизайн-філософія Sergeant — **Soft & Organic** з Emerald-акцентом (Fizruk-модуль
+перейшов з Teal на Cyan у v2-редизайні 2026-05 — див. § палітру нижче).
 Цей документ описує бренд-ідентичність, голос і marketing-asset-и.
 **Для UI-коду** — починай із [`design-system.md`](./design-system.md): саме він
 тримає канонічні токени, type-scale, компоненти і ESLint-контракти. Якщо щось

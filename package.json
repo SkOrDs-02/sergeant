@@ -130,6 +130,7 @@
     "lint:html-sri": "node scripts/lint-html-sri.mjs",
     "lint:secrets": "node scripts/pre-commit-gitleaks.mjs",
     "lint:pnpm-overrides": "node scripts/check-pnpm-overrides.mjs",
+    "snapshot": "node tools/agent-snapshot/snapshot.mjs",
     "lint:overrides": "node scripts/check-pnpm-overrides-staleness.mjs",
     "lint:pwa-precache": "node scripts/check-pwa-precache-1st-party.mjs",
     "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs",
@@ -214,7 +215,12 @@
       "undici@>=6.0.0 <6.27.0": "^6.27.0",
       "undici@>=7.23.0 <7.28.0": "^7.28.0",
       "undici@>=8.0.0 <8.5.0": "^8.5.0",
-      "form-data@<=4.0.5": ">=4.0.6"
+      "form-data@<=4.0.5": ">=4.0.6",
+      "brace-expansion@>=5.0.0 <5.0.6": "5.0.6",
+      "dompurify@<3.4.11": "3.4.11",
+      "js-yaml@>=3.0.0 <3.15.0": "3.15.0",
+      "js-yaml@>=4.0.0 <4.2.0": "4.2.0",
+      "qs@>=6.11.1 <6.15.2": "6.15.2"
     },
     "patchedDependencies": {
       "@expo/cli@0.22.28": "patches/@expo__cli@0.22.28.patch"

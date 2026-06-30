@@ -40,6 +40,7 @@ stryker-reports/
 
 # Local screenshots / scratch assets (use external storage like Notion/Figma)
 attached_assets/
+_scratch/
 
 # Mobile / EAS
 apps/mobile/google-services.json
@@ -56,6 +57,9 @@ artifacts/
 
 # CI-local caches
 .cache/
+
+# Agent snapshot local cache + output (tools/agent-snapshot)
+.kilocode/
 
 # Pre-commit timing log (P1-5 from 2026-05-13-testing-devx-roast.md).
 # Local dev signal only — never a CI gate. Aggregate via

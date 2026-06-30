@@ -15,6 +15,7 @@ import {
   getActiveModules,
   getActiveNudge,
   getHideInactiveModules,
+  getModulesWithFirstAction,
   getOnboardingGoals,
   getVibePicks,
   hasSeenCrossModulePreview,
@@ -31,6 +32,7 @@ import { useDashboardFocus } from "../insights/TodayFocusCard";
 import { hasLiveWeeklyDigest } from "../insights/WeeklyDigestCard";
 import { useCoachInsight } from "../insights/useCoachInsight";
 import {
+  detectFirstActionCompletedPerModule,
   detectFirstRealEntry,
   getFirstRealEntryModule,
 } from "../onboarding/firstRealEntry";
@@ -45,7 +47,7 @@ import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
 import {
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -208,6 +210,10 @@ export function useHubDashboardState(props: {
   useMondayAutoDigest();
 
   const hasRealEntry = detectFirstRealEntry();
+  // Fire `first_action_completed { module }` once per module that just got its
+  // first non-demo entry — must run alongside detectFirstRealEntry on the render
+  // path, else the event never emits and the activation funnel stays at 0%.
+  detectFirstActionCompletedPerModule();
   const celebration = useFirstEntryCelebration(hasRealEntry);
   const [sessionDays, setSessionDays] = useState(-1);
   useEffect(() => {
@@ -248,6 +254,7 @@ export function useHubDashboardState(props: {
     if (nudgeDismissed || sessionDays < 2) return null;
     return getActiveNudge(localStorageStore, sessionDays, {
       picks: getVibePicks(localStorageStore),
+      modulesWithEntries: new Set(getModulesWithFirstAction(localStorageStore)),
     });
   }, [sessionDays, nudgeDismissed]);
 
@@ -372,8 +379,16 @@ export function useHubDashboardState(props: {
     [visibleOrder, adaptive.liftedId],
   );
 
+  // MouseSensor (not PointerSensor) for the desktop pointer + a separate
+  // TouchSensor for coarse pointers. PointerSensor handles touch-pointer
+  // events too, but with its distance-only activation (no delay) the first
+  // few px of a finger scroll or an imprecise tap on a card body started a
+  // reorder drag — hijacking scroll and "moving" the module on every touch.
+  // Splitting the sensors lets touch require a deliberate 250ms long-press
+  // (tap → open module, swipe → scroll, hold → drag) while the mouse keeps
+  // its instant 8px drag threshold.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, {
       activationConstraint: { delay: 250, tolerance: 5 },
     }),

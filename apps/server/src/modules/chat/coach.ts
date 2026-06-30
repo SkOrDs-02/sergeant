@@ -1,9 +1,8 @@
 import type { Request, Response } from "express";
 import pool from "../../db.js";
-import {
-  anthropicMessages,
-  extractAnthropicText,
-} from "../../lib/anthropic.js";
+import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
+import { env } from "../../env/env.js";
+import { resolveProTier } from "./aiQuota.js";
 import { sendToUserQuietly } from "../../push/send.js";
 import { parseBody } from "../../http/validate.js";
 import {
@@ -15,10 +14,6 @@ import { logger } from "../../obs/logger.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
-
-interface AnthropicErrorPayload {
-  error?: { message?: string };
-}
 
 interface WeeklyDigestEntry {
   weekKey: string;
@@ -370,25 +365,39 @@ ${snapshotText}
 
 Відповідай ТІЛЬКИ текстом повідомлення, без вітань, без підписів, без лапок.`;
 
-  const { response: aiRes, data: aiData } = await anthropicMessages(
-    apiKey,
-    {
-      model: "claude-sonnet-4-6",
-      max_tokens: 300,
-      messages: [{ role: "user", content: systemPrompt }],
-    },
-    { timeoutMs: 20000, endpoint: "coach-insight" },
-  );
+  // Pro tiered degradation: resolveProTier picks the OpenRouter model for this
+  // Pro user's daily tier (premium gpt-5.1 → standard gemini-lite → floor free).
+  // For Free/Anon/founder/flag-off it returns the premium model = current
+  // behaviour (env.OPENROUTER_COACH_MODEL via the premium-tier default), so the
+  // factory wiring below is unchanged in the common case.
+  const tier = await resolveProTier(req, res, "coach");
 
-  if (!aiRes?.ok) {
-    const errData = aiData as AnthropicErrorPayload | null | undefined;
+  // Routed through the LLMProvider factory so coach can be re-targeted off
+  // Sonnet via env (LLM_COACH_PROVIDER / OPENROUTER_COACH_MODEL) without a
+  // redeploy; Anthropic stays the fallback. `claude-sonnet-4-6` is the model
+  // the Anthropic provider (and the OpenRouter fallback target) uses.
+  const provider = getLLMProvider({
+    provider: env.LLM_COACH_PROVIDER,
+    anthropicApiKey: apiKey,
+    openrouterModel: tier.model,
+  });
+  const aiResult = await invokeLLM(provider, {
+    model: "claude-sonnet-4-6",
+    maxTokens: 300,
+    messages: [{ role: "user", content: systemPrompt }],
+    timeoutMs: 20_000,
+    endpoint: "coach-insight",
+    userId: (req as WithSessionUser).user?.id,
+  });
+
+  if (!aiResult.ok) {
     throw makeAiProviderError({
-      rawProviderMessage: errData?.error?.message,
-      status: aiRes?.status,
+      rawProviderMessage: aiResult.error,
+      status: aiResult.status,
     });
   }
 
-  const text = extractAnthropicText(aiData);
+  const text = aiResult.text;
 
   // Fire-and-forget push з AI-«нудж»-повідомленням дня. Якщо `text` порожній
   // (Anthropic повернула структуру без текстових блоків) — нічого не шлемо,

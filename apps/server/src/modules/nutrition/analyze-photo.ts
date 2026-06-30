@@ -12,7 +12,10 @@ import { validateImageBase64 } from "../../lib/imageMagic.js";
 import { nutritionPhotoRejectedTotal } from "../../obs/metrics.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
-type WithAnthropicKey = Request & { anthropicKey?: string };
+type WithAnthropicKey = Request & {
+  anthropicKey?: string;
+  user?: { id: string };
+};
 
 const SYSTEM = `Ти нутріціолог-помічник. Відповідай ТІЛЬКИ українською.
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
@@ -45,6 +48,7 @@ export default async function handler(
   res: Response,
 ): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
 
   const { image_base64, mime_type, locale } = parseBody(
     AnalyzePhotoSchema,
@@ -104,6 +108,7 @@ export default async function handler(
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "analyze-photo",
+    ...(userId ? { userId } : {}),
   });
   if (!response || !response.ok) {
     throw makeAiProviderError({

@@ -28,6 +28,7 @@ vi.mock("../../obs/logger.js", () => ({
 
 import _pool from "../../db.js";
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
+import { env } from "../../env/env.js";
 import { coachInsight, coachMemoryGet, coachMemoryPost } from "./coach.js";
 import { MAX_BLOB_SIZE } from "./coach.js";
 import { ExternalServiceError } from "../../obs/errors.js";
@@ -79,6 +80,10 @@ function asReq(v: unknown): Request {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Force the Anthropic path: these tests assert the prompt payload via the
+  // `anthropicMessages` mock, so they must route through AnthropicProvider
+  // regardless of the prod default (`LLM_COACH_PROVIDER=openrouter`).
+  (env as { LLM_COACH_PROVIDER: string }).LLM_COACH_PROVIDER = "anthropic";
   // `coachInsight` викликає `sendToUserQuietly` → `sendToUser` → `pool.query`.
   // Без дефолту `vi.fn()` дає `undefined` і падає деструктуризація `rows` (шум у логах).
   pool.query.mockResolvedValue({ rows: [] });

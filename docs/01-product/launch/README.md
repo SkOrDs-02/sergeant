@@ -31,41 +31,41 @@ docs/01-product/launch/
     ├── README.md                          master synthesis plan-guide (TLDR, timeline, лендінг, блокери)
     ├── 00-readiness-audit.md              audit готовності 4 surface-ів (Web, Server, Capacitor, Native, Landing)
     ├── 01-web-launch-with-users.md        Phase 1 — Web launch with users (W-4 .. W+12)
-    ├── 02-capacitor-launch.md             Phase 2 — Capacitor launch with users (W+8 .. W+16)
-    └── 03-native-expo-launch.md           Phase 3 — Native Expo (conditional, decision gate W+16)
+    └── 02-capacitor-launch.md             Phase 2 — Capacitor launch with users (W+8 .. W+16)
+                                           (Phase 3 Native Expo — conditional gate, inline у phases/README.md § Phase 3)
 ```
 
 > **Конвенція:** `business/01-…06-` — це **послідовний launch-milestone sequence** (бізнес-модель → GTM → стек → readiness → ops → архітектура paywall-у). Файли в `tech/` — це **independent roadmaps** окремих ініціатив (AI-memory, OpenClaw, Telegram), які не вкладаються в milestone-послідовність і живуть власним темпом. `product-os/` — FTUX-program: master-tracker (SSOT) + frozen sprint-plan + per-sprint retros. `phases/` — **execution phases** запуску з реальними юзерами (Web → Capacitor → Native), з вхідними/вихідними критеріями і week-by-week планом.
 
 ## Як читати
 
-| Питання                                                           | Документ                                                                                          |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Яка бізнес-модель і скільки коштує Pro?                           | [01 — Монетизація](./business/01-monetization-and-pricing.md#2-тарифні-плани)                     |
-| Як побудувати paywall технічно?                                   | [01 — Paywall](./business/01-monetization-and-pricing.md#6-технічна-реалізація-paywall)           |
-| Які фази запуску і що робити на кожній?                           | [02 — GTM](./business/02-go-to-market.md#1-стратегія-запуску-фази)                                |
-| Як зростати після запуску (SEO, referrals)?                       | [02 — Growth](./business/02-go-to-market.md#5-фаза-3--growth-ongoing)                             |
-| Який стек зараз і що додати?                                      | [03 — Стек](./business/03-services-and-toolstack.md#1-поточний-стек-що-вже-є)                     |
-| Скільки коштуватиме інфраструктура?                               | [03 — Бюджет](./business/03-services-and-toolstack.md#9-повна-monthly-cost-projection)            |
-| Коли і на що мігрувати (managed vs self-host)?                    | [architecture/hosting-evolution](../../02-engineering/architecture/hosting-evolution.md)          |
-| Що треба юридично перед запуском?                                 | [04 — Legal](./business/04-launch-readiness.md#1-юридичне-та-compliance)                          |
-| Чеклист «все готово до запуску»?                                  | [04 — Чеклист](./business/04-launch-readiness.md#7-pre-launch-чеклист)                            |
-| Як адмініструвати продукт і не вигоріти?                          | [05 — Операції](./business/05-operations-and-automation.md#1-шість-операційних-зон)               |
-| Як налаштувати n8n + OpenClaw?                                    | [05 — Автоматизація](./business/05-operations-and-automation.md#6-зона-6-у-деталях-n8n--openclaw) |
-| Як поетапно побудувати OpenClaw v0 → v1?                          | [openclaw-roadmap](./tech/openclaw-roadmap.md)                                                    |
-| Які покращення Telegram-сурфейсів заплановано?                    | [telegram-improvements-roadmap](./tech/telegram-improvements-roadmap.md)                          |
-| Який поточний стан FTUX (sprint registry, відкриті проблеми)?     | [ftux-master-tracker](./product-os/ftux-master-tracker.md)                                        |
-| Як саме запускати з реальними юзерами (Web → Capacitor → Native)? | [phases/README — master plan-guide](./phases/README.md)                                           |
-| Що готово, а що блокує запуск (readiness matrix)?                 | [phases/00 — Readiness audit](./phases/00-readiness-audit.md)                                     |
-| Тижневий план Web-launch з юзерами (W-4 .. W+12)?                 | [phases/01 — Web launch with users](./phases/01-web-launch-with-users.md)                         |
-| Як підключати бета-тестерів через TestFlight / Play?              | [phases/02 — Capacitor launch](./phases/02-capacitor-launch.md)                                   |
-| Чи варто запускати окремо Native Expo (apps/mobile)?              | [phases/03 — Native Expo launch](./phases/03-native-expo-launch.md)                               |
-| Як виправляти FTUX-онбординг (історичний sprint plan)?            | [ftux-sprint-plan](./product-os/ftux-sprint-plan.md) _(frozen)_                                   |
-| Як активувати AI-memory: pgvector, Voyage, recall (ADR-0028)?     | [ai-memory-activation](./tech/ai-memory-activation.md)                                            |
-| S1 ретро — чесний value-prop, поточний стан спринту?              | [sprint-retros/s1-honest-valueprop](./product-os/sprint-retros/s1-honest-valueprop.md)            |
-| S3 ретро — reward у правильний момент, поточний стан спринту?     | [sprint-retros/s3-reward-moments](./product-os/sprint-retros/s3-reward-moments.md)                |
-| Як реалізувати paywall технічно (DB schema, webhook, plan-cache)? | [06 — Архітектура](./business/06-monetization-architecture.md#5-уточнена-розбивка-pr-10-шт)       |
-| Що може піти не так у monetization rollout?                       | [06 — Risk register](./business/06-monetization-architecture.md#7-risk-register)                  |
+| Питання                                                           | Документ                                                                                             |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Яка бізнес-модель і скільки коштує Pro?                           | [01 — Монетизація](./business/01-monetization-and-pricing.md#2-тарифні-плани)                        |
+| Як побудувати paywall технічно?                                   | [01 — Paywall](./business/01-monetization-and-pricing.md#6-технічна-реалізація-paywall)              |
+| Які фази запуску і що робити на кожній?                           | [02 — GTM](./business/02-go-to-market.md#1-стратегія-запуску-фази)                                   |
+| Як зростати після запуску (SEO, referrals)?                       | [02 — Growth](./business/02-go-to-market.md#5-фаза-3--growth-ongoing)                                |
+| Який стек зараз і що додати?                                      | [03 — Стек](./business/03-services-and-toolstack.md#1-поточний-стек-що-вже-є)                        |
+| Скільки коштуватиме інфраструктура?                               | [03 — Бюджет](./business/03-services-and-toolstack.md#9-повна-monthly-cost-projection)               |
+| Коли і на що мігрувати (managed vs self-host)?                    | [architecture/hosting-evolution](../../02-engineering/architecture/hosting-evolution.md)             |
+| Що треба юридично перед запуском?                                 | [04 — Legal](./business/04-launch-readiness.md#1-юридичне-та-compliance)                             |
+| Чеклист «все готово до запуску»?                                  | [04 — Чеклист](./business/04-launch-readiness.md#7-pre-launch-чеклист)                               |
+| Як адмініструвати продукт і не вигоріти?                          | [05 — Операції](./business/05-operations-and-automation.md#1-шість-операційних-зон)                  |
+| Як налаштувати n8n + OpenClaw?                                    | [05 — Автоматизація](./business/05-operations-and-automation.md#6-зона-6-у-деталях-n8n--openclaw)    |
+| Як поетапно побудувати OpenClaw v0 → v1?                          | [openclaw-roadmap](./tech/openclaw-roadmap.md)                                                       |
+| Які покращення Telegram-сурфейсів заплановано?                    | [telegram-improvements-roadmap](./tech/telegram-improvements-roadmap.md)                             |
+| Який поточний стан FTUX (sprint registry, відкриті проблеми)?     | [ftux-master-tracker](./product-os/ftux-master-tracker.md)                                           |
+| Як саме запускати з реальними юзерами (Web → Capacitor → Native)? | [phases/README — master plan-guide](./phases/README.md)                                              |
+| Що готово, а що блокує запуск (readiness matrix)?                 | [phases/00 — Readiness audit](./phases/00-readiness-audit.md)                                        |
+| Тижневий план Web-launch з юзерами (W-4 .. W+12)?                 | [phases/01 — Web launch with users](./phases/01-web-launch-with-users.md)                            |
+| Як підключати бета-тестерів через TestFlight / Play?              | [phases/02 — Capacitor launch](./phases/02-capacitor-launch.md)                                      |
+| Чи варто запускати окремо Native Expo (apps/mobile)?              | [phases/README § Phase 3](./phases/README.md#phase-3--native-expo--conditional) _(conditional gate)_ |
+| Як виправляти FTUX-онбординг (історичний sprint plan)?            | [ftux-sprint-plan](./product-os/ftux-sprint-plan.md) _(frozen)_                                      |
+| Як активувати AI-memory: pgvector, Voyage, recall (ADR-0028)?     | [ai-memory-activation](./tech/ai-memory-activation.md)                                               |
+| S1 ретро — чесний value-prop, поточний стан спринту?              | [sprint-retros/s1-honest-valueprop](./product-os/sprint-retros/s1-honest-valueprop.md)               |
+| S3 ретро — reward у правильний момент, поточний стан спринту?     | [sprint-retros/s3-reward-moments](./product-os/sprint-retros/s3-reward-moments.md)                   |
+| Як реалізувати paywall технічно (DB schema, webhook, plan-cache)? | [06 — Архітектура](./business/06-monetization-architecture.md#5-уточнена-розбивка-pr-10-шт)          |
+| Що може піти не так у monetization rollout?                       | [06 — Risk register](./business/06-monetization-architecture.md#7-risk-register)                     |
 
 ## Високорівнева ідея
 

@@ -80,6 +80,12 @@ export interface LLMGenerateOpts {
    * Інші провайдери ігнорують.
    */
   promptVersion?: string | undefined;
+  /**
+   * Better Auth user-id для per-user cost-ledger. Прокидається лише
+   * `AnthropicProvider`-ом (єдиний, що пише `ai_usage_daily`); OpenRouter/Stub
+   * ігнорують.
+   */
+  userId?: string | undefined;
 }
 
 /**
@@ -164,6 +170,7 @@ export class AnthropicProvider implements LLMProvider {
     if (opts.signal !== undefined) callOpts.signal = opts.signal;
     if (opts.promptVersion !== undefined)
       callOpts.promptVersion = opts.promptVersion;
+    if (opts.userId !== undefined) callOpts.userId = opts.userId;
 
     try {
       const { response, data } = await anthropicMessages(

@@ -1,12 +1,12 @@
 # Sergeant
 
-[![CI](https://github.com/Skords-01/Sergeant/actions/workflows/ci.yml/badge.svg)](https://github.com/Skords-01/Sergeant/actions/workflows/ci.yml)
+[![CI](https://github.com/SkOrDs-02/sergeant/actions/workflows/ci.yml/badge.svg)](https://github.com/SkOrDs-02/sergeant/actions/workflows/ci.yml)
 ![Node 20](https://img.shields.io/badge/node-20.x-brightgreen)
 ![pnpm 9](https://img.shields.io/badge/pnpm-9.15.1-orange)
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-26 by @Skords-01. **Next review:** 2026-09-24.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
@@ -142,8 +142,8 @@ Fizruk and Routine modules follow a **local-first** approach: data is stored loc
 ### Fast path: `pnpm bootstrap` (~5 хв)
 
 ```bash
-git clone https://github.com/Skords-01/Sergeant.git
-cd Sergeant
+git clone https://github.com/SkOrDs-02/sergeant.git
+cd sergeant
 corepack enable && corepack prepare pnpm@9.15.1 --activate   # one-time
 pnpm bootstrap
 ```
@@ -165,8 +165,8 @@ pnpm bootstrap
 #### 1. Clone and install
 
 ```bash
-git clone https://github.com/Skords-01/Sergeant.git
-cd Sergeant
+git clone https://github.com/SkOrDs-02/sergeant.git
+cd sergeant
 pnpm install --frozen-lockfile
 ```
 

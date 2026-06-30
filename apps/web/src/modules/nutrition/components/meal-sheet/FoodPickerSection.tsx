@@ -204,7 +204,7 @@ export function FoodPickerSection({
                     String(Math.max(1, cur - (cur > 50 ? 10 : 5))),
                   );
                 }}
-                className="text-style-title w-8 h-8 rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
+                className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
               >
                 −
               </button>
@@ -229,7 +229,7 @@ export function FoodPickerSection({
                   const cur = Number(pickedGrams) || 100;
                   setPickedGrams(String(cur + (cur >= 50 ? 10 : 5)));
                 }}
-                className="text-style-title w-8 h-8 rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
+                className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
               >
                 +
               </button>

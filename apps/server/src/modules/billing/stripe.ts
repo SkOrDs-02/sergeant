@@ -668,6 +668,252 @@ export function verifyStripeSignature(
   );
 }
 
+type PaymentFailedKind =
+  | "payment_intent"
+  | "invoice"
+  | "charge"
+  | "checkout_expired";
+
+interface PaymentFailedEmit {
+  distinctId: string;
+  userResolved: boolean;
+  properties: Record<string, unknown>;
+}
+
+function getStripeNestedRecord(
+  object: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> {
+  const value = object[key];
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function getMetadataUserId(object: Record<string, unknown>): string | null {
+  const metadata = getStripeMetadata(object);
+  return typeof metadata["user_id"] === "string" ? metadata["user_id"] : null;
+}
+
+/**
+ * Resolve the Better Auth user id behind a Stripe customer through the
+ * `subscriptions.provider_customer_id` mapping. Needed for failure events on
+ * objects Stripe creates itself (`payment_intent`, `charge`, dunning
+ * `invoice`) — those never carry our `metadata.user_id`, so without this
+ * lookup the analytics event would be fully anonymous. Returns `null` when the
+ * customer has no subscription row yet (e.g. a first-charge decline before any
+ * row was written by `checkout.session.completed`).
+ */
+async function resolveUserIdByStripeCustomer(
+  client: PoolClient,
+  customerId: string | null,
+): Promise<string | null> {
+  if (!customerId) return null;
+  const { rows } = await client.query<{ user_id: string }>(
+    `SELECT user_id
+       FROM subscriptions
+      WHERE provider = 'stripe'
+        AND provider_customer_id = $1
+      ORDER BY updated_at DESC
+      LIMIT 1`,
+    [customerId],
+  );
+  return rows[0]?.user_id ?? null;
+}
+
+/**
+ * Pick the PostHog `distinctId` for a failure event. A resolved Better Auth id
+ * is preferred; otherwise fall back to a namespaced Stripe identifier so the
+ * event still lands and aggregate drop-rate / 3DS-fail-rate stay countable
+ * (PostHog attributes it to an anonymous person). The `stripe_customer:` form
+ * groups repeated failures from the same payer; `stripe_event:` is the last
+ * resort when even the customer is absent.
+ */
+function resolveFailureDistinctId(
+  userId: string | null,
+  customerId: string | null,
+  event: StripeEvent,
+): { distinctId: string; userResolved: boolean } {
+  if (userId) return { distinctId: userId, userResolved: true };
+  if (customerId) {
+    return { distinctId: `stripe_customer:${customerId}`, userResolved: false };
+  }
+  return { distinctId: `stripe_event:${event.id}`, userResolved: false };
+}
+
+async function buildPaymentIntentFailed(
+  client: PoolClient,
+  event: StripeEvent,
+  object: Record<string, unknown>,
+): Promise<PaymentFailedEmit> {
+  const error = getStripeNestedRecord(object, "last_payment_error");
+  const errorCode = getStripeObjectString(error, "code");
+  const customerId = getStripeObjectString(object, "customer");
+  const userId =
+    getMetadataUserId(object) ??
+    (await resolveUserIdByStripeCustomer(client, customerId));
+  const { distinctId, userResolved } = resolveFailureDistinctId(
+    userId,
+    customerId,
+    event,
+  );
+  return {
+    distinctId,
+    userResolved,
+    properties: {
+      kind: "payment_intent" satisfies PaymentFailedKind,
+      error_code: errorCode,
+      decline_code: getStripeObjectString(error, "decline_code"),
+      // 3DS / SCA challenge the cardholder failed or abandoned.
+      is_3ds: errorCode === "payment_intent_authentication_failure",
+      stripe_customer_id: customerId,
+      stripe_payment_intent_id: getStripeObjectString(object, "id"),
+    },
+  };
+}
+
+async function buildInvoicePaymentFailed(
+  client: PoolClient,
+  event: StripeEvent,
+  object: Record<string, unknown>,
+): Promise<PaymentFailedEmit> {
+  const customerId = getStripeObjectString(object, "customer");
+  const userId =
+    getMetadataUserId(object) ??
+    (await resolveUserIdByStripeCustomer(client, customerId));
+  const { distinctId, userResolved } = resolveFailureDistinctId(
+    userId,
+    customerId,
+    event,
+  );
+  const attemptCount = object["attempt_count"];
+  return {
+    distinctId,
+    userResolved,
+    properties: {
+      kind: "invoice" satisfies PaymentFailedKind,
+      attempt_count: typeof attemptCount === "number" ? attemptCount : null,
+      // Stripe Smart Retries schedule; null once Stripe gives up (→ churn).
+      next_payment_attempt: isoOrNull(
+        unixSecondsToDate(object["next_payment_attempt"]),
+      ),
+      stripe_customer_id: customerId,
+      stripe_invoice_id: getStripeObjectString(object, "id"),
+      stripe_subscription_id: getStripeObjectString(object, "subscription"),
+    },
+  };
+}
+
+async function buildChargeFailed(
+  client: PoolClient,
+  event: StripeEvent,
+  object: Record<string, unknown>,
+): Promise<PaymentFailedEmit> {
+  const customerId = getStripeObjectString(object, "customer");
+  const userId =
+    getMetadataUserId(object) ??
+    (await resolveUserIdByStripeCustomer(client, customerId));
+  const { distinctId, userResolved } = resolveFailureDistinctId(
+    userId,
+    customerId,
+    event,
+  );
+  const outcome = getStripeNestedRecord(object, "outcome");
+  return {
+    distinctId,
+    userResolved,
+    properties: {
+      kind: "charge" satisfies PaymentFailedKind,
+      failure_code: getStripeObjectString(object, "failure_code"),
+      network_decline_code: getStripeObjectString(
+        outcome,
+        "network_decline_code",
+      ),
+      stripe_customer_id: customerId,
+      stripe_charge_id: getStripeObjectString(object, "id"),
+    },
+  };
+}
+
+function buildCheckoutExpired(
+  event: StripeEvent,
+  object: Record<string, unknown>,
+): PaymentFailedEmit {
+  // Unlike payment_intent / charge, an expired Checkout Session still carries
+  // our `client_reference_id` + `metadata.user_id` — no DB lookup needed.
+  const userId =
+    getStripeObjectString(object, "client_reference_id") ??
+    getMetadataUserId(object);
+  const customerId = getStripeObjectString(object, "customer");
+  const { distinctId, userResolved } = resolveFailureDistinctId(
+    userId,
+    customerId,
+    event,
+  );
+  return {
+    distinctId,
+    userResolved,
+    properties: {
+      kind: "checkout_expired" satisfies PaymentFailedKind,
+      stripe_customer_id: customerId,
+      stripe_session_id: getStripeObjectString(object, "id"),
+    },
+  };
+}
+
+/**
+ * POST-COMMIT, best-effort emit for a negative Stripe payment signal. Mirrors
+ * `captureLifecycle`: a Pino `warn` always fires (operational visibility even
+ * when PostHog is down) and the analytics capture is wrapped so a network
+ * failure never breaks webhook processing. No card data / PII is logged —
+ * only Stripe decline codes and ids; `uuid = event.id` dedupes PostHog-side.
+ */
+async function emitPaymentFailed(
+  event: StripeEvent,
+  emit: PaymentFailedEmit,
+): Promise<void> {
+  const properties: Record<string, unknown> = {
+    source: "stripe_webhook",
+    stripe_event_id: event.id,
+    user_resolved: emit.userResolved,
+    ...emit.properties,
+  };
+  logger.warn({
+    msg: "stripe_payment_failed",
+    stripe_event_id: event.id,
+    kind: properties["kind"],
+    error_code: properties["error_code"],
+    decline_code: properties["decline_code"],
+    is_3ds: properties["is_3ds"],
+    failure_code: properties["failure_code"],
+    network_decline_code: properties["network_decline_code"],
+    attempt_count: properties["attempt_count"],
+    user_resolved: emit.userResolved,
+  });
+  try {
+    const result = await captureImpl({
+      event: ANALYTICS_EVENTS.PAYMENT_FAILED,
+      distinctId: emit.distinctId,
+      properties,
+      uuid: event.id,
+    });
+    if (result.outcome !== "ok" && result.outcome !== "skipped") {
+      logger.warn({
+        msg: "payment_failed_capture_non_ok",
+        outcome: result.outcome,
+        stripe_event_id: event.id,
+      });
+    }
+  } catch (err) {
+    // Analytics is best-effort; never break webhook processing on it.
+    logger.warn({
+      msg: "payment_failed_capture_threw",
+      stripe_event_id: event.id,
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 export async function processStripeWebhook(
   pool: Pool,
   event: StripeEvent,
@@ -685,6 +931,7 @@ export async function processStripeWebhook(
     const object = event.data?.object;
     type LifecycleEmit = "started" | "renewed" | "canceled";
     let lifecycleEmit: LifecycleEmit | null = null;
+    let paymentFailedEmit: PaymentFailedEmit | null = null;
     if (object && typeof object === "object" && !Array.isArray(object)) {
       if (event.type === "checkout.session.completed") {
         await upsertCheckoutCompleted(client, object);
@@ -712,6 +959,22 @@ export async function processStripeWebhook(
         } else {
           lifecycleEmit = "canceled";
         }
+      } else if (event.type === "payment_intent.payment_failed") {
+        paymentFailedEmit = await buildPaymentIntentFailed(
+          client,
+          event,
+          object,
+        );
+      } else if (event.type === "invoice.payment_failed") {
+        paymentFailedEmit = await buildInvoicePaymentFailed(
+          client,
+          event,
+          object,
+        );
+      } else if (event.type === "charge.failed") {
+        paymentFailedEmit = await buildChargeFailed(client, event, object);
+      } else if (event.type === "checkout.session.expired") {
+        paymentFailedEmit = buildCheckoutExpired(event, object);
       }
     }
 
@@ -729,6 +992,12 @@ export async function processStripeWebhook(
       } else {
         await emitSubscriptionCanceled(event, object);
       }
+    }
+    // Negative-signal capture — same POST-COMMIT, best-effort contract as the
+    // lifecycle block above. Only one of `lifecycleEmit` / `paymentFailedEmit`
+    // is ever set per event (mutually-exclusive event types).
+    if (paymentFailedEmit) {
+      await emitPaymentFailed(event, paymentFailedEmit);
     }
     return { ok: true, duplicate: false };
   } catch (err) {

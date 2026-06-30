@@ -102,7 +102,7 @@ export default function RoutineApp({
         />
 
         {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance. */}
-        <AIPill module="routine" />
+        <AIPill />
       </MeshBackground>
     </ModuleAccentProvider>
   );

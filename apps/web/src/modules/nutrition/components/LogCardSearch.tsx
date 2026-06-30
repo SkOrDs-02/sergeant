@@ -98,7 +98,7 @@ export function LogCardSearch({
                 </button>
                 <button
                   type="button"
-                  className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition hover:bg-nutrition/20 transition-colors"
+                  className="shrink-0 w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] flex items-center justify-center rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition hover:bg-nutrition/20 transition-colors"
                   onClick={() => {
                     onAddMealFromSearch?.({
                       id: newMealId(),

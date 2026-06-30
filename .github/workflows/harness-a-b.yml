@@ -1,0 +1,62 @@
+name: Harness A/B Evaluation
+
+on:
+  schedule:
+    - cron: "0 0 * * 0" # weekly Sun 00:00 UTC
+  workflow_dispatch: # manual trigger for debugging
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        ref:
+          - main
+          - experimental/loop-detect
+    steps:
+      - name: Resolve ref
+        id: ref
+        run: |
+          if [ "${{ matrix.ref }}" = "main" ]; then
+            echo "resolved=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "role=control" >> "$GITHUB_OUTPUT"
+          else
+            echo "resolved=${{ matrix.ref }}" >> "$GITHUB_OUTPUT"
+            echo "role=treatment" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.resolved }}
+          fetch-depth: 1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - name: Read current harness version
+        id: hv
+        run: |
+          if [ -f .kilo/harness-versions.json ]; then
+            v=$(node -e "console.log(require('./.kilo/harness-versions.json').current)")
+            echo "version=$v" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=unknown" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run benchmark task suite (placeholder)
+        if: false # gated until golden-task suite ships (see ADR 0068 §Open questions)
+        run: pnpm harness:bench --out=bench-${{ steps.ref.outputs.role }}.json
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: harness-a-b-${{ steps.ref.outputs.role }}-${{ steps.hv.outputs.version }}
+          path: bench-${{ steps.ref.outputs.role }}.json
+          if-no-files-found: ignore

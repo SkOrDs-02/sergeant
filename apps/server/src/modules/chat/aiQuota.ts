@@ -8,9 +8,11 @@ import {
   aiQuotaFailOpenTotal,
   aiCostConsumedTotal,
 } from "../../obs/metrics.js";
+import { toLocalISODate } from "@sergeant/shared";
 import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
 import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
+import { isAnthropicBudgetHardExceeded } from "../../obs/anthropicBudgetGuard.js";
 
 type SessionUser = { id: string } | null;
 
@@ -87,6 +89,83 @@ const DEFAULT_BUCKET = "default";
 const TOOL_BUCKET_PREFIX = "tool:";
 const DEFAULT_TOOL_COST = 3;
 
+// ── Pro tiered model degradation ────────────────────────────────────
+// Окремі відра рахують дорогі (premium) та дешеві (standard) AI-виклики
+// Pro-юзера за добу. Каскад: premium вичерпано → standard → floor (∞,
+// майже-безкоштовна модель). Pro НІКОЛИ не блокується (немає 429). Усе
+// читається з `process.env` (як решта модуля), щоб тести фліпали runtime.
+const PREMIUM_BUCKET = "premium";
+const STANDARD_BUCKET = "standard";
+const DEFAULT_PREMIUM_LIMIT = 20;
+const DEFAULT_STANDARD_LIMIT = 80;
+
+/** Рівень моделі для Pro у поточну добу. */
+export type ProTier = "premium" | "standard" | "floor";
+/** Поверхня, що споживає tier (різні дефолтні моделі). */
+export type ProEndpoint = "chat" | "coach";
+
+export interface ProTierResult {
+  tier: ProTier;
+  /** Готовий model-id для caller-а (Anthropic id для chat, OpenRouter для coach). */
+  model: string;
+  /** Залишок premium/standard-запитів; `null` коли tiering не застосовано. */
+  remaining: number | null;
+  limit: number | null;
+}
+
+function tieredProEnabled(): boolean {
+  const v = process.env["AI_TIERED_PRO_ENABLED"]?.toLowerCase();
+  return v === "1" || v === "true";
+}
+
+/**
+ * Opt-in catastrophic-cost circuit-breaker. Коли увімкнено І денний глобальний
+ * Anthropic-spend перевищив hard-поріг — `resolveProTier` деградує всіх
+ * не-founder юзерів на floor-модель (див. `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL`
+ * у env.ts). Default off. Читаємо `process.env` (а не cached `env`-обʼєкт) для
+ * консистентності з `tieredProEnabled()` і простоти тестування.
+ */
+function hardBreachDegradeAllEnabled(): boolean {
+  const v = process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"]?.toLowerCase();
+  return v === "1" || v === "true";
+}
+
+function envStr(name: string, fallback: string): string {
+  const v = process.env[name];
+  return v === undefined || v === "" ? fallback : v;
+}
+
+/** Дефолтні моделі по (tier × endpoint). Premium reuse-ить наявні env. */
+const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
+  premium: {
+    chat: () => envStr("CHAT_MODEL_SYNTHESIS", "claude-sonnet-4-6"),
+    coach: () => envStr("OPENROUTER_COACH_MODEL", "openai/gpt-5.1"),
+  },
+  standard: {
+    chat: () =>
+      envStr("AI_PRO_STANDARD_CHAT_MODEL", "claude-haiku-4-5-20251001"),
+    coach: () =>
+      envStr("AI_PRO_STANDARD_COACH_MODEL", "google/gemini-2.5-flash-lite"),
+  },
+  floor: {
+    chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", "claude-3-haiku-20240307"),
+    coach: () =>
+      envStr("AI_PRO_FLOOR_COACH_MODEL", "google/gemini-2.5-flash-lite"),
+  },
+};
+
+function tierModel(tier: ProTier, endpoint: ProEndpoint): string {
+  return PRO_TIER_MODEL[tier][endpoint]();
+}
+
+function setTierHeader(res: Response, tier: ProTier): void {
+  try {
+    res.setHeader("X-AI-Tier", tier);
+  } catch {
+    /* ignore */
+  }
+}
+
 function parseLimit<F extends number | null>(
   name: string,
   fallback: F,
@@ -115,7 +194,10 @@ export function isAiQuotaDisabled(): boolean {
   return v === "1" || v === "true";
 }
 
-const DEFAULT_ANON_LIMIT = 40;
+// Default = PROD (Railway `AI_DAILY_ANON_LIMIT`, 2026-06-27). Lower than the
+// free-user cap (5) on purpose: anonymous (IP-keyed) callers are the cheapest
+// to spin up, so they get the tightest daily AI budget.
+const DEFAULT_ANON_LIMIT = 3;
 
 /** Daily AI-message cap for an anonymous (IP-keyed) caller — env-tunable. */
 function anonDailyLimit(): number | null {
@@ -459,6 +541,155 @@ export async function consumeToolQuota(
     }
     return { ok: true, remaining: null, limit, reason: "store_unavailable" };
   }
+}
+
+/**
+ * Pro tiered model resolution. На відміну від `assertAiQuota`, НЕ блокує і НЕ
+ * шле 429 — Pro завжди отримує якусь модель. Повертає `{tier, model}`, caller
+ * підставляє `model` у свій AI-виклик (chat → Anthropic stream, coach → factory).
+ *
+ * Каскад (лише для Pro-плану): premium-bucket (дорога модель) → standard-bucket
+ * (дешевша) → floor (∞, майже-безкоштовна). Free/Anon/founder/disabled/flag-off
+ * та будь-який fail-open шлях → `premium`-модель (поточна поведінка; Free вже
+ * обмежений КІЛЬКІСТЮ через `assertAiQuota`, модель не деградує).
+ *
+ * Refund: інкрементиться рівно одне відро на запит (premium АБО standard), тож
+ * єдиного `req.aiQuotaRefund`-слота достатньо — `attachRefund` прикріплюється
+ * лише коли реально списали. Floor нічого не списує → refund не потрібен.
+ *
+ * Fail-open скрізь: DB-outage / circuit-open / plan-lookup-fail → `premium`.
+ * Краще зрідка дати Pro дорожчу модель, ніж заблокувати оплаченого юзера.
+ */
+export async function resolveProTier(
+  req: Request,
+  res: Response,
+  endpoint: ProEndpoint,
+): Promise<ProTierResult> {
+  const premium = (
+    remaining: number | null = null,
+    limit: number | null = null,
+  ): ProTierResult => {
+    setTierHeader(res, "premium");
+    return {
+      tier: "premium",
+      model: tierModel("premium", endpoint),
+      remaining,
+      limit,
+    };
+  };
+
+  if (isAiQuotaDisabled()) return premium();
+  if (!tieredProEnabled()) return premium();
+
+  const sessionUser = await safeSessionUser(req);
+  // Anon (no session) — gated by count via assertAiQuota, not model-tiered.
+  if (!sessionUser) return premium();
+  // Founder — never degraded (plan-agnostic).
+  if (isFounderUser(sessionUser.id)) return premium();
+
+  // Catastrophic-cost circuit-breaker (opt-in, default off). Коли денний
+  // глобальний Anthropic-spend перевищив hard-поріг І
+  // `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL=true` — деградуємо КОЖНОГО не-founder
+  // юзера (Free + Pro) на floor-модель, не лише тих, хто вичерпав власну
+  // квоту. Це справжня стеля вартості: Free отримує premium-модель (cap-иться
+  // лише КІЛЬКІСТЮ через assertAiQuota), тож на масштабі домінує в AI-COGS —
+  // деградація саме його згинає криву. Sync-флаг, без DB-залежності → працює
+  // навіть при db-outage. Floor нічого не списує (no refund).
+  if (hardBreachDegradeAllEnabled() && isAnthropicBudgetHardExceeded()) {
+    setTierHeader(res, "floor");
+    return {
+      tier: "floor",
+      model: tierModel("floor", endpoint),
+      remaining: 0,
+      limit: 0,
+    };
+  }
+
+  let plan: "free" | "pro" = "free";
+  try {
+    plan =
+      (await getUserPlan(pool, sessionUser.id)).plan === "pro" ? "pro" : "free";
+  } catch (e: unknown) {
+    logger.warn({
+      msg: "pro_tier_plan_lookup_failed",
+      err: { message: (e as Error)?.message || String(e) },
+    });
+    return premium(); // monetization-safe: a transient blip gives Sonnet, never blocks
+  }
+  // Only Pro is model-tiered. Free is count-capped by assertAiQuota.
+  if (plan !== "pro") return premium();
+
+  // Fail-open: never block a paying user on infra trouble.
+  if (!process.env["DATABASE_URL"]) return premium();
+  if (!aiQuotaCircuitBreaker.isAllowing()) return premium();
+
+  const subject = subjectFor(sessionUser, req);
+  // Tier buckets use the Kyiv civil day; Free/Anon buckets stay on `today()`
+  // (UTC) — see `today()` below. Don't unify the two.
+  const day = toLocalISODate();
+  const premiumLimit = parseLimit(
+    "AI_PRO_PREMIUM_DAILY_LIMIT",
+    DEFAULT_PREMIUM_LIMIT,
+  );
+  const standardLimit = parseLimit(
+    "AI_PRO_STANDARD_DAILY_LIMIT",
+    DEFAULT_STANDARD_LIMIT,
+  );
+
+  // 1) premium-bucket
+  try {
+    const pr = await consumeQuota({
+      subject,
+      day,
+      limit: premiumLimit,
+      cost: 1,
+      bucket: PREMIUM_BUCKET,
+    });
+    aiQuotaCircuitBreaker.recordSuccess();
+    if (pr.ok) {
+      attachRefund(req, { subject, day, bucket: PREMIUM_BUCKET, cost: 1 });
+      return premium(pr.remaining, pr.limit);
+    }
+  } catch (e) {
+    aiQuotaCircuitBreaker.recordFailure(e);
+    logQuotaStoreUnavailable("db_error", e);
+    return premium(); // fail-open
+  }
+
+  // 2) standard-bucket (premium exhausted)
+  try {
+    const sr = await consumeQuota({
+      subject,
+      day,
+      limit: standardLimit,
+      cost: 1,
+      bucket: STANDARD_BUCKET,
+    });
+    aiQuotaCircuitBreaker.recordSuccess();
+    if (sr.ok) {
+      attachRefund(req, { subject, day, bucket: STANDARD_BUCKET, cost: 1 });
+      setTierHeader(res, "standard");
+      return {
+        tier: "standard",
+        model: tierModel("standard", endpoint),
+        remaining: sr.remaining,
+        limit: sr.limit,
+      };
+    }
+  } catch (e) {
+    aiQuotaCircuitBreaker.recordFailure(e);
+    logQuotaStoreUnavailable("db_error", e);
+    // fall through to floor — degrade rather than block
+  }
+
+  // 3) floor — both exhausted (or standard-write failed). No increment, no refund.
+  setTierHeader(res, "floor");
+  return {
+    tier: "floor",
+    model: tierModel("floor", endpoint),
+    remaining: 0,
+    limit: standardLimit,
+  };
 }
 
 function setRemainingHeader(res: Response, value: string): void {

@@ -1,6 +1,6 @@
 # Rule 18 — Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS
 
-> **Category:** `active-initiative`
+> **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
 > **Last validated:** 2026-06-05 by @Skords-01
 > **Next review:** 2026-09-01
@@ -16,7 +16,7 @@
 ## Enforced by
 
 - **convention** — eslint.config.js → max-lines: [error, { max: 600, skipBlankLines: true, skipComments: true }] (scoped to `apps/web/src/**/*.{ts,tsx}` and `apps/server/src/**/*.{js,ts}`; tests, `__tests__/**` exempt)
-- **doc** — docs/90-work/initiatives/\_0001-module-decomposition.md (allowlist + Phase 2 decomposition queue)
+- **doc** — docs/90-work/initiatives/archive/\_0001-module-decomposition.md (decomposition queue — closed)
 
 ## Why / What is enforced
 
@@ -56,7 +56,7 @@
 }
 ```
 
-**Allowlist.** Існуючі файли-моноліти (11 на 2026-05-05) виключені окремим блоком `eslint.config.js` з `TODO(0001-module-decomposition): deadline 2026-06-15`. Кожна декомпозиція = видалення одного рядка з allowlist (видно у `git blame`). Allowlist — _не_ постійна fixture: dropping rate відстежується в [`docs/90-work/initiatives/archive/_0001-module-decomposition.md`](../../../90-work/initiatives/archive/_0001-module-decomposition.md) метрикою «Файлів `apps/web/src/**` ≥600 LOC: 16 → 11 → ≤ 2».
+**Allowlist (закрито).** Декомпозиція завершена в межах ініціативи [0001](../../../90-work/initiatives/archive/_0001-module-decomposition.md) (closed) — окремого allowlist-блоку файлів-монолітів у `eslint.config.js` більше **немає**: `max-lines: 600` діє на весь `apps/web/src/**` та `apps/server/src/**` без винятків (виключені лише `*.{test,spec}` / `__tests__/**` / `generated/**`). Метрику «Файлів ≥600 LOC: 16 → 11 → ≤ 2» досягнуто, тому правило промовано з `active-initiative` у `lint-enforced-convention`. Якщо колись знадобиться тимчасовий виняток — його додають свідомо + апрув ревьюерів (розпухлий назад файл > 600 LOC падає).
 
 **Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (`chat.ts` thin orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/`) довів цінність декомпозиції в продакшні. Без жорсткого ліміту декомпозиція — це постійний «уторгований борг» (зробили — наповзло знову).
 
@@ -78,5 +78,5 @@
 
 ## Related
 
-- **doc** — docs/90-work/initiatives/\_0001-module-decomposition.md
+- **doc** — docs/90-work/initiatives/archive/\_0001-module-decomposition.md
 - **agents** — #18

@@ -21,7 +21,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 - Якщо змінюється форма відповіді — онови server-серіалізатор, `packages/api-client` і contract-тест в одному PR.
 - Використовуй `Europe/Kyiv` day boundaries; не деривуй day-ключі raw UTC ISO-нарізкою.
 - Better Auth user-id-и — непрозорі рядки.
-- **Білінг (ADR-0051):** якщо endpoint торкається subscription або pricing — `plan: 'free' | 'pro'` тільки. Plus tier видалено зі scope. Enum живе у `apps/server/src/modules/billing/`.
+- **Білінг (ADR-0068):** активна модель — Free + Pro ₴199/міс / ₴1 490/рік, reverse trial 7 днів (автоматичний Pro → downgrade). `plan: 'free' | 'pro'` тільки. Plus tier видалено зі scope. Enum живе у `apps/server/src/modules/billing/`. Деталі цін і лімітів — у [ADR-0068](../../../docs/04-governance/adr/0068-pricing-v4-uah-reverse-trial.md).
 - **Логування (Hard Rule #21):** нові поверхні логування мають відповідати Pino redaction policy — PII не потрапляє в логи. Перевірка: [`docs/04-governance/security/logging-redaction-policy.md`](../../../docs/04-governance/security/logging-redaction-policy.md).
 
 ## Розміщення

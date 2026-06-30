@@ -35,7 +35,7 @@ import type { HubChatSession } from "../hubChatSessions";
 import { usePlan } from "../../billing/usePlan";
 
 type ChatMessage = HubChatSession["messages"][number];
-const FREE_DAILY_AI_CHAT_LIMIT = 5;
+const FREE_DAILY_AI_CHAT_LIMIT = 15;
 const DAILY_CHAT_COUNT_KEY = "sergeant:ai-chat:daily-count:v1";
 const AUTO_TTS_ENABLED_KEY = "sergeant:hub-chat:auto-tts:v1";
 

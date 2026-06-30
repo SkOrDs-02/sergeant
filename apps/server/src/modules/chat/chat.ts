@@ -14,6 +14,7 @@ import {
   recordAnthropicUsage,
 } from "../../lib/anthropic.js";
 import type { WithAiQuotaRefund } from "./aiQuota.js";
+import { resolveProTier } from "./aiQuota.js";
 import { SYSTEM_PROMPT_VERSION } from "./tools.js";
 import {
   applyMessagesCacheBreakpoint,
@@ -183,6 +184,7 @@ async function callAnthropicWithContinuation(
     endpoint: string;
     signal?: AbortSignal;
     promptVersion?: string;
+    userId?: string;
   },
 ): Promise<{
   response: FetchResponse | null;
@@ -324,6 +326,12 @@ export default async function handler(
     stream,
   } = parseBody(ChatRequestSchema, req);
 
+  // Резолвимо сесію один раз — для RAG-injection (перший тур) і для per-user
+  // cost-ledger (`ai_usage_daily` рядок `u:<id>` поряд із global aggregate).
+  // anon / lookup-error → null: cost тоді пишеться лише глобально.
+  const sessionUser = await getSessionUser(req).catch(() => null);
+  const ledgerUserId = sessionUser?.id ?? undefined;
+
   // Другий крок: клієнт виконав tool calls і повертає результати
   if (tool_results && tool_calls_raw) {
     // M7 — hard cap на кількість tool_use-блоків з клієнтського
@@ -404,8 +412,16 @@ export default async function handler(
     // легко займають 1.5–2k токенів; нижчі значення обрізали відповідь
     // посеред речення. Тримаємо із запасом — модель сама зупиниться раніше,
     // якщо контент закінчився.
+    // Pro tiered degradation: the tool-result synthesis is the expensive
+    // Sonnet turn, so it carries the tier. `resolveProTier` returns the
+    // Anthropic model for this Pro user's daily tier (premium Sonnet →
+    // standard Haiku 4.5 → floor Haiku 3 — all Anthropic, so streaming +
+    // tool-use + prompt-cache keep working). Free/Anon/founder/flag-off get
+    // the premium model = `CHAT_MODEL_SYNTHESIS` (unchanged behaviour). The
+    // first-turn Haiku router below is intentionally left untiered.
+    const proTier = await resolveProTier(req, res, "chat");
     const payload = {
-      model: env.CHAT_MODEL_SYNTHESIS,
+      model: proTier.model,
       max_tokens: 2500,
       system: buildSystem(context),
       tools: TOOLS_WITH_CACHE,
@@ -421,6 +437,7 @@ export default async function handler(
         "chat-tool-result",
         clientAbort.signal,
         SYSTEM_PROMPT_VERSION,
+        ledgerUserId,
       );
       return;
     }
@@ -435,6 +452,7 @@ export default async function handler(
           endpoint: "chat-tool-result",
           signal: clientAbort.signal,
           promptVersion: SYSTEM_PROMPT_VERSION,
+          userId: ledgerUserId,
         },
       ));
     } catch (e) {
@@ -466,9 +484,8 @@ export default async function handler(
   // **тільки на першому турі** (тут), не на tool-result-турі вище. Sync
   // за дизайном: блокуємо handler на ≤RAG_TIMEOUT_MS перш ніж дзвонити
   // Anthropic. Failure-mode → no-op (повертає baseContext).
-  const sessionUserForRag = await getSessionUser(req).catch(() => null);
   const augmentedContext = await buildRagContext({
-    userId: sessionUserForRag?.id ?? null,
+    userId: sessionUser?.id ?? null,
     baseContext: context,
     messages: cleaned,
   });
@@ -501,6 +518,7 @@ export default async function handler(
         endpoint: "chat",
         signal: clientAbort.signal,
         promptVersion: SYSTEM_PROMPT_VERSION,
+        userId: ledgerUserId,
       },
     ));
   } catch (e) {
@@ -688,6 +706,7 @@ async function streamAnthropicToSse(
   endpoint: string = "chat",
   abortSignal?: AbortSignal,
   promptVersion?: string,
+  userId?: string,
 ): Promise<void> {
   let firstResponse: FetchResponse;
   let firstRecordEnd: (outcome?: string) => void;
@@ -777,6 +796,7 @@ async function streamAnthropicToSse(
           iterEndpoint,
           iter.usage,
           promptVersion,
+          userId,
         );
       }
 

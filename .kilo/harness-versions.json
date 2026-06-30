@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "current": "0.1.0",
+  "versions": {
+    "0.1.0": {
+      "releasedAt": "2026-06-29",
+      "changes": [
+        "Initial harness versioning: schemaVersion 1, current 0.1.0 (pre-1.0.0 baseline, no stable release yet)",
+        "Added .kilo/harness-versions.json with versions map and abExperiments registry",
+        "Added .github/workflows/harness-a-b.yml (weekly Sun 00:00 UTC + workflow_dispatch)",
+        "Added scripts/ci-bump-harness-version.mjs (PR-time version incrementer)",
+        "Added Harness version section to AGENTS.md"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    }
+  },
+  "abExperiments": {}
+}

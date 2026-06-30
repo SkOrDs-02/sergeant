@@ -616,7 +616,7 @@ export default function NutritionApp({
         />
 
         {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance. */}
-        <AIPill module="nutrition" />
+        <AIPill />
       </MeshBackground>
     </ModuleAccentProvider>
   );

@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last validated:** 2026-06-25 by docs:gen-status. **Next review:** 2026-06-25.
+> **Last validated:** 2026-06-28 by docs:gen-status. **Next review:** 2026-06-28.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -36,8 +36,8 @@
 | -------------------------------- | -------- |
 | Ініціативи                       | 16       |
 | Планування                       | 9        |
-| Launch / запуск                  | 17       |
-| Аудити й прожарки                | 9        |
+| Launch / запуск                  | 16       |
+| Аудити й прожарки                | 10       |
 | Security hardening               | 2        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |

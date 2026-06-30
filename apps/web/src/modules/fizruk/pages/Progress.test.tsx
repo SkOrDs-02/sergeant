@@ -142,6 +142,36 @@ describe("Progress page", () => {
     expect(screen.getByText("Жим лежачи")).toBeInTheDocument();
   });
 
+  it("falls back to the item's stored nameUk when the exercise is absent from the catalog (QA D-003)", () => {
+    // A manually-added exercise (or a demo-seed id) has no catalog entry, so
+    // the PR board must show the workout item's stored `nameUk` rather than
+    // leaking the raw exerciseId into the Ukrainian-only UI.
+    setHooks({
+      exercises: [],
+      workouts: [
+        {
+          id: "w1",
+          startedAt: "2026-05-14T18:00:00Z",
+          endedAt: "2026-05-14T19:00:00Z",
+          items: [
+            {
+              id: "i1",
+              exerciseId: "squat",
+              nameUk: "Присідання зі штангою",
+              type: "strength",
+              musclesPrimary: ["quadriceps"],
+              musclesSecondary: [],
+              sets: [{ weightKg: 120, reps: 5 }],
+            },
+          ],
+        },
+      ],
+    });
+    render(<Progress onNavigate={onNavigate} />);
+    expect(screen.getByText("Присідання зі штангою")).toBeInTheDocument();
+    expect(screen.queryByText("squat")).not.toBeInTheDocument();
+  });
+
   it("renders the pushup cross-module card only when data exists", () => {
     setHooks({
       pushup: {

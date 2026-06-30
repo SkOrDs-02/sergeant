@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
 
+// Cold dynamic imports of the full Express app are slow on Windows when this
+// route-wiring file runs inside a large parallel batch; keep assertions strict.
+vi.setConfig({ testTimeout: 60_000 });
+
 /**
  * Route-level contract tests for `POST /api/chat`.
  *

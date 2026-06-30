@@ -1,10 +1,11 @@
 # ADR-0051: Pricing v3 — Free + Pro, single paid tier
 
-- **Status:** Accepted
-- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
+- **Status:** Superseded by ADR-0068
+- **Last touched:** 2026-06-27 by @SkOrDs-02 (status update — superseded by ADR-0068).
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
 - **Supersedes:** —
+- **Superseded by:** [ADR-0068](./0068-pricing-v4-uah-reverse-trial.md) — ₴199/міс, зворотній trial, уточнені ліміти Free/Pro (2026-06-27)
 - **Superseded sections (non-ADR):** pricing sections in [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md) (§2.2 Plus tier, §2.3 pay-per-feature, §3 Lifetime ₴2999)
 - **Related:**
   - [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../90-work/initiatives/0010-revenue-first-launch.md)

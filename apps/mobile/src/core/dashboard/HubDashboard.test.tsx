@@ -9,6 +9,7 @@
  */
 
 import { fireEvent, render } from "@testing-library/react-native";
+import { Animated } from "react-native";
 
 import {
   FIRST_ACTION_PENDING_KEY,
@@ -23,6 +24,16 @@ import { ToastProvider } from "@/components/ui/Toast";
 jest.mock("expo-router", () => ({
   router: { push: jest.fn() },
 }));
+
+jest.mock("@/lib/analytics", () => {
+  const { ANALYTICS_EVENTS } = jest.requireActual("@sergeant/shared") as {
+    ANALYTICS_EVENTS: Record<string, string>;
+  };
+  return {
+    ANALYTICS_EVENTS,
+    trackEvent: jest.fn(),
+  };
+});
 
 jest.mock("react-native-safe-area-context", () => {
   const RN = jest.requireActual("react-native");
@@ -63,8 +74,14 @@ jest.mock("./useCoachInsight", () => ({
   }),
 }));
 
+jest.mock("../hints/useHints", () => ({
+  useHints: jest.fn(),
+}));
+
 function resetStore() {
-  _getMMKVInstance().clearAll();
+  const mmkv = _getMMKVInstance();
+  mmkv.clearAll();
+  mmkv.set("dashboard_drag_coach_seen", JSON.stringify(true));
 }
 
 function renderDashboard() {
@@ -75,10 +92,26 @@ function renderDashboard() {
   );
 }
 
+function stubDashboardAnimation() {
+  jest.spyOn(Animated, "loop").mockImplementation(
+    () =>
+      ({
+        reset: jest.fn(),
+        start: jest.fn(),
+        stop: jest.fn(),
+      }) as never,
+  );
+}
+
 describe("HubDashboard one-hero rule", () => {
   beforeEach(() => {
+    stubDashboardAnimation();
     resetStore();
     mockUserData.data = { user: null };
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("shows only FirstActionHeroCard when the FTUX flag is pending", () => {

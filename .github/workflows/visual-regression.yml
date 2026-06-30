@@ -35,11 +35,13 @@ name: Visual Regression (Argos)
 # See `.github/workflows/visual-regression.yml` history + the
 # "Argos snapshot strategy" follow-up in the open-work tracker.
 on:
+  # Reverted to workflow_dispatch-only until the Argos baseline is
+  # bulk-approved in the Argos UI. With no approved baseline every web PR
+  # produced a cosmetic red "Visual regression (Argos)" check and burned
+  # ~6 min of runner time for zero signal. Re-add the `pull_request` trigger
+  # (paths: apps/web/**, packages/design-tokens/**) once a stable 0-diff
+  # green baseline exists, and flip `continue-on-error` back to false then.
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "apps/web/**"
-      - "packages/design-tokens/**"
 
 permissions:
   contents: read

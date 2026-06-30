@@ -48,7 +48,7 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createMonoWebhookRouter());
   app.use(createBanksRouter());
   app.use(createBarcodeRouter());
-  app.use(createNutritionRouter());
+  app.use(createNutritionRouter({ pool }));
   app.use(createFinykRouter());
   app.use(createWeeklyDigestRouter());
   app.use(createCoachRouter());

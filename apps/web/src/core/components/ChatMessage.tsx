@@ -5,7 +5,7 @@
 import { memo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
-import { AssistantMessageBody } from "./AssistantMessageBody";
+import { AssistantMessageBody } from "@shared/components/AssistantMessageBody";
 import { speak } from "../lib/hubChatSpeech";
 import type { ChatMessage as ChatMessageData } from "../lib/hubChatUtils";
 import type { ChatActionCard } from "../lib/hubChatActionCards";
