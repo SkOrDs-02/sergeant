@@ -84,6 +84,8 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
       locale,
       ...(referrer ? { referrer } : {}),
     });
+    // Mount-only landing-view analytics — fire once per page mount, not on
+    // every locale/reference change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

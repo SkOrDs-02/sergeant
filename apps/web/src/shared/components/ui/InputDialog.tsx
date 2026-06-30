@@ -76,6 +76,7 @@ export function InputDialog({
       return () => clearTimeout(timer);
     }
     return undefined;
+    // `reset` is RHF-stable; `inputRef` is a stable ref.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultValue]);
 

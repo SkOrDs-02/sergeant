@@ -110,6 +110,7 @@ export function useLiveWorkoutTick(
       const id = setInterval(() => setNow(Date.now()), 1000);
       return () => clearInterval(id);
     },
+    // setNow is a React setter; activeWorkout is fully captured by the deps.
     [activeWorkout?.id, activeWorkout?.endedAt], // eslint-disable-line react-hooks/exhaustive-deps
   );
 }

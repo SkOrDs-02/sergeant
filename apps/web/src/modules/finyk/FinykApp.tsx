@@ -111,7 +111,7 @@ export default function App({
     () => readRaw(FINYK_MANUAL_ONLY_KEY, "") === "1",
   );
 
-  // Mount-only URL sync effect
+  // Mount-only URL sync effect — page/toast/storage are stable or setters.
   useEffect(() => {
     if (window.location.search.includes("sync=")) {
       const ok = storage.loadFromUrl();
@@ -120,7 +120,7 @@ export default function App({
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Mount-only first-run navigation
+  // Mount-only first-run navigation — firstRunFinyk/pwaAction/page are read once.
   useEffect(() => {
     if (!firstRunFinyk) return;
     if (pwaAction === "add_expense") return;

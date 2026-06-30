@@ -51,6 +51,8 @@ function NumberField({
     if (parseOptionalPositiveInt(draft) !== value) {
       setDraft(canonical);
     }
+    // `draft` is intentionally excluded — comparing against it would re-run
+    // the effect every keystroke and clobber the user's in-progress edit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 

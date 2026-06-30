@@ -305,6 +305,9 @@ export function useOverviewData({
           dueDate,
         };
       }),
+    // kyivYear/Month/Day and txCategories are derived from
+    // subscriptions/transactions/todayStartMs — adding them would only
+    // duplicate the dep; todayStartMs already changes when the day rolls.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [subscriptions, transactions, todayStartMs],
   );
