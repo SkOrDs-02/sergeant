@@ -234,3 +234,16 @@ The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-
 - **A/B experiments:** tracked under `abExperiments` (empty until a treatment is added).
 - **How to bump:** run `node scripts/ci-bump-harness-version.mjs` locally before opening a PR that touches AGENTS.md, a skill, a Hard Rule, or an ESLint design rule; the script auto-detects `patch` / `minor` / `major` from the diff and updates the file in place.
 - **Cross-read:** on session start, if `current` differs from the version noted in the previous session summary, re-read the linked governance doc and the latest `versions.<x.y.z>.changes` entry.
+
+## Harness-engineering v1
+
+Rollout завершено 2026-06-29. Чотири компоненти:
+
+- **Dynamic snapshot** — `tools/agent-snapshot/snapshot.mjs`, runs `pnpm snapshot`
+- **AI-PR checklist** — `.github/PULL_REQUEST_TEMPLATE.md` § AI-Generation Signals,
+  enforced by `.github/workflows/ai-pr-checklist.yml`
+- **Harness versioning** — `.kilo/harness-versions.json`, A/B workflow
+- **Entropy janitors** — `tools/entropy-janitors/`, weekly Mon 06:00 UTC,
+  opens issues only (no auto-PR)
+
+Деталі: [harness-engineering-v1.md](./docs/90-work/planning/harness-engineering-v1.md)
