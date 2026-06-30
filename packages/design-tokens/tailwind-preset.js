@@ -924,6 +924,11 @@ const preset = {
         40: "40",
         50: "50",
         100: "100",
+        150: "150",
+        200: "200",
+        300: "300",
+        400: "400",
+        500: "500",
         // Semantic tier — preferred for new code.
         base: zTier.base,
         dropdown: zTier.dropdown,

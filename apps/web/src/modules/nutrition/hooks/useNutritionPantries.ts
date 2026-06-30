@@ -23,6 +23,7 @@ import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import {
   normalizeFoodName,
+  normalizeUnit,
   parseLoosePantryText,
   type PantryItem,
 } from "../lib/pantryTextParser";
@@ -138,7 +139,20 @@ export function useNutritionPantries({
   }, [pantryItems, pantryText]);
 
   const upsertItem = (raw: string | PantryItem | PantryItem[]) => {
-    const parsed = parseLoosePantryText(raw);
+    const parsed =
+      typeof raw === "string"
+        ? parseLoosePantryText(raw)
+        : (Array.isArray(raw) ? raw : [raw])
+            .map((item) => ({
+              name: normalizeFoodName(item?.name),
+              qty:
+                item?.qty == null || !Number.isFinite(Number(item.qty))
+                  ? null
+                  : Number(item.qty),
+              unit: item?.unit != null ? normalizeUnit(item.unit) : null,
+              notes: item?.notes ?? null,
+            }))
+            .filter((item) => item.name);
     if (!parsed.length) return;
     setPantries((cur) =>
       updatePantry(cur, activePantryId, (p) => ({

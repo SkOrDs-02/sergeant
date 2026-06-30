@@ -58,6 +58,22 @@ export function notifyFinykSqliteCacheRefresh(): void {
       /* noop — listeners must never break notify */
     }
   }
+  try {
+    const target = globalThis as typeof globalThis & {
+      __sergeantSqliteRefreshCounts?: Record<string, number>;
+    };
+    target.__sergeantSqliteRefreshCounts = {
+      ...(target.__sergeantSqliteRefreshCounts ?? {}),
+      finyk: (target.__sergeantSqliteRefreshCounts?.["finyk"] ?? 0) + 1,
+    };
+    globalThis.dispatchEvent?.(
+      new CustomEvent("sergeant:sqlite-cache-refresh", {
+        detail: { module: "finyk" },
+      }),
+    );
+  } catch {
+    /* noop — browser-test signal must never break refresh notify */
+  }
 }
 
 /** Test-only escape hatch: clears subscribers + resets tick. */
