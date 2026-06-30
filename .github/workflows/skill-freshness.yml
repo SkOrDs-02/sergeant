@@ -29,17 +29,22 @@ jobs:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Setup Node
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
-        with:
-          node-version: "22"
-
       # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
       # Version is read from packageManager in root package.json (pnpm@9.15.1).
+      # Must run BEFORE actions/setup-node: setup-node@v5 auto-detects the
+      # `packageManager` field in package.json and shells out to `pnpm` during
+      # its own run — if pnpm isn't on PATH yet, that step fails outright
+      # ("Unable to locate executable file: pnpm") before our `pnpm lint:skills`
+      # step even starts.
       - name: Setup pnpm
         uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
         with:
           run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "22"
 
       - name: Run skill-shape lint + lock-hash verification
         run: pnpm lint:skills
