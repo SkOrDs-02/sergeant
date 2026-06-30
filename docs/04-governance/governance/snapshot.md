@@ -8,7 +8,7 @@
 
 ## What this doc covers
 
-ADR-0067 explains *why* the snapshot exists and *what* it contains. This governance doc covers:
+ADR-0067 explains _why_ the snapshot exists and _what_ it contains. This governance doc covers:
 
 1. **How** an agent uses the snapshot on session start (the §0.1 contract).
 2. **How** the snapshot interacts with `codebase-memory-mcp` (the structural knowledge graph).
@@ -21,20 +21,20 @@ Every agent that loads `sergeant-start-here` MUST run `pnpm snapshot` before loa
 specialist skill. The script is zero-dep, offline-safe, and degrades gracefully. The
 agent reads `.kilocode/snapshot.md` and reacts to its 8 sections:
 
-| Section                 | Failure mode              | Agent action when healthy             | Agent action when degraded         |
-| ----------------------- | ------------------------- | ------------------------------------- | ---------------------------------- |
-| Repo                    | never                     | orient                                | (n/a — never fails)                |
-| CI last run on main     | `gh` unavailable          | investigate if red before opening PR  | proceed with caution, manual check |
-| Budgets                 | bundle script missing     | load `sergeant-deploy-and-observability` if >95% | proceed, no live budget signal |
-| Open entropy issues     | `gh` unavailable          | load `sergeant-tech-debt` if touched surface mentioned | proceed, surface not in scope |
-| Recent PR-ledger        | index parse error         | skim for adjacent work                | proceed, no recent-context signal  |
-| Hard-rule drift         | registry sync error       | re-read named rule before acting      | proceed at own risk                |
-| Initiative deadlines    | date parse error          | read named initiative file            | proceed                            |
-| Agent hints             | never                     | apply                                  | (n/a)                              |
+| Section              | Failure mode          | Agent action when healthy                              | Agent action when degraded         |
+| -------------------- | --------------------- | ------------------------------------------------------ | ---------------------------------- |
+| Repo                 | never                 | orient                                                 | (n/a — never fails)                |
+| CI last run on main  | `gh` unavailable      | investigate if red before opening PR                   | proceed with caution, manual check |
+| Budgets              | bundle script missing | load `sergeant-deploy-and-observability` if >95%       | proceed, no live budget signal     |
+| Open entropy issues  | `gh` unavailable      | load `sergeant-tech-debt` if touched surface mentioned | proceed, surface not in scope      |
+| Recent PR-ledger     | index parse error     | skim for adjacent work                                 | proceed, no recent-context signal  |
+| Hard-rule drift      | registry sync error   | re-read named rule before acting                       | proceed at own risk                |
+| Initiative deadlines | date parse error      | read named initiative file                             | proceed                            |
+| Agent hints          | never                 | apply                                                  | (n/a)                              |
 
 A "degraded" section reads `[unavailable: <reason>]` — the agent MUST NOT block on
 degraded sections; it MUST log them and continue. The snapshot's job is to provide
-*signal*, not to gate.
+_signal_, not to gate.
 
 ## Interaction with codebase-memory-mcp
 
@@ -64,7 +64,7 @@ These are **complementary, not redundant**. The recommended flow on session star
 
 The two are **layered**: snapshot first (fast, cheap, gives context for routing),
 codebase-memory second (expensive, gives answers for specific file/function questions).
-Running codebase-memory *before* the snapshot wastes tokens — you do not yet know
+Running codebase-memory _before_ the snapshot wastes tokens — you do not yet know
 which question to ask the graph.
 
 ### Where they overlap
@@ -100,13 +100,13 @@ When adding a new section to `tools/agent-snapshot/snapshot.mjs`:
 
 ## Failure modes — what the agent does
 
-| Failure                                            | Agent behavior                                            |
-| -------------------------------------------------- | --------------------------------------------------------- |
-| `pnpm snapshot` not installed (script missing)     | Skip §0.1, log a warning, proceed (CI enforces the script's presence on `main`). |
-| `.kilocode/snapshot.md` older than 60 min          | Re-run `pnpm snapshot --refresh`.                         |
-| A single section returns `[unavailable: ...]`      | Continue with the other sections. Note the gap in the session's own worklog. |
-| Total snapshot >50 KB                              | Truncation drops the richest sections first. The agent should prefer the §0.1 actions it *can* see over the ones it cannot. |
-| Cache file corrupted                              | `pnpm snapshot --refresh` (re-runs all sections, overwrites cache). |
+| Failure                                        | Agent behavior                                                                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm snapshot` not installed (script missing) | Skip §0.1, log a warning, proceed (CI enforces the script's presence on `main`).                                            |
+| `.kilocode/snapshot.md` older than 60 min      | Re-run `pnpm snapshot --refresh`.                                                                                           |
+| A single section returns `[unavailable: ...]`  | Continue with the other sections. Note the gap in the session's own worklog.                                                |
+| Total snapshot >50 KB                          | Truncation drops the richest sections first. The agent should prefer the §0.1 actions it _can_ see over the ones it cannot. |
+| Cache file corrupted                           | `pnpm snapshot --refresh` (re-runs all sections, overwrites cache).                                                         |
 
 ## Cross-references
 

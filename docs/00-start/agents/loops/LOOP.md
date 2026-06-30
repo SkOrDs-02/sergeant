@@ -1,4 +1,5 @@
 <!-- LIFECYCLE: Active -->
+
 # Loop Manifest — Autonomous Agent Workflows
 
 > **Last touched:** 2026-06-29 by @SkOrDs-02 (loop-engineering adoption pilot). **Next review:** 2026-09-27.
@@ -11,18 +12,18 @@ Loops існують у режимі **L1 report-only → L2 assisted fixes → 
 
 ## Active Loops
 
-| Loop | Owner skill | Cadence | Phase | Enabled |
-|------|-------------|---------|-------|---------|
-| [pr-review](#pr-review) | `sergeant-review-and-merge` | 5-15m | L1 | No |
-| [tech-debt-sweep](#tech-debt-sweep) | `sergeant-tech-debt` | 6h-1d | L2 | No |
-| [security-audit](#security-audit) | `sergeant-security-audit` | 1d | L1 | No |
-| [migration-guard](#migration-guard) | `sergeant-data-and-migrations` | per-PR | L2 | No |
-| [deploy-watch](#deploy-watch) | `sergeant-deploy-and-observability` | 5-15m | L2 | No |
-| [e2e-flake-watch](#e2e-flake-watch) | `sergeant-e2e-testing` | per-PR | L1 | No |
-| [review-squad-parallel](#review-squad-parallel) | `sergeant-review-squad` | per-PR | L1 | No |
-| [qa-squad-parallel](#qa-squad-parallel) | `sergeant-qa-squad` | per-PR | L1 | No |
-| [council-advisory](#council-advisory) | `sergeant-council` | per-decision | L1 | **Yes** |
-| [planning-batch](#planning-batch) | `sergeant-planning-batch` | per-batch | L1 | **Yes** |
+| Loop                                            | Owner skill                         | Cadence      | Phase | Enabled |
+| ----------------------------------------------- | ----------------------------------- | ------------ | ----- | ------- |
+| [pr-review](#pr-review)                         | `sergeant-review-and-merge`         | 5-15m        | L1    | No      |
+| [tech-debt-sweep](#tech-debt-sweep)             | `sergeant-tech-debt`                | 6h-1d        | L2    | No      |
+| [security-audit](#security-audit)               | `sergeant-security-audit`           | 1d           | L1    | No      |
+| [migration-guard](#migration-guard)             | `sergeant-data-and-migrations`      | per-PR       | L2    | No      |
+| [deploy-watch](#deploy-watch)                   | `sergeant-deploy-and-observability` | 5-15m        | L2    | No      |
+| [e2e-flake-watch](#e2e-flake-watch)             | `sergeant-e2e-testing`              | per-PR       | L1    | No      |
+| [review-squad-parallel](#review-squad-parallel) | `sergeant-review-squad`             | per-PR       | L1    | No      |
+| [qa-squad-parallel](#qa-squad-parallel)         | `sergeant-qa-squad`                 | per-PR       | L1    | No      |
+| [council-advisory](#council-advisory)           | `sergeant-council`                  | per-decision | L1    | **Yes** |
+| [planning-batch](#planning-batch)               | `sergeant-planning-batch`           | per-batch    | L1    | **Yes** |
 
 ## Human Gates (cross-cutting)
 
@@ -52,6 +53,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 ## Per-Loop Detail
 
 ### pr-review
+
 - **Goal:** React to open PRs with safety review, contract checks, docs freshness, commit scope.
 - **Phases:** discover → triage → fix → verify → notify.
 - **Gates:** billing, auth, security, breaking API, hard-rule amendments.
@@ -61,6 +63,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Cost:** [registry.yaml#pr-review](./registry.yaml) — suggested_daily_cap 1.5M tokens.
 
 ### tech-debt-sweep
+
 - **Goal:** Discover dead code (Knip), ESLint baseline drift, module-size violations (#18).
 - **Phases:** scan → prioritize → fix-small → ticket-large.
 - **Gates:** architectural changes, baseline amendment, rule amendment.
@@ -70,6 +73,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Cost:** 400k tokens/day cap.
 
 ### security-audit
+
 - **Goal:** pnpm audit, secret scan, Pino redaction check (#21), Drizzle SQL review, CVE triage.
 - **Phases:** scan → triage-risk → patch-safe → verify-worktree → escalate-risky.
 - **Gates:** high-sev CVE, denylisted packages, auth-cookie changes, prod PAT.
@@ -79,6 +83,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Cost:** 500k tokens/day cap.
 
 ### migration-guard
+
 - **Goal:** Sequential-numbering check, two-phase DROP detection (#4), index audit on every PR touching `db-schema/`.
 - **Phases:** detect → classify → block → escalate.
 - **Gates:** DROP TABLE, gap in numbering, prod rollback required.
@@ -88,6 +93,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Cost:** 100k tokens/day cap. High risk per-run, low volume.
 
 ### deploy-watch
+
 - **Goal:** React to deploy health, Sentry alerts, env drift, Railway incidents.
 - **Phases:** detect → classify → page-human → file-postmortem.
 - **Gates:** prod outage, secret rotation, DB migration on prod.
@@ -97,6 +103,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Cost:** 500k tokens/day cap.
 
 ### e2e-flake-watch
+
 - **Goal:** Detect and quarantine Playwright E2E flakes; surface new a11y regressions on PRs.
 - **Phases:** detect → quarantine → propose-fix → escalate.
 - **Gates:** seed-data change, role-selector change, infra change.
@@ -105,6 +112,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Cost:** 100k tokens/day cap.
 
 ### review-squad-parallel
+
 - **Goal:** Parallel lens coverage (contract, design, security, docs) for PRs touching 3+ governed surfaces.
 - **Phases:** discover → fan-out → synthesize → gate.
 - **Gates:** contradictory lens findings, security flag, contract break.
@@ -114,6 +122,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Cost:** 800k tokens/day cap. **early_exit_required: true** — fan-out може роздуватись.
 
 ### qa-squad-parallel
+
 - **Goal:** Per-surface test + typecheck across all 4 surfaces before synthesis; full QA fan-out.
 - **Phases:** discover → fan-out → synthesize → report.
 - **Gates:** cross-surface bug, baseline amendment.
@@ -123,6 +132,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Cost:** 800k tokens/day cap.
 
 ### council-advisory
+
 - **Goal:** Multi-perspective product/strategy/UX advice for ambiguous decisions and tradeoffs.
 - **Phases:** frame → fan-out → debate → synthesize.
 - **Gates:** none — purely advisory.
@@ -132,6 +142,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Cost:** 600k tokens/day cap.
 
 ### planning-batch
+
 - **Goal:** Execute a batch of N planning tasks via parallel agents with tracker sync.
 - **Phases:** discover → batch → fan-out → sync → archive.
 - **Gates:** contradictory plans, scope creep, blocker amendment.
@@ -149,4 +160,5 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - Schema сумісна з loop-engineering `loop-audit` / `loop-cost` (їх інструменти ігнорують невідомі поля `owner_skill`, `related_skills`, `hard_rules_ref`, `enabled`).
 
 **Tooling limitation:** `loop-audit` шукає файли на repo root рівні (`LOOP.md`, `STATE.md`, `patterns/registry.yaml`, `loop-budget.md`). Ми свідомо тримаємо manifest у `docs/00-start/agents/loops/` щоб не дублювати sources of truth (Hard Rule #15). Через це `loop-audit . --suggest` показує ті самі false-positives незалежно від вмісту — це обмеження їх hardcoded path matching, не нашої schema. Source-of-truth для нашого loop readiness — внутрішня `pnpm lint:skills` + cross-ref validation (див. verification steps у PR description).
+
 - Перед вмиканням будь-якого loop в L2/L3 — заповнити `enabled: true` у `registry.yaml`, оновити таблицю вище, додати entry до PR-ledger (`docs/04-governance/pr-ledger/index.json` per Hard Rule #26).
