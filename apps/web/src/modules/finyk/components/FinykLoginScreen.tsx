@@ -258,8 +258,8 @@ export function FinykLoginScreen({
             type="submit"
             className={cn(
               "mt-4 w-full h-12 min-h-[48px] text-base border-0",
-              "bg-linear-to-r from-brand-600 to-brand-700",
-              "hover:from-brand-700 hover:to-brand-800",
+              "bg-linear-to-r from-brand-strong to-brand-800",
+              "hover:from-brand-800 hover:to-brand-800",
               "text-white font-semibold",
               "shadow-md hover:shadow-glow",
               "transition-[background-color,box-shadow,opacity,transform] duration-200",

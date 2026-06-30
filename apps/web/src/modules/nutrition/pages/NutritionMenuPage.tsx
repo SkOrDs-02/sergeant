@@ -87,6 +87,7 @@ export function NutritionMenuPage({
       <>
         <h1 className="sr-only">Меню</h1>
         <SubTabs
+          ariaLabel="Розділи меню"
           value={menuSubTab}
           onChange={(id) => setMenuSubTab(id as MenuSubTab)}
           tabs={[

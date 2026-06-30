@@ -1,7 +1,7 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-20",
+  "generated_at": "2026-06-29",
   "prs": [
     {
       "number": 3665,
@@ -186,6 +186,13 @@
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
       ]
+    },
+    {
+      "number": 0,
+      "title": "feat(tools): add dynamic agent snapshot for harness context (placeholder — replaced by update-pr-backlinks on merge)",
+      "merged_at": "2026-06-29T20:55:00Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/04-governance/adr/0067-dynamic-agent-snapshot.md"]
     }
   ]
 }

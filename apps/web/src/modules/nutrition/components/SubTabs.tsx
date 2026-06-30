@@ -14,16 +14,24 @@ interface SubTabsProps {
   onChange: (id: string) => void;
   tabs: SubTab[];
   className?: string;
+  ariaLabel?: string;
 }
 
 /**
  * Inline segmented control for splitting a merged bottom-nav page into
  * sub-sections (e.g. `Склад` / `Покупки` inside pantry).
  */
-export function SubTabs({ value, onChange, tabs, className }: SubTabsProps) {
+export function SubTabs({
+  value,
+  onChange,
+  tabs,
+  className,
+  ariaLabel,
+}: SubTabsProps) {
   return (
     <div
       role="tablist"
+      aria-label={ariaLabel}
       className={cn(
         "flex gap-1 p-1 rounded-2xl bg-panelHi border border-line",
         className,

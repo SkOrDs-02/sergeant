@@ -260,11 +260,7 @@ export function BodyAtlas({
                 const elbow = isL ? -6 : 106;
                 const isSel = selected === slot.id;
                 return (
-                  <g
-                    key={slot.id}
-                    className="cursor-pointer"
-                    onClick={() => setSelected(slot.id)}
-                  >
+                  <g key={slot.id}>
                     <polyline
                       points={`${isL ? tx + 22 : tx - 22} ${slot.y} ${elbow} ${slot.y} ${c[0]} ${c[1]}`}
                       className="fill-none stroke-line"
