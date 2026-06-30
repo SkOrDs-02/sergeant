@@ -51,6 +51,15 @@ export interface UsePullToRefreshOptions {
  * - pullProgress: 0-1 progress toward threshold
  * - canRefresh: threshold exceeded, will refresh on release
  */
+/** Fully-reset gesture state — shared by every "stop pulling" path. */
+const IDLE_STATE: PullToRefreshState = {
+  isPulling: false,
+  isRefreshing: false,
+  pullDistance: 0,
+  pullProgress: 0,
+  canRefresh: false,
+};
+
 export function usePullToRefresh(
   options: UsePullToRefreshOptions,
 ): PullToRefreshState {
@@ -64,13 +73,7 @@ export function usePullToRefresh(
     scrollRef,
   } = options;
 
-  const [state, setState] = useState<PullToRefreshState>({
-    isPulling: false,
-    isRefreshing: false,
-    pullDistance: 0,
-    pullProgress: 0,
-    canRefresh: false,
-  });
+  const [state, setState] = useState<PullToRefreshState>(IDLE_STATE);
 
   const touchStartY = useRef<number | null>(null);
   const touchStartScrollTop = useRef<number>(0);
@@ -152,13 +155,7 @@ export function usePullToRefresh(
   const handleTouchCancel = useCallback(() => {
     if (touchStartY.current === null) return;
     touchStartY.current = null;
-    setState({
-      isPulling: false,
-      isRefreshing: false,
-      pullDistance: 0,
-      pullProgress: 0,
-      canRefresh: false,
-    });
+    setState(IDLE_STATE);
   }, []);
 
   const handleTouchEnd = useCallback(async () => {
@@ -182,23 +179,11 @@ export function usePullToRefresh(
         onError?.(err);
       } finally {
         // Animate out
-        setState({
-          isPulling: false,
-          isRefreshing: false,
-          pullDistance: 0,
-          pullProgress: 0,
-          canRefresh: false,
-        });
+        setState(IDLE_STATE);
       }
     } else {
       // Reset without refresh
-      setState({
-        isPulling: false,
-        isRefreshing: false,
-        pullDistance: 0,
-        pullProgress: 0,
-        canRefresh: false,
-      });
+      setState(IDLE_STATE);
     }
   }, [
     enabled,
