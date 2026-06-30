@@ -40,6 +40,7 @@ stryker-reports/
 
 # Local screenshots / scratch assets (use external storage like Notion/Figma)
 attached_assets/
+_scratch/
 
 # Mobile / EAS
 apps/mobile/google-services.json

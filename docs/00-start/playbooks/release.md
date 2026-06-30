@@ -1,6 +1,6 @@
 # Playbook: Реліз
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 **Trigger:** «Виконати реліз» / реліз-несуча зміна на продакшні — `apps/web`, `apps/server`, `apps/mobile-shell` (Capacitor) або `apps/mobile` (Expo); EAS-апдейти, store-білди, скоординовані крос-поверхневі деплої.
@@ -76,6 +76,13 @@ flowchart TD
 - Звір error rate, latency і шум у Sentry на змінених поверхнях.
 - Підтверди, що стан feature-флагу збігається з планом rollout-у.
 
+### 1.6 Онови «Що нового» — якщо реліз несе user-facing зміни
+
+- Якщо реліз містить помітну для юзера зміну (нова фіча, видима поведінка, UX-поліпшення) — додай **один** запис у `whats-new` за процесом у [docs/01-product/whats-new/README.md](../../01-product/whats-new/README.md): markdown-файл + TS-запис у [`apps/web/src/core/whatsNew/releases.ts`](../../../apps/web/src/core/whatsNew/releases.ts), узгоджені (drift ловить `releases.test.ts`).
+- **Консолідуй, не дроби.** Модал показує лише найсвіжіший запис, якого юзер ще не бачив (`pickRelease` → `RELEASES[0]`), а не накопичує пропущені. Тому один запис на реліз-хвилю з 3–6 user-facing пунктами, а не окремий запис на кожен PR — інакше рідкісні юзери пропустять проміжні.
+- Копія — мовою користувача про результат, не інженерний changelog (`feat(...)`-subject у модал не йде). Тон — за [style-guide.uk.md](../../01-product/copy/style-guide.uk.md) (`ти`-звертання).
+- Чисто внутрішні/інфраструктурні релізи (рефактор, deps, CI, docs) — **пропусти** цей крок.
+
 ## 2. Mobile shell (Capacitor)
 
 Для білдів `apps/mobile-shell`, метаданих сторів або поведінки нативної обгортки.
@@ -139,6 +146,7 @@ flowchart TD
 - [ ] Post-release smoke завершено для зачепленої поверхні (`/health` + критичний flow для web/API; install + auth для shell; auth + один mobile-only flow для Expo)
 - [ ] Будь-яке упорядкування міграцій/env зафіксовано у PR або release-нотатці
 - [ ] Build/version/channel identifier-и зафіксовано для мобільних релізів
+- [ ] «Що нового» оновлено для user-facing змін (один консолідований запис; markdown + `releases.ts` узгоджені) — або свідомо пропущено для внутрішнього релізу
 
 ## Коли цей playbook **не** застосовний
 

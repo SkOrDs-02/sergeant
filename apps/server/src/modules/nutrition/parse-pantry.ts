@@ -10,7 +10,10 @@ import {
 import { normalizePantryItems } from "../../lib/nutritionResponse.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
-type WithAnthropicKey = Request & { anthropicKey?: string };
+type WithAnthropicKey = Request & {
+  anthropicKey?: string;
+  user?: { id: string };
+};
 
 const SYSTEM = `Ти помічник з харчування. Відповідай ТІЛЬКИ українською.
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
@@ -44,6 +47,7 @@ export default async function handler(
   res: Response,
 ): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
 
   const { text: raw, locale } = parseBody(ParsePantrySchema, req);
 
@@ -63,6 +67,7 @@ export default async function handler(
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "parse-pantry",
+    ...(userId ? { userId } : {}),
   });
   if (!response || !response.ok) {
     throw makeAiProviderError({

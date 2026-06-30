@@ -1,8 +1,13 @@
 # Міграція на React Native (Expo)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
+> **Стратегічний контекст:** за [ADR-0052](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md)
+> **Capacitor — primary** mobile-шлях; нативний Expo/RN-клієнт нижче — це
+> **паралельна** робота (не основна), з decision-gate після Capacitor
+> production-rollout. Цей документ трекає саме той паралельний RN-трек.
+>
 > Source-of-truth трекер по перенесенню Sergeant із PWA-клієнта (`apps/web`,
 > Vite + React + Tailwind + Workbox) на нативний iOS/Android клієнт
 > (`apps/mobile`, Expo + React Native + Expo Router). Документ живий —

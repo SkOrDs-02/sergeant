@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
 
+// Windows module reloads for route-level app imports can exceed Vitest's default
+// timeout in large batches; keep assertions strict.
+vi.setConfig({ testTimeout: 60_000 });
+
 /**
  * Route-level contract tests for `/api/v1/finyk/*`.
  *
@@ -50,10 +54,11 @@ vi.mock("./../auth.js", () => ({
 // layers; the Postgres-fallback bucket-check would otherwise consume our
 // `queryMock.mockResolvedValueOnce` for the INSERT. Rate-limiting itself has
 // `http/rateLimit.test.ts`; here we test route-wiring + handler-shape.
-vi.mock("./../http/rateLimit.js", async () => {
-  const actual = await vi.importActual<typeof import("./../http/rateLimit.js")>(
-    "./../http/rateLimit.js",
-  );
+vi.mock("./../http/index.js", async () => {
+  const actual =
+    await vi.importActual<typeof import("./../http/index.js")>(
+      "./../http/index.js",
+    );
   return {
     ...actual,
     rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>

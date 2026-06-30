@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/04-governance/governance/repo-map.auto.json`](../../04-governance/governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
@@ -11,7 +11,7 @@
 
 - **Language:** TypeScript 6.
 - **Package manager:** pnpm 9 (`packageManager: "pnpm@9.15.1"`); enforced via `volta`/`engines.pnpm`.
-- **Runtime:** Node 20 (`engines.node: "20.x"`); enforced via `volta.node`/`engines.node`.
+- **Runtime:** Node 22.x (`engines.node: "22.x"`, Volta pins 22.19.0); enforced via `volta.node`/`engines.node`.
 - **Monorepo:** Turborepo 2 — pipelines defined in [`turbo.json`](../../../turbo.json). All apps run under `pnpm dev`, `pnpm build`, `pnpm test`, `pnpm lint`, `pnpm typecheck`.
 - **Pre-commit:** Husky 9 (`.husky/pre-commit` runs `lint-staged`; `.husky/commit-msg` runs `commitlint`). Pipeline matrix in [`CONTRIBUTING.md § Pre-commit hooks`](../../../CONTRIBUTING.md#pre-commit-hooks). Hard Rule #7 forbids `--no-verify` skips.
 

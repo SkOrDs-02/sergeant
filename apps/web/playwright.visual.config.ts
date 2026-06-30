@@ -8,7 +8,9 @@ import { defineConfig, devices } from "@playwright/test";
  * Argos when ARGOS_TOKEN is present. Without the token, Playwright
  * writes the local HTML report for manual inspection.
  *
- * Triggered by `.github/workflows/visual-regression.yml` on every PR.
+ * Triggered by `.github/workflows/visual-regression.yml` — currently
+ * `workflow_dispatch` (manual) only, until the Argos baseline is approved;
+ * the `pull_request` trigger is re-added once a stable 0-diff baseline exists.
  * Local run: `pnpm test:visual`
  */
 export default defineConfig({

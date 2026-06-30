@@ -1,91 +1,116 @@
-/** @vitest-environment jsdom */
-import { beforeEach, describe, expect, it } from "vitest";
-import {
-  __setFizrukSqliteCacheForTests,
-  clearFizrukSqliteCache,
-} from "@fizruk/lib/sqliteReader";
-import {
-  __setNutritionSqliteCacheForTests,
-  clearNutritionSqliteCache,
-} from "@nutrition/lib/sqliteReader";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+
+vi.mock("../../hubChatUtils", () => ({ ls: vi.fn() }));
+vi.mock("../../../../modules/finyk/utils", () => ({
+  getTxStatAmount: vi.fn((t: { amount: number }) => Math.abs(t.amount) / 100),
+}));
+vi.mock("../../../../modules/routine/lib/routineStorage", () => ({
+  loadRoutineState: vi.fn(),
+}));
+vi.mock("../../../../modules/nutrition/lib/nutritionStorage", () => ({
+  loadNutritionLog: vi.fn(),
+}));
+vi.mock("../fizrukActions/shared", () => ({
+  readFizrukWorkouts: vi.fn(),
+}));
+
+import { ls } from "../../hubChatUtils";
+import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
+import { loadNutritionLog } from "../../../../modules/nutrition/lib/nutritionStorage";
+import { readFizrukWorkouts } from "../fizrukActions/shared";
 import { morningBriefing, weeklySummary } from "./briefingHandlers";
 
-// `fizruk_workouts_v1` / `nutrition_log_v1` are tombstoned — these handlers now
-// read the canonical SQLite warm-caches (ADR-0067 residual). Seed those caches
-// directly and assert the briefings reflect the seeded data (proving they no
-// longer read the drained LS keys).
-
-function todayKey(): string {
-  const now = new Date();
-  return [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-  ].join("-");
-}
-
-function seedFizruk(workouts: unknown[]): void {
-  __setFizrukSqliteCacheForTests({ workouts } as unknown as Parameters<
-    typeof __setFizrukSqliteCacheForTests
-  >[0]);
-}
-
-function seedNutrition(log: unknown): void {
-  __setNutritionSqliteCacheForTests({ log } as unknown as Parameters<
-    typeof __setNutritionSqliteCacheForTests
-  >[0]);
-}
+const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
+const mockRoutine = vi.mocked(loadRoutineState);
+const mockNutrition = vi.mocked(loadNutritionLog);
+const mockWorkouts = vi.mocked(readFizrukWorkouts);
 
 beforeEach(() => {
-  localStorage.clear();
-  clearFizrukSqliteCache();
-  clearNutritionSqliteCache();
+  vi.clearAllMocks();
+  // Freeze to a fixed Kyiv midday so day-key assertions are deterministic
+  // regardless of the wall-clock hour the suite runs at (no UTC/Kyiv
+  // boundary flake — see domain invariant: day boundaries are Europe/Kyiv).
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-06-15T12:00:00+03:00"));
+  mockLs.mockReturnValue(null);
+  mockRoutine.mockReturnValue({
+    habits: [],
+    completions: {},
+  } as unknown as ReturnType<typeof loadRoutineState>);
+  mockNutrition.mockReturnValue({} as ReturnType<typeof loadNutritionLog>);
+  mockWorkouts.mockReturnValue([]);
 });
 
-describe("briefingHandlers — canonical SQLite reads (ADR-0067 residual)", () => {
-  it("morningBriefing counts today's planned workout from the SQLite cache", () => {
-    const dk = todayKey();
-    seedFizruk([
-      {
-        id: "w1",
-        startedAt: `${dk}T08:00:00.000Z`,
-        endedAt: null,
-        planned: true,
-        items: [],
-        groups: [],
-        warmup: null,
-        cooldown: null,
-        note: "",
-      },
-    ]);
-    expect(morningBriefing()).toContain("Заплановано тренувань: 1");
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+// ─── morningBriefing ──────────────────────────────────────────────────────────
+
+describe("morningBriefing", () => {
+  it("always starts with greeting", () => {
+    const result = morningBriefing();
+    expect(result).toContain("Доброго ранку");
   });
 
-  it("morningBriefing sums today's kcal from the canonical nutrition log", () => {
-    const dk = todayKey();
-    seedNutrition({
-      [dk]: { meals: [{ id: "m1", name: "Сніданок", macros: { kcal: 450 } }] },
-    });
-    expect(morningBriefing()).toContain("Калорії: 450 ккал");
+  it("shows habit completion when habits exist", () => {
+    mockRoutine.mockReturnValue({
+      habits: [{ id: "h1", name: "Медитація", archived: false }],
+      completions: {},
+    } as unknown as ReturnType<typeof loadRoutineState>);
+    const result = morningBriefing();
+    expect(result).toContain("Звички: 0/1");
   });
 
-  it("weeklySummary counts completed workouts + volume from the SQLite cache", () => {
-    const dk = todayKey();
-    seedFizruk([
-      {
-        id: "w2",
-        startedAt: `${dk}T07:00:00.000Z`,
-        endedAt: `${dk}T08:00:00.000Z`,
-        planned: false,
-        items: [{ nameUk: "Жим", sets: [{ weightKg: 50, reps: 10 }] }],
-        groups: [],
-        warmup: null,
-        cooldown: null,
-        note: "",
-      },
-    ]);
-    const out = weeklySummary();
-    expect(out).toContain("Тренувань: 1");
-    expect(out).toContain("Об'єм: 500 кг×повт");
+  it("shows completed habits for today", () => {
+    const todayKey = getKyivDayKey();
+    mockRoutine.mockReturnValue({
+      habits: [{ id: "h1", name: "Медитація", archived: false }],
+      completions: { h1: [todayKey] },
+    } as unknown as ReturnType<typeof loadRoutineState>);
+    const result = morningBriefing();
+    expect(result).toContain("Звички: 1/1");
+  });
+
+  it("skips habits section when no habits", () => {
+    const result = morningBriefing();
+    expect(result).not.toContain("Звички:");
+  });
+
+  it("shows calories when today has meals", () => {
+    const todayKey = getKyivDayKey();
+    mockNutrition.mockReturnValue({
+      [todayKey]: { meals: [{ macros: { kcal: 500 } }] },
+    } as unknown as ReturnType<typeof loadNutritionLog>);
+    const result = morningBriefing();
+    expect(result).toContain("500 ккал");
+  });
+});
+
+// ─── weeklySummary ────────────────────────────────────────────────────────────
+
+describe("weeklySummary", () => {
+  it("includes header", () => {
+    const result = weeklySummary();
+    expect(result).toContain("Тижневий підсумок");
+  });
+
+  it("shows workout count for the week", () => {
+    const recent = new Date(Date.now() - 2 * 86400000).toISOString();
+    mockWorkouts.mockReturnValue([
+      { startedAt: recent, endedAt: recent, items: [] },
+    ] as unknown as ReturnType<typeof readFizrukWorkouts>);
+    const result = weeklySummary();
+    expect(result).toContain("Тренувань: 1");
+  });
+
+  it("excludes ongoing workouts from weekly count", () => {
+    const recent = new Date(Date.now() - 2 * 86400000).toISOString();
+    mockWorkouts.mockReturnValue([
+      { startedAt: recent, endedAt: null, items: [] },
+    ] as unknown as ReturnType<typeof readFizrukWorkouts>);
+    const result = weeklySummary();
+    expect(result).toContain("Тренувань: 0");
   });
 });

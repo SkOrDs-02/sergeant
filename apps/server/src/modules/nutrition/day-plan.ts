@@ -11,7 +11,10 @@ import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
-type WithAnthropicKey = Request & { anthropicKey?: string };
+type WithAnthropicKey = Request & {
+  anthropicKey?: string;
+  user?: { id: string };
+};
 
 type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
@@ -129,6 +132,7 @@ export default async function handler(
   res: Response,
 ): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
 
   const {
     pantry: pantryIn,
@@ -177,6 +181,7 @@ ${regenStr}`;
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.dayPlan,
     endpoint: "day-plan",
+    ...(userId ? { userId } : {}),
   });
   if (!response || !response.ok) {
     throw makeAiProviderError({

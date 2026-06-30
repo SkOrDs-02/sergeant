@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/service-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-06-25",
+  "generated_at": "2026-06-29",
   "surfaces": [
     {
       "id": "web-pwa",
@@ -11,7 +11,7 @@
       "deployArtifact": "vercel.json",
       "railwayService": null,
       "healthcheckPath": null,
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "id": "api",
@@ -21,7 +21,7 @@
       "deployArtifact": "Dockerfile.api",
       "railwayService": null,
       "healthcheckPath": "/health",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "id": "mobile-expo",
@@ -31,7 +31,7 @@
       "deployArtifact": "eas.json",
       "railwayService": null,
       "healthcheckPath": null,
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "id": "mobile-shell",
@@ -41,7 +41,7 @@
       "deployArtifact": "capacitor.config.ts",
       "railwayService": null,
       "healthcheckPath": null,
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "id": "openclaw-gateway",
@@ -61,7 +61,7 @@
       "deployArtifact": "ops/n8n-workflows/",
       "railwayService": null,
       "healthcheckPath": null,
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     }
   ]
 }

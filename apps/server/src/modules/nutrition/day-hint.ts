@@ -9,7 +9,10 @@ import {
 } from "../../lib/anthropic.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
-type WithAnthropicKey = Request & { anthropicKey?: string };
+type WithAnthropicKey = Request & {
+  anthropicKey?: string;
+  user?: { id: string };
+};
 
 function safeNonNegOrNull(x: unknown): number | null {
   if (x == null || x === "") return null;
@@ -31,6 +34,7 @@ export default async function handler(
   res: Response,
 ): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
 
   const { macros, targets, locale, hasMeals, hasAnyMacros, macroSources } =
     parseBody(DayHintSchema, req);
@@ -74,6 +78,7 @@ ${contextNote}${sourcesNote}Факт за день: ккал ${m.kcal ?? "—"},
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "day-hint",
+    ...(userId ? { userId } : {}),
   });
   if (!response || !response.ok) {
     throw makeAiProviderError({

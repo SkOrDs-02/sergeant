@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-06-25",
+  "generated_at": "2026-06-29",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
@@ -58,7 +58,7 @@
         }
       ],
       "testRunner": "jest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/mobile-shell",
@@ -86,7 +86,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/server",
@@ -142,7 +142,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/web",
@@ -206,7 +206,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/api-client",
@@ -234,7 +234,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/config",
@@ -245,7 +245,7 @@
       "type": "module",
       "frameworkDeps": [],
       "testRunner": null,
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/db-schema",
@@ -273,7 +273,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/design-tokens",
@@ -289,7 +289,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/finyk-domain",
@@ -309,7 +309,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/fizruk-domain",
@@ -329,7 +329,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/insights",
@@ -349,7 +349,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/nutrition-domain",
@@ -369,7 +369,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/openclaw-plugin",
@@ -393,7 +393,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/routine-domain",
@@ -413,7 +413,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/shared",
@@ -437,7 +437,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "eslint-plugin-sergeant-design",
@@ -448,7 +448,7 @@
       "type": "module",
       "frameworkDeps": [],
       "testRunner": null,
-      "owner": "@Skords-01"
+      "owner": "@SkOrDs-02"
     }
   ]
 }

@@ -68,7 +68,7 @@ SSO не залитий, Apple Developer Program не куплений, окре
 | Що готово, а що блокує запуск (з фактичних cross-refs у код)?       | [00 — Readiness audit](./00-readiness-audit.md)                                                        |
 | Як саме запустити web з реальними юзерами (W-4 .. W+12)?            | [01 — Web launch with users](./01-web-launch-with-users.md)                                            |
 | Як підключати реальних бета-тестерів через TestFlight / Play?       | [02 — Capacitor launch](./02-capacitor-launch.md)                                                      |
-| Чи варто взагалі запускати окремо `apps/mobile` (Native Expo)?      | [03 — Native Expo launch](./03-native-expo-launch.md)                                                  |
+| Чи варто взагалі запускати окремо `apps/mobile` (Native Expo)?      | [§ Phase 3 нижче](#phase-3--native-expo--conditional) (decision gate W+16, per ADR-0052)               |
 | Чи треба окремий лендінг (sergeant.com.ua) чи можна без нього?      | [§ 5 нижче](#5-рішення-про-лендінг) + [01 — Web § 2](./01-web-launch-with-users.md#2-лендінг-decision) |
 | Які фази launch-у і що робити на кожній (high-level GTM, без коду)? | [02 — GTM](../business/02-go-to-market.md)                                                             |
 | Що треба юридично / по readiness checklist?                         | [04 — Launch readiness](../business/04-launch-readiness.md)                                            |
@@ -194,8 +194,9 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 ### Phase 3 — Native (Expo) — conditional
 
 > **За поточними даними рекомендація — НЕ запускати окремо у цьому циклі.**
-> Decision gate у W+16 після Capacitor production rollout.
-> Деталі: [03 — Native Expo launch](./03-native-expo-launch.md).
+> Decision gate у W+16 після Capacitor production rollout. Рішення зафіксоване
+> у [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) («Capacitor primary»);
+> сценарії A/B/C нижче лишаються як conditional-гілки для W+16-перегляду.
 
 | Сценарій                  | Trigger                                                                                                              | Дія                                                                 | Effort        |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------- |
@@ -302,7 +303,7 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 - [`00-readiness-audit.md`](./00-readiness-audit.md) — статус 4 поверхонь, матриця готовності, top blockers
 - [`01-web-launch-with-users.md`](./01-web-launch-with-users.md) — Phase 1 з тижневим планом, landing decision, user testing strategy
 - [`02-capacitor-launch.md`](./02-capacitor-launch.md) — Phase 2 з iOS/Android lanes, store submission, IAP decision
-- [`03-native-expo-launch.md`](./03-native-expo-launch.md) — Phase 3 conditional, 3 сценарії + рекомендація
+- Phase 3 (Native Expo) — conditional decision gate, описаний inline у [§ Phase 3 вище](#phase-3--native-expo--conditional); рішення per [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md)
 
 ### Існуючий контекст (parent of this work)
 

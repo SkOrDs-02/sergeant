@@ -21,6 +21,13 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import { _getMMKVInstance } from "@/lib/storage";
 import { ToastProvider } from "@/components/ui/Toast";
+
+jest.mock("../../lib/sqliteReadGate", () => ({
+  __resetRoutineSqliteReadGateForTests: jest.fn(),
+  notifyRoutineSqliteCacheRefresh: jest.fn(),
+  useRoutineSqliteReadTick: () => 0,
+}));
+
 import {
   clearSqliteCompletionsCache,
   clearSqliteRoutineStateCache,

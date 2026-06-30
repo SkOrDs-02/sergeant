@@ -127,5 +127,3 @@ export const BackButton = forwardRef<View, BackButtonProps>(function BackButton(
     </Pressable>
   );
 });
-
-export default BackButton;

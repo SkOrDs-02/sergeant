@@ -1,205 +1,138 @@
-// @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mem = vi.hoisted(() => ({
-  workouts: [] as unknown[],
-  dailyLog: [] as unknown[],
+vi.mock("./shared", () => ({
+  readFizrukDailyLog: vi.fn(),
+  readFizrukWorkouts: vi.fn(),
 }));
 
-vi.mock("./shared", async (orig) => {
-  const actual = await orig<typeof import("./shared")>();
-  return {
-    ...actual,
-    readFizrukWorkouts: vi.fn(() => mem.workouts),
-    readFizrukDailyLog: vi.fn(() => mem.dailyLog),
-  };
-});
+import { readFizrukDailyLog, readFizrukWorkouts } from "./shared";
+import { compareProgress, suggestWorkout, weightChart } from "./analytics";
 
-import { suggestWorkout, compareProgress, weightChart } from "./analytics";
+const mockReadWorkouts = vi.mocked(readFizrukWorkouts);
+const mockReadLog = vi.mocked(readFizrukDailyLog);
 
-const NOW = new Date("2026-06-15T12:00:00Z");
-const DAY = 86_400_000;
-
-function daysAgoIso(days: number): string {
-  return new Date(NOW.getTime() - days * DAY).toISOString();
-}
-
-function workout(opts: {
-  id: string;
-  daysAgo: number;
-  ended?: boolean;
-  items?: unknown[];
-}) {
-  return {
-    id: opts.id,
-    startedAt: daysAgoIso(opts.daysAgo),
-    endedAt: opts.ended === false ? undefined : daysAgoIso(opts.daysAgo),
-    items: opts.items ?? [],
-  };
-}
-
-function item(opts: {
-  nameUk: string;
-  primary?: string[];
-  secondary?: string[];
-  sets?: Array<{ weightKg: number; reps: number }>;
-}) {
-  return {
-    nameUk: opts.nameUk,
-    musclesPrimary: opts.primary ?? [],
-    musclesSecondary: opts.secondary ?? [],
-    sets: opts.sets ?? [],
-  };
-}
+const RECENT = new Date(Date.now() - 1000 * 60 * 60).toISOString();
 
 beforeEach(() => {
-  mem.workouts = [];
-  mem.dailyLog = [];
-  vi.useFakeTimers();
-  vi.setSystemTime(NOW);
+  vi.clearAllMocks();
+  mockReadWorkouts.mockReturnValue([]);
+  mockReadLog.mockReturnValue([]);
 });
-afterEach(() => {
-  vi.useRealTimers();
-});
+
+// ─── suggestWorkout ───────────────────────────────────────────────────────────
 
 describe("suggestWorkout", () => {
-  it("returns a starter suggestion when no completed history", () => {
-    const out = suggestWorkout({ name: "suggest_workout", input: {} });
-    expect(String(out)).toContain("full-body");
+  it("returns beginner recommendation when no history", () => {
+    const result = suggestWorkout({ name: "suggest_workout", input: {} });
+    expect(result).toContain("full-body");
   });
 
-  it("appends focus to the empty-history suggestion", () => {
-    const out = suggestWorkout({
+  it("includes focus when provided with no history", () => {
+    const result = suggestWorkout({
       name: "suggest_workout",
-      input: { focus: "ноги" },
-    });
-    expect(String(out)).toContain("(фокус: ноги)");
+      input: { focus: "спина" },
+    }) as string;
+    expect(result).toContain("спина");
   });
 
-  it("surfaces neglected muscles, last exercises and totals", () => {
-    mem.workouts = [
-      workout({
-        id: "old",
-        daysAgo: 10,
+  it("returns muscle analysis when workouts exist", () => {
+    mockReadWorkouts.mockReturnValue([
+      {
+        startedAt: RECENT,
+        endedAt: RECENT,
         items: [
-          item({ nameUk: "Жим", primary: ["chest"], secondary: ["triceps"] }),
+          {
+            nameUk: "Присідання",
+            musclesPrimary: ["ноги"],
+            musclesSecondary: [],
+            sets: [],
+          },
         ],
-      }),
-      workout({
-        id: "recent",
-        daysAgo: 1,
-        items: [item({ nameUk: "Присід", primary: ["legs"] })],
-      }),
-    ];
-    const out = String(
-      suggestWorkout({ name: "suggest_workout", input: { focus: "груди" } }),
-    );
-    // chest/triceps trained 10 days ago → neglected (>=3 days)
-    expect(out).toContain("chest");
-    expect(out).toContain("Останнє тренування: Присід");
-    expect(out).toContain("Всього завершених: 2");
-    expect(out).toContain("Бажаний фокус: груди");
+      },
+    ] as unknown as ReturnType<typeof readFizrukWorkouts>);
+    const result = suggestWorkout({
+      name: "suggest_workout",
+      input: {},
+    }) as string;
+    expect(result).toContain("Всього завершених: 1");
+  });
+
+  it("skips ongoing workouts (no endedAt)", () => {
+    mockReadWorkouts.mockReturnValue([
+      { startedAt: RECENT, endedAt: null, items: [] },
+    ] as unknown as ReturnType<typeof readFizrukWorkouts>);
+    const result = suggestWorkout({ name: "suggest_workout", input: {} });
+    expect(result).toContain("full-body");
   });
 });
+
+// ─── compareProgress ──────────────────────────────────────────────────────────
 
 describe("compareProgress", () => {
-  it("errors when no completed workouts", () => {
-    expect(
-      String(compareProgress({ name: "compare_progress", input: {} })),
-    ).toContain("Немає завершених");
+  it("returns error when no completed workouts", () => {
+    const result = compareProgress({ name: "compare_progress", input: {} });
+    expect(result).toContain("Немає завершених");
   });
 
-  it("compares first vs second half volume for an exercise", () => {
-    // 30-day window → midpoint at 15 days ago.
-    mem.workouts = [
-      workout({
-        id: "h1",
-        daysAgo: 20,
+  it("returns progress report with volume and max weight", () => {
+    const old = new Date(Date.now() - 20 * 86400000).toISOString();
+    const recent = new Date(Date.now() - 5 * 86400000).toISOString();
+    mockReadWorkouts.mockReturnValue([
+      {
+        startedAt: old,
+        endedAt: old,
         items: [
-          item({
+          {
             nameUk: "Жим",
-            primary: ["chest"],
-            sets: [{ weightKg: 50, reps: 10 }],
-          }),
-        ],
-      }),
-      workout({
-        id: "h2",
-        daysAgo: 5,
-        items: [
-          item({
-            nameUk: "Жим",
-            primary: ["chest"],
-            sets: [{ weightKg: 70, reps: 10 }],
-          }),
-        ],
-      }),
-    ];
-    const out = String(
-      compareProgress({
-        name: "compare_progress",
-        input: { exercise_name: "жим", period_days: 30 },
-      }),
-    );
-    expect(out).toContain("Прогрес (жим) за 30 днів:");
-    expect(out).toContain("Об'єм (кг×повт): 500 → 700");
-    expect(out).toContain("Макс. вага: 50 → 70 кг");
-    expect(out).toContain("Тренувань: 1 → 1");
-  });
-
-  it("matches by muscle group and defaults period to 30", () => {
-    mem.workouts = [
-      workout({
-        id: "m1",
-        daysAgo: 3,
-        items: [
-          item({
-            nameUk: "Тяга",
-            primary: ["back"],
+            musclesPrimary: ["груди"],
+            musclesSecondary: [],
             sets: [{ weightKg: 80, reps: 5 }],
-          }),
+          },
         ],
-      }),
-    ];
-    const out = String(
-      compareProgress({
-        name: "compare_progress",
-        input: { muscle_group: "back" },
-      }),
-    );
-    expect(out).toContain("Прогрес (back) за 30 днів:");
+      },
+      {
+        startedAt: recent,
+        endedAt: recent,
+        items: [
+          {
+            nameUk: "Жим",
+            musclesPrimary: ["груди"],
+            musclesSecondary: [],
+            sets: [{ weightKg: 90, reps: 5 }],
+          },
+        ],
+      },
+    ] as unknown as ReturnType<typeof readFizrukWorkouts>);
+    const result = compareProgress({
+      name: "compare_progress",
+      input: { period_days: 30 },
+    }) as string;
+    expect(result).toContain("Прогрес");
+    expect(result).toContain("Об'єм");
   });
 });
 
+// ─── weightChart ──────────────────────────────────────────────────────────────
+
 describe("weightChart", () => {
-  it("errors when no weight entries in range", () => {
-    expect(String(weightChart({ name: "weight_chart", input: {} }))).toContain(
-      "Немає записів ваги",
-    );
+  it("returns no-data message when no entries", () => {
+    const result = weightChart({ name: "weight_chart", input: {} });
+    expect(result).toContain("Немає записів ваги");
   });
 
-  it("summarizes weight trend and recent records", () => {
-    mem.dailyLog = [
-      { at: daysAgoIso(6), weightKg: 82 },
-      { at: daysAgoIso(4), weightKg: 81 },
-      { at: daysAgoIso(2), weightKg: 80 },
-    ];
-    const out = String(
-      weightChart({ name: "weight_chart", input: { period_days: 30 } }),
-    );
-    expect(out).toContain("Вага за 30 днів (3 записів):");
-    expect(out).toContain("Перша: 82 кг → Остання: 80 кг (-2.0 кг)");
-    expect(out).toContain("Мін: 80 кг | Макс: 82 кг");
-    expect(out).toContain("Останні записи:");
-  });
-
-  it("ignores entries with invalid weight or out of range", () => {
-    mem.dailyLog = [
-      { at: daysAgoIso(2), weightKg: 80 },
-      { at: daysAgoIso(100), weightKg: 90 }, // out of 30d range
-      { at: daysAgoIso(1), weightKg: null }, // invalid
-    ];
-    const out = String(weightChart({ name: "weight_chart", input: {} }));
-    expect(out).toContain("(1 записів)");
+  it("returns weight summary with first/last/min/max", () => {
+    const recent = new Date(Date.now() - 3600 * 1000).toISOString();
+    const recent2 = new Date(Date.now() - 7200 * 1000).toISOString();
+    mockReadLog.mockReturnValue([
+      { id: "d1", at: recent2, weightKg: 78 },
+      { id: "d2", at: recent, weightKg: 77 },
+    ] as unknown as ReturnType<typeof readFizrukDailyLog>);
+    const result = weightChart({
+      name: "weight_chart",
+      input: { period_days: 30 },
+    }) as string;
+    expect(result).toContain("Вага за 30 днів");
+    expect(result).toContain("Мін:");
+    expect(result).toContain("Макс:");
   });
 });

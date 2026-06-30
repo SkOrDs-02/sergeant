@@ -52,12 +52,9 @@ interface Tier {
   readonly highlight: boolean;
 }
 
-// D3 § Out of scope: final price is not decided yet. Until the pricing PR
-// lands we deliberately show NO number — a fake "€X" placeholder shipped on
-// the public funnel (independent audit 2026-06-11, dimension 1, CRITICAL).
-// The cadence line under the dash carries the localized "announced at launch"
-// copy; Stripe Checkout shows the real dashboard-configured price.
-const PREMIUM_PRICE_PENDING = "—";
+// Canonical monthly price for the Premium tier (₴199/міс, ₴1490/рік).
+// Cadence line carries the billing period text from the locale catalog.
+const PREMIUM_PRICE_MONTHLY = "₴199";
 
 // Defense-in-depth open-redirect guard (audit F4,
 // docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md). Backend
@@ -76,13 +73,6 @@ function assertAllowedCheckoutUrl(raw: string): string {
   }
   return parsed.toString();
 }
-
-// Free-tier limits (first-pass, TENTATIVE — to be A/B-tested per D3 § Out of scope).
-// Сходити в pricing strategy PR після того, як буде market research input.
-const FREE_LIMIT_EXPENSES = 30;
-const FREE_LIMIT_MEAL_PHOTOS = 20;
-const FREE_LIMIT_ACTIVE_WORKOUTS = 1;
-const FREE_LIMIT_ACTIVE_HABITS = 5;
 
 /**
  * Build the per-locale TIERS array. Lives inside PricingPage so `useLocale`
@@ -104,28 +94,19 @@ function buildTiers(
       tagline: pricing.tiers.freeTagline,
       highlight: false,
       features: [
-        {
-          label: features.expensesFinyk,
-          limit: `${FREE_LIMIT_EXPENSES}${limits.perMonth}`,
-        },
-        {
-          label: features.aiPhotoFood,
-          limit: `${FREE_LIMIT_MEAL_PHOTOS}${limits.perMonth}`,
-        },
-        { label: features.manualMeals, limit: limits.unlimited },
-        {
-          label: features.activeWorkoutTemplate,
-          limit: `${FREE_LIMIT_ACTIVE_WORKOUTS}`,
-        },
-        { label: features.activeHabits, limit: `${FREE_LIMIT_ACTIVE_HABITS}` },
+        { label: features.allModules },
+        { label: features.manualTracking },
+        { label: features.aiChat, limit: limits.aiChatPerDay },
+        { label: features.cloudSync2Devices },
         { label: features.pdfExport, included: false },
         { label: features.multiCurrency, included: false },
+        { label: features.monoAutoSync, included: false },
       ],
     },
     {
       id: "premium",
       name: pricing.tiers.premiumName,
-      price: PREMIUM_PRICE_PENDING,
+      price: PREMIUM_PRICE_MONTHLY,
       cadence: pricing.tiers.premiumCadence,
       tagline: pricing.tiers.premiumTagline,
       highlight: true,

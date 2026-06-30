@@ -133,6 +133,7 @@ export function Progress({ onNavigate }: ProgressProps) {
       weightKg: number;
       reps: number;
       at: string;
+      nameUk: string | null;
     };
     const by: Record<string, PR> = {};
     for (const w of workouts || []) {
@@ -148,6 +149,7 @@ export function Progress({ onNavigate }: ProgressProps) {
               weightKg: s.weightKg,
               reps: s.reps,
               at: w.startedAt,
+              nameUk: it.nameUk ?? null,
             };
         }
       }
@@ -166,7 +168,7 @@ export function Progress({ onNavigate }: ProgressProps) {
         const group = groupById.get(id) || null;
         return {
           id,
-          name: labelById.get(id) || id,
+          name: labelById.get(id) || v.nameUk || id,
           muscleGroup: group,
           muscleGroupLabel: group ? musclesUk?.[group] || null : null,
           ...v,

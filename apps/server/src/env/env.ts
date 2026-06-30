@@ -390,7 +390,10 @@ const envSchema = z.object({
    */
   LLM_READONLY_PROVIDER: z
     .enum(["anthropic", "openrouter", "stub"])
-    .default("anthropic"),
+    // Default = PROD (Railway, 2026-06-27): classify живе на OpenRouter. Без
+    // OPENROUTER_API_KEY factory деградує у Stub (`{"class":"chat"}`) — для
+    // local-dev/CI на Anthropic вистав `LLM_READONLY_PROVIDER=anthropic`.
+    .default("openrouter"),
   /**
    * PR-25 — окремий provider для weekly-digest (`POST /api/weekly-digest`,
    * WF-08 ingest). Дозволяє перемкнути digest-генерацію у `stub`-mode, який
@@ -406,7 +409,24 @@ const envSchema = z.object({
    */
   LLM_DIGEST_PROVIDER: z
     .enum(["anthropic", "openrouter", "stub"])
-    .default("anthropic"),
+    // Default = PROD (Railway, 2026-06-27): weekly-digest на OpenRouter. Без
+    // OPENROUTER_API_KEY factory деградує у Stub (template-звіт без LLM-коментарів);
+    // для local-dev/CI на Anthropic вистав `LLM_DIGEST_PROVIDER=anthropic`.
+    .default("openrouter"),
+  /**
+   * Окремий provider для coach-insight (`POST /api/coach/insight`). Перемикає
+   * генерацію проактивного коуч-повідомлення на OpenRouter (model-eval
+   * 2026-06-26: gpt-5.1 ≥ Sonnet 4.6 за −33% output на цій задачі), НЕ зачіпаючи
+   * chat/nutrition (`LLM_PROVIDER`), classify (`LLM_READONLY_PROVIDER`) чи digest
+   * (`LLM_DIGEST_PROVIDER`). Anthropic лишається фолбеком через
+   * `LLM_FALLBACK_ENABLED` (default true). Stub → детермінований тест/incident.
+   */
+  LLM_COACH_PROVIDER: z
+    .enum(["anthropic", "openrouter", "stub"])
+    // Default = PROD (Railway, 2026-06-27): coach-insight на OpenRouter (gpt-5.1).
+    // Без OPENROUTER_API_KEY factory деградує у Stub; для local-dev/CI на Anthropic
+    // вистав `LLM_COACH_PROVIDER=anthropic`. Anthropic — фолбек (LLM_FALLBACK_ENABLED).
+    .default("openrouter"),
   /**
    * Provider fallback chain. Коли `true` і primary provider = `openrouter`,
    * `getLLMProvider()` обгортає результат у `FallbackProvider`, який при
@@ -510,6 +530,47 @@ const envSchema = z.object({
    * the validated-env surface stays the single inventory of `AI_QUOTA_*`.
    */
   AI_QUOTA_FOUNDER_IDS: z.string().optional(),
+
+  // ── Pro tiered model degradation (premium → standard → floor) ───────
+  // Master-flag для трирівневої деградації моделі у Pro-юзерів. Коли `true`
+  // (default), Pro отримує premium-модель перші `AI_PRO_PREMIUM_DAILY_LIMIT`
+  // запитів/добу, далі standard, далі floor (майже-безкоштовна). Коли `false`,
+  // `resolveProTier()` завжди повертає premium-tier без жодного DB-roundtrip.
+  // Pro НІКОЛИ не бачить 429.
+  // Читається у `modules/chat/aiQuota.ts` через `process.env` (як решта
+  // AI_QUOTA_*), оголошено тут щоб validated-env лишався single inventory.
+  AI_TIERED_PRO_ENABLED: boolFromEnv(true),
+  /** Скільки premium-запитів (дорога модель) на добу для Pro до деградації. */
+  AI_PRO_PREMIUM_DAILY_LIMIT: coerceInt.nonnegative().default(20),
+  /**
+   * Скільки standard-запитів (дешевша модель) на добу для Pro після вичерпання
+   * premium. Понад це — floor-рівень (∞, майже-безкоштовна модель). Лічильник
+   * у bucket `standard`; разом із premium-bucket дають каскад.
+   */
+  AI_PRO_STANDARD_DAILY_LIMIT: coerceInt.nonnegative().default(80),
+  /** Chat standard-модель (Anthropic — tool-use працює). Haiku 4.5 за замовч. */
+  AI_PRO_STANDARD_CHAT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
+  /**
+   * Chat floor-модель. Anthropic Haiku 3 (~$0.25/$1.25 за 1M, ~12× дешевше
+   * Sonnet) — лишається Anthropic, бо chat прибитий до streaming + tool-use +
+   * prompt-cache, а безкоштовні OpenRouter-моделі tool-use не підтримують.
+   */
+  AI_PRO_FLOOR_CHAT_MODEL: stringWithDefault("claude-3-haiku-20240307"),
+  /** Coach standard-модель (через factory/OpenRouter). Gemini Flash Lite. */
+  AI_PRO_STANDARD_COACH_MODEL: stringWithDefault(
+    "google/gemini-2.5-flash-lite",
+  ),
+  /**
+   * Coach floor-модель. Дефолт — `gemini-2.5-flash-lite` (= standard): cost-sim
+   * 2026-06-27 показав, що OpenRouter free-моделі (nemotron-3-ultra:free)
+   * стабільно падають на rate-limit, а fallback на Anthropic тут не рятує —
+   * factory передає OpenRouter-model-id, який Anthropic не приймає, тож coach
+   * лишився б без відповіді. Gemini Flash Lite коштує ~$0.0002/виклик —
+   * практично безкоштовно, але надійно. Справді-free модель можна вказати
+   * env-ом, якщо її стабільність влаштовує.
+   */
+  AI_PRO_FLOOR_COACH_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+
   /** Інтервал SSE heartbeat (мс). Тримає з'єднання живим через проксі. */
   SSE_HEARTBEAT_MS: coerceInt.positive().default(15_000),
 
@@ -615,32 +676,6 @@ const envSchema = z.object({
   GRAFANA_CLOUD_LOKI_USERNAME: z.string().optional(),
   /** Grafana Cloud API token (`glc_…`); basic auth password. */
   GRAFANA_CLOUD_LOKI_TOKEN: z.string().optional(),
-
-  // ── OpenTelemetry (Phase 2 з ініціативи 0004) ──────────────────────
-  /**
-   * OTLP/HTTP collector endpoint (e.g. `https://api.honeycomb.io:443/v1/traces`,
-   * `https://otlp-gateway-prod-eu-north-0.grafana.net/otlp/v1/traces`,
-   * `http://tempo:4318/v1/traces`). Без нього OTel SDK НЕ ініціалізується —
-   * `aiSpan`/`dbSpan` стають NoopTracer-обгортками, auto-instrumentation
-   * не реєструється. Sentry tracing продовжує працювати окремо. Деталі:
-   * `apps/server/src/obs/tracing.ts` + `docs/observability/runbook.md`.
-   */
-  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
-  /** Endpoint лише для traces (overrides `OTEL_EXPORTER_OTLP_ENDPOINT`). */
-  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.string().optional(),
-  /**
-   * Headers (e.g. `x-honeycomb-team=<key>`). Формат — comma-separated
-   * `k=v,k=v`. SECRET-значення (API keys) ходять через `secrets`,
-   * НЕ комітимо в `.env.example`.
-   */
-  OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
-  OTEL_EXPORTER_OTLP_TRACES_HEADERS: z.string().optional(),
-  /** `service.name` resource attribute. Default: `sergeant-api`. */
-  OTEL_SERVICE_NAME: z.string().optional(),
-  /** Override service.version (default — береться з SENTRY_RELEASE / Git SHA). */
-  OTEL_SERVICE_VERSION: z.string().optional(),
-  /** Default sample rate для GET-запитів. 0.0–1.0; default 0.1 (10%). */
-  OTEL_TRACES_SAMPLE_RATE: z.string().optional(),
   /**
    * Personal API key для server-side PostHog cleanup (ADR-0016 ADR-6.3).
    * Має project-level scope із write-доступом до `persons`. БЕЗ нього
@@ -1205,6 +1240,22 @@ const envSchema = z.object({
    */
   ANTHROPIC_BUDGET_ALERT_ENABLED: boolFromEnv(true),
   /**
+   * Catastrophic-cost circuit-breaker (opt-in, default `false`). Коли
+   * `true` І денний глобальний Anthropic-spend перевищив hard-поріг
+   * (`isAnthropicBudgetHardExceeded()`), `resolveProTier()` деградує
+   * **усіх** не-founder юзерів (Free + Pro) на floor-модель — не лише тих,
+   * хто вичерпав власну добову квоту. Це справжня стеля вартості, якої
+   * per-user tiering сам не дає: Free-юзери отримують premium-модель
+   * (обмежені лише КІЛЬКІСТЮ), тож на масштабі домінують в AI-COGS —
+   * деградація саме їх згинає криву витрат.
+   *
+   * Default `false` → нормальна робота лишає поточну alert-only поведінку
+   * (hard alert сигналить, але AI-роути відкриті). Вмикати, коли AI-COGS
+   * треба жорстко обмежити (catastrophic runaway / бюджет вичерпано).
+   * Founder (`AI_QUOTA_FOUNDER_IDS`) ніколи не деградує.
+   */
+  ANTHROPIC_BUDGET_HARD_DEGRADE_ALL: boolFromEnv(false),
+  /**
    * Voyage soft daily-usage cap (USD), enforced in-process (PR-38).
    * Track-имо USD-витрати за поточну UTC-добу у in-memory лічильнику
    * (`modules/ai-memory/voyageBudget.ts`); коли sum > cap — emit
@@ -1262,8 +1313,12 @@ const envSchema = z.object({
    * `google/gemma-4-31b-it:free`), або `@preset/<slug>` — тоді модель і
    * fallback-ланцюг керуються пресетом у дашборді OpenRouter (без редеплою).
    */
-  OPENROUTER_READONLY_MODEL: stringWithDefault(""),
-  OPENROUTER_DIGEST_MODEL: stringWithDefault(""),
+  // Defaults = PROD (Railway, 2026-06-27). Застосовуються лише коли відповідний
+  // `LLM_*_PROVIDER=openrouter`; за порожнього значення fallback на `OPENROUTER_MODEL`,
+  // далі на model самого call-site-а.
+  OPENROUTER_READONLY_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+  OPENROUTER_DIGEST_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+  OPENROUTER_COACH_MODEL: stringWithDefault("openai/gpt-5.1"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -1318,6 +1373,7 @@ export function assertStartupEnv(): void {
     env.LLM_PROVIDER,
     env.LLM_READONLY_PROVIDER,
     env.LLM_DIGEST_PROVIDER,
+    env.LLM_COACH_PROVIDER,
   ];
   if (openrouterProviders.includes("openrouter") && !env.OPENROUTER_API_KEY) {
     warnings.push(

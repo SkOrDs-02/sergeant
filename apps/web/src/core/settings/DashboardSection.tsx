@@ -170,7 +170,7 @@ export function DashboardSection() {
             const checked = activeModules.includes(id);
             return (
               <li key={id} className="px-3 py-2 bg-panel">
-                <label className="flex items-center gap-3 cursor-pointer">
+                <label className="flex items-center gap-3 cursor-pointer touch-target">
                   <input
                     type="checkbox"
                     checked={checked}

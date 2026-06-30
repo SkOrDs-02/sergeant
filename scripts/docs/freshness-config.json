@@ -26,7 +26,8 @@
     "docs/STATUS.md",
     "scripts/__tests__/fixtures/**",
     ".telemetry/**",
-    "mockups/**"
+    "mockups/**",
+    "_scratch/**"
   ],
   "explicitInclude": [],
   "explicitExclude": [

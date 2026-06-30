@@ -153,6 +153,14 @@ function readCachedRoutineState(): RoutineState {
  * Stage 8 PR #056r dropped the `feature.routine.sqlite_v2.dual_write`
  * flag — the dual-write fires whenever a context is registered.
  */
+function scheduleRoutineSqliteCacheRefresh(): void {
+  if (typeof queueMicrotask === "function") {
+    queueMicrotask(notifyRoutineSqliteCacheRefresh);
+    return;
+  }
+  void Promise.resolve().then(notifyRoutineSqliteCacheRefresh);
+}
+
 export function saveRoutineState(next: RoutineState): boolean {
   try {
     const prev = readCachedRoutineState();
@@ -174,7 +182,7 @@ export function saveRoutineState(next: RoutineState): boolean {
     setCachedSqliteCompletions(next.completions);
 
     triggerRoutineDualWrite(prev, next);
-    notifyRoutineSqliteCacheRefresh();
+    scheduleRoutineSqliteCacheRefresh();
     return true;
   } catch {
     return false;

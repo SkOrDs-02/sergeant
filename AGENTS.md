@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-06-23 by @Skords-01. **Next review:** 2026-09-21.
+> **Last touched:** 2026-06-29 by @dimastahov16012003. **Next review:** 2026-09-27.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -96,11 +96,11 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 
 | Path                                     | Owner        | Secondary ¹             | Deep map                                                                                                    |
 | ---------------------------------------- | ------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `apps/web/**`                            | `@Skords-01` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
-| `apps/server/**`                         | `@Skords-01` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
-| `apps/mobile/**`, `apps/mobile-shell/**` | `@Skords-01` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
-| `packages/**`                            | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/02-engineering/architecture/module-ownership.md#packages)         |
-| `ops/**`, `tools/**`, `scripts/**`       | `@Skords-01` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/02-engineering/architecture/module-ownership.md#ops-surfaces) |
+| `apps/web/**`                            | `@SkOrDs-02` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
+| `apps/server/**`                         | `@SkOrDs-02` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
+| `apps/mobile/**`, `apps/mobile-shell/**` | `@SkOrDs-02` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/02-engineering/architecture/module-ownership.md#apps)                 |
+| `packages/**`                            | `@SkOrDs-02` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/02-engineering/architecture/module-ownership.md#packages)         |
+| `ops/**`, `tools/**`, `scripts/**`       | `@SkOrDs-02` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/02-engineering/architecture/module-ownership.md#ops-surfaces) |
 
 > ¹ Secondary is the bus-factor backup reviewer (real GitHub handle preferred; `TBD (<role>)` placeholders are accepted while delegation is in flight). L2 escalation when owner is unreachable: [`docs/00-start/playbooks/operational-continuity.md`](./docs/00-start/playbooks/operational-continuity.md). Empty Secondary cells fail `pnpm lint:codeowners`.
 
@@ -112,7 +112,7 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 > - **`lint-enforced-convention`** — стилістичне/процесне правило з механічним enforcement (ESLint, commitlint, governance-sync, freshness). Severity blocker, але enforcement — лінтер, не ран-тайм.
 > - **`active-initiative`** — правило з allowlist + дедлайном (див. лінкований `TODO(NNNN-…): YYYY-MM-DD`). Для нового коду — blocker; винятки трекаються окремо.
 >
-> Поточний розподіл (26 rule): 8 `blocker-invariant`, 16 `lint-enforced-convention`, 2 `active-initiative`. Машино-читабельна матриця: [`docs/04-governance/governance/hard-rules-matrix.md`](./docs/04-governance/governance/hard-rules-matrix.md). Семантика категорій — у [`docs/04-governance/adr/0045-hard-rules-taxonomy.md`](./docs/04-governance/adr/0045-hard-rules-taxonomy.md). Per-rule canonical bodies (з BAD/GOOD прикладами): [`docs/04-governance/governance/rules/`](./docs/04-governance/governance/rules/). 3-way sync gate (AGENTS.md ↔ JSON ↔ per-rule files): `pnpm lint:hard-rules-registry`. `id` стабільні в обох розділах і `hard-rules.json` — старі PR-описи лінкуються без змін.
+> Поточний розподіл (26 rule): 8 `blocker-invariant`, 18 `lint-enforced-convention`, 0 `active-initiative` (правила #18/#19 промовано після закриття ініціатив 0001/0012 — allowlist'и зняті, enforcement постійний). Машино-читабельна матриця: [`docs/04-governance/governance/hard-rules-matrix.md`](./docs/04-governance/governance/hard-rules-matrix.md). Семантика категорій — у [`docs/04-governance/adr/0045-hard-rules-taxonomy.md`](./docs/04-governance/adr/0045-hard-rules-taxonomy.md). Per-rule canonical bodies (з BAD/GOOD прикладами): [`docs/04-governance/governance/rules/`](./docs/04-governance/governance/rules/). 3-way sync gate (AGENTS.md ↔ JSON ↔ per-rule files): `pnpm lint:hard-rules-registry`. `id` стабільні в обох розділах і `hard-rules.json` — старі PR-описи лінкуються без змін.
 
 | #   | Rule                                                                                     | Category                   | Per-rule file                                                                                                                        |
 | --- | ---------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
@@ -127,8 +127,8 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 | 9   | Saturated brand fills behind `text-white` must use the `-strong` companion               | `lint-enforced-convention` | [`09-saturated-brand-fills-strong-companion.md`](./docs/04-governance/governance/rules/09-saturated-brand-fills-strong-companion.md) |
 | 10  | Lifecycle markers — every file/doc declares its status                                   | `lint-enforced-convention` | [`10-lifecycle-markers.md`](./docs/04-governance/governance/rules/10-lifecycle-markers.md)                                           |
 | 15  | Read governance before coding; update docs alongside code; internal docs in Ukrainian    | `lint-enforced-convention` | [`15-governance-and-doc-language.md`](./docs/04-governance/governance/rules/15-governance-and-doc-language.md)                       |
-| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS                | `active-initiative`        | [`18-module-size-discipline-600.md`](./docs/04-governance/governance/rules/18-module-size-discipline-600.md)                         |
-| 19  | Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo         | `active-initiative`        | [`19-strict-mode-flag-canonical.md`](./docs/04-governance/governance/rules/19-strict-mode-flag-canonical.md)                         |
+| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS                | `lint-enforced-convention` | [`18-module-size-discipline-600.md`](./docs/04-governance/governance/rules/18-module-size-discipline-600.md)                         |
+| 19  | Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo         | `lint-enforced-convention` | [`19-strict-mode-flag-canonical.md`](./docs/04-governance/governance/rules/19-strict-mode-flag-canonical.md)                         |
 | 20  | No OpenClaw PATs in production                                                           | `blocker-invariant`        | [`20-no-openclaw-pats-in-production.md`](./docs/04-governance/governance/rules/20-no-openclaw-pats-in-production.md)                 |
 | 21  | Pino redaction policy enforced                                                           | `blocker-invariant`        | [`21-pino-redaction-policy.md`](./docs/04-governance/governance/rules/21-pino-redaction-policy.md)                                   |
 | 22  | Skill body security scan — no injection/exfiltration patterns in SKILL.md                | `lint-enforced-convention` | [`22-skill-body-security-scan.md`](./docs/04-governance/governance/rules/22-skill-body-security-scan.md)                             |

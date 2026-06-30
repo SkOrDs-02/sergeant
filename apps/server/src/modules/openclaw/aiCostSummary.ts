@@ -22,6 +22,7 @@
  */
 
 import type { Pool } from "pg";
+import { toLocalISODate } from "@sergeant/shared";
 import { register } from "../../obs/metrics.js";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -148,12 +149,7 @@ export interface AiCostSummary {
 
 /** `YYYY-MM-DD` у Europe/Kyiv для переданого `now` (default — поточний час). */
 export function kyivDayKey(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Kyiv",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
+  return toLocalISODate(now);
 }
 
 interface KyivYmd {

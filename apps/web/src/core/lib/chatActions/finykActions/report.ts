@@ -1,7 +1,8 @@
-/* eslint-disable sergeant-design/no-raw-storage-key, sergeant-design/prefer-kyiv-time --
+/* eslint-disable sergeant-design/no-raw-storage-key --
    Chat-action executor (outside React): the bank tx cache + splits stay
    on LS (no SQLite canon); the hidden-tx read moved to the SQLite cache.
-   Host-local period math is pre-existing. Raw-key burndown: 2026-Q3. */
+   Raw-key burndown: 2026-Q3. */
+import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
@@ -13,13 +14,16 @@ export function exportReport(action: ExportReportAction): ChatActionResult {
   let fromDate: Date;
   let toDate = now;
   if (period === "week") {
-    fromDate = new Date(now);
-    fromDate.setDate(fromDate.getDate() - 7);
+    fromDate = new Date(now.getTime() - 7 * 86400000);
   } else if (period === "custom" && from && to) {
     fromDate = new Date(`${from}T00:00:00`);
     toDate = new Date(`${to}T23:59:59`);
   } else {
-    fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Default: from the 1st of the current Kyiv month (00:00 Kyiv) so the
+    // period boundary follows Europe/Kyiv, not the host timezone.
+    const { year, month } = getKyivDateParts(now);
+    fromDate =
+      parseKyivDate(`${year}-${String(month).padStart(2, "0")}-01`) ?? now;
   }
   const fromTs = fromDate.getTime();
   const toTs = toDate.getTime();
@@ -46,8 +50,9 @@ export function exportReport(action: ExportReportAction): ChatActionResult {
     0,
   );
   const totalIncome = income.reduce((s, t) => s + t.amount / 100, 0);
-  const fromStr = fromDate.toLocaleDateString("uk-UA");
-  const toStr = toDate.toLocaleDateString("uk-UA");
+  const dayFmt = new Intl.DateTimeFormat("uk-UA", { timeZone: "Europe/Kyiv" });
+  const fromStr = dayFmt.format(fromDate);
+  const toStr = dayFmt.format(toDate);
   return [
     `Звіт за ${fromStr} — ${toStr}:`,
     `Дохід: ${Math.round(totalIncome)} грн`,

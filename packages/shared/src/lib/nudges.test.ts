@@ -85,6 +85,39 @@ describe("getActiveNudge", () => {
     const third = getActiveNudge(store, 3, { picks: ["finyk"] });
     expect(third?.id).toBe(first!.id);
   });
+
+  it("surfaces the cross-module nudge when exactly one module has entries", () => {
+    const store = createMemoryKVStore();
+    const nudge = getActiveNudge(store, 2, {
+      picks: ["finyk", "fizruk"],
+      modulesWithEntries: new Set(["finyk"]),
+    });
+    expect(nudge?.id).toBe("day2_cross_module");
+  });
+
+  it("hides the cross-module nudge unless exactly one module is active", () => {
+    const store = createMemoryKVStore();
+    // Zero active modules — nothing to cross-pollinate from yet.
+    expect(
+      getActiveNudge(store, 2, {
+        picks: ["finyk"],
+        modulesWithEntries: new Set(),
+      })?.id,
+    ).not.toBe("day2_cross_module");
+    // Two active modules — the cross-module promise already landed.
+    expect(
+      getActiveNudge(store, 2, {
+        picks: ["finyk"],
+        modulesWithEntries: new Set(["finyk", "fizruk"]),
+      })?.id,
+    ).not.toBe("day2_cross_module");
+  });
+
+  it("never surfaces the cross-module nudge without a modulesWithEntries set (fail-closed)", () => {
+    const store = createMemoryKVStore();
+    const nudge = getActiveNudge(store, 2, { picks: ["finyk"] });
+    expect(nudge === null || nudge.id !== "day2_cross_module").toBe(true);
+  });
 });
 
 describe("re-engagement", () => {

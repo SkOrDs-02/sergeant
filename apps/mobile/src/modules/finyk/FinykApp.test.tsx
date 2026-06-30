@@ -30,6 +30,14 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
 }));
 
+jest.mock("./hooks/useFinykSqliteReadBoot", () => ({
+  useFinykSqliteReadBoot: jest.fn(),
+}));
+
+jest.mock("./hooks/useFinykMonoMirrorBoot", () => ({
+  useFinykMonoMirrorBoot: jest.fn(),
+}));
+
 const testUser = {
   user: {
     id: "test-user",

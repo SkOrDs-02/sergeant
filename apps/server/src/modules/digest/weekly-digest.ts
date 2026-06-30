@@ -320,6 +320,7 @@ ${dataContext}`;
         messages: [{ role: "user", content: userPrompt }],
         endpoint: "internal/weekly-digest",
         timeoutMs: 45_000,
+        userId: (req as WithSessionUser).user?.id,
       },
       options.addBreadcrumb ? { addBreadcrumb: options.addBreadcrumb } : {},
     );

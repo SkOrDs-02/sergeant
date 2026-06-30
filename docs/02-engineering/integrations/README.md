@@ -8,6 +8,7 @@
 | Документ                                       | Опис                                                             |
 | ---------------------------------------------- | ---------------------------------------------------------------- |
 | [`monobank-roadmap.md`](./monobank-roadmap.md) | Monobank інтеграція: roadmap і webhook                           |
+| [`monobank-provider-api-plan.md`](./monobank-provider-api-plan.md) | Monobank Provider API («tap-to-confirm»): план, передумови, PR-и |
 | [`railway-vercel.md`](./railway-vercel.md)     | Railway (API) + Vercel (frontend) setup                          |
 | [`renovate-usage.md`](./renovate-usage.md)     | Renovate: автооновлення залежностей                              |
 | [`voyage-pgvector.md`](./voyage-pgvector.md)   | Voyage AI embeddings + pgvector AI memory (foundation, ADR-0028) |

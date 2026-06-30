@@ -2,18 +2,13 @@
  * Server entrypoint (Railway, API-only). Runtime config lives in
  * `server/config.js`.
  *
- * IMPORTANT: `./obs/tracing.js` is imported FIRST, then `./sentry.js`,
- * before `express` or any transitively-loaded HTTP module. ESM evaluates
- * imports depth-first in declaration order, so OTel `NodeSDK.start()` and
- * `Sentry.init()` at the top of those modules run before `http`/`express`
- * are pulled in — which is the only way OpenTelemetry auto-instrumentation
- * (and Sentry's, which uses OTel internally) can monkey-patch them. The
- * order is OTel → Sentry: OTel registers global tracer provider, Sentry
- * then either coexists (when both enabled) or is the only tracer source
- * (when `OTEL_EXPORTER_OTLP_ENDPOINT` is unset and OTel module is no-op).
- * See `apps/server/src/obs/tracing.ts` and `apps/server/src/sentry.ts`.
+ * IMPORTANT: `./sentry.js` is imported FIRST, before `express` or any
+ * transitively-loaded HTTP module. ESM evaluates imports depth-first in
+ * declaration order, so `Sentry.init()` at the top of that module runs
+ * before `http`/`express` are pulled in — which is the only way Sentry's
+ * auto-instrumentation (it uses OTel internally) can monkey-patch them.
+ * See `apps/server/src/sentry.ts`.
  */
-import "./obs/tracing.js";
 import "./sentry.js";
 
 import { assertStartupEnv } from "./env/env.js";

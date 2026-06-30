@@ -7,6 +7,20 @@ import { getUserPlan } from "./getUserPlan.js";
 type AuthedRequest = Request & { user?: { id: string } };
 
 /**
+ * Founder / internal-team Better-Auth user IDs that bypass plan gates
+ * entirely — comma-separated in env `AI_QUOTA_FOUNDER_IDS` (the same list the
+ * AI daily-quota bypass uses, so internal dogfooding stays plan-agnostic in
+ * one place). Read from `process.env` directly to match `aiQuota.isFounderUser`
+ * — flippable in tests without re-importing the validated env. Empty / unset →
+ * nobody bypasses.
+ */
+function isFounderUser(userId: string): boolean {
+  const raw = process.env["AI_QUOTA_FOUNDER_IDS"];
+  if (!raw) return false;
+  return raw.split(",").some((id) => id.trim() !== "" && id.trim() === userId);
+}
+
+/**
  * Express middleware that gates a route behind an active Pro subscription.
  * Returns 402 Payment Required when the user is on the free plan.
  *
@@ -15,6 +29,10 @@ type AuthedRequest = Request & { user?: { id: string } };
  * strictly by the Zod env schema (audit 2026-06-11 ws-08): a typo fails the
  * boot instead of silently disabling monetization, and
  * `STRIPE_ENABLED=true` without `STRIPE_SECRET_KEY` refuses to start.
+ *
+ * Founders (`AI_QUOTA_FOUNDER_IDS`) bypass the paywall regardless of their
+ * billing plan — mirrors the AI-quota founder bypass so internal accounts can
+ * dogfood Pro-only surfaces without a `subscriptions` row.
  */
 export function requirePlan(
   pool: Pool,
@@ -33,6 +51,11 @@ export function requirePlan(
     const userId = req.user?.id;
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    if (isFounderUser(userId)) {
+      next();
       return;
     }
 

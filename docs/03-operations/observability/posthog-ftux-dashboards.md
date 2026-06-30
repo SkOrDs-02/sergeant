@@ -1,6 +1,6 @@
 # PostHog FTUX dashboards — runbook
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 Operational runbook for PostHog (Cloud EU) dashboards that monitor the
@@ -46,6 +46,12 @@ are normative for all `trackEvent(...)` callsites.
 > for both `production` and `preview` targets. Live screenshots will
 > populate inside each insight tile as soon as `onboarding_started`
 > traffic lands in `Default project`.
+
+> **Українізовано (2026-06-26):** display-назви й описи 5 insights + опис
+> дашборда — українською (що означає / як читати / ціль). Зроблено разовим
+> API-PATCH (FTUX не має portable manifest, на відміну від Founder Pulse) —
+> тож зміни не tracked у репо; при майбутньому пересозданні insights укр-назви
+> треба повторити. Канонічні (англ) назви подій / HogQL у §2–§3 незмінні.
 
 ---
 

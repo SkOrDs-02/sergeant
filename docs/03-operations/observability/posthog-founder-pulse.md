@@ -23,10 +23,14 @@ funnel breakdown, D1/D7/D30 retention, activation rate, new-MRR і
 
 - **Account:** Sergeant Cloud EU (host `https://eu.i.posthog.com`).
 - **Project:** `Default project` (id `167740`, prod token `phc_A8dsj…`). Окремий `dev serg` проєкт (id `167756`, token `phc_mSvKK…`) покриває preview deployments — той самий дашборд, окремий датасет.
-- **Folder:** `Dashboards → Founder Pulse` (id буде заповнений після першого імпорту — `TBD` поки manifest вперше не запушено в PostHog UI).
+- **Folder:** [`Dashboards → Founder Pulse`](https://eu.posthog.com/project/167740/dashboard/777283) (id `777283`).
 - **Permissions:** founder + on-call SRE — `Dashboard collaborator`. Усі решта PostHog-користувачів — view-only.
 
-> **Status (2026-05-13):** manifest акцептовано в репо (PR-10). Insights ще не створено в PostHog — наступний крок: пройти `ops/posthog/README.md § Імпорт у PostHog` і заповнити `short_id`-и в §3 нижче.
+> **Status (2026-06-26):** ✅ Dashboard + 7 insights створено через [`scripts/posthog/import-founder-pulse.mjs`](../../../scripts/posthog/import-founder-pulse.mjs) (project `167740`, dashboard `777283`). Live short_id-и: active-users `XBRWeTrn`, funnel-overall `9T025rBs`, funnel-per-module `WPf62Cq6`, activation-rate `bC6ZbB3v`, new-subscriptions `7SSCvzEA`, retention `k0pjSfoY`, funnel-zeroes `vMEk4MKL`.
+>
+> **Українізовано (2026-06-26):** display-назви й описи панелей — українською через manifest-поля `name_uk` / `description_uk`. Importer матчить наявні insights за стабільним тегом `fp:<key>` (fallback на англ-назву), тож re-run оновлює їх на місці, без дублів. Англ `name` / `description` лишаються в manifest як контракт §2–§3.
+>
+> ⚠️ **Дані поки рідкі** (рання стадія): за 30д `signup_completed`≈1, `subscription_started`=0 — тому активаційна воронка, activation-rate і new-MRR панелі майже порожні; оживуть з трафіком. **`first_action_completed` gap — ВИПРАВЛЕНО** (PR #14): подія не emit-илась, бо `detectFirstActionCompletedPerModule()` ніколи не викликався на рендер-шляху; додано виклик у `useHubDashboardState`.
 
 ---
 

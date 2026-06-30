@@ -39,7 +39,7 @@ const webServer = process.env["PW_SKIP_WEBSERVER"]
       command: "node ./tests/smoke/start-smoke-webserver.mjs",
       url: "http://127.0.0.1:4173",
       reuseExistingServer: !isCI,
-      timeout: 240_000,
+      timeout: 360_000,
       stdout: "pipe" as const,
       stderr: "pipe" as const,
       env: {

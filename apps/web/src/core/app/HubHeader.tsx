@@ -109,7 +109,7 @@ export function HubHeader({
   return (
     <header
       className={cn(
-        "px-5 max-w-lg mx-auto w-full",
+        "px-5 max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto w-full",
         "shrink-0 z-40",
         "pt-6 pb-2.5",
       )}

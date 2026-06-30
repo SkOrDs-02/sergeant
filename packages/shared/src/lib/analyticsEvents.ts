@@ -200,6 +200,35 @@ export const ANALYTICS_EVENTS = Object.freeze({
   SUBSCRIPTION_CANCELED: "subscription_canceled",
   SUBSCRIPTION_RENEWED: "subscription_renewed",
 
+  // Billing failures (billing-observability — ADR-0001 §ADR-1.16). Fired
+  // server-side from the Stripe webhook handler
+  // (`apps/server/src/modules/billing/stripe.ts`) on every NEGATIVE payment
+  // signal, so PostHog can measure checkout drop-rate і 3DS-fail rate без
+  // експорту card data. ONE event, розрізнюваний полем `kind`; ніколи не
+  // несе PAN / CVC / raw error blob. Payload-контракт:
+  //
+  //   PAYMENT_FAILED {
+  //     kind: "payment_intent" | "invoice" | "charge" | "checkout_expired",
+  //     source: "stripe_webhook",
+  //     stripe_event_id: string,
+  //     user_resolved: boolean,        // false → distinctId анонімний
+  //     // kind="payment_intent":
+  //     error_code?: string | null,           // last_payment_error.code
+  //     decline_code?: string | null,         // last_payment_error.decline_code
+  //     is_3ds?: boolean,                      // code === "payment_intent_authentication_failure"
+  //     // kind="invoice":
+  //     attempt_count?: number | null,
+  //     next_payment_attempt?: string | null,  // ISO-8601 (Stripe unix→ISO)
+  //     // kind="charge":
+  //     failure_code?: string | null,
+  //     network_decline_code?: string | null,  // outcome.network_decline_code
+  //   }
+  //
+  // distinctId резолвиться через customer → subscriptions.provider_customer_id
+  // → user_id; на miss — fallback `stripe_customer:<id>` / `stripe_event:<id>`
+  // (анонімно), щоб aggregate drop-rate лишався countable.
+  PAYMENT_FAILED: "payment_failed",
+
   // Pricing / waitlist. Очікувані payload-контракти:
   //
   //   PRICING_VIEWED         { source?: "settings" | "paywall" | "direct" }
@@ -231,6 +260,24 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // `variant` is populated when the A/B test (`onboarding_v2` feature flag)
   // is active; absent on production rollout once a winner is picked.
   ACTIVATION_V2_HIT: "activation_v2_hit",
+
+  // Multi-module activation — cross-module breadth signal (Tier 2).
+  // Complements `activation_v2` (Finyk-only depth) with the breadth the
+  // growth funnel actually needs: how many users touch ≥2 modules, not
+  // just deep-activate one. Fired exactly once per browser profile the
+  // moment the count of modules with a `first_action_completed` flag
+  // first reaches `MULTI_MODULE_ACTIVATION_THRESHOLD` (2). Idempotent
+  // through the `hub_multi_module_activated_v1` localStorage flag.
+  // Payload contract:
+  //
+  //   MULTI_MODULE_ACTIVATED { module_count: number,
+  //                            modules: DashboardModuleId[],
+  //                            days_since_first_action: number | null }
+  //
+  // `modules` is in `DASHBOARD_MODULE_IDS` order. `days_since_first_action`
+  // is whole days from the FTUX clock origin (`hub_first_action_started_at_v1`),
+  // or `null` when that stamp is missing (e.g. data restored via sync).
+  MULTI_MODULE_ACTIVATED: "multi_module_activated",
 
   // Landing page (initiative 0010 Phase 6.1). Fired from `/` + `/pricing`
   // public surfaces. Payload contracts:

@@ -48,6 +48,13 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.SUBSCRIPTION_RENEWED).toBe("subscription_renewed");
   });
 
+  it("exposes the billing-failure (observability) event verbatim", () => {
+    // Fired server-side from the Stripe webhook handler; PostHog funnels for
+    // checkout drop-rate / 3DS-fail rate key off this exact string. Renaming
+    // it silently breaks those dashboards — pin it here.
+    expect(ANALYTICS_EVENTS.PAYMENT_FAILED).toBe("payment_failed");
+  });
+
   it("exposes the Pricing / Waitlist (Phase 0 monetization) group verbatim", () => {
     expect(ANALYTICS_EVENTS.PRICING_VIEWED).toBe("pricing_viewed");
     expect(ANALYTICS_EVENTS.PRICING_CTA_CLICKED).toBe("pricing_cta_clicked");

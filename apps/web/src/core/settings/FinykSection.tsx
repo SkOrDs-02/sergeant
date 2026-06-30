@@ -607,7 +607,7 @@ export function FinykSection() {
                     </button>
                   </div>
                 </div>
-                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none touch-target">
                   <input
                     type="checkbox"
                     className="w-4 h-4 rounded accent-emerald-600 cursor-pointer"

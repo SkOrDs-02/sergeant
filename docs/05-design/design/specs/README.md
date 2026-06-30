@@ -1,6 +1,6 @@
 # Design specs
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
 > **Status:** Active
 
 Design-специ для нетривіальних product-side фіч (раніше `agents/specs/`).
@@ -23,7 +23,7 @@ Design-специ для нетривіальних product-side фіч (ран�
 | Дата       | Спек                                                                                                           | Статус                                            | Successor |
 | ---------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | --------- |
 | 2026-04-25 | [`2026-04-25-assistant-capability-catalogue-design.md`](./2026-04-25-assistant-capability-catalogue-design.md) | Shipped (PR #795 + #798/#799/#800/#805/#812/#839) | —         |
-| 2026-05-06 | [`2026-05-06-sync-engine-writer-wiring-design.md`](./2026-05-06-sync-engine-writer-wiring-design.md)           | Active                                            | —         |
+| 2026-05-06 | [`2026-05-06-sync-engine-writer-wiring-design.md`](./2026-05-06-sync-engine-writer-wiring-design.md)           | Shipped                                           | —         |
 
 ### Архів superseded спеків
 
