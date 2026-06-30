@@ -1,0 +1,266 @@
+# Machine-readable registry of autonomous loops operating in this repo.
+# Schema is a superset of cobusgreyling/loop-engineering `patterns/registry.yaml`
+# (fields: id, name, file, goal, cadence, risk, tools, skills, state, phases,
+#  human_gates, starter, week_one_mode, token_cost, cost) with Sergeant-specific
+# additions: owner_skill, related_skills, hard_rules_ref, enabled.
+#
+# Compatible with `loop-audit` / `loop-cost` from loop-engineering; the extra
+# fields are ignored by their tooling.
+#
+# Regenerate from .agents/skills/ by running `pnpm skills:lock` followed by a
+# catalog sync — do not hand-edit when adding a new skill.
+
+version: 1
+generated_by: docs/00-start/agents/loops/registry.yaml
+source_of_truth: docs/00-start/agents/agent-skills-catalog.md
+
+loops:
+  - id: pr-review
+    name: PR Review Babysitter
+    file: LOOP.md#pr-review
+    owner_skill: sergeant-review-and-merge
+    related_skills: [sergeant-review-squad, sergeant-server-api, sergeant-security-audit]
+    goal: React to open PRs with safety review, contract checks, docs freshness, commit scope
+    cadence: 5m-15m
+    risk: medium
+    tools: [claude-code, kilo-code, codex, github-actions]
+    skills: [sergeant-review-and-merge, sergeant-review-squad]
+    state: null
+    phases: [discover, triage, fix, verify, notify]
+    human_gates: [billing, auth, security, breaking-api, hard-rule-amendment]
+    hard_rules_ref: ["#3", "#6", "#7", "#15", "#26"]
+    starter: null
+    week_one_mode: L1
+    enabled: false
+    token_cost: high
+    cost:
+      tokens_noop: 5000
+      tokens_report: 80000
+      tokens_action: 250000
+      suggested_daily_cap: 1500000
+      early_exit_required: true
+
+  - id: tech-debt-sweep
+    name: Tech-Debt Sweeper
+    file: LOOP.md#tech-debt-sweep
+    owner_skill: sergeant-tech-debt
+    related_skills: [sergeant-server-api, sergeant-web-ui, sergeant-review-and-merge]
+    goal: Discover dead code, Knip findings, ESLint baseline drift, module-size violations
+    cadence: 6h-1d
+    risk: low
+    tools: [claude-code, kilo-code, codex, github-actions]
+    skills: [sergeant-tech-debt]
+    state: null
+    phases: [scan, prioritize, fix-small, ticket-large]
+    human_gates: [architectural-changes, baseline-amendment, rule-amendment]
+    hard_rules_ref: ["#18", "#19", "#26"]
+    starter: null
+    week_one_mode: L2
+    enabled: false
+    token_cost: medium
+    cost:
+      tokens_noop: 5000
+      tokens_report: 60000
+      tokens_action: 200000
+      suggested_daily_cap: 400000
+      early_exit_required: true
+
+  - id: security-audit
+    name: Security Audit Sweeper
+    file: LOOP.md#security-audit
+    owner_skill: sergeant-security-audit
+    related_skills: [sergeant-openclaw, sergeant-server-api, better-auth-best-practices]
+    goal: pnpm audit, secret scan, Pino redaction check, Drizzle SQL injection review, CVE triage
+    cadence: 1d
+    risk: medium
+    tools: [claude-code, kilo-code, codex, github-actions]
+    skills: [sergeant-security-audit]
+    state: null
+    phases: [scan, triage-risk, patch-safe, verify-worktree, escalate-risky]
+    human_gates: [high-sev-cve, denylisted-packages, auth-cookie-changes, prod-pat]
+    hard_rules_ref: ["#20", "#21", "#22"]
+    starter: null
+    week_one_mode: L1
+    enabled: false
+    token_cost: medium
+    cost:
+      tokens_noop: 5000
+      tokens_report: 60000
+      tokens_action: 300000
+      suggested_daily_cap: 500000
+      early_exit_required: true
+
+  - id: migration-guard
+    name: Migration Guard
+    file: LOOP.md#migration-guard
+    owner_skill: sergeant-data-and-migrations
+    related_skills: [sergeant-server-api, sergeant-deploy-and-observability]
+    goal: Sequential-numbering check, two-phase DROP detection, index audit on every PR touching db-schema
+    cadence: per-pr
+    risk: high
+    tools: [claude-code, kilo-code, codex, github-actions]
+    skills: [sergeant-data-and-migrations]
+    state: null
+    phases: [detect, classify, block, escalate]
+    human_gates: [drop-table, gap-in-numbering, prod-rollback-required]
+    hard_rules_ref: ["#4"]
+    starter: null
+    week_one_mode: L2
+    enabled: false
+    token_cost: low
+    cost:
+      tokens_noop: 3000
+      tokens_report: 30000
+      tokens_action: 60000
+      suggested_daily_cap: 100000
+      early_exit_required: true
+
+  - id: deploy-watch
+    name: Deploy Watch
+    file: LOOP.md#deploy-watch
+    owner_skill: sergeant-deploy-and-observability
+    related_skills: [sergeant-data-and-migrations, sergeant-security-audit]
+    goal: React to deploy health, Sentry alerts, env drift, Railway incidents
+    cadence: 5m-15m
+    risk: high
+    tools: [claude-code, kilo-code, github-actions, sentry-webhooks]
+    skills: [sergeant-deploy-and-observability]
+    state: null
+    phases: [detect, classify, page-human, file-postmortem]
+    human_gates: [prod-outage, secret-rotation, db-migration-on-prod]
+    hard_rules_ref: ["#6", "#21"]
+    starter: null
+    week_one_mode: L2
+    enabled: false
+    token_cost: medium
+    cost:
+      tokens_noop: 5000
+      tokens_report: 50000
+      tokens_action: 150000
+      suggested_daily_cap: 500000
+      early_exit_required: true
+
+  - id: e2e-flake-watch
+    name: E2E Flake Watch
+    file: LOOP.md#e2e-flake-watch
+    owner_skill: sergeant-e2e-testing
+    related_skills: [sergeant-web-ui, sergeant-mobile-expo]
+    goal: Detect and quarantine Playwright E2E flakes; surface new a11y regressions on PRs
+    cadence: per-pr
+    risk: low
+    tools: [claude-code, kilo-code, codex, github-actions]
+    skills: [sergeant-e2e-testing]
+    state: null
+    phases: [detect, quarantine, propose-fix, escalate]
+    human_gates: [seed-data-change, role-selector-change, infra-change]
+    hard_rules_ref: []
+    starter: null
+    week_one_mode: L1
+    enabled: false
+    token_cost: low
+    cost:
+      tokens_noop: 3000
+      tokens_report: 35000
+      tokens_action: 80000
+      suggested_daily_cap: 100000
+      early_exit_required: false
+
+  - id: review-squad-parallel
+    name: PR Review Squad (Parallel)
+    file: LOOP.md#review-squad-parallel
+    owner_skill: sergeant-review-squad
+    related_skills: [sergeant-review-and-merge, sergeant-security-audit, sergeant-tech-debt]
+    goal: Parallel lens coverage (contract, design, security, docs) for PRs touching 3+ governed surfaces
+    cadence: per-pr
+    risk: medium
+    tools: [claude-code, kilo-code]
+    skills: [sergeant-review-squad]
+    state: null
+    phases: [discover, fan-out, synthesize, gate]
+    human_gates: [contradictory-lens-findings, security-flag, contract-break]
+    hard_rules_ref: ["#3", "#15", "#26"]
+    starter: null
+    week_one_mode: L1
+    enabled: false
+    token_cost: very-high
+    cost:
+      tokens_noop: 5000
+      tokens_report: 60000
+      tokens_action: 400000
+      suggested_daily_cap: 800000
+      early_exit_required: true
+
+  - id: qa-squad-parallel
+    name: QA Squad (Parallel)
+    file: LOOP.md#qa-squad-parallel
+    owner_skill: sergeant-qa-squad
+    related_skills: [sergeant-web-ui, sergeant-server-api, sergeant-mobile-expo, sergeant-data-and-migrations]
+    goal: Per-surface test + typecheck across all 4 surfaces before synthesis; full QA fan-out
+    cadence: per-pr
+    risk: low
+    tools: [claude-code, kilo-code]
+    skills: [sergeant-qa-squad]
+    state: null
+    phases: [discover, fan-out, synthesize, report]
+    human_gates: [cross-surface-bug, baseline-amendment]
+    hard_rules_ref: ["#18", "#19"]
+    starter: null
+    week_one_mode: L1
+    enabled: false
+    token_cost: very-high
+    cost:
+      tokens_noop: 5000
+      tokens_report: 60000
+      tokens_action: 400000
+      suggested_daily_cap: 800000
+      early_exit_required: true
+
+  - id: council-advisory
+    name: Council Advisory
+    file: LOOP.md#council-advisory
+    owner_skill: sergeant-council
+    related_skills: [sergeant-feature-delivery, sergeant-backend-architecture, sergeant-web-ui]
+    goal: Multi-perspective product/strategy/UX advice for ambiguous decisions and tradeoffs
+    cadence: per-decision
+    risk: low
+    tools: [claude-code, kilo-code]
+    skills: [sergeant-council]
+    state: null
+    phases: [frame, fan-out, debate, synthesize]
+    human_gates: [none — purely advisory]
+    hard_rules_ref: []
+    starter: null
+    week_one_mode: L1
+    enabled: true
+    token_cost: high
+    cost:
+      tokens_noop: 0
+      tokens_report: 120000
+      tokens_action: 250000
+      suggested_daily_cap: 600000
+      early_exit_required: false
+
+  - id: planning-batch
+    name: Planning Batch Fan-Out
+    file: LOOP.md#planning-batch
+    owner_skill: sergeant-planning-batch
+    related_skills: [sergeant-feature-delivery, sergeant-review-and-merge]
+    goal: Execute a batch of N planning tasks via parallel agents with tracker sync
+    cadence: per-batch
+    risk: low
+    tools: [claude-code, kilo-code]
+    skills: [sergeant-planning-batch]
+    state: null
+    phases: [discover, batch, fan-out, sync, archive]
+    human_gates: [contradictory-plans, scope-creep, blocker-amendment]
+    hard_rules_ref: ["#15"]
+    starter: null
+    week_one_mode: L1
+    enabled: true
+    token_cost: medium
+    cost:
+      tokens_noop: 0
+      tokens_report: 50000
+      tokens_action: 200000
+      suggested_daily_cap: 400000
+      early_exit_required: false
