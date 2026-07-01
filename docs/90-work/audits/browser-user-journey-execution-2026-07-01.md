@@ -67,13 +67,26 @@ offline/PWA (Група D). Кожен фейл — класифікація pro
 - **Retest:** `pnpm docs:gen-graph` зелений після перенумерації (див.
   evidence log).
 
-### BRJ2-002: локальний PG без `pgvector` блокує міграції
+### BRJ2-002: локальний PG без `pgvector` ≥0.7 блокує міграції
 
 - **Type:** env gap (це середовище, не продукт).
-- **Repro:** `db:migrate:dev` → `extension "vector" is not available` (0A000).
-- **Fix:** встановити `postgresql-16-pgvector` у контейнері; якщо пакет
-  недоступний — задокументувати як env-exception і ганяти smoke проти
-  міграцій до першої vector-залежної (якщо вони йдуть пізніше). Open.
+- **Repro:** `db:migrate:dev` → `extension "vector" is not available` (0A000);
+  після встановлення Ubuntu-пакета 0.6.0 — `type "halfvec" does not exist`
+  (42704; `halfvec` з'явився у pgvector 0.7).
+- **Fix (за дозволом власника):** підключено офіційний PGDG apt-репозитарій →
+  `postgresql-16-pgvector` 0.8.4 → `ALTER EXTENSION vector UPDATE`.
+- **Retest:** `db:migrate:dev` → `migrate_ok` (1 982 мс, повна схема).
+
+### BRJ2-005: `pnpm check` / `Test coverage` / `Critical-flow E2E` червоні на `main`
+
+- **Type:** pre-existing product/CI gap (НЕ спричинено цим PR).
+- **Evidence:** CI-ран `main@4ac3206` (28479344176, 2026-06-30): `check` →
+  step «Format, lint, test, build» failure; `Test coverage (vitest)` → step
+  «Run vitest with coverage» failure; `Critical-flow E2E` → step «Run
+  critical-flow E2E suite» failure. Ті самі три джоби падають на PR #90 з
+  тим самим підписом — база червона до гілки.
+- **Fix:** поза скоупом docs-PR; діагностика — наступний крок цього прогону
+  (локально відтворити `pnpm check` на змігрованій базі). Open.
 
 ### BRJ2-003: 26 broken internal links у harness-доках (pre-existing)
 

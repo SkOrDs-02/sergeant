@@ -68,7 +68,7 @@ Weekly cron Mon 06:00 UTC, **тільки issues** (не PR), debounce чере�
 | New weekly CI jobs            | 0                       | 2 (janitors + harness-a-b)                                                 | `.github/workflows/entropy-janitors.yml`, `harness-a-b.yml` |
 | New repo-owned skills         | 20                      | 20 (no new skill files; tooling is in `tools/**`, not `.agents/skills/**`) | `docs/00-start/agents/agent-skills-catalog.md`              |
 | Hard Rules                    | 26                      | 26 (harness work = governance, not new rules)                              | `docs/04-governance/governance/hard-rules.json`             |
-| ADRs                          | 65 (0065 = last before) | 69 (0066-0069 = harness v1)                                                | `docs/04-governance/adr/`                                   |
+| ADRs                          | 65 (0065 = last before) | 69 (0069–0072 = harness v1, перенумеровано 2026-07-01)                     | `docs/04-governance/adr/`                                   |
 
 > Примітка: bundle numbers у ADR-0071 наводяться як pre-rollout baseline
 > з власних вимірювань автора. Точні CI-виміри з'являться після першого
