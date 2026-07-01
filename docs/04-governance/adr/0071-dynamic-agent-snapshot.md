@@ -114,3 +114,15 @@ gets the static sections.
 ## Links
 
 - Source plan: `E:\Temp\kilo\harness-plan.md` §2 (Dynamic Snapshot)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                   | Title                                                                                    | Merged     |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------- |
+| [#90](https://github.com/Skords-01/Sergeant/pull/90) | fix(docs): browser-journey execution log 2026-07-01 + renumber harness ADRs to 0070–0072 | 2026-07-01 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
