@@ -137,6 +137,10 @@
     {
       "pattern": "^https?://github\\.com/[Ss]kords-01/[Ss]ergeant/",
       "reason": "Historical PR/commit backlinks to the pre-migration GitHub repo Skords-01/Sergeant, suspended during the 2026-06-26 account migration to SkOrDs-02. They reference real PRs/commits from the old repo that no longer resolve (the old PR numbers do not exist on the new repo, which started fresh — so they cannot be rewritten to the new handle either); preserved verbatim in CHANGELOG.md, AGENTS.md, and per-app READMEs as an immutable historical record. New backlinks point at SkOrDs-02/sergeant."
+    },
+    {
+      "pattern": "^https?://agentskills\\.so(/|$)",
+      "reason": "Каталог agent-скілів, цитований у docs/00-start/agents/skills-evolution-roadmap.md; хост періодично обриває запити CI link-checker-а по таймауту ('This operation was aborted') хоча рендериться у браузері — flaky external, зафіксовано на PR #90 (2026-07-01)."
     }
   ]
 }
