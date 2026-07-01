@@ -41,7 +41,8 @@ Loops існують у режимі **L1 report-only → L2 assisted fixes → 
 ## Budget & Kill Switch
 
 - Token caps per loop (aggregate daily/monthly) — [`loop-budget.md`](./loop-budget.md).
-- Per-run brakes (`max_turns`, `max_budget_usd`, `circuit_breaker`, `heartbeat_required` — hard stop on a single run, independent of aggregate cap) — [`loop-budget.md § Per-Run Brakes`](./loop-budget.md#per-run-brakes) + `registry.yaml.cost`.
+- Per-run brakes (`max_turns`, `max_budget_usd`, `circuit_breaker` — hard stop on a single run, independent of aggregate cap) — [`loop-budget.md § Per-Run Brakes`](./loop-budget.md#per-run-brakes) + `registry.yaml.cost`.
+- Heartbeat monitoring (`heartbeat_required` — alerting only, not a stop condition) — [`loop-budget.md § Dead-man's Heartbeat`](./loop-budget.md#dead-mans-heartbeat) + `registry.yaml.cost`.
 - Kill switch: створити GitHub issue з label `loop-pause-all` + призначити `@SkOrDs-02`. Resume — після явного коментаря в issue та оновлення `enabled: true` у `registry.yaml`.
 - Підозра на overspend → append event до Sentry (тег `loop-budget-exceeded`, `loop-circuit-breaker-tripped`, або `loop-heartbeat-silent`) + page on-call.
 
