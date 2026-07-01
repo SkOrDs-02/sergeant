@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -111,7 +112,20 @@ export function useNutritionPantries({
 
   const [pantryStorageErr, setPantryStorageErr] = useState("");
 
+  // DCRUD-007: skip the mount run — it would persist the UNHYDRATED
+  // initial state (LS is tombstoned after the first boot, so that state
+  // is an empty default) while the SQLite cache may already be warm;
+  // the resulting dual-write diff soft-deletes every pantry item the
+  // user has. Before the value-based diff fix this wipe was silently
+  // "healed" by the spurious-upsert feedback loop; now it must simply
+  // never fire. Real mutations and the overlay hydration re-run the
+  // effect with meaningful state.
+  const pantriesHydratedRef = useRef(false);
   useEffect(() => {
+    if (!pantriesHydratedRef.current) {
+      pantriesHydratedRef.current = true;
+      return;
+    }
     const ok = persistPantries(
       NUTRITION_PANTRIES_KEY,
       NUTRITION_ACTIVE_PANTRY_KEY,

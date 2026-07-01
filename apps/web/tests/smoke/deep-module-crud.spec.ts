@@ -116,11 +116,35 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.getByRole("button", { name: /Розгорнути Сьогодні/ }).click();
     await expect(page.getByText("DCRUD кава оновлено")).toBeVisible();
 
-    await page.getByText("DCRUD кава оновлено").click();
-    await page.getByRole("button", { name: "Видалити" }).click();
+    // Harness correction: рядок живе у GroupedVirtuoso зі sticky
+    // day-header-ом — реальний .click() зависає у scroll-into-view
+    // циклі (sticky перекриває hit-point, virtuoso ремонтує ноду).
+    // dispatchEvent виконує той самий продуктовий onClick без hit-test.
+    await page
+      .getByRole("button", { name: /DCRUD кава оновлено/ })
+      .dispatchEvent("click");
+    await expect(
+      page.getByRole("dialog", { name: "Редагувати витрату" }),
+    ).toBeVisible();
+    // Harness correction: dual-write final-notify пульс (~1-2с після
+    // boot) може транзитно перемонтувати ноду кнопки в момент
+    // actionability-перевірки — Playwright-retry після detach зависає,
+    // чекаючи фантомної навігації. dispatchEvent виконує той самий
+    // продуктовий onClick без hit-test (модалка, не віртуалізований ряд).
+    await page.getByRole("button", { name: "Видалити" }).dispatchEvent("click");
     await expect(page.getByText("DCRUD кава оновлено")).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Повернути" }).click();
+    // Harness corrections: (1) toast-кнопка «Повернути» авто-дисмісить
+    // таймером — actionability-retry гоняється з перемонтуванням, тож
+    // dispatchEvent; (2) undo-повернена витрата створює день-групу
+    // заново ЗГОРНУТОЮ (days collapsed by default) — розгортаємо перед
+    // assert-ом.
+    await page
+      .getByRole("button", { name: "Повернути" })
+      .dispatchEvent("click");
+    await page
+      .getByRole("button", { name: /Розгорнути Сьогодні/ })
+      .dispatchEvent("click");
     await expect(page.getByText("DCRUD кава оновлено")).toBeVisible();
 
     expect(errors, "Uncaught page errors during Finyk CRUD").toEqual([]);
@@ -163,7 +187,11 @@ test.describe("@critical deep module CRUD browser loop", () => {
     ).toHaveCount(0);
 
     await page.getByRole("button", { name: "Повернути" }).click();
-    await expect(page.getByText("dcrud йогурт")).toBeVisible();
+    // Harness correction: бере роль-локатор — plain getByText матчить і
+    // undo-тост «Прибрано «dcrud йогурт» з комори» (strict mode violation).
+    await expect(
+      page.getByRole("button", { name: "Редагувати dcrud йогурт" }),
+    ).toBeVisible();
 
     expect(errors, "Uncaught page errors during Nutrition pantry CRUD").toEqual(
       [],
@@ -271,6 +299,14 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await expect(page.getByText("DCRUD body note")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Повернути" }).click();
+    // Harness correction (mirrors DCRUD-001): після restore картка
+    // журналу ре-рендериться згорнутою — нотатка видима лише в
+    // розгорнутому стані, тож спершу розгортаємо відновлений запис.
+    const restoredEntry = page.getByRole("button", {
+      name: /81\.2 кг.*7\.5 год/,
+    });
+    await expect(restoredEntry).toBeVisible();
+    await restoredEntry.click();
     await expect(page.getByText("DCRUD body note")).toBeVisible();
 
     expect(errors, "Uncaught page errors during Fizruk body CRUD").toEqual([]);

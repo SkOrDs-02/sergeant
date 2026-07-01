@@ -62,7 +62,7 @@ describe("importFizrukResidualFromLs", () => {
       userId: "u1",
       clientTs: __testing.STALE_TIMESTAMP,
     });
-    expect(mockRemoveItem).toHaveBeenCalledTimes(3);
+    expect(mockRemoveItem).toHaveBeenCalledTimes(4);
     expect(res).toEqual({ imported: true, cleaned: true });
   });
 
@@ -75,7 +75,7 @@ describe("importFizrukResidualFromLs", () => {
     const res = await importFizrukResidualFromLs(client, "u1");
 
     expect(mockApply).not.toHaveBeenCalled();
-    expect(mockRemoveItem).toHaveBeenCalledTimes(3);
+    expect(mockRemoveItem).toHaveBeenCalledTimes(4);
     expect(res).toEqual({ imported: false, cleaned: true });
   });
 

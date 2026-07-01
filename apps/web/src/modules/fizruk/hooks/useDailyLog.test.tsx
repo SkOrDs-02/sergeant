@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 describe("useDailyLog.addEntry", () => {
-  it("persists the new entry to fizruk_daily_log_v1", () => {
+  it("тримає новий запис у стані і НЕ пише legacy LS-ключ (DCRUD-007 cutover)", () => {
     const { result } = renderHook(() => useDailyLog());
 
     act(() => {
@@ -22,12 +22,12 @@ describe("useDailyLog.addEntry", () => {
     });
 
     expect(result.current.entries).toHaveLength(1);
-    const stored = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.FIZRUK_DAILY_LOG) ?? "[]",
-    );
-    expect(stored).toHaveLength(1);
-    expect(stored[0].sleepHours).toBe(7);
-    expect(stored[0].moodScore).toBe(4);
+    expect(result.current.entries[0]?.sleepHours).toBe(7);
+    expect(result.current.entries[0]?.moodScore).toBe(4);
+    // Журнал персиститься виключно через dual-write пайплайн у
+    // структурну таблицю fizruk_daily_log; legacy-ключ дренується на
+    // boot і більше не пишеться.
+    expect(localStorage.getItem(STORAGE_KEYS.FIZRUK_DAILY_LOG)).toBeNull();
   });
 
   it("mirrors a weight write into hub_biometrics_v1", () => {

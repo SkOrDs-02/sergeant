@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 // transactionsLib imports safeReadLS/safeWriteLS from @shared/lib/storage/storage,
 // which in turn chains into kvStoreBoot → @sergeant/db-schema/sqlite (not
@@ -79,17 +80,16 @@ describe("isDayExpanded", () => {
 });
 
 describe("formatStickyDayLabel", () => {
-  it("returns 'Сьогодні' for today's date key", () => {
-    const now = new Date();
-    const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    expect(formatStickyDayLabel(key)).toBe("Сьогодні");
+  // Day keys are Europe/Kyiv-anchored (domain invariant), тож «сьогодні»
+  // будуємо через getKyivDayKey — тест детермінований у будь-якій TZ
+  // (host-local ключ у вікні 00:00–03:00 Kyiv зʼїжджав на день назад).
+  it("returns 'Сьогодні' for today's KYIV date key", () => {
+    expect(formatStickyDayLabel(getKyivDayKey())).toBe("Сьогодні");
   });
 
-  it("returns 'Вчора' for yesterday's date key", () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    expect(formatStickyDayLabel(key)).toBe("Вчора");
+  it("returns 'Вчора' for yesterday's KYIV date key", () => {
+    const yesterdayKey = getKyivDayKey(new Date(Date.now() - 86400000));
+    expect(formatStickyDayLabel(yesterdayKey)).toBe("Вчора");
   });
 
   it("returns a Ukrainian weekday + date for older dates", () => {

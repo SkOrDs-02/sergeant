@@ -332,7 +332,7 @@ function diffArray<T extends { readonly id: string }>(
   // Upserts: items in next that are new or changed.
   const sortedNextIds = [...nextMap.keys()].sort();
   for (const id of sortedNextIds) {
-    const nextItem = nextMap.get(id)!;
+    const nextItem = nextMap.get(id) as (typeof next)[number];
     const prevItem = prevMap.get(id);
     if (!prevItem) {
       onUpsert(nextItem);
@@ -401,8 +401,36 @@ function pantryChanged(
   return (
     prev.name !== next.name ||
     prev.text !== next.text ||
-    prev.items !== next.items
+    pantryItemsChanged(prev.items, next.items)
   );
+}
+
+// Value-based compare: extractPantrySnapshots rebuilds the items array
+// on every persist, so a reference check emits a spurious pantry-upsert
+// per hydration write. Those no-op upserts feed the overlay→persist→
+// refresh loop, and a stale in-flight upsert un-tombstones rows the
+// user just deleted (DCRUD-007 resurrection).
+function pantryItemsChanged(
+  prev: readonly NutritionPantryItemSnapshot[],
+  next: readonly NutritionPantryItemSnapshot[],
+): boolean {
+  if (prev === next) return false;
+  if (prev.length !== next.length) return true;
+  for (let i = 0; i < prev.length; i += 1) {
+    const a = prev[i];
+    const b = next[i];
+    if (!a || !b) return true;
+    if (
+      a.id !== b.id ||
+      a.name !== b.name ||
+      a.qty !== b.qty ||
+      a.unit !== b.unit ||
+      a.notes !== b.notes
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function prefsChanged(
