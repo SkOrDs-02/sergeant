@@ -1,14 +1,14 @@
 # Dynamic Snapshot — Governance
 
 > **Status:** Active
-> **Last touched:** 2026-06-30 by @SkOrDs-02. **Next review:** 2026-09-30.
+> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
 > **Owner:** @SkOrDs-02
 > **Supersedes:** —
-> **Related:** [ADR-0067](../adr/0067-dynamic-agent-snapshot.md) — rationale and design; [tools/agent-snapshot/README.md](../../tools/agent-snapshot/README.md) — usage; §0.1 in [`.agents/skills/sergeant-start-here/SKILL.md`](../../.agents/skills/sergeant-start-here/SKILL.md) — required entry point.
+> **Related:** [ADR-0071](../adr/0071-dynamic-agent-snapshot.md) — rationale and design; [tools/agent-snapshot/README.md](../../../tools/agent-snapshot/README.md) — usage; §0.1 in [`.agents/skills/sergeant-start-here/SKILL.md`](../../../.agents/skills/sergeant-start-here/SKILL.md) — required entry point.
 
 ## What this doc covers
 
-ADR-0067 explains _why_ the snapshot exists and _what_ it contains. This governance doc covers:
+ADR-0071 explains _why_ the snapshot exists and _what_ it contains. This governance doc covers:
 
 1. **How** an agent uses the snapshot on session start (the §0.1 contract).
 2. **How** the snapshot interacts with `codebase-memory-mcp` (the structural knowledge graph).
@@ -88,7 +88,7 @@ When adding a new section to `tools/agent-snapshot/snapshot.mjs`:
 
 1. **Must** write the section under 5 KB on its own; the `<50 KB` total cap is enforced.
 2. **Must** degrade to `[unavailable: <reason>]` on any error — never throw, never
-   abort the rest of the report (ADR-0067 §Decision).
+   abort the rest of the report (ADR-0071 §Decision).
 3. **Must not** read Pino destinations, GitHub PATs, or any field whose name
    contains `token` / `secret` / `password` (Hard Rule #21).
 4. **Should** reuse the existing `gh` / `git` wrappers in the script; if you need
@@ -110,7 +110,7 @@ When adding a new section to `tools/agent-snapshot/snapshot.mjs`:
 
 ## Cross-references
 
-- **ADR-0067** — design decisions, layout, graceful-degradation contract
+- **ADR-0071** — design decisions, layout, graceful-degradation contract
 - **§0.1 in `sergeant-start-here/SKILL.md`** — the contract an agent follows
 - **`docs/00-start/agents/agent-skills-catalog.md`** — catalog entry for the snapshot tooling
 - **`harness-engineering-v1.md`** (rollout summary) — links this doc as the snapshot governance reference

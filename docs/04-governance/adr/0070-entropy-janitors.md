@@ -1,9 +1,10 @@
-# ADR 0066 — Scheduled Entropy Janitors
+# ADR-0070: Scheduled Entropy Janitors
 
-> **Status:** Active
-> **Date:** 2026-06-29
-> **Author:** @Skords-01 (Harness Engineering v1)
-> **Deciders:** @Skords-01
+- **Status:** Accepted
+- **Date:** 2026-06-29
+- **Author:** @Skords-01 (Harness Engineering v1)
+- **Deciders:** @Skords-01
+- **Supersedes:** —
 
 ## Context
 

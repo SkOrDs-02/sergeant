@@ -1,5 +1,8 @@
 # Worklog — harness-v1-summary
 
+> **Last validated:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
+> **Status:** Reference
+
 > Branch: devin/1782826662-harness-v1-summary
 > Started: 2026-06-30T16:36:00+03:00
 > Owner session: Kilo (final summary session)

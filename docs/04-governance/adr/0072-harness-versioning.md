@@ -1,7 +1,7 @@
-# ADR-0068: Harness versioning and A/B evaluation
+# ADR-0072: Harness versioning and A/B evaluation
 
-> **Last touched:** 2026-06-29 by @Skords-01. **Next review:** 2026-09-27.
-> **Status:** Active
+> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
+> **Status:** Accepted
 
 - **Status:** Accepted
 - **Date:** 2026-06-29

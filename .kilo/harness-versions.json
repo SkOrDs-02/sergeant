@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "0.1.0",
+  "current": "0.1.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -10,6 +10,14 @@
         "Added .github/workflows/harness-a-b.yml (weekly Sun 00:00 UTC + workflow_dispatch)",
         "Added scripts/ci-bump-harness-version.mjs (PR-time version incrementer)",
         "Added Harness version section to AGENTS.md"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "0.1.1": {
+      "releasedAt": "2026-07-01",
+      "changes": [
+        "bump from 0.1.0 -> 0.1.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-06-29)</title>
+    <title>Sergeant — Knowledge Graph (2026-07-01)</title>
     <style>
       body {
         font-family:
@@ -97,12 +97,12 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-06-29 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-07-01 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
-      <span class="chip chip-adr">adr: <b>65</b></span>
-      <span class="chip chip-audit">audit: <b>19</b></span>
+      <span class="chip chip-adr">adr: <b>69</b></span>
+      <span class="chip chip-audit">audit: <b>24</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>51</b></span>
       <span class="chip chip-playbook">playbook: <b>61</b></span>
@@ -111,7 +111,7 @@
     </div>
 
     <details open>
-      <summary>Nodes (238 core)</summary>
+      <summary>Nodes (247 core)</summary>
       <table>
         <thead>
           <tr>
@@ -936,6 +936,51 @@
             <td>number=68</td>
           </tr>
           <tr>
+            <td>adr</td>
+            <td><code>adr:0069</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0069-ai-pr-checklist.md"
+                >ADR-0069: AI-PR Checklist and validation workflow</a
+              >
+            </td>
+            <td>Proposed</td>
+            <td>number=69 · last_validated=2026-06-29</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0070</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0070-entropy-janitors.md"
+                >ADR-0070: Scheduled Entropy Janitors</a
+              >
+            </td>
+            <td>Accepted</td>
+            <td>number=70</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0071</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0071-dynamic-agent-snapshot.md"
+                >ADR-0071: Dynamic agent snapshot for harness context</a
+              >
+            </td>
+            <td>Proposed</td>
+            <td>number=71</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0072</code></td>
+            <td>
+              <a href="../../docs/04-governance/adr/0072-harness-versioning.md"
+                >ADR-0072: Harness versioning and A/B evaluation</a
+              >
+            </td>
+            <td>Active</td>
+            <td>number=72 · last_validated=2026-06-29</td>
+          </tr>
+          <tr>
             <td>audit</td>
             <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
             <td>
@@ -1158,6 +1203,71 @@
               >
             </td>
             <td>Draft</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td>
+              <code>audit:browser-user-journey-execution-2026-06-30</code>
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/browser-user-journey-execution-2026-06-30.md"
+                >Browser user journey execution log</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td>
+              <code>audit:browser-user-journey-execution-2026-07-01</code>
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/browser-user-journey-execution-2026-07-01.md"
+                >Browser user journey execution log — 2026-07-01</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:browser-user-journey-loop</code></td>
+            <td>
+              <a href="../../docs/90-work/audits/browser-user-journey-loop.md"
+                >Browser user journey loop</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td>
+              <code>audit:deep-module-crud-browser-execution-2026-06-30</code>
+            </td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/deep-module-crud-browser-execution-2026-06-30.md"
+                >Deep module CRUD browser execution log</a
+              >
+            </td>
+            <td>Active</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>audit</td>
+            <td><code>audit:deep-module-crud-browser-loop</code></td>
+            <td>
+              <a
+                href="../../docs/90-work/audits/deep-module-crud-browser-loop.md"
+                >Deep module CRUD browser loop</a
+              >
+            </td>
+            <td>Active</td>
             <td></td>
           </tr>
           <tr>
@@ -3653,7 +3763,7 @@
     </details>
 
     <details>
-      <summary>Edges (435 total, first 500 core-to-core)</summary>
+      <summary>Edges (441 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -3822,6 +3932,36 @@
             <td><code>adr:0067</code></td>
             <td>references</td>
             <td><code>hard-rule:2</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0069</code></td>
+            <td>references</td>
+            <td><code>hard-rule:15</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0069</code></td>
+            <td>references</td>
+            <td><code>hard-rule:26</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0070</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0070</code></td>
+            <td>references</td>
+            <td><code>hard-rule:3</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0071</code></td>
+            <td>references</td>
+            <td><code>hard-rule:21</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0071</code></td>
+            <td>references</td>
+            <td><code>hard-rule:26</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>

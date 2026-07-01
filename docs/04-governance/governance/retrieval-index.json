@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-06-30",
+  "generated_at": "2026-07-01",
   "sourceHashes": {
-    "knowledge-graph": "5c4e47fe2314078d2f211c25a53d9a7d1b6c493015c1a9dd109ca9b348919697",
+    "knowledge-graph": "5975bd8a965cf133dd587e580067b6e75e401b825966b0416ff93b80fc44c77b",
     "symbol-index": "0da672f03c69da0e6f6e554294eba3d08e53c819e1dc5da3e37ef027cb599227"
   },
   "counts": {
-    "adr": 65,
-    "audit": 19,
+    "adr": 69,
+    "audit": 24,
     "export": 303,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
     "skill": 23,
-    "total": 548
+    "total": 557
   },
   "chunks": [
     {
@@ -731,6 +731,50 @@
       "contentHash": "fb06157ed730db3d2fe86a06cea44a5a26e6dab006d3ed2881209670678e556f"
     },
     {
+      "id": "adr:0069",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0069-ai-pr-checklist.md",
+      "line": 1,
+      "title": "ADR-0069: AI-PR Checklist and validation workflow",
+      "tier": "core",
+      "status": "Proposed",
+      "text": "ADR-0069: AI-PR Checklist and validation workflow · adr:0069 · adr · Proposed · 69 · 2026-06-29 · Context and Problem Statement · Decision · Consequences · Positive · Negative · Neutral · Alternatives Considered · Alt A: probot/ai-pr-checklist GitHub App · Alt B: Перевіряти AI markers у коді, а не trailer · Alt C: Завжди вимагати checklist, без bypass · Alt D: AI-marker у commit message + bypass через label · Acceptance Criteria (з §4.5 плану) · Follow-up / Open Questions",
+      "contentHash": "d9bfb0fde9f11f9aec19ee8362caf23bcfcebbd19a039d840f835432f1755d2d"
+    },
+    {
+      "id": "adr:0070",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0070-entropy-janitors.md",
+      "line": 1,
+      "title": "ADR-0070: Scheduled Entropy Janitors",
+      "tier": "core",
+      "status": "Accepted",
+      "text": "ADR-0070: Scheduled Entropy Janitors · adr:0070 · adr · Accepted · 70 · Context · Decision · Consequences · Positive · Negative · Neutral · Alternatives considered · Follow-ups",
+      "contentHash": "a9582d4bf8bc7a879d2b2309bc1021f8eb2b6489e86d8ca04002b4c8364a4682"
+    },
+    {
+      "id": "adr:0071",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0071-dynamic-agent-snapshot.md",
+      "line": 1,
+      "title": "ADR-0071: Dynamic agent snapshot for harness context",
+      "tier": "core",
+      "status": "Proposed",
+      "text": "ADR-0071: Dynamic agent snapshot for harness context · adr:0071 · adr · Proposed · 71 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "fe41e2f714c8e50886eede2bb4930dcf83ac77917a689f131e466aabb48ea062"
+    },
+    {
+      "id": "adr:0072",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0072-harness-versioning.md",
+      "line": 1,
+      "title": "ADR-0072: Harness versioning and A/B evaluation",
+      "tier": "core",
+      "status": "Active",
+      "text": "ADR-0072: Harness versioning and A/B evaluation · adr:0072 · adr · Active · 72 · 2026-06-29 · Context and Problem Statement · Decision · Consequences · Alternatives Considered · Open Questions / Follow-ups",
+      "contentHash": "4bafb237e666f0fd6531f01e2457868e52db67b852269db281ce1f8d1ca74a1c"
+    },
+    {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
       "type": "audit",
       "path": "docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md",
@@ -905,6 +949,61 @@
       "status": "Draft",
       "text": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub) · audit:2026-08-XX-sync-engine-roast · audit · Draft · Sync Engine Deep Roast — apps/server/src/modules/sync/syncV2.ts (stub) · TL;DR · Scope · Methodology hints · Transaction-boundary trace (2026-06-06 code read) · Handler: syncV2Push (POST /api/v2/sync/push) · Handler: syncV2Pull (GET /api/v2/sync/pull) · DLQ-row TTL note · Cross-refs",
       "contentHash": "f4c38dc725703b69696931342f5a289d7ff5eae771b878bb61b1c540d1ead316"
+    },
+    {
+      "id": "audit:browser-user-journey-execution-2026-06-30",
+      "type": "audit",
+      "path": "docs/90-work/audits/browser-user-journey-execution-2026-06-30.md",
+      "line": 1,
+      "title": "Browser user journey execution log",
+      "tier": "core",
+      "status": "Active",
+      "text": "Browser user journey execution log · audit:browser-user-journey-execution-2026-06-30 · audit · Active · Мета · Контекст запуску · Самопромпт · Результати · Виправлення · BRJ-001: Ledger webServer timeout замалий · BRJ-002: Smoke API readiness timeout замалий · Відкриті ризики · BRJ-003: Fresh worktree install зависає на Windows · BRJ-004: Локальні env gaps очікувано деградують AI/push/backup paths · BRJ-005: Better Auth/Postgres connection timeout шум у extended run · Що можна чесно стверджувати",
+      "contentHash": "99133aa6972d66cd2358217b6b48033a4c9d40e97998edb9b3c8777c4d2ad5cc"
+    },
+    {
+      "id": "audit:browser-user-journey-execution-2026-07-01",
+      "type": "audit",
+      "path": "docs/90-work/audits/browser-user-journey-execution-2026-07-01.md",
+      "line": 1,
+      "title": "Browser user journey execution log — 2026-07-01",
+      "tier": "core",
+      "status": "Active",
+      "text": "Browser user journey execution log — 2026-07-01 · audit:browser-user-journey-execution-2026-07-01 · audit · Active · Мета прогону · Контекст запуску · Оркестрація · Evidence log · Знахідки · BRJ2-001: колізія номерів ADR 0066/0067/0068 ламає docs:gen-graph і ADR-gate · BRJ2-002: локальний PG без pgvector ≥0.7 блокує міграції · BRJ2-005: pnpm check / Test coverage / Critical-flow E2E червоні на main · BRJ2-003: 26 broken internal links у harness-доках (pre-existing) · BRJ2-004: 4 файли без freshness-маркерів (pre-existing, Rule #10) · Підсумок",
+      "contentHash": "5c4a79d7f8345ca66e27f4833468666734540d4e4c0dd525d41f4bd1d74c7470"
+    },
+    {
+      "id": "audit:browser-user-journey-loop",
+      "type": "audit",
+      "path": "docs/90-work/audits/browser-user-journey-loop.md",
+      "line": 1,
+      "title": "Browser user journey loop",
+      "tier": "core",
+      "status": "Active",
+      "text": "Browser user journey loop · audit:browser-user-journey-loop · audit · Active · Мета · Жорсткі правила · Групи · Група 0 — Baseline and ledger map · Група A — Entry, auth, onboarding, shell · Група B — Core modules · Група C — Chat and AI UX · Група D — Offline, PWA, errors, accessibility · Fix loop · Evidence формат · Handoff prompt",
+      "contentHash": "5deee8b4085e19c0214766efe00f56f92f209fdfd3be8f1a8d4d517ac930e474"
+    },
+    {
+      "id": "audit:deep-module-crud-browser-execution-2026-06-30",
+      "type": "audit",
+      "path": "docs/90-work/audits/deep-module-crud-browser-execution-2026-06-30.md",
+      "line": 1,
+      "title": "Deep module CRUD browser execution log",
+      "tier": "core",
+      "status": "Active",
+      "text": "Deep module CRUD browser execution log · audit:deep-module-crud-browser-execution-2026-06-30 · audit · Active · Контекст запуску · Code map · Results · Findings · Current status",
+      "contentHash": "00b2783cf7a71e99fc806db22ec49c1ebc6d3efde4ac9bcfbe1ec9e47def6ec3"
+    },
+    {
+      "id": "audit:deep-module-crud-browser-loop",
+      "type": "audit",
+      "path": "docs/90-work/audits/deep-module-crud-browser-loop.md",
+      "line": 1,
+      "title": "Deep module CRUD browser loop",
+      "tier": "core",
+      "status": "Active",
+      "text": "Deep module CRUD browser loop · audit:deep-module-crud-browser-loop · audit · Active · Мета · Жорсткі правила · Покриття loop 4 · Порядок виконання · Handoff prompt",
+      "contentHash": "075bf13906390ec0d21fc950758b7bf61a3397dfeaaf3e4f033cd8d4a83d83ca"
     },
     {
       "id": "audit:production-readiness-execution-2026-06-29",

@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-06-29 by @dimastahov16012003. **Next review:** 2026-09-27.
+> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -227,7 +227,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 ## Harness version
 
-The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-plugin-sergeant-design`, pre-commit hooks, `.kilocode/snapshot.md`) is versioned in [`.kilo/harness-versions.json`](.kilo/harness-versions.json). Follow [the governance doc](docs/04-governance/governance/harness-versioning.md) for bump rules and the [ADR-0068](docs/04-governance/adr/0068-harness-versioning.md) for rationale.
+The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-plugin-sergeant-design`, pre-commit hooks, `.kilocode/snapshot.md`) is versioned in [`.kilo/harness-versions.json`](.kilo/harness-versions.json). Follow [the governance doc](docs/04-governance/governance/harness-versioning.md) for bump rules and the [ADR-0072](docs/04-governance/adr/0072-harness-versioning.md) for rationale.
 
 - **Schema:** `schemaVersion: 1` (bump on backward-incompatible layout changes).
 - **Current:** see `current` field in `.kilo/harness-versions.json`.
