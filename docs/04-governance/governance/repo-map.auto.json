@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-01",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
@@ -207,6 +207,26 @@
       ],
       "testRunner": "vitest",
       "owner": "@SkOrDs-02"
+    },
+    {
+      "name": "@sergeant/entropy-janitors",
+      "path": "tools/entropy-janitors",
+      "category": "tool",
+      "private": true,
+      "version": "0.1.0",
+      "type": "module",
+      "frameworkDeps": [
+        {
+          "name": "tsx",
+          "version": "*"
+        },
+        {
+          "name": "typescript",
+          "version": "*"
+        }
+      ],
+      "testRunner": "node-test",
+      "owner": null
     },
     {
       "name": "@sergeant/api-client",

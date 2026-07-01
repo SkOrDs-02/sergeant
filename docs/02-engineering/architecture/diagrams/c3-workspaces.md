@@ -1,6 +1,6 @@
 # C3 — Workspace dependency graph
 
-> **Last validated:** 2026-06-29 by @Skords-01. **Next review:** 2026-09-27.
+> **Last validated:** 2026-07-01 by @Skords-01. **Next review:** 2026-09-29.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-architecture-diagrams`. -->
@@ -18,6 +18,9 @@ flowchart LR
         apps_mobile_shell["@sergeant/mobile-shell"]
         apps_server["@sergeant/server"]
         apps_web["@sergeant/web"]
+    end
+    subgraph tools["tools"]
+        tools_entropy_janitors["@sergeant/entropy-janitors"]
     end
     subgraph packages["packages"]
         packages_api_client["@sergeant/api-client"]
@@ -63,12 +66,13 @@ flowchart LR
     classDef tool fill:#b45309,stroke:#7c2d12,color:#fff
     classDef package fill:#15803d,stroke:#166534,color:#fff
     class apps_mobile,apps_mobile_shell,apps_server,apps_web app
+    class tools_entropy_janitors tool
     class packages_api_client,packages_config,packages_db_schema,packages_design_tokens,packages_eslint_plugin_sergeant_design,packages_finyk_domain,packages_fizruk_domain,packages_insights,packages_nutrition_domain,packages_openclaw_plugin,packages_routine_domain,packages_shared package
 ```
 
 ## Stats
 
-- **16** workspaces total — 4 apps, 12 packages, 0 tools.
+- **17** workspaces total — 4 apps, 12 packages, 1 tool.
 - **25** cross-workspace import edges.
 
 ## Top imported workspaces
@@ -77,8 +81,8 @@ The packages most other workspaces depend on. `Importers` = unique file count ac
 
 | Rank | Workspace                    | Importers | Exports |
 | ---- | ---------------------------- | --------- | ------- |
-| 1    | `@sergeant/shared`           | 356       | 1       |
-| 2    | `@sergeant/nutrition-domain` | 90        | 1       |
+| 1    | `@sergeant/shared`           | 364       | 1       |
+| 2    | `@sergeant/nutrition-domain` | 91        | 1       |
 | 3    | `@sergeant/fizruk-domain`    | 83        | 1       |
 | 4    | `@sergeant/routine-domain`   | 64        | 1       |
 | 5    | `@sergeant/api-client`       | 39        | 200     |

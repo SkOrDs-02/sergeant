@@ -777,11 +777,11 @@
       "type": "adr",
       "title": "ADR-0072: Harness versioning and A/B evaluation",
       "path": "docs/04-governance/adr/0072-harness-versioning.md",
-      "status": "Active",
+      "status": "Accepted",
       "tier": "core",
       "meta": {
         "number": 72,
-        "last_validated": "2026-06-29"
+        "last_validated": "2026-07-01"
       }
     },
     {
