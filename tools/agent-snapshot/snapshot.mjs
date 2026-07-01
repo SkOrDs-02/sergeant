@@ -7,7 +7,7 @@
 // report. Called by agents at the start of a session so they can react to
 // the current state of the repo, not just its static policy.
 //
-// Spec: docs/04-governance/adr/0067-dynamic-agent-snapshot.md
+// Spec: docs/04-governance/adr/0071-dynamic-agent-snapshot.md
 //
 // Output: writes to .kilocode/snapshot.md by default (override via argv[2]).
 // Cache:  .kilocode/snapshot.cache.json, 15 min TTL, invalidated on `git pull`.

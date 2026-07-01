@@ -1,8 +1,11 @@
 # tools/agent-snapshot
 
+> **Last validated:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
+> **Status:** Active
+
 Single-file Node script that gathers a "dynamic context" report for Sergeant
 agents at session start. See
-[`docs/04-governance/adr/0067-dynamic-agent-snapshot.md`](../../docs/04-governance/adr/0067-dynamic-agent-snapshot.md)
+[`docs/04-governance/adr/0071-dynamic-agent-snapshot.md`](../../docs/04-governance/adr/0071-dynamic-agent-snapshot.md)
 for the full design.
 
 ## Usage

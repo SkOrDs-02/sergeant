@@ -1,6 +1,6 @@
 # AI-PR Checklist та guard workflow
 
-> **Last validated:** 2026-06-29 by @Kilo-session. **Next review:** 2026-09-27.
+> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
 > **Status:** Active
 
 Цей документ пояснює **навіщо** в Sergeant існує AI-Generation Signals секція
@@ -100,10 +100,10 @@ False positive (workflow не помітив AI сигналів) — bypass н�
 
 - ADR [`0069-ai-pr-checklist.md`](../adr/0069-ai-pr-checklist.md) —
   контекст рішення, alternatives, наслідки
-- Workflow [`.github/workflows/ai-pr-checklist.yml`](../../../../.github/workflows/ai-pr-checklist.yml)
-- PR template [`.github/PULL_REQUEST_TEMPLATE.md`](../../../../.github/PULL_REQUEST_TEMPLATE.md) § _AI-Generation Signals_
+- Workflow [`.github/workflows/ai-pr-checklist.yml`](../../../.github/workflows/ai-pr-checklist.yml)
+- PR template [`.github/PULL_REQUEST_TEMPLATE.md`](../../../.github/PULL_REQUEST_TEMPLATE.md) § _AI-Generation Signals_
 - Hard Rules (зокрема #15 — read governance before coding)
-- AI markers: [`docs/04-governance/governance/ai-markers.md`](./ai-markers.md)
+- AI markers: [`AGENTS.md § AI markers`](../../../AGENTS.md#ai-markers)
   (якщо існує) — повний список marker-ів і syntax
 
 ---

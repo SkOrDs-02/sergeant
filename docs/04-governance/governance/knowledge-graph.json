@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-01",
   "counts": {
-    "adr": 65,
-    "audit": 19,
+    "adr": 69,
+    "audit": 24,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
@@ -739,6 +739,52 @@
       }
     },
     {
+      "id": "adr:0069",
+      "type": "adr",
+      "title": "ADR-0069: AI-PR Checklist and validation workflow",
+      "path": "docs/04-governance/adr/0069-ai-pr-checklist.md",
+      "status": "Proposed",
+      "tier": "core",
+      "meta": {
+        "number": 69,
+        "last_validated": "2026-06-29"
+      }
+    },
+    {
+      "id": "adr:0070",
+      "type": "adr",
+      "title": "ADR-0070: Scheduled Entropy Janitors",
+      "path": "docs/04-governance/adr/0070-entropy-janitors.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 70
+      }
+    },
+    {
+      "id": "adr:0071",
+      "type": "adr",
+      "title": "ADR-0071: Dynamic agent snapshot for harness context",
+      "path": "docs/04-governance/adr/0071-dynamic-agent-snapshot.md",
+      "status": "Proposed",
+      "tier": "core",
+      "meta": {
+        "number": 71
+      }
+    },
+    {
+      "id": "adr:0072",
+      "type": "adr",
+      "title": "ADR-0072: Harness versioning and A/B evaluation",
+      "path": "docs/04-governance/adr/0072-harness-versioning.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {
+        "number": 72,
+        "last_validated": "2026-06-29"
+      }
+    },
+    {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
       "type": "audit",
       "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
@@ -879,6 +925,51 @@
       "title": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)",
       "path": "docs/90-work/audits/2026-08-XX-sync-engine-roast.md",
       "status": "Draft",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:browser-user-journey-execution-2026-06-30",
+      "type": "audit",
+      "title": "Browser user journey execution log",
+      "path": "docs/90-work/audits/browser-user-journey-execution-2026-06-30.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:browser-user-journey-execution-2026-07-01",
+      "type": "audit",
+      "title": "Browser user journey execution log — 2026-07-01",
+      "path": "docs/90-work/audits/browser-user-journey-execution-2026-07-01.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:browser-user-journey-loop",
+      "type": "audit",
+      "title": "Browser user journey loop",
+      "path": "docs/90-work/audits/browser-user-journey-loop.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:deep-module-crud-browser-execution-2026-06-30",
+      "type": "audit",
+      "title": "Deep module CRUD browser execution log",
+      "path": "docs/90-work/audits/deep-module-crud-browser-execution-2026-06-30.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:deep-module-crud-browser-loop",
+      "type": "audit",
+      "title": "Deep module CRUD browser loop",
+      "path": "docs/90-work/audits/deep-module-crud-browser-loop.md",
+      "status": "Active",
       "tier": "core",
       "meta": {}
     },
@@ -5226,6 +5317,36 @@
       "from": "adr:0067",
       "to": "pr:75",
       "type": "touched-by"
+    },
+    {
+      "from": "adr:0069",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "adr:0069",
+      "to": "hard-rule:26",
+      "type": "references"
+    },
+    {
+      "from": "adr:0070",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "adr:0070",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "adr:0071",
+      "to": "hard-rule:21",
+      "type": "references"
+    },
+    {
+      "from": "adr:0071",
+      "to": "hard-rule:26",
+      "type": "references"
     },
     {
       "from": "audit:2026-05-06-ux-roast-pr-plan",

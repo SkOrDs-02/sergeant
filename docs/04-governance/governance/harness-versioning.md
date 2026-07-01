@@ -1,9 +1,9 @@
 # Harness versioning
 
-> **Last touched:** 2026-06-29 by @Skords-01. **Next review:** 2026-09-27.
+> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
 > **Status:** Active
-> **Owns:** [.kilo/harness-versions.json](../../../../.kilo/harness-versions.json), [`.github/workflows/harness-a-b.yml`](../../../../.github/workflows/harness-a-b.yml), [`scripts/ci-bump-harness-version.mjs`](../../../../scripts/ci-bump-harness-version.mjs).
-> **Decided by:** [ADR-0068](../adr/0068-harness-versioning.md).
+> **Owns:** [.kilo/harness-versions.json](../../../.kilo/harness-versions.json), [`.github/workflows/harness-a-b.yml`](../../../.github/workflows/harness-a-b.yml), [`scripts/ci-bump-harness-version.mjs`](../../../scripts/ci-bump-harness-version.mjs).
+> **Decided by:** [ADR-0072](../adr/0072-harness-versioning.md).
 
 ## Scope
 
@@ -81,7 +81,7 @@ If you need to override the detected bump (e.g. you are touching a rule file but
 
 ## A/B evaluation
 
-`.github/workflows/harness-a-b.yml` runs weekly Sunday 00:00 UTC and on `workflow_dispatch`. It checks out two refs in a matrix (`main` as the control, `experimental/loop-detect` as a placeholder treatment) and uploads an artifact per cohort with the harness version it ran against. The benchmark step is currently gated `if: false` — it lights up once the golden-task suite ships (follow-up tracked in ADR-0068 §Open Questions).
+`.github/workflows/harness-a-b.yml` runs weekly Sunday 00:00 UTC and on `workflow_dispatch`. It checks out two refs in a matrix (`main` as the control, `experimental/loop-detect` as a placeholder treatment) and uploads an artifact per cohort with the harness version it ran against. The benchmark step is currently gated `if: false` — it lights up once the golden-task suite ships (follow-up tracked in ADR-0072 §Open Questions).
 
 To start a new experiment:
 

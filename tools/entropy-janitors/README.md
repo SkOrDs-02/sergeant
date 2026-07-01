@@ -1,5 +1,8 @@
 # @sergeant/entropy-janitors
 
+> **Last validated:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
+> **Status:** Active
+
 Scheduled entropy checks for the Sergeant monorepo.
 
 This workspace package ships three independent janitors, each as a CLI:
@@ -11,7 +14,7 @@ This workspace package ships three independent janitors, each as a CLI:
 | `dep-cycles` | finds circular dependencies in `apps/` and `packages/` via a built-in ESM resolver (no extra deps)                     | `entropy-janitor/dep-cycles` |
 
 Janitors are scheduled weekly (Monday 06:00 UTC) by
-[`.github/workflows/entropy-janitors.yml`](../../../../github/workflows/entropy-janitors.yml)
+[`.github/workflows/entropy-janitors.yml`](../../.github/workflows/entropy-janitors.yml)
 and only ever create **issues** — never PRs (the human owner decides what to do
 with the report).
 
@@ -61,9 +64,9 @@ GitHub-PAT redaction.
 - **Pino redaction is applied to every log line** before it leaves the
   process (Hard Rule #21).
 - **Issues only, never PRs** — keeps humans in the loop for janitor-driven
-  changes; see ADR 0066.
+  changes; see ADR 0070.
 
 ## Related docs
 
-- [ADR 0066 — Scheduled Entropy Janitors](../../../../docs/04-governance/adr/0066-entropy-janitors.md)
-- [sergeant-tech-debt skill](../../../../.agents/skills/sergeant-tech-debt/SKILL.md) — section "Scheduled janitors"
+- [ADR 0070 — Scheduled Entropy Janitors](../../docs/04-governance/adr/0070-entropy-janitors.md)
+- [sergeant-tech-debt skill](../../.agents/skills/sergeant-tech-debt/SKILL.md) — section "Scheduled janitors"

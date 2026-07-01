@@ -1,4 +1,4 @@
-# ADR-0067: Dynamic agent snapshot for harness context
+# ADR-0071: Dynamic agent snapshot for harness context
 
 - **Status:** Proposed
 - **Date:** 2026-06-29
@@ -6,7 +6,7 @@
 - **Supersedes:** —
 - **Related:**
   - [`docs/00-start/agents/agent-skills-catalog.md`](../../00-start/agents/agent-skills-catalog.md)
-  - [`docs/04-governance/hard-rules.md`](../hard-rules.md) (Hard Rule #21 — pino redaction; followed)
+  - [`docs/04-governance/governance/rules/21-pino-redaction-policy.md`](../governance/rules/21-pino-redaction-policy.md) (Hard Rule #21 — pino redaction; followed)
 
 ---
 

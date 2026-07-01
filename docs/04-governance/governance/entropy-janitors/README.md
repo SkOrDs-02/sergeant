@@ -1,5 +1,8 @@
 # Entropy Janitors — Operator Notes
 
+> **Last validated:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
+> **Status:** Active
+
 This directory is the human-facing companion to the janitor workflow
 (`.github/workflows/entropy-janitors.yml`) and the workspace package
 `@sergeant/entropy-janitors`.
@@ -14,7 +17,7 @@ This directory is the human-facing companion to the janitor workflow
 | `tools/entropy-janitors/src/shared/`              | Logger (Pino redaction), output, git helpers    |
 | `tools/entropy-janitors/src/__tests__/`           | Unit tests (`node --test`)                      |
 | `tools/entropy-janitors/README.md`                | Local-usage doc                                 |
-| `docs/04-governance/adr/0066-entropy-janitors.md` | Architectural decision record                   |
+| `docs/04-governance/adr/0070-entropy-janitors.md` | Architectural decision record                   |
 | `.github/workflows/entropy-janitors.yml`          | Weekly scheduled run + manual dispatch          |
 
 ## Triage checklist (when an issue lands)
