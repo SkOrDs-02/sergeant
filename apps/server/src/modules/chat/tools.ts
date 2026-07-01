@@ -32,6 +32,7 @@ import { CROSS_MODULE_TOOLS } from "./toolDefs/crossModule.js";
 import { UTILITY_TOOLS } from "./toolDefs/utility.js";
 import { MEMORY_TOOLS } from "./toolDefs/memory.js";
 import { normalizeStrictTools } from "./toolDefs/strict.js";
+import { logger } from "../../obs/logger.js";
 
 import type { AnthropicTool } from "./toolDefs/types.js";
 
@@ -90,8 +91,9 @@ function validateToolRegistry(tools: AnthropicTool[]): void {
     );
   }
 
-  console.log(
-    `[chat/tools] Registry validated: ${tools.length} tools, ${strictCount} strict`,
+  logger.info(
+    { tools: tools.length, strict: strictCount },
+    "[chat/tools] Registry validated",
   );
 }
 
