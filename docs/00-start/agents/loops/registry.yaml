@@ -4,11 +4,20 @@
 #  human_gates, starter, week_one_mode, token_cost, cost) with Sergeant-specific
 # additions: owner_skill, related_skills, hard_rules_ref, enabled.
 #
+# cost.* also carries per-run brakes (not in upstream schema, ignored by their
+# tooling): max_turns (hard step cap), max_budget_usd (hard per-run $ ceiling),
+# circuit_breaker (halt condition on repeated identical tool calls),
+# heartbeat_required (dead-man's-switch monitoring for high-risk/high-cadence
+# loops). See loop-budget.md § Per-Run Brakes and § Dead-man's Heartbeat for
+# rationale and policy.
+#
 # Compatible with `loop-audit` / `loop-cost` from loop-engineering; the extra
 # fields are ignored by their tooling.
 #
 # Regenerate from .agents/skills/ by running `pnpm skills:lock` followed by a
-# catalog sync — do not hand-edit when adding a new skill.
+# catalog sync — do not hand-edit when adding a new skill. Per-run brake
+# fields (max_turns/max_budget_usd/circuit_breaker/heartbeat_required) are
+# Sergeant policy, not skill-derived — hand-edit those directly.
 
 version: 1
 generated_by: docs/00-start/agents/loops/registry.yaml
@@ -40,6 +49,10 @@ loops:
       tokens_action: 250000
       suggested_daily_cap: 1500000
       early_exit_required: true
+      max_turns: 35
+      max_budget_usd: 8
+      circuit_breaker: same_tool_call_repeat_3
+      heartbeat_required: true
 
   - id: tech-debt-sweep
     name: Tech-Debt Sweeper
@@ -66,6 +79,10 @@ loops:
       tokens_action: 200000
       suggested_daily_cap: 400000
       early_exit_required: true
+      max_turns: 25
+      max_budget_usd: 5
+      circuit_breaker: same_tool_call_repeat_3
+      heartbeat_required: false
 
   - id: security-audit
     name: Security Audit Sweeper
@@ -93,6 +110,10 @@ loops:
       tokens_action: 300000
       suggested_daily_cap: 500000
       early_exit_required: true
+      max_turns: 25
+      max_budget_usd: 5
+      circuit_breaker: same_tool_call_repeat_3
+      heartbeat_required: false
 
   - id: migration-guard
     name: Migration Guard
@@ -118,6 +139,10 @@ loops:
       tokens_action: 60000
       suggested_daily_cap: 100000
       early_exit_required: true
+      max_turns: 15
+      max_budget_usd: 2
+      circuit_breaker: same_tool_call_repeat_3
+      heartbeat_required: true
 
   - id: deploy-watch
     name: Deploy Watch
@@ -143,6 +168,10 @@ loops:
       tokens_action: 150000
       suggested_daily_cap: 500000
       early_exit_required: true
+      max_turns: 25
+      max_budget_usd: 5
+      circuit_breaker: same_tool_call_repeat_3
+      heartbeat_required: true
 
   - id: e2e-flake-watch
     name: E2E Flake Watch
@@ -168,6 +197,10 @@ loops:
       tokens_action: 80000
       suggested_daily_cap: 100000
       early_exit_required: false
+      max_turns: 15
+      max_budget_usd: 2
+      circuit_breaker: same_tool_call_repeat_3
+      heartbeat_required: false
 
   - id: review-squad-parallel
     name: PR Review Squad (Parallel)
@@ -194,6 +227,10 @@ loops:
       tokens_action: 400000
       suggested_daily_cap: 800000
       early_exit_required: true
+      max_turns: 50
+      max_budget_usd: 15
+      circuit_breaker: same_tool_call_repeat_3
+      heartbeat_required: false
 
   - id: qa-squad-parallel
     name: QA Squad (Parallel)
@@ -225,6 +262,10 @@ loops:
       tokens_action: 400000
       suggested_daily_cap: 800000
       early_exit_required: true
+      max_turns: 50
+      max_budget_usd: 15
+      circuit_breaker: same_tool_call_repeat_3
+      heartbeat_required: false
 
   - id: council-advisory
     name: Council Advisory
@@ -255,6 +296,10 @@ loops:
       tokens_action: 250000
       suggested_daily_cap: 600000
       early_exit_required: false
+      max_turns: 35
+      max_budget_usd: 8
+      circuit_breaker: same_tool_call_repeat_3
+      heartbeat_required: false
 
   - id: planning-batch
     name: Planning Batch Fan-Out
@@ -280,3 +325,7 @@ loops:
       tokens_action: 200000
       suggested_daily_cap: 400000
       early_exit_required: false
+      max_turns: 25
+      max_budget_usd: 5
+      circuit_breaker: same_tool_call_repeat_3
+      heartbeat_required: false

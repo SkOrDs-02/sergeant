@@ -2,11 +2,13 @@
 
 # Loop Budget — Autonomous Agent Workflows
 
-> **Last touched:** 2026-06-29 by @SkOrDs-02. **Next review:** 2026-09-27.
+> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
 > **Status:** Active
 > **Source of truth:** [`registry.yaml`](./registry.yaml) — поля `cost.*`
 
 Token caps per loop, kill switch policy, escalation rules. Цей файл — human-readable mirror `registry.yaml.cost`, плюс operational policy.
+
+> **2026-07-01:** додано per-run brakes (`max_turns`, `max_budget_usd`, `circuit_breaker`, `heartbeat_required` у `registry.yaml.cost`) — прогалина знайдена при звірці з "loop engineering" oglядовою статтею (runaway $47k/11-day інцидент з індустрії). Aggregate daily/monthly caps нижче не зупиняють один runaway run _до_ того, як він вичерпає денний бюджет за хвилини — ці поля закривають той проміжок. Див. § Per-Run Brakes, § Dead-man's Heartbeat, § Four Failure Modes.
 
 ## Per-Loop Caps
 
@@ -53,12 +55,60 @@ Token caps per loop, kill switch policy, escalation rules. Цей файл — h
 | `council-advisory`      | 0    | 120k   | 250k   |
 | `planning-batch`        | 0    | 50k    | 200k   |
 
+## Per-Run Brakes
+
+Daily/monthly caps вище — aggregate ceiling. Вони не заважають **одному** run проскочити крізь весь денний бюджет за один прохід, якщо той run застряг у циклі (два агенти запитують один одного про більше роботи, retry-loop без backoff тощо). Per-run brakes — hard stop на рівні одного run, незалежно від aggregate budget:
+
+| Loop                    | `max_turns` | `max_budget_usd` | `circuit_breaker`         |
+| ----------------------- | ----------- | ---------------- | ------------------------- |
+| `pr-review`             | 35          | $8               | same tool+args × 3 → halt |
+| `tech-debt-sweep`       | 25          | $5               | same tool+args × 3 → halt |
+| `security-audit`        | 25          | $5               | same tool+args × 3 → halt |
+| `migration-guard`       | 15          | $2               | same tool+args × 3 → halt |
+| `deploy-watch`          | 25          | $5               | same tool+args × 3 → halt |
+| `e2e-flake-watch`       | 15          | $2               | same tool+args × 3 → halt |
+| `review-squad-parallel` | 50          | $15              | same tool+args × 3 → halt |
+| `qa-squad-parallel`     | 50          | $15              | same tool+args × 3 → halt |
+| `council-advisory`      | 35          | $8               | same tool+args × 3 → halt |
+| `planning-batch`        | 25          | $5               | same tool+args × 3 → halt |
+
+Значення — per sub-agent run (не сума fan-out). Для loops із `max_sub_agents_per_run` > 1 (`registry.yaml.cost` не містить цього поля напряму — див. `max sub-agents/run` у таблиці "Per-Loop Caps" вище) множник тримає aggregate cap як остаточну стелю; per-run brake ловить один вихід з-під контролю до того, як daily cap встигне це помітити.
+
+`max_turns` мапиться на `--max-turns` (Claude Code) / рівнозначний turn-limit параметр в Codex automation config. `max_budget_usd` мапиться на `--max-budget-usd` в print-mode виклику або еквівалентний per-thread ceiling у Codex Automations. `circuit_breaker` — не нативний прапорець жодного з харнесів; реалізується в runner/wrapper-скрипті навколо кожного loop run (лічильник останніх N tool calls, порівняння tool+args, hard-abort при збігу).
+
+**Значення estimated, не виміряні** — та сама caveat, що й для aggregate cost estimation method вище. Переглянути після першого місяця реальних Sentry `loop-run` даних.
+
+## Dead-man's Heartbeat
+
+Loops з `heartbeat_required: true` (`pr-review`, `migration-guard`, `deploy-watch`, `e2e-flake-watch`) — high risk і/або high cadence (5-15m або per-PR на критичному шляху) — мають писати heartbeat щоразу, коли run стартує і коли завершується:
+
+1. Кожен run пише Sentry event з тегом `loop-heartbeat` (loop id, run id, phase, timestamp) на старті й на кожній зміні фази.
+2. Якщо heartbeat не приходить довше 2× cadence loop-а (наприклад >30m для loop з cadence 15m) — це "тиха смерть": run застряг (переповнений контекст, hung tool call, retry без backoff), а не завершився штатно. Сигнал відрізняється від "run просто нічого не знайшов" (той завершується і закриває heartbeat).
+3. Мовчання довше порогу → Sentry alert (tag `loop-heartbeat-silent`) → page on-call за тим самим routing, що й `loop-budget-exceeded` нижче.
+
+Loops з `heartbeat_required: false` — низький risk або batch/per-decision cadence (немає "continuous background" очікування) — heartbeat необов'язковий; aggregate daily cap + PR-comment audit trail (§ Storage of Run History) достатньо.
+
+## Four Failure Modes
+
+Чек-лист для дизайну нового loop або ревʼю existing — кожен loop має явно назвати, який brake ловить який failure mode (порожня клітинка = прогалина, яку треба закрити перед enable в L2/L3):
+
+| Failure mode           | Симптом                                                              | Brake, що ловить                                                                                                                                              |
+| ---------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Runaway recursion**  | Два агенти нескінченно просять одне в одного більше роботи           | `max_turns` + `max_budget_usd` (per-run hard stop)                                                                                                            |
+| **Silent death**       | Run завис (context exhausted, hung retry) але виглядає живим         | Dead-man's heartbeat (§ вище)                                                                                                                                 |
+| **Random walk**        | Немає verifiable stop condition — loop дрейфує від цілі, а не до неї | Explicit gate/goal contract per loop (§ Human Gates у LOOP.md) + maker/checker split (review-squad, qa-squad, council) замість self-graded "виглядає готовим" |
+| **Comprehension debt** | Diff зростає швидше, ніж людина встигає його розуміти                | Human-read gate — жоден loop не має права merge без review; L1→L3 phased rollout (LOOP.md) тримає early loops report-only                                     |
+
+`circuit_breaker` (same tool+args × 3 → halt) — додатковий сигнал саме для runaway recursion: ловить вужчий, але дешевший-у-детекції випадок, коли агент буквально повторює той самий виклик, а не просто "багато робить".
+
 ## On Budget Exceed
 
+Той самий playbook застосовується і при спрацюванні per-run brakes (`max_turns`/`max_budget_usd` hit, `circuit_breaker` halt, чи heartbeat silence) — це просто інший тригер того самого incident flow, не окрема процедура:
+
 1. **Pause scheduler** для конкретного loop (через GitHub Actions workflow_dispatch або harness disable).
-2. **Append Sentry event** з тегом `loop-budget-exceeded` + loop id + actual spend.
+2. **Append Sentry event** з відповідним тегом — `loop-budget-exceeded` (aggregate cap), `loop-circuit-breaker-tripped` (same tool+args × 3), або `loop-heartbeat-silent` (dead-man's switch) — + loop id, run id, actual spend/turns.
 3. **Open incident issue** з label `loop-pause-all` + assign @SkOrDs-02.
-4. **Page on-call** якщо loop = `deploy-watch`, `pr-review`, `review-squad-parallel`, `qa-squad-parallel` (high-risk).
+4. **Page on-call** якщо loop = `deploy-watch`, `pr-review`, `review-squad-parallel`, `qa-squad-parallel` (high-risk) — або будь-який loop із `heartbeat_required: true` при `loop-heartbeat-silent`.
 
 Resume — тільки після root-cause analysis і явного unpause через PR.
 

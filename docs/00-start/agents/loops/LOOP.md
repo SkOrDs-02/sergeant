@@ -2,7 +2,7 @@
 
 # Loop Manifest — Autonomous Agent Workflows
 
-> **Last touched:** 2026-06-29 by @SkOrDs-02 (loop-engineering adoption pilot). **Next review:** 2026-09-27.
+> **Last touched:** 2026-07-01 by @claude (per-run brakes: max_turns/max_budget_usd/circuit_breaker/heartbeat). **Next review:** 2026-09-29.
 > **Status:** Active
 > **Source of truth:** [`registry.yaml`](./registry.yaml) (machine-readable, 10 loops)
 
@@ -40,9 +40,10 @@ Loops існують у режимі **L1 report-only → L2 assisted fixes → 
 
 ## Budget & Kill Switch
 
-- Token caps per loop — [`loop-budget.md`](./loop-budget.md).
+- Token caps per loop (aggregate daily/monthly) — [`loop-budget.md`](./loop-budget.md).
+- Per-run brakes (`max_turns`, `max_budget_usd`, `circuit_breaker`, `heartbeat_required` — hard stop on a single run, independent of aggregate cap) — [`loop-budget.md § Per-Run Brakes`](./loop-budget.md#per-run-brakes) + `registry.yaml.cost`.
 - Kill switch: створити GitHub issue з label `loop-pause-all` + призначити `@SkOrDs-02`. Resume — після явного коментаря в issue та оновлення `enabled: true` у `registry.yaml`.
-- Підозра на overspend → append event до Sentry (тег `loop-budget-exceeded`) + page on-call.
+- Підозра на overspend → append event до Sentry (тег `loop-budget-exceeded`, `loop-circuit-breaker-tripped`, або `loop-heartbeat-silent`) + page on-call.
 
 ## Convention Source
 
