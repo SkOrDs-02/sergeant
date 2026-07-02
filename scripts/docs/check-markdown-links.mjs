@@ -220,52 +220,50 @@ export function saveCache(cache, cacheFile = CACHE_FILE) {
 
 // ── Fetch with cache ─────────────────────────────────────────────────────────
 
-async function checkExternal(
-  url,
-  cache,
-  { timeoutMs = 8000, attempts = 3 } = {},
-) {
-  if (cache[url]) return cache[url];
-
-  // Транспортні фейли (abort по таймауту, DNS/reset) ретраяться зі
-  // свіжим AbortController: один повільний host на ран інакше валить
-  // гейт випадковим URL-ом («This operation was aborted» — щоразу інший
-  // лінк). HTTP-статуси НЕ ретраяться — семантика --strict-external
-  // для справжніх 4xx/5xx незмінна.
-  let lastErr = "";
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      // HEAD first (cheap). Fallback to GET if server disallows HEAD (405/501).
-      let res = await fetch(url, {
-        method: "HEAD",
+async function checkExternalOnce(url, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    // HEAD first (cheap). Fallback to GET if server disallows HEAD (405/501).
+    let res = await fetch(url, {
+      method: "HEAD",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: { "user-agent": "sergeant-markdown-link-checker/1.0" },
+    });
+    if (res.status === 405 || res.status === 501 || res.status === 403) {
+      res = await fetch(url, {
+        method: "GET",
         redirect: "follow",
         signal: controller.signal,
         headers: { "user-agent": "sergeant-markdown-link-checker/1.0" },
       });
-      if (res.status === 405 || res.status === 501 || res.status === 403) {
-        res = await fetch(url, {
-          method: "GET",
-          redirect: "follow",
-          signal: controller.signal,
-          headers: { "user-agent": "sergeant-markdown-link-checker/1.0" },
-        });
-      }
-      const ok = res.ok || STATUS_TREAT_AS_OK.has(res.status);
-      const result = { ok, status: res.status, at: Date.now() };
-      cache[url] = result;
-      return result;
-    } catch (err) {
-      lastErr = String(err.message || err);
-      if (attempt < attempts) {
-        await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
-      }
-    } finally {
-      clearTimeout(timer);
     }
+    const ok = res.ok || STATUS_TREAT_AS_OK.has(res.status);
+    return { ok, status: res.status, at: Date.now() };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      error: String(err.message || err),
+      at: Date.now(),
+    };
+  } finally {
+    clearTimeout(timer);
   }
-  const result = { ok: false, status: 0, error: lastErr, at: Date.now() };
+}
+
+async function checkExternal(url, cache, { timeoutMs = 8000 } = {}) {
+  if (cache[url]) return cache[url];
+  let result = await checkExternalOnce(url, timeoutMs);
+  // A `status: 0` failure is transient transport noise (abort/timeout, DNS
+  // hiccup, connection reset) — not evidence the link is broken. One retry
+  // with a doubled deadline kills the rotating one-slow-host-per-run CI
+  // flake without hiding genuinely dead links (those return real statuses
+  // or fail both attempts).
+  if (!result.ok && result.status === 0) {
+    result = await checkExternalOnce(url, timeoutMs * 2);
+  }
   cache[url] = result;
   return result;
 }

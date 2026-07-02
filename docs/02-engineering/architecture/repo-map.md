@@ -47,7 +47,7 @@
 - `ops/n8n-workflows/` — n8n workflow JSON manifests (heartbeat, agent-dispatcher). Validated by `pnpm ops:n8n:validate`.
 - `tools/openclaw/` — Telegram bot (above). Sidecar `tsconfig.json` extends `tsconfig.node.json`.
 - `tools/tsconfig-guard/` — guards strict-family `tsconfig` flags (Hard Rule #19); allowlist with expiry/owner.
-- `tools/entropy-janitors/` — workspace-пакет `@sergeant/entropy-janitors` (harness-v1, ADR-0070): три weekly janitor-скрипти (doc-drift, dead-code/knip, dep-cycles), відкривають лише issues. Запуск: `pnpm janitors:*`; cron `.github/workflows/entropy-janitors.yml`.
+- `tools/entropy-janitors/` — workspace-пакет `@sergeant/entropy-janitors` (harness-v1, ADR-0070): три weekly janitor-скрипти (doc-drift, dead-code/knip, dep-cycles), відкривають лише issues, ніколи не PR. Запуск: `pnpm janitors:*`; cron `.github/workflows/entropy-janitors.yml`.
 - `tools/agent-snapshot/` — zero-dep динамічний snapshot контексту для агентів (`pnpm snapshot`, ADR-0071) → `.kilocode/snapshot.md`.
 - `scripts/` — governance / docs / API / CI helpers. See [`docs/04-governance/governance/README.md`](../../04-governance/governance/README.md) for the full list.
 

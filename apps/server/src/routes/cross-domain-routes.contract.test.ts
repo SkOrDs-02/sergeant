@@ -1,4 +1,5 @@
 import express from "express";
+import type { Pool } from "pg";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -255,7 +256,9 @@ describe("nutrition route wiring", () => {
     ["/api/nutrition/week-plan", "weekPlan"],
     ["/api/nutrition/shopping-list", "shoppingList"],
   ])("routes %s through session + AI guards", async (path, handler) => {
-    const res = await request(appWith(createNutritionRouter()))
+    const res = await request(
+      appWith(createNutritionRouter({ pool: mockPool as unknown as Pool })),
+    )
       .post(path)
       .set("x-test-user-id", "user-1")
       .send({ input: "ok" });
@@ -265,7 +268,9 @@ describe("nutrition route wiring", () => {
   });
 
   it("rejects AI nutrition endpoints without a session before handler work", async () => {
-    const res = await request(appWith(createNutritionRouter()))
+    const res = await request(
+      appWith(createNutritionRouter({ pool: mockPool as unknown as Pool })),
+    )
       .post("/api/nutrition/analyze-photo")
       .send({ input: "ok" });
 
@@ -275,7 +280,9 @@ describe("nutrition route wiring", () => {
 
   it("lets backup upload/download use session without Anthropic quota", async () => {
     vi.stubEnv("ANTHROPIC_API_KEY", "");
-    const app = appWith(createNutritionRouter());
+    const app = appWith(
+      createNutritionRouter({ pool: mockPool as unknown as Pool }),
+    );
 
     await expect(
       request(app)

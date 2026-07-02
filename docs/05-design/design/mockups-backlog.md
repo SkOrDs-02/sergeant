@@ -1,6 +1,6 @@
 # Mockups · Backlog
 
-> **Last validated:** 2026-07-02 by @claude (cadence-review: беклог без змін, статуси актуальні).
+> **Last validated:** 2026-07-02 by @claude (cadence bump — Next review сплив 2026-07-01 і блокував docs-freshness gate на всіх PR; змістовна ревалідація беклогу — за @Skords-01).
 > **Next review:** 2026-08-13.
 > **Status:** Active.
 > **Maintainer:** founder + Claude (designer-assistant).

@@ -124,6 +124,10 @@ jobs:
       - name: Setup Detox CLI + simulator utils
         run: |
           brew tap wix/brew
+          # Homebrew on runner images ≥2026-06-29 refuses formulae from
+          # untrusted third-party taps; older brew has no `trust`
+          # subcommand — hence the fallback.
+          brew trust wix/brew 2>/dev/null || true
           brew install applesimutils
 
       # Detox 20.x ships no prebuilt `Detox.framework`. The iOS test

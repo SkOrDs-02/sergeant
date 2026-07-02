@@ -452,7 +452,7 @@ export default async function handler(
           endpoint: "chat-tool-result",
           signal: clientAbort.signal,
           promptVersion: SYSTEM_PROMPT_VERSION,
-          userId: ledgerUserId,
+          ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
         },
       ));
     } catch (e) {
@@ -518,7 +518,7 @@ export default async function handler(
         endpoint: "chat",
         signal: clientAbort.signal,
         promptVersion: SYSTEM_PROMPT_VERSION,
-        userId: ledgerUserId,
+        ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
       },
     ));
   } catch (e) {
