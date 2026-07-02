@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last validated:** 2026-07-01 by docs:gen-today. **Next review:** 2026-07-08.
+> **Last validated:** 2026-07-02 by docs:gen-today. **Next review:** 2026-07-09.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -11,9 +11,12 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 
 _Нема items з `Phase X next` / `Stage X IN PROGRESS` / `Phase X blocked` маркерами. Або все закрито, або status headers потребують уточнення (Rule #10)._
 
-## Прострочений review (0)
+## Прострочений review (2)
 
-_Жодного документа не пропустило `Next review:` дату. 🎉_
+Документи, чия `Next review:` дата минула. Або bump date після швидкого re-read, або переведи в `Status: Closed`/`Archived`.
+
+- [`90-work/planning/sprint-9-10-plan-2026.md`](./90-work/planning/sprint-9-10-plan-2026.md) — Sergeant — план Спринтів 9-10 (2026-07-07 – 2026-08-01) _(due 2026-07-01, **1d overdue**)_
+- [`90-work/planning/sprint-roadmap-q2q3-2026.md`](./90-work/planning/sprint-roadmap-q2q3-2026.md) — Sergeant — Спринтовий роадмап Q2–Q3 2026 _(due 2026-07-01, **1d overdue**)_
 
 ## WIP load — 🟢 healthy
 

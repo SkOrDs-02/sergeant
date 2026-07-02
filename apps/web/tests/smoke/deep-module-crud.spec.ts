@@ -132,6 +132,11 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // чекаючи фантомної навігації. dispatchEvent виконує той самий
     // продуктовий onClick без hit-test (модалка, не віртуалізований ряд).
     await page.getByRole("button", { name: "Видалити" }).dispatchEvent("click");
+    // Harness correction: ловимо undo-тост одразу після delete — його TTL
+    // (~5с) інакше сплине, поки полінгується toHaveCount(0) під
+    // навантаженням повної сюїти.
+    const undoBtn = page.getByRole("button", { name: "Повернути" });
+    await expect(undoBtn).toBeVisible();
     await expect(page.getByText("DCRUD кава оновлено")).toHaveCount(0);
 
     // Harness corrections: (1) toast-кнопка «Повернути» авто-дисмісить
@@ -139,9 +144,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // dispatchEvent; (2) undo-повернена витрата створює день-групу
     // заново ЗГОРНУТОЮ (days collapsed by default) — розгортаємо перед
     // assert-ом.
-    await page
-      .getByRole("button", { name: "Повернути" })
-      .dispatchEvent("click");
+    await undoBtn.dispatchEvent("click");
     await page
       .getByRole("button", { name: /Розгорнути Сьогодні/ })
       .dispatchEvent("click");
