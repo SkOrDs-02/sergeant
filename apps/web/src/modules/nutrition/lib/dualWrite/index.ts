@@ -11,7 +11,11 @@ import {
   recordReadFallback,
 } from "../../../../core/observability/dualWriteTelemetry.js";
 import { refreshNutritionSqliteState } from "../sqliteReader.js";
-import { notifyNutritionSqliteCacheRefresh } from "../sqliteReadGate.js";
+import {
+  __closeNutritionSqliteMutationWindow,
+  __openNutritionSqliteMutationWindow,
+  notifyNutritionSqliteCacheRefresh,
+} from "../sqliteReadGate.js";
 import {
   applyNutritionDualWriteOps,
   type ApplyDualWriteResult,
@@ -186,19 +190,36 @@ async function runDualWriteNutritionState(
  * Schedule on a macrotask so input handlers can finish and the UI can
  * commit before SQLite/parity work starts.
  */
+// DCRUD-007 single-flight queue: concurrent fire-and-forget dual-writes
+// used to interleave apply → refresh → notify, so a refresh whose
+// snapshot predated a newer local mutation could be the LAST notify —
+// and the read overlay would clobber the fresh UI state with the stale
+// cache. Serializing the pipeline + exposing the pending count lets the
+// overlay skip replacements while writes are in flight. Mirrors the
+// finyk dual-write orchestrator.
+let dualWriteQueue: Promise<unknown> = Promise.resolve();
+
 export function triggerNutritionDualWrite(
   prev: NutritionDualWriteState,
   next: NutritionDualWriteState,
 ): void {
   const ctx = registeredContext;
   if (!ctx) return;
-  globalThis.setTimeout(() => {
-    void dualWriteNutritionState(prev, next).catch((err) => {
+  __openNutritionSqliteMutationWindow();
+  dualWriteQueue = dualWriteQueue
+    .then(() => new Promise((resolve) => globalThis.setTimeout(resolve, 0)))
+    .then(() => dualWriteNutritionState(prev, next))
+    .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {
         error: err instanceof Error ? err.message : String(err),
       });
+    })
+    .then(() => {
+      __closeNutritionSqliteMutationWindow();
+      // No-op while later writes are still queued (their windows are
+      // open); the last write of a burst delivers the visible refresh.
+      notifyNutritionSqliteCacheRefresh();
     });
-  }, 0);
 }
 
 export type DualWriteOutcome =

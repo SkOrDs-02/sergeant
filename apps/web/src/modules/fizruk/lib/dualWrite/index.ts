@@ -7,7 +7,11 @@ import {
   recordReadFallback,
 } from "../../../../core/observability/dualWriteTelemetry.js";
 import { refreshFizrukSqliteState } from "../sqliteReader.js";
-import { notifyFizrukSqliteCacheRefresh } from "../sqliteReadGate.js";
+import {
+  __closeFizrukSqliteMutationWindow,
+  __openFizrukSqliteMutationWindow,
+  notifyFizrukSqliteCacheRefresh,
+} from "../sqliteReadGate.js";
 import {
   applyFizrukDualWriteOps,
   type ApplyDualWriteResult,
@@ -180,19 +184,36 @@ async function runDualWriteFizrukState(
  * Resolves immediately so the LS-write call site doesn't pay any
  * latency on the happy path.
  */
+// DCRUD-007 single-flight queue: concurrent fire-and-forget dual-writes
+// used to interleave apply → refresh → notify, so a refresh whose
+// snapshot predated a newer local mutation could be the LAST notify —
+// and the read overlay would clobber the fresh UI state with the stale
+// cache. Serializing the pipeline + exposing the pending count lets the
+// overlay skip replacements while writes are in flight. Mirrors the
+// finyk dual-write orchestrator.
+let dualWriteQueue: Promise<unknown> = Promise.resolve();
+
 export function triggerFizrukDualWrite(
   prev: FizrukDualWriteState,
   next: FizrukDualWriteState,
 ): void {
   const ctx = registeredContext;
   if (!ctx) return;
-  globalThis.setTimeout(() => {
-    void dualWriteFizrukState(prev, next).catch((err) => {
+  __openFizrukSqliteMutationWindow();
+  dualWriteQueue = dualWriteQueue
+    .then(() => new Promise((resolve) => globalThis.setTimeout(resolve, 0)))
+    .then(() => dualWriteFizrukState(prev, next))
+    .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {
         error: err instanceof Error ? err.message : String(err),
       });
+    })
+    .then(() => {
+      __closeFizrukSqliteMutationWindow();
+      // No-op while later writes are still queued (their windows are
+      // open); the last write of a burst delivers the visible refresh.
+      notifyFizrukSqliteCacheRefresh();
     });
-  }, 0);
 }
 
 export type DualWriteOutcome =

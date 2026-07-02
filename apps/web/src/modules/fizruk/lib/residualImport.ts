@@ -30,6 +30,8 @@ import {
   type Workout,
 } from "@sergeant/fizruk-domain";
 
+import { STORAGE_KEYS } from "@sergeant/shared";
+
 import { applyFizrukDualWriteOps } from "./dualWrite/adapter.js";
 import {
   diffFizrukDualWriteOps,
@@ -38,8 +40,10 @@ import {
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractCustomExerciseSnapshots,
+  extractDailyLogSnapshots,
   extractMeasurementSnapshots,
   extractWorkoutSnapshots,
+  type FizrukDailyLogEntryLike,
 } from "./fizrukDualWriteState.js";
 import { fizrukStorage } from "./fizrukStorageInstance.js";
 
@@ -66,9 +70,13 @@ export async function importFizrukResidualFromLs(
   const workouts = readWorkoutsFromLs();
   const customExercises = readCustomExercisesFromLs();
   const measurements = readMeasurementsFromLs();
+  const dailyLog = readDailyLogFromLs();
 
   const hasAny =
-    workouts !== null || customExercises !== null || measurements !== null;
+    workouts !== null ||
+    customExercises !== null ||
+    measurements !== null ||
+    dailyLog !== null;
   if (!hasAny) return { imported: false, cleaned: false };
 
   // Build a FizrukDualWriteState from whatever was found in LS. Slots
@@ -80,7 +88,7 @@ export async function importFizrukResidualFromLs(
       ? extractCustomExerciseSnapshots(customExercises)
       : [],
     measurements: measurements ? extractMeasurementSnapshots(measurements) : [],
-    dailyLog: [],
+    dailyLog: dailyLog ? extractDailyLogSnapshots(dailyLog) : [],
     monthlyPlan: null,
     workoutTemplates: [],
   };
@@ -109,6 +117,7 @@ export async function importFizrukResidualFromLs(
   fizrukStorage.removeItem(WORKOUTS_STORAGE_KEY);
   fizrukStorage.removeItem(CUSTOM_EXERCISES_KEY);
   fizrukStorage.removeItem(MEASUREMENTS_STORAGE_KEY);
+  fizrukStorage.removeItem(STORAGE_KEYS.FIZRUK_DAILY_LOG);
 
   return { imported: ops.length > 0, cleaned: true };
 }
@@ -146,6 +155,19 @@ function readMeasurementsFromLs(): MeasurementEntry[] | null {
     const raw = fizrukStorage.readJSON<unknown>(MEASUREMENTS_STORAGE_KEY, null);
     if (raw == null) return null;
     return Array.isArray(raw) ? (raw as MeasurementEntry[]) : [];
+  } catch {
+    return null;
+  }
+}
+
+function readDailyLogFromLs(): FizrukDailyLogEntryLike[] | null {
+  try {
+    const raw = fizrukStorage.readJSON<unknown>(
+      STORAGE_KEYS.FIZRUK_DAILY_LOG,
+      null,
+    );
+    if (raw == null) return null;
+    return Array.isArray(raw) ? (raw as FizrukDailyLogEntryLike[]) : [];
   } catch {
     return null;
   }

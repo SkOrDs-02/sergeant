@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
+> **Last touched:** 2026-07-02 by @claude. **Next review:** 2026-09-30.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/04-governance/governance/repo-map.auto.json`](../../04-governance/governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
@@ -47,7 +47,8 @@
 - `ops/n8n-workflows/` — n8n workflow JSON manifests (heartbeat, agent-dispatcher). Validated by `pnpm ops:n8n:validate`.
 - `tools/openclaw/` — Telegram bot (above). Sidecar `tsconfig.json` extends `tsconfig.node.json`.
 - `tools/tsconfig-guard/` — guards strict-family `tsconfig` flags (Hard Rule #19); allowlist with expiry/owner.
-- `tools/entropy-janitors/` — три щотижневі janitor-и (doc-drift, dead-code/Knip, dep-cycles); відкривають issues, ніколи не PR. Локально: `pnpm janitors:*`.
+- `tools/entropy-janitors/` — workspace-пакет `@sergeant/entropy-janitors` (harness-v1, ADR-0070): три weekly janitor-скрипти (doc-drift, dead-code/knip, dep-cycles), відкривають лише issues, ніколи не PR. Запуск: `pnpm janitors:*`; cron `.github/workflows/entropy-janitors.yml`.
+- `tools/agent-snapshot/` — zero-dep динамічний snapshot контексту для агентів (`pnpm snapshot`, ADR-0071) → `.kilocode/snapshot.md`.
 - `scripts/` — governance / docs / API / CI helpers. See [`docs/04-governance/governance/README.md`](../../04-governance/governance/README.md) for the full list.
 
 ## Test stacks per surface

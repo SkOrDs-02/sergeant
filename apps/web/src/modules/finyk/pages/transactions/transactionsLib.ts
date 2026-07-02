@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 
@@ -12,8 +13,10 @@ export type DayCollapseOverrides = Record<string, boolean>;
  * Used to bucket transactions into days for the GroupedVirtuoso list.
  */
 export function dayKeyFromTx(ts: number): string {
-  const d = new Date(ts * 1000);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  // Kyiv-anchored (domain invariant): host-local components bucketed a
+  // 23:30-Kyiv purchase under the wrong day on non-Kyiv devices and
+  // disagreed with manual-expense keys (Kyiv via toLocalISODate).
+  return getKyivDayKey(ts * 1000);
 }
 
 /**
@@ -146,19 +149,26 @@ const STICKY_WEEKDAYS_NOMINATIVE = [
  * the long Ukrainian weekday + day-of-month.
  */
 export function formatStickyDayLabel(key: string): string {
-  const [y, m, da] = key.split("-").map(Number);
-  const d = new Date(y!, m! - 1, da);
-  const t0 = new Date();
-  t0.setHours(0, 0, 0, 0);
-  const d0 = new Date(d);
-  d0.setHours(0, 0, 0, 0);
-  const diffDays = Math.round((t0.getTime() - d0.getTime()) / 86400000);
-  if (diffDays === 0) return "Сьогодні";
-  if (diffDays === 1) return "Вчора";
-  const weekday = STICKY_WEEKDAYS_NOMINATIVE[d.getDay()] ?? "";
+  // Domain invariant: day keys are Europe/Kyiv-anchored (manual-expense
+  // dates default to the Kyiv date via `toLocalISODate`). «Сьогодні» /
+  // «Вчора» must therefore derive from the KYIV day key too — the old
+  // host-local `new Date().setHours(0)` baseline drifted one day in the
+  // 00:00–03:00 Kyiv window on non-Kyiv runtimes (UTC CI rendered a
+  // fresh expense under a weekday header instead of «Сьогодні»).
+  const todayKey = getKyivDayKey();
+  if (key === todayKey) return "Сьогодні";
+
+  const yesterdayKey = getKyivDayKey(new Date(Date.now() - 86400000));
+  if (key === yesterdayKey) return "Вчора";
+  const [y = 1970, m = 1, da = 1] = key.split("-").map(Number);
+  // UTC-парс календарної дати ключа: weekday/day/month цієї дати
+  // однакові в будь-якій TZ, host-local getters тут не потрібні.
+  const d = new Date(Date.UTC(y, m - 1, da));
+  const weekday = STICKY_WEEKDAYS_NOMINATIVE[d.getUTCDay()] ?? "";
   const dayMonth = d.toLocaleDateString("uk-UA", {
     day: "numeric",
     month: "long",
+    timeZone: "UTC",
   });
   return `${weekday}, ${dayMonth}`;
 }

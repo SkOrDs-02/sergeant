@@ -7,7 +7,11 @@ import {
   recordReadFallback,
 } from "../../../../core/observability/dualWriteTelemetry.js";
 import { refreshFinykSqliteState } from "../sqliteReader.js";
-import { notifyFinykSqliteCacheRefresh } from "../sqliteReadGate.js";
+import {
+  __closeFinykSqliteMutationWindow,
+  __openFinykSqliteMutationWindow,
+  notifyFinykSqliteCacheRefresh,
+} from "../sqliteReadGate.js";
 import {
   applyFinykDualWriteOps,
   type ApplyDualWriteResult,
@@ -205,10 +209,21 @@ async function runDualWriteFinykState(
   return { status: "applied", result };
 }
 
+// DCRUD-007 single-flight queue: concurrent fire-and-forget dual-writes
+// used to interleave apply → refresh → notify, so a refresh whose
+// snapshot predated a newer local mutation could be the LAST notify —
+// and the read overlay would clobber the fresh UI state with the stale
+// cache (which then escalated to a spurious blob-delete through the
+// diff-writer). Serializing the pipeline + exposing the pending count
+// lets the overlay skip replacements while writes are in flight.
+let dualWriteQueue: Promise<unknown> = Promise.resolve();
+
 /**
  * Fire-and-forget entry point used by Finyk LS-write hooks.
  * Resolves immediately so the LS-write call site doesn't pay any
- * latency on the happy path.
+ * latency on the happy path. Runs are serialized (single-flight) in
+ * enqueue order; the final run of a burst re-notifies subscribers so
+ * the overlay applies exactly one causally-latest snapshot.
  */
 export function triggerFinykDualWrite(
   prev: FinykDualWriteState,
@@ -216,13 +231,21 @@ export function triggerFinykDualWrite(
 ): void {
   const ctx = registeredContext;
   if (!ctx) return;
-  globalThis.setTimeout(() => {
-    void dualWriteFinykState(prev, next).catch((err) => {
+  __openFinykSqliteMutationWindow();
+  dualWriteQueue = dualWriteQueue
+    .then(() => new Promise((resolve) => globalThis.setTimeout(resolve, 0)))
+    .then(() => dualWriteFinykState(prev, next))
+    .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {
         error: err instanceof Error ? err.message : String(err),
       });
+    })
+    .then(() => {
+      __closeFinykSqliteMutationWindow();
+      // No-op while later writes are still queued (their windows are
+      // open); the last write of a burst delivers the visible refresh.
+      notifyFinykSqliteCacheRefresh();
     });
-  }, 0);
 }
 
 /**

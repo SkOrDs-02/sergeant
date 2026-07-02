@@ -284,9 +284,9 @@ describe("Finyk dual-write — orchestrator (registerFinykDualWriteContext)", ()
     );
     expect(rows).toHaveLength(0);
 
-    // microtask flushed
-    await Promise.resolve();
-    await Promise.resolve();
+    // queued run flushed (single-flight queue defers via a macrotask —
+    // DCRUD-007; wait one real timer turn instead of bare microtasks)
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     rows = await handle.client.all<Record<string, unknown>>(
       "SELECT * FROM finyk_budgets WHERE id = ?",

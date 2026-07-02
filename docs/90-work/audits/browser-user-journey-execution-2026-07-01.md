@@ -2,7 +2,7 @@
 
 # Browser user journey execution log — 2026-07-01
 
-> **Last validated:** 2026-07-01 by @claude. **Next review:** 2026-07-15.
+> **Last touched:** 2026-07-02 by @claude. **Next review:** 2026-09-30.
 > **Status:** Active
 
 Canonical loop: [`browser-user-journey-loop.md`](./browser-user-journey-loop.md).
@@ -111,6 +111,51 @@ offline/PWA (Група D). Кожен фейл — класифікація pro
 
 _(далі — формат: `BRJ2-NNN`, тип, репро, fix/exception, retest)_
 
+## Fix-фаза: deep-CRUD dual-write races (BRJ2-005, E2E-гілка)
+
+Діагностика — 3 паралельні read-only агенти (finyk create-clobber /
+nutrition delete-resurrection / fizruk reload-loss) + живі Playwright-зонди.
+Три кореневі продуктові фікси (коміт `615ce86`):
+
+1. **nutrition** — `pantryChanged` порівнював `items` за референсом, а
+   snapshot-екстрактор щоразу будує нові масиви → спурйозний
+   `pantry-upsert` на кожен persist → петля overlay→persist→refresh, у
+   якій stale in-flight upsert знімав tombstone щойно видаленого item
+   (upsert `deleted_at = NULL` з runtime `clientTs`). Фікс: value-based
+   порівняння items + інверсія тесту, що закріплював ref-семантику.
+2. **fizruk** — `useDailyLog` писав через dual-write у структурну
+   таблицю `fizruk_daily_log`, а читав з legacy LS/kv-ключа
+   `fizruk_daily_log_v1` (розбіжність джерела читання і цілі запису) —
+   після reload запис «зникав». Фікс: read-шлях мігровано на
+   SQLite-overlay (дзеркало `useMeasurements`) + drain legacy-ключа у
+   `residualImport` на boot.
+3. **finyk + всі 3 модулі** — fire-and-forget dual-write-и
+   інтерлівились: stale refresh міг бути останнім notify, і overlay
+   клоберив оптимістичний UI-стан (з ескалацією у спурйозний
+   blob-delete через diff-writer). Фікс: single-flight черга +
+   «вікна мутацій» у `sqliteReadGate` (notify відкладається, поки є
+   in-flight записи; останній запис бурсту доставляє єдиний
+   causally-latest snapshot).
+
+Супутнє: `dayKeyFromTx` переведено на Kyiv-anchor (доменний інваріант);
+harness-фікси спеки — dispatchEvent для virtuoso-ряду/кнопки модалки,
+раннє захоплення undo-тоста (TTL ~5с), роль-локатор після undo,
+повторний expand дня після undo.
+
+**Env-нотатки прогону:** (а) довгоживучий локальний PG накопичує
+server-sync стан спільного тест-юзера між прогонами (routine ловив
+«воскреслі» хабіти минулих прогонів через sync-реплей) — для CI-паритету
+базу треба перестворювати перед фінальним прогоном (у CI вона свіжа
+щоджоба); (б) системний PostgreSQL у контейнері спорадично зупиняється —
+перевіряти `service postgresql status` перед прогоном.
+
 ## Підсумок
 
-_(заповнюється при закритті прогону)_
+**Повна `@critical` сюїта: 22/22 passed (59.7s)** — проти свіжої БД,
+свіжого auth-стейту, production preview build з фіксами. Всі 4 deep-CRUD
+тести (finyk/nutrition/routine/fizruk) зелені: create → edit →
+reload-persist → delete → undo-restore. Юніти зачеплених модулів:
+162/162; typecheck чистий. Це закриває E2E-гілку BRJ2-005 — після мержу
+`Critical-flow E2E` на `main` має стати зеленим. Гілки `pnpm check` /
+`Test coverage` BRJ2-005 — окремий наступний крок (діагностика
+локальним `pnpm check`).

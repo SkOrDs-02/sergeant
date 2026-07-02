@@ -25,6 +25,26 @@ import { useSyncExternalStore } from "react";
 let cacheTick = 0;
 const listeners = new Set<() => void>();
 
+// DCRUD-007: while the dual-write queue has enqueued-but-unfinished
+// writes, the SQLite cache snapshot is causally BEHIND the optimistic
+// local state. Bumping the tick in that window makes the overlay
+// clobber a just-written mutation (which the diff-writer then escalates
+// into a spurious delete). The queue opens a window per enqueued write
+// and closes it after apply → refresh; notify is deferred while any
+// window is open — the queue's final quiescent notify delivers exactly
+// one causally-latest snapshot.
+let pendingMutationWindows = 0;
+
+/** Opened by the dual-write queue at enqueue time (one per write). */
+export function __openNutritionSqliteMutationWindow(): void {
+  pendingMutationWindows += 1;
+}
+
+/** Closed by the dual-write queue after apply → refresh completes. */
+export function __closeNutritionSqliteMutationWindow(): void {
+  pendingMutationWindows = Math.max(0, pendingMutationWindows - 1);
+}
+
 function subscribe(onChange: () => void): () => void {
   listeners.add(onChange);
   return () => {
@@ -52,6 +72,7 @@ export function useNutritionSqliteReadTick(): number {
  * with the latest `getCachedNutritionSqliteState()`.
  */
 export function notifyNutritionSqliteCacheRefresh(): void {
+  if (pendingMutationWindows > 0) return;
   cacheTick += 1;
   for (const listener of listeners) {
     try {
@@ -81,5 +102,6 @@ export function notifyNutritionSqliteCacheRefresh(): void {
 /** Test-only escape hatch: clears subscribers + resets tick. */
 export function __resetNutritionSqliteReadGateForTests(): void {
   cacheTick = 0;
+  pendingMutationWindows = 0;
   listeners.clear();
 }

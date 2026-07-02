@@ -4,7 +4,7 @@
   "generated_at": "2026-07-02",
   "sourceHashes": {
     "knowledge-graph": "593b74a1921b848991eef3f34fa729e05274c0fa4a1baa6f4261f35a97668afe",
-    "symbol-index": "913278dd830a0bf597bdfb039db9f846e221f0bc8a085e28befbbce37bf4aa49"
+    "symbol-index": "a725d91e4e15d7ecea71cb396a249f914345ea00a8c223514dda2e12f613b60b"
   },
   "counts": {
     "adr": 69,
@@ -969,8 +969,8 @@
       "title": "Browser user journey execution log — 2026-07-01",
       "tier": "core",
       "status": "Active",
-      "text": "Browser user journey execution log — 2026-07-01 · audit:browser-user-journey-execution-2026-07-01 · audit · Active · Мета прогону · Контекст запуску · Оркестрація · Evidence log · Знахідки · BRJ2-001: колізія номерів ADR 0066/0067/0068 ламає docs:gen-graph і ADR-gate · BRJ2-002: локальний PG без pgvector ≥0.7 блокує міграції · BRJ2-005: pnpm check / Test coverage / Critical-flow E2E червоні на main · BRJ2-003: 26 broken internal links у harness-доках (pre-existing) · BRJ2-004: 4 файли без freshness-маркерів (pre-existing, Rule #10) · Підсумок",
-      "contentHash": "5c4a79d7f8345ca66e27f4833468666734540d4e4c0dd525d41f4bd1d74c7470"
+      "text": "Browser user journey execution log — 2026-07-01 · audit:browser-user-journey-execution-2026-07-01 · audit · Active · Мета прогону · Контекст запуску · Оркестрація · Evidence log · Знахідки · BRJ2-001: колізія номерів ADR 0066/0067/0068 ламає docs:gen-graph і ADR-gate · BRJ2-002: локальний PG без pgvector ≥0.7 блокує міграції · BRJ2-005: pnpm check / Test coverage / Critical-flow E2E червоні на main · BRJ2-003: 26 broken internal links у harness-доках (pre-existing) · BRJ2-004: 4 файли без freshness-маркерів (pre-existing, Rule #10) · Fix-фаза: deep-CRUD dual-write races (BRJ2-005, E2E-гілка) · Підсумок",
+      "contentHash": "e4ade91d12bfd4e6cc7c8c8c875438a81695d6fab7ac6696a390b7bf7bfc7714"
     },
     {
       "id": "audit:browser-user-journey-loop",

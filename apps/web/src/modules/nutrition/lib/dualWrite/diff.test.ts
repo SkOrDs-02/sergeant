@@ -337,17 +337,47 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
     expect(ops).toEqual([{ kind: "pantry-upsert", pantry: after }]);
   });
 
-  it("емітить pantry-upsert при зміні референсу items (навіть якщо вміст рівний)", () => {
+  it("НЕ емітить pantry-upsert при зміні лише референсу items (value-рівні) — анти-резурекція DCRUD-007", () => {
     const items1 = [makePantryItem({ id: "it1", qty: 1 })];
-    const items2 = [makePantryItem({ id: "it1", qty: 1 })]; // інший масив
+    const items2 = [makePantryItem({ id: "it1", qty: 1 })]; // інший масив, той самий вміст
     const before = makePantry({ items: items1 });
     const after = makePantry({ items: items2 });
     const ops = diffNutritionDualWriteOps(
       makeState({ pantries: [before] }),
       makeState({ pantries: [after] }),
     );
-    expect(ops).toHaveLength(1);
-    expect((ops[0] as { kind: string }).kind).toBe("pantry-upsert");
+    expect(ops).toEqual([]);
+  });
+
+  it("емітить pantry-upsert при value-зміні item (qty)", () => {
+    const before = makePantry({
+      items: [makePantryItem({ id: "it1", qty: 1 })],
+    });
+    const after = makePantry({
+      items: [makePantryItem({ id: "it1", qty: 2 })],
+    });
+    const ops = diffNutritionDualWriteOps(
+      makeState({ pantries: [before] }),
+      makeState({ pantries: [after] }),
+    );
+    expect(ops).toEqual([{ kind: "pantry-upsert", pantry: after }]);
+  });
+
+  it("емітить pantry-upsert при видаленні item зі списку", () => {
+    const before = makePantry({
+      items: [
+        makePantryItem({ id: "it1", qty: 1 }),
+        makePantryItem({ id: "it2", qty: 3 }),
+      ],
+    });
+    const after = makePantry({
+      items: [makePantryItem({ id: "it1", qty: 1 })],
+    });
+    const ops = diffNutritionDualWriteOps(
+      makeState({ pantries: [before] }),
+      makeState({ pantries: [after] }),
+    );
+    expect(ops).toEqual([{ kind: "pantry-upsert", pantry: after }]);
   });
 
   it("не емітить pantry-upsert, коли items — той самий референс", () => {

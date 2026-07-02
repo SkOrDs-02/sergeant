@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
 import type { DailyLogEntry as DomainDailyLogEntry } from "@sergeant/fizruk-domain";
 import { mirrorWeightToBiometrics } from "../../../core/profile/biometrics";
 import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
@@ -9,8 +7,8 @@ import {
   extractDailyLogSnapshots,
   peekFizrukDualWriteState,
 } from "../lib/fizrukDualWriteState";
-
-const KEY = STORAGE_KEYS.FIZRUK_DAILY_LOG;
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 /**
  * Daily log entry schema. Extends the domain `DailyLogEntry` (used by
@@ -44,20 +42,37 @@ function uid() {
   return `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * DCRUD-007 cutover: the journal is sourced from the SQLite cache
+ * (`fizruk_daily_log` table) and persisted exclusively through the
+ * dual-write pipeline — mirroring `useMeasurements`. The legacy
+ * `fizruk_daily_log_v1` LS key was a divergent read source (writes
+ * landed in the structured table, reads came from LS/kv_store, so a
+ * reload "lost" the entry); it is drained on boot via
+ * `importFizrukResidualFromLs` and removed.
+ */
 export function useDailyLog() {
-  const [entries, setEntries] = useState<DailyLogEntry[]>([]);
+  const sqliteCacheTick = useFizrukSqliteReadTick();
+  const [entries, setEntries] = useState<DailyLogEntry[]>(() => {
+    const cache = getCachedFizrukSqliteState();
+    return cache.refreshedAt === null
+      ? []
+      : (cache.dailyLog as DailyLogEntry[]);
+  });
 
+  // Overlay the journal from the SQLite cache once it's warm.
   useEffect(() => {
-    const loaded = safeReadLS<DailyLogEntry[]>(KEY, []);
-    if (Array.isArray(loaded)) setEntries(loaded);
-  }, []);
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    setEntries(cache.dailyLog as DailyLogEntry[]);
+  }, [sqliteCacheTick]);
 
   const persist = useCallback((next: DailyLogEntry[]) => {
     setEntries(next);
-    safeWriteLS(KEY, next);
-    // Stage 12 / PR #070f-dualwrite — mirror the LS write into SQLite
-    // through the dual-write pipeline. Fire-and-forget; trigger is a
-    // no-op when the context is not registered (pre-auth).
+    // Stage 12 / PR #070f-dualwrite — persist through the dual-write
+    // pipeline (SQLite is the source of truth for the journal).
+    // Fire-and-forget; trigger is a no-op when the context is not
+    // registered (pre-auth).
     const prevDualWrite =
       peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
     const nextDualWrite = {
@@ -75,6 +90,7 @@ export function useDailyLog() {
     (data: Partial<DailyLogEntry>) => {
       const e: DailyLogEntry = {
         id: uid(),
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для timestamp запису (не Kyiv-межа доби)
         at: new Date().toISOString(),
         weightKg: null,
         sleepHours: null,
