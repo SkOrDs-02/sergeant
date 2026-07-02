@@ -1,9 +1,9 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-01",
+  "generated_at": "2026-07-02",
   "sourceHashes": {
-    "knowledge-graph": "240b20de08959f50682a056f68df0dccb95c9fae52ba9ac8409f65ccf0c972a7",
+    "knowledge-graph": "593b74a1921b848991eef3f34fa729e05274c0fa4a1baa6f4261f35a97668afe",
     "symbol-index": "913278dd830a0bf597bdfb039db9f846e221f0bc8a085e28befbbce37bf4aa49"
   },
   "counts": {
