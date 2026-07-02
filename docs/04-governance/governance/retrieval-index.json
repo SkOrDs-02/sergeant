@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-07-02",
   "sourceHashes": {
-    "knowledge-graph": "5975bd8a965cf133dd587e580067b6e75e401b825966b0416ff93b80fc44c77b",
+    "knowledge-graph": "593b74a1921b848991eef3f34fa729e05274c0fa4a1baa6f4261f35a97668afe",
     "symbol-index": "0da672f03c69da0e6f6e554294eba3d08e53c819e1dc5da3e37ef027cb599227"
   },
   "counts": {
@@ -770,9 +770,9 @@
       "line": 1,
       "title": "ADR-0072: Harness versioning and A/B evaluation",
       "tier": "core",
-      "status": "Active",
-      "text": "ADR-0072: Harness versioning and A/B evaluation · adr:0072 · adr · Active · 72 · 2026-06-29 · Context and Problem Statement · Decision · Consequences · Alternatives Considered · Open Questions / Follow-ups",
-      "contentHash": "4bafb237e666f0fd6531f01e2457868e52db67b852269db281ce1f8d1ca74a1c"
+      "status": "Accepted",
+      "text": "ADR-0072: Harness versioning and A/B evaluation · adr:0072 · adr · Accepted · 72 · 2026-07-01 · Context and Problem Statement · Decision · Consequences · Alternatives Considered · Open Questions / Follow-ups",
+      "contentHash": "206a06e594b3fb6c38b81351b49b3ce33b84b71e37ffac0cf858c7c1d1219c9d"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",

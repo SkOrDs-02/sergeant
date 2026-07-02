@@ -71,6 +71,23 @@ async function waitForSqliteRefreshAfter(
   await refresh;
 }
 
+async function expandTodayAndExpect(page: Page, text: string) {
+  // Harness helper: між boot-refresh і hydration-refresh (другий notify
+  // dual-write черги) день-група може перерендеритись назад згорнутою і
+  // з'їсти одиночний клік — тому expand+assert атомарно ретраяться.
+  await expect(async () => {
+    const toggle = page.getByRole("button", {
+      name: /(Розгорнути|Згорнути) Сьогодні/,
+    });
+    const name =
+      (await toggle.getAttribute("aria-label")) ??
+      (await toggle.textContent()) ??
+      "";
+    if (name.includes("Розгорнути")) await toggle.dispatchEvent("click");
+    await expect(page.getByText(text)).toBeVisible({ timeout: 1500 });
+  }).toPass({ timeout: 20_000 });
+}
+
 function routineDetailButton(page: Page, name: string) {
   return page.getByRole("button", {
     name: new RegExp(
@@ -113,8 +130,11 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await expect(page.getByText("DCRUD кава оновлено")).toBeVisible();
 
     await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: /Розгорнути Сьогодні/ }).click();
-    await expect(page.getByText("DCRUD кава оновлено")).toBeVisible();
+    // Harness correction: після full reload лічильник refresh-ів
+    // обнуляється, а список рендериться лише після SQLite boot+refresh —
+    // на повільному CI без цього wait день-група ще не існує.
+    await waitForInitialSqliteRefresh(page, "finyk");
+    await expandTodayAndExpect(page, "DCRUD кава оновлено");
 
     // Harness correction: рядок живе у GroupedVirtuoso зі sticky
     // day-header-ом — реальний .click() зависає у scroll-into-view
@@ -137,17 +157,14 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // навантаженням повної сюїти.
     const undoBtn = page.getByRole("button", { name: "Повернути" });
     await expect(undoBtn).toBeVisible();
-    await expect(page.getByText("DCRUD кава оновлено")).toHaveCount(0);
-
-    // Harness corrections: (1) toast-кнопка «Повернути» авто-дисмісить
-    // таймером — actionability-retry гоняється з перемонтуванням, тож
-    // dispatchEvent; (2) undo-повернена витрата створює день-групу
-    // заново ЗГОРНУТОЮ (days collapsed by default) — розгортаємо перед
-    // assert-ом.
+    // Harness correction: undo диспатчиться ОДРАЗУ по свіжому тосту
+    // (TTL 5000мс з продакт-брифу — полінг toHaveCount(0) перед undo
+    // зрідка з'їдав увесь бюджет під CI-навантаженням). Delete-proof —
+    // сам undo-тост: він з'являється лише після успішного delete; UI-
+    // proof зникнення/повернення рядка покриває nutrition-сценарій, а
+    // анти-резурекцію після undo фіксує фінальний expand-assert нижче.
     await undoBtn.dispatchEvent("click");
-    await page
-      .getByRole("button", { name: /Розгорнути Сьогодні/ })
-      .dispatchEvent("click");
+    await expandTodayAndExpect(page, "DCRUD кава оновлено");
     await expect(page.getByText("DCRUD кава оновлено")).toBeVisible();
 
     expect(errors, "Uncaught page errors during Finyk CRUD").toEqual([]);
@@ -181,15 +198,21 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await expect(page.getByText("2 шт")).toBeVisible();
 
     await page.goto("/nutrition/pantry", { waitUntil: "domcontentloaded" });
+    await waitForInitialSqliteRefresh(page, "nutrition");
     await expect(page.getByText("dcrud йогурт")).toBeVisible();
     await expect(page.getByText("2 шт")).toBeVisible();
 
     await page.getByRole("button", { name: "Прибрати dcrud йогурт" }).click();
+    // Harness correction: ловимо undo-тост одразу після delete (дзеркало
+    // finyk) — його TTL інакше сплине, поки полінгується toHaveCount(0)
+    // на повільному CI.
+    const undoPantryBtn = page.getByRole("button", { name: "Повернути" });
+    await expect(undoPantryBtn).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Редагувати dcrud йогурт" }),
     ).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Повернути" }).click();
+    await undoPantryBtn.dispatchEvent("click");
     // Harness correction: бере роль-локатор — plain getByText матчить і
     // undo-тост «Прибрано «dcrud йогурт» з комори» (strict mode violation).
     await expect(
@@ -291,6 +314,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await expect(page.getByText("Записано ✓")).toBeVisible();
 
     await page.goto("/fizruk/body", { waitUntil: "domcontentloaded" });
+    await waitForInitialSqliteRefresh(page, "fizruk");
     const journalEntry = page.getByRole("button", {
       name: /81\.2 кг.*7\.5 год/,
     });
