@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-01",
+  "generated_at": "2026-07-02",
   "sourceHashes": {
-    "knowledge-graph": "5975bd8a965cf133dd587e580067b6e75e401b825966b0416ff93b80fc44c77b",
-    "symbol-index": "0da672f03c69da0e6f6e554294eba3d08e53c819e1dc5da3e37ef027cb599227"
+    "knowledge-graph": "593b74a1921b848991eef3f34fa729e05274c0fa4a1baa6f4261f35a97668afe",
+    "symbol-index": "913278dd830a0bf597bdfb039db9f846e221f0bc8a085e28befbbce37bf4aa49"
   },
   "counts": {
     "adr": 69,
@@ -770,9 +770,9 @@
       "line": 1,
       "title": "ADR-0072: Harness versioning and A/B evaluation",
       "tier": "core",
-      "status": "Active",
-      "text": "ADR-0072: Harness versioning and A/B evaluation · adr:0072 · adr · Active · 72 · 2026-06-29 · Context and Problem Statement · Decision · Consequences · Alternatives Considered · Open Questions / Follow-ups",
-      "contentHash": "4bafb237e666f0fd6531f01e2457868e52db67b852269db281ce1f8d1ca74a1c"
+      "status": "Accepted",
+      "text": "ADR-0072: Harness versioning and A/B evaluation · adr:0072 · adr · Accepted · 72 · 2026-07-01 · Context and Problem Statement · Decision · Consequences · Alternatives Considered · Open Questions / Follow-ups",
+      "contentHash": "206a06e594b3fb6c38b81351b49b3ce33b84b71e37ffac0cf858c7c1d1219c9d"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
@@ -2934,8 +2934,8 @@
       "path": "packages/design-tokens/index.d.ts",
       "title": "ModuleAccent (type)",
       "tier": "extended",
-      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 18×",
-      "contentHash": "c18594d0840e5417653e3bc44547dd130666e0359659d8b5e9e331573c8a4781"
+      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 17×",
+      "contentHash": "b8fc95cfb164a7458365df1ae05032e108b1bcd2dabc7ee534ee57ee762d5822"
     },
     {
       "id": "export:@sergeant/design-tokens:moduleAccentRgb",

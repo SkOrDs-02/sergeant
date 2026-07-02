@@ -300,7 +300,20 @@ function main() {
   if (wantsCheck) {
     const current = readSafe(OUT_JSON);
     let mismatch = false;
-    if (current !== nextJson) {
+
+    // `generated_at` is a clock value: a byte-exact compare would flag every
+    // committed artifact as stale the day after it was generated (breaking any
+    // PR that outlives midnight). Neutralize the stamp on both sides before
+    // comparing — only real content drift fails. Mirrors the precedent in
+    // scripts/agent/build-retrieval-index.mjs.
+    const stripGeneratedAt = (s) =>
+      s === null
+        ? null
+        : s
+            .replace(/"generated_at":\s*"[^"]*"/g, '"generated_at":""')
+            .replace(/\(\d{4}-\d{2}-\d{2}\)/g, "(<date>)")
+            .replace(/Generated \d{4}-\d{2}-\d{2}/g, "Generated <date>");
+    if (stripGeneratedAt(current) !== stripGeneratedAt(nextJson)) {
       console.error(
         `${relPath(OUT_JSON)} is out of date. Run \`pnpm docs:gen-service-catalog\` and commit.`,
       );

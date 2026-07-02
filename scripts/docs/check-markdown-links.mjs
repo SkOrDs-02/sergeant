@@ -220,8 +220,7 @@ export function saveCache(cache, cacheFile = CACHE_FILE) {
 
 // ── Fetch with cache ─────────────────────────────────────────────────────────
 
-async function checkExternal(url, cache, { timeoutMs = 8000 } = {}) {
-  if (cache[url]) return cache[url];
+async function checkExternalOnce(url, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -241,21 +240,32 @@ async function checkExternal(url, cache, { timeoutMs = 8000 } = {}) {
       });
     }
     const ok = res.ok || STATUS_TREAT_AS_OK.has(res.status);
-    const result = { ok, status: res.status, at: Date.now() };
-    cache[url] = result;
-    return result;
+    return { ok, status: res.status, at: Date.now() };
   } catch (err) {
-    const result = {
+    return {
       ok: false,
       status: 0,
       error: String(err.message || err),
       at: Date.now(),
     };
-    cache[url] = result;
-    return result;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function checkExternal(url, cache, { timeoutMs = 8000 } = {}) {
+  if (cache[url]) return cache[url];
+  let result = await checkExternalOnce(url, timeoutMs);
+  // A `status: 0` failure is transient transport noise (abort/timeout, DNS
+  // hiccup, connection reset) — not evidence the link is broken. One retry
+  // with a doubled deadline kills the rotating one-slow-host-per-run CI
+  // flake without hiding genuinely dead links (those return real statuses
+  // or fail both attempts).
+  if (!result.ok && result.status === 0) {
+    result = await checkExternalOnce(url, timeoutMs * 2);
+  }
+  cache[url] = result;
+  return result;
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────

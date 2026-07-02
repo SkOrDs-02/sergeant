@@ -502,10 +502,27 @@ async function main() {
   );
 
   if (wantsCheck) {
+    // The generated_at stamp changes every calendar day, so a byte-exact
+    // compare would flag every catalog as stale the day after it was
+    // committed (breaking any PR that outlives midnight). Neutralize the
+    // stamp on both sides before comparing — only real content drift fails.
+    const stripGeneratedAt = (text) =>
+      text === null
+        ? null
+        : text
+            .replace(
+              /"generated_at": "\d{4}-\d{2}-\d{2}"/g,
+              '"generated_at": "<date>"',
+            )
+            .replace(
+              /Symbol Index \(\d{4}-\d{2}-\d{2}\)/g,
+              "Symbol Index (<date>)",
+            )
+            .replace(/Generated \d{4}-\d{2}-\d{2} ·/g, "Generated <date> ·");
     let mismatch = false;
     for (const { target, content } of perPackagePayloads) {
       const current = readSafe(target);
-      if (current !== content) {
+      if (stripGeneratedAt(current) !== stripGeneratedAt(content)) {
         console.error(
           `${relPath(target)} is out of date. Run \`pnpm docs:gen-symbols\` and commit.`,
         );
@@ -517,7 +534,7 @@ async function main() {
       [OUT_INDEX_HTML, indexHtml],
     ]) {
       const current = readSafe(path);
-      if (current !== next) {
+      if (stripGeneratedAt(current) !== stripGeneratedAt(next)) {
         console.error(
           `${relPath(path)} is out of date. Run \`pnpm docs:gen-symbols\` and commit.`,
         );

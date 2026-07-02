@@ -141,6 +141,18 @@
     {
       "pattern": "^https?://agentskills\\.so(/|$)",
       "reason": "Каталог agent-скілів, цитований у docs/00-start/agents/skills-evolution-roadmap.md; хост періодично обриває запити CI link-checker-а по таймауту ('This operation was aborted') хоча рендериться у браузері — flaky external, зафіксовано на PR #90 (2026-07-01)."
+    },
+    {
+      "pattern": "^https?://fakerjs\\.dev(/|$)",
+      "reason": "Faker docs host cited in docs/90-work/planning/tools-research-2026-05.md; CI checker intermittently aborts (timeout) on this host — failed two consecutive PR runs 2026-07-01/02 with 'This operation was aborted' while the site renders fine in browsers."
+    },
+    {
+      "pattern": "^https?://zakon\\.rada\\.gov\\.ua(/|$)",
+      "reason": "Верховна Рада legal-acts portal cited in docs/01-product/launch/business/04-launch-readiness.md; the host is slow / bot-hostile for non-browser HTTP clients and intermittently times out in CI ('This operation was aborted', 4 links in the 2026-07-02 PR run) while rendering fine in browsers."
+    },
+    {
+      "pattern": "^https?://railway\\.app(/|$)",
+      "reason": "Railway (deploy platform) sits behind bot protection that hangs non-browser HTTP clients: /help aborted on BOTH checker attempts (8s + 16s retry) in two consecutive CI runs 2026-07-02 while rendering fine in browsers. Persistent for the checker's UA, not transient."
     }
   ]
 }
