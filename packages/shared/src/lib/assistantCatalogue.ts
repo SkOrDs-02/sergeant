@@ -1090,6 +1090,25 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresInput: true,
     requiresOnline: true,
   },
+  {
+    id: "get_daily_series",
+    module: "analytics",
+    label: "Зв'язки між метриками",
+    shortLabel: "Кореляції",
+    icon: "activity",
+    description:
+      "Чи пов'язано X з Y? Вирівнює по днях метрики різних модулів і рахує кореляцію: витрати↔тренування, вага↔калорії, звички↔білок.",
+    examples: [
+      "чи пов'язані мої витрати з тренуваннями",
+      "вага корелює з калоріями?",
+      "у дні коли роблю звички — їм більше білка?",
+    ],
+    prompt: "Проаналізуй зв'язок між: ",
+    requiresInput: true,
+    requiresOnline: true,
+    isNew: true,
+    aiHint: "1-6 метрик, кореляція кодом",
+  },
 
   // ───── Утиліти (5) ────────────────────────────────────────────────────
   {

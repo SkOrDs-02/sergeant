@@ -191,6 +191,42 @@ describe("category_breakdown", () => {
 });
 
 // ---------------------------------------------------------------------------
+// get_daily_series
+// ---------------------------------------------------------------------------
+describe("get_daily_series", () => {
+  it("happy: returns aligned series + correlation block", () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const txs: Array<{ id: string; amount: number; time: number }> = [];
+    for (let d = 0; d < 5; d++) {
+      const t = nowSec - d * 86400;
+      txs.push({ id: `e${d}`, amount: -(1000 + d * 100) * 100, time: t });
+      txs.push({ id: `i${d}`, amount: (2000 + d * 200) * 100, time: t });
+    }
+    localStorage.setItem("finyk_tx_cache", JSON.stringify({ txs }));
+    const out = call({
+      name: "get_daily_series",
+      input: { metrics: ["spending", "income"] },
+    });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("day,spending,income");
+  });
+
+  it("error: empty metrics returns guidance string", () => {
+    const out = call({ name: "get_daily_series", input: { metrics: [] } });
+    expect(out).toContain("Вкажи");
+  });
+
+  it("shape: result is a non-empty string", () => {
+    const out = call({
+      name: "get_daily_series",
+      input: { metrics: ["spending"] },
+    });
+    expect(typeof out).toBe("string");
+    expect(out.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // detect_anomalies
 // ---------------------------------------------------------------------------
 describe("detect_anomalies", () => {

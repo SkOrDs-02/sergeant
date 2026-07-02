@@ -3,6 +3,7 @@ import {
   weeklySummary,
 } from "./crossActions/briefingHandlers";
 import { compareWeeks } from "./crossActions/compareWeeksHandler";
+import { getDailySeries } from "./crossActions/dailySeries";
 import { exportModuleData } from "./crossActions/exportHandler";
 import {
   categoryBreakdown,
@@ -21,6 +22,7 @@ import type {
   DetectAnomaliesAction,
   ExportModuleDataAction,
   ForgetAction,
+  GetDailySeriesAction,
   ListNotesAction,
   MyProfileAction,
   RememberAction,
@@ -52,6 +54,8 @@ export function handleCrossAction(
       return categoryBreakdown(action as CategoryBreakdownAction);
     case "detect_anomalies":
       return detectAnomalies(action as DetectAnomaliesAction);
+    case "get_daily_series":
+      return getDailySeries(action as GetDailySeriesAction);
     case "convert_units":
       return convertUnits(action as ConvertUnitsAction);
     case "save_note":
