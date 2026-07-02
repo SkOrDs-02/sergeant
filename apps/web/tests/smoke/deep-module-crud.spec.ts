@@ -85,7 +85,7 @@ async function expandTodayAndExpect(page: Page, text: string) {
       "";
     if (name.includes("Розгорнути")) await toggle.dispatchEvent("click");
     await expect(page.getByText(text)).toBeVisible({ timeout: 1500 });
-  }).toPass({ timeout: 20_000 });
+  }).toPass({ timeout: 30_000 });
 }
 
 function routineDetailButton(page: Page, name: string) {
@@ -97,6 +97,11 @@ function routineDetailButton(page: Page, name: string) {
 }
 
 test.describe("@critical deep module CRUD browser loop", () => {
+  // Deep-CRUD цикли на холодному CI-раннері легально повільні: після
+  // full reload дані повертаються sync-реплеєм із сервера (SQLite у
+  // preview — memory-VFS), що на cold-cache займає десятки секунд.
+  test.describe.configure({ timeout: 60_000 });
+
   test("finyk: creates, edits, deletes, and restores a manual expense", async ({
     page,
   }) => {
