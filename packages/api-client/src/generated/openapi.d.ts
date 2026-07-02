@@ -2574,6 +2574,7 @@ export interface components {
                 nutrition?: unknown;
                 routine?: unknown;
                 overallRecommendations?: string[];
+                correlations?: string[];
             };
         };
         /** @description POST /api/coach/insight. */

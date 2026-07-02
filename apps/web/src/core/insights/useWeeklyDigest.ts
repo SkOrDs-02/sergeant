@@ -10,6 +10,7 @@ import {
   safeWriteLS,
 } from "@shared/lib/storage/storage";
 import { loadDigest as sharedLoadDigest } from "@shared/lib/storage/weeklyDigestStorage";
+import { buildDigestCorrelations } from "./digestCorrelations";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "@finyk/constants";
@@ -458,6 +459,9 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
       queryClient.invalidateQueries({ queryKey: coachKeys.all });
 
       try {
+        // Кореляції рахуються кодом (не LLM) з локальних даних усіх модулів —
+        // коуч отримує «помічені зв'язки» без окремого виклику моделі (WP3).
+        const correlations = buildDigestCorrelations();
         coachApi
           .postMemory({
             weeklyDigest: {
@@ -465,6 +469,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
               weekRange: wr,
               generatedAt,
               ...report,
+              correlations,
             },
           })
           .catch((err: unknown) => {

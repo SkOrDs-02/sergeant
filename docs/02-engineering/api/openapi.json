@@ -2597,6 +2597,12 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "correlations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
