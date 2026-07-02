@@ -333,34 +333,34 @@ importers:
         version: 7.1.6
       '@capacitor-mlkit/barcode-scanning':
         specifier: ^7.5.0
-        version: 7.5.0(@capacitor/core@7.6.7)
+        version: 7.5.0(@capacitor/core@8.4.1)
       '@capacitor/android':
         specifier: ^7.6.7
-        version: 7.6.7(@capacitor/core@7.6.7)
+        version: 7.6.7(@capacitor/core@8.4.1)
       '@capacitor/app':
         specifier: ^7.1.2
-        version: 7.1.2(@capacitor/core@7.6.7)
+        version: 7.1.2(@capacitor/core@8.4.1)
       '@capacitor/core':
-        specifier: ^7.6.7
-        version: 7.6.7
+        specifier: ^8.4.1
+        version: 8.4.1
       '@capacitor/ios':
         specifier: ^7.6.7
-        version: 7.6.7(@capacitor/core@7.6.7)
+        version: 7.6.7(@capacitor/core@8.4.1)
       '@capacitor/keyboard':
         specifier: ^7.0.6
-        version: 7.0.6(@capacitor/core@7.6.7)
+        version: 7.0.6(@capacitor/core@8.4.1)
       '@capacitor/preferences':
         specifier: ^7.0.4
-        version: 7.0.4(@capacitor/core@7.6.7)
+        version: 7.0.4(@capacitor/core@8.4.1)
       '@capacitor/push-notifications':
         specifier: ^7.0.6
-        version: 7.0.6(@capacitor/core@7.6.7)
+        version: 7.0.6(@capacitor/core@8.4.1)
       '@capacitor/splash-screen':
         specifier: ^7.0.5
-        version: 7.0.5(@capacitor/core@7.6.7)
+        version: 7.0.5(@capacitor/core@8.4.1)
       '@capacitor/status-bar':
         specifier: ^7.0.6
-        version: 7.0.6(@capacitor/core@7.6.7)
+        version: 7.0.6(@capacitor/core@8.4.1)
       '@sergeant/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -1910,6 +1910,9 @@ packages:
 
   '@capacitor/core@7.6.7':
     resolution: {integrity: sha512-DR0kqfcsDzWhvskz+sJWy41cdv+P1ITjmOYYG5WSV88EO6tx5Tf82M61vp4NjV7rfQDUAQjBAypgaTiB2/2oEg==}
+
+  '@capacitor/core@8.4.1':
+    resolution: {integrity: sha512-xqhOGLbTAYeOWK+IDUNSjQJAPapQjRHrIcgk9PYp52or9zFTaaMko31uNi16N6W+CRJ8VrRram6fOYILkBG2Hg==}
 
   '@capacitor/ios@7.6.7':
     resolution: {integrity: sha512-ZXw1tO1orV6yDpkJyXxoerLC6S+UW8HFa280TX57Pgo4tPwuqWDF22vInjaolKmL/+k70R+zuRjul+hhiBWvlw==}
@@ -7072,6 +7075,10 @@ packages:
     resolution: {integrity: sha512-SkE2t82KlkkxQRVMVLAGKxLfORGQfrkx5dkj+vlgXRVNEdPc4eZcR+J/Fvj8C+yKSFH5L0q3NFlyufOVQnCcYQ==}
     engines: {node: '>=10.13.0'}
 
+  enhanced-resolve@5.24.1:
+    resolution: {integrity: sha512-7DdUaTjmNwMcH2gLr1qycesKII3BK4RLy/mdAb7x10Lq7bR4aNKHt1BR1ZALSv0rPM/hF5wYF0PhGop/rJm8vw==}
+    engines: {node: '>=10.13.0'}
+
   enquirer@2.4.1:
     resolution: {integrity: sha512-rRqJg/6gd538VHvR3PSrdRBb/1Vy2YfzHqzvbhGIQpDRKIa4FgV/54b5Q1xYSxOOwKvjXweS26E0Q+nAMwp2pQ==}
     engines: {node: '>=8.6'}
@@ -11111,8 +11118,8 @@ packages:
     resolution: {integrity: sha512-3NnuWfM6vBYoy5gZFvHiYsVbafvI9vZv/+jlIigFn4oP4zjNPK3LhcY0xSCgeb1a5L8jO71Mit9LlNoi2UfDDQ==}
     engines: {node: '>=10'}
 
-  serialize-javascript@7.0.5:
-    resolution: {integrity: sha512-F4LcB0UqUl1zErq+1nYEEzSHJnIwb3AF2XWB94b+afhrekOUijwooAYqFyRbjYkm2PAKBabx6oYv/xDxNi8IBw==}
+  serialize-javascript@7.0.6:
+    resolution: {integrity: sha512-ATTK5Q4gFVg0YDp1my2vqygyvhcklD/UV5GIlYHooGTn/NogJqIzpetkD6E5kmuVULqz/S9inUL25XcAgDRJQg==}
     engines: {node: '>=20.0.0'}
 
   serve-static@1.16.3:
@@ -13884,17 +13891,25 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@capacitor-mlkit/barcode-scanning@7.5.0(@capacitor/core@7.6.7)':
+  '@capacitor-mlkit/barcode-scanning@7.5.0(@capacitor/core@8.4.1)':
     dependencies:
-      '@capacitor/core': 7.6.7
+      '@capacitor/core': 8.4.1
 
   '@capacitor/android@7.6.7(@capacitor/core@7.6.7)':
     dependencies:
       '@capacitor/core': 7.6.7
 
+  '@capacitor/android@7.6.7(@capacitor/core@8.4.1)':
+    dependencies:
+      '@capacitor/core': 8.4.1
+
   '@capacitor/app@7.1.2(@capacitor/core@7.6.7)':
     dependencies:
       '@capacitor/core': 7.6.7
+
+  '@capacitor/app@7.1.2(@capacitor/core@8.4.1)':
+    dependencies:
+      '@capacitor/core': 8.4.1
 
   '@capacitor/cli@7.6.7':
     dependencies:
@@ -13922,29 +13937,37 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  '@capacitor/core@8.4.1':
+    dependencies:
+      tslib: 2.8.1
+
   '@capacitor/ios@7.6.7(@capacitor/core@7.6.7)':
     dependencies:
       '@capacitor/core': 7.6.7
 
-  '@capacitor/keyboard@7.0.6(@capacitor/core@7.6.7)':
+  '@capacitor/ios@7.6.7(@capacitor/core@8.4.1)':
     dependencies:
-      '@capacitor/core': 7.6.7
+      '@capacitor/core': 8.4.1
 
-  '@capacitor/preferences@7.0.4(@capacitor/core@7.6.7)':
+  '@capacitor/keyboard@7.0.6(@capacitor/core@8.4.1)':
     dependencies:
-      '@capacitor/core': 7.6.7
+      '@capacitor/core': 8.4.1
 
-  '@capacitor/push-notifications@7.0.6(@capacitor/core@7.6.7)':
+  '@capacitor/preferences@7.0.4(@capacitor/core@8.4.1)':
     dependencies:
-      '@capacitor/core': 7.6.7
+      '@capacitor/core': 8.4.1
 
-  '@capacitor/splash-screen@7.0.5(@capacitor/core@7.6.7)':
+  '@capacitor/push-notifications@7.0.6(@capacitor/core@8.4.1)':
     dependencies:
-      '@capacitor/core': 7.6.7
+      '@capacitor/core': 8.4.1
 
-  '@capacitor/status-bar@7.0.6(@capacitor/core@7.6.7)':
+  '@capacitor/splash-screen@7.0.5(@capacitor/core@8.4.1)':
     dependencies:
-      '@capacitor/core': 7.6.7
+      '@capacitor/core': 8.4.1
+
+  '@capacitor/status-bar@7.0.6(@capacitor/core@8.4.1)':
+    dependencies:
+      '@capacitor/core': 8.4.1
 
   '@colors/colors@1.6.0': {}
 
@@ -16401,7 +16424,7 @@ snapshots:
 
   '@rollup/plugin-terser@1.0.0(rollup@4.62.2)':
     dependencies:
-      serialize-javascript: 7.0.5
+      serialize-javascript: 7.0.6
       smob: 1.6.2
       terser: 5.48.0
     optionalDependencies:
@@ -19513,6 +19536,11 @@ snapshots:
       once: 1.4.0
 
   enhanced-resolve@5.24.0:
+    dependencies:
+      graceful-fs: 4.2.11
+      tapable: 2.3.3
+
+  enhanced-resolve@5.24.1:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3
@@ -24543,7 +24571,7 @@ snapshots:
     dependencies:
       type-fest: 0.20.2
 
-  serialize-javascript@7.0.5: {}
+  serialize-javascript@7.0.6: {}
 
   serve-static@1.16.3:
     dependencies:
@@ -26079,7 +26107,7 @@ snapshots:
       acorn-import-phases: 1.0.4(acorn@8.17.0)
       browserslist: 4.28.2
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.24.0
+      enhanced-resolve: 5.24.1
       es-module-lexer: 2.1.0
       eslint-scope: 5.1.1
       events: 3.3.0
