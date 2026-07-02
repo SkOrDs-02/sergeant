@@ -49,7 +49,7 @@
     "expo-document-picker": "~13.0.3",
     "expo-file-system": "~18.0.12",
     "expo-haptics": "~14.0.1",
-    "expo-image-manipulator": "~13.0.6",
+    "expo-image-manipulator": "~56.0.19",
     "expo-image-picker": "~16.0.6",
     "expo-keep-awake": "~14.0.1",
     "expo-linear-gradient": "~14.0.2",
