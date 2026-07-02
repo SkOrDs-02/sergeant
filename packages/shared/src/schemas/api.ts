@@ -552,6 +552,7 @@ export const CoachMemoryPostSchema = z.object({
       nutrition: z.unknown().optional(),
       routine: z.unknown().optional(),
       overallRecommendations: z.array(z.string()).optional(),
+      correlations: z.array(z.string()).optional(),
     })
     .optional(),
 });

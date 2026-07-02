@@ -24,6 +24,7 @@ interface WeeklyDigestEntry {
   nutrition?: { summary?: string } | null | undefined;
   routine?: { summary?: string } | null | undefined;
   overallRecommendations?: string[] | undefined;
+  correlations?: string[] | undefined;
 }
 
 interface CoachMemory {
@@ -42,6 +43,7 @@ interface IncomingMemory {
     nutrition?: { summary?: string } | null;
     routine?: { summary?: string } | null;
     overallRecommendations?: string[];
+    correlations?: string[];
   };
 }
 
@@ -134,6 +136,7 @@ function mergeMemory(
       routine: incoming.weeklyDigest.routine ?? null,
       overallRecommendations:
         incoming.weeklyDigest.overallRecommendations ?? [],
+      correlations: incoming.weeklyDigest.correlations ?? [],
     };
     const existingIdx = digests.findIndex((d) => d.weekKey === entry.weekKey);
     if (existingIdx >= 0) {
@@ -195,6 +198,25 @@ function buildMemorySummary(memory: CoachMemory | null): string {
   if (routineSummaries.length) {
     lines.push("Звички (по тижнях):");
     lines.push(...routineSummaries.slice(0, 4));
+  }
+
+  // Помічені зв'язки — крос-модульні кореляції, пораховані КОДОМ на клієнті
+  // (не LLM) під час weekly-digest. Даємо коучу «у дні тренувань ти витрачаєш
+  // менше» без окремого виклику моделі. Найсвіжіші тижні першими, дедуп.
+  const seenCorr = new Set<string>();
+  const correlations: string[] = [];
+  for (const d of digests) {
+    for (const c of d.correlations || []) {
+      if (seenCorr.has(c)) continue;
+      seenCorr.add(c);
+      correlations.push(c);
+      if (correlations.length >= 4) break;
+    }
+    if (correlations.length >= 4) break;
+  }
+  if (correlations.length) {
+    lines.push("Помічені зв'язки:");
+    correlations.forEach((c) => lines.push(`  • ${c}`));
   }
 
   const allRecs = digests

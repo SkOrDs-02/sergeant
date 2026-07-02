@@ -330,6 +330,31 @@ describe("coachMemoryPost — mergeMemory logic (PR F)", () => {
     );
     expect(keys[0]).toBe("2026-W01");
   });
+
+  it("зберігає correlations у записі digest (WP3)", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [] }) // getMemory → немає
+      .mockResolvedValueOnce({ rows: [] }); // INSERT
+
+    const req = {
+      user: { id: "user_1" },
+      body: {
+        weeklyDigest: {
+          weekKey: "2026-W20",
+          correlations: ["у дні тренувань ти витрачаєш менше (r=-0.52, 14 дн)"],
+        },
+      },
+    };
+    await coachMemoryPost(asReq(req), makeRes());
+
+    const insertCall = pool.query.mock.calls[1] as [string, unknown[]];
+    const saved = JSON.parse(insertCall[1][1] as string) as {
+      weeklyDigests: Array<{ correlations?: string[] }>;
+    };
+    expect(saved.weeklyDigests[0]!.correlations).toEqual([
+      "у дні тренувань ти витрачаєш менше (r=-0.52, 14 дн)",
+    ]);
+  });
 });
 
 describe("coachMemoryGet — parseMemory raw-fallback warn", () => {
