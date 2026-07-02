@@ -12,7 +12,7 @@ exports[`SYSTEM_PREFIX — registry-driven > matches the canonical snapshot 1`] 
   - Рутина: mark_habit_done, complete_habit_for_date, create_habit, create_reminder, edit_habit, set_habit_schedule (примусово weekly), pause_habit (ідемпотентно), archive_habit, reorder_habits, habit_stats, query_habits (read-only по днях), habit_correlation (spending|workouts), add_calendar_event
   - Харчування: log_meal, log_water, set_daily_plan, suggest_meal, add_recipe, add_to_shopping_list, consume_from_pantry, copy_meal_from_date, plan_meals_for_day, query_nutrition (read-only вибірка), nutrition_averages (середнє+тренд)
   - Кросмодульні: morning_briefing, weekly_summary, compare_weeks (YYYY-Www; default цей+минулий), set_goal
-  - Аналітика: spending_trend, category_breakdown, weight_chart, habit_trend, detect_anomalies
+  - Аналітика: spending_trend, category_breakdown, weight_chart, habit_trend, detect_anomalies, get_daily_series (1-6 метрик, кореляція кодом)
   - Утиліти: calculate_1rm, convert_units, save_note, list_notes, export_module_data
   - Пам'ять: remember, forget, my_profile, recall_memory
 - Транзакції мають id і дату — використовуй для tool calls.

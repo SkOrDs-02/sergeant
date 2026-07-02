@@ -79,6 +79,7 @@ import type {
   SpendingTrendAction,
   WeightChartAction,
   CategoryBreakdownAction,
+  GetDailySeriesAction,
   DetectAnomaliesAction,
   CompareWeeksAction,
   ConvertUnitsAction,
@@ -187,6 +188,7 @@ export type {
   SpendingTrendAction,
   WeightChartAction,
   CategoryBreakdownAction,
+  GetDailySeriesAction,
   DetectAnomaliesAction,
   CompareWeeksAction,
   CompareWeeksModule,
@@ -268,6 +270,7 @@ export type ChatAction =
   | SpendingTrendAction
   | WeightChartAction
   | CategoryBreakdownAction
+  | GetDailySeriesAction
   | DetectAnomaliesAction
   | CompareWeeksAction
   | ConvertUnitsAction
