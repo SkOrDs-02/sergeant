@@ -1,6 +1,6 @@
 # Sergeant — Спринтовий роадмап Q2–Q3 2026
 
-> **Last validated:** 2026-05-31 by Claude (child session — Спринт 8 close-out звірка: T4-B react-markdown swap підтверджено shipped; решта cuts (@dnd-kit / react-virtuoso / vendor-sqlite-lazy / drizzle tree-shake / replayIntegration drop) — досі open у коді; size gate дрейфнув 870→880 kB; T5 Lighthouse — досі warn-only. Раніше того ж дня — Спринт 6 close-out: O4 dedup + T1 HubDashboard зашиплені; O3 first-pass). Раніше: 2026-05-13 by Devin (T5 closed; T2/T3/T6/T10/O6/O7 закриті раніше). **Next review:** 2026-07-01.
+> **Last validated:** 2026-07-02 by @claude (cadence-review при аналізі відкритої роботи: стан Спринту 8 незмінний — T4-B cuts + T5 tightening досі open). Раніше: 2026-05-31 by Claude (child session — Спринт 8 close-out звірка: T4-B react-markdown swap підтверджено shipped; решта cuts (@dnd-kit / react-virtuoso / vendor-sqlite-lazy / drizzle tree-shake / replayIntegration drop) — досі open у коді; size gate дрейфнув 870→880 kB; T5 Lighthouse — досі warn-only. Раніше того ж дня — Спринт 6 close-out: O4 dedup + T1 HubDashboard зашиплені; O3 first-pass). Раніше: 2026-05-13 by Devin (T5 closed; T2/T3/T6/T10/O6/O7 закриті раніше). **Next review:** 2026-07-28.
 > **Status:** Active — Спринти 6-7 реалізаційно закриті; Спринт 8 частковий (T4-A + T4-B react-markdown + T6 shipped; решта T4-B cuts + T5 tightening open); за календарем активне вікно — Спринт 7
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.

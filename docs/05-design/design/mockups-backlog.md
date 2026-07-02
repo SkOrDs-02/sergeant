@@ -1,7 +1,7 @@
 # Mockups · Backlog
 
-> **Last validated:** 2026-05-18 by @Skords-01.
-> **Next review:** 2026-07-01.
+> **Last validated:** 2026-07-02 by @claude (cadence-review: беклог без змін, статуси актуальні).
+> **Next review:** 2026-08-13.
 > **Status:** Active.
 > **Maintainer:** founder + Claude (designer-assistant).
 
