@@ -1,6 +1,6 @@
 # Agents in apps/server
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last touched:** 2026-07-02 by @dimastahov16012003. **Next review:** 2026-09-30.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють у `apps/server/`. Не дублюй repo policy: hard rules і CI matrix живуть у корені.
@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-Node 20 + Express + PostgreSQL 17 (`pg`) + Better Auth (cookie + bearer) + Anthropic Claude (tool-use, streaming) + Voyage embeddings (AI memory). Деплой: Railway via [`Dockerfile.api`](../../Dockerfile.api). Тести: Vitest unit + Testcontainers (real Postgres) інтеграційні.
+Node 22 + Express + PostgreSQL 17 (`pg`) + Better Auth (cookie + bearer) + Anthropic Claude (tool-use, streaming) + Voyage embeddings (AI memory). Деплой: Railway via [`Dockerfile.api`](../../Dockerfile.api). Тести: Vitest unit + Testcontainers (real Postgres) інтеграційні.
 
 ## Quick commands
 

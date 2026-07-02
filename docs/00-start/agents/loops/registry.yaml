@@ -31,7 +31,7 @@ loops:
     related_skills:
       [sergeant-review-squad, sergeant-server-api, sergeant-security-audit]
     goal: React to open PRs with safety review, contract checks, docs freshness, commit scope
-    cadence: 5m-15m
+    cadence: twice-weekly (Mon+Thu ~10:00 Kyiv)
     risk: medium
     tools: [claude-code, kilo-code, codex, github-actions]
     skills: [sergeant-review-and-merge, sergeant-review-squad]
@@ -41,7 +41,9 @@ loops:
     hard_rules_ref: ["#3", "#6", "#7", "#15", "#26"]
     starter: null
     week_one_mode: L1
-    enabled: false
+    enabled: true
+    status: active
+    runner: "owner-machine Claude scheduled task pr-triage-weekly (поза репо)"
     token_cost: high
     cost:
       tokens_noop: 5000
@@ -72,6 +74,7 @@ loops:
     starter: null
     week_one_mode: L2
     enabled: false
+    status: designed
     token_cost: medium
     cost:
       tokens_noop: 5000
@@ -103,6 +106,7 @@ loops:
     starter: null
     week_one_mode: L1
     enabled: false
+    status: designed
     token_cost: medium
     cost:
       tokens_noop: 5000
@@ -132,6 +136,7 @@ loops:
     starter: null
     week_one_mode: L2
     enabled: false
+    status: designed
     token_cost: low
     cost:
       tokens_noop: 3000
@@ -161,6 +166,8 @@ loops:
     starter: null
     week_one_mode: L2
     enabled: false
+    status: blocked-on-infra
+    note: "Grafana Alloy + n8n паузовано 2026-06-28 (railway down); Sentry→Telegram alert chain непрацездатний — вмикати після redeploy observability."
     token_cost: medium
     cost:
       tokens_noop: 5000
@@ -190,6 +197,7 @@ loops:
     starter: null
     week_one_mode: L1
     enabled: false
+    status: designed
     token_cost: low
     cost:
       tokens_noop: 3000
@@ -220,6 +228,7 @@ loops:
     starter: null
     week_one_mode: L1
     enabled: false
+    status: designed
     token_cost: very-high
     cost:
       tokens_noop: 5000
@@ -255,6 +264,7 @@ loops:
     starter: null
     week_one_mode: L1
     enabled: false
+    status: designed
     token_cost: very-high
     cost:
       tokens_noop: 5000
@@ -289,6 +299,7 @@ loops:
     starter: null
     week_one_mode: L1
     enabled: true
+    status: manual
     token_cost: high
     cost:
       tokens_noop: 0
@@ -318,6 +329,7 @@ loops:
     starter: null
     week_one_mode: L1
     enabled: true
+    status: manual
     token_cost: medium
     cost:
       tokens_noop: 0
