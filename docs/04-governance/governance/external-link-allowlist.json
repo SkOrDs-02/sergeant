@@ -141,6 +141,10 @@
     {
       "pattern": "^https?://agentskills\\.so(/|$)",
       "reason": "Каталог agent-скілів, цитований у docs/00-start/agents/skills-evolution-roadmap.md; хост періодично обриває запити CI link-checker-а по таймауту ('This operation was aborted') хоча рендериться у браузері — flaky external, зафіксовано на PR #90 (2026-07-01)."
+    },
+    {
+      "pattern": "^https?://fakerjs\\.dev(/|$)",
+      "reason": "Faker docs host cited in docs/90-work/planning/tools-research-2026-05.md; CI checker intermittently aborts (timeout) on this host — failed two consecutive PR runs 2026-07-01/02 with 'This operation was aborted' while the site renders fine in browsers."
     }
   ]
 }
