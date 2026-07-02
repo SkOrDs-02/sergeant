@@ -4,7 +4,7 @@
   "generated_at": "2026-07-02",
   "sourceHashes": {
     "knowledge-graph": "593b74a1921b848991eef3f34fa729e05274c0fa4a1baa6f4261f35a97668afe",
-    "symbol-index": "0da672f03c69da0e6f6e554294eba3d08e53c819e1dc5da3e37ef027cb599227"
+    "symbol-index": "a725d91e4e15d7ecea71cb396a249f914345ea00a8c223514dda2e12f613b60b"
   },
   "counts": {
     "adr": 69,
@@ -2934,8 +2934,8 @@
       "path": "packages/design-tokens/index.d.ts",
       "title": "ModuleAccent (type)",
       "tier": "extended",
-      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 18×",
-      "contentHash": "c18594d0840e5417653e3bc44547dd130666e0359659d8b5e9e331573c8a4781"
+      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 17×",
+      "contentHash": "b8fc95cfb164a7458365df1ae05032e108b1bcd2dabc7ee534ee57ee762d5822"
     },
     {
       "id": "export:@sergeant/design-tokens:moduleAccentRgb",

@@ -2,8 +2,8 @@
   "$schema": "../../docs/04-governance/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
   "generated_at": "2026-07-02",
-  "package": "@sergeant/web",
-  "entryFile": null,
+  "package": "@sergeant/entropy-janitors",
+  "entryFile": "tools/entropy-janitors/src/index.ts",
   "stats": {
     "exportCount": 0,
     "totalImporters": 0,
