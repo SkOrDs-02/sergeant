@@ -14,6 +14,22 @@ vi.mock("@shared/hooks/useToast", () => ({
   }),
 }));
 
+// Журнал ваги персиститься через dual-write пайплайн (SQLite — source of
+// truth після Stage 12 / PR #070f), а не через localStorage — перехоплюємо
+// trigger, щоб асертити дзеркалення Profile-ваги у fizruk daily log.
+const dualWriteTriggerMock = vi.fn();
+vi.mock("../../modules/fizruk/lib/dualWrite/index", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("../../modules/fizruk/lib/dualWrite/index")
+    >();
+  return {
+    ...actual,
+    triggerFizrukDualWrite: (...args: unknown[]) =>
+      dualWriteTriggerMock(...args),
+  };
+});
+
 import { BIOMETRICS_DEFAULT, type Biometrics } from "./biometrics";
 import { BiometricsSection } from "./BiometricsSection";
 
@@ -107,7 +123,7 @@ describe("BiometricsSection", () => {
     expect(toastSuccessMock).toHaveBeenCalledWith("Біометрію збережено");
   });
 
-  it("mirrors a Profile-side weight write into fizruk_daily_log_v1", () => {
+  it("mirrors a Profile-side weight write into the fizruk daily log (dual-write)", () => {
     render(<BiometricsSection />);
 
     fireEvent.change(screen.getByLabelText("Поточна вага (кг)"), {
@@ -115,11 +131,13 @@ describe("BiometricsSection", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
 
-    const log = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.FIZRUK_DAILY_LOG) ?? "[]",
-    );
-    expect(log).toHaveLength(1);
-    expect(log[0].weightKg).toBe(70);
+    expect(dualWriteTriggerMock).toHaveBeenCalledTimes(1);
+    const [, nextState] = dualWriteTriggerMock.mock.calls[0] as [
+      unknown,
+      { dailyLog: Array<{ weightKg: number | null }> },
+    ];
+    expect(nextState.dailyLog).toHaveLength(1);
+    expect(nextState.dailyLog[0]?.weightKg).toBe(70);
   });
 
   it("shows the activity-level hint when one is selected", () => {
