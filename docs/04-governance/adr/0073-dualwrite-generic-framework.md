@@ -1,9 +1,9 @@
 # ADR-0073: Generic dual-write framework для 4 модульних пайплайнів
 
 > **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
-> **Status:** Proposed
+> **Status:** Accepted
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-03
 - **Deciders:** @Skords-01
 - **Supersedes:** —
@@ -189,19 +189,19 @@ export function createDualWriteOrchestrator<S, Op>(
 
 **Крок 3 — routine (web).** Особливості: outbox-side-effect (`enqueueOutboxUpsert`) оформлюється як per-handler код, НЕ як generic hook (semantic, див. нижче); `habit-rename` LIKE-cascade — ручний handler без білдера. Гейт: snapshot байт-ідентичний **включно з порядком** `client.run` → `enqueueOutboxUpsert`; integration-тест outbox-у зелений.
 
-**Крок 4 — fizruk (web).** Перший `errorPolicy: "atomic-batch"`. Гейт: snapshot фіксує і `BEGIN`/`COMMIT`/`ROLLBACK`; тест «помилка в середині батча → rollback, errored = ops.length» (вже існує в `__tests__/adapter.test.ts`) зелений.
+**Крок 4 — fizruk (web).** Передумова (рішення Open question #1): окремий semantic-change PR вирівнює web-fizruk з `atomic-batch` на `best-effort` (у ньому оновлюються existing тести і SQL-snapshot — це зміна специфікації, не міграція). Після цього крок 4 — звичайна best-effort міграція; `errorPolicy: "atomic-batch"` лишається в API фреймворку невикористаним. Гейт: пост-вирівняльний snapshot байт-ідентичний.
 
 **Крок 5 — finyk (web).** Найбільший: 5 сімейств таблиць, `upsertGuard: "none"` + `deletePolicy: "hard"` для per-tx мапінгів, orchestrator-фабрика з `scheduling: "single-flight"` і `afterApply` (cache refresh). Гейт: snapshot байт-ідентичний; `chatBridge.test.ts` + DCRUD-007 сценарії зелені; ручний прогін web із Sentry-тегами `dualwrite.finyk.*` (наявність тегів — smoke).
 
 **Кроки 6–9 — mobile (finyk → nutrition → routine → fizruk).** Ті самі spec-и, але **окремі** від web (mobile-fizruk має власні op-kinds і `errorPolicy: "best-effort"` — фіксуємо as-is, НЕ «вирівнюємо» під web без окремого рішення). Гейт кожного: mobile Jest-suite зелений, mobile SQL-snapshot байт-ідентичний, `pnpm --filter @sergeant/mobile typecheck`.
 
-**Крок 10 (опційний, окреме рішення) — residualImport-скелет.** Тільки `STALE_TIMESTAMP` + `drainResidual`. Гейт: `residualImport.test.ts` усіх модулів зелені без змін.
+**Крок 10 — скасовано** (рішення Open question #6, 2026-07-03): residualImport-и (boot-path) лишаються as-is, у scope ініціативи не входять.
 
 Rollback-важіль: кожен крок — ізольований PR, який чіпає один пайплайн; revert одного PR повертає один пайплайн на локальну реалізацію, не зачіпаючи інші.
 
 ## Що ми свідомо НЕ абстрагуємо (semantic, not incidental)
 
-1. **Error policy web-fizruk (атомарний батч).** Коментар в адаптері обґрунтовує атомарність («половина diff-а = стан, якого ніколи не було в LS»); аргумент однаково застосовний до інших 3 пайплайнів, але вони best-effort. Це або свідомий trade-off (fizruk-diff «крихкіший»), або дрейф — ми **не знаємо напевно** (Open question #1). Фреймворк зберігає обидві політики як параметр і нічого не вирівнює.
+1. **Error policy web-fizruk (атомарний батч).** ~~Було open question~~ — **вирішено 2026-07-03 (Open question #1): web-fizruk вирівнюється на best-effort** окремим semantic-change PR до кроку 4. Фреймворк зберігає `errorPolicy` як параметр API, але після вирівнювання всі 8 пайплайнів — best-effort.
 2. **finyk per-tx мапінги: hard DELETE без LWW-guard-а.** Задокументовано в коді як by-design («absence is the no-override state»). Узагальнювати guard на них — зміна семантики.
 3. **routine outbox-enqueue всередині adapter-а.** Це міст dual-write → sync-v2 (ADR-0065-суміжна територія), єдиний у 4 пайплайнах. Робити з нього generic `afterOp`-hook — передчасна абстракція на N=1; лишається кодом handler-а.
 4. **Diff-функції повністю.** `composeEatenAt`, `buildCompletionRowId`, per-shape diff-и fizruk — доменна логіка.
@@ -238,22 +238,24 @@ Rollback-важіль: кожен крок — ізольований PR, яки
 4. **Hard Rule #18:** finyk-spec-файл може вирости >600 eff LOC — ділити по сімействах таблиць одразу (за прикладом fizruk `ops/*`).
 5. **`this`-подібні незадокументовані розбіжності** (див. Open questions) можуть виявитись багами, які snapshot-гейт «заморозить» як специфікацію. _Мітигація:_ кожен Open question — рішення власника до відповідного кроку; знайдений баг фікситься **до** міграції відповідного пайплайна окремим PR-ом.
 
-## Open questions (потрібне рішення власника)
+## Open questions — рішення власника (2026-07-03)
 
-1. **web-fizruk атомарний батч vs best-effort усіх інших (і mobile-fizruk).** Навмисно чи дрейф? Якщо навмисно — чому аргумент атомарності не застосовано до інших 3; якщо дрейф — у який бік вирівнювати (окремим PR-ом до або після кроку 4). Ми не змогли довести навмисність з коду/доків.
-2. **finyk hard-DELETE без guard-а на per-tx мапінгах** — підтверджено коментарем, але у гонці «delete на пристрої A, новіший upsert на пристрої B» delete виграє незалежно від часу. Прийнятно (absence = no-override) чи баг? Впливає на `deletePolicy` дефолти.
-3. **Дім пакета:** новий `packages/dualwrite-core` vs розширення `@sergeant/db-schema` (де вже живе `SqliteMigrationClient`). Питання межі — `sergeant-monorepo-boundaries`; впливає на крок 1.
-4. **`created_at`-семантика:** routine `habit-upsert` зберігає `h.createdAt ?? clientTs`, решта пайплайнів завжди пишуть `clientTs`. Навмисно (routine має справжній createdAt в домені) чи неконсистентність, яку варто зафіксувати як параметр `createdAt: "entity-or-clientTs"`? (У sketch-і — параметр; підтвердити.)
-5. **Відсутність `created_at` у `nutrition_water_log`/`nutrition_shopping_list`** — схемна навмисність чи спрощення? Впливає лише на `TableSpec.createdAt: "absent"`.
-6. **Scope residualImport:** чи входить крок 10 в ініціативу взагалі (виграш мінімальний — константа + скелет; ризик ненульовий, бо це boot-path).
-7. **mobile-логер `console.warn`** (fizruk mobile) — мігрувати на ін'єктований логер у межах кроків 6–9 чи лишити as-is до окремого mobile-observability рішення?
+Усі 7 питань закриті рішенням власника (@Skords-01, сесія 2026-07-03):
+
+1. **web-fizruk атомарний батч vs best-effort.** ✅ **Рішення: вирівняти web-fizruk на best-effort** (як усі інші пайплайни, включно з mobile-fizruk). Вирівнювання — **окремий semantic-change PR до кроку 4** (не міграційний: у ньому дозволено оновити existing тести і SQL-snapshot, бо міняється специфікація). Після цього `errorPolicy: "atomic-batch"` лишається в API фреймворку як параметр, але жоден пайплайн його не використовує.
+2. **finyk hard-DELETE без guard-а.** ✅ **Рішення: прийняти as-is** (absence = no-override — остання воля користувача). `deletePolicy: "hard"` + `upsertGuard: "none"` фіксуються snapshot-гейтом як специфікація.
+3. **Дім пакета.** ✅ **Рішення: новий `packages/dualwrite-core`.** Крок 1 розблоковано.
+4. **`created_at`-семантика.** ✅ **Рішення: уніфікувати всі пайплайни** — єдина семантика `entity.createdAt ?? clientTs` (для сутностей без доменного createdAt це factually еквівалентно поточному `clientTs`, тож поведінка міняється лише там, де доменний createdAt існує і раніше ігнорувався). Параметр `createdAt: "entity-or-clientTs"` стає єдиним значенням; зміни поведінки поза routine — задокументувати в міграційному PR відповідного пайплайна.
+5. **`created_at` у `nutrition_water_log`/`nutrition_shopping_list`.** ✅ **Рішення: додати колонки** окремим migration-PR (ADD COLUMN, two-phase не потрібен) **до кроку 2**; після цього `TableSpec.createdAt: "absent"` для цих таблиць знімається.
+6. **Scope residualImport.** ✅ **Рішення: крок 10 скасовано** — boot-path не чіпаємо, виграш не виправдовує ризик.
+7. **mobile-логер `console.warn`.** ✅ **Рішення: полагодити в межах кроків 6–9** — ін'єктований логер під час міграції mobile-fizruk (файл і так переписується).
 
 ## Compliance
 
 - **Гейт байт-ідентичності:** SQL-snapshot-тести з кроку 0 живуть поруч з адаптерами (`*.sqlsnapshot.test.ts`), ганяються звичайним `pnpm check`; будь-який міграційний PR, що міняє snapshot, — червоний за визначенням.
 - **Заборона правити тести в міграційних PR** — перевіряється на рев'ю (`sergeant-review-and-merge`); PR-body зобов'язаний містити рядок «tests untouched: yes/no + чому».
 - Після завершення міграції: janitor-перевірка «нових локальних копій `applyDualWriteOps`-циклу немає» — grep-правило в entropy-janitors (`tools/entropy-janitors/`), issue-only.
-- Статус цього ADR: `Proposed` → `Accepted` після рішення власника по Open questions #1–#3 (мінімально достатній набір для кроку 1).
+- Статус цього ADR: `Accepted` 2026-07-03 — власник закрив усі 7 open questions (див. § Open questions); крок 1 розблоковано.
 
 ## Links
 

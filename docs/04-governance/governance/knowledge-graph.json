@@ -789,7 +789,7 @@
       "type": "adr",
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "path": "docs/04-governance/adr/0073-dualwrite-generic-framework.md",
-      "status": "Proposed",
+      "status": "Accepted",
       "tier": "core",
       "meta": {
         "number": 73,
