@@ -10,6 +10,8 @@ import { ThemeSwitcher } from "@shared/components/ui/ThemeSwitcher";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { BrandLogo } from "./BrandLogo";
 import { messages } from "@shared/i18n/uk";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
+import { hapticTap } from "@shared/lib/adapters/haptic";
 import type { User } from "@sergeant/shared";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { useHubPref } from "../settings/hubPrefs";
@@ -124,6 +126,34 @@ export function HubHeader({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
+          {/* Global AI-assistant entry. Lives in the hub top-bar so it is
+              reachable from every hub tab and does not depend on the
+              dashboard-only FTUX-gated FAB (which vanished on the empty
+              home + on the reports/profile tabs — user report 2026-07-03).
+              Brand-tinted so it reads as the primary AI affordance rather
+              than neutral chrome. Opens the chat bottom-sheet via the hub
+              bus, same contract as the module-shell assistant buttons. */}
+          <Tooltip
+            content={messages.nav.openAssistant}
+            placement="bottom-center"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                hapticTap();
+                emitHubBus("openChat", { message: null, autoSend: false });
+              }}
+              aria-label={messages.nav.openAssistant}
+              className={cn(
+                "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl",
+                "bg-brand-soft text-brand-strong hover:bg-brand-soft-hover transition-colors",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              )}
+            >
+              <Icon name="sparkle" size="lg" />
+            </button>
+          </Tooltip>
+
           <Tooltip
             content={`Пошук по всіх модулях (${modK})`}
             placement="bottom-center"
@@ -190,13 +220,6 @@ export function HubHeader({
               </button>
             </Tooltip>
           )}
-
-          {/* AI-assistant entry was previously surfaced here as a sparkle
-              icon (#1507) after the floating FAB was retired in #1357. It
-              was reverted: the header now stays focused on Search +
-              theme/auth chrome, and the assistant is reachable via the
-              dashboard FAB rendered by `HubHomeView`. ⌘K → «Запитати
-              асистента» and the `/chat` deep-link continue to work. */}
 
           {/* Theme switcher: 4-mode (`light` / `dark` / `system` / `hc`).
               Header uses the `dropdown` variant (single trigger, ~50px)

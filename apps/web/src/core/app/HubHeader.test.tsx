@@ -25,6 +25,12 @@ vi.mock("@shared/components/ui/Tooltip", () => ({
 vi.mock("./BrandLogo", () => ({
   BrandLogo: () => <div data-testid="brand-logo" />,
 }));
+vi.mock("@shared/lib/modules/hubBus", () => ({
+  emitHubBus: vi.fn(),
+}));
+vi.mock("@shared/lib/adapters/haptic", () => ({
+  hapticTap: vi.fn(),
+}));
 vi.mock("./NotificationBell", () => ({
   NotificationBell: ({ notifications }: { notifications: unknown[] }) => (
     <div data-testid="bell" data-count={notifications.length} />
@@ -32,6 +38,7 @@ vi.mock("./NotificationBell", () => ({
 }));
 
 import { HubHeader } from "./HubHeader";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 
 function baseProps() {
   return {
@@ -75,6 +82,17 @@ describe("HubHeader", () => {
     });
     render(<HubHeader {...baseProps()} />);
     expect(screen.getByText(/Доброї ночі/)).toBeInTheDocument();
+  });
+
+  it("opens the assistant chat via the hub bus", () => {
+    render(<HubHeader {...baseProps()} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Відкрити AI-асистента" }),
+    );
+    expect(emitHubBus).toHaveBeenCalledWith("openChat", {
+      message: null,
+      autoSend: false,
+    });
   });
 
   it("fires onOpenSearch when the search button is clicked", () => {
