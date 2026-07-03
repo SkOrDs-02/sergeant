@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, dirname, join } from "node:path";
@@ -17,12 +17,16 @@ function runDrift(
   let output = "";
   let exitCode = 0;
   try {
-    output = execSync(`node scripts/check-schema-drift.mjs ${args}`, {
-      cwd: ROOT,
-      encoding: "utf8",
-      stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env, ...env },
-    });
+    output = execFileSync(
+      "node",
+      ["scripts/check-schema-drift.mjs", ...args.split(" ").filter(Boolean)],
+      {
+        cwd: ROOT,
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, ...env },
+      },
+    );
   } catch (err: unknown) {
     const e = err as { stdout?: string; status?: number };
     output = e.stdout ?? "";
@@ -42,19 +46,7 @@ function runDrift(
  */
 describe("Drizzle schema ↔ SQL migration drift", () => {
   it("reports no drift between packages/db-schema/src/pg and migrations", () => {
-    let output = "";
-    let exitCode = 0;
-    try {
-      output = execSync("node scripts/check-schema-drift.mjs --json", {
-        cwd: ROOT,
-        encoding: "utf8",
-        stdio: ["pipe", "pipe", "pipe"],
-      });
-    } catch (err: unknown) {
-      const e = err as { stdout?: string; stderr?: string; status?: number };
-      output = e.stdout ?? "";
-      exitCode = e.status ?? 1;
-    }
+    const { output, exitCode } = runDrift("--json");
 
     let result: {
       ok: boolean;
