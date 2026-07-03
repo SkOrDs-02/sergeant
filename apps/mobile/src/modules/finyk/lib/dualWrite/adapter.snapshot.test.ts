@@ -1,7 +1,7 @@
 /**
- * SQL-snapshot gate — ADR-0073 Крок 0.
+ * SQL-snapshot gate — ADR-0073 Крок 0 (mobile).
  *
- * Фіксує байт-точну послідовність `(sql, params)`, яку finyk-адаптер
+ * Фіксує байт-точну послідовність `(sql, params)`, яку mobile-finyk-адаптер
  * виконує для канонічного набору операцій (по одній кожного kind).
  * Це специфікація поведінки пайплайна ПЕРЕД міграцією на
  * `@sergeant/dualwrite-core`: міграційні PR-и (Кроки 2-9) мають лишати
@@ -10,10 +10,13 @@
  * semantic-change PR з явним поясненням (див. ADR-0073 § Міграційний
  * план і § Ризики).
  *
+ * Дзеркало канонічного веб-гейта
+ * `apps/web/src/modules/finyk/lib/dualWrite/adapter.snapshot.test.ts`,
+ * адаптоване під Jest (mobile-рig) замість Vitest.
+ *
  * AI-DANGER: не оновлюй `__snapshots__/adapter.snapshot.test.ts.snap`
  * «щоб тест пройшов» — розберись, чому SQL змінився.
  */
-import { describe, expect, it, vi } from "vitest";
 import { applyFinykDualWriteOps } from "./adapter";
 import type { FinykDualWriteOp } from "./diff";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -21,7 +24,7 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 function makeRecordingClient() {
   const calls: Array<{ sql: string; params: readonly unknown[] }> = [];
   const client = {
-    run: vi.fn((sql: string, params?: readonly unknown[]) => {
+    run: jest.fn((sql: string, params?: readonly unknown[]) => {
       calls.push({ sql, params: params ?? [] });
       return Promise.resolve(undefined);
     }),
@@ -76,9 +79,9 @@ const CANONICAL_OPS: FinykDualWriteOp[] = [
       dismissedRecurringJson: "[]",
     },
   },
-];
+] as never;
 
-describe("finyk dual-write SQL snapshot (ADR-0073 Крок 0)", () => {
+describe("mobile finyk dual-write SQL snapshot (ADR-0073 Крок 0)", () => {
   it("emits a byte-stable (sql, params) sequence for the canonical op set", async () => {
     const { client, calls } = makeRecordingClient();
 

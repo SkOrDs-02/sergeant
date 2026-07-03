@@ -1,0 +1,246 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`mobile routine dual-write SQL snapshot (ADR-0073 Крок 0) emits a byte-stable (sql, params) sequence for the canonical op set 1`] = `
+[
+  {
+    "params": [
+      "h1:2026-06-22",
+      "u1",
+      "Вода",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_entries
+           (id, user_id, name, completed_at, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           completed_at = excluded.completed_at,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_entries.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "h1:2026-06-21",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_entries
+            SET deleted_at = ?, updated_at = ?
+          WHERE id = ?
+            AND user_id = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "Вода 2л",
+      "2026-06-23T00:00:00.000Z",
+      "u1",
+      "h1:%",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_entries
+            SET name = ?, updated_at = ?
+          WHERE user_id = ?
+            AND id LIKE ?
+            AND deleted_at IS NULL
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "h1",
+      "u1",
+      "Вода 2л",
+      "💧",
+      "["tag1"]",
+      "cat1",
+      0,
+      0,
+      "daily",
+      "2026-06-01",
+      null,
+      "morning",
+      "["08:00"]",
+      "[1,2,3,4,5]",
+      "2026-06-01T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_habits
+           (id, user_id, name, emoji, tag_ids_json, category_id,
+            archived, paused, recurrence, start_date, end_date,
+            time_of_day, reminder_times_json, weekdays_json,
+            created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           emoji = excluded.emoji,
+           tag_ids_json = excluded.tag_ids_json,
+           category_id = excluded.category_id,
+           archived = excluded.archived,
+           paused = excluded.paused,
+           recurrence = excluded.recurrence,
+           start_date = excluded.start_date,
+           end_date = excluded.end_date,
+           time_of_day = excluded.time_of_day,
+           reminder_times_json = excluded.reminder_times_json,
+           weekdays_json = excluded.weekdays_json,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_habits.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "h1",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_habits
+            SET deleted_at = ?, updated_at = ?
+          WHERE id = ?
+            AND user_id = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "tag1",
+      "u1",
+      "здоровʼя",
+      "",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_tags
+           (id, user_id, name, scope, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           scope = excluded.scope,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_tags.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "tag1",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_tags
+            SET deleted_at = ?, updated_at = ?
+          WHERE id = ?
+            AND user_id = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "cat1",
+      "u1",
+      "Ранок",
+      "🌅",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_categories
+           (id, user_id, name, emoji, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           emoji = excluded.emoji,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_categories.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "cat1",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_categories
+            SET deleted_at = ?, updated_at = ?
+          WHERE id = ?
+            AND user_id = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "{"weekStart":"monday"}",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_prefs (user_id, data_json, updated_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET
+           data_json = excluded.data_json,
+           updated_at = excluded.updated_at
+         WHERE excluded.updated_at > routine_prefs.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "2026-06-22",
+      40,
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_pushups (user_id, date_key, reps, updated_at)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(user_id, date_key) DO UPDATE SET
+           reps = excluded.reps,
+           updated_at = excluded.updated_at
+         WHERE excluded.updated_at > routine_pushups.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "["h1","h2"]",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_habit_order (user_id, order_json, updated_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET
+           order_json = excluded.order_json,
+           updated_at = excluded.updated_at
+         WHERE excluded.updated_at > routine_habit_order.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "h1:2026-06-22",
+      "легко",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_completion_notes
+           (user_id, note_key, note, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, NULL)
+         ON CONFLICT(user_id, note_key) DO UPDATE SET
+           note = excluded.note,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_completion_notes.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "u1",
+      "h1:2026-06-21",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_completion_notes
+            SET deleted_at = ?, updated_at = ?
+          WHERE user_id = ?
+            AND note_key = ?
+            AND updated_at < ?",
+  },
+]
+`;
