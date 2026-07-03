@@ -101,7 +101,7 @@ read & write the shared cache.
 
 **Sergeant-specific:**
 
-- Локальний Postgres піднімається через кореневий `docker-compose.yml` (`pgvector/pgvector:pg16` — не alpine, бо міграція 025 потребує `CREATE EXTENSION vector`). Повний dev cycle — `pnpm dev:db` (піднімає docker + мігрує).
+- Локальний Postgres піднімається через кореневий `docker-compose.yml` (`pgvector/pgvector:pg17` — не alpine, бо міграція 025 потребує `CREATE EXTENSION vector`). Повний dev cycle — `pnpm dev:db` (піднімає docker + мігрує).
 - **Volta вже в package.json** (`"volta": { "node": "20.20.2", "pnpm": "9.15.1" }`) + `engines.node = "20.x"`. Пункт «must» закритий.
 
 ### 1.2. CLI quality-of-life

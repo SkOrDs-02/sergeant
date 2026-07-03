@@ -53,7 +53,7 @@ Concretely:
 - Spec `apps/web/tests/a11y/ds-visual-qa.spec.ts` — 56 screenshots: 4 viewports (mobile-S, mobile-L, tablet, desktop) × 2 themes (light, dark) × 7 hub surfaces (HubLanding, HubSearch, HubReports, HubBackup, FinykDashboard, FizrukDashboard, NutritionDashboard).
 - CI job `.github/workflows/visual-regression.yml`:
   - Runs on `push: main` і `pull_request:`.
-  - Постгрес `pgvector/pgvector:pg16` (потрібен для preview-build, бо `db:migrate:dev` тягне 025-міграцію з `vector` extension) — SHA-pinned.
+  - Постгрес `pgvector/pgvector:pg16` (потрібен для preview-build, бо `db:migrate:dev` тягне 025-міграцію з `vector` extension) — SHA-pinned (тепер pg17 — image bump після ADR-у, див. `docker-compose.yml`).
   - `concurrency: visual-${{ github.ref }}` cancel-in-progress, щоб PR-flood не палив Argos quota.
   - Без `ARGOS_TOKEN` — screenshot-и зберігаються як CI artifact (для repos без Argos integration).
   - Без блокуючого `needs:` у downstream-jobs — гейт-чек постить Argos через `argos/sergeant` commit status, не через required CI check.

@@ -1,6 +1,6 @@
 # Voyage AI + pgvector — AI memory
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
 > **Status:** Active (vendor/setup reference; behavior SSOT is architecture doc)
 
 AI memory підсистема. Canonical behavior/ownership lives in [`docs/02-engineering/architecture/ai-memory.md`](../architecture/ai-memory.md); цей файл лишається reference для Voyage/pgvector setup, env, retry/cost knobs. ADR — [`0028-pgvector-ai-memory.md`](../../04-governance/adr/0028-pgvector-ai-memory.md).
@@ -271,23 +271,25 @@ Threshold-и міграції на dedicated vector DB — у [ADR-0028 § scali
 ## Тестування
 
 - Unit (mocked fetch + in-memory store): `apps/server/src/modules/ai-memory/embeddings.test.ts`, `service.test.ts`. Запуск — `pnpm test`.
-- Integration (testcontainers + `pgvector/pgvector:pg16`): `vectorStore.integration.test.ts`. Запуск — `pnpm --filter @sergeant/server test:integration`.
+- Integration (testcontainers + `pgvector/pgvector:pg17`): `vectorStore.integration.test.ts`. Запуск — `pnpm --filter @sergeant/server test:integration`.
 
 Без Docker integration-test-и soft-skip-аються з warning-ом — local dev без Docker лишається зеленим.
 
 ### CI Postgres image
 
-Міграція `025_ai_memories_pgvector.sql` робить `CREATE EXTENSION IF NOT EXISTS vector`, тому будь-який job, який запускає `pnpm --filter @sergeant/server db:migrate:dev` або підіймає server-test-suite, мусить мати pgvector у Postgres-сервісі. Стандартний `postgres:16-alpine` падає з `extension "vector" is not available` ще на boot-і.
+Міграція `025_ai_memories_pgvector.sql` робить `CREATE EXTENSION IF NOT EXISTS vector`, тому будь-який job, який запускає `pnpm --filter @sergeant/server db:migrate:dev` або підіймає server-test-suite, мусить мати pgvector у Postgres-сервісі. Стандартний `postgres:17-alpine` падає з `extension "vector" is not available` ще на boot-і.
 
-Усі CI-workflow-и Sergeant-а використовують `pgvector/pgvector:pg16` (multi-arch manifest, SHA-pinned для supply-chain hardening):
+Усі CI-workflow-и Sergeant-а використовують `pgvector/pgvector:pg17` (multi-arch manifest, SHA-pinned для supply-chain hardening):
 
 | Workflow                                                                    | Job                 | Файл                                                                 |
 | --------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------- |
-| [`ci.yml`](../../../.github/workflows/ci.yml)                               | `Critical-flow E2E` | services.postgres.image = `pgvector/pgvector:pg16@sha256:7d400e34…`  |
+| [`ci.yml`](../../../.github/workflows/ci.yml)                               | `Critical-flow E2E` | services.postgres.image = `pgvector/pgvector:pg17@sha256:feb68f4f…`  |
 | [`extended-e2e.yml`](../../../.github/workflows/extended-e2e.yml)           | `Extended-flow E2E` | той самий digest                                                     |
 | [`visual-regression.yml`](../../../.github/workflows/visual-regression.yml) | `Visual regression` | той самий digest (workflow піднімає API сервер → міграції → preview) |
 
-Якщо додаєш новий CI-job, що чіпає server / БД — копіюй `services.postgres` блок з `ci.yml`. Локальний `docker-compose.yml` залишається на `postgres:16-alpine`, бо AI-memory feature-flag-нутий через `AI_MEMORY_ENABLED=false` за замовчуванням і dev-loop не виконує міграцію 025 без ручного flip-а; коли вмикаєш фічу локально — переключай на `pgvector/pgvector:pg16` точково.
+Якщо додаєш новий CI-job, що чіпає server / БД — копіюй `services.postgres` блок з `ci.yml`. Локальний `docker-compose.yml` залишається на `postgres:17-alpine`, бо AI-memory feature-flag-нутий через `AI_MEMORY_ENABLED=false` за замовчуванням і dev-loop не виконує міграцію 025 без ручного flip-а; коли вмикаєш фічу локально — переключай на `pgvector/pgvector:pg17` точково.
+
+> **Потребує перевірки (не виправлено в межах цієї правки):** абзац вище стверджує, що кореневий `docker-compose.yml` за замовчуванням підіймає plain `postgres:17-alpine`, а перемикається на pgvector лише точково. Фактично `docker-compose.yml` (рядок 30) вже безумовно піднімає `pgvector/pgvector:pg17@sha256:…` — не plain `postgres`. Ця розбіжність виходить за межі простого pg16→pg17 version-bump-у (стосується самої feature-flag-логіки, не лише тега image-у) і потребує окремої перевірки перед подальшим редагуванням цього розділу.
 
 ## Зовнішні посилання
 

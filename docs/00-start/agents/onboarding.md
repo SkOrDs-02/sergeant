@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -23,7 +23,7 @@
 
 ## 2. Postgres + міграції
 
-- **Підняти БД:** `pnpm db:up` (== `docker compose up -d` із [`docker-compose.yml`](../../../docker-compose.yml)). Image — `pgvector/pgvector:pg16`, не stock `postgres:16-alpine` (міграція `025_ai_memories_pgvector.sql` робить `CREATE EXTENSION vector` — alpine падає). CI workflow'и `ci.yml`, `extended-e2e.yml`, `visual-regression.yml` пінять той же image.
+- **Підняти БД:** `pnpm db:up` (== `docker compose up -d` із [`docker-compose.yml`](../../../docker-compose.yml)). Image — `pgvector/pgvector:pg17`, не stock `postgres:17-alpine` (міграція `025_ai_memories_pgvector.sql` робить `CREATE EXTENSION vector` — alpine падає). CI workflow'и `ci.yml`, `extended-e2e.yml`, `visual-regression.yml` пінять той же image.
 - **Прогнати міграції:** `pnpm db:migrate` (== `apps/server/migrate.mjs`). Sequential `NNN_*.sql` у [`apps/server/src/migrations/`](../../../apps/server/src/migrations), без gaps. Hard Rule #4 — drop колонок робиться у **двох фазах**, deployed окремо.
 - **Один-команда стартап:** `pnpm dev:db` (db:up + db:migrate).
 - **Reset:** `docker compose down -v && pnpm dev:db` (стирає volume — `dev` only).

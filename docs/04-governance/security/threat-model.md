@@ -1,6 +1,6 @@
 # STRIDE threat model
 
-> **Last validated:** 2026-06-09 by @Skords-01. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
 > **Status:** Active
 
 Закриває [I6 — Document the STRIDE threat model per module](./hardening/I6-threat-model.md).
@@ -153,7 +153,7 @@ SPA fallback, OS-level. Trust boundary: app-tier ↔ persistence-tier.
 | Encryption-at-rest (Postgres)      | I      | Railway LUKS; `*_TOKEN_ENC_KEY` AES-GCM for Mono / OAuth tokens                                                                                       | KMS-managed key rotation phase 2 (H4)                                               |
 | Encryption-at-rest (SQLite mobile) | I      | OS keychain for bearer-token (H1); IndexedDB best-effort                                                                                              | localStorage / IndexedDB confidentiality is best-effort — no PII stored client-side |
 | Backup / restore                   | I/D    | Disaster-recovery RPO/RTO targets ([`./disaster-recovery.md`](./disaster-recovery.md)); `db-backup-verify.yml` workflow                               | Restore drill cadence (covered by RPO doc)                                          |
-| `pgvector` extension               | T      | Pinned `pgvector/pgvector:pg16` image; migration `025_ai_memories_pgvector.sql` `CREATE EXTENSION IF NOT EXISTS vector`                               | None — image pin is the contract                                                    |
+| `pgvector` extension               | T      | Pinned `pgvector/pgvector:pg17` image; migration `025_ai_memories_pgvector.sql` `CREATE EXTENSION IF NOT EXISTS vector`                               | None — image pin is the contract                                                    |
 | Ownership leakage between tenants  | I/E    | Every query filters by `userId`; snapshot tests; CodeQL ownership taint                                                                               | None — [I8](./hardening/I8-periodic-external-pentest.md) Closed                     |
 
 ## Cross-cutting controls
