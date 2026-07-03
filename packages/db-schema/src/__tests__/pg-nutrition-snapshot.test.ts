@@ -295,6 +295,11 @@ describe("pg/nutritionWaterLog schema snapshot", () => {
     expect(columnMap["volume_ml"]!.columnType).toBe("PgInteger");
     expect(columnMap["volume_ml"]!.notNull).toBe(true);
     expect(columnMap["volume_ml"]!.hasDefault).toBe(true);
+    // ADR-0073 Крок 0.5а: nullable без default до Кроку 2 — паритет із
+    // SQLite-діалектом (міграція 079).
+    expect(columnMap["created_at"]!.columnType).toBe("PgTimestamp");
+    expect(columnMap["created_at"]!.notNull).toBe(false);
+    expect(columnMap["created_at"]!.hasDefault).toBe(false);
     expect(columnMap["updated_at"]!.columnType).toBe("PgTimestamp");
     expect(columnMap["updated_at"]!.notNull).toBe(true);
     expect(columnMap["updated_at"]!.hasDefault).toBe(true);
@@ -334,6 +339,10 @@ describe("pg/nutritionShoppingList schema snapshot", () => {
     expect(columnMap["data"]!.columnType).toBe("PgJsonb");
     expect(columnMap["data"]!.notNull).toBe(true);
     expect(columnMap["data"]!.hasDefault).toBe(true);
+    // ADR-0073 Крок 0.5а: nullable без default до Кроку 2 (див. water_log).
+    expect(columnMap["created_at"]!.columnType).toBe("PgTimestamp");
+    expect(columnMap["created_at"]!.notNull).toBe(false);
+    expect(columnMap["created_at"]!.hasDefault).toBe(false);
     expect(columnMap["updated_at"]!.columnType).toBe("PgTimestamp");
     expect(columnMap["updated_at"]!.notNull).toBe(true);
     expect(columnMap["updated_at"]!.hasDefault).toBe(true);
