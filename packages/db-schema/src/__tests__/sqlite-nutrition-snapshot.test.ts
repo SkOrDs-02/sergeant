@@ -342,6 +342,10 @@ describe("sqlite/nutritionWaterLog schema snapshot", () => {
     expect(columnMap["volume_ml"]!.dataType).toBe("number");
     expect(columnMap["volume_ml"]!.notNull).toBe(true);
     expect(columnMap["volume_ml"]!.hasDefault).toBe(true);
+    // ADR-0073 Крок 0.5а: nullable без default до Кроку 2 — передчасний
+    // NOT NULL/default тут зламав би append-only міграцію 003.
+    expect(columnMap["created_at"]!.notNull).toBe(false);
+    expect(columnMap["created_at"]!.hasDefault).toBe(false);
     expect(columnMap["updated_at"]!.dataType).toBe("string");
     expect(columnMap["updated_at"]!.notNull).toBe(true);
     expect(columnMap["updated_at"]!.hasDefault).toBe(true);
@@ -381,6 +385,9 @@ describe("sqlite/nutritionShoppingList schema snapshot", () => {
     expect(columnMap["data_json"]!.dataType).toBe("string");
     expect(columnMap["data_json"]!.notNull).toBe(true);
     expect(columnMap["data_json"]!.hasDefault).toBe(true);
+    // ADR-0073 Крок 0.5а: nullable без default до Кроку 2 (див. water_log).
+    expect(columnMap["created_at"]!.notNull).toBe(false);
+    expect(columnMap["created_at"]!.hasDefault).toBe(false);
     expect(columnMap["updated_at"]!.dataType).toBe("string");
     expect(columnMap["updated_at"]!.notNull).toBe(true);
     expect(columnMap["updated_at"]!.hasDefault).toBe(true);
