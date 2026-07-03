@@ -21,6 +21,7 @@ import type { Server } from "http";
 import { createApp } from "./app.js";
 import { config } from "./config.js";
 import { pool } from "./db.js";
+import { drainReplicaPool } from "./dbReplica.js";
 import { env } from "./env.js";
 import { markStartupComplete } from "./lib/appState.js";
 import {
@@ -383,10 +384,23 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     // Audit P2-5: bounded drain з `SHUTDOWN_GRACE_MS / 2` AbortController-ом.
     // На abort helper лог-warn-ить `pg_pool_end_timeout`; shutdown продовжує
     // йти далі (Redis, Sentry), а `hardTimer` залишається last-resort safety net.
-    await endPoolWithAbortTimeout(pool, {
-      timeoutMs: Math.floor(SHUTDOWN_GRACE_MS / 2),
-      logger,
-    });
+    //
+    // Primary і replica пули дренуємо ПАРАЛЕЛЬНО (`Promise.all`): пули
+    // незалежні, а кожен drain уже bounded окремим `SHUTDOWN_GRACE_MS / 2`
+    // AbortController-ом. Послідовний дренаж міг би з'їсти весь grace-бюджет
+    // (2 × GRACE/2 = GRACE) і не лишити часу на Redis + Sentry-flush до
+    // hard-timeout-у; паралельно ж сумарний drain лишається ≤ GRACE/2.
+    // `pool: "primary"|"replica"` у логах розрізняє два пули; replica-drain —
+    // no-op, якщо `DATABASE_URL_REPLICA` не заданий.
+    const poolDrainTimeoutMs = Math.floor(SHUTDOWN_GRACE_MS / 2);
+    await Promise.all([
+      endPoolWithAbortTimeout(pool, {
+        timeoutMs: poolDrainTimeoutMs,
+        logger,
+        poolLabel: "primary",
+      }),
+      drainReplicaPool({ timeoutMs: poolDrainTimeoutMs, logger }),
+    ]);
 
     try {
       await disconnectRedis();
