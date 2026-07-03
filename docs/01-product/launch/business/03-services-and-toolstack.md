@@ -1,6 +1,6 @@
 # 03. Сервіси та тулстек
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
@@ -63,7 +63,7 @@
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
 | Vite + React 18 SPA         | `apps/web/package.json` → `vite`, `react ^18`                                                                             | in use                       |
 | Express + Node 20           | `apps/server/package.json` → `express ^4.22`                                                                              | in use                       |
-| PostgreSQL (pg + pgvector)  | `apps/server/package.json` → `pg ^8.20`; `docker-compose.yml` → `pgvector/pgvector:pg16`                                  | in use                       |
+| PostgreSQL (pg + pgvector)  | `apps/server/package.json` → `pg ^8.20`; `docker-compose.yml` → `pgvector/pgvector:pg17`                                  | in use                       |
 | Redis (ioredis)             | `apps/server/src/lib/redis.ts`, `ioredis ^5.6`                                                                            | in use                       |
 | Better Auth                 | `apps/server/package.json` → `better-auth ^1.6`                                                                           | in use                       |
 | Anthropic Claude            | `apps/server/src/lib/anthropic.ts`                                                                                        | in use                       |

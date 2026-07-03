@@ -242,7 +242,7 @@ job is the automated smoke, not a replacement for operator practice.
 
 - Restore не вдається через corruption у dump-і → перейти на попередній денний snapshot; повідомити Skords-01 у Telegram + [postmortem.md](../../00-start/playbooks/write-postmortem.md).
 - Усі 7 Railway-snapshot-ів corrupted → catastrophic event; перейти на manual reconstitute з op-log реплеїв клієнтських БД (best-effort, ≤ 24h data loss expected).
-- pgvector extension не доступний на restore-target → див. note у [AGENTS.md](../../../AGENTS.md) hard-rule #4 — restore-image має бути `pgvector/pgvector:pg16`, не stock `postgres:16-alpine`.
+- pgvector extension не доступний на restore-target → див. note у [AGENTS.md](../../../AGENTS.md) hard-rule #4 — restore-image має бути `pgvector/pgvector:pg17`, не stock `postgres:17-alpine`.
 
 ## Related
 

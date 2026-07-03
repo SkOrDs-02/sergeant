@@ -207,7 +207,7 @@ PR-32 з [`docs/90-work/planning/pr-plan-2026-05.md`](../../90-work/planning/pr-
 
 Раніше `.down.sql` валідувалися виключно `pnpm lint:migrations` (формальні `DROP`-правила два-фази + sequential numbering — статичний lint, що не виконує SQL). Drift в самих down-файлах — `DROP COLUMN` під колонку, яку перейменували, або забутий `DROP INDEX`, що дублює auto-drop через `CASCADE` — мовчав до моменту, коли DBA би відкочував руками вночі.
 
-`pnpm db:drill:down` (на CI — job `Migration down drill (AGENTS rule #4)` у [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml)) виконує round-trip drill на свіжому `pgvector/pgvector:pg16` (SHA-pinned, ідентичний docker-compose):
+`pnpm db:drill:down` (на CI — job `Migration down drill (AGENTS rule #4)` у [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml)) виконує round-trip drill на свіжому `pgvector/pgvector:pg17` (SHA-pinned, ідентичний docker-compose):
 
 1. **Phase A** — `DROP SCHEMA public CASCADE` → apply усі `NNN_*.sql` у lexicographic order → знімок схеми (tables, columns, indexes, constraints, sequences, enums) → SHA-256 fingerprint.
 2. **Phase B** — у **зворотному порядку** apply `NNN_*.down.sql` для кожної міграції. Міграції без `.down.sql` — info-skip (legacy baseline 001–005, 007, 011, 034, 047, 056, 057, де down не потрібен).

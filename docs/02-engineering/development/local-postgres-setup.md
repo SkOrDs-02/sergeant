@@ -1,6 +1,6 @@
 # Local Postgres setup
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
 > **Status:** Active
 
 Локальний Postgres для розробки запускається через `docker-compose.yml` у
@@ -35,11 +35,11 @@ docker pull pgvector/pgvector:pg17
 docker inspect pgvector/pgvector:pg17 --format '{{index .RepoDigests 0}}'
 ```
 
-Floating-теги (`:pg16`, `:latest`) автомутують upstream-вміст без notice, що
+Floating-теги (`:pg17`, `:latest`) автомутують upstream-вміст без notice, що
 ламає три інваріанти Sergeant-стеку:
 
 1. **Reproducibility.** Bug-репорт місячної давності неможливо exact-reproduce —
-   `docker pull pgvector/pgvector:pg16` у вівторок дає інакший layer-набір
+   `docker pull pgvector/pgvector:pg17` у вівторок дає інакший layer-набір
    ніж у понеділок. SHA робить «works on my machine» falsifiable.
 2. **CVE-trap safety.** Свіжо-зламаний upstream-shape (наприклад, regression у
    `vector` extension) автоматично pull-иться під час `docker compose up`.

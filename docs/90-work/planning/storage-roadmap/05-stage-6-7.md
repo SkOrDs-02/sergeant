@@ -1,6 +1,6 @@
 # Storage & Sync — PR-плани: Stage 6–7 (Operational maturity та Cleanup)
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
 > **Status:** Active
 
 > **Частина** [storage-roadmap](../storage-roadmap.md) · [← Stage 5](./04-stage-5.md) · [→ Stage 8–9](./06-stage-8-9.md)
@@ -101,7 +101,7 @@
   smoke-test SQL із runbook-у §4. Failures → auto-created GitHub Issue.
 - **Реалізовано.** `.github/workflows/db-backup-verify.yml` — weekly cron
   (Sunday 04:00 UTC), `workflow_dispatch` for manual runs. Uses
-  `pgvector/pgvector:pg16` service container (matches CI/docker-compose).
+  `pgvector/pgvector:pg17` service container (matches CI/docker-compose; bumped from pg16 after the pg17 rollout).
   Graceful fallback: коли `RAILWAY_TOKEN` не налаштований — migration-only
   verify (schema integrity без production data). 5-step pipeline:
   1. Pull latest Railway dump via CLI (або skip з warning).
@@ -191,10 +191,15 @@ client_updated_at)` (Postgres requirement для partitioned tables).
 - Що лишається в `apps/mobile/src/sync/`:
   - `hook/useCloudSync` — v1-shape stub (Phase 5 client cut-over),
   - `hook/useSyncStatus` — read-only stub returning idle shape (mobile
-    v2 op-log writer-runtime ще не прокинутий у boot path; web
-    counterpart — `apps/web/src/core/syncEngine/syncEngineWriter.ts` —
+    v2 op-log writer-runtime на момент цього PR ще не прокинутий у boot
+    path; web counterpart — `apps/web/src/core/syncEngine/syncEngineWriter.ts` —
     залендив у [#1953](https://github.com/Skords-01/Sergeant/pull/1953);
-    mobile wiring = follow-up),
+    mobile wiring = follow-up — **виконано** у PR #058
+    ([#2118](https://github.com/Skords-01/Sergeant/pull/2118)), `useSyncStatus`
+    відтоді читає real writer status, boot wiring — `apps/mobile/app/_layout.tsx:202`
+    → `bootSyncEngineWriter`, singleton —
+    `apps/mobile/src/core/syncEngine/singleton.ts`; деталі у
+    [06-stage-8-9.md § PR #058](./06-stage-8-9.md)),
   - `useSyncedStorage` — `useLocalStorage` + `enqueueChange` (no-op)
     wrapper для tracked sync keys,
   - `enqueue.ts` (no-op) — лишається до PR #053b/c (mobile KVStore
@@ -278,7 +283,7 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   finyk transactions, routine entries) — повністю на SQLite через
   `useStorage()` per-module + op-log v2 push/pull. Tracked-key-и з
   `@sergeant/shared/sync/modules.ts` дзеркалять SQLite-row-и через
-  `syncEngineWriter` (web — landed [#1953](https://github.com/Skords-01/Sergeant/pull/1953); mobile follow-up).
+  `syncEngineWriter` (web — landed [#1953](https://github.com/Skords-01/Sergeant/pull/1953); mobile follow-up — **виконано** у PR #058 / [#2118](https://github.com/Skords-01/Sergeant/pull/2118), boot wiring у `apps/mobile/app/_layout.tsx:202`).
 - **Web changes.**
   - Видалити `apps/web/src/core/cloudSync/enqueue.ts` (no-op shim) +
     `apps/web/src/core/cloudSync/index.ts` `enqueue` re-export.
@@ -295,7 +300,7 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   - `useSyncedStorage` спрощується до `useLocalStorage` без callback hook.
 - **Risk.** Multi-module migration зачіпає 33 prod-файли (web 7 + mobile 26).
   Плануємо розбити на 3 sub-PR-и: (a) web shim drop + 3 onboarding / profile callsites, (b) mobile module-stores wave 1 (fizruk), (c) mobile wave 2 (nutrition + finyk + routine + boot wiring). Кожен sub-PR — green CI + Sentry baseline check.
-- **Dep.** `apps/web/src/core/syncEngine/syncEngineWriter.ts` (web) вже landed [#1953](https://github.com/Skords-01/Sergeant/pull/1953). Mobile counterpart — запланований follow-up до PR #053 (mobile sync-engine writer wiring у boot path).
+- **Dep.** `apps/web/src/core/syncEngine/syncEngineWriter.ts` (web) вже landed [#1953](https://github.com/Skords-01/Sergeant/pull/1953). Mobile counterpart — на момент цього PR запланований follow-up до PR #053 (mobile sync-engine writer wiring у boot path) — **виконано** у PR #058 / [#2118](https://github.com/Skords-01/Sergeant/pull/2118).
 - **Done criteria.**
   1. `apps/web/src/core/cloudSync/enqueue.ts` + `apps/mobile/src/sync/enqueue.ts` видалені (нуль `enqueueChange` callsites у production-коді).
   2. `safeWriteSyncedLS` / `safeRemoveSyncedLS` deprecated (тільки backward-compat re-export із warning, або повне видалення).
@@ -404,7 +409,8 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   5. governance-sync + ADR graph зелені.
 - **Out of scope (для PR #053c).**
   - Mobile sync-engine writer-runtime wiring у boot-path (counterpart до
-    web `apps/web/src/core/syncEngine/syncEngineWriter.ts` [#1953](https://github.com/Skords-01/Sergeant/pull/1953)).
+    web `apps/web/src/core/syncEngine/syncEngineWriter.ts` [#1953](https://github.com/Skords-01/Sergeant/pull/1953)) —
+    **виконано** у PR #058 / [#2118](https://github.com/Skords-01/Sergeant/pull/2118), boot wiring у `apps/mobile/app/_layout.tsx:202`.
   - Решта 16 mobile module-store call-sites: 5 nutrition hooks, 1
     routine, 3 finyk store-и, 5 dashboard / settings / observability,
     `apps/mobile/src/sync/{enqueue,index,useSyncedStorage}.ts` shim
@@ -505,7 +511,7 @@ client_updated_at)` (Postgres requirement для partitioned tables).
 - **Out of scope (наступні PR-и).**
   - Mobile sync-engine writer-runtime wiring у boot-path (counterpart до
     web `apps/web/src/core/syncEngine/syncEngineWriter.ts` [#1953](https://github.com/Skords-01/Sergeant/pull/1953))
-    — окремий follow-up.
+    — окремий follow-up — **виконано** у PR #058 / [#2118](https://github.com/Skords-01/Sergeant/pull/2118), boot wiring у `apps/mobile/app/_layout.tsx:202`.
   - PR #054 final — 6 storage-primitive файлів на SQLite-backed
     `kv_store(key TEXT PK, value JSON)`, allowlist 6 → 0.
 
