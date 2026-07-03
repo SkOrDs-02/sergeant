@@ -12,13 +12,21 @@
 //   1. Every Drizzle table must have a CREATE TABLE in SQL migrations.
 //   2. Every column in Drizzle (using its explicit SQL name) must be in SQL.
 //   3. Every SQL column (for Drizzle-tracked tables) must be in Drizzle.
-//   Tables that exist only in SQL are not flagged (intentional omissions).
+//   4. Every SQL table that Drizzle does NOT model must be explicitly listed
+//      in SQL_ONLY_TABLES (or whitelisted) — інакше нова SQL-only таблиця
+//      пройшла б повз drift-чекер (сліпа зона). DROP/RENAME TABLE у міграціях
+//      враховуються (напр. 046 дропнув module_data, 042 перейменувала
+//      module_data_partitioned → module_data), тож видалені таблиці не рахуються.
 //
 // Whitelist: covers intentional divergences — see WHITELIST array below.
+// SQL_ONLY_TABLES: server-only таблиці без Drizzle-моделі (analytics, billing,
+// integration-стейт тощо) — див. масив нижче.
 //
 // CLI:
-//   node scripts/check-schema-drift.mjs           # report + exit code
-//   node scripts/check-schema-drift.mjs --json    # machine-readable JSON
+//   node scripts/check-schema-drift.mjs                 # report + exit code
+//   node scripts/check-schema-drift.mjs --json          # machine-readable JSON
+//   node scripts/check-schema-drift.mjs --list-sql-only # dump SQL-only tables
+//                                                       #   (для аудиту allowlist-у)
 
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
@@ -232,6 +240,12 @@ function extractSqlTableBodies(content) {
   return results;
 }
 
+// Прибирає `-- …` та `/* … */` коментарі, щоб DDL у коментарях (напр.
+// приклади `DROP TABLE …` у шапці міграції) не парсились як реальні statement-и.
+function stripSqlComments(content) {
+  return content.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
+}
+
 /**
  * Parse SQL file → Map<tableName, Set<columnName>>
  */
@@ -239,9 +253,7 @@ function parseSqlFile(content) {
   const tables = new Map();
 
   // Strip comments
-  const stripped = content
-    .replace(/--[^\n]*/g, " ")
-    .replace(/\/\*[\s\S]*?\*\//g, " ");
+  const stripped = stripSqlComments(content);
 
   // CREATE TABLE with depth-tracking body extraction
   for (const { tableName, body } of extractSqlTableBodies(stripped)) {
@@ -292,6 +304,37 @@ function parseSqlFile(content) {
   return tables;
 }
 
+/**
+ * Extract `ALTER TABLE x RENAME TO y` statements, in textual order.
+ * Returns [ { from, to } ].  Used to follow table renames across migrations
+ * (напр. 042 робить `module_data → module_data_legacy` + `module_data_partitioned
+ * → module_data`), інакше стара назва лишалась би «SQL-only» привидом.
+ */
+function extractTableRenames(stripped) {
+  const renames = [];
+  const re =
+    /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?([`"']?\w+[`"']?)\s+RENAME\s+TO\s+([`"']?\w+[`"']?)/gi;
+  for (const m of stripped.matchAll(re)) {
+    renames.push({ from: normId(m[1]), to: normId(m[2]) });
+  }
+  return renames;
+}
+
+/**
+ * Extract `DROP TABLE [IF EXISTS] name [CASCADE]` statements, in textual order.
+ * Returns [ tableName ].  Дозволяє «забути» таблиці, видалені міграціями
+ * (напр. 046 дропає `module_data` та `module_data_legacy`), щоб вони не
+ * рахувались як існуючі SQL-таблиці.
+ */
+function extractDroppedTables(stripped) {
+  const dropped = [];
+  const re = /DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?([`"']?\w+[`"']?)/gi;
+  for (const m of stripped.matchAll(re)) {
+    dropped.push(normId(m[1]));
+  }
+  return dropped;
+}
+
 function parseSqlMigrations(dir) {
   const merged = new Map();
   const files = readdirSync(dir)
@@ -302,6 +345,20 @@ function parseSqlMigrations(dir) {
     for (const [tbl, cols] of parseSqlFile(content)) {
       if (!merged.has(tbl)) merged.set(tbl, new Set());
       for (const c of cols) merged.get(tbl).add(c);
+    }
+    // Post-CREATE: apply table renames and drops in the file's textual order
+    // so the merged view tracks the *current* set of live SQL tables.
+    const stripped = stripSqlComments(content);
+    for (const { from, to } of extractTableRenames(stripped)) {
+      if (!merged.has(from)) continue;
+      const cols = merged.get(from);
+      const target = merged.get(to) ?? new Set();
+      for (const c of cols) target.add(c);
+      merged.set(to, target);
+      merged.delete(from);
+    }
+    for (const tbl of extractDroppedTables(stripped)) {
+      merged.delete(tbl);
     }
   }
   return merged;
@@ -599,11 +656,109 @@ function isCrossWhitelisted(table, column) {
   );
 }
 
+// ─── SQL-only tables allowlist ───────────────────────────────────────────────
+//
+// Таблиці, які СТВОРЮЮТЬСЯ SQL-міграціями, але НАВМИСНО не мають Drizzle-моделі
+// у packages/db-schema/src/pg/. Це server-only домени: analytics/observability,
+// billing/subscriptions, integration-стейт (Mono/OpenClaw/n8n/Telegram), черги,
+// webhook-журнали, rate-limit, push-audit тощо. Клієнт не читає їх через Drizzle
+// ORM — доступ лише з сервера (raw SQL / pg-драйвер), тож Drizzle-типізація не
+// потрібна. Список згенеровано з ФАКТИЧНОГО стану міграцій (див. режим
+// `--list-sql-only`), з урахуванням DROP/RENAME (напр. 046 дропнув module_data).
+//
+// Гейт: НОВА SQL-таблиця, якої тут немає і яка не змодельована в Drizzle,
+// впаде як `table-sql-only`. Щоб полагодити — або додай Drizzle-модель у
+// packages/db-schema/src/pg/, або внеси таблицю сюди з обґрунтуванням, чому
+// вона лишається server-only.
+const SQL_ONLY_TABLES = [
+  // AI usage / memory (analytics + server-side episodic store, pgvector).
+  // Клієнт бачить агреговані числа через API, не через Drizzle.
+  "ai_memories",
+  "ai_memory_backfill_state",
+  "ai_memory_ingest_failed",
+  "ai_usage_daily",
+  // Billing / subscriptions / revenue — керуються серверними billing-воркерами
+  // та webhook-хендлерами (Stripe / Apple IAP / LiqPay), клієнт читає через API.
+  "apple_iap_receipts",
+  "billing_subscriptions",
+  "billing_webhook_events",
+  "revenue_daily",
+  "stripe_webhook_events",
+  "subscriptions",
+  // Mono integration state — токени/акаунти/транзакції та черга AI-збагачення;
+  // читаються лише серверним sync-шаром.
+  "mono_account",
+  "mono_ai_enrichment_queue",
+  "mono_connection",
+  "mono_transaction",
+  // Integration webhooks / failure journals (n8n + generic) — server-only журнали.
+  "n8n_failure_events",
+  "n8n_webhook_events",
+  "webhook_events",
+  // OpenClaw gateway — рішення/виклики/аудит записів/mute/нагадування; server-only.
+  "openclaw_decisions",
+  "openclaw_invocations",
+  "openclaw_mute_state",
+  "openclaw_reminders",
+  "openclaw_write_audit",
+  // Push delivery — реєстр девайсів і аудит відправок; пише лише сервер.
+  "push_devices",
+  "push_send_audit",
+  // Telegram alerting — ack-и алертів та архів топіків; server-only.
+  "tg_alert_acks",
+  "tg_topic_archive",
+  // Growth / product analytics — агреговані daily/weekly таблиці, наповнюються
+  // серверними job-ами; клієнт не читає їх через Drizzle.
+  "app_store_reviews",
+  "brand_mentions",
+  "feature_adoption_weekly",
+  "growth_acquisition_daily",
+  "growth_cohorts",
+  "growth_funnel_daily",
+  // SEO analytics — зовнішні дані (GSC / PageSpeed / competitors); server-only.
+  "seo_backlinks",
+  "seo_competitor_snapshots",
+  "seo_competitors",
+  "seo_gsc_daily",
+  "seo_keyword_ranks",
+  "seo_keywords",
+  "seo_pagespeed_daily",
+  "seo_sitemap_health",
+  // Social analytics — канальні метрики та згадки; server-only.
+  "social_channels_daily",
+  "social_mentions",
+  // Email / marketing — журнали кампаній/подій + unsubscribe-реєстр; server-only.
+  "email_campaigns_log",
+  "email_events",
+  "email_unsubscribes",
+  // Governance / strategy — журнал порушень hard-rules і стратегічні цілі;
+  // server-only (governance-tooling, не клієнтський Drizzle-read).
+  "hard_rules_violations",
+  "strategic_goals",
+  // Rate limiting — token-bucket стан; читає/пише лише серверний middleware.
+  "rate_limit_buckets",
+  // User preferences — server-managed key-value налаштування (не Drizzle-read).
+  "user_preferences",
+];
+
+function isSqlOnlyAllowlisted(table) {
+  return SQL_ONLY_TABLES.includes(table);
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const SQL_DIR = resolve(ROOT, "apps/server/src/migrations");
-const DRIZZLE_DIR = resolve(ROOT, "packages/db-schema/src/pg");
-const SQLITE_DRIZZLE_DIR = resolve(ROOT, "packages/db-schema/src/sqlite");
+// Директорії за замовчуванням — реальні схеми. Env-оверрайди існують лише для
+// тестів (drift.test.ts), щоб прогнати детектор проти фікстур; у CI/проді не
+// виставляються.
+const SQL_DIR = process.env.SCHEMA_DRIFT_SQL_DIR
+  ? resolve(process.env.SCHEMA_DRIFT_SQL_DIR)
+  : resolve(ROOT, "apps/server/src/migrations");
+const DRIZZLE_DIR = process.env.SCHEMA_DRIFT_PG_DIR
+  ? resolve(process.env.SCHEMA_DRIFT_PG_DIR)
+  : resolve(ROOT, "packages/db-schema/src/pg");
+const SQLITE_DRIZZLE_DIR = process.env.SCHEMA_DRIFT_SQLITE_DIR
+  ? resolve(process.env.SCHEMA_DRIFT_SQLITE_DIR)
+  : resolve(ROOT, "packages/db-schema/src/sqlite");
 
 const sqlSchema = parseSqlMigrations(SQL_DIR);
 const drizzleSchema = parseDrizzleSchemas(DRIZZLE_DIR);
@@ -647,6 +802,45 @@ for (const [tbl, drizzleCols] of drizzleSchema) {
       });
     }
   }
+}
+
+// ─── SQL-only table check ─────────────────────────────────────────────────────
+//
+// Кожна таблиця, яка існує в SQL-міграціях (після врахування DROP/RENAME), але
+// відсутня в Drizzle PG-схемі, має бути або змодельована в Drizzle, або явно
+// внесена в SQL_ONLY_TABLES. Інакше нова SQL-only таблиця пройшла б непоміченою
+// — це і є сліпа зона, яку закриває ця перевірка.
+const sqlOnlyTables = [];
+for (const tbl of sqlSchema.keys()) {
+  if (drizzleSchema.has(tbl)) continue; // змодельована в Drizzle — ок
+  if (isWhitelisted(tbl)) continue; // whole-table whitelist (напр. auth)
+  sqlOnlyTables.push(tbl);
+  if (isSqlOnlyAllowlisted(tbl)) continue; // задокументована server-only таблиця
+  issues.push({
+    kind: "table-sql-only",
+    table: tbl,
+    message: `Table "${tbl}" created in SQL migrations but has no Drizzle PG model and is not in SQL_ONLY_TABLES — add a Drizzle model in packages/db-schema/src/pg/, or add "${tbl}" to SQL_ONLY_TABLES in scripts/check-schema-drift.mjs with a justification`,
+  });
+}
+
+// Допоміжний режим для генерації/аудиту allowlist-у: друкує повний список
+// SQL-only таблиць (незалежно від allowlist-у) і виходить. Використовується при
+// перегляді SQL_ONLY_TABLES після додавання нових міграцій.
+if (process.argv.includes("--list-sql-only")) {
+  const sorted = [...sqlOnlyTables].sort();
+  process.stdout.write(
+    JSON.stringify(
+      {
+        count: sorted.length,
+        tables: sorted,
+        allowlisted: sorted.filter(isSqlOnlyAllowlisted),
+        notAllowlisted: sorted.filter((t) => !isSqlOnlyAllowlisted(t)),
+      },
+      null,
+      2,
+    ) + "\n",
+  );
+  process.exit(0);
 }
 
 // ─── PG ↔ SQLite Drizzle cross-check ─────────────────────────────────────────
