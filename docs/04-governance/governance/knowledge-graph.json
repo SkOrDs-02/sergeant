@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-02",
+  "generated_at": "2026-07-03",
   "counts": {
-    "adr": 69,
+    "adr": 70,
     "audit": 24,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
-    "pr": 219,
+    "pr": 221,
     "skill": 23
   },
   "nodes": [
@@ -782,6 +782,18 @@
       "meta": {
         "number": 72,
         "last_validated": "2026-07-01"
+      }
+    },
+    {
+      "id": "adr:0073",
+      "type": "adr",
+      "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
+      "path": "docs/04-governance/adr/0073-dualwrite-generic-framework.md",
+      "status": "Accepted",
+      "tier": "core",
+      "meta": {
+        "number": 73,
+        "last_validated": "2026-07-03"
       }
     },
     {
@@ -4312,6 +4324,26 @@
       }
     },
     {
+      "id": "pr:57",
+      "type": "pr",
+      "title": "PR #57",
+      "tier": "extended",
+      "meta": {
+        "number": 57,
+        "url": "https://github.com/Skords-01/Sergeant/pull/57"
+      }
+    },
+    {
+      "id": "pr:70",
+      "type": "pr",
+      "title": "PR #70",
+      "tier": "extended",
+      "meta": {
+        "number": 70,
+        "url": "https://github.com/Skords-01/Sergeant/pull/70"
+      }
+    },
+    {
       "id": "pr:704",
       "type": "pr",
       "title": "PR #704",
@@ -5347,6 +5379,21 @@
       "from": "adr:0071",
       "to": "hard-rule:26",
       "type": "references"
+    },
+    {
+      "from": "adr:0073",
+      "to": "hard-rule:18",
+      "type": "references"
+    },
+    {
+      "from": "adr:0073",
+      "to": "pr:57",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0073",
+      "to": "pr:70",
+      "type": "touched-by"
     },
     {
       "from": "audit:2026-05-06-ux-roast-pr-plan",

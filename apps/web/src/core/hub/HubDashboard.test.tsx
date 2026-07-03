@@ -67,6 +67,7 @@ vi.mock("@dnd-kit/core", () => ({
     return <div data-testid="dnd-context">{children}</div>;
   },
   PointerSensor: function PointerSensor() {},
+  MouseSensor: function MouseSensor() {},
   TouchSensor: function TouchSensor() {},
   KeyboardSensor: function KeyboardSensor() {},
   closestCenter: function closestCenter() {},
@@ -559,7 +560,10 @@ describe("HubDashboard", () => {
     expect(Array.isArray(sensors)).toBe(true);
     const sensorNames = sensors.map((entry) => entry.sensor?.name);
     expect(sensorNames).toContain("KeyboardSensor");
-    expect(sensorNames).toContain("PointerSensor");
+    // PointerSensor розділено на MouseSensor (миттєвий 8px drag) +
+    // TouchSensor (250ms long-press) — див. коментар у useHubDashboardState.
+    expect(sensorNames).toContain("MouseSensor");
+    expect(sensorNames).toContain("TouchSensor");
 
     expect(mocks.dndCapture.onDragStart).toBeTypeOf("function");
     expect(mocks.dndCapture.onDragEnd).toBeTypeOf("function");

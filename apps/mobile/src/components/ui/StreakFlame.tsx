@@ -80,10 +80,14 @@ function useReduceMotion(): boolean {
  * FlameParticle — Small particle for celebration effect
  */
 function FlameParticle({ delay, color }: { delay: number; color: string }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.5)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [translateY] = useState(() => new Animated.Value(0));
+  const [translateX] = useState(() => new Animated.Value(0));
+  const [scale] = useState(() => new Animated.Value(0.5));
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -158,10 +162,10 @@ export function StreakFlame({
   const reduceMotion = useReduceMotion();
   const shouldAnimate = !disableAnimation && !reduceMotion && days > 0;
 
-  // Animation values
-  const scale = useRef(new Animated.Value(1)).current;
-  const glowOpacity = useRef(new Animated.Value(0.3)).current;
-  const rotation = useRef(new Animated.Value(0)).current;
+  // Animation values (lazy useState — see AI-CONTEXT in FlameParticle)
+  const [scale] = useState(() => new Animated.Value(1));
+  const [glowOpacity] = useState(() => new Animated.Value(0.3));
+  const [rotation] = useState(() => new Animated.Value(0));
 
   // Celebration state
   const [showParticles, setShowParticles] = useState(false);

@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AccessibilityInfo,
   Animated,
@@ -149,10 +149,16 @@ export function CoachTip({
   const config = variantConfig[variant];
   const Icon = config.icon;
 
-  // Animation values
-  const opacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
-  const translateY = useRef(new Animated.Value(reduceMotion ? 0 : 10)).current;
-  const scale = useRef(new Animated.Value(reduceMotion ? 1 : 0.95)).current;
+  // Animation values.
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [opacity] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  const [translateY] = useState(
+    () => new Animated.Value(reduceMotion ? 0 : 10),
+  );
+  const [scale] = useState(() => new Animated.Value(reduceMotion ? 1 : 0.95));
 
   // Entrance animation
   useEffect(() => {
@@ -273,7 +279,7 @@ export function CoachTipSpotlight({
   ...props
 }: CoachTipSpotlightProps) {
   const reduceMotion = useReduceMotion();
-  const opacity = useRef(new Animated.Value(0)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (reduceMotion) {

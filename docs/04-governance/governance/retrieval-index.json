@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-02",
+  "generated_at": "2026-07-03",
   "sourceHashes": {
-    "knowledge-graph": "593b74a1921b848991eef3f34fa729e05274c0fa4a1baa6f4261f35a97668afe",
+    "knowledge-graph": "4e5bcc32a5c0eaa80f1c0d2dd838d87189d2e36ff2bbef6246406253589b6f1e",
     "symbol-index": "a725d91e4e15d7ecea71cb396a249f914345ea00a8c223514dda2e12f613b60b"
   },
   "counts": {
-    "adr": 69,
+    "adr": 70,
     "audit": 24,
     "export": 303,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
     "skill": 23,
-    "total": 557
+    "total": 558
   },
   "chunks": [
     {
@@ -773,6 +773,17 @@
       "status": "Accepted",
       "text": "ADR-0072: Harness versioning and A/B evaluation · adr:0072 · adr · Accepted · 72 · 2026-07-01 · Context and Problem Statement · Decision · Consequences · Alternatives Considered · Open Questions / Follow-ups",
       "contentHash": "206a06e594b3fb6c38b81351b49b3ce33b84b71e37ffac0cf858c7c1d1219c9d"
+    },
+    {
+      "id": "adr:0073",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0073-dualwrite-generic-framework.md",
+      "line": 1,
+      "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
+      "tier": "core",
+      "status": "Accepted",
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-03 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
+      "contentHash": "ea2474d7ca1f2b56825c6e7fe7a85c2155f9dbeb11237d95d6bad97c6df3e115"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
