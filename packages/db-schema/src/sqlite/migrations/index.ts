@@ -955,11 +955,34 @@ CREATE TABLE IF NOT EXISTS nutrition_shopping_list (
  * `002_nutrition_full_state.sql` extends the schema to full LS-state
  * coverage (Stage 11 / PR #070n-schema).
  */
+/**
+ * ADR-0073 (рішення власника №5, 2026-07-03) — додати `created_at` до
+ * water_log і shopping_list. Дзеркалить Postgres-міграцію
+ * `079_nutrition_created_at.sql`. Колонка nullable: SQLite не дозволяє
+ * неконстантний DEFAULT в ADD COLUMN, а писати її адаптери почнуть лише
+ * з Кроку 2 (`entity.createdAt ?? clientTs`). Backfill = updated_at.
+ */
+const NUTRITION_003_CREATED_AT_SQL = `
+ALTER TABLE nutrition_water_log ADD COLUMN created_at TEXT;
+UPDATE nutrition_water_log
+   SET created_at = updated_at
+ WHERE created_at IS NULL;
+
+ALTER TABLE nutrition_shopping_list ADD COLUMN created_at TEXT;
+UPDATE nutrition_shopping_list
+   SET created_at = updated_at
+ WHERE created_at IS NULL;
+`;
+
 export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_nutrition_tables.sql", sql: NUTRITION_001_SQL },
   {
     name: "002_nutrition_full_state.sql",
     sql: NUTRITION_002_FULL_STATE_SQL,
+  },
+  {
+    name: "003_nutrition_created_at.sql",
+    sql: NUTRITION_003_CREATED_AT_SQL,
   },
 ] as const;
 
