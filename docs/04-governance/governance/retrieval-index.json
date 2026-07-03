@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-02",
+  "generated_at": "2026-07-03",
   "sourceHashes": {
-    "knowledge-graph": "593b74a1921b848991eef3f34fa729e05274c0fa4a1baa6f4261f35a97668afe",
+    "knowledge-graph": "220755bb72b7bd8a601bac9be88659ed6dfb3ded3cb576d476c75109c8488504",
     "symbol-index": "a725d91e4e15d7ecea71cb396a249f914345ea00a8c223514dda2e12f613b60b"
   },
   "counts": {
-    "adr": 69,
+    "adr": 70,
     "audit": 24,
     "export": 303,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
     "skill": 23,
-    "total": 557
+    "total": 558
   },
   "chunks": [
     {
@@ -773,6 +773,17 @@
       "status": "Accepted",
       "text": "ADR-0072: Harness versioning and A/B evaluation · adr:0072 · adr · Accepted · 72 · 2026-07-01 · Context and Problem Statement · Decision · Consequences · Alternatives Considered · Open Questions / Follow-ups",
       "contentHash": "206a06e594b3fb6c38b81351b49b3ce33b84b71e37ffac0cf858c7c1d1219c9d"
+    },
+    {
+      "id": "adr:0073",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0073-dualwrite-generic-framework.md",
+      "line": 1,
+      "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
+      "tier": "core",
+      "status": "Proposed",
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Proposed · 73 · 2026-07-03 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions (потрібне рішення власника) · Compliance · Links",
+      "contentHash": "af04b1d490ec8a4a987bf7c41c93a3af4971d7bfb078373394f50ab4fab6d0d0"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
