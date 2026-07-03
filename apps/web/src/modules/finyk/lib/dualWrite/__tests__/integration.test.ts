@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   __clearFinykDualWriteContextForTests,
@@ -318,6 +318,16 @@ describe("Finyk dual-write — orchestrator (registerFinykDualWriteContext)", ()
   it("create-then-edit of the same manual expense with an identical clientTs still applies the edit (DCRUD-108)", async () => {
     registerFinykDualWriteContext(makeCtx());
 
+    // Deterministic drain for the fire-and-forget single-flight queue:
+    // poll the actual SQLite row instead of sleeping a fixed interval
+    // (a fixed sleep is itself timing-sensitive on slow CI — the very
+    // failure class this regression guards against).
+    const readExpenseRows = () =>
+      handle.client.all<{ data_json: string }>(
+        "SELECT data_json FROM finyk_manual_expenses WHERE id = ?",
+        ["m-dcrud-108"],
+      );
+
     const created: FinykDualWriteState = {
       ...EMPTY_FINYK_STATE,
       manualExpenses: [
@@ -332,7 +342,11 @@ describe("Finyk dual-write — orchestrator (registerFinykDualWriteContext)", ()
       ],
     };
     triggerFinykDualWrite(EMPTY_FINYK_STATE, created);
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    // Wait for the create flush to fully apply before enqueueing the
+    // edit — two SEPARATE flushes, mirroring the E2E timeline.
+    await vi.waitFor(async () => {
+      expect(await readExpenseRows()).toHaveLength(1);
+    });
 
     const edited: FinykDualWriteState = {
       ...EMPTY_FINYK_STATE,
@@ -350,16 +364,16 @@ describe("Finyk dual-write — orchestrator (registerFinykDualWriteContext)", ()
     // Same registered ctx → same `getNow()` constant as the create above,
     // simulating two flushes that land in the identical millisecond.
     triggerFinykDualWrite(created, edited);
-    await new Promise((resolve) => setTimeout(resolve, 10));
-
-    const rows = await handle.client.all<{ data_json: string }>(
-      "SELECT data_json FROM finyk_manual_expenses WHERE id = ?",
-      ["m-dcrud-108"],
-    );
-    expect(rows).toHaveLength(1);
-    expect(JSON.parse(rows[0]!.data_json).description).toBe(
-      "DCRUD кава оновлено",
-    );
+    // Pre-fix code NEVER converges here (the LWW guard drops the edit
+    // outright, it does not merely delay it), so waitFor times out and
+    // fails the test rather than masking the bug.
+    await vi.waitFor(async () => {
+      const rows = await readExpenseRows();
+      expect(rows).toHaveLength(1);
+      expect(JSON.parse(rows[0]!.data_json).description).toBe(
+        "DCRUD кава оновлено",
+      );
+    });
   });
 });
 
