@@ -1,6 +1,6 @@
 # Agents in apps/server
 
-> **Last touched:** 2026-07-02 by @dimastahov16012003. **Next review:** 2026-09-30.
+> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють у `apps/server/`. Не дублюй repo policy: hard rules і CI matrix живуть у корені.
@@ -39,7 +39,7 @@ pnpm api:check-openapi                                # freshness gate (CI-block
 
 ## Health & deploy
 
-`/health` p95 < 100 ms (formalized: [`SLO.md § 2.1`](../../docs/03-operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` — design-only, не wired — див. SLO.md § Статус wiring). Pre-deploy: `pnpm db:migrate` (requires `MIGRATE_DATABASE_URL` = public DB URL). Anthropic `/api/chat` p95 first token < 1.5 s. AI memory endpoints require `VOYAGE_API_KEY` when `AI_MEMORY_ENABLED=true`.
+`/health` p95 < 100 ms (formalized: [`SLO.md § 2.1`](../../docs/03-operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` — design-only, не wired — див. SLO.md § Статус wiring). Railway health-probe і pre-deploy job задані як config-as-code у [`railway.toml`](../../railway.toml) → `[deploy]` (`healthcheckPath = "/health"`, `preDeployCommand = "node dist-server/migrate.js"`), а не лише у дашборді. Pre-deploy виконує міграції (requires `MIGRATE_DATABASE_URL` = public DB URL). Anthropic `/api/chat` p95 first token < 1.5 s. AI memory endpoints require `VOYAGE_API_KEY` when `AI_MEMORY_ENABLED=true`.
 
 ## Deeper docs
 

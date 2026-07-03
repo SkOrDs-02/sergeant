@@ -25,14 +25,16 @@
 #
 # Healthcheck: Distroless не має shell-у, тож HEALTHCHECK CMD не може
 # виконати `wget`/`curl`. Railway моніторить через external HTTP-probe
-# на `/health` (service-level config), тому Dockerfile HEALTHCHECK
-# опущено — Railway автоматично рестартить unhealthy container незалежно.
+# на `/health` (`healthcheckPath` у `railway.toml` → `[deploy]`), тому
+# Dockerfile HEALTHCHECK опущено — Railway автоматично рестартить
+# unhealthy container незалежно.
 #
 # Railway Pre-Deploy винятки: Railway виконує `preDeployCommand`
-# (`node dist-server/migrate.js`) через `/bin/sh -c "<cmd>"` всередині
-# того ж runtime-образу. Distroless шела не має, тому pre-deploy
-# мовчки фейлиться (deploy-логи порожні, контейнер не встигає нічого
-# написати). Щоб не ламати release-stage міграцій, у runtime-стейдж
+# (`node dist-server/migrate.js`, задано у `railway.toml` → `[deploy]`)
+# через `/bin/sh -c "<cmd>"` всередині того ж runtime-образу. Distroless
+# шела не має, тому pre-deploy мовчки фейлиться (deploy-логи порожні,
+# контейнер не встигає нічого написати). Щоб не ламати release-stage
+# міграцій, у runtime-стейдж
 # нижче запікаємо `busybox` (~800 KB) з official `busybox:stable-musl`
 # (static-pie ELF, без жодних .so-залежностей) як `/bin/sh`, і додаємо
 # `/nodejs/bin` у PATH, щоб `sh -c "node ..."` міг його зарезолвити.
