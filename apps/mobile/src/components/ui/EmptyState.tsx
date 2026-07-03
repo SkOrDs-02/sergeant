@@ -16,7 +16,7 @@
 
 import * as Haptics from "expo-haptics";
 import type { LucideIcon } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AccessibilityInfo,
   Animated,
@@ -91,9 +91,13 @@ export function EmptyState({
   // `packages/design-tokens/mobile.d.ts`.
   const resolvedIconColor = iconColor ?? colors.textMuted;
 
-  // Pulsing animation for the icon container
-  const pulseScale = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.6)).current;
+  // Pulsing animation for the icon container.
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [pulseScale] = useState(() => new Animated.Value(1));
+  const [pulseOpacity] = useState(() => new Animated.Value(0.6));
 
   useEffect(() => {
     if (!shouldAnimate || !IconComponent) return;
@@ -134,20 +138,24 @@ export function EmptyState({
   }, [shouldAnimate, IconComponent, pulseScale, pulseOpacity]);
 
   // Animation values for staggered entrance
-  const containerOpacity = useRef(
-    new Animated.Value(shouldAnimate ? 0 : 1),
-  ).current;
-  const containerScale = useRef(
-    new Animated.Value(shouldAnimate ? 0.95 : 1),
-  ).current;
-  const iconOpacity = useRef(new Animated.Value(shouldAnimate ? 0 : 1)).current;
-  const iconScale = useRef(new Animated.Value(shouldAnimate ? 0.9 : 1)).current;
-  const actionOpacity = useRef(
-    new Animated.Value(shouldAnimate ? 0 : 1),
-  ).current;
-  const actionTranslateY = useRef(
-    new Animated.Value(shouldAnimate ? 8 : 0),
-  ).current;
+  const [containerOpacity] = useState(
+    () => new Animated.Value(shouldAnimate ? 0 : 1),
+  );
+  const [containerScale] = useState(
+    () => new Animated.Value(shouldAnimate ? 0.95 : 1),
+  );
+  const [iconOpacity] = useState(
+    () => new Animated.Value(shouldAnimate ? 0 : 1),
+  );
+  const [iconScale] = useState(
+    () => new Animated.Value(shouldAnimate ? 0.9 : 1),
+  );
+  const [actionOpacity] = useState(
+    () => new Animated.Value(shouldAnimate ? 0 : 1),
+  );
+  const [actionTranslateY] = useState(
+    () => new Animated.Value(shouldAnimate ? 8 : 0),
+  );
 
   useEffect(() => {
     if (!shouldAnimate) return;
