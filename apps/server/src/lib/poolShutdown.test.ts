@@ -138,6 +138,27 @@ describe("endPoolWithAbortTimeout (audit P2-5)", () => {
     );
   });
 
+  it("stamps the `pool` label into every log line when poolLabel is set", async () => {
+    const logger = makeLogger();
+    const end = vi.fn(async () => {
+      await new Promise<void>((r) => setTimeout(r, 10));
+    });
+
+    const resultP = endPoolWithAbortTimeout(
+      { end },
+      { timeoutMs: POOL_END_TIMEOUT_MS, logger, poolLabel: "replica" },
+    );
+
+    await vi.advanceTimersByTimeAsync(10);
+
+    const result = await resultP;
+    expect(result).toEqual({ ok: true, reason: "ended" });
+    expect(logger.info).toHaveBeenCalledWith({
+      msg: "pg_pool_ended",
+      pool: "replica",
+    });
+  });
+
   it("aborts immediately when externalSignal is already aborted at entry", async () => {
     const logger = makeLogger();
     const end = vi.fn(() => new Promise<void>(() => {}));

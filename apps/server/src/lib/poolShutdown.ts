@@ -59,6 +59,13 @@ export interface EndPoolOptions {
    * скасовується миттєво.
    */
   externalSignal?: AbortSignal;
+  /**
+   * Опційна мітка пулу (`"primary"` | `"replica"` | …), яка додається у
+   * кожен лог-рядок як поле `pool`. Дозволяє дашбордам розрізняти drain
+   * primary- і replica-пулів, коли обидва дренуються в одному shutdown-і.
+   * Якщо не задано — лог-обʼєкти лишаються без поля `pool` (backward-compat).
+   */
+  poolLabel?: string;
 }
 
 /**
@@ -69,7 +76,10 @@ export async function endPoolWithAbortTimeout(
   pool: Pick<Pool, "end">,
   options: EndPoolOptions,
 ): Promise<EndPoolResult> {
-  const { timeoutMs, logger, externalSignal } = options;
+  const { timeoutMs, logger, externalSignal, poolLabel } = options;
+  // Спред-мітка пулу для логів; порожня, якщо `poolLabel` не заданий, тож
+  // лог-обʼєкти лишаються byte-identical до старої поведінки (backward-compat).
+  const poolField = poolLabel ? { pool: poolLabel } : {};
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -118,16 +128,18 @@ export async function endPoolWithAbortTimeout(
     const result = await Promise.race([endPromise, abortPromise]);
 
     if (result.ok) {
-      logger?.info({ msg: "pg_pool_ended" });
+      logger?.info({ msg: "pg_pool_ended", ...poolField });
     } else if (result.reason === "aborted") {
       logger?.warn({
         msg: "pg_pool_end_timeout",
+        ...poolField,
         timeoutMs,
         abortedAfterMs: result.abortedAfterMs,
       });
     } else {
       logger?.warn({
         msg: "pg_pool_end_error",
+        ...poolField,
         err: serializeError(result.err, { includeStack: false }),
       });
     }

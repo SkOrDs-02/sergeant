@@ -50,6 +50,11 @@ import type { PoolClient, QueryResult, QueryResultRow } from "pg";
 import { logger } from "./obs/logger.js";
 import { env } from "./env.js";
 import pool from "./db.js";
+import {
+  endPoolWithAbortTimeout,
+  type EndPoolOptions,
+  type EndPoolResult,
+} from "./lib/poolShutdown.js";
 
 /** Чи увімкнений read-replica routing у цьому процесі. */
 export const REPLICA_ENABLED: boolean = Boolean(env.DATABASE_URL_REPLICA);
@@ -207,6 +212,42 @@ export function getReplicaPoolStats() {
     idleCount: replicaPool.idleCount,
     waitingCount: replicaPool.waitingCount,
   };
+}
+
+/**
+ * Результат дренажу replica pool. `"skipped"` — коли реплiка не
+ * сконфігурована (`DATABASE_URL_REPLICA` порожній), тож дренувати нічого;
+ * решта reason-ів дзеркалять `EndPoolResult` від primary-drain-у.
+ */
+export type DrainReplicaResult =
+  | EndPoolResult
+  | { ok: true; reason: "skipped" };
+
+/**
+ * Bounded drain для replica pool під час graceful shutdown. No-op (повертає
+ * `{ ok: true, reason: "skipped" }`), якщо `DATABASE_URL_REPLICA` не заданий —
+ * single-URL деплоїменти (dev, docker-compose) не мають окремого пулу для
+ * дренажу.
+ *
+ * Коли реплiка сконфігурована — використовує той самий
+ * `endPoolWithAbortTimeout`, що й primary, з `pool: "replica"` міткою у логах,
+ * щоб дашборд розрізняв два пули. Дзеркалить контракт primary-drain-у: ніколи
+ * не throws, повертає структурований результат.
+ *
+ * У shutdown-послідовності `index.ts` викликається **паралельно** з
+ * primary-drain-ом (`Promise.all`): пули незалежні, кожен bounded окремим
+ * `timeoutMs`, тож паралельний дренаж не подвоює grace-бюджет.
+ */
+export async function drainReplicaPool(
+  options: Omit<EndPoolOptions, "poolLabel">,
+): Promise<DrainReplicaResult> {
+  if (!replicaPool) {
+    return { ok: true, reason: "skipped" };
+  }
+  return endPoolWithAbortTimeout(replicaPool, {
+    ...options,
+    poolLabel: "replica",
+  });
 }
 
 /** Експорт для tests — не використовувати у production-коді. */
