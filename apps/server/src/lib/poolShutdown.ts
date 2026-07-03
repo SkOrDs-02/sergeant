@@ -60,12 +60,13 @@ export interface EndPoolOptions {
    */
   externalSignal?: AbortSignal;
   /**
-   * Опційна мітка пулу (`"primary"` | `"replica"` | …), яка додається у
-   * кожен лог-рядок як поле `pool`. Дозволяє дашбордам розрізняти drain
-   * primary- і replica-пулів, коли обидва дренуються в одному shutdown-і.
+   * Опційна мітка пулу, яка додається у кожен лог-рядок як поле `pool`.
+   * Дозволяє дашбордам розрізняти drain primary- і replica-пулів, коли
+   * обидва дренуються в одному shutdown-і. Literal union — щоб typo у мітці
+   * ловився компілятором; новий пул = свідоме розширення union-а.
    * Якщо не задано — лог-обʼєкти лишаються без поля `pool` (backward-compat).
    */
-  poolLabel?: string;
+  poolLabel?: "primary" | "replica";
 }
 
 /**

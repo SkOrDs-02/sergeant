@@ -242,6 +242,10 @@ function extractSqlTableBodies(content) {
 
 // Прибирає `-- …` та `/* … */` коментарі, щоб DDL у коментарях (напр.
 // приклади `DROP TABLE …` у шапці міграції) не парсились як реальні statement-и.
+// Обмеження (свідоме): regex не знає про string-літерали — `--` усередині
+// `DEFAULT 'foo--bar'` обріже хвіст рядка. Для drift-tooling це прийнятно:
+// у наших міграціях таких літералів нема; якщо з'являться — перейти на
+// quote-aware сканер.
 function stripSqlComments(content) {
   return content.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
 }
