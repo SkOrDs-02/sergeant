@@ -1,6 +1,6 @@
 # Railway (API + PostgreSQL) + Vercel (фронт)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
 > **Status:** Active
 
 ## 1. PostgreSQL на Railway
@@ -16,6 +16,9 @@
 
 1. **Add service** → **GitHub repo** → обери репозиторій Hub.
 2. У налаштуваннях сервісу: **Settings** → якщо не підхопився Dockerfile, вкажи **Dockerfile path**: `Dockerfile.api` (або використай [railway.toml](../../../railway.toml) у корені — вже налаштований).
+
+   > **Config-as-code (`railway.toml` → `[deploy]`).** Pre-deploy job (`preDeployCommand = "node dist-server/migrate.js"` — release-stage міграції) і health-probe (`healthcheckPath = "/health"`, `healthcheckTimeout = 300` с) тепер задані у файлі, а не лише в дашборді. **Правило пріоритету Railway:** значення з config-as-code завжди перекривають дашборд, але **лише для поточного деплою** — стор дашборду не мутується, а поля, яких у файлі немає, беруться з дашборду. Тому дашборд-значення pre-deploy/health чистити не обов'язково (файл їх однаково перекриє), але щоб уникнути дрейфу — тримай їх синхронними або лиши джерелом істини сам `railway.toml`. Pre-deploy потребує env `MIGRATE_DATABASE_URL` (public DB URL) — internal-networking на цій стадії ще не піднятий.
+
 3. У **Variables** додай:
 
 | Змінна                           | Значення                                                                                                                                                                                                   |
@@ -84,6 +87,7 @@ ALLOWED_ORIGINS=http://localhost:5173
 ## 6. Моніторинг і логи
 
 - **Healthcheck**:\n+ - **Uptime**: `GET /livez` кожні 1–5 хв.\n+ - **Readiness (з БД)**: `GET /readyz` (або `/health`) — корисно, якщо хочеш алертити саме проблеми з Postgres.\n+ - Алерт при **не 200** або тілі не `ok`.
+- **Railway-probe (config-as-code)**: власний probe самого Railway (рестарт unhealthy-контейнера) береться з `healthcheckPath = "/health"` у [`railway.toml`](../../../railway.toml) → `[deploy]`, а не з дашборду. Це окремо від зовнішнього uptime-моніторингу вище.
 - **Логи Railway**: шукай за **`X-Request-Id`** з відповіді API або з тіла помилки (`requestId`), щоб зв’язати клієнт і сервер.
 - **Структуровані рядки** `{"msg":"http",...}` — фільтруй за `status >= 500` або `path` для регресій.
 
