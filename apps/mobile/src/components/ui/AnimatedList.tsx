@@ -13,7 +13,7 @@
  * - Optional pull-to-refresh support
  */
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   AccessibilityInfo,
   Animated,
@@ -76,9 +76,15 @@ export function AnimatedListItem({
   const reduceMotion = useReduceMotion();
   const shouldAnimate = !disableAnimation && !reduceMotion;
 
-  const opacity = useRef(new Animated.Value(shouldAnimate ? 0 : 1)).current;
-  const translateY = useRef(new Animated.Value(shouldAnimate ? 20 : 0)).current;
-  const scale = useRef(new Animated.Value(shouldAnimate ? 0.95 : 1)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [opacity] = useState(() => new Animated.Value(shouldAnimate ? 0 : 1));
+  const [translateY] = useState(
+    () => new Animated.Value(shouldAnimate ? 20 : 0),
+  );
+  const [scale] = useState(() => new Animated.Value(shouldAnimate ? 0.95 : 1));
 
   useEffect(() => {
     if (!shouldAnimate) return;
@@ -187,7 +193,7 @@ export function AnimatedFadeIn({
   style?: ViewProps["style"];
 }) {
   const reduceMotion = useReduceMotion();
-  const opacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
+  const [opacity] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -248,17 +254,19 @@ export function AnimatedSlideIn({
     }
   };
 
-  const opacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
-  const translateX = useRef(
-    new Animated.Value(
-      reduceMotion ? 0 : (getInitialTransform().translateX ?? 0),
-    ),
-  ).current;
-  const translateY = useRef(
-    new Animated.Value(
-      reduceMotion ? 0 : (getInitialTransform().translateY ?? 0),
-    ),
-  ).current;
+  const [opacity] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  const [translateX] = useState(
+    () =>
+      new Animated.Value(
+        reduceMotion ? 0 : (getInitialTransform().translateX ?? 0),
+      ),
+  );
+  const [translateY] = useState(
+    () =>
+      new Animated.Value(
+        reduceMotion ? 0 : (getInitialTransform().translateY ?? 0),
+      ),
+  );
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -324,10 +332,10 @@ export function AnimatedScale({
   style?: ViewProps["style"];
 }) {
   const reduceMotion = useReduceMotion();
-  const opacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
-  const scale = useRef(
-    new Animated.Value(reduceMotion ? 1 : initialScale),
-  ).current;
+  const [opacity] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  const [scale] = useState(
+    () => new Animated.Value(reduceMotion ? 1 : initialScale),
+  );
 
   useEffect(() => {
     if (reduceMotion) return;

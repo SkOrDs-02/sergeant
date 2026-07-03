@@ -14,7 +14,7 @@
  */
 
 import * as Haptics from "expo-haptics";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AccessibilityInfo, Animated, Pressable, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
@@ -107,10 +107,14 @@ function ConfettiParticle({
   color: string;
   size: number;
 }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [translateY] = useState(() => new Animated.Value(0));
+  const [translateX] = useState(() => new Animated.Value(0));
+  const [scale] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const angle = Math.random() * Math.PI * 2;
@@ -191,11 +195,11 @@ export function AnimatedCheckbox({
   const dimension = sizePx[size];
   const strokeWidth = strokeWidths[size];
 
-  // Animation values
-  const scale = useRef(new Animated.Value(1)).current;
-  const bgOpacity = useRef(new Animated.Value(checked ? 1 : 0)).current;
-  const checkProgress = useRef(new Animated.Value(checked ? 1 : 0)).current;
-  const borderScale = useRef(new Animated.Value(checked ? 0 : 1)).current;
+  // Animation values (lazy useState — see AI-CONTEXT in ConfettiParticle)
+  const [scale] = useState(() => new Animated.Value(1));
+  const [bgOpacity] = useState(() => new Animated.Value(checked ? 1 : 0));
+  const [checkProgress] = useState(() => new Animated.Value(checked ? 1 : 0));
+  const [borderScale] = useState(() => new Animated.Value(checked ? 0 : 1));
 
   // Confetti state
   const [showParticles, setShowParticles] = useState(false);
