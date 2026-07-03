@@ -1,0 +1,251 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`nutrition dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-stable (sql, params) sequence for the canonical op set 1`] = `
+[
+  {
+    "params": [
+      "meal1",
+      "u1",
+      "2026-06-20T08:30:00.000Z",
+      "breakfast",
+      "Вівсянка",
+      "Сніданок",
+      350,
+      12.5,
+      7,
+      55,
+      "manual",
+      "manual",
+      250,
+      null,
+      0,
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO nutrition_meals
+       (id, user_id, eaten_at, meal_type, name, label,
+        kcal, protein_g, fat_g, carbs_g,
+        source, macro_source, amount_g, food_id, is_demo,
+        created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+     ON CONFLICT(id) DO UPDATE SET
+       eaten_at     = excluded.eaten_at,
+       meal_type    = excluded.meal_type,
+       name         = excluded.name,
+       label        = excluded.label,
+       kcal         = excluded.kcal,
+       protein_g    = excluded.protein_g,
+       fat_g        = excluded.fat_g,
+       carbs_g      = excluded.carbs_g,
+       source       = excluded.source,
+       macro_source = excluded.macro_source,
+       amount_g     = excluded.amount_g,
+       food_id      = excluded.food_id,
+       is_demo      = excluded.is_demo,
+       updated_at   = excluded.updated_at,
+       deleted_at   = NULL
+     WHERE excluded.updated_at > nutrition_meals.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "meal2",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE nutrition_meals
+        SET deleted_at = ?, updated_at = ?
+      WHERE id = ? AND user_id = ? AND updated_at < ?",
+  },
+  {
+    "params": [
+      "p1",
+      "u1",
+      "Дім",
+      "",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO nutrition_pantries
+       (id, user_id, name, text, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, NULL)
+     ON CONFLICT(id) DO UPDATE SET
+       name       = excluded.name,
+       text       = excluded.text,
+       updated_at = excluded.updated_at,
+       deleted_at = NULL
+     WHERE excluded.updated_at > nutrition_pantries.updated_at",
+  },
+  {
+    "params": [
+      "pi1",
+      "p1",
+      "u1",
+      "Гречка",
+      2,
+      "kg",
+      null,
+      0,
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO nutrition_pantry_items
+         (id, pantry_id, user_id, name, qty, unit, notes, sort_order,
+          created_at, updated_at, deleted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+       ON CONFLICT(id) DO UPDATE SET
+         pantry_id  = excluded.pantry_id,
+         name       = excluded.name,
+         qty        = excluded.qty,
+         unit       = excluded.unit,
+         notes      = excluded.notes,
+         sort_order = excluded.sort_order,
+         updated_at = excluded.updated_at,
+         deleted_at = NULL
+       WHERE excluded.updated_at > nutrition_pantry_items.updated_at",
+  },
+  {
+    "params": [
+      "pi2",
+      "p1",
+      "u1",
+      "Олія",
+      null,
+      null,
+      "докупити",
+      1,
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO nutrition_pantry_items
+         (id, pantry_id, user_id, name, qty, unit, notes, sort_order,
+          created_at, updated_at, deleted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+       ON CONFLICT(id) DO UPDATE SET
+         pantry_id  = excluded.pantry_id,
+         name       = excluded.name,
+         qty        = excluded.qty,
+         unit       = excluded.unit,
+         notes      = excluded.notes,
+         sort_order = excluded.sort_order,
+         updated_at = excluded.updated_at,
+         deleted_at = NULL
+       WHERE excluded.updated_at > nutrition_pantry_items.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "p1",
+      "u1",
+      "pi1",
+      "pi2",
+    ],
+    "sql": "UPDATE nutrition_pantry_items
+        SET deleted_at = ?, updated_at = ?
+      WHERE pantry_id = ?
+        AND user_id = ?
+        AND deleted_at IS NULL
+        AND id NOT IN (?,?)",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "p2",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE nutrition_pantries
+        SET deleted_at = ?, updated_at = ?
+      WHERE id = ? AND user_id = ? AND updated_at < ?",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "p2",
+      "u1",
+    ],
+    "sql": "UPDATE nutrition_pantry_items
+        SET deleted_at = ?, updated_at = ?
+      WHERE pantry_id = ? AND user_id = ? AND deleted_at IS NULL",
+  },
+  {
+    "params": [
+      "u1",
+      "{"kcalTarget":2200}",
+      "p1",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO nutrition_prefs
+       (user_id, prefs_json, active_pantry_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       prefs_json       = excluded.prefs_json,
+       active_pantry_id = excluded.active_pantry_id,
+       updated_at       = excluded.updated_at
+     WHERE excluded.updated_at > nutrition_prefs.updated_at",
+  },
+  {
+    "params": [
+      "r1",
+      "u1",
+      "Борщ",
+      "{"servings":4}",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO nutrition_recipes
+       (id, user_id, name, data_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, NULL)
+     ON CONFLICT(id) DO UPDATE SET
+       name       = excluded.name,
+       data_json  = excluded.data_json,
+       updated_at = excluded.updated_at,
+       deleted_at = NULL
+     WHERE excluded.updated_at > nutrition_recipes.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "r2",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE nutrition_recipes
+        SET deleted_at = ?, updated_at = ?
+      WHERE id = ? AND user_id = ? AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "2026-06-20",
+      1500,
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO nutrition_water_log (user_id, date_key, volume_ml, updated_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(user_id, date_key) DO UPDATE SET
+       volume_ml  = excluded.volume_ml,
+       updated_at = excluded.updated_at
+     WHERE excluded.updated_at > nutrition_water_log.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "{"categories":[]}",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO nutrition_shopping_list (user_id, data_json, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       data_json  = excluded.data_json,
+       updated_at = excluded.updated_at
+     WHERE excluded.updated_at > nutrition_shopping_list.updated_at",
+  },
+]
+`;
