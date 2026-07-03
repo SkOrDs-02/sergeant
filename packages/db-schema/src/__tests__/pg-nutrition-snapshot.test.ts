@@ -279,6 +279,7 @@ describe("pg/nutritionWaterLog schema snapshot", () => {
       "user_id",
       "date_key",
       "volume_ml",
+      "created_at",
       "updated_at",
     ]);
   });
@@ -315,7 +316,12 @@ describe("pg/nutritionShoppingList schema snapshot", () => {
 
   it("declares all expected columns", () => {
     const columnNames = config.columns.map((c) => c.name);
-    expect(columnNames).toEqual(["user_id", "data", "updated_at"]);
+    expect(columnNames).toEqual([
+      "user_id",
+      "data",
+      "created_at",
+      "updated_at",
+    ]);
   });
 
   it("declares column types matching migration 051", () => {

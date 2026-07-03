@@ -202,6 +202,9 @@ export const nutritionWaterLog = sqliteTable(
     userId: text("user_id").notNull(),
     dateKey: text("date_key").notNull(),
     volumeMl: integer("volume_ml").notNull().default(0),
+    // ADR-0073 Крок 0.5а: nullable до Кроку 2 — SQLite ADD COLUMN не
+    // приймає неконстантний DEFAULT, адаптери колонку ще не пишуть.
+    createdAt: text("created_at"),
     updatedAt: text("updated_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -221,6 +224,8 @@ export const nutritionWaterLog = sqliteTable(
 export const nutritionShoppingList = sqliteTable("nutrition_shopping_list", {
   userId: text("user_id").primaryKey(),
   dataJson: text("data_json").notNull().default('{"categories":[]}'),
+  // ADR-0073 Крок 0.5а: nullable до Кроку 2 (див. nutritionWaterLog).
+  createdAt: text("created_at"),
   updatedAt: text("updated_at")
     .notNull()
     .default(sql`(datetime('now'))`),

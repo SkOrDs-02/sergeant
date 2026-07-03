@@ -326,6 +326,7 @@ describe("sqlite/nutritionWaterLog schema snapshot", () => {
       "user_id",
       "date_key",
       "volume_ml",
+      "created_at",
       "updated_at",
     ]);
   });
@@ -362,7 +363,12 @@ describe("sqlite/nutritionShoppingList schema snapshot", () => {
 
   it("declares all expected columns", () => {
     const columnNames = config.columns.map((c) => c.name);
-    expect(columnNames).toEqual(["user_id", "data_json", "updated_at"]);
+    expect(columnNames).toEqual([
+      "user_id",
+      "data_json",
+      "created_at",
+      "updated_at",
+    ]);
   });
 
   it("declares column types matching the inline migration", () => {
@@ -405,7 +411,7 @@ describe("sqlite/nutrition migrations exports", () => {
 
   it("ships the Stage 11 002_nutrition_full_state.sql delta", () => {
     // Append-only — `001_*` first, then `002_*` for the Stage 11 delta.
-    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(2);
+    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(3);
     expect(NUTRITION_CLIENT_MIGRATIONS[1]!.name).toBe(
       "002_nutrition_full_state.sql",
     );
@@ -417,6 +423,23 @@ describe("sqlite/nutrition migrations exports", () => {
     );
     expect(NUTRITION_CLIENT_MIGRATIONS[1]!.sql).toMatch(
       /PRIMARY KEY \(user_id, date_key\)/,
+    );
+  });
+
+  it("ships the ADR-0073 003_nutrition_created_at.sql delta", () => {
+    // Дзеркалить Postgres 079_nutrition_created_at.sql: nullable
+    // created_at + backfill з updated_at для обох Stage-11 таблиць.
+    expect(NUTRITION_CLIENT_MIGRATIONS[2]!.name).toBe(
+      "003_nutrition_created_at.sql",
+    );
+    expect(NUTRITION_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /ALTER TABLE nutrition_water_log ADD COLUMN created_at TEXT/,
+    );
+    expect(NUTRITION_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /ALTER TABLE nutrition_shopping_list ADD COLUMN created_at TEXT/,
+    );
+    expect(NUTRITION_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /SET created_at = updated_at/,
     );
   });
 

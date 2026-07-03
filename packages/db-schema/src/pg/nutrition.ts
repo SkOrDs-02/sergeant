@@ -207,6 +207,10 @@ export const nutritionWaterLog = pgTable(
     userId: text("user_id").notNull(),
     dateKey: text("date_key").notNull(),
     volumeMl: integer("volume_ml").notNull().default(0),
+    // ADR-0073 Крок 0.5а: nullable до Кроку 2 — паритет із SQLite-діалектом
+    // (там ADD COLUMN не приймає неконстантний DEFAULT); NOT NULL затягнемо
+    // окремою міграцією, коли адаптери гарантовано пишуть колонку.
+    createdAt: timestamp("created_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -225,6 +229,8 @@ export const nutritionWaterLog = pgTable(
 export const nutritionShoppingList = pgTable("nutrition_shopping_list", {
   userId: text("user_id").primaryKey(),
   data: jsonb().notNull().default({ categories: [] }),
+  // ADR-0073 Крок 0.5а: nullable до Кроку 2 (див. nutritionWaterLog).
+  createdAt: timestamp("created_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
