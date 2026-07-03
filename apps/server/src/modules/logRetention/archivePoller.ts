@@ -47,6 +47,7 @@
 import { gzipSync } from "node:zlib";
 
 import type { Pool } from "pg";
+import { toLocalISODate } from "@sergeant/shared";
 
 import { logger } from "../../obs/logger.js";
 import { logArchiveRowsTotal } from "../../obs/metrics.js";
@@ -306,7 +307,10 @@ export class LogArchivePoller {
     table: string,
     rows: ReadonlyArray<{ id: string }>,
   ): string {
-    const date = this.now().toISOString().slice(0, 10);
+    // Europe/Kyiv day boundary (домен-інваріант) — archive object date prefix
+    // matches Kyiv civil day, not UTC, so a nightly batch lands in the same
+    // day-folder as the rest of the domain's day-keyed data.
+    const date = toLocalISODate(this.now());
     const first = rows[0]?.id ?? "unknown";
     const last = rows[rows.length - 1]?.id ?? first;
     return `openclaw-archive/${date}/${table}__${first}-${last}.jsonl.gz`;

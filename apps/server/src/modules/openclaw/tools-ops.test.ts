@@ -502,6 +502,41 @@ describe("recordDecision", () => {
     expect(capturedFetch).toHaveLength(0);
   });
 
+  it("dates the decision file on the Europe/Kyiv civil day at the UTC→Kyiv boundary", async () => {
+    // 2026-05-15T21:30:00Z = 2026-05-16 00:30 Kyiv (summer, UTC+3). The
+    // decision-record filename must carry the Kyiv day `2026-05-16`, not the
+    // UTC day `2026-05-15`.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-15T21:30:00Z"));
+    try {
+      vi.mocked(getOpenclawGithubAuth).mockResolvedValue({
+        token: "ghs_tok",
+        source: "app",
+      });
+      const pool = makeFakePool([{ id: "55" }]);
+      let fetchCount = 0;
+      installFetch(() => {
+        fetchCount++;
+        if (fetchCount === 1) return jsonRes({ object: { sha: "base_sha" } });
+        if (fetchCount === 2) return jsonRes({ ref: "refs/heads/branch" }, 201);
+        if (fetchCount === 3) return jsonRes({ content: { sha: "new_sha" } });
+        return jsonRes({ html_url: "https://github.com/owner/repo/pull/1" });
+      });
+
+      await recordDecision(pool, baseInput);
+
+      // Call #3 is the PUT that creates the decision file at its path.
+      const putContentsCall = capturedFetch.find((c) =>
+        c.url.includes("/contents/docs/decisions/"),
+      );
+      expect(putContentsCall).toBeDefined();
+      expect(putContentsCall!.url).toContain("2026-05-16");
+      expect(putContentsCall!.url).not.toContain("2026-05-15");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("fail-soft: PR-create failure повертає prUrl=null + prError без throw", async () => {
     vi.mocked(getOpenclawGithubAuth).mockResolvedValue({
       token: "ghs_tok",

@@ -18,6 +18,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { Pool, QueryResult } from "pg";
+import { toLocalISODate } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
 import { env } from "../../env.js";
 import { getOpenclawGithubAuth } from "./github-auth.js";
@@ -1248,7 +1249,9 @@ function decisionMarkdown(input: {
   rationale: string;
   alternatives?: string | undefined;
 }): string {
-  const date = new Date().toISOString().slice(0, 10);
+  // Europe/Kyiv day boundary (домен-інваріант) — decision-record дата
+  // відповідає київському дню, коли рішення зафіксовано, не UTC.
+  const date = toLocalISODate();
   return [
     `# ${input.topic}`,
     "",
@@ -1287,7 +1290,8 @@ async function openDecisionPr(
 ): Promise<string> {
   const repo = env.OPENCLAW_GITHUB_REPO;
   const baseBranch = env.OPENCLAW_GITHUB_BASE_BRANCH;
-  const date = new Date().toISOString().slice(0, 10);
+  // Europe/Kyiv day boundary (домен-інваріант) — filename дата = київський день.
+  const date = toLocalISODate();
   const slug = decisionSlug(input.topic);
   const branch = `openclaw/decision-${input.decisionId}-${slug}`;
   const filePath = `docs/decisions/${date}-${slug}.md`;

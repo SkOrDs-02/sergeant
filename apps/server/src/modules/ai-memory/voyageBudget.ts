@@ -88,6 +88,7 @@ const state: BudgetState = {
  * за-Kyiv-time finyk-roll-up-ами.
  */
 export function getVoyageUtcDayKey(now: number = Date.now()): string {
+  // AI-NOTE: UTC intentional — vendor billing day boundary
   return new Date(now).toISOString().slice(0, 10);
 }
 

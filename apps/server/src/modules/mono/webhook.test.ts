@@ -53,12 +53,14 @@ import {
   monoWebhookDurationMs as _histogram,
 } from "../../obs/metrics.js";
 import { sendToUserQuietly as _sendToUserQuietly } from "../../push/send.js";
+import { enqueueMemoryIngest as _enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { webhookHandler } from "./webhook.js";
 
 const dbQuery = _query as unknown as Mock;
 const pool = _pool as unknown as { connect: Mock; query: Mock };
 const counter = _counter as unknown as { inc: Mock };
 const histogram = _histogram as unknown as { observe: Mock };
+const enqueueMemoryIngest = _enqueueMemoryIngest as unknown as Mock;
 const sendPushMock = _sendToUserQuietly as unknown as Mock;
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -271,6 +273,50 @@ describe("webhookHandler", () => {
       monoAccountId: "acc_uah",
     });
     expect(sendPushMock!.mock.calls[0]![2]).toEqual({ module: "mono" });
+  });
+
+  it("dates the AI-memory content on the Europe/Kyiv civil day at the UTC→Kyiv boundary", async () => {
+    // time = 2025-05-15T21:30:00Z = 2025-05-16 00:30 Kyiv (summer, UTC+3).
+    // The transaction's Kyiv day is the 16th, so the memory content string
+    // must carry `2025-05-16`. A UTC `toISOString().slice(0,10)` would emit
+    // the wrong `2025-05-15`.
+    const boundaryUnix = Math.floor(
+      new Date("2025-05-15T21:30:00Z").getTime() / 1000,
+    );
+    const payload = {
+      type: "StatementItem",
+      data: {
+        account: "acc_uah",
+        statementItem: {
+          id: "tx_boundary",
+          time: boundaryUnix,
+          description: "Кава",
+          mcc: 5814,
+          amount: -6500,
+          operationAmount: -6500,
+          currencyCode: 980,
+          balance: 1500000,
+        },
+      },
+    };
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: true });
+    pool.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await webhookHandler(makeReq(VALID_SECRET, payload), res);
+    await Promise.resolve();
+
+    expect(res.statusCode).toBe(200);
+    expect(enqueueMemoryIngest).toHaveBeenCalledTimes(1);
+    const ingestArg = enqueueMemoryIngest.mock.calls[0]![0] as {
+      content: string;
+    };
+    expect(ingestArg.content).toContain("2025-05-16");
+    expect(ingestArg.content).not.toContain("2025-05-15");
   });
 
   it("does NOT fire push when ON CONFLICT updates existing transaction (Monobank retry)", async () => {

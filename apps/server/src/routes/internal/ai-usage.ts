@@ -1,5 +1,6 @@
 import { Router } from "express";
 import type { Pool } from "pg";
+import { toLocalISODate } from "@sergeant/shared";
 import { asyncHandler } from "../../http/index.js";
 
 interface AiUsageBody {
@@ -32,7 +33,10 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
       }
 
       const totalTokens = inputTokens + outputTokens;
-      const usageDay = new Date().toISOString().slice(0, 10);
+      // Europe/Kyiv day boundary (домен-інваріант) — той самий стовпець
+      // `ai_usage_daily.usage_day` пишеться через `toLocalISODate` в
+      // anthropicUsageStore і читається як Kyiv-день у aiCostSummary.
+      const usageDay = toLocalISODate();
 
       await pool.query(
         `INSERT INTO ai_usage_daily (
