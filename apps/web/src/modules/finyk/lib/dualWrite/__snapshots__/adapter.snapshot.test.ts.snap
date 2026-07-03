@@ -1,0 +1,173 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`finyk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-stable (sql, params) sequence for the canonical op set 1`] = `
+[
+  {
+    "params": [
+      "u1",
+      "acc1",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO finyk_hidden_accounts
+       (user_id, account_id, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, NULL)
+     ON CONFLICT(user_id, account_id) DO UPDATE SET
+       updated_at = excluded.updated_at,
+       deleted_at = NULL
+     WHERE excluded.updated_at > finyk_hidden_accounts.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "u1",
+      "tx1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE finyk_hidden_transactions
+        SET deleted_at = ?, updated_at = ?
+      WHERE user_id = ? AND transaction_id = ? AND updated_at < ?",
+  },
+  {
+    "params": [
+      "b1",
+      "u1",
+      "{"x":1}",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO finyk_budgets
+       (id, user_id, data_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)
+     ON CONFLICT(id) DO UPDATE SET
+       data_json  = excluded.data_json,
+       updated_at = excluded.updated_at,
+       deleted_at = NULL
+     WHERE excluded.updated_at > finyk_budgets.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "b1",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE finyk_budgets
+        SET deleted_at = ?, updated_at = ?
+      WHERE id = ? AND user_id = ? AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "t1",
+      "food",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO finyk_tx_categories
+       (user_id, transaction_id, category_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(user_id, transaction_id) DO UPDATE SET
+       category_id = excluded.category_id,
+       updated_at  = excluded.updated_at
+     WHERE excluded.updated_at > finyk_tx_categories.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "t1",
+    ],
+    "sql": "DELETE FROM finyk_tx_categories
+      WHERE user_id = ? AND transaction_id = ?",
+  },
+  {
+    "params": [
+      "u1",
+      "t2",
+      "[]",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO finyk_tx_splits
+       (user_id, transaction_id, splits_json, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(user_id, transaction_id) DO UPDATE SET
+       splits_json = excluded.splits_json,
+       updated_at  = excluded.updated_at
+     WHERE excluded.updated_at > finyk_tx_splits.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "t2",
+    ],
+    "sql": "DELETE FROM finyk_tx_splits
+      WHERE user_id = ? AND transaction_id = ?",
+  },
+  {
+    "params": [
+      "u1",
+      "t3",
+      "[]",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO finyk_mono_debt_links
+       (user_id, transaction_id, debt_ids_json, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(user_id, transaction_id) DO UPDATE SET
+       debt_ids_json = excluded.debt_ids_json,
+       updated_at    = excluded.updated_at
+     WHERE excluded.updated_at > finyk_mono_debt_links.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "t3",
+    ],
+    "sql": "DELETE FROM finyk_mono_debt_links
+      WHERE user_id = ? AND transaction_id = ?",
+  },
+  {
+    "params": [
+      "u1",
+      "2026-06",
+      1000,
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO finyk_networth_history
+       (user_id, month, networth, snapshot_json, created_at, updated_at)
+     VALUES (?, ?, ?, '{}', ?, ?)
+     ON CONFLICT(user_id, month) DO UPDATE SET
+       networth   = excluded.networth,
+       updated_at = excluded.updated_at
+     WHERE excluded.updated_at > finyk_networth_history.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "{}",
+      1,
+      "[]",
+      "[]",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO finyk_prefs
+       (user_id, monthly_plan_json, show_balance,
+        excluded_stat_tx_ids_json, dismissed_recurring_json,
+        created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       monthly_plan_json         = excluded.monthly_plan_json,
+       show_balance              = excluded.show_balance,
+       excluded_stat_tx_ids_json = excluded.excluded_stat_tx_ids_json,
+       dismissed_recurring_json  = excluded.dismissed_recurring_json,
+       updated_at                = excluded.updated_at
+     WHERE excluded.updated_at > finyk_prefs.updated_at",
+  },
+]
+`;
