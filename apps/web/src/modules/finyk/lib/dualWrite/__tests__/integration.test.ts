@@ -300,6 +300,67 @@ describe("Finyk dual-write — orchestrator (registerFinykDualWriteContext)", ()
       triggerFinykDualWrite(EMPTY_FINYK_STATE, EMPTY_FINYK_STATE),
     ).not.toThrow();
   });
+
+  // Regression — deep-module-crud.spec.ts:105 ("finyk: creates, edits,
+  // deletes, and restores a manual expense"). A create immediately
+  // followed by an edit to the SAME row queues two flushes through the
+  // DCRUD-007 single-flight queue in `triggerFinykDualWrite`. Each flush
+  // computes its own `clientTs` from `ctx.getNow()` — `Date.now()`
+  // resolution. `makeCtx()` pins `getNow` to a single constant, which is
+  // the deterministic stand-in for two flushes landing in the identical
+  // millisecond (plausible in real usage, near-certain on CI's coarser
+  // system-timer resolution). Without a strictly-monotonic clientTs, the
+  // adapter's LWW guard (`WHERE excluded.updated_at > table.updated_at`,
+  // adapter.ts) silently drops the edit — the row keeps the CREATE-time
+  // `data_json` forever, exactly matching the reported symptom (edit
+  // visible in React state, never in the SQLite row the post-reload
+  // overlay reads from).
+  it("create-then-edit of the same manual expense with an identical clientTs still applies the edit (DCRUD-108)", async () => {
+    registerFinykDualWriteContext(makeCtx());
+
+    const created: FinykDualWriteState = {
+      ...EMPTY_FINYK_STATE,
+      manualExpenses: [
+        {
+          id: "m-dcrud-108",
+          dataJson: JSON.stringify({
+            id: "m-dcrud-108",
+            description: "DCRUD кава",
+            amount: 123,
+          }),
+        },
+      ],
+    };
+    triggerFinykDualWrite(EMPTY_FINYK_STATE, created);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    const edited: FinykDualWriteState = {
+      ...EMPTY_FINYK_STATE,
+      manualExpenses: [
+        {
+          id: "m-dcrud-108",
+          dataJson: JSON.stringify({
+            id: "m-dcrud-108",
+            description: "DCRUD кава оновлено",
+            amount: 123,
+          }),
+        },
+      ],
+    };
+    // Same registered ctx → same `getNow()` constant as the create above,
+    // simulating two flushes that land in the identical millisecond.
+    triggerFinykDualWrite(created, edited);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    const rows = await handle.client.all<{ data_json: string }>(
+      "SELECT data_json FROM finyk_manual_expenses WHERE id = ?",
+      ["m-dcrud-108"],
+    );
+    expect(rows).toHaveLength(1);
+    expect(JSON.parse(rows[0]!.data_json).description).toBe(
+      "DCRUD кава оновлено",
+    );
+  });
 });
 
 describe("Finyk dual-write — applyFinykDualWriteOpsViaContext + mirrors", () => {
