@@ -64,9 +64,6 @@ vi.mock("@shared/components/layout/MeshBackground", () => ({
     <div>{children}</div>
   ),
 }));
-vi.mock("@shared/components/ui/AIPill", () => ({
-  AIPill: () => <div data-testid="ai-pill" />,
-}));
 vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubSettingsSection: vi.fn(),
 }));
@@ -155,15 +152,5 @@ describe("HubHomeView", () => {
       "data-hidden",
       "true",
     );
-  });
-
-  it("shows the AI pill on the dashboard tab outside FTUX", () => {
-    render(<HubHomeView {...props()} />);
-    expect(screen.getByTestId("ai-pill")).toBeInTheDocument();
-  });
-
-  it("hides the AI pill when not on the dashboard tab", () => {
-    render(<HubHomeView {...props({ ui: makeUi({ hubView: "reports" }) })} />);
-    expect(screen.queryByTestId("ai-pill")).not.toBeInTheDocument();
   });
 });

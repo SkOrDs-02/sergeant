@@ -1,6 +1,5 @@
 import { Suspense, type CSSProperties } from "react";
 import { type User } from "@sergeant/shared";
-import { AIPill } from "@shared/components/ui/AIPill";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
 import { HubBottomNav } from "./HubBottomNav";
@@ -144,7 +143,7 @@ export function HubHomeView(props: HubHomeViewProps) {
     // overflow-hidden` is baked into MeshBackground; the remaining
     // `safe-area-pt page-enter` slot through as className.
     // Sergeant v2 redesign Phase 1 (T6 synergy) — exposes
-    // `--bottom-nav-height` so portaled <Sheet>s and the AIPill below
+    // `--bottom-nav-height` so portaled <Sheet>s
     // resolve their `var(--bottom-nav-height, 0px)` calc against a real
     // 60px floor instead of 0px. Closes M4 + M6 (Sheet positioning on
     // hub) with the same single edit. The 60px matches the inner
@@ -220,17 +219,11 @@ export function HubHomeView(props: HubHomeViewProps) {
         />
       </Suspense>
 
-      {/* Sergeant v2 redesign (2026-05, PR-7b) — persistent AI-assistant
-          FAB (tap → opens chat sheet via the hub bus). Shown only on the
-          dashboard tab + hidden during FTUX so the first-action signal
-          stays the single CTA. `bottom={96}` lifts the FAB above the
-          floating glass HubBottomNav (which sits at `mb-3` with ~60px
-          inner height). `standalone` anchors it in the bottom-right
-          corner — on the hub there is no competing module FAB, so it
-          takes the canonical primary-FAB slot. */}
-      {ui.hubView === "dashboard" && !inFtuxSession && (
-        <AIPill standalone bottom={96} />
-      )}
+      {/* The global AI-assistant entry now lives in <HubHeader> (top-bar,
+          brand-tinted sparkle) so it is present on every hub tab and does
+          not depend on the dashboard-only FTUX gate. The previous
+          dashboard FAB duplicated that entry and was invisible on the
+          empty home + reports/profile tabs — user report 2026-07-03. */}
     </MeshBackground>
   );
 }
