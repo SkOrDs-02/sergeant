@@ -165,11 +165,14 @@ describe("051_nutrition_full_state migration", () => {
       for (const f of ups) await execSqlFile(pool, f);
 
       const cols = await listColumns(pool, "nutrition_water_log");
+      // 079_nutrition_created_at.sql (ADR-0073 Крок 0.5а) додає nullable
+      // created_at через ALTER — тому вона остання за ordinal_position.
       expect(cols.map((c) => c.name)).toEqual([
         "user_id",
         "date_key",
         "volume_ml",
         "updated_at",
+        "created_at",
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
@@ -180,6 +183,8 @@ describe("051_nutrition_full_state migration", () => {
       expect(byName["volume_ml"]!.type).toBe("integer");
       expect(byName["volume_ml"]!.nullable).toBe("NO");
       expect(byName["updated_at"]!.type).toBe("timestamp with time zone");
+      expect(byName["created_at"]!.type).toBe("timestamp with time zone");
+      expect(byName["created_at"]!.nullable).toBe("YES");
 
       const pkCheck = await pool.query<{ column_name: string }>(
         `SELECT a.attname AS column_name
@@ -210,10 +215,13 @@ describe("051_nutrition_full_state migration", () => {
       for (const f of ups) await execSqlFile(pool, f);
 
       const cols = await listColumns(pool, "nutrition_shopping_list");
+      // 079_nutrition_created_at.sql (ADR-0073 Крок 0.5а): created_at
+      // остання за ordinal_position (ALTER ADD COLUMN).
       expect(cols.map((c) => c.name)).toEqual([
         "user_id",
         "data",
         "updated_at",
+        "created_at",
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
@@ -222,6 +230,8 @@ describe("051_nutrition_full_state migration", () => {
       expect(byName["data"]!.type).toBe("jsonb");
       expect(byName["data"]!.nullable).toBe("NO");
       expect(byName["updated_at"]!.type).toBe("timestamp with time zone");
+      expect(byName["created_at"]!.type).toBe("timestamp with time zone");
+      expect(byName["created_at"]!.nullable).toBe("YES");
 
       const pkCheck = await pool.query<{ column_name: string }>(
         `SELECT a.attname AS column_name
@@ -392,8 +402,13 @@ describe("051_nutrition_full_state migration", () => {
         shoppingList: await listColumns(pool, "nutrition_shopping_list"),
       };
 
+      // 079 нашаровується на 051-таблиці — drill опускає обидві у
+      // зворотному порядку і піднімає у прямому, інакше відтворена
+      // схема лишиться без created_at і fingerprint розійдеться.
+      await execSqlFile(pool, "079_nutrition_created_at.down.sql");
       await execSqlFile(pool, "051_nutrition_full_state.down.sql");
       await execSqlFile(pool, "051_nutrition_full_state.sql");
+      await execSqlFile(pool, "079_nutrition_created_at.sql");
 
       const after = {
         tables: await listFullStateTables(pool),
