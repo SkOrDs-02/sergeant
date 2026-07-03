@@ -51,12 +51,13 @@
 --
 -- ─── No-rollback ──────────────────────────────────────────────────────
 --
--- `046_drop_module_data.down.sql` НЕ існує. Pre-launch single-user, дані
+-- `046_drop_module_data.down.sql` існує лише як мінімальний stub, що
+-- відтворює спрощену `module_data` для `rollback-sanity.test.ts` — це
+-- НЕ production-rollback. Pre-launch single-user, дані
 -- у `module_data WHERE module='profile'` свідомо discard-яться (вже не
 -- читаються нікуди, не пишуться нікуди), `coach` row-а вже скопійована
 -- у `coach_memory` міграцією 045. Restore не має сенсу. Per AGENTS.md
--- production не виконує `down.sql` — отже відсутність down-файлу
--- технічно дозволена.
+-- production не виконує `down.sql` — down-stub слугує тільки тестам.
 --
 -- ─── Verification ─────────────────────────────────────────────────────
 --
