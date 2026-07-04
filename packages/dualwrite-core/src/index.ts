@@ -8,3 +8,5 @@
 
 export * from "./apply.js";
 export * from "./convert.js";
+export * from "./createApplyOps.js";
+export * from "./tableSpec.js";
