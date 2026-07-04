@@ -300,13 +300,19 @@ export function useMonobankWebhook({
     return cached.transactions.length > 0 ? cached.transactions : transactions;
   }, [mirrorEnabled, transactions, mirrorTick]);
 
+  // Narrow the memo inputs to the exact scalar fields it reads. Depending on
+  // the optional-chained properties directly (rather than the whole
+  // `syncStateData` object) keeps the inferred dependency identical to the
+  // declared one, so the manual memoization survives React Compiler.
+  const lastEventAt = syncStateData?.lastEventAt;
+  const txDataUpdatedAt = txQuery.dataUpdatedAt;
   const lastUpdated: Date | null = useMemo(() => {
-    if (syncStateData?.lastEventAt) {
-      return new Date(syncStateData.lastEventAt);
+    if (lastEventAt) {
+      return new Date(lastEventAt);
     }
-    if (txQuery.dataUpdatedAt) return new Date(txQuery.dataUpdatedAt);
+    if (txDataUpdatedAt) return new Date(txDataUpdatedAt);
     return null;
-  }, [syncStateData?.lastEventAt, txQuery.dataUpdatedAt]);
+  }, [lastEventAt, txDataUpdatedAt]);
 
   // === Sync state (UI-compatible shape) ===
   const syncState = useMemo(() => {

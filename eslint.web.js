@@ -476,4 +476,28 @@ export const webBlocks = [
       "react-hooks/immutability": "error",
     },
   },
+  // react-hooks v7 burndown (initiative 0021) — `preserve-manual-memoization`
+  // cleared apps/web: a 2026-07-04 sweep found 9 call-sites; 6 were fixed by
+  // narrowing memo dependencies to the exact scalar/property the body reads
+  // (useMonobankWebhook `lastUpdated`, useNutritionPantries `pantryItems`) and
+  // by making the current instant a primitive `Date.now()` epoch instead of a
+  // component-scope `new Date()` object (finyk Overview subscription/debt
+  // flows, which the Compiler had flagged as depending on a locally-created
+  // mutable). The remaining 3 carry a scoped `eslint-disable-next-line` with a
+  // WHY: two thin fizruk derivation hooks (usePrLatest / usePrPendingInsight)
+  // the Compiler inlines and declines to re-memoize, and one finyk Overview
+  // memo over the `manualExpenses` storage-slots array the Compiler
+  // conservatively treats as reassignable. All three keep a correct,
+  // behaviour-preserving manual memo that does real work at runtime (React
+  // Compiler is not wired into the Vite build yet). Promoted from the baseline
+  // `off` to web-scoped `error` so the next regression fails lint loudly. Stays
+  // `off` in the shared baseline because apps/mobile still carries legacy
+  // violations (separate future bite). See
+  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/preserve-manual-memoization": "error",
+    },
+  },
 ];

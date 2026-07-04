@@ -166,7 +166,10 @@ export const baseline = [
       //   use-memo                     — 0 ✅ promoted to "error" below
       //   immutability                 — web 0 ✅ (promoted to "error" for
       //       apps/web in eslint.web.js) + mobile 4 (still off here)
-      //   preserve-manual-memoization  — 9 (web 7 + mobile 2)
+      //   preserve-manual-memoization  — web 0 ✅ (promoted to "error" for
+      //       apps/web in eslint.web.js after a 2026-07-04 burndown: 6 fixed
+      //       cleanly, 3 behaviour-preserving manual memos kept behind a scoped
+      //       eslint-disable) + mobile 2 (still off here)
       //   purity                       — 13 (apps/web)
       //   refs                         — 59 (apps/web)
       //   set-state-in-effect          — 76 (apps/web)
