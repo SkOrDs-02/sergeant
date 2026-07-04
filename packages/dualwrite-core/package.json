@@ -15,6 +15,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
+  "dependencies": {
+    "@sergeant/db-schema": "workspace:*"
+  },
   "devDependencies": {
     "@sergeant/config": "workspace:*",
     "@types/node": "^20.19.41",

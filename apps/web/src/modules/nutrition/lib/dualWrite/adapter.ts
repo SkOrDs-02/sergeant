@@ -1,3 +1,16 @@
+import {
+  buildDelete,
+  buildLwwUpsert,
+  buildReconcileChildren,
+  createApplyOps,
+  toIntOrNull,
+  toRealOrNull,
+  type ApplyDualWriteOptions as CoreApplyDualWriteOptions,
+  type ApplyDualWriteResult as CoreApplyDualWriteResult,
+  type DualWriteLogger as CoreDualWriteLogger,
+  type DualWriteRuntime,
+  type TableSpec,
+} from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
@@ -13,13 +26,14 @@ import type {
 /**
  * Async SQLite-side adapter for the Nutrition dual-write layer.
  *
- * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. Mirror of
- * `apps/web/src/modules/fizruk/lib/dualWrite/adapter.ts` with nutrition
- * entity types. Takes the `NutritionDualWriteOp[]` produced by
- * `diffNutritionDualWriteOps` and writes them to the local
- * `nutrition_*` tables.
+ * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. Migrated onto
+ * `@sergeant/dualwrite-core` in ADR-0073 крок 2: the op-loop is now
+ * `createApplyOps` (best-effort) and every table's SQL is emitted by the
+ * shared `buildLwwUpsert` / `buildDelete` / `buildReconcileChildren`
+ * builders. Behaviour and emitted SQL are byte-identical to the previous
+ * hand-written adapter — see `adapter.snapshot.test.ts`.
  *
- * Design notes (same as fizruk adapter):
+ * Design notes:
  *
  * - Best-effort: every op is wrapped in try/catch. A single failed op
  *   does NOT abort the rest.
@@ -28,23 +42,9 @@ import type {
  *   strictly newer than the local `updated_at`.
  */
 
-export interface ApplyDualWriteOptions {
-  readonly userId: string;
-  readonly clientTs: string;
-  readonly logger?: DualWriteLogger | undefined;
-}
-
-export type DualWriteLogger = (
-  level: "warn" | "info",
-  message: string,
-  meta?: Record<string, unknown>,
-) => void;
-
-export interface ApplyDualWriteResult {
-  readonly applied: number;
-  readonly errored: number;
-  readonly skipped: number;
-}
+export type ApplyDualWriteOptions = CoreApplyDualWriteOptions;
+export type DualWriteLogger = CoreDualWriteLogger;
+export type ApplyDualWriteResult = CoreApplyDualWriteResult;
 
 const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
   if (level === "warn") {
@@ -52,89 +52,220 @@ const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
   }
 };
 
+const applyOps = createApplyOps<NutritionDualWriteOp>({
+  errorPolicy: "best-effort",
+  handlers: {
+    "meal-upsert": async (client, op, rt) => {
+      await upsertMeal(client, op.meal, rt);
+      return "applied";
+    },
+    "meal-delete": async (client, op, rt) => {
+      await softDeleteMeal(client, op.mealId, rt);
+      return "applied";
+    },
+    "pantry-upsert": async (client, op, rt) => {
+      await upsertPantry(client, op.pantry, rt);
+      return "applied";
+    },
+    "pantry-delete": async (client, op, rt) => {
+      await softDeletePantry(client, op.pantryId, rt);
+      return "applied";
+    },
+    "prefs-upsert": async (client, op, rt) => {
+      await upsertPrefs(client, op.prefs, rt);
+      return "applied";
+    },
+    "recipe-upsert": async (client, op, rt) => {
+      await upsertRecipe(client, op.recipe, rt);
+      return "applied";
+    },
+    "recipe-delete": async (client, op, rt) => {
+      await softDeleteRecipe(client, op.recipeId, rt);
+      return "applied";
+    },
+    "water-log-set": async (client, op, rt) => {
+      await setWaterLog(client, op.dateKey, op.volumeMl, rt);
+      return "applied";
+    },
+    "shopping-list-set": async (client, op, rt) => {
+      await setShoppingList(client, op.shoppingList, rt);
+      return "applied";
+    },
+  },
+});
+
 export async function applyNutritionDualWriteOps(
   client: SqliteMigrationClient,
   ops: readonly NutritionDualWriteOp[],
   options: ApplyDualWriteOptions,
 ): Promise<ApplyDualWriteResult> {
-  if (ops.length === 0) {
-    return { applied: 0, errored: 0, skipped: 0 };
-  }
-  const logger = options.logger ?? DEFAULT_LOGGER;
-  let applied = 0;
-  let errored = 0;
-  let skipped = 0;
-
-  for (const op of ops) {
-    try {
-      const outcome = await applyOne(client, op, options);
-      if (outcome === "applied") applied += 1;
-      else skipped += 1;
-    } catch (err) {
-      errored += 1;
-      logger("warn", "dual-write op failed", {
-        op: op.kind,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }
-
-  return { applied, errored, skipped };
+  return applyOps(client, ops, {
+    userId: options.userId,
+    clientTs: options.clientTs,
+    logger: options.logger ?? DEFAULT_LOGGER,
+  });
 }
 
-type ApplyOutcome = "applied" | "skipped";
+// -----------------------------------------------------------------------
+// Table specs
+// -----------------------------------------------------------------------
 
-async function applyOne(
-  client: SqliteMigrationClient,
-  op: NutritionDualWriteOp,
-  options: ApplyDualWriteOptions,
-): Promise<ApplyOutcome> {
-  const { userId, clientTs } = options;
-  switch (op.kind) {
-    case "meal-upsert":
-      await upsertMeal(client, op.meal, userId, clientTs);
-      return "applied";
+const MEAL_UPSERT_SPEC: TableSpec = {
+  table: "nutrition_meals",
+  insertClause: `INSERT INTO nutrition_meals
+       (id, user_id, eaten_at, meal_type, name, label,
+        kcal, protein_g, fat_g, carbs_g,
+        source, macro_source, amount_g, food_id, is_demo,
+        created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "eaten_at" },
+    { column: "meal_type" },
+    { column: "name" },
+    { column: "label" },
+    { column: "kcal" },
+    { column: "protein_g" },
+    { column: "fat_g" },
+    { column: "carbs_g" },
+    { column: "source" },
+    { column: "macro_source" },
+    { column: "amount_g" },
+    { column: "food_id" },
+    { column: "is_demo" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
 
-    case "meal-delete":
-      await softDeleteMeal(client, op.mealId, userId, clientTs);
-      return "applied";
+const PANTRY_UPSERT_SPEC: TableSpec = {
+  table: "nutrition_pantries",
+  insertClause: `INSERT INTO nutrition_pantries
+       (id, user_id, name, text, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "name" },
+    { column: "text" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
 
-    case "pantry-upsert":
-      await upsertPantry(client, op.pantry, userId, clientTs);
-      return "applied";
+const PANTRY_ITEM_UPSERT_SPEC: TableSpec = {
+  table: "nutrition_pantry_items",
+  insertClause: `INSERT INTO nutrition_pantry_items
+         (id, pantry_id, user_id, name, qty, unit, notes, sort_order,
+          created_at, updated_at, deleted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "pantry_id" },
+    { column: "name" },
+    { column: "qty" },
+    { column: "unit" },
+    { column: "notes" },
+    { column: "sort_order" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 7,
+  setIndent: 9,
+};
 
-    case "pantry-delete":
-      await softDeletePantry(client, op.pantryId, userId, clientTs);
-      return "applied";
+const PREFS_UPSERT_SPEC: TableSpec = {
+  table: "nutrition_prefs",
+  insertClause: `INSERT INTO nutrition_prefs
+       (user_id, prefs_json, active_pantry_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?)`,
+  conflictTarget: ["user_id"],
+  updateColumns: [
+    { column: "prefs_json" },
+    { column: "active_pantry_id" },
+    { column: "updated_at" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
 
-    case "prefs-upsert":
-      await upsertPrefs(client, op.prefs, userId, clientTs);
-      return "applied";
+const RECIPE_UPSERT_SPEC: TableSpec = {
+  table: "nutrition_recipes",
+  insertClause: `INSERT INTO nutrition_recipes
+       (id, user_id, name, data_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "name" },
+    { column: "data_json" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
 
-    case "recipe-upsert":
-      await upsertRecipe(client, op.recipe, userId, clientTs);
-      return "applied";
+const WATER_LOG_UPSERT_SPEC: TableSpec = {
+  table: "nutrition_water_log",
+  insertClause: `INSERT INTO nutrition_water_log (user_id, date_key, volume_ml, updated_at)
+     VALUES (?, ?, ?, ?)`,
+  conflictTarget: ["user_id", "date_key"],
+  updateColumns: [{ column: "volume_ml" }, { column: "updated_at" }],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
 
-    case "recipe-delete":
-      await softDeleteRecipe(client, op.recipeId, userId, clientTs);
-      return "applied";
+const SHOPPING_LIST_UPSERT_SPEC: TableSpec = {
+  table: "nutrition_shopping_list",
+  insertClause: `INSERT INTO nutrition_shopping_list (user_id, data_json, updated_at)
+     VALUES (?, ?, ?)`,
+  conflictTarget: ["user_id"],
+  updateColumns: [{ column: "data_json" }, { column: "updated_at" }],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
 
-    // Stage 11 / PR #070n-dualwrite ops -----------------------------
-    case "water-log-set":
-      await setWaterLog(client, op.dateKey, op.volumeMl, userId, clientTs);
-      return "applied";
+const MEAL_UPSERT_SQL = buildLwwUpsert(MEAL_UPSERT_SPEC);
+const PANTRY_UPSERT_SQL = buildLwwUpsert(PANTRY_UPSERT_SPEC);
+const PANTRY_ITEM_UPSERT_SQL = buildLwwUpsert(PANTRY_ITEM_UPSERT_SPEC);
+const PREFS_UPSERT_SQL = buildLwwUpsert(PREFS_UPSERT_SPEC);
+const RECIPE_UPSERT_SQL = buildLwwUpsert(RECIPE_UPSERT_SPEC);
+const WATER_LOG_UPSERT_SQL = buildLwwUpsert(WATER_LOG_UPSERT_SPEC);
+const SHOPPING_LIST_UPSERT_SQL = buildLwwUpsert(SHOPPING_LIST_UPSERT_SPEC);
 
-    case "shopping-list-set":
-      await setShoppingList(client, op.shoppingList, userId, clientTs);
-      return "applied";
+const MEAL_DELETE_SQL = buildDelete({
+  table: "nutrition_meals",
+  deletePolicy: "soft",
+  matchColumns: ["id", "user_id"],
+});
+const PANTRY_DELETE_SQL = buildDelete({
+  table: "nutrition_pantries",
+  deletePolicy: "soft",
+  matchColumns: ["id", "user_id"],
+});
+const RECIPE_DELETE_SQL = buildDelete({
+  table: "nutrition_recipes",
+  deletePolicy: "soft",
+  matchColumns: ["id", "user_id"],
+});
 
-    default: {
-      const _exhaustive: never = op;
-      void _exhaustive;
-      return "skipped";
-    }
-  }
-}
+// Cascade soft-delete of items when a whole pantry is deleted — this WHERE
+// shape (`deleted_at IS NULL`, no LWW guard) matches the reconcile keepCount-0
+// branch, so reuse that builder.
+const PANTRY_ITEMS_CASCADE_SQL = buildReconcileChildren(
+  { table: "nutrition_pantry_items", parentColumn: "pantry_id" },
+  0,
+);
 
 // -----------------------------------------------------------------------
 // Meals
@@ -150,68 +281,42 @@ function composeEatenAt(dateKey: string, time: string): string {
 async function upsertMeal(
   client: SqliteMigrationClient,
   m: NutritionMealSnapshot,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   const eatenAt = composeEatenAt(m.dateKey, m.time);
-  await client.run(
-    `INSERT INTO nutrition_meals
-       (id, user_id, eaten_at, meal_type, name, label,
-        kcal, protein_g, fat_g, carbs_g,
-        source, macro_source, amount_g, food_id, is_demo,
-        created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
-     ON CONFLICT(id) DO UPDATE SET
-       eaten_at     = excluded.eaten_at,
-       meal_type    = excluded.meal_type,
-       name         = excluded.name,
-       label        = excluded.label,
-       kcal         = excluded.kcal,
-       protein_g    = excluded.protein_g,
-       fat_g        = excluded.fat_g,
-       carbs_g      = excluded.carbs_g,
-       source       = excluded.source,
-       macro_source = excluded.macro_source,
-       amount_g     = excluded.amount_g,
-       food_id      = excluded.food_id,
-       is_demo      = excluded.is_demo,
-       updated_at   = excluded.updated_at,
-       deleted_at   = NULL
-     WHERE excluded.updated_at > nutrition_meals.updated_at`,
-    [
-      m.id,
-      userId,
-      eatenAt,
-      m.mealType || "snack",
-      m.name ?? "",
-      m.label ?? "",
-      toIntOrNull(m.macros?.kcal),
-      toRealOrNull(m.macros?.protein_g),
-      toRealOrNull(m.macros?.fat_g),
-      toRealOrNull(m.macros?.carbs_g),
-      m.source || "manual",
-      m.macroSource || "manual",
-      toRealOrNull(m.amountG),
-      m.foodId ?? null,
-      m.isDemo ? 1 : 0,
-      clientTs,
-      clientTs,
-    ],
-  );
+  await client.run(MEAL_UPSERT_SQL, [
+    m.id,
+    userId,
+    eatenAt,
+    m.mealType || "snack",
+    m.name ?? "",
+    m.label ?? "",
+    toIntOrNull(m.macros?.kcal),
+    toRealOrNull(m.macros?.protein_g),
+    toRealOrNull(m.macros?.fat_g),
+    toRealOrNull(m.macros?.carbs_g),
+    m.source || "manual",
+    m.macroSource || "manual",
+    toRealOrNull(m.amountG),
+    m.foodId ?? null,
+    m.isDemo ? 1 : 0,
+    clientTs,
+    clientTs,
+  ]);
 }
 
 async function softDeleteMeal(
   client: SqliteMigrationClient,
   mealId: string,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `UPDATE nutrition_meals
-        SET deleted_at = ?, updated_at = ?
-      WHERE id = ? AND user_id = ? AND updated_at < ?`,
-    [clientTs, clientTs, mealId, userId, clientTs],
-  );
+  await client.run(MEAL_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    mealId,
+    userId,
+    clientTs,
+  ]);
 }
 
 // -----------------------------------------------------------------------
@@ -221,88 +326,59 @@ async function softDeleteMeal(
 async function upsertPantry(
   client: SqliteMigrationClient,
   p: NutritionPantrySnapshot,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `INSERT INTO nutrition_pantries
-       (id, user_id, name, text, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, NULL)
-     ON CONFLICT(id) DO UPDATE SET
-       name       = excluded.name,
-       text       = excluded.text,
-       updated_at = excluded.updated_at,
-       deleted_at = NULL
-     WHERE excluded.updated_at > nutrition_pantries.updated_at`,
-    [p.id, userId, p.name ?? "", p.text ?? "", clientTs, clientTs],
-  );
+  await client.run(PANTRY_UPSERT_SQL, [
+    p.id,
+    userId,
+    p.name ?? "",
+    p.text ?? "",
+    clientTs,
+    clientTs,
+  ]);
 
   // Upsert items
   const items = p.items ?? [];
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
-    await client.run(
-      `INSERT INTO nutrition_pantry_items
-         (id, pantry_id, user_id, name, qty, unit, notes, sort_order,
-          created_at, updated_at, deleted_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
-       ON CONFLICT(id) DO UPDATE SET
-         pantry_id  = excluded.pantry_id,
-         name       = excluded.name,
-         qty        = excluded.qty,
-         unit       = excluded.unit,
-         notes      = excluded.notes,
-         sort_order = excluded.sort_order,
-         updated_at = excluded.updated_at,
-         deleted_at = NULL
-       WHERE excluded.updated_at > nutrition_pantry_items.updated_at`,
-      [
-        it!.id!,
-        p.id,
-        userId,
-        it!.name! ?? "",
-        toRealOrNull(it!.qty!),
-        it!.unit! ?? null,
-        it!.notes! ?? null,
-        i,
-        clientTs,
-        clientTs,
-      ],
-    );
+    await client.run(PANTRY_ITEM_UPSERT_SQL, [
+      it!.id!,
+      p.id,
+      userId,
+      it!.name! ?? "",
+      toRealOrNull(it!.qty!),
+      it!.unit! ?? null,
+      it!.notes! ?? null,
+      i,
+      clientTs,
+      clientTs,
+    ]);
   }
 
   // Soft-delete items removed from the pantry
   const itemIds = items.map((it) => it.id);
-  await softDeleteRemovedChildren(
-    client,
-    "nutrition_pantry_items",
-    "pantry_id",
-    p.id,
-    userId,
-    clientTs,
-    itemIds,
-  );
+  await softDeleteRemovedChildren(client, p.id, userId, clientTs, itemIds);
 }
 
 async function softDeletePantry(
   client: SqliteMigrationClient,
   pantryId: string,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `UPDATE nutrition_pantries
-        SET deleted_at = ?, updated_at = ?
-      WHERE id = ? AND user_id = ? AND updated_at < ?`,
-    [clientTs, clientTs, pantryId, userId, clientTs],
-  );
+  await client.run(PANTRY_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    pantryId,
+    userId,
+    clientTs,
+  ]);
   // Cascade soft-delete to items
-  await client.run(
-    `UPDATE nutrition_pantry_items
-        SET deleted_at = ?, updated_at = ?
-      WHERE pantry_id = ? AND user_id = ? AND deleted_at IS NULL`,
-    [clientTs, clientTs, pantryId, userId],
-  );
+  await client.run(PANTRY_ITEMS_CASCADE_SQL, [
+    clientTs,
+    clientTs,
+    pantryId,
+    userId,
+  ]);
 }
 
 // -----------------------------------------------------------------------
@@ -312,26 +388,15 @@ async function softDeletePantry(
 async function upsertPrefs(
   client: SqliteMigrationClient,
   prefs: NutritionPrefsSnapshot,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `INSERT INTO nutrition_prefs
-       (user_id, prefs_json, active_pantry_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET
-       prefs_json       = excluded.prefs_json,
-       active_pantry_id = excluded.active_pantry_id,
-       updated_at       = excluded.updated_at
-     WHERE excluded.updated_at > nutrition_prefs.updated_at`,
-    [
-      userId,
-      prefs.prefsJson ?? "{}",
-      prefs.activePantryId ?? null,
-      clientTs,
-      clientTs,
-    ],
-  );
+  await client.run(PREFS_UPSERT_SQL, [
+    userId,
+    prefs.prefsJson ?? "{}",
+    prefs.activePantryId ?? null,
+    clientTs,
+    clientTs,
+  ]);
 }
 
 // -----------------------------------------------------------------------
@@ -341,35 +406,30 @@ async function upsertPrefs(
 async function upsertRecipe(
   client: SqliteMigrationClient,
   r: NutritionRecipeSnapshot,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `INSERT INTO nutrition_recipes
-       (id, user_id, name, data_json, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, NULL)
-     ON CONFLICT(id) DO UPDATE SET
-       name       = excluded.name,
-       data_json  = excluded.data_json,
-       updated_at = excluded.updated_at,
-       deleted_at = NULL
-     WHERE excluded.updated_at > nutrition_recipes.updated_at`,
-    [r.id, userId, r.title ?? "", r.dataJson ?? "{}", clientTs, clientTs],
-  );
+  await client.run(RECIPE_UPSERT_SQL, [
+    r.id,
+    userId,
+    r.title ?? "",
+    r.dataJson ?? "{}",
+    clientTs,
+    clientTs,
+  ]);
 }
 
 async function softDeleteRecipe(
   client: SqliteMigrationClient,
   recipeId: string,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `UPDATE nutrition_recipes
-        SET deleted_at = ?, updated_at = ?
-      WHERE id = ? AND user_id = ? AND updated_at < ?`,
-    [clientTs, clientTs, recipeId, userId, clientTs],
-  );
+  await client.run(RECIPE_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    recipeId,
+    userId,
+    clientTs,
+  ]);
 }
 
 // -----------------------------------------------------------------------
@@ -380,19 +440,15 @@ async function setWaterLog(
   client: SqliteMigrationClient,
   dateKey: string,
   volumeMl: number,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   const safeVolume = toIntOrNull(volumeMl);
-  await client.run(
-    `INSERT INTO nutrition_water_log (user_id, date_key, volume_ml, updated_at)
-     VALUES (?, ?, ?, ?)
-     ON CONFLICT(user_id, date_key) DO UPDATE SET
-       volume_ml  = excluded.volume_ml,
-       updated_at = excluded.updated_at
-     WHERE excluded.updated_at > nutrition_water_log.updated_at`,
-    [userId, dateKey, safeVolume ?? 0, clientTs],
-  );
+  await client.run(WATER_LOG_UPSERT_SQL, [
+    userId,
+    dateKey,
+    safeVolume ?? 0,
+    clientTs,
+  ]);
 }
 
 // -----------------------------------------------------------------------
@@ -402,66 +458,38 @@ async function setWaterLog(
 async function setShoppingList(
   client: SqliteMigrationClient,
   shoppingList: NutritionShoppingListSnapshot,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `INSERT INTO nutrition_shopping_list (user_id, data_json, updated_at)
-     VALUES (?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET
-       data_json  = excluded.data_json,
-       updated_at = excluded.updated_at
-     WHERE excluded.updated_at > nutrition_shopping_list.updated_at`,
-    [userId, shoppingList.dataJson ?? '{"categories":[]}', clientTs],
-  );
+  await client.run(SHOPPING_LIST_UPSERT_SQL, [
+    userId,
+    shoppingList.dataJson ?? '{"categories":[]}',
+    clientTs,
+  ]);
 }
 
 // -----------------------------------------------------------------------
 // Helpers
 // -----------------------------------------------------------------------
 
-function toIntOrNull(v: unknown): number | null {
-  if (v === null || v === undefined) return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? Math.round(n) : null;
-}
-
-function toRealOrNull(v: unknown): number | null {
-  if (v === null || v === undefined) return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
 /**
- * Soft-delete children of a parent that are no longer in `keepIds`.
- * Mirror of the same helper in the fizruk adapter.
+ * Soft-delete children of a pantry that are no longer in `keepIds`.
+ * Delegates the SQL to `buildReconcileChildren` (both the empty and
+ * NOT IN branches) — the params are laid out to match each branch.
  */
 async function softDeleteRemovedChildren(
   client: SqliteMigrationClient,
-  tableName: string,
-  parentCol: string,
   parentId: string,
   userId: string,
   clientTs: string,
   keepIds: readonly string[],
 ): Promise<void> {
+  const sql = buildReconcileChildren(
+    { table: "nutrition_pantry_items", parentColumn: "pantry_id" },
+    keepIds.length,
+  );
   if (keepIds.length === 0) {
-    await client.run(
-      `UPDATE ${tableName}
-          SET deleted_at = ?, updated_at = ?
-        WHERE ${parentCol} = ? AND user_id = ? AND deleted_at IS NULL`,
-      [clientTs, clientTs, parentId, userId],
-    );
+    await client.run(sql, [clientTs, clientTs, parentId, userId]);
     return;
   }
-  const placeholders = keepIds.map(() => "?").join(",");
-  await client.run(
-    `UPDATE ${tableName}
-        SET deleted_at = ?, updated_at = ?
-      WHERE ${parentCol} = ?
-        AND user_id = ?
-        AND deleted_at IS NULL
-        AND id NOT IN (${placeholders})`,
-    [clientTs, clientTs, parentId, userId, ...keepIds],
-  );
+  await client.run(sql, [clientTs, clientTs, parentId, userId, ...keepIds]);
 }
