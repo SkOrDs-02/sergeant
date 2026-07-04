@@ -66,6 +66,16 @@ export interface TableSpec {
    * hand-written SET layout genuinely disagrees.
    */
   readonly alignSetColumns?: boolean;
+  /**
+   * Explicit right-align width (in characters) for the `col` part of each
+   * `col = rhs` line. Defaults to the longest column name in
+   * `updateColumns`. Two hand-written fizruk tables (`fizruk_daily_log`,
+   * `fizruk_workout_sets`) were aligned wider than their own longest
+   * column name — a pre-existing authoring quirk, not a pattern to copy
+   * for new tables. Only set this when reproducing such a fixed byte-exact
+   * legacy layout (ADR-0073 крок 4).
+   */
+  readonly alignWidth?: number;
 }
 
 export interface DeleteSpec {
@@ -95,7 +105,8 @@ export function buildLwwUpsert(spec: TableSpec): string {
   const conflictIndent = sp(spec.conflictIndent);
   const align = spec.alignSetColumns ?? true;
   const width = align
-    ? Math.max(...spec.updateColumns.map((c) => c.column.length))
+    ? (spec.alignWidth ??
+      Math.max(...spec.updateColumns.map((c) => c.column.length)))
     : 0;
 
   const setLines = spec.updateColumns.map(({ column, value }) => {
