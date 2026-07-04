@@ -58,6 +58,14 @@ export interface TableSpec {
   readonly conflictIndent: number;
   /** Indentation (spaces) of each `col = …` line inside SET. */
   readonly setIndent: number;
+  /**
+   * Whether `col = excluded.col` assignments are right-aligned on the
+   * longest column name. `true` (default) matches the nutrition/fizruk
+   * hand-written SQL; `false` emits `col = rhs` with a single space (the
+   * routine adapter's style). This is the one axis where the pipelines'
+   * hand-written SET layout genuinely disagrees.
+   */
+  readonly alignSetColumns?: boolean;
 }
 
 export interface DeleteSpec {
@@ -85,7 +93,10 @@ const sp = (n: number): string => " ".repeat(n);
 export function buildLwwUpsert(spec: TableSpec): string {
   const setIndent = sp(spec.setIndent);
   const conflictIndent = sp(spec.conflictIndent);
-  const width = Math.max(...spec.updateColumns.map((c) => c.column.length));
+  const align = spec.alignSetColumns ?? true;
+  const width = align
+    ? Math.max(...spec.updateColumns.map((c) => c.column.length))
+    : 0;
 
   const setLines = spec.updateColumns.map(({ column, value }) => {
     const rhs = value ?? `excluded.${column}`;
