@@ -193,7 +193,7 @@ async function lookupOFF(barcode: string): Promise<NormalizedProduct | null> {
         "User-Agent":
           "Sergeant-NutritionApp/1.0 (https://sergeant.2dmanager.com.ua)",
       },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(4000),
     });
     if (!r.ok) {
       recordLookup("off", nonOkOutcome(r.status), elapsedMs(start));
@@ -242,7 +242,7 @@ async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
   try {
     const r = await fetch(url, {
       headers: { "User-Agent": "Sergeant-NutritionApp/1.0" },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(4000),
     });
     if (!r.ok) {
       recordLookup("usda", nonOkOutcome(r.status), elapsedMs(start));
@@ -292,7 +292,7 @@ async function lookupUPCitemdb(
   try {
     const r = await fetch(url, {
       headers: { "User-Agent": "Sergeant-NutritionApp/1.0" },
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(3000),
     });
     if (!r.ok) {
       recordLookup("upcitemdb", nonOkOutcome(r.status), elapsedMs(start));
@@ -328,6 +328,11 @@ async function lookupUPCitemdb(
  * GET /api/barcode?barcode=... — каскадний lookup через OFF → USDA → UPCitemdb.
  * Middleware-и роутера (`setModule`, `rateLimitExpress`) забезпечують
  * module-tag і rate-limit; тут лише бізнес-логіка.
+ *
+ * Кроки послідовні (не паралельні) навмисно — hit на ранньому джерелі не
+ * повинен витрачати квоту наступних (особливо UPCitemdb: 100 req/day trial).
+ * Тому per-source timeout тримаємо невеликим (4с/4с/3с = 11с worst-case),
+ * а не 7с/7с/6с — повний miss-cascade інакше тягнеться до ~20с.
  */
 export default async function handler(
   req: Request,

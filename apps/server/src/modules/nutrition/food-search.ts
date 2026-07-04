@@ -91,7 +91,10 @@ async function fetchUSDA(
   query: string,
   signal: AbortSignal,
 ): Promise<USDASearchFood[]> {
-  const apiKey = process.env["USDA_API_KEY"] || "DEMO_KEY";
+  const apiKey =
+    process.env["USDA_FDC_API_KEY"] ||
+    process.env["USDA_API_KEY"] ||
+    "DEMO_KEY";
   const url = new URL(USDA_SEARCH);
   url.searchParams.set("query", query);
   url.searchParams.set("pageSize", "10");
