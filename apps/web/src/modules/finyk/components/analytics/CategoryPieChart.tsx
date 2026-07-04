@@ -132,13 +132,15 @@ function CategoryPieChartComponent({
         : top;
   }
 
-  let currentAngle = 0;
-  const arcs = segments.map((seg) => {
+  const arcs = segments.map((seg, i) => {
     const pct = seg.spent / total;
     const sweep = pct * 360;
-    const start = currentAngle;
-    currentAngle += sweep;
-    return { ...seg, start, end: currentAngle, pct };
+    // Start angle = сума розгорток усіх попередніх сегментів. Обчислюємо
+    // префікс-суму замість мутації зовнішнього акумулятора під час рендеру.
+    const start = segments
+      .slice(0, i)
+      .reduce((angle, prev) => angle + (prev.spent / total) * 360, 0);
+    return { ...seg, start, end: start + sweep, pct };
   });
 
   // Gap between segments, in degrees. Only applied when there are 2+

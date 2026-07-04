@@ -2690,7 +2690,7 @@
       2
     ],
     "react-hooks/immutability": [
-      0
+      2
     ],
     "react-hooks/incompatible-library": [
       1
@@ -2720,7 +2720,7 @@
       1
     ],
     "react-hooks/use-memo": [
-      0
+      2
     ],
     "react/display-name": [
       2
@@ -2987,6 +2987,7 @@
           "apps/web/src/core/settings/NutritionSection.tsx",
           "apps/web/src/core/settings/PWASection.tsx",
           "apps/web/src/core/settings/PlanSection.tsx",
+          "apps/web/src/core/settings/PrivacySection.tsx",
           "apps/web/src/core/settings/RoutineSection.tsx",
           "apps/web/src/core/stories/components/StoriesProgressHeader.tsx",
           "apps/web/src/core/stories/components/slides/FinykSlide.tsx",
@@ -3064,14 +3065,8 @@
           "apps/web/src/modules/fizruk/components/workouts/WorkoutsHeader.tsx",
           "apps/web/src/modules/fizruk/components/workouts/WorkoutsHome.tsx",
           "apps/web/src/modules/fizruk/pages/Atlas.tsx",
-          "apps/web/src/modules/fizruk/pages/Body.tsx",
-          "apps/web/src/modules/fizruk/pages/Body/JournalEntryCard.tsx",
-          "apps/web/src/modules/fizruk/pages/Body/JournalSection.tsx",
           "apps/web/src/modules/fizruk/pages/Dashboard.tsx",
           "apps/web/src/modules/fizruk/pages/Exercise.tsx",
-          "apps/web/src/modules/fizruk/pages/Measurements.tsx",
-          "apps/web/src/modules/fizruk/pages/Programs.tsx",
-          "apps/web/src/modules/fizruk/pages/Progress.tsx",
           "apps/web/src/modules/nutrition/NutritionApp.tsx",
           "apps/web/src/modules/nutrition/components/AddMealSheet.tsx",
           "apps/web/src/modules/nutrition/components/BarcodeScanner.tsx",

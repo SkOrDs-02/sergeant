@@ -462,4 +462,18 @@ export const webBlocks = [
       "@typescript-eslint/no-non-null-assertion": "warn",
     },
   },
+  // react-hooks v7 burndown (initiative 0021) — `immutability` cleared
+  // apps/web: the 3 remaining call-sites (ManualExpenseSheet reset-effect
+  // referencing later-declared setters; CategoryPieChart accumulator
+  // mutation during render) were fixed. Promoted from the baseline `off`
+  // to web-scoped `error` so the next regression fails lint loudly. Stays
+  // `off` in the shared baseline because apps/mobile still carries
+  // legacy violations (separate future bite). See
+  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/immutability": "error",
+    },
+  },
 ];
