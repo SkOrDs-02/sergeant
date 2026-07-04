@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import type { Pool } from "pg";
+import { toLocalISODate } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
 import { env } from "../../env.js";
 import { getOpenclawGithubAuth } from "./github-auth.js";
@@ -87,7 +88,7 @@ function decisionMarkdown(input: {
   rationale: string;
   alternatives?: string | undefined;
 }): string {
-  const date = new Date().toISOString().slice(0, 10);
+  const date = toLocalISODate();
   return [
     `# ${input.topic}`,
     "",
@@ -126,7 +127,7 @@ async function openDecisionPr(
 ): Promise<string> {
   const repo = env.OPENCLAW_GITHUB_REPO;
   const baseBranch = env.OPENCLAW_GITHUB_BASE_BRANCH;
-  const date = new Date().toISOString().slice(0, 10);
+  const date = toLocalISODate();
   const slug = decisionSlug(input.topic);
   const branch = `openclaw/decision-${input.decisionId}-${slug}`;
   const filePath = `docs/decisions/${date}-${slug}.md`;
