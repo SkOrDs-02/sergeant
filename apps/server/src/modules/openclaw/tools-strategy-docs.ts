@@ -6,7 +6,10 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { OpenClawPathTraversalError, safeJoin } from "./safeJoin.js";
 import { READ_STRATEGY_DOCS_ALLOWED_PATHS } from "./types.js";
-import { OpenClawAllowlistError, OpenClawNotFoundError } from "./tools-errors.js";
+import {
+  OpenClawAllowlistError,
+  OpenClawNotFoundError,
+} from "./tools-errors.js";
 
 export interface ReadStrategyDocsInput {
   /**

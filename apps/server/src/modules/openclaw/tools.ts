@@ -25,10 +25,7 @@ export {
   OpenClawNotFoundError,
 } from "./tools-errors.js";
 
-export type {
-  RecallMemoryInput,
-  RecallMemoryOutput,
-} from "./tools-memory.js";
+export type { RecallMemoryInput, RecallMemoryOutput } from "./tools-memory.js";
 export { recallCofounderMemory } from "./tools-memory.js";
 
 export type {
@@ -37,16 +34,10 @@ export type {
 } from "./tools-strategy-docs.js";
 export { readStrategyDoc } from "./tools-strategy-docs.js";
 
-export type {
-  QueryAppDbInput,
-  QueryAppDbOutput,
-} from "./tools-db-query.js";
+export type { QueryAppDbInput, QueryAppDbOutput } from "./tools-db-query.js";
 export { extractSqlTables, queryAppDb } from "./tools-db-query.js";
 
-export type {
-  ReadGithubInput,
-  ReadGithubOutput,
-} from "./tools-github.js";
+export type { ReadGithubInput, ReadGithubOutput } from "./tools-github.js";
 export { readGithub } from "./tools-github.js";
 
 export type {
