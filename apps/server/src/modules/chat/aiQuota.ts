@@ -327,7 +327,10 @@ function subjectFor(sessionUser: SessionUser, req: Request): string {
 }
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  // Europe/Kyiv day boundary (домен-інваріант) — денна квота користувача
+  // скидається о київській півночі, не UTC. Інакше «Спробуй завтра» о 02:00
+  // Kyiv (UTC-північ влітку) відкривало б новий день посеред ночі юзера.
+  return toLocalISODate();
 }
 
 /**
@@ -624,8 +627,8 @@ export async function resolveProTier(
   if (!aiQuotaCircuitBreaker.isAllowing()) return premium();
 
   const subject = subjectFor(sessionUser, req);
-  // Tier buckets use the Kyiv civil day; Free/Anon buckets stay on `today()`
-  // (UTC) — see `today()` below. Don't unify the two.
+  // Both tier buckets and Free/Anon `today()` buckets use the Kyiv civil day
+  // (домен-інваріант) — a single day boundary across all quota buckets.
   const day = toLocalISODate();
   const premiumLimit = parseLimit(
     "AI_PRO_PREMIUM_DAILY_LIMIT",

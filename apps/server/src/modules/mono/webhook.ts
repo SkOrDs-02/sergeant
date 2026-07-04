@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import type { QueryResult } from "pg";
 import { z } from "zod";
+import { toLocalISODate } from "@sergeant/shared";
 import { pool, query } from "../../db.js";
 import { logger, serializeError } from "../../obs/logger.js";
 import {
@@ -171,7 +172,9 @@ function buildMonoMemoryContent(
   const isExpense = item.amount < 0;
   const verb = isExpense ? "Витрата" : "Надходження";
   const description = (item.description || "Без опису").trim().slice(0, 200);
-  const dateIso = new Date(item.time * 1000).toISOString().slice(0, 10);
+  // Day boundary — Europe/Kyiv (домен-інваріант), не UTC: транзакція о 00:30
+  // Kyiv не має «з'їхати» на попередню добу в human-readable memory-рядку.
+  const dateIso = toLocalISODate(item.time * 1000);
   const categoryPart = categorySlug ? ` · ${categorySlug}` : "";
   return `${verb} ${amountStr} ${description}${categoryPart} · ${dateIso}`;
 }

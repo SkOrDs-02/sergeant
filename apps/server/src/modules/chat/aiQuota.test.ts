@@ -284,6 +284,33 @@ describe("assertAiQuota (default bucket)", () => {
       1,
     ]);
   });
+
+  it("keys the daily bucket on the Europe/Kyiv civil day at the UTC→Kyiv boundary", async () => {
+    // 2026-05-15T21:30:00Z = 2026-05-16 00:30 Kyiv (summer, UTC+3). The user's
+    // Kyiv day has already rolled to the 16th, so the quota bucket must be
+    // keyed `2026-05-16`, not the UTC-day `2026-05-15`. Otherwise "Спробуй
+    // завтра" would open a new quota window at half past midnight Kyiv.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-15T21:30:00Z"));
+    try {
+      process.env["DATABASE_URL"] = "postgres://ignored";
+      process.env["AI_QUOTA_DISABLED"] = "0";
+      process.env["AI_DAILY_ANON_LIMIT"] = "10";
+      getSessionUser.mockResolvedValue(null);
+      pool.query.mockResolvedValue({
+        rows: [{ request_count: 1 }],
+        rowCount: 1,
+      });
+
+      const ok = await assertAiQuota(makeReq(), makeRes());
+
+      expect(ok).toBe(true);
+      const [, values] = pool.query.mock.calls[0]!;
+      expect(values[1]).toBe("2026-05-16");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("refundConsumed test hook", () => {

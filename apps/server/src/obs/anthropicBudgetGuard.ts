@@ -114,6 +114,7 @@ interface AnthropicBudgetState {
 }
 
 function utcDay(now: () => number): string {
+  // AI-NOTE: UTC intentional — vendor billing day boundary
   return new Date(now()).toISOString().slice(0, 10);
 }
 

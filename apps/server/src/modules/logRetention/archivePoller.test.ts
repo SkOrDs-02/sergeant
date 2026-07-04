@@ -148,6 +148,38 @@ describe("LogArchivePoller", () => {
     expect(deleteCall[1]).toEqual([["1", "2"]]);
   });
 
+  it("object-name date uses the Europe/Kyiv civil day at the UTC→Kyiv day boundary", async () => {
+    // 2026-05-15T21:30:00Z = 2026-05-16 00:30 Kyiv (summer, UTC+3): the Kyiv
+    // day has already rolled over to the 16th, so the archive folder must be
+    // `2026-05-16`. A UTC day-key would (wrongly) still say `2026-05-15`.
+    const rows = [{ id: "1", invoked_at: "2026-04-01T00:00:00Z", foo: "a" }];
+    const pool = makePool({
+      ...emptyTables,
+      openclaw_invocations: { rows, rowCount: rows.length },
+    });
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      text: async () => "",
+    } as unknown as Response);
+    const poller = new LogArchivePoller({
+      pool,
+      enabled: true,
+      retentionDays: 30,
+      bucket: "test-bucket",
+      gcsDeps: { getAccessToken: async () => "tok", fetchImpl },
+      now: () => new Date("2026-05-15T21:30:00Z"),
+    });
+    await poller.runOnce();
+
+    const [url] = fetchImpl.mock.calls[0] ?? [];
+    expect(url).toContain(
+      "name=openclaw-archive%2F2026-05-16%2Fopenclaw_invocations__1-1.jsonl.gz",
+    );
+    expect(url).not.toContain("openclaw-archive%2F2026-05-15%2F");
+  });
+
   it("runOnce keeps rows in DB when GCS upload fails", async () => {
     const rows = [
       { id: "10", invoked_at: "2026-04-01T00:00:00Z" },
