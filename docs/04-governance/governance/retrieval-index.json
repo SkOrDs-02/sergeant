@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-07-04",
   "sourceHashes": {
-    "knowledge-graph": "8e26078cbd4ebbb5b459ec7ba604c8782ae74f73e79d10e2f56c0202dd62b0e5",
+    "knowledge-graph": "0fa3b3e9548c06cb021f849ac5152ca005d50f7266727be96ae4d506adc2c911",
     "symbol-index": "277a1ac768df8ecded30ad4a89925931543c89c140b83fe41c4a4b954995c0e1"
   },
   "counts": {
@@ -782,8 +782,8 @@
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-03 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
-      "contentHash": "ea2474d7ca1f2b56825c6e7fe7a85c2155f9dbeb11237d95d6bad97c6df3e115"
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-04 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
+      "contentHash": "2968eed9371006cdde0dfff0327d74d24f8852a67da9dbe644fd36090050d5b1"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",

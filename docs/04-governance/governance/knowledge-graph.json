@@ -8,7 +8,7 @@
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
-    "pr": 221,
+    "pr": 225,
     "skill": 23
   },
   "nodes": [
@@ -793,7 +793,7 @@
       "tier": "core",
       "meta": {
         "number": 73,
-        "last_validated": "2026-07-03"
+        "last_validated": "2026-07-04"
       }
     },
     {
@@ -2412,6 +2412,46 @@
       "status": "Active",
       "tier": "core",
       "meta": {}
+    },
+    {
+      "id": "pr:103",
+      "type": "pr",
+      "title": "PR #103",
+      "tier": "extended",
+      "meta": {
+        "number": 103,
+        "url": "https://github.com/Skords-01/Sergeant/pull/103"
+      }
+    },
+    {
+      "id": "pr:107",
+      "type": "pr",
+      "title": "PR #107",
+      "tier": "extended",
+      "meta": {
+        "number": 107,
+        "url": "https://github.com/Skords-01/Sergeant/pull/107"
+      }
+    },
+    {
+      "id": "pr:109",
+      "type": "pr",
+      "title": "PR #109",
+      "tier": "extended",
+      "meta": {
+        "number": 109,
+        "url": "https://github.com/Skords-01/Sergeant/pull/109"
+      }
+    },
+    {
+      "id": "pr:112",
+      "type": "pr",
+      "title": "PR #112",
+      "tier": "extended",
+      "meta": {
+        "number": 112,
+        "url": "https://github.com/Skords-01/Sergeant/pull/112"
+      }
     },
     {
       "id": "pr:1143",
@@ -5382,8 +5422,33 @@
     },
     {
       "from": "adr:0073",
+      "to": "hard-rule:15",
+      "type": "references"
+    },
+    {
+      "from": "adr:0073",
       "to": "hard-rule:18",
       "type": "references"
+    },
+    {
+      "from": "adr:0073",
+      "to": "pr:103",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0073",
+      "to": "pr:107",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0073",
+      "to": "pr:109",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0073",
+      "to": "pr:112",
+      "type": "touched-by"
     },
     {
       "from": "adr:0073",
