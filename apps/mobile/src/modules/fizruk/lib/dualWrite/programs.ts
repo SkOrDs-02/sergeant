@@ -1,3 +1,8 @@
+import {
+  buildLwwUpsert,
+  type DualWriteRuntime,
+  type TableSpec,
+} from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import type {
@@ -6,24 +11,48 @@ import type {
 } from "./diff";
 
 // -----------------------------------------------------------------------
+// Table specs
+// -----------------------------------------------------------------------
+
+const PROGRAMS_UPSERT_SPEC: TableSpec = {
+  table: "fizruk_programs",
+  insertClause: `INSERT INTO fizruk_programs (user_id, active_program_id, updated_at)
+     VALUES (?, ?, ?)`,
+  conflictTarget: ["user_id"],
+  updateColumns: [{ column: "active_program_id" }, { column: "updated_at" }],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
+
+const PLAN_TEMPLATE_UPSERT_SPEC: TableSpec = {
+  table: "fizruk_plan_templates",
+  insertClause: `INSERT INTO fizruk_plan_templates (user_id, data_json, updated_at)
+     VALUES (?, ?, ?)`,
+  conflictTarget: ["user_id"],
+  updateColumns: [{ column: "data_json" }, { column: "updated_at" }],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
+
+const PROGRAMS_UPSERT_SQL = buildLwwUpsert(PROGRAMS_UPSERT_SPEC);
+const PLAN_TEMPLATE_UPSERT_SQL = buildLwwUpsert(PLAN_TEMPLATE_UPSERT_SPEC);
+
+// -----------------------------------------------------------------------
 // Stage 12.5 / PR #070f2-mobile-dualwrite — programs singleton row
 // -----------------------------------------------------------------------
 
 export async function setPrograms(
   client: SqliteMigrationClient,
   programs: FizrukProgramsSnapshot,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `INSERT INTO fizruk_programs (user_id, active_program_id, updated_at)
-     VALUES (?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET
-       active_program_id = excluded.active_program_id,
-       updated_at        = excluded.updated_at
-     WHERE excluded.updated_at > fizruk_programs.updated_at`,
-    [userId, programs.activeProgramId ?? null, clientTs],
-  );
+  await client.run(PROGRAMS_UPSERT_SQL, [
+    userId,
+    programs.activeProgramId ?? null,
+    clientTs,
+  ]);
 }
 
 // -----------------------------------------------------------------------
@@ -33,16 +62,11 @@ export async function setPrograms(
 export async function setPlanTemplate(
   client: SqliteMigrationClient,
   planTemplate: FizrukPlanTemplateSnapshot,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `INSERT INTO fizruk_plan_templates (user_id, data_json, updated_at)
-     VALUES (?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET
-       data_json  = excluded.data_json,
-       updated_at = excluded.updated_at
-     WHERE excluded.updated_at > fizruk_plan_templates.updated_at`,
-    [userId, planTemplate.dataJson ?? "null", clientTs],
-  );
+  await client.run(PLAN_TEMPLATE_UPSERT_SQL, [
+    userId,
+    planTemplate.dataJson ?? "null",
+    clientTs,
+  ]);
 }
