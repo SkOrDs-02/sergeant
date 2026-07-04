@@ -282,10 +282,18 @@ export function useOverviewData({
     [limitBudgets, statTx, txCategories, txSplits, customCategories],
   );
 
-  const todayStart = new Date(kyivYear, kyivMonth, kyivDay);
-  // Hoist the epoch primitive so the memo dependency arrays below stay simple
-  // expressions (react-hooks/use-memo) rather than `todayStart.getTime()` calls.
-  const todayStartMs = todayStart.getTime();
+  // Memoize the Kyiv day-start epoch so it is a stable primitive: it only
+  // changes when the calendar day rolls over. Deriving it inline from a `new
+  // Date(...)` each render makes React Compiler treat the Date-derived value as
+  // potentially-mutable and skip memoization of every flow that depends on it;
+  // the wrapped primitive keeps the dependency arrays below simple expressions
+  // and lets the debt/subscription flow memos below preserve cleanly.
+  /* eslint-disable react-hooks/preserve-manual-memoization -- React Compiler elects not to preserve this trivial epoch memo ("memoized in source but not in output"); the memo is pure and its deps (Kyiv date parts) are exhaustive. Compiler is not enabled at runtime, so this useMemo does real work — it hoists the `new Date(...)` allocation out of every render and stabilises the primitive the flow memos below depend on. */
+  const todayStartMs = useMemo(
+    () => new Date(kyivYear, kyivMonth, kyivDay).getTime(),
+    [kyivYear, kyivMonth, kyivDay],
+  );
+  /* eslint-enable react-hooks/preserve-manual-memoization */
 
   const subscriptionFlows = useMemo(
     () =>
