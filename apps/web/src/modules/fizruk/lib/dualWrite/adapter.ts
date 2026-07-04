@@ -57,35 +57,28 @@ export async function applyFizrukDualWriteOps(
   }
   const logger = options.logger ?? DEFAULT_LOGGER;
   let applied = 0;
+  let errored = 0;
   let skipped = 0;
 
-  // The whole batch is atomic: a diff describes one LS-state transition, so
-  // applying half of it would leave SQLite on a state that never existed in
-  // LS and silently diverge until the next full diff. On any failure the
-  // transaction rolls back and the batch is retried wholesale by the next
-  // dual-write tick.
-  await client.exec("BEGIN");
-  try {
-    for (const op of ops) {
+  // Best-effort per-op: each op is applied independently so a single failure
+  // never aborts the rest of the batch. This aligns fizruk with every other
+  // dual-write pipeline (nutrition/routine/mobile-fizruk and the shared
+  // `applyDualWriteOps` core), resolving ADR-0073 Open Question #1.
+  for (const op of ops) {
+    try {
       const outcome = await applyOne(client, op, options);
       if (outcome === "applied") applied += 1;
       else skipped += 1;
+    } catch (err) {
+      errored += 1;
+      logger("warn", "dual-write op failed", {
+        op: op.kind,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
-    await client.exec("COMMIT");
-  } catch (err) {
-    try {
-      await client.exec("ROLLBACK");
-    } catch {
-      /* rollback failure is unrecoverable here; the original error wins */
-    }
-    logger("warn", "dual-write batch rolled back", {
-      ops: ops.length,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return { applied: 0, errored: ops.length, skipped: 0 };
   }
 
-  return { applied, errored: 0, skipped };
+  return { applied, errored, skipped };
 }
 
 type ApplyOutcome = "applied" | "skipped";
