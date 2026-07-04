@@ -20,6 +20,7 @@ const SCOPES = [
   "design-tokens",
   "config",
   "db-schema",
+  "dualwrite-core",
   "eslint-plugins",
   "openclaw-plugin",
   "migrations",

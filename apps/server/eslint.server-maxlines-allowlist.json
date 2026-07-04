@@ -1,8 +1,5 @@
 [
   "apps/server/src/modules/chat/chat.ts",
   "apps/server/src/modules/billing/stripe.ts",
-  "apps/server/src/modules/sync/fizruk/applySync.ts",
-  "apps/server/src/routes/internal/openclaw.ts",
-  "apps/server/src/modules/openclaw/tools.ts",
-  "apps/server/src/obs/metrics.ts"
+  "apps/server/src/modules/sync/fizruk/applySync.ts"
 ]

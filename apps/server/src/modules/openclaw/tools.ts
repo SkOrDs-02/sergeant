@@ -111,183 +111,9 @@ export interface ReadStrategyDocsOutput {
  * у `beforeAll` без re-import-у tools.ts. Production override
  * прийде з Dockerfile.api `ENV OPENCLAW_REPO_ROOT=/app`.
  *
- * Default fallback (env unset): три рівні вище від цього файлу. У дев-середе
- * (`tsx`) це лежить у `apps/server/src/modules/openclaw/tools.ts` → repo
- * root. У бандлі (esbuild → `apps/server/dist-server/index.js`) той же
- * розрахунок дає `/` всередині Docker-image, тому prod-overrider
- * `OPENCLAW_REPO_ROOT=/app` обов'язковий — без нього `read_strategy_docs`
- * валив 5xx.
- */
-function resolveRepoRoot(): string {
-  const envRoot = process.env["OPENCLAW_REPO_ROOT"];
-  if (envRoot) return path.resolve(envRoot);
-  return path.resolve(import.meta.dirname ?? __dirname, "../../../../..");
-}
-
-export async function readStrategyDoc(
-  input: ReadStrategyDocsInput,
-): Promise<ReadStrategyDocsOutput> {
-  const repoRoot = resolveRepoRoot();
-  // Strip leading slashes so the LLM-supplied `docs/strategy/foo.md` and
-  // `/docs/strategy/foo.md` resolve identically; `safeJoin` itself rejects
-  // truly absolute paths (`/etc/passwd`, `C:\...`) before any traversal
-  // attempt reaches the filesystem.
-  const requested = input.path.replace(/^\/+/, "");
-  let resolved: string;
-  try {
-    resolved = safeJoin(repoRoot, requested);
-  } catch (err) {
-    if (err instanceof OpenClawPathTraversalError) {
-      // L8 — surface traversal attempts as allowlist violations so the
-      // routes-handler maps them to 4xx (not 5xx via Sentry-fatal).
-      // Wrap rather than re-throw so callers keep one error type to
-      // match against.
-      throw new OpenClawAllowlistError(
-        `Path '${input.path}' is not in read_strategy_docs allowlist (path traversal blocked)`,
-      );
-    }
-    throw err;
-  }
-
-  // Prefix-allowlist: resolved-path має починатися з repoRoot/<allowed>.
-  const isAllowed = READ_STRATEGY_DOCS_ALLOWED_PATHS.some((prefix) => {
-    const allowedRoot = path.resolve(repoRoot, prefix);
-    return (
-      resolved === allowedRoot || resolved.startsWith(allowedRoot + path.sep)
-    );
-  });
-  if (!isAllowed) {
-    throw new OpenClawAllowlistError(
-      `Path '${input.path}' is not in read_strategy_docs allowlist`,
-    );
-  }
-
-  // Stat first — якщо це директорія, повертаємо її вміст списком (для
-  // index-у). Якщо файл — повертаємо contents.
-  //
-  // Allowlist-prefix може посилатися на директорію, що ще не існує (напр.
-  // `docs/decisions/` до першого `record_decision`-PR-у або aspirational
-  // `docs/strategy/` до першого `commit_to_strategy_doc`). У runtime image
-  // (Dockerfile.api) також копіюються тільки існуючі subdir-и. У таких
-  // випадках раніше `fs.stat` бабахав ENOENT → asyncHandler → Sentry fatal.
-  // Тепер мапаємо на `OpenClawNotFoundError`, який routes-handler віддає
-  // як 404 з `{ error: 'not_found' }`. Allowlist-семантика залишається
-  // окремо — `allowlist_fail` лише для path-traversal/forbidden-prefix.
-  let stat: import("node:fs").Stats;
-  try {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- `resolved` validated by `isAllowed`/path-traversal check at lines 123-128
-    stat = await fs.stat(resolved);
-  } catch (err) {
-    if (isEnoentError(err)) {
-      throw new OpenClawNotFoundError(
-        `Path '${input.path}' not found in read_strategy_docs tree`,
-      );
-    }
-    throw err;
-  }
-  if (stat.isDirectory()) {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- `resolved` validated by `isAllowed`/path-traversal check at lines 123-128
-    const entries = await fs.readdir(resolved);
-    return {
-      path: input.path,
-      contents: entries.sort().join("\n"),
-      size: entries.length,
-    };
-  }
-
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- `resolved` validated by `isAllowed`/path-traversal check at lines 123-128
-  const contents = await fs.readFile(resolved, "utf-8");
-  return {
-    path: input.path,
-    contents,
-    size: stat.size,
-  };
-}
-
-function isEnoentError(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code: unknown }).code === "ENOENT"
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// query_app_db — read-only SQL з table-allowlist
-// ─────────────────────────────────────────────────────────────────────────
-
-export interface QueryAppDbInput {
-  sql: string;
-  params?: ReadonlyArray<unknown> | undefined;
-  /** Hard cap на rows. Default 200, max 1000. */
-  limit?: number | undefined;
-}
-
-export interface QueryAppDbOutput {
-  rowCount: number;
-  rows: Record<string, unknown>[];
-  /** Список таблиць, які пройшли allowlist-перевірку. */
-  tablesUsed: string[];
-}
-
-/**
- * Detects basic write-statements (INSERT/UPDATE/DELETE/TRUNCATE/ALTER/CREATE
- * /DROP/GRANT/REVOKE/COPY). Case-insensitive. Найперший token має бути
- * SELECT або WITH (для CTEs).
- */
-function isWriteSql(sql: string): boolean {
-  const trimmed = sql.trim().toLowerCase();
-  if (
-    trimmed.startsWith("select ") ||
-    trimmed.startsWith("select(") ||
-    trimmed.startsWith("with ")
-  ) {
-    return false;
-  }
-  return true;
-}
-
-/**
- * Витягає таблиці зі SQL за регексом FROM/JOIN. Не справжній parser, але
- * для simple read-queries-у достатньо. Якщо tool-input не пройде через
- * цей filter, запит fail-closed-ається.
- */
-export function extractSqlTables(sql: string): string[] {
-  // Strip коменти й string-literals (щоб не матчити "FROM" всередині них).
-  const stripped = sql
-    .replace(/--[^\n]*/g, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/'(?:[^']|'')*'/g, "");
-
-  const re = /\b(?:from|join)\s+(?:only\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\b/gi;
-  const found = new Set<string>();
-  for (const match of stripped.matchAll(re)) {
-    if (match[1]) found.add(match[1].toLowerCase());
-  }
-  return [...found];
-}
-
-export class OpenClawAllowlistError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "OpenClawAllowlistError";
-  }
-}
-
-export class OpenClawSchemaError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "OpenClawSchemaError";
-  }
-}
-
-/**
- * Throwed коли LLM запитав allowlist-прохідний path/resource, який ще
- * фізично не існує (e.g. `docs/decisions/` до першого decision-PR-у,
- * або subdir, що навмисно не запікається в Docker image). Routes-handler
- * мапає на 404 з `{ error: 'not_found' }` — це user-error, не server-fault,
- * тож НЕ повинен ескалейтись у asyncHandler → Sentry-fatal pipeline.
+ * Цей файл — барель: реалізації рознесені по доменних модулях
+ * (`tools-*.ts`), а імпорт-шлях `./tools.js` зберігається для всіх
+ * споживачів через re-export.
  */
 export class OpenClawNotFoundError extends Error {
   constructor(message: string) {
@@ -1349,29 +1175,63 @@ async function openDecisionPr(
     throw new Error(`Failed to create file: HTTP ${putRes.status}`);
   }
 
-  // 4) Open PR.
-  const prRes = await fetch(`https://api.github.com/repos/${repo}/pulls`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      title: `chore(openclaw): decision #${input.decisionId} — ${input.topic}`,
-      head: branch,
-      base: baseBranch,
-      body: [
-        markdown,
-        "",
-        "---",
-        "",
-        `_PR opened automatically by OpenClaw. Postgres row: \`openclaw_decisions.id=${input.decisionId}\`._`,
-        `_Per ADR-0031 §3, OpenClaw never auto-merges; founder reviews and merges._`,
-      ].join("\n"),
-      maintainer_can_modify: true,
-    }),
-  });
-  if (!prRes.ok) {
-    throw new Error(`Failed to open PR: HTTP ${prRes.status}`);
-  }
-  const prBody = (await prRes.json()) as { html_url?: string };
-  if (!prBody.html_url) throw new Error("PR response missing html_url");
-  return prBody.html_url;
-}
+export {
+  OpenClawAllowlistError,
+  OpenClawSchemaError,
+  OpenClawNotFoundError,
+} from "./tools-errors.js";
+
+export type { RecallMemoryInput, RecallMemoryOutput } from "./tools-memory.js";
+export { recallCofounderMemory } from "./tools-memory.js";
+
+export type {
+  ReadStrategyDocsInput,
+  ReadStrategyDocsOutput,
+} from "./tools-strategy-docs.js";
+export { readStrategyDoc } from "./tools-strategy-docs.js";
+
+export type { QueryAppDbInput, QueryAppDbOutput } from "./tools-db-query.js";
+export { extractSqlTables, queryAppDb } from "./tools-db-query.js";
+
+export type { ReadGithubInput, ReadGithubOutput } from "./tools-github.js";
+export { readGithub } from "./tools-github.js";
+
+export type {
+  ReadWorkflowLogsInput,
+  ReadWorkflowLogsOutput,
+} from "./tools-workflow-logs.js";
+export { readWorkflowLogs } from "./tools-workflow-logs.js";
+
+export type {
+  ReadTelegramTopicHistoryInput,
+  ReadTelegramTopicHistoryErrorCode,
+  ReadTelegramTopicHistoryError,
+  ReadTelegramTopicHistoryMessage,
+  ReadTelegramTopicHistoryOutput,
+  ReadTelegramTopicHistoryDeps,
+} from "./tools-telegram-history.js";
+export { readTelegramTopicHistory } from "./tools-telegram-history.js";
+
+export type {
+  GetStripeMetricsInput,
+  GetStripeMetricsOutput,
+  SentryLevel,
+  GetSentryIssuesInput,
+  SentryIssueRecord,
+  GetSentryIssuesOutput,
+  GetServerStatsOutput,
+  GetPostHogStatsInput,
+  GetPostHogStatsOutput,
+  GetGithubReleasesInput,
+  GetGithubReleasesOutput,
+} from "./tools-external-metrics.js";
+export {
+  getStripeMetrics,
+  getSentryIssues,
+  getServerStats,
+  getPostHogStats,
+  getGithubReleases,
+} from "./tools-external-metrics.js";
+
+export type { RecordDecisionResult } from "./tools-decisions.js";
+export { recordDecision } from "./tools-decisions.js";
