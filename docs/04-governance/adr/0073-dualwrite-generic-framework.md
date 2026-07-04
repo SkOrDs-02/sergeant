@@ -187,13 +187,13 @@ export function createDualWriteOrchestrator<S, Op>(
 | 1         | пакет `@sergeant/dualwrite-core` (core + web re-export)                                      | ✅ merged                | #103     |
 | 2         | nutrition web + примітиви `createApplyOps`/`TableSpec`/білдери                               | ✅ merged                | #107     |
 | 3         | routine web (+ `alignSetColumns` вісь у `buildLwwUpsert`)                                    | ✅ merged                | #109     |
-| Open Q #1 | web-fizruk `atomic-batch`→`best-effort` (**semantic**, передумова кр.4)                      | 🔍 in review             | #112     |
-| 4         | fizruk web (мехмиграція на білдери; після Open Q #1)                                         | ⏳ pending               | —        |
-| 5         | finyk web (5 сімейств таблиць, hard-DELETE `upsertGuard:"none"`, single-flight orchestrator) | ⏳ pending               | —        |
-| 6         | mobile finyk                                                                                 | ⏳ pending               | —        |
-| 7         | mobile nutrition                                                                             | ⏳ pending               | —        |
-| 8         | mobile routine                                                                               | ⏳ pending               | —        |
-| 9         | mobile fizruk (власні op-kinds: `active-workout-set` → KV)                                   | ⏳ pending               | —        |
+| Open Q #1 | web-fizruk `atomic-batch`→`best-effort` (**semantic**, передумова кр.4)                      | ✅ merged                | #112     |
+| 4         | fizruk web (мехмиграція на білдери; після Open Q #1)                                         | 🔍 in review             | #116     |
+| 5         | finyk web (5 сімейств таблиць, hard-DELETE `upsertGuard:"none"`, single-flight orchestrator) | 🔍 in review             | #116     |
+| 6         | mobile finyk                                                                                 | 🔍 in review             | #116     |
+| 7         | mobile nutrition                                                                             | 🔍 in review             | #116     |
+| 8         | mobile routine                                                                               | 🔍 in review             | #116     |
+| 9         | mobile fizruk (власні op-kinds: `active-workout-set` → KV)                                   | 🔍 in review             | #116     |
 | 10        | ~~residualImport skeleton~~                                                                  | ❌ скасовано (Open Q #6) | —        |
 
 Легенда: ✅ у `main` · 🔍 PR відкритий, чекає review/merge · ⏳ ще не почато · ❌ не робимо.
