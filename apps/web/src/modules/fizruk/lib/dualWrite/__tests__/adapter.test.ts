@@ -328,7 +328,7 @@ describe("applyFizrukDualWriteOps", () => {
     expect(result.errored).toBe(0);
   });
 
-  it("rolls the whole batch back when one op fails", async () => {
+  it("best-effort: a single failing op is isolated and does not abort the rest", async () => {
     const warnings: Array<{ msg: string; meta?: unknown }> = [];
     const failingClient: typeof handle.client = {
       ...handle.client,
@@ -359,15 +359,18 @@ describe("applyFizrukDualWriteOps", () => {
       logger: (_level, msg, meta) => warnings.push({ msg, meta }),
     });
 
-    expect(result).toEqual({ applied: 0, errored: 2, skipped: 0 });
-    expect(warnings.some((w) => w.msg.includes("rolled back"))).toBe(true);
+    // Only the failing op counts as errored; the successful op is applied.
+    expect(result).toEqual({ applied: 1, errored: 1, skipped: 0 });
+    expect(warnings.some((w) => w.msg.includes("dual-write op failed"))).toBe(
+      true,
+    );
 
-    // The successful first op must NOT survive — SQLite stays on the
-    // pre-batch state instead of a half-applied diff.
+    // The successful first op survives — best-effort does not roll back
+    // already-applied ops on a later failure.
     const rows = await handle.client.all<Record<string, unknown>>(
       "SELECT id FROM fizruk_measurements",
     );
-    expect(rows).toEqual([]);
+    expect(rows).toEqual([{ id: "m-ok" }]);
   });
 
   // --- Stage 12 / PR #070f-dualwrite — Daily log ops ---

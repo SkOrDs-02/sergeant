@@ -3,10 +3,6 @@
 exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-stable (sql, params) sequence for the canonical op set 1`] = `
 [
   {
-    "params": [],
-    "sql": "BEGIN",
-  },
-  {
     "params": [
       "w1",
       "u1",
@@ -355,10 +351,6 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
     "sql": "UPDATE fizruk_workout_templates
         SET deleted_at = ?, updated_at = ?
       WHERE id = ? AND user_id = ? AND updated_at < ?",
-  },
-  {
-    "params": [],
-    "sql": "COMMIT",
   },
 ]
 `;
