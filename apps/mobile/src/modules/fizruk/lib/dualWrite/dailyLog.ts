@@ -1,7 +1,50 @@
+import {
+  buildDelete,
+  buildLwwUpsert,
+  toIntOrNull,
+  toRealOrNull,
+  type DualWriteRuntime,
+  type TableSpec,
+} from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import type { FizrukDailyLogSnapshot } from "./diff";
-import { toIntOrNull, toRealOrNull } from "./_helpers";
+
+// -----------------------------------------------------------------------
+// Table spec
+// -----------------------------------------------------------------------
+
+const DAILY_LOG_UPSERT_SPEC: TableSpec = {
+  table: "fizruk_daily_log",
+  insertClause: `INSERT INTO fizruk_daily_log
+       (id, user_id, entry_at, weight_kg, sleep_hours, energy_level, mood,
+        note, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "entry_at" },
+    { column: "weight_kg" },
+    { column: "sleep_hours" },
+    { column: "energy_level" },
+    { column: "mood" },
+    { column: "note" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+  // Hand-written SQL aligned one column wider than this table's own max
+  // (`energy_level`, 12 chars) — see `alignWidth` doc.
+  alignWidth: 13,
+};
+
+const DAILY_LOG_UPSERT_SQL = buildLwwUpsert(DAILY_LOG_UPSERT_SPEC);
+const DAILY_LOG_DELETE_SQL = buildDelete({
+  table: "fizruk_daily_log",
+  deletePolicy: "soft",
+  matchColumns: ["id", "user_id"],
+});
 
 // -----------------------------------------------------------------------
 // Stage 12 / PR #070f-mobile-dualwrite — daily-log per-row upsert / soft-delete
@@ -10,49 +53,32 @@ import { toIntOrNull, toRealOrNull } from "./_helpers";
 export async function upsertDailyLog(
   client: SqliteMigrationClient,
   e: FizrukDailyLogSnapshot,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `INSERT INTO fizruk_daily_log
-       (id, user_id, entry_at, weight_kg, sleep_hours, energy_level, mood,
-        note, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
-     ON CONFLICT(id) DO UPDATE SET
-       entry_at      = excluded.entry_at,
-       weight_kg     = excluded.weight_kg,
-       sleep_hours   = excluded.sleep_hours,
-       energy_level  = excluded.energy_level,
-       mood          = excluded.mood,
-       note          = excluded.note,
-       updated_at    = excluded.updated_at,
-       deleted_at    = NULL
-     WHERE excluded.updated_at > fizruk_daily_log.updated_at`,
-    [
-      e.id,
-      userId,
-      e.at,
-      toRealOrNull(e.weightKg),
-      toRealOrNull(e.sleepHours),
-      toIntOrNull(e.energyLevel),
-      toIntOrNull(e.mood),
-      e.note ?? "",
-      clientTs,
-      clientTs,
-    ],
-  );
+  await client.run(DAILY_LOG_UPSERT_SQL, [
+    e.id,
+    userId,
+    e.at,
+    toRealOrNull(e.weightKg),
+    toRealOrNull(e.sleepHours),
+    toIntOrNull(e.energyLevel),
+    toIntOrNull(e.mood),
+    e.note ?? "",
+    clientTs,
+    clientTs,
+  ]);
 }
 
 export async function softDeleteDailyLog(
   client: SqliteMigrationClient,
   entryId: string,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(
-    `UPDATE fizruk_daily_log
-        SET deleted_at = ?, updated_at = ?
-      WHERE id = ? AND user_id = ? AND updated_at < ?`,
-    [clientTs, clientTs, entryId, userId, clientTs],
-  );
+  await client.run(DAILY_LOG_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    entryId,
+    userId,
+    clientTs,
+  ]);
 }

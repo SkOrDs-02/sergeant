@@ -14,6 +14,13 @@ export const ACTIVE_WORKOUT_KV_KEY = "fizruk_active_workout_id_v1";
 // -----------------------------------------------------------------------
 // Stage 12.5 / PR #070f3-active-workout-dualwrite — active-workout
 // kv_store slot writer
+//
+// ADR-0073 крок 9: `active-workout-set` writes to `kv_store`, not a
+// `fizruk_*` table — `TableSpec`/`buildLwwUpsert` model `ON CONFLICT` on a
+// declared table with an `updated_at` LWW guard, but `kv_store`'s guard
+// compares an INTEGER epoch-ms column against an ISO `clientTs`, which the
+// builders don't parameterise. This stays a hand-written handler per
+// ADR-0073 § "Що ми свідомо НЕ абстрагуємо" п.7.
 // -----------------------------------------------------------------------
 
 /**
@@ -36,7 +43,7 @@ export const ACTIVE_WORKOUT_KV_KEY = "fizruk_active_workout_id_v1";
 export async function setActiveWorkout(
   client: SqliteMigrationClient,
   activeWorkout: FizrukActiveWorkoutSnapshot,
-  clientTs: string,
+  { clientTs }: { readonly clientTs: string },
 ): Promise<void> {
   const id = activeWorkout.activeWorkoutId;
   const value = JSON.stringify(id ?? null);

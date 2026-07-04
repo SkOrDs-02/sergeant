@@ -1,6 +1,102 @@
+import {
+  buildLwwUpsert,
+  buildReconcileChildren,
+  type DualWriteRuntime,
+  type TableSpec,
+} from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import type { FizrukItemSnapshot, FizrukWorkoutSnapshot } from "./diff";
+
+// -----------------------------------------------------------------------
+// Table specs
+// -----------------------------------------------------------------------
+
+const WORKOUT_UPSERT_SPEC: TableSpec = {
+  table: "fizruk_workouts",
+  insertClause: `INSERT INTO fizruk_workouts
+       (id, user_id, started_at, ended_at, note, groups_json,
+        warmup_json, cooldown_json, wellbeing_json,
+        created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "started_at" },
+    { column: "ended_at" },
+    { column: "note" },
+    { column: "groups_json" },
+    { column: "warmup_json" },
+    { column: "cooldown_json" },
+    { column: "wellbeing_json" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
+
+const WORKOUT_ITEM_UPSERT_SPEC: TableSpec = {
+  table: "fizruk_workout_items",
+  insertClause: `INSERT INTO fizruk_workout_items
+       (id, workout_id, user_id, exercise_id, name_uk, primary_group,
+        muscles_primary, muscles_secondary, type, duration_sec, distance_m,
+        sort_order, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "workout_id" },
+    { column: "exercise_id" },
+    { column: "name_uk" },
+    { column: "primary_group" },
+    { column: "muscles_primary" },
+    { column: "muscles_secondary" },
+    { column: "type" },
+    { column: "duration_sec" },
+    { column: "distance_m" },
+    { column: "sort_order" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
+
+const WORKOUT_SET_UPSERT_SPEC: TableSpec = {
+  table: "fizruk_workout_sets",
+  insertClause: `INSERT INTO fizruk_workout_sets
+       (id, workout_item_id, user_id, weight_kg, reps, rpe,
+        sort_order, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "weight_kg" },
+    { column: "reps" },
+    { column: "rpe" },
+    { column: "sort_order" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+  // Hand-written SQL aligned wider than this table's own max column name
+  // (`sort_order`/`updated_at`/`deleted_at`, 10 chars) — see `alignWidth` doc.
+  alignWidth: 15,
+};
+
+const WORKOUT_UPSERT_SQL = buildLwwUpsert(WORKOUT_UPSERT_SPEC);
+const WORKOUT_ITEM_UPSERT_SQL = buildLwwUpsert(WORKOUT_ITEM_UPSERT_SPEC);
+const WORKOUT_SET_UPSERT_SQL = buildLwwUpsert(WORKOUT_SET_UPSERT_SPEC);
+
+// Cascade soft-delete of items/sets when a whole workout is deleted — these
+// WHERE shapes (`deleted_at IS NULL`, no LWW guard) match the reconcile
+// keepCount-0 branch, so reuse that builder.
+const WORKOUT_ITEMS_CASCADE_SQL = buildReconcileChildren(
+  { table: "fizruk_workout_items", parentColumn: "workout_id" },
+  0,
+);
 
 // -----------------------------------------------------------------------
 // Workout upsert / soft-delete (includes items, sets, and child cleanup)
@@ -9,45 +105,26 @@ import type { FizrukItemSnapshot, FizrukWorkoutSnapshot } from "./diff";
 export async function upsertWorkout(
   client: SqliteMigrationClient,
   w: FizrukWorkoutSnapshot,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   const groupsJson = JSON.stringify(w.groups ?? []);
   const warmupJson = w.warmup ? JSON.stringify(w.warmup) : null;
   const cooldownJson = w.cooldown ? JSON.stringify(w.cooldown) : null;
   const wellbeingJson = w.wellbeing ? JSON.stringify(w.wellbeing) : null;
 
-  await client.run(
-    `INSERT INTO fizruk_workouts
-       (id, user_id, started_at, ended_at, note, groups_json,
-        warmup_json, cooldown_json, wellbeing_json,
-        created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
-     ON CONFLICT(id) DO UPDATE SET
-       started_at     = excluded.started_at,
-       ended_at       = excluded.ended_at,
-       note           = excluded.note,
-       groups_json    = excluded.groups_json,
-       warmup_json    = excluded.warmup_json,
-       cooldown_json  = excluded.cooldown_json,
-       wellbeing_json = excluded.wellbeing_json,
-       updated_at     = excluded.updated_at,
-       deleted_at     = NULL
-     WHERE excluded.updated_at > fizruk_workouts.updated_at`,
-    [
-      w.id,
-      userId,
-      w.startedAt,
-      w.endedAt ?? null,
-      w.note ?? "",
-      groupsJson,
-      warmupJson,
-      cooldownJson,
-      wellbeingJson,
-      clientTs,
-      clientTs,
-    ],
-  );
+  await client.run(WORKOUT_UPSERT_SQL, [
+    w.id,
+    userId,
+    w.startedAt,
+    w.endedAt ?? null,
+    w.note ?? "",
+    groupsJson,
+    warmupJson,
+    cooldownJson,
+    wellbeingJson,
+    clientTs,
+    clientTs,
+  ]);
 
   const items = w.items ?? [];
   for (let i = 0; i < items.length; i++) {
@@ -77,43 +154,22 @@ async function upsertWorkoutItem(
   const musclesPrimary = JSON.stringify(item.musclesPrimary ?? []);
   const musclesSecondary = JSON.stringify(item.musclesSecondary ?? []);
 
-  await client.run(
-    `INSERT INTO fizruk_workout_items
-       (id, workout_id, user_id, exercise_id, name_uk, primary_group,
-        muscles_primary, muscles_secondary, type, duration_sec, distance_m,
-        sort_order, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
-     ON CONFLICT(id) DO UPDATE SET
-       workout_id        = excluded.workout_id,
-       exercise_id       = excluded.exercise_id,
-       name_uk           = excluded.name_uk,
-       primary_group     = excluded.primary_group,
-       muscles_primary   = excluded.muscles_primary,
-       muscles_secondary = excluded.muscles_secondary,
-       type              = excluded.type,
-       duration_sec      = excluded.duration_sec,
-       distance_m        = excluded.distance_m,
-       sort_order        = excluded.sort_order,
-       updated_at        = excluded.updated_at,
-       deleted_at        = NULL
-     WHERE excluded.updated_at > fizruk_workout_items.updated_at`,
-    [
-      item.id,
-      workoutId,
-      userId,
-      item.exerciseId ?? "",
-      item.nameUk ?? "",
-      item.primaryGroup ?? "",
-      musclesPrimary,
-      musclesSecondary,
-      item.type ?? "strength",
-      item.durationSec ?? null,
-      item.distanceM ?? null,
-      sortOrder,
-      clientTs,
-      clientTs,
-    ],
-  );
+  await client.run(WORKOUT_ITEM_UPSERT_SQL, [
+    item.id,
+    workoutId,
+    userId,
+    item.exerciseId ?? "",
+    item.nameUk ?? "",
+    item.primaryGroup ?? "",
+    musclesPrimary,
+    musclesSecondary,
+    item.type ?? "strength",
+    item.durationSec ?? null,
+    item.distanceM ?? null,
+    sortOrder,
+    clientTs,
+    clientTs,
+  ]);
 
   const sets = item.sets ?? [];
   for (let s = 0; s < sets.length; s++) {
@@ -155,38 +211,23 @@ async function upsertWorkoutSet(
   },
   sortOrder: number,
 ): Promise<void> {
-  await client.run(
-    `INSERT INTO fizruk_workout_sets
-       (id, workout_item_id, user_id, weight_kg, reps, rpe,
-        sort_order, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
-     ON CONFLICT(id) DO UPDATE SET
-       weight_kg       = excluded.weight_kg,
-       reps            = excluded.reps,
-       rpe             = excluded.rpe,
-       sort_order      = excluded.sort_order,
-       updated_at      = excluded.updated_at,
-       deleted_at      = NULL
-     WHERE excluded.updated_at > fizruk_workout_sets.updated_at`,
-    [
-      setId,
-      workoutItemId,
-      userId,
-      set.weightKg ?? 0,
-      set.reps ?? 0,
-      set.rpe ?? null,
-      sortOrder,
-      clientTs,
-      clientTs,
-    ],
-  );
+  await client.run(WORKOUT_SET_UPSERT_SQL, [
+    setId,
+    workoutItemId,
+    userId,
+    set.weightKg ?? 0,
+    set.reps ?? 0,
+    set.rpe ?? null,
+    sortOrder,
+    clientTs,
+    clientTs,
+  ]);
 }
 
 export async function softDeleteWorkout(
   client: SqliteMigrationClient,
   workoutId: string,
-  userId: string,
-  clientTs: string,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(
     `UPDATE fizruk_workouts
@@ -194,12 +235,12 @@ export async function softDeleteWorkout(
       WHERE id = ? AND user_id = ? AND updated_at < ?`,
     [clientTs, clientTs, workoutId, userId, clientTs],
   );
-  await client.run(
-    `UPDATE fizruk_workout_items
-        SET deleted_at = ?, updated_at = ?
-      WHERE workout_id = ? AND user_id = ? AND deleted_at IS NULL`,
-    [clientTs, clientTs, workoutId, userId],
-  );
+  await client.run(WORKOUT_ITEMS_CASCADE_SQL, [
+    clientTs,
+    clientTs,
+    workoutId,
+    userId,
+  ]);
   await client.run(
     `UPDATE fizruk_workout_sets
         SET deleted_at = ?, updated_at = ?
@@ -223,23 +264,13 @@ async function softDeleteRemovedChildren(
   clientTs: string,
   keepIds: string[],
 ): Promise<void> {
+  const sql = buildReconcileChildren(
+    { table: tableName, parentColumn: parentCol },
+    keepIds.length,
+  );
   if (keepIds.length === 0) {
-    await client.run(
-      `UPDATE ${tableName}
-          SET deleted_at = ?, updated_at = ?
-        WHERE ${parentCol} = ? AND user_id = ? AND deleted_at IS NULL`,
-      [clientTs, clientTs, parentId, userId],
-    );
+    await client.run(sql, [clientTs, clientTs, parentId, userId]);
     return;
   }
-  const placeholders = keepIds.map(() => "?").join(",");
-  await client.run(
-    `UPDATE ${tableName}
-        SET deleted_at = ?, updated_at = ?
-      WHERE ${parentCol} = ?
-        AND user_id = ?
-        AND deleted_at IS NULL
-        AND id NOT IN (${placeholders})`,
-    [clientTs, clientTs, parentId, userId, ...keepIds],
-  );
+  await client.run(sql, [clientTs, clientTs, parentId, userId, ...keepIds]);
 }
