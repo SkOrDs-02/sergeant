@@ -96,6 +96,7 @@ export function usePrPendingInsight({
   loaded,
   activeWorkoutId,
 }: PrPendingInsightOptions): Insight | null {
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- React Compiler inlines this thin derivation hook and elects not to re-memoize the result ("memoized in source but not in compilation output"); the memo body is pure and its deps are exhaustive. Compiler is not enabled at runtime, so this useMemo genuinely caches an O(workouts) scan on every Dashboard render — removing it is a real perf regression.
   return useMemo(() => {
     if (!loaded) return null;
 

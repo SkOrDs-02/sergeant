@@ -82,9 +82,13 @@ export function useNutritionPantries({
   }, [pantries, activePantryId]);
 
   const pantryText = activePantry?.text || "";
+  // Depend on the `items` field directly (not the whole `activePantry`) so the
+  // React Compiler infers the same dependency the array declares and the manual
+  // memoization is preserved.
+  const activePantryItems = activePantry?.items;
   const pantryItems = useMemo(
-    () => (Array.isArray(activePantry?.items) ? activePantry.items : []),
-    [activePantry?.items],
+    () => (Array.isArray(activePantryItems) ? activePantryItems : []),
+    [activePantryItems],
   );
   const [newItemName, setNewItemName] = useState("");
 
