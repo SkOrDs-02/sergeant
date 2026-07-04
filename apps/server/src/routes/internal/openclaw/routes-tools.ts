@@ -35,11 +35,7 @@ import {
   seoPsiAudit,
   seoSerpLookup,
 } from "../../../modules/openclaw/index.js";
-import {
-  asAllowlistFailure,
-  asNotFound,
-  asSchemaFailure,
-} from "./helpers.js";
+import { asAllowlistFailure, asNotFound, asSchemaFailure } from "./helpers.js";
 import {
   ClassifyBody,
   DecisionBody,
