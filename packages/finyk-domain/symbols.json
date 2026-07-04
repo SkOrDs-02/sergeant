@@ -1,7 +1,7 @@
 {
   "$schema": "../../docs/04-governance/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-07-03",
+  "generated_at": "2026-07-04",
   "package": "@sergeant/finyk-domain",
   "entryFile": "packages/finyk-domain/src/index.ts",
   "stats": {

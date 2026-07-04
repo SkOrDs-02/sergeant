@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-03",
+  "generated_at": "2026-07-04",
   "sourceHashes": {
-    "knowledge-graph": "4e5bcc32a5c0eaa80f1c0d2dd838d87189d2e36ff2bbef6246406253589b6f1e",
-    "symbol-index": "a725d91e4e15d7ecea71cb396a249f914345ea00a8c223514dda2e12f613b60b"
+    "knowledge-graph": "8e26078cbd4ebbb5b459ec7ba604c8782ae74f73e79d10e2f56c0202dd62b0e5",
+    "symbol-index": "277a1ac768df8ecded30ad4a89925931543c89c140b83fe41c4a4b954995c0e1"
   },
   "counts": {
     "adr": 70,
     "audit": 24,
-    "export": 303,
+    "export": 304,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
     "skill": 23,
-    "total": 558
+    "total": 559
   },
   "chunks": [
     {
@@ -3046,6 +3046,15 @@
       "tier": "extended",
       "text": "ZTier · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 0× · dead export unused",
       "contentHash": "6a5be5db4b14b79feb7bd8a43112247836e52994d42ca24d1a0abda9f8535e6c"
+    },
+    {
+      "id": "export:@sergeant/dualwrite-core:*",
+      "type": "export",
+      "path": "packages/dualwrite-core/src/apply.js",
+      "title": "* (re-export-star)",
+      "tier": "extended",
+      "text": "* · re-export-star · @sergeant/dualwrite-core · packages/dualwrite-core/src/apply.js · used 0× · dead export unused",
+      "contentHash": "27b94ec8184eb6901672fa122d2fd6adbd8ae9a4c4d25993e4f5526c184276ff"
     },
     {
       "id": "export:@sergeant/finyk-domain:*",

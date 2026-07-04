@@ -1,6 +1,6 @@
 # Initiative follow-ups
 
-> **Last validated:** 2026-07-03 by @Skords-01. **Next review:** 2026-10-01.
+> **Last validated:** 2026-07-04 by @Skords-01. **Next review:** 2026-10-02.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-initiative-followups`. -->
