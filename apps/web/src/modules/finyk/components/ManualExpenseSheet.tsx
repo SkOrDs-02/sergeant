@@ -238,6 +238,11 @@ export function ManualExpenseSheet({
   // чистою (description/amount/category/date).
   const [showDateField, setShowDateField] = useState(false);
 
+  // UI-only toggle-и, які скидаються в reset-ефекті нижче. Оголошені тут
+  // (перед ефектом), щоб їхні сеттери були доступні у момент виклику.
+  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
+  const [descFocused, setDescFocused] = useState(false);
+
   useEffect(() => {
     if (open) {
       if (initialExpense?.id) {
@@ -305,7 +310,6 @@ export function ManualExpenseSheet({
   // за межі top-N — підтягуємо її у видимий ряд, щоб активний чип завжди
   // залишався видимим і не плутав користувача при відкритті аркуша.
   const CATEGORY_COLLAPSED_COUNT = 6;
-  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
 
   // Normalise the watched category value so comparison against slug list is
   // stable even if a legacy value slips through.
@@ -339,7 +343,6 @@ export function ManualExpenseSheet({
       .filter((m) => m.name && m.name.toLocaleLowerCase("uk-UA") !== currentKey)
       .slice(0, 5);
   }, [frequentMerchants, description]);
-  const [descFocused, setDescFocused] = useState(false);
   const showMerchantHints =
     merchantSuggestions.length > 0 &&
     (descFocused || description.trim() === "");

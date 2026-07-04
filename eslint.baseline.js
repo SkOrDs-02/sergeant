@@ -164,15 +164,19 @@ export const baseline = [
       // apps/mobile-shell, apps/server, tools/openclaw):
       //   static-components            — 0 ✅ promoted to "error" below
       //   use-memo                     — 0 ✅ promoted to "error" below
-      //   immutability                 — 7 (web 3 + mobile 4)
+      //   immutability                 — web 0 ✅ (promoted to "error" for
+      //       apps/web in eslint.web.js) + mobile 4 (still off here)
       //   preserve-manual-memoization  — 9 (web 7 + mobile 2)
-      //   purity                       — 17 (apps/web)
-      //   refs                         — 37 (apps/web)
-      //   set-state-in-effect          — 78 (apps/web)
+      //   purity                       — 13 (apps/web)
+      //   refs                         — 59 (apps/web)
+      //   set-state-in-effect          — 76 (apps/web)
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/purity": "off",
       "react-hooks/refs": "off",
+      // `immutability` stays `off` in the shared baseline for apps/mobile
+      // (4 legacy violations, separate future bite); apps/web promotes it
+      // to "error" in eslint.web.js after the web burndown.
       "react-hooks/immutability": "off",
       // `static-components` cleared the monorepo — no component is defined
       // inside the body of another component. Promoted from "off" to
