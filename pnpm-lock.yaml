@@ -138,6 +138,9 @@ importers:
       '@sergeant/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@sergeant/dualwrite-core':
+        specifier: workspace:*
+        version: link:../../packages/dualwrite-core
       '@sergeant/finyk-domain':
         specifier: workspace:*
         version: link:../../packages/finyk-domain
