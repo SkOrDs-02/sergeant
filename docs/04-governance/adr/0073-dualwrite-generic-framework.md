@@ -1,6 +1,6 @@
 # ADR-0073: Generic dual-write framework для 4 модульних пайплайнів
 
-> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
+> **Last touched:** 2026-07-04 by @dimastahov16012003. **Next review:** 2026-10-02.
 > **Status:** Accepted
 
 - **Status:** Accepted
@@ -176,6 +176,27 @@ export function createDualWriteOrchestrator<S, Op>(
 - **П'ятий модуль** (наступна поверхня зі стору) отримує пайплайн ціною handlers + TableSpec-ів замість ~1.5k LOC копіювання.
 - Проти Option 2: доведено, що текстуального дублювання немає — «dedup» неможливий за визначенням.
 - Проти Option 3: прийнятний short-term (усе зелене, Knip чистий), але кожна зміна інваріанту (напр., майбутня зміна LWW на HLC чи vector-clock) вимагатиме 8 синхронних правок без механічного гейта.
+
+## Статус виконання (жива відмітка — оновлюй з кожним кроком)
+
+> **Для наступної сесії/харнеса:** це єдине місце істини про прогрес. Відкрий таблицю → перший рядок зі статусом ⏳/🔍 і є твоєю наступною роботою. Перед стартом: `git pull`, і **онови відповідний рядок у тому ж PR, що закриває крок** (Hard Rule #15). Номери PR — на `github.com/Skords-01/Sergeant`. Кроки суто послідовні для одного пайплайна, але web-кроки (2–5) незалежні від mobile (6–9) — можна паралелити різні пайплайни, якщо примітиви вже в `main`.
+
+| Крок      | Опис                                                                                         | Статус                   | PR       |
+| --------- | -------------------------------------------------------------------------------------------- | ------------------------ | -------- |
+| 0         | SQL-snapshot гейти (8 адаптерів: 4 web + 4 mobile)                                           | ✅ merged                | pre-#103 |
+| 1         | пакет `@sergeant/dualwrite-core` (core + web re-export)                                      | ✅ merged                | #103     |
+| 2         | nutrition web + примітиви `createApplyOps`/`TableSpec`/білдери                               | ✅ merged                | #107     |
+| 3         | routine web (+ `alignSetColumns` вісь у `buildLwwUpsert`)                                    | ✅ merged                | #109     |
+| Open Q #1 | web-fizruk `atomic-batch`→`best-effort` (**semantic**, передумова кр.4)                      | 🔍 in review             | #112     |
+| 4         | fizruk web (мехмиграція на білдери; після Open Q #1)                                         | ⏳ pending               | —        |
+| 5         | finyk web (5 сімейств таблиць, hard-DELETE `upsertGuard:"none"`, single-flight orchestrator) | ⏳ pending               | —        |
+| 6         | mobile finyk                                                                                 | ⏳ pending               | —        |
+| 7         | mobile nutrition                                                                             | ⏳ pending               | —        |
+| 8         | mobile routine                                                                               | ⏳ pending               | —        |
+| 9         | mobile fizruk (власні op-kinds: `active-workout-set` → KV)                                   | ⏳ pending               | —        |
+| 10        | ~~residualImport skeleton~~                                                                  | ❌ скасовано (Open Q #6) | —        |
+
+Легенда: ✅ у `main` · 🔍 PR відкритий, чекає review/merge · ⏳ ще не почато · ❌ не робимо.
 
 ## Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці)
 
