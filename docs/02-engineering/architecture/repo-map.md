@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last touched:** 2026-07-02 by @claude. **Next review:** 2026-09-30.
+> **Last touched:** 2026-07-04 by @dimastahov16012003. **Next review:** 2026-10-02.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/04-governance/governance/repo-map.auto.json`](../../04-governance/governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
@@ -34,6 +34,7 @@
 | `@sergeant/config`              | Cross-app build/runtime config helpers.                                                                                    |
 | `@sergeant/db-schema`           | Drizzle ORM schemas (Postgres + SQLite) + the migration runner used by `apps/server`. Schema changes pair with a SQL file. |
 | `@sergeant/design-tokens`       | Tailwind preset + tokens (colour scale, semantic typography, animation tiers). Backs Hard Rules #8/#11/#13/#14/#16/#17.    |
+| `@sergeant/dualwrite-core`      | Platform-neutral dual-write framework core (op-loop, numeric converters) for the 4 module pipelines (ADR-0073).            |
 | `@sergeant/insights`            | Cross-module analytics — pure functions over normalized data.                                                              |
 | `eslint-plugin-sergeant-design` | Custom ESLint rules referenced by Hard Rules #8/#9/#10/#11/#12/#13/#14/#21. Tests via `node --test`.                       |
 | `@sergeant/finyk-domain`        | Finyk module domain logic (kcal-style — but for money/budgets/transactions).                                               |

@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
+> **Last touched:** 2026-07-04 by @dimastahov16012003. **Next review:** 2026-10-02.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -86,7 +86,7 @@ Surface-scoped quick references (commands, gotchas, specialist skill pointer) li
 ## Repo overview
 
 - **pnpm 9.15.1** (enforced via `packageManager`) + **Turborepo** monorepo, **Node 22.x** (Volta pins 22.19.0), **TypeScript 6**.
-- 4 apps (`apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`) + 12 packages (`@sergeant/*`, `eslint-plugin-sergeant-design`, 4 domain packages).
+- 4 apps (`apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`) + 13 packages (`@sergeant/*`, `eslint-plugin-sergeant-design`, 4 domain packages).
 - Pre-commit: **Husky** runs `lint-staged` — ESLint --fix + Prettier for code, `staged-typecheck.mjs` for staged TS/TSX, `bump-last-validated.mjs` for `.md`. Pipeline matrix: [`CONTRIBUTING.md § Pre-commit hooks`](./CONTRIBUTING.md#pre-commit-hooks).
 - Deep tech-stack matrix (per-app stack, per-package purpose, build/deploy outputs): [`docs/02-engineering/architecture/repo-map.md`](./docs/02-engineering/architecture/repo-map.md).
 
@@ -192,7 +192,7 @@ If you legitimately need to raise a limit (e.g. a major new dependency), bump th
 
 ## Commit and PR conventions
 
-Conventional Commits with **explicit scope** (Hard Rule #5). Scope enum: `web`, `server`, `mobile`, `mobile-shell`, `openclaw`, `shared`, `api-client`, `finyk-domain`, `fizruk-domain`, `nutrition-domain`, `routine-domain`, `insights`, `design-tokens`, `config`, `db-schema`, `eslint-plugins`, `openclaw-plugin`, `migrations`, `agents`, `deps`, `docs`, `ci`, `root` — canonical list in [`commitlint.config.js`](./commitlint.config.js). The `commit-msg` Husky hook + commitlint CI gate block invalid scopes.
+Conventional Commits with **explicit scope** (Hard Rule #5). Scope enum: `web`, `server`, `mobile`, `mobile-shell`, `openclaw`, `shared`, `api-client`, `finyk-domain`, `fizruk-domain`, `nutrition-domain`, `routine-domain`, `insights`, `design-tokens`, `config`, `db-schema`, `dualwrite-core`, `eslint-plugins`, `openclaw-plugin`, `migrations`, `agents`, `deps`, `docs`, `ci`, `root` — canonical list in [`commitlint.config.js`](./commitlint.config.js). The `commit-msg` Husky hook + commitlint CI gate block invalid scopes.
 
 Example commit subjects (= squash-merge PR titles):
 

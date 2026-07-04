@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "generated_at": "2026-07-02",
+  "generated_at": "2026-07-03",
   "summary": {
-    "packages": 17,
-    "totalExports": 303,
+    "packages": 18,
+    "totalExports": 304,
     "totalDeadExports": 200
   },
   "packages": [
@@ -1705,6 +1705,25 @@
         {
           "name": "zTier",
           "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        }
+      ]
+    },
+    {
+      "name": "@sergeant/dualwrite-core",
+      "path": "packages/dualwrite-core",
+      "entryFile": "packages/dualwrite-core/src/index.ts",
+      "stats": {
+        "exportCount": 1,
+        "totalImporters": 1,
+        "deadExports": 0
+      },
+      "exports": [
+        {
+          "name": "*",
+          "kind": "re-export-star",
+          "fromFile": "./apply.js",
           "usedBy": [],
           "usageCount": 0
         }
