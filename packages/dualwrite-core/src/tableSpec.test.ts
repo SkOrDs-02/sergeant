@@ -56,6 +56,16 @@ describe("buildLwwUpsert — LWW guard invariant", () => {
     expect(sql).toContain("       deleted_at = NULL");
   });
 
+  it("emits unaligned SET assignments when alignSetColumns is false", () => {
+    const sql = buildLwwUpsert({ ...SIMPLE_UPSERT, alignSetColumns: false });
+    // No right-alignment padding — every assignment uses a single space
+    // (the routine adapter's hand-written style).
+    expect(sql).toContain("       name = excluded.name,");
+    expect(sql).toContain("       data_json = excluded.data_json,");
+    expect(sql).toContain("       deleted_at = NULL");
+    expect(sql).not.toContain("name       = excluded.name");
+  });
+
   it("honours a multi-column conflict target", () => {
     const sql = buildLwwUpsert({
       ...SIMPLE_UPSERT,
