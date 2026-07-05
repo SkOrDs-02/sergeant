@@ -8,6 +8,8 @@ import {
   extractWorkoutTemplateSnapshots,
   peekFizrukDualWriteState,
 } from "../lib/fizrukDualWriteState";
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 const KEY = STORAGE_KEYS.FIZRUK_TEMPLATES;
 
@@ -30,18 +32,38 @@ function uid() {
 }
 
 export function useWorkoutTemplates() {
+  const sqliteCacheTick = useFizrukSqliteReadTick();
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
-  // `loaded` lets consumers distinguish "first paint before the LS read"
+  // `loaded` lets consumers distinguish "first paint before the read"
   // from "read complete, genuinely empty" — without it the Dashboard
   // computes its hero/KPI state from an empty array and flashes the
   // empty/zero UI for returning users before hydration.
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    // Cache-first: prefer the warm SQLite cache over the LS blob so
+    // templates don't regress to a stale LS snapshot once SQLite is
+    // the source of truth. LS remains a write-mirror fallback via
+    // `persist` below — see `residualImport.ts` for the boot-time
+    // drain of legacy LS data.
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt !== null) {
+      setTemplates(cache.workoutTemplates as WorkoutTemplate[]);
+      setLoaded(true);
+      return;
+    }
     const parsed = safeReadLS(KEY, []);
     if (Array.isArray(parsed)) setTemplates(parsed as WorkoutTemplate[]);
     setLoaded(true);
   }, []);
+
+  // Overlay templates from the SQLite cache once it's warm.
+  useEffect(() => {
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    setTemplates(cache.workoutTemplates as WorkoutTemplate[]);
+    setLoaded(true);
+  }, [sqliteCacheTick]);
 
   // Функціональний updater через setTemplates, щоб уникнути stale closure:
   // колбеки в undo-toast можуть викликатись після того, як state оновився
@@ -82,6 +104,7 @@ export function useWorkoutTemplates() {
         name: n,
         exerciseIds: ids,
         groups: Array.isArray(groups) ? groups : [],
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored updatedAt timestamp, not a Kyiv day-boundary calc
         updatedAt: new Date().toISOString(),
       };
       persist((prev) => [t, ...prev]);
@@ -95,7 +118,8 @@ export function useWorkoutTemplates() {
       persist((prev) =>
         prev.map((t) =>
           t.id === id
-            ? { ...t, ...patch, updatedAt: new Date().toISOString() }
+            ? // eslint-disable-next-line no-restricted-syntax -- UTC-anchored updatedAt timestamp
+              { ...t, ...patch, updatedAt: new Date().toISOString() }
             : t,
         ),
       );
@@ -131,7 +155,10 @@ export function useWorkoutTemplates() {
     (id: string) => {
       persist((prev) =>
         prev.map((t) =>
-          t.id === id ? { ...t, lastUsedAt: new Date().toISOString() } : t,
+          t.id === id
+            ? // eslint-disable-next-line no-restricted-syntax -- UTC-anchored lastUsedAt timestamp
+              { ...t, lastUsedAt: new Date().toISOString() }
+            : t,
         ),
       );
     },
