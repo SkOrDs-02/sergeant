@@ -796,6 +796,39 @@
       ],
       "forbiddenSkills": [],
       "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-verify-before-done-trigger-scoped-green",
+      "skill": "sergeant-verify-before-done",
+      "kind": "trigger",
+      "prompt": "I finished the storage-key migration and the scoped single-spec test is green, so it is ready to push to main.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-verify-before-done"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-verify-before-done-trigger-subagent-report",
+      "skill": "sergeant-verify-before-done",
+      "kind": "trigger",
+      "prompt": "A subagent reported that eslint shows zero errors, so mark the lint cleanup task as done and complete.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-verify-before-done"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-verify-before-done-anti-new-feature",
+      "skill": "sergeant-verify-before-done",
+      "kind": "anti-trigger",
+      "prompt": "Design and build a brand new dashboard screen with routing for a planned feature that has no completion claim yet.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": ["sergeant-verify-before-done"]
+    },
+    {
+      "id": "sergeant-verify-before-done-workflow-start-here",
+      "skill": "sergeant-verify-before-done",
+      "kind": "workflow",
+      "prompt": "Before claiming the PR is green and ready, load Sergeant startup rules and then exactly this verification specialist.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-verify-before-done"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
     }
   ]
 }

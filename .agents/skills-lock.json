@@ -115,6 +115,11 @@
       "source": "local",
       "sourceType": "local",
       "computedHash": "b64c2b89b3bb50650e7dcc1963e8e28f70d8ef39429ed1d5ad2afccc23a02567"
+    },
+    "sergeant-verify-before-done": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "e789a64c900d892db1fa5e5c902204ff757c313733f4ac8e3edc4202ac4a99bc"
     }
   }
 }
