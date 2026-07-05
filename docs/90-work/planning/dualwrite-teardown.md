@@ -180,12 +180,16 @@ pnpm check
 
 > **Наслідок для Фази 3:** пункт «видалити `residualImport`» перекваліфіковано — residualImport лишається як demo-bootstrap-міст (DoD #3). Фаза 3 прибирає лише **production LS-write** (fizruk write-mirrors, finyk tx-shim), не residualImport.
 
-### Фаза 3 — викинути LS-запис + residualImport + first-paint fallback `(web)`
+### Фаза 3 — викинути production LS-запис + first-paint fallback `(web)`
 
-- [ ] Видалити `residualImport.ts` × 4 web + boot-call-sites (`sqliteReadBoot.ts:55/57/58/60`) + тести.
-- [ ] Прибрати LS-write-хвости: fizruk monthlyPlan/templates, nutrition water/shopping, finyk tx-shim (`useMonobankWebhook`), finyk slots.
-- [ ] First-paint (R9): прийняти «default до warm cache»; за потреби — синхронний перший SQLite-read.
-- [ ] Прибрати мертві LS-ключі/константи; Knip.
+> `residualImport` **НЕ видаляється** (перекваліфіковано — Фаза 2/DoD #3: demo-bootstrap-міст). Фаза 3 прибирає лише **production LS-write** реального коду.
+
+- [x] **nutrition water/shopping** — LS write-mirror + dead read-fallback прибрано, SQLite-only (`waterStorage.ts`, `shoppingListStorage.ts`). Коміт `2c6d7b20b`. First-paint порожньо до warm (R9).
+- [x] **fizruk monthlyPlan/templates** — LS write-mirror прибрано, SQLite-only (`useMonthlyPlan.ts`, `useWorkoutTemplates.ts`). Коміт `5f0e1426c`. Заодно прибрано LS-coupled `fizruk-storage-monthly-plan` event+listener (скидав стан до дефолтів без LS-write); cross-instance sync тепер через SQLite overlay-tick.
+- [ ] **finyk tx-shim** (`useMonobankWebhook.ts:194-220`) — окремий обережний під-крок. `finyk_info_cache` безпечно (SQLite `finyk_mono_accounts` покриває); `finyk_tx_cache`/`_last_good` — спершу відтворити поріг `length>=3` для `_last_good` у SQLite-читанні (mono-mirror пише на будь-яку непорожню вибірку — семантика не 1:1). finyk slots — вже прибрано (Фаза 1 / #075).
+- [ ] `presetApply` dead presets + мертві LS-ключі/константи; Knip (окремий cleanup-крок).
+
+> **Гейт Фази 3 (крок nutrition+fizruk):** typecheck ✅, eslint 0/0 ✅, scoped vitest 20/20 ✅ (1 LS-coupled unit-тест видалено як застарілий, 2 оновлено семантично — persist тепер покрито dual-write integration-тестами). Browser demo-verify — pending.
 
 ### Фаза 4 — mobile parity
 
