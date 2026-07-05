@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-07-05
  * Status: Active
  * Boot-time residual-import helper for the Nutrition LS keys.
  *
@@ -10,6 +10,12 @@
  * into the local `nutrition_*` SQLite tables (idempotent + LWW-safe),
  * and then deletes the LS entries. Subsequent boots no-op because the
  * LS keys are gone.
+ *
+ * Dual-write teardown Phase 1 extended the drain to `water_log` and
+ * `shopping_list` (`WATER_LOG_KEY` / `SHOPPING_LIST_KEY`) now that
+ * `waterStorage.ts` / `shoppingListStorage.ts` read cache-first — any
+ * pre-cutover LS data for these two keys must land in SQLite at boot
+ * or it becomes permanently invisible to the new read path.
  *
  * The import uses a deliberately stale `clientTs` (epoch zero) so the
  * adapter's LWW guard always lets existing SQLite rows win — we never
@@ -26,10 +32,14 @@ import {
   NUTRITION_LOG_KEY,
   NUTRITION_PANTRIES_KEY,
   NUTRITION_PREFS_KEY,
+  SHOPPING_LIST_KEY,
+  WATER_LOG_KEY,
   defaultNutritionPrefs,
   normalizeNutritionLog,
   normalizeNutritionPrefs,
   normalizePantries,
+  normalizeShoppingList,
+  normalizeWaterLog,
   type NutritionLog,
   type NutritionPrefs,
   type Pantry,
@@ -75,12 +85,16 @@ export async function importNutritionResidualFromLs(
   const pantries = readPantriesFromLs();
   const activePantryId = readActivePantryFromLs();
   const prefs = readPrefsFromLs();
+  const waterLog = readWaterLogFromLs();
+  const shoppingList = readShoppingListFromLs();
 
   const hasAny =
     log !== null ||
     pantries !== null ||
     activePantryId !== null ||
-    prefs !== null;
+    prefs !== null ||
+    waterLog !== null ||
+    shoppingList !== null;
   if (!hasAny) return { imported: false, cleaned: false };
 
   // Build a NutritionDualWriteState from whatever was found in LS.
@@ -101,8 +115,10 @@ export async function importNutritionResidualFromLs(
           }
         : null,
     recipes: [],
-    waterLog: {},
-    shoppingList: null,
+    waterLog: waterLog ? normalizeWaterLog(waterLog) : {},
+    shoppingList: shoppingList
+      ? { dataJson: JSON.stringify(normalizeShoppingList(shoppingList)) }
+      : null,
   };
 
   const ops = diffNutritionDualWriteOps(EMPTY_STATE, next);
@@ -130,6 +146,8 @@ export async function importNutritionResidualFromLs(
   nutritionStorage.removeItem(NUTRITION_PANTRIES_KEY);
   nutritionStorage.removeItem(NUTRITION_ACTIVE_PANTRY_KEY);
   nutritionStorage.removeItem(NUTRITION_PREFS_KEY);
+  nutritionStorage.removeItem(WATER_LOG_KEY);
+  nutritionStorage.removeItem(SHOPPING_LIST_KEY);
 
   return { imported: ops.length > 0, cleaned: true };
 }
@@ -167,6 +185,22 @@ function readActivePantryFromLs(): string | null {
 function readPrefsFromLs(): unknown | null {
   try {
     return nutritionStorage.readJSON<unknown>(NUTRITION_PREFS_KEY, null);
+  } catch {
+    return null;
+  }
+}
+
+function readWaterLogFromLs(): unknown | null {
+  try {
+    return nutritionStorage.readJSON<unknown>(WATER_LOG_KEY, null);
+  } catch {
+    return null;
+  }
+}
+
+function readShoppingListFromLs(): unknown | null {
+  try {
+    return nutritionStorage.readJSON<unknown>(SHOPPING_LIST_KEY, null);
   } catch {
     return null;
   }

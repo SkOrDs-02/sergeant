@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-07-05
  * Status: Active
  */
 import { useCallback, useEffect, useState } from "react";
@@ -10,8 +10,11 @@ import {
   addWaterMl,
   subtractWaterMl,
   resetTodayWater,
+  normalizeWaterLog,
   type WaterLog,
 } from "../lib/waterStorage";
+import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
+import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
 export interface UseWaterTrackerResult {
   todayMl: number;
@@ -21,11 +24,22 @@ export interface UseWaterTrackerResult {
 }
 
 export function useWaterTracker(): UseWaterTrackerResult {
+  const sqliteCacheTick = useNutritionSqliteReadTick();
   const [log, setLog] = useState<WaterLog>(() => loadWaterLog());
 
   useEffect(() => {
     saveWaterLog(log);
   }, [log]);
+
+  // Dual-write teardown Phase 1 — overlay the water log from the local
+  // SQLite cache once it's warm. Mirrors `useNutritionLog`'s overlay
+  // effect: the persist effect above re-diffs this same snapshot, so
+  // the warm-cache hydration is a no-op for the dual-write orchestrator.
+  useEffect(() => {
+    const cache = getCachedNutritionSqliteState();
+    if (cache.refreshedAt === null) return;
+    setLog(normalizeWaterLog(cache.waterLog));
+  }, [sqliteCacheTick]);
 
   const todayMl = getTodayWaterMl(log);
 

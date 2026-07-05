@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-07-05
  * Status: Active
  * Web I/O-адаптер для списку покупок.
  *
@@ -8,10 +8,11 @@
  * `@sergeant/nutrition-domain` і спільна з `apps/mobile`. Тут лишаються
  * лише load/persist поверх `createModuleStorage`.
  *
- * Stage 11 / PR #070n-dualwrite — `persistShoppingList` тепер плюс
- * мирорить нормалізований документ у локальний SQLite через
- * `persistNutritionShoppingList`. LS-write залишається як safety-net до
- * наступного `#057n-tombstone`-кроку для shopping-list.
+ * Dual-write teardown Phase 1 — `loadShoppingList` тепер cache-first:
+ * читає з SQLite warm cache (`getCachedNutritionSqliteState`), мирор
+ * того ж патерна, що `loadNutritionLog` у `nutritionStorage.ts`.
+ * LS лишається лише як write-mirror-фолбек через
+ * `persistNutritionShoppingList`, не як джерело правди для читання.
  */
 import {
   SHOPPING_LIST_KEY,
@@ -21,6 +22,7 @@ import {
 
 import { nutritionStorage } from "./nutritionStorageInstance";
 import { persistNutritionShoppingList } from "./nutritionStorage.js";
+import { getCachedNutritionSqliteState } from "./sqliteReader.js";
 
 export {
   SHOPPING_LIST_KEY,
@@ -38,10 +40,17 @@ export type {
 } from "@sergeant/nutrition-domain";
 
 export function loadShoppingList(
-  key: string = SHOPPING_LIST_KEY,
+  _key: string = SHOPPING_LIST_KEY,
 ): ShoppingList {
-  const parsed = nutritionStorage.readJSON(key, null);
-  return normalizeShoppingList(parsed);
+  const cache = getCachedNutritionSqliteState();
+  if (cache.refreshedAt !== null) {
+    return normalizeShoppingList(cache.shoppingList);
+  }
+  // Pre-boot fallback — cache not warm yet, read the LS mirror so the
+  // first paint is not empty on a returning user's cold load.
+  return normalizeShoppingList(
+    nutritionStorage.readJSON(SHOPPING_LIST_KEY, null),
+  );
 }
 
 export function persistShoppingList(
