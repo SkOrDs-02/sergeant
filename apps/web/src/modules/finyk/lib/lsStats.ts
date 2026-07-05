@@ -1,5 +1,12 @@
+/* eslint-disable sergeant-design/no-raw-storage-key --
+   Навмисний legacy-хаб прямого читання retired finyk-ключів
+   (finyk_hidden_txs / finyk_tx_cats / finyk_recv / finyk_excluded_stat_txs /
+   finyk_tx_splits / finyk_custom_cats_v1) для дашбордних агрегаторів без
+   mounted-хука useStorage. Ключі в burn-down 2026-Q3; міграція на
+   STORAGE_KEYS — окремий крок. Читання raw тут навмисне. */
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { getCachedFinykMonoMirrorState } from "./monoMirrorReader";
 
 // Збирає Set ID транзакцій, що виключаються зі статистики ФІНІК (та сама логіка, що
 // в `useStorage` → `excludedTxIds`), читаючи безпосередньо з localStorage.
@@ -63,15 +70,7 @@ export interface FinykStatsContext {
 }
 
 export function readFinykStatsContext(): FinykStatsContext {
-  const txRaw = safeReadLS<{ txs?: BankTxLike[] } | BankTxLike[] | null>(
-    "finyk_tx_cache",
-    null,
-  );
-  const txs: BankTxLike[] = Array.isArray(txRaw)
-    ? txRaw
-    : Array.isArray(txRaw?.txs)
-      ? txRaw.txs
-      : [];
+  const txs: BankTxLike[] = getCachedFinykMonoMirrorState().transactions;
   const txCategoriesRaw = safeReadLS<Record<string, string>>(
     "finyk_tx_cats",
     {},

@@ -38,7 +38,6 @@ export type { FinykBackup };
  * Stage 8 PR #057k-tombstone: prefers the warm SQLite cache (the
  * canonical source after the LS tombstone). Falls back to LS for
  * fields not yet in the cache or when the cache hasn't warmed.
- * `dismissedRecurring` is still LS-only (no SQLite column yet).
  */
 export function readFinykBackupFromStorage() {
   const cache = getCachedFinykSqliteState();
@@ -91,11 +90,10 @@ export function readFinykBackupFromStorage() {
     customCategories: warm
       ? cache.customCategories
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.customCategories, []),
-    // `dismissedRecurring` is still LS-only — no SQLite column yet.
-    dismissedRecurring: readJSON(
-      FINYK_FIELD_TO_STORAGE_KEY.dismissedRecurring,
-      [],
-    ),
+    dismissedRecurring:
+      warm && cache.dismissedRecurring !== null
+        ? cache.dismissedRecurring
+        : readJSON(FINYK_FIELD_TO_STORAGE_KEY.dismissedRecurring, []),
   };
 }
 
