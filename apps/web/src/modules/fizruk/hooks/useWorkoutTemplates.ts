@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
@@ -41,11 +41,10 @@ export function useWorkoutTemplates() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Cache-first: prefer the warm SQLite cache over the LS blob so
-    // templates don't regress to a stale LS snapshot once SQLite is
-    // the source of truth. LS remains a write-mirror fallback via
-    // `persist` below — see `residualImport.ts` for the boot-time
-    // drain of legacy LS data.
+    // Cache-first: prefer the warm SQLite cache over the LS blob.
+    // Teardown Phase 3 removed the LS write-mirror; the `safeReadLS`
+    // below is only a pre-warm fallback reading whatever
+    // `residualImport.ts` drained on boot (empty once drained).
     const cache = getCachedFizrukSqliteState();
     if (cache.refreshedAt !== null) {
       setTemplates(cache.workoutTemplates as WorkoutTemplate[]);
@@ -71,10 +70,9 @@ export function useWorkoutTemplates() {
   const persist = useCallback((updater: TemplatesUpdater) => {
     setTemplates((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      safeWriteLS(KEY, next);
-      // Stage 12 / PR #070f-dualwrite — mirror template writes into
-      // SQLite via the dual-write pipeline. Fire-and-forget; the
-      // trigger is a no-op when no dual-write context is registered.
+      // Teardown Phase 3 — SQLite-only write via the dual-write pipeline;
+      // the LS mirror was removed. Fire-and-forget; the trigger is a no-op
+      // when no dual-write context is registered.
       const prevDualWrite =
         peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
       const nextDualWrite = {

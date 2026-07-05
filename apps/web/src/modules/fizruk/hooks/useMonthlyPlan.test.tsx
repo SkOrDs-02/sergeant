@@ -47,14 +47,12 @@ describe("useMonthlyPlan", () => {
     expect(result.current.reminderMinute).toBe(30);
   });
 
-  it("setReminderEnabled toggles and persists", () => {
+  it("setReminderEnabled toggles state (SQLite persist covered by integration)", () => {
+    // Teardown Phase 3 — LS write-mirror removed; persistence flows through
+    // the SQLite dual-write pipeline. Unit test asserts hook state only.
     const { result } = renderHook(() => useMonthlyPlan());
     act(() => result.current.setReminderEnabled(false));
     expect(result.current.reminderEnabled).toBe(false);
-    const saved = JSON.parse(
-      localStorage.getItem(MONTHLY_PLAN_STORAGE_KEY) ?? "{}",
-    );
-    expect(saved.reminderEnabled).toBe(false);
   });
 
   it("setDayTemplate sets and clears a day", () => {
@@ -76,15 +74,9 @@ describe("useMonthlyPlan", () => {
     expect(result.current.todayTemplateId).toBe("today-tpl");
   });
 
-  it("reacts to the custom monthly-plan storage event", () => {
-    const { result } = renderHook(() => useMonthlyPlan());
-    localStorage.setItem(
-      MONTHLY_PLAN_STORAGE_KEY,
-      JSON.stringify({ reminderEnabled: false, days: {} }),
-    );
-    act(() => {
-      window.dispatchEvent(new CustomEvent("fizruk-storage-monthly-plan"));
-    });
-    expect(result.current.reminderEnabled).toBe(false);
-  });
+  // Removed (teardown Phase 3): the "fizruk-storage-monthly-plan" custom-event
+  // + storage-listener sync was LS-coupled (loadState read localStorage) and
+  // reset state to defaults once the LS write-mirror was dropped. Cross-instance
+  // sync for the singleton plan now relies on the SQLite overlay tick — there is
+  // no LS event to react to.
 });

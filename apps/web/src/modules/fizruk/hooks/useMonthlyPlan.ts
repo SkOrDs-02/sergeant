@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
@@ -54,10 +54,9 @@ function loadState(): MonthlyPlanState {
 
 /**
  * Cache-first initial state: prefer the SQLite cache (warm on repeat
- * boots) over the LS blob, so the singleton monthly-plan doc doesn't
- * regress to a stale LS snapshot once SQLite is the source of truth.
- * LS remains a write-mirror fallback via `saveState` — see
- * `residualImport.ts` for the boot-time drain of legacy LS data.
+ * boots) over the LS blob. Teardown Phase 3 removed the LS write-mirror;
+ * `loadState()` remains only as a pre-warm fallback reading whatever
+ * `residualImport.ts` drained on boot (empty once drained).
  */
 function loadInitialState(): MonthlyPlanState {
   const cache = getCachedFizrukSqliteState();
@@ -66,10 +65,9 @@ function loadInitialState(): MonthlyPlanState {
 }
 
 function saveState(s: MonthlyPlanState): void {
-  safeWriteLS(STORAGE_KEY, s);
-  // Stage 12 / PR #070f-dualwrite — mirror the singleton monthly-plan
-  // doc into SQLite via the dual-write pipeline. Fire-and-forget; the
-  // trigger is a no-op when no dual-write context is registered.
+  // Teardown Phase 3 — SQLite-only write via the dual-write pipeline; the
+  // LS mirror was removed. Fire-and-forget; the trigger is a no-op when no
+  // dual-write context is registered.
   const prevDualWrite =
     peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
   const nextDualWrite = {
@@ -81,25 +79,11 @@ function saveState(s: MonthlyPlanState): void {
   } catch {
     /* trigger is fire-and-forget — never propagate */
   }
-  window.dispatchEvent(new CustomEvent("fizruk-storage-monthly-plan"));
 }
 
 export function useMonthlyPlan() {
   const sqliteCacheTick = useFizrukSqliteReadTick();
   const [state, setState] = useState(loadInitialState);
-
-  useEffect(() => {
-    const sync = () => setState(loadState());
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY || e.key === null) sync();
-    };
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("fizruk-storage-monthly-plan", sync);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("fizruk-storage-monthly-plan", sync);
-    };
-  }, []);
 
   // Overlay the singleton plan from the SQLite cache once it's warm.
   useEffect(() => {
