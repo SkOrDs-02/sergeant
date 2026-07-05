@@ -10,7 +10,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useWaterTracker } from "./useWaterTracker";
-import { WATER_LOG_KEY } from "../lib/waterStorage";
 
 // 2026-06-04 12:00 UTC — a safe mid-day UTC instant that resolves to the
 // same local calendar date regardless of host timezone.
@@ -79,19 +78,15 @@ describe("useWaterTracker", () => {
     expect(result.current.todayMl).toBe(0);
   });
 
-  it("persists state to localStorage so a re-mount rehydrates correctly", () => {
-    const { result: first } = renderHook(() => useWaterTracker());
+  it("add() updates hook state (SQLite persist covered by integration)", () => {
+    // Teardown Phase 3 — the LS write-mirror was removed; persistence now
+    // flows through the SQLite dual-write pipeline, a no-op until a
+    // dual-write context is registered (covered by the nutrition dualWrite
+    // integration tests). This unit test asserts hook behaviour only.
+    const { result } = renderHook(() => useWaterTracker());
     act(() => {
-      first.current.add(400);
+      result.current.add(400);
     });
-    // Confirm the key exists in localStorage after the effect flushes.
-    const raw = localStorage.getItem(WATER_LOG_KEY);
-    expect(raw).not.toBeNull();
-    const parsed = JSON.parse(raw!);
-    expect(Object.values(parsed).some((v) => v === 400)).toBe(true);
-
-    // New hook instance picks up the persisted value.
-    const { result: second } = renderHook(() => useWaterTracker());
-    expect(second.current.todayMl).toBe(400);
+    expect(result.current.todayMl).toBe(400);
   });
 });

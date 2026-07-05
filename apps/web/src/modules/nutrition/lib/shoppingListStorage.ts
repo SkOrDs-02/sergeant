@@ -8,11 +8,11 @@
  * `@sergeant/nutrition-domain` і спільна з `apps/mobile`. Тут лишаються
  * лише load/persist поверх `createModuleStorage`.
  *
- * Dual-write teardown Phase 1 — `loadShoppingList` тепер cache-first:
- * читає з SQLite warm cache (`getCachedNutritionSqliteState`), мирор
- * того ж патерна, що `loadNutritionLog` у `nutritionStorage.ts`.
- * LS лишається лише як write-mirror-фолбек через
- * `persistNutritionShoppingList`, не як джерело правди для читання.
+ * Dual-write teardown Phase 3 — SQLite is the sole source of truth.
+ * `loadShoppingList` reads the SQLite warm cache; `persistShoppingList`
+ * writes only via the dual-write pipeline (`persistNutritionShoppingList`).
+ * The LS mirror (read fallback + write) was removed — no prod users, so an
+ * empty first paint before the cache warms is acceptable (R9).
  */
 import {
   SHOPPING_LIST_KEY,
@@ -20,7 +20,6 @@ import {
   type ShoppingList,
 } from "@sergeant/nutrition-domain";
 
-import { nutritionStorage } from "./nutritionStorageInstance";
 import { persistNutritionShoppingList } from "./nutritionStorage.js";
 import { getCachedNutritionSqliteState } from "./sqliteReader.js";
 
@@ -43,24 +42,19 @@ export function loadShoppingList(
   _key: string = SHOPPING_LIST_KEY,
 ): ShoppingList {
   const cache = getCachedNutritionSqliteState();
-  if (cache.refreshedAt !== null) {
-    return normalizeShoppingList(cache.shoppingList);
-  }
-  // Pre-boot fallback — cache not warm yet, read the LS mirror so the
-  // first paint is not empty on a returning user's cold load.
+  // SQLite-only: before the warm cache lands, first paint is an empty list
+  // and the overlay fills in once it warms (R9, no LS fallback).
   return normalizeShoppingList(
-    nutritionStorage.readJSON(SHOPPING_LIST_KEY, null),
+    cache.refreshedAt !== null ? cache.shoppingList : null,
   );
 }
 
 export function persistShoppingList(
   list: unknown,
-  key: string = SHOPPING_LIST_KEY,
+  _key: string = SHOPPING_LIST_KEY,
 ): boolean {
   const normalized = normalizeShoppingList(list);
-  const ok = nutritionStorage.writeJSON(key, normalized);
-  // Mirror to SQLite via the dual-write pipeline. Pre-boot / pre-auth
-  // is a no-op inside `persistNutritionShoppingList`.
-  persistNutritionShoppingList(normalized);
-  return ok;
+  // SQLite-only write via the dual-write pipeline. Pre-boot / pre-auth is a
+  // no-op inside `persistNutritionShoppingList`.
+  return persistNutritionShoppingList(normalized);
 }
