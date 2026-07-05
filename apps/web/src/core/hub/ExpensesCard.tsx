@@ -7,12 +7,13 @@ import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import { safeReadLS } from "@shared/lib/storage/storage";
 import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import {
   getFinykExcludedTxIdsFromStorage,
   getFinykTxSplitsFromStorage,
 } from "@finyk/utils";
+import { getCachedFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
+import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
 import {
   aggregateSpending,
   getPeriodRange,
@@ -199,18 +200,10 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
+  const mirrorTick = useFinykMonoMirrorTick();
 
   const { cur, prev, dates } = useMemo(() => {
-    // eslint-disable-next-line sergeant-design/no-raw-storage-key
-    const raw = safeReadLS("finyk_tx_cache", null) as
-      | { txs?: unknown[] }
-      | unknown[]
-      | null;
-    const txList = Array.isArray(raw)
-      ? raw
-      : Array.isArray((raw as { txs?: unknown[] } | null)?.txs)
-        ? (raw as { txs: unknown[] }).txs
-        : [];
+    const txList = getCachedFinykMonoMirrorState().transactions;
 
     const inputs: SpendingInputs = {
       txList: txList as SpendingInputs["txList"],
@@ -227,8 +220,8 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       prev: aggregateSpending(inputs, prevDates),
       dates: curDates,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
-  }, [period, offset, bump]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump/mirrorTick trigger re-read on storage/mirror refresh
+  }, [period, offset, bump, mirrorTick]);
 
   const formattedCurrent = cur.total.toLocaleString("uk-UA");
   const formattedPrev = prev.total.toLocaleString("uk-UA");
