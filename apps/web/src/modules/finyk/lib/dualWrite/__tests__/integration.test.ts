@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   __clearFinykDualWriteContextForTests,
@@ -299,6 +299,81 @@ describe("Finyk dual-write — orchestrator (registerFinykDualWriteContext)", ()
     expect(() =>
       triggerFinykDualWrite(EMPTY_FINYK_STATE, EMPTY_FINYK_STATE),
     ).not.toThrow();
+  });
+
+  // Regression — deep-module-crud.spec.ts:105 ("finyk: creates, edits,
+  // deletes, and restores a manual expense"). A create immediately
+  // followed by an edit to the SAME row queues two flushes through the
+  // DCRUD-007 single-flight queue in `triggerFinykDualWrite`. Each flush
+  // computes its own `clientTs` from `ctx.getNow()` — `Date.now()`
+  // resolution. `makeCtx()` pins `getNow` to a single constant, which is
+  // the deterministic stand-in for two flushes landing in the identical
+  // millisecond (plausible in real usage, near-certain on CI's coarser
+  // system-timer resolution). Without a strictly-monotonic clientTs, the
+  // adapter's LWW guard (`WHERE excluded.updated_at > table.updated_at`,
+  // adapter.ts) silently drops the edit — the row keeps the CREATE-time
+  // `data_json` forever, exactly matching the reported symptom (edit
+  // visible in React state, never in the SQLite row the post-reload
+  // overlay reads from).
+  it("create-then-edit of the same manual expense with an identical clientTs still applies the edit (DCRUD-108)", async () => {
+    registerFinykDualWriteContext(makeCtx());
+
+    // Deterministic drain for the fire-and-forget single-flight queue:
+    // poll the actual SQLite row instead of sleeping a fixed interval
+    // (a fixed sleep is itself timing-sensitive on slow CI — the very
+    // failure class this regression guards against).
+    const readExpenseRows = () =>
+      handle.client.all<{ data_json: string }>(
+        "SELECT data_json FROM finyk_manual_expenses WHERE id = ?",
+        ["m-dcrud-108"],
+      );
+
+    const created: FinykDualWriteState = {
+      ...EMPTY_FINYK_STATE,
+      manualExpenses: [
+        {
+          id: "m-dcrud-108",
+          dataJson: JSON.stringify({
+            id: "m-dcrud-108",
+            description: "DCRUD кава",
+            amount: 123,
+          }),
+        },
+      ],
+    };
+    triggerFinykDualWrite(EMPTY_FINYK_STATE, created);
+    // Wait for the create flush to fully apply before enqueueing the
+    // edit — two SEPARATE flushes, mirroring the E2E timeline.
+    await vi.waitFor(async () => {
+      expect(await readExpenseRows()).toHaveLength(1);
+    });
+
+    const edited: FinykDualWriteState = {
+      ...EMPTY_FINYK_STATE,
+      manualExpenses: [
+        {
+          id: "m-dcrud-108",
+          dataJson: JSON.stringify({
+            id: "m-dcrud-108",
+            description: "DCRUD кава оновлено",
+            amount: 123,
+          }),
+        },
+      ],
+    };
+    // Same registered ctx → same `getNow()` constant as the create above,
+    // simulating two flushes that land in the identical millisecond.
+    triggerFinykDualWrite(created, edited);
+    // Pre-fix code NEVER converges here (the LWW guard drops the edit
+    // outright, it does not merely delay it), so waitFor times out and
+    // fails the test rather than masking the bug.
+    await vi.waitFor(async () => {
+      const rows = await readExpenseRows();
+      expect(rows).toHaveLength(1);
+      expect(JSON.parse(rows[0]!.data_json).description).toBe(
+        "DCRUD кава оновлено",
+      );
+    });
   });
 });
 

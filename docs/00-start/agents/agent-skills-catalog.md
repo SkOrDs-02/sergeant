@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-06-23 by @Skords-01. **Next review:** 2026-09-21.
+> **Last touched:** 2026-07-05 by @dimastahov16012003. **Next review:** 2026-10-03.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -28,6 +28,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`sergeant-feature-delivery`](../../../.agents/skills/sergeant-feature-delivery/SKILL.md)                 | Нові фічі, behavior changes                                      | Spec-first delivery, minimal coherent slices, verification                  |
 | [`sergeant-bugfix-and-regression`](../../../.agents/skills/sergeant-bugfix-and-regression/SKILL.md)       | Баги, регресії, flaky behavior                                   | Reproduce-first, failing check first, minimal fix                           |
 | [`sergeant-review-and-merge`](../../../.agents/skills/sergeant-review-and-merge/SKILL.md)                 | PR review, merge readiness                                       | Safety review, contract checks, docs freshness, commit scope                |
+| [`sergeant-verify-before-done`](../../../.agents/skills/sergeant-verify-before-done/SKILL.md)             | Before claiming done/green/fixed                                 | Run proving command fresh, full scope not scoped, quote exit code           |
 | [`sergeant-web-ui`](../../../.agents/skills/sergeant-web-ui/SKILL.md)                                     | `apps/web`, PWA, Tailwind, a11y                                  | Opacity scale, `-strong` fills, storage wrappers, query keys                |
 | [`sergeant-server-api`](../../../.agents/skills/sergeant-server-api/SKILL.md)                             | `apps/server`, `packages/api-client`                             | Bigint coercion, contract triplet, Kyiv time rules                          |
 | [`sergeant-backend-architecture`](../../../.agents/skills/sergeant-backend-architecture/SKILL.md)         | Backend architecture, CQRS, Temporal, Saga, service boundaries   | Clean/hexagonal architecture, domain events, idempotent orchestration       |

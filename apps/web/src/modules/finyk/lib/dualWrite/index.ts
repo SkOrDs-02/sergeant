@@ -81,6 +81,41 @@ export function registerFinykDualWriteContext(
 /** Test-only escape hatch — clears any registered context. */
 export function __clearFinykDualWriteContextForTests(): void {
   registeredContext = null;
+  lastIssuedClientTs = null;
+}
+
+// DCRUD-108 — last clientTs handed to ANY Finyk dual-write apply, across
+// both the single-flight queue below (`triggerFinykDualWrite`) and the
+// off-React mirror path (`applyFinykDualWriteOpsViaContext`). `ctx.getNow()`
+// is `Date.now()`-resolution (millisecond); a create immediately followed
+// by an edit to the SAME row can legitimately dequeue two flushes whose
+// `getNow()` calls land in the identical millisecond — more so on CI's
+// coarser system-timer resolution than on a dev machine. The adapter's LWW
+// guard is strictly-greater-than by design (`WHERE excluded.updated_at >
+// table.updated_at` — see adapter.ts; never weaken to `>=`, that would
+// blur real concurrent-write detection), so an EQUAL clientTs silently
+// no-ops the second write and the edit never reaches the local SQLite
+// mirror (root cause of the finyk deep-CRUD E2E regression — the edit is
+// visible in React state but lost from the SQLite row the post-reload
+// overlay reads). `nextMonotonicClientTs` guarantees every apply gets a
+// strictly-increasing clientTs regardless of wall-clock resolution,
+// without touching the guard itself.
+let lastIssuedClientTs: string | null = null;
+
+function nextMonotonicClientTs(
+  ctx: Pick<FinykDualWriteContext, "getNow">,
+): string {
+  const now = ctx.getNow();
+  const nowMs = Date.parse(now);
+  const lastMs =
+    lastIssuedClientTs === null ? NaN : Date.parse(lastIssuedClientTs);
+  if (!Number.isNaN(lastMs) && !Number.isNaN(nowMs) && nowMs <= lastMs) {
+    const bumped = new Date(lastMs + 1).toISOString();
+    lastIssuedClientTs = bumped;
+    return bumped;
+  }
+  lastIssuedClientTs = now;
+  return now;
 }
 
 /**
@@ -173,7 +208,7 @@ async function runDualWriteFinykState(
 
   const result = await applyFinykDualWriteOps(client, ops, {
     userId,
-    clientTs: ctx.getNow(),
+    clientTs: nextMonotonicClientTs(ctx),
     logger: ctx.logger,
   });
 
@@ -295,7 +330,7 @@ export async function applyFinykDualWriteOpsViaContext(
 
   const result = await applyFinykDualWriteOps(client, ops, {
     userId,
-    clientTs: ctx.getNow(),
+    clientTs: nextMonotonicClientTs(ctx),
     logger: ctx.logger,
   });
   const outcome: DualWriteOutcome = { status: "applied", result };
