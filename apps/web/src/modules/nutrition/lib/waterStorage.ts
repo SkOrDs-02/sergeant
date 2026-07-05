@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-07-05
  * Status: Active
  * Web I/O-адаптер для журналу води.
  *
@@ -8,10 +8,11 @@
  * `@sergeant/nutrition-domain` і спільна з `apps/mobile`. Тут лишаються
  * лише load/save поверх `createModuleStorage`.
  *
- * Stage 11 / PR #070n-dualwrite — `saveWaterLog` тепер плюс мирорить
- * нормалізований лог у локальний SQLite через
- * `persistNutritionWaterLog`. LS-write залишається як safety-net до
- * наступного `#057n-tombstone`-кроку для water-log.
+ * Dual-write teardown Phase 1 — `loadWaterLog` тепер cache-first: читає
+ * з SQLite warm cache (`getCachedNutritionSqliteState`), мирор того ж
+ * патерна, що `loadNutritionLog` у `nutritionStorage.ts`. LS лишається
+ * лише як write-mirror-фолбек через `persistNutritionWaterLog`, не як
+ * джерело правди для читання.
  */
 import {
   WATER_LOG_KEY,
@@ -21,6 +22,7 @@ import {
 
 import { nutritionStorage } from "./nutritionStorageInstance";
 import { persistNutritionWaterLog } from "./nutritionStorage.js";
+import { getCachedNutritionSqliteState } from "./sqliteReader.js";
 
 export {
   WATER_LOG_KEY,
@@ -32,8 +34,12 @@ export {
 } from "@sergeant/nutrition-domain";
 export type { WaterLog } from "@sergeant/nutrition-domain";
 
-export function loadWaterLog(key: string = WATER_LOG_KEY): WaterLog {
-  return normalizeWaterLog(nutritionStorage.readJSON(key, {}));
+export function loadWaterLog(_key: string = WATER_LOG_KEY): WaterLog {
+  const cache = getCachedNutritionSqliteState();
+  if (cache.refreshedAt !== null) return normalizeWaterLog(cache.waterLog);
+  // Pre-boot fallback — cache not warm yet, read the LS mirror so the
+  // first paint is not empty on a returning user's cold load.
+  return normalizeWaterLog(nutritionStorage.readJSON(WATER_LOG_KEY, {}));
 }
 
 export function saveWaterLog(
