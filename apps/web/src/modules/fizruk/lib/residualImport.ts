@@ -22,6 +22,7 @@ import { logger } from "@shared/lib";
 import {
   CUSTOM_EXERCISES_KEY,
   MEASUREMENTS_STORAGE_KEY,
+  MONTHLY_PLAN_STORAGE_KEY,
   WORKOUTS_STORAGE_KEY,
   parseCustomExercisesFromStorage,
   parseWorkoutsFromStorage,
@@ -42,8 +43,12 @@ import {
   extractCustomExerciseSnapshots,
   extractDailyLogSnapshots,
   extractMeasurementSnapshots,
+  extractMonthlyPlanSnapshot,
   extractWorkoutSnapshots,
+  extractWorkoutTemplateSnapshots,
   type FizrukDailyLogEntryLike,
+  type FizrukMonthlyPlanLike,
+  type FizrukWorkoutTemplateLike,
 } from "./fizrukDualWriteState.js";
 import { fizrukStorage } from "./fizrukStorageInstance.js";
 
@@ -71,12 +76,16 @@ export async function importFizrukResidualFromLs(
   const customExercises = readCustomExercisesFromLs();
   const measurements = readMeasurementsFromLs();
   const dailyLog = readDailyLogFromLs();
+  const monthlyPlan = readMonthlyPlanFromLs();
+  const workoutTemplates = readWorkoutTemplatesFromLs();
 
   const hasAny =
     workouts !== null ||
     customExercises !== null ||
     measurements !== null ||
-    dailyLog !== null;
+    dailyLog !== null ||
+    monthlyPlan !== null ||
+    workoutTemplates !== null;
   if (!hasAny) return { imported: false, cleaned: false };
 
   // Build a FizrukDualWriteState from whatever was found in LS. Slots
@@ -89,8 +98,10 @@ export async function importFizrukResidualFromLs(
       : [],
     measurements: measurements ? extractMeasurementSnapshots(measurements) : [],
     dailyLog: dailyLog ? extractDailyLogSnapshots(dailyLog) : [],
-    monthlyPlan: null,
-    workoutTemplates: [],
+    monthlyPlan: monthlyPlan ? extractMonthlyPlanSnapshot(monthlyPlan) : null,
+    workoutTemplates: workoutTemplates
+      ? extractWorkoutTemplateSnapshots(workoutTemplates)
+      : [],
   };
 
   const ops = diffFizrukDualWriteOps(EMPTY_FIZRUK_DUAL_WRITE_STATE, next);
@@ -118,6 +129,8 @@ export async function importFizrukResidualFromLs(
   fizrukStorage.removeItem(CUSTOM_EXERCISES_KEY);
   fizrukStorage.removeItem(MEASUREMENTS_STORAGE_KEY);
   fizrukStorage.removeItem(STORAGE_KEYS.FIZRUK_DAILY_LOG);
+  fizrukStorage.removeItem(MONTHLY_PLAN_STORAGE_KEY);
+  fizrukStorage.removeItem(STORAGE_KEYS.FIZRUK_TEMPLATES);
 
   return { imported: ops.length > 0, cleaned: true };
 }
@@ -168,6 +181,29 @@ function readDailyLogFromLs(): FizrukDailyLogEntryLike[] | null {
     );
     if (raw == null) return null;
     return Array.isArray(raw) ? (raw as FizrukDailyLogEntryLike[]) : [];
+  } catch {
+    return null;
+  }
+}
+
+function readMonthlyPlanFromLs(): FizrukMonthlyPlanLike | null {
+  try {
+    const raw = fizrukStorage.readJSON<unknown>(MONTHLY_PLAN_STORAGE_KEY, null);
+    if (raw == null || typeof raw !== "object") return null;
+    return raw as FizrukMonthlyPlanLike;
+  } catch {
+    return null;
+  }
+}
+
+function readWorkoutTemplatesFromLs(): FizrukWorkoutTemplateLike[] | null {
+  try {
+    const raw = fizrukStorage.readJSON<unknown>(
+      STORAGE_KEYS.FIZRUK_TEMPLATES,
+      null,
+    );
+    if (raw == null) return null;
+    return Array.isArray(raw) ? (raw as FizrukWorkoutTemplateLike[]) : [];
   } catch {
     return null;
   }
