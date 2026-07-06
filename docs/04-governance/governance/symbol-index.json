@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-07-04",
+  "generated_at": "2026-07-06",
   "summary": {
     "packages": 18,
     "totalExports": 304,
@@ -1716,7 +1716,7 @@
       "entryFile": "packages/dualwrite-core/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 3,
+        "totalImporters": 18,
         "deadExports": 0
       },
       "exports": [

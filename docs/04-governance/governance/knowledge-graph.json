@@ -1,15 +1,15 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-04",
+  "generated_at": "2026-07-06",
   "counts": {
     "adr": 70,
     "audit": 24,
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
-    "pr": 225,
-    "skill": 23
+    "pr": 226,
+    "skill": 24
   },
   "nodes": [
     {
@@ -2484,6 +2484,16 @@
       }
     },
     {
+      "id": "pr:116",
+      "type": "pr",
+      "title": "PR #116",
+      "tier": "extended",
+      "meta": {
+        "number": 116,
+        "url": "https://github.com/Skords-01/Sergeant/pull/116"
+      }
+    },
+    {
       "id": "pr:1230",
       "type": "pr",
       "title": "PR #1230",
@@ -4874,6 +4884,16 @@
       }
     },
     {
+      "id": "skill:sergeant-verify-before-done",
+      "type": "skill",
+      "title": "sergeant-verify-before-done",
+      "path": ".agents/skills/sergeant-verify-before-done/SKILL.md",
+      "tier": "core",
+      "meta": {
+        "description": "Use before claiming any task done/green/fixed in Sergeant — run the proving command fresh and quote its output, never a scoped-filter or assumed pass; UA: перед «готово/зелено/пофіксив»."
+      }
+    },
+    {
       "id": "skill:sergeant-web-ui",
       "type": "skill",
       "title": "sergeant-web-ui",
@@ -5448,6 +5468,11 @@
     {
       "from": "adr:0073",
       "to": "pr:112",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0073",
+      "to": "pr:116",
       "type": "touched-by"
     },
     {
