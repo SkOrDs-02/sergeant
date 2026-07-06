@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-04",
+  "generated_at": "2026-07-06",
   "sourceHashes": {
-    "knowledge-graph": "0fa3b3e9548c06cb021f849ac5152ca005d50f7266727be96ae4d506adc2c911",
-    "symbol-index": "277a1ac768df8ecded30ad4a89925931543c89c140b83fe41c4a4b954995c0e1"
+    "knowledge-graph": "c42fd1e16751bce01987084bed05a5a1f8ef18c7d42f5d91e0d83a89cf590999",
+    "symbol-index": "82e7cc9a551e944fb849206e96ee07910770a3479419c2b60875743f1f74d07a"
   },
   "counts": {
     "adr": 70,
@@ -13,8 +13,8 @@
     "hard-rule": 26,
     "initiative": 51,
     "playbook": 61,
-    "skill": 23,
-    "total": 559
+    "skill": 24,
+    "total": 560
   },
   "chunks": [
     {
@@ -5486,6 +5486,16 @@
       "tier": "core",
       "text": "sergeant-tech-debt · skill:sergeant-tech-debt · skill · Use when reducing technical debt, cleaning dead code with Knip, lowering ESLint baseline violations, or tackling Hard Rule #18 (module-size) refactor sprints in Sergeant; UA: технічний борг, dead code, рефакторинг. · Technical Debt у Sergeant · Debt inventory tools · 1. ESLint baseline (eslint.baseline.js) · 2. Dead code (Knip) · 3. Module size (Hard Rule #18 — active-initiative) · 4. TypeScript strictness (Hard Rule #19 — active-initiative) · Prioritization · Separate PRs for separate classes of debt · What NOT to do · Scheduled janitors · Playbooks",
       "contentHash": "53ff6576bd2f791fdb4131e1285bd62f31f94aa46c694affa33bbca7028e85c8"
+    },
+    {
+      "id": "skill:sergeant-verify-before-done",
+      "type": "skill",
+      "path": ".agents/skills/sergeant-verify-before-done/SKILL.md",
+      "line": 1,
+      "title": "sergeant-verify-before-done",
+      "tier": "core",
+      "text": "sergeant-verify-before-done · skill:sergeant-verify-before-done · skill · Use before claiming any task done/green/fixed in Sergeant — run the proving command fresh and quote its output, never a scoped-filter or assumed pass; UA: перед «готово/зелено/пофіксив». · Verify before you say done (Sergeant) · The gate · Sergeant-specific traps (these are why this SKILL exists) · Red-flag words = stop and run the command · Verification · See also",
+      "contentHash": "a8cf46bbda6c2bd8b1efb2e826c964362ad5b96e92ff8e50a6c9183a7831b308"
     },
     {
       "id": "skill:sergeant-web-ui",

@@ -1,6 +1,6 @@
 # C3 — Workspace dependency graph
 
-> **Last validated:** 2026-07-04 by @Skords-01. **Next review:** 2026-10-02.
+> **Last validated:** 2026-07-06 by @Skords-01. **Next review:** 2026-10-04.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-architecture-diagrams`. -->
@@ -39,6 +39,7 @@ flowchart LR
     end
     apps_mobile --> packages_api_client
     apps_mobile --> packages_design_tokens
+    apps_mobile --> packages_dualwrite_core
     apps_mobile --> packages_finyk_domain
     apps_mobile --> packages_fizruk_domain
     apps_mobile --> packages_insights
@@ -75,7 +76,7 @@ flowchart LR
 ## Stats
 
 - **18** workspaces total — 4 apps, 13 packages, 1 tool.
-- **26** cross-workspace import edges.
+- **27** cross-workspace import edges.
 
 ## Top imported workspaces
 
