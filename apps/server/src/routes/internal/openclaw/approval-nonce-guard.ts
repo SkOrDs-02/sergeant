@@ -83,9 +83,62 @@ function flagGrace(tool: string, reason: GuardRejectReason): void {
   });
 }
 
+type NonceEvaluation =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly reason: GuardRejectReason };
+
+/**
+ * Pure-ish evaluation of the nonce (verify + single-use consume). Returns a
+ * structured verdict; it does NOT decide whether the request is allowed —
+ * that call is made by `enforceWriteApproval` based on server config, so the
+ * user-controlled token never directly gates the sensitive branch. Mirrors
+ * `verifyWebhookRequest` (returns `{ ok, reason }`, middleware decides).
+ */
+async function evaluateNonce(args: {
+  pool: Pool;
+  secret: string;
+  token: string | undefined;
+  tool: string;
+  writeArgs: unknown;
+  nowSec: number;
+}): Promise<NonceEvaluation> {
+  if (args.token === undefined) return { ok: false, reason: "missing_nonce" };
+
+  const verified = verifyApprovalNonce({
+    secret: args.secret,
+    token: args.token,
+    tool: args.tool,
+    writeArgs: args.writeArgs,
+    now: args.nowSec,
+  });
+  if (!verified.ok) return { ok: false, reason: verified.reason };
+
+  // Single-use: consume atomically. Runs only AFTER signature/expiry/binding
+  // checks pass, so a forged token can never burn a real nonce.
+  const consumed = await consumeApprovalNonce(args.pool, verified.payload.jti);
+  if (!consumed.ok) return { ok: false, reason: "already_consumed" };
+
+  // Defence-in-depth: the ledger row must agree with the signed token.
+  if (
+    consumed.tool !== args.tool ||
+    consumed.argsHash !== verified.payload.argsHash
+  ) {
+    return { ok: false, reason: "ledger_mismatch" };
+  }
+
+  return { ok: true };
+}
+
 /**
  * Enforce (or, in grace mode, opportunistically verify) the approval nonce
  * for a `/write/*` call.
+ *
+ * The allow/deny decision hinges on the SERVER-controlled `cfg.required`
+ * flag, never directly on the user-supplied header: a bad/missing nonce is a
+ * 401 only when enforcement is required, and a grace-mode pass-through is
+ * gated by config, not by the attacker choosing to omit the header. This
+ * mirrors `verifyWebhookSignature`'s grace-mode and keeps the security
+ * decision out of untrusted-input control.
  *
  * @returns `true` when the handler should proceed; `false` when a 401 has
  *          already been written to `res` (required mode, bad nonce).
@@ -115,46 +168,28 @@ export async function enforceWriteApproval(args: {
   // Feature disabled → bearer-only legacy posture.
   if (!cfg.secret) return true;
 
-  if (token === undefined) {
-    // Missing nonce: hard-fail only in required mode. In grace mode the
-    // baseline `openclaw_write_invoked` (nonce=absent) already records it —
-    // don't double-emit a medium event on every legit pre-console write.
-    if (cfg.required) return reject(args.res, args.tool, "missing_nonce");
-    return true;
-  }
-
   const nowSec = Math.floor((args.now ? args.now() : Date.now()) / 1000);
-  const verified = verifyApprovalNonce({
+  const outcome = await evaluateNonce({
+    pool: args.pool,
     secret: cfg.secret,
     token,
     tool: args.tool,
     writeArgs: args.writeArgs,
-    now: nowSec,
+    nowSec,
   });
-  if (!verified.ok) {
-    if (cfg.required) return reject(args.res, args.tool, verified.reason);
-    flagGrace(args.tool, verified.reason);
-    return true;
+
+  if (outcome.ok) return true;
+
+  // Sole allow/deny gate is the untrusted-input-free `cfg.required`.
+  if (cfg.required) {
+    reject(args.res, args.tool, outcome.reason);
+    return false;
   }
 
-  // Single-use: consume atomically. Runs only AFTER signature/expiry/binding
-  // checks pass, so a forged token can never burn a real nonce.
-  const consumed = await consumeApprovalNonce(args.pool, verified.payload.jti);
-  if (!consumed.ok) {
-    if (cfg.required) return reject(args.res, args.tool, "already_consumed");
-    flagGrace(args.tool, "already_consumed");
-    return true;
-  }
-
-  // Defence-in-depth: the ledger row must agree with the signed token.
-  if (
-    consumed.tool !== args.tool ||
-    consumed.argsHash !== verified.payload.argsHash
-  ) {
-    if (cfg.required) return reject(args.res, args.tool, "ledger_mismatch");
-    flagGrace(args.tool, "ledger_mismatch");
-    return true;
-  }
-
+  // Grace window: config (not the header) permits the write. A PRESENT but
+  // bad nonce is still worth a medium event; a plain missing nonce is already
+  // captured by the low-severity `openclaw_write_invoked` baseline above, so
+  // don't double-emit on every legit pre-console write.
+  if (token !== undefined) flagGrace(args.tool, outcome.reason);
   return true;
 }

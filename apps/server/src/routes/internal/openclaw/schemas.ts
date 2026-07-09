@@ -332,11 +332,11 @@ export const MuteAlertBody = z.object({
   untilIso: z.string().datetime({ offset: true }).optional(),
 });
 
-// ADR-0036 Phase 4 hardening: single-use approval nonce. The console calls
-// this at the moment it renders the founder's Approve keyboard, passing the
-// exact tool + args it will replay on the `/write/*` call. `args` is the raw
-// write-tool argument object; the server projects+hashes only the fields the
-// tool cares about (WRITE_TOOL_ARG_FIELDS), so extra keys are harmless.
+// ADR-0036 Phase 4 hardening: single-use approval nonce. Консоль викликає це
+// у момент показу founder-у Approve-клавіатури, передаючи ті самі tool + args,
+// які потім повторить на `/write/*`. `args` — сирий об'єкт аргументів
+// write-tool-а; сервер проєктує+хешує лише поля, важливі для конкретного
+// tool-а (`WRITE_TOOL_ARG_FIELDS`), тож зайві ключі нешкідливі.
 export const MintApprovalNonceBody = z
   .object({
     tool: z.string().min(1).refine(isWriteToolName, {

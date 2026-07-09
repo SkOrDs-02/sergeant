@@ -49,6 +49,17 @@ import {
 } from "./schemas.js";
 
 export function registerWriteRoutes(r: Router, pool: Pool): void {
+  // Thin wrapper over `enforceWriteApproval` so each write route stays a
+  // one-liner: `if (!(await approved(req, res, "<tool>", parsed))) return;`.
+  // Returns `true` to proceed, `false` when a 401 was already written.
+  const approved = (
+    req: Parameters<typeof enforceWriteApproval>[0]["req"],
+    res: Parameters<typeof enforceWriteApproval>[0]["res"],
+    tool: string,
+    writeArgs: unknown,
+  ): Promise<boolean> =>
+    enforceWriteApproval({ pool, req, res, tool, writeArgs });
+
   // ---- approval-nonce → mint a single-use, tool+args-bound approval nonce ----
   //
   // ADR-0036 Phase 4 hardening. The console (separate repo, tools/openclaw)
@@ -96,16 +107,7 @@ export function registerWriteRoutes(r: Router, pool: Pool): void {
   // ---- write/strategy-doc → commit_to_strategy_doc ----
   r.post("/api/internal/openclaw/write/strategy-doc", async (req, res) => {
     const parsed = parseBody(CommitStrategyDocBody, req);
-    if (
-      !(await enforceWriteApproval({
-        pool,
-        req,
-        res,
-        tool: "commit_to_strategy_doc",
-        writeArgs: parsed,
-      }))
-    )
-      return;
+    if (!(await approved(req, res, "commit_to_strategy_doc", parsed))) return;
     try {
       // T2 audit #3 — enforce the repo allowlist at the request
       // boundary so an LLM-supplied `repo` is rejected with 400
@@ -134,16 +136,7 @@ export function registerWriteRoutes(r: Router, pool: Pool): void {
   // ---- write/github-issue → create_github_issue ----
   r.post("/api/internal/openclaw/write/github-issue", async (req, res) => {
     const parsed = parseBody(CreateGithubIssueBody, req);
-    if (
-      !(await enforceWriteApproval({
-        pool,
-        req,
-        res,
-        tool: "create_github_issue",
-        writeArgs: parsed,
-      }))
-    )
-      return;
+    if (!(await approved(req, res, "create_github_issue", parsed))) return;
     try {
       // T2 audit #3 — see write/strategy-doc for rationale.
       assertOpenClawRepoAllowed(parsed.repo);
@@ -165,16 +158,7 @@ export function registerWriteRoutes(r: Router, pool: Pool): void {
   // ---- write/post-to-topic → post_to_topic ----
   r.post("/api/internal/openclaw/write/post-to-topic", async (req, res) => {
     const parsed = parseBody(PostToTopicBody, req);
-    if (
-      !(await enforceWriteApproval({
-        pool,
-        req,
-        res,
-        tool: "post_to_topic",
-        writeArgs: parsed,
-      }))
-    )
-      return;
+    if (!(await approved(req, res, "post_to_topic", parsed))) return;
     try {
       const result = await postToTopic({
         topic: parsed.topic,
@@ -211,16 +195,7 @@ export function registerWriteRoutes(r: Router, pool: Pool): void {
   // ---- write/pause-workflow → pause_workflow ----
   r.post("/api/internal/openclaw/write/pause-workflow", async (req, res) => {
     const parsed = parseBody(PauseWorkflowBody, req);
-    if (
-      !(await enforceWriteApproval({
-        pool,
-        req,
-        res,
-        tool: "pause_workflow",
-        writeArgs: parsed,
-      }))
-    )
-      return;
+    if (!(await approved(req, res, "pause_workflow", parsed))) return;
     const result = await pauseWorkflow({
       workflowId: parsed.workflowId,
       reason: parsed.reason,
@@ -231,16 +206,7 @@ export function registerWriteRoutes(r: Router, pool: Pool): void {
   // ---- write/mute-alert → mute_alert ----
   r.post("/api/internal/openclaw/write/mute-alert", async (req, res) => {
     const parsed = parseBody(MuteAlertBody, req);
-    if (
-      !(await enforceWriteApproval({
-        pool,
-        req,
-        res,
-        tool: "mute_alert",
-        writeArgs: parsed,
-      }))
-    )
-      return;
+    if (!(await approved(req, res, "mute_alert", parsed))) return;
     const result = await muteSentryAlert({
       issueId: parsed.issueId,
       untilIso: parsed.untilIso,

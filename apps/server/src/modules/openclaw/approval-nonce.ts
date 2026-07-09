@@ -121,8 +121,13 @@ export function hashWriteArgs(tool: string, source: unknown): string {
       if (obj[field] !== undefined) projected[field] = obj[field];
     }
   }
+  // Plain SHA-256, not HMAC — `argsHash` carries no secret: it is meant to be
+  // publicly recomputable so mint and verify agree, and its integrity is
+  // covered by the HMAC over the whole token payload. The static prefix is
+  // just domain separation, not a key.
   return crypto
-    .createHmac("sha256", "openclaw-args-v1")
+    .createHash("sha256")
+    .update("openclaw-write-args-v1\n")
     .update(stableStringify(projected))
     .digest("hex");
 }

@@ -597,8 +597,8 @@ GitHub PAT з `contents:write` для opening PR-ів з decision markdown у `d
 **Console-side (крок 3, окреме репо `tools/openclaw`):** Approve-flow має
 POST-ити `{ tool, args }` на `/api/internal/openclaw/approval-nonce`, отримати
 `nonce` і переслати його на write-виклик через header `X-OpenClaw-Approval`.
-`args` = ті самі write-tool аргументи (server проектує лише relevant поля per
-`WRITE_TOOL_ARG_FIELDS`). Тільки після того як це стабільно працює, flip
+`args` = ті самі write-tool аргументи (server проєктує лише relevant поля per
+`WRITE_TOOL_ARG_FIELDS`). Тільки після того, як це стабільно працює, flip
 `OPENCLAW_WRITE_NONCE_REQUIRED=true` (крок 4).
 
 ---
