@@ -1,10 +1,12 @@
 # Express 4 → 5 Migration Plan (draft)
 
-> **Status:** Scaffolded
-> **Last touched:** 2026-07-09 by @claude. **Next review:** 2026-10-07.
+> **Status:** Archived
+> **Last touched:** 2026-07-09 by @claude. **Next review:** ніколи (read-only архів).
 > **Owner:** @SkOrDs-02
 > **Supersedes:** —
 > **Related:** [`backend.md`](./backend.md) (backend tech-debt inventory), [`AGENTS.md § Verification before PR`](../../../AGENTS.md), governing skill `sergeant-tech-debt`.
+>
+> **Closeout 2026-07-09.** План повністю виконано в [PR #131](https://github.com/SkOrDs-02/sergeant/pull/131) — `express` 4.22 → 5.2, `@types/express` 4 → 5. Усі 4 передбачені wildcard-блокери (§ 3) поправлені точно за планом; `@types/express@5` дав нуль type-drift (менше невизначеності, ніж план прогнозував); повний server unit-suite (3308 тестів) зелений. `asyncHandler`-cleanup (§ 4) свідомо НЕ виконано в тому PR — окремий opt-in follow-up, трекається окремо. Документ лишається як історичний запис; не редагувати — якщо asyncHandler-cleanup колись піде в роботу, для нього заводиться новий документ.
 >
 > ⚠️ **Це чернетка беклог-плану, не активна ініціатива.** Апгрейд Express 4.22 → 5
 > — **low-priority tech-debt, не блокер**. Express 4.x досі під підтримкою і
