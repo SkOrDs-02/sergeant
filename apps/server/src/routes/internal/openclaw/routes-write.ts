@@ -12,6 +12,7 @@
 
 import type { Router } from "express";
 import type { Pool } from "pg";
+import { env } from "../../../env.js";
 import { parseBody } from "../../../http/validate.js";
 import {
   OpenClawAllowlistError,
@@ -27,13 +28,20 @@ import {
   // ADR-0037 (Phase 4.5): persistent write-audit log helpers.
   recordWriteAudit,
   listRecentWriteAudits,
+  // ADR-0036 Phase 4 hardening: single-use approval nonce.
+  newNonceId,
+  signApprovalNonce,
+  hashWriteArgs,
+  issueApprovalNonce,
 } from "../../../modules/openclaw/index.js";
 import { recordTopicMessage } from "../../../modules/topic-archive/index.js";
 import { logger } from "../../../obs/logger.js";
 import { asAllowlistFailure } from "./helpers.js";
+import { enforceWriteApproval } from "./approval-nonce-guard.js";
 import {
   CommitStrategyDocBody,
   CreateGithubIssueBody,
+  MintApprovalNonceBody,
   MuteAlertBody,
   PauseWorkflowBody,
   PostToTopicBody,
@@ -42,9 +50,65 @@ import {
 } from "./schemas.js";
 
 export function registerWriteRoutes(r: Router, pool: Pool): void {
+  // Thin wrapper over `enforceWriteApproval` so each write route stays a
+  // one-liner: `if (!(await approved(req, res, "<tool>", parsed))) return;`.
+  // Returns `true` to proceed, `false` when a 401 was already written.
+  const approved = (
+    req: Parameters<typeof enforceWriteApproval>[0]["req"],
+    res: Parameters<typeof enforceWriteApproval>[0]["res"],
+    tool: string,
+    writeArgs: unknown,
+  ): Promise<boolean> =>
+    enforceWriteApproval({ pool, req, res, tool, writeArgs });
+
+  // ---- approval-nonce → mint a single-use, tool+args-bound approval nonce ----
+  //
+  // ADR-0036 Phase 4 hardening. The console (separate repo, tools/openclaw)
+  // calls this at the moment it renders the founder's Approve keyboard,
+  // passing the exact tool + args it will replay on the `/write/*` call. The
+  // returned nonce is HMAC-signed over {jti, tool, argsHash, exp} and
+  // recorded in `openclaw_approval_nonce` so it can only be spent once.
+  //
+  // Feature-gated on OPENCLAW_APPROVAL_NONCE_SECRET: when unset we return
+  // `not_configured` (200) so the console degrades gracefully during the
+  // staged rollout — mirrors the `not_configured` posture of the write
+  // endpoints themselves.
+  r.post("/api/internal/openclaw/approval-nonce", async (req, res) => {
+    const parsed = parseBody(MintApprovalNonceBody, req);
+    const secret = env.OPENCLAW_APPROVAL_NONCE_SECRET;
+    if (!secret) {
+      res.json({ status: "not_configured" });
+      return;
+    }
+    const jti = newNonceId();
+    const argsHash = hashWriteArgs(parsed.tool, parsed.args);
+    const expSec =
+      Math.floor(Date.now() / 1000) + env.OPENCLAW_APPROVAL_NONCE_TTL_SEC;
+    const nonce = signApprovalNonce(secret, {
+      jti,
+      tool: parsed.tool,
+      argsHash,
+      exp: expSec,
+    });
+    const expiresAt = new Date(expSec * 1000);
+    await issueApprovalNonce(pool, {
+      jti,
+      tool: parsed.tool,
+      argsHash,
+      expiresAt,
+    });
+    res.json({
+      status: "issued",
+      nonce,
+      jti,
+      expiresAt: expiresAt.toISOString(),
+    });
+  });
+
   // ---- write/strategy-doc → commit_to_strategy_doc ----
   r.post("/api/internal/openclaw/write/strategy-doc", async (req, res) => {
     const parsed = parseBody(CommitStrategyDocBody, req);
+    if (!(await approved(req, res, "commit_to_strategy_doc", parsed))) return;
     try {
       // T2 audit #3 — enforce the repo allowlist at the request
       // boundary so an LLM-supplied `repo` is rejected with 400
@@ -73,6 +137,7 @@ export function registerWriteRoutes(r: Router, pool: Pool): void {
   // ---- write/github-issue → create_github_issue ----
   r.post("/api/internal/openclaw/write/github-issue", async (req, res) => {
     const parsed = parseBody(CreateGithubIssueBody, req);
+    if (!(await approved(req, res, "create_github_issue", parsed))) return;
     try {
       // T2 audit #3 — see write/strategy-doc for rationale.
       assertOpenClawRepoAllowed(parsed.repo);
@@ -94,6 +159,7 @@ export function registerWriteRoutes(r: Router, pool: Pool): void {
   // ---- write/post-to-topic → post_to_topic ----
   r.post("/api/internal/openclaw/write/post-to-topic", async (req, res) => {
     const parsed = parseBody(PostToTopicBody, req);
+    if (!(await approved(req, res, "post_to_topic", parsed))) return;
     try {
       const result = await postToTopic({
         topic: parsed.topic,
@@ -150,6 +216,7 @@ export function registerWriteRoutes(r: Router, pool: Pool): void {
   // ---- write/pause-workflow → pause_workflow ----
   r.post("/api/internal/openclaw/write/pause-workflow", async (req, res) => {
     const parsed = parseBody(PauseWorkflowBody, req);
+    if (!(await approved(req, res, "pause_workflow", parsed))) return;
     const result = await pauseWorkflow({
       workflowId: parsed.workflowId,
       reason: parsed.reason,
@@ -160,6 +227,7 @@ export function registerWriteRoutes(r: Router, pool: Pool): void {
   // ---- write/mute-alert → mute_alert ----
   r.post("/api/internal/openclaw/write/mute-alert", async (req, res) => {
     const parsed = parseBody(MuteAlertBody, req);
+    if (!(await approved(req, res, "mute_alert", parsed))) return;
     const result = await muteSentryAlert({
       issueId: parsed.issueId,
       untilIso: parsed.untilIso,

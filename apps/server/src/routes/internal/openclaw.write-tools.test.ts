@@ -214,6 +214,148 @@ describe("/api/internal/openclaw/write/*", () => {
     expect(recordTopicMessageMock).toHaveBeenCalledTimes(1);
   });
 
+  it("mints an approval nonce when the secret is set, and reports not_configured otherwise", async () => {
+    const { env } = await import("../../env.js");
+    const app = await makeApp();
+
+    // Feature disabled by default → graceful degradation.
+    const off = await request(app)
+      .post("/api/internal/openclaw/approval-nonce")
+      .send({ tool: "pause_workflow", args: { workflowId: "wf_1" } });
+    expect(off.status).toBe(200);
+    expect(off.body).toEqual({ status: "not_configured" });
+
+    // Rejects a non-write tool at the schema boundary.
+    const badTool = await request(app)
+      .post("/api/internal/openclaw/approval-nonce")
+      .send({ tool: "read_github", args: {} });
+    expect(badTool.status).toBe(400);
+
+    const prevSecret = env.OPENCLAW_APPROVAL_NONCE_SECRET;
+    try {
+      env.OPENCLAW_APPROVAL_NONCE_SECRET = "route-test-secret";
+      const issued = await request(app)
+        .post("/api/internal/openclaw/approval-nonce")
+        .send({ tool: "pause_workflow", args: { workflowId: "wf_1" } });
+      expect(issued.status).toBe(200);
+      expect(issued.body.status).toBe("issued");
+      expect(typeof issued.body.nonce).toBe("string");
+      expect(issued.body.nonce.startsWith("oc1.")).toBe(true);
+      expect(typeof issued.body.expiresAt).toBe("string");
+    } finally {
+      env.OPENCLAW_APPROVAL_NONCE_SECRET = prevSecret;
+    }
+  });
+
+  it("rejects a write with no nonce once enforcement is required (401)", async () => {
+    const { env } = await import("../../env.js");
+    const app = await makeApp();
+    const prevSecret = env.OPENCLAW_APPROVAL_NONCE_SECRET;
+    const prevRequired = env.OPENCLAW_WRITE_NONCE_REQUIRED;
+    try {
+      env.OPENCLAW_APPROVAL_NONCE_SECRET = "route-test-secret";
+      env.OPENCLAW_WRITE_NONCE_REQUIRED = true;
+      const res = await request(app)
+        .post("/api/internal/openclaw/write/pause-workflow")
+        .send({ workflowId: "wf_1", reason: "noisy" });
+      expect(res.status).toBe(401);
+      expect(res.body).toMatchObject({
+        code: "OPENCLAW_APPROVAL_NONCE_INVALID",
+        reason: "missing_nonce",
+      });
+      // Must reject BEFORE the tool layer.
+      expect(pauseWorkflowMock).not.toHaveBeenCalled();
+    } finally {
+      env.OPENCLAW_APPROVAL_NONCE_SECRET = prevSecret;
+      env.OPENCLAW_WRITE_NONCE_REQUIRED = prevRequired;
+    }
+  });
+
+  it("mints then replays a nonce end-to-end via the real HTTP header (required mode)", async () => {
+    const { env } = await import("../../env.js");
+    const { createOpenClawInternalRouter } = await import("./openclaw.js");
+    const { APPROVAL_NONCE_HEADER } =
+      await import("../../modules/openclaw/index.js");
+
+    // Stateful in-memory ledger so mint (INSERT) and consume (UPDATE RETURNING)
+    // both behave like the real table — required to exercise the success path.
+    const ledger = new Map<
+      string,
+      { tool: string; argsHash: string; consumed: boolean }
+    >();
+    const pool = {
+      query: vi.fn(async (sql: string, params: unknown[]) => {
+        if (sql.includes("INSERT INTO openclaw_approval_nonce")) {
+          ledger.set(params[0] as string, {
+            tool: params[1] as string,
+            argsHash: params[2] as string,
+            consumed: false,
+          });
+          return { rows: [], rowCount: 1 };
+        }
+        if (sql.includes("UPDATE openclaw_approval_nonce")) {
+          const row = ledger.get(params[0] as string);
+          if (row && !row.consumed) {
+            row.consumed = true;
+            return {
+              rows: [{ tool: row.tool, args_hash: row.argsHash }],
+              rowCount: 1,
+            };
+          }
+          return { rows: [], rowCount: 0 };
+        }
+        return { rows: [], rowCount: 0 };
+      }),
+    } as never;
+
+    const app = express();
+    app.use(express.json());
+    app.use(createOpenClawInternalRouter({ pool }));
+
+    pauseWorkflowMock.mockResolvedValueOnce({
+      status: "paused",
+      workflowId: "wf_9",
+    });
+
+    const prevSecret = env.OPENCLAW_APPROVAL_NONCE_SECRET;
+    const prevRequired = env.OPENCLAW_WRITE_NONCE_REQUIRED;
+    try {
+      env.OPENCLAW_APPROVAL_NONCE_SECRET = "e2e-secret";
+      env.OPENCLAW_WRITE_NONCE_REQUIRED = true;
+
+      const body = { workflowId: "wf_9", reason: "e2e" };
+      const minted = await request(app)
+        .post("/api/internal/openclaw/approval-nonce")
+        .send({ tool: "pause_workflow", args: body });
+      expect(minted.status).toBe(200);
+      const nonce = minted.body.nonce as string;
+      expect(nonce).toBeTruthy();
+
+      // Correct header name + valid nonce → write proceeds (would 401 with
+      // `missing_nonce` if the mint/verify header names disagreed).
+      const written = await request(app)
+        .post("/api/internal/openclaw/write/pause-workflow")
+        .set(APPROVAL_NONCE_HEADER, nonce)
+        .send(body);
+      expect(written.status).toBe(200);
+      expect(pauseWorkflowMock).toHaveBeenCalledWith({
+        workflowId: "wf_9",
+        reason: "e2e",
+      });
+
+      // Replay must fail closed — single-use nonce already consumed.
+      const replay = await request(app)
+        .post("/api/internal/openclaw/write/pause-workflow")
+        .set(APPROVAL_NONCE_HEADER, nonce)
+        .send(body);
+      expect(replay.status).toBe(401);
+      expect(replay.body).toMatchObject({ reason: "already_consumed" });
+    } finally {
+      env.OPENCLAW_APPROVAL_NONCE_SECRET = prevSecret;
+      env.OPENCLAW_WRITE_NONCE_REQUIRED = prevRequired;
+    }
+  });
+
   it("forwards pause-workflow and mute-alert payloads", async () => {
     pauseWorkflowMock.mockResolvedValueOnce({
       status: "paused",

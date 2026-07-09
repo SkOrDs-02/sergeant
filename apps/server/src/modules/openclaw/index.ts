@@ -171,6 +171,33 @@ export type {
   MuteAlertOutput,
 } from "./write-tools.js";
 
+// ADR-0036 Phase 4 hardening: single-use approval nonce for write-tools.
+export {
+  APPROVAL_NONCE_VERSION,
+  APPROVAL_NONCE_HEADER,
+  WRITE_TOOL_ARG_FIELDS,
+  isWriteToolName,
+  stableStringify,
+  hashWriteArgs,
+  newNonceId,
+  signApprovalNonce,
+  verifyApprovalNonce,
+} from "./approval-nonce.js";
+export type {
+  ApprovalNoncePayload,
+  NonceVerifyReason,
+  NonceVerifyResult,
+} from "./approval-nonce.js";
+export {
+  issueApprovalNonce,
+  consumeApprovalNonce,
+  purgeExpiredApprovalNonces,
+} from "./approval-nonce-store.js";
+export type {
+  IssueApprovalNonceInput,
+  ConsumeApprovalNonceOutcome,
+} from "./approval-nonce-store.js";
+
 // PR-C1b: code-understanding read tools (github_search/tree/diff/prs).
 export {
   githubSearch,
