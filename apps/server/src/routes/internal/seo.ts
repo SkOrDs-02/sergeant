@@ -131,9 +131,12 @@ export function createSeoInternalRouter({ pool }: { pool: Pool }): Router {
     const rows = Array.isArray(body.rows) ? body.rows : [];
     let inserted = 0;
     for (const row of rows) {
+      // keyword_id — цілий позитивний FK. Дробові/невалідні id відкидаємо,
+      // інакше Math.trunc «прив'язав» би rank до чужого keyword (напр. 12.9 → 12).
       if (
         typeof row.keywordId !== "number" ||
-        !Number.isFinite(row.keywordId)
+        !Number.isInteger(row.keywordId) ||
+        row.keywordId <= 0
       ) {
         continue;
       }
@@ -151,7 +154,7 @@ export function createSeoInternalRouter({ pool }: { pool: Pool }): Router {
              raw = EXCLUDED.raw
            RETURNING id`,
         [
-          Math.trunc(row.keywordId),
+          row.keywordId,
           body.snapshotDate,
           row.locale ?? "uk",
           row.market ?? "UA",
@@ -357,7 +360,9 @@ export function createSeoInternalRouter({ pool }: { pool: Pool }): Router {
           u.inSitemap === true,
           typeof u.inIndex === "boolean" ? u.inIndex : null,
           u.robotsBlocked === true,
-          u.lastModified ?? null,
+          // Валідуємо дату як у backlink-шляху: невалідний lastModified → null,
+          // щоб malformed-значення не завалило весь snapshot на Postgres-каст.
+          isYmd(u.lastModified) ? u.lastModified : null,
           toJsonbDefault(u.raw),
         ],
       );

@@ -95,8 +95,16 @@ describe("createSeoInternalRouter", () => {
         snapshotDate: "2026-06-24",
         rows: [
           { keywordId: Number.NaN },
+          // Дробовий id (42.8) має бути відкинутий, а не truncated до 42 —
+          // інакше rank прив'язався б до чужого keyword.
           {
             keywordId: 42.8,
+            position: 5,
+            url: "https://wrong.example",
+            raw: { rank: 5 },
+          },
+          {
+            keywordId: 42,
             position: 3.6,
             url: "https://example.com",
             hasFeaturedSnippet: true,
@@ -105,6 +113,8 @@ describe("createSeoInternalRouter", () => {
         ],
       });
     expect(rank.body).toEqual({ ok: true, inserted: 1 });
+    // Лише валідний цілий id доходить до pool.query — рівно один INSERT.
+    expect(queryMock).toHaveBeenCalledTimes(1);
     expect(queryMock.mock.calls[0]?.[1]).toEqual([
       42,
       "2026-06-24",
@@ -253,6 +263,43 @@ describe("createSeoInternalRouter", () => {
       false,
       true,
       "2026-06-01",
+      JSON.stringify({ ok: true }),
+    ]);
+  });
+
+  it("normalizes malformed sitemap lastModified to null", async () => {
+    const queryMock = vi.fn().mockResolvedValue({ rows: [{ id: "31" }] });
+    const app = await makeApp(queryMock);
+
+    const sitemap = await request(app)
+      .post("/api/internal/seo/sitemap-health")
+      .send({
+        snapshotDate: "2026-06-24",
+        urls: [
+          {
+            url: "https://example.com",
+            statusCode: 200,
+            inSitemap: true,
+            inIndex: false,
+            robotsBlocked: false,
+            // Малформатне значення не має долетіти до date-колонки.
+            lastModified: "not-a-date",
+            raw: { ok: true },
+          },
+        ],
+      });
+
+    expect(sitemap.body).toEqual({ ok: true, inserted: 1 });
+    // 7-й bind-параметр (last_modified) — null, а не сире "not-a-date".
+    expect(queryMock.mock.calls[0]?.[1]?.[6]).toBeNull();
+    expect(queryMock.mock.calls[0]?.[1]).toEqual([
+      "2026-06-24",
+      "https://example.com",
+      200,
+      true,
+      false,
+      false,
+      null,
       JSON.stringify({ ok: true }),
     ]);
   });

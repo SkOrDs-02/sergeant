@@ -23,7 +23,8 @@ vi.mock("../../modules/ai-memory/dlq.js", async (origImport) => {
   return {
     ...actual,
     listDlqRows: listDlqRowsMock,
-    markDlqRowReplayed: markDlqRowReplayedMock,
+    // Route викликає strict-варіант (rethrow-ить failure у replay-flow).
+    markDlqRowReplayedStrict: markDlqRowReplayedMock,
   };
 });
 
@@ -32,7 +33,8 @@ vi.mock("../../modules/ai-memory/ingestQueue.js", async (origImport) => {
     await origImport<typeof import("../../modules/ai-memory/ingestQueue.js")>();
   return {
     ...actual,
-    enqueueMemoryIngest: enqueueMemoryIngestMock,
+    // Route викликає strict-варіант (rethrow-ить enqueue-failure).
+    enqueueMemoryIngestStrict: enqueueMemoryIngestMock,
   };
 });
 
@@ -148,6 +150,51 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
     expect(markDlqRowReplayedMock).toHaveBeenCalledTimes(2);
     expect(markDlqRowReplayedMock).toHaveBeenCalledWith(1);
     expect(markDlqRowReplayedMock).toHaveBeenCalledWith(2);
+  });
+
+  it("enqueue-failure для row → потрапляє в errors[], НЕ рахується у replayed", async () => {
+    listDlqRowsMock.mockResolvedValueOnce([
+      sampleRow({ id: 1 }),
+      sampleRow({ id: 2, source: "chat", sourceRef: null }),
+    ]);
+    // row #1 успішний; row #2 — strict-enqueue кидає (Redis-incident).
+    enqueueMemoryIngestMock
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error("Redis ECONNREFUSED"));
+    markDlqRowReplayedMock.mockResolvedValue(undefined);
+
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/ai-memory-dlq/replay")
+      .send({ source: "finyk", dryRun: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.attempted).toBe(2);
+    expect(res.body.replayed).toBe(1);
+    expect(res.body.errors).toEqual([{ id: 2, error: "Redis ECONNREFUSED" }]);
+    // row #2 НЕ був позначений replayed (enqueue провалився до mark-у).
+    expect(markDlqRowReplayedMock).toHaveBeenCalledTimes(1);
+    expect(markDlqRowReplayedMock).toHaveBeenCalledWith(1);
+  });
+
+  it("mark-replayed failure → потрапляє в errors[], НЕ рахується у replayed", async () => {
+    listDlqRowsMock.mockResolvedValueOnce([sampleRow({ id: 7 })]);
+    enqueueMemoryIngestMock.mockResolvedValue(undefined);
+    // enqueue пройшов, але UPDATE replayed_at провалився (DB-incident).
+    markDlqRowReplayedMock.mockRejectedValueOnce(new Error("DB write timeout"));
+
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/ai-memory-dlq/replay")
+      .send({ source: "finyk", dryRun: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.attempted).toBe(1);
+    expect(res.body.replayed).toBe(0);
+    expect(res.body.errors).toEqual([{ id: 7, error: "DB write timeout" }]);
+    expect(enqueueMemoryIngestMock).toHaveBeenCalledTimes(1);
   });
 
   it("400 коли жоден з filter-ів не переданий", async () => {

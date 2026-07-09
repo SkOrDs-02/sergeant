@@ -29,6 +29,7 @@ import {
   listRecentWriteAudits,
 } from "../../../modules/openclaw/index.js";
 import { recordTopicMessage } from "../../../modules/topic-archive/index.js";
+import { logger } from "../../../obs/logger.js";
 import { asAllowlistFailure } from "./helpers.js";
 import {
   CommitStrategyDocBody,
@@ -104,18 +105,38 @@ export function registerWriteRoutes(r: Router, pool: Pool): void {
       // `not_configured` and `error` paths — there was no actual
       // post, so the archive must not pretend otherwise.
       if (result.status === "posted") {
-        await recordTopicMessage(pool, {
-          topic: parsed.topic,
-          text: parsed.text,
-          source: "post_to_topic",
-          messageId: result.messageId ?? null,
-          // No stable dedupe key — manual posts can repeat verbatim
-          // (e.g. two daily heads-ups). Partial UNIQUE index treats
-          // NULL as distinct so we never collide.
-          dedupeKey: null,
-          metadata:
-            result.messageId != null ? { messageId: result.messageId } : {},
-        });
+        // Дзеркалення в архів — best-effort. Telegram-повідомлення ВЖЕ
+        // відправлене (`postToTopic` повернув `posted`) — це неідемпотентний
+        // side-effect. Якщо `recordTopicMessage` кине (DB-збій), НЕ можна
+        // повертати 5xx: caller ретрайне і запостить ДУБЛЬ у Telegram. Тому
+        // логуємо помилку архіву й усе одно віддаємо успішний результат посту.
+        // Це НЕ "defensive try/catch навколо неможливого" (Hard Rule) — DB-запис
+        // реально може впасти, і саме тут ковтати помилку правильно, бо
+        // попередня дія вже незворотно відбулася. Не "чистити" цей catch.
+        try {
+          await recordTopicMessage(pool, {
+            topic: parsed.topic,
+            text: parsed.text,
+            source: "post_to_topic",
+            messageId: result.messageId ?? null,
+            // No stable dedupe key — manual posts can repeat verbatim
+            // (e.g. two daily heads-ups). Partial UNIQUE index treats
+            // NULL as distinct so we never collide.
+            dedupeKey: null,
+            metadata:
+              result.messageId != null ? { messageId: result.messageId } : {},
+          });
+        } catch (archiveErr) {
+          logger.error({
+            msg: "post_to_topic_archive_persist_failed",
+            topic: parsed.topic,
+            messageId: result.messageId ?? null,
+            err:
+              archiveErr instanceof Error
+                ? archiveErr.message
+                : String(archiveErr),
+          });
+        }
       }
       res.json(result);
     } catch (err) {

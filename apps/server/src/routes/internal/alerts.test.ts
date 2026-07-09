@@ -267,6 +267,27 @@ describe("/api/internal/alerts/pending", () => {
     });
   });
 
+  it("forwards T2/T3 cron filters (notYetRepeated/notYetSentryWarned/notSnoozed) to the store", async () => {
+    const app = await makeApp();
+    const res = await request(app).post("/api/internal/alerts/pending").send({
+      severity: "P0",
+      olderThanMinutes: 60,
+      notYetRepeated: true,
+      notYetSentryWarned: true,
+      notSnoozed: true,
+      limit: 25,
+    });
+    expect(res.status).toBe(200);
+    expect(listPendingAlertsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        notYetRepeated: true,
+        notYetSentryWarned: true,
+        notSnoozed: true,
+      }),
+    );
+  });
+
   it("returns alerts payload from the store", async () => {
     listPendingAlertsMock.mockResolvedValueOnce([
       {

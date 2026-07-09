@@ -32,10 +32,10 @@ import { z } from "zod";
 import { parseBody } from "../../http/validate.js";
 import {
   listDlqRows,
-  markDlqRowReplayed,
+  markDlqRowReplayedStrict,
   type DlqRow,
 } from "../../modules/ai-memory/dlq.js";
-import { enqueueMemoryIngest } from "../../modules/ai-memory/ingestQueue.js";
+import { enqueueMemoryIngestStrict } from "../../modules/ai-memory/ingestQueue.js";
 import { logger, serializeError } from "../../obs/logger.js";
 
 const ReplayBody = z
@@ -154,7 +154,7 @@ export function createAiMemoryDlqInternalRouter(_: { pool: Pool }): Router {
     const errors: { id: number; error: string }[] = [];
     for (const row of rows) {
       try {
-        await enqueueMemoryIngest({
+        await enqueueMemoryIngestStrict({
           userId: row.payloadJson.userId,
           source: row.payloadJson.source,
           sourceRef: row.payloadJson.sourceRef,
@@ -163,11 +163,14 @@ export function createAiMemoryDlqInternalRouter(_: { pool: Pool }): Router {
             ? { metadata: row.payloadJson.metadata }
             : {}),
         });
-        await markDlqRowReplayed(row.id);
+        await markDlqRowReplayedStrict(row.id);
         replayed++;
       } catch (err) {
-        // enqueueMemoryIngest не throw-ить (внутрішньо ловить), але про
-        // markDlqRowReplayed-fail хочемо знати на per-row рівні.
+        // Strict-варіанти rethrow-ять реальні failure-и (Redis-enqueue та
+        // DB-mark-replayed). Row, який НЕ був фактично re-enqueue-нутий або
+        // НЕ позначений replayed, потрапляє у `errors[]` і НЕ інкрементує
+        // `replayed` — при цьому `replayed_at IS NULL` зберігається, тож
+        // наступний replay його підхопить (без свідомо-хибного ok:true).
         logger.warn({
           msg: "ai_memory_dlq_replay_row_failed",
           id: row.id,

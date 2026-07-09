@@ -230,14 +230,7 @@ function maybeCaptureDlqSentry(input: {
  */
 export async function markDlqRowReplayed(id: number): Promise<void> {
   try {
-    await query(
-      `UPDATE ai_memory_ingest_failed
-         SET replayed_at  = NOW(),
-             replay_count = replay_count + 1
-       WHERE id = $1`,
-      [id],
-      { op: "ai_memory_dlq_mark_replayed" },
-    );
+    await markDlqRowReplayedStrict(id);
   } catch (err) {
     logger.warn({
       msg: "ai_memory_ingest_dlq_mark_replayed_failed",
@@ -245,6 +238,26 @@ export async function markDlqRowReplayed(id: number): Promise<void> {
       err: serializeError(err, { includeStack: false }),
     });
   }
+}
+
+/**
+ * Strict-варіант `markDlqRowReplayed`: виконує той самий UPDATE, але
+ * **rethrow-ить** DB-помилку замість ковтати її.
+ *
+ * Використовується у `POST /api/internal/ai-memory-dlq/replay`, де failure на
+ * mark-replayed має потрапити у `errors[]` і НЕ інкрементувати `replayed` —
+ * row лишається `replayed_at IS NULL`, тож наступний replay його підхопить.
+ * Best-effort callsite-и (worker-flow) далі викликають swallowing-варіант вище.
+ */
+export async function markDlqRowReplayedStrict(id: number): Promise<void> {
+  await query(
+    `UPDATE ai_memory_ingest_failed
+       SET replayed_at  = NOW(),
+           replay_count = replay_count + 1
+     WHERE id = $1`,
+    [id],
+    { op: "ai_memory_dlq_mark_replayed" },
+  );
 }
 
 export interface ListDlqRowsOptions {

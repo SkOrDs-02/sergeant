@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { Pool } from "pg";
 /**
  * `GET /api/internal/users/cohort?days=N` — повертає список користувачів,
- * які зареєструвались рівно `N` днів тому (за UTC-датою). Використовується
+ * які зареєструвались рівно `N` днів тому (за датою в Europe/Kyiv). Використовується
  * drip-кампаніями (WF-80) для D1/D7/D30 розсилок.
  *
  * Better Auth використовує таблицю `"user"` (не `users`) з кемел-кейс
@@ -16,13 +16,13 @@ export function createUsersInternalRouter({ pool }: { pool: Pool }): Router {
 
   r.get("/api/internal/users/cohort", async (req, res) => {
     const daysRaw = Number(req.query["days"]);
-    if (!Number.isFinite(daysRaw) || daysRaw < 0 || daysRaw > 365) {
+    if (!Number.isInteger(daysRaw) || daysRaw < 0 || daysRaw > 365) {
       res
         .status(400)
         .json({ error: "days must be a non-negative integer <= 365" });
       return;
     }
-    const days = Math.trunc(daysRaw);
+    const days = daysRaw;
     const limit = Math.min(
       500,
       Math.max(1, Math.trunc(Number(req.query["limit"]) || 200)),
@@ -36,7 +36,7 @@ export function createUsersInternalRouter({ pool }: { pool: Pool }): Router {
     }>(
       `SELECT id, email, name, "createdAt"
            FROM "user"
-          WHERE ("createdAt" AT TIME ZONE 'UTC')::date = (CURRENT_DATE - $1::int)
+          WHERE ("createdAt" AT TIME ZONE 'Europe/Kyiv')::date = ((now() AT TIME ZONE 'Europe/Kyiv')::date - $1::int)
           ORDER BY "createdAt" ASC
           LIMIT $2`,
       [days, limit],
