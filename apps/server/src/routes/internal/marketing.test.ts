@@ -201,4 +201,25 @@ describe("createMarketingInternalRouter", () => {
       "{}",
     ]);
   });
+
+  it("clamps negative impressions/engagements to 0 before binding", async () => {
+    const queryMock = vi.fn().mockResolvedValue({ rows: [{ id: "15" }] });
+    const app = await makeApp(queryMock);
+
+    const res = await request(app)
+      .post("/api/internal/marketing/social-channel")
+      .send({
+        snapshotDate: "2026-06-25",
+        platform: "telegram",
+        channel: "main",
+        impressions: -1234.7,
+        engagements: -50,
+      });
+
+    expect(res.body).toEqual({ ok: true, id: 15 });
+    const params = queryMock.mock.calls[0]?.[1];
+    // impressions ($7) та engagements ($8) не мають персистити від'ємне.
+    expect(params?.[6]).toBe("0");
+    expect(params?.[7]).toBe("0");
+  });
 });

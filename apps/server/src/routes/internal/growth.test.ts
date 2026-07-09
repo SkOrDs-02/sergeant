@@ -156,6 +156,32 @@ describe("createGrowthInternalRouter", () => {
     ]);
   });
 
+  it("clamps negative acquisition spend/cac cents to 0 before binding", async () => {
+    const queryMock = vi.fn().mockResolvedValue({ rows: [{ id: "5" }] });
+    const app = await makeApp(queryMock);
+
+    const res = await request(app)
+      .post("/api/internal/growth/acquisition")
+      .send({
+        snapshotDate: "2026-06-25",
+        rows: [
+          {
+            source: "linkedin",
+            signups: 3,
+            spendCents: -1250.9,
+            cacCents: -416.7,
+          },
+        ],
+      });
+
+    expect(res.body).toEqual({ ok: true, inserted: 1 });
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    const params = queryMock.mock.calls[0]?.[1];
+    // spend_cents ($6) та cac_cents ($7) не мають персистити від'ємне.
+    expect(params?.[5]).toBe("0");
+    expect(params?.[6]).toBe("0");
+  });
+
   it("rejects invalid snapshot dates before writing", async () => {
     const queryMock = vi.fn();
     const app = await makeApp(queryMock);

@@ -57,6 +57,20 @@ function bigIntStr(value: unknown): string {
   return Math.trunc(value).toString();
 }
 
+// Як `bigIntStr`, але clamp-ає до 0 — для лічильників/грошей, де
+// від'ємне значення не має сенсу (напр. spend/CAC у kopiykas).
+function nonNegBigIntStr(value: unknown): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "0";
+  return Math.max(0, Math.trunc(value)).toString();
+}
+
+// Nullable-варіант `nonNegBigIntStr`: `null` для non-number/non-finite,
+// інакше clamp-нутий до 0 рядок (для nullable-колонок як `cac_cents`).
+function nullableNonNegBigIntStr(value: unknown): string | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.trunc(value)).toString();
+}
+
 function toJsonbDefault(value: unknown): string {
   if (value == null) return "{}";
   try {
@@ -233,10 +247,8 @@ export function createGrowthInternalRouter({ pool }: { pool: Pool }): Router {
           row.medium ?? "",
           row.campaign ?? "",
           nonNeg(row.signups),
-          bigIntStr(row.spendCents),
-          typeof row.cacCents === "number"
-            ? Math.trunc(row.cacCents).toString()
-            : null,
+          nonNegBigIntStr(row.spendCents),
+          nullableNonNegBigIntStr(row.cacCents),
           toJsonbDefault(row.raw),
         ],
       );

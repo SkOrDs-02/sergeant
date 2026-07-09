@@ -269,6 +269,11 @@ export function createAlertsInternalRouter({
       severity: parsed.severity,
       olderThanMinutes: parsed.olderThanMinutes,
       notYetEscalated: parsed.notYetEscalated,
+      // T2/T3 cron-фільтри (WF-105/WF-106): без цих ключів вже
+      // repeated / sentry-warned / snoozed алерти протікали б назад.
+      notYetRepeated: parsed.notYetRepeated,
+      notYetSentryWarned: parsed.notYetSentryWarned,
+      notSnoozed: parsed.notSnoozed,
       limit: parsed.limit,
     });
     res.json({ alerts });

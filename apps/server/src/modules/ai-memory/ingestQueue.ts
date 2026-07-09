@@ -187,6 +187,27 @@ function assertValidSource(source: string): asserts source is MemorySource {
 export async function enqueueMemoryIngest(
   payload: MemoryIngestPayload,
 ): Promise<void> {
+  await enqueueMemoryIngestImpl(payload, { rethrowEnqueueError: false });
+}
+
+/**
+ * Strict-варіант для DLQ-replay-flow (`POST /api/internal/ai-memory-dlq/replay`):
+ * якщо фактичний `queue.add(...)` кидає (Redis-incident), **rethrow-ить**
+ * помилку, щоб replay-endpoint зарахував row у `errors[]` і НЕ інкрементував
+ * `replayed`. Gating-скіпи (disabled, per-source kill-switch, invalid/empty
+ * payload, no-Redis fallback) поводяться так само, як у best-effort
+ * `enqueueMemoryIngest` — це навмисні drop-и, а не помилки enqueue.
+ */
+export async function enqueueMemoryIngestStrict(
+  payload: MemoryIngestPayload,
+): Promise<void> {
+  await enqueueMemoryIngestImpl(payload, { rethrowEnqueueError: true });
+}
+
+async function enqueueMemoryIngestImpl(
+  payload: MemoryIngestPayload,
+  opts: { rethrowEnqueueError: boolean },
+): Promise<void> {
   const sourceLabel = payload.source;
   // Coarse-validation. Жорстка валідація content/length — у callsite-ах
   // (endpoint застосовує zod-schema, hooks обмежують довжину).
@@ -300,6 +321,10 @@ export async function enqueueMemoryIngest(
     // memory — це best-effort, втрата одного job-у не ламає UX. Краще
     // лишити як failure-метрику + лог, ніж палити Voyage квоту синхронно
     // у webhook-у при Redis-incident-і.
+    //
+    // DLQ-replay (strict-варіант) — виняток: там rethrow-имо, щоб operator
+    // побачив failed row у `errors[]` і той НЕ зарахувався як replayed.
+    if (opts.rethrowEnqueueError) throw err;
   }
 }
 

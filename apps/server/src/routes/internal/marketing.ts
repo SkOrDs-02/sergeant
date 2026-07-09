@@ -19,9 +19,11 @@ function nonNeg(value: unknown): number {
   return Math.max(0, Math.trunc(value));
 }
 
-function bigIntStr(value: unknown): string {
+// Clamp-ає до 0 і coerce-ить до рядка — для лічильників (impressions,
+// engagements), де від'ємне значення не має сенсу.
+function nonNegBigIntStr(value: unknown): string {
   if (typeof value !== "number" || !Number.isFinite(value)) return "0";
-  return Math.trunc(value).toString();
+  return Math.max(0, Math.trunc(value)).toString();
 }
 
 function toJsonbDefault(value: unknown): string {
@@ -264,8 +266,8 @@ export function createMarketingInternalRouter({
         nonNeg(body.followers),
         nonNeg(body.newFollowers),
         nonNeg(body.unsubs),
-        bigIntStr(body.impressions),
-        bigIntStr(body.engagements),
+        nonNegBigIntStr(body.impressions),
+        nonNegBigIntStr(body.engagements),
         toJsonbDefault(body.raw),
       ],
     );
