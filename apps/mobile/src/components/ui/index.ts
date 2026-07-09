@@ -10,8 +10,6 @@
  * - EmptyState: Staggered animations, pre-configured variants
  * - AnimatedCounter: Smooth number transitions
  * - ProgressRing: SVG circular progress with Reanimated
- * - CelebrationModal: Confetti, haptic patterns, achievements
- * - AnimatedList: Staggered fade-in animations
  * - Tooltip: Long-press hints with auto-positioning
  */
 
@@ -140,24 +138,6 @@ export {
 } from "./ProgressRing";
 
 export {
-  CelebrationModal,
-  useCelebration,
-  type CelebrationModalProps,
-  type CelebrationType,
-  type ModuleTheme,
-} from "./CelebrationModal";
-
-export {
-  AnimatedList,
-  AnimatedListItem,
-  AnimatedFadeIn,
-  AnimatedSlideIn,
-  AnimatedScale,
-  type AnimatedListProps,
-  type AnimatedListItemProps,
-} from "./AnimatedList";
-
-export {
   Tooltip,
   TooltipTrigger,
   TooltipLabel,
@@ -180,25 +160,6 @@ export {
   type CheckboxVariant,
   type CheckboxSize,
 } from "./AnimatedCheckbox";
-
-export {
-  CustomRefreshControl,
-  AnimatedRefreshIndicator,
-  PullToRefreshHeader,
-  useRefreshControl,
-  usePullToRefresh,
-  type PullToRefreshProps,
-  type RefreshVariant,
-} from "./PullToRefresh";
-
-export {
-  SwipeableRow,
-  TransactionSwipeableRow,
-  HabitSwipeableRow,
-  commonActions,
-  type SwipeableRowProps,
-  type SwipeAction,
-} from "./SwipeableRow";
 
 export {
   CoachTip,
