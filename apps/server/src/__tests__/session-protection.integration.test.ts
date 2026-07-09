@@ -127,11 +127,15 @@ interface RouteSpec {
 }
 
 /**
- * Walk Express 4's internal `_router.stack` to enumerate every
- * `(method, path)` pair registered by `createApp()`. We descend into
- * mounted Router instances because `registerRoutes` calls
- * `app.use(domainRouter)` for each domain — those routers register their
- * own `/api/...` paths internally (no prefix-mounting at the app level).
+ * Walk the Express router stack to enumerate every `(method, path)` pair
+ * registered by `createApp()`. We descend into mounted Router instances
+ * because `registerRoutes` calls `app.use(domainRouter)` for each domain —
+ * those routers register their own `/api/...` paths internally (no
+ * prefix-mounting at the app level).
+ *
+ * Express 5 exposes the router via the public `app.router` getter; Express 4
+ * lazily populated the private `app._router` after the first `.use()` call
+ * (see the same fallback in `routes/registerRoutes.test.ts`).
  *
  * We deliberately filter out:
  *   - HEAD methods (Express auto-mirrors GET handlers; the same chain
@@ -168,7 +172,8 @@ function listRoutes(express: Express): RouteSpec[] {
     }
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const router = (express as any)._router;
+  const expressAny = express as any;
+  const router = expressAny.router ?? expressAny._router;
   if (router?.stack) visit(router.stack);
   return out;
 }
@@ -200,8 +205,11 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   "/healthz",
   "/metrics",
   // Better Auth — its own cookie/session protocol; not a `requireSession`
-  // consumer. OAuth callbacks land here.
-  "/api/auth/*",
+  // consumer. OAuth callbacks land here. Express 5 registers this route as
+  // `/api/auth/{*splat}` (path-to-regexp v8 named wildcard), not the old
+  // Express 4 `/api/auth/*` string — EXEMPT_ROUTES uses exact string
+  // equality (see `isExempt`), so this literal must track the real path.
+  "/api/auth/{*splat}",
   // CSP report-only endpoint — browser sends from the Vercel SPA origin.
   "/api/csp-report",
   // Public web-vitals beacon from anonymous browsers.
