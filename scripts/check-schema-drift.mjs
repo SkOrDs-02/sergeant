@@ -699,7 +699,8 @@ const SQL_ONLY_TABLES = [
   "n8n_failure_events",
   "n8n_webhook_events",
   "webhook_events",
-  // OpenClaw gateway — рішення/виклики/аудит записів/mute/нагадування; server-only.
+  // OpenClaw gateway — рішення/виклики/аудит записів/mute/нагадування/approval-nonce; server-only.
+  "openclaw_approval_nonce",
   "openclaw_decisions",
   "openclaw_invocations",
   "openclaw_mute_state",
