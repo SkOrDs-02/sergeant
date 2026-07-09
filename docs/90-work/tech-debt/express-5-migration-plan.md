@@ -18,8 +18,8 @@
 
 Головний виграш Express 5 — **нативне пробрасування reject-ів з `async`-хендлерів**
 у error-middleware. У нас це вже вирішено обгорткою
-[`apps/server/src/http/asyncHandler.ts`](../../../apps/server/src/http/asyncHandler.ts)
-(62 файли, 170 call-sites), тож головний біль Express 4 закритий місяці тому.
+`apps/server/src/http/asyncHandler.ts` (62 файли, 170 call-sites), тож головний
+біль Express 4 закритий місяці тому. <!-- de-linked: файл видалено у PR #134 (asyncHandler cleanup) — обгортка стала зайвою під Express 5; історична згадка лишається як plain-текст. -->
 Апгрейд лишає: сучасніший baseline, path-to-regexp v8, −1 обгортковий патерн
 (опційно), актуальні `@types/express@5`.
 
