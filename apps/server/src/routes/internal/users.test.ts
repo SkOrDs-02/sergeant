@@ -41,6 +41,32 @@ describe("createUsersInternalRouter", () => {
     expect(queryMock).not.toHaveBeenCalled();
   });
 
+  it("rejects a negative `days` before reaching the DB", async () => {
+    const queryMock = vi.fn();
+    const app = await makeApp(queryMock);
+
+    const res = await request(app).get("/api/internal/users/cohort?days=-1");
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: "days must be a non-negative integer <= 365",
+    });
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a `days` above the 365 upper bound before reaching the DB", async () => {
+    const queryMock = vi.fn();
+    const app = await makeApp(queryMock);
+
+    const res = await request(app).get("/api/internal/users/cohort?days=366");
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: "days must be a non-negative integer <= 365",
+    });
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
   it("selects the cohort by an Europe/Kyiv date, never UTC", async () => {
     const queryMock = vi.fn().mockResolvedValue({ rows: [] });
     const app = await makeApp(queryMock);
