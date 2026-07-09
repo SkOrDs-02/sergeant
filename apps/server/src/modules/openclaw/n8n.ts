@@ -552,7 +552,22 @@ export interface RefreshBusinessSnapshotOutput {
   notConfigured: boolean;
   durationMs: number;
   results: RefreshBusinessSnapshotResult[];
+  /** Present when the call was rejected by the cooldown guard (see below). */
+  cooldownRemainingMs?: number;
 }
+
+/**
+ * Tier A workflows write to our DB, so an unguarded meta-tool lets a
+ * prompt-injected or looping agent hammer this endpoint into repeated mass
+ * fan-out (DB write pressure + n8n cost amplification). One in-process
+ * cooldown throttles that; the snapshot is eventually-consistent anyway, so
+ * refusing a refresh inside the window loses nothing.
+ *
+ * ponytail: single-process cooldown. If the server ever runs multi-instance,
+ * move this to a Redis token-bucket keyed on the tool name.
+ */
+const REFRESH_SNAPSHOT_COOLDOWN_MS = 60_000;
+let lastSnapshotRefreshAtMs = 0;
 
 /**
  * Fires all Tier A workflows in parallel and waits for n8n to acknowledge
@@ -564,6 +579,20 @@ export interface RefreshBusinessSnapshotOutput {
 export async function refreshBusinessSnapshot(
   input: RefreshBusinessSnapshotInput = {},
 ): Promise<RefreshBusinessSnapshotOutput> {
+  const nowMs = Date.now();
+  const sinceLastMs = nowMs - lastSnapshotRefreshAtMs;
+  if (sinceLastMs < REFRESH_SNAPSHOT_COOLDOWN_MS) {
+    return {
+      triggered: 0,
+      failed: 0,
+      notConfigured: false,
+      durationMs: 0,
+      results: [],
+      cooldownRemainingMs: REFRESH_SNAPSHOT_COOLDOWN_MS - sinceLastMs,
+    };
+  }
+  lastSnapshotRefreshAtMs = nowMs;
+
   const allowlist = await loadN8nAllowlist();
   const tierA = Object.entries(allowlist.workflows).filter(
     ([, meta]) => meta.tier === "A",

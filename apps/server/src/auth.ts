@@ -207,6 +207,16 @@ async function getSocialProviders(): Promise<
         },
         "Failed to generate Apple client_secret JWT — Apple provider disabled",
       );
+      // Fail-open is a deliberate availability trade-off, but a login provider
+      // silently disappearing in prod (env/key-rotation typo) must page, not
+      // just log — ops otherwise learns only from user PROVIDER_NOT_FOUND reports.
+      emitSecurityEvent({
+        event: "auth_apple_client_secret_failed",
+        severity: "high",
+        details: `Apple client_secret JWT generation failed — Apple sign-in disabled: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      });
     }
   }
 
