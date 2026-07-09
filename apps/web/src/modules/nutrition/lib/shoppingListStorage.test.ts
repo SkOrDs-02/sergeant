@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   SHOPPING_LIST_KEY,
   getCheckedItems,
@@ -9,6 +9,18 @@ import {
   removeCheckedItems,
   toggleShoppingItem,
 } from "./shoppingListStorage";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "./sqliteReader";
+
+// persistShoppingList delegates to the dual-write pipeline; intercept it so
+// tests can assert the normalized payload without a real SQLite connection.
+const mockPersistShoppingList = vi.fn().mockReturnValue(true);
+vi.mock("./nutritionStorage.js", () => ({
+  persistNutritionShoppingList: (...a: unknown[]) =>
+    mockPersistShoppingList(...a),
+}));
 
 function createLocalStorageMock() {
   const store = new Map<string, string>();
@@ -25,6 +37,8 @@ function createLocalStorageMock() {
 
 beforeEach(() => {
   globalThis.localStorage = createLocalStorageMock() as unknown as Storage;
+  clearNutritionSqliteCache();
+  mockPersistShoppingList.mockClear();
 });
 
 describe("normalizeShoppingList", () => {
@@ -132,20 +146,21 @@ describe("loadShoppingList", () => {
   });
 
   it("normalizes on read and removes duplicates that were persisted", () => {
-    globalThis.localStorage.setItem(
-      SHOPPING_LIST_KEY,
-      JSON.stringify({
+    // SQLite cache is the source of truth; seed raw (un-normalized) data so
+    // we can verify loadShoppingList still runs normalizeShoppingList on read.
+    __setNutritionSqliteCacheForTests({
+      shoppingList: {
         categories: [
           {
             name: "A",
             items: [
-              { id: "1", name: "X" },
-              { id: "2", name: "x" },
+              { id: "1", name: "X", quantity: "", note: "", checked: false },
+              { id: "2", name: "x", quantity: "", note: "", checked: false },
             ],
           },
         ],
-      }),
-    );
+      },
+    });
     const loaded = loadShoppingList();
     expect(loaded.categories).toHaveLength(1);
     expect(loaded.categories[0]!.items).toHaveLength(1);
@@ -153,6 +168,11 @@ describe("loadShoppingList", () => {
 });
 
 describe("persistShoppingList", () => {
+  // persistShoppingList normalizes its input before delegating to the
+  // dual-write pipeline (persistNutritionShoppingList). We verify the
+  // normalized payload rather than localStorage, which is no longer the
+  // write destination.
+
   it("persists a normalized copy (no duplicates on disk)", () => {
     persistShoppingList({
       categories: [
@@ -165,18 +185,15 @@ describe("persistShoppingList", () => {
         },
       ],
     });
-    const stored = JSON.parse(
-      globalThis.localStorage.getItem(SHOPPING_LIST_KEY)!,
-    );
-    expect(stored.categories[0].items).toHaveLength(1);
+    const [[arg]] = mockPersistShoppingList.mock.calls as [
+      [{ categories: Array<{ items: unknown[] }> }],
+    ];
+    expect(arg.categories[0]!.items).toHaveLength(1);
   });
 
   it("persists empty list on nullish input", () => {
     persistShoppingList(null);
-    const stored = JSON.parse(
-      globalThis.localStorage.getItem(SHOPPING_LIST_KEY)!,
-    );
-    expect(stored).toEqual({ categories: [] });
+    expect(mockPersistShoppingList).toHaveBeenCalledWith({ categories: [] });
   });
 });
 

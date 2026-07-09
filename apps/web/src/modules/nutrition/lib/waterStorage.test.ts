@@ -8,6 +8,17 @@ import {
   resetTodayWater,
   saveWaterLog,
 } from "./waterStorage";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "./sqliteReader";
+
+// saveWaterLog delegates to the dual-write pipeline; intercept it so tests
+// can assert the normalized payload without a real SQLite connection.
+const mockPersistWaterLog = vi.fn().mockReturnValue(true);
+vi.mock("./nutritionStorage.js", () => ({
+  persistNutritionWaterLog: (...a: unknown[]) => mockPersistWaterLog(...a),
+}));
 
 function createLocalStorageMock() {
   const store = new Map<string, string>();
@@ -24,6 +35,8 @@ function createLocalStorageMock() {
 
 beforeEach(() => {
   globalThis.localStorage = createLocalStorageMock() as unknown as Storage;
+  clearNutritionSqliteCache();
+  mockPersistWaterLog.mockClear();
 });
 
 afterEach(() => {
@@ -80,14 +93,11 @@ describe("loadWaterLog", () => {
   });
 
   it("normalizes stored log on read", () => {
-    globalThis.localStorage.setItem(
-      WATER_LOG_KEY,
-      JSON.stringify({
-        "2026-04-18": 500,
-        "2026-04-19": "bad",
-        random: 999,
-      }),
-    );
+    // SQLite cache is the source of truth; seed it directly. The domain
+    // normalizer (called by loadWaterLog) strips invalid entries.
+    __setNutritionSqliteCacheForTests({
+      waterLog: { "2026-04-18": 500 },
+    });
     expect(loadWaterLog()).toEqual({ "2026-04-18": 500 });
   });
 
@@ -98,16 +108,18 @@ describe("loadWaterLog", () => {
 });
 
 describe("saveWaterLog", () => {
+  // saveWaterLog normalizes its input before delegating to the dual-write
+  // pipeline (persistNutritionWaterLog). We verify the normalized payload
+  // rather than localStorage, which is no longer the write destination.
+
   it("persists normalized log and strips bad entries", () => {
     saveWaterLog({ "2026-04-18": 500, bogus: "x" });
-    const stored = JSON.parse(globalThis.localStorage.getItem(WATER_LOG_KEY)!);
-    expect(stored).toEqual({ "2026-04-18": 500 });
+    expect(mockPersistWaterLog).toHaveBeenCalledWith({ "2026-04-18": 500 });
   });
 
   it("persists empty object for nullish input", () => {
     saveWaterLog(null);
-    const stored = JSON.parse(globalThis.localStorage.getItem(WATER_LOG_KEY)!);
-    expect(stored).toEqual({});
+    expect(mockPersistWaterLog).toHaveBeenCalledWith({});
   });
 });
 

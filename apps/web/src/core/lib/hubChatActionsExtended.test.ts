@@ -25,13 +25,17 @@ import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
 
 // Tombstoned slices (workouts / measurements / pantries / prefs) live in the
 // SQLite cache, not LS. Fake the canonical helpers in-memory so these
-// integration specs assert the persisted state. LS-backed slices (water,
-// shopping, daily-log, plan-template) keep their real LS path.
+// integration specs assert the persisted state.
+// shoppingListStorage also moved to SQLite-only writes (Phase 3) — mock it
+// in-memory so add_to_shopping_list can assert state without a real DB.
 const mem = vi.hoisted(() => ({
   workouts: [] as FizrukWorkout[],
   pantries: null as unknown,
   active: "home",
   prefs: {} as Record<string, unknown>,
+  shoppingList: { categories: [] } as {
+    categories: Array<{ name: string; items: Array<Record<string, unknown>> }>;
+  },
 }));
 
 vi.mock("../../modules/fizruk/lib/dualWrite/index", async (orig) => {
@@ -79,6 +83,25 @@ vi.mock("../../modules/nutrition/lib/nutritionStorage", async (orig) => {
   };
 });
 
+// shoppingListStorage moved to SQLite-only writes (Phase 3). Back it with
+// in-memory state so add_to_shopping_list can assert state without a real DB.
+vi.mock("../../modules/nutrition/lib/shoppingListStorage", async (orig) => {
+  const actual =
+    await orig<
+      typeof import("../../modules/nutrition/lib/shoppingListStorage")
+    >();
+  return {
+    ...actual,
+    loadShoppingList: vi.fn(() => mem.shoppingList),
+    persistShoppingList: vi.fn((list: unknown) => {
+      mem.shoppingList = actual.normalizeShoppingList(
+        list,
+      ) as unknown as typeof mem.shoppingList;
+      return true;
+    }),
+  };
+});
+
 beforeEach(() => {
   // Stage 8 PR #057r/#057k-tombstone — routine + finyk canonical state
   // lives in the SQLite warm caches, not localStorage. Reset all so each
@@ -88,6 +111,7 @@ beforeEach(() => {
   mem.pantries = null;
   mem.active = "home";
   mem.prefs = {};
+  mem.shoppingList = { categories: [] };
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   clearFinykSqliteCache();
@@ -901,14 +925,9 @@ describe("add_to_shopping_list", () => {
       name: "add_to_shopping_list",
       input: { name: "Молоко", quantity: "1 л", category: "Молочні" },
     });
-    let list = readLS<{
-      categories: Array<{
-        name: string;
-        items: Array<{ name: string; quantity: string; checked: boolean }>;
-      }>;
-    }>("nutrition_shopping_list_v1", { categories: [] });
-    expect(list.categories).toHaveLength(1);
-    expect(list.categories[0]!.items[0]).toMatchObject({
+    // shoppingListStorage is mocked with in-memory state (SQLite-only writes).
+    expect(mem.shoppingList.categories).toHaveLength(1);
+    expect(mem.shoppingList.categories[0]!.items[0]).toMatchObject({
       name: "Молоко",
       quantity: "1 л",
       checked: false,
@@ -919,14 +938,8 @@ describe("add_to_shopping_list", () => {
       input: { name: "молоко", quantity: "2 л", category: "Молочні" },
     });
     expect(msg).toContain("оновлено");
-    list = readLS<{
-      categories: Array<{
-        name: string;
-        items: Array<{ name: string; quantity: string; checked: boolean }>;
-      }>;
-    }>("nutrition_shopping_list_v1", { categories: [] });
-    expect(list.categories[0]!.items).toHaveLength(1);
-    expect(list!.categories[0]!.items[0]!.quantity).toBe("2 л");
+    expect(mem.shoppingList.categories[0]!.items).toHaveLength(1);
+    expect(mem.shoppingList.categories[0]!.items[0]!["quantity"]).toBe("2 л");
   });
 });
 
