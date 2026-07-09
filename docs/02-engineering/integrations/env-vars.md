@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-06-29 by @dimastahov16012003. **Next review:** 2026-09-27.
+> **Last touched:** 2026-07-09 by @claude. **Next review:** 2026-10-07.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -563,6 +563,43 @@ GitHub PAT з `contents:write` для opening PR-ів з decision markdown у `d
 - Fallback на `Git_PAT` якщо існує (Devin-VM-only convention; production codepath не повинен залежати від цього).
 - `OPENCLAW_GITHUB_REPO=Skords-01/Sergeant`, `OPENCLAW_GITHUB_BASE_BRANCH=main`.
 - **Не** додавати нові call-сайти на `env.OPENCLAW_GITHUB_PAT` — використовуй `getOpenclawGithubAuth()` з [`apps/server/src/modules/openclaw/github-auth.ts`](../../../apps/server/src/modules/openclaw/github-auth.ts).
+
+### `OPENCLAW_APPROVAL_NONCE_SECRET`, `OPENCLAW_WRITE_NONCE_REQUIRED`, `OPENCLAW_APPROVAL_NONCE_TTL_SEC` _(optional; ADR-0036 Phase 4 hardening)_
+
+> Server-side enforcement founder-approval-у на write-tool endpoint-ах
+> (`/api/internal/openclaw/write/*`). До цього approval існував лише на
+> console-стороні (`tools/openclaw`, окреме репо) — будь-хто з `INTERNAL_API_KEY`
+> міг POST-ити write без перевірки. Nonce робить write **non-replayable**
+> (single-use), **прив'язаним до tool+args** (HMAC over `{jti, tool, argsHash, exp}`)
+> і **approval-linked** (кожен nonce мінтиться у момент показу founder-у Approve-клавіатури).
+> Rollout повторює grace-mode патерн `WEBHOOK_HMAC_REQUIRED`.
+
+- `OPENCLAW_APPROVAL_NONCE_SECRET` — HMAC-secret для підпису nonce-ів.
+  Згенерувати: `openssl rand -hex 32`. Пустий рядок (default) — фіча
+  повністю вимкнена: `/api/internal/openclaw/approval-nonce` повертає
+  `{ status: "not_configured" }`, а verify на write-ах — no-op (bearer-only).
+  Читається у [`routes/internal/openclaw/routes-write.ts`](../../../apps/server/src/routes/internal/openclaw/routes-write.ts)
+  (mint) і [`routes/internal/openclaw/approval-nonce-guard.ts`](../../../apps/server/src/routes/internal/openclaw/approval-nonce-guard.ts) (verify).
+- `OPENCLAW_WRITE_NONCE_REQUIRED` — `true|false`, default `false`. `false`
+  (grace) — server verify+consume-ить nonce якщо console його прислала,
+  warn-логує `openclaw_write_nonce_invalid` на PRESENT-but-bad nonce, але
+  **пропускає** write. Це вікно, поки console (`tools/openclaw`, окреме репо)
+  ще не викотила свою Approve-flow зміну. `true` — flip **після** того як
+  console надійно мінтить+форвардить nonce; з цього моменту missing/invalid
+  nonce → `401 OPENCLAW_APPROVAL_NONCE_INVALID`. **Не** вмикати server-only
+  одним кроком — це поламало б усі prod-write-и до релізу console.
+- `OPENCLAW_APPROVAL_NONCE_TTL_SEC` — час життя nonce у секундах, default
+  `300` (5 хв). Nonce single-use незалежно від TTL; TTL — верхня межа
+  approve→execute latency. Single-use ledger: таблиця `openclaw_approval_nonce`
+  (міграція `080_openclaw_approval_nonce.sql`), `consumed_at` стемпиться
+  атомарно при першій успішній верифікації.
+
+**Console-side (крок 3, окреме репо `tools/openclaw`):** Approve-flow має
+POST-ити `{ tool, args }` на `/api/internal/openclaw/approval-nonce`, отримати
+`nonce` і переслати його на write-виклик через header `X-OpenClaw-Approval`.
+`args` = ті самі write-tool аргументи (server проектує лише relevant поля per
+`WRITE_TOOL_ARG_FIELDS`). Тільки після того як це стабільно працює, flip
+`OPENCLAW_WRITE_NONCE_REQUIRED=true` (крок 4).
 
 ---
 

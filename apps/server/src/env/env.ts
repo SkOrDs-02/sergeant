@@ -1141,6 +1141,36 @@ const envSchema = z.object({
   /** Скільки reminder-ів брати за один poll (batch). */
   OPENCLAW_REMINDER_POLL_BATCH: intFromEnv(20),
 
+  // ── OpenClaw write-tool approval nonce (ADR-0036 Phase 4 hardening) ──
+  /**
+   * HMAC-SHA256 shared secret for signing single-use approval nonces on
+   * OpenClaw `/write/*` endpoints. The console requests a nonce from
+   * `/api/internal/openclaw/approval-nonce` at the moment it shows the
+   * founder the Approve keyboard, then replays it on the write call via the
+   * `X-OpenClaw-Approval` header. Empty string disables the feature
+   * entirely (mint returns `not_configured`, verification is a no-op) —
+   * exactly the `WEBHOOK_HMAC_SECRET=""` posture.
+   */
+  OPENCLAW_APPROVAL_NONCE_SECRET: stringWithDefault(""),
+  /**
+   * Enforce the approval nonce on OpenClaw `/write/*`. Default `false`
+   * ships the same staged grace window as `WEBHOOK_HMAC_REQUIRED`: when a
+   * secret is set the server verifies + consumes any nonce present, logs
+   * `openclaw_write_nonce_invalid` on a bad/missing one, but still lets the
+   * write through so the console (separate repo — `tools/openclaw`) can
+   * ship its Approve-flow change without breaking prod writes. Flip to
+   * `true` only AFTER the console reliably mints + forwards nonces; then a
+   * missing/invalid nonce → 401.
+   */
+  OPENCLAW_WRITE_NONCE_REQUIRED: boolFromEnv(false),
+  /**
+   * Approval-nonce lifetime in seconds. A nonce minted at approval time is
+   * only valid for this window on the subsequent write call (single-use,
+   * regardless of expiry). 5 min matches the founder's realistic
+   * approve→execute latency and the OWASP webhook-replay default.
+   */
+  OPENCLAW_APPROVAL_NONCE_TTL_SEC: intFromEnv(300),
+
   // ── PR-28 — n8n_webhook_events retention ───────────────────────────
   /**
    * Скільки днів зберігати рядки в `n8n_webhook_events` перед `DELETE`.

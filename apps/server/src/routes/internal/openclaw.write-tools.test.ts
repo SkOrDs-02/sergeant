@@ -214,6 +214,63 @@ describe("/api/internal/openclaw/write/*", () => {
     expect(recordTopicMessageMock).toHaveBeenCalledTimes(1);
   });
 
+  it("mints an approval nonce when the secret is set, and reports not_configured otherwise", async () => {
+    const { env } = await import("../../env.js");
+    const app = await makeApp();
+
+    // Feature disabled by default → graceful degradation.
+    const off = await request(app)
+      .post("/api/internal/openclaw/approval-nonce")
+      .send({ tool: "pause_workflow", args: { workflowId: "wf_1" } });
+    expect(off.status).toBe(200);
+    expect(off.body).toEqual({ status: "not_configured" });
+
+    // Rejects a non-write tool at the schema boundary.
+    const badTool = await request(app)
+      .post("/api/internal/openclaw/approval-nonce")
+      .send({ tool: "read_github", args: {} });
+    expect(badTool.status).toBe(400);
+
+    const prevSecret = env.OPENCLAW_APPROVAL_NONCE_SECRET;
+    try {
+      env.OPENCLAW_APPROVAL_NONCE_SECRET = "route-test-secret";
+      const issued = await request(app)
+        .post("/api/internal/openclaw/approval-nonce")
+        .send({ tool: "pause_workflow", args: { workflowId: "wf_1" } });
+      expect(issued.status).toBe(200);
+      expect(issued.body.status).toBe("issued");
+      expect(typeof issued.body.nonce).toBe("string");
+      expect(issued.body.nonce.startsWith("oc1.")).toBe(true);
+      expect(typeof issued.body.expiresAt).toBe("string");
+    } finally {
+      env.OPENCLAW_APPROVAL_NONCE_SECRET = prevSecret;
+    }
+  });
+
+  it("rejects a write with no nonce once enforcement is required (401)", async () => {
+    const { env } = await import("../../env.js");
+    const app = await makeApp();
+    const prevSecret = env.OPENCLAW_APPROVAL_NONCE_SECRET;
+    const prevRequired = env.OPENCLAW_WRITE_NONCE_REQUIRED;
+    try {
+      env.OPENCLAW_APPROVAL_NONCE_SECRET = "route-test-secret";
+      env.OPENCLAW_WRITE_NONCE_REQUIRED = true;
+      const res = await request(app)
+        .post("/api/internal/openclaw/write/pause-workflow")
+        .send({ workflowId: "wf_1", reason: "noisy" });
+      expect(res.status).toBe(401);
+      expect(res.body).toMatchObject({
+        code: "OPENCLAW_APPROVAL_NONCE_INVALID",
+        reason: "missing_nonce",
+      });
+      // Must reject BEFORE the tool layer.
+      expect(pauseWorkflowMock).not.toHaveBeenCalled();
+    } finally {
+      env.OPENCLAW_APPROVAL_NONCE_SECRET = prevSecret;
+      env.OPENCLAW_WRITE_NONCE_REQUIRED = prevRequired;
+    }
+  });
+
   it("forwards pause-workflow and mute-alert payloads", async () => {
     pauseWorkflowMock.mockResolvedValueOnce({
       status: "paused",

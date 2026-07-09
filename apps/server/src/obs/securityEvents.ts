@@ -31,7 +31,14 @@ export type SecurityEventName =
   | "auth_session_ua_drift"
   | "prompt_injection_attempt"
   | "transcribe_usd_cap_hit"
-  | "chat_tool_cap_hit";
+  | "chat_tool_cap_hit"
+  // OpenClaw write-tool hardening (ADR-0036 Phase 4). `invoked` is the
+  // detect-only baseline — one per `/write/*` call, low severity; a burst
+  // trips the per-type rate-limiter as an anomaly signal. `nonce_invalid`
+  // fires when the approval nonce is missing/invalid (warn in grace mode,
+  // and the write is 401-rejected once enforcement is required).
+  | "openclaw_write_invoked"
+  | "openclaw_write_nonce_invalid";
 
 export type SecurityEventSeverity =
   | "critical"

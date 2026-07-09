@@ -8,7 +8,10 @@
  */
 
 import { z } from "zod";
-import { MAX_TREND_DAYS } from "../../../modules/openclaw/index.js";
+import {
+  MAX_TREND_DAYS,
+  isWriteToolName,
+} from "../../../modules/openclaw/index.js";
 
 export const TRIGGER_VALUES = [
   "dm",
@@ -328,6 +331,20 @@ export const MuteAlertBody = z.object({
   issueId: z.string().min(1).max(200),
   untilIso: z.string().datetime({ offset: true }).optional(),
 });
+
+// ADR-0036 Phase 4 hardening: single-use approval nonce. The console calls
+// this at the moment it renders the founder's Approve keyboard, passing the
+// exact tool + args it will replay on the `/write/*` call. `args` is the raw
+// write-tool argument object; the server projects+hashes only the fields the
+// tool cares about (WRITE_TOOL_ARG_FIELDS), so extra keys are harmless.
+export const MintApprovalNonceBody = z
+  .object({
+    tool: z.string().min(1).refine(isWriteToolName, {
+      message: "tool is not an OpenClaw write-tool",
+    }),
+    args: z.record(z.string(), z.unknown()),
+  })
+  .strict();
 
 // ADR-0037 (Phase 4.5): write-audit log endpoints. Console writes a row
 // per approve/reject/executed transition; the same id pairs `approved` +
