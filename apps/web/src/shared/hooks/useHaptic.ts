@@ -18,19 +18,11 @@ import {
   hapticWarning,
   hapticError,
 } from "@shared/lib/adapters/haptic";
+import { prefersReducedMotion } from "@shared/lib/ui/motion";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════════════════════════ */
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || !window.matchMedia) return false;
-  try {
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  } catch {
-    return false;
-  }
-}
 
 function safeVibrate(pattern: number | number[]): void {
   if (
