@@ -1,8 +1,6 @@
 name: Harness A/B Evaluation
 
 on:
-  schedule:
-    - cron: "0 0 * * 0" # weekly Sun 00:00 UTC
   workflow_dispatch: # manual trigger for debugging
 
 permissions:

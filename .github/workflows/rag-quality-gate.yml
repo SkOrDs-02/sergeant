@@ -1,6 +1,6 @@
 name: RAG quality gate (recall@4 weekly)
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Linked to docs/90-work/planning/pr-plan-2026-05.md § PR-22 «RAG quality gate».
 # Reaction playbook: docs/03-operations/observability/runbook.md § «RagQualityGateDegraded».
 #
@@ -19,8 +19,6 @@ name: RAG quality gate (recall@4 weekly)
 # pgvector) — workflow_dispatch уже готовий до перемикача.
 
 on:
-  schedule:
-    - cron: "0 8 * * 1" # Monday 08:00 UTC = 11:00 Europe/Kyiv
   workflow_dispatch:
     inputs:
       mode:

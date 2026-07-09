@@ -1,6 +1,6 @@
 name: Release SBOM + SLSA L1 provenance
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -146,7 +146,7 @@ jobs:
       # file (subject = sha256(file)), signs with a short-lived Sigstore
       # OIDC certificate, and writes the attestation to the GH Attestations
       # API. Verifiable post-publish via:
-      #   gh attestation verify <file> --repo Skords-01/Sergeant
+      #   gh attestation verify <file> --repo SkOrDs-02/Sergeant
       # See docs/04-governance/security/hardening/I3-sbom-generation.md § Phase 3.
       - name: Attest SBOM build provenance (SLSA L1)
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be

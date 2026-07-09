@@ -1,6 +1,6 @@
 name: Shell-tax weekly report
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -34,9 +34,6 @@ name: Shell-tax weekly report
 #     `since` to override the 90-day window for ad-hoc baselines.
 
 on:
-  schedule:
-    # Weekly Monday at 06:00 UTC (≈ 09:00 Kyiv) — same slot as docs cron.
-    - cron: "0 6 * * 1"
   workflow_dispatch:
     inputs:
       since:

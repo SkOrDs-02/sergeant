@@ -1,6 +1,6 @@
 name: TypeScript Next (forward-compat)
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -8,8 +8,6 @@ name: TypeScript Next (forward-compat)
 # TypeScript breaking changes before they land in a release.
 # Failures here are advisory — they do NOT block merging.
 on:
-  schedule:
-    - cron: "0 4 * * 1" # UTC 04:00 every Monday
   push:
     paths:
       - "**/tsconfig*.json"

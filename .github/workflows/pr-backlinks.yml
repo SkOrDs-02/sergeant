@@ -1,7 +1,7 @@
 name: PR backlinks
 
 # Phase 5 of Initiative 0014 (knowledge graph & auto-generated catalogs).
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Specification: docs/04-governance/adr/0061-pr-backlink-storage.md.
 #
 # When a PR merges and touches a canonical doc (ADR / initiative /
