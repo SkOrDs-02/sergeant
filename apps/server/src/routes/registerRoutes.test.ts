@@ -62,6 +62,9 @@ interface RouteLayer {
 }
 
 type ExpressAppWithRouter = Express & {
+  // Express 5 exposes the router via the public `app.router` getter.
+  router?: { stack?: RouteLayer[] };
+  // Express 4 lazily populated the private `app._router` after the first mount.
   _router?: { stack?: RouteLayer[] };
 };
 
@@ -87,8 +90,10 @@ function collectRoutes(
 }
 
 function extractRoutes(app: Express): string[] {
-  // Express 4 exposes `_router` after the first `.use()` call.
-  const rootStack = (app as ExpressAppWithRouter)._router?.stack;
+  // Express 5 exposes the router via the public `app.router` getter; Express 4
+  // lazily populated the private `app._router` after the first `.use()` call.
+  const appWithRouter = app as ExpressAppWithRouter;
+  const rootStack = appWithRouter.router?.stack ?? appWithRouter._router?.stack;
   const routes = collectRoutes(rootStack);
   // Normalize: sort by "METHOD path" — snapshot-stable across router shuffle.
   return routes

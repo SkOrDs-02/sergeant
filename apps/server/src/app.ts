@@ -173,11 +173,14 @@ export function createApp({
       | Handler
       | FrontendMiddlewareBundle;
     if (typeof fe === "function") {
-      app.get("*", fe);
+      // Express 5 / path-to-regexp v8: bare "*" is no longer a valid path.
+      // A RegExp route matches every path including "/" (root-inclusive),
+      // preserving the previous SPA-fallback catch-all behaviour.
+      app.get(/.*/, fe);
     } else {
       app.use("/assets", fe.assetsStatic);
       app.use(fe.rootStatic);
-      app.get("*", fe.sendIndex);
+      app.get(/.*/, fe.sendIndex);
     }
   }
 

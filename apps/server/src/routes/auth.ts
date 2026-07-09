@@ -21,6 +21,10 @@ export function createAuthRouter(): Router {
   const r = Router();
   r.use("/api/auth", authMetricsMiddleware);
   r.use("/api/auth", authSensitiveRateLimit);
-  r.all("/api/auth/*", toNodeHandler(auth));
+  // Express 5 / path-to-regexp v8: wildcards must be named. `{*splat}` is the
+  // root-inclusive named wildcard — it matches `/api/auth` and every sub-path
+  // (`/api/auth/sign-in`, `/api/auth/callback/*`, …), preserving the Express 4
+  // `/api/auth/*` mount that Better Auth's `toNodeHandler` relies on.
+  r.all("/api/auth/{*splat}", toNodeHandler(auth));
   return r;
 }

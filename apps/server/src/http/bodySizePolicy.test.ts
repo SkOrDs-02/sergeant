@@ -28,7 +28,7 @@ import {
 function makeApp() {
   const app = express();
   applyBodySizePolicy(app);
-  app.all("*", (req, res) => {
+  app.all(/.*/, (req, res) => {
     res.status(200).json({
       receivedKeys: Object.keys((req.body as Record<string, unknown>) ?? {})
         .length,
