@@ -3,11 +3,7 @@
  */
 
 // Accessibility
-export {
-  useReduceMotion,
-  useAnimationDuration,
-  useSpringConfig,
-} from "./useReduceMotion";
+export { useReduceMotion } from "./useReduceMotion";
 export {
   useScreenReader,
   useAnnounceOnChange,

@@ -3,7 +3,6 @@ import type { Pool } from "pg";
 import { logger } from "../obs/logger.js";
 import { getRedisStats, pingRedis } from "../lib/redis.js";
 import { getPoolStats } from "../db.js";
-import { backgroundQueue } from "../lib/backgroundQueue.js";
 import { anthropicCircuitBreaker } from "../lib/circuitBreaker.js";
 import { elapsedMs } from "../lib/timing.js";
 import { appState } from "../lib/appState.js";
@@ -100,13 +99,6 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
       },
     };
 
-    // Background queue
-    const queueStats = backgroundQueue.getStats();
-    checks["backgroundQueue"] = {
-      status: queueStats.isShuttingDown ? "shutting_down" : "healthy",
-      details: queueStats,
-    };
-
     // Circuit breakers
     const anthropicCb = anthropicCircuitBreaker.getStats();
     checks["circuitBreakers"] = {
@@ -137,7 +129,7 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
  *      processing/failed/dead_letter для mono-enrichment).
  *
  * Контракт відповіді: `{status, timestamp, workers:{aiMemoryIngest,
- * monoEnrichment, backgroundQueue}}`. Не включає `version`/`commit`/`sha`
+ * monoEnrichment}}`. Не включає `version`/`commit`/`sha`
  * (L7 audit `docs/security/hardening/L7-health-endpoint-info-leak.md` —
  * ті самі invariants, що й для `/healthz`).
  *
@@ -154,10 +146,8 @@ export function createWorkersHealthHandler(pool: Pool): RequestHandler {
       getMemoryIngestWorkerStats(),
       getMonoEnrichmentWorkerStatus(pool),
     ]);
-    const bgQueue = backgroundQueue.getStats();
-
     // Worker вважається "responsive": його sample-функція не повернула
-    // `error`. Disabled / fallback / порожня черга — все ще responsive.
+    // `error`. Disabled / fallback — все ще responsive.
     const memoryIngestResponsive = memoryIngest.error === undefined;
     const monoEnrichmentResponsive = monoEnrichment.error === undefined;
     const allResponsive = memoryIngestResponsive && monoEnrichmentResponsive;
@@ -168,13 +158,6 @@ export function createWorkersHealthHandler(pool: Pool): RequestHandler {
       workers: {
         aiMemoryIngest: memoryIngest,
         monoEnrichment,
-        backgroundQueue: {
-          status: bgQueue.isShuttingDown ? "shutting_down" : "healthy",
-          queued: bgQueue.queued,
-          running: bgQueue.running,
-          concurrency: bgQueue.concurrency,
-          isShuttingDown: bgQueue.isShuttingDown,
-        },
       },
     });
   };

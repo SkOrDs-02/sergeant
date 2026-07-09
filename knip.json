@@ -134,9 +134,9 @@
       "ignoreDependencies": ["jsdom"]
     },
     "packages/openclaw-plugin": {
-      // Scaffolded parity barrels — @scaffolded + @nextStep; tracked in dead-code roast 2026-05-13.
-      // Do NOT delete; future smoke-suite / integration suite will import from these.
-      "ignore": ["src/legacy/parity/index.ts", "src/parity/index.ts"],
+      // Scaffolded parity barrel — @scaffolded + @nextStep; tracked in dead-code roast 2026-05-13.
+      // Do NOT delete; future smoke-suite / integration suite will import from it.
+      "ignore": ["src/parity/index.ts"],
       // openclaw/plugin-sdk/plugin-entry — provided by the OpenClaw runtime at execution time,
       //   not a pnpm dependency (similar to how plugin host APIs are provided by the host)
       // typebox — used in index.ts but not declared in package.json (transitive from zod)

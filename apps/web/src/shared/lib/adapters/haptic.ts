@@ -26,15 +26,7 @@ import {
   setHapticAdapter,
   type HapticAdapter,
 } from "@sergeant/shared";
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || !window.matchMedia) return false;
-  try {
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  } catch {
-    return false;
-  }
-}
+import { prefersReducedMotion } from "@shared/lib/ui/motion";
 
 function canVibrate(): boolean {
   if (typeof navigator === "undefined") return false;

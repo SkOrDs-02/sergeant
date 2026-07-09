@@ -22,7 +22,6 @@ import request from "supertest";
  *       aiMemoryIngest: { enabled, started, fallbackMode, concurrency,
  *                         attempts, jobCounts, error? },
  *       monoEnrichment: { enabled, intervalMs, queueDepth, error? },
- *       backgroundQueue: { status, size, processing, isShuttingDown },
  *     },
  *   }
  *
@@ -115,13 +114,6 @@ describe("GET /health/workers — happy path (no Redis, mono queue empty)", () =
             dead_letter: 0,
             total: 0,
           },
-        },
-        backgroundQueue: {
-          status: expect.stringMatching(/^(healthy|shutting_down)$/),
-          queued: expect.any(Number),
-          running: expect.any(Number),
-          concurrency: expect.any(Number),
-          isShuttingDown: expect.any(Boolean),
         },
       },
     });
