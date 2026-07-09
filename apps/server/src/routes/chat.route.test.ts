@@ -9,7 +9,7 @@ vi.setConfig({ testTimeout: 60_000 });
  * Route-level contract tests for `POST /api/chat`.
  *
  * Covers the full HTTP wiring (setModule → rateLimit → requireAnthropicKey →
- * requireAiQuota → asyncHandler) for two paths that `modules/chat/chat.test.ts`
+ * requireAiQuota → handler) for two paths that `modules/chat/chat.test.ts`
  * (handler-level) and `modules/chat/chat.stream.test.ts` (SSE forwarding) only
  * exercise by calling the handler directly:
  *

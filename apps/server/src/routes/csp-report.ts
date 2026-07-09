@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { asyncHandler, rateLimitExpress } from "../http/index.js";
+import { rateLimitExpress } from "../http/index.js";
 import cspReportHandler from "../modules/observability/csp-report.js";
 
 /**
@@ -23,7 +23,7 @@ export function createCspReportRouter(): Router {
   r.post(
     "/api/csp-report",
     rateLimitExpress({ key: "api:csp-report", limit: 120, windowMs: 60_000 }),
-    asyncHandler(cspReportHandler),
+    cspReportHandler,
   );
   return r;
 }

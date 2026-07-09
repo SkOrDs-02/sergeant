@@ -91,7 +91,7 @@ export async function readStrategyDoc(
   // `docs/decisions/` до першого `record_decision`-PR-у або aspirational
   // `docs/strategy/` до першого `commit_to_strategy_doc`). У runtime image
   // (Dockerfile.api) також копіюються тільки існуючі subdir-и. У таких
-  // випадках раніше `fs.stat` бабахав ENOENT → asyncHandler → Sentry fatal.
+  // випадках раніше `fs.stat` бабахав ENOENT → errorHandler → Sentry fatal.
   // Тепер мапаємо на `OpenClawNotFoundError`, який routes-handler віддає
   // як 404 з `{ error: 'not_found' }`. Allowlist-семантика залишається
   // окремо — `allowlist_fail` лише для path-traversal/forbidden-prefix.

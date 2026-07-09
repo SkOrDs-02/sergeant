@@ -1,10 +1,5 @@
 import { Router } from "express";
-import {
-  asyncHandler,
-  rateLimitExpress,
-  requireSession,
-  setModule,
-} from "../http/index.js";
+import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
 import { createManualExpense } from "../modules/finyk/manualExpenses.js";
 
 /**
@@ -43,7 +38,7 @@ export function createFinykRouter(): Router {
       limit: 60,
       windowMs: 60_000,
     }),
-    asyncHandler(createManualExpense),
+    createManualExpense,
   );
 
   return r;

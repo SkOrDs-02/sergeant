@@ -17,7 +17,7 @@ export class OpenClawSchemaError extends Error {
  * фізично не існує (e.g. `docs/decisions/` до першого decision-PR-у,
  * або subdir, що навмисно не запікається в Docker image). Routes-handler
  * мапає на 404 з `{ error: 'not_found' }` — це user-error, не server-fault,
- * тож НЕ повинен ескалейтись у asyncHandler → Sentry-fatal pipeline.
+ * тож НЕ повинен ескалейтись у errorHandler → Sentry-fatal pipeline.
  */
 export class OpenClawNotFoundError extends Error {
   constructor(message: string) {

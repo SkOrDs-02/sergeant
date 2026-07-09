@@ -50,7 +50,6 @@ export * as schemas from "./schemas.js";
 
 // Нові middleware для доменних роутерів (PR 1 додає файли; PR 3 почне
 // використовувати їх замість per-handler boilerplate).
-export { asyncHandler } from "./asyncHandler.js";
 export { setModule } from "./setModule.js";
 export { requireSession, requireSessionSoft } from "./requireSession.js";
 export { requireVerifiedEmail } from "./requireVerifiedEmail.js";

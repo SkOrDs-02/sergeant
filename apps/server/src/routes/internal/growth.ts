@@ -1,6 +1,5 @@
 import { Router } from "express";
 import type { Pool } from "pg";
-import { asyncHandler } from "../../http/index.js";
 
 /**
  * Growth / revenue snapshot endpoints (n8n WF-60…WF-66).
@@ -71,20 +70,18 @@ export function createGrowthInternalRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
 
   // ── Funnel snapshot ────────────────────────────────────────────────────────
-  r.post(
-    "/api/internal/growth/funnel",
-    asyncHandler(async (req, res) => {
-      const body = req.body as { snapshotDate?: string; rows?: FunnelRow[] };
-      if (!isYmd(body.snapshotDate)) {
-        res.status(400).json({ error: "snapshotDate must be YYYY-MM-DD" });
-        return;
-      }
-      const rows = Array.isArray(body.rows) ? body.rows : [];
-      let inserted = 0;
-      for (const row of rows) {
-        if (!row.step || typeof row.stepOrder !== "number") continue;
-        const result = await pool.query<{ id: string }>(
-          `INSERT INTO growth_funnel_daily (
+  r.post("/api/internal/growth/funnel", async (req, res) => {
+    const body = req.body as { snapshotDate?: string; rows?: FunnelRow[] };
+    if (!isYmd(body.snapshotDate)) {
+      res.status(400).json({ error: "snapshotDate must be YYYY-MM-DD" });
+      return;
+    }
+    const rows = Array.isArray(body.rows) ? body.rows : [];
+    let inserted = 0;
+    for (const row of rows) {
+      if (!row.step || typeof row.stepOrder !== "number") continue;
+      const result = await pool.query<{ id: string }>(
+        `INSERT INTO growth_funnel_daily (
              snapshot_date, step, step_order, segment, count, conversion_rate, raw
            )
            VALUES ($1::date, $2, $3, $4, $5, $6, $7::jsonb)
@@ -95,35 +92,32 @@ export function createGrowthInternalRouter({ pool }: { pool: Pool }): Router {
              conversion_rate = EXCLUDED.conversion_rate,
              raw = EXCLUDED.raw
            RETURNING id`,
-          [
-            body.snapshotDate,
-            row.step,
-            Math.trunc(row.stepOrder),
-            row.segment ?? "all",
-            nonNeg(row.count),
-            typeof row.conversionRate === "number" ? row.conversionRate : null,
-            toJsonbDefault(row.raw),
-          ],
-        );
-        if (result.rows.length > 0) inserted += 1;
-      }
-      res.json({ ok: true, inserted });
-    }),
-  );
+        [
+          body.snapshotDate,
+          row.step,
+          Math.trunc(row.stepOrder),
+          row.segment ?? "all",
+          nonNeg(row.count),
+          typeof row.conversionRate === "number" ? row.conversionRate : null,
+          toJsonbDefault(row.raw),
+        ],
+      );
+      if (result.rows.length > 0) inserted += 1;
+    }
+    res.json({ ok: true, inserted });
+  });
 
   // ── Cohort retention ───────────────────────────────────────────────────────
-  r.post(
-    "/api/internal/growth/cohort",
-    asyncHandler(async (req, res) => {
-      const body = req.body as { rows?: CohortRow[] };
-      const rows = Array.isArray(body.rows) ? body.rows : [];
-      let inserted = 0;
-      for (const row of rows) {
-        if (!isYmd(row.cohortStart) || typeof row.periodOffset !== "number") {
-          continue;
-        }
-        const result = await pool.query<{ id: string }>(
-          `INSERT INTO growth_cohorts (
+  r.post("/api/internal/growth/cohort", async (req, res) => {
+    const body = req.body as { rows?: CohortRow[] };
+    const rows = Array.isArray(body.rows) ? body.rows : [];
+    let inserted = 0;
+    for (const row of rows) {
+      if (!isYmd(row.cohortStart) || typeof row.periodOffset !== "number") {
+        continue;
+      }
+      const result = await pool.query<{ id: string }>(
+        `INSERT INTO growth_cohorts (
              cohort_start, period_offset, cohort_size, retained, retention_rate
            )
            VALUES ($1::date, $2, $3, $4, $5)
@@ -133,45 +127,42 @@ export function createGrowthInternalRouter({ pool }: { pool: Pool }): Router {
              retained = EXCLUDED.retained,
              retention_rate = EXCLUDED.retention_rate
            RETURNING id`,
-          [
-            row.cohortStart,
-            Math.max(0, Math.trunc(row.periodOffset)),
-            nonNeg(row.cohortSize),
-            nonNeg(row.retained),
-            typeof row.retentionRate === "number" ? row.retentionRate : null,
-          ],
-        );
-        if (result.rows.length > 0) inserted += 1;
-      }
-      res.json({ ok: true, inserted });
-    }),
-  );
+        [
+          row.cohortStart,
+          Math.max(0, Math.trunc(row.periodOffset)),
+          nonNeg(row.cohortSize),
+          nonNeg(row.retained),
+          typeof row.retentionRate === "number" ? row.retentionRate : null,
+        ],
+      );
+      if (result.rows.length > 0) inserted += 1;
+    }
+    res.json({ ok: true, inserted });
+  });
 
   // ── Revenue snapshot ───────────────────────────────────────────────────────
-  r.post(
-    "/api/internal/revenue/snapshot",
-    asyncHandler(async (req, res) => {
-      const body = req.body as {
-        snapshotDate?: string;
-        mrrCents?: number;
-        arrCents?: number;
-        arpuCents?: number;
-        activeSubscriptions?: number;
-        newMrrCents?: number;
-        expansionMrrCents?: number;
-        contractionMrrCents?: number;
-        churnMrrCents?: number;
-        netNewMrrCents?: number;
-        logoChurnCount?: number;
-        raw?: unknown;
-      };
-      if (!isYmd(body.snapshotDate)) {
-        res.status(400).json({ error: "snapshotDate must be YYYY-MM-DD" });
-        return;
-      }
+  r.post("/api/internal/revenue/snapshot", async (req, res) => {
+    const body = req.body as {
+      snapshotDate?: string;
+      mrrCents?: number;
+      arrCents?: number;
+      arpuCents?: number;
+      activeSubscriptions?: number;
+      newMrrCents?: number;
+      expansionMrrCents?: number;
+      contractionMrrCents?: number;
+      churnMrrCents?: number;
+      netNewMrrCents?: number;
+      logoChurnCount?: number;
+      raw?: unknown;
+    };
+    if (!isYmd(body.snapshotDate)) {
+      res.status(400).json({ error: "snapshotDate must be YYYY-MM-DD" });
+      return;
+    }
 
-      const result = await pool.query<{ id: string }>(
-        `INSERT INTO revenue_daily (
+    const result = await pool.query<{ id: string }>(
+      `INSERT INTO revenue_daily (
            snapshot_date, mrr_cents, arr_cents, arpu_cents, active_subscriptions,
            new_mrr_cents, expansion_mrr_cents, contraction_mrr_cents,
            churn_mrr_cents, net_new_mrr_cents, logo_churn_count, raw
@@ -191,44 +182,41 @@ export function createGrowthInternalRouter({ pool }: { pool: Pool }): Router {
            logo_churn_count = EXCLUDED.logo_churn_count,
            raw = EXCLUDED.raw
          RETURNING id`,
-        [
-          body.snapshotDate,
-          bigIntStr(body.mrrCents),
-          bigIntStr(body.arrCents),
-          bigIntStr(body.arpuCents),
-          nonNeg(body.activeSubscriptions),
-          bigIntStr(body.newMrrCents),
-          bigIntStr(body.expansionMrrCents),
-          bigIntStr(body.contractionMrrCents),
-          bigIntStr(body.churnMrrCents),
-          bigIntStr(body.netNewMrrCents),
-          nonNeg(body.logoChurnCount),
-          toJsonbDefault(body.raw),
-        ],
-      );
+      [
+        body.snapshotDate,
+        bigIntStr(body.mrrCents),
+        bigIntStr(body.arrCents),
+        bigIntStr(body.arpuCents),
+        nonNeg(body.activeSubscriptions),
+        bigIntStr(body.newMrrCents),
+        bigIntStr(body.expansionMrrCents),
+        bigIntStr(body.contractionMrrCents),
+        bigIntStr(body.churnMrrCents),
+        bigIntStr(body.netNewMrrCents),
+        nonNeg(body.logoChurnCount),
+        toJsonbDefault(body.raw),
+      ],
+    );
 
-      res.json({ ok: true, id: Number(result.rows[0]?.id ?? 0) });
-    }),
-  );
+    res.json({ ok: true, id: Number(result.rows[0]?.id ?? 0) });
+  });
 
   // ── Acquisition channels ───────────────────────────────────────────────────
-  r.post(
-    "/api/internal/growth/acquisition",
-    asyncHandler(async (req, res) => {
-      const body = req.body as {
-        snapshotDate?: string;
-        rows?: AcquisitionRow[];
-      };
-      if (!isYmd(body.snapshotDate)) {
-        res.status(400).json({ error: "snapshotDate must be YYYY-MM-DD" });
-        return;
-      }
-      const rows = Array.isArray(body.rows) ? body.rows : [];
-      let inserted = 0;
-      for (const row of rows) {
-        if (!row.source) continue;
-        const result = await pool.query<{ id: string }>(
-          `INSERT INTO growth_acquisition_daily (
+  r.post("/api/internal/growth/acquisition", async (req, res) => {
+    const body = req.body as {
+      snapshotDate?: string;
+      rows?: AcquisitionRow[];
+    };
+    if (!isYmd(body.snapshotDate)) {
+      res.status(400).json({ error: "snapshotDate must be YYYY-MM-DD" });
+      return;
+    }
+    const rows = Array.isArray(body.rows) ? body.rows : [];
+    let inserted = 0;
+    for (const row of rows) {
+      if (!row.source) continue;
+      const result = await pool.query<{ id: string }>(
+        `INSERT INTO growth_acquisition_daily (
              snapshot_date, source, medium, campaign, signups, spend_cents, cac_cents, raw
            )
            VALUES ($1::date, $2, $3, $4, $5, $6, $7, $8::jsonb)
@@ -239,43 +227,40 @@ export function createGrowthInternalRouter({ pool }: { pool: Pool }): Router {
              cac_cents = EXCLUDED.cac_cents,
              raw = EXCLUDED.raw
            RETURNING id`,
-          [
-            body.snapshotDate,
-            row.source,
-            row.medium ?? "",
-            row.campaign ?? "",
-            nonNeg(row.signups),
-            bigIntStr(row.spendCents),
-            typeof row.cacCents === "number"
-              ? Math.trunc(row.cacCents).toString()
-              : null,
-            toJsonbDefault(row.raw),
-          ],
-        );
-        if (result.rows.length > 0) inserted += 1;
-      }
-      res.json({ ok: true, inserted });
-    }),
-  );
+        [
+          body.snapshotDate,
+          row.source,
+          row.medium ?? "",
+          row.campaign ?? "",
+          nonNeg(row.signups),
+          bigIntStr(row.spendCents),
+          typeof row.cacCents === "number"
+            ? Math.trunc(row.cacCents).toString()
+            : null,
+          toJsonbDefault(row.raw),
+        ],
+      );
+      if (result.rows.length > 0) inserted += 1;
+    }
+    res.json({ ok: true, inserted });
+  });
 
   // ── Feature adoption ───────────────────────────────────────────────────────
-  r.post(
-    "/api/internal/growth/feature-adoption",
-    asyncHandler(async (req, res) => {
-      const body = req.body as {
-        weekStart?: string;
-        rows?: FeatureAdoptionRow[];
-      };
-      if (!isYmd(body.weekStart)) {
-        res.status(400).json({ error: "weekStart must be YYYY-MM-DD" });
-        return;
-      }
-      const rows = Array.isArray(body.rows) ? body.rows : [];
-      let inserted = 0;
-      for (const row of rows) {
-        if (!row.featureKey) continue;
-        const result = await pool.query<{ id: string }>(
-          `INSERT INTO feature_adoption_weekly (
+  r.post("/api/internal/growth/feature-adoption", async (req, res) => {
+    const body = req.body as {
+      weekStart?: string;
+      rows?: FeatureAdoptionRow[];
+    };
+    if (!isYmd(body.weekStart)) {
+      res.status(400).json({ error: "weekStart must be YYYY-MM-DD" });
+      return;
+    }
+    const rows = Array.isArray(body.rows) ? body.rows : [];
+    let inserted = 0;
+    for (const row of rows) {
+      if (!row.featureKey) continue;
+      const result = await pool.query<{ id: string }>(
+        `INSERT INTO feature_adoption_weekly (
              week_start, feature_key, module, active_users, total_users, adoption_rate
            )
            VALUES ($1::date, $2, $3, $4, $5, $6)
@@ -285,20 +270,19 @@ export function createGrowthInternalRouter({ pool }: { pool: Pool }): Router {
              total_users = EXCLUDED.total_users,
              adoption_rate = EXCLUDED.adoption_rate
            RETURNING id`,
-          [
-            body.weekStart,
-            row.featureKey,
-            row.module ?? "core",
-            nonNeg(row.activeUsers),
-            nonNeg(row.totalUsers),
-            typeof row.adoptionRate === "number" ? row.adoptionRate : null,
-          ],
-        );
-        if (result.rows.length > 0) inserted += 1;
-      }
-      res.json({ ok: true, inserted });
-    }),
-  );
+        [
+          body.weekStart,
+          row.featureKey,
+          row.module ?? "core",
+          nonNeg(row.activeUsers),
+          nonNeg(row.totalUsers),
+          typeof row.adoptionRate === "number" ? row.adoptionRate : null,
+        ],
+      );
+      if (result.rows.length > 0) inserted += 1;
+    }
+    res.json({ ok: true, inserted });
+  });
 
   return r;
 }

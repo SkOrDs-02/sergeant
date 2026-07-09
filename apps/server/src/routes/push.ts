@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { env } from "../env/env.js";
 import {
-  asyncHandler,
   rateLimitExpress,
   requireApiSecret,
   requireSession,
@@ -35,35 +34,23 @@ import {
 export function createPushRouter(): Router {
   const r = Router();
   r.use("/api/push", setModule("push"));
-  r.get("/api/push/vapid-public", asyncHandler(vapidPublic));
+  r.get("/api/push/vapid-public", vapidPublic);
   r.use(
     "/api/push",
     rateLimitExpress({ key: "api:push", limit: 30, windowMs: 60_000 }),
   );
-  r.post(
-    "/api/push/subscribe",
-    requireSessionSoft(),
-    asyncHandler(pushSubscribe),
-  );
-  r.delete(
-    "/api/push/subscribe",
-    requireSessionSoft(),
-    asyncHandler(pushUnsubscribe),
-  );
+  r.post("/api/push/subscribe", requireSessionSoft(), pushSubscribe);
+  r.delete("/api/push/subscribe", requireSessionSoft(), pushUnsubscribe);
   // `/api/push/register` — уніфікований mobile+web endpoint. Свідомо йде
   // через `requireSession()` (жорсткий 401), а не `requireSessionSoft`:
   // mobile-клієнт має прозорий сигнал "токен протух, треба перелогінитись",
   // а не silently 200 з пустою сесією. Доступний також як `/api/v1/push/register`
   // через `apiVersionRewrite`.
-  r.post("/api/push/register", requireSession(), asyncHandler(pushRegister));
+  r.post("/api/push/register", requireSession(), pushRegister);
   // `/api/push/unregister` — симетричний анрег. Web шле
   // `{ platform: "web", endpoint }`, native — `{ platform, token }`.
   // Сесія обов'язкова з тих самих причин, що й у register.
-  r.post(
-    "/api/push/unregister",
-    requireSession(),
-    asyncHandler(pushUnregister),
-  );
+  r.post("/api/push/unregister", requireSession(), pushUnregister);
   // `/api/push/send` — internal-only fan-out endpoint. Hardening item M14
   // (`docs/security/hardening/M14-internal-push-ip-allowlist.md`) layers
   // three independent checks here:
@@ -99,7 +86,7 @@ export function createPushRouter(): Router {
       },
     }),
     requireApiSecret("API_SECRET"),
-    asyncHandler(sendPush),
+    sendPush,
   );
   // `/api/v1/push/test` — ручка «пульнути тестовий пуш на мої пристрої».
   // Реєструємо на `/api/push/test`: `apiVersionRewrite` у `app.ts` переписує
@@ -113,7 +100,7 @@ export function createPushRouter(): Router {
     "/api/push/test",
     requireSession(),
     rateLimitExpress({ key: "api:push:test", limit: 1, windowMs: 5_000 }),
-    asyncHandler(pushTest),
+    pushTest,
   );
   return r;
 }

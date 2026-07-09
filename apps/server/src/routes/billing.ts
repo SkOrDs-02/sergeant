@@ -8,7 +8,6 @@ import {
   BillingStatusResponseSchema,
 } from "@sergeant/shared";
 import {
-  asyncHandler,
   rateLimitExpress,
   requireSession,
   setModule,
@@ -47,7 +46,7 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       limit: 10,
       windowMs: 60 * 60 * 1000,
     }),
-    asyncHandler(async (req: AuthedRequest, res: Response) => {
+    async (req: AuthedRequest, res: Response) => {
       const parsed = parseBody(BillingCheckoutRequestSchema, req);
 
       try {
@@ -72,18 +71,18 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
         }
         throw err;
       }
-    }),
+    },
   );
 
   r.get(
     "/api/billing/status",
     requireSession(),
-    asyncHandler(async (req: AuthedRequest, res: Response) => {
+    async (req: AuthedRequest, res: Response) => {
       const payload = BillingStatusResponseSchema.parse(
         await getSubscriptionStatus(pool, req.user!.id),
       );
       res.json(payload);
-    }),
+    },
   );
 
   r.post(
@@ -94,7 +93,7 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       limit: 10,
       windowMs: 60 * 60 * 1000,
     }),
-    asyncHandler(async (req: AuthedRequest, res: Response) => {
+    async (req: AuthedRequest, res: Response) => {
       try {
         const payload = BillingPortalResponseSchema.parse(
           await createCustomerPortalSession({
@@ -120,53 +119,50 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
         }
         throw err;
       }
-    }),
+    },
   );
 
-  r.post(
-    "/api/billing/stripe-webhook",
-    asyncHandler(async (req: Request, res: Response) => {
-      const raw = rawBody(req);
-      const signature =
-        typeof req.headers["stripe-signature"] === "string"
-          ? req.headers["stripe-signature"]
-          : undefined;
-      if (!verifyStripeSignature(raw, signature)) {
-        emitSecurityEvent({
-          event: "stripe_webhook_bad_sig",
-          severity: "high",
-          details:
-            signature === undefined
-              ? "stripe signature header missing"
-              : "stripe signature mismatch",
-        });
-        res.status(400).json({ error: "Invalid Stripe signature" });
-        return;
-      }
+  r.post("/api/billing/stripe-webhook", async (req: Request, res: Response) => {
+    const raw = rawBody(req);
+    const signature =
+      typeof req.headers["stripe-signature"] === "string"
+        ? req.headers["stripe-signature"]
+        : undefined;
+    if (!verifyStripeSignature(raw, signature)) {
+      emitSecurityEvent({
+        event: "stripe_webhook_bad_sig",
+        severity: "high",
+        details:
+          signature === undefined
+            ? "stripe signature header missing"
+            : "stripe signature mismatch",
+      });
+      res.status(400).json({ error: "Invalid Stripe signature" });
+      return;
+    }
 
-      const event = JSON.parse(raw.toString("utf8")) as {
-        id?: unknown;
-        type?: unknown;
-        data?: unknown;
-      };
-      if (typeof event.id !== "string" || typeof event.type !== "string") {
-        res.status(400).json({ error: "Invalid Stripe event" });
-        return;
-      }
+    const event = JSON.parse(raw.toString("utf8")) as {
+      id?: unknown;
+      type?: unknown;
+      data?: unknown;
+    };
+    if (typeof event.id !== "string" || typeof event.type !== "string") {
+      res.status(400).json({ error: "Invalid Stripe event" });
+      return;
+    }
 
-      const stripeEvent =
-        event.data && typeof event.data === "object"
-          ? {
-              id: event.id,
-              type: event.type,
-              data: event.data as { object?: Record<string, unknown> },
-            }
-          : { id: event.id, type: event.type };
+    const stripeEvent =
+      event.data && typeof event.data === "object"
+        ? {
+            id: event.id,
+            type: event.type,
+            data: event.data as { object?: Record<string, unknown> },
+          }
+        : { id: event.id, type: event.type };
 
-      const result = await processStripeWebhook(pool, stripeEvent, raw);
-      res.json(result);
-    }),
-  );
+    const result = await processStripeWebhook(pool, stripeEvent, raw);
+    res.json(result);
+  });
 
   return r;
 }

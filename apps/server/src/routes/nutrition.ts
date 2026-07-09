@@ -1,7 +1,6 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import {
-  asyncHandler,
   rateLimitExpress,
   requireAiQuota,
   requireAnthropicKey,
@@ -62,7 +61,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
     }),
     requirePlan(pool, "pro"),
     ...ai,
-    asyncHandler(analyzePhoto),
+    analyzePhoto,
   );
   r.post(
     "/api/nutrition/parse-pantry",
@@ -72,7 +71,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
     }),
     ...ai,
-    asyncHandler(parsePantry),
+    parsePantry,
   );
   // Same Vision shape as analyze-photo — same cost (3).
   r.post(
@@ -85,7 +84,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
     }),
     requirePlan(pool, "pro"),
     ...ai,
-    asyncHandler(refinePhoto),
+    refinePhoto,
   );
   // Anthropic text generation — medium-weight (~5–8s, smaller payloads
   // than chat-stream). Cost 2.
@@ -98,7 +97,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       cost: () => 2,
     }),
     ...ai,
-    asyncHandler(recommendRecipes),
+    recommendRecipes,
   );
   r.post(
     "/api/nutrition/day-hint",
@@ -108,7 +107,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
     }),
     ...ai,
-    asyncHandler(dayHint),
+    dayHint,
   );
   // Heaviest plan — generates 7 days of meals at once (~10–15s, larger
   // prompt). Cost 3 leaves the bucket at ~3 plans/min before tightening.
@@ -121,7 +120,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       cost: () => 3,
     }),
     ...ai,
-    asyncHandler(weekPlan),
+    weekPlan,
   );
   // Day plan is ~3× lighter than week-plan — cost 2.
   r.post(
@@ -133,7 +132,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       cost: () => 2,
     }),
     ...ai,
-    asyncHandler(dayPlan),
+    dayPlan,
   );
   r.post(
     "/api/nutrition/shopping-list",
@@ -143,7 +142,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
     }),
     ...ai,
-    asyncHandler(shoppingList),
+    shoppingList,
   );
   r.post(
     "/api/nutrition/backup-upload",
@@ -152,7 +151,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       limit: 20,
       windowMs: 60_000,
     }),
-    asyncHandler(backupUpload),
+    backupUpload,
   );
   r.post(
     "/api/nutrition/backup-download",
@@ -161,7 +160,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       limit: 30,
       windowMs: 60_000,
     }),
-    asyncHandler(backupDownload),
+    backupDownload,
   );
   return r;
 }

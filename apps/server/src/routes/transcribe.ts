@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  asyncHandler,
   rateLimitExpress,
   requireGroqKey,
   requireSession,
@@ -29,7 +28,7 @@ export function createTranscribeRouter(): Router {
     rateLimitExpress({ key: "api:transcribe", limit: 60, windowMs: 60_000 }),
     requireSession(),
     requireGroqKey(),
-    asyncHandler(transcribeHandler),
+    transcribeHandler,
   );
   return r;
 }

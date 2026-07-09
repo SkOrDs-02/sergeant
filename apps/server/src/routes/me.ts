@@ -8,12 +8,7 @@ import {
   UserPreferencesSchema,
   type MeResponse,
 } from "@sergeant/shared";
-import {
-  asyncHandler,
-  parseBody,
-  requireSession,
-  setModule,
-} from "../http/index.js";
+import { parseBody, requireSession, setModule } from "../http/index.js";
 import { pool } from "../db.js";
 import {
   buildMeExport,
@@ -67,7 +62,7 @@ export function createMeRouter(): Router {
   r.get(
     "/api/me/export",
     requireSession(),
-    asyncHandler(async (req: Request, res: Response) => {
+    async (req: Request, res: Response) => {
       const user = serializeMeUser(
         (req as Request & { user: AuthedUser }).user,
       );
@@ -75,65 +70,57 @@ export function createMeRouter(): Router {
         await buildMeExport(pool, user),
       );
       res.json(payload);
-    }),
+    },
   );
 
   r.get(
     "/api/me/preferences",
     requireSession(),
-    asyncHandler(async (req: Request, res: Response) => {
+    async (req: Request, res: Response) => {
       const user = (req as Request & { user: AuthedUser }).user;
       const payload = UserPreferencesSchema.parse(
         await getUserPreferences(pool, user.id),
       );
       res.json(payload);
-    }),
+    },
   );
 
   r.patch(
     "/api/me/preferences",
     requireSession(),
-    asyncHandler(async (req: Request, res: Response) => {
+    async (req: Request, res: Response) => {
       const user = (req as Request & { user: AuthedUser }).user;
       const patch = parseBody(UserPreferencesPatchSchema, req);
       const payload = UserPreferencesSchema.parse(
         await upsertUserPreferences(pool, user.id, patch),
       );
       res.json(payload);
-    }),
+    },
   );
 
-  r.delete(
-    "/api/me",
-    requireSession(),
-    asyncHandler(async (req: Request, res: Response) => {
-      const user = (req as Request & { user: AuthedUser }).user;
-      const payload = MeDeleteResponseSchema.parse(
-        await deleteUserData(pool, user.id),
-      );
-      res.json(payload);
-    }),
-  );
+  r.delete("/api/me", requireSession(), async (req: Request, res: Response) => {
+    const user = (req as Request & { user: AuthedUser }).user;
+    const payload = MeDeleteResponseSchema.parse(
+      await deleteUserData(pool, user.id),
+    );
+    res.json(payload);
+  });
 
-  r.get(
-    "/api/me",
-    requireSession(),
-    asyncHandler(async (req: Request, res: Response) => {
-      const user = (req as Request & { user: AuthedUser }).user;
-      // Прогоняємо відповідь через канонічну Zod-схему з `@sergeant/shared`
-      // (те саме, що валідує `@sergeant/api-client` на клієнті). Це гарантує,
-      // що веб і майбутній мобільний клієнт отримають ідентичну форму, і
-      // не дає випадково просочити новому полю в response без оновлення
-      // схеми.
-      // `email` має валідацію `.email()` у схемі — тож порожній рядок ""
-      // валитиме parse. Використовуємо `||` замість `??`, щоб і falsy-рядки
-      // (якщо колись прийшов "") нормалізувались до `null`.
-      const payload: MeResponse = MeResponseSchema.parse({
-        user: serializeMeUser(user),
-      });
-      res.json(payload);
-    }),
-  );
+  r.get("/api/me", requireSession(), async (req: Request, res: Response) => {
+    const user = (req as Request & { user: AuthedUser }).user;
+    // Прогоняємо відповідь через канонічну Zod-схему з `@sergeant/shared`
+    // (те саме, що валідує `@sergeant/api-client` на клієнті). Це гарантує,
+    // що веб і майбутній мобільний клієнт отримають ідентичну форму, і
+    // не дає випадково просочити новому полю в response без оновлення
+    // схеми.
+    // `email` має валідацію `.email()` у схемі — тож порожній рядок ""
+    // валитиме parse. Використовуємо `||` замість `??`, щоб і falsy-рядки
+    // (якщо колись прийшов "") нормалізувались до `null`.
+    const payload: MeResponse = MeResponseSchema.parse({
+      user: serializeMeUser(user),
+    });
+    res.json(payload);
+  });
   return r;
 }
 

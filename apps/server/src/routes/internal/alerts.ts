@@ -29,7 +29,6 @@ import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
 import { env } from "../../env/env.js";
-import { asyncHandler } from "../../http/index.js";
 import { parseBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
 import { Sentry } from "../../sentry.js";
@@ -210,290 +209,263 @@ export function createAlertsInternalRouter({
   const r = Router();
 
   // ---- post ----
-  r.post(
-    "/api/internal/alerts/post",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(PostBody, req);
-      const result = await recordAlertPost(pool, {
-        alertId: parsed.alertId,
+  r.post("/api/internal/alerts/post", async (req, res) => {
+    const parsed = parseBody(PostBody, req);
+    const result = await recordAlertPost(pool, {
+      alertId: parsed.alertId,
+      topic: parsed.topic,
+      severity: parsed.severity,
+      summary: parsed.summary ?? null,
+      metadata: parsed.metadata,
+    });
+    // Mirror the alert into `tg_topic_archive` so
+    // `read_telegram_topic_history` can surface it (OpenClaw roadmap
+    // Phase 3 / Pain P8). Skip when the alert had no `summary` —
+    // empty rows are useless to the LLM. Skip on retry path
+    // (`alreadyPosted`) — the archive write is idempotent on its own
+    // dedupe key but we'd waste a roundtrip.
+    if (parsed.summary && !result.alreadyPosted) {
+      await recordTopicMessage(pool, {
         topic: parsed.topic,
-        severity: parsed.severity,
-        summary: parsed.summary ?? null,
-        metadata: parsed.metadata,
+        text: parsed.summary,
+        source: "alert",
+        dedupeKey: parsed.alertId,
+        metadata: {
+          severity: parsed.severity,
+          ...(parsed.metadata ?? {}),
+        },
       });
-      // Mirror the alert into `tg_topic_archive` so
-      // `read_telegram_topic_history` can surface it (OpenClaw roadmap
-      // Phase 3 / Pain P8). Skip when the alert had no `summary` —
-      // empty rows are useless to the LLM. Skip on retry path
-      // (`alreadyPosted`) — the archive write is idempotent on its own
-      // dedupe key but we'd waste a roundtrip.
-      if (parsed.summary && !result.alreadyPosted) {
-        await recordTopicMessage(pool, {
-          topic: parsed.topic,
-          text: parsed.summary,
-          source: "alert",
-          dedupeKey: parsed.alertId,
-          metadata: {
-            severity: parsed.severity,
-            ...(parsed.metadata ?? {}),
-          },
-        });
-      }
-      res.json({
-        ok: true,
-        id: result.id,
-        alreadyPosted: result.alreadyPosted,
-      });
-    }),
-  );
+    }
+    res.json({
+      ok: true,
+      id: result.id,
+      alreadyPosted: result.alreadyPosted,
+    });
+  });
 
   // ---- ack ----
-  r.post(
-    "/api/internal/alerts/ack",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(AckBody, req);
-      const result = await recordAlertAck(pool, {
-        alertId: parsed.alertId,
-        ackByTgUserId: parsed.ackByTgUserId,
-        ackAction: parsed.ackAction,
-      });
-      if (result.notFound) {
-        res.status(404).json({ error: "alert_not_found" });
-        return;
-      }
-      res.json({
-        ok: true,
-        alreadyAcked: result.alreadyAcked,
-      });
-    }),
-  );
+  r.post("/api/internal/alerts/ack", async (req, res) => {
+    const parsed = parseBody(AckBody, req);
+    const result = await recordAlertAck(pool, {
+      alertId: parsed.alertId,
+      ackByTgUserId: parsed.ackByTgUserId,
+      ackAction: parsed.ackAction,
+    });
+    if (result.notFound) {
+      res.status(404).json({ error: "alert_not_found" });
+      return;
+    }
+    res.json({
+      ok: true,
+      alreadyAcked: result.alreadyAcked,
+    });
+  });
 
   // ---- pending ----
-  r.post(
-    "/api/internal/alerts/pending",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(PendingBody, req);
-      const alerts = await listPendingAlerts(pool, {
-        topic: parsed.topic,
-        severity: parsed.severity,
-        olderThanMinutes: parsed.olderThanMinutes,
-        notYetEscalated: parsed.notYetEscalated,
-        limit: parsed.limit,
-      });
-      res.json({ alerts });
-    }),
-  );
+  r.post("/api/internal/alerts/pending", async (req, res) => {
+    const parsed = parseBody(PendingBody, req);
+    const alerts = await listPendingAlerts(pool, {
+      topic: parsed.topic,
+      severity: parsed.severity,
+      olderThanMinutes: parsed.olderThanMinutes,
+      notYetEscalated: parsed.notYetEscalated,
+      limit: parsed.limit,
+    });
+    res.json({ alerts });
+  });
 
   // ---- history (OpenClaw `/alerts history <days>`) ----
-  r.post(
-    "/api/internal/alerts/history",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(HistoryBody, req);
-      const result = await getAlertHistoryStats(pool, {
-        ...(parsed.days != null ? { daysBack: parsed.days } : {}),
-        ...(parsed.limit != null ? { limit: parsed.limit } : {}),
-      });
-      res.json(result);
-    }),
-  );
+  r.post("/api/internal/alerts/history", async (req, res) => {
+    const parsed = parseBody(HistoryBody, req);
+    const result = await getAlertHistoryStats(pool, {
+      ...(parsed.days != null ? { daysBack: parsed.days } : {}),
+      ...(parsed.limit != null ? { limit: parsed.limit } : {}),
+    });
+    res.json(result);
+  });
 
   // ---- send (O4 / B.1 deduped shipper) ----
-  r.post(
-    "/api/internal/alerts/send",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(SendBody, req);
+  r.post("/api/internal/alerts/send", async (req, res) => {
+    const parsed = parseBody(SendBody, req);
 
-      const client = telegramClient ?? defaultAlertBotTelegramClient();
-      if (!client) {
-        res.status(503).json({
-          ok: false,
-          error: "telegram_not_configured",
-          note: "SERGEANT_ALERT_BOT_TOKEN env не виставлений.",
-        });
-        return;
-      }
+    const client = telegramClient ?? defaultAlertBotTelegramClient();
+    if (!client) {
+      res.status(503).json({
+        ok: false,
+        error: "telegram_not_configured",
+        note: "SERGEANT_ALERT_BOT_TOKEN env не виставлений.",
+      });
+      return;
+    }
 
-      // PR /mute (Phase 5b): founder DM "do not disturb" gate.
-      // Caller передає `founderUserId` лише для DM-channel-ів (WF-103
-      // escalation, SAB direct-to-founder). Topic-channel-и
-      // (ops/eng/incidents) skip-ають це поле — їх mute не торкається.
-      // P0 (critical) bypass-ить mute з breadcrumb-ом для audit-trail.
-      if (parsed.founderUserId) {
-        const muteGuard = await isFounderMuted(pool, {
-          founderUserId: parsed.founderUserId,
-        });
-        if (muteGuard.muted) {
-          if (parsed.severity === "P0") {
-            Sentry.addBreadcrumb({
-              category: "openclaw.mute",
-              message: "openclaw-muted-override-critical",
-              level: "warning",
-              data: {
-                alertId: parsed.alertId,
-                topic: parsed.topic,
-                severity: parsed.severity,
-                mutedUntilIso: muteGuard.mutedUntilIso,
-              },
-            });
-          } else {
-            Sentry.addBreadcrumb({
-              category: "openclaw.mute",
-              message: "openclaw-muted-skip",
-              level: "info",
-              data: {
-                alertId: parsed.alertId,
-                topic: parsed.topic,
-                severity: parsed.severity,
-                mutedUntilIso: muteGuard.mutedUntilIso,
-              },
-            });
-            logger.info({
-              msg: "alerts_send_skipped_muted",
+    // PR /mute (Phase 5b): founder DM "do not disturb" gate.
+    // Caller передає `founderUserId` лише для DM-channel-ів (WF-103
+    // escalation, SAB direct-to-founder). Topic-channel-и
+    // (ops/eng/incidents) skip-ають це поле — їх mute не торкається.
+    // P0 (critical) bypass-ить mute з breadcrumb-ом для audit-trail.
+    if (parsed.founderUserId) {
+      const muteGuard = await isFounderMuted(pool, {
+        founderUserId: parsed.founderUserId,
+      });
+      if (muteGuard.muted) {
+        if (parsed.severity === "P0") {
+          Sentry.addBreadcrumb({
+            category: "openclaw.mute",
+            message: "openclaw-muted-override-critical",
+            level: "warning",
+            data: {
               alertId: parsed.alertId,
+              topic: parsed.topic,
               severity: parsed.severity,
               mutedUntilIso: muteGuard.mutedUntilIso,
-            });
-            res.status(200).json({
-              action: "skipped_muted",
-              alertId: parsed.alertId,
-              mutedUntilIso: muteGuard.mutedUntilIso,
-            });
-            return;
-          }
-        }
-      }
-
-      const result = await postOrEditDedupedAlert(pool, client, {
-        alertId: parsed.alertId,
-        topic: parsed.topic,
-        severity: parsed.severity,
-        summary: parsed.summary ?? null,
-        metadata: parsed.metadata,
-        dedupSignature: parsed.dedupSignature ?? null,
-        chatId: parsed.chatId,
-        messageThreadId: parsed.messageThreadId,
-        text: parsed.text,
-        disableNotification: parsed.disableNotification,
-        windowMs: parsed.windowMs ?? DEFAULT_DEDUP_WINDOW_MS,
-      });
-
-      // Дзеркаляться в archive тільки при першому відправленні (аналог логіки
-      // в `/alerts/post`). `edited`/`sent_after_edit_failure`/етц. — вже
-      // відомі алерти, archive-рядок вже є.
-      if (result.action === "sent" && !result.alreadyPosted && parsed.summary) {
-        await recordTopicMessage(pool, {
-          topic: parsed.topic,
-          text: parsed.summary,
-          source: "alert",
-          dedupeKey: parsed.alertId,
-          metadata: {
-            severity: parsed.severity,
-            ...(parsed.metadata ?? {}),
-          },
-        });
-      }
-
-      res.status(result.action === "error" ? 502 : 200).json(result);
-    }),
-  );
-
-  // ---- escalate (T1 — WF-103 DM founder) ----
-  r.post(
-    "/api/internal/alerts/escalate",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(EscalateBody, req);
-      const result = await markAlertEscalated(pool, parsed.alertId);
-      if (result.notFound) {
-        res.status(404).json({ error: "alert_not_found" });
-        return;
-      }
-      res.json({
-        ok: true,
-        alreadyEscalated: result.alreadyEscalated,
-      });
-    }),
-  );
-
-  // ---- repeat (T2 — WF-105 repeat-ping cron, 60min) ----
-  r.post(
-    "/api/internal/alerts/repeat",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(RepeatBody, req);
-      const result = await markAlertRepeated(pool, parsed.alertId);
-      if (result.notFound) {
-        res.status(404).json({ error: "alert_not_found" });
-        return;
-      }
-      res.json({
-        ok: true,
-        alreadyRepeated: result.alreadyRepeated,
-      });
-    }),
-  );
-
-  // ---- sentry-warn (T3 — WF-106 sentry-warn cron, 120min) ----
-  r.post(
-    "/api/internal/alerts/sentry-warn",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(SentryWarnBody, req);
-      const result = await markAlertSentryWarned(pool, parsed.alertId);
-      if (result.notFound) {
-        res.status(404).json({ error: "alert_not_found" });
-        return;
-      }
-      // Idempotency — if cron retries within the same tick, do not re-fire
-      // the Sentry event. Cron-side `notYetSentryWarned=true` filter should
-      // prevent this, but defence-in-depth: row was already stamped on a
-      // prior successful response.
-      if (!result.alreadySentryWarned) {
-        try {
-          Sentry.captureMessage(`unacked-alert-escalation: ${parsed.alertId}`, {
-            level: "warning",
-            tags: {
-              kind: "unacked-alert-escalation",
-              alertId: parsed.alertId,
             },
           });
-        } catch (err) {
-          // Capture failure must NOT block the DB transition — the row is
-          // already stamped, so the cron will not retry. Log so opsfolk
-          // can spot Sentry-side outages.
-          logger.warn({
-            msg: "alert_sentry_warn_capture_failed",
-            alertId: parsed.alertId,
-            err: (err as Error)?.message,
+        } else {
+          Sentry.addBreadcrumb({
+            category: "openclaw.mute",
+            message: "openclaw-muted-skip",
+            level: "info",
+            data: {
+              alertId: parsed.alertId,
+              topic: parsed.topic,
+              severity: parsed.severity,
+              mutedUntilIso: muteGuard.mutedUntilIso,
+            },
           });
+          logger.info({
+            msg: "alerts_send_skipped_muted",
+            alertId: parsed.alertId,
+            severity: parsed.severity,
+            mutedUntilIso: muteGuard.mutedUntilIso,
+          });
+          res.status(200).json({
+            action: "skipped_muted",
+            alertId: parsed.alertId,
+            mutedUntilIso: muteGuard.mutedUntilIso,
+          });
+          return;
         }
       }
-      res.json({
-        ok: true,
-        alreadySentryWarned: result.alreadySentryWarned,
+    }
+
+    const result = await postOrEditDedupedAlert(pool, client, {
+      alertId: parsed.alertId,
+      topic: parsed.topic,
+      severity: parsed.severity,
+      summary: parsed.summary ?? null,
+      metadata: parsed.metadata,
+      dedupSignature: parsed.dedupSignature ?? null,
+      chatId: parsed.chatId,
+      messageThreadId: parsed.messageThreadId,
+      text: parsed.text,
+      disableNotification: parsed.disableNotification,
+      windowMs: parsed.windowMs ?? DEFAULT_DEDUP_WINDOW_MS,
+    });
+
+    // Дзеркаляться в archive тільки при першому відправленні (аналог логіки
+    // в `/alerts/post`). `edited`/`sent_after_edit_failure`/етц. — вже
+    // відомі алерти, archive-рядок вже є.
+    if (result.action === "sent" && !result.alreadyPosted && parsed.summary) {
+      await recordTopicMessage(pool, {
+        topic: parsed.topic,
+        text: parsed.summary,
+        source: "alert",
+        dedupeKey: parsed.alertId,
+        metadata: {
+          severity: parsed.severity,
+          ...(parsed.metadata ?? {}),
+        },
       });
-    }),
-  );
+    }
+
+    res.status(result.action === "error" ? 502 : 200).json(result);
+  });
+
+  // ---- escalate (T1 — WF-103 DM founder) ----
+  r.post("/api/internal/alerts/escalate", async (req, res) => {
+    const parsed = parseBody(EscalateBody, req);
+    const result = await markAlertEscalated(pool, parsed.alertId);
+    if (result.notFound) {
+      res.status(404).json({ error: "alert_not_found" });
+      return;
+    }
+    res.json({
+      ok: true,
+      alreadyEscalated: result.alreadyEscalated,
+    });
+  });
+
+  // ---- repeat (T2 — WF-105 repeat-ping cron, 60min) ----
+  r.post("/api/internal/alerts/repeat", async (req, res) => {
+    const parsed = parseBody(RepeatBody, req);
+    const result = await markAlertRepeated(pool, parsed.alertId);
+    if (result.notFound) {
+      res.status(404).json({ error: "alert_not_found" });
+      return;
+    }
+    res.json({
+      ok: true,
+      alreadyRepeated: result.alreadyRepeated,
+    });
+  });
+
+  // ---- sentry-warn (T3 — WF-106 sentry-warn cron, 120min) ----
+  r.post("/api/internal/alerts/sentry-warn", async (req, res) => {
+    const parsed = parseBody(SentryWarnBody, req);
+    const result = await markAlertSentryWarned(pool, parsed.alertId);
+    if (result.notFound) {
+      res.status(404).json({ error: "alert_not_found" });
+      return;
+    }
+    // Idempotency — if cron retries within the same tick, do not re-fire
+    // the Sentry event. Cron-side `notYetSentryWarned=true` filter should
+    // prevent this, but defence-in-depth: row was already stamped on a
+    // prior successful response.
+    if (!result.alreadySentryWarned) {
+      try {
+        Sentry.captureMessage(`unacked-alert-escalation: ${parsed.alertId}`, {
+          level: "warning",
+          tags: {
+            kind: "unacked-alert-escalation",
+            alertId: parsed.alertId,
+          },
+        });
+      } catch (err) {
+        // Capture failure must NOT block the DB transition — the row is
+        // already stamped, so the cron will not retry. Log so opsfolk
+        // can spot Sentry-side outages.
+        logger.warn({
+          msg: "alert_sentry_warn_capture_failed",
+          alertId: parsed.alertId,
+          err: (err as Error)?.message,
+        });
+      }
+    }
+    res.json({
+      ok: true,
+      alreadySentryWarned: result.alreadySentryWarned,
+    });
+  });
 
   // ---- snooze (T2 inline-keyboard «🕐 1h» / «🕓 4h») ----
-  r.post(
-    "/api/internal/alerts/snooze",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(SnoozeBody, req);
-      const snoozedUntilAt = new Date(
-        Date.now() + parsed.durationMinutes * 60_000,
-      );
-      const result = await markAlertSnoozed(pool, {
-        alertId: parsed.alertId,
-        snoozedUntilAt,
-      });
-      if (result.notFound) {
-        res.status(404).json({ error: "alert_not_found" });
-        return;
-      }
-      res.json({
-        ok: true,
-        snoozedUntilAt: result.snoozedUntilAt,
-      });
-    }),
-  );
+  r.post("/api/internal/alerts/snooze", async (req, res) => {
+    const parsed = parseBody(SnoozeBody, req);
+    const snoozedUntilAt = new Date(
+      Date.now() + parsed.durationMinutes * 60_000,
+    );
+    const result = await markAlertSnoozed(pool, {
+      alertId: parsed.alertId,
+      snoozedUntilAt,
+    });
+    if (result.notFound) {
+      res.status(404).json({ error: "alert_not_found" });
+      return;
+    }
+    res.json({
+      ok: true,
+      snoozedUntilAt: result.snoozedUntilAt,
+    });
+  });
 
   // Debug trace — same pattern as openclaw subroutes.
   r.use("/api/internal/alerts", (req, _res, next) => {

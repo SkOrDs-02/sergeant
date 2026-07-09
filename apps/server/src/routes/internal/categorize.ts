@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { asyncHandler } from "../../http/index.js";
 import { anthropicMessages } from "../../lib/anthropic.js";
 import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
 import { maskPii } from "../../lib/pii-mask.js";
@@ -139,30 +138,27 @@ export async function categorizeTransaction(
 export function createCategorizeInternalRouter(): Router {
   const r = Router();
 
-  r.post(
-    "/api/internal/categorize",
-    asyncHandler(async (req, res) => {
-      const body = req.body as CategorizeArgs;
-      // `.trim()`-перевірка дзеркалить інваріант `categorizeTransaction`
-      // (якщо description порожній після trim — функція throw-ить, який
-      // catch-блок нижче прикриє як 502 "AI service error"). Робимо це
-      // тут, щоб whitespace-only payload отримав 400, а не misleading 502.
-      if (!body?.description?.trim()) {
-        res.status(400).json({ error: "description is required" });
-        return;
-      }
-      try {
-        const result = await categorizeTransaction({
-          description: body.description,
-          amount: body.amount,
-          mcc: body.mcc,
-        });
-        res.json(result);
-      } catch {
-        res.status(502).json({ error: "AI service error" });
-      }
-    }),
-  );
+  r.post("/api/internal/categorize", async (req, res) => {
+    const body = req.body as CategorizeArgs;
+    // `.trim()`-перевірка дзеркалить інваріант `categorizeTransaction`
+    // (якщо description порожній після trim — функція throw-ить, який
+    // catch-блок нижче прикриє як 502 "AI service error"). Робимо це
+    // тут, щоб whitespace-only payload отримав 400, а не misleading 502.
+    if (!body?.description?.trim()) {
+      res.status(400).json({ error: "description is required" });
+      return;
+    }
+    try {
+      const result = await categorizeTransaction({
+        description: body.description,
+        amount: body.amount,
+        mcc: body.mcc,
+      });
+      res.json(result);
+    } catch {
+      res.status(502).json({ error: "AI service error" });
+    }
+  });
 
   return r;
 }

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  asyncHandler,
   rateLimitExpress,
   requireAiQuota,
   requireAnthropicKey,
@@ -20,7 +19,7 @@ export function createWeeklyDigestRouter(): Router {
     }),
     requireAnthropicKey(),
     requireAiQuota(),
-    asyncHandler(weeklyDigest),
+    weeklyDigest,
   );
   return r;
 }

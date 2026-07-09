@@ -133,7 +133,7 @@ export interface OpenClawWriteAuditRecord {
  * Усі таблиці тут МАЮТЬ існувати у поточній схемі (див. `apps/server/src/
  * migrations/`). Allowlist-рекорди для ще-не-створених таблиць призводять
  * до 5xx у `query_app_db` (LLM формує SELECT за allowlist-ом → Postgres
- * → `relation "X" does not exist` → asyncHandler → Sentry fatal).
+ * → `relation "X" does not exist` → errorHandler → Sentry fatal).
  *
  * Раніше тут були `subscriptions` і `payments` — це aspirational stubs
  * для майбутнього Stripe billing-модуля. Жодна міграція їх не створювала
@@ -144,7 +144,7 @@ export interface OpenClawWriteAuditRecord {
  * відповідної міграції; `n8n_errors`, `mono_transactions`, `routines` —
  * назви, які не збігаються з реальними таблицями (`n8n_failure_events`,
  * `mono_transaction`, `routine_entries`/`routine_streaks`). LLM-pre-fill
- * SQL валив прод 5xx-ом → asyncHandler → Sentry fatal. Кожен запис нижче
+ * SQL валив прод 5xx-ом → errorHandler → Sentry fatal. Кожен запис нижче
  * посилається на migration-файл, де таблицю створено.
  *
  * Forbidden: auth_*, ai_usage_daily, ai_memories, sync_op_log,

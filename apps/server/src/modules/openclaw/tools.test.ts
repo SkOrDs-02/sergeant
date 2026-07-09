@@ -395,7 +395,7 @@ describe("readStrategyDoc ENOENT handling (allowlist-prefix exists, target missi
 
   it("throws OpenClawNotFoundError (NOT generic Error) when allowed dir missing", async () => {
     // `docs/decisions/` — у allowlist-і, але директорії в fake-root-і немає.
-    // До фіксу: `fs.stat` бабахав ENOENT → asyncHandler → 5xx → Sentry-fatal.
+    // До фіксу: `fs.stat` бабахав ENOENT → errorHandler → 5xx → Sentry-fatal.
     // Зараз: typed `OpenClawNotFoundError` → route-handler віддає 404 з
     // `{ error: 'not_found' }`, без забруднення Sentry.
     await expect(
