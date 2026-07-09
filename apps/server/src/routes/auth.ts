@@ -7,9 +7,9 @@ import {
 } from "../http/index.js";
 
 /**
- * `/api/auth/*` — Better Auth mount.
+ * `/api/auth/{*splat}` — Better Auth mount.
  *
- * Router навмисно мапить повний шлях (`/api/auth/*`) і мoнтується до app
+ * Router навмисно мапить повний шлях (`/api/auth/{*splat}`) і мoнтується до app
  * через `app.use(router)` (без префіксу). Це зберігає `req.url` у вигляді
  * `/api/auth/sign-in`, як очікує Better Auth handler.
  *
