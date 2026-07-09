@@ -11,6 +11,32 @@ import type { Habit } from "@sergeant/routine-domain";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import type { NutritionLog } from "@sergeant/nutrition-domain";
 import { handleCrossAction } from "./crossActions";
+
+// `readFinykStatsContext` now reads bank transactions from the SQLite Mono
+// mirror cache instead of `finyk_tx_cache` localStorage. Bridge the two so
+// existing test code that seeds LS still flows through to `aggregateFinyk`.
+vi.mock("../../../modules/finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: vi.fn(() => {
+    const raw = localStorage.getItem("finyk_tx_cache");
+    if (!raw) return { transactions: [], accounts: [], refreshedAt: null };
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      const txs = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray((parsed as { txs?: unknown[] })?.txs)
+          ? (parsed as { txs: unknown[] }).txs
+          : [];
+      return {
+        transactions: txs,
+        accounts: [],
+        refreshedAt: new Date().toISOString(),
+      };
+    } catch {
+      return { transactions: [], accounts: [], refreshedAt: null };
+    }
+  }),
+  clearFinykMonoMirrorCache: vi.fn(),
+}));
 import {
   __setRoutineSqliteStateCacheForTests,
   __setRoutineSqliteCompletionsCacheForTests,

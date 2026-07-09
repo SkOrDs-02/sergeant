@@ -72,7 +72,7 @@ describe("importNutritionResidualFromLs", () => {
         clientTs: __testing.STALE_TIMESTAMP,
       }),
     );
-    expect(removeItem).toHaveBeenCalledTimes(4);
+    expect(removeItem).toHaveBeenCalledTimes(6);
     expect(res).toEqual({ imported: true, cleaned: true });
   });
 
@@ -82,7 +82,7 @@ describe("importNutritionResidualFromLs", () => {
 
     const res = await importNutritionResidualFromLs(client, "user-1");
     expect(applyOps).not.toHaveBeenCalled();
-    expect(removeItem).toHaveBeenCalledTimes(4);
+    expect(removeItem).toHaveBeenCalledTimes(6);
     expect(res).toEqual({ imported: false, cleaned: true });
   });
 

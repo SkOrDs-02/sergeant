@@ -15,6 +15,32 @@ vi.mock("@finyk/utils", async (importOriginal) => {
   };
 });
 
+// ExpensesCard reads bank transactions from the SQLite Mono mirror cache.
+// Bridge it to localStorage so test-seeded `finyk_tx_cache` entries flow
+// through — this matches the pattern used in crossActions.test.ts.
+vi.mock("@finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: vi.fn(() => {
+    const raw = localStorage.getItem("finyk_tx_cache");
+    if (!raw) return { transactions: [], accounts: [], refreshedAt: null };
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      const txs = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray((parsed as { txs?: unknown[] })?.txs)
+          ? (parsed as { txs: unknown[] }).txs
+          : [];
+      return {
+        transactions: txs,
+        accounts: [],
+        refreshedAt: new Date().toISOString(),
+      };
+    } catch {
+      return { transactions: [], accounts: [], refreshedAt: null };
+    }
+  }),
+  useFinykMonoMirrorTick: vi.fn(() => 0),
+}));
+
 import ExpensesCard from "./ExpensesCard";
 
 // One spending tx (negative amount) timed at noon today. `time` is unix
