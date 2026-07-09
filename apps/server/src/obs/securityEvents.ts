@@ -29,6 +29,7 @@ export type SecurityEventName =
   | "mono_webhook_bad_payload"
   | "stripe_webhook_bad_sig"
   | "auth_session_ua_drift"
+  | "auth_apple_client_secret_failed"
   | "prompt_injection_attempt"
   | "transcribe_usd_cap_hit"
   | "chat_tool_cap_hit"

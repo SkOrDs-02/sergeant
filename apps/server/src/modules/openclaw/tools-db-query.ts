@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import type { Pool, QueryResult } from "pg";
+import { parse, astVisitor } from "pgsql-ast-parser";
 import { QUERY_APP_DB_TABLE_ALLOWLIST } from "./types.js";
 import { OpenClawAllowlistError, OpenClawSchemaError } from "./tools-errors.js";
 
@@ -38,23 +39,49 @@ function isWriteSql(sql: string): boolean {
 }
 
 /**
- * Витягає таблиці зі SQL за регексом FROM/JOIN. Не справжній parser, але
- * для simple read-queries-у достатньо. Якщо tool-input не пройде через
- * цей filter, запит fail-closed-ається.
+ * Витягає всі таблиці, до яких звертається запит, через справжній SQL-parser
+ * (`pgsql-ast-parser`). Регекс тут не годиться: schema-qualified (`public.session`),
+ * quoted (`"user"`), comma-join (`FROM a, session`) і вкладені subquery-таблиці
+ * обходять наївний `\bFROM\s+(\w+)` і читаються повз allowlist. AST бачить
+ * структуру, тож кожен `tableRef` (на будь-якій глибині) враховується.
+ *
+ * CTE-псевдоніми (`WITH x AS (…) … FROM x`) не є реальними таблицями — їх
+ * виключаємо, щоб легітимні CTE не блокувалися allowlist-ом. Non-public схеми
+ * нормалізуються у qualified-ім'я (`pg_catalog.pg_authid`), яке ніколи не в
+ * allowlist → block. Unparseable SQL → fail-closed (кидаємо), бо пропустити
+ * обфускований bypass гірше, ніж відхилити рідкісний валідний edge-case.
  */
 export function extractSqlTables(sql: string): string[] {
-  // Strip коменти й string-literals (щоб не матчити "FROM" всередині них).
-  const stripped = sql
-    .replace(/--[^\n]*/g, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/'(?:[^']|'')*'/g, "");
-
-  const re = /\b(?:from|join)\s+(?:only\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\b/gi;
-  const found = new Set<string>();
-  for (const match of stripped.matchAll(re)) {
-    if (match[1]) found.add(match[1].toLowerCase());
+  let statements: ReturnType<typeof parse>;
+  try {
+    statements = parse(sql);
+  } catch {
+    throw new OpenClawAllowlistError(
+      "query_app_db: SQL could not be parsed for table-allowlist check",
+    );
   }
-  return [...found];
+
+  const cteNames = new Set<string>();
+  const referenced = new Set<string>();
+  const visitor = astVisitor(() => ({
+    with: (w) => {
+      for (const bind of w.bind) {
+        if (bind.alias.name) cteNames.add(bind.alias.name.toLowerCase());
+      }
+      visitor.super().with(w);
+    },
+    tableRef: (t) => {
+      const schema = t.schema?.toLowerCase();
+      const name = t.name.toLowerCase();
+      referenced.add(
+        schema && schema !== "public" ? `${schema}.${name}` : name,
+      );
+    },
+  }));
+  for (const stmt of statements) visitor.statement(stmt);
+
+  for (const cte of cteNames) referenced.delete(cte);
+  return [...referenced];
 }
 
 /**
