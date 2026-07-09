@@ -1,6 +1,6 @@
 # Agent fan-out backlog plan - 2026-06-06
 
-> **Last validated:** 2026-06-06 by backlog-fanout-plan workflow (run `wf_f0ee80e8-869`). **Next review:** 2026-07-06.
+> **Last validated:** 2026-07-09 by @claude (freshness-cadence refresh — read-only планувальний знімок, без змін). **Next review:** 2026-10-07.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED from a read-only 20-agent planning run. Nothing here was committed to the tree. Diffs are proposals for human review. -->

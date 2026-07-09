@@ -1,6 +1,6 @@
 # Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф
 
-> **Last validated:** 2026-06-13 by @claude (audit-triage reconciliation — PR-A та PR-D анотовано як shipped). **Next review:** 2026-07-08.
+> **Last validated:** 2026-07-09 by @claude (freshness-cadence refresh — знімок лишається чинним, без змін контенту). **Next review:** 2026-10-07.
 >
 > **Status:** Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Residual is out-of-band: plop stale-branding rename + Sept KV→SQLite tombstone batch + react-hooks burndown (Initiative 0021).
 
