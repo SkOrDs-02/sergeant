@@ -513,8 +513,8 @@ describe("chat handler — SSE graceful degradation на continuation-помил
 describe("chat handler — SSE first-call upstream errors", () => {
   it("перший upstream !ok → кидає ExternalServiceError, БЕЗ SSE-заголовків і БЕЗ data-подій", async () => {
     // Pre-SSE upstream-помилка: SSE-заголовки ще не виставлені, тому
-    // нормалізуємо у `makeAiProviderError`. `asyncHandler` довеже до
-    // `errorHandler`, який віддасть JSON `{ error, code: ANTHROPIC_ERROR,
+    // нормалізуємо у `makeAiProviderError`. Express 5 нативно долавлює reject
+    // до `errorHandler`, який віддасть JSON `{ error, code: ANTHROPIC_ERROR,
     // requestId }` зі статусом 429 і безпечним UA-message (без сирого
     // тексту від провайдера). Перевіряємо контракт на рівні throw.
     anthropicMessagesStream.mockResolvedValueOnce({

@@ -27,7 +27,6 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
-import { asyncHandler } from "../../http/index.js";
 import { parseBody } from "../../http/validate.js";
 import {
   carryGoalToNextWeek,
@@ -110,81 +109,69 @@ export function createStrategicInternalRouter({
    * `(persona, founderUserId, weekStart)` — це маркер «strategic week
    * kicked off». PR-35+ замінить placeholder на real conversation flow.
    */
-  r.post(
-    "/api/internal/strategic/weekly-checkin",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(WeeklyCheckinBody, req);
-      const goalText =
-        parsed.goalText ?? "Weekly strategic kickoff (placeholder)";
-      const created = await createGoal(pool, {
-        persona: parsed.persona,
-        founderUserId: parsed.founderUserId,
-        weekStart: parsed.weekStart,
-        goalText,
-      });
-      if (created === null) {
-        res.status(200).json({ ok: false, error: "create_failed" });
-        return;
-      }
-      res.json({ ok: true, goal: created });
-    }),
-  );
+  r.post("/api/internal/strategic/weekly-checkin", async (req, res) => {
+    const parsed = parseBody(WeeklyCheckinBody, req);
+    const goalText =
+      parsed.goalText ?? "Weekly strategic kickoff (placeholder)";
+    const created = await createGoal(pool, {
+      persona: parsed.persona,
+      founderUserId: parsed.founderUserId,
+      weekStart: parsed.weekStart,
+      goalText,
+    });
+    if (created === null) {
+      res.status(200).json({ ok: false, error: "create_failed" });
+      return;
+    }
+    res.json({ ok: true, goal: created });
+  });
 
-  r.post(
-    "/api/internal/strategic/goals",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(CreateGoalBody, req);
-      const created = await createGoal(pool, {
-        persona: parsed.persona,
-        founderUserId: parsed.founderUserId,
-        weekStart: parsed.weekStart,
-        goalText: parsed.goalText,
-        ...(parsed.status !== undefined ? { status: parsed.status } : {}),
-      });
-      if (created === null) {
-        res.status(200).json({ ok: false, error: "create_failed" });
-        return;
-      }
-      res.json({ ok: true, goal: created });
-    }),
-  );
+  r.post("/api/internal/strategic/goals", async (req, res) => {
+    const parsed = parseBody(CreateGoalBody, req);
+    const created = await createGoal(pool, {
+      persona: parsed.persona,
+      founderUserId: parsed.founderUserId,
+      weekStart: parsed.weekStart,
+      goalText: parsed.goalText,
+      ...(parsed.status !== undefined ? { status: parsed.status } : {}),
+    });
+    if (created === null) {
+      res.status(200).json({ ok: false, error: "create_failed" });
+      return;
+    }
+    res.json({ ok: true, goal: created });
+  });
 
-  r.post(
-    "/api/internal/strategic/goals/list",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(ListGoalsBody, req);
-      const goals = await listGoalsForWeek(pool, {
-        weekStart: parsed.weekStart,
-        ...(parsed.persona !== undefined ? { persona: parsed.persona } : {}),
-        ...(parsed.founderUserId !== undefined
-          ? { founderUserId: parsed.founderUserId }
-          : {}),
-        ...(parsed.status !== undefined ? { status: parsed.status } : {}),
-      });
-      res.json({ ok: true, goals });
-    }),
-  );
+  r.post("/api/internal/strategic/goals/list", async (req, res) => {
+    const parsed = parseBody(ListGoalsBody, req);
+    const goals = await listGoalsForWeek(pool, {
+      weekStart: parsed.weekStart,
+      ...(parsed.persona !== undefined ? { persona: parsed.persona } : {}),
+      ...(parsed.founderUserId !== undefined
+        ? { founderUserId: parsed.founderUserId }
+        : {}),
+      ...(parsed.status !== undefined ? { status: parsed.status } : {}),
+    });
+    res.json({ ok: true, goals });
+  });
 
   /**
    * `/strategy list` Telegram-команда — листить goals founder-а через всі
    * тижні з опційним status- / persona-фільтром. Окремий route від
    * `/goals/list`, бо там обов'язковий `weekStart`. Hard-cap 200 рядків.
    */
-  r.post(
-    "/api/internal/strategic/list",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(ListBody, req);
-      const goals = await listGoals(pool, {
-        ...(parsed.founderUserId !== undefined
-          ? { founderUserId: parsed.founderUserId }
-          : {}),
-        ...(parsed.persona !== undefined ? { persona: parsed.persona } : {}),
-        ...(parsed.status !== undefined ? { status: parsed.status } : {}),
-        ...(parsed.limit !== undefined ? { limit: parsed.limit } : {}),
-      });
-      res.json({ ok: true, goals });
-    }),
-  );
+  r.post("/api/internal/strategic/list", async (req, res) => {
+    const parsed = parseBody(ListBody, req);
+    const goals = await listGoals(pool, {
+      ...(parsed.founderUserId !== undefined
+        ? { founderUserId: parsed.founderUserId }
+        : {}),
+      ...(parsed.persona !== undefined ? { persona: parsed.persona } : {}),
+      ...(parsed.status !== undefined ? { status: parsed.status } : {}),
+      ...(parsed.limit !== undefined ? { limit: parsed.limit } : {}),
+    });
+    res.json({ ok: true, goals });
+  });
 
   /**
    * `GET /api/internal/strategic/goals/:id` — single-goal lookup для
@@ -192,31 +179,25 @@ export function createStrategicInternalRouter({
    * Fail-open: `{ ok: false, error: 'not_found' }` (status 200) якщо
    * goal не існує — Telegram-handler рендерить err-меседж.
    */
-  r.post(
-    "/api/internal/strategic/goal",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(CarryGoalBody, req);
-      const goal = await getGoalById(pool, parsed.id);
-      if (goal === null) {
-        res.status(200).json({ ok: false, error: "not_found" });
-        return;
-      }
-      res.json({ ok: true, goal });
-    }),
-  );
+  r.post("/api/internal/strategic/goal", async (req, res) => {
+    const parsed = parseBody(CarryGoalBody, req);
+    const goal = await getGoalById(pool, parsed.id);
+    if (goal === null) {
+      res.status(200).json({ ok: false, error: "not_found" });
+      return;
+    }
+    res.json({ ok: true, goal });
+  });
 
-  r.post(
-    "/api/internal/strategic/goals/status",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(UpdateStatusBody, req);
-      const updated = await updateGoalStatus(pool, parsed.id, parsed.status);
-      if (updated === null) {
-        res.status(200).json({ ok: false, error: "update_failed" });
-        return;
-      }
-      res.json({ ok: true, goal: updated });
-    }),
-  );
+  r.post("/api/internal/strategic/goals/status", async (req, res) => {
+    const parsed = parseBody(UpdateStatusBody, req);
+    const updated = await updateGoalStatus(pool, parsed.id, parsed.status);
+    if (updated === null) {
+      res.status(200).json({ ok: false, error: "update_failed" });
+      return;
+    }
+    res.json({ ok: true, goal: updated });
+  });
 
   /**
    * `/strategy carry <id>` — atomic UPDATE: `week_start += 7d, status =
@@ -224,18 +205,15 @@ export function createStrategicInternalRouter({
    * audit / history-рефернсів (на відміну від INSERT-нового-рядка).
    * Fail-open: `null` → `{ ok: false }`.
    */
-  r.post(
-    "/api/internal/strategic/goals/carry",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(CarryGoalBody, req);
-      const carried = await carryGoalToNextWeek(pool, parsed.id);
-      if (carried === null) {
-        res.status(200).json({ ok: false, error: "carry_failed" });
-        return;
-      }
-      res.json({ ok: true, goal: carried });
-    }),
-  );
+  r.post("/api/internal/strategic/goals/carry", async (req, res) => {
+    const parsed = parseBody(CarryGoalBody, req);
+    const carried = await carryGoalToNextWeek(pool, parsed.id);
+    if (carried === null) {
+      res.status(200).json({ ok: false, error: "carry_failed" });
+      return;
+    }
+    res.json({ ok: true, goal: carried });
+  });
 
   return r;
 }

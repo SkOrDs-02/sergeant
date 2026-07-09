@@ -11,7 +11,7 @@ import request from "supertest";
  *   3. rate-limit per-user 1/5с: 2-й виклик у те саме вікно → 429;
  *   4. невалідне body (відсутнє `title`) → 400 (zod);
  *   5. failure path — якщо `sendToUser` кидає, handler повертає 500
- *      (через `asyncHandler` → `errorHandler`), а не 200.
+ *      (Express 5 нативно ловить reject → `errorHandler`), а не 200.
  *
  * Ми мокаємо `push/send.js` точково, щоб не конфліктувати з паралельними
  * тестами, які імпортують цей же модуль, і reset-имо стан `beforeEach`.

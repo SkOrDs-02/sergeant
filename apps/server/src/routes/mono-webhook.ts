@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  asyncHandler,
   requireSession,
   requireVerifiedEmail,
   setModule,
@@ -50,8 +49,8 @@ export function createMonoWebhookRouter(): Router {
   // Header-only маршрут реєструється першим, щоб `POST /api/mono/webhook` без
   // path-secret (edge-rewrite кейс) потрапляв сюди, а не у 404. Monobank
   // реально б'є у path-варіант нижче.
-  r.post("/api/mono/webhook", asyncHandler(webhookHandler));
-  r.post("/api/mono/webhook/:secret", asyncHandler(webhookHandler));
+  r.post("/api/mono/webhook", webhookHandler);
+  r.post("/api/mono/webhook/:secret", webhookHandler);
 
   // Session-protected endpoints.
   //
@@ -72,29 +71,17 @@ export function createMonoWebhookRouter(): Router {
     "/api/mono/connect",
     requireSession(),
     requireVerifiedEmail(),
-    asyncHandler(connectHandler),
+    connectHandler,
   );
-  r.post(
-    "/api/mono/disconnect",
-    requireSession(),
-    asyncHandler(disconnectHandler),
-  );
-  r.get(
-    "/api/mono/sync-state",
-    requireSession(),
-    asyncHandler(syncStateHandler),
-  );
-  r.get("/api/mono/accounts", requireSession(), asyncHandler(accountsHandler));
-  r.get(
-    "/api/mono/transactions",
-    requireSession(),
-    asyncHandler(transactionsHandler),
-  );
-  r.post("/api/mono/backfill", requireSession(), asyncHandler(backfillHandler));
+  r.post("/api/mono/disconnect", requireSession(), disconnectHandler);
+  r.get("/api/mono/sync-state", requireSession(), syncStateHandler);
+  r.get("/api/mono/accounts", requireSession(), accountsHandler);
+  r.get("/api/mono/transactions", requireSession(), transactionsHandler);
+  r.post("/api/mono/backfill", requireSession(), backfillHandler);
   r.get(
     "/api/mono/backfill-progress",
     requireSession(),
-    asyncHandler(backfillProgressHandler),
+    backfillProgressHandler,
   );
 
   return r;

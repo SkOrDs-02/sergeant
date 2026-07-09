@@ -18,7 +18,7 @@ vi.setConfig({ testTimeout: 60_000 });
  *
  * These tests complement `modules/chat/coach.test.ts` (unit, handler-level)
  * by asserting the full HTTP wiring: setModule → rateLimit → requireSession →
- * requireAnthropicKey → requireAiQuota → asyncHandler.
+ * requireAnthropicKey → requireAiQuota → handler.
  *
  * AI-CONTEXT: env single-source migration.  `requireAnthropicKey` reads
  * `env.ANTHROPIC_API_KEY` (validated Zod env, captured at first load of

@@ -17,7 +17,6 @@
  */
 
 import { Router } from "express";
-import { asyncHandler } from "../../http/index.js";
 import {
   enableDebugWindow,
   disableDebugWindow,
@@ -32,46 +31,37 @@ export function createDebugWindowInternalRouter(): Router {
 
   // POST /api/internal/debug-window/enable
   // Body: { durationMs?: number; requestedBy?: string }
-  router.post(
-    "/api/internal/debug-window/enable",
-    asyncHandler(async (req, res) => {
-      const body = req.body as {
-        durationMs?: unknown;
-        requestedBy?: unknown;
-      };
-      const durationMs =
-        typeof body.durationMs === "number" && body.durationMs > 0
-          ? body.durationMs
-          : DEFAULT_DURATION_MS;
-      const requestedBy =
-        typeof body.requestedBy === "string" && body.requestedBy.length > 0
-          ? body.requestedBy
-          : "openclaw";
+  router.post("/api/internal/debug-window/enable", async (req, res) => {
+    const body = req.body as {
+      durationMs?: unknown;
+      requestedBy?: unknown;
+    };
+    const durationMs =
+      typeof body.durationMs === "number" && body.durationMs > 0
+        ? body.durationMs
+        : DEFAULT_DURATION_MS;
+    const requestedBy =
+      typeof body.requestedBy === "string" && body.requestedBy.length > 0
+        ? body.requestedBy
+        : "openclaw";
 
-      enableDebugWindow(durationMs, requestedBy);
-      res.json({ ok: true, remainingMs: debugWindowRemainingMs() });
-    }),
-  );
+    enableDebugWindow(durationMs, requestedBy);
+    res.json({ ok: true, remainingMs: debugWindowRemainingMs() });
+  });
 
   // POST /api/internal/debug-window/disable
-  router.post(
-    "/api/internal/debug-window/disable",
-    asyncHandler(async (_req, res) => {
-      disableDebugWindow();
-      res.json({ ok: true });
-    }),
-  );
+  router.post("/api/internal/debug-window/disable", async (_req, res) => {
+    disableDebugWindow();
+    res.json({ ok: true });
+  });
 
   // GET /api/internal/debug-window/status
-  router.get(
-    "/api/internal/debug-window/status",
-    asyncHandler(async (_req, res) => {
-      res.json({
-        level: currentLogLevel(),
-        remainingMs: debugWindowRemainingMs(),
-      });
-    }),
-  );
+  router.get("/api/internal/debug-window/status", async (_req, res) => {
+    res.json({
+      level: currentLogLevel(),
+      remainingMs: debugWindowRemainingMs(),
+    });
+  });
 
   return router;
 }

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  asyncHandler,
   rateLimitExpress,
   requireAiQuota,
   requireAnthropicKey,
@@ -30,7 +29,7 @@ export function createChatRouter(): Router {
     }),
     requireAnthropicKey(),
     requireAiQuota(),
-    asyncHandler(chatHandler),
+    chatHandler,
   );
   return r;
 }

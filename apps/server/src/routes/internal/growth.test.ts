@@ -2,14 +2,6 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../http/index.js", () => ({
-  asyncHandler:
-    (fn: express.RequestHandler): express.RequestHandler =>
-    (req, res, next) => {
-      Promise.resolve(fn(req, res, next)).catch(next);
-    },
-}));
-
 async function makeApp(
   queryMock = vi.fn().mockResolvedValue({ rows: [{ id: "11" }] }),
 ) {

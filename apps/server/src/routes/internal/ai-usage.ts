@@ -1,8 +1,6 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { toLocalISODate } from "@sergeant/shared";
-import { asyncHandler } from "../../http/index.js";
-
 interface AiUsageBody {
   source: string;
   bucket?: string;
@@ -18,28 +16,24 @@ function nonNegativeInt(value: unknown): number {
 export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
 
-  r.post(
-    "/api/internal/ai-usage",
-    asyncHandler(async (req, res) => {
-      const { source, bucket = "default" } = req.body as AiUsageBody;
-      const inputTokens = nonNegativeInt((req.body as AiUsageBody).inputTokens);
-      const outputTokens = nonNegativeInt(
-        (req.body as AiUsageBody).outputTokens,
-      );
+  r.post("/api/internal/ai-usage", async (req, res) => {
+    const { source, bucket = "default" } = req.body as AiUsageBody;
+    const inputTokens = nonNegativeInt((req.body as AiUsageBody).inputTokens);
+    const outputTokens = nonNegativeInt((req.body as AiUsageBody).outputTokens);
 
-      if (!source) {
-        res.status(400).json({ error: "source is required" });
-        return;
-      }
+    if (!source) {
+      res.status(400).json({ error: "source is required" });
+      return;
+    }
 
-      const totalTokens = inputTokens + outputTokens;
-      // Europe/Kyiv day boundary (домен-інваріант) — той самий стовпець
-      // `ai_usage_daily.usage_day` пишеться через `toLocalISODate` в
-      // anthropicUsageStore і читається як Kyiv-день у aiCostSummary.
-      const usageDay = toLocalISODate();
+    const totalTokens = inputTokens + outputTokens;
+    // Europe/Kyiv day boundary (домен-інваріант) — той самий стовпець
+    // `ai_usage_daily.usage_day` пишеться через `toLocalISODate` в
+    // anthropicUsageStore і читається як Kyiv-день у aiCostSummary.
+    const usageDay = toLocalISODate();
 
-      await pool.query(
-        `INSERT INTO ai_usage_daily (
+    await pool.query(
+      `INSERT INTO ai_usage_daily (
            subject_key,
            usage_day,
            bucket,
@@ -55,19 +49,18 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
            input_tokens  = ai_usage_daily.input_tokens  + EXCLUDED.input_tokens,
            output_tokens = ai_usage_daily.output_tokens + EXCLUDED.output_tokens,
            total_tokens  = ai_usage_daily.total_tokens  + EXCLUDED.total_tokens`,
-        [
-          `n8n:${source}`,
-          usageDay,
-          bucket,
-          inputTokens,
-          outputTokens,
-          totalTokens,
-        ],
-      );
+      [
+        `n8n:${source}`,
+        usageDay,
+        bucket,
+        inputTokens,
+        outputTokens,
+        totalTokens,
+      ],
+    );
 
-      res.json({ ok: true });
-    }),
-  );
+    res.json({ ok: true });
+  });
 
   return r;
 }

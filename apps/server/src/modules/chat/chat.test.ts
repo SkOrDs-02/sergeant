@@ -466,7 +466,7 @@ describe("chat handler — tool_use parsing", () => {
     });
     const res = makeRes();
     // Замість прямого `res.status().json()` тепер кидаємо `ExternalServiceError`.
-    // `asyncHandler` ловить через `Promise.resolve(...).catch(next)` і
+    // Express 5 нативно ловить reject із async-хендлера і проброшує в `next`, а
     // термінальний `errorHandler` віддає клієнту 4xx/5xx + `code: EXTERNAL_SERVICE`,
     // інкрементує `app_errors_total` і (для 5xx без operational-маркера) пише в Sentry.
     let caught: unknown = null;

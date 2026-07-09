@@ -5,12 +5,7 @@ import {
   WaitlistSubmitResponseSchema,
   type WaitlistSubmitResponse,
 } from "@sergeant/shared";
-import {
-  asyncHandler,
-  rateLimitExpress,
-  setModule,
-  parseBody,
-} from "../http/index.js";
+import { rateLimitExpress, setModule, parseBody } from "../http/index.js";
 import { getSessionUser } from "../auth.js";
 import pool from "../db.js";
 import { submitWaitlistEntry } from "../modules/waitlist/waitlistService.js";
@@ -40,7 +35,7 @@ export function createWaitlistRouter(): Router {
   r.use("/api/v1/waitlist", setModule("waitlist"));
   r.use("/api/waitlist", setModule("waitlist"));
 
-  const handler = asyncHandler(async (req: Request, res: Response) => {
+  const handler = async (req: Request, res: Response) => {
     const parsed = parseBody(WaitlistSubmitSchema, req);
 
     // Опційне привʼязування до сесії, якщо користувач залогінений. Не
@@ -74,7 +69,7 @@ export function createWaitlistRouter(): Router {
       created: result.created,
     });
     res.json(payload);
-  });
+  };
 
   r.post(
     "/api/v1/waitlist",

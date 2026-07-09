@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  asyncHandler,
   cachingMiddleware,
   rateLimitExpress,
   setModule,
@@ -19,7 +18,7 @@ export function createFoodSearchRouter(): Router {
     setModule("nutrition"),
     cachingMiddleware({ policy: "stale-while-revalidate", maxAgeSeconds: 300 }),
     rateLimitExpress({ key: "api:food-search", limit: 40, windowMs: 60_000 }),
-    asyncHandler(foodSearchHandler),
+    foodSearchHandler,
   );
   return r;
 }

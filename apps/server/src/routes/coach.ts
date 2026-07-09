@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  asyncHandler,
   rateLimitExpress,
   requireAiQuota,
   requireAnthropicKey,
@@ -26,14 +25,14 @@ export function createCoachRouter(): Router {
     "/api/coach",
     rateLimitExpress({ key: "api:coach", limit: 20, windowMs: 60 * 60_000 }),
   );
-  r.get("/api/coach/memory", requireSession(), asyncHandler(coachMemoryGet));
-  r.post("/api/coach/memory", requireSession(), asyncHandler(coachMemoryPost));
+  r.get("/api/coach/memory", requireSession(), coachMemoryGet);
+  r.post("/api/coach/memory", requireSession(), coachMemoryPost);
   r.post(
     "/api/coach/insight",
     requireSession(),
     requireAnthropicKey(),
     requireAiQuota(),
-    asyncHandler(coachInsight),
+    coachInsight,
   );
   return r;
 }

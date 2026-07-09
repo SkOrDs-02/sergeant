@@ -11,7 +11,7 @@ vi.setConfig({ testTimeout: 60_000 });
  * Mirrors `coach.route.test.ts` (same hoisted `mockPool` / `getSessionUser`
  * mocks, same `loadCreateApp` env-reparse pattern, same passthrough
  * `rateLimitExpress` mock) and asserts the full HTTP wiring:
- * setModule → rateLimit → requireSession → asyncHandler.
+ * setModule → rateLimit → requireSession → handler.
  *
  * Covers:
  *   1. Auth guard: unauthenticated POST → 401.

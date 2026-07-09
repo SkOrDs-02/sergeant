@@ -47,7 +47,6 @@ vi.mock("../http/index.js", async () => {
         _next: () => void,
       ) =>
         res.status(401).json({ error: "Unauthorized" }),
-    asyncHandler: (fn: (...args: unknown[]) => unknown) => fn,
   };
 });
 

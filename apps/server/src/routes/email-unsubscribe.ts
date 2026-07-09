@@ -1,7 +1,6 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 
-import { asyncHandler } from "../http/index.js";
 import { FTUX_DRIP_CAMPAIGN_FAMILY } from "../email/ftuxDripCopy.js";
 import { verifyUnsubscribeToken } from "../email/ftuxUnsubscribeToken.js";
 import { logger } from "../obs/logger.js";
@@ -30,55 +29,52 @@ import { ftuxDripUnsubscribesTotal } from "../obs/metrics.js";
 export function createEmailUnsubscribeRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
 
-  r.get(
-    "/api/email/unsubscribe",
-    asyncHandler(async (req, res) => {
-      const raw = typeof req.query["u"] === "string" ? req.query["u"] : "";
+  r.get("/api/email/unsubscribe", async (req, res) => {
+    const raw = typeof req.query["u"] === "string" ? req.query["u"] : "";
 
-      const verdict = verifyUnsubscribeToken(raw);
-      if (!verdict.ok) {
-        if (verdict.reason === "missing_secret") {
-          ftuxDripUnsubscribesTotal.inc({ outcome: "missing_secret" });
-          res
-            .status(503)
-            .type("text/plain")
-            .send("Unsubscribe service not configured.");
-          return;
-        }
-        ftuxDripUnsubscribesTotal.inc({ outcome: "invalid_token" });
-        logger.warn({
-          msg: "ftux_drip_unsubscribe_invalid_token",
-          reason: verdict.reason,
-        });
-        res.status(200).type("text/html").send(renderInvalidPage());
+    const verdict = verifyUnsubscribeToken(raw);
+    if (!verdict.ok) {
+      if (verdict.reason === "missing_secret") {
+        ftuxDripUnsubscribesTotal.inc({ outcome: "missing_secret" });
+        res
+          .status(503)
+          .type("text/plain")
+          .send("Unsubscribe service not configured.");
         return;
       }
+      ftuxDripUnsubscribesTotal.inc({ outcome: "invalid_token" });
+      logger.warn({
+        msg: "ftux_drip_unsubscribe_invalid_token",
+        reason: verdict.reason,
+      });
+      res.status(200).type("text/html").send(renderInvalidPage());
+      return;
+    }
 
-      // Атомарний INSERT з ON CONFLICT — повторний клік той самий лінк
-      // повертає 200, але без duplicate-row-у.
-      const insert = await pool.query<{ id: string }>(
-        `INSERT INTO email_unsubscribes (user_id, campaign_family, source)
+    // Атомарний INSERT з ON CONFLICT — повторний клік той самий лінк
+    // повертає 200, але без duplicate-row-у.
+    const insert = await pool.query<{ id: string }>(
+      `INSERT INTO email_unsubscribes (user_id, campaign_family, source)
          VALUES ($1, $2, 'email_footer')
          ON CONFLICT (user_id, campaign_family) DO NOTHING
          RETURNING id`,
-        [verdict.userId, verdict.family],
-      );
+      [verdict.userId, verdict.family],
+    );
 
-      const wasNew = insert.rows.length > 0;
-      ftuxDripUnsubscribesTotal.inc({
-        outcome: wasNew ? "ok" : "already_unsubscribed",
-      });
-      logger.info({
-        msg: wasNew
-          ? "ftux_drip_unsubscribe_recorded"
-          : "ftux_drip_unsubscribe_repeat_click",
-        family: verdict.family,
-        userId: verdict.userId,
-      });
+    const wasNew = insert.rows.length > 0;
+    ftuxDripUnsubscribesTotal.inc({
+      outcome: wasNew ? "ok" : "already_unsubscribed",
+    });
+    logger.info({
+      msg: wasNew
+        ? "ftux_drip_unsubscribe_recorded"
+        : "ftux_drip_unsubscribe_repeat_click",
+      family: verdict.family,
+      userId: verdict.userId,
+    });
 
-      res.status(200).type("text/html").send(renderSuccessPage());
-    }),
-  );
+    res.status(200).type("text/html").send(renderSuccessPage());
+  });
 
   return r;
 }

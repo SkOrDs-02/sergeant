@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  asyncHandler,
   cachingMiddleware,
   rateLimitExpress,
   setModule,
@@ -20,7 +19,7 @@ export function createBarcodeRouter(): Router {
     setModule("barcode"),
     cachingMiddleware({ policy: "stale-while-revalidate", maxAgeSeconds: 300 }),
     rateLimitExpress({ key: "api:barcode", limit: 30, windowMs: 60_000 }),
-    asyncHandler(barcodeHandler),
+    barcodeHandler,
   );
   return r;
 }

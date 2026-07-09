@@ -58,8 +58,8 @@ async function invoke(
   handle: RequestHandler,
   req: Partial<Request>,
 ): Promise<Response & FakeRes> {
-  // asyncHandler returns void and only calls `next` on error; resolve when the
-  // handler has produced a response via `res.json`.
+  // Express 5 catches a rejected handler promise and calls `next` only on
+  // error; resolve when the handler has produced a response via `res.json`.
   return await new Promise<Response & FakeRes>((resolve, reject) => {
     const res = makeRes(() => resolve(res));
     const next = (err?: unknown) => (err ? reject(err) : resolve(res));

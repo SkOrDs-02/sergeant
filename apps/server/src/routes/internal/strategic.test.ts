@@ -11,14 +11,6 @@ const goalMocks = vi.hoisted(() => ({
   updateGoalStatus: vi.fn(),
 }));
 
-vi.mock("../../http/index.js", () => ({
-  asyncHandler:
-    (fn: express.RequestHandler): express.RequestHandler =>
-    (req, res, next) => {
-      Promise.resolve(fn(req, res, next)).catch(next);
-    },
-}));
-
 vi.mock("../../lib/strategicGoals.js", () => ({
   STRATEGIC_GOAL_PERSONAS: ["finyk", "fizruk", "nutrition", "routine"],
   STRATEGIC_GOAL_STATUSES: ["active", "achieved", "dropped", "carried_over"],

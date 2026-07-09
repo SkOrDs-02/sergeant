@@ -22,7 +22,6 @@ import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
 
-import { asyncHandler } from "../../http/index.js";
 import { parseBody } from "../../http/validate.js";
 import {
   finalizeBackfill,
@@ -72,23 +71,20 @@ export function createAiMemoryInternalRouter({ pool }: { pool: Pool }): Router {
    * Returns: { ok: true, stateId, totalCandidates, estimatedCostUsd,
    *            status, budgetExceeded, voyageBudgetSoftUsd }
    */
-  r.post(
-    "/api/internal/ai-memory/backfill/start",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(StartBackfillBody, req);
-      const out = await startBackfill(pool, {
-        founderUserId: parsed.founderUserId,
-        daysWindow: parsed.daysWindow,
-        sourceMode: parsed.sourceMode,
-        batchSize: parsed.batchSize,
-        dryRun: parsed.dryRun,
-        ...(parsed.topicFilter !== undefined
-          ? { topicFilter: parsed.topicFilter }
-          : {}),
-      });
-      res.json({ ok: true, ...out });
-    }),
-  );
+  r.post("/api/internal/ai-memory/backfill/start", async (req, res) => {
+    const parsed = parseBody(StartBackfillBody, req);
+    const out = await startBackfill(pool, {
+      founderUserId: parsed.founderUserId,
+      daysWindow: parsed.daysWindow,
+      sourceMode: parsed.sourceMode,
+      batchSize: parsed.batchSize,
+      dryRun: parsed.dryRun,
+      ...(parsed.topicFilter !== undefined
+        ? { topicFilter: parsed.topicFilter }
+        : {}),
+    });
+    res.json({ ok: true, ...out });
+  });
 
   /**
    * POST /api/internal/ai-memory/backfill/batch
@@ -97,36 +93,30 @@ export function createAiMemoryInternalRouter({ pool }: { pool: Pool }): Router {
    *            skippedDedupInBatch, cumulativeProcessed, cumulativeEnqueued,
    *            hasMore, lastProcessedId }
    */
-  r.post(
-    "/api/internal/ai-memory/backfill/batch",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(RunBatchBody, req);
-      const out = await runBackfillBatch(pool, {
-        stateId: parsed.stateId,
-        founderUserId: parsed.founderUserId,
-      });
-      res.json({ ok: true, ...out });
-    }),
-  );
+  r.post("/api/internal/ai-memory/backfill/batch", async (req, res) => {
+    const parsed = parseBody(RunBatchBody, req);
+    const out = await runBackfillBatch(pool, {
+      stateId: parsed.stateId,
+      founderUserId: parsed.founderUserId,
+    });
+    res.json({ ok: true, ...out });
+  });
 
   /**
    * POST /api/internal/ai-memory/backfill/finalize
    * Body: { stateId, founderUserId, status, error? }
    * Returns: { ok: true }
    */
-  r.post(
-    "/api/internal/ai-memory/backfill/finalize",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(FinalizeBody, req);
-      await finalizeBackfill(pool, {
-        stateId: parsed.stateId,
-        founderUserId: parsed.founderUserId,
-        status: parsed.status,
-        ...(parsed.error !== undefined ? { error: parsed.error } : {}),
-      });
-      res.json({ ok: true });
-    }),
-  );
+  r.post("/api/internal/ai-memory/backfill/finalize", async (req, res) => {
+    const parsed = parseBody(FinalizeBody, req);
+    await finalizeBackfill(pool, {
+      stateId: parsed.stateId,
+      founderUserId: parsed.founderUserId,
+      status: parsed.status,
+      ...(parsed.error !== undefined ? { error: parsed.error } : {}),
+    });
+    res.json({ ok: true });
+  });
 
   return r;
 }

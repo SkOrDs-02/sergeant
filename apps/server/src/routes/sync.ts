@@ -1,10 +1,5 @@
 import { Router } from "express";
-import {
-  asyncHandler,
-  rateLimitExpress,
-  requireSession,
-  setModule,
-} from "../http/index.js";
+import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
 import { listSyncAudit } from "../modules/sync/audit.js";
 import { v1ClientSurveyMiddleware } from "../modules/sync/clientSurvey.js";
 import { respondV1Gone } from "../modules/sync/sunsetGone.js";
@@ -68,13 +63,13 @@ export function createSyncRouter(): Router {
   // public read-only deprecation announcements; they read no user state
   // and have no business logic. `/api/sync/audit` (read-only audit log)
   // stays behind auth (mounted AFTER `requireSession()` below).
-  r.post("/api/sync/push", asyncHandler(respondV1Gone));
-  r.post("/api/sync/pull", asyncHandler(respondV1Gone));
-  r.get("/api/sync/pull-all", asyncHandler(respondV1Gone));
-  r.post("/api/sync/pull-all", asyncHandler(respondV1Gone));
-  r.post("/api/sync/push-all", asyncHandler(respondV1Gone));
+  r.post("/api/sync/push", respondV1Gone);
+  r.post("/api/sync/pull", respondV1Gone);
+  r.get("/api/sync/pull-all", respondV1Gone);
+  r.post("/api/sync/pull-all", respondV1Gone);
+  r.post("/api/sync/push-all", respondV1Gone);
   r.use("/api/sync", requireSession());
-  r.get("/api/sync/audit", asyncHandler(listSyncAudit));
+  r.get("/api/sync/audit", listSyncAudit);
 
   r.use("/api/v2/sync", setModule("syncV2"));
   r.use(
@@ -82,8 +77,8 @@ export function createSyncRouter(): Router {
     rateLimitExpress({ key: "api:v2:sync", limit: 60, windowMs: 60_000 }),
   );
   r.use("/api/v2/sync", requireSession());
-  r.post("/api/v2/sync/push", asyncHandler(syncV2Push));
-  r.get("/api/v2/sync/pull", asyncHandler(syncV2Pull));
+  r.post("/api/v2/sync/push", syncV2Push);
+  r.get("/api/v2/sync/pull", syncV2Pull);
   // Stage 5 / PR #041: SSE long-polling. Окрема rate-limit-категорія,
   // бо connection-handshake — це 1 hit; ми не хочемо, щоб stream-
   // reconnect-loop при flapping-мережі з'їдав push-budget.
@@ -94,7 +89,7 @@ export function createSyncRouter(): Router {
       limit: 30,
       windowMs: 60_000,
     }),
-    asyncHandler(syncV2Stream),
+    syncV2Stream,
   );
 
   return r;

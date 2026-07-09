@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { asyncHandler, rateLimitExpress, setModule } from "../http/index.js";
+import { rateLimitExpress, setModule } from "../http/index.js";
 import privatHandler from "../modules/mono/privat.js";
 
 /**
@@ -20,7 +20,7 @@ export function createBanksRouter(): Router {
   r.all(
     "/api/privat",
     rateLimitExpress({ key: "api:privat", limit: 30, windowMs: 60_000 }),
-    asyncHandler(privatHandler),
+    privatHandler,
   );
   return r;
 }

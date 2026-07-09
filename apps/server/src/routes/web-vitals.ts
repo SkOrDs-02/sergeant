@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { asyncHandler, rateLimitExpress } from "../http/index.js";
+import { rateLimitExpress } from "../http/index.js";
 import webVitalsHandler from "../modules/observability/web-vitals.js";
 
 export function createWebVitalsRouter(): Router {
@@ -13,7 +13,7 @@ export function createWebVitalsRouter(): Router {
     // швидке табування (Tab → Tab → ...) без false-positive-блокування
     // легітимного юзера.
     rateLimitExpress({ key: "api:web-vitals", limit: 50, windowMs: 60_000 }),
-    asyncHandler(webVitalsHandler),
+    webVitalsHandler,
   );
   return r;
 }
