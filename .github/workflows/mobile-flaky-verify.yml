@@ -1,6 +1,6 @@
 name: Mobile flaky-tests verification (20-run)
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 #
 # Scope: T7 з `docs/90-work/planning/sprint-roadmap-q2q3-2026.md` § 1.1 — Tech-борг.

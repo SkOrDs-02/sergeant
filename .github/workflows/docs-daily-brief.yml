@@ -1,6 +1,6 @@
 name: Docs daily brief
 
-# Owner: @Skords-01 (solo maintainer).
+# Owner: @SkOrDs-02 (solo maintainer).
 # Purpose: regenerate the daily-ops artifacts (open-work / today / trust badge)
 # from a scheduled run, then push the refreshed copy back to `main` if any of
 # them drifted in the last 24 hours. Without this cron the artifacts would only
@@ -21,8 +21,6 @@ name: Docs daily brief
 #     refresh between scheduled runs without touching the repo.
 
 on:
-  schedule:
-    - cron: "0 6 * * *"
   workflow_dispatch: {}
 
 permissions:

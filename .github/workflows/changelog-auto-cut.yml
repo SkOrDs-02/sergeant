@@ -1,6 +1,6 @@
 name: Changelog auto-cut
 
-# Owner: @Skords-01 (solo maintainer).
+# Owner: @SkOrDs-02 (solo maintainer).
 # Purpose: cut a release tag every Friday IF the Unreleased section has real
 # content. Solo vibe-coder workflow — no human-triggered release cadence;
 # this cron makes "tag what shipped this week" zero-effort.
