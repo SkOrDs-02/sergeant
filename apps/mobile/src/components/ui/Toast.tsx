@@ -200,10 +200,14 @@ interface ToastRowProps {
 }
 
 function ToastRow({ toast, duration, onDismiss }: ToastRowProps) {
-  const progress = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(-20)).current;
-  const scale = useRef(new Animated.Value(0.9)).current;
-  const progressBar = useRef(new Animated.Value(1)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [progress] = useState(() => new Animated.Value(0));
+  const [translateY] = useState(() => new Animated.Value(-20));
+  const [scale] = useState(() => new Animated.Value(0.9));
+  const [progressBar] = useState(() => new Animated.Value(1));
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const IconComponent = VARIANT_ICON[toast.type] ?? VARIANT_ICON.info;

@@ -16,7 +16,7 @@
  * - Dark mode support via semantic tokens
  */
 
-import { Component, type ReactNode, useState, useEffect, useRef } from "react";
+import { Component, type ReactNode, useState, useEffect } from "react";
 import {
   Animated,
   Pressable,
@@ -64,8 +64,12 @@ function ErrorFallbackUI({
   onBack: () => void;
 }) {
   const [showDetails, setShowDetails] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [scaleAnim] = useState(() => new Animated.Value(0.95));
 
   useEffect(() => {
     // Entrance animation

@@ -69,8 +69,12 @@ function DragReorderCoachMark({
   visible: boolean;
   onDismiss: () => void;
 }) {
-  const opacity = useRef(new RNAnimated.Value(0)).current;
-  const translateY = useRef(new RNAnimated.Value(-8)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [opacity] = useState(() => new RNAnimated.Value(0));
+  const [translateY] = useState(() => new RNAnimated.Value(-8));
 
   useEffect(() => {
     if (visible) {
