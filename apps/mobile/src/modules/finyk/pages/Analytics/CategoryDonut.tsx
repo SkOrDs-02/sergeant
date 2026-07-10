@@ -141,13 +141,11 @@ function CategoryDonutComponent({ data, size = 160 }: CategoryDonutProps) {
         : top;
   }
 
-  let currentAngle = 0;
-  const arcs: Arc[] = segments.map((seg) => {
+  const arcs: Arc[] = segments.reduce<Arc[]>((list, seg, index) => {
+    const start = index === 0 ? 0 : (list[index - 1]?.end ?? 0);
     const sweep = (seg.spent / total) * 360;
-    const start = currentAngle;
-    currentAngle += sweep;
-    return { ...seg, start, end: currentAngle };
-  });
+    return [...list, { ...seg, start, end: start + sweep }];
+  }, []);
 
   const visible = arcs.filter((a) => a.end - a.start >= RENDER_MIN_SWEEP);
   const GAP_DEG = visible.length > 1 ? 1 : 0;

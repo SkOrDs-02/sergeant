@@ -19,7 +19,7 @@
 
 - [x] 3 eslint-disable в FinykApp.tsx виправлені (navigate додано до deps, mount-only effects)
 - [x] 2 eslint-disable в useWorkoutsLifecycle.ts виправлені (mount-only, stable deps)
-- [x] `react-hooks/immutability` — web 0 ✅, promoted to `"error"` у `eslint.web.js` (після web burndown)
+- [x] `react-hooks/immutability` — web 0 ✅ + mobile 0 ✅ (2026-07-10: CategoryDonut reduce; Sheet SheetContent split + scoped disables for RNGH worklets); promoted to `"error"` in `eslint.mobile.js`
 - [x] `react-hooks/preserve-manual-memoization` — web 0 ✅, promoted to `"error"` у `eslint.web.js` (2026-07-04 burndown: 6 fixed, 3 kept behind scoped eslint-disable з обґрунтуванням)
 - [ ] `react-hooks/purity` — web ~14 + mobile 3 (2026-07-10 re-measure у `eslint.baseline.js` scoreboard); promotion blocked until burndown
 - [ ] `react-hooks/refs` — web ~59 + mobile 164 (2026-07-10); найбільший залишок на mobile UI primitives
@@ -33,11 +33,11 @@
 
 **Web-правила:**
 
-- `immutability` (web) — promoted to `"error"` у `eslint.web.js` (рядок 476); burndown: web 0.
+- `immutability` (mobile) — promoted to `"error"` у `eslint.mobile.js` (2026-07-10): CategoryDonut immutable reduce; Sheet → `SheetContent` mount-only subtree + 2 scoped `eslint-disable-next-line` на RNGH worklet `.value` writes.
 - `preserve-manual-memoization` (web) — promoted to `"error"` у `eslint.web.js` (рядок 500) після burndown 2026-07-04 (6 fix, 3 scoped-disable з обґрунтуванням); web 0.
 - `purity`, `refs`, `set-state-in-effect` (web) — виміряно 0 порушень на apps/web 2026-07-10; окремий агент промовує їх у `eslint.web.js`.
 
-**Залишок:** mobile-хвиля (`immutability` 4, `preserve-manual-memoization` 2, `refs` 322) + exhaustive-deps catalog-sync.
+**Залишок:** mobile-хвиля (`preserve-manual-memoization` 2, `refs` 322) + exhaustive-deps catalog-sync (done).
 
 ## Виконані дії (2026-06-10)
 

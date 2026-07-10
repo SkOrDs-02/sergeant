@@ -65,7 +65,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
   runOnJS,
   interpolate,
   Extrapolation,
@@ -110,28 +109,8 @@ const SPRING_CONFIG = {
 const DISMISS_THRESHOLD = 100;
 const VELOCITY_THRESHOLD = 500;
 
-export function Sheet({
-  open,
-  onClose,
-  title,
-  description,
-  children,
-  footer,
-  closeLabel = "Закрити",
-  maxHeight = 0.9,
-  disableGestureDismiss = false,
-  rememberScrollPosition = false,
-  scrollPositionKey: _scrollPositionKey,
-}: SheetProps) {
+export function Sheet({ open, ...contentProps }: SheetProps) {
   const [reduceMotion, setReduceMotion] = useState(false);
-  const { height: windowHeight } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const scrollViewRef = useRef<ScrollView>(null);
-  const savedScrollPosition = useRef<number>(0);
-
-  // Reanimated shared values
-  const translateY = useSharedValue(0);
-  const scrimOpacity = useSharedValue(0);
 
   useEffect(() => {
     let mounted = true;
@@ -153,24 +132,51 @@ export function Sheet({
     };
   }, []);
 
-  // Reset animation values when sheet opens and restore scroll position
-  useEffect(() => {
-    if (open) {
-      translateY.value = 0;
-      scrimOpacity.value = withTiming(1, { duration: 200 });
-      // Restore scroll position after a small delay to let the ScrollView render
-      if (rememberScrollPosition && savedScrollPosition.current > 0) {
-        setTimeout(() => {
-          scrollViewRef.current?.scrollTo({
-            y: savedScrollPosition.current,
-            animated: false,
-          });
-        }, 100);
-      }
-    }
-  }, [open, translateY, scrimOpacity, rememberScrollPosition]);
+  if (!open) return null;
 
-  // Save scroll position when scrolling
+  return <SheetContent {...contentProps} reduceMotion={reduceMotion} />;
+}
+
+type SheetContentProps = Omit<SheetProps, "open"> & {
+  reduceMotion: boolean;
+};
+
+function SheetContent({
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  closeLabel = "Закрити",
+  maxHeight = 0.9,
+  disableGestureDismiss = false,
+  rememberScrollPosition = false,
+  scrollPositionKey: _scrollPositionKey,
+  reduceMotion,
+}: SheetContentProps) {
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const savedScrollPosition = useRef<number>(0);
+
+  // Fresh shared values per open — SheetContent unmounts when `open` is false.
+  // AI-CONTEXT: never write `.value` inside React useEffect here; gesture
+  // worklets own all translateY mutations so react-hooks/immutability stays clean.
+  const translateY = useSharedValue(0);
+
+  useEffect(() => {
+    if (rememberScrollPosition && savedScrollPosition.current > 0) {
+      const timer = setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          y: savedScrollPosition.current,
+          animated: false,
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [rememberScrollPosition]);
+
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       if (rememberScrollPosition) {
@@ -180,33 +186,24 @@ export function Sheet({
     [rememberScrollPosition],
   );
 
-  // Percentage `maxHeight` on a RN View resolves against its parent's
-  // height. Our panel sits inside a `KeyboardAvoidingView` that wraps
-  // its content (no flex:1 / explicit height), so a `"90%"` string
-  // would resolve against the panel's own content — not the viewport.
-  // Mirror the web `max-h-[90vh]` by computing an absolute pixel value
-  // off `useWindowDimensions()`.
   const heightFraction = Math.max(0.1, Math.min(1, maxHeight));
   const maxPanelHeight = Math.round(windowHeight * heightFraction);
 
-  const handleClose = () => {
-    scrimOpacity.value = withTiming(0, { duration: 150 });
+  const handleClose = useCallback(() => {
     onClose();
-  };
+  }, [onClose]);
 
-  // Animated styles - must be called unconditionally before any early returns
   const animatedPanelStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
 
   const animatedScrimStyle = useAnimatedStyle(() => ({
-    opacity:
-      interpolate(
-        translateY.value,
-        [0, DISMISS_THRESHOLD * 2],
-        [0.4, 0],
-        Extrapolation.CLAMP,
-      ) * scrimOpacity.value,
+    opacity: interpolate(
+      translateY.value,
+      [0, DISMISS_THRESHOLD * 2],
+      [0.4, 0],
+      Extrapolation.CLAMP,
+    ),
   }));
 
   const animatedIndicatorStyle = useAnimatedStyle(() => {
@@ -234,12 +231,11 @@ export function Sheet({
     };
   });
 
-  // Gesture handler for swipe-to-dismiss
   const panGesture = Gesture.Pan()
     .enabled(!disableGestureDismiss && !reduceMotion)
     .onUpdate((event) => {
-      // Only allow dragging down (positive Y translation)
       if (event.translationY > 0) {
+        // eslint-disable-next-line react-hooks/immutability -- Reanimated shared value in RNGH worklet
         translateY.value = event.translationY;
       }
     })
@@ -249,6 +245,7 @@ export function Sheet({
         event.velocityY > VELOCITY_THRESHOLD;
 
       if (shouldDismiss) {
+        // eslint-disable-next-line react-hooks/immutability -- Reanimated shared value in RNGH worklet
         translateY.value = withSpring(
           windowHeight,
           { ...SPRING_CONFIG, stiffness: 300 },
@@ -259,15 +256,9 @@ export function Sheet({
           },
         );
       } else {
-        // Snap back to original position
         translateY.value = withSpring(0, SPRING_CONFIG);
       }
     });
-
-  // Bail out before rendering the Modal to keep children fully
-  // unmounted while closed. Matches the web guard (`if (!open) return
-  // null;`) and avoids keeping child state alive between opens.
-  if (!open) return null;
 
   return (
     <Modal
@@ -279,7 +270,6 @@ export function Sheet({
       accessibilityLabel={title}
     >
       <View className="flex-1 justify-end">
-        {/* Animated Scrim */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={closeLabel}
@@ -311,7 +301,6 @@ export function Sheet({
                   paddingBottom: Math.max(insets.bottom, 16),
                 }}
               >
-                {/* Drag Indicator */}
                 <View className="flex items-center pt-3 pb-1">
                   <GestureDetector gesture={panGesture}>
                     <Animated.View
@@ -322,7 +311,6 @@ export function Sheet({
                   </GestureDetector>
                 </View>
 
-                {/* Header */}
                 <View className="flex-row items-start justify-between gap-3 px-5 pt-1 pb-3">
                   <View className="flex-1">
                     <Text className="text-lg font-extrabold text-fg leading-tight">
@@ -346,7 +334,6 @@ export function Sheet({
                   </Button>
                 </View>
 
-                {/* Scrollable Content */}
                 <ScrollView
                   ref={scrollViewRef}
                   keyboardShouldPersistTaps="handled"
@@ -358,7 +345,6 @@ export function Sheet({
                   {children}
                 </ScrollView>
 
-                {/* Sticky Footer */}
                 {footer ? (
                   <View className="px-5 pt-3 pb-4 border-t border-cream-300 dark:border-cream-700 bg-cream-50 dark:bg-cream-900">
                     {footer}
