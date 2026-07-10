@@ -117,15 +117,23 @@ export default defineConfig({
         //   repo-wide default floor), branches → 63, fns → 64,
         //   statements → 73. ~2–2.7pp headroom kept for throttled CI.
         //
-        // Floors set ~2–2.7pp below current actuals. Raise per sprint
+        // - 2026-07-10 (web coverage wave 1–4): parallel subagent push
+        //   across finyk/fizruk/nutrition/core/routine + SQLite storage
+        //   test drift fixes. Measured (CI=true, maxWorkers=1, 697 files /
+        //   6977 tests):
+        //     lines 89.76 / branches 75.1 / fns 81.52 / statements 87.29.
+        //   Ratchet: lines → 87 (coverage-thresholds.json), branches → 73,
+        //   fns → 79, statements → 85. ~2–2.8pp headroom for throttled CI.
+        //
+        // Floors set ~2–2.8pp below current actuals. Raise per sprint
         // as more component shells land (next targets: FinykApp,
         // NutritionApp, useRoutineAppState, CommandPaletteUI,
         // HabitDetailSheet — the heavy orchestration shells still at 0%).
         // `lines` приходить з кореневого coverage-thresholds.json.
         lines: sharedThresholds["apps/web"],
-        branches: 63,
-        functions: 64,
-        statements: 73,
+        branches: 73,
+        functions: 79,
+        statements: 85,
       },
     },
   },
