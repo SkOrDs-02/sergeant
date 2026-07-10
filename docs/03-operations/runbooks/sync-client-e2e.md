@@ -25,6 +25,15 @@
 3. **Mobile:** foreground app (pull on AppState active).
 4. **Pass:** expense у списку на mobile.
 
+## B2. Phase 2 — habit definition sync (web ↔ web / web → mobile)
+
+1. **Profile A:** Routine → create habit «Phase 2 sync test».
+2. Push 200.
+3. **Profile B** (or mobile foreground): pull ≤60s.
+4. **Pass:** habit visible in list.
+
+Handoff: [`sync-client-wiring-phase2-handoff.md`](../../90-work/planning/sync-client-wiring-phase2-handoff.md) §3.
+
 ## C. Echo suppression
 
 1. Profile A: mutation → push success.

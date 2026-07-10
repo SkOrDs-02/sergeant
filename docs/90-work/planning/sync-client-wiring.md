@@ -142,7 +142,7 @@ pnpm --filter @sergeant/api-client exec vitest run src/__tests__/contracts
 pnpm check
 ```
 
-**Manual E2E (обов'язково для Phase 1 PR):** два browser profiles або web + mobile emulator — mutation → wait push → pull → assert overlay.
+| **Manual E2E (обов'язково для Phase 1 PR):** два browser profiles або web + mobile emulator — mutation → wait push → pull → assert overlay. Phase 2 habit gate — див. [`sync-client-wiring-phase2-handoff.md`](./sync-client-wiring-phase2-handoff.md) §3.
 
 ---
 
@@ -165,19 +165,23 @@ pnpm check
 
 - [x] **1a. Client pull loop (web)** — `core/syncEngine/syncEngineReader.ts`: fetch pull → apply to SQLite → bump cursor → notify overlay ticks. (PR-1 merged)
 - [x] **1b. Outbox enqueue (web)** — `enqueueOutboxUpsert` у sqliteWriter adapters для finyk/fizruk/nutrition/routine registry tables. (PR-2, PR-3 merged)
-- [ ] **1c. Mobile parity** — pull loop + outbox enqueue parity з web. (PR-4 [#189](https://github.com/SkOrDs-02/sergeant/pull/189) — pending merge)
+- [x] **1c. Mobile parity** — PR-4 merged
 - [x] **1d. Integration test** — client round-trip vitest (`syncRoundTrip.test.ts`) + server `syncV2.integration.test.ts`. (PR-5)
 - [x] **1e. Scheduler wiring** — pull on boot + after successful push + periodic/backoff. (PR-1 merged)
 
-**Гейт:** habit/budget/manual-expense round-trip web↔web (two profiles) OR web→mobile.
+**Гейт:** manual E2E за [`sync-client-e2e.md`](../03-operations/runbooks/sync-client-e2e.md) (локальне середовище).
 
-### Фаза 2 — Full state registry expansion
+### Фаза 2 — Full state registry expansion (in progress)
 
-- [ ] Server: apply functions для routine full-state tables (habits, tags, categories, prefs, pushups, habit_order, completion_notes).
-- [ ] Server: apply для fizruk misc + nutrition water/shopping.
-- [ ] Extend `OP_LOG_TABLE_REGISTRY` + migrations if PG columns missing.
-- [ ] Client enqueue для нових таблиць.
-- [ ] Contract tests updated.
+> **Handoff:** [`sync-client-wiring-phase2-handoff.md`](./sync-client-wiring-phase2-handoff.md) — що зроблено в cloud vs що лишилось локально.
+
+- [x] Server: apply functions для routine full-state tables (7).
+- [x] Server: apply для fizruk misc + nutrition water/shopping (8).
+- [x] Extend `OP_LOG_TABLE_REGISTRY` (27 → **42**); PG migrations не потрібні (050/051/052).
+- [x] Client enqueue web + mobile для нових таблиць.
+- [ ] Contract tests — N/A (push/pull shape unchanged).
+- [ ] Integration test (Testcontainers) — **blocked cloud**; run locally/CI.
+- [ ] Manual E2E habit round-trip — **blocked cloud**; run locally.
 
 ### Фаза 3 — Realtime + ops
 
@@ -226,6 +230,7 @@ pnpm check
 ## 10. Пов'язане
 
 - [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md) — **операційна інструкція** (фази, агенти, метрики, E2E)
+- [`sync-client-wiring-phase2-handoff.md`](./sync-client-wiring-phase2-handoff.md) — Phase 2 cloud/local handoff
 - [`dualwrite-teardown.md`](./dualwrite-teardown.md) — SQLite SoT на клієнті (виконано)
 - [`storage-roadmap.md`](./storage-roadmap.md) — historical 13 stages
 - [`storage-roadmap/01-overview.md`](./storage-roadmap/01-overview.md) — цільова архітектура sync
@@ -234,6 +239,6 @@ pnpm check
 - [ADR-0065](../../04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md) — retention + NOTIFY
 - [ADR-0073](../../04-governance/adr/0073-dualwrite-generic-framework.md) — sqliteWriter framework
 - `apps/server/src/modules/sync/syncV2.ts` — registry + push/pull handlers
-- `apps/web/src/core/syncEngine/` — push scheduler (pull TBD)
+- `apps/web/src/core/syncEngine/` — push + pull scheduler
 - `apps/web/src/core/syncEngine/enqueueOutboxUpsert.ts` — enqueue helper
 - `packages/api-client/src/endpoints/syncV2*.ts` — contract types

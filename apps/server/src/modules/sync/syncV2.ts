@@ -29,6 +29,15 @@ import {
   applyRoutineStreaks,
 } from "./routine/applySync.js";
 import {
+  applyRoutineCategories,
+  applyRoutineCompletionNotes,
+  applyRoutineHabitOrder,
+  applyRoutineHabits,
+  applyRoutinePrefs,
+  applyRoutinePushups,
+  applyRoutineTags,
+} from "./routine/applySyncFullState.js";
+import {
   applyFizrukWorkouts,
   applyFizrukItems,
   applyFizrukSets,
@@ -36,12 +45,24 @@ import {
   applyFizrukMeasurements,
 } from "./fizruk/applySync.js";
 import {
+  applyFizrukDailyLog,
+  applyFizrukMonthlyPlan,
+  applyFizrukPlanTemplates,
+  applyFizrukPrograms,
+  applyFizrukWellbeing,
+  applyFizrukWorkoutTemplates,
+} from "./fizruk/applySyncFullState.js";
+import {
   applyNutritionMeals,
   applyNutritionPantries,
   applyNutritionPantryItems,
   applyNutritionPrefs,
   applyNutritionRecipes,
 } from "./nutrition/applySync.js";
+import {
+  applyNutritionShoppingList,
+  applyNutritionWaterLog,
+} from "./nutrition/applySyncFullState.js";
 import {
   applyFinykHiddenAccounts,
   applyFinykHiddenTransactions,
@@ -112,16 +133,31 @@ const CLOCK_SKEW_FORWARD_MS = 60 * 60 * 1000;
 const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   routine_entries: applyRoutineEntries,
   routine_streaks: applyRoutineStreaks,
+  routine_habits: applyRoutineHabits,
+  routine_tags: applyRoutineTags,
+  routine_categories: applyRoutineCategories,
+  routine_prefs: applyRoutinePrefs,
+  routine_pushups: applyRoutinePushups,
+  routine_habit_order: applyRoutineHabitOrder,
+  routine_completion_notes: applyRoutineCompletionNotes,
   fizruk_workouts: applyFizrukWorkouts,
   fizruk_workout_items: applyFizrukItems,
   fizruk_workout_sets: applyFizrukSets,
   fizruk_custom_exercises: applyFizrukCustomExercises,
   fizruk_measurements: applyFizrukMeasurements,
+  fizruk_daily_log: applyFizrukDailyLog,
+  fizruk_monthly_plan: applyFizrukMonthlyPlan,
+  fizruk_plan_templates: applyFizrukPlanTemplates,
+  fizruk_programs: applyFizrukPrograms,
+  fizruk_wellbeing: applyFizrukWellbeing,
+  fizruk_workout_templates: applyFizrukWorkoutTemplates,
   nutrition_meals: applyNutritionMeals,
   nutrition_pantries: applyNutritionPantries,
   nutrition_pantry_items: applyNutritionPantryItems,
   nutrition_prefs: applyNutritionPrefs,
   nutrition_recipes: applyNutritionRecipes,
+  nutrition_water_log: applyNutritionWaterLog,
+  nutrition_shopping_list: applyNutritionShoppingList,
   finyk_hidden_accounts: applyFinykHiddenAccounts,
   finyk_hidden_transactions: applyFinykHiddenTransactions,
   finyk_budgets: applyFinykBudgets,
