@@ -173,15 +173,15 @@
 
 ### Revenue (`revenue-monetization-roast`)
 
-| Item                                                     | Обґрунтування                                                                        |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| P1-5 — LiqPay payment gateway placeholder                | UA-локальний шлюз; залежить від launch + EN-locale priority. Може зайти в Sprint 11. |
-| P2-1 — GTM hero copy A/B (PostHog feature flag)          | Post-launch ритуал; залежить від baseline metrics з S10-R1.                          |
-| P2-2 — Revenue dashboards в admin-панелі                 | Post-launch analytics; ROI росте з користувацькою базою.                             |
+| Item                                                     | Обґрунтування                                                                                                                                         |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1-5 — LiqPay payment gateway placeholder                | UA-локальний шлюз; залежить від launch + EN-locale priority. Може зайти в Sprint 11.                                                                  |
+| P2-1 — GTM hero copy A/B (PostHog feature flag)          | Post-launch ритуал; залежить від baseline metrics з S10-R1.                                                                                           |
+| P2-2 — Revenue dashboards в admin-панелі                 | Post-launch analytics; ROI росте з користувацькою базою.                                                                                              |
 | P2-3 — Subscription change proration (upgrade/downgrade) | ADR-grade; [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) фіксує monthly/yearly UAH tiers. Після Sprint 10 launch traction. |
-| P2-4 — Invoice PDF generation + email                    | Post-launch ритуал.                                                                  |
-| P2-5 — Referral / promo code system                      | Post-launch ритуал.                                                                  |
-| P2-6 — Annual billing option                             | ADR amendment + Stripe Price + UI toggle. Post-launch ритуал.                        |
+| P2-4 — Invoice PDF generation + email                    | Post-launch ритуал.                                                                                                                                   |
+| P2-5 — Referral / promo code system                      | Post-launch ритуал.                                                                                                                                   |
+| P2-6 — Annual billing option                             | ADR amendment + Stripe Price + UI toggle. Post-launch ритуал.                                                                                         |
 
 ### Documentation hygiene (`documentation-hygiene-roast`)
 

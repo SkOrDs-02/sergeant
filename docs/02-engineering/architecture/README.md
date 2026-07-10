@@ -1,6 +1,6 @@
 # 🏗️ Architecture
 
-> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.
@@ -14,7 +14,7 @@ System architecture and runtime surface inventory for Sergeant.
 | Document                                         | Purpose                                                                        | Last updated  |
 | ------------------------------------------------ | ------------------------------------------------------------------------------ | ------------- |
 | [`service-catalog.md`](./service-catalog.md)     | Runtime inventory: owners, targets, dependencies, healthchecks, rollback paths | 2026-05-15 ✅ |
-| [`platforms.md`](./platforms.md)                 | Web / RN mobile / Capacitor shell — статус, feature-parity матриця (ADR-0052) | 2026-07-10 ✅ |
+| [`platforms.md`](./platforms.md)                 | Web / RN mobile / Capacitor shell — статус, feature-parity матриця (ADR-0052)  | 2026-07-10 ✅ |
 | [`hosting-evolution.md`](./hosting-evolution.md) | Hosting evolution, infra phases, migration triggers                            | 2026-05-13 ✅ |
 
 ### Архітектурні діаграми та потоки

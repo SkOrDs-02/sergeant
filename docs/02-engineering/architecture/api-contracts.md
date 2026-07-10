@@ -1,6 +1,6 @@
 # API contracts — runtime consumer-driven contract testing (Pact)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 >
 > **v2 (persona-extend) coverage:** 22 consumer interactions → 14 unique routes; 8+ provider replays у `provider.test.ts` (решта — `it.todo` або auth-stubbed). Див. header comment у `apps/server/src/__tests__/contracts/provider.test.ts`.
@@ -9,11 +9,11 @@ Pact-based **runtime** contract verification for `@sergeant/api-client ↔ @serg
 
 ## TL;DR
 
-| Гарантія                                             | Як забезпечується                                                                            | Surface                                                   |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **Типи клієнт ↔ сервер ↔ тест синхронізовані**       | Hard Rule #3 + `pnpm api:check-openapi` + `*.contract.test.ts` фікстури в `@sergeant/shared` | Build-time / pre-PR                                       |
-| **Wire-shape клієнт ↔ сервер ідентична на рантаймі** | Pact-контракт: consumer описує запит+відповідь, провайдер реплеює це проти `createApp()`     | `pnpm check` → `turbo run test` (consumer + `provider.test.ts` у `@sergeant/server`) |
-| **Pact-файли як артефакт між сервісами**             | Локально: `packages/api-client/pacts/*.json`. Окремий GH Actions artifact-upload — optional follow-up | Repo checkout (не split-job CI)                                                       |
+| Гарантія                                             | Як забезпечується                                                                                     | Surface                                                                              |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Типи клієнт ↔ сервер ↔ тест синхронізовані**       | Hard Rule #3 + `pnpm api:check-openapi` + `*.contract.test.ts` фікстури в `@sergeant/shared`          | Build-time / pre-PR                                                                  |
+| **Wire-shape клієнт ↔ сервер ідентична на рантаймі** | Pact-контракт: consumer описує запит+відповідь, провайдер реплеює це проти `createApp()`              | `pnpm check` → `turbo run test` (consumer + `provider.test.ts` у `@sergeant/server`) |
+| **Pact-файли як артефакт між сервісами**             | Локально: `packages/api-client/pacts/*.json`. Окремий GH Actions artifact-upload — optional follow-up | Repo checkout (не split-job CI)                                                      |
 
 ## 🎯 Чому Pact поверх OpenAPI sync
 
