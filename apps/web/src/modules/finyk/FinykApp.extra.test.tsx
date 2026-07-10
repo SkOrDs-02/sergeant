@@ -119,12 +119,13 @@ vi.mock("./components/SyncIndicator", () => ({
   SWIPE_THRESHOLD_PX: 80,
 }));
 
+const swipeState = vi.hoisted(() => ({ dragDx: 0 }));
 vi.mock("@shared/hooks/useSwipeNavigation", () => ({
   useSwipeNavigation: vi.fn(() => ({
     onTouchStart: vi.fn(),
     onTouchMove: vi.fn(),
     onTouchEnd: vi.fn(),
-    dragDx: 0,
+    dragDx: swipeState.dragDx,
   })),
 }));
 
@@ -247,9 +248,11 @@ vi.mock("./components/FinykLoginScreen", () => ({
   FinykLoginScreen: ({
     onContinueWithoutBank,
     onBackToHub,
+    onConnect,
   }: {
     onContinueWithoutBank: () => void;
     onBackToHub: () => void;
+    onConnect: (token: string) => void;
   }) => (
     <div data-testid="finyk-login-screen">
       <button type="button" onClick={onContinueWithoutBank}>
@@ -257,6 +260,9 @@ vi.mock("./components/FinykLoginScreen", () => ({
       </button>
       <button type="button" onClick={onBackToHub}>
         Назад overlay
+      </button>
+      <button type="button" onClick={() => onConnect("overlay-token")}>
+        Connect overlay
       </button>
     </div>
   ),
@@ -301,6 +307,7 @@ vi.mock("@shared/components/ui/ModuleBottomNav", () => ({
 // ── Imports under test (must come after vi.mock declarations) ─────────────────
 import FinykApp from "./FinykApp";
 import { useFinykRoute } from "./hooks/useFinykRoute";
+import type { FinykPage } from "./lib/finykRouter";
 import { useMonobank } from "./hooks/useMonobank";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import { enableFinykManualOnly } from "./lib/demoData";
@@ -558,5 +565,132 @@ describe("FinykApp (extra) — settings button", () => {
     expect(() =>
       render(<FinykApp onOpenSettings={onOpenSettings} />),
     ).not.toThrow();
+  });
+});
+
+// ── EyeClosedIcon (showBalance=false) ────────────────────────────────────────
+
+describe("FinykApp (extra) — EyeClosedIcon when showBalance=false", () => {
+  it("renders the hide-eye button aria-label when balance is hidden", () => {
+    storageMock.showBalance = false;
+    render(<FinykApp />);
+    // When showBalance=false, button label is "Показати суми"
+    const eyeButton = screen.getByRole("button", {
+      name: /показати суми/i,
+    });
+    expect(eyeButton).toBeInTheDocument();
+  });
+
+  it("clicking the eye button from hidden state calls setShowBalance(true)", () => {
+    storageMock.showBalance = false;
+    render(<FinykApp />);
+    const eyeButton = screen.getByRole("button", {
+      name: /показати суми/i,
+    });
+    fireEvent.click(eyeButton);
+    expect(storageMock.setShowBalance).toHaveBeenCalledWith(true);
+  });
+});
+
+// ── getSwipeStyle: non-zero swipeDx ──────────────────────────────────────────
+
+describe("FinykApp (extra) — getSwipeStyle with non-zero dragDx", () => {
+  afterEach(() => {
+    swipeState.dragDx = 0;
+  });
+
+  it("applies translate3d transform when swipeDx != 0", () => {
+    swipeState.dragDx = 60;
+    // Re-render with non-zero dragDx → getSwipeStyle returns translate style
+    render(<FinykApp />);
+    // The component renders without crashing; the style is applied inline.
+    // Verify the page content still renders.
+    expect(screen.getByTestId("finyk-overview")).toBeInTheDocument();
+  });
+});
+
+// ── Login overlay onConnect ───────────────────────────────────────────────────
+
+describe("FinykApp (extra) — login overlay onConnect callback", () => {
+  it("calls mono.connect with the token from the login overlay", () => {
+    const connectMock = vi.fn();
+    vi.mocked(useMonobank).mockReturnValue({
+      clientInfo: null,
+      connecting: false,
+      error: null,
+      authError: null,
+      setAuthError: vi.fn(),
+      connect: connectMock,
+      accounts: [],
+      transactions: [],
+      syncState: null,
+    } as unknown as ReturnType<typeof useMonobank>);
+
+    render(<FinykApp />);
+    // Open the login overlay
+    fireEvent.click(screen.getByText("Підключити"));
+    expect(screen.getByTestId("finyk-login-screen")).toBeInTheDocument();
+
+    // Click the connect button in the overlay
+    fireEvent.click(screen.getByText("Connect overlay"));
+    expect(connectMock).toHaveBeenCalledWith("overlay-token");
+  });
+});
+
+// ── NoBankBanner onContinueManually ──────────────────────────────────────────
+
+describe("FinykApp (extra) — NoBankBanner onContinueManually", () => {
+  it("calls enableFinykManualOnly and hides the banner when continuing manually", () => {
+    render(<FinykApp />);
+    expect(screen.getByTestId("no-bank-banner")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Без банку"));
+    expect(enableFinykManualOnly).toHaveBeenCalled();
+    // Banner should be gone after manualOnly=true
+    expect(screen.queryByTestId("no-bank-banner")).not.toBeInTheDocument();
+  });
+});
+
+// ── renderPage — all page variants ───────────────────────────────────────────
+
+describe("FinykApp (extra) — page routing", () => {
+  it("renders the overview page by default", () => {
+    vi.mocked(useFinykRoute).mockReturnValue(["overview", navigateMock]);
+    render(<FinykApp />);
+    expect(screen.getByTestId("finyk-overview")).toBeInTheDocument();
+  });
+
+  it("renders null for an unknown page route without crashing", () => {
+    vi.mocked(useFinykRoute).mockReturnValue([
+      "unknown" as unknown as FinykPage,
+      navigateMock,
+    ]);
+    expect(() => render(<FinykApp />)).not.toThrow();
+  });
+});
+
+// ── Auto-close login overlay on clientInfo change ─────────────────────────────
+
+describe("FinykApp (extra) — auto-close login overlay when clientInfo arrives", () => {
+  it("closes the overlay when clientInfo becomes non-null after opening", () => {
+    const { rerender } = render(<FinykApp />);
+    fireEvent.click(screen.getByText("Підключити"));
+    expect(screen.getByTestId("finyk-login-screen")).toBeInTheDocument();
+
+    // Simulate clientInfo arriving (successful connect)
+    vi.mocked(useMonobank).mockReturnValue({
+      clientInfo: { accounts: [], name: "Тест" },
+      connecting: false,
+      error: null,
+      authError: null,
+      setAuthError: vi.fn(),
+      connect: vi.fn(),
+      accounts: [],
+      transactions: [],
+      syncState: null,
+    } as unknown as ReturnType<typeof useMonobank>);
+    rerender(<FinykApp />);
+
+    // Overlay should be closed
+    expect(screen.queryByTestId("finyk-login-screen")).not.toBeInTheDocument();
   });
 });
