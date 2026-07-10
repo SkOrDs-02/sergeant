@@ -7,7 +7,7 @@ import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import {
   triggerHiddenTransactionSqliteMirror,
   triggerManualExpenseDeleteSqliteMirror,
-} from "../../../../modules/finyk/lib/dualWrite";
+} from "../../../../modules/finyk/lib/sqliteWriter";
 import type {
   CreateTransactionAction,
   DeleteTransactionAction,

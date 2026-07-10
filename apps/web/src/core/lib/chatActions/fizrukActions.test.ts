@@ -5,7 +5,7 @@ import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
 // Spy on the dual-write trigger so the tombstoned measurements key (and the
 // daily-log mirror) are guarded: a regression back to raw `lsSet` would leave
 // the trigger uncalled and fail these assertions.
-vi.mock("../../../modules/fizruk/lib/dualWrite/index", () => ({
+vi.mock("../../../modules/fizruk/lib/sqliteWriter/index", () => ({
   triggerFizrukDualWrite: vi.fn(),
   isFizrukDualWriteRegistered: () => false,
 }));
@@ -29,7 +29,7 @@ vi.mock("./fizrukActions/shared", async (orig) => {
 });
 
 import { handleFizrukAction } from "./fizrukActions";
-import { triggerFizrukDualWrite } from "../../../modules/fizruk/lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../../../modules/fizruk/lib/sqliteWriter/index";
 import { persistFizrukWorkouts } from "./fizrukActions/shared";
 import type { ChatAction } from "./types";
 

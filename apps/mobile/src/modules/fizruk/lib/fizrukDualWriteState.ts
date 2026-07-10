@@ -59,7 +59,7 @@ export type ExtractableChecklistLike = {
   readonly label: string;
 };
 
-import { isFizrukDualWriteRegistered } from "./dualWrite/index";
+import { isFizrukDualWriteRegistered } from "./sqliteWriter/index";
 import {
   type FizrukActiveWorkoutSnapshot,
   type FizrukCustomExerciseSnapshot,
@@ -74,7 +74,7 @@ import {
   type FizrukWellbeingSnapshot,
   type FizrukWorkoutSnapshot,
   type FizrukWorkoutTemplateSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import { getCachedFizrukSqliteState } from "./sqliteReader";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;

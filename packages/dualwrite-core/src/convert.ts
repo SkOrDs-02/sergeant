@@ -1,7 +1,7 @@
 /**
  * Nullable numeric converters for SQLite bind parameters.
  *
- * Extracted verbatim from `apps/web/src/shared/lib/dualWrite/core.ts`
+ * Extracted verbatim from `apps/web/src/shared/lib/sqliteWriter/core.ts`
  * (Stage 10 PR #070-dualwrite-refactor). Behaviour is unchanged.
  */
 

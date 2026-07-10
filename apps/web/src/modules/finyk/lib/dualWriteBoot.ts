@@ -13,7 +13,7 @@ import { getSqliteDb } from "../../../core/db/sqlite.js";
 import {
   registerFinykDualWriteContext,
   type FinykDualWriteContext,
-} from "./dualWrite/index.js";
+} from "./sqliteWriter/index.js";
 import { migrateFinyk } from "./clientMigrate.js";
 
 export interface BootFinykDualWriteInput {
@@ -37,7 +37,9 @@ export function bootFinykDualWrite(input: BootFinykDualWriteInput): () => void {
       }
       return client;
     },
-    getNow: () => new Date().toISOString(),
+    getNow: () =>
+      // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, not a Kyiv day key
+      new Date().toISOString(),
   };
   return registerFinykDualWriteContext(ctx);
 }

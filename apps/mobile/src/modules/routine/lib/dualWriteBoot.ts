@@ -19,7 +19,7 @@ import { getSqliteMigrationClient } from "@/core/db/sqlite";
 import {
   registerRoutineDualWriteContext,
   type RoutineDualWriteContext,
-} from "./dualWrite";
+} from "./sqliteWriter";
 
 export interface BootRoutineDualWriteInput {
   getUserId(): string | null;

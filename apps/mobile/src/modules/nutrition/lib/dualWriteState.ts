@@ -22,12 +22,12 @@ import {
 import {
   isNutritionDualWriteRegistered,
   type NutritionDualWriteState,
-} from "./dualWrite";
+} from "./sqliteWriter";
 import type {
   NutritionMealSnapshot,
   NutritionPantrySnapshot,
   NutritionRecipeSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import { loadSavedRecipes, type SavedRecipe } from "./recipeBookStore";
 import { getCachedNutritionSqliteState } from "./sqliteReader";
 

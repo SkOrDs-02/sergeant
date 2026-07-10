@@ -22,12 +22,12 @@ import type {
 } from "@sergeant/finyk-domain/domain";
 
 import { safeReadLS } from "@/lib/storage";
-import { triggerFinykDualWrite } from "./dualWrite";
+import { triggerFinykDualWrite } from "./sqliteWriter";
 import {
   blobsFromArray,
   idsFromArray,
   stateWithSlice,
-} from "./dualWrite/extract";
+} from "./sqliteWriter/extract";
 import { getCachedFinykSqliteState } from "./sqliteReader";
 import { useFinykSqliteReadTick } from "./sqliteReadGate";
 

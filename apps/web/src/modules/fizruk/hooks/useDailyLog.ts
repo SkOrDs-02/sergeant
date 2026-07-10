@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import type { DailyLogEntry as DomainDailyLogEntry } from "@sergeant/fizruk-domain";
 import { mirrorWeightToBiometrics } from "../../../core/profile/biometrics";
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractDailyLogSnapshots,

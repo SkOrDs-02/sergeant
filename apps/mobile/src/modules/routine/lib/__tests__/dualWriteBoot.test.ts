@@ -10,7 +10,7 @@ const mockRegister = jest.fn();
 const mockGetSqliteMigrationClient = jest.fn();
 const mockMigrationClient = { __label: "migration-client" };
 
-jest.mock("../dualWrite", () => ({
+jest.mock("../sqliteWriter", () => ({
   registerRoutineDualWriteContext: (ctx: unknown) => mockRegister(ctx),
 }));
 

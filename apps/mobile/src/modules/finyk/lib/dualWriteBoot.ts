@@ -15,7 +15,7 @@ import { migrateFinyk } from "./clientMigrate";
 import {
   registerFinykDualWriteContext,
   type FinykDualWriteContext,
-} from "./dualWrite";
+} from "./sqliteWriter";
 
 export interface BootFinykDualWriteInput {
   getUserId(): string | null;

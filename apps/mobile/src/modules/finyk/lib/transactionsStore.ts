@@ -26,14 +26,14 @@ import type { MonoAccount, Transaction } from "@sergeant/finyk-domain/domain";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { triggerFinykDualWrite } from "./dualWrite";
+import { triggerFinykDualWrite } from "./sqliteWriter";
 import {
   blobsFromArray,
   idsFromArray,
   stateWithSlice,
   txCatsFromMap,
   txSplitsFromMap,
-} from "./dualWrite/extract";
+} from "./sqliteWriter/extract";
 
 import type { ManualExpensePayload } from "../components/ManualExpenseSheet";
 

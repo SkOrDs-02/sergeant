@@ -39,7 +39,7 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { safeReadStringLS, safeRemoveLS, safeWriteLS } from "@/lib/storage";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractActiveWorkoutSnapshot,

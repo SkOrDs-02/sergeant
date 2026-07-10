@@ -25,8 +25,8 @@ import {
 import { _getMMKVInstance } from "@/lib/storage";
 
 import { migrateRoutine } from "../clientMigrate";
-import { applyRoutineDualWriteOps } from "../dualWrite/adapter";
-import { diffRoutineDualWriteOps } from "../dualWrite/diff";
+import { applyRoutineDualWriteOps } from "../sqliteWriter/adapter";
+import { diffRoutineDualWriteOps } from "../sqliteWriter/diff";
 import { importRoutineResidualFromMmkv } from "../residualImport";
 
 function syncClient(db: ReturnType<typeof Database>): SqliteMigrationClient {

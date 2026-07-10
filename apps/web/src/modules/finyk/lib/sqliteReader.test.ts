@@ -10,8 +10,8 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
-import { applyFinykDualWriteOps } from "./dualWrite/adapter";
-import type { FinykDualWriteOp } from "./dualWrite/diff";
+import { applyFinykDualWriteOps } from "./sqliteWriter/adapter";
+import type { FinykDualWriteOp } from "./sqliteWriter/diff";
 import {
   clearFinykSqliteCache,
   getCachedFinykSqliteState,
@@ -20,7 +20,7 @@ import {
 import {
   createTestSqlite,
   type TestSqliteHandle,
-} from "./dualWrite/__tests__/testSqlite";
+} from "./sqliteWriter/__tests__/testSqlite";
 
 const UID = "user-1";
 const TS = "2026-05-01T10:00:00.000Z";

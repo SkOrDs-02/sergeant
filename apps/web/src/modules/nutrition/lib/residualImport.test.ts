@@ -18,12 +18,12 @@ vi.mock("./nutritionStorageInstance", () => ({
 }));
 
 const applyOps = vi.fn();
-vi.mock("./dualWrite/adapter.js", () => ({
+vi.mock("./sqliteWriter/adapter.js", () => ({
   applyNutritionDualWriteOps: (...a: unknown[]) => applyOps(...a),
 }));
 
 const diffOps = vi.fn();
-vi.mock("./dualWrite/diff.js", () => ({
+vi.mock("./sqliteWriter/diff.js", () => ({
   diffNutritionDualWriteOps: (...a: unknown[]) => diffOps(...a),
 }));
 

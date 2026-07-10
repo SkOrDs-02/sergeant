@@ -49,7 +49,7 @@ import {
   type Habit,
   type HabitSnapshot,
 } from "@sergeant/routine-domain";
-import { triggerRoutineDualWrite } from "./dualWrite/index.js";
+import { triggerRoutineDualWrite } from "./sqliteWriter/index.js";
 import {
   getCachedSqliteCompletions,
   getCachedSqliteRoutineState,
@@ -364,6 +364,7 @@ export function buildRoutineBackupPayload() {
   return {
     kind: "hub-routine-backup" as const,
     schemaVersion: ROUTINE_SCHEMA_VERSION,
+    // eslint-disable-next-line no-restricted-syntax -- backup export wall-clock metadata
     exportedAt: new Date().toISOString(),
     data: loadRoutineState(),
   };

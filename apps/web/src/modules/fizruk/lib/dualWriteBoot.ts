@@ -18,7 +18,7 @@ import { getSqliteDb } from "../../../core/db/sqlite.js";
 import {
   registerFizrukDualWriteContext,
   type FizrukDualWriteContext,
-} from "./dualWrite/index.js";
+} from "./sqliteWriter/index.js";
 
 export interface BootFizrukDualWriteInput {
   getUserId(): string | null;
@@ -39,7 +39,9 @@ export function bootFizrukDualWrite(
       const handle = await getSqliteDb();
       return handle.migrationClient();
     },
-    getNow: () => new Date().toISOString(),
+    getNow: () =>
+      // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, not a Kyiv day key
+      new Date().toISOString(),
   };
   return registerFizrukDualWriteContext(ctx);
 }

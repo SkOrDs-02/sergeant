@@ -16,7 +16,7 @@ import { migrateNutrition } from "./clientMigrate";
 import {
   registerNutritionDualWriteContext,
   type NutritionDualWriteContext,
-} from "./dualWrite";
+} from "./sqliteWriter";
 
 export interface BootNutritionDualWriteInput {
   getUserId(): string | null;

@@ -40,7 +40,7 @@ import {
   type HabitSnapshot,
   type RoutineState,
 } from "@sergeant/routine-domain";
-import { triggerRoutineDualWrite } from "./dualWrite";
+import { triggerRoutineDualWrite } from "./sqliteWriter";
 import {
   getCachedSqliteCompletions,
   getCachedSqliteRoutineState,
