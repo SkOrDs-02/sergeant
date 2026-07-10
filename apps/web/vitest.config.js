@@ -138,15 +138,23 @@ export default defineConfig({
         //   Ratchet: lines → 88 (coverage-thresholds.json), branches → 74,
         //   fns → 81, statements → 86. ~1.5–2.5pp headroom for throttled CI.
         //
+        // - 2026-07-10 (web coverage wave 7): Transactions page shells,
+        //   FeedbackDialog, useSqliteTickOverlay, singleton branches,
+        //   CapabilityDetailModal, foodDb legacy migration. Measured (CI=true,
+        //   maxWorkers=1, 724 files / ~7170 tests — 16 pre-existing fails on
+        //   main sqlite-overlay drift, not introduced by this wave):
+        //     lines 90.52 / branches 75.84 / fns 82.64 / statements 88.03.
+        //   Ratchet: lines → 89, branches → 75, fns → 82, statements → 87.
+        //
         // Floors set ~1.3–2.5pp below current actuals. Raise per sprint
         // as more component shells land (next targets: FinykApp,
         // NutritionApp, useRoutineAppState, CommandPaletteUI,
         // HabitDetailSheet — the heavy orchestration shells still at 0%).
         // `lines` приходить з кореневого coverage-thresholds.json.
         lines: sharedThresholds["apps/web"],
-        branches: 74,
-        functions: 81,
-        statements: 86,
+        branches: 75,
+        functions: 82,
+        statements: 87,
       },
     },
   },
