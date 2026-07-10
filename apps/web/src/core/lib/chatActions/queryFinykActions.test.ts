@@ -5,18 +5,24 @@ import {
   __setFinykSqliteStateCacheForTests,
   clearFinykSqliteCache,
 } from "../../../modules/finyk/lib/sqliteReader";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../../modules/finyk/lib/monoMirrorReader";
 import type { ManualExpense } from "../../../modules/finyk/hooks/useStorage.types";
 import type { ChatAction } from "./types";
 
 beforeEach(() => {
   localStorage.clear();
   clearFinykSqliteCache();
+  clearFinykMonoMirrorCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
 });
 afterEach(() => {
   localStorage.clear();
   clearFinykSqliteCache();
+  clearFinykMonoMirrorCache();
   vi.useRealTimers();
 });
 
@@ -31,8 +37,8 @@ function call(action: ChatAction): string {
 /**
  * Seed manual (грн) + bank (kopiykas) transactions for a deterministic
  * dataset. Manual expenses come from the canonical SQLite warm cache
- * (the executors read it off-React, not LS); the bank cache stays on LS
- * (`finyk_tx_cache` — no SQLite canon).
+ * (the executors read it off-React, not LS); bank transactions come from
+ * the Mono mirror cache (finyk_tx_cache is tombstoned in Phase 3).
  */
 function seed(): void {
   __setFinykSqliteStateCacheForTests({
@@ -68,27 +74,25 @@ function seed(): void {
       },
     ] as unknown as ManualExpense[],
   });
-  localStorage.setItem(
-    "finyk_tx_cache",
-    JSON.stringify({
-      txs: [
-        {
-          id: "b_silpo",
-          date: "2026-04-20",
-          description: "Сільпо",
-          amount: -30000,
-          category: "food",
-        },
-        {
-          id: "b_taxi",
-          date: "2026-04-18",
-          merchant: "Bolt",
-          amount: -15000,
-          category: "transport",
-        },
-      ],
-    }),
-  );
+  // Bank transactions now live in the Mono mirror cache (Phase 3 teardown).
+  __setFinykMonoMirrorCacheForTests({
+    transactions: [
+      {
+        id: "b_silpo",
+        date: "2026-04-20",
+        description: "Сільпо",
+        amount: -30000,
+        category: "food",
+      },
+      {
+        id: "b_taxi",
+        date: "2026-04-18",
+        merchant: "Bolt",
+        amount: -15000,
+        category: "transport",
+      },
+    ] as never[],
+  });
 }
 
 // ---------------------------------------------------------------------------

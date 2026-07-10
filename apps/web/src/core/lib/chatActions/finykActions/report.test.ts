@@ -7,28 +7,33 @@ vi.mock("../../../../modules/finyk/utils", () => ({
 vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
   getCachedFinykSqliteState: vi.fn(),
 }));
+vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: vi.fn(),
+}));
 
 import { ls } from "../../hubChatUtils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import { exportReport } from "./report";
 
 const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
 const mockGetCached = vi.mocked(getCachedFinykSqliteState);
+const mockGetMirror = vi.mocked(getCachedFinykMonoMirrorState);
 
 // Use a timestamp within the last 7 days so "week" period filter passes
 const TX_EPOCH_SEC = Math.floor((Date.now() - 3600 * 1000) / 1000);
-
-function makeCache(txs: Array<{ id: string; amount: number; time?: number }>) {
-  return { txs };
-}
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetCached.mockReturnValue({
     hiddenTransactions: [],
   } as unknown as ReturnType<typeof getCachedFinykSqliteState>);
+  mockGetMirror.mockReturnValue({
+    transactions: [],
+    accounts: [],
+    refreshedAt: null,
+  });
   mockLs.mockImplementation((key: string) => {
-    if (key === "finyk_tx_cache") return makeCache([]);
     if (key === "finyk_tx_splits") return {};
     return null;
   });
@@ -52,14 +57,13 @@ describe("exportReport", () => {
   });
 
   it("sums expenses (negative amounts)", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return makeCache([
-          { id: "t1", amount: -5000, time: TX_EPOCH_SEC },
-          { id: "t2", amount: -3000, time: TX_EPOCH_SEC },
-        ]);
-      }
-      return {};
+    mockGetMirror.mockReturnValue({
+      transactions: [
+        { id: "t1", amount: -5000, time: TX_EPOCH_SEC },
+        { id: "t2", amount: -3000, time: TX_EPOCH_SEC },
+      ] as never,
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
     });
     const result = exportReport({
       name: "export_report",
@@ -69,11 +73,10 @@ describe("exportReport", () => {
   });
 
   it("sums income (positive amounts)", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return makeCache([{ id: "t3", amount: 10000, time: TX_EPOCH_SEC }]);
-      }
-      return {};
+    mockGetMirror.mockReturnValue({
+      transactions: [{ id: "t3", amount: 10000, time: TX_EPOCH_SEC }] as never,
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
     });
     const result = exportReport({
       name: "export_report",
@@ -86,14 +89,13 @@ describe("exportReport", () => {
     mockGetCached.mockReturnValue({
       hiddenTransactions: ["t_hidden"],
     } as unknown as ReturnType<typeof getCachedFinykSqliteState>);
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return makeCache([
-          { id: "t_hidden", amount: -20000, time: TX_EPOCH_SEC },
-          { id: "t_visible", amount: -5000, time: TX_EPOCH_SEC },
-        ]);
-      }
-      return {};
+    mockGetMirror.mockReturnValue({
+      transactions: [
+        { id: "t_hidden", amount: -20000, time: TX_EPOCH_SEC },
+        { id: "t_visible", amount: -5000, time: TX_EPOCH_SEC },
+      ] as never,
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
     });
     const result = exportReport({
       name: "export_report",
@@ -109,10 +111,6 @@ describe("exportReport", () => {
   });
 
   it("accepts custom period with from/to dates", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") return makeCache([]);
-      return {};
-    });
     const result = exportReport({
       name: "export_report",
       input: { period: "custom", from: "2026-04-01", to: "2026-04-30" },
@@ -121,14 +119,13 @@ describe("exportReport", () => {
   });
 
   it("shows correct counts in Транзакцій line", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return makeCache([
-          { id: "t1", amount: -1000, time: TX_EPOCH_SEC },
-          { id: "t2", amount: 500, time: TX_EPOCH_SEC },
-        ]);
-      }
-      return {};
+    mockGetMirror.mockReturnValue({
+      transactions: [
+        { id: "t1", amount: -1000, time: TX_EPOCH_SEC },
+        { id: "t2", amount: 500, time: TX_EPOCH_SEC },
+      ] as never,
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
     });
     const result = exportReport({
       name: "export_report",

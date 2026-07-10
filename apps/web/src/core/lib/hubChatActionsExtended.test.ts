@@ -18,6 +18,10 @@ import {
   __setFinykSqliteStateCacheForTests,
   clearFinykSqliteCache,
 } from "../../modules/finyk/lib/sqliteReader";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../modules/finyk/lib/monoMirrorReader";
 import type { ManualExpense } from "../../modules/finyk/hooks/useStorage.types";
 import { executeAction } from "./hubChatActions";
 import { triggerFizrukDualWrite } from "../../modules/fizruk/lib/dualWrite/index";
@@ -104,7 +108,8 @@ vi.mock("../../modules/nutrition/lib/shoppingListStorage", async (orig) => {
 
 beforeEach(() => {
   // Stage 8 PR #057r/#057k-tombstone — routine + finyk canonical state
-  // lives in the SQLite warm caches, not localStorage. Reset all so each
+  // lives in the SQLite warm caches, not localStorage. Phase 3 teardown also
+  // moved Mono bank transactions to the mirror cache. Reset all so each
   // spec starts clean.
   localStorage.clear();
   mem.workouts = [];
@@ -115,6 +120,7 @@ beforeEach(() => {
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   clearFinykSqliteCache();
+  clearFinykMonoMirrorCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
 });
@@ -123,6 +129,7 @@ afterEach(() => {
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   clearFinykSqliteCache();
+  clearFinykMonoMirrorCache();
   vi.useRealTimers();
 });
 
@@ -170,26 +177,23 @@ describe("find_transaction", () => {
   });
 
   it("шукає bank cache transactions і не показує hidden ids", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [
-          {
-            id: "mono_ok",
-            amount: -12500,
-            description: "Сільпо",
-            time: 1718376000,
-          },
-          {
-            id: "mono_hidden",
-            amount: -12500,
-            description: "Сільпо",
-            time: 1718376000,
-          },
-        ],
-      }),
-    );
-    // Bank tx cache stays on LS; hidden-tx ids are read from SQLite now.
+    // finyk_tx_cache is tombstoned (Phase 3) — seed the canonical mirror cache.
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        {
+          id: "mono_ok",
+          amount: -12500,
+          description: "Сільпо",
+          time: 1718376000,
+        } as never,
+        {
+          id: "mono_hidden",
+          amount: -12500,
+          description: "Сільпо",
+          time: 1718376000,
+        } as never,
+      ],
+    });
     __setFinykSqliteStateCacheForTests({ hiddenTransactions: ["mono_hidden"] });
     const msg = executeAction({
       name: "find_transaction",

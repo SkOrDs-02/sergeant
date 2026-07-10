@@ -14,22 +14,25 @@ import {
   __setNutritionSqliteCacheForTests,
   clearNutritionSqliteCache,
 } from "@nutrition/lib/sqliteReader";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "@finyk/lib/monoMirrorReader";
 import { performSearch } from "./searchSources";
 import type { Hit } from "./searchTypes";
 
-// Each test seeds a *distinct* localStorage payload before calling
-// `performSearch`. Both the module-level `parseCache` and the `scoreLru`
-// (searchCache.ts) key on a snapshot built from the raw stored strings, so
-// different fixture content always produces a fresh snapshot → no cross-test
-// cache bleed even though those caches persist for the module's lifetime.
+// Each test seeds a *distinct* in-memory cache payload before calling
+// `performSearch`. Finyk bank transactions now come from the SQLite mirror
+// cache (Dual-write teardown Phase 3). Routine / Fizruk / Nutrition are
+// also SQLite-cache-backed — reset all warm caches so fixtures never leak
+// across specs.
 beforeEach(() => {
   localStorage.clear();
-  // Routine / Fizruk / Nutrition are SQLite-cache-backed now — reset the warm
-  // caches so seeded fixtures never leak across specs.
   clearSqliteRoutineStateCache();
   clearSqliteCompletionsCache();
   clearFizrukSqliteCache();
   clearNutritionSqliteCache();
+  clearFinykMonoMirrorCache();
 });
 
 function finykHit(results: Hit[]): Hit | undefined {
@@ -68,23 +71,23 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
   });
 
   it("matches a Finyk transaction by description token", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify([
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
         {
           id: "tx-coffee",
           amount: -4500,
-          time: 1_700_000_000_000,
+          time: 1_700_000_000,
           description: "Кава на районі",
-        },
+        } as never,
         {
           id: "tx-rent",
           amount: -1_200_000,
-          time: 1_700_000_100_000,
+          time: 1_700_000_100,
           description: "Оренда квартири",
-        },
-      ]),
-    );
+        } as never,
+      ],
+    });
     const results = performSearch("кава");
     const hit = finykHit(results);
     expect(hit).toBeDefined();
