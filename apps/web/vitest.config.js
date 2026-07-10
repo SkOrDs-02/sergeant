@@ -125,15 +125,22 @@ export default defineConfig({
         //   Ratchet: lines → 87 (coverage-thresholds.json), branches → 73,
         //   fns → 79, statements → 85. ~2–2.8pp headroom for throttled CI.
         //
+        // - 2026-07-10 (web coverage wave 6): zero-coverage shells across
+        //   fizruk/routine/nutrition/core hub+settings. Measured (CI=true,
+        //   maxWorkers=1, 710 files / 7121 tests):
+        //     lines 90.49 / branches 75.76 / fns 82.63 / statements 88.
+        //   Ratchet: lines → 88 (coverage-thresholds.json), branches → 74,
+        //   fns → 81, statements → 86. ~1.5–2.5pp headroom for throttled CI.
+        //
         // Floors set ~2–2.8pp below current actuals. Raise per sprint
         // as more component shells land (next targets: FinykApp,
         // NutritionApp, useRoutineAppState, CommandPaletteUI,
         // HabitDetailSheet — the heavy orchestration shells still at 0%).
         // `lines` приходить з кореневого coverage-thresholds.json.
         lines: sharedThresholds["apps/web"],
-        branches: 73,
-        functions: 79,
-        statements: 85,
+        branches: 74,
+        functions: 81,
+        statements: 86,
       },
     },
   },
