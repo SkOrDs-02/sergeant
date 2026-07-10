@@ -6,7 +6,7 @@
     "adr": 70,
     "audit": 24,
     "hard-rule": 26,
-    "initiative": 51,
+    "initiative": 52,
     "playbook": 62,
     "pr": 232,
     "skill": 24
@@ -1457,6 +1457,19 @@
       "tier": "core",
       "meta": {
         "number": 21
+      }
+    },
+    {
+      "id": "initiative:0022",
+      "type": "initiative",
+      "title": "0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding)",
+      "path": "docs/90-work/initiatives/0022-import-from-external-trackers.md",
+      "status": "Proposed (2026-06-28) — драфт плану; не почато. Чекає на founder-greenlight по скоупу Фази 1 + рішення по валютній нормалізації та dedup-стратегії (див. § Відкриті рішення).",
+      "tier": "core",
+      "meta": {
+        "number": 22,
+        "owner": "@SkOrDs-02",
+        "priority": "P2 (growth / activation lever — не блокер launch-у 0010)"
       }
     },
     {
@@ -6373,6 +6386,26 @@
       "from": "initiative:0021",
       "to": "pr:3560",
       "type": "touched-by"
+    },
+    {
+      "from": "initiative:0022",
+      "to": "hard-rule:1",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0022",
+      "to": "hard-rule:2",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0022",
+      "to": "hard-rule:3",
+      "type": "references"
+    },
+    {
+      "from": "initiative:0022",
+      "to": "hard-rule:4",
+      "type": "references"
     },
     {
       "from": "initiative:hardening-matrix",

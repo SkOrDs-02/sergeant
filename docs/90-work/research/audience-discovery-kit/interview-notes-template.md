@@ -1,6 +1,6 @@
 # Interview notes — [Респондент NN]
 
-> **Last touched:** 2026-06-29 by @dimastahov16012003. **Next review:** 2026-09-27.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 > Копіюй цей файл під кожне інтервʼю: `interview-01-imya.md`, `interview-02-…`.
