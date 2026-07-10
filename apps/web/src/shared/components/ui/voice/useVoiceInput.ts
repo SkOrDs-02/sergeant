@@ -50,13 +50,8 @@ export function useVoiceInput({
   onError,
 }: UseVoiceInputOptions = {}): UseVoiceInputReturn {
   const [listening, setListening] = useState(false);
-  const [supported, setSupported] = useState(false);
+  const [supported] = useState(() => !!getSpeechRecognitionCtor());
   const recRef = useRef<SpeechRecognitionLike | null>(null);
-
-  useEffect(() => {
-    const SpeechRecognition = getSpeechRecognitionCtor();
-    setSupported(!!SpeechRecognition);
-  }, []);
 
   const start = useCallback(() => {
     const SpeechRecognition = getSpeechRecognitionCtor();

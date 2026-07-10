@@ -74,8 +74,10 @@ export function useWhatsNew(opts: UseWhatsNewOptions): UseWhatsNewResult {
 
     if (SESSION_SHOWN_RELEASE_IDS.has(candidate.id)) {
       shownRef.current = true;
-      setRelease(candidate);
-      setOpen(true);
+      void Promise.resolve().then(() => {
+        setRelease(candidate);
+        setOpen(true);
+      });
       return;
     }
 

@@ -94,35 +94,29 @@ export function FirstEntryCelebrationModal({
     }, 200);
   }, [onClose]);
 
-  // Sync visibility with open prop. The `setVisible` / `setAnimateOut`
-  // calls translate the parent-controlled `open` boolean into local
-  // animation state and fire the analytics event. Treating it as
-  // render-derivation would lose the open-edge needed for the
-  // animation; suppress `react-hooks/set-state-in-effect` here.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    setVisible(true);
+    setAnimateOut(false);
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
+
   useEffect(() => {
-    if (open) {
-      setVisible(true);
-      setAnimateOut(false);
-      // Trigger haptic on open
-      if (navigator.vibrate) {
-        navigator.vibrate([50, 30, 50]);
-      }
-      // Капчуємо фактично-render-нуті `nextStepTip` + `primaryCtaLabel` у
-      // payload-і — щоб PostHog dashboard ловив silent-copy-regression
-      // (FTUX roast §2.9 → pr-plan-ftux PR-A). Розрахунок повторюється у
-      // render-фазі (`getFirstEntryCelebrationCopy(moduleId)` нижче) — це
-      // pure-функція над замороженим catalog-ом, тож додаткові алокації
-      // мізерні і відбуваються тільки на open-edge.
-      const { nextStepTip, primaryCtaLabel } =
-        getFirstEntryCelebrationCopy(moduleId);
-      trackEvent(ANALYTICS_EVENTS.CELEBRATION_SHOWN, {
-        ttvMs,
-        source: "first_entry",
-        moduleId,
-        tipVariant: nextStepTip,
-        ctaLabel: primaryCtaLabel,
-      });
+    if (!open) return;
+    if (navigator.vibrate) {
+      navigator.vibrate([50, 30, 50]);
     }
+    const { nextStepTip, primaryCtaLabel } =
+      getFirstEntryCelebrationCopy(moduleId);
+    trackEvent(ANALYTICS_EVENTS.CELEBRATION_SHOWN, {
+      ttvMs,
+      source: "first_entry",
+      moduleId,
+      tipVariant: nextStepTip,
+      ctaLabel: primaryCtaLabel,
+    });
   }, [open, ttvMs, moduleId]);
 
   // Auto-dismiss after 10 seconds

@@ -84,14 +84,11 @@ export function useFoodSearch(foodQuery: string): UseFoodSearchResult {
   // and consumers don't have to track where it lives.
   const [foodErr, setFoodErr] = useState("");
 
-  // Any pending save-food error is stale the moment the user starts typing
-  // a new search. The pre-react-query implementation did this implicitly on
-  // the fetch-effect; restore it explicitly here.
-  useEffect(() => {
+  const [prevTrimmed, setPrevTrimmed] = useState(trimmed);
+  if (trimmed !== prevTrimmed) {
+    setPrevTrimmed(trimmed);
     if (foodErr) setFoodErr("");
-    // `foodErr` excluded: including it would loop (effect clears it).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trimmed]);
+  }
 
   return {
     foodHits: trimmed && localQuery === trimmed ? (local.data ?? []) : [],

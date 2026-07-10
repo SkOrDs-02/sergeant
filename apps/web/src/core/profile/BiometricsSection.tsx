@@ -15,7 +15,7 @@
  * lives in `biometrics.ts` so this component only orchestrates the
  * form — no cross-module knowledge leaks into the JSX.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
@@ -172,15 +172,11 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
   const [form, setForm] = useState<FormState>(() =>
     biometricsToForm(biometrics),
   );
-
-  // Whenever the persisted record changes from outside the form (Fizruk
-  // weigh-in, cross-tab sync, CloudSync pull) reset the form to the new
-  // source-of-truth. Editing a single field doesn't lose the user's
-  // input either: the dependency array is the persisted record, not the
-  // form state, so typing into "heightCm" doesn't re-trigger the reset.
-  useEffect(() => {
+  const [prevBiometrics, setPrevBiometrics] = useState(biometrics);
+  if (biometrics !== prevBiometrics) {
+    setPrevBiometrics(biometrics);
     setForm(biometricsToForm(biometrics));
-  }, [biometrics]);
+  }
 
   const diff = useMemo(
     () => diffFormAgainst(form, biometrics),

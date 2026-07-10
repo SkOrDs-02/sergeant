@@ -94,18 +94,12 @@ export function useHubUIState(): HubUIState {
     [navigate],
   );
 
-  // Re-sync `hubView` whenever the URL search params change, regardless of
-  // how the change was triggered — this covers (a) browser back/forward
-  // (popstate, picked up by react-router and reflected in `useLocation()`),
-  // (b) react-router `navigate()` calls that update the search string
-  // without going through `setHubView` (e.g. the `/profile → /?tab=profile`
-  // legacy redirect in `App.tsx`), and (c) any other code path that mutates
-  // `window.history` outside this hook. Without this, an external
-  // `navigate()` to `/?tab=profile` would change the address bar but leave
-  // `hubView` stuck on its initial value (typically `"dashboard"`).
-  useEffect(() => {
+  // Re-sync `hubView` when URL search params change (back/forward, external navigate).
+  const [prevSearch, setPrevSearch] = useState(location.search);
+  if (location.search !== prevSearch) {
+    setPrevSearch(location.search);
     setHubViewRaw(readViewFromSearch(location.search));
-  }, [location.search]);
+  }
 
   const closeSearch = useCallback(() => setSearchOpen(false), []);
 

@@ -102,13 +102,16 @@ export function PantryManagerSheet({
 
   // При закритті sheet — повертаємо форму в `idle`, щоб наступне
   // відкриття було без застряглого минулого стану.
-  useEffect(() => {
-    if (open) return;
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (!open && prevOpen) {
+    setPrevOpen(false);
     setMoreOpen(false);
     setPantryForm((f) =>
       f.mode === "idle" ? f : { mode: "idle", name: "", err: "" },
     );
-  }, [open, setPantryForm]);
+  } else if (open && !prevOpen) {
+    setPrevOpen(true);
+  }
 
   const formTitle =
     pantryForm.mode === "rename"

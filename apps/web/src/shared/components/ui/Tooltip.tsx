@@ -180,9 +180,11 @@ export function Tooltip({
   // Measure trigger + panel and place the panel after layout. We use
   // a layout effect so the user never sees a one-frame flash at (0,0)
   // before reposition.
+  if (!open && coords !== null) {
+    setCoords(null);
+  }
   useLayoutEffect(() => {
     if (!open) {
-      setCoords(null);
       return;
     }
     const trigger = wrapperRef.current;

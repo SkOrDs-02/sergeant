@@ -7,7 +7,7 @@
 //   - Fires exactly once, client-side, per browser profile.
 //   - Skipped on sessions where the user already has real data on mount.
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import type { DashboardModuleId } from "@sergeant/shared";
 import { getTimeToValueMs } from "./vibePicks";
 import { getFirstRealEntryModule } from "./firstRealEntry";
@@ -33,34 +33,19 @@ export function useFirstEntryCelebration(
   const [open, setOpen] = useState(false);
   const [ttvMs, setTtvMs] = useState<number | null>(null);
   const [moduleId, setModuleId] = useState<DashboardModuleId | null>(null);
-  const firedRef = useRef(false);
-  // Snapshot value at mount — if user already has data, skip celebration
-  const initialRef = useRef(hasRealEntry);
+  const [hadEntryAtMount] = useState(() => hasRealEntry);
+  const [celebrationFired, setCelebrationFired] = useState(false);
 
   const close = useCallback(() => {
     setOpen(false);
   }, []);
 
-  useEffect(() => {
-    if (firedRef.current) return;
-    if (initialRef.current) {
-      firedRef.current = true;
-      return;
-    }
-    if (!hasRealEntry) return;
-    firedRef.current = true;
-    // Read TTV value persisted by detectFirstRealEntry
-    const ttv = getTimeToValueMs();
-    // External-event adaptor: this effect translates a freshly-flipped
-    // first-real-entry flag into the celebration state. The setState
-    // calls drive a one-shot UI transition, not a render derivation,
-    // so we suppress `react-hooks/set-state-in-effect` rather than
-    // restructure (same precedent as `useRoutineAppState.ts:201`).
-
-    setTtvMs(ttv);
+  if (!hadEntryAtMount && hasRealEntry && !celebrationFired) {
+    setCelebrationFired(true);
+    setTtvMs(getTimeToValueMs());
     setModuleId(getFirstRealEntryModule());
     setOpen(true);
-  }, [hasRealEntry]);
+  }
 
   return { open, ttvMs, moduleId, close };
 }

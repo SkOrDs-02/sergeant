@@ -136,10 +136,10 @@ export const CelebrationModal = memo(function CelebrationModal({
           x: 50 + (Math.random() - 0.5) * 80,
           y: 40 + (Math.random() - 0.5) * 60,
           rotation: Math.random() * 360,
-          color: colors[Math.floor(Math.random() * colors.length)]!,
+          color: colors[Math.floor(Math.random() * colors.length)] ?? "#10B981",
           size: 6 + Math.random() * 10,
           delay: Math.random() * 0.4,
-          shape: shapes[Math.floor(Math.random() * shapes.length)]!,
+          shape: shapes[Math.floor(Math.random() * shapes.length)] ?? "circle",
         });
       }
       return newParticles;
@@ -148,8 +148,9 @@ export const CelebrationModal = memo(function CelebrationModal({
   );
 
   // Generate confetti on open
-  useEffect(() => {
-    if (!open) return;
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
     setIsExiting(false);
 
     const counts = { low: 15, medium: 30, high: 50 };
@@ -162,11 +163,12 @@ export const CelebrationModal = memo(function CelebrationModal({
 
     setParticles(generateParticles(count));
 
-    // Haptic feedback
     if (navigator.vibrate) {
       navigator.vibrate(type === "confetti" ? [50, 30, 50] : [30]);
     }
-  }, [open, type, confettiIntensity, generateParticles]);
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   const handleClose = useCallback(() => {
     setIsExiting(true);
@@ -587,9 +589,16 @@ export const MiniSuccess = memo(function MiniSuccess({
 }: MiniSuccessProps) {
   const [visible, setVisible] = useState(false);
 
-  useEffect(() => {
-    if (!show) return;
+  const [prevShow, setPrevShow] = useState(show);
+  if (show && !prevShow) {
+    setPrevShow(true);
     setVisible(true);
+  } else if (!show && prevShow) {
+    setPrevShow(false);
+  }
+
+  useEffect(() => {
+    if (!visible) return;
 
     const timer = setTimeout(() => {
       setVisible(false);
@@ -597,7 +606,7 @@ export const MiniSuccess = memo(function MiniSuccess({
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [show, duration, onComplete]);
+  }, [visible, duration, onComplete]);
 
   if (!visible) return null;
 

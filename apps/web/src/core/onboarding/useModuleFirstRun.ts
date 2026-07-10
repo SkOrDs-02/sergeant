@@ -30,7 +30,7 @@
  * future change to this namespace must update both call sites.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   safeReadStringLS,
   safeWriteLS,
@@ -99,20 +99,17 @@ export function useModuleFirstRun(moduleId: string | null): UseModuleFirstRun {
     moduleId !== null && storageReady ? !readFirstSeen(moduleId) : false,
   );
 
-  // Resolve `firstRun` when the caller switches modules OR when the persistent
-  // store first becomes ready. `storageReady` is a one-way latch (false→true),
-  // so this reads the real flag exactly once per moduleId after the warm-cache
-  // settles. Intentionally ignores cross-tab edits to the seen flag — once the
-  // module is mounted, mid-session toggles must not yank the editor surface
-  // back open (the effect only re-runs on moduleId / storageReady changes, not
-  // on a plain re-render).
-  useEffect(() => {
+  const [prevModuleId, setPrevModuleId] = useState(moduleId);
+  const [prevStorageReady, setPrevStorageReady] = useState(storageReady);
+  if (moduleId !== prevModuleId || storageReady !== prevStorageReady) {
+    setPrevModuleId(moduleId);
+    setPrevStorageReady(storageReady);
     if (moduleId === null || !storageReady) {
       setFirstRun(false);
-      return;
+    } else {
+      setFirstRun(!readFirstSeen(moduleId));
     }
-    setFirstRun(!readFirstSeen(moduleId));
-  }, [moduleId, storageReady]);
+  }
 
   const markSeen = useCallback(() => {
     if (!moduleId) return;

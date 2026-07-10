@@ -56,6 +56,25 @@ export function usePhotoAnalysis({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [portionGrams, setPortionGrams] = useState("");
 
+  const [prevPhotoResult, setPrevPhotoResult] =
+    useState<NutritionPhotoResult | null>(null);
+  if (
+    photoResult !== prevPhotoResult &&
+    photoResult &&
+    Array.isArray(photoResult.questions)
+  ) {
+    setPrevPhotoResult(photoResult);
+    setAnswers((cur) => {
+      const next = { ...cur };
+      photoResult.questions.slice(0, 6).forEach((q) => {
+        if (next[q] == null) next[q] = "";
+      });
+      return next;
+    });
+  } else if (photoResult !== prevPhotoResult) {
+    setPrevPhotoResult(photoResult);
+  }
+
   useEffect(() => {
     return () => {
       if (photoPreviewUrl) {
@@ -67,18 +86,6 @@ export function usePhotoAnalysis({
       }
     };
   }, [photoPreviewUrl]);
-
-  useEffect(() => {
-    if (photoResult && Array.isArray(photoResult.questions)) {
-      setAnswers((cur) => {
-        const next = { ...cur };
-        photoResult.questions.slice(0, 6).forEach((q) => {
-          if (next[q] == null) next[q] = "";
-        });
-        return next;
-      });
-    }
-  }, [photoResult]);
 
   const onPickPhoto = async (file: File | null | undefined) => {
     setErr("");

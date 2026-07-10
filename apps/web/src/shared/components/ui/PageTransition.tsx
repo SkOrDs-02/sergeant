@@ -77,22 +77,22 @@ export function PageTransition({
     typeof window !== "undefined" &&
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-  useEffect(() => {
-    if (pageKey === displayedKey) return;
-
+  const [prevPageKey, setPrevPageKey] = useState(pageKey);
+  if (pageKey !== displayedKey && pageKey !== prevPageKey) {
+    setPrevPageKey(pageKey);
     if (prefersReducedMotion) {
-      // Skip animation
       setDisplayedKey(pageKey);
       setDisplayedChildren(children);
-      onTransitionEnd?.();
-      return;
+      void Promise.resolve().then(() => onTransitionEnd?.());
+    } else {
+      setIsExiting(true);
     }
+  }
 
-    // Start exit animation
-    setIsExiting(true);
+  useEffect(() => {
+    if (!isExiting || pageKey === displayedKey) return;
 
     timeoutRef.current = setTimeout(() => {
-      // After exit, update content and start enter animation
       setDisplayedKey(pageKey);
       setDisplayedChildren(children);
       setIsExiting(false);
@@ -104,21 +104,15 @@ export function PageTransition({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [
-    pageKey,
-    displayedKey,
-    children,
-    duration,
-    prefersReducedMotion,
-    onTransitionEnd,
-  ]);
+  }, [isExiting, pageKey, displayedKey, children, duration, onTransitionEnd]);
 
-  // Update children when key matches but content changes
-  useEffect(() => {
-    if (pageKey === displayedKey && !isExiting) {
-      setDisplayedChildren(children);
-    }
-  }, [pageKey, displayedKey, children, isExiting]);
+  if (
+    pageKey === displayedKey &&
+    !isExiting &&
+    displayedChildren !== children
+  ) {
+    setDisplayedChildren(children);
+  }
 
   const animClass = isExiting
     ? directionClasses[direction].exit

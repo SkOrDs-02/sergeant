@@ -84,9 +84,9 @@ export default function App({
     useModuleFirstRun("finyk");
   const [firstRunFinykSurface, setFirstRunFinykSurface] =
     useState(firstRunFinyk);
-  useEffect(() => {
-    if (firstRunFinyk) setFirstRunFinykSurface(true);
-  }, [firstRunFinyk]);
+  if (firstRunFinyk && !firstRunFinykSurface) {
+    setFirstRunFinykSurface(true);
+  }
   const firstRunFinykActive = firstRunFinykSurface && page === "budgets";
 
   // State
@@ -127,9 +127,10 @@ export default function App({
     if (page !== "budgets") navigate("budgets");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // PWA action effect (navigate is stable)
-  useEffect(() => {
-    if (pwaAction !== "add_expense") return;
+  // PWA action: open add-expense sheet when the OS deep-link fires.
+  const [prevPwaAction, setPrevPwaAction] = useState(pwaAction);
+  if (pwaAction === "add_expense" && prevPwaAction !== "add_expense") {
+    setPrevPwaAction("add_expense");
     const prefill = consumePresetPrefill("finyk");
     navigate("transactions");
     setEditingManualExpenseId(null);
@@ -142,16 +143,10 @@ export default function App({
         : null,
     );
     setShowExpenseSheet(true);
-    onPwaActionConsumed?.();
-  }, [
-    navigate,
-    pwaAction,
-    onPwaActionConsumed,
-    setEditingManualExpenseId,
-    setQuickAddCategory,
-    setQuickAddDescription,
-    setShowExpenseSheet,
-  ]);
+    void Promise.resolve().then(() => onPwaActionConsumed?.());
+  } else if (pwaAction !== prevPwaAction) {
+    setPrevPwaAction(pwaAction ?? null);
+  }
 
   const { mergedMono } = useUnifiedFinanceData({ mono, privat });
   const { frequentCategories, frequentMerchants } = useFinykPersonalization({
@@ -182,11 +177,9 @@ export default function App({
   const swipeDx = swipe.dragDx;
 
   // Auto-close login overlay on successful connect
-  useEffect(() => {
-    if (clientInfo && showLoginOverlay) {
-      setShowLoginOverlay(false);
-    }
-  }, [clientInfo, showLoginOverlay]);
+  if (clientInfo && showLoginOverlay) {
+    setShowLoginOverlay(false);
+  }
 
   const showNoBankBanner = !clientInfo && !manualOnly;
 

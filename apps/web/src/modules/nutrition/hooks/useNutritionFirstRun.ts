@@ -65,9 +65,9 @@ export function useNutritionFirstRun({
   // The banner itself dismounts on dismiss via `onDismiss`.
   const [firstRunNutritionSurface, setFirstRunNutritionSurface] =
     useState(firstRunNutrition);
-  useEffect(() => {
-    if (firstRunNutrition) setFirstRunNutritionSurface(true);
-  }, [firstRunNutrition]);
+  if (firstRunNutrition && !firstRunNutritionSurface) {
+    setFirstRunNutritionSurface(true);
+  }
 
   const firstRunNutritionActive =
     firstRunNutritionSurface && activePage === "menu" && menuSubTab === "plan";

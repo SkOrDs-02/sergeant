@@ -2,7 +2,7 @@
  * Last validated: 2026-05-20
  * Status: Active
  */
-import { useState, useEffect, useId, useMemo } from "react";
+import { useState, useId, useMemo } from "react";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
@@ -243,63 +243,53 @@ export function ManualExpenseSheet({
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [descFocused, setDescFocused] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      if (initialExpense?.id) {
-        reset({
-          description: String(initialExpense.description || ""),
-          amount:
-            initialExpense.amount != null ? String(initialExpense.amount) : "",
-          // upgradeCategory handles Era 1/2/3 stored values.
-          category: upgradeCategory(initialExpense.category),
-          date: toLocalISODate(initialExpense.date || Date.now()),
-        });
-      } else {
-        // Пріоритет: явна initialCategory (клік з дашборду) > найчастіша
-        // категорія з статистики > дефолт ("other"). Будь-яка legacy
-        // мітка (Era 1/2) оновлюється до slug (Era 3).
-        let startCategory: CategorySlug = DEFAULT_CATEGORY;
-        if (initialCategory) {
-          startCategory = upgradeCategory(initialCategory);
-        } else if (frequentCategories.length > 0) {
-          const top = frequentCategories[0];
-          if (top) {
-            const manualLabel =
-              typeof top.manualLabel === "string" ? top.manualLabel : null;
-            const canonicalLabel = top.id
-              ? CANONICAL_TO_MANUAL_LABEL[top.id]
-              : null;
-            const topSlug = manualLabel ?? canonicalLabel;
-            const upgradedTopSlug = topSlug ? upgradeCategory(topSlug) : null;
-            if (upgradedTopSlug && CATEGORY_SLUGS.includes(upgradedTopSlug)) {
-              startCategory = upgradedTopSlug;
-            }
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    if (initialExpense?.id) {
+      reset({
+        description: String(initialExpense.description || ""),
+        amount:
+          initialExpense.amount != null ? String(initialExpense.amount) : "",
+        category: upgradeCategory(initialExpense.category),
+        date: initialExpense.date
+          ? toLocalISODate(initialExpense.date)
+          : toLocalISODate(),
+      });
+    } else {
+      let startCategory: CategorySlug = DEFAULT_CATEGORY;
+      if (initialCategory) {
+        startCategory = upgradeCategory(initialCategory);
+      } else if (frequentCategories.length > 0) {
+        const top = frequentCategories[0];
+        if (top) {
+          const manualLabel =
+            typeof top.manualLabel === "string" ? top.manualLabel : null;
+          const canonicalLabel = top.id
+            ? CANONICAL_TO_MANUAL_LABEL[top.id]
+            : null;
+          const topSlug = manualLabel ?? canonicalLabel;
+          const upgradedTopSlug = topSlug ? upgradeCategory(topSlug) : null;
+          if (upgradedTopSlug && CATEGORY_SLUGS.includes(upgradedTopSlug)) {
+            startCategory = upgradedTopSlug;
           }
         }
-        reset({
-          description:
-            typeof initialDescription === "string" ? initialDescription : "",
-          amount: "",
-          category: startCategory,
-          date: toLocalISODate(),
-        });
       }
-      // UI-only state (категорії розгорнуті / фокус у полі Назва) зберігається
-      // між відкриттями, бо компонент змонтований постійно (FinykApp тримає
-      // його як always-rendered). Скидаємо до дефолтів, щоб новий «Додати
-      // витрату» не успадковував стан попереднього відкриття.
-      setCategoriesExpanded(false);
-      setDescFocused(false);
-      setShowDateField(false);
-      // 6.3: clear AI-applied state when the sheet reopens — stale
-      // suggestion from a previous session shouldn't carry over.
-      setAiAppliedCategory(null);
+      reset({
+        description:
+          typeof initialDescription === "string" ? initialDescription : "",
+        amount: "",
+        category: startCategory,
+        date: toLocalISODate(),
+      });
     }
-    // frequentCategories/initialCategory/initialDescription лише задають
-    // стартовий стан при відкритті — навмисно не реагуємо на їхні
-    // оновлення у відкритому sheet.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialExpense]);
+    setCategoriesExpanded(false);
+    setDescFocused(false);
+    setShowDateField(false);
+    setAiAppliedCategory(null);
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   const sortedCategories = useMemo(
     () => sortCategoriesByFrequency(frequentCategories),

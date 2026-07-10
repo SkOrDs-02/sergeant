@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
@@ -152,17 +152,17 @@ export function useHubNavigation(): HubNavigation {
     [activeModule, navigate],
   );
 
-  useEffect(() => {
+  const locKey = `${location.pathname}|${location.search}`;
+  const [prevLocKey, setPrevLocKey] = useState(locKey);
+  if (locKey !== prevLocKey) {
+    setPrevLocKey(locKey);
+    const params = new URLSearchParams(location.search);
     const mod =
       parsePathnameModule(location.pathname) ??
-      parseModule(searchParams.get("module"));
-    if (mod !== activeModule) {
-      setModuleAnimClass(mod ? "module-enter" : "hub-enter");
-      setActiveModule(mod);
-    }
-    // `activeModule` is read but also set — adding it would loop.
-    // Setters (`setActiveModule`, `setModuleAnimClass`) are stable.
-  }, [location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
+      parseModule(params.get("module"));
+    setModuleAnimClass(mod ? "module-enter" : "hub-enter");
+    setActiveModule(mod);
+  }
 
   return {
     activeModule,

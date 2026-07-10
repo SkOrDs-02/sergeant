@@ -222,15 +222,16 @@ export function useRoutineAppState({
 
   // PWA shortcut entry: when the App-shell receives the
   // `?pwa=add_habit` deep-link it sets `pwaAction` and we open the
-  // quick-add dialog once. The setStates here are an external-event
-  // adaptor (the OS opening the PWA), not a render derivation, so we
-  // suppress `react-hooks/set-state-in-effect` rather than restructure.
-  useEffect(() => {
-    if (pwaAction !== "add_habit") return;
+  // quick-add dialog once.
+  const [prevPwaAction, setPrevPwaAction] = useState(pwaAction);
+  if (pwaAction === "add_habit" && prevPwaAction !== "add_habit") {
+    setPrevPwaAction("add_habit");
     setQuickAddHabitOpen(true);
     setQuickAddFocusTick((t) => t + 1);
-    onPwaActionConsumed?.();
-  }, [pwaAction, onPwaActionConsumed]);
+    void Promise.resolve().then(() => onPwaActionConsumed?.());
+  } else if (pwaAction !== prevPwaAction) {
+    setPrevPwaAction(pwaAction ?? null);
+  }
 
   // Per-module first-run: pop the quick-create dialog the first time
   // the user enters Routine. Habits do not have a small «previous
@@ -243,14 +244,18 @@ export function useRoutineAppState({
   const routineFirstRun = useModuleFirstRun("routine");
   const [quickAddFirstRunHint, setQuickAddFirstRunHint] =
     useState<boolean>(false);
-  useEffect(() => {
-    if (!routineFirstRun.firstRun) return;
-    if (pwaAction === "add_habit") return;
+  const [firstRunDialogOpened, setFirstRunDialogOpened] = useState(false);
+  if (
+    routineFirstRun.firstRun &&
+    pwaAction !== "add_habit" &&
+    !firstRunDialogOpened
+  ) {
+    setFirstRunDialogOpened(true);
     setQuickAddHabitOpen(true);
     setQuickAddFocusTick((t) => t + 1);
     setQuickAddFirstRunHint(true);
-    routineFirstRun.markSeen();
-  }, [routineFirstRun, pwaAction]);
+    void Promise.resolve().then(() => routineFirstRun.markSeen());
+  }
   const dismissQuickAddFirstRunHint = useCallback(() => {
     setQuickAddFirstRunHint(false);
   }, []);
