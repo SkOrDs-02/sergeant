@@ -4286,3 +4286,230 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
     TIMEOUT_MS,
   );
 });
+
+describe("cross-user isolation — PR-T07", () => {
+  it(
+    "user B pull (since=0) does NOT return user A's ops",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-cu-isol-a");
+      await ensureUser("u-cu-isol-b");
+
+      const ts = isoNow();
+      // User A pushes a routine_entry.
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-cu-isol-a",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "insert" as const,
+                row: {
+                  id: "c0000001-0001-0001-0001-000000000001",
+                  user_id: "u-cu-isol-a",
+                  name: "user A exclusive habit",
+                  completed_at: ts,
+                },
+                client_ts: ts,
+                idempotency_key: "cu-isol-a-push-1",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+      expect((pushRes.body as { accepted: number }).accepted).toBe(1);
+
+      // User B pulls from the beginning — must see zero ops.
+      const pullRes = makeRes();
+      await syncV2Pull(
+        makeReq({ userId: "u-cu-isol-b", query: { since: 0 } }),
+        pullRes,
+      );
+
+      expect(pullRes.statusCode).toBe(200);
+      const pullBody = pullRes.body as {
+        ops: unknown[];
+        next_cursor: number | null;
+      };
+      expect(pullBody.ops).toHaveLength(0);
+      expect(pullBody.next_cursor).toBeNull();
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "two devices same user — push device1, pull device2 sees ops",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-cu-twodev");
+
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-cu-twodev",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "insert" as const,
+                row: {
+                  id: "c0000002-0002-0002-0002-000000000002",
+                  user_id: "u-cu-twodev",
+                  name: "cross-device habit",
+                  completed_at: ts,
+                },
+                client_ts: ts,
+                idempotency_key: "cu-twodev-push-1",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "dev-alpha" },
+        }),
+        pushRes,
+      );
+      expect((pushRes.body as { accepted: number }).accepted).toBe(1);
+
+      // Pull from a different device — ops from dev-alpha must be visible.
+      const pullRes = makeRes();
+      await syncV2Pull(
+        makeReq({
+          userId: "u-cu-twodev",
+          query: { since: 0 },
+          headers: { "x-origin-device-id": "dev-beta" },
+        }),
+        pullRes,
+      );
+
+      expect(pullRes.statusCode).toBe(200);
+      const pullBody = pullRes.body as {
+        ops: Array<{ id: number; row: { name: string } }>;
+        next_cursor: number | null;
+      };
+      expect(pullBody.ops).toHaveLength(1);
+      expect(pullBody.ops[0]!.row.name).toBe("cross-device habit");
+      // Hard Rule #1 — bigint coerced to number.
+      expect(typeof pullBody.ops[0]!.id).toBe("number");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "replay after truncate op-log only — LWW guard prevents duplicate row even without idempotency state",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-cu-replay");
+
+      const ts = isoNow();
+      const op = {
+        table: "routine_entries",
+        op: "insert" as const,
+        row: {
+          id: "c0000003-0003-0003-0003-000000000003",
+          user_id: "u-cu-replay",
+          name: "replay test habit",
+          completed_at: ts,
+        },
+        client_ts: ts,
+        idempotency_key: "cu-replay-key-1",
+      };
+
+      // First push — must apply cleanly.
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({ userId: "u-cu-replay", body: { ops: [op] } }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      // Confirm the routine_entry row exists.
+      const before = await testPool.query<{ c: string }>(
+        `SELECT COUNT(*)::text AS c FROM routine_entries WHERE user_id = $1`,
+        ["u-cu-replay"],
+      );
+      expect(Number(before!.rows[0]!.c)).toBe(1);
+
+      // Simulate op-log loss (e.g. manual TRUNCATE or disaster recovery).
+      // routine_entries is intentionally NOT truncated — only the op-log.
+      await testPool.query(
+        `TRUNCATE sync_op_log, sync_audit_log RESTART IDENTITY CASCADE`,
+      );
+
+      // Replay: same op, same client_ts. The idempotency_key is no longer in
+      // the log, so the engine proceeds to applyFn. applyFn finds the existing
+      // row with updated_at == clientTs → LWW guard rejects with lww_conflict.
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({ userId: "u-cu-replay", body: { ops: [op] } }),
+        r2,
+      );
+      const r2Body = r2.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(r2Body.accepted).toBe(0);
+      expect(r2Body!.results[0]!.reason).toBe("lww_conflict");
+
+      // Data is intact — still exactly one row, no phantom duplicate.
+      const after = await testPool.query<{ c: string }>(
+        `SELECT COUNT(*)::text AS c FROM routine_entries WHERE user_id = $1`,
+        ["u-cu-replay"],
+      );
+      expect(Number(after!.rows[0]!.c)).toBe(1);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "push op with row.user_id ≠ session user → rejected for routine_entries (not only increment)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-cu-xuser-sess");
+      await ensureUser("u-cu-xuser-other");
+
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-cu-xuser-sess",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "insert" as const,
+                row: {
+                  id: "c0000004-0004-0004-0004-000000000004",
+                  user_id: "u-cu-xuser-other",
+                  name: "should be rejected",
+                  completed_at: ts,
+                },
+                client_ts: ts,
+                idempotency_key: "cu-xuser-1",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      const body = pushRes.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(0);
+      expect(body!.results[0]!.status).toBe("rejected");
+      expect(body!.results[0]!.reason).toBe("user_id_mismatch");
+
+      // Confirm no phantom row was written for the other user.
+      const count = await testPool.query<{ c: string }>(
+        `SELECT COUNT(*)::text AS c FROM routine_entries WHERE user_id = $1`,
+        ["u-cu-xuser-other"],
+      );
+      expect(Number(count!.rows[0]!.c)).toBe(0);
+    },
+    TIMEOUT_MS,
+  );
+});
