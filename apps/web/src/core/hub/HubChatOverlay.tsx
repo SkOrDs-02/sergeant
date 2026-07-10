@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
+import { messages } from "@shared/i18n/uk";
 import { PageLoader } from "../app/PageLoader";
 import { lazyDefault } from "../lib/lazyImport";
 import { useHubChatOverlay } from "./useHubChatOverlay";
@@ -46,16 +47,18 @@ export function HubChatOverlay() {
   // overlay opens on the route where the user invoked it, then closes only
   // on subsequent navigations.
   const firstRenderRef = useRef(true);
+  const openRef = useRef(open);
+  const closeChatRef = useRef(closeChat);
+  useLayoutEffect(() => {
+    openRef.current = open;
+    closeChatRef.current = closeChat;
+  });
   useEffect(() => {
     if (firstRenderRef.current) {
       firstRenderRef.current = false;
       return;
     }
-    if (open) closeChat();
-    // We intentionally do NOT depend on `open` / `closeChat` — pathname is
-    // the trigger. Re-running on `open` toggles would close the overlay we
-    // just opened in the same render tick.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (openRef.current) closeChatRef.current();
   }, [location.pathname]);
 
   if (!open) return null;
@@ -70,13 +73,13 @@ export function HubChatOverlay() {
       // duplicate stack. `title` is still consumed by `aria-labelledby`
       // via the visually-hidden node Sheet renders when hideHeader=true.
       hideHeader
-      title="AI-асистент"
+      title={messages.hub.overlayTitle}
       // HubChat owns the inner scroll (`HubChatBody` is the scrollable
       // surface). Override Sheet's default padded + overflow-y-auto
       // body so we don't nest two scrolling containers; the inner
       // `flex` lets HubChat's `flex-1 min-h-0` shell fill the panel.
       bodyClassName="!p-0 !overflow-hidden flex flex-col"
-      closeLabel="Закрити чат"
+      closeLabel={messages.hub.closeChat}
     >
       <SuspenseWithMinDelay fallback={<PageLoader />}>
         <HubChat

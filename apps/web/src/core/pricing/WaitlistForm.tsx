@@ -171,10 +171,7 @@ export function WaitlistForm({
         tier_interest: defaultTier,
       });
     }
-    // `reset` із RHF стабільний; `watch` не запускає лишніх render-ів через
-    // те, що ми його викликаємо вручну.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultTier]);
+  }, [defaultTier, reset, watch]);
 
   const tierValue = watch("tier_interest");
   const emailErrorMessage = formState.errors.email?.message;
