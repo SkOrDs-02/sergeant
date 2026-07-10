@@ -118,7 +118,6 @@ export function RoutineCalendarPanel({
   // localStorage thrash) and unmount-flush invariant.
   const {
     noteDrafts,
-    noteDraftsRef,
     noteExpanded,
     setNoteExpanded,
     scheduleNoteFlush,
@@ -571,10 +570,7 @@ export function RoutineCalendarPanel({
                                 onBlur={() => {
                                   flushNoteDraft(habitId, e.date);
                                   // Collapse if the user cleared the note.
-                                  const flushedValue =
-                                    noteDraftsRef.current[noteKey]?.value ??
-                                    savedValue;
-                                  if (flushedValue.trim().length === 0) {
+                                  if (value.trim().length === 0) {
                                     setNoteExpanded((p) => {
                                       const next = { ...p };
                                       delete next[noteKey];

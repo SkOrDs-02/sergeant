@@ -56,7 +56,9 @@ export function useFizrukWorkoutReminder({
 
   // Keep a stable ref so onMinuteTick closure doesn't need to list these as deps.
   const configRef = useRef({ reminderHour, reminderMinute });
-  configRef.current = { reminderHour, reminderMinute };
+  useEffect(() => {
+    configRef.current = { reminderHour, reminderMinute };
+  }, [reminderHour, reminderMinute]);
 
   useEffect(() => {
     sendFizrukStateToSW({

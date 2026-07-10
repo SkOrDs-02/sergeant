@@ -29,7 +29,7 @@ import {
   screen,
   cleanup,
 } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { RestTimerProvider } from "./RestTimerProvider";
 import { useRestTimer } from "./RestTimerContext";
 import { RestTimerOverlay } from "../components/workouts/RestTimerOverlay";
@@ -63,12 +63,9 @@ function WorkoutsPageSimulator({
   onMount: (api: ReturnType<typeof useRestTimer>) => void;
 }) {
   const api = useRestTimer();
-  // Single fire on mount to hand the API to the test.
-  const firedRef = { current: false };
-  if (!firedRef.current) {
-    firedRef.current = true;
+  useEffect(() => {
     onMount(api);
-  }
+  }, [api, onMount]);
   return null;
 }
 

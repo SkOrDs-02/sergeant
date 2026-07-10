@@ -50,9 +50,11 @@ export function HubChatBody({
   const chatRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
 
-  const lastRole = messages[messages.length - 1]?.role;
   // Re-stick the moment the user sends a new message — they want the reply.
-  if (lastRole === "user") stickToBottomRef.current = true;
+  useEffect(() => {
+    const lastRole = messages[messages.length - 1]?.role;
+    if (lastRole === "user") stickToBottomRef.current = true;
+  }, [messages]);
 
   useEffect(() => {
     if (chatRef.current && stickToBottomRef.current)

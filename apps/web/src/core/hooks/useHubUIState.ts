@@ -47,7 +47,9 @@ export function useHubUIState(): HubUIState {
   // every location change (which would break referential equality for
   // `HubBottomNav`'s `onChange` prop).
   const locationRef = useRef(location);
-  locationRef.current = location;
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
 
   const setHubView = useCallback(
     (view: HubView) => {

@@ -28,7 +28,9 @@ export function useNutritionReminders(prefs: NutritionReminderPrefs): void {
 
   // Keep a stable ref so onMinuteTick doesn't need to list prefs as a dep.
   const prefsRef = useRef(prefs);
-  prefsRef.current = prefs;
+  useEffect(() => {
+    prefsRef.current = prefs;
+  }, [prefs]);
 
   useEffect(() => {
     try {

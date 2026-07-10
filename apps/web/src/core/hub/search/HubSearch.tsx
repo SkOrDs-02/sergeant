@@ -30,12 +30,28 @@ export interface HubSearchProps {
  * here would call `onClose` twice on every Esc.
  */
 export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
-  const engine = useSearchEngine({ onClose, onOpenModule });
+  const {
+    inputRef,
+    listRef,
+    query,
+    setQuery,
+    results,
+    flat,
+    activeIdx,
+    setActiveIdx,
+    recents,
+    openHit,
+    pickRecent,
+    clearRecents,
+    commitQuery,
+    inlineAi,
+    escalateToChat,
+  } = useSearchEngine({ onClose, onOpenModule });
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   useDialogFocusTrap(true, panelRef, { inertBackground: true });
 
-  const activeHit = engine.flat[engine.activeIdx];
+  const activeHit = flat[activeIdx];
 
   return (
     <div
@@ -46,35 +62,35 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
       aria-label={messages.nav.globalSearch}
     >
       <SearchInput
-        ref={engine.inputRef}
-        query={engine.query}
-        onQueryChange={engine.setQuery}
+        ref={inputRef}
+        query={query}
+        onQueryChange={setQuery}
         onClose={onClose}
         listId="hub-search-results"
-        expanded={engine.flat.length > 0}
+        expanded={flat.length > 0}
         activeId={activeHit ? `hub-hit-${activeHit.id}` : undefined}
       />
 
       <InlineAiRail
-        state={engine.inlineAi.state}
-        onRetry={(q) => void engine.inlineAi.ask(q)}
-        onCancel={engine.inlineAi.cancel}
-        onOpenInChat={engine.escalateToChat}
-        onDismiss={engine.inlineAi.reset}
+        state={inlineAi.state}
+        onRetry={(q) => void inlineAi.ask(q)}
+        onCancel={inlineAi.cancel}
+        onOpenInChat={escalateToChat}
+        onDismiss={inlineAi.reset}
       />
 
       <SearchResults
-        ref={engine.listRef}
-        query={engine.query}
-        results={engine.results}
-        flat={engine.flat}
-        activeIdx={engine.activeIdx}
-        recents={engine.recents}
-        onActivate={engine.openHit}
-        onHover={(idx) => engine.setActiveIdx(idx)}
-        onPickRecent={engine.pickRecent}
-        onClearRecents={engine.clearRecents}
-        onCommitQuery={engine.commitQuery}
+        ref={listRef}
+        query={query}
+        results={results}
+        flat={flat}
+        activeIdx={activeIdx}
+        recents={recents}
+        onActivate={openHit}
+        onHover={(idx) => setActiveIdx(idx)}
+        onPickRecent={pickRecent}
+        onClearRecents={clearRecents}
+        onCommitQuery={commitQuery}
         onOpenModule={onOpenModule}
         onClose={onClose}
       />

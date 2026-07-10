@@ -13,7 +13,7 @@
  *
  * @last-validated 2026-05-19
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -93,7 +93,7 @@ export function AddMealSheet({
   // Tracks whether the current sheet opening auto-skipped the source step,
   // so we can show the "Обрати джерело ↑" backtrack link instead of the
   // regular ← arrow that only appears after forward navigation.
-  const skippedSourceRef = useRef(false);
+  const [wasAutoSkipped, setWasAutoSkipped] = useState(false);
 
   const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } =
     useFoodSearch(foodQuery);
@@ -156,7 +156,7 @@ export function AddMealSheet({
         !initialMeal?.id && !photoResult && mealTemplates.length === 0;
       const initialStep =
         initialMeal?.id || photoResult ? "fill" : autoSkip ? "fill" : "source";
-      skippedSourceRef.current = autoSkip && initialStep === "fill";
+      setWasAutoSkipped(autoSkip && initialStep === "fill");
       setStep(initialStep);
       void ensureSeedFoods();
     }
@@ -259,14 +259,12 @@ export function AddMealSheet({
   // text link "Обрати джерело ↑" inline with the title rather than a ← icon
   // button, because the icon back button implies "you navigated here" which
   // would confuse users who never saw the source step.
-  const wasAutoSkipped = canBacktrack && skippedSourceRef.current;
-
   function handleBacktrack() {
     // Clear any picked source to prevent the auto-advance effect from
     // immediately pushing back to "fill" when we return to "source".
     setPickedFood(null);
     setFromPantryItem(null);
-    skippedSourceRef.current = false;
+    setWasAutoSkipped(false);
     setStep("source");
   }
 

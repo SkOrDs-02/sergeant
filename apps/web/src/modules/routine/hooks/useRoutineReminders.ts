@@ -60,7 +60,10 @@ function sendRoutineStateToSW(routine: RoutineState): void {
 export function useRoutineReminders(routine: RoutineState): void {
   const enabled = routine.prefs?.routineRemindersEnabled === true;
   const routineRef = useRef<RoutineState>(routine);
-  routineRef.current = routine;
+
+  useEffect(() => {
+    routineRef.current = routine;
+  }, [routine]);
 
   useEffect(() => {
     cleanupStaleRoutineNotifyKeys();
