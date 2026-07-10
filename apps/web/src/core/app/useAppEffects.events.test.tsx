@@ -169,4 +169,28 @@ describe("useAppEffects — global event bridges", () => {
       });
     }).not.toThrow();
   });
+
+  it("opens a module when the service worker posts OPEN_MODULE", () => {
+    const openModule = vi.fn();
+    let messageHandler: ((event: Event) => void) | null = null;
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        addEventListener: (type: string, handler: EventListener) => {
+          if (type === "message")
+            messageHandler = handler as (event: Event) => void;
+        },
+        removeEventListener: vi.fn(),
+      },
+    });
+    renderHook(() => useAppEffects(makeDeps({ openModule })));
+    act(() => {
+      messageHandler?.(
+        new MessageEvent("message", {
+          data: { type: "OPEN_MODULE", module: "nutrition" },
+        }),
+      );
+    });
+    expect(openModule).toHaveBeenCalledWith("nutrition");
+  });
 });
