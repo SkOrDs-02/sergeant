@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-07-06",
+  "generated_at": "2026-07-10",
   "summary": {
     "packages": 18,
     "totalExports": 304,
@@ -1765,7 +1765,7 @@
       "entryFile": "packages/fizruk-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 83,
+        "totalImporters": 84,
         "deadExports": 0
       },
       "exports": [
