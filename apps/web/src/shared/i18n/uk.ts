@@ -702,7 +702,7 @@ export const messages = {
     signInOrCreate: "Увійти або створити акаунт",
   },
 
-  // What's new modal (PR-18 у `docs/launch/product-os/ftux-master-tracker.md`
+  // What's new modal (PR-18 у `docs/01-product/launch/product-os/ftux-master-tracker.md`
   // §3.3). UI-копія обмежена — release-specific копія (title / summary /
   // items / CTA label) живе у TS-таблиці `apps/web/src/core/whatsNew/
   // releases.ts`; у каталог потрапляють лише chrome-літерали з рамки

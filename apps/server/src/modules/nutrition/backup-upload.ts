@@ -53,7 +53,7 @@ export default async function handler(
   const file = path.join(dir, `nutrition-backup-${key}.json`);
   // `key` — HMAC(userId, token, secret) у base64url, тому шлях детермінований
   // і не дозволяє path-traversal; `dir` пінується у `.data`.
-  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- `file` is HMAC(userId, token, secret) base64url under pinned `.data` dir; deterministic path, no traversal.
   await fs.writeFile(file, raw, "utf8");
 
   res.status(200).json({ ok: true, savedAt: Date.now() });

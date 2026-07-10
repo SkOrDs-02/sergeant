@@ -4462,7 +4462,7 @@ const noBareFixedInsetModal = {
 //   - Strategy `kyivMondayISO` uses `Intl.DateTimeFormat` directly and is
 //     itself the recommended pattern.
 //
-// See docs/governance/rules/kyiv-time-helpers.md for the full migration
+// See docs/04-governance/governance/rules/kyiv-time-helpers.md for the full migration
 // plan and the audit cross-ref.
 const PREFER_KYIV_TIME_MESSAGE =
   "Don't read host-local date parts ({{name}}). Use @shared/lib/time/kyivTime helpers " +
@@ -4539,12 +4539,12 @@ const preferKyivTime = {
 //
 // Rollout: `warn` зараз → `error` через 1 sprint після підтвердження, що
 // усі callsite-и у PR-09 + PR-10 мігровані. Дивись AGENTS.md §Hard rules
-// та docs/governance/rules/27-prefer-parse-body.md.
+// та docs/04-governance/governance/rules/27-prefer-parse-body.md.
 
 const PREFER_PARSE_BODY_MESSAGE =
-  "Use `parseBody(Schema, req)` instead of `validateBody(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler` and eliminates the sentinel pattern that caused double-response 500s. See docs/governance/rules/27-prefer-parse-body.md.";
+  "Use `parseBody(Schema, req)` instead of `validateBody(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler` and eliminates the sentinel pattern that caused double-response 500s. See docs/04-governance/governance/rules/27-prefer-parse-body.md.";
 const PREFER_PARSE_QUERY_MESSAGE =
-  "Use `parseQuery(Schema, req)` instead of `validateQuery(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler`. See docs/governance/rules/27-prefer-parse-body.md.";
+  "Use `parseQuery(Schema, req)` instead of `validateQuery(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler`. See docs/04-governance/governance/rules/27-prefer-parse-body.md.";
 
 // Paths that are allowed to import/call validateBody — the definition file
 // and its test.
@@ -4558,7 +4558,7 @@ const preferParseBodyOverValidateBody = {
       description:
         "Prefer throw-based parseBody/parseQuery over sentinel validateBody/validateQuery in Express handlers",
       recommended: false,
-      url: "docs/governance/rules/27-prefer-parse-body.md",
+      url: "docs/04-governance/governance/rules/27-prefer-parse-body.md",
     },
     schema: [],
     messages: {

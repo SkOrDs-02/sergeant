@@ -45,7 +45,7 @@ describe("ONBOARDING_DEFAULT_PICKS_EXPERIMENT", () => {
 describe("S6.1 audit-guard", () => {
   it("experiment id matches the sprint-plan name (PostHog dashboard depends on it)", () => {
     // `onboarding_default_picks_v1` is referenced in
-    // `docs/launch/ftux-sprint-plan.md` §2.1 / B-1 and in the
+    // `docs/01-product/launch/ftux-sprint-plan.md` §2.1 / B-1 and in the
     // PostHog feature-flag config; renaming it silently breaks the
     // dashboard. Block that drift here.
     expect(ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id).toBe(

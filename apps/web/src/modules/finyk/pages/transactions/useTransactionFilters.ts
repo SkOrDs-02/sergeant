@@ -287,9 +287,8 @@ export function useTransactionFilters({
   // Day collapse/expand state. Persisted as a sparse override map:
   // absence → default rule (only "today" is expanded). Explicit boolean
   // overrides the default and survives across sessions.
-  const todayDayKey = useMemo(
-    () => dayKeyFromTx(Math.floor(Date.now() / 1000)),
-    [],
+  const [todayDayKey] = useState(() =>
+    dayKeyFromTx(Math.floor(Date.now() / 1000)),
   );
   const [dayOverrides, setDayOverrides] = useState(() => readDayCollapse());
 

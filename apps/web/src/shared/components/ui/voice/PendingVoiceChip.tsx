@@ -33,7 +33,7 @@ export function PendingVoiceChip({
   onCancel,
 }: PendingVoiceChipProps) {
   const [progress, setProgress] = useState(1);
-  const startedAtRef = useRef<number>(Date.now());
+  const startedAtRef = useRef<number | null>(null);
   const onConfirmRef = useRef(onConfirm);
   onConfirmRef.current = onConfirm;
 
@@ -41,7 +41,8 @@ export function PendingVoiceChip({
     startedAtRef.current = Date.now();
     let raf = 0;
     const tick = () => {
-      const elapsed = Date.now() - startedAtRef.current;
+      const startedAt = startedAtRef.current ?? Date.now();
+      const elapsed = Date.now() - startedAt;
       const remaining = Math.max(0, VOICE_CONFIRM_MS - elapsed);
       setProgress(remaining / VOICE_CONFIRM_MS);
       if (remaining <= 0) {

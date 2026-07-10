@@ -17,7 +17,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // Onboarding replay (Settings → "Подивитись tour" — read-only mode).
   // Distinguished from `ONBOARDING_STARTED` / `ONBOARDING_COMPLETED` so
   // re-runs do not inflate the FTUX funnel — see S4.5 in
-  // `docs/launch/ftux-sprint-plan.md`.
+  // `docs/01-product/launch/ftux-sprint-plan.md`.
   ONBOARDING_REPLAY_VIEWED: "onboarding_replay_viewed",
   ONBOARDING_REPLAY_DISMISSED: "onboarding_replay_dismissed",
 
@@ -349,7 +349,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   PERMISSIONS_SETTINGS_OPENED: "permissions_settings_opened",
   PERMISSION_STATUS_CHANGED: "permission_status_changed",
 
-  // Demo mode (S4.1 of `docs/launch/ftux-sprint-plan.md`). The welcome
+  // Demo mode (S4.1 of `docs/01-product/launch/ftux-sprint-plan.md`). The welcome
   // screen ships a "Подивитись приклад" CTA that seeds a fake hub
   // payload in localStorage; once the user lands inside the hub, a
   // banner offers them a one-tap path back to the real onboarding
@@ -363,7 +363,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   DEMO_DISMISSED: "demo_dismissed",
   DEMO_TO_WIZARD_CONFIRMED: "demo_to_wizard_confirmed",
 
-  // PWA install prompt (Wave 1 PR-07 — `docs/launch/product-os/ftux-master-tracker.md`).
+  // PWA install prompt (Wave 1 PR-07 — `docs/01-product/launch/product-os/ftux-master-tracker.md`).
   // Funnel:
   //   PWA_INSTALL_PROMPTED  ≥  PWA_INSTALL_ACCEPTED + PWA_INSTALL_DISMISSED
   //   PWA_INSTALLED          ≤  PWA_INSTALL_ACCEPTED                  (Android/Chromium only;

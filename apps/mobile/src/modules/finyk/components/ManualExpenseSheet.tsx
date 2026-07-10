@@ -17,7 +17,7 @@
  * PR4 lands.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { toLocalISODate } from "@sergeant/shared";
@@ -73,6 +73,14 @@ export function upgradeCategory(
 
 // Strips leading emoji / punctuation so "🍴 їжа" → "їжа". Used as the
 // fallback description when the user leaves the field blank.
+function computeInitialExpenseDate(raw?: string | number | Date): string {
+  if (raw != null && raw !== "") {
+    const d = raw instanceof Date ? raw : new Date(raw);
+    if (!Number.isNaN(d.getTime())) return toLocalISODate(d);
+  }
+  return toLocalISODate(new Date());
+}
+
 function stripEmoji(label: string): string {
   const str = String(label || "");
   let i = 0;
@@ -128,14 +136,6 @@ export function ManualExpenseSheet({
 }: ManualExpenseSheetProps) {
   const isEditing = !!initialExpense?.id;
 
-  const initialDate = useMemo(() => {
-    if (initialExpense?.date) {
-      const d = new Date(initialExpense.date);
-      if (!Number.isNaN(d.getTime())) return toLocalISODate(d);
-    }
-    return toLocalISODate(new Date());
-  }, [initialExpense?.date]);
-
   const [description, setDescription] = useState(
     initialExpense?.description ?? initialDescription ?? "",
   );
@@ -145,7 +145,9 @@ export function ManualExpenseSheet({
   const [category, setCategory] = useState<ManualExpenseCategory>(
     upgradeCategory(initialExpense?.category ?? initialCategory),
   );
-  const [date, setDate] = useState(initialDate);
+  const [date, setDate] = useState(() =>
+    computeInitialExpenseDate(initialExpense?.date),
+  );
   const [error, setError] = useState<string | null>(null);
 
   // When the sheet is re-opened with a different row (e.g. user taps
@@ -158,11 +160,11 @@ export function ManualExpenseSheet({
       initialExpense?.amount != null ? String(initialExpense.amount) : "",
     );
     setCategory(upgradeCategory(initialExpense?.category ?? initialCategory));
-    setDate(initialDate);
+    setDate(computeInitialExpenseDate(initialExpense?.date));
     setError(null);
   }, [
     open,
-    initialDate,
+    initialExpense?.date,
     initialExpense?.amount,
     initialExpense?.category,
     initialExpense?.description,

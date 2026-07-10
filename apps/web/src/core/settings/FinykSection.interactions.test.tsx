@@ -19,6 +19,12 @@ const apiState = vi.hoisted(() => ({
   isPro: true,
 }));
 
+// Controllable backfill progress state — allows individual tests to simulate
+// the "running" status without re-hoisting the whole mock.
+const backfillState = vi.hoisted(() => ({
+  status: null as string | null,
+}));
+
 vi.mock("@shared/api", async () => {
   const actual =
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
@@ -64,7 +70,17 @@ vi.mock("../../modules/finyk/lib/finykStorage", () => ({
 }));
 
 vi.mock("../../modules/finyk/hooks/useMonoBackfillProgress", () => ({
-  useMonoBackfillProgress: () => ({ progress: null }),
+  useMonoBackfillProgress: () => ({
+    progress: backfillState.status
+      ? {
+          status: backfillState.status,
+          accountsProcessed: 1,
+          accountsTotal: 3,
+          transactionsProcessed: 42,
+          lastError: null,
+        }
+      : null,
+  }),
 }));
 
 import { monoWebhookApi } from "@shared/api";
@@ -109,6 +125,7 @@ describe("FinykSection interactions", () => {
     vi.clearAllMocks();
     apiState.isPro = true;
     storageMock.customCategories = [];
+    backfillState.status = null;
     localStorage.clear();
     sessionStorage.clear();
   });
@@ -272,5 +289,136 @@ describe("FinykSection interactions", () => {
     await waitFor(() =>
       expect(screen.getByText("🔄 Оновити дані")).toBeInTheDocument(),
     );
+  });
+
+  // ── Additional branches ────────────────────────────────────────────────────
+
+  it("renders a yellow pending indicator when status=pending", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "pending",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 1,
+    });
+    renderSection();
+    expect(await screen.findByText("Webhook pending")).toBeInTheDocument();
+    // Check border colour class via className (yellow-500/30).
+    const card = screen
+      .getByText("Webhook pending")
+      .closest("[class*='border-']");
+    expect(card?.className).toContain("yellow-500");
+  });
+
+  it("renders a red error indicator when status is an unknown/error value", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "error",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    renderSection();
+    expect(await screen.findByText("Webhook error")).toBeInTheDocument();
+    const card = screen
+      .getByText("Webhook error")
+      .closest("[class*='border-']");
+    expect(card?.className).toContain("red-500");
+  });
+
+  it("shows Re-sync… and disables the button when backfill is running", async () => {
+    backfillState.status = "running";
+    mockedSyncState.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 2,
+    });
+    renderSection();
+    const btn = await screen.findByText("Re-sync…");
+    expect(btn).toBeTruthy();
+    expect((btn.closest("button") as HTMLButtonElement | null)?.disabled).toBe(
+      true,
+    );
+  });
+
+  it("opens paywall when non-Pro user triggers backfill", async () => {
+    apiState.isPro = false;
+    mockedSyncState.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 2,
+    });
+    renderSection();
+    const btn = await screen.findByText(/Re-sync/);
+    fireEvent.click(btn);
+    expect(
+      await screen.findByText("Авто-Mono sync доступний у Pro"),
+    ).toBeInTheDocument();
+    expect(mockedBackfill).not.toHaveBeenCalled();
+  });
+
+  it("backfill API error is swallowed gracefully (connected state remains)", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 2,
+    });
+    mockedBackfill.mockRejectedValue(new Error("Помилка re-sync"));
+    renderSection();
+    const btn = await screen.findByText("Re-sync (backfill)");
+    fireEvent.click(btn);
+    await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
+    // Component stays in connected state — Re-sync button is still present.
+    await waitFor(() =>
+      expect(screen.getByText("Re-sync (backfill)")).toBeInTheDocument(),
+    );
+  });
+
+  it("Enter key in the webhook token input submits the form", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    mockedConnect.mockResolvedValue({ status: "active", accountsCount: 1 });
+    renderSection();
+    const input = await screen.findByPlaceholderText("Токен Monobank API");
+    fireEvent.change(input, { target: { value: "tok-enter" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() =>
+      expect(mockedConnect).toHaveBeenCalledWith(
+        "tok-enter",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    );
+  });
+
+  it("shows generic connect error for non-auth, non-aborted failures", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    mockedConnect.mockRejectedValue(new Error("Мережева помилка"));
+    renderSection();
+    const input = await screen.findByPlaceholderText("Токен Monobank API");
+    fireEvent.change(input, { target: { value: "tok" } });
+    fireEvent.click(screen.getByText("Підключити Monobank"));
+    expect(await screen.findByText("Мережева помилка")).toBeInTheDocument();
+  });
+
+  it("shows lastEventAt timestamp when webhook is connected and event exists", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: "2024-03-15T14:30:00Z",
+      lastBackfillAt: null,
+      accountsCount: 2,
+    });
+    renderSection();
+    await screen.findByText("Webhook active");
+    // The formatted time should appear somewhere in the rendered output.
+    // The exact locale string depends on the test environment; just check
+    // for a presence of "·" separator (rendered alongside the date).
+    const statusSection = screen.getByText("Webhook active").parentElement;
+    expect(statusSection?.textContent).toContain("·");
   });
 });

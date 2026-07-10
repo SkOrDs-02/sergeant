@@ -74,8 +74,10 @@ export function Progress({ onNavigate }: ProgressProps) {
       }));
   }, [entries]);
 
+  const [nowMs] = useState(() => Date.now());
+
   const weeklyByMuscle = useMemo(() => {
-    const now = Date.now();
+    const now = nowMs;
     const weeks = new Map<number, Record<string, number>>();
     const DAY = 24 * 60 * 60 * 1000;
     const cutoff = now - 28 * DAY;
@@ -125,7 +127,7 @@ export function Progress({ onNavigate }: ProgressProps) {
 
     const max = top[0]?.value || 1;
     return { latestWeek, top, max };
-  }, [workouts, musclesUk]);
+  }, [workouts, musclesUk, nowMs]);
 
   const prs = useMemo(() => {
     type PR = {

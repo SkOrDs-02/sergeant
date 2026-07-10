@@ -18,7 +18,7 @@ import { accountAgeDays } from "../feedback/accountAge";
  *     Сегментуємо ретеншн і funnel-и за тим, який модуль користувач
  *     обрав на старті. Якщо vibe-picks порожні — поле опускаємо.
  *   - `plan` — поточний tier підписки. Поки що Stripe/billing немає
- *     (див. `docs/launch/business/01-monetization-and-pricing.md`), тому всі
+ *     (див. `docs/01-product/launch/business/01-monetization-and-pricing.md`), тому всі
  *     ідентифіковані юзери `"free"`. Коли підписки з'являться, цей
  *     модуль буде єдине місце, де треба підставити реальне джерело.
  *   - `locale` — `navigator.language` без подальшої нормалізації,

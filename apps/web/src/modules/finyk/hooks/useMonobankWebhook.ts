@@ -46,7 +46,7 @@ import {
  * onboarding demo seed). The webhook hook keeps writing them as a
  * forward-compat shim so existing readers keep working without a coordinated
  * migration. Phase-out tracked under Monobank Roadmap follow-up — see
- * `docs/integrations/monobank-roadmap.md` (section A → B).
+ * `docs/02-engineering/integrations/monobank-roadmap.md` (section A → B).
  */
 const LEGACY_TX_CACHE_KEY = "finyk_tx_cache";
 const LEGACY_TX_CACHE_LAST_GOOD_KEY = "finyk_tx_cache_last_good";

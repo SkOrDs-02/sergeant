@@ -1,6 +1,6 @@
 # Детальний план декомпозиції syncV2.ts
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-10 by @claude. **Next review:** 2026-10-08.
 > **Status:** Active
 
 ## Поточний стан

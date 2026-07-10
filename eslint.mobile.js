@@ -126,4 +126,67 @@ export const mobileBlocks = [
       "@typescript-eslint/no-explicit-any": "warn",
     },
   },
+  // react-hooks v7 burndown (initiative 0021) — `immutability` cleared
+  // apps/mobile: Sheet.tsx shared-value deps + CategoryDonut render accumulator.
+  // Promoted from baseline `off` to mobile-scoped `error`. See
+  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "react-hooks/immutability": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `purity` cleared apps/mobile:
+  // OnboardingWizard step timestamp ref init + useRecovery `nowMs` state
+  // (parity with web `useRecovery`). Promoted from baseline `off` to
+  // mobile-scoped `error`. See initiative 0021.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "react-hooks/purity": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `preserve-manual-memoization`
+  // cleared apps/mobile: 4 call-sites fixed by extracting `computeInitialExpenseDate`
+  // (ManualExpenseSheet — drop the memo the Compiler couldn't preserve) and by
+  // centralising `pantryItems` in `useNutritionPantries` with a narrowed
+  // `activePantryItems` dependency (mirrors web hook). Promoted from the
+  // baseline `off` to mobile-scoped `error` so the next regression fails lint
+  // loudly. Stays `off` in the shared baseline until other surfaces clear.
+  // See `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/preserve-manual-memoization": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `refs` cleared apps/mobile
+  // across waves 1–3: Animated.Value lazy useState, onboarding intro state,
+  // hook callback-ref sync via useEffect, draggable reduceMotion shared values,
+  // HubSearch destructure. Promoted from baseline `off` to mobile-scoped
+  // `error`. See `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "react-hooks/refs": "error",
+    },
+  },
 ];

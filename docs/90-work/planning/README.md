@@ -1,6 +1,6 @@
 # Планування
 
-> **Last validated:** 2026-06-02 by @claude (planning-folder review: fast-forward архівація `pr-plan-security-obs-2026-05.md` — усі картки S2–S11 ✅ verified on main — та ефемерної `session-2026-05-15-revenue-security-testing.md`; drift-fix статусу `storage-roadmap.md` Stage 13 `4/9`→`9/9`. Раніше того ж дня: вказівник на `execute-planning-batch` workflow + fast-forward архівація `pr-plan-docs-hygiene-2026-05.md`). **Next review:** 2026-08-31.
+> **Last validated:** 2026-07-10 by @cursor-agent (catalog syncv2 plan after `plans/` relocation). **Next review:** 2026-10-08.
 > **Status:** Active
 
 Активні roadmap-и, дослідницькі плани і decision-rationale документи розвитку Sergeant.
@@ -10,6 +10,10 @@
 > **Як виконувати ці плани батчами:** [`../playbooks/execute-planning-batch.md`](../../00-start/playbooks/execute-planning-batch.md) (governing skill `sergeant-planning-batch`, parallel fan-out layer — [`../agents/agent-workflows.md`](../../00-start/agents/agent-workflows.md) §12). Динамічно тягне наступні N невиконаних PR-карток звідси, гонить паралельні агенти, оновлює трекери і fast-forward архівує доведені до повністю виконано доки (без 90-day gate, за standing-дозволом founder-а).
 
 ## Активні документи
+
+### Спеки фіч
+
+Кожна нетривіальна фіча починається зі спеки у [`specs/`](./specs/) (шаблон: [`specs/TEMPLATE.md`](./specs/TEMPLATE.md)). Спека народжується через spec-інтервʼю (глобальний скіл `spec`: AskUserQuestion → самодостатній документ) і виконується у свіжій сесії/worktree, читаючи лише її. Дрібні фікси та задачі з готовим playbook/initiative-таском спеки не потребують.
 
 ### Зведені роадмапи
 
@@ -39,6 +43,7 @@
 | [`tools-research-2026-05-followup.md`](./tools-research-2026-05-followup.md) | Follow-up до `tools-research-2026-05.md` — реальний стан адопції + переоцінка «відкладених» / «не рекомендованих» (Hold / Mild miss / Real loss / Reconsider) | Active research                                               |
 | [`tailwind-v4-migration.md`](./tailwind-v4-migration.md)                     | Tailwind v3 → v4 migration plan                                                                                                                               | Phases 1/3/4 ✅ done; Phase 2 (mobile / NativeWind 5) blocked |
 | [`flyio-vs-railway.md`](./flyio-vs-railway.md)                               | Decision-rationale: Railway зараз залишається, Fly.io — checklist «коли мігрувати»                                                                            | Reference (не потребує дій)                                   |
+| [`syncv2-decomposition-detailed.md`](./syncv2-decomposition-detailed.md)     | Детальний план декомпозиції `syncV2.ts` (Hard Rule #18 module-size)                                                                                           | Active                                                        |
 | [`talk-to-your-data.md`](./talk-to-your-data.md)                             | План для conversational data Q&A на даних користувача                                                                                                         | Draft                                                         |
 
 ## Архів

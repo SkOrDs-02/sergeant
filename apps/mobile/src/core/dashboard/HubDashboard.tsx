@@ -28,7 +28,7 @@
  */
 
 import { router, type Href } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -86,9 +86,13 @@ import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
  * AssistantFab — floating action button with pulse glow animation.
  */
 function AssistantFab({ onPress }: { onPress: () => void }) {
-  const pulseScale = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.4)).current;
-  const shadowOpacity = useRef(new Animated.Value(0.3)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [pulseScale] = useState(() => new Animated.Value(1));
+  const [pulseOpacity] = useState(() => new Animated.Value(0.4));
+  const [shadowOpacity] = useState(() => new Animated.Value(0.3));
 
   useEffect(() => {
     // Subtle pulse animation for the glow ring

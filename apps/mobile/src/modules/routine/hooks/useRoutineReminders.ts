@@ -245,8 +245,10 @@ export function useRoutineReminders(
   const rescheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rescheduleInFlightRef = useRef<Promise<void> | null>(null);
 
-  routineRef.current = routine;
-  permissionRef.current = permission;
+  useEffect(() => {
+    routineRef.current = routine;
+    permissionRef.current = permission;
+  }, [routine, permission]);
 
   // --- perform the real schedule/cancel work -----------------------------
   const performReschedule = useCallback(async (): Promise<void> => {

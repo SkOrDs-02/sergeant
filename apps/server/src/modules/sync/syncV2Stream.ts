@@ -40,7 +40,7 @@ import { elapsedMs } from "../../lib/timing.js";
  *
  * Single-process замітка: емітер in-memory; multi-instance деплоймент
  * у майбутньому потребуватиме cross-process fan-out. Рішення зафіксовано
- * в `docs/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md`
+ * в `docs/04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md`
  * (PG `LISTEN/NOTIFY` обрано над Redis; реалізація gated на реальний
  * multi-instance тригер — roadmap PR #050). Railway-сетап Sergeant-а зараз
  * single-instance, тому fan-out тривіальний; cross-process — наступний шар.

@@ -160,26 +160,28 @@ export const baseline = [
       // Promote back to "error" after the cleanup PR has migrated the
       // last call-site (mirrors the WCAG-`-strong` policy below).
       //
-      // Current scoreboard (2026-05-16 sweep across apps/web, apps/mobile,
+      // Current scoreboard (2026-07-10 re-measure across apps/web, apps/mobile,
       // apps/mobile-shell, apps/server, tools/openclaw):
       //   static-components            — 0 ✅ promoted to "error" below
       //   use-memo                     — 0 ✅ promoted to "error" below
-      //   immutability                 — web 0 ✅ (promoted to "error" for
-      //       apps/web in eslint.web.js) + mobile 4 (still off here)
-      //   preserve-manual-memoization  — web 0 ✅ (promoted to "error" for
-      //       apps/web in eslint.web.js after a 2026-07-04 burndown: 6 fixed
-      //       cleanly, 3 behaviour-preserving manual memos kept behind a scoped
-      //       eslint-disable) + mobile 2 (still off here)
-      //   purity                       — 13 (apps/web)
-      //   refs                         — 59 (apps/web)
-      //   set-state-in-effect          — 76 (apps/web)
+      //   immutability                 — web 0 ✅ + mobile 0 ✅ (2026-07-10:
+      //       CategoryDonut reduce fix + Sheet Reanimated scoped disables;
+      //       promoted in eslint.web.js + eslint.mobile.js)
+      //   preserve-manual-memoization  — web 0 ✅ (promoted in eslint.web.js
+      //       after 2026-07-04 burndown) + mobile 0 ✅ (promoted in eslint.mobile.js)
+      //   purity                       — web 0 ✅ (promoted in eslint.web.js)
+      //       + mobile 0 ✅ (promoted in eslint.mobile.js)
+      //   refs                         — web ~59 (still off here); mobile 0 ✅ (promoted in eslint.mobile.js)
+      //   set-state-in-effect          — web ~80 (still off here) + mobile 44
+      // Promoted per-surface once that surface's count reaches 0. See
+      // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/purity": "off",
       "react-hooks/refs": "off",
-      // `immutability` stays `off` in the shared baseline for apps/mobile
-      // (4 legacy violations, separate future bite); apps/web promotes it
-      // to "error" in eslint.web.js after the web burndown.
+      // `immutability` promoted to `error` in eslint.mobile.js (2026-07-10
+      // burndown); baseline stays `off` for other surfaces still on legacy
+      // react-hooks v7 rules.
       "react-hooks/immutability": "off",
       // `static-components` cleared the monorepo — no component is defined
       // inside the body of another component. Promoted from "off" to

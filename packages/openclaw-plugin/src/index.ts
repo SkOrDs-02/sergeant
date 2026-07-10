@@ -188,7 +188,8 @@ function makeTools(founderUserId: string): ToolSpec[] {
         "Read a strategy/planning/ADR document from the Sergeant repo. Returns full markdown.",
       params: Type.Object({
         path: Type.String({
-          description: "Relative repo path (e.g. docs/adr/0031-foo.md)",
+          description:
+            "Relative repo path (e.g. docs/04-governance/adr/0031-foo.md)",
         }),
       }),
       endpoint: "/strategy",
@@ -563,7 +564,7 @@ function makeTools(founderUserId: string): ToolSpec[] {
     {
       name: "commit_to_strategy_doc",
       description:
-        "WRITE — commit content to a Sergeant strategy document (docs/strategy/**, docs/adr/**) in a Sergeant-allowlisted repo. Returns commit sha. Use for: founder-approved decisions that need to land in the strategy log. Mutating action — confirm with the founder before invoking.",
+        "WRITE — commit content to a Sergeant strategy document (docs/strategy/**, docs/04-governance/adr/**) in a Sergeant-allowlisted repo. Returns commit sha. Use for: founder-approved decisions that need to land in the strategy log. Mutating action — confirm with the founder before invoking.",
       params: Type.Object({
         path: Type.String({
           description:

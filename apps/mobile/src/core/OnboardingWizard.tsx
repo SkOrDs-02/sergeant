@@ -120,7 +120,7 @@ export function OnboardingWizard({
   // transition so `onboarding_step_completed.durationMs` reflects time
   // *spent* on each step instead of cumulative wall-clock from mount.
   const startedAtRef = useRef<number | null>(null);
-  const stepEnteredAtRef = useRef<number>(Date.now());
+  const stepEnteredAtRef = useRef<number>(0);
 
   // Mount-only: fire `onboarding_started` + the welcome step view. The
   // web wizard collapses both into one screen; on mobile they map to

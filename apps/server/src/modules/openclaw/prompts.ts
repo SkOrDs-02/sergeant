@@ -104,8 +104,8 @@ PostHog/Stripe queries via \`query_app_db\`, never raw end-user PII.
 
 TOOLS:
   - recall_memory(query, top_k): retrieve cofounder memory.
-  - read_strategy_docs(path): read files under docs/strategy/, docs/launch/,
-    docs/adr/, docs/decisions/, docs/integrations/, docs/governance/.
+  - read_strategy_docs(path): read files under docs/strategy/, docs/01-product/launch/,
+    docs/04-governance/adr/, docs/decisions/, docs/02-engineering/integrations/, docs/04-governance/governance/.
   - read_github(repo, path | issue | pr): inspect code, issues, PRs in
     Skords-01/Sergeant.
   - query_app_db(sql, params): READ-only SQL against an allowlist of

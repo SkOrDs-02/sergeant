@@ -1,6 +1,6 @@
 # 0021 — React-hooks v7 ESLint cleanup
 
-> **Last touched:** 2026-06-14 by @github-actions[bot]. **Next review:** 2026-09-12.
+> **Last touched:** 2026-07-10 by @claude. **Next review:** 2026-09-12.
 > **Status:** In progress
 > **Agent-ready:** yes
 
@@ -19,9 +19,37 @@
 
 - [x] 3 eslint-disable в FinykApp.tsx виправлені (navigate додано до deps, mount-only effects)
 - [x] 2 eslint-disable в useWorkoutsLifecycle.ts виправлені (mount-only, stable deps)
+- [x] `react-hooks/immutability` — web 0 ✅ + mobile 0 ✅ (2026-07-10: CategoryDonut reduce; Sheet SheetContent split + scoped disables for RNGH worklets); promoted to `"error"` in `eslint.mobile.js`
+- [x] `react-hooks/preserve-manual-memoization` — web 0 ✅ + mobile 0 ✅ (2026-07-10: `computeInitialExpenseDate` + centralised `pantryItems`); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
+- [x] `react-hooks/purity` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
+- [x] `react-hooks/refs` — mobile 0 ✅ (waves 1–3 [#156](https://github.com/SkOrDs-02/sergeant/pull/156), [#160](https://github.com/SkOrDs-02/sergeant/pull/160), wave 3); promoted to `"error"` in `eslint.mobile.js`. Web ~59 ще `off`.
+- [ ] `react-hooks/set-state-in-effect` — web ~80 + mobile 44 (2026-07-10)
 - [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
 - [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
-- [ ] `eslint.baseline.js:146-178` оновлено або видалено
+- [ ] `eslint.baseline.js:146-178` оновлено або видалено (після promotion всіх 5 правил)
+
+## Виконані дії (2026-07-10)
+
+**Web-правила:**
+
+- `immutability` (mobile) — promoted to `"error"` у `eslint.mobile.js` (2026-07-10): CategoryDonut immutable reduce; Sheet → `SheetContent` mount-only subtree + 2 scoped `eslint-disable-next-line` на RNGH worklet `.value` writes.
+- `preserve-manual-memoization` (mobile) — 4 call-sites fixed; promoted to `"error"` у `eslint.mobile.js` ([#159](https://github.com/SkOrDs-02/sergeant/pull/159)).
+- `preserve-manual-memoization` (web) — promoted to `"error"` у `eslint.web.js` (рядок 500) після burndown 2026-07-04 (6 fix, 3 scoped-disable з обґрунтуванням); web 0.
+- `purity` (mobile) — promoted to `"error"` у `eslint.mobile.js` (2026-07-10): OnboardingWizard ref placeholder + `useRecovery` `nowMs` state (web parity).
+- `purity` (web) — promoted to `"error"` у `eslint.web.js` після burndown 14 call-sites у 9 файлах (2026-07-10).
+- `refs`, `set-state-in-effect` (web) — ще `off` у baseline (~59 / ~80); promotion після burndown.
+
+**Mobile preserve-manual-memoization (PR #159):**
+
+- `ManualExpenseSheet.tsx` — `computeInitialExpenseDate()` helper замість `useMemo` з `[initialExpense?.date]`.
+- `useNutritionPantries.ts` — `pantryItems` з вузькою залежністю `activePantryItems` (паритет web).
+- `Dashboard.tsx`, `RecipeRecommender.tsx`, `Shopping.tsx` — споживають `pantryItems` з хука.
+
+**Mobile refs wave 2 (PR #160):** 8 файлів — core dashboard (AssistantFab, HubInsightsPanel, DraggableDashboard coach mark), Toast, FAB, SyncStatusIndicator, ModuleErrorBoundary, RestTimerOverlay. Патерн: `useRef(new Animated.Value(x)).current` → `useState(() => new Animated.Value(x))`.
+
+**Mobile refs wave 3:** onboarding intro `useState`, HubSearch destructure, `useChatSessions` boot snapshot, `useLocalStorage`/`voice`/`useRoutineReminders` callback-ref sync via `useEffect`, draggable lists `reduceMotion` shared values + `useLayoutEffect` height buffers. Mobile `refs` → 0; promoted in `eslint.mobile.js`.
+
+**Залишок:** web `refs` (~59) + `set-state-in-effect` (~80 web / 44 mobile).
 
 ## Виконані дії (2026-06-10)
 

@@ -80,7 +80,11 @@ export function AnimatedCounter({
   separator = true,
   locale = "uk-UA",
 }: AnimatedCounterProps) {
-  const animatedValue = useRef(new Animated.Value(value)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [animatedValue] = useState(() => new Animated.Value(value));
   const [displayValue, setDisplayValue] = useState(value);
   const reduceMotion = useReduceMotion();
   const prevValue = useRef(value);
