@@ -1,6 +1,6 @@
 # Tech-debt assessment 2026-07-01 — групи, інструкції до фіксу, burndown-план
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-09-30.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 > **Методологія:** повний прогін механічних гейтів (pnpm lint, knip, janitors doc-drift/dep-cycles, lint:ai-legacy) + воркфло з 11 підагентів (6 verify-агентів звіряли кожну групу з живим кодом точними вимірами — ESLint per-rule прогони, effective-LOC через саме правило `max-lines`, pairwise diff; 5 instruct-агентів писали рецепти). Числа в цьому документі — виміряні 2026-07-01 на HEAD, не переписані зі старих доків.
@@ -74,15 +74,15 @@ Verify-агент спростував F-004/F-005 з assessment 2026-06-05: pai
 
 ## Група 5 — Дрібні self-contained + заблоковані
 
-| Пункт                                           | Статус                             | Дія                                                                                                                                                    |
-| ----------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `chat/tools.ts` console.log (F-008)             | ✅ виконано в цьому PR             | —                                                                                                                                                      |
-| Grafana Alloy Dockerfile digest-pin (INFRA-004) | Відкрито, P4                       | `docker inspect --format='{{index .RepoDigests 0}}' grafana/alloy:v1.17.0` → `FROM grafana/alloy:v1.17.0@sha256:…` + AI-NOTE як оновлювати; scope `ci` |
-| `OptimizedImage.tsx` unused (UX-017)            | 🚫 Blocked-reason: by-design       | Файл несе `@scaffolded` + «Do NOT delete» + `@owner` + `@nextStep` (CDN/loader story). НЕ видаляти                                                     |
-| Lighthouse warn→error (T5)                      | 🚫 Blocked-reason: data-gated      | Чекає baseline-збору LCP; коли буде — `lighthouserc.json` LCP → `["error",{maxNumericValue:3000}]`                                                     |
-| Mobile coverage floor 30 (TC-03)                | Відкрито, P3                       | Піднімати ratchet-ом у міру дописування тестів; великий effort, окрема ініціатива                                                                      |
-| UI-примітиви 155→179 файлів (UX-011)            | Відкрито, P4, регресує             | Консолідація — окремий design-цикл                                                                                                                     |
-| `sync_op_log` партиціювання                     | 🚫 Blocked: multi-instance trigger | План в ADR-0065, не брати                                                                                                                              |
+| Пункт                                           | Статус                             | Дія                                                                                                                                |
+| ----------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `chat/tools.ts` console.log (F-008)             | ✅ виконано в цьому PR             | —                                                                                                                                  |
+| Grafana Alloy Dockerfile digest-pin (INFRA-004) | ✅ виконано в цьому PR             | `FROM grafana/alloy:v1.17.0@sha256:41c41849989b7e054ccbadc17938ee1e5592fe26bfbc56ef3ffc109c0b0b2739` + AI-NOTE процедури оновлення |
+| `OptimizedImage.tsx` unused (UX-017)            | 🚫 Blocked-reason: by-design       | Файл несе `@scaffolded` + «Do NOT delete» + `@owner` + `@nextStep` (CDN/loader story). НЕ видаляти                                 |
+| Lighthouse warn→error (T5)                      | 🚫 Blocked-reason: data-gated      | Чекає baseline-збору LCP; коли буде — `lighthouserc.json` LCP → `["error",{maxNumericValue:3000}]`                                 |
+| Mobile coverage floor 30 (TC-03)                | Відкрито, P3                       | Піднімати ratchet-ом у міру дописування тестів; великий effort, окрема ініціатива                                                  |
+| UI-примітиви 155→179 файлів (UX-011)            | Відкрито, P4, регресує             | Консолідація — окремий design-цикл                                                                                                 |
+| `sync_op_log` партиціювання                     | 🚫 Blocked: multi-instance trigger | План в ADR-0065, не брати                                                                                                          |
 
 ## Довідка: що перевірено і чисте (не борг)
 
