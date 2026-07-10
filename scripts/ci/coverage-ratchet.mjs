@@ -69,10 +69,13 @@ export function evaluateRatchet(baseline, actuals) {
         `${workspace}: lines ${actual}% < baseline ${floor}% − ${epsilon}пп. ` +
           `Додай тести або (свідомо, з обґрунтуванням у PR) знизь baseline у coverage-ratchet.json.`,
       );
-    } else if (actual > floor) {
+    } else if (actual > floor + epsilon) {
+      // Симетрично до fail-порогу (floor − epsilon): бампимо лише за
+      // осмислений приріст понад epsilon, інакше sub-epsilon коливання
+      // v8-інструментації спричиняли б шумні baseline-коміти у PR-гілку.
       bumps[workspace] = actual;
       report.push(
-        `⬆️  ${workspace}: ${actual}% > baseline ${floor}% — baseline піднято.`,
+        `⬆️  ${workspace}: ${actual}% > baseline ${floor}% + ${epsilon}пп — baseline піднято.`,
       );
     } else {
       report.push(

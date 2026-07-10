@@ -44,6 +44,15 @@ test("межа: рівно baseline − epsilon ще проходить", () => 
   assert.deepEqual(failures, []);
 });
 
+test("no-bump: приріст у межах epsilon над baseline не бампить (без шуму)", () => {
+  const { failures, bumps } = evaluateRatchet(baseline, {
+    "apps/web": 77.9, // +0.4 над 77.5 — менше за epsilon 0.5
+    "apps/server": 61.2,
+  });
+  assert.deepEqual(failures, []);
+  assert.deepEqual(bumps, {});
+});
+
 test("bump: зростання переписує baseline тільки для workspace-у, що виріс", () => {
   const { failures, bumps } = evaluateRatchet(baseline, {
     "apps/web": 79.13,

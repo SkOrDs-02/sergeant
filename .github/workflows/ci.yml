@@ -501,7 +501,13 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add coverage-ratchet.json
           git commit -m "chore(ci): ratchet coverage baseline upward"
-          git push origin "$HEAD_REF"
+          # Best-effort: сам gate вже пройшов зеленим. Rejected/transient push
+          # (напр. гілка зрушила між checkout і push) не має валити coverage-job —
+          # bump під'їде наступним раном. Лишаємо WARNING і виходимо 0.
+          if ! git push origin "$HEAD_REF"; then
+            echo "::warning::coverage-ratchet baseline bump push failed; gate stays green, bump retries next run."
+            exit 0
+          fi
 
       - name: Upload coverage HTML reports
         if: always()
