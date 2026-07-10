@@ -547,6 +547,11 @@ const preset = {
         "glow-teal": "0 0 0 3px rgba(20, 184, 166, 0.15)",
         "glow-coral": "0 0 0 3px rgba(249, 112, 102, 0.15)",
         "glow-lime": "0 0 0 3px rgba(146, 204, 23, 0.15)",
+        // «Чорнило» FAB glow — a luminescent module-accent halo (spec § 4:
+        // FAB = module accent + glow 24px/40%), replacing the drop shadow
+        // under the dark ink direction. Routine is the only module with a
+        // center FAB today.
+        "glow-fab-coral": "0 0 24px rgba(255, 140, 120, 0.4)", // coral-400 / 40%
         // Destructive hover ring (Button variant="destructive").
         "danger-ring": "var(--shadow-danger-ring)",
         // Elevated cards (hover state)

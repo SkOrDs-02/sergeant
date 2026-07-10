@@ -101,7 +101,9 @@ export function RoutineBottomNav({
             "absolute left-1/2 -translate-x-1/2 -top-[22px]",
             "w-14 h-14 rounded-full z-40",
             "bg-linear-to-br from-coral-600 to-coral-700 text-white",
-            "shadow-float border-4 border-bg",
+            // Light keeps the drop shadow; dark «Чорнило» swaps it for a
+            // luminescent coral glow (spec § 4: FAB = accent + glow 24px/40%).
+            "shadow-float dark:shadow-glow-fab-coral border-4 border-bg",
             "flex items-center justify-center",
             "transition-transform duration-150 active:scale-95 hover:scale-[1.04]",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
