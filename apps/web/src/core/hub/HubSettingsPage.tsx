@@ -21,6 +21,7 @@ import { AssistantCatalogueSection } from "../settings/AssistantCatalogueSection
 import { DashboardSection } from "../settings/DashboardSection";
 import { DataExportSection } from "../settings/DataExportSection";
 import { ExperimentalSection } from "../settings/ExperimentalSection";
+import { FeedbackSection } from "../feedback/FeedbackSection";
 import { GeneralSection } from "../settings/GeneralSection";
 import { NotificationsSection } from "../settings/NotificationsSection";
 import { PlanSection } from "../settings/PlanSection";
@@ -90,6 +91,7 @@ const GROUPS = [
       "notifications",
       "ai",
       "assistant",
+      "feedback",
     ],
   },
   {
@@ -245,6 +247,13 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
         keywords:
           "асистент команди chat help допомога інструменти каталог можливості tools",
         render: () => <AssistantCatalogueSection />,
+      },
+      {
+        id: "feedback",
+        title: "Фідбек",
+        keywords:
+          "фідбек feedback відгук ідея баг bug пропозиція nps опитування survey підтримка",
+        render: () => <FeedbackSection />,
       },
       {
         id: "routine",

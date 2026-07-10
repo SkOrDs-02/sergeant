@@ -1,6 +1,6 @@
 # 02. Go-to-market: запуск, промоутинг, growth
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-10 by @claude. **Next review:** 2026-10-08.
 > **Status:** Active
 
 > Pre-MVP draft. Цифри traffic/CPA/reach — оцінкові, для брейнштормінгу.
@@ -90,9 +90,13 @@ sergeant.com.ua/blog           → SEO-блог (Astro SSG)
 
 ### 3.2 Фідбек-лупи
 
-- In-app feedback widget («Є ідея / Знайшов баг»).
+- ✅ In-app feedback widget («Є ідея / Знайшов баг») — shipped: Settings →
+  «Фідбек», події `feedback_widget_opened` / `feedback_submitted` у PostHog.
+  Ops-довідка: [`feedback-loop.md`](../../../03-operations/observability/feedback-loop.md).
 - Щотижневий email-дайджест: «Що ми зробили цього тижня за вашим фідбеком».
-- NPS опитування після 7 днів використання.
+- ✅ NPS опитування після 7 днів використання — shipped: PostHog Surveys,
+  client-тригер `nps_survey_eligible` за віком акаунта (разова настройка
+  survey у dashboard — кроки у [`feedback-loop.md § 2`](../../../03-operations/observability/feedback-loop.md)).
 
 ### 3.3 Ключові метрики бети
 

@@ -48,6 +48,18 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.SUBSCRIPTION_RENEWED).toBe("subscription_renewed");
   });
 
+  it("exposes the feedback-loop group verbatim", () => {
+    // `nps_survey_eligible` is referenced verbatim by the PostHog Survey
+    // display condition (dashboard-side config), and `feedback_submitted`
+    // by the feedback-inbox insight. A rename here silently kills the NPS
+    // survey trigger — pin the strings.
+    expect(ANALYTICS_EVENTS.FEEDBACK_WIDGET_OPENED).toBe(
+      "feedback_widget_opened",
+    );
+    expect(ANALYTICS_EVENTS.FEEDBACK_SUBMITTED).toBe("feedback_submitted");
+    expect(ANALYTICS_EVENTS.NPS_SURVEY_ELIGIBLE).toBe("nps_survey_eligible");
+  });
+
   it("exposes the billing-failure (observability) event verbatim", () => {
     // Fired server-side from the Stripe webhook handler; PostHog funnels for
     // checkout drop-rate / 3DS-fail rate key off this exact string. Renaming
