@@ -37,7 +37,14 @@ describe("ExerciseProgressChart", () => {
       />,
     );
     expect(screen.getByLabelText("Графік Жим")).toBeInTheDocument();
-    expect(screen.getByText(/\+10\.0 кг/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Графік Жим")).toHaveAttribute(
+      "aria-describedby",
+      "fizruk-exercise-progress-Жим",
+    );
+    expect(document.getElementById("fizruk-exercise-progress-Жим")).toHaveClass(
+      "sr-only",
+    );
+    expect(screen.getAllByText(/\+10\.0 кг/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders a negative delta", () => {
@@ -49,7 +56,8 @@ describe("ExerciseProgressChart", () => {
         color="#00f"
       />,
     );
-    expect(screen.getByText(/-10\.0 кг/)).toBeInTheDocument();
+    const deltas = screen.getAllByText(/-10\.0 кг/);
+    expect(deltas.length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders mid-point label for long series (n > 3)", () => {

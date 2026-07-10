@@ -18,9 +18,17 @@ describe("WeeklyVolumeChart", () => {
 
   it("renders the area chart with non-zero weekly volume", () => {
     render(<WeeklyVolumeChart volumeKg={[100, 200, 0, 400, 0, 600, 700]} />);
-    expect(
-      screen.getByLabelText("Графік обсягу тренувань за дні поточного тижня"),
-    ).toBeInTheDocument();
+    const chart = screen.getByLabelText(
+      "Графік обсягу тренувань за дні поточного тижня",
+    );
+    expect(chart).toBeInTheDocument();
+    expect(chart).toHaveAttribute(
+      "aria-describedby",
+      "fizruk-weekly-volume-summary",
+    );
+    expect(document.getElementById("fizruk-weekly-volume-summary")).toHaveClass(
+      "sr-only",
+    );
     // Day labels are present.
     expect(screen.getByText("Пн")).toBeInTheDocument();
     expect(screen.getByText("Нд")).toBeInTheDocument();

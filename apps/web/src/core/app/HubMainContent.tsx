@@ -187,6 +187,7 @@ export const HubMainContent = memo(function HubMainContent({
               aria-labelledby="hub-tab-dashboard"
               className="flex flex-col gap-5 pt-2"
             >
+              <h1 className="sr-only">{messages.nav.dashboard}</h1>
               <HubDashboard
                 onOpenModule={onOpenModule}
                 user={user}

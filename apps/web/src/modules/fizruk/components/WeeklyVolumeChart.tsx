@@ -88,6 +88,8 @@ export function WeeklyVolumeChart({
     lab: fr === 0 ? "0" : fr === 1 ? formatYAxis(max) : formatYAxis(max * 0.5),
   }));
 
+  const summaryId = "fizruk-weekly-volume-summary";
+
   return (
     <div className={cn("w-full", className)}>
       <div className="flex items-center justify-between mb-2">
@@ -108,6 +110,7 @@ export function WeeklyVolumeChart({
         className="w-full h-auto max-h-[200px] overflow-visible"
         role="img"
         aria-label="Графік обсягу тренувань за дні поточного тижня"
+        aria-describedby={summaryId}
       >
         <defs>
           <linearGradient id="wvFill" x1="0" y1="0" x2="0" y2="1">
@@ -171,6 +174,19 @@ export function WeeklyVolumeChart({
           );
         })}
       </svg>
+      <div id={summaryId} className="sr-only">
+        <p>
+          Тижневий обʼєм тренувань. Сума за тиждень:{" "}
+          {totalVol.toLocaleString("uk-UA")} кг×повт.
+        </p>
+        <ul>
+          {LABELS_UK.map((lab, i) => (
+            <li key={lab}>
+              {lab}: {(Number(vals[i]) || 0).toLocaleString("uk-UA")} кг×повт
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

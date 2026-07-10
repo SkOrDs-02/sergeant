@@ -76,8 +76,6 @@ export function HubChatBody({
       onScroll={handleScroll}
       className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 min-h-0"
       aria-busy={loading}
-      aria-live="polite"
-      aria-relevant="additions"
     >
       {/* Visually-hidden live region for streaming status — announced to
           screen readers without disrupting the message list region above. */}
