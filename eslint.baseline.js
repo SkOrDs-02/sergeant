@@ -96,7 +96,7 @@ export const baselineIgnores = {
  * Shared baseline — flat-config slice consumed by every Sergeant
  * surface. Keeps the design-system guardrails (`sergeant-design/*`),
  * the legacy-palette `no-restricted-syntax` guard, the react-hooks v7
- * suppressions, and the `@typescript-eslint/no-unused-vars` rule in
+ * rules (initiative 0021 closed — all at `error`), and the `@typescript-eslint/no-unused-vars` rule in
  * exactly one place. Surface-specific extensions live in per-app
  * `eslint.config.js` files (phase 2) or in the root `eslint.config.js`
  * after this spread (current state).
@@ -145,46 +145,15 @@ export const baseline = [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // `eslint-plugin-react-hooks` v7 promoted a batch of new rules
-      // (`set-state-in-effect`, `preserve-manual-memoization`,
-      // `static-components`, `use-memo`, `immutability`, `purity`,
-      // `refs-during-render`) to "error" in its `recommended` config
-      // (see #1572 dev-deps bump). The pre-v7 codebase has dozens of
-      // legacy `setState`-inside-effect, manual-memo, and ref-read
-      // patterns that pre-date the rules — they're queued for a
-      // dedicated cleanup initiative (see roadmap). Until that
-      // cleanup lands, disable the rules so:
-      //   1. lint-staged on touched files doesn't fail with errors
-      //      authored by other contributors before the rule existed,
-      //   2. `pnpm lint` keeps a clean signal for genuine regressions.
-      // Promote back to "error" after the cleanup PR has migrated the
-      // last call-site (mirrors the WCAG-`-strong` policy below).
-      //
-      // Current scoreboard (2026-07-10 re-measure across apps/web, apps/mobile,
-      // apps/mobile-shell, apps/server, tools/openclaw):
-      //   static-components            — 0 ✅ promoted to "error" below
-      //   use-memo                     — 0 ✅ promoted to "error" below
-      //   immutability                 — web 0 ✅ + mobile 0 ✅ (2026-07-10:
-      //       CategoryDonut reduce fix + Sheet Reanimated scoped disables;
-      //       promoted in eslint.web.js + eslint.mobile.js)
-      //   preserve-manual-memoization  — web 0 ✅ (promoted in eslint.web.js
-      //       after 2026-07-04 burndown) + mobile 0 ✅ (promoted in eslint.mobile.js)
-      //   purity                       — web 0 ✅ (promoted in eslint.web.js)
-      //       + mobile 0 ✅ (promoted in eslint.mobile.js)
-      //   refs                         — web 0 ✅ (promoted in eslint.web.js)
-      //       + mobile 0 ✅ (promoted in eslint.mobile.js)
-      //   set-state-in-effect          — web 0 ✅ + mobile 0 ✅ (promoted in
-      //       eslint.web.js + eslint.mobile.js, 2026-07-10)
-      // Promoted per-surface once that surface's count reaches 0. See
-      // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/preserve-manual-memoization": "off",
-      "react-hooks/purity": "off",
-      "react-hooks/refs": "off",
-      // `immutability` promoted to `error` in eslint.mobile.js (2026-07-10
-      // burndown); baseline stays `off` for other surfaces still on legacy
-      // react-hooks v7 rules.
-      "react-hooks/immutability": "off",
+      // Initiative 0021 closed (2026-07-10, PR #177): all react-hooks v7
+      // rules cleared monorepo-wide — web/mobile in eslint.web.js /
+      // eslint.mobile.js; baseline holds `error` for server, mobile-shell,
+      // openclaw. See docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md.
+      "react-hooks/set-state-in-effect": "error",
+      "react-hooks/preserve-manual-memoization": "error",
+      "react-hooks/purity": "error",
+      "react-hooks/refs": "error",
+      "react-hooks/immutability": "error",
       // `static-components` cleared the monorepo — no component is defined
       // inside the body of another component. Promoted from "off" to
       // "error" so the baseline holds; next regression fails lint loudly.

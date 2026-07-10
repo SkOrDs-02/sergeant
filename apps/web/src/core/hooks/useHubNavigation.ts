@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useSyncedFromKey } from "@shared/hooks/useSyncedFromKey";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
@@ -153,16 +154,14 @@ export function useHubNavigation(): HubNavigation {
   );
 
   const locKey = `${location.pathname}|${location.search}`;
-  const [prevLocKey, setPrevLocKey] = useState(locKey);
-  if (locKey !== prevLocKey) {
-    setPrevLocKey(locKey);
+  useSyncedFromKey(locKey, () => {
     const params = new URLSearchParams(location.search);
     const mod =
       parsePathnameModule(location.pathname) ??
       parseModule(params.get("module"));
     setModuleAnimClass(mod ? "module-enter" : "hub-enter");
     setActiveModule(mod);
-  }
+  });
 
   return {
     activeModule,

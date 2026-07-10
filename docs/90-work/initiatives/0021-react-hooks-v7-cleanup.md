@@ -1,8 +1,12 @@
 # 0021 — React-hooks v7 ESLint cleanup
 
 > **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-09-12.
-> **Status:** In progress
+> **Status:** Done
 > **Agent-ready:** yes
+
+## Closure (2026-07-10)
+
+Initiative closed via PR [#177](https://github.com/Skords-01/Sergeant/pull/177). All six react-hooks v7 rules (`immutability`, `preserve-manual-memoization`, `purity`, `refs`, `set-state-in-effect`, plus earlier `static-components` / `use-memo`) are at `"error"` monorepo-wide: web + mobile in `eslint.web.js` / `eslint.mobile.js`; server, mobile-shell, and openclaw via `eslint.baseline.js` after a 2026-07-10 re-measure found 0 violations on every surface. The ~32-line baseline scoreboard comment block was replaced with a short closure note (−50%+ suppressions).
 
 ## Проблема
 
@@ -24,9 +28,9 @@
 - [x] `react-hooks/purity` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
 - [x] `react-hooks/refs` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js` (mobile waves 1–3 [#156](https://github.com/SkOrDs-02/sergeant/pull/156), [#160](https://github.com/SkOrDs-02/sergeant/pull/160), [#162](https://github.com/SkOrDs-02/sergeant/pull/162); web wave 1 — 26 files).
 - [x] `react-hooks/set-state-in-effect` — web 0 ✅ + mobile 0 ✅ (promoted in `eslint.web.js` / `eslint.mobile.js`, 2026-07-10)
-- [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
-- [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
-- [ ] `eslint.baseline.js:146-178` оновлено або видалено (після promotion всіх 5 правил)
+- [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені — **часткове виконання (wave 1, 2026-07-10):** каталог синхронізовано (7 застарілих записів видалено, 34 → 24 файли), 3 disables прибрано (ref-fix `usePwaAction.ts`, `read`-всередині-ефекту `hubPrefs.ts`, стабільні deps у `useNutritionPwaAction.ts`); залишок 24 файли — переважно виправдані інваріанти (bump-tick, mount-only, RHF stable); наступна ціль wave 2 — `useSearchEngine.ts` (useCallback fix)
+- [x] baseline suppressions в `eslint.baseline.js` скорочені на 50% (5 `"off"` → 0; scoreboard comment −32 lines)
+- [x] `eslint.baseline.js:146-178` оновлено (closure note + all 5 rules promoted to `"error"`, PR #177)
 
 ## Виконані дії (2026-07-10)
 
@@ -53,7 +57,7 @@
 
 **Web refs wave 1:** 26 files — core hooks (activation, SW update, hub UI, speech, chat), HubSearch destructure, nutrition/fizruk/routine reminders, AddMealSheet/BarcodeScanner, DropdownMenu/Tooltip ref composition, useSwipeNavigation `isDragging` state, shared hooks (localStorage, theme). Web `refs` → 0; promoted in `eslint.web.js`.
 
-**Залишок:** `exhaustive-deps` та решта baseline suppressions.
+**Залишок:** `exhaustive-deps` — out of scope for this initiative (pre-existing `recommended` rule, not part of v7 promotion batch).
 
 ## Виконані дії (2026-06-10)
 

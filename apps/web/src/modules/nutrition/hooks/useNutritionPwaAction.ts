@@ -36,6 +36,9 @@ export function useNutritionPwaAction({
   setPhotoCardForceOpen,
   onPwaActionConsumed,
 }: UseNutritionPwaActionArgs): void {
+  // Extract the stable ref object so it can be listed as a dep without
+  // pulling the full photo controller (which may have changing fields).
+  const { fileRef } = photo;
   useEffect(() => {
     if (pwaAction === "add_meal") {
       setActivePageAndHash("log");
@@ -48,14 +51,14 @@ export function useNutritionPwaAction({
       setPhotoCardForceOpen(true);
       const raf = requestAnimationFrame(() => {
         try {
-          photo.fileRef.current?.click();
+          fileRef.current?.click();
         } catch {
           /* noop — picker may be blocked without a user gesture */
         }
       });
       const fallback = window.setTimeout(() => {
         try {
-          photo.fileRef.current?.click();
+          fileRef.current?.click();
         } catch {
           /* noop */
         }
@@ -67,7 +70,12 @@ export function useNutritionPwaAction({
       };
     }
     return undefined;
-    // `photo.fileRef` is a stable ref; `setPhotoCardForceOpen` is a setter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [log, onPwaActionConsumed, pwaAction]);
+  }, [
+    log,
+    onPwaActionConsumed,
+    pwaAction,
+    setActivePageAndHash,
+    setPhotoCardForceOpen,
+    fileRef,
+  ]);
 }
