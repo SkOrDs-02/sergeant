@@ -80,13 +80,12 @@ export function PersonalInfoSection({
     },
   });
 
+  const resetName = nameForm.reset;
+
   // Keep the form in sync if the server value changes (e.g. after onRefresh).
   useEffect(() => {
-    nameForm.reset({ name: user.name ?? "" });
-    // nameForm.reset is stable (RHF guarantee); intentionally omit nameForm
-    // from deps to avoid an infinite loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.name]);
+    resetName({ name: user.name ?? "" });
+  }, [user.name, resetName]);
 
   // ── Email form ────────────────────────────────────────────────────────────
   const emailForm = useApiForm<EmailValues>({

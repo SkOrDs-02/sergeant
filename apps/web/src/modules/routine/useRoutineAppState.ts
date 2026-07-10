@@ -163,6 +163,7 @@ export function useRoutineAppState({
   // canonical: bookmarking `/routine/stats` always opens stats regardless
   // of the stored value.
   const route = useRoutineRoute("calendar");
+  const navigateMainTab = route.navigate;
   const [persistedTab, setPersistedTab] = useLocalStorageState<RoutineMainTab>(
     STORAGE_KEYS.ROUTINE_MAIN_TAB,
     "calendar",
@@ -185,10 +186,8 @@ export function useRoutineAppState({
     if (pathTail !== "") return;
     if (location.hash) return;
     if (persistedTab === "calendar") return;
-    route.navigate(persistedTab);
-    // Mount-only — guarded by `restoredFromPersistRef`, see block comment above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    navigateMainTab(persistedTab);
+  }, [location.pathname, location.hash, persistedTab, navigateMainTab]);
   const setMainTab: Dispatch<SetStateAction<RoutineMainTab>> = useCallback(
     (next) => {
       const resolved =
@@ -202,6 +201,7 @@ export function useRoutineAppState({
   );
 
   const time = useRoutineTimeState();
+  const deepLinkDay = time.deepLinkDay;
   const navigate = useNavigate();
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [listQuery, setListQuery] = useState<string>("");
@@ -223,15 +223,20 @@ export function useRoutineAppState({
   // PWA shortcut entry: when the App-shell receives the
   // `?pwa=add_habit` deep-link it sets `pwaAction` and we open the
   // quick-add dialog once.
-  const [prevPwaAction, setPrevPwaAction] = useState(pwaAction);
-  if (pwaAction === "add_habit" && prevPwaAction !== "add_habit") {
-    setPrevPwaAction("add_habit");
-    setQuickAddHabitOpen(true);
-    setQuickAddFocusTick((t) => t + 1);
-    void Promise.resolve().then(() => onPwaActionConsumed?.());
-  } else if (pwaAction !== prevPwaAction) {
-    setPrevPwaAction(pwaAction ?? null);
-  }
+  const prevPwaActionRef = useRef<string | null | undefined>(null);
+  useEffect(() => {
+    if (pwaAction !== "add_habit") {
+      prevPwaActionRef.current = pwaAction ?? null;
+      return;
+    }
+    if (prevPwaActionRef.current === "add_habit") return;
+    prevPwaActionRef.current = "add_habit";
+    void Promise.resolve().then(() => {
+      setQuickAddHabitOpen(true);
+      setQuickAddFocusTick((t) => t + 1);
+      onPwaActionConsumed?.();
+    });
+  }, [pwaAction, onPwaActionConsumed]);
 
   // Per-module first-run: pop the quick-create dialog the first time
   // the user enters Routine. Habits do not have a small «previous
@@ -260,40 +265,42 @@ export function useRoutineAppState({
     setQuickAddFirstRunHint(false);
   }, []);
 
+  const deepLinkHandledRef = useRef(false);
   useEffect(() => {
+    if (deepLinkHandledRef.current) return;
     try {
       const params = new URLSearchParams(location.search);
       const q = params.get("routineDay");
-      // Validate the calendar date itself, not just the regex shape, so
-      // `?routineDay=2026-02-30` is rejected (consolidated page-audit
-      // § Theme 1 — 09 F6). `parseKyivDate` returns `null` for bad
-      // calendar dates without throwing.
-      if (q && parseKyivDate(q)) {
-        time.deepLinkDay(q);
-        // Видаляємо параметр після застосування, щоб back-навігація чи
-        // рефреш не запускали стрибок у "day"-режим повторно. Йдемо
-        // через `navigate({ replace: true })`, а не `history.replaceState`
-        // — інакше дата-роутер `createBrowserRouter` не побачить зміну URL
-        // і `useLocation()` у решті дерева повертатиме застарілий search,
-        // через що `?routineDay=` міг би повторно застосовуватись на
-        // наступному рендері.
-        params.delete("routineDay");
-        const qs = params.toString();
-        navigate(
-          {
-            pathname: location.pathname,
-            search: qs ? `?${qs}` : "",
-            hash: location.hash,
-          },
-          { replace: true },
-        );
-      }
+      if (!q || !parseKyivDate(q)) return;
+      deepLinkHandledRef.current = true;
+      deepLinkDay(q);
+      // Видаляємо параметр після застосування, щоб back-навігація чи
+      // рефреш не запускали стрибок у "day"-режим повторно. Йдемо
+      // через `navigate({ replace: true })`, а не `history.replaceState`
+      // — інакше дата-роутер `createBrowserRouter` не побачить зміну URL
+      // і `useLocation()` у решті дерева повертатиме застарілий search,
+      // через що `?routineDay=` міг би повторно застосовуватись на
+      // наступному рендері.
+      params.delete("routineDay");
+      const qs = params.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: qs ? `?${qs}` : "",
+          hash: location.hash,
+        },
+        { replace: true },
+      );
     } catch {
       /* noop */
     }
-    // Mount-only deep-link consumption — intentional one-shot, see block comment above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    location.pathname,
+    location.search,
+    location.hash,
+    navigate,
+    deepLinkDay,
+  ]);
 
   const timeState = useMemo(
     () => ({

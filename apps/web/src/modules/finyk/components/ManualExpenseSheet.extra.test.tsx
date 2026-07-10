@@ -11,6 +11,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeAll } from "vitest";
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -173,7 +174,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       date: "2026-05-20",
     };
 
-    it("prefills the form and shows the 'Зберегти' label", () => {
+    it("prefills the form and shows the 'Зберегти' label", async () => {
       render(
         <ManualExpenseSheet
           open
@@ -182,6 +183,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
           initialExpense={initialExpense}
         />,
       );
+      await act(async () => {});
       expect(screen.getByLabelText("Сума ₴")).toHaveValue(175);
       expect(
         screen.getByRole("button", { name: "Зберегти" }),

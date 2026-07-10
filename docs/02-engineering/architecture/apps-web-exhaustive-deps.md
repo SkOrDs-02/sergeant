@@ -3,94 +3,46 @@
 > **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
-Документ фіксує **інваріанти** там, де ESLint `react-hooks/exhaustive-deps` вимкнено у виробничих модулях. Мета — не «вимкнути правило», а зафіксувати контракт для рев'ю та рефакторингу. Каталог охоплює **24 виробничих файли** (тестові файли не включені).
+Документ фіксує **інваріанти** там, де ESLint `react-hooks/exhaustive-deps` вимкнено у виробничих модулях. Мета — не «вимкнути правило», а зафіксувати контракт для рев'ю та рефакторингу.
+
+**Поточний стан (2026-07-10, wave 4):** **0 активних `eslint-disable` у виробничому `apps/web/src`** (тестові файли не враховуються). Усі колишні винятки знято; нижче — історія хвиль і патерни, які замінили disable.
 
 ---
 
-## UI-примітиви (`apps/web/src/shared/components/ui/`)
+## Простими словами: навіщо це було і що зробили
 
-| Файл / функція                                        | Фактичні deps                            | Інваріант                                                                                                                                                                                 |
-| ----------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `KeyboardShortcutsModal.tsx` (`useRegisterShortcuts`) | `[registry, registrationId]`             | `shortcuts` (inline-масив) не в deps — deep-порівняння вимагало б JSON-серіалізації на кожен рендер; callers передають стабільний статичний масив.                                        |
-| `InputDialog.tsx`                                     | `[open, defaultValue]`                   | `reset` (від RHF) і `inputRef` стабільні; відкриття діалогу та зміна `defaultValue` — єдині смислові тригери скидання форми.                                                              |
-| `CommandPalette.tsx` (`useRegisterCommand`)           | `[register, unregister, registrationId]` | `commands` (memoized масив) не в deps — залежність від усього `ctx`-об'єкту спричиняла нескінченний цикл: `register` → bump `revision` → новий `ctx` → effect re-runs → `register` знову. |
-| `CommandPaletteUI.tsx`                                | `[ctx, revision]`                        | `revision` тікає при реєстрації/знятті команд і є смисловим тригером `ctx.getAll()`; інші поля `ctx` (`open`, `recents`) не впливають на список команд.                                   |
+**Проблема.** Правило `exhaustive-deps` каже React-хукам: «перезапускай ефект/memo, коли змінюється будь-яка змінна, яку ти читаєш». Іноді це ламає задум:
 
-## Core / Hub (`apps/web/src/core/hub/`)
+- **Один раз при відкритті** — аналітика лендингу, deep-link `?sync=`, відновлення вкладки Routine. Якщо додати все в deps, ефект стрілятиме знову при кожному ре-рендері батька.
+- **«Тік» після запису в storage** — Hub-картки (калорії, звички, витрати) читають localStorage/SQLite. Значення `bump` саме по собі не використовується в обчисленні — воно лише каже «щойно щось записали, перечитай». ESLint вважало `bump` зайвим і просило прибрати — тоді картки не оновлювались би після зміни даних.
+- **Стабільні функції** — `reset` з react-hook-form, `setView` з useState, module-level `loadNutritionLog`. Вони не змінюються, але лінтер вимагав їх у списку — або навпаки, зайвий `user`-об'єкт після refetch `/me` викликав би повторний PostHog identify.
 
-| Файл / функція                              | Фактичні deps                        | Інваріант                                                                                                                                  |
-| ------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `HubChatOverlay.tsx`                        | `[location.pathname]`                | `open` і `closeChat` навмисно не в deps — їхня зміна (відкриття overlay) не повинна викликати негайне закриття в тому самому тику рендеру. |
-| `NutritionCard.tsx`                         | `[period, offset, bump]`             | `bump` (від `useHubStorageBump`) є смисловим тригером re-read storage; `loadNutritionLog` — стабільна module-level функція.                |
-| `RoutineCard.tsx`                           | `[period, offset, bump]`             | Аналогічно `NutritionCard` — `bump` ініціює повторне читання routine-storage без зміни інших deps.                                         |
-| `FitnessCard.tsx`                           | `[period, offset, bump]`             | Аналогічно `NutritionCard` — `bump` ініціює читання SQLite warm cache для тренувань.                                                       |
-| `ExpensesCard.tsx`                          | `[period, offset, bump, mirrorTick]` | `bump` і `mirrorTick` ініціюють re-read storage/mirror; `getCachedFinykMonoMirrorState` — стабільна функція.                               |
-| `dashboardCards.tsx` (`StreakIndicator`)    | `[bump]`                             | `bump` є смисловим тригером re-read quick-stats із localStorage; `safeReadLS` — стабільна функція.                                         |
-| `dashboardCards.tsx` (`MotivationalFooter`) | `[bump]`                             | `bump` ініціює перерахунок `countRealEntries`; `localStorageStore` — стабільний модульний об'єкт.                                          |
+**Що зробили по хвилях** (каталог з **34 → 0** файлів з disable):
 
-## Core / Hub / Search (`apps/web/src/core/hub/search/`)
+| Хвиля | Що                                           | Як                                                                                |
+| ----- | -------------------------------------------- | --------------------------------------------------------------------------------- |
+| **1** | PWA/hub prefs                                | ref-fix, читання всередині ефекту, коректні deps                                  |
+| **2** | `useSearchEngine`                            | `useCallback` для обробників клавіатури                                           |
+| **3** | Command palette, shortcuts, діалоги, HubChat | ref-sync + revision fingerprint; RHF `reset` у deps                               |
+| **4** | Hub-картки, mount-only, insights, auth       | `void bump` / `void tick` у memo; `firedRef` для one-shot; `userRef` для identify |
 
-| Файл / функція       | Фактичні deps                       | Інваріант                                                                                                                                                                                           |
-| -------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useSearchEngine.ts` | `[flat, activeIdx, onClose, query]` | `openHit` і `commitQuery` — plain-функції у тілі хука (без `useCallback`); включення як deps спричиняє нескінченний re-subscribe keydown listener. Пріоритет для wave 2: обгорнути у `useCallback`. |
+**Патерни замість disable** (використовуй при новому коді):
 
-## Auth та активація (`apps/web/src/core/`)
-
-| Файл / функція                      | Фактичні deps                    | Інваріант                                                                                                                                                                                                            |
-| ----------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `auth/AuthContext.tsx`              | `[user?.id]`                     | `user`-об'єкт не в deps — traits (signup_date) стабільні на час сесії, а решта (vibe/plan/locale) тягнеться з localStorage і `navigator`; повторний `identify` на кожен рефетч `/api/v1/me` з тим самим id є зайвим. |
-| `activation/useActivationV2Boot.ts` | `[user, queryClient, cacheTick]` | `cacheTick` — смисловий тригер recompute snapshot; реальні значення читаються всередині memo через `queryClient.getQueryData`, а не з deps-переліку.                                                                 |
-
-## Landing та Pricing (`apps/web/src/core/`)
-
-| Файл / функція             | Фактичні deps   | Інваріант                                                                                                                                                   |
-| -------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `LandingPage.tsx`          | `[]`            | `LANDING_VIEWED` аналітика стріляє один раз на mount; `locale` і `referrer` читаються всередині ефекту; повторний фаєр при кожній зміні locale — небажаний. |
-| `pricing/WaitlistForm.tsx` | `[defaultTier]` | `reset` і `watch` — стабільні від RHF; зміна `defaultTier` ззовні — єдиний смисловий тригер синхронізації form-state.                                       |
-
-## Налаштування (`apps/web/src/core/profile/`)
-
-| Файл / функція            | Фактичні deps | Інваріант                                                                                                                         |
-| ------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `PersonalInfoSection.tsx` | `[user.name]` | `nameForm.reset` гарантовано стабільний (RHF); весь `nameForm`-об'єкт не в deps, щоб уникнути infinite loop при зміні form-state. |
-
-## Finyk (`apps/web/src/modules/finyk/`)
-
-| Файл / функція                                            | Фактичні deps                                 | Інваріант                                                                                                                                                                                              |
-| --------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `FinykApp.tsx` (URL sync effect)                          | `[]`                                          | Mount-only ефект: `?sync=` обробляється один раз при відкритті модуля; `storage`/`toast` — стабільні або setter-и.                                                                                     |
-| `FinykApp.tsx` (first-run nav effect)                     | `[]`                                          | Mount-only ефект: `firstRunFinyk`/`pwaAction`/`page` читаються один раз; навігація до `"budgets"` повинна відбуватись лише при першому mount.                                                          |
-| `hooks/useFinykInsights.ts`                               | `[mirrorTick]`                                | `mirrorTick` ініціює re-read Mono mirror cache; `getCachedFinykMonoMirrorState` — стабільна module-level функція.                                                                                      |
-| `hooks/useFinykPersonalization.ts`                        | `[excludedTxIdsKey]`                          | `Set` для `excludedTxIds` ре-створюється лише при зміні відсортованого ключа (рядок id); `rawExcludedTxIds` — нестабільне посилання, що змінюється на кожен рендер, але вміст Set може бути однаковим. |
-| `pages/overview/useOverviewData.ts` (`subscriptionFlows`) | `[subscriptions, transactions, todayStartMs]` | `kyivYear`/`Month`/`Day` і `txCategories` є похідними від `subscriptions`/`transactions`/`todayStartMs`; їхнє дублювання у deps лише повторювало б ті самі тригери.                                    |
-
-## Routine (`apps/web/src/modules/routine/`)
-
-| Файл / функція                               | Фактичні deps                         | Інваріант                                                                                                                                                         |
-| -------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useRoutineDerivedData.ts`                   | `[routine, range, finykCalendarTick]` | `finykCalendarTick` оновлює події Фініка у календарі без зміни об'єкта `routine`; без нього тік Finyk mirror не впливав би на вивід хука.                         |
-| `useRoutineAppState.ts` (restore tab effect) | `[]`                                  | Mount-only ефект: відновлення останньої активної вкладки з localStorage виконується один раз при першому mount; `restoredFromPersistRef` блокує повторний запуск. |
-| `useRoutineAppState.ts` (deep-link effect)   | `[]`                                  | Mount-only ефект: параметр `?routineDay=` споживається одноразово при відкритті модуля і видаляється з URL.                                                       |
-
-## Nutrition (`apps/web/src/modules/nutrition/`)
-
-| Файл / функція                  | Фактичні deps       | Інваріант                                                                                                                   |
-| ------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `hooks/useNutritionInsights.ts` | `[sqliteCacheTick]` | `sqliteCacheTick` ініціює re-read Nutrition SQLite cache; `getCachedNutritionSqliteState` — стабільна module-level функція. |
-
-## Fizruk (`apps/web/src/modules/fizruk/`)
-
-| Файл / функція                                                 | Фактичні deps                                 | Інваріант                                                                                                                                                        |
-| -------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hooks/useWorkoutsLifecycle.ts` (`useWorkoutsViewFromSession`) | `[]`                                          | Mount-only ефект: sessionStorage-флаг `fizruk_workouts_mode` споживається одноразово; `setView` — стабільний setter.                                             |
-| `hooks/useWorkoutsLifecycle.ts` (`useLiveWorkoutTick`)         | `[activeWorkout?.id, activeWorkout?.endedAt]` | Інтервал перезапускається лише при зміні `id` або `endedAt` — повний workout-об'єкт мутується при редагуванні сетів і не повинен перезапускати таймер щосекунди. |
+1. **`void bump`** на початку `useMemo` — явно «використовуємо» тік, не прибираючи його з deps.
+2. **`firedRef` / `*HandledRef`** — ефект з повним dep-списком, але логіка виконується лише один раз.
+3. **`useRef` + `useLayoutEffect`** — свіжі callback/open/close без зайвих перезапусків ефекту.
+4. **Деструктуризація `reset` з RHF** — стабільна функція в deps без всього form-об'єкта.
 
 ---
 
-**Загальна кількість файлів:** 24 (деякі файли містять кілька навмисних винятків у різних функціях).
+## Історія знятих винятків (архів)
 
-**Знято у wave 1 (2026-07-10):** `usePwaAction.ts` (ref-fix), `settings/hubPrefs.ts` (read усередині ефекту), `nutrition/useNutritionPwaAction.ts` (стабільні deps додано). Раніше знято попередніми агентами: `useLocalStorageState.ts`, `useHubNavigation.ts`, `NutritionSection.tsx`, `ManualExpenseSheet.tsx`, `useFinykStorageSlots.ts`, `HabitQuickCreateDialog.tsx`, `useFoodSearch.ts`.
+**Wave 1:** `usePwaAction`, `hubPrefs`, `useNutritionPwaAction` + раніше: `useLocalStorageState`, `useHubNavigation`, `NutritionSection`, `ManualExpenseSheet`, `useFinykStorageSlots`, `HabitQuickCreateDialog`, `useFoodSearch`.
 
-**Ризик:** будь-який рефакторинг, що перейменовує залежності або виносить логіку у нові props/hooks, має **перечитати** відповідний коментар у файлі та прогнати відповідні vitest / ручний сценарій.
+**Wave 2:** `useSearchEngine.ts`.
 
-**Поліпшення (wave 2):** `useSearchEngine.ts` — обгорнути `openHit`/`commitQuery` у `useCallback` для повністю коректного dep-списку без disable.
+**Wave 3:** `CommandPalette`, `CommandPaletteUI`, `KeyboardShortcutsModal`, `InputDialog`, `WaitlistForm`, `HubChatOverlay`.
+
+**Wave 4:** Hub cards (`NutritionCard`, `RoutineCard`, `FitnessCard`, `ExpensesCard`, `dashboardCards`), insights (`useFinykInsights`, `useNutritionInsights`), `useFinykPersonalization`, `useOverviewData`, `useRoutineDerivedData`, `useActivationV2Boot`, `AuthContext`, `PersonalInfoSection`, `LandingPage`, `FinykApp`, `useRoutineAppState`, `useWorkoutsLifecycle`.
+
+**Ризик:** новий код з «тіком», mount-only або refetch-sensitive логікою — спочатку перевір патерни вище, потім vitest / ручний сценарій.

@@ -23,6 +23,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -190,18 +191,27 @@ export function useRegisterCommand(
   // visible UX stall on hot paths (post-auth navigation, route shells).
   const register = ctx?.register;
   const unregister = ctx?.unregister;
+  const commandsRef = useRef(commands);
+  const commandsRevision = useMemo(
+    () =>
+      commands
+        .map((c) => `${c.id}\0${c.title}\0${c.disabled ? 1 : 0}`)
+        .join("\n"),
+    [commands],
+  );
+  useLayoutEffect(() => {
+    commandsRef.current = commands;
+  });
   useEffect(() => {
     if (!register || !unregister) return;
-    if (commands.length === 0) {
+    const current = commandsRef.current;
+    if (current.length === 0) {
       unregister(registrationId);
       return () => unregister(registrationId);
     }
-    register({ id: registrationId, commands });
+    register({ id: registrationId, commands: current });
     return () => unregister(registrationId);
-    // Intentionally omit `commands` from the deps — callers pass a
-    // memoized list and we re-register only on id / context change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [register, unregister, registrationId]);
+  }, [register, unregister, registrationId, commandsRevision, commands.length]);
 }
 
 /**

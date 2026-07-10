@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
@@ -77,17 +77,17 @@ export function LandingPage({ onContinueWithoutAccount }: LandingPageProps) {
   // користувач прийшов напряму), щоб PostHog міг розбити вхідний
   // трафік по джерелах (organic, paid, direct).
   // `locale` is now dynamic — resolved from URL param / localStorage / default.
+  const firedRef = useRef(false);
   useEffect(() => {
+    if (firedRef.current) return;
+    firedRef.current = true;
     const referrer = typeof document !== "undefined" ? document.referrer : "";
     trackEvent(ANALYTICS_EVENTS.LANDING_VIEWED, {
       path: "/",
       locale,
       ...(referrer ? { referrer } : {}),
     });
-    // Mount-only landing-view analytics — fire once per page mount, not on
-    // every locale/reference change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [locale]);
 
   function goToSignIn() {
     navigate(SIGN_IN_PATH);

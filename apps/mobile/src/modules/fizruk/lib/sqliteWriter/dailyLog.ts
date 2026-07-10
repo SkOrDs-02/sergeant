@@ -8,6 +8,7 @@ import {
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { fireSyncOutboxUpsert } from "@/core/syncEngine/fireSyncOutboxUpsert";
 import type { FizrukDailyLogSnapshot } from "./diff";
 
 // -----------------------------------------------------------------------
@@ -67,6 +68,23 @@ export async function upsertDailyLog(
     clientTs,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "fizruk_daily_log",
+    op: "insert",
+    clientTs,
+    row: {
+      id: e.id,
+      user_id: userId,
+      entry_at: e.at,
+      weight_kg: e.weightKg,
+      sleep_hours: e.sleepHours,
+      energy_level: e.energyLevel,
+      mood: e.mood,
+      note: e.note ?? "",
+      created_at: clientTs,
+    },
+  });
 }
 
 export async function softDeleteDailyLog(
@@ -81,4 +99,11 @@ export async function softDeleteDailyLog(
     userId,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "fizruk_daily_log",
+    op: "delete",
+    clientTs,
+    row: { id: entryId, user_id: userId },
+  });
 }

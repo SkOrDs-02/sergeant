@@ -28,7 +28,7 @@ function highestMilestoneCrossed(
 ): number | null {
   for (let i = STREAK_MILESTONES.length - 1; i >= 0; i--) {
     const m = STREAK_MILESTONES[i];
-    if (current >= m! && previous < m!) return m!;
+    if (m !== undefined && current >= m && previous < m) return m;
   }
   return null;
 }
@@ -127,6 +127,7 @@ export function StreakIndicator() {
   const bump = useHubStorageBump();
 
   const streak = useMemo(() => {
+    void bump; // storage-write tick — forces re-read of quick-stats shards
     const readLegacy = (key: string): Record<string, unknown> | null => {
       const raw = safeReadStringLS(key, null);
       if (!raw) return null;
@@ -155,7 +156,6 @@ export function StreakIndicator() {
       .sort((a, b) => b.days - a.days);
 
     return streaks[0]?.days ?? 0;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
   }, [bump]);
 
   // Detect streak-milestone crossings on the hub itself so the funnel
@@ -239,8 +239,10 @@ export function MotivationalFooter() {
   // native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
-  const entryCount = useMemo(() => countRealEntries(localStorageStore), [bump]);
+  const entryCount = useMemo(() => {
+    void bump; // storage-write tick — forces re-count of cross-module entries
+    return countRealEntries(localStorageStore);
+  }, [bump]);
 
   if (entryCount === 0) return null;
 

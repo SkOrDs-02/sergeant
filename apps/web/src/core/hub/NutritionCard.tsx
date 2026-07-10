@@ -199,6 +199,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
   const bump = useHubStorageBump();
 
   const { cur, prev, dates } = useMemo(() => {
+    void bump; // storage-write tick — forces re-read without calling load* inside deps
     // Canonical meal log from the SQLite warm cache — `nutrition_log_v1`
     // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
     // `aggregateKcal` expects the loose legacy shape; the domain `kcal` is
@@ -224,7 +225,6 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
       prev: aggregateKcal(nutritionLog, prevDates),
       dates: curDates,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
   }, [period, offset, bump]);
 
   const formattedCurrent = cur.avg.toLocaleString("uk-UA");

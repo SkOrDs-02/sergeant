@@ -10,6 +10,7 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
+import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
 import type {
   FizrukCustomExerciseSnapshot,
   FizrukDualWriteOp,
@@ -102,22 +103,80 @@ const applyOps = createApplyOps<FizrukDualWriteOp>({
     },
     "daily-log-upsert": async (client, op, rt) => {
       await upsertDailyLog(client, op.entry, rt);
+      const e = op.entry;
+      fireSyncOutboxUpsert(client, {
+        userId: rt.userId,
+        table: "fizruk_daily_log",
+        op: "insert",
+        clientTs: rt.clientTs,
+        row: {
+          id: e.id,
+          user_id: rt.userId,
+          entry_at: e.at,
+          weight_kg: e.weightKg,
+          sleep_hours: e.sleepHours,
+          energy_level: e.energyLevel,
+          mood: e.mood,
+          note: e.note ?? "",
+          created_at: rt.clientTs,
+        },
+      });
       return "applied";
     },
     "daily-log-delete": async (client, op, rt) => {
       await softDeleteDailyLog(client, op.entryId, rt);
+      fireSyncOutboxUpsert(client, {
+        userId: rt.userId,
+        table: "fizruk_daily_log",
+        op: "delete",
+        clientTs: rt.clientTs,
+        row: { id: op.entryId, user_id: rt.userId },
+      });
       return "applied";
     },
     "monthly-plan-set": async (client, op, rt) => {
       await setMonthlyPlan(client, op.monthlyPlan, rt);
+      fireSyncOutboxUpsert(client, {
+        userId: rt.userId,
+        table: "fizruk_monthly_plan",
+        op: "insert",
+        clientTs: rt.clientTs,
+        row: {
+          user_id: rt.userId,
+          data_json: op.monthlyPlan.dataJson ?? "{}",
+        },
+      });
       return "applied";
     },
     "workout-template-upsert": async (client, op, rt) => {
       await upsertWorkoutTemplate(client, op.template, rt);
+      const t = op.template;
+      fireSyncOutboxUpsert(client, {
+        userId: rt.userId,
+        table: "fizruk_workout_templates",
+        op: "insert",
+        clientTs: rt.clientTs,
+        row: {
+          id: t.id,
+          user_id: rt.userId,
+          name: t.name ?? "",
+          exercise_ids_json: JSON.stringify(t.exerciseIds ?? []),
+          groups_json: JSON.stringify(t.groups ?? []),
+          last_used_at: t.lastUsedAt ?? null,
+          created_at: rt.clientTs,
+        },
+      });
       return "applied";
     },
     "workout-template-delete": async (client, op, rt) => {
       await softDeleteWorkoutTemplate(client, op.templateId, rt);
+      fireSyncOutboxUpsert(client, {
+        userId: rt.userId,
+        table: "fizruk_workout_templates",
+        op: "delete",
+        clientTs: rt.clientTs,
+        row: { id: op.templateId, user_id: rt.userId },
+      });
       return "applied";
     },
   },

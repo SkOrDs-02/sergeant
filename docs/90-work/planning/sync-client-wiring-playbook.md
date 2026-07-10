@@ -245,18 +245,18 @@ pnpm --filter @sergeant/mobile test
 **Дизайн**
 
 1. Extend server integration: push from device A → assert pull on device B (already exists — **add client-side apply test** if feasible in vitest with in-memory SQLite).
-2. Document **Manual E2E Runbook** (§8 below) in PR description.
+2. Document **Manual E2E Runbook** — canonical copy: [`docs/03-operations/runbooks/sync-client-e2e.md`](../../03-operations/runbooks/sync-client-e2e.md) (summary §8 below).
 3. Optional Playwright: two contexts — out of scope unless `sergeant-e2e-testing` confirms harness ready.
 
 **Gate Phase 1 complete**
 
-| Метрика                      | Baseline | Target | Actual |
-| ---------------------------- | -------- | ------ | ------ |
-| Pull consumer (web)          | 0        | 1      | ☐      |
-| Pull consumer (mobile)       | 0        | 1      | ☐      |
-| Registry tables with enqueue | ~1       | 27     | ☐      |
-| E2E habit/expense round-trip | ❌       | ✅     | ☐      |
-| `pnpm check`                 | —        | green  | ☐      |
+| Метрика                      | Baseline | Target | Actual              |
+| ---------------------------- | -------- | ------ | ------------------- |
+| Pull consumer (web)          | 0        | 1      | ✅ PR-1             |
+| Pull consumer (mobile)       | 0        | 1      | ☐ PR-4 pending      |
+| Registry tables with enqueue | ~1       | 27     | ✅ PR-2/3 (web)     |
+| E2E habit/expense round-trip | ❌       | ✅     | ☐ manual after PR-4 |
+| `pnpm check`                 | —        | green  | ☐ PR-5 CI           |
 
 **QA squad (parallel, read-only):**
 
@@ -342,6 +342,8 @@ pnpm check
 ---
 
 ## 8. Manual E2E Runbook (обов'язково для Phase 1 PR-5)
+
+> **Canonical runbook:** [`docs/03-operations/runbooks/sync-client-e2e.md`](../../03-operations/runbooks/sync-client-e2e.md) — копіюй у PR description або on-call triage.
 
 **Prerequisites:** local `pnpm dev:db`, `pnpm dev:server`, `pnpm dev:web`; two Chromium profiles OR web + Expo emulator; one test user (Better Auth).
 

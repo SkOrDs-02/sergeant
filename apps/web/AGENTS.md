@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-07-02 by @dimastahov16012003. **Next review:** 2026-09-30.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -17,6 +17,7 @@ React 18 + Vite 8 + Tailwind 4 + TanStack Query + Better Auth (cookie sessions) 
 
 ```bash
 pnpm dev:web                                   # http://localhost:5173 (proxies /api → :3000)
+pnpm --filter @sergeant/db-schema build        # required before Vitest — @sergeant/db-schema/sqlite must be emitted
 pnpm --filter @sergeant/web build              # production build
 pnpm --filter @sergeant/web build:capacitor    # build for Capacitor shell
 pnpm --filter @sergeant/web test               # Vitest
@@ -35,6 +36,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 - **Module size (Hard Rule #18):** `max-lines: 600` for web TS/TSX. Active initiative — split before crossing.
 - **Storage:** wrapper from `@shared/storage`; allowlist enforced by `pnpm lint:localstorage-allowlist`.
 - **Touch targets:** `Button` auto-applies `min-h-[44px] min-w-[44px]` for `xs`/`sm`/`iconOnly`; opt out with `data-compact` only for intentionally small cells (heatmaps).
+- **Vitest prerequisite:** run `pnpm --filter @sergeant/db-schema build` before `pnpm --filter @sergeant/web test`. Without it, Vitest cannot resolve `@sergeant/db-schema/sqlite` and hundreds of suites fail at import time with `(0 test)`.
 
 ## Bundle budget
 

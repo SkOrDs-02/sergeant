@@ -28,7 +28,7 @@ Initiative closed via PR [#177](https://github.com/Skords-01/Sergeant/pull/177).
 - [x] `react-hooks/purity` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
 - [x] `react-hooks/refs` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js` (mobile waves 1–3 [#156](https://github.com/SkOrDs-02/sergeant/pull/156), [#160](https://github.com/SkOrDs-02/sergeant/pull/160), [#162](https://github.com/SkOrDs-02/sergeant/pull/162); web wave 1 — 26 files).
 - [x] `react-hooks/set-state-in-effect` — web 0 ✅ + mobile 0 ✅ (promoted in `eslint.web.js` / `eslint.mobile.js`, 2026-07-10)
-- [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені — **часткове виконання (wave 1, 2026-07-10):** каталог синхронізовано (7 застарілих записів видалено, 34 → 24 файли), 3 disables прибрано (ref-fix `usePwaAction.ts`, `read`-всередині-ефекту `hubPrefs.ts`, стабільні deps у `useNutritionPwaAction.ts`); залишок 24 файли — переважно виправдані інваріанти (bump-tick, mount-only, RHF stable); наступна ціль wave 2 — `useSearchEngine.ts` (useCallback fix)
+- [x] react-hooks/exhaustive-deps violations в інших файлах виправлені — **wave 1–4 (2026-07-10):** каталог **34 → 0** production disables; wave 4 — hub bump-tick (`void bump`), mount-only (`firedRef`), insights ticks, AuthContext `userRef`, RHF `reset` deps
 - [x] baseline suppressions в `eslint.baseline.js` скорочені на 50% (5 `"off"` → 0; scoreboard comment −32 lines)
 - [x] `eslint.baseline.js:146-178` оновлено (closure note + all 5 rules promoted to `"error"`, PR #177)
 

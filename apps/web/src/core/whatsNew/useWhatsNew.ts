@@ -61,23 +61,35 @@ export function __resetWhatsNewSessionForTesting(): void {
 
 export function useWhatsNew(opts: UseWhatsNewOptions): UseWhatsNewResult {
   const { enabled } = opts;
-  const [release, setRelease] = useState<WhatsNewRelease | null>(null);
-  const [open, setOpen] = useState(false);
-  const shownRef = useRef(false);
+
+  // If this release was already shown in this session (e.g. re-mount before
+  // dismissal), pre-open immediately so there's no ~2.5s flash. Lazy
+  // initializers run synchronously at mount — no setState in effect needed.
+  const [release, setRelease] = useState<WhatsNewRelease | null>(() => {
+    if (!enabled) return null;
+    const c = pickRelease(readLastSeenId());
+    return c && SESSION_SHOWN_RELEASE_IDS.has(c.id) ? c : null;
+  });
+  const [open, setOpen] = useState(() => {
+    if (!enabled) return false;
+    const c = pickRelease(readLastSeenId());
+    return !!(c && SESSION_SHOWN_RELEASE_IDS.has(c.id));
+  });
+  // shownRef guards the effect: true → skip the timer path (already open or
+  // already scheduled). Initialized from the lazy open state above.
+  const shownRef = useRef(open);
 
   useEffect(() => {
     if (!enabled) return;
-    if (shownRef.current) return;
+    if (shownRef.current) return; // pre-opened by lazy init or previous timer
 
     const candidate = pickRelease(readLastSeenId());
     if (!candidate) return;
 
+    // Fast path: session guard pre-populated state via lazy init — just mark
+    // shownRef so a re-effect (e.g. after HMR) doesn't schedule a timer.
     if (SESSION_SHOWN_RELEASE_IDS.has(candidate.id)) {
       shownRef.current = true;
-      void Promise.resolve().then(() => {
-        setRelease(candidate);
-        setOpen(true);
-      });
       return;
     }
 

@@ -203,6 +203,8 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   const mirrorTick = useFinykMonoMirrorTick();
 
   const { cur, prev, dates } = useMemo(() => {
+    void bump; // storage-write tick
+    void mirrorTick; // Mono mirror refresh tick
     const txList = getCachedFinykMonoMirrorState().transactions;
 
     const inputs: SpendingInputs = {
@@ -220,7 +222,6 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       prev: aggregateSpending(inputs, prevDates),
       dates: curDates,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump/mirrorTick trigger re-read on storage/mirror refresh
   }, [period, offset, bump, mirrorTick]);
 
   const formattedCurrent = cur.total.toLocaleString("uk-UA");

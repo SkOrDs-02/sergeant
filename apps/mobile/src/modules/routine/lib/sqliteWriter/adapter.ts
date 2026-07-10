@@ -8,7 +8,10 @@ import {
   type TableSpec,
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { enqueueOutboxIncrement } from "@sergeant/db-schema/sqlite";
 
+import { enqueueOutboxUpsert } from "@/core/syncEngine/enqueueOutboxUpsert";
+import { fireSyncOutboxUpsert } from "@/core/syncEngine/fireSyncOutboxUpsert";
 import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff";
 
 /**
@@ -30,10 +33,10 @@ import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff";
  *     `buildDelete` does not reproduce; that shape is unique to routine.
  *   - `habit-upsert` preserves `h.createdAt ?? clientTs` for `created_at`.
  *
- * Unlike the web copy, the mobile adapter has no sync-v2 outbox bridge —
- * `completion-add` / `completion-remove` only ever write `routine_entries`
- * (the web-only `enqueueOutboxUpsert` side-effect is web-specific, see
- * ADR-0073 § «НЕ абстрагуємо» п.3 — this is as-is, not a regression).
+ * Sync-v2 outbox bridge: `completion-add` / `completion-remove` fire
+ * `enqueueOutboxUpsert` for `routine_entries` and `enqueueOutboxIncrement`
+ * for `routine_streaks` after each local write (fire-and-forget; failures
+ * are swallowed so a sync-enqueue failure never breaks the local write).
  *
  * Op kind → table mapping:
  *
@@ -356,6 +359,35 @@ async function addCompletion(
     clientTs,
     clientTs,
   ]);
+  // Enqueue routine_entries insert so the server learns about this completion.
+  // Fire-and-forget: a sync failure must never break the local write.
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "routine_entries",
+    op: "insert",
+    row: {
+      id,
+      user_id: userId,
+      name: habitName,
+      completed_at: clientTs,
+      created_at: clientTs,
+      deleted_at: null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
+  // Enqueue a streak increment (+1) so the server's PN-counter stays current.
+  void enqueueOutboxIncrement(client, {
+    userId,
+    table: "routine_streaks",
+    row: { user_id: userId, delta: 1 },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
 }
 
 async function removeCompletion(
@@ -372,6 +404,30 @@ async function removeCompletion(
     userId,
     clientTs,
   ]);
+  // Enqueue a soft-delete op so the server mirrors the removal.
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "routine_entries",
+    op: "delete",
+    row: {
+      id,
+      user_id: userId,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
+  // Enqueue a streak decrement (-1) so the server's PN-counter stays current.
+  void enqueueOutboxIncrement(client, {
+    userId,
+    table: "routine_streaks",
+    row: { user_id: userId, delta: -1 },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
 }
 
 async function renameHabit(
@@ -419,6 +475,29 @@ async function upsertHabit(
     h.createdAt ?? clientTs,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_habits",
+    op: "insert",
+    clientTs,
+    row: {
+      id: h.id,
+      user_id: userId,
+      name: h.name,
+      emoji: h.emoji ?? "",
+      tag_ids_json: JSON.stringify(h.tagIds ?? []),
+      category_id: h.categoryId ?? null,
+      archived: h.archived ? 1 : 0,
+      paused: h.paused ? 1 : 0,
+      recurrence: h.recurrence ?? "daily",
+      start_date: h.startDate ?? null,
+      end_date: h.endDate ?? null,
+      time_of_day: h.timeOfDay ?? "",
+      reminder_times_json: JSON.stringify(h.reminderTimes ?? []),
+      weekdays_json: JSON.stringify(h.weekdays ?? [0, 1, 2, 3, 4, 5, 6]),
+      created_at: h.createdAt ?? clientTs,
+    },
+  });
 }
 
 async function softDeleteHabit(
@@ -433,6 +512,13 @@ async function softDeleteHabit(
     userId,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_habits",
+    op: "delete",
+    clientTs,
+    row: { id: habitId, user_id: userId },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -452,6 +538,19 @@ async function upsertTag(
     clientTs,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_tags",
+    op: "insert",
+    clientTs,
+    row: {
+      id: t.id,
+      user_id: userId,
+      name: t.name,
+      scope: t.scope ?? "",
+      created_at: clientTs,
+    },
+  });
 }
 
 async function softDeleteTag(
@@ -466,6 +565,13 @@ async function softDeleteTag(
     userId,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_tags",
+    op: "delete",
+    clientTs,
+    row: { id: tagId, user_id: userId },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -485,6 +591,19 @@ async function upsertCategory(
     clientTs,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_categories",
+    op: "insert",
+    clientTs,
+    row: {
+      id: c.id,
+      user_id: userId,
+      name: c.name,
+      emoji: c.emoji ?? "",
+      created_at: clientTs,
+    },
+  });
 }
 
 async function softDeleteCategory(
@@ -499,6 +618,13 @@ async function softDeleteCategory(
     userId,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_categories",
+    op: "delete",
+    clientTs,
+    row: { id: categoryId, user_id: userId },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -511,6 +637,13 @@ async function setPrefs(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(PREFS_UPSERT_SQL, [userId, JSON.stringify(prefs), clientTs]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_prefs",
+    op: "insert",
+    clientTs,
+    row: { user_id: userId, data_json: JSON.stringify(prefs) },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -524,6 +657,13 @@ async function upsertPushup(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(PUSHUP_UPSERT_SQL, [userId, dateKey, reps, clientTs]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_pushups",
+    op: "insert",
+    clientTs,
+    row: { user_id: userId, date_key: dateKey, reps },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -540,6 +680,13 @@ async function setHabitOrder(
     JSON.stringify(orderedIds),
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_habit_order",
+    op: "insert",
+    clientTs,
+    row: { user_id: userId, order_json: JSON.stringify(orderedIds) },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -558,6 +705,13 @@ async function upsertCompletionNote(
     note,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_completion_notes",
+    op: "insert",
+    clientTs,
+    row: { user_id: userId, note_key: noteKey, note },
+  });
 }
 
 async function deleteCompletionNote(
@@ -572,4 +726,11 @@ async function deleteCompletionNote(
     noteKey,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_completion_notes",
+    op: "delete",
+    clientTs,
+    row: { user_id: userId, note_key: noteKey },
+  });
 }

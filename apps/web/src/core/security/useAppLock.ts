@@ -54,8 +54,7 @@ export function useAppLock(): UseAppLockReturn {
   // hand to `AppLock` / `PrivacySection` — target the right partition.
   const { user } = useAuth();
   const userId = user?.id ?? null;
-  const [internalState, setInternalState] = useState<LockState>("idle");
-  const state = enabled ? internalState : "idle";
+  const [state, setState] = useState<LockState>("idle");
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastIdleResetRef = useRef(0);
   const setupModeRef = useRef<"setup" | "change">("setup");
@@ -66,7 +65,7 @@ export function useAppLock(): UseAppLockReturn {
     if (!enabled) return;
     let cancelled = false;
     hasPinSet(userId).then((has) => {
-      if (!cancelled && has) setInternalState("locked");
+      if (!cancelled && has) setState("locked");
     });
     return () => {
       cancelled = true;
@@ -79,7 +78,7 @@ export function useAppLock(): UseAppLockReturn {
     const handleVisibility = () => {
       if (document.visibilityState !== "visible") return;
       hasPinSet(userId).then((has) => {
-        if (has) setInternalState("locked");
+        if (has) setState("locked");
       });
     };
     document.addEventListener("visibilitychange", handleVisibility);
@@ -98,7 +97,7 @@ export function useAppLock(): UseAppLockReturn {
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
       hasPinSet(userId).then((has) => {
-        if (has) setInternalState("locked");
+        if (has) setState("locked");
       });
     }, IDLE_TIMEOUT_MS);
   }, [enabled, userId]);
@@ -122,12 +121,12 @@ export function useAppLock(): UseAppLockReturn {
   }, [enabled, resetIdleTimer]);
 
   const lock = useCallback(() => {
-    setInternalState("locked");
+    setState("locked");
   }, []);
 
   const startSetup = useCallback(() => {
     setupModeRef.current = "setup";
-    setInternalState("setup");
+    setState("setup");
     capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_STARTED, {
       mode: "setup",
     });
@@ -135,7 +134,7 @@ export function useAppLock(): UseAppLockReturn {
 
   const startChange = useCallback(() => {
     setupModeRef.current = "change";
-    setInternalState("change");
+    setState("change");
     capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_STARTED, {
       mode: "change",
     });
@@ -143,7 +142,7 @@ export function useAppLock(): UseAppLockReturn {
 
   const finishSetup = useCallback(() => {
     const mode = setupModeRef.current;
-    setInternalState("idle");
+    setState("idle");
     capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_COMPLETED, { mode });
   }, []);
 
@@ -151,7 +150,7 @@ export function useAppLock(): UseAppLockReturn {
     async (pin: string): Promise<boolean> => {
       const result = await verifyPinAttempt(pin, userId);
       if (result.ok) {
-        setInternalState("idle");
+        setState("idle");
         capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_SUCCESS, {
           method: "pin",
         });
@@ -173,7 +172,7 @@ export function useAppLock(): UseAppLockReturn {
         // `APP_LOCK_UNLOCK_FAILED` event above already carries
         // `wiped: true`, so dashboards filter on it without aggregating
         // a duplicate event.
-        setInternalState("idle");
+        setState("idle");
       }
       return false;
     },

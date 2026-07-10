@@ -37,15 +37,12 @@ export function useNutritionInsights(): Insight[] {
   // both detection hooks return null for empty/zero input, so no false
   // positives during the boot window.
   const { log, prefs } = useMemo(() => {
+    void sqliteCacheTick; // SQLite cache refresh tick
     const cached = getCachedNutritionSqliteState();
     return {
       log: cached.log,
       prefs: cached.prefs ?? defaultNutritionPrefs(),
     };
-    // sqliteCacheTick is the intentional dep — re-evaluate on cache tick.
-    // getCachedNutritionSqliteState is a stable module-level fn; omitting it
-    // from the dep array is intentional and mirrors the pattern in useWorkouts.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sqliteCacheTick]);
 
   const proteinInsight = useProteinLowInsight(log, prefs);

@@ -6,6 +6,7 @@ import {
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { enqueueOutboxUpsert } from "@/core/syncEngine/enqueueOutboxUpsert";
 import type { FizrukCustomExerciseSnapshot } from "./diff";
 
 // -----------------------------------------------------------------------
@@ -52,6 +53,14 @@ export async function upsertCustomExercise(
     clientTs,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_custom_exercises",
+    op: "insert",
+    row: { id: exercise.id, user_id: userId, data_json: dataJson },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 export async function softDeleteCustomExercise(
@@ -66,4 +75,12 @@ export async function softDeleteCustomExercise(
     userId,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_custom_exercises",
+    op: "delete",
+    row: { id: exerciseId, user_id: userId },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
