@@ -39,7 +39,7 @@ const SEARCH_DEBOUNCE_MS = 80;
 export function CommandPaletteUI() {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- CommandPaletteUI is always rendered inside CommandPalette provider
   const ctx = useContext(CommandPaletteContext)!;
-  const { open, closePalette, recents, markRecent, revision } = ctx;
+  const { open, closePalette, recents, markRecent, getAll } = ctx;
   const titleId = useId();
   const listId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -87,12 +87,7 @@ export function CommandPaletteUI() {
     };
   }, [open]);
 
-  const allCommands = useMemo(
-    () => ctx.getAll(),
-    // `revision` ticks when commands are registered / unregistered.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ctx, revision],
-  );
+  const allCommands = getAll();
 
   const groups = useMemo(
     () => buildGroups(allCommands, recents, query),

@@ -296,6 +296,8 @@ export const messages = {
     // потрапляють reused chat/insights/cross-module-preview labels та
     // довший offline-notice composer-а.
     insights: "Інсайти",
+    overlayTitle: "AI-асистент",
+    closeChat: "Закрити чат",
     chatQuickActions: "Швидкі сценарії",
     valueProgressAria: "Прогрес до твоїх цілей",
     crossModulePreviewAria: "Що Sergeant покаже далі",

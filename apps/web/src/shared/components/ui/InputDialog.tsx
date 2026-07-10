@@ -70,15 +70,11 @@ export function InputDialog({
   useDialogFocusTrap(open, ref, { onEscape: onCancel, inertBackground: true });
 
   useEffect(() => {
-    if (open) {
-      reset({ value: defaultValue });
-      const timer = setTimeout(() => inputRef.current?.focus(), 60);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-    // `reset` is RHF-stable; `inputRef` is a stable ref.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, defaultValue]);
+    if (!open) return;
+    reset({ value: defaultValue });
+    const timer = setTimeout(() => inputRef.current?.focus(), 60);
+    return () => clearTimeout(timer);
+  }, [open, defaultValue, reset]);
 
   useEffect(() => {
     if (!open) return;

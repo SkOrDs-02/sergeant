@@ -5,6 +5,8 @@ import {
   useContext,
   createContext,
   useRef,
+  useLayoutEffect,
+  useMemo,
 } from "react";
 
 export interface KeyboardShortcut {
@@ -83,15 +85,28 @@ export function useRegisterShortcuts(
   shortcuts: KeyboardShortcut[],
 ) {
   const registry = useContext(ShortcutRegistryContext);
+  const shortcutsRef = useRef(shortcuts);
+  const shortcutsRevision = useMemo(
+    () =>
+      shortcuts
+        .map(
+          (s) => `${s.keys.join("+")}\0${s.description}\0${s.category ?? ""}`,
+        )
+        .join("\n"),
+    [shortcuts],
+  );
+  useLayoutEffect(() => {
+    shortcutsRef.current = shortcuts;
+  });
 
   useEffect(() => {
-    if (!registry || shortcuts.length === 0) return;
-    registry.register({ id: registrationId, shortcuts });
+    if (!registry || shortcutsRef.current.length === 0) return;
+    registry.register({
+      id: registrationId,
+      shortcuts: shortcutsRef.current,
+    });
     return () => registry.unregister(registrationId);
-    // Intentionally omit `shortcuts` from deps — callers typically pass
-    // an inline array; deep comparison would require JSON serialization.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registry, registrationId]);
+  }, [registry, registrationId, shortcutsRevision, shortcuts.length]);
 }
 
 /**
