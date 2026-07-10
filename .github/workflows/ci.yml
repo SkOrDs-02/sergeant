@@ -388,6 +388,10 @@ jobs:
   coverage:
     name: Test coverage (vitest)
     runs-on: ubuntu-latest
+    permissions:
+      # contents: write — потрібен КРОКУ «Push coverage-ratchet baseline bump»,
+      # який комітить піднятий baseline назад у PR-гілку (same-repo PRs only).
+      contents: write
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -451,6 +455,53 @@ jobs:
 
           echo ""
           echo "✅ All workspaces meet their coverage floor threshold"
+
+      - name: Coverage ratchet — unit tests
+        # Cheap pre-flight (same pattern as the dedupe-gate / SRI-gate tests):
+        # validates evaluateRatchet/applyBumps so a broken helper fails fast
+        # before the gate below decides the PR's fate.
+        run: node --test scripts/ci/__tests__/coverage-ratchet.test.mjs
+
+      - name: Coverage ratchet (apps/web + apps/server)
+        # Ratchet-гейт «не гірше ніж зараз» поверх статичних floors вище:
+        # baseline живе у coverage-ratchet.json (repo root). Падає, якщо
+        # total.lines.pct workspace-у нижче baseline − 0.5пп; коли покриття
+        # зросло — переписує baseline у робочому дереві (наступний крок
+        # комітить bump у PR-гілку). Гейт свідомо живе ТІЛЬКИ в CI: локальний
+        # повний suite на Windows флакі, жоден локальний скрипт це не викликає.
+        # Читає coverage/coverage-summary.json — turbo-output test:coverage,
+        # тому cache-hit replay віддає ті самі числа (кеш не ламається).
+        run: node scripts/ci/coverage-ratchet.mjs
+
+      - name: Push coverage-ratchet baseline bump
+        # Only same-repo PRs: fork PRs get a read-only GITHUB_TOKEN, and on
+        # push-to-main runs head.ref не існує. Пуш ботом із GITHUB_TOKEN не
+        # тригерить новий CI-ран (GitHub-механіка) — циклу немає.
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- coverage-ratchet.json; then
+            echo "Baseline unchanged — nothing to push."
+            exit 0
+          fi
+          cp coverage-ratchet.json /tmp/coverage-ratchet.json
+          git checkout -- coverage-ratchet.json
+          git fetch origin "$HEAD_REF"
+          git checkout -B "$HEAD_REF" "origin/$HEAD_REF"
+          cp /tmp/coverage-ratchet.json coverage-ratchet.json
+          if git diff --quiet -- coverage-ratchet.json; then
+            echo "Head branch already carries this baseline."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add coverage-ratchet.json
+          git commit -m "chore(ci): ratchet coverage baseline upward"
+          git push origin "$HEAD_REF"
 
       - name: Upload coverage HTML reports
         if: always()
