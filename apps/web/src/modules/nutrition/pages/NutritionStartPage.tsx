@@ -71,6 +71,7 @@ export function NutritionStartPage({
       title="Не вдалось показати «Харчування»"
     >
       <>
+        <h1 className="sr-only">{messages.nav.nutritionOverview}</h1>
         <NutritionDashboard
           log={log.nutritionLog}
           prefs={prefs}

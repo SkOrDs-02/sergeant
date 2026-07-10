@@ -63,6 +63,7 @@ export function ProfilePage() {
   // sections can be open simultaneously (non-mutually-exclusive).
   return (
     <div className="max-w-lg mx-auto px-5 pb-10 space-y-2 pt-6">
+      <h1 className="sr-only">{messages.nav.profile}</h1>
       {!online && (
         <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-4 py-3 mb-2">
           <Icon name="wifi-off" size={16} className="text-warning shrink-0" />

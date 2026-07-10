@@ -7,6 +7,7 @@ import {
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { PageLoader } from "../app/PageLoader";
 import { lazyDefault } from "../lib/lazyImport";
+import { messages } from "@shared/i18n/uk";
 import {
   safeReadStringSS,
   safeWriteSS,
@@ -83,6 +84,7 @@ export function HubChatPage() {
       tabIndex={-1}
       className="h-dvh flex flex-col bg-bg text-text overflow-hidden safe-area-pt-pb page-enter outline-none"
     >
+      <h1 className="sr-only">{messages.nav.chat}</h1>
       <SuspenseWithMinDelay fallback={<PageLoader />}>
         <HubChat
           onClose={handleClose}

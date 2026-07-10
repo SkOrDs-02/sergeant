@@ -27,9 +27,16 @@ describe("CategoryPieChart", () => {
         total={10000}
       />,
     );
-    expect(screen.getByRole("img")).toBeInTheDocument();
-    // 10000 formatted in uk-UA + ₴
-    expect(screen.getByText(/10\D?000\s*₴/)).toBeInTheDocument();
+    const img = screen.getByRole("img", { name: "Кругова діаграма категорій" });
+    expect(img).toHaveAttribute(
+      "aria-describedby",
+      "finyk-category-pie-summary",
+    );
+    expect(document.getElementById("finyk-category-pie-summary")).toBeTruthy();
+    // Total appears in the SVG centre and in the sr-only data summary.
+    expect(screen.getAllByText(/10\D?000\s*₴/).length).toBeGreaterThanOrEqual(
+      1,
+    );
     expect(screen.getByText("FOOD")).toBeInTheDocument();
     expect(screen.getByText("FUN")).toBeInTheDocument();
   });
@@ -43,6 +50,7 @@ describe("CategoryPieChart", () => {
     // Overflow toggle present.
     const toggle = screen.getByTestId("finyk-analytics-donut-toggle");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle.className).toMatch(/min-h-\[44px\]/);
     // Collapsed view buckets the rest into "Інше".
     expect(screen.getByText("Інше")).toBeInTheDocument();
 

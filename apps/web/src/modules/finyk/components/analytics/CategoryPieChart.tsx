@@ -150,6 +150,7 @@ function CategoryPieChartComponent({
   const RENDER_MIN_SWEEP = 0.5;
   const visible = arcs.filter((a) => a.end - a.start >= RENDER_MIN_SWEEP);
   const GAP_DEG = visible.length > 1 ? 1 : 0;
+  const summaryId = "finyk-category-pie-summary";
 
   return (
     <div className={cn("w-full", className)}>
@@ -161,6 +162,7 @@ function CategoryPieChartComponent({
           className="shrink-0"
           role="img"
           aria-label="Кругова діаграма категорій"
+          aria-describedby={summaryId}
         >
           {arcs.map((arc, i) => {
             const sweep = arc.end - arc.start;
@@ -233,6 +235,23 @@ function CategoryPieChartComponent({
           ))}
         </div>
       </div>
+      <div id={summaryId} className="sr-only">
+        <p>
+          Розподіл витрат за категоріями. Всього{" "}
+          {displayTotal.toLocaleString("uk-UA")} ₴.
+        </p>
+        <ul>
+          {arcs.map((arc) => {
+            const pctInt = Math.round(arc.pct * 100);
+            return (
+              <li key={arc.categoryId}>
+                {arc.label}: {arc.spent.toLocaleString("uk-UA")} ₴ (
+                {pctInt < 1 ? "менше 1" : pctInt}%)
+              </li>
+            );
+          })}
+        </ul>
+      </div>
       {hasOverflow ? (
         <div className="mt-3 flex justify-center">
           <button
@@ -240,7 +259,7 @@ function CategoryPieChartComponent({
             onClick={() => setShowAll((v) => !v)}
             aria-expanded={expanded}
             data-testid="finyk-analytics-donut-toggle"
-            className="px-3 py-1.5 rounded-full border border-line bg-panelHi text-style-caption text-text hover:border-muted/50 transition-colors"
+            className="min-h-[44px] px-3 py-2 rounded-full border border-line bg-panelHi text-style-caption text-text hover:border-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
             {expanded ? "Згорнути ↑" : `Показати всі (${data.length}) ↓`}
           </button>

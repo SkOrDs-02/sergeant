@@ -16,6 +16,7 @@ import type { HubView } from "../hooks/useHubUIState";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
+import { messages } from "@shared/i18n/uk";
 import { IOSInstallBanner } from "./IOSInstallBanner";
 import { TrialBanner } from "../billing/TrialBanner";
 
@@ -203,6 +204,7 @@ export const HubMainContent = memo(function HubMainContent({
               aria-labelledby="hub-tab-reports"
               className="pt-2"
             >
+              <h1 className="sr-only">{messages.nav.reports}</h1>
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <HubReports />
                 <TabReadyProbe tab="reports" />
