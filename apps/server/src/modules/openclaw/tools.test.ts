@@ -38,10 +38,10 @@ describe("extractSqlTables", () => {
     ).toEqual(["subscriptions"]);
   });
 
-  it("handles ONLY keyword", () => {
-    expect(extractSqlTables("SELECT * FROM ONLY subscriptions")).toEqual([
-      "subscriptions",
-    ]);
+  it("rejects ONLY keyword syntax (parser fail-closed)", () => {
+    expect(() => extractSqlTables("SELECT * FROM ONLY subscriptions")).toThrow(
+      OpenClawAllowlistError,
+    );
   });
 
   it("is case-insensitive", () => {
@@ -282,18 +282,16 @@ describe("queryAppDb security boundaries", () => {
     expect(executedSql(calls)).toContain("LIMIT 200");
   });
 
-  it("rejects WITH (CTE) queries (Phase 1 — CTE alias detected as table)", async () => {
-    // У Phase 1 наш `extractSqlTables` навмисно простий: CTE-аліас типу
-    // `WITH x AS (...)` теж потрапляє у tables-set, не проходить allowlist.
-    // Це fail-closed behaviour: краще rejected-ний CTE, ніж шанс на bypass
-    // через `WITH x AS (SELECT * FROM auth_secret) SELECT * FROM x`.
+  it("allows WITH (CTE) when underlying tables are allowlisted", async () => {
+    // AST parser strips CTE aliases and checks real table refs inside the
+    // CTE body — `users` is allowlisted, so this is safe. A CTE that reads
+    // `auth_secret` would still be rejected via tables inside the subquery.
     const { pool, calls } = makeFakePool();
-    await expect(
-      queryAppDb(pool, {
-        sql: "WITH x AS (SELECT id FROM users) SELECT * FROM x",
-      }),
-    ).rejects.toBeInstanceOf(OpenClawAllowlistError);
-    expect(calls).toHaveLength(0);
+    const out = await queryAppDb(pool, {
+      sql: "WITH x AS (SELECT id FROM users) SELECT * FROM x",
+    });
+    expect(out.tablesUsed).toEqual(["users"]);
+    expect(calls.length).toBeGreaterThan(0);
   });
 
   it("runs allowlisted queries inside a READ ONLY transaction with a tight statement timeout", async () => {

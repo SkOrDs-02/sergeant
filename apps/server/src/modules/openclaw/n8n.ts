@@ -569,6 +569,11 @@ export interface RefreshBusinessSnapshotOutput {
 const REFRESH_SNAPSHOT_COOLDOWN_MS = 60_000;
 let lastSnapshotRefreshAtMs = 0;
 
+/** Test hook — resets the in-process refresh cooldown. Never call from production. */
+export function __resetRefreshSnapshotCooldownForTests(): void {
+  lastSnapshotRefreshAtMs = 0;
+}
+
 /**
  * Fires all Tier A workflows in parallel and waits for n8n to acknowledge
  * each `run` call. The actual snapshot data lands in our DB asynchronously

@@ -33,6 +33,7 @@ vi.mock("../../env/env.js", () => ({
 
 import {
   __resetN8nAllowlistCacheForTests,
+  __resetRefreshSnapshotCooldownForTests,
   __setN8nAllowlistForTests,
   activateN8nWorkflow,
   describeN8nWorkflow,
@@ -95,6 +96,7 @@ function setN8nCreds(present: boolean): void {
 
 beforeEach(() => {
   __resetN8nAllowlistCacheForTests();
+  __resetRefreshSnapshotCooldownForTests();
   __setN8nAllowlistForTests(TEST_ALLOWLIST);
   setN8nCreds(true);
 });
