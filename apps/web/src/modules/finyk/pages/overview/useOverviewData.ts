@@ -120,7 +120,7 @@ export function useOverviewData({
   // keeps this instant a scalar the React Compiler can track — a component-scope
   // `Date` reads as a locally-created mutable value that poisons every derived
   // memo dependency (react-hooks/preserve-manual-memoization).
-  const nowMs = Date.now();
+  const [nowMs] = useState(() => Date.now());
   // Anchor every calendar-window computation below to Europe/Kyiv (the
   // domain time invariant) instead of host-local Date getters, so month and
   // day boundaries never drift off-by-one on a non-Kyiv device. getKyivDateParts
@@ -149,7 +149,6 @@ export function useOverviewData({
       .map((e) => manualExpenseToTransaction(e));
     // Depend on the Kyiv month primitives (stable within a render pass) so the
     // memo doesn't thrash on `now` being recreated each render.
-    // eslint-disable-next-line react-hooks/preserve-manual-memoization -- `manualExpenses` is a storage-slots array the React Compiler conservatively flags as "may be modified later" (it is reassigned via setManualExpenses in a sibling hook); the manual memo is correct and behaviour-preserving here. Compiler is not enabled at runtime, so this useMemo does real work — dropping it would recompute the filtered/mapped list every render.
   }, [manualExpenses, kyivYear, kyivMonth]);
 
   const txForStats = useMemo(
@@ -288,12 +287,11 @@ export function useOverviewData({
   // potentially-mutable and skip memoization of every flow that depends on it;
   // the wrapped primitive keeps the dependency arrays below simple expressions
   // and lets the debt/subscription flow memos below preserve cleanly.
-  /* eslint-disable react-hooks/preserve-manual-memoization -- React Compiler elects not to preserve this trivial epoch memo ("memoized in source but not in output"); the memo is pure and its deps (Kyiv date parts) are exhaustive. Compiler is not enabled at runtime, so this useMemo does real work — it hoists the `new Date(...)` allocation out of every render and stabilises the primitive the flow memos below depend on. */
+
   const todayStartMs = useMemo(
     () => new Date(kyivYear, kyivMonth, kyivDay).getTime(),
     [kyivYear, kyivMonth, kyivDay],
   );
-  /* eslint-enable react-hooks/preserve-manual-memoization */
 
   const subscriptionFlows = useMemo(
     () =>

@@ -21,13 +21,13 @@
 - [x] 2 eslint-disable в useWorkoutsLifecycle.ts виправлені (mount-only, stable deps)
 - [x] `react-hooks/immutability` — web 0 ✅ + mobile 0 ✅ (2026-07-10: CategoryDonut reduce; Sheet SheetContent split + scoped disables for RNGH worklets); promoted to `"error"` in `eslint.mobile.js`
 - [x] `react-hooks/preserve-manual-memoization` — web 0 ✅, promoted to `"error"` у `eslint.web.js` (2026-07-04 burndown: 6 fixed, 3 kept behind scoped eslint-disable з обґрунтуванням)
-- [ ] `react-hooks/purity` — web ~14 + mobile 3 (2026-07-10 re-measure у `eslint.baseline.js` scoreboard); promotion blocked until burndown
-- [ ] `react-hooks/refs` — web ~59 + mobile 164 (2026-07-10); найбільший залишок на mobile UI primitives
-- [ ] `react-hooks/set-state-in-effect` — web ~80 + mobile 44 (2026-07-10); promotion blocked until burndown
+- [x] `react-hooks/purity` — web 0 ✅, promoted to `"error"` у `eslint.web.js` (2026-07-10)
+- [ ] `react-hooks/refs` — web ~59 + mobile ~106 після wave 1 ([#156](https://github.com/SkOrDs-02/sergeant/pull/156))
+- [ ] `react-hooks/set-state-in-effect` — web ~80 + mobile 44 (2026-07-10)
 - [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
 - [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
 - [ ] `eslint.baseline.js:146-178` оновлено або видалено (після promotion всіх 5 правил)
-- [ ] mobile: `immutability` (4 порушення), `preserve-manual-memoization` (2 порушення), `refs` (322 порушення) — окрема хвиля після web
+- [ ] mobile: `preserve-manual-memoization` (2 порушення), `refs` (~106 після wave 1 [#156](https://github.com/SkOrDs-02/sergeant/pull/156)) — окрема хвиля
 
 ## Виконані дії (2026-07-10)
 
@@ -35,9 +35,10 @@
 
 - `immutability` (mobile) — promoted to `"error"` у `eslint.mobile.js` (2026-07-10): CategoryDonut immutable reduce; Sheet → `SheetContent` mount-only subtree + 2 scoped `eslint-disable-next-line` на RNGH worklet `.value` writes.
 - `preserve-manual-memoization` (web) — promoted to `"error"` у `eslint.web.js` (рядок 500) після burndown 2026-07-04 (6 fix, 3 scoped-disable з обґрунтуванням); web 0.
-- `purity`, `refs`, `set-state-in-effect` (web) — виміряно 0 порушень на apps/web 2026-07-10; окремий агент промовує їх у `eslint.web.js`.
+- `purity` (web) — promoted to `"error"` у `eslint.web.js` після burndown 14 call-sites у 9 файлах (2026-07-10).
+- `refs`, `set-state-in-effect` (web) — ще `off` у baseline (~59 / ~80); promotion після burndown.
 
-**Залишок:** mobile-хвиля (`preserve-manual-memoization` 2, `refs` 322) + exhaustive-deps catalog-sync (done).
+**Залишок:** mobile-хвиля (`preserve-manual-memoization` 2, `refs` ~106 після wave 1 [#156](https://github.com/SkOrDs-02/sergeant/pull/156)) + web `refs`/`set-state-in-effect` + exhaustive-deps catalog-sync (done).
 
 ## Виконані дії (2026-06-10)
 
