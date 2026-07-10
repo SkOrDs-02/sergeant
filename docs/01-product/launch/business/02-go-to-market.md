@@ -94,9 +94,10 @@ sergeant.com.ua/blog           → SEO-блог (Astro SSG)
   «Фідбек», події `feedback_widget_opened` / `feedback_submitted` у PostHog.
   Ops-довідка: [`feedback-loop.md`](../../../03-operations/observability/feedback-loop.md).
 - Щотижневий email-дайджест: «Що ми зробили цього тижня за вашим фідбеком».
-- ✅ NPS опитування після 7 днів використання — shipped: PostHog Surveys,
-  client-тригер `nps_survey_eligible` за віком акаунта (разова настройка
-  survey у dashboard — кроки у [`feedback-loop.md § 2`](../../../03-operations/observability/feedback-loop.md)).
+- ✅ NPS опитування після 7 календарних днів від створення акаунта (UTC) —
+  shipped: PostHog Surveys, client-тригер `nps_survey_eligible` за віком
+  акаунта (разова настройка survey у dashboard — кроки у
+  [`feedback-loop.md § 2`](../../../03-operations/observability/feedback-loop.md)).
 
 ### 3.3 Ключові метрики бети
 

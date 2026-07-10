@@ -57,18 +57,20 @@ export function FeedbackDialog({ open, onClose }: FeedbackDialogProps) {
       setShowEmptyError(true);
       return;
     }
+    // `has_page_context` віддзеркалює контекст, який РЕАЛЬНО долетів, а не
+    // сам тумблер: якщо `buildPageContext()` повернув null (не-DOM edge),
+    // прапорець має бути false, щоб payload не був внутрішньо
+    // суперечливим (true без `page`/`viewport`).
+    const context = includeContext ? buildPageContext() : null;
     const payload: Record<string, unknown> = {
       category,
       message: trimmed.slice(0, MAX_MESSAGE_LENGTH),
       length: trimmed.length,
-      has_page_context: includeContext,
+      has_page_context: context !== null,
     };
-    if (includeContext) {
-      const context = buildPageContext();
-      if (context) {
-        payload["page"] = context.page;
-        payload["viewport"] = context.viewport;
-      }
+    if (context) {
+      payload["page"] = context.page;
+      payload["viewport"] = context.viewport;
     }
     trackEvent(ANALYTICS_EVENTS.FEEDBACK_SUBMITTED, payload);
     toast.success(messages.feedback.submitted);

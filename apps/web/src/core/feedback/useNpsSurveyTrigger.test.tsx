@@ -49,6 +49,13 @@ describe("useNpsSurveyTrigger", () => {
     expect(trackEvent).not.toHaveBeenCalled();
   });
 
+  it("fires exactly at the threshold age (off-by-one guard)", () => {
+    renderHook(() =>
+      useNpsSurveyTrigger(makeUser(isoDaysAgo(NPS_MIN_ACCOUNT_AGE_DAYS))),
+    );
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+  });
+
   it("does not fire for signed-out or legacy (createdAt: null) users", () => {
     renderHook(() => useNpsSurveyTrigger(null));
     renderHook(() => useNpsSurveyTrigger(makeUser(null)));

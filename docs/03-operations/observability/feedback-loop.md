@@ -44,8 +44,11 @@ PII: баланси, назви транзакцій), а мінімальний
    table**, event `feedback_submitted`, breakdown-колонки `category`,
    `message`, `page`. Зберегти insight як **Feedback inbox** у dashboard
    «Founder pulse» (див. [`posthog-founder-pulse.md`](./posthog-founder-pulse.md)).
-3. Опційно — PostHog webhook/Slack destination на event
-   `feedback_submitted`, щоб фідбек падав у месенджер одразу.
+3. Не пересилай `feedback_submitted` у Slack/webhook без окремо
+   затверджених правил доступу, retention і обробки PII — event містить
+   raw user-generated `message`, і `scrubPII` НЕ гарантує вичищення
+   довільного PII зі свобідного тексту. За потреби пересилай лише
+   allowlist-ований санітайзований payload у restricted destination.
 
 ## 2. NPS через PostHog Surveys
 
