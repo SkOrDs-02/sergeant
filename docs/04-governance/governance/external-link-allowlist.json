@@ -153,6 +153,30 @@
     {
       "pattern": "^https?://railway\\.app(/|$)",
       "reason": "Railway (deploy platform) sits behind bot protection that hangs non-browser HTTP clients: /help aborted on BOTH checker attempts (8s + 16s retry) in two consecutive CI runs 2026-07-02 while rendering fine in browsers. Persistent for the checker's UA, not transient."
+    },
+    {
+      "pattern": "^https?://help\\.hevyapp\\.com/hc/en-us/articles/38001424401943(-.*)?$",
+      "reason": "Hevy help-centre article 38001424401943 (export-data instructions, Zendesk-hosted) returns 403 to non-browser User-Agents but renders in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the Hevy CSV-export source mapping. Scoped to the cited article ID so other Hevy help links still get checked."
+    },
+    {
+      "pattern": "^https?://support\\.myfitnesspal\\.com/hc/en-us/articles/360032273352(-.*)?$",
+      "reason": "MyFitnessPal help-centre article 360032273352 (Data-Export FAQ, Zendesk-hosted) returns 403 to non-browser User-Agents but renders in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the MFP CSV-export source mapping. Scoped to the cited article ID."
+    },
+    {
+      "pattern": "^https?://support\\.budgetbakers\\.com/hc/en-us/articles/7151606064018(-.*)?$",
+      "reason": "BudgetBakers (Wallet) help-centre article 7151606064018 (export-transactions guide, Zendesk-hosted) returns 403 to non-browser User-Agents but renders in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the Wallet CSV-export source mapping. Scoped to the cited article ID."
+    },
+    {
+      "pattern": "^https?://help\\.monarchmoney\\.com/hc/en-us/articles/4409682789908(-.*)?$",
+      "reason": "Monarch Money help-centre article 4409682789908 (manual-import guide, Zendesk-hosted) returns 403 to non-browser User-Agents but renders in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the Monarch CSV-import source mapping. Scoped to the cited article ID."
+    },
+    {
+      "pattern": "^https?://habitica\\.fandom\\.com/wiki/Data_Export$",
+      "reason": "Habitica Fandom wiki Data_Export page returns 403 to non-browser User-Agents (Fandom anti-bot) but renders in browsers. Cited in docs/90-work/initiatives/0022-import-from-external-trackers.md as the Habitica Data-Export reference (deferred CSV-import source). Scoped to the single cited page."
+    },
+    {
+      "pattern": "^https?://diia\\.gov\\.ua(/.*)?$",
+      "reason": "diia.gov.ua (Ukrainian government services portal) aborts connections from CI runner User-Agents with 'This operation was aborted' (consistent across runs, same anti-bot behaviour as cabinet.tax.gov.ua / gdpr-info.eu / eur-lex.europa.eu already listed). Cited in docs/01-product/launch/business/04-launch-readiness.md as the canonical Diia portal; the page loads correctly in browsers and the gov URL is citation-stable."
     }
   ]
 }
