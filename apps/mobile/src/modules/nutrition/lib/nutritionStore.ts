@@ -36,11 +36,11 @@ import {
 import {
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
-} from "./dualWrite";
+} from "./sqliteWriter";
 import type {
   NutritionMealSnapshot,
   NutritionPantrySnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import { peekNutritionDualWriteState } from "./dualWriteState";
 import { getCachedNutritionSqliteState } from "./sqliteReader";
 

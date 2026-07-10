@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
 import { __test_only as scanHelpers } from "../doc-drift/scan.js";
+import { __test_only as residueHelpers } from "../dualwrite-residue/scan.js";
 import { __test_only as cycleHelpers } from "../dep-cycles/scanner.js";
 
 const { extractReferences, toPosix, SKIP_DIRS } = scanHelpers;
@@ -70,6 +71,34 @@ describe("dep-cycles resolveImport", () => {
     const from = resolve(root, "apps/web/src/index.ts");
     const resolved = resolveImport("node:fs", from, root);
     assert.equal(resolved, null);
+  });
+});
+
+describe("dualwrite-residue scan helpers", () => {
+  it("detects module key reads", () => {
+    assert.equal(
+      residueHelpers.lineHasModuleKeyRead('  readJSON("finyk_budgets", []);'),
+      true,
+    );
+    assert.equal(
+      residueHelpers.lineHasModuleKeyRead('  // readJSON("finyk_budgets")'),
+      false,
+    );
+  });
+
+  it("detects tombstoned tx cache reads", () => {
+    assert.equal(
+      residueHelpers.lineHasTombstonedRead(
+        '  safeReadLS("finyk_tx_cache", null);',
+      ),
+      true,
+    );
+    assert.equal(
+      residueHelpers.lineHasTombstonedRead(
+        '  removeFinykStorageItem("finyk_tx_cache");',
+      ),
+      false,
+    );
   });
 });
 

@@ -6,12 +6,12 @@ import { redactKeysRecursively } from "./logger.js";
 /**
  * S5 / S9-S1 parity gate (audit `2026-05-13-security-observability-roast.md`).
  *
- * OpenTelemetry export was removed (ADR-0035 revert), but span-attribute bags
- * still flow through the same `REDACT_KEY_NAMES` contract via pino
- * `formatters.log` and Sentry scrubbers. This suite exhaustively asserts that
- * `redactKeysRecursively` — the non-mutating walker used before any log record
- * leaves the process — masks every canonical key at arbitrary depth, matching
- * the old OTel attribute denylist intent.
+ * OpenTelemetry export прибрано (revert ADR-0035), але span-attribute bags
+ * досі проходять через той самий контракт `REDACT_KEY_NAMES` через pino
+ * `formatters.log` і Sentry scrubbers. Цей suite вичерпно перевіряє, що
+ * `redactKeysRecursively` — немутуючий walker перед експортом лог-запису —
+ * маскує кожен канонічний ключ на довільній глибині, зберігаючи намір
+ * старого OTel attribute denylist.
  */
 describe("tracing attribute redaction parity (REDACT_KEY_NAMES)", () => {
   const secretValue = "leak-must-not-appear-in-export";
@@ -42,6 +42,40 @@ describe("tracing attribute redaction parity (REDACT_KEY_NAMES)", () => {
       ).toBe("visible");
     },
   );
+
+  it("replaces object-valued canonical keys with null", () => {
+    const key = REDACT_KEY_NAMES[0];
+    if (!key) throw new Error("REDACT_KEY_NAMES must not be empty");
+
+    const attrs = {
+      [key]: { hash: secretValue, algo: "bcrypt" },
+      safeField: "visible",
+    };
+
+    const redacted = redactKeysRecursively(attrs) as Record<string, unknown>;
+
+    expect(JSON.stringify(redacted)).not.toContain(secretValue);
+    expect(redacted[key]).toBeNull();
+    expect(redacted["safeField"]).toBe("visible");
+  });
+
+  it("redacts canonical keys nested inside arrays", () => {
+    const key = REDACT_KEY_NAMES[0];
+    if (!key) throw new Error("REDACT_KEY_NAMES must not be empty");
+
+    const attrs = {
+      items: [{ [key]: secretValue, label: "keep" }, { label: "also-keep" }],
+    };
+
+    const redacted = redactKeysRecursively(attrs) as {
+      items: Array<Record<string, unknown>>;
+    };
+
+    expect(JSON.stringify(redacted)).not.toContain(secretValue);
+    expect(redacted.items[0]?.[key]).toBe("[redacted]");
+    expect(redacted.items[0]?.["label"]).toBe("keep");
+    expect(redacted.items[1]?.["label"]).toBe("also-keep");
+  });
 
   it("does not mutate the input object (exporter-safe snapshot)", () => {
     const attrs = {

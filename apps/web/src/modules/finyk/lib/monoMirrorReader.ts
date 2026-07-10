@@ -77,6 +77,26 @@ export function clearFinykMonoMirrorCache(): void {
   lastGoodTransactions = [];
 }
 
+/**
+ * Test-only seeder — overlays `partial` onto the empty cache and marks
+ * it warm (`refreshedAt`). Lets unit tests seed canonical Mono mirror
+ * state without a real SQLite round-trip. Mirrors the pattern used by
+ * `__setFinykSqliteStateCacheForTests` in `sqliteReader.ts`.
+ */
+export function __setFinykMonoMirrorCacheForTests(
+  partial: Partial<SqliteMonoMirrorCache>,
+): void {
+  cache = {
+    ...EMPTY_CACHE,
+    ...partial,
+    // eslint-disable-next-line no-restricted-syntax -- UTC refresh timestamp, not a Kyiv day key
+    refreshedAt: partial.refreshedAt ?? new Date().toISOString(),
+  };
+  if (Array.isArray(partial.transactions) && partial.transactions.length > 0) {
+    lastGoodTransactions = partial.transactions;
+  }
+}
+
 interface TxRow extends Record<string, unknown> {
   data_json: string;
   mono_time: number;

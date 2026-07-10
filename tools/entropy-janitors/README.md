@@ -1,17 +1,18 @@
 # @sergeant/entropy-janitors
 
-> **Last validated:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 Scheduled entropy checks for the Sergeant monorepo.
 
 This workspace package ships three independent janitors, each as a CLI:
 
-| Janitor      | What it does                                                                                                           | Issue label                  |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| `doc-drift`  | scans `docs/`, `.agents/`, `.github/` and package READMEs for broken `path:line` references and missing RQ-key symbols | `entropy-janitor/doc-drift`  |
-| `dead-code`  | wraps Knip in JSON mode and reports unused files/exports/dependencies per workspace                                    | `entropy-janitor/dead-code`  |
-| `dep-cycles` | finds circular dependencies in `apps/` and `packages/` via a built-in ESM resolver (no extra deps)                     | `entropy-janitor/dep-cycles` |
+| Janitor             | What it does                                                                                                                        | Issue label                         |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `doc-drift`         | scans `docs/`, `.agents/`, `.github/` and package READMEs for broken `path:line` references and missing RQ-key symbols              | `entropy-janitor/doc-drift`         |
+| `dead-code`         | wraps Knip in JSON mode and reports unused files/exports/dependencies per workspace                                                 | `entropy-janitor/dead-code`         |
+| `dep-cycles`        | finds circular dependencies in `apps/` and `packages/` via a built-in ESM resolver (no extra deps)                                  | `entropy-janitor/dep-cycles`        |
+| `dualwrite-residue` | flags new raw LS/MMKV reads of module data (`finyk_*`, `fizruk_*`, …) outside the teardown allowlist; guards `residualImport` count | `entropy-janitor/dualwrite-residue` |
 
 Janitors are scheduled weekly (Monday 06:00 UTC) by
 [`.github/workflows/entropy-janitors.yml`](../../.github/workflows/entropy-janitors.yml)
@@ -25,6 +26,7 @@ pnpm install
 pnpm --filter @sergeant/entropy-janitors doc-drift
 pnpm --filter @sergeant/entropy-janitors dead-code
 pnpm --filter @sergeant/entropy-janitors dep-cycles
+pnpm --filter @sergeant/entropy-janitors dualwrite-residue
 # or
 pnpm --filter @sergeant/entropy-janitors all
 ```

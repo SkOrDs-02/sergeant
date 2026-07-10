@@ -31,7 +31,7 @@ import {
   type MonthlyPlanState,
 } from "@sergeant/fizruk-domain/domain/plan/index";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractMonthlyPlanSnapshot,

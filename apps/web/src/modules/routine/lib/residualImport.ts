@@ -30,8 +30,8 @@ import {
   type RoutineState,
 } from "@sergeant/routine-domain";
 
-import { applyRoutineDualWriteOps } from "./dualWrite/adapter.js";
-import { diffRoutineDualWriteOps } from "./dualWrite/diff.js";
+import { applyRoutineDualWriteOps } from "./sqliteWriter/adapter.js";
+import { diffRoutineDualWriteOps } from "./sqliteWriter/diff.js";
 import { routineStorage } from "./routineStorageInstance.js";
 
 const STALE_TIMESTAMP = "1970-01-01T00:00:00.000Z";

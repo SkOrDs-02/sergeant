@@ -32,26 +32,26 @@ jest.mock("@/lib/storage", () => ({
 
 const mockTriggerNutritionDualWrite = jest.fn();
 const mockNutritionRegistered = jest.fn();
-jest.mock("@/modules/nutrition/lib/dualWrite", () => ({
+jest.mock("@/modules/nutrition/lib/sqliteWriter", () => ({
   triggerNutritionDualWrite: (...args: unknown[]) =>
     mockTriggerNutritionDualWrite(...args),
   isNutritionDualWriteRegistered: () => mockNutritionRegistered(),
 }));
 
 const mockTriggerRoutineDualWrite = jest.fn();
-jest.mock("@/modules/routine/lib/dualWrite", () => ({
+jest.mock("@/modules/routine/lib/sqliteWriter", () => ({
   triggerRoutineDualWrite: (...args: unknown[]) =>
     mockTriggerRoutineDualWrite(...args),
 }));
 
 const mockTriggerFizrukDualWrite = jest.fn();
-jest.mock("@/modules/fizruk/lib/dualWrite", () => ({
+jest.mock("@/modules/fizruk/lib/sqliteWriter", () => ({
   triggerFizrukDualWrite: (...args: unknown[]) =>
     mockTriggerFizrukDualWrite(...args),
 }));
 
 const mockTriggerFinykDualWrite = jest.fn();
-jest.mock("@/modules/finyk/lib/dualWrite", () => ({
+jest.mock("@/modules/finyk/lib/sqliteWriter", () => ({
   triggerFinykDualWrite: (...args: unknown[]) =>
     mockTriggerFinykDualWrite(...args),
 }));

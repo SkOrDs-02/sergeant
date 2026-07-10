@@ -23,7 +23,7 @@
 - [x] `react-hooks/preserve-manual-memoization` — web 0 ✅ + mobile 0 ✅ (2026-07-10: `computeInitialExpenseDate` + centralised `pantryItems`); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
 - [x] `react-hooks/purity` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
 - [x] `react-hooks/refs` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js` (mobile waves 1–3 [#156](https://github.com/SkOrDs-02/sergeant/pull/156), [#160](https://github.com/SkOrDs-02/sergeant/pull/160), [#162](https://github.com/SkOrDs-02/sergeant/pull/162); web wave 1 — 26 files).
-- [x] `react-hooks/set-state-in-effect` — web 0 ✅ promoted in `eslint.web.js` (2026-07-10 wave 2); mobile 2 remaining (OS permission async — wave 2)
+- [x] `react-hooks/set-state-in-effect` — web 0 ✅ + mobile 0 ✅ (promoted in `eslint.web.js` / `eslint.mobile.js`, 2026-07-10)
 - [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
 - [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
 - [ ] `eslint.baseline.js:146-178` оновлено або видалено (після promotion всіх 5 правил)
@@ -39,7 +39,7 @@
 - `purity` (web) — promoted to `"error"` у `eslint.web.js` після burndown 14 call-sites у 9 файлах (2026-07-10).
 - `refs` (web) — promoted to `"error"` у `eslint.web.js` (2026-07-10): 26 files — useEffect callback-ref sync, HubSearch destructure, AddMealSheet `useState`, useSwipeNavigation `isDragging` state, DropdownMenu/Tooltip ref-taint fixes.
 - `set-state-in-effect` (web) — wave 1 (81→48): `useSqliteTickOverlay`, render-time SQLite overlay, `useSyncExternalStore`. Wave 2 (48→0): core hub/onboarding, finyk/nutrition/routine modules, shared UI (Toast/Tooltip/PageTransition/voice). Promoted to `"error"` in `eslint.web.js` (2026-07-10).
-- `set-state-in-effect` (mobile) — wave 1 (46→2): render-time `prevTick` SQLite overlay parity, `prevOpen` sheet reset, render-time derivation. Залишок: `NotificationsSection` + `useRoutineReminders` (async OS permission APIs).
+- `set-state-in-effect` (mobile) — wave 1 (46→2): render-time `prevTick` SQLite overlay parity, `prevOpen` sheet reset, render-time derivation. Wave 2 (2→0): microtask-deferred OS permission state (`NotificationsSection`, `useRoutineReminders`). Promoted to `"error"` in `eslint.mobile.js` (2026-07-10).
 
 **Mobile preserve-manual-memoization (PR #159):**
 
@@ -53,7 +53,7 @@
 
 **Web refs wave 1:** 26 files — core hooks (activation, SW update, hub UI, speech, chat), HubSearch destructure, nutrition/fizruk/routine reminders, AddMealSheet/BarcodeScanner, DropdownMenu/Tooltip ref composition, useSwipeNavigation `isDragging` state, shared hooks (localStorage, theme). Web `refs` → 0; promoted in `eslint.web.js`.
 
-**Залишок:** `set-state-in-effect` (web 0 ✅ promoted 2026-07-10 / mobile 2 — OS permissions); `exhaustive-deps` та решта baseline suppressions.
+**Залишок:** `exhaustive-deps` та решта baseline suppressions.
 
 ## Виконані дії (2026-06-10)
 

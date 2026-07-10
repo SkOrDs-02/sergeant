@@ -3,7 +3,7 @@ import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractWorkoutTemplateSnapshots,

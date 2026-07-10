@@ -25,7 +25,7 @@ import type {
   FizrukData,
 } from "@sergeant/fizruk-domain";
 
-import { isFizrukDualWriteRegistered } from "./dualWrite/index.js";
+import { isFizrukDualWriteRegistered } from "./sqliteWriter/index.js";
 import {
   type FizrukCustomExerciseSnapshot,
   type FizrukDailyLogSnapshot,
@@ -36,7 +36,7 @@ import {
   type FizrukSetSnapshot,
   type FizrukWorkoutSnapshot,
   type FizrukWorkoutTemplateSnapshot,
-} from "./dualWrite/diff/index.js";
+} from "./sqliteWriter/diff/index.js";
 import { getCachedFizrukSqliteState } from "./sqliteReader.js";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;

@@ -1,8 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
 import { readAllData } from "./readAllData";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../../modules/finyk/lib/monoMirrorReader";
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  clearFinykMonoMirrorCache();
+});
 
 describe("readAllData", () => {
   it("returns empty defaults when localStorage is empty", () => {
@@ -15,47 +22,38 @@ describe("readAllData", () => {
     expect(d.excludedIds.size).toBe(0);
   });
 
-  it("reads tx cache and info cache (flat shape)", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [{ id: "t1", amount: -100 }],
-        timestamp: 1700000000,
-      }),
-    );
-    localStorage.setItem(
-      "finyk_info_cache",
-      JSON.stringify({ accounts: [{ id: "a1", balance: 5 }], name: "Олег" }),
-    );
+  it("reads transactions and accounts from the Mono mirror cache", () => {
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [{ id: "t1", amount: -100 } as never],
+      accounts: [{ id: "a1", balance: 5 }],
+    });
     const d = readAllData();
     expect(d.transactions).toHaveLength(1);
     expect(d.accounts).toHaveLength(1);
-    expect(d.clientName).toBe("Олег");
-    expect(d.cacheTime).toBe(1700000000);
+    // clientName is no longer derived from finyk_info_cache — it is always "".
+    expect(d.clientName).toBe("");
+    expect(d.cacheTime).not.toBeNull();
   });
 
-  it("reads info cache wrapped in { info } shape", () => {
-    localStorage.setItem(
-      "finyk_info_cache",
-      JSON.stringify({ info: { accounts: [{ id: "a2" }], name: "Іван" } }),
-    );
+  it("accounts from mirror cache are exposed directly", () => {
+    __setFinykMonoMirrorCacheForTests({
+      accounts: [{ id: "a2", balance: 99 }],
+    });
     const d = readAllData();
-    expect(d.clientName).toBe("Іван");
     expect(d.accounts).toHaveLength(1);
+    expect((d.accounts[0] as { id: string }).id).toBe("a2");
+    expect(d.clientName).toBe("");
   });
 
   it("computes excludedIds from hidden txs, transfers and receivable links", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [
-          { id: "t1", amount: -100 },
-          { id: "t2", amount: -200 },
-          { id: "t3", amount: -300 },
-          { id: "t4", amount: -400 },
-        ],
-      }),
-    );
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "t1", amount: -100 } as never,
+        { id: "t2", amount: -200 } as never,
+        { id: "t3", amount: -300 } as never,
+        { id: "t4", amount: -400 } as never,
+      ],
+    });
     localStorage.setItem("finyk_hidden_txs", JSON.stringify(["t1"]));
     localStorage.setItem(
       "finyk_tx_cats",

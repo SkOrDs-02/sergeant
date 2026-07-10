@@ -16,8 +16,8 @@ import {
   isNutritionDualWriteRegistered,
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
-} from "./dualWrite";
-import type { NutritionRecipeSnapshot } from "./dualWrite/diff";
+} from "./sqliteWriter";
+import type { NutritionRecipeSnapshot } from "./sqliteWriter/diff";
 import { peekNutritionDualWriteState } from "./dualWriteState";
 import { getCachedNutritionSqliteState } from "./sqliteReader";
 

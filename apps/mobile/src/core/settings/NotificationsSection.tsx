@@ -103,17 +103,21 @@ export function NotificationsSection() {
   const { prefs: nutritionPrefs, updatePrefs: updateNutritionPrefs } =
     useNutritionPrefs();
 
+  const applyPermStatus = useCallback((next: PermStatus) => {
+    void Promise.resolve().then(() => setPermStatus(next));
+  }, []);
+
   const refreshPermissions = useCallback(async () => {
     try {
       const perm = await Notifications.getPermissionsAsync();
-      setPermStatus(toStatus(perm));
+      applyPermStatus(toStatus(perm));
     } catch {
       // Native modules can throw on some simulators / dev builds
       // without the notifications entitlement — treat as undetermined
       // rather than crashing the settings screen.
-      setPermStatus("undetermined");
+      applyPermStatus("undetermined");
     }
-  }, []);
+  }, [applyPermStatus]);
 
   useEffect(() => {
     void refreshPermissions();
@@ -123,13 +127,13 @@ export function NotificationsSection() {
     try {
       const perm = await Notifications.requestPermissionsAsync();
       const nextStatus = toStatus(perm);
-      setPermStatus(nextStatus);
+      applyPermStatus(nextStatus);
       return nextStatus;
     } catch {
-      setPermStatus("denied");
+      applyPermStatus("denied");
       return "denied";
     }
-  }, []);
+  }, [applyPermStatus]);
 
   const requestPermission = useCallback(() => {
     void requestPermissionStatus();

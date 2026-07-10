@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../../modules/fizruk/lib/dualWrite/index", () => ({
+vi.mock("../../../../modules/fizruk/lib/sqliteWriter/index", () => ({
   triggerFizrukDualWrite: vi.fn(),
 }));
 vi.mock("../../../../modules/fizruk/lib/fizrukDualWriteState", () => ({
@@ -12,8 +12,8 @@ vi.mock("../../../../modules/fizruk/lib/sqliteReader", () => ({
   getCachedFizrukSqliteState: vi.fn(),
 }));
 
-import { triggerFizrukDualWrite } from "../../../../modules/fizruk/lib/dualWrite/index";
-import type { FizrukDualWriteState } from "../../../../modules/fizruk/lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../../../../modules/fizruk/lib/sqliteWriter/index";
+import type { FizrukDualWriteState } from "../../../../modules/fizruk/lib/sqliteWriter/index";
 import {
   extractMeasurementSnapshots,
   peekFizrukDualWriteState,

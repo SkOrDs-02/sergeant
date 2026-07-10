@@ -1,6 +1,6 @@
 # Прожарка #10/10 — Mobile (Expo + Capacitor) Reliability & UX (2026-05-13)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Archived
 > **Scope:** `apps/mobile/**` (Expo 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Jest 29) та `apps/mobile-shell/**` (Capacitor 7 wrapper + Vitest). Окрема активна ініціатива з SQLite-міграції (Stage 8/9) сюди не входить — її ведуть інші сесії. Mobile-strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md); dual-track sunset — [initiative 0002](../../initiatives/archive/_0002-mobile-platform-decision.md). Canonical mobile debt owner — [`docs/90-work/tech-debt/mobile.md`](../../tech-debt/mobile.md).
 
@@ -84,7 +84,7 @@
 
 #### P2.2a — Decompose `dualWrite/diff.ts` ✅ Closed in #2750
 
-Монолітний `apps/mobile/src/modules/fizruk/lib/dualWrite/diff.ts` (633 LOC) розкладено у module-folder `apps/mobile/src/modules/fizruk/lib/dualWrite/diff/` з per-shape diff-helpers (`workouts.ts`, `customExercises.ts`, `measurements.ts`, `dailyLog.ts`, `monthlyPlan.ts`, `workoutTemplates.ts`, `programs.ts`, `planTemplate.ts`, `wellbeing.ts`, `activeWorkout.ts`) + спільний `diffArray.ts` хелпер + барель `index.ts` (orchestrator + state + union + публічні re-exports). Барель = 229 LOC, найбільший per-shape файл = 95 LOC; усе значно нижче порогу 600 (Hard Rule #18). Публічний API `from "./dualWrite/diff"` збережено байт-у-байт (resolves через folder + index.ts). Поведінкові тести (`__tests__/diff.test.ts`) проходять без змін; додано per-shape `__tests__/diff.perShape.test.ts` (21 кейс, 1 happy-path + 1 edge-case на кожен з 10 shape-ів).
+Монолітний `apps/mobile/src/modules/fizruk/lib/dualWrite/diff.ts` (633 LOC) розкладено у module-folder `apps/mobile/src/modules/fizruk/lib/dualWrite/diff/` з per-shape diff-helpers (`workouts.ts`, `customExercises.ts`, `measurements.ts`, `dailyLog.ts`, `monthlyPlan.ts`, `workoutTemplates.ts`, `programs.ts`, `planTemplate.ts`, `wellbeing.ts`, `activeWorkout.ts`) + спільний `diffArray.ts` хелпер + барель `index.ts` (orchestrator + state + union + публічні re-exports). Барель = 229 LOC, найбільший per-shape файл = 95 LOC; усе значно нижче порогу 600 (Hard Rule #18). Публічний API `from "./sqliteWriter/diff"` збережено байт-у-байт (resolves через folder + index.ts). Поведінкові тести (`__tests__/diff.test.ts`) проходять без змін; додано per-shape `__tests__/diff.perShape.test.ts` (21 кейс, 1 happy-path + 1 edge-case на кожен з 10 shape-ів).
 
 ### P2.3 — Domain-shape alignment fizruk × 4 + finyk × 2 (M3 + M4)
 

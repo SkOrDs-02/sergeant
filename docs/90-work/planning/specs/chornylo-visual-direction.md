@@ -1,6 +1,6 @@
 # SPEC: «Чорнило» — dark-first візуальний напрям для apps/web
 
-> **Last touched:** 2026-07-10 by @dimastahov16012003. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Scaffolded
 
 <!-- Джерело: Claude Design проєкт «Оцінка дизайну Сержанта»

@@ -10,7 +10,7 @@ const mockRegister = vi.fn();
 const mockGetSqliteDb = vi.fn();
 const mockMigrationClient = { __label: "migration-client" };
 
-vi.mock("../dualWrite/index.js", () => ({
+vi.mock("../sqliteWriter/index.js", () => ({
   registerFizrukDualWriteContext: (ctx: unknown) => mockRegister(ctx),
 }));
 

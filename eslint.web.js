@@ -527,8 +527,7 @@ export const webBlocks = [
   // patterns; wave 2 (48→0) fixed core hub/onboarding, finyk/nutrition/routine
   // modules, and shared UI (Toast/Tooltip/PageTransition/voice). Promoted from
   // baseline `off` to web-scoped `error` so the next regression fails lint
-  // loudly. Stays `off` in the shared baseline because apps/mobile still
-  // carries ~46 legacy violations (separate future bite). See
+  // loudly. Mobile cleared in the same initiative (2026-07-10). See
   // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],

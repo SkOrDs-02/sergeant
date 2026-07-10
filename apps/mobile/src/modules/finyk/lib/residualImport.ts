@@ -19,13 +19,13 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { safeReadLS, safeRemoveLS } from "@/lib/storage";
 
-import { applyFinykDualWriteOps } from "./dualWrite/adapter";
+import { applyFinykDualWriteOps } from "./sqliteWriter/adapter";
 import {
   EMPTY_FINYK_STATE,
   diffFinykDualWriteOps,
   type FinykDualWriteState,
   type FinykPrefsSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import {
   blobsFromArray,
   idsFromArray,
@@ -33,7 +33,7 @@ import {
   networthHistoryFrom,
   txCatsFromMap,
   txSplitsFromMap,
-} from "./dualWrite/extract";
+} from "./sqliteWriter/extract";
 
 const STALE_TIMESTAMP = "1970-01-01T00:00:00.000Z";
 

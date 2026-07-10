@@ -20,7 +20,7 @@ const getSqliteDb = vi.fn(async (..._args: unknown[]) => ({
 vi.mock("../../../core/db/sqlite.js", () => ({
   getSqliteDb: (...args: unknown[]) => getSqliteDb(...args),
 }));
-vi.mock("./dualWrite/index.js", () => ({
+vi.mock("./sqliteWriter/index.js", () => ({
   registerNutritionDualWriteContext: (...args: unknown[]) =>
     registerCtx(...args),
 }));

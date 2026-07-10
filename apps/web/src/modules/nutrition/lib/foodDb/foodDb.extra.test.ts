@@ -74,6 +74,37 @@ describe("makeFoodProduct – extra branches", () => {
     const p = makeFoodProduct({ name: "м\u2019ясо", brand: "" });
     expect(p.norm).toBe("м'ясо");
   });
+
+  it("collapses repeated whitespace in norm tokens", () => {
+    const p = makeFoodProduct({
+      name: "  Йогурт   грецький  ",
+      brand: "  Ферма  ",
+    });
+    expect(p.norm).toBe("йогурт грецький ферма");
+  });
+
+  it("clamps non-finite macro values to zero", () => {
+    const p = makeFoodProduct({
+      name: "Test",
+      per100: {
+        kcal: Number.NaN,
+        protein_g: Number.POSITIVE_INFINITY,
+        fat_g: "3.5",
+        carbs_g: -4,
+      },
+    });
+    expect(p.per100).toEqual({
+      kcal: 0,
+      protein_g: 0,
+      fat_g: 3.5,
+      carbs_g: 0,
+    });
+  });
+
+  it("defaults defaultGrams to 100 when zero is provided", () => {
+    const p = makeFoodProduct({ name: "Test", defaultGrams: 0 });
+    expect(p.defaultGrams).toBe(100);
+  });
 });
 
 describe("searchFoods – scoring branches", () => {
@@ -106,6 +137,28 @@ describe("searchFoods – scoring branches", () => {
     await upsertFood({ name: "Банан" });
     const hits = await searchFoods("апельсин мандарин");
     expect(hits).toEqual([]);
+  });
+
+  it("ranks token-scattered matches after substring matches (score=2)", async () => {
+    await upsertFood({ name: "Яблуко зелене пиріг" });
+    await upsertFood({ name: "Пиріг з яблуком" });
+    const hits = await searchFoods("яблуко пиріг");
+    // Both norms contain every token, but neither includes the contiguous
+    // phrase "яблуко пиріг" → score=2 for both.
+    expect(hits.length).toBe(2);
+    expect(hits.map((h) => h.name).sort()).toEqual([
+      "Пиріг з яблуком",
+      "Яблуко зелене пиріг",
+    ]);
+  });
+});
+
+describe("upsertFood – validation branches", () => {
+  it("rejects whitespace-only names without touching IndexedDB", async () => {
+    const openSpy = vi.spyOn(globalThis.indexedDB as IDBFactory, "open");
+    const result = await upsertFood({ name: "\t\n" });
+    expect(result).toEqual({ ok: false, error: "Назва продукту порожня" });
+    expect(openSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -157,6 +210,120 @@ describe("db=null / openSergeantDb fails paths", () => {
   it("ensureSeedFoods returns false when DB fails", async () => {
     mockNullDb();
     expect(await ensureSeedFoods()).toBe(false);
+  });
+});
+
+const LEGACY_DB_NAME = "hub_nutrition_food_db";
+
+async function seedLegacyFoodDb(
+  products: Array<{
+    id: string;
+    name: string;
+    brand?: string;
+    norm?: string;
+    defaultGrams?: number;
+    per100?: {
+      kcal: number;
+      protein_g: number;
+      fat_g: number;
+      carbs_g: number;
+    };
+    updatedAt?: number;
+  }>,
+  barcodes: Record<string, string> = {},
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const req = indexedDB.open(LEGACY_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      db.createObjectStore("products", { keyPath: "id" });
+      db.createObjectStore("barcodes");
+    };
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction(["products", "barcodes"], "readwrite");
+      const productStore = tx.objectStore("products");
+      for (const product of products) {
+        productStore.put({
+          brand: "",
+          norm: product.name.toLowerCase(),
+          defaultGrams: 100,
+          per100: { kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+          updatedAt: Date.now(),
+          ...product,
+        });
+      }
+      const barcodeStore = tx.objectStore("barcodes");
+      for (const [barcode, foodId] of Object.entries(barcodes)) {
+        barcodeStore.put(foodId, barcode);
+      }
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => reject(tx.error);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+describe("legacy hub_nutrition_food_db migration", () => {
+  it("copies legacy products into sergeant-db on first read", async () => {
+    await seedLegacyFoodDb([
+      {
+        id: "food_legacy_1",
+        name: "Каша гречана",
+        norm: "каша гречана",
+        updatedAt: 1_700_000_000_000,
+      },
+    ]);
+
+    const list = await listFoods();
+    expect(list.map((x) => x.name)).toContain("Каша гречана");
+
+    const legacyStillOpen = await indexedDB.databases();
+    expect(legacyStillOpen.map((d) => d.name)).not.toContain(LEGACY_DB_NAME);
+  });
+
+  it("copies legacy barcodes and resolves products after migration", async () => {
+    await seedLegacyFoodDb(
+      [
+        {
+          id: "food_legacy_bc",
+          name: "Сир твердий",
+          norm: "сир твердий",
+        },
+      ],
+      { "4820111122222": "food_legacy_bc" },
+    );
+
+    const found = await lookupFoodByBarcode("4820111122222");
+    expect(found?.name).toBe("Сир твердий");
+  });
+
+  it("migrates legacy DB that only has a barcodes store", async () => {
+    await new Promise<void>((resolve, reject) => {
+      const req = indexedDB.open(LEGACY_DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore("barcodes");
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction("barcodes", "readwrite");
+        tx.objectStore("barcodes").put("food_orphan", "4820999888777");
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+      req.onerror = () => reject(req.error);
+    });
+
+    await upsertFood({ name: "Мігрований", id: "food_orphan" });
+    expect(await lookupFoodByBarcode("4820999888777")).toMatchObject({
+      name: "Мігрований",
+    });
   });
 });
 

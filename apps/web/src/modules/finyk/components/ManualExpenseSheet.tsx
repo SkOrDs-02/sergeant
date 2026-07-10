@@ -2,7 +2,7 @@
  * Last validated: 2026-05-20
  * Status: Active
  */
-import { useState, useId, useMemo } from "react";
+import { useState, useId, useMemo, useEffect } from "react";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
@@ -243,53 +243,90 @@ export function ManualExpenseSheet({
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [descFocused, setDescFocused] = useState(false);
 
-  const [prevOpen, setPrevOpen] = useState(open);
-  if (open && !prevOpen) {
-    setPrevOpen(true);
-    if (initialExpense?.id) {
-      reset({
-        description: String(initialExpense.description || ""),
-        amount:
-          initialExpense.amount != null ? String(initialExpense.amount) : "",
-        category: upgradeCategory(initialExpense.category),
-        date: initialExpense.date
-          ? toLocalISODate(initialExpense.date)
-          : toLocalISODate(),
+  const openInitKey = useMemo(
+    () =>
+      open
+        ? [
+            initialExpense?.id ?? "new",
+            initialCategory ?? "",
+            initialDescription ?? "",
+            frequentCategories.map((c) => c.id).join(","),
+          ].join("|")
+        : "",
+    [
+      open,
+      initialExpense,
+      initialCategory,
+      initialDescription,
+      frequentCategories,
+    ],
+  );
+  const [prevOpenInitKey, setPrevOpenInitKey] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      void Promise.resolve().then(() => {
+        setPrevOpenInitKey("");
       });
-    } else {
-      let startCategory: CategorySlug = DEFAULT_CATEGORY;
-      if (initialCategory) {
-        startCategory = upgradeCategory(initialCategory);
-      } else if (frequentCategories.length > 0) {
-        const top = frequentCategories[0];
-        if (top) {
-          const manualLabel =
-            typeof top.manualLabel === "string" ? top.manualLabel : null;
-          const canonicalLabel = top.id
-            ? CANONICAL_TO_MANUAL_LABEL[top.id]
-            : null;
-          const topSlug = manualLabel ?? canonicalLabel;
-          const upgradedTopSlug = topSlug ? upgradeCategory(topSlug) : null;
-          if (upgradedTopSlug && CATEGORY_SLUGS.includes(upgradedTopSlug)) {
-            startCategory = upgradedTopSlug;
+      return;
+    }
+    if (openInitKey === prevOpenInitKey) return;
+
+    void Promise.resolve().then(() => {
+      setPrevOpenInitKey(openInitKey);
+
+      if (initialExpense?.id) {
+        reset({
+          description: String(initialExpense.description || ""),
+          amount:
+            initialExpense.amount != null ? String(initialExpense.amount) : "",
+          category: upgradeCategory(initialExpense.category),
+          date: initialExpense.date
+            ? toLocalISODate(initialExpense.date)
+            : toLocalISODate(),
+        });
+      } else {
+        let startCategory: CategorySlug = DEFAULT_CATEGORY;
+        if (initialCategory) {
+          startCategory = upgradeCategory(initialCategory);
+        } else if (frequentCategories.length > 0) {
+          const top = frequentCategories[0];
+          if (top) {
+            const manualLabel =
+              typeof top.manualLabel === "string" ? top.manualLabel : null;
+            const canonicalLabel = top.id
+              ? CANONICAL_TO_MANUAL_LABEL[top.id]
+              : null;
+            const topSlug = manualLabel ?? canonicalLabel;
+            const upgradedTopSlug = topSlug ? upgradeCategory(topSlug) : null;
+            if (upgradedTopSlug && CATEGORY_SLUGS.includes(upgradedTopSlug)) {
+              startCategory = upgradedTopSlug;
+            }
           }
         }
+        reset({
+          description:
+            typeof initialDescription === "string" ? initialDescription : "",
+          amount: "",
+          category: startCategory,
+          date: toLocalISODate(),
+        });
       }
-      reset({
-        description:
-          typeof initialDescription === "string" ? initialDescription : "",
-        amount: "",
-        category: startCategory,
-        date: toLocalISODate(),
-      });
-    }
-    setCategoriesExpanded(false);
-    setDescFocused(false);
-    setShowDateField(false);
-    setAiAppliedCategory(null);
-  } else if (!open && prevOpen) {
-    setPrevOpen(false);
-  }
+      setCategoriesExpanded(false);
+      setDescFocused(false);
+      setShowDateField(false);
+      setAiAppliedCategory(null);
+    });
+  }, [
+    open,
+    openInitKey,
+    prevOpenInitKey,
+    initialExpense,
+    initialCategory,
+    initialDescription,
+    frequentCategories,
+    reset,
+  ]);
 
   const sortedCategories = useMemo(
     () => sortCategoriesByFrequency(frequentCategories),

@@ -26,14 +26,16 @@ interface UseNutritionPrefsStateResult {
 export function useNutritionPrefsState(
   sqliteCacheTick: number,
 ): UseNutritionPrefsStateResult {
+  const readOverlay = () => {
+    const cache = getCachedNutritionSqliteState();
+    if (cache.refreshedAt === null || !cache.prefs) return undefined;
+    return cache.prefs;
+  };
+
   const [prefs, setPrefs] = useSqliteTickOverlay(
     sqliteCacheTick,
-    () => {
-      const cache = getCachedNutritionSqliteState();
-      if (cache.refreshedAt === null || !cache.prefs) return undefined;
-      return cache.prefs;
-    },
-    () => loadNutritionPrefs(),
+    readOverlay,
+    () => readOverlay() ?? loadNutritionPrefs(),
   );
   const [prefsStorageErr, setPrefsStorageErr] = useState("");
 

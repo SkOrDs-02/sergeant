@@ -189,4 +189,21 @@ export const mobileBlocks = [
       "react-hooks/refs": "error",
     },
   },
+  // react-hooks v7 burndown (initiative 0021) — `set-state-in-effect` cleared
+  // apps/mobile in two waves (2026-07-10): wave 1 (46→2) render-time SQLite
+  // overlay, prevOpen sheet reset, derived state; wave 2 (2→0) microtask-deferred
+  // OS permission state after async Expo Notifications APIs. Promoted from
+  // baseline `off` to mobile-scoped `error`. See initiative 0021.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "react-hooks/set-state-in-effect": "error",
+    },
+  },
 ];

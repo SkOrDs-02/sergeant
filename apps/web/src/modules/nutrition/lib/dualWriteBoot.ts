@@ -12,7 +12,7 @@ import { getSqliteDb } from "../../../core/db/sqlite.js";
 import {
   registerNutritionDualWriteContext,
   type NutritionDualWriteContext,
-} from "./dualWrite/index.js";
+} from "./sqliteWriter/index.js";
 import { migrateNutrition } from "./clientMigrate.js";
 
 export interface BootNutritionDualWriteInput {

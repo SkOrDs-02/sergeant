@@ -25,7 +25,7 @@ import { __resetFinykSqliteReadGateForTests } from "@/modules/finyk/lib/sqliteRe
 
 // Mock the dual-write trigger so we can assert without the full SQLite stack.
 const mockTriggerFinykDualWrite = jest.fn();
-jest.mock("@/modules/finyk/lib/dualWrite", () => ({
+jest.mock("@/modules/finyk/lib/sqliteWriter", () => ({
   __esModule: true,
   triggerFinykDualWrite: (...args: unknown[]) =>
     mockTriggerFinykDualWrite(...args),

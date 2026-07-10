@@ -45,8 +45,8 @@ import type {
 
 import { safeReadStringLS, safeWriteLS } from "@/lib/storage";
 
-import { triggerFizrukDualWrite } from "./dualWrite";
-import { type FizrukDualWriteState } from "./dualWrite/diff";
+import { triggerFizrukDualWrite } from "./sqliteWriter";
+import { type FizrukDualWriteState } from "./sqliteWriter/diff";
 import {
   extractCustomExerciseSnapshots,
   extractMeasurementSnapshots,

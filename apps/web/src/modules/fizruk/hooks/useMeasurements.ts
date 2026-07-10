@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractMeasurementSnapshots,

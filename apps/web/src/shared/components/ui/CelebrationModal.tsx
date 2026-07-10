@@ -162,13 +162,17 @@ export const CelebrationModal = memo(function CelebrationModal({
           : counts.low;
 
     setParticles(generateParticles(count));
-
-    if (navigator.vibrate) {
-      navigator.vibrate(type === "confetti" ? [50, 30, 50] : [30]);
-    }
   } else if (!open && prevOpen) {
     setPrevOpen(false);
   }
+
+  const prevOpenForVibrateRef = useRef(open);
+  useEffect(() => {
+    if (open && !prevOpenForVibrateRef.current && navigator.vibrate) {
+      navigator.vibrate(type === "confetti" ? [50, 30, 50] : [30]);
+    }
+    prevOpenForVibrateRef.current = open;
+  }, [open, type]);
 
   const handleClose = useCallback(() => {
     setIsExiting(true);

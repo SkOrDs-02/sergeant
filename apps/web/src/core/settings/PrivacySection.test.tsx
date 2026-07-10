@@ -65,6 +65,7 @@ vi.mock("../legal/LegalLinks", () => ({
   LegalLinks: () => null,
 }));
 
+import { meApi } from "@shared/api";
 import { PrivacySection } from "./PrivacySection";
 
 async function openSection() {
@@ -130,5 +131,149 @@ describe("PrivacySection — audit F16 (per-user PIN scoping)", () => {
 
     await waitFor(() => expect(appLock.disablePin).toHaveBeenCalledTimes(1));
     expect(mockSetFlag).toHaveBeenCalledWith("app-lock-enabled", false);
+  });
+});
+
+describe("PrivacySection — preferences (analytics / aiMemory / pushNotifications)", () => {
+  const basePrefs: UserPreferences = {
+    analytics: true,
+    aiMemory: true,
+    pushNotifications: false,
+    updatedAt: null,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseFlag.mockReturnValue(false);
+    vi.mocked(meApi.getPreferences).mockResolvedValue({ ...basePrefs });
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({ ...basePrefs });
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("loads and displays preferences from the API on mount", async () => {
+    render(<PrivacySection />);
+    await openSection();
+
+    await waitFor(() => expect(meApi.getPreferences).toHaveBeenCalledTimes(1));
+  });
+
+  it("toggles analytics preference and calls updatePreferences", async () => {
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      analytics: false,
+    });
+    render(<PrivacySection />);
+    await openSection();
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    fireEvent.click(analyticsToggle);
+
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledWith({
+        analytics: false,
+      }),
+    );
+  });
+
+  it("toggles aiMemory preference and calls updatePreferences", async () => {
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      aiMemory: false,
+    });
+    render(<PrivacySection />);
+    await openSection();
+
+    const aiMemoryToggle = await screen.findByRole("switch", {
+      name: /AI memory/i,
+    });
+    fireEvent.click(aiMemoryToggle);
+
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledWith({ aiMemory: false }),
+    );
+  });
+
+  it("toggles pushNotifications preference and calls updatePreferences", async () => {
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      pushNotifications: true,
+    });
+    render(<PrivacySection />);
+    await openSection();
+
+    const pushToggle = await screen.findByRole("switch", {
+      name: /Push-повідомлення/i,
+    });
+    fireEvent.click(pushToggle);
+
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledWith({
+        pushNotifications: true,
+      }),
+    );
+  });
+
+  it("calls updatePreferences and handles failure without crashing", async () => {
+    vi.mocked(meApi.updatePreferences).mockRejectedValue(new Error("500"));
+    render(<PrivacySection />);
+    await openSection();
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    fireEvent.click(analyticsToggle);
+
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledTimes(1),
+    );
+    // Component remains mounted after failure (no crash)
+    expect(analyticsToggle).toBeInTheDocument();
+  });
+
+  it("shows an error when getPreferences API call fails", async () => {
+    vi.mocked(meApi.getPreferences).mockRejectedValue(new Error("401"));
+    render(<PrivacySection />);
+    await openSection();
+
+    await waitFor(() =>
+      expect(screen.getByText(/Увійди в акаунт/i)).toBeInTheDocument(),
+    );
+  });
+
+  it("dismisses disable-confirm dialog on cancel without calling disablePin", async () => {
+    mockUseFlag.mockReturnValue(true);
+    render(<PrivacySection />);
+    await openSection();
+
+    fireEvent.click(
+      screen.getByRole("switch", { name: /Блокування додатку/i }),
+    );
+
+    const cancel = await screen.findByRole("button", { name: /Скасувати/i });
+    fireEvent.click(cancel);
+
+    expect(appLock.disablePin).not.toHaveBeenCalled();
+    expect(mockSetFlag).not.toHaveBeenCalledWith("app-lock-enabled", false);
+  });
+
+  it("shows Change PIN and Lock Now buttons when app-lock flag is enabled", async () => {
+    mockUseFlag.mockReturnValue(true);
+    render(<PrivacySection />);
+    await openSection();
+
+    // Buttons are rendered inside the flagEnabled branch
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /Змінити PIN/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Заблокувати зараз/i }),
+      ).toBeInTheDocument();
+    });
   });
 });

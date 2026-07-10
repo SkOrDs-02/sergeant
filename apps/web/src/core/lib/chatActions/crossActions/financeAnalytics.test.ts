@@ -15,10 +15,14 @@ vi.mock("../../../../modules/finyk/constants", () => ({
 vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
   getCachedFinykSqliteState: vi.fn(),
 }));
+vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: vi.fn(),
+}));
 
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import {
   categoryBreakdown,
   detectAnomalies,
@@ -27,6 +31,7 @@ import {
 
 const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
 const mockGetCached = vi.mocked(getCachedFinykSqliteState);
+const mockGetMirror = vi.mocked(getCachedFinykMonoMirrorState);
 const mockGetTxAmount = vi.mocked(getTxStatAmount);
 
 const RECENT_SEC = Math.floor((Date.now() - 3600 * 1000) / 1000);
@@ -42,10 +47,13 @@ function makeState() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockGetCached.mockReturnValue(makeState());
-  mockLs.mockImplementation((key: string) => {
-    if (key === "finyk_tx_cache") return { txs: [] };
-    return {};
+  // finyk_tx_cache is tombstoned — bank transactions now come from the mirror.
+  mockGetMirror.mockReturnValue({
+    transactions: [],
+    accounts: [],
+    refreshedAt: null,
   });
+  mockLs.mockImplementation((_key: string) => ({}));
   mockGetTxAmount.mockImplementation(
     (t: { amount: number }) => Math.abs(t.amount) / 100,
   );
@@ -85,16 +93,14 @@ describe("spendingTrend", () => {
       ...makeState(),
       hiddenTransactions: ["t_hidden"],
     });
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return {
-          txs: [
-            { id: "t_hidden", amount: -100000, time: RECENT_SEC },
-            { id: "t_visible", amount: -5000, time: RECENT_SEC },
-          ],
-        };
-      }
-      return {};
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
+    mockGetMirror.mockReturnValue({
+      transactions: [
+        { id: "t_hidden", amount: -100000, time: RECENT_SEC },
+        { id: "t_visible", amount: -5000, time: RECENT_SEC },
+      ] as never,
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
     });
     const result = spendingTrend({ name: "spending_trend", input: {} });
     expect(result).toContain("Транзакцій: 1");
@@ -105,56 +111,47 @@ describe("spendingTrend", () => {
 
 describe("detectAnomalies", () => {
   it("returns insufficient data message for < 3 expenses", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return { txs: [{ id: "t1", amount: -1000, time: RECENT_SEC }] };
-      }
-      return {};
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
+    mockGetMirror.mockReturnValue({
+      transactions: [{ id: "t1", amount: -1000, time: RECENT_SEC }] as never,
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
     });
     const result = detectAnomalies({ name: "detect_anomalies", input: {} });
     expect(result).toContain("Недостатньо");
   });
 
   it("returns no anomalies message when all amounts are similar", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return {
-          txs: [
-            { id: "t1", amount: -1000, time: RECENT_SEC },
-            { id: "t2", amount: -1000, time: RECENT_SEC },
-            { id: "t3", amount: -1000, time: RECENT_SEC },
-          ],
-        };
-      }
-      return {};
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
+    mockGetMirror.mockReturnValue({
+      transactions: [
+        { id: "t1", amount: -1000, time: RECENT_SEC },
+        { id: "t2", amount: -1000, time: RECENT_SEC },
+        { id: "t3", amount: -1000, time: RECENT_SEC },
+      ] as never,
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
     });
     const result = detectAnomalies({ name: "detect_anomalies", input: {} });
     expect(result).toContain("аномалій не виявлено");
   });
 
   it("detects large outlier transaction", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return {
-          txs: [
-            { id: "t1", amount: -1000, time: RECENT_SEC, description: "Кава" },
-            { id: "t2", amount: -1000, time: RECENT_SEC, description: "Їжа" },
-            {
-              id: "t3",
-              amount: -1000,
-              time: RECENT_SEC,
-              description: "Транспорт",
-            },
-            {
-              id: "big",
-              amount: -100000,
-              time: RECENT_SEC,
-              description: "Великий платіж",
-            },
-          ],
-        };
-      }
-      return {};
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
+    mockGetMirror.mockReturnValue({
+      transactions: [
+        { id: "t1", amount: -1000, time: RECENT_SEC, description: "Кава" },
+        { id: "t2", amount: -1000, time: RECENT_SEC, description: "Їжа" },
+        { id: "t3", amount: -1000, time: RECENT_SEC, description: "Транспорт" },
+        {
+          id: "big",
+          amount: -100000,
+          time: RECENT_SEC,
+          description: "Великий платіж",
+        },
+      ] as never,
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
     });
     const result = detectAnomalies({ name: "detect_anomalies", input: {} });
     expect(result).toContain("Аномальні витрати");

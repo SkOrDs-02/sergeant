@@ -9,10 +9,10 @@ const { applyMock, diffMock, removeItemMock, readJSONMock, warnMock } =
     warnMock: vi.fn(),
   }));
 
-vi.mock("./dualWrite/adapter.js", () => ({
+vi.mock("./sqliteWriter/adapter.js", () => ({
   applyRoutineDualWriteOps: applyMock,
 }));
-vi.mock("./dualWrite/diff.js", () => ({
+vi.mock("./sqliteWriter/diff.js", () => ({
   diffRoutineDualWriteOps: diffMock,
 }));
 vi.mock("./routineStorageInstance.js", () => ({

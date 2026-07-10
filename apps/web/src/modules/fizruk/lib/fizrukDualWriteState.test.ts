@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-vi.mock("./dualWrite/index.js", () => ({
+vi.mock("./sqliteWriter/index.js", () => ({
   isFizrukDualWriteRegistered: () => mockRegistered(),
 }));
 

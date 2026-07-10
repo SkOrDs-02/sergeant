@@ -1,13 +1,13 @@
 # @sergeant/dualwrite-core
 
-> **Last touched:** 2026-07-04 by @dimastahov16012003. **Next review:** 2026-10-02.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 Платформо-нейтральне ядро dual-write фреймворку ([ADR-0073](../../docs/04-governance/adr/0073-dualwrite-generic-framework.md)) для 4 модульних пайплайнів LS/MMKV→SQLite (finyk, fizruk, nutrition, routine; web + mobile). Pure TypeScript, без DOM / React Native / Sentry — усе платформне (логер, телеметрія, uuid) ін'єктується споживачем.
 
 ## Що всередині (крок 1)
 
-- **`applyDualWriteOps`** — best-effort op-loop з per-op try/catch і лічильниками `{applied, errored, skipped}`, перенесений з `apps/web/src/shared/lib/dualWrite/core.ts` (web-шлях лишився re-export-ом).
+- **`applyDualWriteOps`** — best-effort op-loop з per-op try/catch і лічильниками `{applied, errored, skipped}`, перенесений з `apps/web/src/shared/lib/sqliteWriter/core.ts` (web-шлях лишився re-export-ом).
 - **`toIntOrNull` / `toRealOrNull`** — nullable числові конвертери для SQLite bind-параметрів.
 - Типи: `ApplyDualWriteOptions`, `ApplyDualWriteResult`, `ApplyOutcome`, `DualWriteLogger`.
 

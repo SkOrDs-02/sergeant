@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from "react";
 import { cn } from "../../lib/ui/cn";
 
 export type TransitionDirection =
@@ -78,7 +84,10 @@ export function PageTransition({
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
   const [prevPageKey, setPrevPageKey] = useState(pageKey);
-  if (pageKey !== displayedKey && pageKey !== prevPageKey) {
+  if (pageKey === displayedKey && isExiting) {
+    setIsExiting(false);
+    setPrevPageKey(pageKey);
+  } else if (pageKey !== displayedKey && pageKey !== prevPageKey) {
     setPrevPageKey(pageKey);
     if (prefersReducedMotion) {
       setDisplayedKey(pageKey);
@@ -88,6 +97,13 @@ export function PageTransition({
       setIsExiting(true);
     }
   }
+
+  useLayoutEffect(() => {
+    if (pageKey !== displayedKey) return;
+    if (!timeoutRef.current) return;
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = undefined;
+  }, [pageKey, displayedKey]);
 
   useEffect(() => {
     if (!isExiting || pageKey === displayedKey) return;

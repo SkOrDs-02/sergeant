@@ -18,8 +18,8 @@ import { useCallback, useState } from "react";
 
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
 import { useFinykSqliteReadTick } from "../lib/sqliteReadGate";
-import { blobsFromArray, stateWithSlice } from "../lib/dualWrite/extract";
-import { triggerFinykDualWrite } from "../lib/dualWrite";
+import { blobsFromArray, stateWithSlice } from "../lib/sqliteWriter/extract";
+import { triggerFinykDualWrite } from "../lib/sqliteWriter";
 
 export interface CustomCategory {
   id: string;

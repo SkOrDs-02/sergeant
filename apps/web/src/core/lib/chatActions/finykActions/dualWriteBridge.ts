@@ -19,7 +19,7 @@
  *      fallback still read LS, so it must stay in sync;
  *   3. mirrors the per-slice `prev → next` delta into SQLite and bumps
  *      the read-gate so any mounted Finyk UI re-renders (see
- *      `modules/finyk/lib/dualWrite/chatBridge`).
+ *      `modules/finyk/lib/sqliteWriter/chatBridge`).
  *
  * Keys not covered by the dual-write contract fall through to a plain
  * `lsSet`, preserving the previous behaviour.
@@ -34,12 +34,12 @@ import {
   stateWithSlice,
   txCatsFromMap,
   txSplitsFromMap,
-} from "../../../../modules/finyk/lib/dualWrite/extract";
-import type { FinykDualWriteState } from "../../../../modules/finyk/lib/dualWrite/diff";
+} from "../../../../modules/finyk/lib/sqliteWriter/extract";
+import type { FinykDualWriteState } from "../../../../modules/finyk/lib/sqliteWriter/diff";
 import {
   mirrorFinykChatDualWrite,
   mirrorFinykChatMonthlyPlan,
-} from "../../../../modules/finyk/lib/dualWrite/chatBridge";
+} from "../../../../modules/finyk/lib/sqliteWriter/chatBridge";
 
 /** Singleton prefs key — merged against canonical fields, not slice-diffed. */
 const MONTHLY_PLAN_KEY = "finyk_monthly_plan";

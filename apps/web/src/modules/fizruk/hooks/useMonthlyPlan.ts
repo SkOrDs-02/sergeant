@@ -5,7 +5,7 @@ import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractMonthlyPlanSnapshot,

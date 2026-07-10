@@ -11,11 +11,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const triggerSpy = vi.fn();
 let dualWriteRegistered = true;
 
-vi.mock("./dualWrite/index", async () => {
-  const actual =
-    await vi.importActual<typeof import("./dualWrite/index")>(
-      "./dualWrite/index",
-    );
+vi.mock("./sqliteWriter/index", async () => {
+  const actual = await vi.importActual<typeof import("./sqliteWriter/index")>(
+    "./sqliteWriter/index",
+  );
   return {
     ...actual,
     triggerNutritionDualWrite: (...args: unknown[]) => triggerSpy(...args),

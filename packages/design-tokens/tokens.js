@@ -165,6 +165,42 @@ export const moduleAccentRgb = {
   nutrition: { default: "146 204 23", strong: "70 98 18" }, // lime-500 / -800
 };
 
+/**
+ * «Чорнило» (Ink) — dark-first surface + text scale.
+ *
+ * Canonical values for the `.theme-dark` "Ink" visual direction (spec:
+ * docs/90-work/planning/specs/chornylo-visual-direction.md § 1). A single
+ * deep green-black surface with luminescent per-module accents; depth comes
+ * from surface tint + accent border + glow, not a downward shadow.
+ *
+ * `surface`/`text` are authored here as the source of truth for the `.dark`
+ * CSS variables in apps/web/src/styles/theme.css. `accent` re-surfaces the
+ * existing `brandColors.{emerald,cyan,coral,lime}[400]` tier-400 tones in
+ * their module role — text placed over an accent fill is always `bg` ink
+ * (#0d1512), never white (spec § 1).
+ */
+export const inkTheme = {
+  surface: {
+    bg: "#0d1512", // page background
+    surface: "#121c17", // cards, rows, nav, fields
+    surfaceHi: "#17231d", // hover / input bg
+    line: "rgba(255, 255, 255, 0.06)", // hairline
+    lineStrong: "rgba(255, 255, 255, 0.12)", // prominent divider
+  },
+  text: {
+    strong: "#f2f6f2", // display / headings — 14.9:1 on bg
+    fg: "#e7f0ea", // body
+    muted: "#8a968e", // meta — AA 5.6:1 on surface
+    subtle: "#5f6b64", // labels ≥12px only
+  },
+  accent: {
+    finyk: brandColors.emerald[400], // #34d399
+    fizruk: brandColors.cyan[400], // #22d3ee
+    routine: brandColors.coral[400], // #ff8c78
+    nutrition: brandColors.lime[400], // #b0e636
+  },
+};
+
 /** Status/semantic colors — consistent across app. */
 export const statusColors = {
   success: "#10b981", // emerald-500

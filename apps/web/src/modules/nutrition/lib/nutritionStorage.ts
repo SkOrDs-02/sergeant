@@ -38,11 +38,11 @@ import {
   isNutritionDualWriteRegistered,
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
-} from "./dualWrite/index.js";
+} from "./sqliteWriter/index.js";
 import type {
   NutritionMealSnapshot,
   NutritionPantrySnapshot,
-} from "./dualWrite/diff.js";
+} from "./sqliteWriter/diff.js";
 import { getCachedNutritionSqliteState } from "./sqliteReader.js";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 

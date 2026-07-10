@@ -20,7 +20,7 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { logger } from "@shared/lib";
 
 import { readJSON, readRaw, removeItem } from "./finykStorage";
-import { applyFinykDualWriteOps } from "./dualWrite/adapter.js";
+import { applyFinykDualWriteOps } from "./sqliteWriter/adapter.js";
 import {
   EMPTY_FINYK_STATE,
   diffFinykDualWriteOps,
@@ -31,7 +31,7 @@ import {
   type FinykNetworthEntry,
   type FinykTxCategoryEntry,
   type FinykTxSplitsEntry,
-} from "./dualWrite/diff.js";
+} from "./sqliteWriter/diff.js";
 
 const STALE_TIMESTAMP = "1970-01-01T00:00:00.000Z";
 

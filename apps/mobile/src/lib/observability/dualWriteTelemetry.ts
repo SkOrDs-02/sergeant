@@ -18,7 +18,7 @@
  * the same trail in mobile Sentry events.
  *
  * **Stage 10 mobile mirror** introduces `recordParityCheck` for
- * Routine — see `../../modules/routine/lib/dualWrite/parity.ts`.
+ * Routine — see `../../modules/routine/lib/sqliteWriter/parity.ts`.
  *
  * @see apps/web/src/core/observability/dualWriteTelemetry.ts — single
  *      source-of-truth for the bucket boundaries and gate thresholds.

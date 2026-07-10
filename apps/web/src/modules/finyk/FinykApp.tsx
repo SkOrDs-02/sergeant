@@ -128,25 +128,39 @@ export default function App({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // PWA action: open add-expense sheet when the OS deep-link fires.
-  const [prevPwaAction, setPrevPwaAction] = useState(pwaAction);
-  if (pwaAction === "add_expense" && prevPwaAction !== "add_expense") {
-    setPrevPwaAction("add_expense");
-    const prefill = consumePresetPrefill("finyk");
-    navigate("transactions");
-    setEditingManualExpenseId(null);
-    setQuickAddCategory(
-      typeof prefill?.["category"] === "string" ? prefill["category"] : null,
-    );
-    setQuickAddDescription(
-      typeof prefill?.["description"] === "string"
-        ? prefill["description"]
-        : null,
-    );
-    setShowExpenseSheet(true);
-    void Promise.resolve().then(() => onPwaActionConsumed?.());
-  } else if (pwaAction !== prevPwaAction) {
-    setPrevPwaAction(pwaAction ?? null);
-  }
+  const prevPwaActionRef = useRef(pwaAction);
+  useEffect(() => {
+    if (pwaAction !== "add_expense") {
+      prevPwaActionRef.current = pwaAction;
+      return;
+    }
+    if (prevPwaActionRef.current === "add_expense") return;
+    prevPwaActionRef.current = "add_expense";
+
+    void Promise.resolve().then(() => {
+      const prefill = consumePresetPrefill("finyk");
+      navigate("transactions");
+      setEditingManualExpenseId(null);
+      setQuickAddCategory(
+        typeof prefill?.["category"] === "string" ? prefill["category"] : null,
+      );
+      setQuickAddDescription(
+        typeof prefill?.["description"] === "string"
+          ? prefill["description"]
+          : null,
+      );
+      setShowExpenseSheet(true);
+      onPwaActionConsumed?.();
+    });
+  }, [
+    pwaAction,
+    navigate,
+    setEditingManualExpenseId,
+    setQuickAddCategory,
+    setQuickAddDescription,
+    setShowExpenseSheet,
+    onPwaActionConsumed,
+  ]);
 
   const { mergedMono } = useUnifiedFinanceData({ mono, privat });
   const { frequentCategories, frequentMerchants } = useFinykPersonalization({

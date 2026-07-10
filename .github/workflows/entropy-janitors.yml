@@ -41,6 +41,10 @@ jobs:
         run: pnpm --filter @sergeant/entropy-janitors dep-cycles --root "$GITHUB_WORKSPACE" --out-dir "$JANITORS_OUT_DIR"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run dualwrite-residue
+        run: pnpm --filter @sergeant/entropy-janitors dualwrite-residue --root "$GITHUB_WORKSPACE" --out-dir "$JANITORS_OUT_DIR"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4

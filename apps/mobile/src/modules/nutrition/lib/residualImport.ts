@@ -42,14 +42,14 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { safeReadLS, safeReadStringLS, safeRemoveLS } from "@/lib/storage";
 
-import { applyNutritionDualWriteOps } from "./dualWrite/adapter";
+import { applyNutritionDualWriteOps } from "./sqliteWriter/adapter";
 import {
   diffNutritionDualWriteOps,
   type NutritionDualWriteState,
   type NutritionMealSnapshot,
   type NutritionPantrySnapshot,
   type NutritionRecipeSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import { normalizeSavedRecipe, type SavedRecipe } from "./recipeBookStore";
 
 const STALE_TIMESTAMP = "1970-01-01T00:00:00.000Z";

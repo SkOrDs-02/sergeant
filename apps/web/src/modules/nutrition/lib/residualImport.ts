@@ -45,13 +45,13 @@ import {
   type Pantry,
 } from "@sergeant/nutrition-domain";
 
-import { applyNutritionDualWriteOps } from "./dualWrite/adapter.js";
+import { applyNutritionDualWriteOps } from "./sqliteWriter/adapter.js";
 import {
   diffNutritionDualWriteOps,
   type NutritionDualWriteState,
   type NutritionMealSnapshot,
   type NutritionPantrySnapshot,
-} from "./dualWrite/diff.js";
+} from "./sqliteWriter/diff.js";
 import { nutritionStorage } from "./nutritionStorageInstance";
 
 const STALE_TIMESTAMP = "1970-01-01T00:00:00.000Z";

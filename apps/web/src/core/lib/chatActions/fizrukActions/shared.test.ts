@@ -5,9 +5,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 // so persist* helpers exercise their pure pre-write logic + LS write without a
 // real dual-write pipeline. A spy lets us assert the trigger is invoked.
 const trigger = vi.hoisted(() => vi.fn());
-vi.mock("../../../../modules/fizruk/lib/dualWrite/index", async (orig) => ({
+vi.mock("../../../../modules/fizruk/lib/sqliteWriter/index", async (orig) => ({
   ...(await orig<
-    typeof import("../../../../modules/fizruk/lib/dualWrite/index")
+    typeof import("../../../../modules/fizruk/lib/sqliteWriter/index")
   >()),
   triggerFizrukDualWrite: trigger,
 }));
