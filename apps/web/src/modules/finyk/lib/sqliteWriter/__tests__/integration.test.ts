@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Patch enqueueOutboxUpsert so integration tests can assert the outbox
+// enqueue shape without a real sync_op_outbox table in the test DB.
+// The mock is hoisted via vi.mock so it intercepts the adapter import.
+vi.mock("../../../../../core/syncEngine/enqueueOutboxUpsert.js", () => ({
+  enqueueOutboxUpsert: vi.fn().mockResolvedValue({ id: 1, inserted: true }),
+}));
+import { enqueueOutboxUpsert } from "../../../../../core/syncEngine/enqueueOutboxUpsert.js";
+
 import {
   __clearFinykDualWriteContextForTests,
   applyFinykDualWriteOps,
@@ -478,5 +486,307 @@ describe("Finyk dual-write — applyFinykDualWriteOpsViaContext + mirrors", () =
       ["m_none"],
     );
     expect(rows).toHaveLength(0);
+  });
+});
+
+// -----------------------------------------------------------------------
+// Outbox enqueue wiring
+// -----------------------------------------------------------------------
+
+describe("Finyk dual-write — outbox enqueue wiring", () => {
+  const enqueueMock = enqueueOutboxUpsert as ReturnType<typeof vi.fn>;
+
+  let handle: TestSqliteHandle;
+
+  beforeEach(async () => {
+    handle = await createTestSqlite();
+    enqueueMock.mockClear();
+    enqueueMock.mockResolvedValue({ id: 1, inserted: true });
+  });
+
+  afterEach(() => {
+    __clearFinykDualWriteContextForTests();
+    handle.close();
+  });
+
+  function makeCtx(): FinykDualWriteContext {
+    return {
+      getUserId: () => USER_ID,
+      getMigrationClient: async () => handle.client,
+      getNow: () => NOW,
+    };
+  }
+
+  it("enqueues finyk_hidden_accounts insert on id-upsert", async () => {
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "id-upsert",
+          table: "finyk_hidden_accounts",
+          entry: { id: "acc-1" },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_hidden_accounts");
+    expect(input.op).toBe("insert");
+    expect(input.row).toMatchObject({ user_id: USER_ID, account_id: "acc-1" });
+  });
+
+  it("enqueues finyk_hidden_accounts delete on id-delete", async () => {
+    // Seed a row first
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "id-upsert",
+          table: "finyk_hidden_accounts",
+          entry: { id: "acc-2" },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    enqueueMock.mockClear();
+    await applyFinykDualWriteOps(
+      handle.client,
+      [{ kind: "id-delete", table: "finyk_hidden_accounts", id: "acc-2" }],
+      { userId: USER_ID, clientTs: LATER },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_hidden_accounts");
+    expect(input.op).toBe("delete");
+    expect(input.row).toMatchObject({ user_id: USER_ID, account_id: "acc-2" });
+  });
+
+  it("enqueues finyk_hidden_transactions insert on id-upsert", async () => {
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "id-upsert",
+          table: "finyk_hidden_transactions",
+          entry: { id: "tx-1" },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_hidden_transactions");
+    expect(input.row).toMatchObject({
+      user_id: USER_ID,
+      transaction_id: "tx-1",
+    });
+  });
+
+  it("enqueues blob-table insert (finyk_budgets) on blob-upsert", async () => {
+    const id = "44444444-4444-4444-4444-444444444444";
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "blob-upsert",
+          table: "finyk_budgets",
+          entry: { id, dataJson: '{"amount":500}' },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_budgets");
+    expect(input.op).toBe("insert");
+    expect(input.row).toMatchObject({
+      id,
+      user_id: USER_ID,
+      data_json: '{"amount":500}',
+    });
+  });
+
+  it("enqueues blob-table delete (finyk_manual_expenses) on blob-delete", async () => {
+    const id = "55555555-5555-5555-5555-555555555555";
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "blob-upsert",
+          table: "finyk_manual_expenses",
+          entry: { id, dataJson: "{}" },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    enqueueMock.mockClear();
+    await applyFinykDualWriteOps(
+      handle.client,
+      [{ kind: "blob-delete", table: "finyk_manual_expenses", id }],
+      { userId: USER_ID, clientTs: LATER },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_manual_expenses");
+    expect(input.op).toBe("delete");
+    expect(input.row).toMatchObject({ id, user_id: USER_ID });
+  });
+
+  it("enqueues finyk_tx_categories insert on tx-category-upsert", async () => {
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "tx-category-upsert",
+          entry: { transactionId: "tx-cat-1", categoryId: "food" },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_tx_categories");
+    expect(input.op).toBe("insert");
+    expect(input.row).toMatchObject({
+      user_id: USER_ID,
+      transaction_id: "tx-cat-1",
+      category_id: "food",
+    });
+  });
+
+  it("enqueues finyk_tx_splits insert on tx-splits-upsert", async () => {
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "tx-splits-upsert",
+          entry: { transactionId: "tx-sp-1", splitsJson: "[]" },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_tx_splits");
+    expect(input.op).toBe("insert");
+    expect(input.row).toMatchObject({
+      user_id: USER_ID,
+      transaction_id: "tx-sp-1",
+      splits_json: "[]",
+    });
+  });
+
+  it("does NOT enqueue finyk_mono_debt_links (R7 local-only)", async () => {
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "mono-debt-link-upsert",
+          entry: { transactionId: "tx-mdl-1", debtIdsJson: '["d1"]' },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).not.toHaveBeenCalled();
+  });
+
+  it("enqueues finyk_networth_history insert on networth-upsert", async () => {
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "networth-upsert",
+          entry: { month: "2026-01", networth: 12000 },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_networth_history");
+    expect(input.op).toBe("insert");
+    expect(input.row).toMatchObject({
+      user_id: USER_ID,
+      month: "2026-01",
+      networth: 12000,
+    });
+  });
+
+  it("enqueues finyk_prefs insert on prefs-upsert", async () => {
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "prefs-upsert",
+          prefs: {
+            monthlyPlanJson: "{}",
+            showBalance: true,
+            excludedStatTxIdsJson: "[]",
+            dismissedRecurringJson: "[]",
+          },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_prefs");
+    expect(input.op).toBe("insert");
+    expect(input.row).toMatchObject({ user_id: USER_ID, show_balance: 1 });
+  });
+
+  it("does NOT reject dualWrite when enqueueOutboxUpsert throws (fire-and-forget)", async () => {
+    enqueueMock.mockRejectedValue(new Error("disk full"));
+    const result = await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "blob-upsert",
+          table: "finyk_assets",
+          entry: { id: "a-1", dataJson: "{}" },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    expect(result.applied).toBe(1);
+    expect(result.errored).toBe(0);
+  });
+
+  it("dualWriteFinykState enqueues on mutation via full orchestrator", async () => {
+    registerFinykDualWriteContext(makeCtx());
+    const next: FinykDualWriteState = {
+      ...EMPTY_FINYK_STATE,
+      hiddenAccounts: [{ id: "acc-orch-1" }],
+    };
+    await dualWriteFinykState(EMPTY_FINYK_STATE, next);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_hidden_accounts");
+    expect(input.row).toMatchObject({ account_id: "acc-orch-1" });
+    expect(typeof input.idempotencyKey).toBe("string");
+    expect(input.idempotencyKey.length).toBeGreaterThan(0);
   });
 });

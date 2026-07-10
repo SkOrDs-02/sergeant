@@ -12,7 +12,16 @@
  *
  * AI-DANGER: не оновлюй `__snapshots__/adapter.snapshot.test.ts.snap`
  * «щоб тест пройшов» — розберись, чому SQL змінився.
+ *
+ * Note: enqueueOutboxUpsert is mocked here so that the sync-outbox
+ * INSERT calls do NOT appear in the recorded (sql, params) sequence.
+ * The snapshot captures only the production-table writes; outbox wiring
+ * is tested separately in the integration test.
  */
+// Mock must be hoisted before adapter import so it intercepts the adapter.
+vi.mock("../../../../core/syncEngine/enqueueOutboxUpsert.js", () => ({
+  enqueueOutboxUpsert: vi.fn().mockResolvedValue({ id: 1, inserted: true }),
+}));
 import { describe, expect, it, vi } from "vitest";
 import { applyNutritionDualWriteOps } from "./adapter";
 import type { NutritionDualWriteOp } from "./diff.js";
@@ -25,6 +34,10 @@ function makeRecordingClient() {
       calls.push({ sql, params: params ?? [] });
       return Promise.resolve(undefined);
     }),
+    // Returns empty array — used by softDeletePantry / softDeleteRemovedChildren
+    // to query which items to enqueue as deleted. Enqueue calls are not recorded
+    // in `calls`, so the (sql, params) snapshot remains byte-stable.
+    all: vi.fn(() => Promise.resolve([])),
   } as unknown as SqliteMigrationClient;
   return { client, calls };
 }

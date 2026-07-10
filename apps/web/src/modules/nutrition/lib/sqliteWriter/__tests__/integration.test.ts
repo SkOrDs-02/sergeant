@@ -1,7 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Patch enqueueOutboxUpsert so integration tests can assert the outbox
+// enqueue shape without a real sync_op_outbox table in the test DB.
+// The mock is hoisted via vi.mock so it intercepts the adapter import.
+vi.mock("../../../../../core/syncEngine/enqueueOutboxUpsert.js", () => ({
+  enqueueOutboxUpsert: vi.fn().mockResolvedValue({ id: 1, inserted: true }),
+}));
+import { enqueueOutboxUpsert } from "../../../../../core/syncEngine/enqueueOutboxUpsert.js";
 
 import {
   __clearNutritionDualWriteContextForTests,
+  applyNutritionDualWriteOps,
   dualWriteNutritionState,
   isNutritionDualWriteRegistered,
   registerNutritionDualWriteContext,
@@ -259,5 +268,288 @@ describe("nutrition dualWrite orchestrator", () => {
   it("triggerNutritionDualWrite does nothing when no context is registered", () => {
     // Should not throw
     expect(() => triggerNutritionDualWrite(EMPTY, EMPTY)).not.toThrow();
+  });
+});
+
+// -----------------------------------------------------------------------
+// Outbox enqueue wiring
+// -----------------------------------------------------------------------
+
+describe("nutrition dualWrite — outbox enqueue wiring", () => {
+  const enqueueMock = enqueueOutboxUpsert as ReturnType<typeof vi.fn>;
+
+  let handle: TestSqliteHandle;
+
+  beforeEach(async () => {
+    handle = await createTestSqlite();
+    enqueueMock.mockClear();
+    enqueueMock.mockResolvedValue({ id: 1, inserted: true });
+  });
+
+  afterEach(() => {
+    __clearNutritionDualWriteContextForTests();
+    handle.close();
+  });
+
+  it("enqueues nutrition_meals insert on meal-upsert", async () => {
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "meal-upsert",
+          meal: {
+            id: "m1",
+            dateKey: "2026-07-01",
+            time: "08:00",
+            mealType: "breakfast",
+            name: "Вівсянка",
+            label: "вівсянка",
+            macros: { kcal: 300, protein_g: 10, fat_g: 5, carbs_g: 50 },
+            source: "manual",
+            macroSource: "manual",
+            amountG: 200,
+            foodId: null,
+            isDemo: false,
+          },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("nutrition_meals");
+    expect(input.op).toBe("insert");
+    expect(input.row).toMatchObject({
+      id: "m1",
+      user_id: UID,
+      meal_type: "breakfast",
+    });
+    expect(typeof input.idempotencyKey).toBe("string");
+    expect(input.idempotencyKey.length).toBeGreaterThan(0);
+  });
+
+  it("enqueues nutrition_meals delete on meal-delete", async () => {
+    // Seed first
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "meal-upsert",
+          meal: {
+            id: "m-del",
+            dateKey: "2026-07-01",
+            time: "08:00",
+            mealType: "snack",
+            name: "x",
+            label: "",
+            macros: null,
+            source: "manual",
+            macroSource: "manual",
+            amountG: null,
+            foodId: null,
+            isDemo: false,
+          },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    enqueueMock.mockClear();
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [{ kind: "meal-delete", mealId: "m-del" }],
+      { userId: UID, clientTs: TS1 },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("nutrition_meals");
+    expect(input.op).toBe("delete");
+    expect(input.row).toMatchObject({ id: "m-del", user_id: UID });
+  });
+
+  it("enqueues nutrition_pantries insert on pantry-upsert", async () => {
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "pantry-upsert",
+          pantry: { id: "p1", name: "Дім", text: "", items: [] },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    const calls = (
+      enqueueMock.mock.calls as [unknown, { table: string; op: string }][]
+    ).filter(([, i]) => i.table === "nutrition_pantries");
+    expect(calls).toHaveLength(1);
+    const [, input] = calls[0]!;
+    expect(input.op).toBe("insert");
+  });
+
+  it("enqueues nutrition_pantry_items insert for each item in pantry-upsert", async () => {
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "pantry-upsert",
+          pantry: {
+            id: "p2",
+            name: "Офіс",
+            text: "",
+            items: [
+              { id: "it1", name: "молоко", qty: 1, unit: "л", notes: null },
+              { id: "it2", name: "хліб", qty: 2, unit: "шт", notes: null },
+            ],
+          },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    const itemCalls = (
+      enqueueMock.mock.calls as [unknown, { table: string }][]
+    ).filter(([, i]) => i.table === "nutrition_pantry_items");
+    expect(itemCalls).toHaveLength(2);
+  });
+
+  it("enqueues nutrition_pantries delete and cascades item deletes on pantry-delete", async () => {
+    // Seed a pantry with items first
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "pantry-upsert",
+          pantry: {
+            id: "p-del",
+            name: "Видалити",
+            text: "",
+            items: [
+              { id: "it-del-1", name: "a", qty: null, unit: null, notes: null },
+            ],
+          },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    enqueueMock.mockClear();
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [{ kind: "pantry-delete", pantryId: "p-del" }],
+      { userId: UID, clientTs: TS1 },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    const pantryCall = (
+      enqueueMock.mock.calls as [unknown, { table: string; op: string }][]
+    ).find(([, i]) => i.table === "nutrition_pantries");
+    expect(pantryCall).toBeDefined();
+    expect(pantryCall![1].op).toBe("delete");
+    const itemCall = (
+      enqueueMock.mock.calls as [unknown, { table: string; op: string }][]
+    ).find(([, i]) => i.table === "nutrition_pantry_items");
+    expect(itemCall).toBeDefined();
+    expect(itemCall![1].op).toBe("delete");
+  });
+
+  it("enqueues nutrition_prefs insert on prefs-upsert", async () => {
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "prefs-upsert",
+          prefs: { prefsJson: '{"goal":"cut"}', activePantryId: null },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("nutrition_prefs");
+    expect(input.op).toBe("insert");
+    expect(input.row).toMatchObject({
+      user_id: UID,
+      prefs_json: '{"goal":"cut"}',
+    });
+  });
+
+  it("enqueues nutrition_recipes insert on recipe-upsert", async () => {
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "recipe-upsert",
+          recipe: { id: "r1", title: "Омлет", dataJson: '{"steps":[]}' },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("nutrition_recipes");
+    expect(input.op).toBe("insert");
+    expect(input.row).toMatchObject({ id: "r1", user_id: UID, name: "Омлет" });
+  });
+
+  it("enqueues nutrition_recipes delete on recipe-delete", async () => {
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "recipe-upsert",
+          recipe: { id: "r-del", title: "x", dataJson: "{}" },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    enqueueMock.mockClear();
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [{ kind: "recipe-delete", recipeId: "r-del" }],
+      { userId: UID, clientTs: TS1 },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("nutrition_recipes");
+    expect(input.op).toBe("delete");
+    expect(input.row).toMatchObject({ id: "r-del", user_id: UID });
+  });
+
+  it("does NOT enqueue for water-log-set (not in registry)", async () => {
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [{ kind: "water-log-set", dateKey: "2026-07-01", volumeMl: 500 }],
+      { userId: UID, clientTs: TS1 },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).not.toHaveBeenCalled();
+  });
+
+  it("does NOT reject dualWrite when enqueueOutboxUpsert throws (fire-and-forget)", async () => {
+    enqueueMock.mockRejectedValue(new Error("disk full"));
+    const result = await applyNutritionDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "prefs-upsert",
+          prefs: { prefsJson: "{}", activePantryId: null },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    expect(result.applied).toBe(1);
+    expect(result.errored).toBe(0);
   });
 });
