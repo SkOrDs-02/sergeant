@@ -47,6 +47,13 @@ export { messages, type MessageCatalog } from "./uk";
 export { messagesEn } from "./en";
 
 /**
+ * Reverse-trial day-7 paywall A/B copy (CMP-70 / CMP-72). Окремий `as const`
+ * блок, не частина `MessageCatalog` (містить `features: string[]`). Див.
+ * `uk.ts` блок-коментар.
+ */
+export { paywallTrialDay7Copy } from "./uk";
+
+/**
  * Resolve full message catalog for a given locale.
  *
  * - `lang='uk'` (default): returns canonical `uk` без копіювання.

@@ -88,6 +88,59 @@ describe("PaywallModal", () => {
     );
   });
 
+  it("fires `paywall_viewed` with { surface, variant } for trial_day7 A/B surfaces", () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <PaywallModal
+          open={false}
+          onClose={() => {}}
+          surface="trial_day7"
+          variant="B"
+          title="Trial завершується"
+          description="…"
+        />
+      </MemoryRouter>,
+    );
+    expect(trackEventMock).not.toHaveBeenCalled();
+
+    rerender(
+      <MemoryRouter>
+        <PaywallModal
+          open={true}
+          onClose={() => {}}
+          surface="trial_day7"
+          variant="B"
+          title="Trial завершується"
+          description="…"
+        />
+      </MemoryRouter>,
+    );
+    expect(trackEventMock).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.PAYWALL_VIEWED,
+      {
+        surface: "trial_day7",
+        variant: "B",
+      },
+    );
+  });
+
+  it("omits the variant key from the payload when no variant is provided", () => {
+    render(
+      <MemoryRouter>
+        <PaywallModal
+          open={true}
+          onClose={() => {}}
+          surface="ai_chat_limit"
+          title="AI"
+          description="."
+        />
+      </MemoryRouter>,
+    );
+    const payload = trackEventMock.mock.calls[0]?.[1];
+    expect(payload).toEqual({ surface: "ai_chat_limit" });
+    expect(payload).not.toHaveProperty("variant");
+  });
+
   it("renders the headline + description and a primary Pro CTA when open", () => {
     renderModal(true);
     expect(screen.getByText("AI-чат на ліміті")).toBeTruthy();

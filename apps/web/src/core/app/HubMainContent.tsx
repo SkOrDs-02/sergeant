@@ -18,6 +18,7 @@ import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { IOSInstallBanner } from "./IOSInstallBanner";
 import { TrialBanner } from "../billing/TrialBanner";
+import { TrialDay7Paywall } from "../billing/TrialDay7Paywall";
 
 /**
  * Mounts only after the parent Suspense boundary resolves. Inside a
@@ -165,6 +166,7 @@ export const HubMainContent = memo(function HubMainContent({
   return (
     <>
       {!inFtuxSession && <TrialBanner />}
+      {!inFtuxSession && <TrialDay7Paywall />}
 
       {showIos && <IOSInstallBanner onDismiss={onDismissIos} />}
 

@@ -889,3 +889,55 @@ export const messages = {
 export interface MessageCatalog {
   readonly [key: string]: string | MessageCatalog;
 }
+
+/**
+ * Reverse-trial day-7 paywall A/B copy (growth-experiment G_next-1, CMP-70 /
+ * Eng-wiring CMP-72).
+ *
+ * Окремий `as const`-експорт, а не частина `messages`, бо `MessageCatalog`
+ * рекурсивно дозволяє лише `string | MessageCatalog` (без масивів) — а
+ * фіч-лист paywall-у природньо є `string[]`. Тримати тут, у каталозі, щоб:
+ *   1. Усі UA-strings жили в одному місці (Hard Rule i18n — жодного кириличного
+ *      JSX-літералу; `eslint sergeant-design/no-cyrillic-jsx-literal` ловить
+ *      регресії).
+ *   2. Майбутня EN-адаптація (якщо експеримент живе після v1) додається окремим
+ *      sibling-експортом, не чіпаючи `MessageCatalog` shallow-merge контракт.
+ *
+ * Копі — style-guide.uk-компліант (звертання «ти», заголовки без крапки, CTA —
+ * наказова форма 2-ї однини). Соціальний proof (variant B) — чесний, на
+ * стабільних продуктових фактах (offline / on-device / made-in-UA), без
+ * fabricated чисел (див. CMP-70 §6 — числовий social proof окремим follow-up
+ * після 28 днів прод-даних).
+ *
+ * Source of truth for copy: `docs/01-product/launch/business/growth-experiments/01-paywall-day7-benefit-socialproof.md` §3.
+ */
+export const paywallTrialDay7Copy = {
+  variantA: {
+    title: "Trial завершується",
+    description:
+      "Сьогодні завершується 7 днів Pro. Оформи підписку, щоб не втратити доступ до AI-чату й автосинку Mono.",
+    features: [
+      "Безлімітний AI-чат + щоденні брифи",
+      "Авто-синхронізація Mono + CloudSync між пристроями",
+      "Експорт CSV/PDF + крос-модульні звіти",
+      "₴199/міс або ₴1 490/рік — без прив'язки картки зараз",
+    ],
+    ctaLabel: "Перейти на Pro",
+    dismissLabel: "Не зараз",
+  },
+  variantB: {
+    title: "Збережи свій ритм",
+    description:
+      "За 7 днів ти вже завів бюджет, підключив Mono і побудував стрік. Pro залишає цей ритм із тобою: AI без ліміту, авто-синх і звіти, що бачать усю картину твого дня.",
+    features: [
+      "AI без ліміту щодня — поради, що знають твій тиждень, а не загальний шаблон",
+      "Mono авто-синх — транзакції падають самі, рукою нічого не тягти",
+      "Звіти PDF/CSV — твої цифри в одному місці, навіть без інтернету",
+      "CloudSync — продовжуй з телефону чи ноута, де зручно",
+    ],
+    socialProof:
+      "Працює офлайн. Дані — на твоєму пристрої. Зроблений в Україні медиком, що сам тримає ритм у полі.",
+    ctaLabel: "Зберегти Pro",
+    dismissLabel: "Не зараз",
+  },
+} as const;

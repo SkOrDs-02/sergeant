@@ -24,7 +24,18 @@ export type PaywallSurface =
   | "csv_export"
   | "unlimited_ai_photo"
   | "themes"
+  | "trial_day7"
   | "other";
+
+/**
+ * A/B-variant label для reverse-trial day-7 paywall (growth-experiment
+ * G_next-1, CMP-70 / CMP-72). Приєднується до PostHog `paywall_viewed.variant`
+ * щоб funnel `paywall_viewed → checkout_opened → subscription_started` міг
+ * зводитись per variant. Для не-експериментальних surface — `undefined`
+ * (payload лишається `{ surface }`, без `variant`-ключа, щоб не плодити
+ * `variant: undefined` у PostHog-ів і не ламати існуючі assertion-тести).
+ */
+export type PaywallVariant = "A" | "B";
 
 export interface PaywallModalProps {
   open: boolean;
@@ -34,12 +45,19 @@ export interface PaywallModalProps {
    * funnel can pivot per locked feature (AI chat limit vs CloudSync vs …).
    */
   surface: PaywallSurface;
+  /** A/B-variant attribution (тільки `trial_day7` наразі). */
+  variant?: PaywallVariant;
   /** Headline shown in the modal header. */
   title: string;
   /** Body paragraph explaining the locked feature. */
   description: string;
   /** Visible features list (3–5 bullets). */
   features?: ReadonlyArray<string>;
+  /**
+   * Social-proof рядок під features (variant B day-7 paywall). Рендериться
+   * як приглушений підпис; для variant A / інших surface — не передається.
+   */
+  socialProof?: string;
   /** Override the primary CTA label. Defaults to "Перейти до Pro". */
   ctaLabel?: string;
   /** Override the secondary CTA label. Defaults to "Не зараз". */
@@ -57,9 +75,11 @@ export function PaywallModal({
   open,
   onClose,
   surface,
+  variant,
   title,
   description,
   features = DEFAULT_FEATURES,
+  socialProof,
   ctaLabel = "Перейти до Pro",
   dismissLabel = "Не зараз",
 }: PaywallModalProps) {
@@ -71,10 +91,16 @@ export function PaywallModal({
     // modal stays open must NOT re-fire — that would inflate the
     // `paywall_viewed → checkout_opened → subscription_started` funnel.
     if (open && !prevOpen.current) {
-      trackEvent(ANALYTICS_EVENTS.PAYWALL_VIEWED, { surface });
+      // `variant` only for A/B surfaces (trial_day7). For non-experiment
+      // surfaces omit the key entirely so PostHog payload stays `{ surface }`
+      // — backward compatible with existing funnel + assertion tests.
+      trackEvent(
+        ANALYTICS_EVENTS.PAYWALL_VIEWED,
+        variant ? { surface, variant } : { surface },
+      );
     }
     prevOpen.current = open;
-  }, [open, surface]);
+  }, [open, surface, variant]);
 
   function handleCta() {
     navigate(`/pricing?source=paywall`);
@@ -116,6 +142,9 @@ export function PaywallModal({
           </li>
         ))}
       </ul>
+      {socialProof ? (
+        <p className="mt-3 text-xs opacity-70 text-text">{socialProof}</p>
+      ) : null}
     </Modal>
   );
 }
