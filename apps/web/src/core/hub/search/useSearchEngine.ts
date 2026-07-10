@@ -1,4 +1,11 @@
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
@@ -66,6 +73,8 @@ export function useSearchEngine({
   const listRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const inlineAi = useInlineAiRail();
+  const inlineAsk = inlineAi.ask;
+  const inlineReset = inlineAi.reset;
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -118,88 +127,94 @@ export function useSearchEngine({
     return order.map((m) => results.filter((r) => r.module === m)).flat();
   }, [results]);
 
-  const commitQuery = (q: string) => {
+  const commitQuery = useCallback((q: string) => {
     if (!q.trim()) return;
     const next = pushRecentQuery(q);
     setRecents(next);
-  };
+  }, []);
 
-  const escalateToChat = (prompt: string) => {
-    inlineAi.reset();
-    onClose();
-    // Sergeant v2 Phase 7 D5 — open the chat overlay with the prompt
-    // prefilled. `autoSend=false` keeps the user in control: chat
-    // opens with the prompt ready to edit before sending. Matches
-    // `AssistantCataloguePage`'s "Try in chat" CTA shape; the bus
-    // handler in `useAppEffects` routes to the bottom-sheet overlay,
-    // and the full-screen `/chat?q=…` URL stays a valid deep-link via
-    // `HubChatPage`.
-    emitHubBus("openChat", { message: prompt, autoSend: false });
-  };
+  const escalateToChat = useCallback(
+    (prompt: string) => {
+      inlineReset();
+      onClose();
+      // Sergeant v2 Phase 7 D5 — open the chat overlay with the prompt
+      // prefilled. `autoSend=false` keeps the user in control: chat
+      // opens with the prompt ready to edit before sending. Matches
+      // `AssistantCataloguePage`'s "Try in chat" CTA shape; the bus
+      // handler in `useAppEffects` routes to the bottom-sheet overlay,
+      // and the full-screen `/chat?q=…` URL stays a valid deep-link via
+      // `HubChatPage`.
+      emitHubBus("openChat", { message: prompt, autoSend: false });
+    },
+    [inlineReset, onClose],
+  );
 
-  const openHit = (hit: Hit) => {
-    hapticTap();
-    commitQuery(query);
-    // AI handoff is a hot-path command — keep the launcher mounted and
-    // resolve the question inline rather than swapping the whole screen
-    // for the fullscreen chat overlay. Multi-turn / tool-call execution
-    // still escalates to the chat surface via the rail's own CTA.
-    if (hit.target.kind === "ai-handoff") {
-      void inlineAi.ask(hit.target.query);
-      return;
-    }
-    onClose();
-    // `target` carries the navigation intent so we don't have to re-derive
-    // it from `hit.module` (which is the visual grouping, not the route):
-    //   - module hits  → existing onOpenModule plumbing
-    //   - settings hit → URL-addressable settings tab (Settings page reads
-    //                    `?tab=settings` via useHubUIState); section deep-
-    //                    linking can be wired in a follow-up once the
-    //                    settings page exposes a section anchor API
-    //   - assistant hit→ if the hit carries a capability, open the chat
-    //                    with its first example prefilled (the chat input
-    //                    receives focus so the user can edit before
-    //                    sending). Without a capability we fall back to
-    //                    the full /assistant catalogue route.
-    switch (hit.target.kind) {
-      case "module":
-        onOpenModule(hit.target.moduleId);
-        break;
-      case "settings": {
-        const url = new URL(window.location.href);
-        url.searchParams.set("tab", "settings");
-        navigate({
-          pathname: url.pathname || "/",
-          search: url.search,
-        });
-        break;
+  const openHit = useCallback(
+    (hit: Hit) => {
+      hapticTap();
+      commitQuery(query);
+      // AI handoff is a hot-path command — keep the launcher mounted and
+      // resolve the question inline rather than swapping the whole screen
+      // for the fullscreen chat overlay. Multi-turn / tool-call execution
+      // still escalates to the chat surface via the rail's own CTA.
+      if (hit.target.kind === "ai-handoff") {
+        void inlineAsk(hit.target.query);
+        return;
       }
-      case "assistant": {
-        const cap = hit.target.capability;
-        const example = cap?.examples?.[0];
-        if (example) {
-          // Phase 7 D5 — open overlay with the example prefilled.
-          // Mirrors `AssistantCataloguePage`'s "Try in chat" CTA which
-          // also routes through the hub bus.
-          emitHubBus("openChat", { message: example, autoSend: false });
-        } else {
-          navigate("/assistant");
+      onClose();
+      // `target` carries the navigation intent so we don't have to re-derive
+      // it from `hit.module` (which is the visual grouping, not the route):
+      //   - module hits  → existing onOpenModule plumbing
+      //   - settings hit → URL-addressable settings tab (Settings page reads
+      //                    `?tab=settings` via useHubUIState); section deep-
+      //                    linking can be wired in a follow-up once the
+      //                    settings page exposes a section anchor API
+      //   - assistant hit→ if the hit carries a capability, open the chat
+      //                    with its first example prefilled (the chat input
+      //                    receives focus so the user can edit before
+      //                    sending). Without a capability we fall back to
+      //                    the full /assistant catalogue route.
+      switch (hit.target.kind) {
+        case "module":
+          onOpenModule(hit.target.moduleId);
+          break;
+        case "settings": {
+          const url = new URL(window.location.href);
+          url.searchParams.set("tab", "settings");
+          navigate({
+            pathname: url.pathname || "/",
+            search: url.search,
+          });
+          break;
         }
-        break;
+        case "assistant": {
+          const cap = hit.target.capability;
+          const example = cap?.examples?.[0];
+          if (example) {
+            // Phase 7 D5 — open overlay with the example prefilled.
+            // Mirrors `AssistantCataloguePage`'s "Try in chat" CTA which
+            // also routes through the hub bus.
+            emitHubBus("openChat", { message: example, autoSend: false });
+          } else {
+            navigate("/assistant");
+          }
+          break;
+        }
+        case "action": {
+          // Cross-module quick-add launcher — dispatches the same PWA-intent
+          // the bento NextCard / FAB use. The destination module reads the
+          // intent on mount via `useHubModuleAction` and opens its own
+          // create-modal.
+          openHubModuleWithAction(hit.target.moduleId, hit.target.action);
+          break;
+        }
+        // Note: `ai-handoff` hits never reach this switch — they're
+        // intercepted above (before `onClose`) and resolved inline by
+        // the rail. Adding a case here would be unreachable code.
       }
-      case "action": {
-        // Cross-module quick-add launcher — dispatches the same PWA-intent
-        // the bento NextCard / FAB use. The destination module reads the
-        // intent on mount via `useHubModuleAction` and opens its own
-        // create-modal.
-        openHubModuleWithAction(hit.target.moduleId, hit.target.action);
-        break;
-      }
-      // Note: `ai-handoff` hits never reach this switch — they're
-      // intercepted above (before `onClose`) and resolved inline by
-      // the rail. Adding a case here would be unreachable code.
-    }
-  };
+    },
+    [commitQuery, inlineAsk, navigate, onClose, onOpenModule, query],
+  );
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -230,9 +245,7 @@ export function useSearchEngine({
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-    // `openHit`/`commitQuery` are stable callbacks; `setActiveIdx` is a setter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flat, activeIdx, onClose, query]);
+  }, [activeIdx, commitQuery, flat, onClose, openHit, query]);
 
   const pickRecent = (q: string) => {
     setQuery(q);
