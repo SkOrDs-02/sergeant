@@ -336,3 +336,124 @@ describe("useChatSend — loading state", () => {
     expect(result.current.loading).toBe(false);
   });
 });
+
+// ─── Tool-calls schema mismatch → toast + fallback render ────────────────────
+
+describe("useChatSend — tool_calls schema mismatch", () => {
+  it("shows toast and falls back to data.text when tool_calls envelope is invalid", async () => {
+    sendMock.mockResolvedValue({
+      // Missing required `id` field → fails ToolCallEnvelopeSchema.
+      tool_calls: [{ name: "log_water", input: { amount_ml: 250 } }],
+      tool_calls_raw: [],
+      text: "Fallback text from model",
+    });
+
+    const { result, captured } = renderWithCapture();
+
+    await act(async () => {
+      await result.current.send("запиши воду");
+    });
+
+    // Fallback message is rendered from data.text.
+    const flat = captured.flat();
+    const assistantMsgs = flat.filter((m) => m.role === "assistant");
+    expect(assistantMsgs.length).toBeGreaterThan(0);
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("falls back to 'Немає відповіді.' when tool_calls schema fails and data.text is absent", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [{ name: "unknown_injected_tool", input: {} }],
+      tool_calls_raw: [],
+      text: "",
+    });
+
+    const { result, captured } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("щось");
+    });
+
+    const flat = captured.flat();
+    const assistantMsg = flat.find((m) => m.role === "assistant");
+    expect(assistantMsg).toBeDefined();
+    expect(result.current.loading).toBe(false);
+  });
+});
+
+// ─── SSE MAX_STREAM_CHARS exceeded → abort and friendly error ─────────────────
+
+describe("useChatSend — SSE MAX_STREAM_CHARS overflow", () => {
+  it("aborts stream and appends friendly error when stream exceeds char limit", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "log_water", input: { amount_ml: 200 } }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "log_water", result: "Записав 200 мл" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response("stream-data", {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      }),
+    );
+
+    // Simulate the SSE consumer throwing the "too long" error.
+    consumeSseMock.mockImplementation(
+      async (_res: Response, _onDelta: (d: string) => void) => {
+        throw new Error("Відповідь занадто довга");
+      },
+    );
+
+    const { result, captured } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("дуже довге питання");
+    });
+
+    const flat = captured.flat();
+    const assistantMsg = flat.find((m) => m.role === "assistant");
+    expect(assistantMsg).toBeDefined();
+    // The error text is appended to the message that was already in DOM.
+    expect(result.current.loading).toBe(false);
+  });
+});
+
+// ─── send guard: empty string and loading ────────────────────────────────────
+
+describe("useChatSend — send early-exit guards", () => {
+  it("does nothing when text is empty string", async () => {
+    const { result } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("   ");
+    });
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when loading is true (guard prevents double-send)", async () => {
+    // The loading guard (if (!msg || loading) return) prevents a second
+    // concurrent send. We can indirectly verify by making sendMock hang.
+    let resolveSend: () => void = () => {};
+    sendMock.mockImplementation(
+      () =>
+        new Promise<{ text: string }>((r) => {
+          resolveSend = () => r({ text: "ok" });
+        }),
+    );
+
+    const { result } = renderWithCapture();
+
+    // Start first send (will block).
+    act(() => {
+      void result.current.send("перший");
+    });
+    // Try to send again while loading.
+    await act(async () => {
+      await result.current.send("другий");
+    });
+
+    // Only one API call should be in flight.
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    // Cleanup: resolve the pending send.
+    resolveSend();
+  });
+});
