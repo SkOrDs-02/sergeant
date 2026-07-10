@@ -15,7 +15,7 @@
 | **Клієнтський SQLite** (web OPFS / mobile expo-sqlite) | ✅ SoT для finyk / fizruk / nutrition / routine                                 |
 | **`sqliteWriter/`** (колишній dualWrite)               | ✅ Усі production-мутації модульних даних                                       |
 | **Server sync v2 API**                                 | ✅ `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`, `GET /api/v2/sync/stream` |
-| **`OP_LOG_TABLE_REGISTRY`**                            | ✅ 25 таблиць з apply-функціями на сервері                                      |
+| **`OP_LOG_TABLE_REGISTRY`**                            | ✅ 27 таблиць з apply-функціями на сервері                                      |
 | **Push scheduler**                                     | ✅ Boot на web (`main.tsx`) і mobile (`_layout.tsx`)                            |
 | **CloudSync v1**                                       | ✅ Видалено (`module_data` dropped, `/api/sync/*` → 410)                        |
 
@@ -86,7 +86,7 @@
                               │
 ┌──────────── SERVER ────────────────────────────────────────────────┐
 │  syncV2Push / syncV2Pull / syncV2Stream ✅                         │
-│  OP_LOG_TABLE_REGISTRY — 25 tables (syncV2.ts:112–140)              │
+│  OP_LOG_TABLE_REGISTRY — 27 tables (syncV2.ts:112–140)              │
 │  SSE: in-process EventEmitter (single Railway instance)              │
 │  sync_op_log retention: ADR-0065 Proposed                          │
 └────────────────────────────────────────────────────────────────────┘
@@ -114,7 +114,7 @@
 | ------------------------------------------- | -------------------------- | ------------------------------ |
 | Client pull consumer (web/mobile)           | 0                          | **2** (web + mobile)           |
 | `enqueueOutboxUpsert` production call sites | 2 (web routine completion) | **≥1 per synced table class**  |
-| Tables in registry with client enqueue      | ~2 ops (completions only)  | **25** (або documented subset) |
+| Tables in registry with client enqueue      | ~2 ops (completions only)  | **27** (або documented subset) |
 | E2E multi-device habit round-trip           | ❌                         | ✅                             |
 | Outbox rows pushed per user session (smoke) | ~0                         | **>0** after mutation          |
 | Stale audit doc §4.1                        | LS SoT (wrong)             | SQLite SoT + sync gap noted    |
@@ -148,12 +148,16 @@ pnpm check
 
 ## 7. Фазовий план
 
-### Фаза 0 — розвідка та inventory `(0.5 дня)`
+> **Playbook (дизайн роботи, агенти, гейти, E2E):** [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md)
 
-- [ ] Inventory: grep `enqueueOutboxUpsert` / `sync_op_outbox` INSERT across apps.
-- [ ] Inventory: diff `OP_LOG_TABLE_REGISTRY` keys vs `packages/db-schema/src/sqlite/migrations` module tables.
-- [ ] Confirm `sync_op_cursor` schema + helpers (`packages/db-schema/src/sqlite/routine.ts` or dedicated).
-- [ ] Document echo-suppression: skip pull ops where `origin_device_id === localDeviceId`.
+### Фаза 0 — розвідка та inventory ✅ (baseline 2026-07-10)
+
+- [x] Inventory: grep `enqueueOutboxUpsert` — **2** production call sites (web routine completion only).
+- [x] Inventory: registry **27** ∩ SQLite module **45** → **27** synced-ready; **18** SQLite-only (Phase 2).
+- [x] Confirm `sync_op_cursor` schema (`001_routine_spike.sql`, `routine.ts`).
+- [x] Echo-suppression: `originDeviceId` wired; server filter `IS DISTINCT FROM`; client skip defence-in-depth.
+
+**Операційна інструкція:** [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md) §3 — метрики, перепровірки, розподіл агентів.
 
 ### Фаза 1 — Sync MVP `(enqueue + pull, registry tables only)`
 
@@ -221,6 +225,7 @@ pnpm check
 
 ## 10. Пов'язане
 
+- [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md) — **операційна інструкція** (фази, агенти, метрики, E2E)
 - [`dualwrite-teardown.md`](./dualwrite-teardown.md) — SQLite SoT на клієнті (виконано)
 - [`storage-roadmap.md`](./storage-roadmap.md) — historical 13 stages
 - [`storage-roadmap/01-overview.md`](./storage-roadmap/01-overview.md) — цільова архітектура sync
