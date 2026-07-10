@@ -125,13 +125,19 @@ export default defineConfig({
         //   Ratchet: lines → 87 (coverage-thresholds.json), branches → 73,
         //   fns → 79, statements → 85. ~2–2.8pp headroom for throttled CI.
         //
-        // Floors set ~2–2.8pp below current actuals. Raise per sprint
+        // - 2026-07-10 (web coverage wave 5): branch-focused push on finyk,
+        //   core (dailySeries/AuthContext/useChatSend), fizruk orchestrator.
+        //   Measured (CI=true, maxWorkers=1, 700 files / 7115 tests):
+        //     lines 89.92 / branches 75.34 / fns 81.64 / statements 87.47.
+        //   Ratchet: lines → 88, branches → 74. ~1.3–2pp headroom.
+        //
+        // Floors set ~1.3–2.8pp below current actuals. Raise per sprint
         // as more component shells land (next targets: FinykApp,
         // NutritionApp, useRoutineAppState, CommandPaletteUI,
         // HabitDetailSheet — the heavy orchestration shells still at 0%).
         // `lines` приходить з кореневого coverage-thresholds.json.
         lines: sharedThresholds["apps/web"],
-        branches: 73,
+        branches: 74,
         functions: 79,
         statements: 85,
       },
