@@ -163,11 +163,11 @@ pnpm check
 
 **Scope:** таблиці вже в `OP_LOG_TABLE_REGISTRY`; **не** розширюємо registry.
 
-- [ ] **1a. Client pull loop (web)** — `core/syncEngine/syncEngineReader.ts` (new): fetch pull → apply to SQLite → bump cursor → notify overlay ticks.
-- [ ] **1b. Outbox enqueue (web)** — hook `enqueueOutboxUpsert` у shared sqliteWriter adapter path (or per-module adapter post-apply) для finyk/fizruk/nutrition/routine registry tables.
-- [ ] **1c. Mobile parity** — pull loop + routine completion outbox (parity з web adapter.ts:357,391).
-- [ ] **1d. Integration test** — Testcontainers або vitest integration: push from A, pull on B, assert row.
-- [ ] **1e. Scheduler wiring** — pull on boot + after successful push + periodic/backoff.
+- [x] **1a. Client pull loop (web)** — `core/syncEngine/syncEngineReader.ts`: fetch pull → apply to SQLite → bump cursor → notify overlay ticks. (PR-1 merged)
+- [x] **1b. Outbox enqueue (web)** — `enqueueOutboxUpsert` у sqliteWriter adapters для finyk/fizruk/nutrition/routine registry tables. (PR-2, PR-3 merged)
+- [ ] **1c. Mobile parity** — pull loop + outbox enqueue parity з web. (PR-4 [#189](https://github.com/SkOrDs-02/sergeant/pull/189) — pending merge)
+- [x] **1d. Integration test** — client round-trip vitest (`syncRoundTrip.test.ts`) + server `syncV2.integration.test.ts`. (PR-5)
+- [x] **1e. Scheduler wiring** — pull on boot + after successful push + periodic/backoff. (PR-1 merged)
 
 **Гейт:** habit/budget/manual-expense round-trip web↔web (two profiles) OR web→mobile.
 
