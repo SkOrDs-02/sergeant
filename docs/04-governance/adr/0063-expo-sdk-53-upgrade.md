@@ -1,6 +1,6 @@
 # ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-10 by @github-actions[bot]. **Next review:** 2026-10-08.
 > **Status:** Accepted
 
 - **Status:** Accepted <!-- Proposed | Accepted | Deprecated | Superseded by ADR-NNNN -->
@@ -123,3 +123,15 @@ A pre-flight ADR de-risks a single-maintainer mobile bump by converting an explo
 - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md) — source plan + acceptance criteria
 - [Expo SDK release roadmap](https://docs.expo.dev/versions/latest/)
 - [React Native release notes](https://github.com/facebook/react-native/releases)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                       | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------- | ---------- |
+| [#221](https://github.com/Skords-01/Sergeant/pull/221) | docs(docs): sync docs/04-governance with code and ADR index | 2026-07-10 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
