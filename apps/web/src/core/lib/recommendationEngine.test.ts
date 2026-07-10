@@ -18,6 +18,20 @@ import {
 } from "@nutrition/lib/sqliteReader";
 import { generateRecommendations } from "./recommendationEngine";
 
+// ── Mirror mock ──────────────────────────────────────────────────────────────
+// Dualwrite-teardown Phase 3: bank transactions are now sourced from the Mono
+// mirror reader. Tests provide transactions via this mock; `setLS` routes
+// "finyk_tx_cache" writes here instead of localStorage.
+const mockMirrorTxsRec: Array<Record<string, unknown>> = [];
+vi.mock("../../modules/finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: () => ({
+    transactions: mockMirrorTxsRec,
+    accounts: [],
+    refreshedAt: mockMirrorTxsRec.length > 0 ? new Date().toISOString() : null,
+  }),
+}));
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -31,6 +45,16 @@ let nutritionSeed: { log?: unknown; prefs?: unknown } = {};
 
 function setLS(key: string, value: unknown) {
   switch (key) {
+    case "finyk_tx_cache": {
+      // Route to mirror mock — supports both { txs: [...] } and bare-array shapes
+      // for backward-compat with test fixtures written before Phase 3.
+      mockMirrorTxsRec.length = 0;
+      const txs = Array.isArray(value)
+        ? value
+        : ((value as { txs?: unknown[] } | null)?.txs ?? []);
+      mockMirrorTxsRec.push(...(txs as Array<Record<string, unknown>>));
+      return;
+    }
     case "hub_routine_v1": {
       const v = (value ?? {}) as {
         habits?: Array<{ id: string }>;

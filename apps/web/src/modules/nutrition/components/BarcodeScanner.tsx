@@ -37,9 +37,11 @@ function NativeBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
   const onDetectedRef = useRef(onDetected);
   const onCloseRef = useRef(onClose);
   const toastRef = useRef(toast);
-  onDetectedRef.current = onDetected;
-  onCloseRef.current = onClose;
-  toastRef.current = toast;
+  useEffect(() => {
+    onDetectedRef.current = onDetected;
+    onCloseRef.current = onClose;
+    toastRef.current = toast;
+  }, [onDetected, onClose, toast]);
 
   useEffect(() => {
     let cancelled = false;

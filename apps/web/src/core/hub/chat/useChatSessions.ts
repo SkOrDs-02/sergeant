@@ -50,39 +50,29 @@ export interface UseChatSessionsResult {
  *
  * On first render we run the legacy migration (`hub_chat_history` →
  * `hub_chat_sessions_v1`) inside `loadSessions` so existing users keep
- * their last 30 messages as session #1. The three useState
- * initializers all read from the same eagerly computed snapshot —
- * calling `ensureActiveSession` twice would otherwise mint two
- * independent fresh sessions when storage is empty.
+ * their last 30 messages as session #1. The boot snapshot is computed
+ * once via `useState` lazy init so all three state slices share the
+ * same `ensureActiveSession` result — calling it twice would otherwise
+ * mint two independent fresh sessions when storage is empty.
  */
 export function useChatSessions(): UseChatSessionsResult {
   const toast = useToast();
 
-  const initialSessionsRef = useRef<{
-    sessions: HubChatSession[];
-    activeId: string;
-  } | null>(null);
-  if (initialSessionsRef.current === null) {
-    initialSessionsRef.current = ensureActiveSession(
-      loadSessions(),
-      loadActiveSessionId(),
-    );
-  }
+  const [boot] = useState(() =>
+    ensureActiveSession(loadSessions(), loadActiveSessionId()),
+  );
 
   const [sessions, setSessions] = useState<HubChatSession[]>(
-    () => initialSessionsRef.current!.sessions,
+    () => boot.sessions,
   );
-  const [activeId, setActiveId] = useState<string>(
-    () => initialSessionsRef.current!.activeId,
-  );
+  const [activeId, setActiveId] = useState<string>(() => boot.activeId);
   const [historyOpen, setHistoryOpen] = useState(false);
   // Header "Деталі" popover — controlled so item actions (open
   // history drawer, minimize) can dismiss it after the click.
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const initial = initialSessionsRef.current!;
-    const found = initial.sessions.find((s) => s.id === initial.activeId);
+    const found = boot.sessions.find((s) => s.id === boot.activeId);
     return normalizeStoredMessages(found?.messages ?? null);
   });
 

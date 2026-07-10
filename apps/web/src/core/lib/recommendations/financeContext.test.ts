@@ -5,8 +5,31 @@ import { buildFinanceContext } from "./financeContext";
 // Fixed clock so monthStart is deterministic across runs.
 const FIXED_NOW = new Date("2026-04-15T10:30:00.000Z");
 
+// ── Mirror mock ──────────────────────────────────────────────────────────────
+// Dualwrite-teardown Phase 3: bank transactions are now sourced from the Mono
+// mirror reader instead of `finyk_tx_cache` LS. Tests provide transactions via
+// this mock rather than localStorage.
+
+const mockMirrorTransactions: Array<Record<string, unknown>> = [];
+vi.mock("../../../modules/finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: () => ({
+    transactions: mockMirrorTransactions,
+    accounts: [],
+    refreshedAt:
+      mockMirrorTransactions.length > 0 ? FIXED_NOW.toISOString() : null,
+  }),
+}));
+
+function setMirrorTxs(txs: Array<Record<string, unknown>>) {
+  mockMirrorTransactions.length = 0;
+  mockMirrorTransactions.push(...txs);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
 beforeEach(() => {
   localStorage.clear();
+  mockMirrorTransactions.length = 0;
   vi.useFakeTimers();
   vi.setSystemTime(FIXED_NOW);
 });
@@ -14,10 +37,11 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   localStorage.clear();
+  mockMirrorTransactions.length = 0;
 });
 
 describe("buildFinanceContext — defaults", () => {
-  it("returns sane empty defaults when no LS data is present", () => {
+  it("returns sane empty defaults when no data is present", () => {
     const ctx = buildFinanceContext();
     expect(ctx.now.toISOString()).toBe(FIXED_NOW.toISOString());
     // `monthStart` is the *local* first-of-month at 00:00 (see
@@ -51,23 +75,16 @@ describe("buildFinanceContext — defaults", () => {
   });
 });
 
-describe("buildFinanceContext — transactions cache shapes", () => {
-  it("supports the legacy { txs: […] } cache shape", () => {
+describe("buildFinanceContext — transactions from mirror cache", () => {
+  it("returns transactions from the mirror cache", () => {
     const tx = { id: "t1", amount: -1500, time: FIXED_NOW.getTime() };
-    localStorage.setItem("finyk_tx_cache", JSON.stringify({ txs: [tx] }));
+    setMirrorTxs([tx]);
     const ctx = buildFinanceContext();
     expect(ctx.transactions).toEqual([tx]);
   });
 
-  it("supports a bare-array cache shape", () => {
-    const tx = { id: "t1", amount: -1500, time: FIXED_NOW.getTime() };
-    localStorage.setItem("finyk_tx_cache", JSON.stringify([tx]));
-    const ctx = buildFinanceContext();
-    expect(ctx.transactions).toEqual([tx]);
-  });
-
-  it("falls back to empty array when cache is malformed JSON", () => {
-    localStorage.setItem("finyk_tx_cache", "{not-json");
+  it("returns empty array when mirror cache is empty", () => {
+    // no setMirrorTxs call — cache stays empty
     const ctx = buildFinanceContext();
     expect(ctx.transactions).toEqual([]);
   });
@@ -80,7 +97,7 @@ describe("buildFinanceContext — thisMonthTx filtering", () => {
       { id: "before", amount: -100, time: monthStartMs - 86_400_000 },
       { id: "in", amount: -200, time: monthStartMs + 86_400_000 },
     ];
-    localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
+    setMirrorTxs(txs);
     const ctx = buildFinanceContext();
     expect(ctx.thisMonthTx.map((t) => t.id)).toEqual(["in"]);
   });
@@ -90,7 +107,7 @@ describe("buildFinanceContext — thisMonthTx filtering", () => {
       { id: "visible", amount: -100, time: FIXED_NOW.getTime() },
       { id: "hidden", amount: -200, time: FIXED_NOW.getTime() },
     ];
-    localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
+    setMirrorTxs(txs);
     localStorage.setItem("finyk_hidden_txs", JSON.stringify(["hidden"]));
     const ctx = buildFinanceContext();
     expect(ctx.thisMonthTx.map((t) => t.id)).toEqual(["visible"]);
@@ -102,7 +119,7 @@ describe("buildFinanceContext — thisMonthTx filtering", () => {
       { id: "spend", amount: -100, time: FIXED_NOW.getTime() },
       { id: "transfer", amount: -1000, time: FIXED_NOW.getTime() },
     ];
-    localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
+    setMirrorTxs(txs);
     localStorage.setItem(
       "finyk_tx_cats",
       JSON.stringify({ transfer: "internal_transfer" }),
@@ -116,7 +133,7 @@ describe("buildFinanceContext — thisMonthTx filtering", () => {
     // FIXED_NOW = 2026-04-15 → seconds form below is well after monthStart.
     const seconds = Math.floor(FIXED_NOW.getTime() / 1000);
     const txs = [{ id: "in", amount: -100, time: seconds }];
-    localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
+    setMirrorTxs(txs);
     const ctx = buildFinanceContext();
     expect(ctx.thisMonthTx.map((t) => t.id)).toEqual(["in"]);
   });
@@ -129,7 +146,7 @@ describe("buildFinanceContext — categorySpend (legacy)", () => {
       { id: "t2", amount: -5000, time: FIXED_NOW.getTime() }, // 50 UAH
       { id: "income", amount: 30000, time: FIXED_NOW.getTime() }, // ignored (positive)
     ];
-    localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
+    setMirrorTxs(txs);
     localStorage.setItem(
       "finyk_tx_cats",
       JSON.stringify({ t1: "food", t2: "food" }),
@@ -140,14 +157,14 @@ describe("buildFinanceContext — categorySpend (legacy)", () => {
 
   it("falls back to category 'other' when no override exists", () => {
     const txs = [{ id: "t1", amount: -10000, time: FIXED_NOW.getTime() }];
-    localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
+    setMirrorTxs(txs);
     const ctx = buildFinanceContext();
     expect(ctx.categorySpend["other"]).toBe(100);
   });
 
   it("uses txSplits to distribute amounts across split categoryIds", () => {
     const txs = [{ id: "t1", amount: -20000, time: FIXED_NOW.getTime() }];
-    localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
+    setMirrorTxs(txs);
     localStorage.setItem(
       "finyk_tx_splits",
       JSON.stringify({
@@ -164,7 +181,7 @@ describe("buildFinanceContext — categorySpend (legacy)", () => {
 
   it("ignores split entries marked as internal_transfer", () => {
     const txs = [{ id: "t1", amount: -20000, time: FIXED_NOW.getTime() }];
-    localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
+    setMirrorTxs(txs);
     localStorage.setItem(
       "finyk_tx_splits",
       JSON.stringify({
@@ -221,7 +238,7 @@ describe("buildFinanceContext — canonical aggregations", () => {
         mcc: 5411,
       },
     ];
-    localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
+    setMirrorTxs(txs);
     const ctx = buildFinanceContext();
     // Both transactions categorize via MCC 5411 → "food"; counter should be 2.
     expect(ctx.canonicalTotalCount.get("food")).toBe(2);
@@ -236,7 +253,7 @@ describe("buildFinanceContext — canonical aggregations", () => {
         description: "Salary",
       },
     ];
-    localStorage.setItem("finyk_tx_cache", JSON.stringify(txs));
+    setMirrorTxs(txs);
     const ctx = buildFinanceContext();
     expect(ctx.canonicalTotalCount.size).toBe(0);
   });

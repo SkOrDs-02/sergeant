@@ -1,5 +1,17 @@
 /**
- * Агрегати як у `apps/web/src/core/insights/useWeeklyDigest.ts` — ті ж ключі MMKV.
+ * Агрегати як у `apps/web/src/core/insights/useWeeklyDigest.ts`.
+ *
+ * Migrated (dual-write teardown) from raw MMKV shard reads to SQLite
+ * warm-cache reads for all tombstoned keys:
+ *  - `finyk_tx_cache` (Mono transactions) → `getCachedFinykMonoMirrorState()`
+ *  - `finyk_tx_cats` / `finyk_hidden_txs` / `finyk_custom_cats_v1`
+ *    → `getCachedFinykSqliteState()`
+ *  - `finyk_monthly_plan` → `getCachedFinykSqliteState().monthlyPlan`
+ *    (MMKV fallback removed — SQLite is the canonical source)
+ *  - `fizruk_workouts_v1` → `getCachedFizrukSqliteState()`
+ *  - `nutrition_log_v1` / `nutrition_prefs_v1` → `getCachedNutritionSqliteState()`
+ *  - `hub_routine_v1` → `getCachedSqliteRoutineState()` +
+ *    `getCachedSqliteCompletions()`
  */
 import {
   MCC_CATEGORIES,
@@ -8,8 +20,14 @@ import {
 import type { MonthlyPlan } from "@sergeant/finyk-domain/domain";
 import type { WeeklyDigestPayload } from "@sergeant/api-client";
 
-import { safeReadLS } from "@/lib/storage";
 import { getCachedFinykSqliteState } from "@/modules/finyk/lib/sqliteReader";
+import { getCachedFinykMonoMirrorState } from "@/modules/finyk/lib/monoMirrorReader";
+import { getCachedFizrukSqliteState } from "@/modules/fizruk/lib/sqliteReader";
+import { getCachedNutritionSqliteState } from "@/modules/nutrition/lib/sqliteReader";
+import {
+  getCachedSqliteCompletions,
+  getCachedSqliteRoutineState,
+} from "@/modules/routine/lib/sqliteReader";
 
 const ALL_CATS = [...MCC_CATEGORIES, ...INCOME_CATEGORIES];
 
@@ -68,13 +86,21 @@ export interface FinykAggregate {
 }
 
 export function aggregateFinyk(weekKey: string): FinykAggregate {
-  const txRaw = safeReadLS<{ txs?: unknown[] } | null>("finyk_tx_cache", null);
-  const txList: unknown[] = txRaw?.txs ?? (Array.isArray(txRaw) ? txRaw : []);
-  const txCategories =
-    safeReadLS<Record<string, string>>("finyk_tx_cats", {}) ?? {};
-  const hiddenIds = new Set(safeReadLS<string[]>("finyk_hidden_txs", []) ?? []);
-  const customCategories =
-    safeReadLS<Category[]>("finyk_custom_cats_v1", []) ?? [];
+  // Mono transactions — read from the SQLite mono-mirror cache
+  // (tombstoned `finyk_tx_cache` MMKV key).
+  const txList = getCachedFinykMonoMirrorState().transactions;
+
+  // Read tombstoned keys from the SQLite warm cache.
+  const finykCache = getCachedFinykSqliteState();
+  const txCategoriesRaw = finykCache.txCategories;
+  const txCategories: Record<string, string> = {};
+  for (const [k, v] of Object.entries(txCategoriesRaw)) {
+    if (typeof v === "string") txCategories[k] = v;
+  }
+  const hiddenIds = new Set(finykCache.hiddenTransactions);
+  const customCategories: Category[] = finykCache.customCategories.map(
+    ({ id, label }) => ({ id, label }),
+  );
   const transferIds = new Set(
     Object.entries(txCategories)
       .filter(([, v]) => v === "internal_transfer")
@@ -90,28 +116,21 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
   let txCount = 0;
   const catAmounts: Record<string, number> = {};
 
-  if (Array.isArray(txList)) {
-    for (const tx of txList as Array<{
-      id: string;
-      time: number;
-      amount: number;
-      mcc?: number;
-    }>) {
-      const ts = tx.time > 1e10 ? tx.time : tx.time * 1000;
-      const d = new Date(ts);
-      if (d < monday || d >= sunday) continue;
-      if (hiddenIds.has(tx.id)) continue;
-      if (transferIds.has(tx.id)) continue;
-      const amount = (tx.amount ?? 0) / 100;
-      txCount++;
-      if (amount < 0) {
-        totalSpent += Math.abs(amount);
-        const rawCat = txCategories[tx.id] || tx.mcc || "other";
-        const cat = resolveCatLabel(rawCat, customCategories);
-        catAmounts[cat] = (catAmounts[cat] ?? 0) + Math.abs(amount);
-      } else {
-        totalIncome += amount;
-      }
+  for (const tx of txList) {
+    const ts = tx.time > 1e10 ? tx.time : tx.time * 1000;
+    const d = new Date(ts);
+    if (d < monday || d >= sunday) continue;
+    if (hiddenIds.has(tx.id)) continue;
+    if (transferIds.has(tx.id)) continue;
+    const amount = (tx.amount ?? 0) / 100;
+    txCount++;
+    if (amount < 0) {
+      totalSpent += Math.abs(amount);
+      const rawCat = txCategories[tx.id] ?? tx.mcc ?? "other";
+      const cat = resolveCatLabel(rawCat, customCategories);
+      catAmounts[cat] = (catAmounts[cat] ?? 0) + Math.abs(amount);
+    } else {
+      totalIncome += amount;
     }
   }
 
@@ -120,17 +139,10 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
     .slice(0, 5)
     .map(([name, amount]) => ({ name, amount: Math.round(amount) }));
 
-  // PR #072 (storage-roadmap Stage 13) — read SQLite `finyk_prefs.monthly_plan_json`
-  // (canonical) with one-step MMKV fallback (`finyk_monthly_plan`) for cold-boot.
-  // The historical `finyk_storage_v2` blob lost its writers in Stage 4 PR
-  // #035–#039, so the previous reader returned `null` on every fresh
-  // install and `Insights.budgetRemaining` silently degraded.
-  const sqliteMonthlyPlan = getCachedFinykSqliteState().monthlyPlan;
-  const lsMonthlyPlan = safeReadLS<MonthlyPlan | null>(
-    "finyk_monthly_plan",
-    null,
-  );
-  const monthlyPlan = sqliteMonthlyPlan ?? lsMonthlyPlan;
+  // SQLite `finyk_prefs.monthly_plan_json` is now the canonical source.
+  // The MMKV `finyk_monthly_plan` fallback is retired.
+  const monthlyPlan: MonthlyPlan | null =
+    getCachedFinykSqliteState().monthlyPlan;
   const expenseNum = Number(monthlyPlan?.expense);
   const monthlyBudget = Number.isFinite(expenseNum) ? expenseNum : null;
 
@@ -151,26 +163,18 @@ export interface FizrukAggregate {
 }
 
 export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
-  const parsed = safeReadLS<unknown>("fizruk_workouts_v1", null);
-  if (!parsed) return null;
-  const workouts: Array<{
-    endedAt?: string;
-    startedAt: string;
-    exercises?: Array<{
-      name?: string;
-      sets?: Array<{ weight?: number; reps?: number }>;
-    }>;
-  }> = Array.isArray(parsed)
-    ? parsed
-    : ((parsed as { workouts?: unknown[] })?.workouts ?? []);
-  if (!Array.isArray(workouts) || workouts.length === 0) return null;
+  // Read from the SQLite warm cache (tombstoned `fizruk_workouts_v1` key).
+  const fizrukCache = getCachedFizrukSqliteState();
+  if (fizrukCache.refreshedAt === null) return null;
+  const workouts = fizrukCache.workouts;
+  if (workouts.length === 0) return null;
 
   const monday = new Date(`${weekKey}T00:00:00`);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 7);
 
   const weekWorkouts = workouts.filter((w) => {
-    if (!w.endedAt) return false;
+    if (w.endedAt === null) return false;
     const d = new Date(w.startedAt);
     return d >= monday && d < sunday;
   });
@@ -179,18 +183,15 @@ export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
   const exerciseVolumes: Record<string, number> = {};
 
   for (const w of weekWorkouts) {
-    if (Array.isArray(w.exercises)) {
-      for (const ex of w.exercises) {
-        const vol = Array.isArray(ex.sets)
-          ? ex.sets.reduce(
-              (s, set) => s + (set.weight ?? 0) * (set.reps ?? 0),
-              0,
-            )
-          : 0;
-        totalVolume += vol;
-        if (ex.name) {
-          exerciseVolumes[ex.name] = (exerciseVolumes[ex.name] ?? 0) + vol;
-        }
+    for (const item of w.items) {
+      const vol = (item.sets ?? []).reduce(
+        (s, set) => s + set.weightKg * set.reps,
+        0,
+      );
+      totalVolume += vol;
+      if (item.nameUk) {
+        exerciseVolumes[item.nameUk] =
+          (exerciseVolumes[item.nameUk] ?? 0) + vol;
       }
     }
   }
@@ -200,7 +201,7 @@ export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
     .slice(0, 3)
     .map(([name, vol]) => ({ name, totalVolume: Math.round(vol) }));
 
-  const allCompleted = workouts.filter((w) => w.endedAt);
+  const allCompleted = workouts.filter((w) => w.endedAt !== null);
   const sorted = [...allCompleted].sort(
     (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
   );
@@ -232,25 +233,13 @@ export interface NutritionAggregate {
 }
 
 export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
-  const log = safeReadLS<
-    Record<
-      string,
-      {
-        meals?: Array<{
-          macros?: {
-            kcal?: number;
-            protein_g?: number;
-            fat_g?: number;
-            carbs_g?: number;
-          };
-        }>;
-      }
-    >
-  >("nutrition_log_v1", {});
-  const prefs = safeReadLS<{ dailyTargetKcal?: number } | null>(
-    "nutrition_prefs_v1",
-    null,
-  );
+  // Read from the SQLite warm cache (tombstoned `nutrition_log_v1` /
+  // `nutrition_prefs_v1` MMKV keys).
+  const nutritionCache = getCachedNutritionSqliteState();
+  if (nutritionCache.refreshedAt === null) return null;
+
+  const log = nutritionCache.log;
+  const prefs = nutritionCache.prefs;
   const targetKcal = prefs?.dailyTargetKcal ?? 2000;
 
   const monday = new Date(`${weekKey}T00:00:00`);
@@ -264,15 +253,14 @@ export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     const dk = localDateKey(d);
-    const dayData = log?.[dk];
-    const meals = Array.isArray(dayData?.meals) ? dayData.meals : [];
+    const meals = log[dk]?.meals ?? [];
     if (meals.length > 0) {
       daysLogged++;
       for (const m of meals) {
-        totalKcal += m?.macros?.kcal ?? 0;
-        totalProtein += m?.macros?.protein_g ?? 0;
-        totalFat += m?.macros?.fat_g ?? 0;
-        totalCarbs += m?.macros?.carbs_g ?? 0;
+        totalKcal += m.macros.kcal ?? 0;
+        totalProtein += m.macros.protein_g ?? 0;
+        totalFat += m.macros.fat_g ?? 0;
+        totalCarbs += m.macros.carbs_g ?? 0;
       }
     }
   }
@@ -303,23 +291,16 @@ export interface RoutineAggregate {
 }
 
 export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
-  const state = safeReadLS<{
-    habits?: Array<{
-      id: string;
-      name?: string;
-      title?: string;
-      archived?: boolean;
-    }>;
-    completions?: Record<string, string[]>;
-  } | null>("hub_routine_v1", null);
-  if (!state) return null;
+  // Read from the SQLite warm cache (tombstoned `hub_routine_v1` MMKV key).
+  const sqliteState = getCachedSqliteRoutineState();
+  const completionsCache = getCachedSqliteCompletions();
+  if (sqliteState.refreshedAt === null && completionsCache.refreshedAt === null)
+    return null;
 
-  const habits = Array.isArray(state.habits)
-    ? state.habits.filter((h) => !h.archived)
-    : [];
+  const habits = sqliteState.habits.filter((h) => !h.archived);
   if (!habits.length) return null;
 
-  const completions = state.completions ?? {};
+  const completions = completionsCache.completions;
   const monday = new Date(`${weekKey}T00:00:00`);
 
   const habitStats: HabitStat[] = habits.map((h) => {
@@ -334,7 +315,7 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
       }
     }
     return {
-      name: h.name || h.title || "Звичка",
+      name: h.name || "Звичка",
       done,
       total: 7,
       completionRate: Math.round((done / 7) * 100),

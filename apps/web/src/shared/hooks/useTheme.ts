@@ -152,7 +152,10 @@ export function useTheme(): UseThemeReturn {
   // Keep an up-to-date snapshot for callbacks that mustn't re-create on
   // every render of `setChoice` (storage / mq listeners).
   const choiceRef = useRef(choice);
-  choiceRef.current = choice;
+
+  useEffect(() => {
+    choiceRef.current = choice;
+  }, [choice]);
 
   const resolved = useMemo(
     () => resolveTheme(choice, systemPrefersDark),

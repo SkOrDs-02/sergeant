@@ -82,7 +82,10 @@ export function VoiceMicButton({
     anchorRect: DOMRect;
   } | null>(null);
   const onResultRef = useRef(onResult);
-  onResultRef.current = onResult;
+
+  useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
 
   // Інтерсептор: замість миттєвого commit показуємо preview-чипі.
   // Якщо `confirmBeforeCommit=false` — поведінка стара (миттєвий

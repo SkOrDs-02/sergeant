@@ -15,6 +15,7 @@ import {
   loadNutritionLog,
   loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
+import { getCachedFinykMonoMirrorState } from "../../modules/finyk/lib/monoMirrorReader";
 
 const { FINANCE_RULES, runRules } = Recommendations;
 export type Rec = Recommendations.Rec;
@@ -417,15 +418,8 @@ function buildWeeklyDigestRecs(): Rec[] {
   }
 
   // Витрати минулого тижня
-  const txCache = safeLS<{ txs?: Transaction[] } | Transaction[] | null>(
-    "finyk_tx_cache",
-    null,
-  );
-  const transactions: Transaction[] = txCache
-    ? Array.isArray(txCache)
-      ? txCache
-      : (txCache.txs ?? [])
-    : [];
+  const transactions: Transaction[] = getCachedFinykMonoMirrorState()
+    .transactions as Transaction[];
   const txCategories = safeLS<Record<string, string>>("finyk_tx_cats", {});
   const hiddenTxIds = new Set<string>(safeLS<string[]>("finyk_hidden_txs", []));
   const transferIds = new Set<string>(

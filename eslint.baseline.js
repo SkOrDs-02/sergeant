@@ -171,7 +171,8 @@ export const baseline = [
       //       after 2026-07-04 burndown) + mobile 0 ✅ (promoted in eslint.mobile.js)
       //   purity                       — web 0 ✅ (promoted in eslint.web.js)
       //       + mobile 0 ✅ (promoted in eslint.mobile.js)
-      //   refs                         — web ~59 (still off here); mobile 0 ✅ (promoted in eslint.mobile.js)
+      //   refs                         — web 0 ✅ (promoted in eslint.web.js)
+      //       + mobile 0 ✅ (promoted in eslint.mobile.js)
       //   set-state-in-effect          — web ~80 (still off here) + mobile 44
       // Promoted per-surface once that surface's count reaches 0. See
       // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.

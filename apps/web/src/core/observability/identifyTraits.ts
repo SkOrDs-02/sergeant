@@ -4,6 +4,7 @@
  */
 import type { User } from "@sergeant/shared";
 import { getVibePicks, type HubModuleId } from "../onboarding/vibePicks";
+import { accountAgeDays } from "../feedback/accountAge";
 
 /**
  * Person properties (traits), які прокидаються в PostHog `identify(distinctId, traits)`
@@ -27,12 +28,19 @@ import { getVibePicks, type HubModuleId } from "../onboarding/vibePicks";
  *     часу свідома: дозволяє "за днем життя акаунта" сегментацію без
  *     зайвого PII (точна година реєстрації нікому не потрібна для
  *     funnels).
+ *   - `account_age_days` — цілі доби від `user.createdAt` на момент
+ *     identify. Знімок «на момент логіну» (не live-лічильник) — цього
+ *     достатньо для person-property таргетингу PostHog Survey
+ *     (`account_age_days >= 7`, NPS — GTM § 3.2) як запасного шляху
+ *     поруч з event-тригером `nps_survey_eligible`; для точних когорт
+ *     користуйся `signup_date`.
  */
 export interface IdentifyTraits {
   vibe?: HubModuleId[];
   plan?: "free" | "pro";
   locale?: string;
   signup_date?: string;
+  account_age_days?: number;
   // Index-signature робить `IdentifyTraits` сумісним з
   // `Record<string, unknown>` без runtime-касту в місці виклику
   // `identifyPostHogUser`. PostHog приймає довільний bag-of-properties;
@@ -103,6 +111,9 @@ export function buildIdentifyTraits(user: User): IdentifyTraits {
 
   const signupDate = toSignupDate(user.createdAt);
   if (signupDate) traits.signup_date = signupDate;
+
+  const ageDays = accountAgeDays(user.createdAt);
+  if (ageDays !== null) traits.account_age_days = ageDays;
 
   return traits;
 }

@@ -1,11 +1,13 @@
-/* eslint-disable sergeant-design/no-raw-storage-key, @typescript-eslint/no-non-null-assertion --
-   Cross-module briefing executor (outside React): routine / fizruk / nutrition
-   now read canonical SQLite state (loadRoutineState / readFizrukWorkouts /
-   loadNutritionLog); only the finyk tx-cache stays on LS (not tombstoned). The
-   non-null assertions are pre-existing. Raw-key burndown tracked for 2026-Q3. */
+/* eslint-disable @typescript-eslint/no-non-null-assertion --
+   Pre-existing non-null assertions on already-Array.isArray-guarded
+   index lookups. */
+/* eslint-disable sergeant-design/no-raw-storage-key --
+   Tx splits stay on LS; bank transactions now come from the Mono mirror
+   reader (Dual-write teardown Phase 3). */
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
+import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
 import { loadNutritionLog } from "../../../../modules/nutrition/lib/nutritionStorage";
 import { readFizrukWorkouts } from "../fizrukActions/shared";
@@ -104,19 +106,17 @@ export function weeklySummary(): string {
     );
     parts.push(`Калорії: ~${avg} ккал/день (${weekKcal.length} днів)`);
   }
-  const txCache = ls<{
-    txs?: Array<{
-      id: string;
-      amount: number;
-      time?: number;
-      description?: string;
-      mcc?: number;
-    }>;
-  } | null>("finyk_tx_cache", null);
+  const mirrorTxs = getCachedFinykMonoMirrorState().transactions as Array<{
+    id: string;
+    amount: number;
+    time?: number;
+    description?: string;
+    mcc?: number;
+  }>;
   const txSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
-  if (txCache?.txs) {
+  if (mirrorTxs.length > 0) {
     const weekTs = weekAgo.getTime() / 1000;
-    const weekTxs = txCache.txs.filter((t) => (t.time || 0) > weekTs);
+    const weekTxs = mirrorTxs.filter((t) => (t.time || 0) > weekTs);
     const spent = weekTxs
       .filter((t) => t.amount < 0)
       .reduce((s, t) => s + getTxStatAmount(t, txSplits), 0);

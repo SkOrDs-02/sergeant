@@ -78,7 +78,9 @@ export function useActivationV2(
   // changes — variant flips are rare and we want fire-once semantics
   // even when the parent re-renders with a fresh options object.
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   useEffect(() => {
     if (!input || !result) return;

@@ -125,6 +125,12 @@ export default defineConfig({
         //   Ratchet: lines → 87 (coverage-thresholds.json), branches → 73,
         //   fns → 79, statements → 85. ~2–2.8pp headroom for throttled CI.
         //
+        // - 2026-07-10 (web coverage wave 5): branch-focused push on finyk,
+        //   core (dailySeries/AuthContext/useChatSend), fizruk orchestrator.
+        //   Measured (CI=true, maxWorkers=1, 700 files / 7115 tests):
+        //     lines 89.92 / branches 75.34 / fns 81.64 / statements 87.47.
+        //   Ratchet: lines → 88, branches → 74. ~1.3–2pp headroom.
+        //
         // - 2026-07-10 (web coverage wave 6): zero-coverage shells across
         //   fizruk/routine/nutrition/core hub+settings. Measured (CI=true,
         //   maxWorkers=1, 710 files / 7121 tests):
@@ -132,7 +138,7 @@ export default defineConfig({
         //   Ratchet: lines → 88 (coverage-thresholds.json), branches → 74,
         //   fns → 81, statements → 86. ~1.5–2.5pp headroom for throttled CI.
         //
-        // Floors set ~2–2.8pp below current actuals. Raise per sprint
+        // Floors set ~1.3–2.5pp below current actuals. Raise per sprint
         // as more component shells land (next targets: FinykApp,
         // NutritionApp, useRoutineAppState, CommandPaletteUI,
         // HabitDetailSheet — the heavy orchestration shells still at 0%).

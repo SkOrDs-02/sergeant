@@ -105,6 +105,7 @@ export function Tooltip({
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLSpanElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openRef = useRef(open);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -114,6 +115,10 @@ export function Tooltip({
   }, []);
 
   useEffect(() => clearTimer, [clearTimer]);
+
+  useEffect(() => {
+    if (!open) clearTimer();
+  }, [open, clearTimer]);
 
   const scheduleOpen = useCallback(() => {
     if (disabled) return;
@@ -125,6 +130,52 @@ export function Tooltip({
     clearTimer();
     setOpen(false);
   }, [clearTimer]);
+
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
+  // Wire open/close handlers on the cloned trigger DOM node. Handlers
+  // cannot live on `cloneElement` props — react-hooks/refs flags any
+  // callback passed there that closes over timer refs (see DropdownMenu
+  // for the same data-attribute + layout-effect pattern).
+  useLayoutEffect(() => {
+    const triggerEl = wrapperRef.current
+      ?.firstElementChild as HTMLElement | null;
+    if (!triggerEl) return;
+
+    const onMouseEnter = () => {
+      scheduleOpen();
+    };
+    const onMouseLeave = () => {
+      closeNow();
+    };
+    const onFocusIn = () => {
+      scheduleOpen();
+    };
+    const onFocusOut = () => {
+      closeNow();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && openRef.current) {
+        closeNow();
+      }
+    };
+
+    triggerEl.addEventListener("mouseenter", onMouseEnter);
+    triggerEl.addEventListener("mouseleave", onMouseLeave);
+    triggerEl.addEventListener("focusin", onFocusIn);
+    triggerEl.addEventListener("focusout", onFocusOut);
+    triggerEl.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      triggerEl.removeEventListener("mouseenter", onMouseEnter);
+      triggerEl.removeEventListener("mouseleave", onMouseLeave);
+      triggerEl.removeEventListener("focusin", onFocusIn);
+      triggerEl.removeEventListener("focusout", onFocusOut);
+      triggerEl.removeEventListener("keydown", onKeyDown);
+    };
+  }, [children, scheduleOpen, closeNow]);
 
   // Measure trigger + panel and place the panel after layout. We use
   // a layout effect so the user never sees a one-frame flash at (0,0)
@@ -202,28 +253,7 @@ export function Tooltip({
 
   const trigger = cloneElement(children, {
     "aria-describedby": open ? id : triggerProps["aria-describedby"],
-    onMouseEnter: (e: React.MouseEvent) => {
-      triggerProps.onMouseEnter?.(e);
-      scheduleOpen();
-    },
-    onMouseLeave: (e: React.MouseEvent) => {
-      triggerProps.onMouseLeave?.(e);
-      closeNow();
-    },
-    onFocus: (e: React.FocusEvent) => {
-      triggerProps.onFocus?.(e);
-      scheduleOpen();
-    },
-    onBlur: (e: React.FocusEvent) => {
-      triggerProps.onBlur?.(e);
-      closeNow();
-    },
-    onKeyDown: (e: ReactKeyboardEvent) => {
-      triggerProps.onKeyDown?.(e);
-      if (e.key === "Escape" && open) {
-        closeNow();
-      }
-    },
+    "data-tooltip-trigger": id,
   } as TriggerExtraProps);
 
   // Render the panel into document.body so any transformed /

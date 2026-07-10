@@ -712,6 +712,33 @@ export const messages = {
     dismiss: "Зрозуміло",
   },
 
+  // Feedback loop (GTM § 3.2) — in-app feedback widget у Settings.
+  // Копія за style-guide: звертання «ти», заголовки без крапки,
+  // toast-success — перфект минулого часу.
+  feedback: {
+    settingsTitle: "Фідбек",
+    settingsSubGroupTitle: "Є ідея чи знайшов баг?",
+    settingsDescription:
+      "Розкажи, що поламалось або чого бракує — кожне повідомлення читає людина.",
+    openButton: "Написати фідбек",
+    dialogTitle: "Твій фідбек",
+    dialogDescription: "Кілька речень достатньо — головне, суть.",
+    categoryLabel: "Про що це",
+    categoryIdea: "Ідея",
+    categoryBug: "Баг",
+    categoryOther: "Інше",
+    messageLabel: "Повідомлення",
+    placeholderIdea: "Чого тобі бракує в застосунку?",
+    placeholderBug: "Що саме поламалось і на якому екрані?",
+    placeholderOther: "Розкажи, що думаєш",
+    contextLabel: "Додати контекст сторінки",
+    contextDescription:
+      "Адреса поточної сторінки та розмір екрана — допоможе відтворити проблему.",
+    submit: "Надіслати",
+    submitted: "Дякую! Відгук надіслано.",
+    emptyError: "Напиши хоча б кілька слів — порожній відгук не долетить.",
+  },
+
   // Phase 7 D2 — paywall feature gates. Per-feature copy used by the
   // shared `<PaywallModal>` when a call-site gates an action via
   // `useFeatureGate(featureId)`. Keep `name` short enough to plug

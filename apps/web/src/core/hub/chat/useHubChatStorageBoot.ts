@@ -40,7 +40,9 @@ export function useHubChatStorageBoot(): void {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const userIdRef = useRef<string | null>(userId);
-  userIdRef.current = userId;
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
   const registered = useRef(false);
 
   useEffect(() => {

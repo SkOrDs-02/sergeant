@@ -1,7 +1,7 @@
 /* eslint-disable sergeant-design/no-raw-storage-key --
-   Cross-module daily-series reader (outside React): the finyk tx cache + splits
-   stay on LS (no SQLite canon), mirroring financeAnalytics / briefingHandlers.
-   Raw-key burndown tracked for 2026-Q3. */
+   Cross-module daily-series reader (outside React): tx splits stay on LS;
+   bank transactions now come from the Mono mirror reader (Dual-write
+   teardown Phase 3). */
 /**
  * `get_daily_series` — вирівняні по днях ряди метрик з усіх 4 модулів +
  * пораховані КОДОМ кореляції (Pearson/Spearman) для кожної пари. Це базовий
@@ -21,6 +21,7 @@ import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import { loadNutritionLog } from "../../../../modules/nutrition/lib/nutritionStorage";
 import { getCachedNutritionSqliteState } from "../../../../modules/nutrition/lib/sqliteReader";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
@@ -116,10 +117,11 @@ function addTo(map: Map<string, number>, day: string, amount: number): void {
 
 function readFinyk(sign: "spending" | "income"): Map<string, number> {
   const out = new Map<string, number>();
-  const cache = ls<{
-    txs?: Array<{ id: string; amount: number; time?: number }>;
-  } | null>("finyk_tx_cache", null);
-  const txs = cache?.txs ?? [];
+  const txs = getCachedFinykMonoMirrorState().transactions as Array<{
+    id: string;
+    amount: number;
+    time?: number;
+  }>;
   const hidden = getCachedFinykSqliteState().hiddenTransactions;
   const splits = ls<Record<string, unknown>>("finyk_tx_splits", {});
   for (const t of txs) {

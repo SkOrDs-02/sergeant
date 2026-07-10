@@ -1,7 +1,6 @@
 /* eslint-disable sergeant-design/no-raw-storage-key --
-   Chat-action executor (outside React): the bank tx cache + splits stay
-   on LS (no SQLite canon); hidden-tx / custom-category / per-tx-category
-   reads moved to the SQLite cache. Raw-key burndown tracked for 2026-Q3. */
+   Chat-action executor (outside React): tx splits stay on LS; bank transactions
+   now come from the Mono mirror reader (Dual-write teardown Phase 3). */
 import { ls } from "../../hubChatUtils";
 import {
   calcCategorySpent,
@@ -12,6 +11,7 @@ import {
   mergeExpenseCategoryDefinitions,
 } from "../../../../modules/finyk/constants";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type {
   CategoryBreakdownAction,
   DetectAnomaliesAction,
@@ -24,16 +24,13 @@ export function spendingTrend(action: SpendingTrendAction): string {
   const now = Date.now();
   const currentStart = now - days * 86400000;
   const prevStart = currentStart - days * 86400000;
-  const txCache = ls<{
-    txs?: Array<{
-      id: string;
-      amount: number;
-      time?: number;
-      description?: string;
-      mcc?: number;
-    }>;
-  } | null>("finyk_tx_cache", null);
-  const allTxs = txCache?.txs || [];
+  const allTxs = getCachedFinykMonoMirrorState().transactions as Array<{
+    id: string;
+    amount: number;
+    time?: number;
+    description?: string;
+    mcc?: number;
+  }>;
   const hiddenTxIds = getCachedFinykSqliteState().hiddenTransactions;
   const trendSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
   const txs = allTxs.filter((t) => !hiddenTxIds.includes(t.id || ""));
@@ -72,20 +69,18 @@ export function categoryBreakdown(action: CategoryBreakdownAction): string {
   const { period_days } = (action as CategoryBreakdownAction).input || {};
   const days = Number(period_days) || 30;
   const cutoff = Date.now() - days * 86400000;
-  const txCache = ls<{
-    txs?: Array<{
-      id: string;
-      amount: number;
-      time?: number;
-      description?: string;
-      mcc?: number;
-    }>;
-  } | null>("finyk_tx_cache", null);
+  const allTxsCat = getCachedFinykMonoMirrorState().transactions as Array<{
+    id: string;
+    amount: number;
+    time?: number;
+    description?: string;
+    mcc?: number;
+  }>;
   const hiddenTxIds = getCachedFinykSqliteState().hiddenTransactions;
   const customC = getCachedFinykSqliteState().customCategories;
   const catMap = getCachedFinykSqliteState().txCategories;
   const breakdownSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
-  const expenses = (txCache?.txs || []).filter((t) => {
+  const expenses = allTxsCat.filter((t) => {
     if (hiddenTxIds.includes(t.id || "")) return false;
     const ts = (t.time || 0) * 1000;
     return t.amount < 0 && ts >= cutoff;
@@ -125,18 +120,16 @@ export function detectAnomalies(action: DetectAnomaliesAction): string {
   const days = Number(period_days) || 30;
   const threshold = Number(threshold_multiplier) || 3;
   const cutoff = Date.now() - days * 86400000;
-  const txCache = ls<{
-    txs?: Array<{
-      id: string;
-      amount: number;
-      time?: number;
-      description?: string;
-      mcc?: number;
-    }>;
-  } | null>("finyk_tx_cache", null);
+  const allTxsAnomaly = getCachedFinykMonoMirrorState().transactions as Array<{
+    id: string;
+    amount: number;
+    time?: number;
+    description?: string;
+    mcc?: number;
+  }>;
   const hiddenTxIds = getCachedFinykSqliteState().hiddenTransactions;
   const anomalySplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
-  const expenses = (txCache?.txs || []).filter((t) => {
+  const expenses = allTxsAnomaly.filter((t) => {
     if (hiddenTxIds.includes(t.id || "")) return false;
     const ts = (t.time || 0) * 1000;
     return t.amount < 0 && ts >= cutoff;

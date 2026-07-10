@@ -50,9 +50,11 @@ export function useSWUpdate() {
   // Refs forwarded into effects so callbacks are always up-to-date
   // without re-registering event listeners on every render.
   const toastRef = useRef(toast);
-  toastRef.current = toast;
   const queryClientRef = useRef(queryClient);
-  queryClientRef.current = queryClient;
+  useEffect(() => {
+    toastRef.current = toast;
+    queryClientRef.current = queryClient;
+  }, [toast, queryClient]);
 
   const applyUpdate = useCallback(() => {
     if (typeof window.__pwaUpdateSW === "function") {
@@ -65,7 +67,9 @@ export function useSWUpdate() {
   // Stored in a ref so the poll interval can reference the latest version
   // without re-subscribing.
   const applyUpdateRef = useRef(applyUpdate);
-  applyUpdateRef.current = applyUpdate;
+  useEffect(() => {
+    applyUpdateRef.current = applyUpdate;
+  }, [applyUpdate]);
 
   useEffect(() => {
     let pollIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -117,7 +121,10 @@ export function useSWUpdate() {
       if (pollIntervalId === null) {
         pollIntervalId = setInterval(() => {
           if (toastShownRef.current) {
-            clearInterval(pollIntervalId!);
+            const intervalId = pollIntervalId;
+            if (intervalId !== null) {
+              clearInterval(intervalId);
+            }
             pollIntervalId = null;
             return;
           }

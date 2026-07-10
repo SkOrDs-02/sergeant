@@ -35,7 +35,7 @@ afterEach(() => {
 });
 
 describe("buildIdentifyTraits", () => {
-  it("повертає всі чотири трейти, коли всі джерела доступні", () => {
+  it("повертає всі п'ять трейтів, коли всі джерела доступні", () => {
     mockGetVibePicks.mockReturnValue(["finyk", "fizruk"]);
     vi.stubGlobal("navigator", { language: "uk-UA" });
 
@@ -46,7 +46,24 @@ describe("buildIdentifyTraits", () => {
       plan: "free",
       locale: "uk-UA",
       signup_date: "2026-01-15",
+      account_age_days: expect.any(Number),
     });
+  });
+
+  it("`account_age_days` — цілі доби від createdAt (NPS-таргетинг, GTM § 3.2)", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-25T08:30:00.000Z"));
+    try {
+      const traits = buildIdentifyTraits(BASE_USER); // createdAt 2026-01-15
+      expect(traits.account_age_days).toBe(10);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("опускає `account_age_days`, якщо `createdAt` = null", () => {
+    const traits = buildIdentifyTraits({ ...BASE_USER, createdAt: null });
+    expect(traits).not.toHaveProperty("account_age_days");
   });
 
   it("`signup_date` — це YYYY-MM-DD у UTC, не в локальному TZ", () => {

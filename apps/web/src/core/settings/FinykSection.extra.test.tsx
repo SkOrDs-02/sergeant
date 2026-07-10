@@ -270,4 +270,79 @@ describe("FinykSection extra branches", () => {
       expect(screen.getByText("🔄 Оновити дані")).toBeInTheDocument(),
     );
   });
+
+  // ── Cache clear confirm executes clearTxCache ─────────────────────────────
+
+  it("clears tx cache when the confirm modal Очистити button is clicked", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(await screen.findByText("🧹 Очистити кеш транзакцій"));
+
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByText("Очистити"));
+
+    await waitFor(() =>
+      expect(removeFinykStorageItem).toHaveBeenCalledWith("finyk_tx_cache"),
+    );
+    expect(removeFinykStorageItem).toHaveBeenCalledWith(
+      "finyk_tx_cache_last_good",
+    );
+  });
+
+  // ── Connect: auth error with no server message falls back to default ───────
+
+  it("shows default auth error when serverMessage is null", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    mockedConnect.mockRejectedValue({
+      kind: "http",
+      isAuth: true,
+      serverMessage: null,
+    });
+    renderSection();
+    const input = await screen.findByPlaceholderText("Токен Monobank API");
+    fireEvent.change(input, { target: { value: "tok" } });
+    fireEvent.click(screen.getByText("Підключити Monobank"));
+    expect(
+      await screen.findByText(
+        "Токен Monobank недійсний або закінчився. Оновіть токен.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  // ── triggerBackfill: Error instance → error message stored ─────────────────
+
+  it("does not crash after backfill fails with Error instance", async () => {
+    mockedSyncState.mockResolvedValue(ACTIVE);
+    mockedBackfill.mockRejectedValue(new Error("Помилка re-sync"));
+    renderSection();
+    fireEvent.click(await screen.findByText("Re-sync (backfill)"));
+    await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
+    // Component stays in connected state — Re-sync button remains
+    expect(await screen.findByText("Re-sync (backfill)")).toBeInTheDocument();
+  });
+
+  // ── Enter key on empty category input ─────────────────────────────────────
+
+  it("does not crash when Enter is pressed on empty category input", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    const input = await screen.findByPlaceholderText("Напр. 🎨 Хобі");
+    // Guard: newCategoryLabel.trim() must be truthy
+    fireEvent.keyDown(input, { key: "Enter" });
+    // Component stays stable
+    expect(input).toBeInTheDocument();
+  });
+
+  // ── Webhook status badge: lastEventAt null (no timestamp separator) ────────
+
+  it("does not render the · separator when lastEventAt is null", async () => {
+    mockedSyncState.mockResolvedValue({
+      ...ACTIVE,
+      lastEventAt: null,
+    });
+    renderSection();
+    expect(await screen.findByText("Webhook active")).toBeInTheDocument();
+    const statusSection = screen.getByText("Webhook active").parentElement;
+    expect(statusSection?.textContent).not.toContain("·");
+  });
 });

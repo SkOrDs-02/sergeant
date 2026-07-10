@@ -248,6 +248,19 @@ export function useFinykTransactionsStore(
   const [realTx, setRealTxState] = useState<Transaction[]>(
     () => seed?.realTx ?? readBankTxCache(),
   );
+  const [customCategories, setCustomCategoriesState] = useState<
+    { id: string; label: string }[]
+  >(() => {
+    if (seed?.customCategories) return seed.customCategories;
+    const cached = getCachedFinykSqliteState();
+    if (cached.refreshedAt !== null) {
+      return cached.customCategories.map(({ id, label }) => ({
+        id,
+        label: label ?? "",
+      }));
+    }
+    return [];
+  });
 
   // Flush seed realTx through MMKV (Mono cache keys are still
   // MMKV-backed). Dual-write keys are no longer flushed here.
@@ -310,6 +323,15 @@ export function useFinykTransactionsStore(
     }
     setTxSplitsState(txSplitsMap);
     setHiddenState(cache.hiddenTransactions);
+    // Overlay `customCategories` from SQLite so settings changes
+    // (written via `useFinykCustomCategories`) are immediately
+    // visible to the Transactions screen without a remount.
+    setCustomCategoriesState(
+      cache.customCategories.map(({ id, label }) => ({
+        id,
+        label: label ?? "",
+      })),
+    );
   }, [sqliteCacheTick]);
 
   // Stage 4 PR #038 — overlay `realTx` from the Mono mirror cache when
@@ -485,7 +507,10 @@ export function useFinykTransactionsStore(
     hiddenTxIds,
     realTx,
     accounts: seed?.accounts ?? [],
-    customCategories: seed?.customCategories ?? [],
+    // `customCategories` is overlaid from the SQLite cache via the
+    // `sqliteCacheTick` effect above. `seed` injection still wins for
+    // tests that pre-populate the store with explicit fixtures.
+    customCategories: seed?.customCategories ?? customCategories,
 
     addManualExpense,
     updateManualExpense,

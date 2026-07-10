@@ -1,11 +1,14 @@
 /* eslint-disable sergeant-design/no-raw-storage-key --
    Chat-action executors run outside React; storage key strings are used
-   directly here. Same pattern as queryFinykActions.ts. */
+   directly here for the write-path (finyk_tx_cats). Manual expenses and
+   per-tx category overrides come from the canonical SQLite warm cache;
+   bank transactions now come from the Mono mirror reader. */
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type {
   BatchCategorizeAction,
   ChangeCategoryAction,
@@ -90,35 +93,16 @@ function readSearchTransactions(): FinykSearchTx[] {
   }>;
   const txCategories = sqlite.txCategories;
   const hidden = new Set(sqlite.hiddenTransactions);
-  const cached = ls<
-    | Array<{
-        id?: string;
-        time?: number | string;
-        date?: string;
-        description?: string;
-        merchant?: string;
-        amount?: number | string;
-        category?: string;
-        type?: string;
-      }>
-    | {
-        txs?: Array<{
-          id?: string;
-          time?: number | string;
-          date?: string;
-          description?: string;
-          merchant?: string;
-          amount?: number | string;
-          category?: string;
-          type?: string;
-        }>;
-      }
-  >("finyk_tx_cache", []);
-  const bankTxs = Array.isArray(cached)
-    ? cached
-    : Array.isArray(cached.txs)
-      ? cached.txs
-      : [];
+  const bankTxs = getCachedFinykMonoMirrorState().transactions as Array<{
+    id?: string;
+    time?: number | string;
+    date?: string;
+    description?: string;
+    merchant?: string;
+    amount?: number | string;
+    category?: string;
+    type?: string;
+  }>;
 
   const manualTxs = manual.map((tx): FinykSearchTx | null => {
     const id = String(tx.id || "").trim();

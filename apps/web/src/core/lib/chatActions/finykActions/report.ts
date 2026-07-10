@@ -1,11 +1,11 @@
 /* eslint-disable sergeant-design/no-raw-storage-key --
-   Chat-action executor (outside React): the bank tx cache + splits stay
-   on LS (no SQLite canon); the hidden-tx read moved to the SQLite cache.
-   Raw-key burndown: 2026-Q3. */
+   Chat-action executor (outside React): tx splits stay on LS; bank transactions
+   now come from the Mono mirror reader (Dual-write teardown Phase 3). */
 import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type { ExportReportAction, ChatActionResult } from "../types";
 
 export function exportReport(action: ExportReportAction): ChatActionResult {
@@ -27,17 +27,15 @@ export function exportReport(action: ExportReportAction): ChatActionResult {
   }
   const fromTs = fromDate.getTime();
   const toTs = toDate.getTime();
-  const txCache = ls<{
-    txs?: Array<{
-      id: string;
-      amount: number;
-      description?: string;
-      mcc?: number;
-      time?: number;
-    }>;
-  } | null>("finyk_tx_cache", null);
+  const mirrorTxs = getCachedFinykMonoMirrorState().transactions as Array<{
+    id: string;
+    amount: number;
+    description?: string;
+    mcc?: number;
+    time?: number;
+  }>;
   const reportSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
-  const txs = (txCache?.txs || []).filter((t) => {
+  const txs = mirrorTxs.filter((t) => {
     const ts = (t.time || 0) * 1000;
     return ts >= fromTs && ts <= toTs;
   });
