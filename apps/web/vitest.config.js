@@ -146,6 +146,18 @@ export default defineConfig({
         //     lines 90.52 / branches 75.84 / fns 82.64 / statements 88.03.
         //   Ratchet: lines → 89, branches → 75, fns → 82, statements → 87.
         //
+        // - 2026-07-10 (web coverage wave 9): ModuleShell + lazy route entries
+        //   (4 modules, settings, onboarding), dualWriteBoot hooks (4 modules),
+        //   HubSearch / PushNotificationToggle / nutritionErrors shells, plus
+        //   partial test-drift fixes for async hub-shell + SQLite overlay.
+        //   Measured (CI=true, maxWorkers=1, reportOnFailure, 737 files /
+        //   7393 tests — 9 legacy fails remain on main sync/overlay drift):
+        //     lines 90.12 / branches 75.64 / fns 82.72 / statements 87.66.
+        //   Ratchet: lines → 89 (coverage-thresholds.json), branches → 75,
+        //   fns → 82, statements → 87. ~0.1–0.4pp headroom on lines — main
+        //   sync-v2 scaffold widened the denominator; next wave targets heavy
+        //   shells (FinykApp, NutritionApp, useRoutineAppState).
+        //
         // Floors set ~1.3–2.5pp below current actuals. Raise per sprint
         // as more component shells land (next targets: FinykApp,
         // NutritionApp, useRoutineAppState, CommandPaletteUI,

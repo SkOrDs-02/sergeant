@@ -131,6 +131,11 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
       target: { value: "200" },
     });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Додати" })).not.toBeDisabled();
+    });
+
     fireEvent.click(screen.getByRole("button", { name: "Додати" }));
 
     await waitFor(() => {

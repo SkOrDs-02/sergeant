@@ -108,8 +108,7 @@ vi.mock("../../modules/nutrition/lib/shoppingListStorage", async (orig) => {
 
 beforeEach(() => {
   // Stage 8 PR #057r/#057k-tombstone — routine + finyk canonical state
-  // lives in the SQLite warm caches, not localStorage. Phase 3 teardown also
-  // moved Mono bank transactions to the mirror cache. Reset all so each
+  // lives in the SQLite warm caches, not localStorage. Reset all so each
   // spec starts clean.
   localStorage.clear();
   mem.workouts = [];
@@ -177,7 +176,6 @@ describe("find_transaction", () => {
   });
 
   it("шукає bank cache transactions і не показує hidden ids", () => {
-    // finyk_tx_cache is tombstoned (Phase 3) — seed the canonical mirror cache.
     __setFinykMonoMirrorCacheForTests({
       transactions: [
         {
@@ -185,14 +183,14 @@ describe("find_transaction", () => {
           amount: -12500,
           description: "Сільпо",
           time: 1718376000,
-        } as never,
+        },
         {
           id: "mono_hidden",
           amount: -12500,
           description: "Сільпо",
           time: 1718376000,
-        } as never,
-      ],
+        },
+      ] as never[],
     });
     __setFinykSqliteStateCacheForTests({ hiddenTransactions: ["mono_hidden"] });
     const msg = executeAction({

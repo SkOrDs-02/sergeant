@@ -10,6 +10,7 @@ import {
   act,
   renderHook,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import {
   CelebrationModal,
@@ -65,7 +66,7 @@ describe("CelebrationModal", () => {
     expect(screen.getByText("Все вийшло")).toBeInTheDocument();
   });
 
-  it("fires haptic vibration on open", () => {
+  it("fires haptic vibration on open", async () => {
     render(
       <CelebrationModal
         type="confetti"
@@ -74,7 +75,7 @@ describe("CelebrationModal", () => {
         title="Перемога"
       />,
     );
-    expect(navigator.vibrate).toHaveBeenCalled();
+    await waitFor(() => expect(navigator.vibrate).toHaveBeenCalled());
   });
 
   it("renders value + unit", () => {
