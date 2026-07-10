@@ -7,7 +7,7 @@
  * tokens scoped to a single installation, with cache + auto-refresh
  * 5 minutes before expiry. The legacy PAT-flow (`OPENCLAW_GITHUB_PAT` and
  * its `Git_PAT` fallback) was removed in Phase 2 together with the «no
- * PAT in production» Hard Rule #20 in `docs/governance/hard-rules.json` —
+ * PAT in production» Hard Rule #20 in `docs/04-governance/governance/hard-rules.json` —
  * `assertStartupEnv()` in `apps/server/src/env/env.ts` now refuses to
  * boot the server in production if `OPENCLAW_GITHUB_PAT` or `Git_PAT` is
  * still present in `process.env`.

@@ -6,7 +6,7 @@
  * tombstone, the in-memory snapshot vanishes when the component
  * unmounts and the soft-delete becomes immediately irreversible —
  * which contradicts the "every soft-delete is undoable" rule (see
- * `docs/playbooks/undo-toast.md` if/when written).
+ * `docs/00-start/playbooks/undo-toast.md` if/when written).
  *
  * Usage pattern in a host component:
  *

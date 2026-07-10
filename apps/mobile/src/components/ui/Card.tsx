@@ -35,7 +35,7 @@
  *   the same semantic token (no more hardcoded `cream-300`).
  */
 
-import { forwardRef, useRef, type ReactNode } from "react";
+import { forwardRef, useState, type ReactNode } from "react";
 import {
   Animated,
   Pressable,
@@ -150,7 +150,11 @@ function AnimatedPressable({
   className?: string;
   style?: ViewProps["style"];
 }) {
-  const scaleValue = useRef(new Animated.Value(1)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [scaleValue] = useState(() => new Animated.Value(1));
 
   const handlePressIn = () => {
     Animated.spring(scaleValue, {

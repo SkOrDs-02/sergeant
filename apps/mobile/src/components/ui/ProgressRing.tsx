@@ -123,9 +123,13 @@ export function ProgressRing({
   const { colorScheme } = useColorScheme();
   const trackColor = colorScheme === "dark" ? trackColorDark : trackColorLight;
 
-  // Glow animation for 100% completion
-  const glowOpacity = useRef(new RNAnimated.Value(0)).current;
-  const glowScale = useRef(new RNAnimated.Value(1)).current;
+  // Glow animation for 100% completion.
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [glowOpacity] = useState(() => new RNAnimated.Value(0));
+  const [glowScale] = useState(() => new RNAnimated.Value(1));
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled()

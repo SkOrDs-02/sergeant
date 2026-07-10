@@ -208,7 +208,7 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
         // embedding_model = 'X' або `hnsw.iterative_scan` — щоб планувальник
         // зміг використати HNSW-індекс для ORDER BY ... LIMIT навіть при
         // наявності додаткового WHERE-предиката. Деталі — у
-        // docs/playbooks/embedding-provider-migration.md.
+        // docs/00-start/playbooks/embedding-provider-migration.md.
         params.push(env.VOYAGE_EMBEDDING_MODEL);
         where += ` AND embedding_model = $${params.length}`;
 

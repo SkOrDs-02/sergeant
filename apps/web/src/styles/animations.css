@@ -19,7 +19,7 @@
 
    All timing values come from `--motion-duration-*` / `--motion-ease-*`
    in `theme.css`. Raw values in `className` (e.g. `duration-[230ms]`)
-   are forbidden — see `docs/governance/rules/17-animation-budget.md`.
+   are forbidden — see `docs/04-governance/governance/rules/17-animation-budget.md`.
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── Page & module entry (RESPONSE) ──────────────────────────────────── */

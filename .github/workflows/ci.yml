@@ -1,6 +1,6 @@
 name: CI
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -479,24 +479,6 @@ jobs:
             packages/*/coverage/coverage-summary.json
           if-no-files-found: ignore
           retention-days: 30
-
-      - name: Upload coverage to Codecov
-        if: always()
-        # Non-blocking: Codecov now rejects tokenless uploads ("Token required - not
-        # valid tokenless upload"), which makes the action exit non-zero even with
-        # fail_ci_if_error: false. continue-on-error keeps the coverage job green on
-        # this infra failure; coverage data still uploads once a CODECOV_TOKEN secret
-        # is configured.
-        continue-on-error: true
-        # codecov/codecov-action v4.6.0 (SHA-pinned for supply-chain hardening)
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: >-
-            apps/server/coverage/coverage-final.json,
-            apps/web/coverage/coverage-final.json
-          fail_ci_if_error: false
-          verbose: false
 
   a11y:
     name: Accessibility (axe-core)

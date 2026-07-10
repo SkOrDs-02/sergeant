@@ -1,6 +1,6 @@
 name: Weekly DB backup verify
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: storage-roadmap.md PR #049b — weekly rehearsal of Railway Postgres restore + smoke-test schema integrity.
 # Ref: docs/03-operations/runbooks/database-backup-restore.md § 4 + § 6.
@@ -259,7 +259,7 @@ jobs:
               '',
               'See [database-backup-restore.md](docs/03-operations/runbooks/database-backup-restore.md) for investigation steps.',
               '',
-              'cc @Skords-01',
+              'cc @SkOrDs-02',
             ].join('\n');
 
             // Dedup: only create if no open issue with this title prefix exists.

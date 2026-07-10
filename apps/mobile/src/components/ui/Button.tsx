@@ -27,7 +27,7 @@
  *   `PressableProps` instead of `ButtonHTMLAttributes`.
  */
 
-import { forwardRef, useEffect, useRef, type ReactNode } from "react";
+import { forwardRef, useEffect, useState, type ReactNode } from "react";
 import {
   Animated,
   Easing,
@@ -191,7 +191,11 @@ function SpinningLoader({
   color: string;
   size?: number;
 }) {
-  const spinValue = useRef(new Animated.Value(0)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [spinValue] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const animation = Animated.loop(

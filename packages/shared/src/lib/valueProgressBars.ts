@@ -15,7 +15,7 @@
  * (`routine → finyk → nutrition → fizruk`) so the user reads back
  * their commitments in the same sequence they spelled them out.
  *
- * Mirrors the FTUX S3.3 spec (`docs/launch/ftux-sprint-plan.md`):
+ * Mirrors the FTUX S3.3 spec (`docs/01-product/launch/ftux-sprint-plan.md`):
  *   - S3.3a — finyk + routine bars.
  *   - S3.3b — nutrition + fizruk bars (extension without changing
  *     the public surface).

@@ -1007,7 +1007,7 @@ const envSchema = z.object({
    * `routine`, `journal`) не gate-нуті цим flag-ом — вони контролюються
    * виключно master-вимикачем.
    *
-   * Activation runbook: [`docs/launch/tech/ai-memory-activation.md`].
+   * Activation runbook: [`docs/01-product/launch/tech/ai-memory-activation.md`].
    * Decision-point Day 30: якщо `ai_memories < 100 rows` за 7 днів після
    * активації — kill module (див. `docs/observability/runbook.md`
    * § "AI memory activation & Day-30 decision-point").
@@ -1029,7 +1029,7 @@ const envSchema = z.object({
    * порожня, digest буде слати «За добу нічого не записано» graceful-message
    * (workflow handle-ає empty result).
    *
-   * Activation runbook: [`docs/launch/tech/ai-memory-activation.md`].
+   * Activation runbook: [`docs/01-product/launch/tech/ai-memory-activation.md`].
    * Monitoring: [`docs/observability/runbook.md` § "WF-30 AI memory daily
    * digest (PR-21)"].
    */
@@ -1553,7 +1553,7 @@ export function assertStartupEnv(): void {
   if (env.AI_MEMORY_ENABLED && !env.VOYAGE_API_KEY) {
     if (isProduction) {
       throw new Error(
-        "VOYAGE_API_KEY is required in production when AI_MEMORY_ENABLED=true. Without it embedding-calls throw MissingVoyageApiKeyError on first request (HTTP 503 у /api/ai-memory/recall, BullMQ skip у ingest) — fail-loud at boot instead of silently shipping a half-wired feature. Set the key from voyageai.com → API keys, або вимкни `AI_MEMORY_ENABLED=false` доки key не буде доступний. Activation runbook: docs/launch/tech/ai-memory-activation.md.",
+        "VOYAGE_API_KEY is required in production when AI_MEMORY_ENABLED=true. Without it embedding-calls throw MissingVoyageApiKeyError on first request (HTTP 503 у /api/ai-memory/recall, BullMQ skip у ingest) — fail-loud at boot instead of silently shipping a half-wired feature. Set the key from voyageai.com → API keys, або вимкни `AI_MEMORY_ENABLED=false` доки key не буде доступний. Activation runbook: docs/01-product/launch/tech/ai-memory-activation.md.",
       );
     }
     warnings.push(
@@ -1593,7 +1593,7 @@ export function assertStartupEnv(): void {
     }
     if (leftoverPats.length > 0) {
       throw new Error(
-        `Hard Rule #20 violated: ${leftoverPats.join(", ")} present in production. OpenClaw must authenticate via the GitHub App-flow only — set OPENCLAW_GITHUB_APP_{ID,PRIVATE_KEY,INSTALLATION_ID} and remove the legacy PAT(s) from the secret-store. See docs/playbooks/rotate-openclaw-credentials.md.`,
+        `Hard Rule #20 violated: ${leftoverPats.join(", ")} present in production. OpenClaw must authenticate via the GitHub App-flow only — set OPENCLAW_GITHUB_APP_{ID,PRIVATE_KEY,INSTALLATION_ID} and remove the legacy PAT(s) from the secret-store. See docs/00-start/playbooks/rotate-openclaw-credentials.md.`,
       );
     }
   }

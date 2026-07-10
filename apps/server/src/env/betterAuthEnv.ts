@@ -33,7 +33,7 @@ export function assertBetterAuthStartupEnv(): void {
   const secret = process.env["BETTER_AUTH_SECRET"]?.trim();
   if (!secret || secret.length < 32) {
     throw new Error(
-      "BETTER_AUTH_SECRET is required in production and must be at least 32 characters (see README / docs/integrations/railway-vercel.md).",
+      "BETTER_AUTH_SECRET is required in production and must be at least 32 characters (see README / docs/02-engineering/integrations/railway-vercel.md).",
     );
   }
   const lower = secret.toLowerCase();

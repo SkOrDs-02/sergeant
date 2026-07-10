@@ -1,6 +1,6 @@
 # Tech-debt assessment 2026-07-01 — групи, інструкції до фіксу, burndown-план
 
-> **Last touched:** 2026-07-02 by @claude. **Next review:** 2026-09-30.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-09-30.
 > **Status:** Active
 
 > **Методологія:** повний прогін механічних гейтів (pnpm lint, knip, janitors doc-drift/dep-cycles, lint:ai-legacy) + воркфло з 11 підагентів (6 verify-агентів звіряли кожну групу з живим кодом точними вимірами — ESLint per-rule прогони, effective-LOC через саме правило `max-lines`, pairwise diff; 5 instruct-агентів писали рецепти). Числа в цьому документі — виміряні 2026-07-01 на HEAD, не переписані зі старих доків.
@@ -18,33 +18,20 @@
 
 ---
 
-## Група 1 — Server max-lines burndown (Hard Rule #18) — P2, ~5-6 PR
+## Група 1 — Server max-lines burndown (Hard Rule #18) — ✅ DONE (2026-07-10)
 
-Залишок allowlist (6 файлів, effective LOC виміряний правилом):
+**Верифіковано 2026-07-10:** `eslint.server-maxlines-allowlist.json` = `[]` (порожній). Усі 6 файлів декомпозовано або зменшено нижче 600 effective LOC:
 
-| Файл                               | raw / eff       | Понад ліміт                    |
-| ---------------------------------- | --------------- | ------------------------------ |
-| `routes/internal/openclaw.ts`      | 1819 / **1379** | +779 (найбільший)              |
-| `modules/openclaw/tools.ts`        | 1373 / **994**  | +394                           |
-| `modules/billing/stripe.ts`        | 1013 / **835**  | +235                           |
-| `obs/metrics.ts`                   | 1301 / **673**  | +73                            |
-| `modules/sync/fizruk/applySync.ts` | 654 / **623**   | +23 (найменший реальний борг)  |
-| `modules/chat/chat.ts`             | 887 / **600**   | рівно на ліміті, zero headroom |
+| Файл                               | raw (до → після)   | Результат                                               |
+| ---------------------------------- | ------------------ | ------------------------------------------------------- |
+| `routes/internal/openclaw.ts`      | 1819 → **73**      | барель; каталог `routes/internal/openclaw/` (11 файлів) |
+| `modules/openclaw/tools.ts`        | 1373 → **81**      | барель; доменні блоки у sibling-файлах                  |
+| `modules/billing/stripe.ts`        | 1013 → **293**     | ✅ під 600                                              |
+| `obs/metrics.ts`                   | 1301 → **875 raw** | eff LOC під 600 (переважно коментарі; allowlist знятий) |
+| `modules/sync/fizruk/applySync.ts` | 654 → **414**      | ✅ під 600                                              |
+| `modules/chat/chat.ts`             | 887 → **534**      | ✅ під 600 (streaming-блок винесено)                    |
 
-Регресійний фон чистий: жоден не-allowlisted файл сервера не перевищує 550 eff (найближчі: `chat/aiQuota.ts` ~538, `sync/finyk/applySync.ts` ~536).
-
-**Порядок і шви декомпозиції** (один PR = один файл/кластер, scope `server`, allowlist-запис видаляється в тому самому PR; перед перенесенням exported symbol — grep імпортів по monorepo, де можливо — re-export зі старого файлу):
-
-1. **`sync/fizruk/applySync.ts` (+23).** 5 незалежних exported-функцій; винести `applyFizrukMeasurements` + `applyFizrukCustomExercises` у сусідній `applyMisc.ts`, re-export. Не змінювати сигнатури/порядок SQL; прогнати sync-тести.
-2. **`obs/metrics.ts` (+73).** Уже секціонований банерами. `metrics/registry.ts` (register + statusClass + startPoolSampler + metricsHandler) + винести секції Sync (~9 метрик) у `metrics/sync.ts` і BullMQ-джоби у `metrics/jobs.ts`; `metrics.ts` — барель `export *`. Ризик: подвійна реєстрація метрики кине помилку на старті — після зміни підняти сервер і смикнути `/metrics`.
-3. **`chat/chat.ts` (600, zero headroom).** Винести SSE-streaming блок (`SSE_HEARTBEAT_MS`, `StreamIterationResult`, `streamOneIterationToSse`, `streamAnthropicToSse`, ~200 eff) у `chatStream.ts`. Гарячий шлях — прогнати `chat.stream.test.ts` + ручний SSE-прогін; прочитати AI-DANGER-маркери перед перенесенням.
-4. **`billing/stripe.ts` (+235).** Три шви: webhook-конвеєр → `stripeWebhook.ts`; PostHog lifecycle capture → `stripeLifecycle.ts`; checkout/portal/status лишаються. `verifyStripeSignature` — re-export. Платіжний код: тільки переміщення, нуль змін логіки.
-5. **`openclaw/tools.ts` (+394).** Доменні блоки: `telegram-history.ts`, `external-metrics.ts`, `decisions.ts`, за потреби `db-query.ts`; error-класи → `errors.ts`; `tools.ts` — барель. SQL-sandbox (`FORBIDDEN_SQL_FUNCTION_RE`, `assertNoForbiddenSqlConstructs`) — security-чутливий, переносити байт-в-байт.
-6. **`routes/internal/openclaw.ts` (+779).** Каталог `routes/internal/openclaw/`: `schemas.ts` (~55 Zod-схем), `helpers.ts`, 6 суб-роутерів за префіксом шляху, `index.ts` з `createOpenClawInternalRouter`. Можна двома PR: G1 = schemas+helpers (файл впаде до ~860 eff), G2 = суб-роутери + зняття з allowlist. PAT-чутлива поверхня (Hard Rule #20) — auth-перевірки не чіпати.
-
-`env/env.ts` НЕ декомпозувати: навмисний single-inventory Zod-схеми, 96% raw-обсягу — коментарі, які правило пропускає; headroom 41 eff LOC — правило тепер охороняє файл.
-
-**Verification per PR:** `pnpm --filter @sergeant/server lint && … typecheck && … test`; повний `pnpm check` перед merge; для metrics — локальний `/metrics`; для chat — SSE-прогін.
+Allowlist порожній — ESLint-правило тепер активно охороняє всі server-файли без винятків.
 
 ## Група 2 — react-hooks v7: 5 вимкнених правил — P2, 6-7 PR
 

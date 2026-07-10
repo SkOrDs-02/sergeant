@@ -4,7 +4,7 @@
  *
  * The pre-S6.1 wizard pre-selected every module on splash and silently
  * fell back to `[...ALL_MODULES]` when the user finished with an
- * empty pick list. The audit (`docs/launch/ftux-sprint-plan.md` §2.1
+ * empty pick list. The audit (`docs/01-product/launch/ftux-sprint-plan.md` §2.1
  * / B-1) flagged this as the single biggest commitment-leak in FTUX:
  * "тап-через-усе" produces a populated dashboard the user never
  * actually chose, which depresses D7 retention.

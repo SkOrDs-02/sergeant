@@ -12,7 +12,7 @@
  * - Reduced motion support
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AccessibilityInfo, Animated, Text, View } from "react-native";
 import NetInfo, { type NetInfoState } from "@react-native-community/netinfo";
 import { WifiOff, RefreshCw } from "lucide-react-native";
@@ -36,8 +36,12 @@ export function OfflineBanner({
   const [reduceMotion, setReduceMotion] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const translateY = useRef(new Animated.Value(-100)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [translateY] = useState(() => new Animated.Value(-100));
+  const [opacity] = useState(() => new Animated.Value(0));
 
   // Subscribe to network state
   useEffect(() => {

@@ -160,19 +160,19 @@ export const baseline = [
       // Promote back to "error" after the cleanup PR has migrated the
       // last call-site (mirrors the WCAG-`-strong` policy below).
       //
-      // Current scoreboard (2026-05-16 sweep across apps/web, apps/mobile,
+      // Current scoreboard (2026-07-10 re-measure across apps/web, apps/mobile,
       // apps/mobile-shell, apps/server, tools/openclaw):
       //   static-components            — 0 ✅ promoted to "error" below
       //   use-memo                     — 0 ✅ promoted to "error" below
       //   immutability                 — web 0 ✅ (promoted to "error" for
       //       apps/web in eslint.web.js) + mobile 4 (still off here)
       //   preserve-manual-memoization  — web 0 ✅ (promoted to "error" for
-      //       apps/web in eslint.web.js after a 2026-07-04 burndown: 6 fixed
-      //       cleanly, 3 behaviour-preserving manual memos kept behind a scoped
-      //       eslint-disable) + mobile 2 (still off here)
-      //   purity                       — 13 (apps/web)
-      //   refs                         — 59 (apps/web)
-      //   set-state-in-effect          — 76 (apps/web)
+      //       apps/web in eslint.web.js after 2026-07-04 burndown) + mobile 4
+      //   purity                       — web ~14 + mobile 3 (still off here)
+      //   refs                         — web ~59 + mobile 164 (still off here)
+      //   set-state-in-effect          — web ~80 + mobile 44 (still off here)
+      // Promoted per-surface once that surface's count reaches 0. See
+      // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/purity": "off",
