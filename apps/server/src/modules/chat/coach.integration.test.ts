@@ -1,13 +1,15 @@
 /**
- * Integration tests for coach memory handlers (GET + POST /api/coach/memory).
+ * Integration tests for coach memory routes (GET + POST /api/coach/memory).
  *
- * Uses a real Postgres container against the `coach_memory` table.
- * The LLM/Anthropic path (POST /api/coach/insight) is NOT tested here —
- * that requires network access and is covered by E2E.
+ * Uses Testcontainers Postgres + createApp() + mocked getSessionUser
+ * (same pattern as dataRights / auth-session-me integration suites).
+ * Handler-direct + vi.doMock("../../db.js") was flaky in CI: coach.ts
+ * imported the module-level pool before the mock applied → ECONNREFUSED
+ * on localhost:5432.
  *
  * Tests:
  *   1. POST /api/coach/memory → UPSERT: creates row on first call, updates on second.
- *   2. POST with blob > MAX_BLOB_SIZE → 413 response, no DB write.
+ *   2. POST with blob > MAX_BLOB_SIZE → 413, no row written.
  *   3. GET /api/coach/memory round-trip: data stored by POST is returned by GET.
  */
 
@@ -20,121 +22,61 @@ import {
   beforeEach,
   vi,
 } from "vitest";
-import type { Request, Response } from "express";
+import request from "supertest";
+import type { Express } from "express";
+import type { Pool } from "pg";
 import {
   bootIntegrationHarness,
   shutdownIntegrationHarness,
   seedIntegrationUser,
   truncateIntegrationTables,
+  CSRF_HEADERS,
   INTEGRATION_TIMEOUT_MS,
-  type IntegrationHarness,
 } from "../../test/createIntegrationApp.js";
-import { MAX_BLOB_SIZE } from "./coach.js";
 
-let harness: IntegrationHarness;
-let dockerAvailable = false;
+// Mirror coach.ts MAX_BLOB_SIZE — never static-import ./coach.js here; that
+// loads db.ts before bootIntegrationHarness() sets DATABASE_URL.
+const MAX_BLOB_SIZE = 5 * 1024 * 1024;
 
-let coachMemoryPostFn: (req: Request, res: Response) => Promise<void>;
-let coachMemoryGetFn: (req: Request, res: Response) => Promise<void>;
+const { getSessionUserMock } = vi.hoisted(() => ({
+  getSessionUserMock: vi.fn(),
+}));
+
+vi.mock("../../auth.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../auth.js")>();
+  return { ...actual, getSessionUser: getSessionUserMock };
+});
 
 const USER_ID = "u_coach_intg_01";
+const USER_EMAIL = `${USER_ID}@test.local`;
 
-interface TestRes {
-  statusCode: number;
-  body: unknown;
-  status(code: number): TestRes;
-  json(payload: unknown): TestRes;
-}
+let app: Express | undefined;
+let pool: Pool | undefined;
+let dockerAvailable = false;
+let skipReason: string | null = null;
 
-function makeRes(): TestRes & Response {
-  const res: TestRes = {
-    statusCode: 200,
-    body: {},
-    status(code) {
-      this.statusCode = code;
-      return this;
-    },
-    json(payload) {
-      this.body = payload;
-      return this;
-    },
-  };
-  return res as TestRes & Response;
-}
-
-function makePostReq(userId: string, body: Record<string, unknown>): Request {
-  return {
-    method: "POST",
-    body,
-    user: { id: userId },
-  } as unknown as Request;
-}
-
-function makeGetReq(userId: string): Request {
-  return {
-    method: "GET",
-    body: {},
-    user: { id: userId },
-  } as unknown as Request;
+function authedSession() {
+  getSessionUserMock.mockResolvedValue({
+    id: USER_ID,
+    email: USER_EMAIL,
+    name: USER_ID,
+    emailVerified: true,
+  });
 }
 
 beforeAll(async () => {
   try {
-    harness = await bootIntegrationHarness({ app: false });
+    const harness = await bootIntegrationHarness();
+    app = harness.app;
+    pool = harness.pool;
     dockerAvailable = true;
   } catch (e) {
     if (process.env["CI"]) throw e;
+    skipReason = e instanceof Error ? e.message : String(e);
     console.warn(
-      "[coach integration] Skipping:",
-      e instanceof Error ? e.message : String(e),
+      `[coach integration] Skipping: testcontainers unavailable — ${skipReason}`,
     );
-    return;
   }
-
-  // Mock db.js with the real test pool so coach handlers hit the test DB.
-  vi.doMock("../../db.js", () => ({
-    default: harness.pool,
-    pool: harness.pool,
-    query: (text: string, values?: unknown[]) =>
-      harness.pool.query(text, values),
-    ensureSchema: vi.fn().mockResolvedValue(undefined),
-  }));
-
-  vi.doMock("../../obs/logger.js", () => ({
-    logger: {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      fatal: vi.fn(),
-    },
-  }));
-
-  // Stub LLM dependencies (only needed for coachInsight, not tested here).
-  vi.doMock("../../lib/llm/provider.js", () => ({
-    getLLMProvider: vi.fn(),
-    invokeLLM: vi.fn(),
-  }));
-
-  vi.doMock("../../push/send.js", () => ({
-    sendToUser: vi.fn(),
-    sendToUserQuietly: vi.fn(),
-  }));
-
-  vi.doMock("./aiQuota.js", () => ({
-    resolveProTier: vi.fn(async () => ({
-      model: "claude-sonnet-4-5",
-      tier: "premium",
-    })),
-  }));
-
-  vi.doMock("../../obs/errors.js", () => ({
-    makeAiProviderError: vi.fn((opts: unknown) => new Error(String(opts))),
-  }));
-
-  const mod = await import("./coach.js");
-  coachMemoryPostFn = mod.coachMemoryPost;
-  coachMemoryGetFn = mod.coachMemoryGet;
 }, INTEGRATION_TIMEOUT_MS);
 
 afterAll(async () => {
@@ -142,16 +84,18 @@ afterAll(async () => {
 }, INTEGRATION_TIMEOUT_MS);
 
 beforeEach(async () => {
-  if (!dockerAvailable) return;
-  await truncateIntegrationTables(harness.pool);
-  await seedIntegrationUser(harness.pool, USER_ID);
+  getSessionUserMock.mockReset();
+  if (!pool) return;
+  await truncateIntegrationTables(pool);
+  await seedIntegrationUser(pool, USER_ID, USER_EMAIL);
+  authedSession();
 });
 
 describe("coach memory — integration (real Postgres)", () => {
   it(
     "POST /api/coach/memory UPSERT: creates row on first call, updates version on second",
     async (ctx) => {
-      if (!dockerAvailable) return ctx.skip();
+      if (!dockerAvailable || !app || !pool) return ctx.skip();
 
       const digest = {
         weeklyDigest: {
@@ -164,25 +108,29 @@ describe("coach memory — integration (real Postgres)", () => {
         },
       };
 
-      // First POST — should create a new row.
-      const res1 = makeRes();
-      await coachMemoryPostFn(makePostReq(USER_ID, digest), res1);
-      expect(res1.statusCode).toBe(200);
+      const res1 = await request(app)
+        .post("/api/coach/memory")
+        .set(CSRF_HEADERS)
+        .set("Authorization", "Bearer test-bearer")
+        .send(digest);
+      expect(res1.status).toBe(200);
       expect(res1.body).toMatchObject({ ok: true });
 
-      const { rows: rows1 } = await harness.pool.query<{ version: number }>(
+      const { rows: rows1 } = await pool.query<{ version: number }>(
         `SELECT version FROM coach_memory WHERE user_id = $1`,
         [USER_ID],
       );
       expect(rows1).toHaveLength(1);
       expect(rows1[0]!.version).toBe(1);
 
-      // Second POST — should increment version (UPSERT).
-      const res2 = makeRes();
-      await coachMemoryPostFn(makePostReq(USER_ID, digest), res2);
-      expect(res2.statusCode).toBe(200);
+      const res2 = await request(app)
+        .post("/api/coach/memory")
+        .set(CSRF_HEADERS)
+        .set("Authorization", "Bearer test-bearer")
+        .send(digest);
+      expect(res2.status).toBe(200);
 
-      const { rows: rows2 } = await harness.pool.query<{ version: number }>(
+      const { rows: rows2 } = await pool.query<{ version: number }>(
         `SELECT version FROM coach_memory WHERE user_id = $1`,
         [USER_ID],
       );
@@ -195,11 +143,8 @@ describe("coach memory — integration (real Postgres)", () => {
   it(
     "POST with blob > MAX_BLOB_SIZE → 413, no row written",
     async (ctx) => {
-      if (!dockerAvailable) return ctx.skip();
+      if (!dockerAvailable || !app || !pool) return ctx.skip();
 
-      // Build a payload that exceeds MAX_BLOB_SIZE after JSON serialization.
-      // A summary string longer than MAX_BLOB_SIZE guarantees the serialized
-      // CoachMemory object will also exceed it.
       const hugeSummary = "x".repeat(MAX_BLOB_SIZE + 1024);
       const body = {
         weeklyDigest: {
@@ -210,16 +155,16 @@ describe("coach memory — integration (real Postgres)", () => {
         },
       };
 
-      const res = makeRes();
-      await coachMemoryPostFn(makePostReq(USER_ID, body), res);
+      const res = await request(app)
+        .post("/api/coach/memory")
+        .set(CSRF_HEADERS)
+        .set("Authorization", "Bearer test-bearer")
+        .send(body);
 
-      expect(res.statusCode).toBe(413);
-      expect((res.body as Record<string, unknown>)["error"]).toMatch(
-        /blob too large/i,
-      );
+      expect(res.status).toBe(413);
+      expect(res.body.error).toMatch(/blob too large/i);
 
-      // No row must be written.
-      const { rows } = await harness.pool.query<{ c: string }>(
+      const { rows } = await pool.query<{ c: string }>(
         `SELECT COUNT(*)::text AS c FROM coach_memory WHERE user_id = $1`,
         [USER_ID],
       );
@@ -231,7 +176,7 @@ describe("coach memory — integration (real Postgres)", () => {
   it(
     "GET /api/coach/memory round-trip: stored data returned correctly",
     async (ctx) => {
-      if (!dockerAvailable) return ctx.skip();
+      if (!dockerAvailable || !app || !pool) return ctx.skip();
 
       const digest = {
         weeklyDigest: {
@@ -244,28 +189,23 @@ describe("coach memory — integration (real Postgres)", () => {
         },
       };
 
-      // Write via POST.
-      await coachMemoryPostFn(makePostReq(USER_ID, digest), makeRes());
+      const postRes = await request(app)
+        .post("/api/coach/memory")
+        .set(CSRF_HEADERS)
+        .set("Authorization", "Bearer test-bearer")
+        .send(digest);
+      expect(postRes.status).toBe(200);
 
-      // Read via GET.
-      const res = makeRes();
-      await coachMemoryGetFn(makeGetReq(USER_ID), res);
+      const getRes = await request(app)
+        .get("/api/coach/memory")
+        .set("Authorization", "Bearer test-bearer");
 
-      expect(res.statusCode).toBe(200);
-      const body = res.body as {
-        ok: boolean;
-        memory: {
-          weeklyDigests: Array<{
-            weekKey: string;
-            fizruk?: { summary?: string };
-          }>;
-        };
-      };
-      expect(body.ok).toBe(true);
-      expect(body.memory).not.toBeNull();
-      expect(body.memory.weeklyDigests).toHaveLength(1);
-      expect(body.memory.weeklyDigests[0]!.weekKey).toBe("2026-W28");
-      expect(body.memory.weeklyDigests[0]!.fizruk?.summary).toBe(
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.ok).toBe(true);
+      expect(getRes.body.memory).not.toBeNull();
+      expect(getRes.body.memory.weeklyDigests).toHaveLength(1);
+      expect(getRes.body.memory.weeklyDigests[0]!.weekKey).toBe("2026-W28");
+      expect(getRes.body.memory.weeklyDigests[0]!.fizruk?.summary).toBe(
         "3 workouts completed",
       );
     },
