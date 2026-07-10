@@ -168,6 +168,7 @@ beforeEach(() => {
       items: [{ name: "яйця", qty: 6, unit: "шт", notes: null }],
       text: "",
     },
+    pantryItems: [{ name: "яйця", qty: 6, unit: "шт", notes: null }],
     setActivePantryId: jest.fn(),
     addLine: jest.fn(),
     applyParsedItems: jest.fn(),

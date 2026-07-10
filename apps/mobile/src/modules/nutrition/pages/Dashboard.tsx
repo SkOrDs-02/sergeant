@@ -156,7 +156,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
   const api = useApiClient();
   const { nutritionLog, addMeal } = useNutritionLog();
   const { prefs, updatePrefs } = useNutritionPrefs();
-  const { activePantry } = useNutritionPantries();
+  const { pantryItems } = useNutritionPantries();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const [dayPlan, setDayPlan] = useState<DayPlanState | null>(null);
@@ -184,11 +184,9 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
       setDayPlanBusy(true);
       setDayPlanErr("");
       try {
-        const pantryItems = Array.isArray(activePantry?.items)
-          ? activePantry.items.slice(0, PANTRY_ITEMS_LIMIT)
-          : [];
+        const pantryPayload = pantryItems.slice(0, PANTRY_ITEMS_LIMIT);
         const data = await api.nutrition.dayPlan({
-          pantry: pantryItems,
+          pantry: pantryPayload,
           targets: {
             kcal: prefs.dailyTargetKcal ?? null,
             protein_g: prefs.dailyTargetProtein_g ?? null,
@@ -235,7 +233,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
     },
     [
       api,
-      activePantry?.items,
+      pantryItems,
       dayPlanBusy,
       prefs.dailyTargetKcal,
       prefs.dailyTargetProtein_g,

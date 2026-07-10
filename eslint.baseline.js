@@ -168,7 +168,7 @@ export const baseline = [
       //       CategoryDonut reduce fix + Sheet Reanimated scoped disables;
       //       promoted in eslint.web.js + eslint.mobile.js)
       //   preserve-manual-memoization  — web 0 ✅ (promoted in eslint.web.js
-      //       after 2026-07-04 burndown) + mobile 4 (still off here)
+      //       after 2026-07-04 burndown) + mobile 0 ✅ (promoted in eslint.mobile.js)
       //   purity                       — web 0 ✅ (promoted in eslint.web.js)
       //       + mobile 0 ✅ (promoted in eslint.mobile.js)
       //   refs                         — web ~59 (still off here; mobile ~106 after wave 1)
