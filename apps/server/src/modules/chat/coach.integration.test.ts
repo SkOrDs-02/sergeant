@@ -33,7 +33,10 @@ import {
   CSRF_HEADERS,
   INTEGRATION_TIMEOUT_MS,
 } from "../../test/createIntegrationApp.js";
-import { MAX_BLOB_SIZE } from "./coach.js";
+
+// Mirror coach.ts MAX_BLOB_SIZE — never static-import ./coach.js here; that
+// loads db.ts before bootIntegrationHarness() sets DATABASE_URL.
+const MAX_BLOB_SIZE = 5 * 1024 * 1024;
 
 const { getSessionUserMock } = vi.hoisted(() => ({
   getSessionUserMock: vi.fn(),
