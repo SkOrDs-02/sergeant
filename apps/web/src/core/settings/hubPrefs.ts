@@ -23,22 +23,22 @@ export function useHubPref<T>(
   key: string,
   defaultValue: T,
 ): [T, (next: T) => void] {
-  const read = (): T => {
+  const [value, setValue] = useState<T>(() => {
     const prefs = loadHubPrefs();
     return key in prefs ? (prefs[key] as T) : defaultValue;
-  };
-  const [value, setValue] = useState<T>(read);
+  });
 
   useEffect(() => {
+    const read = (): T => {
+      const prefs = loadHubPrefs();
+      return key in prefs ? (prefs[key] as T) : defaultValue;
+    };
     const handler = (e: StorageEvent) => {
       if (e.key === HUB_PREFS_KEY || e.key === null) setValue(read());
     };
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
-    // `read`/`setValue` excluded — `read` is stable for a given `key`,
-    // `setValue` is a React setter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, defaultValue]);
 
   const update = (next: T) => {
     setValue(next);
