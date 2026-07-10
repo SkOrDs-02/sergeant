@@ -215,3 +215,160 @@ describe("buildDailySeries — alignment", () => {
     expect(col[2]).toBe(5000);
   });
 });
+
+describe("getDailySeries — explicit date range + period_days capping", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T12:00:00"));
+  });
+  afterEach(() => {
+    localStorage.clear();
+    vi.useRealTimers();
+  });
+
+  it("respects explicit date_from / date_to over period_days", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: {
+        metrics: ["spending"],
+        date_from: "2026-04-10",
+        date_to: "2026-04-12",
+      },
+    });
+    // Header should reference the explicit range.
+    const header = out.split("\n").find((l) => l.startsWith("Ряди метрик"));
+    expect(header).toContain("2026-04-10");
+    expect(header).toContain("2026-04-12");
+    expect(header).toContain("3 днів");
+  });
+
+  it("caps period_days exceeding MAX_PERIOD_DAYS (365) to 365", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: {
+        metrics: ["spending"],
+        // period_days is read at runtime but not yet on the typed contract.
+        period_days: 500,
+      } as import("../types").GetDailySeriesAction["input"] & {
+        period_days?: number;
+      },
+    });
+    const header = out.split("\n").find((l) => l.startsWith("Ряди метрик"));
+    expect(header).toContain("365 днів");
+  });
+
+  it("fill=null surfaces in the table output (empty cells for missing days)", () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    localStorage.setItem(
+      "finyk_tx_cache",
+      JSON.stringify({
+        txs: [{ id: "e0", amount: -1000 * 100, time: nowSec }],
+      }),
+    );
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: {
+        metrics: ["spending"],
+        date_from: "2026-04-20",
+        date_to: "2026-04-22",
+        fill: "null",
+      },
+    });
+    // The 2026-04-20 row should have an empty spending cell.
+    const lines = out.split("\n");
+    const emptyDay = lines.find((l) => l === "2026-04-20,");
+    expect(emptyDay).toBeDefined();
+  });
+});
+
+describe("formatDailySeries — trend arrows", () => {
+  it("renders ↑ when the second half average is higher", () => {
+    const s = series(["spending"], { spending: [1, 1, 5, 5] }, 4);
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).toContain("↑");
+  });
+
+  it("renders ↓ when the second half average is lower", () => {
+    const s = series(["spending"], { spending: [5, 5, 1, 1] }, 4);
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).toContain("↓");
+  });
+
+  it("renders → when both halves have the same average", () => {
+    const s = series(["spending"], { spending: [3, 3, 3, 3] }, 4);
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).toContain("→");
+  });
+
+  it("renders no trend for fewer than 4 data points", () => {
+    const s = series(["spending"], { spending: [1, 2, 3] }, 3);
+    const out = formatDailySeries(s, [], "zero");
+    // With < 4 points summariseMetric does not append a trend char.
+    expect(out).not.toMatch(/[↑↓→]/u);
+  });
+
+  it("truncates table to last 90 rows when days > 90 and shows row count info", () => {
+    const days = 95;
+    const col: (number | undefined)[] = Array.from(
+      { length: days },
+      (_, i) => i + 1,
+    );
+    const daysList: string[] = Array.from({ length: days }, (_, i) => {
+      const d = new Date("2025-01-01");
+      d.setDate(d.getDate() + i);
+      return d.toISOString().slice(0, 10);
+    });
+    const s: DailySeries = {
+      from: daysList[0]!,
+      to: daysList[days - 1]!,
+      days: daysList,
+      raw: { spending: col },
+      metrics: ["spending"],
+    };
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).toContain(`Таблиця (останні 90 з ${days} днів):`);
+  });
+});
+
+describe("formatDailySeries — correlation strength labels", () => {
+  it("labels a high positive r as сильний прямий", () => {
+    const s = series(
+      ["spending", "income"],
+      {
+        spending: [1, 2, 3, 4, 5, 6, 7, 8],
+        income: [2, 4, 6, 8, 10, 12, 14, 16],
+      },
+      8,
+    );
+    const corr = computePairwiseCorrelations(s);
+    const out = formatDailySeries(s, corr, "zero");
+    expect(out).toContain("сильний прямий");
+  });
+
+  it("labels a strong negative r as сильний зворотній", () => {
+    const s = series(
+      ["weight", "kcal"],
+      {
+        weight: [8, 7, 6, 5, 4, 3, 2, 1],
+        kcal: [1, 2, 3, 4, 5, 6, 7, 8],
+      },
+      8,
+    );
+    const corr = computePairwiseCorrelations(s);
+    const out = formatDailySeries(s, corr, "zero");
+    expect(out).toContain("сильний зворотній");
+  });
+
+  it("shows недостатньо спільних днів when no pair meets the 4-point threshold", () => {
+    const s = series(
+      ["spending", "income"],
+      { spending: [1, 2, 3], income: [2, 4, 6] },
+      3,
+    );
+    const corr = computePairwiseCorrelations(s);
+    expect(corr).toHaveLength(0);
+    const out = formatDailySeries(s, corr, "zero");
+    expect(out).toContain("недостатньо спільних днів");
+  });
+});
