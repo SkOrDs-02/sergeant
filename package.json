@@ -151,7 +151,8 @@
     "janitors:doc-drift": "pnpm --filter @sergeant/entropy-janitors doc-drift",
     "janitors:dead-code": "pnpm --filter @sergeant/entropy-janitors dead-code",
     "janitors:dep-cycles": "pnpm --filter @sergeant/entropy-janitors dep-cycles",
-    "janitors:all": "pnpm run janitors:doc-drift && pnpm run janitors:dead-code && pnpm run janitors:dep-cycles"
+    "janitors:dualwrite-residue": "pnpm --filter @sergeant/entropy-janitors dualwrite-residue",
+    "janitors:all": "pnpm run janitors:doc-drift && pnpm run janitors:dead-code && pnpm run janitors:dep-cycles && pnpm run janitors:dualwrite-residue"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",

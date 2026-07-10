@@ -1,4 +1,8 @@
-export type JanitorKind = "doc-drift" | "dead-code" | "dep-cycles";
+export type JanitorKind =
+  | "doc-drift"
+  | "dead-code"
+  | "dep-cycles"
+  | "dualwrite-residue";
 
 export interface DriftFinding {
   readonly kind:

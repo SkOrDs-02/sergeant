@@ -10,7 +10,8 @@
     "doc-drift": "tsx src/doc-drift/index.ts",
     "dead-code": "tsx src/dead-code/index.ts",
     "dep-cycles": "tsx src/dep-cycles/index.ts",
-    "all": "tsx src/doc-drift/index.ts && tsx src/dead-code/index.ts && tsx src/dep-cycles/index.ts",
+    "dualwrite-residue": "tsx src/dualwrite-residue/index.ts",
+    "all": "tsx src/doc-drift/index.ts && tsx src/dead-code/index.ts && tsx src/dep-cycles/index.ts && tsx src/dualwrite-residue/index.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test --import tsx src/__tests__/**/*.test.ts"

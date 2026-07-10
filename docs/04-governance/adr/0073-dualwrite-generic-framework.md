@@ -1,6 +1,6 @@
 # ADR-0073: Generic dual-write framework для 4 модульних пайплайнів
 
-> **Last touched:** 2026-07-04 by @dimastahov16012003. **Next review:** 2026-10-02.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Accepted
 
 - **Status:** Accepted
@@ -13,17 +13,17 @@
   - [`docs/04-governance/adr/0004-cloudsync-lww-conflict-resolution.md`](./0004-cloudsync-lww-conflict-resolution.md) — базова LWW-семантика
   - [`docs/04-governance/adr/0011-local-first-storage.md`](./0011-local-first-storage.md) — local-first контекст, у якому живе dual-write
   - [`docs/02-engineering/architecture/domain-invariants.md`](../../02-engineering/architecture/domain-invariants.md) — Kyiv time, day keys, identity
-  - [`apps/web/src/shared/lib/dualWrite/core.ts`](../../../apps/web/src/shared/lib/dualWrite/core.ts) — існуючий мінімальний shared core (Stage 10, PR #070-dualwrite-refactor)
+  - [`apps/web/src/shared/lib/sqliteWriter/core.ts`](../../../apps/web/src/shared/lib/sqliteWriter/core.ts) — web re-export shim для `@sergeant/dualwrite-core` (колишній `dualWrite/core`, перейменовано Phase 5 teardown 2026-07-10)
 
 ---
 
 ## Context and Problem Statement
 
-У монорепо живуть **4 незалежні dual-write пайплайни** (finyk, fizruk, nutrition, routine), кожен — це LS/MMKV→SQLite дзеркало: `diff(prev, next)` → op-stream → adapter з ідемпотентними `ON CONFLICT` upsert-ами під LWW-guard-ом → parity-probe → телеметрія. Кожен пайплайн має web-копію (`apps/web/src/modules/<m>/lib/dualWrite/`) і mobile-копію (`apps/mobile/src/modules/<m>/lib/dualWrite/`), плюс супутній boot-time `residualImport.ts` (дренаж legacy LS-ключів зі стейл-таймстемпом `1970-01-01T00:00:00.000Z`, щоб LWW-guard завжди давав перемогу існуючим SQLite-рядкам).
+У монорепо живуть **4 незалежні SQLite-writer пайплайни** (finyk, fizruk, nutrition, routine), кожен — canonical SQLite persistence: `diff(prev, next)` → op-stream → adapter з ідемпотентними `ON CONFLICT` upsert-ами під LWW-guard-ом → parity-probe → телеметрія. Кожен пайплайн має web-копію (`apps/web/src/modules/<m>/lib/sqliteWriter/`, колишній `dualWrite/`) і mobile-копію (`apps/mobile/src/modules/<m>/lib/sqliteWriter/`), плюс супутній boot-time `residualImport.ts` (demo-bootstrap drain legacy LS-ключів).
 
 Assessment 2026-07-01 (§ Група 4) верифікаційним агентом **спростував** стару гіпотезу F-004/F-005 «це дублікати»: pairwise diff копій `residualImport.ts` = 209–467 рядків на файлах 110–310 LOC (2–4× власного розміру), а dualWrite-пайплайни (1442–2170 LOC кожен за виміром assessment-у; наш повторний вимір 2026-07-03 по web-копіях без тестів: finyk 2193, fizruk 1764, nutrition 1491, routine 1491) мають **різну структуру каталогів і різну семантику** — спільним є лише архітектурний патерн: best-effort try/catch, `ON CONFLICT ... DO UPDATE ... WHERE excluded.updated_at > <table>.updated_at`, soft-delete з `updated_at < ?`. Отже «вилучення у спільний фреймворк» — це **побудова generic-фреймворку** (архітектурне рішення), а не механічний dedup.
 
-Додатковий факт: мінімальний shared core **вже існує** (`apps/web/src/shared/lib/dualWrite/core.ts`, 102 LOC, з тестами `core.test.ts`), але фактично мертвий як框架: його цикл `applyDualWriteOps` не використовує **жоден** адаптер; лише web-fizruk імпортує звідти типи і `toIntOrNull`/`toRealOrNull`. Кожен інший адаптер тримає локальні копії типів, дефолтного логера і apply-циклу.
+Додатковий факт: мінімальний shared core **вже існує** (`apps/web/src/shared/lib/sqliteWriter/core.ts`, re-export `@sergeant/dualwrite-core`), але фактично мертвий як框架: його цикл `applyDualWriteOps` не використовує **жоден** адаптер; лише web-fizruk імпортує звідти типи і `toIntOrNull`/`toRealOrNull`. Кожен інший адаптер тримає локальні копії типів, дефолтного логера і apply-циклу.
 
 Проблема, яку вирішуємо: (1) кожен новий op-kind чи 5-й модуль повторює той самий скелет; (2) інваріанти (LWW-guard `>` строго, tombstone-семантика, best-effort контракт) захищені лише конвенцією і копі-пейстом — регресію в одній копії тести інших копій не ловлять; (3) web і mobile копії одного модуля вже дрейфують (див. inventory нижче: web-fizruk транзакційний, mobile-fizruk — ні).
 
@@ -250,6 +250,7 @@ Rollback-важіль: кожен крок — ізольований PR, яки
 
 - Поведінка в рантаймі байт-ідентична за визначенням гейта; жодних змін API, схем чи міграцій БД.
 - residualImport-и лишаються майже незмінними (лише shared константа + скелет, якщо крок 10 схвалено).
+- **Dual-write teardown (2026-07-10):** production LS-write модульних даних прибрано (PR #169); каталоги `lib/dualWrite/` перейменовано на `lib/sqliteWriter/`; entropy-janitor `dualwrite-residue` guard-ить регресії. Деталі — [`dualwrite-teardown.md`](../../90-work/planning/dualwrite-teardown.md).
 
 ## Risks
 
@@ -275,7 +276,7 @@ Rollback-важіль: кожен крок — ізольований PR, яки
 
 - **Гейт байт-ідентичності:** SQL-snapshot-тести з кроку 0 живуть поруч з адаптерами (`*.sqlsnapshot.test.ts`), ганяються звичайним `pnpm check`; будь-який міграційний PR, що міняє snapshot, — червоний за визначенням.
 - **Заборона правити тести в міграційних PR** — перевіряється на рев'ю (`sergeant-review-and-merge`); PR-body зобов'язаний містити рядок «tests untouched: yes/no + чому».
-- Після завершення міграції: janitor-перевірка «нових локальних копій `applyDualWriteOps`-циклу немає» — grep-правило в entropy-janitors (`tools/entropy-janitors/`), issue-only.
+- Після завершення міграції: janitor-перевірка «нових локальних копій `applyDualWriteOps`-циклу немає» — grep-правило в entropy-janitors (`tools/entropy-janitors/`), issue-only. ✅ Реалізовано як `dualwrite-residue` (2026-07-10, Phase 5 teardown).
 - Статус цього ADR: `Accepted` 2026-07-03 — власник закрив усі 7 open questions (див. § Open questions); крок 1 розблоковано.
 
 ## Links
