@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
@@ -82,34 +83,39 @@ export const MEASURE_FIELDS = [
  */
 export function useMeasurements() {
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  const [entries, setEntries] = useState<MeasurementEntry[]>(() => {
-    const cache = getCachedFizrukSqliteState();
-    return cache.refreshedAt === null
-      ? []
-      : (cache.measurements as MeasurementEntry[]);
-  });
+  const [entries, setEntries] = useSqliteTickOverlay<MeasurementEntry[]>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null
+        ? undefined
+        : (cache.measurements as MeasurementEntry[]);
+    },
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null
+        ? []
+        : (cache.measurements as MeasurementEntry[]);
+    },
+  );
 
-  // Overlay measurements from the SQLite cache once it's warm.
-  useEffect(() => {
-    const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setEntries(cache.measurements as MeasurementEntry[]);
-  }, [sqliteCacheTick]);
-
-  const persist = useCallback((next: MeasurementEntry[]) => {
-    setEntries(next);
-    const prevDualWrite =
-      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-    const nextDualWrite = {
-      ...prevDualWrite,
-      measurements: extractMeasurementSnapshots(next),
-    };
-    try {
-      triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
-    } catch {
-      /* trigger is fire-and-forget — never propagate */
-    }
-  }, []);
+  const persist = useCallback(
+    (next: MeasurementEntry[]) => {
+      setEntries(next);
+      const prevDualWrite =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      const nextDualWrite = {
+        ...prevDualWrite,
+        measurements: extractMeasurementSnapshots(next),
+      };
+      try {
+        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+      } catch {
+        /* trigger is fire-and-forget — never propagate */
+      }
+    },
+    [setEntries],
+  );
 
   const addEntry = useCallback(
     (entry: Partial<MeasurementEntry>): MeasurementEntry => {
@@ -127,6 +133,7 @@ export function useMeasurements() {
       const e: MeasurementEntry = {
         ...sanitised,
         id: uid(),
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для timestamp запису (не Kyiv-межа доби)
         at: new Date().toISOString(),
       };
       persist([e, ...entries]);

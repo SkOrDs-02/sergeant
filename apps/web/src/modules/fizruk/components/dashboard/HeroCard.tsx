@@ -177,8 +177,12 @@ function diffSecFromNow(startedAtIso: string): number {
  */
 function useElapsedSec(startedAtIso: string): number {
   const [sec, setSec] = useState<number>(() => diffSecFromNow(startedAtIso));
-  useEffect(() => {
+  const [prevStartedAtIso, setPrevStartedAtIso] = useState(startedAtIso);
+  if (startedAtIso !== prevStartedAtIso) {
+    setPrevStartedAtIso(startedAtIso);
     setSec(diffSecFromNow(startedAtIso));
+  }
+  useEffect(() => {
     const id = setInterval(() => {
       setSec(diffSecFromNow(startedAtIso));
     }, 1000);

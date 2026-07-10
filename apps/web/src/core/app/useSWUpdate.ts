@@ -36,7 +36,9 @@ function hasMutationsInFlight(
 export function useSWUpdate() {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(
+    () => typeof window !== "undefined" && Boolean(window.__pwaUpdateReady),
+  );
 
   // Tracks whether we have already shown (or are about to show) the
   // update toast so we never fire it twice.
@@ -165,7 +167,6 @@ export function useSWUpdate() {
     };
 
     if (window.__pwaUpdateReady) {
-      setUpdateAvailable(true);
       scheduleOrShowUpdateToast();
     }
 

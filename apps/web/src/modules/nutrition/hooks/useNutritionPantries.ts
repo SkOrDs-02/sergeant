@@ -58,17 +58,15 @@ export function useNutritionPantries({
   );
 
   const sqliteCacheTick = useNutritionSqliteReadTick();
-
-  // Stage 4 PR #033 + Stage 8 PR #057n: overlay pantries / active
-  // pantry from the SQLite cache once it's warm. LS reads above stay
-  // as a synchronous fallback so the first paint never blocks on
-  // SQLite.
-  useEffect(() => {
+  const [prevSqliteTick, setPrevSqliteTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevSqliteTick) {
+    setPrevSqliteTick(sqliteCacheTick);
     const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    setPantries(cache.pantries);
-    if (cache.activePantryId) setActivePantryId(cache.activePantryId);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setPantries(cache.pantries);
+      if (cache.activePantryId) setActivePantryId(cache.activePantryId);
+    }
+  }
 
   const activePantry = useMemo(() => {
     const arr = Array.isArray(pantries) ? pantries : [];

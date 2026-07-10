@@ -28,6 +28,11 @@ export function useStoriesAutoplay({
   onAdvance,
 }: Options): number {
   const [progress, setProgress] = useState(0);
+  const [progressKey, setProgressKey] = useState(key);
+  if (key !== progressKey) {
+    setProgressKey(key);
+    setProgress(0);
+  }
   // Keep `onAdvance` behind a ref so the animation loop doesn't need to
   // restart every time a parent re-renders with a new callback identity.
   const onAdvanceRef = useRef(onAdvance);
@@ -36,7 +41,6 @@ export function useStoriesAutoplay({
   }, [onAdvance]);
 
   useEffect(() => {
-    setProgress(0);
     if (paused) return;
     if (typeof window === "undefined" || typeof performance === "undefined") {
       return;

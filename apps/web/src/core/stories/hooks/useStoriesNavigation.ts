@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 interface Options {
   total: number;
@@ -24,14 +24,13 @@ interface Api {
  */
 export function useStoriesNavigation({ total, onExhausted }: Options): Api {
   const [index, setIndex] = useState(0);
-
-  // Clamp when `total` shrinks. Don't auto-exhaust here (that would close
-  // the overlay on every digest mutation); callers use `onExhausted` only
-  // on the terminal `next()` call.
-  useEffect(() => {
-    if (total === 0) return;
-    setIndex((i) => (i >= total ? total - 1 : i));
-  }, [total]);
+  const [prevTotal, setPrevTotal] = useState(total);
+  if (total !== prevTotal) {
+    setPrevTotal(total);
+    if (total > 0) {
+      setIndex((i) => (i >= total ? total - 1 : i));
+    }
+  }
 
   const next = useCallback(() => {
     setIndex((i) => {

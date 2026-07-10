@@ -130,6 +130,8 @@ export function useLocalStorageState<T>(
     }
   });
 
+  const isFirstWriteRef = useRef(true);
+
   // Track the key the last write was for — if `key` changes between
   // renders we re-initialize state from the new slot on the next read.
   const lastKeyRef = useRef(key);
@@ -140,19 +142,24 @@ export function useLocalStorageState<T>(
     const raw = webKVStore.getString(key);
     const { deserialize: d, validate: v } = optionsRef.current;
     if (raw === null) {
-      setValue(resolveInitial(initialValue));
+      void Promise.resolve().then(() => setValue(resolveInitial(initialValue)));
       return;
     }
     try {
       const parsed = d ? d(raw) : JSON.parse(raw);
       if (v && !v(parsed)) {
-        setValue(resolveInitial(initialValue));
+        void Promise.resolve().then(() =>
+          setValue(resolveInitial(initialValue)),
+        );
         return;
       }
-      setValue((parsed ?? resolveInitial(initialValue)) as T);
+      void Promise.resolve().then(() =>
+        setValue((parsed ?? resolveInitial(initialValue)) as T),
+      );
     } catch {
-      setValue(resolveInitial(initialValue));
+      void Promise.resolve().then(() => setValue(resolveInitial(initialValue)));
     }
+    isFirstWriteRef.current = true;
     // Intentionally depend only on `key` — `initialValue` by design is a
     // seed and changing it after mount should not re-initialise state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -162,7 +169,6 @@ export function useLocalStorageState<T>(
   // storage (or is the seeded initial for a missing key), so writing it
   // back is either a no-op or an unwanted side-effect on first paint.
   // Subsequent `setValue` calls go through this effect normally.
-  const isFirstWriteRef = useRef(true);
   useEffect(() => {
     if (!hasLocalStorage()) return undefined;
     if (isFirstWriteRef.current) {

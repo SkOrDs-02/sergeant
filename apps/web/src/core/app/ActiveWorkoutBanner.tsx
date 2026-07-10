@@ -1,50 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 import { messages } from "@shared/i18n/uk";
 
-/**
- * Persistent "return to active workout" CTA.
- *
- * Fizruk remembers the open workout in `fizruk_active_workout_id_v1`. If
- * the user navigates to the Hub (or another module) mid-set, the workout
- * is still "live" but the user has to manually open Fizruk → Workouts →
- * find the highlighted row to get back. That's three taps for an action
- * that should be one — and it's especially easy to lose the thread when
- * the user jumps to Finyk to log the protein shake they just bought.
- *
- * This banner renders in the Hub shell (outside of any module) whenever
- * an active workout id is persisted. One tap opens Fizruk and deep-links
- * to the Workouts page via the existing cross-module nav bus.
- *
- * Returns null when there's no active workout, or when `hidden` is true
- * (e.g. during the FTUX session where any extra CTA crowds the splash).
- */
-export function ActiveWorkoutBanner({ hidden = false }: { hidden?: boolean }) {
-  const activeId = useActiveFizrukWorkout();
-
-  // Track elapsed minutes since the banner first appeared (approximate).
-  // We use mount time as a proxy for workout start — good enough to give
-  // users a "how long have I been away?" signal without needing the exact
-  // workout start timestamp from Fizruk's domain.
-  const startRef = useRef<number | null>(null);
+function ActiveWorkoutBannerTimer() {
+  const [startMs] = useState(() => Date.now());
   const [elapsedMin, setElapsedMin] = useState(0);
 
   useEffect(() => {
-    if (!activeId) return;
-    // Reset clock each time a new active workout appears.
-    startRef.current = Date.now();
-    setElapsedMin(0);
     const id = setInterval(() => {
-      const startedAt = startRef.current ?? Date.now();
-      setElapsedMin(Math.floor((Date.now() - startedAt) / 60_000));
+      setElapsedMin(Math.floor((Date.now() - startMs) / 60_000));
     }, 60_000);
     return () => clearInterval(id);
-  }, [activeId]);
-
-  if (hidden) return null;
-  if (!activeId) return null;
+  }, [startMs]);
 
   const label =
     elapsedMin > 0
@@ -74,4 +43,30 @@ export function ActiveWorkoutBanner({ hidden = false }: { hidden?: boolean }) {
       </button>
     </div>
   );
+}
+
+/**
+ * Persistent "return to active workout" CTA.
+ *
+ * Fizruk remembers the open workout in `fizruk_active_workout_id_v1`. If
+ * the user navigates to the Hub (or another module) mid-set, the workout
+ * is still "live" but the user has to manually open Fizruk → Workouts →
+ * find the highlighted row to get back. That's three taps for an action
+ * that should be one — and it's especially easy to lose the thread when
+ * the user jumps to Finyk to log the protein shake they just bought.
+ *
+ * This banner renders in the Hub shell (outside of any module) whenever
+ * an active workout id is persisted. One tap opens Fizruk and deep-links
+ * to the Workouts page via the existing cross-module nav bus.
+ *
+ * Returns null when there's no active workout, or when `hidden` is true
+ * (e.g. during the FTUX session where any extra CTA crowds the splash).
+ */
+export function ActiveWorkoutBanner({ hidden = false }: { hidden?: boolean }) {
+  const activeId = useActiveFizrukWorkout();
+
+  if (hidden) return null;
+  if (!activeId) return null;
+
+  return <ActiveWorkoutBannerTimer key={activeId} />;
 }

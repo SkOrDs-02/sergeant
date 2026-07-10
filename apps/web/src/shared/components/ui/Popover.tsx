@@ -162,10 +162,7 @@ export function Popover({
   // Position the panel after layout so the first paint already has
   // the correct coordinates.
   useLayoutEffect(() => {
-    if (!open) {
-      setCoords(null);
-      return;
-    }
+    if (!open) return;
     const trig = triggerRef.current;
     const panel = panelRef.current;
     if (!trig || !panel) return;
