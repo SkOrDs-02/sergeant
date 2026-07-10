@@ -158,6 +158,28 @@ describe("AssetForm", () => {
     expect(screen.getByPlaceholderText("Сума")).toBeInTheDocument();
   });
 
+  it("calls setShowAssetForm(false) on cancel", () => {
+    const setShowAssetForm = vi.fn();
+    const { container } = render(
+      withQueryClient(
+        <AssetForm
+          newAsset={{ name: "Cash", amount: "100", currency: "UAH", emoji: "" }}
+          setNewAsset={vi.fn()}
+          setManualAssets={vi.fn()}
+          setShowAssetForm={setShowAssetForm}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+        />,
+      ),
+    );
+    fireEvent.click(
+      within(container)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Скасувати")!,
+    );
+    expect(setShowAssetForm).toHaveBeenCalledWith(false);
+  });
+
   it("rejects non-positive amounts and saves a positive one", () => {
     const setManualAssets = vi.fn();
     const setShowAssetForm = vi.fn();
@@ -242,6 +264,30 @@ describe("ReceivableForm", () => {
     expect(
       screen.getByPlaceholderText("Нотатка (необов'язково)"),
     ).toBeInTheDocument();
+  });
+
+  it("calls setShowRecvForm(false) on cancel", () => {
+    const setShowRecvForm = vi.fn();
+    const { container } = render(
+      <ReceivableForm
+        newRecv={{
+          name: "Alice",
+          emoji: "",
+          amount: "100",
+          note: "",
+          dueDate: "",
+        }}
+        setNewRecv={vi.fn()}
+        setReceivables={vi.fn()}
+        setShowRecvForm={setShowRecvForm}
+      />,
+    );
+    fireEvent.click(
+      within(container)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Скасувати")!,
+    );
+    expect(setShowRecvForm).toHaveBeenCalledWith(false);
   });
 
   it("rejects non-positive amounts and saves a positive one", () => {
@@ -335,5 +381,57 @@ describe("DebtForm", () => {
       .find((b) => b.textContent?.trim() === "Скасувати");
     fireEvent.click(cancelBtn!);
     expect(onCancel).toHaveBeenCalledWith(false);
+  });
+
+  it("commits a valid debt (name + totalAmount) and closes the form", () => {
+    const setManualDebts = vi.fn();
+    const setShowDebtForm = vi.fn();
+    const { container } = render(
+      <DebtForm
+        newDebt={{
+          name: "Кредит",
+          emoji: "\u{1F4B8}",
+          totalAmount: "50000",
+          dueDate: "",
+        }}
+        setNewDebt={vi.fn()}
+        setManualDebts={setManualDebts}
+        setShowDebtForm={setShowDebtForm}
+        debtFormRef={createRef()}
+        debtNameInputRef={createRef()}
+      />,
+    );
+    fireEvent.click(
+      within(container)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Додати")!,
+    );
+    expect(setManualDebts).toHaveBeenCalledTimes(1);
+    expect(setShowDebtForm).toHaveBeenCalledWith(false);
+  });
+
+  it("does not commit a debt when name is empty", () => {
+    const setManualDebts = vi.fn();
+    const { container } = render(
+      <DebtForm
+        newDebt={{
+          name: "",
+          emoji: "\u{1F4B8}",
+          totalAmount: "50000",
+          dueDate: "",
+        }}
+        setNewDebt={vi.fn()}
+        setManualDebts={setManualDebts}
+        setShowDebtForm={vi.fn()}
+        debtFormRef={createRef()}
+        debtNameInputRef={createRef()}
+      />,
+    );
+    fireEvent.click(
+      within(container)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Додати")!,
+    );
+    expect(setManualDebts).not.toHaveBeenCalled();
   });
 });

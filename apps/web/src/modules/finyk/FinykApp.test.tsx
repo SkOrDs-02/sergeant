@@ -5,7 +5,7 @@
  * renders the header, nav bar, and the default overview page.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
 // ── Heavy hook stubs ─────────────────────────────────────────────────────────
 
@@ -221,6 +221,8 @@ vi.mock("@shared/components/ui/ModuleBottomNav", () => ({
 
 // ── Import under test (must come after vi.mock declarations) ─────────────────
 import FinykApp from "./FinykApp";
+import { useFinykRoute } from "./hooks/useFinykRoute";
+import { useMonobank } from "./hooks/useMonobank";
 
 afterEach(() => {
   cleanup();
@@ -275,5 +277,90 @@ describe("FinykApp smoke tests", () => {
     render(<FinykApp />);
     // Default page is "overview"
     expect(screen.getByTestId("active-page").textContent).toBe("overview");
+  });
+});
+
+describe("FinykApp — page routing", () => {
+  it("renders the transactions page when page is 'transactions'", () => {
+    vi.mocked(useFinykRoute).mockReturnValueOnce(["transactions", vi.fn()]);
+    render(<FinykApp />);
+    expect(screen.getByTestId("lazy-Transactions")).toBeInTheDocument();
+    expect(screen.queryByTestId("finyk-overview")).not.toBeInTheDocument();
+  });
+
+  it("renders the budgets page when page is 'budgets'", () => {
+    vi.mocked(useFinykRoute).mockReturnValueOnce(["budgets", vi.fn()]);
+    render(<FinykApp />);
+    expect(screen.getByTestId("lazy-Budgets")).toBeInTheDocument();
+  });
+
+  it("renders the analytics page when page is 'analytics'", () => {
+    vi.mocked(useFinykRoute).mockReturnValueOnce(["analytics", vi.fn()]);
+    render(<FinykApp />);
+    expect(screen.getByTestId("lazy-Analytics")).toBeInTheDocument();
+  });
+
+  it("renders the assets page when page is 'assets'", () => {
+    vi.mocked(useFinykRoute).mockReturnValueOnce(["assets", vi.fn()]);
+    render(<FinykApp />);
+    expect(screen.getByTestId("lazy-Assets")).toBeInTheDocument();
+  });
+});
+
+describe("FinykApp — connect/manual-only flows", () => {
+  it("opens the login overlay when the connect button in NoBankBanner is clicked", () => {
+    render(<FinykApp />);
+    // Initially the login screen is NOT visible
+    expect(screen.queryByTestId("finyk-login-screen")).not.toBeInTheDocument();
+    // Click the "Підключити" button in the NoBankBanner mock
+    fireEvent.click(screen.getByText("Підключити"));
+    // Login overlay should now show
+    expect(screen.getByTestId("finyk-login-screen")).toBeInTheDocument();
+  });
+
+  it("hides NoBankBanner after manual-only is activated", () => {
+    render(<FinykApp />);
+    expect(screen.getByTestId("no-bank-banner")).toBeInTheDocument();
+    // Click "Без банку" — calls enableFinykManualOnly() + setManualOnly(true)
+    fireEvent.click(screen.getByText("Без банку"));
+    // showNoBankBanner = !clientInfo && !manualOnly = false
+    expect(screen.queryByTestId("no-bank-banner")).not.toBeInTheDocument();
+  });
+});
+
+describe("FinykApp — authError banner", () => {
+  it("renders the authError alert when mono has an authError", () => {
+    vi.mocked(useMonobank).mockReturnValueOnce({
+      clientInfo: null,
+      connecting: false,
+      error: null,
+      authError: "Токен застарів",
+      setAuthError: vi.fn(),
+      connect: vi.fn(),
+      accounts: [],
+      transactions: [],
+      syncState: null,
+    } as unknown as ReturnType<typeof useMonobank>);
+    render(<FinykApp />);
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Токен потребує оновлення")).toBeInTheDocument();
+  });
+
+  it("closes the authError banner when ✕ is clicked", () => {
+    const setAuthError = vi.fn();
+    vi.mocked(useMonobank).mockReturnValueOnce({
+      clientInfo: null,
+      connecting: false,
+      error: null,
+      authError: "Токен застарів",
+      setAuthError,
+      connect: vi.fn(),
+      accounts: [],
+      transactions: [],
+      syncState: null,
+    } as unknown as ReturnType<typeof useMonobank>);
+    render(<FinykApp />);
+    fireEvent.click(screen.getByLabelText("Закрити"));
+    expect(setAuthError).toHaveBeenCalledWith("");
   });
 });

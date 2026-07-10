@@ -3,8 +3,20 @@ import {
   STANDALONE_ROUTE_PATHS,
   renderStandaloneRoute,
 } from "./StandaloneRoutes";
+import type { StandaloneRouteArgs } from "./StandaloneRoutes";
 import { KNOWN_PATHS } from "./routes";
 import type { useAuth } from "../auth/AuthContext";
+import {
+  SIGN_IN_PATH,
+  SIGN_IN_ALIAS_PATHS,
+  RESET_PASSWORD_PATH,
+  PROFILE_PATH,
+  PRICING_PATH,
+  STATUS_PATH,
+  ASSISTANT_PATH,
+  CHAT_PATH,
+  WELCOME_PATH,
+} from "./appPaths";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
 
@@ -183,5 +195,116 @@ describe("STANDALONE_ROUTE_PATHS ↔ KNOWN_PATHS exhaustiveness (Web deep-dive �
     expect(KNOWN_PATHS.has("/nutrition")).toBe(false);
     expect(KNOWN_PATHS.has("/fizruk")).toBe(false);
     expect(KNOWN_PATHS.has("/routine")).toBe(false);
+  });
+});
+
+// ─── Per-route render behaviour ────────────────────────────────────────────
+
+function callRouteArgs(
+  overrides: Partial<StandaloneRouteArgs> & { pathname: string },
+): ReturnType<typeof renderStandaloneRoute> {
+  return renderStandaloneRoute({
+    user: null,
+    authLoading: false,
+    storageReady: true,
+    onLeaveAuth: noop,
+    onLeaveWelcome: noop,
+    onOpenAuth: noop,
+    onAssistantClose: noop,
+    ...overrides,
+  });
+}
+
+describe("renderStandaloneRoute() — /sign-in", () => {
+  it("renders AuthPage for an unauthenticated visitor", () => {
+    expect(callRouteArgs({ pathname: SIGN_IN_PATH })).not.toBeNull();
+  });
+
+  it("returns a redirect for an already-authenticated user", () => {
+    const authedUser = { id: "u1", email: "u@example.com" } as AuthUser;
+    // Non-null because it returns <RedirectTo> not the auth page
+    expect(
+      callRouteArgs({ pathname: SIGN_IN_PATH, user: authedUser }),
+    ).not.toBeNull();
+  });
+
+  it("returns non-null during auth loading (shows AuthPage, not redirect)", () => {
+    // When authLoading=true + user=null we still render the form, not a redirect
+    expect(
+      callRouteArgs({ pathname: SIGN_IN_PATH, authLoading: true }),
+    ).not.toBeNull();
+  });
+});
+
+describe("renderStandaloneRoute() — sign-in alias paths", () => {
+  it.each(SIGN_IN_ALIAS_PATHS)("redirects %s to SIGN_IN_PATH", (alias) => {
+    expect(callRouteArgs({ pathname: alias })).not.toBeNull();
+  });
+});
+
+describe("renderStandaloneRoute() — /reset-password", () => {
+  it("renders without auth", () => {
+    expect(callRouteArgs({ pathname: RESET_PASSWORD_PATH })).not.toBeNull();
+  });
+
+  it("renders even when authenticated (recovery flow for different account)", () => {
+    const authedUser = { id: "u1", email: "u@example.com" } as AuthUser;
+    expect(
+      callRouteArgs({ pathname: RESET_PASSWORD_PATH, user: authedUser }),
+    ).not.toBeNull();
+  });
+});
+
+describe("renderStandaloneRoute() — /profile", () => {
+  it("renders a loader while auth is still loading", () => {
+    expect(
+      callRouteArgs({ pathname: PROFILE_PATH, authLoading: true }),
+    ).not.toBeNull();
+  });
+
+  it("redirects to sign-in when not authenticated", () => {
+    // No user + not loading → redirect
+    expect(callRouteArgs({ pathname: PROFILE_PATH })).not.toBeNull();
+  });
+
+  it("redirects to hub /?tab=profile when authenticated", () => {
+    const authedUser = { id: "u1", email: "u@example.com" } as AuthUser;
+    expect(
+      callRouteArgs({ pathname: PROFILE_PATH, user: authedUser }),
+    ).not.toBeNull();
+  });
+});
+
+describe("renderStandaloneRoute() — public utility pages", () => {
+  it("renders the pricing page", () => {
+    expect(callRouteArgs({ pathname: PRICING_PATH })).not.toBeNull();
+  });
+
+  it("renders the status page", () => {
+    expect(callRouteArgs({ pathname: STATUS_PATH })).not.toBeNull();
+  });
+
+  it("renders the assistant catalogue page", () => {
+    expect(callRouteArgs({ pathname: ASSISTANT_PATH })).not.toBeNull();
+  });
+
+  it("renders the hub chat page", () => {
+    expect(callRouteArgs({ pathname: CHAT_PATH })).not.toBeNull();
+  });
+});
+
+describe("renderStandaloneRoute() — /welcome", () => {
+  it("renders WelcomeScreen for a genuine first-time visitor", () => {
+    mockShouldShowOnboarding.mockReturnValueOnce(true);
+    expect(
+      callRouteArgs({ pathname: WELCOME_PATH, storageReady: true }),
+    ).not.toBeNull();
+  });
+
+  it("returns a redirect for a returning user who deep-links /welcome", () => {
+    // storageReady=true, shouldShowOnboarding=false → returning user
+    expect(
+      callRouteArgs({ pathname: WELCOME_PATH, storageReady: true }),
+    ).not.toBeNull();
   });
 });

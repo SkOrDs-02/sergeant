@@ -325,6 +325,8 @@ import NutritionApp from "./NutritionApp";
 import { useNutritionRoute } from "./hooks/useNutritionRoute";
 import type { UseNutritionRouteResult } from "./hooks/useNutritionRoute";
 import type { NutritionPage } from "./lib/nutritionRouter";
+import { useNutritionLog } from "./hooks/useNutritionLog";
+import { useNutritionPantries } from "./hooks/useNutritionPantries";
 
 function mockRoute(activePage: NutritionPage): UseNutritionRouteResult {
   return {
@@ -394,5 +396,86 @@ describe("NutritionApp — smoke tests", () => {
       />,
     );
     expect(screen.getByTestId("nutrition-header")).toBeInTheDocument();
+  });
+});
+
+// ─── Log / pantry error state → storage warning banner ─────────────────────
+
+const DEFAULT_LOG_RETURN = {
+  nutritionLog: {},
+  setNutritionLog: vi.fn(),
+  selectedDate: "2026-01-01",
+  setSelectedDate: vi.fn(),
+  addMealSheetOpen: false,
+  setAddMealSheetOpen: vi.fn(),
+  addMealPhotoResult: null,
+  setAddMealPhotoResult: vi.fn(),
+  handleAddMeal: vi.fn(),
+  handleEditMeal: vi.fn(),
+  handleRemoveMeal: vi.fn(),
+  handleRestoreMeal: vi.fn(),
+  storageErr: "",
+  duplicateYesterday: vi.fn(),
+  replaceLogFromJsonText: vi.fn(),
+  mergeLogFromJsonText: vi.fn(),
+  trimLogToLastDays: vi.fn(),
+} as unknown as ReturnType<typeof useNutritionLog>;
+
+const DEFAULT_PANTRY_RETURN = {
+  pantries: [],
+  activePantryId: "default",
+  effectiveItems: [],
+  pantryStorageErr: "",
+  upsertItem: vi.fn(),
+  removeItem: vi.fn(),
+  consumeItem: vi.fn(),
+  addPantry: vi.fn(),
+  removePantry: vi.fn(),
+  setActivePantryId: vi.fn(),
+  editPantry: vi.fn(),
+  clearPantry: vi.fn(),
+  replaceFromJsonText: vi.fn(),
+  importText: vi.fn(),
+} as unknown as ReturnType<typeof useNutritionPantries>;
+
+describe("NutritionApp — storage error banners", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useNutritionRoute).mockReturnValue(mockRoute("start"));
+  });
+
+  it("renders a warning banner when useNutritionLog has a storageErr", () => {
+    vi.mocked(useNutritionLog).mockReturnValueOnce({
+      ...DEFAULT_LOG_RETURN,
+      storageErr: "Помилка сховища журналу",
+    });
+    render(<NutritionApp />);
+    // Banner component is mocked as <div data-testid="banner">{children}</div>
+    expect(screen.getByText("Помилка сховища журналу")).toBeInTheDocument();
+  });
+
+  it("renders a warning banner when useNutritionPantries has a pantryStorageErr", () => {
+    vi.mocked(useNutritionPantries).mockReturnValueOnce({
+      ...DEFAULT_PANTRY_RETURN,
+      pantryStorageErr: "Помилка сховища комори",
+    });
+    render(<NutritionApp />);
+    expect(screen.getByText("Помилка сховища комори")).toBeInTheDocument();
+  });
+
+  it("concatenates multiple storage errors into one banner", () => {
+    vi.mocked(useNutritionLog).mockReturnValueOnce({
+      ...DEFAULT_LOG_RETURN,
+      storageErr: "Журнал: помилка",
+    });
+    vi.mocked(useNutritionPantries).mockReturnValueOnce({
+      ...DEFAULT_PANTRY_RETURN,
+      pantryStorageErr: "Комора: помилка",
+    });
+    render(<NutritionApp />);
+    // storageBanner = errors joined by " "
+    expect(
+      screen.getByText("Журнал: помилка Комора: помилка"),
+    ).toBeInTheDocument();
   });
 });
