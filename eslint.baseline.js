@@ -164,8 +164,9 @@ export const baseline = [
       // apps/mobile-shell, apps/server, tools/openclaw):
       //   static-components            — 0 ✅ promoted to "error" below
       //   use-memo                     — 0 ✅ promoted to "error" below
-      //   immutability                 — web 0 ✅ (promoted to "error" for
-      //       apps/web in eslint.web.js) + mobile 4 (still off here)
+      //   immutability                 — web 0 ✅ + mobile 0 ✅ (2026-07-10:
+      //       CategoryDonut reduce fix + Sheet Reanimated scoped disables;
+      //       promoted in eslint.mobile.js)
       //   preserve-manual-memoization  — web 0 ✅ (promoted to "error" for
       //       apps/web in eslint.web.js after 2026-07-04 burndown) + mobile 4
       //   purity                       — web ~14 + mobile 3 (still off here)
@@ -177,9 +178,9 @@ export const baseline = [
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/purity": "off",
       "react-hooks/refs": "off",
-      // `immutability` stays `off` in the shared baseline for apps/mobile
-      // (4 legacy violations, separate future bite); apps/web promotes it
-      // to "error" in eslint.web.js after the web burndown.
+      // `immutability` promoted to `error` in eslint.mobile.js (2026-07-10
+      // burndown); baseline stays `off` for other surfaces still on legacy
+      // react-hooks v7 rules.
       "react-hooks/immutability": "off",
       // `static-components` cleared the monorepo — no component is defined
       // inside the body of another component. Promoted from "off" to
