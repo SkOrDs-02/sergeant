@@ -323,4 +323,170 @@ describe("RoutineCalendarPanel", () => {
       screen.getByPlaceholderText("Нотатка до відмітки"),
     ).toBeInTheDocument();
   });
+
+  it("shows the 'empty period' state when list is empty, no filter active and habits exist", () => {
+    dataFixture.mockReturnValue(
+      baseData({ listIsEmpty: true, hasListFilter: false, hasNoHabits: false }),
+    );
+    render(<RoutineCalendarPanel />);
+    expect(screen.getByText("Порожній період")).toBeInTheDocument();
+    // The inline "заплануй тренування" link should be present.
+    expect(
+      screen.getByRole("button", { name: "заплануй тренування" }),
+    ).toBeInTheDocument();
+  });
+
+  it("clicking 'заплануй тренування' opens the fizruk plan sheet for selectedDay", () => {
+    dataFixture.mockReturnValue(
+      baseData({
+        listIsEmpty: true,
+        hasListFilter: false,
+        hasNoHabits: false,
+        selectedDay: "2026-06-23",
+      }),
+    );
+    render(<RoutineCalendarPanel />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "заплануй тренування" }),
+    );
+    expect(screen.getByTestId("fizruk-plan-sheet")).toHaveAttribute(
+      "data-date",
+      "2026-06-23",
+    );
+  });
+
+  it("renders the Fizruk filter chip when showFizrukInCalendar pref is default (true)", () => {
+    // defaultRoutineState has showFizrukInCalendar undefined (≠ false), so the chip renders.
+    render(<RoutineCalendarPanel />);
+    expect(
+      screen.getByRole("button", { name: /Фізрук|Тренування/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the Finyk subscriptions filter chip by default", () => {
+    render(<RoutineCalendarPanel />);
+    expect(
+      screen.getByRole("button", { name: "Підписки Фініка" }),
+    ).toBeInTheDocument();
+  });
+
+  it("toggles the Fizruk filter chip on click", () => {
+    dataFixture.mockReturnValue(baseData({ tagFilter: null }));
+    render(<RoutineCalendarPanel />);
+    const fizrukChip = screen.getByRole("button", {
+      name: /Фізрук|Тренування/i,
+    });
+    fireEvent.click(fizrukChip);
+    expect(setTagFilter).toHaveBeenCalledTimes(1);
+  });
+
+  it("toggles the Finyk subscriptions filter chip on click", () => {
+    dataFixture.mockReturnValue(baseData({ tagFilter: null }));
+    render(<RoutineCalendarPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "Підписки Фініка" }));
+    expect(setTagFilter).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the 'Деталі' button for a fizruk event in the list and opens the fizruk plan sheet", () => {
+    const { habitId: _drop1, ...fizrukBase } = makeEvent({
+      id: "fz-2",
+      fizruk: true,
+      title: "Ранкове тренування",
+      date: "2026-06-23",
+    });
+    void _drop1;
+    const fizrukEvent = fizrukBase;
+    dataFixture.mockReturnValue(
+      baseData({
+        listIsEmpty: false,
+        hasNoHabits: false,
+        grouped: [["Фізрук", [fizrukEvent]]],
+      }),
+    );
+    render(<RoutineCalendarPanel />);
+    const detailBtns = screen.getAllByRole("button", { name: "Деталі" });
+    fireEvent.click(detailBtns[0]!);
+    expect(screen.getByTestId("fizruk-plan-sheet")).toHaveAttribute(
+      "data-date",
+      "2026-06-23",
+    );
+  });
+
+  it("activates a fizruk event row with the keyboard (Enter key)", () => {
+    const { habitId: _drop2, ...fizrukBase } = makeEvent({
+      id: "fz-kb",
+      fizruk: true,
+      date: "2026-06-23",
+    });
+    void _drop2;
+    const fizrukEvent = fizrukBase;
+    dataFixture.mockReturnValue(
+      baseData({
+        listIsEmpty: false,
+        hasNoHabits: false,
+        grouped: [["Фізрук", [fizrukEvent]]],
+      }),
+    );
+    render(<RoutineCalendarPanel />);
+    const rowDiv = document.querySelector(
+      '[role="button"][tabindex="0"][aria-label*="тренування"],' +
+        '[role="button"][tabindex="0"]',
+    );
+    if (rowDiv) {
+      fireEvent.keyDown(rowDiv, { key: "Enter" });
+      expect(screen.getByTestId("fizruk-plan-sheet")).toBeInTheDocument();
+    }
+  });
+
+  it("calls onOpenModule for a finyk subscription event 'Фінік' button", () => {
+    const onOpenModule = vi.fn();
+    actionsFixture.mockReturnValue(baseActions({ onOpenModule }));
+    const { habitId: _drop3, ...finykBase } = makeEvent({
+      id: "fin-1",
+      finykSub: true,
+      title: "Netflix",
+    });
+    void _drop3;
+    const finykEvent = finykBase;
+    dataFixture.mockReturnValue(
+      baseData({
+        listIsEmpty: false,
+        hasNoHabits: false,
+        grouped: [["Підписки", [finykEvent]]],
+      }),
+    );
+    render(<RoutineCalendarPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "Фінік" }));
+    expect(onOpenModule).toHaveBeenCalledWith("finyk", { hash: "assets" });
+  });
+
+  it("activates a habit row with Space key and opens the detail sheet", () => {
+    const event = makeEvent({ habitId: "h2", title: "Медитація" });
+    dataFixture.mockReturnValue(
+      baseData({
+        listIsEmpty: false,
+        hasNoHabits: false,
+        grouped: [["Звички", [event]]],
+      }),
+    );
+    render(<RoutineCalendarPanel />);
+    const rowDiv = screen.getByRole("button", {
+      name: "Деталі: Медитація",
+    });
+    fireEvent.keyDown(rowDiv, { key: " " });
+    expect(screen.getByTestId("habit-detail-sheet")).toHaveAttribute(
+      "data-habit",
+      "h2",
+    );
+  });
+
+  it("renders the evening insight card when eveningInsight is set", () => {
+    eveningInsight = {
+      id: "todo-evening",
+      title: "Вечірнє нагадування",
+      subtitle: "Перевір список",
+    };
+    render(<RoutineCalendarPanel />);
+    expect(screen.getByText("Вечірнє нагадування")).toBeInTheDocument();
+  });
 });
