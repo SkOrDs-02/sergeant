@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-06",
+  "generated_at": "2026-07-10",
   "sourceHashes": {
     "knowledge-graph": "c42fd1e16751bce01987084bed05a5a1f8ef18c7d42f5d91e0d83a89cf590999",
-    "symbol-index": "82e7cc9a551e944fb849206e96ee07910770a3479419c2b60875743f1f74d07a"
+    "symbol-index": "ec1e448546c4513df16adfc673d7f644aa3c94a0dc609f4a77b3bad3340ae673"
   },
   "counts": {
     "adr": 70,
@@ -4108,8 +4108,8 @@
       "title": "0021 — React-hooks v7 ESLint cleanup",
       "tier": "core",
       "status": "In progress",
-      "text": "0021 — React-hooks v7 ESLint cleanup · initiative:0021 · initiative · In progress · 21 · Проблема · Скоуп · Acceptance criteria · Виконані дії (2026-06-10) · Timeline · Recent PRs",
-      "contentHash": "f6ea65598cb452e6f65022b8132d33f8f15eb2664eaa6bd67c168b1bb3df8d49"
+      "text": "0021 — React-hooks v7 ESLint cleanup · initiative:0021 · initiative · In progress · 21 · Проблема · Скоуп · Acceptance criteria · Виконані дії (2026-07-10) · Виконані дії (2026-06-10) · Timeline · Recent PRs",
+      "contentHash": "38c2bca91b5e1877b3966419fb7359b4c8f5b8cfd3f95545e811854ff64f01a5"
     },
     {
       "id": "initiative:follow-ups",
