@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13. **Archived:** 2026-05-02.
 > **Status:** Archived
 
-> **Owner:** @Skords-01 · **Created:** 2026-05-02 ·
+> **Owner:** @SkOrDs-02 · **Created:** 2026-05-02 ·
 > **Roadmap reference:** [`docs/90-work/planning/storage-roadmap/02-stages-0-3.md` PR #022](../../../90-work/planning/storage-roadmap/02-stages-0-3.md#stage-3--spike-на-routine) ·
 > **Branch:** `devin/1777743313-spike-routine-sqlite-v2` (library) →
 > `devin/1777752068-fix-adr-0031-readme-index` and `devin/1777753778-strict-ts-docs-sync`

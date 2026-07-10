@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-05-12 by Devin. **Next review:** замінено новим SDK-reality spike (TBD — див. § Postmortem 2026-05-12 нижче).
 > **Status:** Archived
-> **Owner:** @Skords-01 · **Created:** 2026-05-10
+> **Owner:** @SkOrDs-02 · **Created:** 2026-05-10
 > **Roadmap reference:** [`docs/90-work/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../../90-work/planning/archive/openclaw-migration-plan.md)
 > **Time-box:** 1–2 days (per plan §510). **Branch:** `devin/1778445962-openclaw-poc-spike` (merged into `main` via PR [#2385](https://github.com/Skords-01/Sergeant/pull/2385); код перенесено у `packages/openclaw-plugin/src/legacy/` Stage 1 rewrite-ом).
 

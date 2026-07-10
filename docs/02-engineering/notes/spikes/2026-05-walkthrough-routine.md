@@ -37,4 +37,4 @@ graph TD
 
 - APNs library decision: `docs/04-governance/adr/0048-apns-provider-library.md`
 - Push notifications architecture: `docs/04-governance/adr/0019-push-notifications.md`
-- Runtime issues: `@Skords-01` (поки TBD secondary)
+- Runtime issues: `@SkOrDs-02` (поки TBD secondary)

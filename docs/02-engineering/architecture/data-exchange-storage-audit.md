@@ -94,7 +94,7 @@ Monobank винесений із client-side proxy в server-side webhook flow:
 
 ## 3. Як зараз зберігаються дані
 
-### 3.1. PostgreSQL (migrations 001–074)
+### 3.1. PostgreSQL (migrations 001–080)
 
 Основні таблиці:
 
@@ -107,9 +107,11 @@ Monobank винесений із client-side proxy в server-side webhook flow:
 - Coach state: `coach_memory` — per-user JSONB, замінила `module_data.coach` (045).
 - Billing: `subscriptions` (056) — canonical multi-provider. Legacy `billing_subscriptions` (047) orphan, deprecated.
 - Ops/Telegram: `tg_topic_archive` — append-only message history для Sergeant_ops supergroup topics (048).
-- AI usage: `ai_usage_daily` — bucket pattern розширено до `transcribe:<model>` (049).
+- AI usage: `ai_usage_daily` — bucket pattern `transcribe:<model>` (049), `anthropic:<model>` restored (078).
 - Push audit: `push_send_audit` (041).
 - Email: `email_unsubscribes` (043/044).
+- Nutrition: `created_at` на `nutrition_water_log` та related tables (079, nullable backfill).
+- OpenClaw: `openclaw_approval_nonce` — single-use write approval nonces (080).
 
 > **`module_data` — видалена.** Дропнута міграцією 046 (`CASCADE` → всі partitions + helper function). Дані `module='profile'` списані свідомо (pre-launch); `module='coach'` мігровані в `coach_memory` (045).
 

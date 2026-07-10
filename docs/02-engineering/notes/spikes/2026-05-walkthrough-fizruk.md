@@ -35,4 +35,4 @@ graph TD
 ## Escalation
 
 - CloudSync architecture: `docs/04-governance/adr/0043-cloudsync-v1-sunset.md`, `docs/04-governance/adr/0047-cloudsync-v1-410-gone.md`
-- Runtime issues: `@Skords-01` (поки TBD secondary)
+- Runtime issues: `@SkOrDs-02` (поки TBD secondary)

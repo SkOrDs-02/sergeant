@@ -34,5 +34,5 @@ graph TD
 ## Escalation
 
 - Питання по Monobank API: [developers.monobank.ua](https://api.monobank.ua/docs/)
-- Runtime issues: `@Skords-01` (поки TBD secondary)
+- Runtime issues: `@SkOrDs-02` (поки TBD secondary)
 - n8n WF-06 flow: `ops/n8n-workflows/WF-06-*.json`

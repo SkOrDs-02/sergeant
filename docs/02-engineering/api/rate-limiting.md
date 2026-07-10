@@ -40,6 +40,8 @@ rateLimitExpress({
 
 ### Currently configured costs
 
+> **Registry note (Phase 2a):** лише `api:auth:sensitive` живе у централізованому [`apps/server/src/config/rateLimit.ts`](../../../apps/server/src/config/rateLimit.ts). Решта AI/nutrition/chat ключів — inline `rateLimitExpress({ key, limit, windowMs, cost })` у відповідних route-файлах (`apps/server/src/routes/*.ts`, module routers). Phase 2b — міграція на `policy()` без зміни лімітів.
+
 | Key                           | `limit`     | `windowMs`  | `cost` | Effective rpm | Rationale                                                           |
 | ----------------------------- | ----------- | ----------- | ------ | ------------- | ------------------------------------------------------------------- |
 | `api:chat`                    | 60          | 60 s        | 10     | 6             | Streaming SSE ~30 s + ~50 KB tokens; upstream Anthropic chargeable. |
