@@ -8,7 +8,9 @@ import {
   type TableSpec,
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { enqueueOutboxIncrement } from "@sergeant/db-schema/sqlite";
 
+import { enqueueOutboxUpsert } from "@/core/syncEngine/enqueueOutboxUpsert";
 import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff";
 
 /**
@@ -30,10 +32,10 @@ import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff";
  *     `buildDelete` does not reproduce; that shape is unique to routine.
  *   - `habit-upsert` preserves `h.createdAt ?? clientTs` for `created_at`.
  *
- * Unlike the web copy, the mobile adapter has no sync-v2 outbox bridge —
- * `completion-add` / `completion-remove` only ever write `routine_entries`
- * (the web-only `enqueueOutboxUpsert` side-effect is web-specific, see
- * ADR-0073 § «НЕ абстрагуємо» п.3 — this is as-is, not a regression).
+ * Sync-v2 outbox bridge: `completion-add` / `completion-remove` fire
+ * `enqueueOutboxUpsert` for `routine_entries` and `enqueueOutboxIncrement`
+ * for `routine_streaks` after each local write (fire-and-forget; failures
+ * are swallowed so a sync-enqueue failure never breaks the local write).
  *
  * Op kind → table mapping:
  *
@@ -356,6 +358,35 @@ async function addCompletion(
     clientTs,
     clientTs,
   ]);
+  // Enqueue routine_entries insert so the server learns about this completion.
+  // Fire-and-forget: a sync failure must never break the local write.
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "routine_entries",
+    op: "insert",
+    row: {
+      id,
+      user_id: userId,
+      name: habitName,
+      completed_at: clientTs,
+      created_at: clientTs,
+      deleted_at: null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
+  // Enqueue a streak increment (+1) so the server's PN-counter stays current.
+  void enqueueOutboxIncrement(client, {
+    userId,
+    table: "routine_streaks",
+    row: { user_id: userId, delta: 1 },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
 }
 
 async function removeCompletion(
@@ -372,6 +403,30 @@ async function removeCompletion(
     userId,
     clientTs,
   ]);
+  // Enqueue a soft-delete op so the server mirrors the removal.
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "routine_entries",
+    op: "delete",
+    row: {
+      id,
+      user_id: userId,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
+  // Enqueue a streak decrement (-1) so the server's PN-counter stays current.
+  void enqueueOutboxIncrement(client, {
+    userId,
+    table: "routine_streaks",
+    row: { user_id: userId, delta: -1 },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
 }
 
 async function renameHabit(
