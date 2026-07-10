@@ -12,7 +12,7 @@ export type SyncV2Outcome =
   | "unauthorized"
   | "error";
 
-// Reject reasons — 51 значень, докуменовані в metrics.md §4
+// Reject reasons — 54 значень, докуменовані в metrics.md §4
 export const APPLY_REJECT_REASONS = [
   // CRDT / per-row state invariants
   "lww_conflict",

@@ -138,11 +138,14 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // `invalid_delta` (PN-counter primitive payload validation у
     // `applyRoutineStreaks`).
     // Cardinality cap у `docs/observability/metrics.md` §4 = ~28 tables ×
-    // 3 statuses × 53 reasons ≈ 4_452 series worst-case (phenomenologically <100,
+    // 3 statuses × 59 reasons ≈ 4_956 series worst-case (phenomenologically <100,
     // більшість табл/reason-пар не зустрічаються одночасно). Якщо сума
     // елементів у двох масивах drift-ує — оновити cardinality calc у
     // metrics.md + dashboard top-10 reject reasons panel.
-    expect(APPLY_REJECT_REASONS.length).toBe(48);
+    // Phase 2 sync expansion (ba5eadd75) додало 6 нових причин для full-state
+    // таблиць: missing_date_key, missing_note_key, invalid_last_used_at,
+    // invalid_entry_at, invalid_energy, invalid_sleep_quality.
+    expect(APPLY_REJECT_REASONS.length).toBe(54);
     expect(ENGINE_REJECT_REASONS.length).toBe(5);
 
     // Ключові CRDT-інваріанти, на які прив'язаний sync health alerting,
