@@ -20,12 +20,16 @@ import { cn } from "../../lib/ui/cn";
  *   rounded only at the top. The panel background fills the safe-area
  *   strip so there's no page-coloured dead space below the labels
  *   (user report 2026-06-05 / bottom-nav-gap).
- * - Active indicator: a rounded outline (`rounded-2xl border`)
- *   framing the active tab, tinted with the module accent
- *   (`tokens.outline`) — outline only, no fill. Carries module
- *   identity.
- * - Active icon picks up `tokens.text` (module-colored); label
- *   stays `text-text`. No drop-shadow glow.
+ * - Active indicator:
+ *   - Light (default): a rounded outline (`rounded-2xl border`) framing
+ *     the active tab, tinted with the module accent (`tokens.outline`) —
+ *     outline only, no fill. Active icon picks up `tokens.text`
+ *     (module-colored); label stays `text-text`.
+ *   - Dark («Чорнило»): the active tab is a solid module-accent square
+ *     (`tokens.fill` = luminescent tier-400) with an **ink foreground**
+ *     (`dark:text-bg` → #0d1512), per spec § 4. No drop-shadow glow.
+ *   The `dark:`-scoped fill leaves the light default untouched (the
+ *   light § 5 nav treatment is a later step).
  * - Labels `text-style-caption` (12px) per Hard Rule #16.
  *
  * Routine special-case (FAB):
@@ -69,10 +73,12 @@ export interface ModuleBottomNavProps {
 }
 
 type ColorTokens = {
-  /** Active icon tint. Module-colored text token. */
+  /** Active icon tint (light). Module-colored text token. */
   text: string;
-  /** Active-tab outline border — module accent at low opacity. */
+  /** Active-tab outline border (light) — module accent at low opacity. */
   outline: string;
+  /** Active-tab solid fill (dark «Чорнило») — luminescent tier-400 accent. */
+  fill: string;
   /** Tiny unread/attention dot color. */
   badge: string;
 };
@@ -81,21 +87,25 @@ const COLORS: Record<ModuleNavColor, ColorTokens> = {
   finyk: {
     text: "text-finyk",
     outline: "border-finyk/40",
+    fill: "dark:bg-brand-400",
     badge: "bg-finyk",
   },
   fizruk: {
     text: "text-fizruk",
     outline: "border-fizruk/40",
+    fill: "dark:bg-cyan-400",
     badge: "bg-fizruk",
   },
   routine: {
     text: "text-routine",
     outline: "border-routine/40",
+    fill: "dark:bg-coral-400",
     badge: "bg-routine",
   },
   nutrition: {
     text: "text-nutrition",
     outline: "border-nutrition/40",
+    fill: "dark:bg-lime-400",
     badge: "bg-nutrition",
   },
 };
@@ -147,14 +157,23 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                 "active:scale-95",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 active
-                  ? cn("text-text", tokens.outline)
+                  ? cn(
+                      // Light: module-accent outline. Dark «Чорнило»: solid
+                      // tier-400 fill + ink foreground (#0d1512 via text-bg).
+                      "text-text",
+                      tokens.outline,
+                      tokens.fill,
+                      "dark:border-transparent dark:text-bg",
+                    )
                   : "text-text border-transparent hover:text-text/80",
               )}
             >
               <span
                 className={cn(
                   "relative transition-all duration-200",
-                  active && tokens.text,
+                  // Light: module-colored icon. Dark: ink icon on the
+                  // accent fill (overrides tokens.text under «Чорнило»).
+                  active && cn(tokens.text, "dark:text-bg"),
                 )}
                 aria-hidden
               >

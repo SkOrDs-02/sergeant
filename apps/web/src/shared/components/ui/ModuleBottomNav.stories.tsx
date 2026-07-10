@@ -61,10 +61,11 @@ export default meta;
 
 type Story = StoryObj<typeof ModuleBottomNav>;
 
-/** Фінік — emerald-700 active pill, активна вкладка «Головна». */
+/** Фінік — active tab: emerald outline (light) / solid emerald-400 fill
+ *  + ink icon (dark «Чорнило»), активна вкладка «Головна». */
 export const Finyk: Story = {};
 
-/** Фізрук — cyan-800 active pill, активна вкладка «Бюджети». */
+/** Фізрук — cyan outline (light) / solid cyan-400 fill (dark), «Бюджети». */
 export const Fizruk: Story = {
   args: {
     module: "fizruk",
@@ -90,7 +91,7 @@ export const Fizruk: Story = {
   },
 };
 
-/** Routine — coral-700 active pill (без центрального FAB). */
+/** Routine — coral outline (light) / solid coral-400 fill (dark), без FAB. */
 export const Routine: Story = {
   args: {
     module: "routine",
@@ -111,7 +112,7 @@ export const Routine: Story = {
   },
 };
 
-/** Nutrition — lime-800 active pill. */
+/** Nutrition — lime outline (light) / solid lime-400 fill (dark). */
 export const Nutrition: Story = {
   args: {
     module: "nutrition",
