@@ -3,6 +3,7 @@ import {
   useContext,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -385,6 +386,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // `buildIdentifyTraits()` — див. JSDoc у `identifyTraits.ts` про
   // джерела і поведінку при відсутності localStorage / navigator.
   const lastIdentifiedUserIdRef = useRef<string | null>(null);
+  const userRef = useRef(user);
+  useLayoutEffect(() => {
+    userRef.current = user;
+  });
   // AI-DANGER: auth-state transition effect. Calls `identifyPostHogUser` on
   // every login and `resetPostHog` on every logout. Wrong wiring here either
   // attributes one user's analytics events to another (privacy leak) or
@@ -393,11 +398,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const currentId = user?.id ?? null;
     const prevId = lastIdentifiedUserIdRef.current;
-    if (currentId && user && currentId !== prevId) {
+    const sessionUser = userRef.current;
+    if (currentId && sessionUser && currentId !== prevId) {
       // `IdentifyTraits` має index-signature `[key: string]: unknown`,
       // тому присвоюється до `Record<string, unknown>` без касту.
       // Типи трейтів захищає сам `buildIdentifyTraits`.
-      identifyPostHogUser(currentId, buildIdentifyTraits(user));
+      identifyPostHogUser(currentId, buildIdentifyTraits(sessionUser));
       lastIdentifiedUserIdRef.current = currentId;
       // Audit 03 / Decision #2 (C): partition SW cache keys per user.
       // Fire-and-forget; SW restart will fall back to `__u=anon` until
@@ -435,7 +441,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // localStorage і `navigator`. Перезапуск ефекту на кожен новий
     // `user`-референс (наприклад, після refetch `/api/v1/me`)
     // спричинив би зайві identify-виклики при тому самому id.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // `userRef` дає свіжі traits лише на переході id.
   }, [user?.id]);
 
   // Request a password reset email via Better Auth. Returns `true` when

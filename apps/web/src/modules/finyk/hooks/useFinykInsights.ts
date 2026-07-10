@@ -41,11 +41,8 @@ export function useFinykInsights(): Insight[] {
   const mirrorTick = useFinykMonoMirrorTick();
 
   const transactions = useMemo(() => {
+    void mirrorTick; // mirror cache refresh tick
     return getCachedFinykMonoMirrorState().transactions;
-    // mirrorTick is the intentional dep — re-read the cache on each tick.
-    // getCachedFinykMonoMirrorState is a stable module-level fn; omitting
-    // it from the dep array is intentional and mirrors the pattern in useWorkouts.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mirrorTick]);
 
   const slots = useFinykStorageSlots();

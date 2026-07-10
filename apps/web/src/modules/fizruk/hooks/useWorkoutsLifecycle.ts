@@ -59,8 +59,7 @@ export function useWorkoutsViewFromSession(
       setView(m);
       safeRemoveSS(VIEW_FROM_SESSION_KEY);
     }
-    // Mount-only effect: setView is stable
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [setView]);
 }
 
 /**
@@ -103,14 +102,9 @@ export function useLiveWorkoutTick(
   activeWorkout: Workout | null,
   setNow: Dispatch<SetStateAction<number>>,
 ): void {
-  // Mount-only effect: setNow is stable; only id/endedAt changes matter
-  useEffect(
-    () => {
-      if (!activeWorkout || activeWorkout.endedAt) return;
-      const id = setInterval(() => setNow(Date.now()), 1000);
-      return () => clearInterval(id);
-    },
-    // setNow is a React setter; activeWorkout is fully captured by the deps.
-    [activeWorkout?.id, activeWorkout?.endedAt], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  useEffect(() => {
+    if (!activeWorkout?.id || activeWorkout.endedAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [activeWorkout?.id, activeWorkout?.endedAt, setNow]);
 }

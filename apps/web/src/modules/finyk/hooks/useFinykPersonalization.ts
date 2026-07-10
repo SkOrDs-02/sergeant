@@ -60,11 +60,10 @@ export function useFinykPersonalization({
   }, [rawExcludedTxIds]);
   // Re-create the Set only when the canonical key (sorted id list) changes;
   // comparing the Set reference itself would re-allocate on every parent render.
-  const excludedTxIds = useMemo<Set<string> | undefined>(
-    () => rawExcludedTxIds || undefined,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [excludedTxIdsKey],
-  );
+  const excludedTxIds = useMemo<Set<string> | undefined>(() => {
+    if (!excludedTxIdsKey) return undefined;
+    return new Set(excludedTxIdsKey.split("|"));
+  }, [excludedTxIdsKey]);
 
   const opts = useMemo(
     () => ({

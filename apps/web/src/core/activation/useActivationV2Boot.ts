@@ -107,6 +107,7 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
   }, [scheduleCacheTick]);
 
   const input = useMemo<ActivationInput | null>(() => {
+    void cacheTick; // external cache invalidation tick
     if (!user) return null;
     const signedUpAt = parseSignedUpAt(user.createdAt);
     if (signedUpAt === null) return null;
@@ -128,8 +129,6 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
       categorizedTransactions,
       budgetsCreated,
     };
-    // `cacheTick` / `evaluatedAt` force recompute when external caches change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional tick triggers; see comment above
   }, [user, queryClient, cacheTick, evaluatedAt]);
 
   return useActivationV2(input, options);
