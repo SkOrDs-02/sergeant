@@ -1,11 +1,13 @@
 # Sergeant — Launch & Monetization Docs
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
+> **Канон ціни (2026-07-10):** [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — **₴199/міс / ₴1490/рік**, reverse trial 7 днів, Free AI 15 msg/day. У старих блоках нижче ₴99/₴799 — historical context.
+>
 > Робочі документи запуску — згруповані за логікою у три піддерева:
 > бізнес-стратегія (`business/`), технічні roadmap-и продуктових сурфейсів (`tech/`),
-> та FTUX delivery (`product-os/`). Всі цифри попередні — для брейнштормінгу та A/B-тестів.
+> та FTUX delivery (`product-os/`). Стратегічні цифри — для брейнштормінгу та A/B-тестів; implementation truth — ADR-0068 + `apps/web/src/core/billing/`.
 
 ## Структура
 
@@ -77,8 +79,8 @@ Sergeant = один додаток замість п'яти
  local-first PWA + native          AI бачить весь день
 ```
 
-**Модель:** Freemium + підписка Pro (₴99/міс | ₴799/рік).
-Soft metered paywall — всі модулі базово безкоштовно; ліміти на AI, sync, звіти.
+**Модель:** Freemium + підписка Pro (**₴199/міс | ₴1490/рік**, ADR-0068).
+Soft metered paywall — всі модулі базово безкоштовно; ліміти на AI (15 msg/day Free), sync (2 devices Free), звіти.
 
 **Ринок:** Україна → Польща → англомовний.
 
@@ -99,6 +101,6 @@ Soft metered paywall — всі модулі базово безкоштовно
 | Share-картки             | OG-зображення з результатами тижня → [вірусні петлі](./business/02-go-to-market.md#53-вірусні-петлі-viral-loops)       |
 | Telegram-канал           | Збирати аудиторію до запуску → [pre-launch](./business/02-go-to-market.md#2-фаза-0--pre-launch)                        |
 | Founder's story на DOU   | Безкоштовний PR → [українські канали](./business/02-go-to-market.md#українські-канали)                                 |
-| Paywall skeleton         | `subscriptions` + `requirePlan()` → [paywall](./business/01-monetization-and-pricing.md#6-технічна-реалізація-paywall) |
-| Waitlist landing         | Збір email → [landing page](./business/02-go-to-market.md#landing-page)                                                |
+| Billing scaffold (shipped) | `PaywallModal`, `PricingPage`, `usePlan()`, `/api/billing/*` → [06 — Архітектура](./business/06-monetization-architecture.md); open: prod Stripe env + legal |
+| In-app landing (shipped)   | `LandingPage` на `/` + `WaitlistForm` → [phases §5](./phases/README.md#5-рішення-про-лендінг); open: standalone `sergeant.com.ua` |
 | PWA install optimization | Піднімати % установок → [PWA install rate](./business/05-operations-and-automation.md#зона-1--product)                 |

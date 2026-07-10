@@ -1,6 +1,6 @@
 # 01 · Product — продукт, копірайт, GTM
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 Продуктовий шар: tone-of-voice, маркетинг, go-to-market і release-нотатки.

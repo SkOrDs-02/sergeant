@@ -1,7 +1,7 @@
 # FTUX sprint plan — від прожарки до PR-ів
 
 > **Last validated:** 2026-05-13 by @Skords-01 / Devin (consolidated into master tracker). **Next review:** 2026-08-11.
-> **Status:** Frozen reference — see [`docs/01-product/launch/ftux-master-tracker.md`](./ftux-master-tracker.md) for current state.
+> **Status:** Frozen reference — see [`product-os/ftux-master-tracker.md`](./ftux-master-tracker.md) for current state.
 
 > ### 📦 Consolidated 2026-05-05
 >

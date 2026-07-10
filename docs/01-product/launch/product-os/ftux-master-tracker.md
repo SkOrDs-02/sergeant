@@ -1,7 +1,9 @@
 # FTUX Master Tracker — стан, проблеми, план
 
-> **Last validated:** 2026-05-13 by Devin (child session, roast #1/10 status bump). **Next review:** 2026-08-11.
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active — **single source of truth** для First-Time User Experience.
+>
+> **Update 2026-07-10:** billing scaffold landed (`usePlan()`, `PaywallModal`, `TrialBanner`, `/api/billing/*`). Pricing — ADR-0068 (₴199, reverse trial 7d). Summer refresh whats-new shipped (`2026-06-26-summer-refresh`). Секції §1–§3 нижче містять historical PR-snapshots (2026-05) + новий зріз.
 
 > **Що це.** Один документ, що об'єднує **стан** (що зашиплено, що відкрито), **проблеми** (з audit-trail), **план** (sprint-i + PR-плани), **копії й макети** (hero copy variants, outcome-card sketch), **метрики** (PostHog dashboards + SLO), **рішення** (Q&A log).
 >
@@ -46,13 +48,21 @@
 
 ## 1. TL;DR
 
-> **PR-status (snapshot 2026-05-06 09:00 UTC):** PR-00, PR-01, PR-02 + status-bump #1939, PR-03 (`pnpm bootstrap` #1943), PR-04 (`disciplined hero copy` #1944), **PR-05 (`demo mode as first-class CTA` #1986), PR-06 (`canonical Cyrillic naming sweep` #1998), PR-07 (`pwa install prompt banner` #2011)**, PR-17 (license auto-gen — `pnpm licenses:check` у CI, [#516](https://github.com/Skords-01/Sergeant/pull/516) / [#517](https://github.com/Skords-01/Sergeant/pull/517) / [#518](https://github.com/Skords-01/Sergeant/pull/518)) — merged. PR-18 (whats-new modal) — ✅ Closed. PR-19 (paywall UX placement sketch → [`paywall-ux-placement.md`](./paywall-ux-placement.md)) — у роботі (#1989). PR-20 plan ([`paywall-implementation-plan.md`](./paywall-implementation-plan.md)) — у цьому PR; impl-кодинг розбитий на 4 sub-PR (20a/b/c/d ~510 LOC) і чекає 0010 phase 3 (`usePlan()` RQ-hook). З Wave 1 залишається лише PR-08 (cleanup — archive stale audits + delete `.replit`). Детально — §3 PR-план.
+> **Snapshot 2026-07-10 (code truth):**
+>
+> - **Billing:** scaffold shipped — `usePlan()`, `PaywallModal`, `TrialBanner`, `PricingPage`, server `/api/billing/checkout|status|portal|stripe-webhook`. Open: live Stripe prod env, legal publish, remaining placement polish.
+> - **Pricing/trial:** ADR-0068 — ₴199/міс, ₴1490/рік, reverse trial 7 днів, Free AI 15 msg/day, cloud-sync 2 devices.
+> - **Landing:** in-app `LandingPage` на `/` + waitlist shipped; standalone `sergeant.com.ua` — TBD.
+> - **FTUX sprints:** S1–S3 core items merged; S6 cleanup mostly done. Real-world activation conversion still **TBD** (needs 14+ day cohort).
+> - **Paywall placement:** sketch у [`paywall-ux-placement.md`](./paywall-ux-placement.md) — historical 14d opt-in trial; implementation follows ADR-0068 reverse trial.
+>
+> **PR-status (historical snapshot 2026-05-06 09:00 UTC):** PR-00, PR-01, PR-02 + status-bump #1939, PR-03 (`pnpm bootstrap` #1943), PR-04 (`disciplined hero copy` #1944), **PR-05 (`demo mode as first-class CTA` #1986), PR-06 (`canonical Cyrillic naming sweep` #1998), PR-07 (`pwa install prompt banner` #2011)**, PR-17 (license auto-gen — `pnpm licenses:check` у CI, [#516](https://github.com/Skords-01/Sergeant/pull/516) / [#517](https://github.com/Skords-01/Sergeant/pull/517) / [#518](https://github.com/Skords-01/Sergeant/pull/518)) — merged. PR-18 (whats-new modal) — ✅ Closed. PR-19 (paywall UX placement sketch → [`paywall-ux-placement.md`](./paywall-ux-placement.md)) — ✅ landed. PR-20 billing impl — ✅ scaffold shipped (sub-PRs 20a–d + initiative 0010). З Wave 1 залишається лише PR-08 (cleanup — archive stale audits + delete `.replit`). Детально — §3 PR-план.
 >
 > **Module-readiness update 2026-05-05:** Fizruk shipped progress charts + exercise catalog + workout notes ([PR #19](https://github.com/Skords-01/Sergeant/pull/19)) і Workouts/Dashboard refactor + journal pagination ([PR #20](https://github.com/Skords-01/Sergeant/pull/20)) — інкорпоровано у §3.5 (FTUX-relevant infra) + §5.3 / §5.4 (Fizruk visual references); §4.1 розширено 6 hero copy variants для наступної ротації + §4.2 selection rubric.
 >
 > **Module-readiness update 2026-05-06:** PR #19 / #20 батч включає precursor UI cleanup — Measurements page тепер починається з єдиного hint-card («Як робити заміри») після видалення дубльованих overview/stats блоків ([PR #17](https://github.com/Skords-01/Sergeant/pull/17)), а Progress page втратила дубльований grid quick-stats ([PR #18](https://github.com/Skords-01/Sergeant/pull/18)). Інкорпоровано у §3.5 як окрема Fizruk visual-cleanup рядок (де FTUX-cold-start §5.3 / §5.4 рендерить ці поверхні).
 >
-> **Paywall placement decided 2026-05-06:** post-first-real-entry sheet (soft, FF-gated, 14d Pro trial без payment method). Sketch + telemetry contract + 3 copy variants (α/β/γ) + acceptance criteria for PR-20 — у [`paywall-ux-placement.md`](./paywall-ux-placement.md). PR-19 landed; PR-20 чекає 0010 Stripe scaffold.
+> **Paywall placement decided 2026-05-06 (updated 2026-07-10):** post-first-real-entry sheet sketch у [`paywall-ux-placement.md`](./paywall-ux-placement.md). **Implementation** follows ADR-0068 reverse trial (7d auto Pro → downgrade), not 14d opt-in trial. PR-19 landed; PR-20 billing scaffold shipped.
 >
 > **Roast #1/10 — 2026-05-13 progress (parent-driven, freeze override):** 3 carryover items закрито у `2026-05-13-ftux-onboarding-roast` PR — (1) **B-11 §2.9** generic «Що далі» tip → module-aware `nextStepTip` у [`FIRST_ENTRY_CELEBRATIONS`](../../../../packages/shared/src/lib/onboardingCelebrations.ts); (2) **P2-15 §4** generic «Продовжити» CTA → module-aware `primaryCtaLabel`; (3) **M-10** FTUX SLO відсутні → declarative [`docs/03-operations/observability/ftux-slo.yml`](../../../03-operations/observability/ftux-slo.yml). Audit guards у [`onboardingCelebrations.test.ts`](../../../../packages/shared/src/lib/onboardingCelebrations.test.ts) блокують regression. Roast doc: [`docs/90-work/audits/2026-05-13-ftux-onboarding-roast.md`](../../../90-work/audits/archive/2026-05-13-ftux-onboarding-roast.md).
 

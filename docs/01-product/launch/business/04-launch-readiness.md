@@ -1,7 +1,9 @@
 # 04. Launch readiness: legal, ops, edge cases, метрики, чеклист
 
-> **Last validated:** 2026-06-11 by @Skords-01. **Next review:** 2026-09-09.
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
+
+> **Update 2026-07-10:** billing UI (`PaywallModal`, `PricingPage`, `PlanSection`, `usePlan()`) і server routes (`/api/billing/*`, `stripeWebhook.ts`) shipped. Edge-case таблиця §2 оновлена: «scaffold shipped» vs «prod rollout pending». Pre-launch checklist §7 розділяє code shipped / prod config.
 
 > Pre-MVP draft. Покриває все, що треба перевірити перед запуском платного продукту.
 > Джерело: `sergeant-launch-checklist.md` (§1, §2, §5, §6, §10),
@@ -169,28 +171,29 @@ PATCH /api/me/preferences
 
 | #     | Сценарій                                | Поточна поведінка                     | Очікувана поведінка                                                                          | Trigger тесту                                                        |
 | ----- | --------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| EC-01 | Webhook не доставлено після оплати      | Не реалізовано                        | Polling: перевірити статус підписки в Stripe при кожному login (`pollPlan.ts`)               | `stripe trigger invoice.paid` із вимкненим webhook endpoint          |
+| EC-01 | Webhook не доставлено після оплати      | 🟡 Webhook shipped; login polling fallback — open | Polling: перевірити статус підписки в Stripe при кожному login (`pollPlan.ts`)               | `stripe trigger invoice.paid` із вимкненим webhook endpoint          |
 | EC-02 | Chargeback (`charge.disputed`)          | Не реалізовано                        | Downgrade → Free + email юзеру (`handleDispute.ts`)                                          | `stripe trigger charge.disputed`                                     |
-| EC-03 | Оплата з двох акаунтів                  | Не реалізовано                        | Stripe customer прив'язаний до `user.id`; один customer = один user (`ensureOneCustomer.ts`) | Створити 2 акаунти → спробувати прив'язати той самий Stripe customer |
-| EC-04 | Видалення акаунту з active subscription | `deleteUser` hook існує (Better Auth) | Cancel Stripe sub → delete → cascade cleanup (`handleSubDeleted.ts`)                         | Створити Pro-акаунт → `DELETE /api/me` → перевірити Stripe Dashboard |
+| EC-03 | Оплата з двох акаунтів                  | 🟡 Checkout прив'язує customer до `user.id` | Stripe customer прив'язаний до `user.id`; один customer = один user (`ensureOneCustomer.ts`) | Створити 2 акаунти → спробувати прив'язати той самий Stripe customer |
+| EC-04 | Видалення акаунту з active subscription | 🟡 `deleteUser` hook існує (Better Auth) | Cancel Stripe sub → delete → cascade cleanup (`handleSubDeleted.ts`)                         | Створити Pro-акаунт → `DELETE /api/me` → перевірити Stripe Dashboard |
 | EC-05 | Timezone billing                        | Stripe працює в UTC                   | UI показує `period_end` у Kyiv timezone (`Europe/Kyiv`)                                      | Перевірити відображення дати закінчення підписки в UI                |
-| EC-06 | Валюта                                  | Stripe auto-convert                   | UI показує ціну в локальній валюті                                                           | Змінити browser locale → перевірити pricing page                     |
-| EC-07 | Downgrade Pro → Free                    | Не реалізовано                        | Дані залишаються, sync вимикається (`handleSubUpdated.ts`)                                   | Stripe Dashboard → cancel subscription → перевірити UI               |
-| EC-08 | Free юзер перевищує AI quota            | `requireAiQuota.ts` існує             | Grandfather: grace period 30 днів для юзерів зареєстрованих до paywall                       | Реєстрація до paywall → 6-й AI запит → перевірити grace              |
-| EC-09 | Payment failed (карта declined)         | Не реалізовано                        | Stripe retry 3× за 3 тижні → downgrade + email (`handlePaymentFailed.ts`)                    | Stripe test card `4000 0000 0000 0341` (decline after attach)        |
-| EC-10 | Subscription renewed (`invoice.paid`)   | Не реалізовано                        | Оновити `current_period_end`, підтвердити Pro (`handleInvoicePaid.ts`)                       | `stripe trigger invoice.paid`                                        |
+| EC-06 | Валюта                                  | 🟡 UI показує ₴199/₴1490 (ADR-0068)   | UI показує ціну в локальній валюті                                                           | Змінити browser locale → перевірити pricing page                     |
+| EC-07 | Downgrade Pro → Free                    | 🟡 `customer.subscription.updated/deleted` handlers shipped | Дані залишаються, sync вимикається (`handleSubUpdated.ts`)                                   | Stripe Dashboard → cancel subscription → перевірити UI               |
+| EC-08 | Free юзер перевищує AI quota            | ✅ `requireAiQuota.ts` + 15 msg/day (ADR-0068) | Grandfather: grace period 30 днів для юзерів зареєстрованих до paywall                       | Реєстрація до paywall → 16-й AI запит → перевірити grace             |
+| EC-09 | Payment failed (карта declined)         | 🟡 `invoice.payment_failed` / `charge.failed` handlers shipped | Stripe retry 3× за 3 тижні → downgrade + email (`handlePaymentFailed.ts`)                    | Stripe test card `4000 0000 0000 0341` (decline after attach)        |
+| EC-10 | Subscription renewed (`invoice.paid`)   | 🟡 `customer.subscription.updated` renewal path shipped | Оновити `current_period_end`, підтвердити Pro (`handleInvoicePaid.ts`)                       | `stripe trigger invoice.paid`                                        |
 | EC-11 | Офлайн з valid Pro                      | Plan cache в localStorage/MMKV        | Pro-фічі працюють офлайн без обмежень                                                        | DevTools → Network: offline → використати Pro-фічу                   |
 | EC-12 | Офлайн з expired Pro (< 72 год)         | Не реалізовано                        | Grace mode: Pro працює + банер «Підключіться до інтернету»                                   | DevTools → offline → змінити `cache.expiresAt` на −48 год            |
 | EC-13 | Офлайн з expired Pro (> 72 год)         | Не реалізовано                        | Downgrade до Free локально; дані залишаються, sync/AI заблоковано                            | DevTools → offline → змінити `cache.expiresAt` на −96 год            |
-| EC-14 | Online після grace period               | Не реалізовано                        | `GET /api/billing/plan` → оновити cache + toast «Ваш план: …»                                | Відновити з'єднання після grace → перевірити toast і cache           |
-| EC-15 | Оплата на вебі → відкрити мобілку       | Не реалізовано                        | `usePlan()` → `GET /api/billing/plan` → Pro на всіх пристроях                                | Оплатити на вебі → відкрити мобілку → перевірити план                |
+| EC-14 | Online після grace period               | 🟡 `GET /api/billing/status` + `usePlan()` shipped | `GET /api/billing/status` → оновити cache + toast «Ваш план: …»                                | Відновити з'єднання після grace → перевірити toast і cache           |
+| EC-15 | Оплата на вебі → відкрити мобілку       | 🟡 `usePlan()` cross-device via server status | `usePlan()` → `GET /api/billing/status` → Pro на всіх пристроях                                | Оплатити на вебі → відкрити мобілку → перевірити план                |
 | EC-16 | Push про зміну плану                    | Не реалізовано                        | Push «Ваш план оновлено до Pro на всіх пристроях» на всі девайси                             | Оплатити → перевірити push на іншому пристрої                        |
 
-> **Webhook entry point (створити):**
-> `apps/server/src/routes/stripe-webhook.ts` → `POST /api/stripe/webhook`
-> з `express.raw()` middleware для Stripe signature verification.
+> **Webhook entry point (shipped):**
+> `apps/server/src/modules/billing/stripeWebhook.ts` → `POST /api/billing/stripe-webhook`
+> з raw-body middleware для Stripe signature verification (`billing.webhook.test.ts`).
 > Технічна реалізація paywall →
-> [01 § Paywall](./01-monetization-and-pricing.md#6-технічна-реалізація-paywall).
+> [01 § Paywall](./01-monetization-and-pricing.md#6-технічна-реалізація-paywall) ·
+> [06 — Архітектура](./06-monetization-architecture.md).
 
 ### 2.1 Offline + Billing (деталі)
 
@@ -482,12 +485,12 @@ What was lucky:
 
 | Метрика                     | Формула                                 | Target              | Де вимірюється                        | Benchmark             |
 | --------------------------- | --------------------------------------- | ------------------- | ------------------------------------- | --------------------- |
-| LTV (Pro subscriber)        | ARPU × avg_lifetime_months = ₴99 × 8    | ₴792                | SQL + Stripe                          | B2C SaaS LTV: $50–200 |
+| LTV (Pro subscriber)        | ARPU × avg_lifetime_months = ₴199 × 8   | ₴1 592              | SQL + Stripe                          | B2C SaaS LTV: $50–200 |
 | CAC (blended)               | total_marketing_spend / new_subscribers | ₴20–40              | Ads dashboard + SQL (manual)          | Indie B2C CAC: $5–30  |
 | LTV:CAC ratio               | LTV / CAC                               | 20:1 → 40:1         | Розрахунок (manual)                   | Здорово: > 3:1        |
 | Gross margin                | (revenue - COGS) / revenue × 100 %      | > 80 %              | Stripe revenue − infra costs (manual) | SaaS: 70–85 %         |
-| Breakeven point             | fixed_costs / ARPU = ₴2,800 / ₴99       | ~30 Pro subscribers | Розрахунок (manual)                   | —                     |
-| ARPU (avg revenue per user) | MRR / total_active_subscribers          | ₴99                 | Stripe MRR / subscribers count        | —                     |
+| Breakeven point             | fixed_costs / ARPU = ₴2,800 / ₴199     | ~15 Pro subscribers | Розрахунок (manual)                   | —                     |
+| ARPU (avg revenue per user) | MRR / total_active_subscribers          | ₴199                | Stripe MRR / subscribers count        | —                     |
 
 ```
 Breakeven деталізація:
@@ -495,7 +498,7 @@ Breakeven деталізація:
   - Server (Railway):      ~$20/міс = ~₴800/міс
   - AI API (Anthropic):    ~$50/міс = ~₴2,000/міс при 500 active AI users
   - Total fixed:           ~$70/міс = ~₴2,800/міс
-  - Breakeven:             ~30 Pro subscribers (₴99 × 30 = ₴2,970)
+  - Breakeven:             ~15 Pro subscribers (₴199 × 15 = ₴2,985)
 ```
 
 > Деталі витрат → [03 § Monthly Cost Projection](./03-services-and-toolstack.md#9-повна-monthly-cost-projection).
@@ -588,19 +591,19 @@ Low Likelihood      │                │ [R4] Конкурент   │        
 
 | #   | Категорія  | Задача                                                      | Owner   | Deadline    | Статус |
 | --- | ---------- | ----------------------------------------------------------- | ------- | ----------- | ------ |
-| 1   | Юридичне   | Privacy Policy сторінка (§1.1)                              | Founder | Місяць 1 W1 | [ ]    |
-| 2   | Юридичне   | Terms of Service сторінка (§1.1)                            | Founder | Місяць 1 W1 | [ ]    |
+| 1   | Юридичне   | Privacy Policy сторінка (§1.1)                              | Founder | Місяць 1 W1 | [~] UI shipped (`/legal/privacy`); publish/review pending |
+| 2   | Юридичне   | Terms of Service сторінка (§1.1)                            | Founder | Місяць 1 W1 | [~] UI shipped (`/legal/terms`); publish/review pending   |
 | 3   | Юридичне   | Cookie consent banner (EU) (§1.1)                           | Dev     | Місяць 1 W2 | [ ]    |
 | 4   | Юридичне   | ФОП реєстрація + банківський рахунок (§1.3)                 | Founder | Місяць 1 W2 | [ ]    |
 | 5   | Юридичне   | Data classification audit (§1.2)                            | Dev     | Місяць 1 W3 | [ ]    |
-| 6   | Продукт    | Paywall UI (не дратує, soft + metered)                      | Dev     | Місяць 1 W2 | [ ]    |
-| 7   | Продукт    | Pricing page / модалка                                      | Dev     | Місяць 1 W2 | [ ]    |
-| 8   | Продукт    | Billing Settings секція                                     | Dev     | Місяць 1 W3 | [ ]    |
+| 6   | Продукт    | Paywall UI (не дратує, soft + metered)                      | Dev     | Місяць 1 W2 | [x] `PaywallModal` shipped; placement polish ongoing      |
+| 7   | Продукт    | Pricing page / модалка                                      | Dev     | Місяць 1 W2 | [x] `PricingPage` shipped (₴199/₴1490, ADR-0068)         |
+| 8   | Продукт    | Billing Settings секція                                     | Dev     | Місяць 1 W3 | [x] `PlanSection` shipped; portal env pending             |
 | 9   | Продукт    | `GET /api/me/export` — Data export (GDPR) (§1.4)            | Dev     | Місяць 2 W1 | [ ]    |
 | 10  | Продукт    | `DELETE /api/me` — повний cascade + external cleanup (§1.4) | Dev     | Місяць 2 W1 | [ ]    |
 | 11  | Продукт    | `GET/PATCH /api/me/preferences` (§1.4)                      | Dev     | Місяць 2 W2 | [ ]    |
 | 12  | Продукт    | FAQ / Help page                                             | Founder | Місяць 1 W4 | [ ]    |
-| 13  | Маркетинг  | Landing page                                                | Dev     | Місяць 1 W1 | [ ]    |
+| 13  | Маркетинг  | Landing page                                                | Dev     | Місяць 1 W1 | [~] in-app `/` shipped; standalone `sergeant.com.ua` open |
 | 14  | Маркетинг  | Store screenshots (якщо Play Store)                         | Founder | Місяць 4    | [ ]    |
 | 15  | Маркетинг  | Demo video (30–60 с)                                        | Founder | Місяць 1 W3 | [ ]    |
 | 16  | Маркетинг  | Telegram канал                                              | Founder | Місяць 1 W1 | [ ]    |
@@ -608,13 +611,13 @@ Low Likelihood      │                │ [R4] Конкурент   │        
 | 18  | Маркетинг  | DOU стаття drafted                                          | Founder | Місяць 2 W4 | [ ]    |
 | 19  | Маркетинг  | OG meta tags для social sharing                             | Dev     | Місяць 1 W3 | [ ]    |
 | 20  | Технічне   | DB backups verified                                         | Dev     | Місяць 1 W3 | [ ]    |
-| 21  | Технічне   | Stripe production keys + webhook endpoint (§2)              | Dev     | Місяць 1 W2 | [ ]    |
+| 21  | Технічне   | Stripe production keys + webhook endpoint (§2)              | Dev     | Місяць 1 W2 | [~] handlers shipped; prod keys pending                   |
 | 22  | Технічне   | Staging environment                                         | Dev     | Місяць 1 W1 | [ ]    |
 | 23  | Технічне   | Rate limiting через Redis (не in-memory)                    | Dev     | Місяць 1 W3 | [ ]    |
 | 24  | Технічне   | Sentry alerts configured                                    | Dev     | Місяць 1 W2 | [ ]    |
 | 25  | Технічне   | Status page — uptimerobot.com (§3.3)                        | Dev     | Місяць 1 W4 | [ ]    |
 | 26  | Технічне   | Error rate monitoring (Prometheus + Grafana) (§3.2)         | Dev     | Місяць 1 W3 | [ ]    |
-| 27  | Технічне   | Stripe webhook handlers: all events (§2)                    | Dev     | Місяць 2 W2 | [ ]    |
+| 27  | Технічне   | Stripe webhook handlers: all events (§2)                    | Dev     | Місяць 2 W2 | [~] core events shipped; dispute/offline grace open         |
 | 28  | Технічне   | Offline grace period flow (§2.1)                            | Dev     | Місяць 2 W3 | [ ]    |
 | 29  | Технічне   | Multi-device plan sync + push (§2.2)                        | Dev     | Місяць 2 W3 | [ ]    |
 | 30  | Операційне | Support email або Telegram                                  | Founder | Місяць 1 W1 | [ ]    |
