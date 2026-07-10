@@ -202,6 +202,7 @@ describe("useRoutineAppState", () => {
       }),
     );
 
+    await act(async () => {});
     expect(result.current.quickAddHabitOpen).toBe(true);
     expect(onConsumed).toHaveBeenCalledOnce();
 
@@ -229,13 +230,14 @@ describe("useRoutineAppState", () => {
     );
   });
 
-  it("opens first-run quick add and consumes valid routineDay deep links", () => {
+  it("opens first-run quick add and consumes valid routineDay deep links", async () => {
     routineAppMocks.firstRun.firstRun = true;
     routineAppMocks.location.search = "?routineDay=2026-06-20&keep=1";
     const { result } = renderHook(() => useRoutineAppState({}));
 
     expect(result.current.quickAddHabitOpen).toBe(true);
     expect(result.current.quickAddFirstRunHint).toBe(true);
+    await act(async () => {});
     expect(routineAppMocks.markSeen).toHaveBeenCalledOnce();
     expect(routineAppMocks.deepLinkDay).toHaveBeenCalledWith("2026-06-20");
     expect(routineAppMocks.reactNavigate).toHaveBeenCalledWith(

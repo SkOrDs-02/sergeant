@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, afterEach, beforeAll } from "vitest";
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -127,6 +128,7 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
         initialCategory="🍴 їжа"
       />,
     );
+    await act(async () => {});
 
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
       target: { value: "200" },
@@ -157,6 +159,7 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
         initialCategory="транспорт"
       />,
     );
+    await act(async () => {});
 
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
       target: { value: "50" },
