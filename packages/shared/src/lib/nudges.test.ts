@@ -179,7 +179,7 @@ describe("re-engagement audit-guard (S6.9)", () => {
   it("REENGAGEMENT_INACTIVE_DAYS is the 2-day early-loop threshold", () => {
     // Audit-guard: changing this constant is a product decision
     // (re-engagement window). If you bump it, also update
-    // `docs/launch/ftux-sprint-plan.md` S6.9 row and re-run baseline.
+    // `docs/01-product/launch/ftux-sprint-plan.md` S6.9 row and re-run baseline.
     expect(REENGAGEMENT_INACTIVE_DAYS).toBe(2);
   });
 

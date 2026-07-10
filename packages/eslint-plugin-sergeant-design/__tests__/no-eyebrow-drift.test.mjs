@@ -7,7 +7,7 @@
  * file-path allowlist — the responsibility for routing through the DS lives
  * with the author. See `packages/eslint-plugin-sergeant-design/index.js`
  * (`noEyebrowDrift`) and Hard-Rule-adjacent docs in
- * `docs/governance/rules/`.
+ * `docs/04-governance/governance/rules/`.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";

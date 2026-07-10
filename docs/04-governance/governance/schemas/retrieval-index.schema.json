@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://sergeant.dev/schemas/retrieval-index.schema.json",
   "title": "Agent retrieval index manifest",
-  "description": "Build-time, committed chunk manifest that powers `pnpm agent:find`. Vectors live out of git in a content-hash cache (Phase 2); this manifest is the queryable, diffable source of truth. See docs/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md.",
+  "description": "Build-time, committed chunk manifest that powers `pnpm agent:find`. Vectors live out of git in a content-hash cache (Phase 2); this manifest is the queryable, diffable source of truth. See docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md.",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "generated_at", "sourceHashes", "counts", "chunks"],

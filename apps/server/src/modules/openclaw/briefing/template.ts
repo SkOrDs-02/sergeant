@@ -7,7 +7,7 @@
  * Дизайн:
  *   - 5 секцій у фіксованому порядку (MRR / signups / PR-queue /
  *     workflow-health / alerts) — порядок mirrors-ить
- *     `docs/launch/tech/openclaw-roadmap.md § Phase 2` Scope-block.
+ *     `docs/01-product/launch/tech/openclaw-roadmap.md § Phase 2` Scope-block.
  *   - Кожна секція має 3 modes: `not_configured` (показуємо hint про
  *     env), `partial` (показуємо що є + `note`), `full` (показуємо
  *     повний metric-роядок).

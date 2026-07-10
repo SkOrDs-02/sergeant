@@ -23,8 +23,8 @@ describe("safeJoin (L8 path-traversal guard)", () => {
   });
 
   it("collapses `..` segments that stay inside root", () => {
-    expect(safeJoin(root, "docs/strategy/../launch/foo.md")).toBe(
-      path.resolve(root, "docs/launch/foo.md"),
+    expect(safeJoin(root, "docs/01-product/launch/../launch/foo.md")).toBe(
+      path.resolve(root, "docs/01-product/launch/foo.md"),
     );
   });
 

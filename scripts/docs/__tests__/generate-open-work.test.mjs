@@ -430,7 +430,7 @@ describe("rewriteRelativeLinks", () => {
   it("rewrites a sibling-file link to be relative to the new file", () => {
     const out = rewriteRelativeLinks(
       "see [tracker](./ftux-master-tracker.md#3-4) for details",
-      "docs/launch/product-os/paywall-implementation-plan.md",
+      "docs/01-product/launch/product-os/paywall-implementation-plan.md",
       "docs/open-work.md",
     );
     assert.match(

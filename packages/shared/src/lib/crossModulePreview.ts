@@ -1,6 +1,6 @@
 /**
  * Cross-module preview — copy + persistence for the one-shot post-first-entry
- * promo card (S6.4 in `docs/launch/ftux-sprint-plan.md`).
+ * promo card (S6.4 in `docs/01-product/launch/ftux-sprint-plan.md`).
  *
  * The preview surfaces inline on the dashboard exactly once after the user
  * crosses the first-real-entry threshold. Its job is to demonstrate
