@@ -2,7 +2,11 @@
   "$comment": "Coverage-ratchet baseline («не гірше ніж зараз») для total.lines.pct. Читається ТІЛЬКИ CI-гейтом scripts/ci/coverage-ratchet.mjs (.github/workflows/ci.yml :: job coverage) — локально гейт не запускається (повний suite на Windows флакі). CI падає, якщо покриття нижче baseline − epsilonPp; коли покриття зросло — CI сам комітить bump цього файлу у PR-гілку. Руками редагуй лише при свідомому зниженні (видалення добре покритого коду) — з обґрунтуванням у PR. Статичні floors живуть окремо у coverage-thresholds.json.",
   "epsilonPp": 0.5,
   "workspaces": {
-    "apps/web": { "lines": 87.63 },
-    "apps/server": { "lines": 91.68 }
+    "apps/web": {
+      "lines": 90.7
+    },
+    "apps/server": {
+      "lines": 91.68
+    }
   }
 }
