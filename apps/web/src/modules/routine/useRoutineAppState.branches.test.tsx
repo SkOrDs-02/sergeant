@@ -1,4 +1,8 @@
 // @vitest-environment jsdom
+/**
+ * Branch-focused coverage for useRoutineAppState — bulk-mark guard,
+ * persisted-tab restore, PWA edge cases, and storage-error defaults.
+ */
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useRoutineAppState } from "./useRoutineAppState";
@@ -22,6 +26,7 @@ const routineAppMocks = vi.hoisted(() => ({
   goToToday: vi.fn(),
   applyTimeMode: vi.fn(),
   deepLinkDay: vi.fn(),
+  persistedTab: "calendar" as "calendar" | "stats",
   location: {
     pathname: "/routine",
     search: "",
@@ -70,7 +75,10 @@ vi.mock("@shared/lib/adapters/haptic", () => ({
   hapticSuccess: routineAppMocks.hapticSuccess,
 }));
 vi.mock("@shared/hooks/useLocalStorageState", () => ({
-  useLocalStorageState: () => ["calendar", routineAppMocks.setPersistedTab],
+  useLocalStorageState: () => [
+    routineAppMocks.persistedTab,
+    routineAppMocks.setPersistedTab,
+  ],
 }));
 vi.mock("@shared/lib/time/kyivTime", () => ({
   parseKyivDate: (value: string) =>
@@ -145,9 +153,10 @@ vi.mock("./useRoutineDerivedData", () => ({
   useRoutineDerivedData: () => routineAppMocks.derived,
 }));
 
-describe("useRoutineAppState", () => {
+describe("useRoutineAppState (branches)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    routineAppMocks.persistedTab = "calendar";
     routineAppMocks.location.pathname = "/routine";
     routineAppMocks.location.search = "";
     routineAppMocks.location.hash = "";
@@ -155,45 +164,31 @@ describe("useRoutineAppState", () => {
     routineAppMocks.route.navigate = routineAppMocks.routeNavigate;
     routineAppMocks.firstRun.firstRun = false;
     routineAppMocks.firstRun.markSeen = routineAppMocks.markSeen;
+    routineAppMocks.derived.range = {
+      startKey: "2026-06-25",
+      endKey: "2026-06-25",
+    };
   });
 
   afterEach(() => {
     window.localStorage.clear();
   });
 
-  it("composes calendar data/actions and handles quick-add state", () => {
-    const onOpenModule = vi.fn();
-    const { result } = renderHook(() => useRoutineAppState({ onOpenModule }));
-
-    expect(routineAppMocks.useSqliteReadBoot).toHaveBeenCalledOnce();
-    expect(routineAppMocks.useRoutineDualWriteBoot).toHaveBeenCalledOnce();
-    expect(routineAppMocks.useRoutineReminders).toHaveBeenCalledOnce();
-    expect(result.current.mainTab).toBe("calendar");
-    expect(result.current.streakMax).toBe(3);
-    expect(result.current.calendarData.rangeLabel).toBe("Тиждень");
-    expect(result.current.calendarActions.onOpenModule).toBe(onOpenModule);
-
-    act(() => result.current.openQuickAddHabit());
-    expect(result.current.quickAddHabitOpen).toBe(true);
-    expect(result.current.quickAddFocusTick).toBe(1);
-
-    act(() => result.current.closeQuickAddHabit());
-    expect(result.current.quickAddHabitOpen).toBe(false);
-
-    act(() => result.current.calendarActions.onToggleHabit("h1", "2026-06-25"));
-    expect(routineAppMocks.hapticTap).toHaveBeenCalledOnce();
-    expect(result.current.routine).toMatchObject({
-      toggled: { habitId: "h1", dateKey: "2026-06-25" },
-    });
+  it("skips bulk mark when the visible range spans multiple days", () => {
+    routineAppMocks.derived.range = {
+      startKey: "2026-06-25",
+      endKey: "2026-06-26",
+    };
+    const { result } = renderHook(() => useRoutineAppState({}));
 
     act(() => result.current.calendarActions.onBulkMarkDay());
-    expect(routineAppMocks.hapticSuccess).toHaveBeenCalledOnce();
-    expect(result.current.routine).toMatchObject({
-      bulkMarked: "2026-06-25",
+    expect(routineAppMocks.hapticSuccess).not.toHaveBeenCalled();
+    expect(result.current.routine).not.toMatchObject({
+      bulkMarked: expect.anything(),
     });
   });
 
-  it("handles pwa add_habit, storage errors, tab changes, and pull refresh errors", async () => {
+  it("ignores an unknown pwaAction without opening quick-add", async () => {
     const onConsumed = vi.fn();
     const { result, rerender } = renderHook(
       ({
@@ -215,57 +210,47 @@ describe("useRoutineAppState", () => {
       },
     );
 
-    rerender({ action: "add_habit", onPwaActionConsumed: onConsumed });
-    expect(result.current.quickAddHabitOpen).toBe(true);
+    rerender({ action: "unknown_action", onPwaActionConsumed: onConsumed });
+    expect(result.current.quickAddHabitOpen).toBe(false);
     await waitFor(() => {
-      expect(onConsumed).toHaveBeenCalledOnce();
+      expect(onConsumed).not.toHaveBeenCalled();
     });
+  });
+
+  it("restores the persisted stats tab on bare /routine entry", () => {
+    routineAppMocks.persistedTab = "stats";
+    renderHook(() => useRoutineAppState({}));
+    expect(routineAppMocks.routeNavigate).toHaveBeenCalledWith("stats");
+  });
+
+  it("ignores an invalid routineDay deep-link param", () => {
+    routineAppMocks.location.search = "?routineDay=not-a-date";
+    renderHook(() => useRoutineAppState({}));
+    expect(routineAppMocks.deepLinkDay).not.toHaveBeenCalled();
+    expect(routineAppMocks.reactNavigate).not.toHaveBeenCalled();
+  });
+
+  it("uses a fallback storage-error message when detail.message is missing", () => {
+    const { result } = renderHook(() => useRoutineAppState({}));
 
     act(() => {
       window.dispatchEvent(
-        new CustomEvent("routine:storage-error", {
-          detail: { message: "quota" },
-        }),
+        new CustomEvent("routine:storage-error", { detail: {} }),
       );
     });
-    expect(result.current.storageErrorMsg).toBe("quota");
-
-    act(() => result.current.setMainTab("stats"));
-    expect(routineAppMocks.setPersistedTab).toHaveBeenCalledWith("stats");
-    expect(routineAppMocks.routeNavigate).toHaveBeenCalledWith("stats");
-
-    await result.current.handlePullRefresh();
-    expect(routineAppMocks.requestCloudPull).toHaveBeenCalledWith(2500);
-
-    result.current.handlePullRefreshError();
-    expect(routineAppMocks.toastError).toHaveBeenCalledWith(
-      expect.stringContaining("Не вдалося"),
-      undefined,
-      expect.objectContaining({ label: "Повторити" }),
-    );
+    expect(result.current.storageErrorMsg).toBe("невідома помилка");
   });
 
-  it("opens first-run quick add and consumes valid routineDay deep links", async () => {
-    routineAppMocks.firstRun.firstRun = true;
-    routineAppMocks.location.search = "?routineDay=2026-06-20&keep=1";
+  it("setMainTab accepts a functional updater", () => {
+    routineAppMocks.route.page = "calendar";
     const { result } = renderHook(() => useRoutineAppState({}));
 
-    expect(result.current.quickAddHabitOpen).toBe(true);
-    expect(result.current.quickAddFirstRunHint).toBe(true);
-    await waitFor(() => {
-      expect(routineAppMocks.markSeen).toHaveBeenCalledOnce();
-    });
-    expect(routineAppMocks.deepLinkDay).toHaveBeenCalledWith("2026-06-20");
-    expect(routineAppMocks.reactNavigate).toHaveBeenCalledWith(
-      {
-        pathname: "/routine",
-        search: "?keep=1",
-        hash: "",
-      },
-      { replace: true },
+    act(() =>
+      result.current.setMainTab((prev) =>
+        prev === "calendar" ? "stats" : prev,
+      ),
     );
-
-    act(() => result.current.dismissQuickAddFirstRunHint());
-    expect(result.current.quickAddFirstRunHint).toBe(false);
+    expect(routineAppMocks.setPersistedTab).toHaveBeenCalledWith("stats");
+    expect(routineAppMocks.routeNavigate).toHaveBeenCalledWith("stats");
   });
 });

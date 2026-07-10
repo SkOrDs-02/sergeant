@@ -146,10 +146,17 @@ export default defineConfig({
         //     lines 90.52 / branches 75.84 / fns 82.64 / statements 88.03.
         //   Ratchet: lines → 89, branches → 75, fns → 82, statements → 87.
         //
+        // - 2026-07-10 (web coverage wave 10): orchestration-shell branch push
+        //   (FinykApp/NutritionApp page routing + swipe, pending-action machine,
+        //   useRoutineAppState branches, HabitDetailSheet delete-without-snapshot,
+        //   CommandPalette Escape, async PWA drift fixes in FinykApp.extra /
+        //   useRoutineAppState). Measured (CI=true, maxWorkers=1):
+        //     lines 89.98 / branches 75.48 / fns 82.49 / statements 87.54.
+        //   Floors unchanged: 89 / 75 / 82 / 87 (~0.5–2.5pp headroom).
+        //
         // Floors set ~1.3–2.5pp below current actuals. Raise per sprint
-        // as more component shells land (next targets: FinykApp,
-        // NutritionApp, useRoutineAppState, CommandPaletteUI,
-        // HabitDetailSheet — the heavy orchestration shells still at 0%).
+        // as more component shells land (next targets: remaining FinykApp /
+        // NutritionApp callback branches in heavy lazy pages).
         // `lines` приходить з кореневого coverage-thresholds.json.
         lines: sharedThresholds["apps/web"],
         branches: 75,

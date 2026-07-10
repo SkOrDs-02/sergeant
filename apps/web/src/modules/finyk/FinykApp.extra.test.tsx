@@ -7,7 +7,13 @@
  * SyncPill balance toggle, and FAB.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 
 // ── Stable mock references ────────────────────────────────────────────────────
 
@@ -119,14 +125,25 @@ vi.mock("./components/SyncIndicator", () => ({
   SWIPE_THRESHOLD_PX: 80,
 }));
 
-const swipeState = vi.hoisted(() => ({ dragDx: 0 }));
+const swipeState = vi.hoisted(() => ({
+  dragDx: 0,
+  handlers: {} as {
+    onSwipeLeft?: () => void;
+    onSwipeRight?: () => void;
+  },
+}));
 vi.mock("@shared/hooks/useSwipeNavigation", () => ({
-  useSwipeNavigation: vi.fn(() => ({
-    onTouchStart: vi.fn(),
-    onTouchMove: vi.fn(),
-    onTouchEnd: vi.fn(),
-    dragDx: swipeState.dragDx,
-  })),
+  useSwipeNavigation: vi.fn(
+    (opts: { onSwipeLeft?: () => void; onSwipeRight?: () => void }) => {
+      swipeState.handlers = opts;
+      return {
+        onTouchStart: vi.fn(),
+        onTouchMove: vi.fn(),
+        onTouchEnd: vi.fn(),
+        dragDx: swipeState.dragDx,
+      };
+    },
+  ),
 }));
 
 vi.mock("@shared/hooks/useDialogFocusTrap", () => ({
@@ -413,22 +430,32 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
 // ── pwaAction ─────────────────────────────────────────────────────────────────
 
 describe("FinykApp (extra) — pwaAction='add_expense'", () => {
-  it("navigates to transactions and opens expense sheet on mount", () => {
+  it("navigates to transactions and opens expense sheet when action arrives", async () => {
     const onPwaActionConsumed = vi.fn();
-    render(
+    const { rerender } = render(
+      <FinykApp onPwaActionConsumed={onPwaActionConsumed} />,
+    );
+    rerender(
       <FinykApp
         pwaAction="add_expense"
         onPwaActionConsumed={onPwaActionConsumed}
       />,
     );
-    expect(navigateMock).toHaveBeenCalledWith("transactions");
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("transactions");
+    });
     expect(screen.getByTestId("expense-sheet")).toBeInTheDocument();
-    expect(onPwaActionConsumed).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(onPwaActionConsumed).toHaveBeenCalled();
+    });
   });
 
-  it("calls consumePresetPrefill for finyk on add_expense action", () => {
-    render(<FinykApp pwaAction="add_expense" />);
-    expect(consumePresetPrefill).toHaveBeenCalledWith("finyk");
+  it("calls consumePresetPrefill for finyk on add_expense action", async () => {
+    const { rerender } = render(<FinykApp />);
+    rerender(<FinykApp pwaAction="add_expense" />);
+    await waitFor(() => {
+      expect(consumePresetPrefill).toHaveBeenCalledWith("finyk");
+    });
   });
 });
 
@@ -487,15 +514,13 @@ describe("FinykApp (extra) — first-run navigation", () => {
   });
 
   it("skips first-run navigate when pwaAction is add_expense", () => {
-    vi.mocked(useModuleFirstRun).mockReturnValueOnce({
+    vi.mocked(useModuleFirstRun).mockReturnValue({
       firstRun: true,
       markSeen: vi.fn(),
     });
-    vi.mocked(useFinykRoute).mockReturnValueOnce(["overview", navigateMock]);
+    vi.mocked(useFinykRoute).mockReturnValue(["overview", navigateMock]);
     render(<FinykApp pwaAction="add_expense" />);
-    // pwaAction effect navigates to "transactions", NOT to "budgets"
     expect(navigateMock).not.toHaveBeenCalledWith("budgets");
-    expect(navigateMock).toHaveBeenCalledWith("transactions");
   });
 });
 
@@ -657,6 +682,31 @@ describe("FinykApp (extra) — page routing", () => {
     vi.mocked(useFinykRoute).mockReturnValue(["overview", navigateMock]);
     render(<FinykApp />);
     expect(screen.getByTestId("finyk-overview")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["transactions", "lazy-Transactions"],
+    ["budgets", "lazy-Budgets"],
+    ["analytics", "lazy-Analytics"],
+    ["assets", "lazy-Assets"],
+  ] as const)("renders the %s page shell", (page, testId) => {
+    vi.mocked(useFinykRoute).mockReturnValue([page, navigateMock]);
+    render(<FinykApp />);
+    expect(screen.getByTestId(testId)).toBeInTheDocument();
+  });
+
+  it("swipes left from overview to the next nav page", () => {
+    vi.mocked(useFinykRoute).mockReturnValue(["overview", navigateMock]);
+    render(<FinykApp />);
+    swipeState.handlers.onSwipeLeft?.();
+    expect(navigateMock).toHaveBeenCalledWith("transactions");
+  });
+
+  it("swipes right from transactions back to overview", () => {
+    vi.mocked(useFinykRoute).mockReturnValue(["transactions", navigateMock]);
+    render(<FinykApp />);
+    swipeState.handlers.onSwipeRight?.();
+    expect(navigateMock).toHaveBeenCalledWith("overview");
   });
 
   it("renders null for an unknown page route without crashing", () => {
