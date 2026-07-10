@@ -1880,7 +1880,7 @@
       "entryFile": "packages/nutrition-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 93,
+        "totalImporters": 94,
         "deadExports": 0
       },
       "exports": [
@@ -2073,7 +2073,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 374,
+        "totalImporters": 376,
         "deadExports": 0
       },
       "exports": [
