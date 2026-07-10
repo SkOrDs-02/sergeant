@@ -132,7 +132,7 @@ export default function App({
   }, [firstRunFinyk, pwaAction, page, navigate]);
 
   // PWA action: open add-expense sheet when the OS deep-link fires.
-  const prevPwaActionRef = useRef(pwaAction);
+  const prevPwaActionRef = useRef<string | null | undefined>(null);
   useEffect(() => {
     if (pwaAction !== "add_expense") {
       prevPwaActionRef.current = pwaAction;

@@ -42,9 +42,10 @@ describe("useNutritionPrefsState", () => {
     expect(result.current.prefsStorageErr).toBe("");
   });
 
-  it("surfaces a banner string when persistence fails", () => {
+  it("surfaces a banner string when persistence fails", async () => {
     persistNutritionPrefs.mockReturnValue(false);
     const { result } = renderHook(() => useNutritionPrefsState(0));
+    await act(async () => {});
     expect(result.current.prefsStorageErr).toBe(
       "Не вдалося зберегти налаштування.",
     );

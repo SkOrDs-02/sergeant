@@ -7,7 +7,13 @@
  * SyncPill balance toggle, and FAB.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+} from "@testing-library/react";
 
 // ── Stable mock references ────────────────────────────────────────────────────
 
@@ -413,7 +419,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
 // ── pwaAction ─────────────────────────────────────────────────────────────────
 
 describe("FinykApp (extra) — pwaAction='add_expense'", () => {
-  it("navigates to transactions and opens expense sheet on mount", () => {
+  it("navigates to transactions and opens expense sheet on mount", async () => {
     const onPwaActionConsumed = vi.fn();
     render(
       <FinykApp
@@ -421,13 +427,15 @@ describe("FinykApp (extra) — pwaAction='add_expense'", () => {
         onPwaActionConsumed={onPwaActionConsumed}
       />,
     );
+    await act(async () => {});
     expect(navigateMock).toHaveBeenCalledWith("transactions");
     expect(screen.getByTestId("expense-sheet")).toBeInTheDocument();
     expect(onPwaActionConsumed).toHaveBeenCalled();
   });
 
-  it("calls consumePresetPrefill for finyk on add_expense action", () => {
+  it("calls consumePresetPrefill for finyk on add_expense action", async () => {
     render(<FinykApp pwaAction="add_expense" />);
+    await act(async () => {});
     expect(consumePresetPrefill).toHaveBeenCalledWith("finyk");
   });
 });
@@ -486,13 +494,14 @@ describe("FinykApp (extra) — first-run navigation", () => {
     expect(navigateMock).not.toHaveBeenCalledWith("budgets");
   });
 
-  it("skips first-run navigate when pwaAction is add_expense", () => {
+  it("skips first-run navigate when pwaAction is add_expense", async () => {
     vi.mocked(useModuleFirstRun).mockReturnValueOnce({
       firstRun: true,
       markSeen: vi.fn(),
     });
     vi.mocked(useFinykRoute).mockReturnValueOnce(["overview", navigateMock]);
     render(<FinykApp pwaAction="add_expense" />);
+    await act(async () => {});
     // pwaAction effect navigates to "transactions", NOT to "budgets"
     expect(navigateMock).not.toHaveBeenCalledWith("budgets");
     expect(navigateMock).toHaveBeenCalledWith("transactions");

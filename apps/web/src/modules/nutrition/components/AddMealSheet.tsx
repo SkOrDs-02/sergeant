@@ -114,7 +114,7 @@ export function AddMealSheet({
     setForm,
   });
 
-  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevOpen, setPrevOpen] = useState(false);
   if (open && !prevOpen) {
     setPrevOpen(true);
     if (initialMeal?.id) {

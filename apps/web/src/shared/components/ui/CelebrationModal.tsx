@@ -166,7 +166,9 @@ export const CelebrationModal = memo(function CelebrationModal({
     setPrevOpen(false);
   }
 
-  const prevOpenForVibrateRef = useRef(open);
+  // Initialized to false so the effect detects the open=true mount as a
+  // transition and fires haptics — matching the original useEffect pattern.
+  const prevOpenForVibrateRef = useRef(false);
   useEffect(() => {
     if (open && !prevOpenForVibrateRef.current && navigator.vibrate) {
       navigator.vibrate(type === "confetti" ? [50, 30, 50] : [30]);
@@ -593,7 +595,9 @@ export const MiniSuccess = memo(function MiniSuccess({
 }: MiniSuccessProps) {
   const [visible, setVisible] = useState(false);
 
-  const [prevShow, setPrevShow] = useState(show);
+  // Initialized to false so the render-phase check correctly detects the
+  // initial show=true case and sets visible=true synchronously.
+  const [prevShow, setPrevShow] = useState(false);
   if (show && !prevShow) {
     setPrevShow(true);
     setVisible(true);

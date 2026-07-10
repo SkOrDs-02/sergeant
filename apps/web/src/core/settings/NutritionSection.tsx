@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
@@ -79,11 +79,22 @@ function NumberField({
   );
 }
 
+const STORAGE_ERR_MSG = "Не вдалося зберегти налаштування Харчування.";
+
+function persistAndCaptureErr(prefs: NutritionPrefs): string {
+  return persistNutritionPrefs(prefs) ? "" : STORAGE_ERR_MSG;
+}
+
 export function NutritionSection() {
   const [prefs, setPrefs] = useState<NutritionPrefs>(() =>
     loadNutritionPrefs(),
   );
-  const [storageErr, setStorageErr] = useState<string>("");
+  // Persist initial prefs at mount and capture any storage error synchronously.
+  // Subsequent persists happen in patchPrefs / resetDailyTargets event handlers
+  // to avoid calling setState in a useEffect body (react-hooks/set-state-in-effect).
+  const [storageErr, setStorageErr] = useState<string>(() =>
+    persistAndCaptureErr(loadNutritionPrefs()),
+  );
 
   // Pantry picker state (stored separately from prefs, in
   // NUTRITION_PANTRIES_KEY / NUTRITION_ACTIVE_PANTRY_KEY).
@@ -92,26 +103,20 @@ export function NutritionSection() {
     loadActivePantryId(),
   );
 
-  // Persist prefs on every change. The actual NutritionApp also owns a
-  // copy of prefs via `loadNutritionPrefs()` + `useEffect`; the next time
-  // the Nutrition module mounts it will pick the updated prefs from LS.
-  useEffect(() => {
-    const err = persistNutritionPrefs(prefs)
-      ? ""
-      : "Не вдалося зберегти налаштування Харчування.";
-    void Promise.resolve().then(() => setStorageErr(err));
-  }, [prefs]);
-
   const activePantry = useMemo(
     () => pantries.find((p) => p.id === activePantryId) || pantries[0] || null,
     [pantries, activePantryId],
   );
 
+  // Persist on every change and update the error banner. Called from event
+  // handlers (not effects) so setState is safe without the microtask deferral.
   const patchPrefs = useCallback(
     (patch: Partial<NutritionPrefs>) => {
-      setPrefs((p) => ({ ...p, ...patch }));
+      const next = { ...prefs, ...patch };
+      setPrefs(next);
+      setStorageErr(persistAndCaptureErr(next));
     },
-    [setPrefs],
+    [prefs],
   );
 
   const handleSetActivePantry = useCallback(
@@ -130,6 +135,7 @@ export function NutritionSection() {
       dailyTargetFat_g: d.dailyTargetFat_g,
       dailyTargetCarbs_g: d.dailyTargetCarbs_g,
     });
+    // patchPrefs already persists and updates storageErr
   }, [patchPrefs]);
 
   const navigate = useNavigate();
