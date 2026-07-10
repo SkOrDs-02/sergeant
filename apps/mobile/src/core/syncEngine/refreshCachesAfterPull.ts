@@ -9,7 +9,17 @@
  */
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
-const ROUTINE_PULL_TABLES = new Set(["routine_entries", "routine_streaks"]);
+const ROUTINE_PULL_TABLES = new Set([
+  "routine_entries",
+  "routine_streaks",
+  "routine_habits",
+  "routine_tags",
+  "routine_categories",
+  "routine_prefs",
+  "routine_pushups",
+  "routine_habit_order",
+  "routine_completion_notes",
+]);
 const FINYK_PULL_TABLES = new Set([
   "finyk_hidden_accounts",
   "finyk_hidden_transactions",
@@ -33,6 +43,12 @@ const FIZRUK_PULL_TABLES = new Set([
   "fizruk_workout_sets",
   "fizruk_custom_exercises",
   "fizruk_measurements",
+  "fizruk_daily_log",
+  "fizruk_monthly_plan",
+  "fizruk_plan_templates",
+  "fizruk_programs",
+  "fizruk_wellbeing",
+  "fizruk_workout_templates",
 ]);
 const NUTRITION_PULL_TABLES = new Set([
   "nutrition_meals",
@@ -40,6 +56,8 @@ const NUTRITION_PULL_TABLES = new Set([
   "nutrition_pantry_items",
   "nutrition_prefs",
   "nutrition_recipes",
+  "nutrition_water_log",
+  "nutrition_shopping_list",
 ]);
 
 function touches(set: Set<string>, affected: ReadonlySet<string>): boolean {

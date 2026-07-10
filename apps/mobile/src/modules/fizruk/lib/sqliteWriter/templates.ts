@@ -6,6 +6,7 @@ import {
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { fireSyncOutboxUpsert } from "@/core/syncEngine/fireSyncOutboxUpsert";
 import type {
   FizrukMonthlyPlanSnapshot,
   FizrukWorkoutTemplateSnapshot,
@@ -70,6 +71,16 @@ export async function setMonthlyPlan(
     monthlyPlan.dataJson ?? "{}",
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "fizruk_monthly_plan",
+    op: "insert",
+    clientTs,
+    row: {
+      user_id: userId,
+      data_json: monthlyPlan.dataJson ?? "{}",
+    },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -95,6 +106,21 @@ export async function upsertWorkoutTemplate(
     clientTs,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "fizruk_workout_templates",
+    op: "insert",
+    clientTs,
+    row: {
+      id: t.id,
+      user_id: userId,
+      name: t.name ?? "",
+      exercise_ids_json: exerciseIdsJson,
+      groups_json: groupsJson,
+      last_used_at: t.lastUsedAt ?? null,
+      created_at: clientTs,
+    },
+  });
 }
 
 export async function softDeleteWorkoutTemplate(
@@ -109,4 +135,11 @@ export async function softDeleteWorkoutTemplate(
     userId,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "fizruk_workout_templates",
+    op: "delete",
+    clientTs,
+    row: { id: templateId, user_id: userId },
+  });
 }

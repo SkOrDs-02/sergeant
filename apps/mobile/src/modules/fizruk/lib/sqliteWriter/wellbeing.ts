@@ -8,6 +8,7 @@ import {
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { fireSyncOutboxUpsert } from "@/core/syncEngine/fireSyncOutboxUpsert";
 import type { FizrukWellbeingSnapshot } from "./diff";
 
 // -----------------------------------------------------------------------
@@ -62,6 +63,22 @@ export async function upsertWellbeing(
     clientTs,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "fizruk_wellbeing",
+    op: "insert",
+    clientTs,
+    row: {
+      user_id: userId,
+      date_key: e.dateKey,
+      mood: toIntOrNull(e.mood),
+      energy: toIntOrNull(e.energy),
+      sleep_quality: toIntOrNull(e.sleepQuality),
+      sleep_hours: toRealOrNull(e.sleepHours),
+      notes: e.notes ?? "",
+      created_at: clientTs,
+    },
+  });
 }
 
 export async function softDeleteWellbeing(
@@ -76,4 +93,11 @@ export async function softDeleteWellbeing(
     dateKey,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "fizruk_wellbeing",
+    op: "delete",
+    clientTs,
+    row: { user_id: userId, date_key: dateKey },
+  });
 }

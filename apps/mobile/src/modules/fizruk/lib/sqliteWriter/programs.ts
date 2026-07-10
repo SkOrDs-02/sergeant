@@ -5,6 +5,7 @@ import {
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { fireSyncOutboxUpsert } from "@/core/syncEngine/fireSyncOutboxUpsert";
 import type {
   FizrukPlanTemplateSnapshot,
   FizrukProgramsSnapshot,
@@ -53,6 +54,16 @@ export async function setPrograms(
     programs.activeProgramId ?? null,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "fizruk_programs",
+    op: "insert",
+    clientTs,
+    row: {
+      user_id: userId,
+      active_program_id: programs.activeProgramId ?? null,
+    },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -69,4 +80,11 @@ export async function setPlanTemplate(
     planTemplate.dataJson ?? "null",
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "fizruk_plan_templates",
+    op: "insert",
+    clientTs,
+    row: { user_id: userId, data_json: planTemplate.dataJson ?? "null" },
+  });
 }

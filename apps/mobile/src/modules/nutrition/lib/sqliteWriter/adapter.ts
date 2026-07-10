@@ -14,6 +14,7 @@ import {
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { enqueueOutboxUpsert } from "@/core/syncEngine/enqueueOutboxUpsert";
+import { fireSyncOutboxUpsert } from "@/core/syncEngine/fireSyncOutboxUpsert";
 
 import type {
   NutritionDualWriteOp,
@@ -573,6 +574,13 @@ async function setWaterLog(
     safeVolume ?? 0,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "nutrition_water_log",
+    op: "insert",
+    clientTs,
+    row: { user_id: userId, date_key: dateKey, volume_ml: safeVolume ?? 0 },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -589,6 +597,16 @@ async function setShoppingList(
     shoppingList.dataJson ?? '{"categories":[]}',
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "nutrition_shopping_list",
+    op: "insert",
+    clientTs,
+    row: {
+      user_id: userId,
+      data_json: shoppingList.dataJson ?? '{"categories":[]}',
+    },
+  });
 }
 
 // -----------------------------------------------------------------------
