@@ -1,43 +1,17 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+
+import { seedFTUX } from "../utils/seedFTUX";
+import { collectPageErrors } from "./smokeHelpers";
 
 /**
  * Module smoke — РУТИНА (routine).
  *
- * Audit `2026-05-13-testing-devx-roast.md` §P1-3. Minimal cold-load mount
- * + key-element assert; deep flows live in the routine RTL suites.
+ * S10-X1: cold-load mount + calendar → add-habit CTA → dialog open.
  */
 
-const SEEDED_LS: Record<string, string> = {
-  hub_onboarding_done_v1: "1",
-  hub_first_action_done_v1: "1",
-  hub_vibe_picks_v1: JSON.stringify({
-    picks: ["finyk", "fizruk", "nutrition", "routine"],
-    firstActionPending: null,
-    firstActionStartedAt: null,
-    firstRealEntryAt: Date.now(),
-    updatedAt: Date.now(),
-  }),
-  "sergeant.onboarding.module_first_seen.routine.v1": "1",
-  "sergeant.whatsNew.lastSeenId.v1": "2026-05-06-cold-start",
-};
-
-async function seedLocalStorage(page: Page) {
-  await page.addInitScript((entries: Record<string, string>) => {
-    try {
-      for (const [k, v] of Object.entries(entries)) {
-        window.localStorage.setItem(k, v);
-      }
-    } catch {
-      /* ignore */
-    }
-  }, SEEDED_LS);
-}
-
 test("@critical routine: cold-load mounts module shell", async ({ page }) => {
-  await seedLocalStorage(page);
-
-  const errors: string[] = [];
-  page.on("pageerror", (err) => errors.push(err.message));
+  await seedFTUX(page, "post-ftux");
+  const errors = await collectPageErrors(page);
 
   await page.goto("/?module=routine", { waitUntil: "domcontentloaded" });
 
@@ -49,4 +23,22 @@ test("@critical routine: cold-load mounts module shell", async ({ page }) => {
   ).toHaveCount(0);
 
   expect(errors, "Uncaught page errors on routine cold load").toEqual([]);
+});
+
+test("@critical routine: calendar → add-habit CTA opens create dialog", async ({
+  page,
+}) => {
+  await seedFTUX(page, "post-ftux");
+  const errors = await collectPageErrors(page);
+
+  await page.goto("/routine", { waitUntil: "domcontentloaded" });
+
+  await page
+    .getByRole("button", { name: "Додати звичку", exact: true })
+    .click();
+  await expect(page.getByRole("dialog", { name: "Нова звичка" })).toBeVisible({
+    timeout: 10_000,
+  });
+
+  expect(errors, "Uncaught page errors on routine CTA happy path").toEqual([]);
 });
