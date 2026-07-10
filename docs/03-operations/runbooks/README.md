@@ -19,6 +19,7 @@ playbook каже **що** і **коли**, runbook — **як саме** вик
 | [`postgres-read-replica.md`](./postgres-read-replica.md)             | Streaming read-replica + `DATABASE_URL_REPLICA`, прозорий fallback на primary. Storage roadmap PR #047.           |
 | [`openclaw-telegram-tools.md`](./openclaw-telegram-tools.md)         | `read_telegram_topic_history` LLM tool — env-vars, structured errors, smoke-tests (PR-35 / Pain P8).              |
 | [`openclaw-morning-briefing.md`](./openclaw-morning-briefing.md)     | Morning-briefing template — 5 hardcoded sections, env-vars matrix, manual smoke-test (PR-26 / Phase 2.A).         |
+| [`sync-client-e2e.md`](./sync-client-e2e.md)                         | Phase 1 sync wiring gate — web↔web / web→mobile manual E2E, failure triage, CI smoke commands.                    |
 
 ## Runbook vs playbook vs incident workflow
 
