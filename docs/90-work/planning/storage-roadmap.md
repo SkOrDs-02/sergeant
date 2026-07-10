@@ -32,7 +32,7 @@ Roadmap переведення Storage & Sync у Sergeant на production-ready 
 
 **Поточний стан (2026-05-19):** Усі 13 запланованих Stage-ів завершено. Redis (#045) лишається опційним opt-in. Документ зберігається як historical reference та для audit/rollout context.
 
-**Dual-write teardown (2026-07-10):** follow-up ініціатива після Stage 8 — LS/MMKV production-write модульних даних прибрано; SQLite — canonical writer. Деталі й свідомі винятки (demo-seed, residualImport-міст, Mono cloud-sync cache) — [`dualwrite-teardown.md`](./dualwrite-teardown.md) (Status: Deprecated, виконано). Каталоги `lib/dualWrite/` перейменовано на `lib/sqliteWriter/`.
+**Dual-write teardown (2026-07-10):** follow-up ініціатива після Stage 8 — LS/MMKV production-write модульних даних прибрано; SQLite — canonical writer. Деталі й свідомі винятки (demo-seed, residualImport-міст, Mono cloud-sync cache) — [`dualwrite-teardown.md`](./dualwrite-teardown.md) (Status: Deprecated, виконано). Каталоги `lib/dualWrite/` перейменовано на `lib/sqliteWriter/`; shim-и видалено, import-и мігровано.
 
 ## Зміст
 

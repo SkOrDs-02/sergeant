@@ -28,8 +28,8 @@ import {
   isFinykDualWriteRegistered,
   triggerFinykDualWrite,
   type FinykDualWriteState,
-} from "../lib/dualWrite/index.js";
-import { extractFinykDualWriteState } from "../lib/dualWrite/extract.js";
+} from "../lib/sqliteWriter/index.js";
+import { extractFinykDualWriteState } from "../lib/sqliteWriter/extract.js";
 import type { FinykStorageSlots } from "./useFinykStorageSlots";
 
 export function useFinykDualWriteSync(slots: FinykStorageSlots): void {

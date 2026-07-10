@@ -17,12 +17,12 @@
 
 import type { FinykBackup } from "@sergeant/finyk-domain/backup";
 
-import { triggerFinykDualWrite } from "./dualWrite";
+import { triggerFinykDualWrite } from "./sqliteWriter";
 import {
   EMPTY_FINYK_STATE,
   type FinykDualWriteState,
   type FinykPrefsSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import {
   blobsFromArray,
   idsFromArray,
@@ -30,7 +30,7 @@ import {
   networthHistoryFrom,
   txCatsFromMap,
   txSplitsFromMap,
-} from "./dualWrite/extract";
+} from "./sqliteWriter/extract";
 import { getCachedFinykSqliteState } from "./sqliteReader";
 
 /**

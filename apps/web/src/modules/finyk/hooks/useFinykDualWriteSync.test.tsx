@@ -6,12 +6,12 @@ const isRegistered = vi.fn();
 const trigger = vi.fn();
 const extract = vi.fn((..._a: unknown[]) => ({ marker: "next" }));
 
-vi.mock("../lib/dualWrite/index.js", () => ({
+vi.mock("../lib/sqliteWriter/index.js", () => ({
   EMPTY_FINYK_STATE: { marker: "empty" },
   isFinykDualWriteRegistered: () => isRegistered(),
   triggerFinykDualWrite: (...a: unknown[]) => trigger(...a),
 }));
-vi.mock("../lib/dualWrite/extract.js", () => ({
+vi.mock("../lib/sqliteWriter/extract.js", () => ({
   extractFinykDualWriteState: (...a: unknown[]) => extract(...a),
 }));
 

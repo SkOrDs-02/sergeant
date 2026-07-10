@@ -28,8 +28,8 @@ import {
 
 import { safeReadLS, safeRemoveLS } from "@/lib/storage";
 
-import { applyRoutineDualWriteOps } from "./dualWrite/adapter";
-import { diffRoutineDualWriteOps } from "./dualWrite/diff";
+import { applyRoutineDualWriteOps } from "./sqliteWriter/adapter";
+import { diffRoutineDualWriteOps } from "./sqliteWriter/diff";
 
 const STALE_TIMESTAMP = "1970-01-01T00:00:00.000Z";
 

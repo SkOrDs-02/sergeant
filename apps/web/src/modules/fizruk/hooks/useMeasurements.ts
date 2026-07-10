@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractMeasurementSnapshots,
@@ -127,6 +127,7 @@ export function useMeasurements() {
       const e: MeasurementEntry = {
         ...sanitised,
         id: uid(),
+        // eslint-disable-next-line no-restricted-syntax -- measurement entry wall-clock instant
         at: new Date().toISOString(),
       };
       persist([e, ...entries]);

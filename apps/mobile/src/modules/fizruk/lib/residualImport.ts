@@ -52,7 +52,7 @@ import {
 
 import { safeReadLS, safeRemoveLS } from "@/lib/storage";
 
-import { applyFizrukDualWriteOps } from "./dualWrite/adapter";
+import { applyFizrukDualWriteOps } from "./sqliteWriter/adapter";
 import {
   diffFizrukDualWriteOps,
   type FizrukCustomExerciseSnapshot,
@@ -63,7 +63,7 @@ import {
   type FizrukSetSnapshot,
   type FizrukWorkoutSnapshot,
   type FizrukWorkoutTemplateSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import {
   extractMonthlyPlanSnapshot,
   extractPlanTemplateSnapshot,

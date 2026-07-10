@@ -17,7 +17,7 @@ import { getSqliteMigrationClient } from "@/core/db/sqlite";
 import {
   registerFizrukDualWriteContext,
   type FizrukDualWriteContext,
-} from "./dualWrite";
+} from "./sqliteWriter";
 
 export interface BootFizrukDualWriteInput {
   getUserId(): string | null;

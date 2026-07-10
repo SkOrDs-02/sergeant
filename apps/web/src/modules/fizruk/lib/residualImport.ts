@@ -33,11 +33,11 @@ import {
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { applyFizrukDualWriteOps } from "./dualWrite/adapter.js";
+import { applyFizrukDualWriteOps } from "./sqliteWriter/adapter.js";
 import {
   diffFizrukDualWriteOps,
   type FizrukDualWriteState,
-} from "./dualWrite/diff/index.js";
+} from "./sqliteWriter/diff/index.js";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractCustomExerciseSnapshots,

@@ -1,7 +1,7 @@
 /**
  * Unit tests for the nullable numeric converters.
  *
- * Adapted from `apps/web/src/shared/lib/dualWrite/core.test.ts` — pure part.
+ * Adapted from `apps/web/src/shared/lib/sqliteWriter/core.test.ts` — pure part.
  */
 import { describe, expect, it } from "vitest";
 

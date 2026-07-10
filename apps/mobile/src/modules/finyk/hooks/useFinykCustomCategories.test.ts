@@ -22,7 +22,7 @@ import {
 import { _getMMKVInstance } from "@/lib/storage";
 
 const mockTriggerFinykDualWrite = jest.fn();
-jest.mock("@/modules/finyk/lib/dualWrite", () => ({
+jest.mock("@/modules/finyk/lib/sqliteWriter", () => ({
   __esModule: true,
   triggerFinykDualWrite: (...args: unknown[]) =>
     mockTriggerFinykDualWrite(...args),

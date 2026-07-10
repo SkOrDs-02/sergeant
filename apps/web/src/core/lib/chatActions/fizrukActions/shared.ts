@@ -1,5 +1,5 @@
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { triggerFizrukDualWrite } from "../../../../modules/fizruk/lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../../../../modules/fizruk/lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractDailyLogSnapshots,

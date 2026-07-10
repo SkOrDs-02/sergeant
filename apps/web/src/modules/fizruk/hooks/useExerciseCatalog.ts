@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FizrukData } from "@sergeant/fizruk-domain";
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractCustomExerciseSnapshots,

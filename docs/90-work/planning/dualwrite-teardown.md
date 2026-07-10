@@ -204,7 +204,8 @@ pnpm check
 
 ### Фаза 5 — фінальний cleanup і закриття ✅ завершено 2026-07-10
 
-- [x] Перейменувати `dualWrite/` → `sqliteWriter/` (каталоги web+mobile × 4 модулі + `@shared/lib/sqliteWriter`); тонкі `dualWrite/*` re-export shim-и для legacy import-шляхів; docstring-и оновлено; ADR-0073 § Consequences доповнено.
+- [x] Перейменувати `dualWrite/` → `sqliteWriter/` (каталоги web+mobile × 4 модулі + `@shared/lib/sqliteWriter`); docstring-и оновлено; ADR-0073 § Consequences доповнено.
+- [x] Прибрати `dualWrite/*` re-export shim-и — усі production import-и мігровано на `sqliteWriter/` (2026-07-10 cleanup).
 - [x] Entropy-janitor grep-правило `dualwrite-residue` — baseline allowlist + tombstoned-key guard (`tools/entropy-janitors/src/dualwrite-residue/`).
 - [x] Цей документ + cross-ref у `storage-roadmap.md`; Status → `Deprecated`.
 

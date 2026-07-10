@@ -20,7 +20,7 @@ import {
 } from "../../modules/finyk/lib/sqliteReader";
 import type { ManualExpense } from "../../modules/finyk/hooks/useStorage.types";
 import { executeAction } from "./hubChatActions";
-import { triggerFizrukDualWrite } from "../../modules/fizruk/lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../../modules/fizruk/lib/sqliteWriter/index";
 import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
 
 // Tombstoned slices (workouts / measurements / pantries / prefs) live in the
@@ -38,9 +38,9 @@ const mem = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("../../modules/fizruk/lib/dualWrite/index", async (orig) => {
+vi.mock("../../modules/fizruk/lib/sqliteWriter/index", async (orig) => {
   const actual =
-    await orig<typeof import("../../modules/fizruk/lib/dualWrite/index")>();
+    await orig<typeof import("../../modules/fizruk/lib/sqliteWriter/index")>();
   return { ...actual, triggerFizrukDualWrite: vi.fn() };
 });
 

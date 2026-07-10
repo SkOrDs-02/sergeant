@@ -26,8 +26,8 @@ import { __testing, importFinykResidualFromLs } from "./residualImport";
 import {
   createTestSqlite,
   type TestSqliteHandle,
-} from "./dualWrite/__tests__/testSqlite";
-import { applyFinykDualWriteOps } from "./dualWrite/adapter";
+} from "./sqliteWriter/__tests__/testSqlite";
+import { applyFinykDualWriteOps } from "./sqliteWriter/adapter";
 
 const USER_ID = "user-residual-test";
 
@@ -42,7 +42,7 @@ afterEach(() => {
   handle.close();
   localStorage.clear();
   vi.restoreAllMocks();
-  vi.doUnmock("./dualWrite/adapter.js");
+  vi.doUnmock("./sqliteWriter/adapter.js");
   vi.doUnmock("./finykStorage");
   vi.resetModules();
 });
@@ -681,7 +681,7 @@ describe("importFinykResidualFromLs — невалідні форми (defensive
 describe("importFinykResidualFromLs — apply падає", () => {
   it("повертає {imported:false, cleaned:false} і ЗБЕРІГАЄ LS, якщо apply кидає Error", async () => {
     vi.resetModules();
-    vi.doMock("./dualWrite/adapter.js", () => ({
+    vi.doMock("./sqliteWriter/adapter.js", () => ({
       applyFinykDualWriteOps: vi.fn(async () => {
         throw new Error("boom");
       }),
@@ -706,7 +706,7 @@ describe("importFinykResidualFromLs — apply падає", () => {
 
   it("логує raw value (не .message) коли apply кидає non-Error", async () => {
     vi.resetModules();
-    vi.doMock("./dualWrite/adapter.js", () => ({
+    vi.doMock("./sqliteWriter/adapter.js", () => ({
       applyFinykDualWriteOps: vi.fn(async () => {
         throw "string-error";
       }),

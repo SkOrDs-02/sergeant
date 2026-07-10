@@ -22,7 +22,7 @@ jest.mock("@/lib/storage", () => ({
 const mockTriggerDualWrite = jest.fn();
 const mockIsRegistered = jest.fn();
 
-jest.mock("../dualWrite", () => ({
+jest.mock("../sqliteWriter", () => ({
   triggerNutritionDualWrite: (...args: unknown[]) =>
     mockTriggerDualWrite(...args),
   isNutritionDualWriteRegistered: () => mockIsRegistered(),

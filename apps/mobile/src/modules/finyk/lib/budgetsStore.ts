@@ -18,9 +18,12 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { safeReadLS } from "@/lib/storage";
 
-import { triggerFinykDualWrite } from "./dualWrite";
-import { EMPTY_FINYK_STATE, type FinykPrefsSnapshot } from "./dualWrite/diff";
-import { blobsFromArray, stateWithSlice } from "./dualWrite/extract";
+import { triggerFinykDualWrite } from "./sqliteWriter";
+import {
+  EMPTY_FINYK_STATE,
+  type FinykPrefsSnapshot,
+} from "./sqliteWriter/diff";
+import { blobsFromArray, stateWithSlice } from "./sqliteWriter/extract";
 import { getCachedFinykSqliteState } from "./sqliteReader";
 import { useFinykSqliteReadTick } from "./sqliteReadGate";
 

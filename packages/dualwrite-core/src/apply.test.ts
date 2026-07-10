@@ -2,7 +2,7 @@
  * Unit tests for the platform-neutral dual-write op-loop.
  *
  * `applyDualWriteOps` — iterates ops, calls applyOne, accumulates counters.
- * Adapted from `apps/web/src/shared/lib/dualWrite/core.test.ts` — pure part
+ * Adapted from `apps/web/src/shared/lib/sqliteWriter/core.test.ts` — pure part
  * only (the web `createDefaultLogger` stays in the web shim with its test).
  */
 import { describe, expect, it, vi } from "vitest";

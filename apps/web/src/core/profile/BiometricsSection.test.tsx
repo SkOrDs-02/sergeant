@@ -18,17 +18,20 @@ vi.mock("@shared/hooks/useToast", () => ({
 // truth після Stage 12 / PR #070f), а не через localStorage — перехоплюємо
 // trigger, щоб асертити дзеркалення Profile-ваги у fizruk daily log.
 const dualWriteTriggerMock = vi.fn();
-vi.mock("../../modules/fizruk/lib/dualWrite/index", async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("../../modules/fizruk/lib/dualWrite/index")
-    >();
-  return {
-    ...actual,
-    triggerFizrukDualWrite: (...args: unknown[]) =>
-      dualWriteTriggerMock(...args),
-  };
-});
+vi.mock(
+  "../../modules/fizruk/lib/sqliteWriter/index",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("../../modules/fizruk/lib/sqliteWriter/index")
+      >();
+    return {
+      ...actual,
+      triggerFizrukDualWrite: (...args: unknown[]) =>
+        dualWriteTriggerMock(...args),
+    };
+  },
+);
 
 import { BIOMETRICS_DEFAULT, type Biometrics } from "./biometrics";
 import { BiometricsSection } from "./BiometricsSection";

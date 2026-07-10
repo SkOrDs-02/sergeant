@@ -23,7 +23,7 @@ import {
 import {
   createTestSqlite,
   type TestSqliteHandle,
-} from "./dualWrite/__tests__/testSqlite";
+} from "./sqliteWriter/__tests__/testSqlite";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 
 const UID = "user-1";

@@ -5,7 +5,7 @@ import type {
   WorkoutGroup,
   WorkoutItem,
 } from "@sergeant/fizruk-domain/domain";
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractWorkoutSnapshots,
@@ -143,7 +143,9 @@ export function useWorkouts() {
   const createWorkout = useCallback((): Workout => {
     const w: Workout = {
       id: uid("w"),
-      startedAt: new Date().toISOString(),
+      startedAt:
+        // eslint-disable-next-line no-restricted-syntax -- workout session wall-clock instant
+        new Date().toISOString(),
       endedAt: null,
       items: [],
       groups: [],
@@ -159,7 +161,10 @@ export function useWorkouts() {
     ({ startedAt }: { startedAt: string }): Workout => {
       const w: Workout = {
         id: uid("w"),
-        startedAt: startedAt || new Date().toISOString(),
+        startedAt:
+          startedAt ||
+          // eslint-disable-next-line no-restricted-syntax -- workout session wall-clock fallback
+          new Date().toISOString(),
         endedAt: null,
         items: [],
         groups: [],
@@ -175,6 +180,7 @@ export function useWorkouts() {
 
   const endWorkout = useCallback(
     (id: string): Workout | null => {
+      // eslint-disable-next-line no-restricted-syntax -- workout end wall-clock instant
       const nowIso = new Date().toISOString();
       let ended: Workout | null = null;
       persist((prev: Workout[]) =>

@@ -30,7 +30,7 @@ import { getSqliteDb } from "../../../core/db/sqlite.js";
 import {
   registerRoutineDualWriteContext,
   type RoutineDualWriteContext,
-} from "./dualWrite/index.js";
+} from "./sqliteWriter/index.js";
 
 /**
  * Inputs the boot helper needs from the React layer.
@@ -64,7 +64,9 @@ export function bootRoutineDualWrite(
       const handle = await getSqliteDb();
       return handle.migrationClient();
     },
-    getNow: () => new Date().toISOString(),
+    getNow: () =>
+      // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, not a Kyiv day key
+      new Date().toISOString(),
   };
   return registerRoutineDualWriteContext(ctx);
 }

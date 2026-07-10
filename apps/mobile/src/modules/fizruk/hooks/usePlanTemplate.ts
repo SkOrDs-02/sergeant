@@ -19,7 +19,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractPlanTemplateSnapshot,

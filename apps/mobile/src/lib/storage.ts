@@ -270,7 +270,7 @@ export function safeRemoveLS(key: string): boolean {
 // ---------------
 // With the v1 cloudSync engine sunset (PR #052c) and the mobile sync
 // shim dropped (PR #053c), per-module SQLite dual-write adapters
-// (`apps/mobile/src/modules/{routine,fizruk,nutrition,finyk}/lib/dualWrite`)
+// (`apps/mobile/src/modules/{routine,fizruk,nutrition,finyk}/lib/sqliteWriter`)
 // intercept mutations directly and feed the op-log v2 writer.
 // Modules that need cloud-sync visibility wire writes through their
 // own dual-write adapter on top of `safeWriteLS` rather than relying

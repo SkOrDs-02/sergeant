@@ -27,7 +27,7 @@ let cachedCompletions = {
   refreshedAt: null as string | null,
 };
 
-vi.mock("./dualWrite/index.js", () => ({
+vi.mock("./sqliteWriter/index.js", () => ({
   triggerRoutineDualWrite: triggerMock,
 }));
 vi.mock("@shared/lib/modules/hubBus", () => ({ emitHubBus: emitHubBusMock }));

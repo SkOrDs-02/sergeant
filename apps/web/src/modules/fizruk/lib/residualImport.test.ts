@@ -14,11 +14,11 @@ vi.mock("./fizrukStorageInstance.js", () => ({
   },
 }));
 
-vi.mock("./dualWrite/adapter.js", () => ({
+vi.mock("./sqliteWriter/adapter.js", () => ({
   applyFizrukDualWriteOps: (...a: unknown[]) => mockApply(...a),
 }));
 
-vi.mock("./dualWrite/diff/index.js", () => ({
+vi.mock("./sqliteWriter/diff/index.js", () => ({
   diffFizrukDualWriteOps: (...a: unknown[]) => mockDiff(...a),
 }));
 

@@ -25,8 +25,8 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
 
 import { migrateFizruk } from "../clientMigrate";
-import { applyFizrukDualWriteOps } from "../dualWrite/adapter";
-import { diffFizrukDualWriteOps } from "../dualWrite/diff";
+import { applyFizrukDualWriteOps } from "../sqliteWriter/adapter";
+import { diffFizrukDualWriteOps } from "../sqliteWriter/diff";
 import { importFizrukResidualFromMmkv } from "../residualImport";
 
 function syncClient(db: ReturnType<typeof Database>): SqliteMigrationClient {

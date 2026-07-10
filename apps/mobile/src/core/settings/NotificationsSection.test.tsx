@@ -32,7 +32,7 @@ import { _getMMKVInstance } from "@/lib/storage";
 // dual-write adapter + better-sqlite3 stack inside a render test.
 const mockTriggerNutritionDualWrite = jest.fn();
 const mockIsNutritionDualWriteRegistered = jest.fn(() => true);
-jest.mock("@/modules/nutrition/lib/dualWrite", () => ({
+jest.mock("@/modules/nutrition/lib/sqliteWriter", () => ({
   __esModule: true,
   triggerNutritionDualWrite: (...args: unknown[]) =>
     mockTriggerNutritionDualWrite(...args),

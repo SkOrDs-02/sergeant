@@ -9,8 +9,8 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
-import { applyFizrukDualWriteOps } from "./dualWrite/adapter";
-import type { FizrukDualWriteOp } from "./dualWrite/diff";
+import { applyFizrukDualWriteOps } from "./sqliteWriter/adapter";
+import type { FizrukDualWriteOp } from "./sqliteWriter/diff";
 import {
   clearFizrukSqliteCache,
   getCachedFizrukSqliteState,
@@ -19,7 +19,7 @@ import {
 import {
   createTestSqlite,
   type TestSqliteHandle,
-} from "./dualWrite/__tests__/testSqlite";
+} from "./sqliteWriter/__tests__/testSqlite";
 
 const UID = "user-1";
 const TS = "2026-05-01T10:00:00.000Z";

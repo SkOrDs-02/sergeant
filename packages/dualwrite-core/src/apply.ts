@@ -1,7 +1,7 @@
 /**
  * Platform-neutral dual-write op-loop (ADR-0073, крок 1).
  *
- * Extracted verbatim from `apps/web/src/shared/lib/dualWrite/core.ts`
+ * Extracted verbatim from `apps/web/src/shared/lib/sqliteWriter/core.ts`
  * (Stage 10 PR #070-dualwrite-refactor). Behaviour is unchanged: best-effort,
  * idempotent iteration over ops with per-op try/catch and counters.
  *
