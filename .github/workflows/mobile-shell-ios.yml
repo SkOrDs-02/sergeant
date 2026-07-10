@@ -22,23 +22,22 @@ name: Mobile Shell (iOS)
 # path-filtered to mobile-shell / web surfaces so web-only PRs don't pay
 # for a macOS runner they do not need.
 
+# Web-focus phase (2026-07): PR/push triggers лише на `apps/mobile-shell/**`
+# — web-only зміни не гонять macOS shell-build. Ручний прогін:
+# `workflow_dispatch`. Повернути `apps/web/**` у paths, коли mobile знову
+# в обов'язковому CI-контурі.
+
 on:
   push:
     branches: [main]
     paths:
       - "apps/mobile-shell/**"
-      - "apps/web/**"
-      - "apps/server/**"
-      - "packages/**"
       - "pnpm-lock.yaml"
       - "package.json"
       - ".github/workflows/mobile-shell-ios.yml"
   pull_request:
     paths:
       - "apps/mobile-shell/**"
-      - "apps/web/**"
-      - "apps/server/**"
-      - "packages/**"
       - "pnpm-lock.yaml"
       - "package.json"
       - ".github/workflows/mobile-shell-ios.yml"

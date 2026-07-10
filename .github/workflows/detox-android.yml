@@ -40,42 +40,15 @@ name: Detox (Android)
 #      first defence; Detox catches anything the codegen + types miss
 #      (e.g. behavioural drift, route ordering, header changes).
 #   See `docs/90-work/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
+#
+# Web-focus phase (2026-07): `push` вимкнено — Detox не гониться на кожен
+# merge до `main`. Nightly schedule + `workflow_dispatch` лишаються. PR-тригер
+# лише на прямі зміни mobile-shell.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/mobile/**"
-      - "apps/mobile-shell/**"
-      # Server response-shape sources — a /api/* response shape change in
-      # apps/server/src/routes/** (or a migration that reshapes a Zod
-      # response schema) can silently break mobile consumers if Detox
-      # isn't rerun. Stack-pulse PR-18 (M2): keep these in lockstep with
-      # detox-ios.yml.
-      - "apps/server/src/routes/**"
-      - "apps/server/src/migrations/**"
-      - "packages/finyk-domain/**"
-      - "packages/routine-domain/**"
-      - "packages/api-client/**"
-      - "packages/shared/**"
-      - "apps/server/src/modules/**/*.routes.ts"
-      - "apps/server/src/modules/**/serializers/**"
-      - "apps/server/src/migrations/**"
-      - "pnpm-lock.yaml"
-      - ".github/workflows/detox-android.yml"
   pull_request:
     paths:
       - "apps/mobile/**"
       - "apps/mobile-shell/**"
-      - "apps/server/src/routes/**"
-      - "apps/server/src/migrations/**"
-      - "packages/finyk-domain/**"
-      - "packages/routine-domain/**"
-      - "packages/api-client/**"
-      - "packages/shared/**"
-      - "apps/server/src/modules/**/*.routes.ts"
-      - "apps/server/src/modules/**/serializers/**"
-      - "apps/server/src/migrations/**"
-      - "pnpm-lock.yaml"
       - ".github/workflows/detox-android.yml"
   # Nightly run catches drift on transitive deps that wouldn't fire a
   # `paths`-scoped trigger — Android SDK image refresh, AGP upgrade via
