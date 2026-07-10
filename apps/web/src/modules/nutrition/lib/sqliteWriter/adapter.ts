@@ -15,6 +15,8 @@ import {
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
+import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
+
 import type {
   NutritionDualWriteOp,
   NutritionMealSnapshot,
@@ -304,6 +306,31 @@ async function upsertMeal(
     clientTs,
     clientTs,
   ]);
+  // Enqueue sync-v2 outbox op. Fire-and-forget — swallow errors.
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "nutrition_meals",
+    op: "insert",
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+    row: {
+      id: m.id,
+      user_id: userId,
+      eaten_at: eatenAt,
+      meal_type: m.mealType || "snack",
+      name: m.name ?? "",
+      label: m.label ?? "",
+      kcal: toIntOrNull(m.macros?.kcal),
+      protein_g: toRealOrNull(m.macros?.protein_g),
+      fat_g: toRealOrNull(m.macros?.fat_g),
+      carbs_g: toRealOrNull(m.macros?.carbs_g),
+      source: m.source || "manual",
+      macro_source: m.macroSource || "manual",
+      amount_g: toRealOrNull(m.amountG),
+      food_id: m.foodId ?? null,
+      is_demo: m.isDemo ? 1 : 0,
+    },
+  }).catch(() => {});
 }
 
 async function softDeleteMeal(
@@ -318,6 +345,14 @@ async function softDeleteMeal(
     userId,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "nutrition_meals",
+    op: "delete",
+    row: { id: mealId, user_id: userId },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 // -----------------------------------------------------------------------
@@ -337,6 +372,14 @@ async function upsertPantry(
     clientTs,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "nutrition_pantries",
+    op: "insert",
+    row: { id: p.id, user_id: userId, name: p.name ?? "", text: p.text ?? "" },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 
   // Upsert items
   const items = p.items ?? [];
@@ -354,6 +397,23 @@ async function upsertPantry(
       clientTs,
       clientTs,
     ]);
+    void enqueueOutboxUpsert(client, {
+      userId,
+      table: "nutrition_pantry_items",
+      op: "insert",
+      row: {
+        id: it!.id!,
+        pantry_id: p.id,
+        user_id: userId,
+        name: it!.name! ?? "",
+        qty: toRealOrNull(it!.qty!),
+        unit: it!.unit! ?? null,
+        notes: it!.notes! ?? null,
+        sort_order: i,
+      },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
   }
 
   // Soft-delete items removed from the pantry
@@ -366,6 +426,11 @@ async function softDeletePantry(
   pantryId: string,
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
+  // Query items to enqueue as deleted before the cascade.
+  const itemsToDelete = await client.all<{ id: string }>(
+    `SELECT id FROM nutrition_pantry_items WHERE pantry_id = ? AND user_id = ? AND deleted_at IS NULL`,
+    [pantryId, userId],
+  );
   await client.run(PANTRY_DELETE_SQL, [
     clientTs,
     clientTs,
@@ -380,6 +445,24 @@ async function softDeletePantry(
     pantryId,
     userId,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "nutrition_pantries",
+    op: "delete",
+    row: { id: pantryId, user_id: userId },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
+  for (const it of itemsToDelete) {
+    void enqueueOutboxUpsert(client, {
+      userId,
+      table: "nutrition_pantry_items",
+      op: "delete",
+      row: { id: it.id, user_id: userId },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
+  }
 }
 
 // -----------------------------------------------------------------------
@@ -398,6 +481,18 @@ async function upsertPrefs(
     clientTs,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "nutrition_prefs",
+    op: "insert",
+    row: {
+      user_id: userId,
+      prefs_json: prefs.prefsJson ?? "{}",
+      active_pantry_id: prefs.activePantryId ?? null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 // -----------------------------------------------------------------------
@@ -417,6 +512,19 @@ async function upsertRecipe(
     clientTs,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "nutrition_recipes",
+    op: "insert",
+    row: {
+      id: r.id,
+      user_id: userId,
+      name: r.title ?? "",
+      data_json: r.dataJson ?? "{}",
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 async function softDeleteRecipe(
@@ -431,6 +539,14 @@ async function softDeleteRecipe(
     userId,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "nutrition_recipes",
+    op: "delete",
+    row: { id: recipeId, user_id: userId },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 // -----------------------------------------------------------------------
@@ -476,6 +592,7 @@ async function setShoppingList(
  * Soft-delete children of a pantry that are no longer in `keepIds`.
  * Delegates the SQL to `buildReconcileChildren` (both the empty and
  * NOT IN branches) — the params are laid out to match each branch.
+ * Also enqueues a delete outbox op for each item that will be removed.
  */
 async function softDeleteRemovedChildren(
   client: SqliteMigrationClient,
@@ -488,9 +605,27 @@ async function softDeleteRemovedChildren(
     { table: "nutrition_pantry_items", parentColumn: "pantry_id" },
     keepIds.length,
   );
+  const BASE_QUERY = `SELECT id FROM nutrition_pantry_items WHERE pantry_id = ? AND user_id = ? AND deleted_at IS NULL`;
+  let toDelete: Array<{ id: string }>;
   if (keepIds.length === 0) {
+    toDelete = await client.all<{ id: string }>(BASE_QUERY, [parentId, userId]);
     await client.run(sql, [clientTs, clientTs, parentId, userId]);
-    return;
+  } else {
+    const placeholders = keepIds.map(() => "?").join(",");
+    toDelete = await client.all<{ id: string }>(
+      `${BASE_QUERY} AND id NOT IN (${placeholders})`,
+      [parentId, userId, ...keepIds],
+    );
+    await client.run(sql, [clientTs, clientTs, parentId, userId, ...keepIds]);
   }
-  await client.run(sql, [clientTs, clientTs, parentId, userId, ...keepIds]);
+  for (const it of toDelete) {
+    void enqueueOutboxUpsert(client, {
+      userId,
+      table: "nutrition_pantry_items",
+      op: "delete",
+      row: { id: it.id, user_id: userId },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
+  }
 }
