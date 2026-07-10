@@ -10,7 +10,6 @@ import {
   act,
   renderHook,
   screen,
-  waitFor,
 } from "@testing-library/react";
 import {
   CelebrationModal,
@@ -66,7 +65,7 @@ describe("CelebrationModal", () => {
     expect(screen.getByText("Все вийшло")).toBeInTheDocument();
   });
 
-  it("fires haptic vibration on open", async () => {
+  it("fires haptic vibration on open", () => {
     render(
       <CelebrationModal
         type="confetti"
@@ -75,7 +74,8 @@ describe("CelebrationModal", () => {
         title="Перемога"
       />,
     );
-    await waitFor(() => expect(navigator.vibrate).toHaveBeenCalled());
+    // useEffect runs in RTL's act flush — waitFor polls with fake timers and hangs.
+    expect(navigator.vibrate).toHaveBeenCalledWith([50, 30, 50]);
   });
 
   it("renders value + unit", () => {
