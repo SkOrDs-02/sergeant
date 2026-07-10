@@ -147,49 +147,66 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
    * Home → 1, End → 5.
    * Clicking the same selected value deselects it (toggle to null).
    */
-  const makeScoreKeyHandler = useCallback(
-    (
-      current: number | null,
-      setter: (v: number | null) => void,
-      groupRef: React.RefObject<HTMLDivElement | null>,
-    ) =>
-      (e: KeyboardEvent<HTMLDivElement>) => {
-        const VALUES = [1, 2, 3, 4, 5] as const;
-        let next: number | null = null;
-        const cur = current ?? 0;
-        const idx = VALUES.indexOf(cur as (typeof VALUES)[number]);
-        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-          e.preventDefault();
-          next = VALUES[(idx + 1) % VALUES.length] ?? 1;
-        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-          e.preventDefault();
-          next = VALUES[(idx - 1 + VALUES.length) % VALUES.length] ?? 5;
-        } else if (e.key === "Home") {
-          e.preventDefault();
-          next = 1;
-        } else if (e.key === "End") {
-          e.preventDefault();
-          next = 5;
-        }
-        if (next !== null) {
-          setter(next);
-          // Move DOM focus to the newly selected button so screen readers
-          // announce it and the roving tabIndex stays coherent.
-          const buttons =
-            groupRef.current?.querySelectorAll<HTMLButtonElement>(
-              '[role="radio"]',
-            );
-          if (buttons) {
-            const target = buttons[next - 1];
-            target?.focus();
-          }
-        }
-      },
-    [],
-  );
+  const handleScoreKeyDown = (
+    e: KeyboardEvent<HTMLDivElement>,
+    current: number | null,
+    setter: (v: number | null) => void,
+    groupEl: HTMLDivElement | null,
+  ) => {
+    const VALUES = [1, 2, 3, 4, 5] as const;
+    let next: number | null = null;
+    const cur = current ?? 0;
+    const idx = VALUES.indexOf(cur as (typeof VALUES)[number]);
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      next = VALUES[(idx + 1) % VALUES.length] ?? 1;
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      next = VALUES[(idx - 1 + VALUES.length) % VALUES.length] ?? 5;
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      next = 1;
+    } else if (e.key === "End") {
+      e.preventDefault();
+      next = 5;
+    }
+    if (next !== null) {
+      setter(next);
+      const buttons =
+        groupEl?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+      if (buttons) {
+        const target = buttons[next - 1];
+        target?.focus();
+      }
+    }
+  };
 
   const energyGroupRef = useRef<HTMLDivElement | null>(null);
   const moodGroupRef = useRef<HTMLDivElement | null>(null);
+
+  const onEnergyKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>) => {
+      handleScoreKeyDown(
+        e,
+        energyLevel,
+        (v) => setValue("energyLevel", v, { shouldDirty: true }),
+        energyGroupRef.current,
+      );
+    },
+    [energyLevel, setValue],
+  );
+
+  const onMoodKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>) => {
+      handleScoreKeyDown(
+        e,
+        moodScore,
+        (v) => setValue("moodScore", v, { shouldDirty: true }),
+        moodGroupRef.current,
+      );
+    },
+    [moodScore, setValue],
+  );
 
   const weightData = useMemo(() => {
     const recent = recentWith("weightKg", 30);
@@ -394,11 +411,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
                 role="radiogroup"
                 tabIndex={-1}
                 aria-label={messages.fizruk.body.energyLevel}
-                onKeyDown={makeScoreKeyHandler(
-                  energyLevel,
-                  (v) => setValue("energyLevel", v, { shouldDirty: true }),
-                  energyGroupRef,
-                )}
+                onKeyDown={onEnergyKeyDown}
               >
                 {[1, 2, 3, 4, 5].map((v) => (
                   <ScoreButton
@@ -436,11 +449,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
                 role="radiogroup"
                 tabIndex={-1}
                 aria-label={messages.fizruk.body.mood}
-                onKeyDown={makeScoreKeyHandler(
-                  moodScore,
-                  (v) => setValue("moodScore", v, { shouldDirty: true }),
-                  moodGroupRef,
-                )}
+                onKeyDown={onMoodKeyDown}
               >
                 {[1, 2, 3, 4, 5].map((v) => (
                   <ScoreButton

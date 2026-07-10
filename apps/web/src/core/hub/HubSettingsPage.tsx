@@ -154,7 +154,9 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
   const routerLocation = useLocation();
   const location = useBrowserLocation(routerLocation);
   const locationRef = useRef(location);
-  locationRef.current = location;
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
   const writeSettingsGroupParam = useCallback(
     (groupId: string) => {
       const current = locationRef.current;

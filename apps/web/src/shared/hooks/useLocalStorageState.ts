@@ -24,6 +24,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -86,10 +87,14 @@ export function useLocalStorageState<T>(
   options: UseLocalStorageStateOptions<T> = {},
 ): [T, Dispatch<SetStateAction<T>>] {
   const { validate, debounceMs, raw, serialize, deserialize } = options;
-  const effectiveSerialize =
-    serialize ?? (raw ? (v: T) => String(v) : undefined);
-  const effectiveDeserialize =
-    deserialize ?? (raw ? (r: string) => r : undefined);
+  const effectiveSerialize = useMemo(
+    () => serialize ?? (raw ? (v: T) => String(v) : undefined),
+    [serialize, raw],
+  );
+  const effectiveDeserialize = useMemo(
+    () => deserialize ?? (raw ? (r: string) => r : undefined),
+    [deserialize, raw],
+  );
 
   // Stable ref for the latest options so the read/write effects don't
   // re-subscribe on every render if the caller inlines an options object.
@@ -98,11 +103,14 @@ export function useLocalStorageState<T>(
     serialize: effectiveSerialize,
     deserialize: effectiveDeserialize,
   });
-  optionsRef.current = {
-    validate,
-    serialize: effectiveSerialize,
-    deserialize: effectiveDeserialize,
-  };
+
+  useEffect(() => {
+    optionsRef.current = {
+      validate,
+      serialize: effectiveSerialize,
+      deserialize: effectiveDeserialize,
+    };
+  }, [validate, effectiveSerialize, effectiveDeserialize]);
 
   const [value, setValue] = useState<T>(() => {
     const fallback = resolveInitial(initialValue);

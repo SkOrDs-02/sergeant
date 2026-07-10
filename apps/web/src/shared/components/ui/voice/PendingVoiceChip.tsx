@@ -35,7 +35,10 @@ export function PendingVoiceChip({
   const [progress, setProgress] = useState(1);
   const startedAtRef = useRef<number | null>(null);
   const onConfirmRef = useRef(onConfirm);
-  onConfirmRef.current = onConfirm;
+
+  useEffect(() => {
+    onConfirmRef.current = onConfirm;
+  }, [onConfirm]);
 
   useEffect(() => {
     startedAtRef.current = Date.now();

@@ -486,14 +486,16 @@ export function usePrivatbank(enabled = true) {
     setLastUpdated(null);
   };
 
-  const connectRef = useRef<typeof connect | null>(null);
-  connectRef.current = connect;
+  const connectRef = useRef(connect);
+  useEffect(() => {
+    connectRef.current = connect;
+  });
 
   useEffect(() => {
     if (!enabled) return;
     if (storedId && storedToken) {
       setConnected(true);
-      connectRef.current?.(storedId, storedToken, false);
+      connectRef.current(storedId, storedToken, false);
     }
   }, [enabled, storedId, storedToken]);
 

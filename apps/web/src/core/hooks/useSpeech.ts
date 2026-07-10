@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { logger } from "@shared/lib";
 
 type SpeechRecognitionResultLike = {
@@ -49,7 +49,9 @@ export function useSpeech(
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const cbRef = useRef(onResult);
-  cbRef.current = onResult;
+  useEffect(() => {
+    cbRef.current = onResult;
+  }, [onResult]);
 
   const supported =
     typeof window !== "undefined" &&

@@ -22,7 +22,7 @@
 - [x] `react-hooks/immutability` — web 0 ✅ + mobile 0 ✅ (2026-07-10: CategoryDonut reduce; Sheet SheetContent split + scoped disables for RNGH worklets); promoted to `"error"` in `eslint.mobile.js`
 - [x] `react-hooks/preserve-manual-memoization` — web 0 ✅ + mobile 0 ✅ (2026-07-10: `computeInitialExpenseDate` + centralised `pantryItems`); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
 - [x] `react-hooks/purity` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
-- [x] `react-hooks/refs` — mobile 0 ✅ (waves 1–3 [#156](https://github.com/SkOrDs-02/sergeant/pull/156), [#160](https://github.com/SkOrDs-02/sergeant/pull/160), wave 3); promoted to `"error"` in `eslint.mobile.js`. Web ~59 ще `off`.
+- [x] `react-hooks/refs` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js` (mobile waves 1–3 [#156](https://github.com/SkOrDs-02/sergeant/pull/156), [#160](https://github.com/SkOrDs-02/sergeant/pull/160), [#162](https://github.com/SkOrDs-02/sergeant/pull/162); web wave 1 — 26 files).
 - [ ] `react-hooks/set-state-in-effect` — web ~80 + mobile 44 (2026-07-10)
 - [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
 - [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
@@ -37,7 +37,8 @@
 - `preserve-manual-memoization` (web) — promoted to `"error"` у `eslint.web.js` (рядок 500) після burndown 2026-07-04 (6 fix, 3 scoped-disable з обґрунтуванням); web 0.
 - `purity` (mobile) — promoted to `"error"` у `eslint.mobile.js` (2026-07-10): OnboardingWizard ref placeholder + `useRecovery` `nowMs` state (web parity).
 - `purity` (web) — promoted to `"error"` у `eslint.web.js` після burndown 14 call-sites у 9 файлах (2026-07-10).
-- `refs`, `set-state-in-effect` (web) — ще `off` у baseline (~59 / ~80); promotion після burndown.
+- `refs` (web) — promoted to `"error"` у `eslint.web.js` (2026-07-10): 26 files — useEffect callback-ref sync, HubSearch destructure, AddMealSheet `useState`, useSwipeNavigation `isDragging` state, DropdownMenu/Tooltip ref-taint fixes.
+- `set-state-in-effect` (web) — ще `off` у baseline (~80); promotion після burndown.
 
 **Mobile preserve-manual-memoization (PR #159):**
 
@@ -49,7 +50,9 @@
 
 **Mobile refs wave 3:** onboarding intro `useState`, HubSearch destructure, `useChatSessions` boot snapshot, `useLocalStorage`/`voice`/`useRoutineReminders` callback-ref sync via `useEffect`, draggable lists `reduceMotion` shared values + `useLayoutEffect` height buffers. Mobile `refs` → 0; promoted in `eslint.mobile.js`.
 
-**Залишок:** web `refs` (~59) + `set-state-in-effect` (~80 web / 44 mobile).
+**Web refs wave 1:** 26 files — core hooks (activation, SW update, hub UI, speech, chat), HubSearch destructure, nutrition/fizruk/routine reminders, AddMealSheet/BarcodeScanner, DropdownMenu/Tooltip ref composition, useSwipeNavigation `isDragging` state, shared hooks (localStorage, theme). Web `refs` → 0; promoted in `eslint.web.js`.
+
+**Залишок:** `set-state-in-effect` (~80 web / 44 mobile).
 
 ## Виконані дії (2026-06-10)
 

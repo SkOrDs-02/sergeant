@@ -26,6 +26,7 @@ import {
   useEffect,
   useId,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -107,6 +108,7 @@ interface TriggerInjectedProps {
   "aria-haspopup"?: "menu" | true | undefined;
   "aria-expanded"?: boolean | undefined;
   "aria-controls"?: string | undefined;
+  "data-dropdown-menu-trigger"?: string | undefined;
 }
 
 export interface DropdownMenuProps {
@@ -186,7 +188,8 @@ export const DropdownMenu = forwardRef<DropdownMenuHandle, DropdownMenuProps>(
     const isControlled = controlledOpen !== undefined;
     const open = isControlled ? controlledOpen : internalOpen;
 
-    const triggerRef = useRef<HTMLElement>(null);
+    const triggerRef = useRef<HTMLElement | null>(null);
+    const externalRefBox = useRef<Ref<HTMLElement> | undefined>(undefined);
     const menuId = useId();
 
     const setOpen = useCallback(
@@ -215,6 +218,33 @@ export const DropdownMenu = forwardRef<DropdownMenuHandle, DropdownMenuProps>(
       [setOpen],
     );
 
+    useEffect(() => {
+      if (!isValidElement(trigger)) return;
+      externalRefBox.current = (trigger.props as TriggerInjectedProps).ref;
+    }, [trigger]);
+
+    useLayoutEffect(() => {
+      if (!isValidElement(trigger)) return;
+      const el = document.querySelector(
+        `[data-dropdown-menu-trigger="${CSS.escape(menuId)}"]`,
+      ) as HTMLElement | null;
+      triggerRef.current = el;
+      const externalRef = externalRefBox.current;
+      if (typeof externalRef === "function") {
+        externalRef(el);
+      } else if (externalRef != null && typeof externalRef === "object") {
+        const mutableRef = externalRef as { current: HTMLElement | null };
+        mutableRef.current = el;
+      }
+      return () => {
+        if (typeof externalRef === "function") {
+          externalRef(null);
+        } else if (externalRef != null && typeof externalRef === "object") {
+          (externalRef as { current: HTMLElement | null }).current = null;
+        }
+      };
+    }, [menuId, trigger]);
+
     if (!isValidElement(trigger)) {
       // Surface the mistake at runtime rather than silently swallowing
       // it — DropdownMenu's a11y contract depends on cloning the trigger.
@@ -225,7 +255,7 @@ export const DropdownMenu = forwardRef<DropdownMenuHandle, DropdownMenuProps>(
 
     const existing = trigger.props as TriggerInjectedProps;
     const triggerEl = cloneElement(trigger, {
-      ref: composeRefs(existing.ref, triggerRef),
+      "data-dropdown-menu-trigger": menuId,
       onClick: (event: ReactMouseEvent<HTMLElement>) => {
         existing.onClick?.(event);
         setOpen(!open);
@@ -263,21 +293,6 @@ export const DropdownMenu = forwardRef<DropdownMenuHandle, DropdownMenuProps>(
     );
   },
 );
-
-/** Compose an external (possibly-callback or null) ref with our internal one.
- *  Mirrors the pattern in react-aria — keeps cloneElement transparent. */
-function composeRefs<T>(
-  external: Ref<T> | undefined,
-  internal: { current: T | null },
-): (node: T | null) => void {
-  return (node) => {
-    internal.current = node;
-    if (typeof external === "function") external(node);
-    else if (external && typeof external === "object") {
-      (external as { current: T | null }).current = node;
-    }
-  };
-}
 
 interface PanelProps {
   anchorRef: React.RefObject<HTMLElement | null>;

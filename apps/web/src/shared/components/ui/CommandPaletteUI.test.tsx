@@ -41,7 +41,9 @@ function HarnessInner({
 }) {
   const controls = useCommandPaletteControls();
   useRegisterCommand("test", commands);
-  if (onOpenRef) onOpenRef.current = controls.open;
+  useEffect(() => {
+    if (onOpenRef) onOpenRef.current = controls.open;
+  }, [onOpenRef, controls.open]);
   useEffect(() => {
     controls.open();
     // Mount-only test bootstrap — open the palette once harness mounts.
