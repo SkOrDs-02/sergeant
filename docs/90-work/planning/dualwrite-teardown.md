@@ -237,6 +237,7 @@ pnpm check
 ## 11. Пов'язане
 
 - [`storage-roadmap.md`](./storage-roadmap.md) — попередня ініціатива (Stage 8 cut-over, dual-write default-on).
+- [`sync-client-wiring.md`](./sync-client-wiring.md) — **наступна ініціатива** (client pull + outbox enqueue для multi-device sync).
 - [ADR-0073](../../04-governance/adr/0073-dualwrite-generic-framework.md) — generic dual-write фреймворк (adapter, що стає SQLite-writer-ом).
 - [ADR-0004](../../04-governance/adr/0004-cloudsync-lww-conflict-resolution.md) — LWW-семантика (R1).
 - [ADR-0011](../../04-governance/adr/0011-local-first-storage.md) — local-first контекст.

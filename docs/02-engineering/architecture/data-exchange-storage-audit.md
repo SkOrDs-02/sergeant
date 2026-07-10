@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-03.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.
@@ -137,9 +137,15 @@ DB-level safety:
 
 ## 4. Слабкі місця та ризики
 
-### 4.1. SQLite cut-over — LS-write залишається source-of-truth
+### 4.1. SQLite cut-over — завершено; sync client wiring — outstanding
 
-`sync_op_log` і normalized per-domain tables є для всіх доменів, і read-default-on квартет (Stage 8 PR #055r2/#055f2/#055n2/#055k2) лендив: всі 4 `feature.<m>.sqlite_v2.read_sqlite` флаги зараз `defaultValue: true` у `apps/{web,mobile}/src/core/lib/featureFlags.ts`. Stage 8 dual-write feature-flag drop квартет (#056r/#056f/#056n/#056k) також лендив — SQLite mirror фірить unconditionally whenever a dual-write context is registered. Але **LS/MMKV-write залишається source-of-truth** практично для всіх 4 модулів доки не видаляться LS readers + tombstone для `STORAGE_KEYS.*` (PR #057\* quartet — outstanding). Routine додатково блокований SQLite-схемою: 7 з 8 полів `RoutineState` (habits, tags, categories, prefs, pushupsByDate, habitOrder, completionNotes) — LS-only, питання повного LS-write drop-у винесено в Stage 10 candidate (розширення Routine SQLite-схеми). Деталі — [`docs/90-work/planning/storage-roadmap/06-stage-8-9.md`](../../90-work/planning/storage-roadmap/06-stage-8-9.md#stage-8--sqlite-cut-over-rollout) Stage 8.
+**Оновлено 2026-07-10** після [`dualwrite-teardown.md`](../../90-work/planning/dualwrite-teardown.md):
+
+- **Клієнтський SQLite** (web OPFS / mobile expo-sqlite) — **єдиний source-of-truth** для модульних даних finyk / fizruk / nutrition / routine. Production LS/MMKV-write модульних ключів прибрано; `sqliteWriter/` — canonical mutation path.
+- **Свідомі винятки** (не residue): demo-seed LS bridge, `fizruk_rest_settings_v1`, web nutrition recipes (IndexedDB), Mono client mirror, kv_store, TanStack Query persister.
+- **Наступний gap (не cut-over):** **multi-device sync client wiring** — server `/api/v2/sync/*` готовий, але client pull/SSE consumer відсутній, outbox enqueue майже порожній (лише web routine completions). Деталі — [`sync-client-wiring.md`](../../90-work/planning/sync-client-wiring.md).
+
+_Історична нотатка (до 2026-07-10): LS/MMKV-write був source-of-truth під dual-write; Stage 8 PR #057\* quartet закрив read/write cut-over._
 
 ### 4.2. `sync_op_log` append-only retention
 
@@ -174,10 +180,10 @@ PostgreSQL `BIGINT` приходить з `pg` як string. Repo має hard rul
 
 ### P0 / короткий горизонт
 
-1. **Завершити SQLite cut-over** (Stage 8 PR #057\* quartet).
-   - Read-default-on квартет уже лендив (PR #055r2/#055f2/#055n2/#055k2) — всі 4 `feature.<m>.sqlite_v2.read_sqlite` флаги `defaultValue: true`.
-   - Дропнути LS reader оверлеї + tombstone `STORAGE_KEYS.{ROUTINE,FIZRUK_*,NUTRITION_*,FINYK_*}` (PR #057\* quartet, 14d canary gate на #056\*).
-   - Розширити Routine SQLite-схему до повного покриття LS стану (Stage 10 candidate — `routine_habits`, `routine_tags`, `routine_categories`, `routine_prefs`, `routine_pushups`, `routine_habit_order`, `routine_completion_notes`) перед Routine LS-write drop.
+1. **Sync client wiring (наступна ініціатива).**
+   - Client pull loop + outbox enqueue для таблиць `OP_LOG_TABLE_REGISTRY`.
+   - E2E multi-device round-trip (web↔mobile або два web profiles).
+   - Деталі — [`sync-client-wiring.md`](../../90-work/planning/sync-client-wiring.md) Phases 0–1.
 
 2. **Додати retention/partition для `sync_op_log`.**
    - Визначити retention window (active + archive).
@@ -212,4 +218,4 @@ PostgreSQL `BIGINT` приходить з `pg` як string. Repo має hard rul
 
 ## 6. Практичний підсумок
 
-Поточна архітектура перейшла з гібридного v1/v2 стану у **v2-only**: `module_data` дропнута, v1 sync endpoints повертають 410 Gone, `sync_op_outbox`-based engine є єдиним sync-шляхом. Нові surfaces (billing, transcribe, coach memory, Telegram topic archive) мають власні dedicated tables і server modules. Найбільший ROI зараз — довести read cutover для Finyk/Nutrition, додати retention/partition для `sync_op_log`, і стабілізувати Nutrition backup у durable storage.
+Поточна архітектура — **v2-only** на сервері і **SQLite-only** для модульних даних на клієнті (dual-write teardown 2026-07-10). CloudSync v1 знятий; `sync_op_outbox` — єдиний sync-transport. **Найбільший ROI зараз:** wire client pull + outbox enqueue ([`sync-client-wiring.md`](../../90-work/planning/sync-client-wiring.md)), потім retention/partition для `sync_op_log` і durable Nutrition backup.
