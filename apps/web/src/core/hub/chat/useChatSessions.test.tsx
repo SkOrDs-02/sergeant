@@ -22,6 +22,14 @@ vi.mock("@shared/lib/ui/undoToast", () => ({
   showUndoToast: showUndoToastMock,
 }));
 
+const { stopSpeakingMock } = vi.hoisted(() => ({
+  stopSpeakingMock: vi.fn(),
+}));
+
+vi.mock("../../lib/hubChatSpeech", () => ({
+  stopSpeaking: stopSpeakingMock,
+}));
+
 import { useChatSessions } from "./useChatSessions";
 import {
   SESSIONS_STORAGE_KEY,
@@ -37,6 +45,7 @@ function storedSessions(): HubChatSession[] {
 beforeEach(() => {
   localStorage.clear();
   showUndoToastMock.mockReset();
+  stopSpeakingMock.mockReset();
   vi.useFakeTimers();
 });
 
@@ -178,5 +187,127 @@ describe("useChatSessions (audit 03 F22 — debounce/undo)", () => {
     const reloaded = loadSessions();
     expect(reloaded).toHaveLength(1);
     expect(reloaded[0]!.title).toBe("персист тест");
+  });
+
+  it("upgrades a legacy «Бесіда …» auto title on debounced flush", () => {
+    const now = Date.now();
+    const legacy: HubChatSession = {
+      id: "sess-legacy-prefix",
+      title: "Бесіда 01.07 12:00",
+      createdAt: now,
+      updatedAt: now,
+      messages: [],
+    };
+    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify([legacy]));
+    localStorage.setItem("hub_chat_active_session_v1", "sess-legacy-prefix");
+
+    const { result } = renderHook(() => useChatSessions());
+    act(() => {
+      result.current.setMessages((m) => [...m, makeUserMsg("новий заголовок")]);
+    });
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+
+    expect(storedSessions()[0]!.title).toBe("новий заголовок");
+    expect(storedSessions()[0]!.titleSource).toBe("auto");
+  });
+
+  it("switches sessions, persists the outgoing one, and stops speech", () => {
+    const { result } = renderHook(() => useChatSessions());
+    const firstId = result.current.activeId;
+
+    act(() => {
+      result.current.handleCreateSession();
+    });
+    const secondId = result.current.activeId;
+    act(() => {
+      result.current.setMessages((m) => [...m, makeUserMsg("другa бесіда")]);
+    });
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+
+    act(() => {
+      result.current.handleSelectSession(firstId);
+    });
+
+    expect(result.current.activeId).toBe(firstId);
+    expect(result.current.historyOpen).toBe(false);
+    expect(stopSpeakingMock).toHaveBeenCalled();
+    const stored = storedSessions();
+    const second = stored.find((s) => s.id === secondId);
+    expect(second?.messages.some((m) => m.text === "другa бесіда")).toBe(true);
+  });
+
+  it("closes history when re-selecting the already-active session", () => {
+    const { result } = renderHook(() => useChatSessions());
+    const activeId = result.current.activeId;
+
+    act(() => {
+      result.current.setHistoryOpen(true);
+    });
+    act(() => {
+      result.current.handleSelectSession(activeId);
+    });
+
+    expect(result.current.historyOpen).toBe(false);
+    expect(stopSpeakingMock).not.toHaveBeenCalled();
+  });
+
+  it("ignores handleSelectSession for an unknown session id", () => {
+    const { result } = renderHook(() => useChatSessions());
+    const activeId = result.current.activeId;
+
+    act(() => {
+      result.current.handleSelectSession("missing-session");
+    });
+
+    expect(result.current.activeId).toBe(activeId);
+  });
+
+  it("persistCurrentMessages writes synchronously without waiting for debounce", () => {
+    const { result } = renderHook(() => useChatSessions());
+    act(() => {
+      result.current.setMessages((m) => [
+        ...m,
+        makeUserMsg("синхронний запис"),
+      ]);
+    });
+    act(() => {
+      result.current.persistCurrentMessages();
+    });
+
+    const stored = storedSessions();
+    expect(stored[0]!.messages.some((m) => m.text === "синхронний запис")).toBe(
+      true,
+    );
+  });
+
+  it("flushes messages on beforeunload without debounce", () => {
+    const { result } = renderHook(() => useChatSessions());
+    act(() => {
+      result.current.setMessages((m) => [...m, makeUserMsg("unload flush")]);
+    });
+    act(() => {
+      window.dispatchEvent(new Event("beforeunload"));
+    });
+
+    const stored = storedSessions();
+    expect(stored[0]!.messages.some((m) => m.text === "unload flush")).toBe(
+      true,
+    );
+  });
+
+  it("exposes history and details popover toggles", () => {
+    const { result } = renderHook(() => useChatSessions());
+
+    act(() => {
+      result.current.setHistoryOpen(true);
+      result.current.setDetailsOpen(true);
+    });
+
+    expect(result.current.historyOpen).toBe(true);
+    expect(result.current.detailsOpen).toBe(true);
   });
 });

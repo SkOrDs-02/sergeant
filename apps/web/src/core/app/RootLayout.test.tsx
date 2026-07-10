@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 /**
@@ -11,7 +12,36 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
  * gates, title effect, context plumbing) without their real implementations.
  */
 
-const authState = { user: null as { id: string } | null };
+const {
+  authState,
+  goToHubMock,
+  openModuleMock,
+  setSearchOpenMock,
+  hubKeyboardCfg,
+  useNutritionDualWriteBootMock,
+  useNutritionSqliteReadBootMock,
+  useFinykDualWriteBootMock,
+  setFlagMock,
+  navigationState,
+} = vi.hoisted(() => ({
+  authState: { user: null as { id: string } | null },
+  goToHubMock: vi.fn(),
+  openModuleMock: vi.fn(),
+  setSearchOpenMock: vi.fn(),
+  hubKeyboardCfg: {
+    current: null as null | {
+      onOpenSearch: () => void;
+      onOpenShortcuts: () => void;
+      onOpenAssistant: () => void;
+      onNavigate: (target: string) => void;
+    },
+  },
+  useNutritionDualWriteBootMock: vi.fn(),
+  useNutritionSqliteReadBootMock: vi.fn(),
+  useFinykDualWriteBootMock: vi.fn(),
+  setFlagMock: vi.fn(),
+  navigationState: { activeModule: null as string | null },
+}));
 
 vi.mock("../auth/AuthContext", () => ({
   useAuth: () => ({ user: authState.user, isLoading: false }),
@@ -25,7 +55,11 @@ vi.mock("../security/AppLockContext", () => ({
   }),
 }));
 vi.mock("../security/AppLock", () => ({
-  AppLock: () => <div data-testid="app-lock" />,
+  AppLock: ({ onSetupCancel }: { onSetupCancel: () => void }) => (
+    <button type="button" data-testid="app-lock-cancel" onClick={onSetupCancel}>
+      cancel-setup
+    </button>
+  ),
 }));
 vi.mock("../hub/HubChatOverlay", () => ({
   HubChatOverlay: () => <div data-testid="chat-overlay" />,
@@ -46,12 +80,14 @@ vi.mock("@shared/components/ui/CommandPalette", () => ({
 }));
 vi.mock("../activation", () => ({ useActivationV2Boot: vi.fn() }));
 vi.mock("../lib/featureFlags", () => ({
-  setFlag: vi.fn(),
+  setFlag: setFlagMock,
   useFlag: () => false,
 }));
 vi.mock("./useDemoCommands", () => ({ useDemoCommands: vi.fn() }));
 vi.mock("../hooks/useHubKeyboardShortcuts", () => ({
-  useHubKeyboardShortcuts: vi.fn(),
+  useHubKeyboardShortcuts: (cfg: typeof hubKeyboardCfg.current) => {
+    hubKeyboardCfg.current = cfg;
+  },
 }));
 vi.mock("../hooks/useBrowserLocation", () => ({
   useBrowserLocation: (loc: { search?: string }) => ({
@@ -60,15 +96,18 @@ vi.mock("../hooks/useBrowserLocation", () => ({
 }));
 vi.mock("../hooks/useHubNavigation", () => ({
   useHubNavigation: () => ({
-    activeModule: null,
-    openModule: vi.fn(),
-    goToHub: vi.fn(),
+    activeModule: navigationState.activeModule,
+    openModule: openModuleMock,
+    goToHub: goToHubMock,
     goToModuleSettings: vi.fn(),
     moduleAnimClass: "",
   }),
 }));
 vi.mock("../hooks/useHubUIState", () => ({
-  useHubUIState: () => ({ searchOpen: false, setSearchOpen: vi.fn() }),
+  useHubUIState: () => ({
+    searchOpen: false,
+    setSearchOpen: setSearchOpenMock,
+  }),
 }));
 vi.mock("../hooks/usePwaActions", () => ({
   usePwaActions: () => ({
@@ -93,23 +132,38 @@ vi.mock("./useSWUpdate", () => ({
   useSWUpdate: () => ({ updateAvailable: false, applyUpdate: vi.fn() }),
 }));
 vi.mock("../../modules/nutrition/hooks/useNutritionDualWriteBoot", () => ({
-  useNutritionDualWriteBoot: vi.fn(),
+  useNutritionDualWriteBoot: useNutritionDualWriteBootMock,
 }));
 vi.mock("../../modules/nutrition/hooks/useNutritionSqliteReadBoot", () => ({
-  useNutritionSqliteReadBoot: vi.fn(),
+  useNutritionSqliteReadBoot: useNutritionSqliteReadBootMock,
 }));
 vi.mock("../../modules/finyk/hooks/useFinykDualWriteBoot", () => ({
-  useFinykDualWriteBoot: vi.fn(),
+  useFinykDualWriteBoot: useFinykDualWriteBootMock,
 }));
 
 import { RootLayout } from "./RootLayout";
+import { titleForPath } from "./appPaths";
+import { useHubShell } from "./HubShellContext";
+
+function ShortcutProbe() {
+  const { shortcutsOpen } = useHubShell();
+  return <div data-testid="shortcuts-open">{String(shortcutsOpen)}</div>;
+}
 
 function renderAt(path = "/") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route element={<RootLayout />}>
-          <Route path="*" element={<div data-testid="child">child</div>} />
+          <Route
+            path="*"
+            element={
+              <>
+                <div data-testid="child">child</div>
+                <ShortcutProbe />
+              </>
+            }
+          />
         </Route>
       </Routes>
     </MemoryRouter>,
@@ -119,34 +173,91 @@ function renderAt(path = "/") {
 describe("RootLayout", () => {
   beforeEach(() => {
     authState.user = null;
+    navigationState.activeModule = null;
+    hubKeyboardCfg.current = null;
     document.title = "";
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
   });
   afterEach(() => vi.clearAllMocks());
 
   it("renders the shell (skip-link, app-lock, overlay) and the child route", () => {
     renderAt("/");
     expect(screen.getByTestId("skip-link")).toBeInTheDocument();
-    expect(screen.getByTestId("app-lock")).toBeInTheDocument();
+    expect(screen.getByTestId("app-lock-cancel")).toBeInTheDocument();
     expect(screen.getByTestId("chat-overlay")).toBeInTheDocument();
     expect(screen.getByTestId("child")).toBeInTheDocument();
   });
 
-  it("does not render the authenticated boot gates when logged out", () => {
+  it("does not boot nutrition/finyk sqlite hooks when logged out", () => {
     authState.user = null;
     renderAt("/");
-    // Boot gates render null for anonymous users; the shell still mounts.
-    expect(screen.getByTestId("child")).toBeInTheDocument();
+    expect(useNutritionDualWriteBootMock).not.toHaveBeenCalled();
+    expect(useNutritionSqliteReadBootMock).not.toHaveBeenCalled();
+    expect(useFinykDualWriteBootMock).not.toHaveBeenCalled();
   });
 
-  it("renders the authenticated boot gates when a user is present", () => {
+  it("boots nutrition and finyk sqlite hooks when a user is present", () => {
     authState.user = { id: "u1" };
     renderAt("/");
-    expect(screen.getByTestId("child")).toBeInTheDocument();
+    expect(useNutritionDualWriteBootMock).toHaveBeenCalled();
+    expect(useNutritionSqliteReadBootMock).toHaveBeenCalled();
+    expect(useFinykDualWriteBootMock).toHaveBeenCalled();
   });
 
   it("pins the document title for the active route", () => {
     renderAt("/chat");
-    // titleForPath resolves a non-empty title for known + unknown routes.
-    expect(document.title.length).toBeGreaterThan(0);
+    expect(document.title).toBe(titleForPath("/chat"));
+  });
+
+  it("skips document.title writes when the tab title is already correct", () => {
+    const expected = titleForPath("/chat");
+    document.title = expected;
+    const titleSpy = vi.spyOn(document, "title", "set");
+    renderAt("/chat");
+    expect(titleSpy).not.toHaveBeenCalled();
+    titleSpy.mockRestore();
+  });
+
+  it("disables app lock setup and finishes setup when cancel is pressed", async () => {
+    const user = userEvent.setup();
+    renderAt("/");
+    await user.click(screen.getByTestId("app-lock-cancel"));
+    expect(setFlagMock).toHaveBeenCalledWith("app-lock-enabled", false);
+  });
+
+  it("opens hub search directly when already on the hub", () => {
+    navigationState.activeModule = null;
+    renderAt("/");
+    hubKeyboardCfg.current!.onOpenSearch();
+    expect(setSearchOpenMock).toHaveBeenCalledWith(true);
+    expect(goToHubMock).not.toHaveBeenCalled();
+  });
+
+  it("returns to the hub before opening search from inside a module", () => {
+    navigationState.activeModule = "finyk";
+    renderAt("/finyk");
+    hubKeyboardCfg.current!.onOpenSearch();
+    expect(goToHubMock).toHaveBeenCalledTimes(1);
+    expect(setSearchOpenMock).toHaveBeenCalledWith(true);
+  });
+
+  it("routes keyboard navigation chords to hub or module openers", () => {
+    renderAt("/");
+    hubKeyboardCfg.current!.onNavigate("hub");
+    expect(goToHubMock).toHaveBeenCalledTimes(1);
+    hubKeyboardCfg.current!.onNavigate("nutrition");
+    expect(openModuleMock).toHaveBeenCalledWith("nutrition");
+  });
+
+  it("toggles shortcutsOpen via the keyboard-shortcuts callback", () => {
+    renderAt("/");
+    expect(screen.getByTestId("shortcuts-open")).toHaveTextContent("false");
+    act(() => {
+      hubKeyboardCfg.current!.onOpenShortcuts();
+    });
+    expect(screen.getByTestId("shortcuts-open")).toHaveTextContent("true");
   });
 });
