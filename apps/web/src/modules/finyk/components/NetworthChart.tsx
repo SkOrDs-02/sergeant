@@ -41,7 +41,9 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
     `${px(data.length - 1)},${H - PAD.bottom}`,
   ].join(" ");
 
-  const isPositive = values[values.length - 1]! >= values[0]!;
+  const lastValue = values.at(-1) ?? 0;
+  const firstValue = values[0] ?? 0;
+  const isPositive = lastValue >= firstValue;
   const color = isPositive ? statusColors.success : statusColors.danger;
 
   const fmt = (v: number) => {
@@ -64,13 +66,23 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
     "Груд",
   ];
   const monthLabel = (m: string) => {
-    const [, month] = m.split("-");
-    return MONTH_UK[parseInt(month!, 10) - 1] || m;
+    const monthPart = m.split("-")[1];
+    const idx = parseInt(monthPart ?? "1", 10) - 1;
+    return MONTH_UK[idx] || m;
   };
+
+  const summaryId = "finyk-networth-summary";
 
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full overflow-visible">
+      {/* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- chart a11y labels + sr-only summary */}
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full overflow-visible"
+        role="img"
+        aria-label="Графік нетворсу за місяці"
+        aria-describedby={summaryId}
+      >
         <defs>
           <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.28" />
@@ -135,6 +147,21 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
           </g>
         ))}
       </svg>
+      <div id={summaryId} className="sr-only">
+        <p>
+          Динаміка нетворсу. Поточне значення: {fmt(lastValue)}₴. Зміна від
+          першого місяця: {lastValue - firstValue >= 0 ? "+" : ""}
+          {fmt(lastValue - firstValue)}₴.
+        </p>
+        <ul>
+          {data.map((d) => (
+            <li key={d.month}>
+              {monthLabel(d.month)}: {fmt(d.networth)}₴
+            </li>
+          ))}
+        </ul>
+      </div>
+      {/* eslint-enable sergeant-design/no-cyrillic-jsx-literal */}
     </div>
   );
 }

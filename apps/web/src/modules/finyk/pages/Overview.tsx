@@ -61,6 +61,7 @@ export function Overview({
       {() => (
         <div className="flex-1 overflow-y-auto overscroll-contain">
           <div className="px-4 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
+            <h1 className="sr-only">{messages.nav.nutritionOverview}</h1>
             {(d.clientInfo ||
               d.syncState?.status === "error" ||
               d.syncState?.status === "loading" ||

@@ -121,6 +121,7 @@ export function MiniLineChart({
   const firstValid = valid[0] as MiniLineChartDataPoint;
   const delta = Number(lastValid.value) - Number(firstValid.value);
   const gradId = `mlcFill${color.replace(/[^a-zA-Z0-9]/g, "")}`;
+  const summaryId = `fizruk-mini-line-${metricLabel.replace(/\s/g, "-")}`;
 
   // Show last few labels (max 4 evenly spread)
   const labelIndices = new Set<number>();
@@ -140,6 +141,7 @@ export function MiniLineChart({
         className="w-full h-auto max-h-[160px] overflow-visible"
         role="img"
         aria-label={`Графік тренду — ${metricLabel}`}
+        aria-describedby={summaryId}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -215,6 +217,24 @@ export function MiniLineChart({
           );
         })}
       </svg>
+
+      {}
+      <div id={summaryId} className="sr-only">
+        <p>
+          Тренд {metricLabel}. Поточне значення: {lastValid.value} {unit}.
+          {delta !== 0
+            ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${delta.toFixed(1)} ${unit}.`
+            : ""}
+        </p>
+        <ul>
+          {valid.map((d, i) => (
+            <li key={i}>
+              {d.label}: {d.value} {unit}
+            </li>
+          ))}
+        </ul>
+      </div>
+      {}
 
       <div className="flex items-baseline gap-2 mt-1">
         <span className="text-xl font-extrabold tabular-nums text-text">

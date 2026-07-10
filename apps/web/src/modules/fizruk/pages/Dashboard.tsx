@@ -48,6 +48,7 @@ import { InsightCard } from "@shared/components/ui/InsightCard";
 import { useRestDayOverdueInsight } from "../hooks/useRestDayOverdueInsight";
 import { usePrPendingInsight } from "../hooks/usePrPendingInsight";
 import { usePrLatest } from "../hooks/usePrLatest";
+import { messages } from "@shared/i18n/uk";
 
 interface DashboardTodaySession {
   sessionKey: string;
@@ -398,6 +399,7 @@ export function Dashboard({
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+        <h1 className="sr-only">{messages.nav.nutritionOverview}</h1>
         <HeroCard
           state={heroState}
           greeting={greeting}

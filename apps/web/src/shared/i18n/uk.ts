@@ -196,10 +196,7 @@ export const messages = {
   },
 
   nav: {
-    // Round 16 — aria-labels та headings у navigation-surface-ах
-    // (bottom-nav, header, search). Винесено в catalog тому що
-    // accessibility-strings часто переписуються на product-ревізії,
-    // і централізація економить grep-час на наступних round-ах.
+    // Round 16 — a11y/nav strings (bottom-nav, header, search); centralized for grep on later a11y rounds.
     hubSections: "Розділи хабу",
     dashboard: "Головна",
     profile: "Профіль",
@@ -219,6 +216,7 @@ export const messages = {
     closeMenu: "Закрити меню",
     quickActions: "Швидкі дії",
     voiceInput: "Голосовий ввід",
+    welcome: "Ласкаво просимо",
   },
 
   empty: {
