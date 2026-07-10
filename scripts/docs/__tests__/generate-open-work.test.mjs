@@ -435,7 +435,7 @@ describe("rewriteRelativeLinks", () => {
     );
     assert.match(
       out,
-      /\[tracker\]\(\.\/launch\/product-os\/ftux-master-tracker\.md#3-4\)/,
+      /\[tracker\]\(\.\/01-product\/launch\/product-os\/ftux-master-tracker\.md#3-4\)/,
     );
   });
 
