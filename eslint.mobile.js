@@ -142,4 +142,20 @@ export const mobileBlocks = [
       "react-hooks/immutability": "error",
     },
   },
+  // react-hooks v7 burndown (initiative 0021) — `purity` cleared apps/mobile:
+  // OnboardingWizard step timestamp ref init + useRecovery `nowMs` state
+  // (parity with web `useRecovery`). Promoted from baseline `off` to
+  // mobile-scoped `error`. See initiative 0021.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "react-hooks/purity": "error",
+    },
+  },
 ];
