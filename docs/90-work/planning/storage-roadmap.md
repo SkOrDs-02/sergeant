@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready (Index)
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Reference (all 13 stages complete; retained as historical reference; Redis #045 optional opt-in only).
 >
 > **Canonical current status (2026-05-19):** Stage 13 is complete (9/9 landed). Детальний стан і PR-посилання — у частинах нижче.
@@ -31,6 +31,8 @@
 Roadmap переведення Storage & Sync у Sergeant на production-ready стан: SQLite (OPFS + expo-sqlite) замість localStorage/MMKV, per-row op-log реплікація замість whole-blob CloudSync v1, normalization модульних даних.
 
 **Поточний стан (2026-05-19):** Усі 13 запланованих Stage-ів завершено. Redis (#045) лишається опційним opt-in. Документ зберігається як historical reference та для audit/rollout context.
+
+**Dual-write teardown (2026-07-10):** follow-up ініціатива після Stage 8 — LS/MMKV production-write модульних даних прибрано; SQLite — canonical writer. Деталі й свідомі винятки (demo-seed, residualImport-міст, Mono cloud-sync cache) — [`dualwrite-teardown.md`](./dualwrite-teardown.md) (Status: Deprecated, виконано). Каталоги `lib/dualWrite/` перейменовано на `lib/sqliteWriter/`.
 
 ## Зміст
 

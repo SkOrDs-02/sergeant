@@ -2,6 +2,7 @@
 import { runDocDrift } from "./doc-drift/index.js";
 import { runDeadCode } from "./dead-code/index.js";
 import { runDepCycles } from "./dep-cycles/index.js";
+import { runDualwriteResidue } from "./dualwrite-residue/index.js";
 import {
   printCliSummary,
   buildIssuePayload,
@@ -15,7 +16,13 @@ import type {
   IssueDispatch,
 } from "./shared/types.js";
 
-type Command = "doc-drift" | "dead-code" | "dep-cycles" | "all" | "help";
+type Command =
+  | "doc-drift"
+  | "dead-code"
+  | "dep-cycles"
+  | "dualwrite-residue"
+  | "all"
+  | "help";
 
 function commandFromArgv(argv: readonly string[]): {
   command: Command;
@@ -29,6 +36,7 @@ function commandFromArgv(argv: readonly string[]): {
     first === "doc-drift" ||
     first === "dead-code" ||
     first === "dep-cycles" ||
+    first === "dualwrite-residue" ||
     first === "all"
   ) {
     return { command: first, rest: argv.slice(1) as string[] };
@@ -44,7 +52,8 @@ function printGlobalHelp(): void {
     "  doc-drift    Broken doc references (path:line)",
     "  dead-code    Unused files/exports/dependencies (Knip wrapper)",
     "  dep-cycles   Circular dependencies in apps/ and packages/",
-    "  all          Run all three sequentially",
+    "  dualwrite-residue  Raw LS/MMKV module-data reads outside teardown allowlist",
+    "  all          Run all four sequentially",
     "  help         Show this help",
     "",
     "Each subcommand accepts: --root, --dry-run, --json, --out-dir, --limit, -h/--help",
@@ -142,11 +151,12 @@ function toOptions(
 }
 
 async function runSubcommand(
-  command: "doc-drift" | "dead-code" | "dep-cycles",
+  command: "doc-drift" | "dead-code" | "dep-cycles" | "dualwrite-residue",
   rest: readonly string[],
 ): Promise<JanitorResult | null> {
   if (command === "doc-drift") return runDocDrift(rest);
   if (command === "dead-code") return runDeadCode(rest);
+  if (command === "dualwrite-residue") return runDualwriteResidue(rest);
   return runDepCycles(rest);
 }
 
@@ -163,7 +173,12 @@ async function main(): Promise<void> {
 
   if (command === "all") {
     let totalFindings = 0;
-    for (const sub of ["doc-drift", "dead-code", "dep-cycles"] as const) {
+    for (const sub of [
+      "doc-drift",
+      "dead-code",
+      "dep-cycles",
+      "dualwrite-residue",
+    ] as const) {
       const result = await runSubcommand(sub, rest);
       if (!result) continue;
       printCliSummary(result, effectiveOptions);
