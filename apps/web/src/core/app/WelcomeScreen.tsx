@@ -19,6 +19,7 @@ import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { useCallback } from "react";
 import { WelcomeModulePicker } from "./WelcomeModulePicker";
 import type { DashboardModuleId } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 
 // Static preview of the populated hub that sits behind the splash card on
 // `/welcome`. Renders a 2×2 bento grid matching `HubDashboard`'s module
@@ -306,6 +307,7 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     >
       <PeekBackdrop />
       <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
+        <h1 className="sr-only">{messages.nav.welcome}</h1>
         <div className="w-full max-w-md space-y-3">
           {/* Phase 7 D4 — preset picker replaces the row-based
               OnboardingWizard as the cold-start surface. The wizard

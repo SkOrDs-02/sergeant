@@ -27,6 +27,13 @@ describe("WellbeingChart", () => {
       />,
     );
     expect(screen.getByLabelText("Графік самопочуття")).toBeInTheDocument();
+    expect(screen.getByLabelText("Графік самопочуття")).toHaveAttribute(
+      "aria-describedby",
+      "fizruk-wellbeing-summary",
+    );
+    expect(document.getElementById("fizruk-wellbeing-summary")).toHaveClass(
+      "sr-only",
+    );
     expect(screen.getByText("Енергія")).toBeInTheDocument();
     expect(screen.getByText("Настрій")).toBeInTheDocument();
   });

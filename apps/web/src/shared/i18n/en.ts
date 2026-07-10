@@ -158,6 +158,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     closeMenu: "Close menu",
     quickActions: "Quick actions",
     voiceInput: "Voice input",
+    welcome: "Welcome",
   },
 
   empty: {

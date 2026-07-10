@@ -51,6 +51,7 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
 
   const colorEnergy = "rgb(22 163 74)"; // success green
   const colorMood = "rgb(168 85 247)"; // purple-500
+  const summaryId = "fizruk-wellbeing-summary";
 
   return (
     <div className="w-full">
@@ -77,6 +78,7 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
         className="w-full h-auto max-h-[120px] overflow-visible"
         role="img"
         aria-label="Графік самопочуття"
+        aria-describedby={summaryId}
       >
         {/* Horizontal guide lines at 1,2,3,4,5 */}
         {[1, 3, 5].map((score) => {
@@ -141,6 +143,18 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
           );
         })}
       </svg>
+      <div id={summaryId} className="sr-only">
+        <p>Динаміка енергії та настрою після тренувань.</p>
+        <ul>
+          {data.map((d, i) => (
+            <li key={i}>
+              {d.label}
+              {d.energy != null ? `, енергія ${d.energy} з 5` : ""}
+              {d.mood != null ? `, настрій ${d.mood} з 5` : ""}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

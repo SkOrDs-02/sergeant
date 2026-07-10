@@ -120,9 +120,9 @@ export function HubHeader({
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <BrandLogo as="span" size="lg" variant="mark" />
-          <h1 className="truncate text-xl leading-none font-extrabold tracking-tight text-text select-none">
+          <span className="truncate text-xl leading-none font-extrabold tracking-tight text-text select-none">
             Sergeant
-          </h1>
+          </span>
         </div>
 
         <div className="flex items-center gap-1 shrink-0">

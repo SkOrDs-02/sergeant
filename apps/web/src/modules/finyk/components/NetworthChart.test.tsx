@@ -28,6 +28,11 @@ describe("NetworthChart", () => {
     );
     const svg = container.querySelector("svg");
     expect(svg).not.toBeNull();
+    expect(svg).toHaveAttribute("aria-describedby", "finyk-networth-summary");
+    expect(svg).toHaveAttribute("role", "img");
+    expect(document.getElementById("finyk-networth-summary")).toHaveClass(
+      "sr-only",
+    );
     expect(container.querySelector("polyline")).not.toBeNull();
     expect(container.querySelector("polygon")).not.toBeNull();
     // Ukrainian month labels for Jan/Feb/Mar.

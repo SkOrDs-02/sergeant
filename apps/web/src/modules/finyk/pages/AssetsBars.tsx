@@ -31,12 +31,14 @@ export function AssetsLiabilitiesBar({
   if (total <= 0) return null;
   const assetsPct = Math.round((assets / total) * 100);
   const liabilitiesPct = 100 - assetsPct;
+  const summaryId = "finyk-assets-liabilities-summary";
   return (
     <div className="mt-4">
       <div
         className="relative flex h-2 w-full overflow-hidden rounded-full bg-finyk/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]"
         role="img"
         aria-label={`Активи ${assetsPct}% · Пасиви ${liabilitiesPct}%`}
+        aria-describedby={summaryId}
       >
         <div
           className="bg-linear-to-r from-finyk to-finyk-strong"
@@ -63,6 +65,17 @@ export function AssetsLiabilitiesBar({
           Пасиви {liabilitiesPct}%
         </span>
       </div>
+      {}
+      <div id={summaryId} className="sr-only">
+        <p>
+          Співвідношення активів і пасивів. Активи:{" "}
+          {assets.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴ (
+          {assetsPct}%). Пасиви:{" "}
+          {liabilities.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴
+          ({liabilitiesPct}%).
+        </p>
+      </div>
+      {}
     </div>
   );
 }

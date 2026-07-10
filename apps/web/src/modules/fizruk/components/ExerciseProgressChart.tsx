@@ -74,6 +74,7 @@ export function ExerciseProgressChart({
   const lastVal = points[points.length - 1]?.value ?? 0;
   const firstVal = points[0]?.value ?? 0;
   const delta = lastVal - firstVal;
+  const summaryId = `fizruk-exercise-progress-${label.replace(/\s/g, "-")}`;
 
   return (
     <div className="w-full">
@@ -82,6 +83,7 @@ export function ExerciseProgressChart({
         className="w-full h-auto max-h-[120px] overflow-visible"
         role="img"
         aria-label={`Графік ${label}`}
+        aria-describedby={summaryId}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -148,6 +150,21 @@ export function ExerciseProgressChart({
           );
         })}
       </svg>
+      <div id={summaryId} className="sr-only">
+        <p>
+          Прогрес {label}. Поточне значення: {fmt(lastVal, 1)} {unit}.
+          {delta !== 0 && Number.isFinite(delta)
+            ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${delta.toFixed(1)} ${unit}.`
+            : ""}
+        </p>
+        <ul>
+          {points.map((p, i) => (
+            <li key={i}>
+              {p.dateLabel}: {fmt(p.value, 1)} {unit}
+            </li>
+          ))}
+        </ul>
+      </div>
       <div className="flex items-baseline gap-2 mt-1">
         <span className="text-lg font-extrabold tabular-nums text-text">
           {fmt(lastVal, 1)} {unit}

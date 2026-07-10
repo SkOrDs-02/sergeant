@@ -31,6 +31,10 @@ describe("MiniLineChart", () => {
     );
     const img = screen.getByRole("img");
     expect(img).toHaveAttribute("aria-label", expect.stringContaining("вагу"));
+    expect(img).toHaveAttribute("aria-describedby", "fizruk-mini-line-вагу");
+    expect(document.getElementById("fizruk-mini-line-вагу")).toHaveClass(
+      "sr-only",
+    );
     // Last value rendered in the footer (value + unit, split across nodes).
     expect(
       screen.getByText((_content, el) => el?.textContent === "82 кг"),
@@ -39,12 +43,12 @@ describe("MiniLineChart", () => {
 
   it("shows a positive delta with a + sign", () => {
     render(<MiniLineChart data={points([80, 85])} unit="кг" color="#00f" />);
-    expect(screen.getByText(/\+5\.0 кг/)).toBeInTheDocument();
+    expect(screen.getAllByText(/\+5\.0 кг/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows a negative delta", () => {
     render(<MiniLineChart data={points([85, 80])} unit="кг" color="#00f" />);
-    expect(screen.getByText(/-5\.0 кг/)).toBeInTheDocument();
+    expect(screen.getAllByText(/-5\.0 кг/).length).toBeGreaterThanOrEqual(1);
   });
 
   it("handles gaps (null points) without crashing", () => {

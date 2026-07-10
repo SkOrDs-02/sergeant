@@ -122,6 +122,8 @@ describe("HubChatBody", () => {
     const { container } = renderBody({ loading: true });
     const liveRegion = container.querySelector('[role="status"]');
     expect(liveRegion).toHaveTextContent("Асистент відповідає…");
+    const scrollContainer = container.querySelector('[aria-busy="true"]');
+    expect(scrollContainer).not.toHaveAttribute("aria-live");
   });
 
   it("clears live region text when not loading", () => {
