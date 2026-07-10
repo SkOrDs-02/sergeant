@@ -254,4 +254,77 @@ describe("shopping-list handler", () => {
       ),
     ).rejects.toMatchObject({ name: "ExternalServiceError" });
   });
+
+  it("skips non-object categories and items during normalization", async () => {
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(
+        JSON.stringify({
+          categories: [
+            null,
+            {
+              name: "Яйця",
+              items: [null, { name: "Яйця", quantity: "10 шт", note: "свіжі" }],
+            },
+            { name: "Порожня", items: [] },
+          ],
+        }),
+      ),
+    );
+
+    const res = makeRes();
+    await handler(
+      makeReq({
+        recipes: [{ title: "Омлет", ingredients: ["яйця"] }],
+        locale: "uk-UA",
+      }),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({
+      categories: [
+        {
+          name: "Яйця",
+          items: [
+            expect.objectContaining({
+              name: "Яйця",
+              quantity: "10 шт",
+              note: "свіжі",
+            }),
+          ],
+        },
+      ],
+      rawText: null,
+    });
+  });
+
+  it("passes userId to anthropicMessages when session user is present", async () => {
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(
+        JSON.stringify({
+          categories: [
+            {
+              name: "Яйця",
+              items: [{ name: "Яйця", quantity: "6 шт", note: "" }],
+            },
+          ],
+        }),
+      ),
+    );
+
+    await handler(
+      {
+        anthropicKey: "test-anthropic-key",
+        body: {
+          recipes: [{ title: "Омлет", ingredients: ["яйця"] }],
+          locale: "uk-UA",
+        },
+        user: { id: "u_shopping" },
+      } as unknown as Request,
+      makeRes(),
+    );
+
+    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
+    expect(options["userId"]).toBe("u_shopping");
+  });
 });
