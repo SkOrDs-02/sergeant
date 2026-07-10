@@ -36,6 +36,18 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
   },
   {
     "params": [
+      "u1",
+      "routine_streaks",
+      "{"user_id":"u1","delta":1}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000002",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, 'increment', ?, ?, ?)",
+  },
+  {
+    "params": [
       "2026-06-23T00:00:00.000Z",
       "2026-06-23T00:00:00.000Z",
       "h1:2026-06-19",
@@ -55,11 +67,23 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "delete",
       "{"id":"h1:2026-06-19","user_id":"u1"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000002",
+      "00000000-0000-4000-8000-000000000003",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
      VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_streaks",
+      "{"user_id":"u1","delta":-1}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000004",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, 'increment', ?, ?, ?)",
   },
   {
     "params": [

@@ -2,13 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
-// Patch enqueueOutboxUpsert so integration tests can assert the outbox
-// enqueue shape without a real sync_op_outbox table in the test DB.
-// The mock is hoisted via vi.mock so it intercepts the adapter import.
+// Patch enqueueOutboxUpsert and enqueueOutboxIncrement so integration tests
+// can assert the outbox enqueue shape without a real sync_op_outbox table.
+// Both mocks are hoisted via vi.mock so they intercept the adapter imports.
 vi.mock("../../../../../core/syncEngine/enqueueOutboxUpsert.js", () => ({
   enqueueOutboxUpsert: vi.fn().mockResolvedValue({ id: 1, inserted: true }),
 }));
+vi.mock("@sergeant/db-schema/sqlite", () => ({
+  enqueueOutboxIncrement: vi
+    .fn()
+    .mockResolvedValue({ ok: true, id: 1, inserted: true }),
+}));
 import { enqueueOutboxUpsert } from "../../../../../core/syncEngine/enqueueOutboxUpsert.js";
+import { enqueueOutboxIncrement } from "@sergeant/db-schema/sqlite";
 
 import {
   __clearRoutineDualWriteContextForTests,
@@ -216,6 +222,7 @@ describe("dualWriteRoutineState orchestrator", () => {
 
 describe("dualWriteRoutineState — outbox enqueue wiring", () => {
   const enqueueMock = enqueueOutboxUpsert as ReturnType<typeof vi.fn>;
+  const incrementMock = enqueueOutboxIncrement as ReturnType<typeof vi.fn>;
 
   let handle: Awaited<ReturnType<typeof createTestSqlite>>;
 
@@ -223,6 +230,8 @@ describe("dualWriteRoutineState — outbox enqueue wiring", () => {
     handle = await createTestSqlite();
     enqueueMock.mockClear();
     enqueueMock.mockResolvedValue({ id: 1, inserted: true });
+    incrementMock.mockClear();
+    incrementMock.mockResolvedValue({ ok: true, id: 1, inserted: true });
   });
 
   afterEach(() => {
@@ -306,6 +315,72 @@ describe("dualWriteRoutineState — outbox enqueue wiring", () => {
     expect(result.status).toBe("applied");
 
     // The SQLite entry was still written.
+    const rows = await listEntries(handle.client);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.id).toBe("h1:2026-05-01");
+  });
+
+  it("enqueues a routine_streaks increment(+1) op after completion-add", async () => {
+    registerRoutineDualWriteContext(makeCtx());
+    const prev = makeState([{ id: "h1", name: "Drink" }], {});
+    const next = makeState([{ id: "h1", name: "Drink" }], {
+      h1: ["2026-05-01"],
+    });
+
+    await dualWriteRoutineState(prev, next);
+
+    // Allow the fire-and-forget microtask chain to settle.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(incrementMock).toHaveBeenCalledOnce();
+    const [, input] = incrementMock.mock.calls[0]!;
+    expect(input.table).toBe("routine_streaks");
+    expect(input.row).toMatchObject({ user_id: USER_ID, delta: 1 });
+    expect(typeof input.idempotencyKey).toBe("string");
+    expect(input.idempotencyKey.length).toBeGreaterThan(0);
+  });
+
+  it("enqueues a routine_streaks increment(-1) op after completion-remove", async () => {
+    registerRoutineDualWriteContext(makeCtx());
+
+    // Seed an existing completion so the diff produces a completion-remove.
+    await handle.client.run(
+      `INSERT INTO routine_entries
+         (id, user_id, name, completed_at, created_at, updated_at, deleted_at)
+       VALUES (?, ?, ?, ?, ?, ?, NULL)`,
+      ["h1:2026-05-01", USER_ID, "Drink", T1, T1, T1],
+    );
+
+    const prev = makeState([{ id: "h1", name: "Drink" }], {
+      h1: ["2026-05-01"],
+    });
+    const next = makeState([{ id: "h1", name: "Drink" }], {});
+
+    await dualWriteRoutineState(prev, next);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(incrementMock).toHaveBeenCalledOnce();
+    const [, input] = incrementMock.mock.calls[0]!;
+    expect(input.table).toBe("routine_streaks");
+    expect(input.row).toMatchObject({ user_id: USER_ID, delta: -1 });
+  });
+
+  it("does NOT reject dualWrite when enqueueOutboxIncrement throws (fire-and-forget)", async () => {
+    incrementMock.mockRejectedValue(new Error("outbox full"));
+    registerRoutineDualWriteContext(makeCtx());
+
+    const prev = makeState([{ id: "h1", name: "Drink" }], {});
+    const next = makeState([{ id: "h1", name: "Drink" }], {
+      h1: ["2026-05-01"],
+    });
+
+    const result = await dualWriteRoutineState(prev, next);
+    expect(result.status).toBe("applied");
+
+    // Local write succeeded regardless of outbox failure.
     const rows = await listEntries(handle.client);
     expect(rows).toHaveLength(1);
     expect(rows[0]!.id).toBe("h1:2026-05-01");

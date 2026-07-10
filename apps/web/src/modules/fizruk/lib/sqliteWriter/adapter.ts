@@ -1,29 +1,39 @@
 import {
-  buildDelete,
-  buildLwwUpsert,
-  buildReconcileChildren,
   createApplyOps,
   toIntOrNull,
-  toRealOrNull,
   type ApplyDualWriteOptions as CoreApplyDualWriteOptions,
   type ApplyDualWriteResult as CoreApplyDualWriteResult,
   type DualWriteLogger as CoreDualWriteLogger,
   type DualWriteRuntime,
-  type TableSpec,
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
+import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import type {
   FizrukCustomExerciseSnapshot,
-  FizrukDailyLogSnapshot,
   FizrukDualWriteOp,
   FizrukItemSnapshot,
   FizrukMeasurementSnapshot,
-  FizrukMonthlyPlanSnapshot,
   FizrukWorkoutSnapshot,
-  FizrukWorkoutTemplateSnapshot,
 } from "./diff/index.js";
+import {
+  CUSTOM_EXERCISE_DELETE_SQL,
+  CUSTOM_EXERCISE_UPSERT_SQL,
+  MEASUREMENT_DELETE_SQL,
+  MEASUREMENT_UPSERT_SQL,
+  setMonthlyPlan,
+  softDeleteDailyLog,
+  softDeleteRemovedChildren,
+  softDeleteWorkoutTemplate,
+  upsertDailyLog,
+  upsertWorkoutTemplate,
+  WORKOUT_DELETE_SQL,
+  WORKOUT_ITEMS_CASCADE_SQL,
+  WORKOUT_ITEM_UPSERT_SQL,
+  WORKOUT_SET_UPSERT_SQL,
+  WORKOUT_UPSERT_SQL,
+} from "./adapter.sql.js";
 
 /**
  * Async SQLite-side adapter for the Fizruk dual-write layer.
@@ -47,6 +57,10 @@ import type {
  *   hand-written: the workout-delete cascade fans out across two child
  *   tables in one op (including a `workout_item_id IN (SELECT …)` subquery
  *   for sets), a shape `buildReconcileChildren` doesn't model.
+ * - Sync-v2 outbox bridge: registry tables (`fizruk_workouts`,
+ *   `fizruk_workout_items`, `fizruk_workout_sets`, `fizruk_custom_exercises`,
+ *   `fizruk_measurements`) fire `enqueueOutboxUpsert` after each local write
+ *   (fire-and-forget; failures are swallowed per R2).
  */
 
 export type ApplyDualWriteOptions = CoreApplyDualWriteOptions;
@@ -122,233 +136,9 @@ export async function applyFizrukDualWriteOps(
 }
 
 // -----------------------------------------------------------------------
-// Table specs
+// Shared type for sets inside workout items.
 // -----------------------------------------------------------------------
 
-const WORKOUT_UPSERT_SPEC: TableSpec = {
-  table: "fizruk_workouts",
-  insertClause: `INSERT INTO fizruk_workouts
-       (id, user_id, started_at, ended_at, note, groups_json,
-        warmup_json, cooldown_json, wellbeing_json,
-        created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "started_at" },
-    { column: "ended_at" },
-    { column: "note" },
-    { column: "groups_json" },
-    { column: "warmup_json" },
-    { column: "cooldown_json" },
-    { column: "wellbeing_json" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 5,
-  setIndent: 7,
-};
-
-const WORKOUT_ITEM_UPSERT_SPEC: TableSpec = {
-  table: "fizruk_workout_items",
-  insertClause: `INSERT INTO fizruk_workout_items
-       (id, workout_id, user_id, exercise_id, name_uk, primary_group,
-        muscles_primary, muscles_secondary, type, duration_sec, distance_m,
-        sort_order, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "workout_id" },
-    { column: "exercise_id" },
-    { column: "name_uk" },
-    { column: "primary_group" },
-    { column: "muscles_primary" },
-    { column: "muscles_secondary" },
-    { column: "type" },
-    { column: "duration_sec" },
-    { column: "distance_m" },
-    { column: "sort_order" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 5,
-  setIndent: 7,
-};
-
-const WORKOUT_SET_UPSERT_SPEC: TableSpec = {
-  table: "fizruk_workout_sets",
-  insertClause: `INSERT INTO fizruk_workout_sets
-       (id, workout_item_id, user_id, weight_kg, reps, rpe,
-        sort_order, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "weight_kg" },
-    { column: "reps" },
-    { column: "rpe" },
-    { column: "sort_order" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 5,
-  setIndent: 7,
-  // Hand-written SQL aligned wider than this table's own max column name
-  // (`sort_order`/`updated_at`/`deleted_at`, 10 chars) — see `alignWidth` doc.
-  alignWidth: 15,
-};
-
-const CUSTOM_EXERCISE_UPSERT_SPEC: TableSpec = {
-  table: "fizruk_custom_exercises",
-  insertClause: `INSERT INTO fizruk_custom_exercises
-       (id, user_id, data_json, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "data_json" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 5,
-  setIndent: 7,
-};
-
-const MEASUREMENT_UPSERT_SPEC: TableSpec = {
-  table: "fizruk_measurements",
-  insertClause: `INSERT INTO fizruk_measurements
-       (id, user_id, measured_at, weight_kg, waist_cm, chest_cm, hips_cm,
-        bicep_cm, sleep_hours, energy_level, mood,
-        created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "measured_at" },
-    { column: "weight_kg" },
-    { column: "waist_cm" },
-    { column: "chest_cm" },
-    { column: "hips_cm" },
-    { column: "bicep_cm" },
-    { column: "sleep_hours" },
-    { column: "energy_level" },
-    { column: "mood" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 5,
-  setIndent: 7,
-};
-
-const DAILY_LOG_UPSERT_SPEC: TableSpec = {
-  table: "fizruk_daily_log",
-  insertClause: `INSERT INTO fizruk_daily_log
-       (id, user_id, entry_at, weight_kg, sleep_hours, energy_level, mood,
-        note, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "entry_at" },
-    { column: "weight_kg" },
-    { column: "sleep_hours" },
-    { column: "energy_level" },
-    { column: "mood" },
-    { column: "note" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 5,
-  setIndent: 7,
-  // Hand-written SQL aligned one column wider than this table's own max
-  // (`energy_level`, 12 chars) — see `alignWidth` doc.
-  alignWidth: 13,
-};
-
-const MONTHLY_PLAN_UPSERT_SPEC: TableSpec = {
-  table: "fizruk_monthly_plan",
-  insertClause: `INSERT INTO fizruk_monthly_plan (user_id, data_json, updated_at)
-     VALUES (?, ?, ?)`,
-  conflictTarget: ["user_id"],
-  updateColumns: [{ column: "data_json" }, { column: "updated_at" }],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 5,
-  setIndent: 7,
-};
-
-const WORKOUT_TEMPLATE_UPSERT_SPEC: TableSpec = {
-  table: "fizruk_workout_templates",
-  insertClause: `INSERT INTO fizruk_workout_templates
-       (id, user_id, name, exercise_ids_json, groups_json, last_used_at,
-        created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "name" },
-    { column: "exercise_ids_json" },
-    { column: "groups_json" },
-    { column: "last_used_at" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 5,
-  setIndent: 7,
-};
-
-const WORKOUT_UPSERT_SQL = buildLwwUpsert(WORKOUT_UPSERT_SPEC);
-const WORKOUT_ITEM_UPSERT_SQL = buildLwwUpsert(WORKOUT_ITEM_UPSERT_SPEC);
-const WORKOUT_SET_UPSERT_SQL = buildLwwUpsert(WORKOUT_SET_UPSERT_SPEC);
-const CUSTOM_EXERCISE_UPSERT_SQL = buildLwwUpsert(CUSTOM_EXERCISE_UPSERT_SPEC);
-const MEASUREMENT_UPSERT_SQL = buildLwwUpsert(MEASUREMENT_UPSERT_SPEC);
-const DAILY_LOG_UPSERT_SQL = buildLwwUpsert(DAILY_LOG_UPSERT_SPEC);
-const MONTHLY_PLAN_UPSERT_SQL = buildLwwUpsert(MONTHLY_PLAN_UPSERT_SPEC);
-const WORKOUT_TEMPLATE_UPSERT_SQL = buildLwwUpsert(
-  WORKOUT_TEMPLATE_UPSERT_SPEC,
-);
-
-const WORKOUT_DELETE_SQL = buildDelete({
-  table: "fizruk_workouts",
-  deletePolicy: "soft",
-  matchColumns: ["id", "user_id"],
-});
-const CUSTOM_EXERCISE_DELETE_SQL = buildDelete({
-  table: "fizruk_custom_exercises",
-  deletePolicy: "soft",
-  matchColumns: ["id", "user_id"],
-});
-const MEASUREMENT_DELETE_SQL = buildDelete({
-  table: "fizruk_measurements",
-  deletePolicy: "soft",
-  matchColumns: ["id", "user_id"],
-});
-const DAILY_LOG_DELETE_SQL = buildDelete({
-  table: "fizruk_daily_log",
-  deletePolicy: "soft",
-  matchColumns: ["id", "user_id"],
-});
-const WORKOUT_TEMPLATE_DELETE_SQL = buildDelete({
-  table: "fizruk_workout_templates",
-  deletePolicy: "soft",
-  matchColumns: ["id", "user_id"],
-});
-
-// Cascade soft-delete of items/sets when a whole workout is deleted — these
-// WHERE shapes (`deleted_at IS NULL`, no LWW guard) match the reconcile
-// keepCount-0 branch, so reuse that builder.
-const WORKOUT_ITEMS_CASCADE_SQL = buildReconcileChildren(
-  { table: "fizruk_workout_items", parentColumn: "workout_id" },
-  0,
-);
-
-// -----------------------------------------------------------------------
-// Workouts (parent + items + sets)
-// -----------------------------------------------------------------------
-
-/**
- * Shared type for sets inside workout items.
- */
 export type WorkoutSet = {
   weightKg: number;
   reps: number;
@@ -356,10 +146,10 @@ export type WorkoutSet = {
   [k: string]: unknown;
 };
 
-/**
- * Upserts a workout and all its child items/sets in a single pass.
- * Handles soft-delete of removed children.
- */
+// -----------------------------------------------------------------------
+// Workouts (parent + items + sets)
+// -----------------------------------------------------------------------
+
 async function upsertWorkout(
   client: SqliteMigrationClient,
   w: FizrukWorkoutSnapshot,
@@ -384,13 +174,32 @@ async function upsertWorkout(
     clientTs,
   ]);
 
-  // Upsert items
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_workouts",
+    op: "insert",
+    row: {
+      id: w.id,
+      user_id: userId,
+      started_at: w.startedAt,
+      ended_at: w.endedAt ?? null,
+      note: w.note ?? "",
+      groups_json: groupsJson,
+      warmup_json: warmupJson,
+      cooldown_json: cooldownJson,
+      wellbeing_json: wellbeingJson,
+      created_at: clientTs,
+      deleted_at: null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
+
   const items = w.items ?? [];
   for (const [i, item] of items.entries()) {
     await upsertWorkoutItem(client, item, w.id, userId, clientTs, i);
   }
 
-  // Soft-delete items that were removed from the workout
   const itemIds = items.map((it) => it.id);
   await softDeleteRemovedChildren(
     client,
@@ -431,14 +240,36 @@ async function upsertWorkoutItem(
     clientTs,
   ]);
 
-  // Upsert sets
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_workout_items",
+    op: "insert",
+    row: {
+      id: item.id,
+      user_id: userId,
+      workout_id: workoutId,
+      exercise_id: item.exerciseId ?? "",
+      name_uk: item.nameUk ?? "",
+      primary_group: item.primaryGroup ?? "",
+      muscles_primary: musclesPrimary,
+      muscles_secondary: musclesSecondary,
+      type: item.type ?? "strength",
+      duration_sec: item.durationSec ?? null,
+      distance_m: item.distanceM ?? null,
+      sort_order: sortOrder,
+      created_at: clientTs,
+      deleted_at: null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
+
   const sets = item.sets ?? [];
   for (const [s, set] of sets.entries()) {
     const setId = `${item.id}:s${s}`;
     await upsertWorkoutSet(client, setId, item.id, userId, clientTs, set, s);
   }
 
-  // Soft-delete removed sets
   const setIds = sets.map((_, s) => `${item.id}:s${s}`);
   await softDeleteRemovedChildren(
     client,
@@ -471,6 +302,25 @@ async function upsertWorkoutSet(
     clientTs,
     clientTs,
   ]);
+
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_workout_sets",
+    op: "insert",
+    row: {
+      id: setId,
+      user_id: userId,
+      workout_item_id: workoutItemId,
+      weight_kg: set.weightKg ?? 0,
+      reps: set.reps ?? 0,
+      rpe: set.rpe ?? null,
+      sort_order: sortOrder,
+      created_at: clientTs,
+      deleted_at: null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 async function softDeleteWorkout(
@@ -478,7 +328,27 @@ async function softDeleteWorkout(
   workoutId: string,
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  // Soft-delete the workout itself
+  // Collect item/set IDs before cascade so we can enqueue their deletes.
+  const cascadeItemRows = await client.all<{ id: string }>(
+    `SELECT id FROM fizruk_workout_items
+     WHERE workout_id = ? AND user_id = ? AND deleted_at IS NULL`,
+    [workoutId, userId],
+  );
+  const itemIds = cascadeItemRows.map((r) => r.id);
+
+  let cascadeSetIds: string[] = [];
+  if (itemIds.length > 0) {
+    const placeholders = itemIds.map(() => "?").join(",");
+    const cascadeSetRows = await client.all<{ id: string }>(
+      `SELECT id FROM fizruk_workout_sets
+       WHERE workout_item_id IN (${placeholders})
+         AND user_id = ? AND deleted_at IS NULL`,
+      [...itemIds, userId],
+    );
+    cascadeSetIds = cascadeSetRows.map((r) => r.id);
+  }
+
+  // Soft-delete the workout itself.
   await client.run(WORKOUT_DELETE_SQL, [
     clientTs,
     clientTs,
@@ -486,7 +356,7 @@ async function softDeleteWorkout(
     userId,
     clientTs,
   ]);
-  // Cascade soft-delete to items and sets
+  // Cascade soft-delete to items and sets.
   await client.run(WORKOUT_ITEMS_CASCADE_SQL, [
     clientTs,
     clientTs,
@@ -501,32 +371,38 @@ async function softDeleteWorkout(
       ) AND user_id = ? AND deleted_at IS NULL`,
     [clientTs, clientTs, workoutId, userId],
   );
-}
 
-// -----------------------------------------------------------------------
-// Child-row cleanup: soft-delete children that are no longer in the
-// parent's array (e.g. items removed from a workout, sets removed
-// from an item).
-// -----------------------------------------------------------------------
+  // Enqueue deletes for the workout and all its cascaded children.
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_workouts",
+    op: "delete",
+    row: { id: workoutId, user_id: userId },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 
-async function softDeleteRemovedChildren(
-  client: SqliteMigrationClient,
-  tableName: string,
-  parentCol: string,
-  parentId: string,
-  userId: string,
-  clientTs: string,
-  keepIds: string[],
-): Promise<void> {
-  const sql = buildReconcileChildren(
-    { table: tableName, parentColumn: parentCol },
-    keepIds.length,
-  );
-  if (keepIds.length === 0) {
-    await client.run(sql, [clientTs, clientTs, parentId, userId]);
-    return;
+  for (const itemId of itemIds) {
+    void enqueueOutboxUpsert(client, {
+      userId,
+      table: "fizruk_workout_items",
+      op: "delete",
+      row: { id: itemId, user_id: userId },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
   }
-  await client.run(sql, [clientTs, clientTs, parentId, userId, ...keepIds]);
+
+  for (const setId of cascadeSetIds) {
+    void enqueueOutboxUpsert(client, {
+      userId,
+      table: "fizruk_workout_sets",
+      op: "delete",
+      row: { id: setId, user_id: userId },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
+  }
 }
 
 // -----------------------------------------------------------------------
@@ -546,6 +422,20 @@ async function upsertCustomExercise(
     clientTs,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_custom_exercises",
+    op: "insert",
+    row: {
+      id: exercise.id,
+      user_id: userId,
+      data_json: dataJson,
+      created_at: clientTs,
+      deleted_at: null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 async function softDeleteCustomExercise(
@@ -560,6 +450,14 @@ async function softDeleteCustomExercise(
     userId,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_custom_exercises",
+    op: "delete",
+    row: { id: exerciseId, user_id: userId },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 // -----------------------------------------------------------------------
@@ -586,6 +484,28 @@ async function upsertMeasurement(
     clientTs,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_measurements",
+    op: "insert",
+    row: {
+      id: m.id,
+      user_id: userId,
+      measured_at: m.at,
+      weight_kg: m["weightKg"] ?? null,
+      waist_cm: m["waistCm"] ?? null,
+      chest_cm: m["chestCm"] ?? null,
+      hips_cm: m["hipsCm"] ?? null,
+      bicep_cm: m["bicepCm"] ?? null,
+      sleep_hours: m["sleepHours"] ?? null,
+      energy_level: m["energyLevel"] ?? null,
+      mood: m["mood"] ?? null,
+      created_at: clientTs,
+      deleted_at: null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 async function softDeleteMeasurement(
@@ -600,96 +520,12 @@ async function softDeleteMeasurement(
     userId,
     clientTs,
   ]);
-}
-
-// -----------------------------------------------------------------------
-// Daily log
-// -----------------------------------------------------------------------
-
-async function upsertDailyLog(
-  client: SqliteMigrationClient,
-  e: FizrukDailyLogSnapshot,
-  { userId, clientTs }: DualWriteRuntime,
-): Promise<void> {
-  await client.run(DAILY_LOG_UPSERT_SQL, [
-    e.id,
+  void enqueueOutboxUpsert(client, {
     userId,
-    e.at,
-    toRealOrNull(e.weightKg),
-    toRealOrNull(e.sleepHours),
-    toIntOrNull(e.energyLevel),
-    toIntOrNull(e.mood),
-    e.note ?? "",
+    table: "fizruk_measurements",
+    op: "delete",
+    row: { id: measurementId, user_id: userId },
     clientTs,
-    clientTs,
-  ]);
-}
-
-async function softDeleteDailyLog(
-  client: SqliteMigrationClient,
-  entryId: string,
-  { userId, clientTs }: DualWriteRuntime,
-): Promise<void> {
-  await client.run(DAILY_LOG_DELETE_SQL, [
-    clientTs,
-    clientTs,
-    entryId,
-    userId,
-    clientTs,
-  ]);
-}
-
-// -----------------------------------------------------------------------
-// Monthly plan (singleton per user)
-// -----------------------------------------------------------------------
-
-async function setMonthlyPlan(
-  client: SqliteMigrationClient,
-  monthlyPlan: FizrukMonthlyPlanSnapshot,
-  { userId, clientTs }: DualWriteRuntime,
-): Promise<void> {
-  await client.run(MONTHLY_PLAN_UPSERT_SQL, [
-    userId,
-    monthlyPlan.dataJson ?? "{}",
-    clientTs,
-  ]);
-}
-
-// -----------------------------------------------------------------------
-// Workout templates
-// -----------------------------------------------------------------------
-
-async function upsertWorkoutTemplate(
-  client: SqliteMigrationClient,
-  t: FizrukWorkoutTemplateSnapshot,
-  { userId, clientTs }: DualWriteRuntime,
-): Promise<void> {
-  const exerciseIdsJson = JSON.stringify(
-    Array.isArray(t.exerciseIds) ? t.exerciseIds.map(String) : [],
-  );
-  const groupsJson = JSON.stringify(Array.isArray(t.groups) ? t.groups : []);
-  await client.run(WORKOUT_TEMPLATE_UPSERT_SQL, [
-    t.id,
-    userId,
-    t.name ?? "",
-    exerciseIdsJson,
-    groupsJson,
-    t.lastUsedAt ?? null,
-    clientTs,
-    clientTs,
-  ]);
-}
-
-async function softDeleteWorkoutTemplate(
-  client: SqliteMigrationClient,
-  templateId: string,
-  { userId, clientTs }: DualWriteRuntime,
-): Promise<void> {
-  await client.run(WORKOUT_TEMPLATE_DELETE_SQL, [
-    clientTs,
-    clientTs,
-    templateId,
-    userId,
-    clientTs,
-  ]);
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
