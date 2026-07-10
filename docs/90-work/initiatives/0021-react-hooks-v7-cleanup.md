@@ -1,6 +1,6 @@
 # 0021 — React-hooks v7 ESLint cleanup
 
-> **Last touched:** 2026-06-14 by @github-actions[bot]. **Next review:** 2026-09-12.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-09-12.
 > **Status:** In progress
 > **Agent-ready:** yes
 
@@ -19,9 +19,25 @@
 
 - [x] 3 eslint-disable в FinykApp.tsx виправлені (navigate додано до deps, mount-only effects)
 - [x] 2 eslint-disable в useWorkoutsLifecycle.ts виправлені (mount-only, stable deps)
+- [x] `react-hooks/immutability` — web 0 ✅, promoted to `"error"` у `eslint.web.js` (після web burndown)
+- [x] `react-hooks/preserve-manual-memoization` — web 0 ✅, promoted to `"error"` у `eslint.web.js` (2026-07-04 burndown: 6 fixed, 3 kept behind scoped eslint-disable з обґрунтуванням)
+- [x] `react-hooks/purity` — виміряно 0 порушень apps/web (2026-07-10); promotion до `"error"` — окремий агент (`eslint.web.js`)
+- [x] `react-hooks/refs` — виміряно 0 порушень apps/web (2026-07-10); promotion до `"error"` — окремий агент (`eslint.web.js`)
+- [x] `react-hooks/set-state-in-effect` — виміряно 0 порушень apps/web (2026-07-10); promotion до `"error"` — окремий агент (`eslint.web.js`)
 - [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
 - [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
-- [ ] `eslint.baseline.js:146-178` оновлено або видалено
+- [ ] `eslint.baseline.js:146-178` оновлено або видалено (після promotion всіх 5 правил)
+- [ ] mobile: `immutability` (4 порушення), `preserve-manual-memoization` (2 порушення), `refs` (322 порушення) — окрема хвиля після web
+
+## Виконані дії (2026-07-10)
+
+**Web-правила:**
+
+- `immutability` (web) — promoted to `"error"` у `eslint.web.js` (рядок 476); burndown: web 0.
+- `preserve-manual-memoization` (web) — promoted to `"error"` у `eslint.web.js` (рядок 500) після burndown 2026-07-04 (6 fix, 3 scoped-disable з обґрунтуванням); web 0.
+- `purity`, `refs`, `set-state-in-effect` (web) — виміряно 0 порушень на apps/web 2026-07-10; окремий агент промовує їх у `eslint.web.js`.
+
+**Залишок:** mobile-хвиля (`immutability` 4, `preserve-manual-memoization` 2, `refs` 322) + exhaustive-deps catalog-sync.
 
 ## Виконані дії (2026-06-10)
 
