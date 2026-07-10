@@ -14,15 +14,12 @@ import {
   formatDailySeries,
   getDailySeries,
 } from "./dailySeries";
-import {
-  __setFinykMonoMirrorCacheForTests,
-  clearFinykMonoMirrorCache,
-} from "../../../../modules/finyk/lib/monoMirrorReader";
 
 // ─── Hoisted mock factories ────────────────────────────────────────────────────
 
 const {
   mockCachedFinyk,
+  mockCachedFinykMonoMirror,
   mockLoadNutritionLog,
   mockCachedNutrition,
   mockLoadRoutineState,
@@ -31,6 +28,11 @@ const {
   mockTxStatAmount,
 } = vi.hoisted(() => ({
   mockCachedFinyk: vi.fn(() => ({ hiddenTransactions: [] as string[] })),
+  mockCachedFinykMonoMirror: vi.fn(() => ({
+    transactions: [] as unknown[],
+    accounts: [] as unknown[],
+    refreshedAt: null as string | null,
+  })),
   mockLoadNutritionLog: vi.fn(() => ({}) as Record<string, unknown>),
   mockCachedNutrition: vi.fn(() => ({
     waterLog: {} as Record<string, number>,
@@ -46,6 +48,10 @@ const {
 
 vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
   getCachedFinykSqliteState: mockCachedFinyk,
+}));
+
+vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: mockCachedFinykMonoMirror,
 }));
 
 vi.mock("../../../../modules/nutrition/lib/nutritionStorage", () => ({
@@ -73,12 +79,16 @@ vi.mock("../../../../modules/finyk/utils", () => ({
 
 beforeEach(() => {
   localStorage.clear();
-  clearFinykMonoMirrorCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-04-22T12:00:00Z"));
 
   // Reset all mocks to their safe defaults.
   mockCachedFinyk.mockReturnValue({ hiddenTransactions: [] });
+  mockCachedFinykMonoMirror.mockReturnValue({
+    transactions: [],
+    accounts: [],
+    refreshedAt: null,
+  });
   mockLoadNutritionLog.mockReturnValue({});
   mockCachedNutrition.mockReturnValue({ waterLog: {} });
   mockLoadRoutineState.mockReturnValue({ habits: [], completions: {} });
@@ -168,11 +178,14 @@ describe("buildDailySeries — reversed date range", () => {
 describe("buildDailySeries — hidden transactions excluded", () => {
   it("hides a spending tx whose id is in hiddenTransactions", () => {
     const nowSec = Math.floor(Date.now() / 1000);
-    __setFinykMonoMirrorCacheForTests({
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
+    mockCachedFinykMonoMirror.mockReturnValue({
       transactions: [
         { id: "hidden-1", amount: -5000 * 100, time: nowSec },
         { id: "visible-1", amount: -2000 * 100, time: nowSec },
-      ] as never[],
+      ],
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
     });
     mockCachedFinyk.mockReturnValue({ hiddenTransactions: ["hidden-1"] });
 
@@ -187,10 +200,11 @@ describe("buildDailySeries — hidden transactions excluded", () => {
 
   it("income path: tx with amount > 0 is included in income metric", () => {
     const nowSec = Math.floor(Date.now() / 1000);
-    __setFinykMonoMirrorCacheForTests({
-      transactions: [
-        { id: "income-1", amount: 3000 * 100, time: nowSec },
-      ] as never[],
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
+    mockCachedFinykMonoMirror.mockReturnValue({
+      transactions: [{ id: "income-1", amount: 3000 * 100, time: nowSec }],
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
     });
 
     const s = buildDailySeries(["income"], {

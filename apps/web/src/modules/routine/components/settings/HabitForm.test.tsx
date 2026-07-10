@@ -147,15 +147,14 @@ describe("HabitForm – advanced options disclosure", () => {
     expect(screen.getByLabelText(/Початок/)).toBeInTheDocument();
   });
 
-  it("keeps advanced section open while editing even after 'Менше опцій'", () => {
+  it("collapses the advanced section again when 'Менше опцій' is clicked", () => {
     render(<Harness editingId="h1" />);
     // Advanced is open by default in editing mode
     expect(
       screen.getByRole("button", { name: /Менше опцій/ }),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Менше опцій/ }));
-    // editingId pins advanced open — user must not lose field access mid-edit
-    expect(screen.getByLabelText(/Початок/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Початок/)).not.toBeInTheDocument();
   });
 
   it("shows explanatory text for 'once' recurrence in advanced section", () => {

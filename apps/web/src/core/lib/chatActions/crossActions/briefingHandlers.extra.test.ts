@@ -77,19 +77,20 @@ describe("weeklySummary — habit + spending branches", () => {
     __setRoutineSqliteCompletionsCacheForTests({
       completions: { h1: [todayKey] },
     });
+    // finyk_tx_cache is tombstoned (Phase 3) — seed the canonical mirror cache.
     __setFinykMonoMirrorCacheForTests({
       transactions: [
         {
           id: "t1",
           amount: -50000,
           time: Math.floor(SYS.getTime() / 1000) - 3600,
-        },
+        } as never,
         {
           id: "t2",
           amount: 100000,
           time: Math.floor(SYS.getTime() / 1000) - 3600,
-        },
-      ] as never[],
+        } as never,
+      ],
     });
     const out = weeklySummary();
     expect(out).toContain("Звички:");

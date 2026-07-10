@@ -1,18 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mirrorTxs } = vi.hoisted(() => ({
-  mirrorTxs: { current: [] as unknown[] },
-}));
-
 vi.mock("@shared/lib/storage/storage", () => ({
   safeReadStringLS: vi.fn(),
-}));
-vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
-  getCachedFinykMonoMirrorState: () => ({
-    transactions: mirrorTxs.current,
-    accounts: [],
-    refreshedAt: null,
-  }),
 }));
 vi.mock("../../../../modules/routine/lib/routineStorage", () => ({
   loadRoutineState: vi.fn(),
@@ -24,6 +13,9 @@ vi.mock("../../../../modules/nutrition/lib/nutritionStorage", () => ({
 vi.mock("../fizrukActions/shared", () => ({
   readFizrukWorkouts: vi.fn(),
 }));
+vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: vi.fn(),
+}));
 
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
@@ -32,6 +24,7 @@ import {
   loadNutritionPrefs,
 } from "../../../../modules/nutrition/lib/nutritionStorage";
 import { readFizrukWorkouts } from "../fizrukActions/shared";
+import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import { exportModuleData } from "./exportHandler";
 
 const mockReadLS = vi.mocked(safeReadStringLS);
@@ -39,11 +32,17 @@ const mockRoutine = vi.mocked(loadRoutineState);
 const mockNutritionLog = vi.mocked(loadNutritionLog);
 const mockNutritionPrefs = vi.mocked(loadNutritionPrefs);
 const mockWorkouts = vi.mocked(readFizrukWorkouts);
+const mockMonoMirror = vi.mocked(getCachedFinykMonoMirrorState);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mirrorTxs.current = [];
   mockReadLS.mockReturnValue(null);
+  // finyk bank transactions now come from the Mono mirror cache.
+  mockMonoMirror.mockReturnValue({
+    transactions: [],
+    accounts: [],
+    refreshedAt: null,
+  });
   mockRoutine.mockReturnValue(
     {} as unknown as ReturnType<typeof loadRoutineState>,
   );
@@ -67,7 +66,7 @@ describe("exportModuleData", () => {
   });
 
   it("exports finyk module", () => {
-    mirrorTxs.current = [];
+    // The result contains the header regardless of whether there are transactions.
     const result = exportModuleData({
       name: "export_module_data",
       input: { module: "finyk" },
@@ -107,7 +106,12 @@ describe("exportModuleData", () => {
   });
 
   it("returns JSON format when requested", () => {
-    mirrorTxs.current = [];
+    // Provide non-empty transactions so exportValue doesn't short-circuit to "немає даних".
+    mockMonoMirror.mockReturnValue({
+      transactions: [{ id: "t1", amount: -100 }] as never,
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
+    });
     const result = exportModuleData({
       name: "export_module_data",
       input: { module: "finyk", format: "json" },
@@ -115,12 +119,12 @@ describe("exportModuleData", () => {
     expect(result).toContain("(JSON)");
   });
 
-  it("returns empty transactions label when mirror cache is empty", () => {
-    mirrorTxs.current = [];
+  it("returns no-data message for finyk when cache is empty", () => {
+    mockReadLS.mockReturnValue(null);
     const result = exportModuleData({
       name: "export_module_data",
       input: { module: "finyk" },
     });
-    expect(result).toContain("Транзакції: []");
+    expect(result).toContain("немає даних");
   });
 });

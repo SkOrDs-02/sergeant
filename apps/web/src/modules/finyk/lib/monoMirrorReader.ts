@@ -77,23 +77,23 @@ export function clearFinykMonoMirrorCache(): void {
   lastGoodTransactions = [];
 }
 
-/** Test-only: seed the in-memory mirror without SQLite I/O. */
+/**
+ * Test-only seeder — overlays `partial` onto the empty cache and marks
+ * it warm (`refreshedAt`). Lets unit tests seed canonical Mono mirror
+ * state without a real SQLite round-trip. Mirrors the pattern used by
+ * `__setFinykSqliteStateCacheForTests` in `sqliteReader.ts`.
+ */
 export function __setFinykMonoMirrorCacheForTests(
   partial: Partial<SqliteMonoMirrorCache>,
 ): void {
   cache = {
-    transactions: partial.transactions ?? [],
-    accounts: partial.accounts ?? [],
-    refreshedAt:
-      partial.refreshedAt === undefined
-        ? partial.transactions?.length
-          ? // eslint-disable-next-line no-restricted-syntax -- test-only refreshedAt stamp
-            new Date().toISOString()
-          : null
-        : partial.refreshedAt,
+    ...EMPTY_CACHE,
+    ...partial,
+    // eslint-disable-next-line no-restricted-syntax -- UTC refresh timestamp, not a Kyiv day key
+    refreshedAt: partial.refreshedAt ?? new Date().toISOString(),
   };
-  if (cache.transactions.length > 0) {
-    lastGoodTransactions = cache.transactions;
+  if (Array.isArray(partial.transactions) && partial.transactions.length > 0) {
+    lastGoodTransactions = partial.transactions;
   }
 }
 

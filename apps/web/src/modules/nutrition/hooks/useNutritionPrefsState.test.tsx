@@ -5,7 +5,7 @@
  * Unit tests for the nutrition-prefs state hook (LS hydrate + SQLite overlay
  * + persist-error banner).
  */
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const loadNutritionPrefs = vi.fn();
@@ -42,14 +42,12 @@ describe("useNutritionPrefsState", () => {
     expect(result.current.prefsStorageErr).toBe("");
   });
 
-  it("surfaces a banner string when persistence fails", async () => {
+  it("surfaces a banner string when persistence fails", () => {
     persistNutritionPrefs.mockReturnValue(false);
     const { result } = renderHook(() => useNutritionPrefsState(0));
-    await waitFor(() => {
-      expect(result.current.prefsStorageErr).toBe(
-        "Не вдалося зберегти налаштування.",
-      );
-    });
+    expect(result.current.prefsStorageErr).toBe(
+      "Не вдалося зберегти налаштування.",
+    );
   });
 
   it("persists again whenever prefs change", () => {
@@ -81,8 +79,8 @@ describe("useNutritionPrefsState", () => {
       ({ tick }) => useNutritionPrefsState(tick),
       { initialProps: { tick: 0 } },
     );
-    // Cold tick on mount — still the LS seed.
-    expect(result.current.prefs).toEqual(INITIAL);
+    // overlay runs on the first effect pass too
+    expect(result.current.prefs).toEqual(OVERLAY);
     rerender({ tick: 1 });
     expect(result.current.prefs).toEqual(OVERLAY);
   });

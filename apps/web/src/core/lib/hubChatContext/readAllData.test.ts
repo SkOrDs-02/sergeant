@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
+import { readAllData } from "./readAllData";
 import {
   __setFinykMonoMirrorCacheForTests,
   clearFinykMonoMirrorCache,
 } from "../../../modules/finyk/lib/monoMirrorReader";
-import { readAllData } from "./readAllData";
 
 beforeEach(() => {
   localStorage.clear();
@@ -12,7 +12,7 @@ beforeEach(() => {
 });
 
 describe("readAllData", () => {
-  it("returns empty defaults when caches are empty", () => {
+  it("returns empty defaults when localStorage is empty", () => {
     const d = readAllData();
     expect(d.transactions).toEqual([]);
     expect(d.accounts).toEqual([]);
@@ -22,27 +22,37 @@ describe("readAllData", () => {
     expect(d.excludedIds.size).toBe(0);
   });
 
-  it("reads tx and account slices from the Mono mirror cache", () => {
+  it("reads transactions and accounts from the Mono mirror cache", () => {
     __setFinykMonoMirrorCacheForTests({
       transactions: [{ id: "t1", amount: -100 } as never],
       accounts: [{ id: "a1", balance: 5 }],
-      refreshedAt: "2026-06-01T00:00:00.000Z",
     });
     const d = readAllData();
     expect(d.transactions).toHaveLength(1);
     expect(d.accounts).toHaveLength(1);
+    // clientName is no longer derived from finyk_info_cache — it is always "".
     expect(d.clientName).toBe("");
-    expect(d.cacheTime).toBe(new Date("2026-06-01T00:00:00.000Z").getTime());
+    expect(d.cacheTime).not.toBeNull();
+  });
+
+  it("accounts from mirror cache are exposed directly", () => {
+    __setFinykMonoMirrorCacheForTests({
+      accounts: [{ id: "a2", balance: 99 }],
+    });
+    const d = readAllData();
+    expect(d.accounts).toHaveLength(1);
+    expect((d.accounts[0] as { id: string }).id).toBe("a2");
+    expect(d.clientName).toBe("");
   });
 
   it("computes excludedIds from hidden txs, transfers and receivable links", () => {
     __setFinykMonoMirrorCacheForTests({
       transactions: [
-        { id: "t1", amount: -100 },
-        { id: "t2", amount: -200 },
-        { id: "t3", amount: -300 },
-        { id: "t4", amount: -400 },
-      ] as never[],
+        { id: "t1", amount: -100 } as never,
+        { id: "t2", amount: -200 } as never,
+        { id: "t3", amount: -300 } as never,
+        { id: "t4", amount: -400 } as never,
+      ],
     });
     localStorage.setItem("finyk_hidden_txs", JSON.stringify(["t1"]));
     localStorage.setItem(

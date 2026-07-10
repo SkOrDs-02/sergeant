@@ -7,10 +7,6 @@ import {
   getDailySeries,
   type DailySeries,
 } from "./dailySeries";
-import {
-  __setFinykMonoMirrorCacheForTests,
-  clearFinykMonoMirrorCache,
-} from "../../../../modules/finyk/lib/monoMirrorReader";
 
 function series(
   metrics: DailySeries["metrics"],
@@ -109,14 +105,18 @@ describe("formatDailySeries — fill semantics", () => {
 });
 
 describe("getDailySeries — executor", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
     clearFinykMonoMirrorCache();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-22T12:00:00"));
   });
-  afterEach(() => {
+  afterEach(async () => {
     localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
     clearFinykMonoMirrorCache();
     vi.useRealTimers();
   });
@@ -137,7 +137,9 @@ describe("getDailySeries — executor", () => {
     expect(out).toContain("Вкажи");
   });
 
-  it("happy: seeded finyk txs correlate spending ↔ income across days", () => {
+  it("happy: seeded finyk txs correlate spending ↔ income across days", async () => {
+    const { __setFinykMonoMirrorCacheForTests } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
     const nowSec = Math.floor(Date.now() / 1000);
     const txs: Array<{ id: string; amount: number; time: number }> = [];
     // 5 consecutive days, one expense + one (proportional) income each.
@@ -146,6 +148,7 @@ describe("getDailySeries — executor", () => {
       txs.push({ id: `e${d}`, amount: -(1000 + d * 100) * 100, time: t });
       txs.push({ id: `i${d}`, amount: (2000 + d * 200) * 100, time: t });
     }
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
     __setFinykMonoMirrorCacheForTests({ transactions: txs as never[] });
 
     const out = getDailySeries({
@@ -192,20 +195,27 @@ describe("getDailySeries — executor", () => {
 });
 
 describe("buildDailySeries — alignment", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
     clearFinykMonoMirrorCache();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-22T12:00:00"));
   });
-  afterEach(() => {
+  afterEach(async () => {
     localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
     clearFinykMonoMirrorCache();
     vi.useRealTimers();
   });
 
-  it("aligns finyk spending onto the correct Kyiv day and leaves gaps undefined", () => {
+  it("aligns finyk spending onto the correct Kyiv day and leaves gaps undefined", async () => {
+    const { __setFinykMonoMirrorCacheForTests } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
     const nowSec = Math.floor(Date.now() / 1000);
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
     __setFinykMonoMirrorCacheForTests({
       transactions: [
         { id: "e0", amount: -5000 * 100, time: nowSec },
@@ -224,14 +234,18 @@ describe("buildDailySeries — alignment", () => {
 });
 
 describe("getDailySeries — explicit date range + period_days capping", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
     clearFinykMonoMirrorCache();
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-22T12:00:00"));
   });
-  afterEach(() => {
+  afterEach(async () => {
     localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
     clearFinykMonoMirrorCache();
     vi.useRealTimers();
   });
@@ -267,8 +281,11 @@ describe("getDailySeries — explicit date range + period_days capping", () => {
     expect(header).toContain("365 днів");
   });
 
-  it("fill=null surfaces in the table output (empty cells for missing days)", () => {
+  it("fill=null surfaces in the table output (empty cells for missing days)", async () => {
+    const { __setFinykMonoMirrorCacheForTests } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
     const nowSec = Math.floor(Date.now() / 1000);
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
     __setFinykMonoMirrorCacheForTests({
       transactions: [
         { id: "e0", amount: -1000 * 100, time: nowSec },
