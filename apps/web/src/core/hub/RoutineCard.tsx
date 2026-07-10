@@ -199,6 +199,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
   const bump = useHubStorageBump();
 
   const { cur, prev, dates } = useMemo(() => {
+    void bump; // storage-write tick — forces re-read without calling load* inside deps
     // Canonical routine state from the SQLite warm cache — `hub_routine_v1`
     // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
     // `aggregateHabits` expects the loose legacy shape; the domain `archived`
@@ -220,7 +221,6 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
       prev: aggregateHabits(routineState, prevDates),
       dates: curDates,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
   }, [period, offset, bump]);
 
   const formattedCurrent = cur.pct.toLocaleString("uk-UA");

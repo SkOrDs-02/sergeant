@@ -111,21 +111,25 @@ export default function App({
     () => readRaw(FINYK_MANUAL_ONLY_KEY, "") === "1",
   );
 
-  // Mount-only URL sync effect — page/toast/storage are stable or setters.
+  const syncHandledRef = useRef(false);
   useEffect(() => {
+    if (syncHandledRef.current) return;
+    syncHandledRef.current = true;
     if (window.location.search.includes("sync=")) {
       const ok = storage.loadFromUrl();
       if (ok) toast.success("Налаштування синхронізовано!");
       else toast.error("Не вдалось завантажити синк-даних");
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [storage, toast]);
 
-  // Mount-only first-run navigation — firstRunFinyk/pwaAction/page are read once.
+  const firstRunNavHandledRef = useRef(false);
   useEffect(() => {
+    if (firstRunNavHandledRef.current) return;
+    firstRunNavHandledRef.current = true;
     if (!firstRunFinyk) return;
     if (pwaAction === "add_expense") return;
     if (page !== "budgets") navigate("budgets");
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [firstRunFinyk, pwaAction, page, navigate]);
 
   // PWA action: open add-expense sheet when the OS deep-link fires.
   const prevPwaActionRef = useRef(pwaAction);

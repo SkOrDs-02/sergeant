@@ -108,15 +108,13 @@ export function useRoutineDerivedData({
     return monthBounds(monthCursor.y, monthCursor.m);
   }, [timeMode, monthCursor.y, monthCursor.m, selectedDay]);
 
-  const events = useMemo(
-    () =>
-      buildHubCalendarEvents(routine, range, {
-        showFizruk: routine.prefs.showFizrukInCalendar !== false,
-        showFinykSubs: routine.prefs.showFinykSubscriptionsInCalendar !== false,
-      }),
-    /* finykCalendarTick лишаємо: оновлення подій Фініка без зміни routine */
-    [routine, range, finykCalendarTick], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  const events = useMemo(() => {
+    void finykCalendarTick; // Finyk mirror tick without mutating `routine`
+    return buildHubCalendarEvents(routine, range, {
+      showFizruk: routine.prefs.showFizrukInCalendar !== false,
+      showFinykSubs: routine.prefs.showFinykSubscriptionsInCalendar !== false,
+    });
+  }, [routine, range, finykCalendarTick]);
 
   const filtered = useMemo(() => {
     let ev: HubCalendarEvent[] = events;

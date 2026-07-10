@@ -193,6 +193,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
   const bump = useHubStorageBump();
 
   const { cur, prev, dates } = useMemo(() => {
+    void bump; // storage-write tick — forces re-read without calling getCached* inside deps
     // Canonical workouts live in the SQLite warm cache — `fizruk_workouts_v1`
     // is tombstoned (drained + deleted on boot). The canonical list carries
     // ISO-string timestamps; `aggregateWorkouts` expects the legacy epoch-ms
@@ -216,7 +217,6 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
       prev: aggregateWorkouts(rawWorkouts, prevDates),
       dates: curDates,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
   }, [period, offset, bump]);
 
   const formattedCurrent = cur.count.toLocaleString("uk-UA");
