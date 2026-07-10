@@ -94,7 +94,10 @@ describe("Card", () => {
       expect(cls).toContain("border-finyk-soft-border/50");
       // Dark-mode parity: deep `-900` token instead of bg-panel + faint overlay.
       expect(cls).toContain("dark:bg-finyk-soft");
-      expect(cls).toContain("dark:border-finyk-soft-border/40");
+      // «Чорнило» hero (dark): luminescent tier-400 accent border /25 +
+      // inset-glow, replacing the old faint soft-border/40 + drop shadow.
+      expect(cls).toContain("dark:border-brand-400/25");
+      expect(cls).toContain("dark:shadow-glow-inset-emerald");
     });
 
     it("variant='finyk-soft' maps to module='finyk' prominence='soft'", () => {
@@ -175,6 +178,10 @@ describe("Card", () => {
       const cls = container.firstElementChild!.className;
       expect(cls).toContain("bg-panel");
       expect(cls).toContain("border-nutrition-soft-border");
+      // «Чорнило» selected (dark): accent/10 wash + accent/35 border, flat.
+      expect(cls).toContain("dark:bg-lime-400/10");
+      expect(cls).toContain("dark:border-lime-400/35");
+      expect(cls).toContain("dark:shadow-none");
     });
 
     it("module + prominence='interactive' keeps hover-lift + module hairline", () => {
