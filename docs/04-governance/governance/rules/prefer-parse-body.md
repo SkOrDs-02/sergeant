@@ -1,4 +1,4 @@
-# Rule 27 — Prefer `parseBody` / `parseQuery` over sentinel `validateBody` / `validateQuery`
+# Prefer `parseBody` / `parseQuery` over sentinel `validateBody` / `validateQuery`
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `warn` (rollout → `error` after migration complete)
