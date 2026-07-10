@@ -1,6 +1,6 @@
 # Tools research 2026-05 — follow-up: що з відкладеного дійсно гірше / краще
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-07-10 by @cursoragent (runtime Node 22; openclaw path). **Next review:** 2026-10-08.
 > **Status:** Active
 
 > **Контекст:** [`tools-research-2026-05.md`](./tools-research-2026-05.md) (далі — TR-26-05) — основний research-довідник станом на 2026-05-05.
@@ -102,7 +102,7 @@ TR-26-05 §1 ставить **ElectricSQL** на топ (🔥🔥🔥, L effort,
 
 - **Drizzle Kit migrations** як заміна `apps/server/src/migrations/NNN_*.sql` — НЕ робити. Ваші ручні SQL-файли + `apps/server/migrate.mjs` дають точний control над `CREATE EXTENSION vector` (міграція 025), two-phase DROP (rule #4 у `AGENTS.md`), partition-routines (`module_data`). Drizzle Kit за-абстрагує це на свою шкоду.
 - **Biome** як заміна ESLint+Prettier — не зараз. Ваш ESLint ecosystem (eslint-plugin-sergeant-design + 14 кастомних `lint:*` скриптів у `package.json`) надто глибокий, Biome ще не покриває все.
-- **Bun runtime** для Express — Node 20 + pnpm 9 = production-stable. Bun ще rough на edge cases (нативні addons, Node test runner compat). Reconsider при Node 24.
+- **Bun runtime** для Express — Node 22 + pnpm 9 = production-stable (Volta 22.19.0, `Dockerfile.api` → `node:22.16.0-alpine`). Bun ще rough на edge cases. Reconsider при Node 24.
 
 ---
 
@@ -161,7 +161,7 @@ grep -rln 'featureFlag\|isFeatureEnabled\|getFeatureFlag' apps/
 
 - **Адопчено:** PostHog Feature Flags (`apps/web/src/core/lib/featureFlags.ts`, `apps/mobile/src/core/lib/featureFlags.ts` + тести); Anthropic `strict: true` (`apps/server/src/modules/chat/toolDefs/strict.ts`).
 - **Не адопчено:** CVA, react-email, pg-boss, TanStack Router, Hono, SQLocal/PGlite, Devcontainer, fishery+faker, apple-health, chart-library (scaffolded `shared/charts/`), UptimeRobot.
-- **У `tools/openclaw` / `apps/server`:** BullMQ + ioredis (Redis-залежність — рішення проти pg-boss).
+- **У external OpenClaw gateway / `apps/server`:** BullMQ + ioredis (Redis-залежність — рішення проти pg-boss). Historical `tools/openclaw` removed.
 
 ---
 

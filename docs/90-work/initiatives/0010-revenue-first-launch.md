@@ -1,7 +1,8 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-07-10 by @cursoragent (decision frame; billing scaffold shipped). **Next review:** 2026-10-08.
 > **Status:** In progress
+> **Update 2026-07-10:** TL;DR нижче — **historical decision snapshot** (2026-05-04). Фактичний стан: billing scaffold shipped (`subscriptions` migrations, Stripe routes, paywall UI); pricing canon — [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) (₴199/₴1490); `tools/openclaw` removed → external gateway (ADR-0055). Founder blockers: live Stripe + ФОП.
 > **✅ Completed:** Phases 0, 1, 2, 3, 4.1, 4.2, 4.3, 5.1, 5.2, 6 (including 6.2 EN-locale wiring)
 > **⏳ Pending (founder-блокери only):**
 >

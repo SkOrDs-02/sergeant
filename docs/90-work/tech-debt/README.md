@@ -1,6 +1,6 @@
 # Технічний борг
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-07-10 by @cursoragent (mobile TS 6 align; openclaw paths). **Next review:** 2026-10-08.
 > **Status:** Active
 
 Living-реєстри технічного боргу.
