@@ -3,7 +3,8 @@
  * Extra coverage for useMonobankWebhook — exercises the callbacks that the
  * primary spec leaves uncovered: refresh, backfill (success + error),
  * clearTxCache, fetchMonth (rejects when disconnected, resolves a normalized
- * month when connected), and the empty-token guard in connect.
+ * month when connected), the empty-token guard in connect, syncState status
+ * mapping (pending → loading, invalid → error), and enabled=false.
  *
  * Heavy/native deps (sqlite mirror, transaction loader) are mocked so the hook
  * runs in jsdom with no DB. Money is integer kopiykas (number).
@@ -232,5 +233,52 @@ describe("useMonobankWebhook — extra callbacks", () => {
     expect(month[0]!.id).toBe("h1");
     expect(month[0]!.amount).toBe(-12345);
     expect(result.current.historyTx).toHaveLength(1);
+  });
+});
+
+describe("useMonobankWebhook — syncState status mapping", () => {
+  it("maps 'pending' status → loading", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "pending",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    const { result } = renderHook(() => useMonobankWebhook(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => {
+      expect(result.current.syncState.status).toBe("loading");
+    });
+  });
+
+  it("maps 'invalid' status → error + sets lastError", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "invalid",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    const { result } = renderHook(() => useMonobankWebhook(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => {
+      expect(result.current.syncState.status).toBe("error");
+    });
+    expect(result.current.syncState.lastError).toMatch(/invalid/i);
+  });
+});
+
+describe("useMonobankWebhook — enabled=false", () => {
+  it("skips all queries and returns idle state when disabled", async () => {
+    const { result } = renderHook(
+      () => useMonobankWebhook({ enabled: false }),
+      { wrapper: makeWrapper() },
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.syncState.status).toBe("idle");
+    expect(mockedSyncState).not.toHaveBeenCalled();
   });
 });
