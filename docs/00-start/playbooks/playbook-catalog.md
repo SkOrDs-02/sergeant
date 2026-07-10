@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -30,6 +30,7 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Review / merge gate                            | [`../governance/review-checklist.md`](../../04-governance/governance/review-checklist.md) | `sergeant-review-and-merge`                             | Human + agent |
 | PR review across 3+ governed surfaces          | [`run-squad-review.md`](./run-squad-review.md)                                            | `sergeant-review-squad`                                 | Human + agent |
 | Cross-surface feature delivery (DB→server→web) | [`run-squad-deliver.md`](./run-squad-deliver.md)                                          | `sergeant-deliver-squad`                                | Human + agent |
+| Sync client wiring (pull + outbox phases 0–4)  | [`sync-client-wiring-playbook.md`](../../90-work/planning/sync-client-wiring-playbook.md) | `sergeant-feature-delivery` + `sergeant-deliver-squad`  | Human + agent |
 | Full QA across all surfaces in parallel        | [`run-squad-qa.md`](./run-squad-qa.md)                                                    | `sergeant-qa-squad`                                     | Human + agent |
 | Validate idea / decision from multiple angles  | [`run-council.md`](./run-council.md)                                                      | `sergeant-council`                                      | Human + agent |
 | Execute a batch of planning tasks (parallel)   | [`execute-planning-batch.md`](./execute-planning-batch.md)                                | `sergeant-planning-batch`                               | Human + agent |
