@@ -200,6 +200,14 @@ describe("WorkoutItemCard — time + distance + read-only", () => {
     expect(screen.getByText(/планка/i)).toBeInTheDocument();
   });
 
+  it("duration input change in time type calls updateItem with durationSec", () => {
+    renderCard({ it: makeItem({ type: "time", durationSec: 60, sets: [] }) });
+    fireEvent.change(screen.getByLabelText("Тривалість у секундах"), {
+      target: { value: "90" },
+    });
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", { durationSec: 90 });
+  });
+
   it("renders distance + duration inputs and cardio metrics for a distance item", () => {
     renderCard({
       it: makeItem({
@@ -212,6 +220,47 @@ describe("WorkoutItemCard — time + distance + read-only", () => {
     expect(screen.getByLabelText("Дистанція в метрах")).toBeInTheDocument();
     expect(screen.getByText("Темп")).toBeInTheDocument();
     expect(screen.getByText("Швидкість")).toBeInTheDocument();
+  });
+
+  it("distance input change calls updateItem with distanceM", () => {
+    renderCard({
+      it: makeItem({
+        type: "distance",
+        distanceM: 1000,
+        durationSec: 300,
+        sets: [],
+      }),
+    });
+    fireEvent.change(screen.getByLabelText("Дистанція в метрах"), {
+      target: { value: "2000" },
+    });
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", { distanceM: 2000 });
+  });
+
+  it("distance duration input change calls updateItem with durationSec", () => {
+    renderCard({
+      it: makeItem({
+        type: "distance",
+        distanceM: 1000,
+        durationSec: 300,
+        sets: [],
+      }),
+    });
+    const durationInputs = screen.getAllByLabelText("Тривалість у секундах");
+    fireEvent.change(durationInputs[0]!, { target: { value: "400" } });
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", { durationSec: 400 });
+  });
+
+  it("switching type to 'distance' calls updateItem with distanceM + durationSec", () => {
+    renderCard();
+    fireEvent.click(
+      screen.getByRole("tab", { name: "Дистанція — метри та час" }),
+    );
+    expect(updateItem).toHaveBeenCalledWith(
+      "w1",
+      "it-1",
+      expect.objectContaining({ type: "distance" }),
+    );
   });
 
   it("read-only mode hides the delete-item button and disables set delete", () => {
@@ -228,5 +277,93 @@ describe("WorkoutItemCard — time + distance + read-only", () => {
     fireEvent.click(screen.getByRole("button", { name: "Жим лежачи" }));
     // Navigation is internal (useFizrukRoute); assert no crash + button works.
     expect(screen.getByText("Жим лежачи")).toBeInTheDocument();
+  });
+});
+
+describe("WorkoutItemCard — last-time hint variants", () => {
+  it("renders distance metrics in the last-time hint for a distance entry", () => {
+    renderCard({
+      lastByExerciseId: {
+        bench: {
+          type: "distance",
+          distanceM: 5000,
+          durationSec: 1800,
+        },
+      },
+    });
+    expect(screen.getByText(/5000м/)).toBeInTheDocument();
+  });
+
+  it("renders duration seconds in the last-time hint for a time entry", () => {
+    renderCard({
+      lastByExerciseId: {
+        bench: {
+          type: "time",
+          durationSec: 120,
+        },
+      },
+    });
+    expect(screen.getByText(/120с/)).toBeInTheDocument();
+  });
+
+  it("renders the last-time hint without a date when _startedAt is missing", () => {
+    renderCard({
+      lastByExerciseId: {
+        bench: {
+          type: "strength",
+          sets: [{ weightKg: 60, reps: 6 }],
+        },
+      },
+    });
+    expect(screen.getByText(/Минулого разу/)).toBeInTheDocument();
+    expect(screen.getByText(/60×6/)).toBeInTheDocument();
+  });
+});
+
+describe("WorkoutItemCard — recovery conflict warning", () => {
+  it("shows recovery warning when a primary muscle is red in recBy", () => {
+    renderCard({
+      recBy: {
+        pec: {
+          id: "pec",
+          label: "Груди",
+          status: "red" as const,
+          lastAt: Date.now() - 86400000,
+          daysSince: 1,
+          load7d: 0,
+          fatigue: 0,
+        },
+      },
+    });
+    expect(screen.getByText(/Рано навантажувати/)).toBeInTheDocument();
+  });
+});
+
+describe("WorkoutItemCard — rest timer guards", () => {
+  it("Enter on reps with zero weight and zero reps does NOT start the rest timer", () => {
+    renderCard({ it: makeItem({ sets: [{ weightKg: 0, reps: 0 }] }) });
+    fireEvent.keyDown(screen.getByLabelText("Кількість повторень"), {
+      key: "Enter",
+    });
+    expect(setRestTimer).not.toHaveBeenCalled();
+  });
+
+  it("Enter on reps in a completed workout does NOT start the rest timer", () => {
+    renderCard({
+      activeWorkout: makeWorkout({ endedAt: "2026-06-22T11:00:00Z" }),
+    });
+    fireEvent.keyDown(screen.getByLabelText("Кількість повторень"), {
+      key: "Enter",
+    });
+    expect(setRestTimer).not.toHaveBeenCalled();
+  });
+
+  it("Enter on reps in a grouped item does NOT start the rest timer", () => {
+    const group = { id: "g1", type: "superset" } as WorkoutGroup;
+    renderCard({ group });
+    fireEvent.keyDown(screen.getByLabelText("Кількість повторень"), {
+      key: "Enter",
+    });
+    expect(setRestTimer).not.toHaveBeenCalled();
   });
 });
