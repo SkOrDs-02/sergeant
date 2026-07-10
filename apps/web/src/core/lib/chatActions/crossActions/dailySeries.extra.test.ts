@@ -658,3 +658,225 @@ describe("getDailySeries — fill=null via executor", () => {
     expect(zeroLine).toBeDefined();
   });
 });
+
+// ─── formatDailySeries — ≥2 metrics with 0 correlations (insufficient data) ──
+
+describe("formatDailySeries — 2+ metrics but no correlation points", () => {
+  it("shows недостатньо спільних днів when no pair has ≥4 shared data points", () => {
+    // Only 3 days, only one metric has data → no pairwise-complete days.
+    const s = {
+      from: "2026-01-01",
+      to: "2026-01-03",
+      days: ["2026-01-01", "2026-01-02", "2026-01-03"],
+      raw: {
+        spending: [100, undefined, undefined] as (number | undefined)[],
+        kcal: [undefined, 500, undefined] as (number | undefined)[],
+      } as Record<string, (number | undefined)[]>,
+      metrics: ["spending", "kcal"] as import("./dailySeries").DailyMetric[],
+    };
+    const corr = computePairwiseCorrelations(s);
+    expect(corr).toHaveLength(0);
+    const out = formatDailySeries(s, corr, "zero");
+    expect(out).toContain("Кореляції");
+    expect(out).toContain("недостатньо спільних днів");
+  });
+});
+
+// ─── summariseMetric — trend directions ──────────────────────────────────────
+
+describe("summariseMetric — trend arrows via formatDailySeries", () => {
+  it("flat trend (→) when first half mean equals second half mean", () => {
+    const s = {
+      from: "2026-01-01",
+      to: "2026-01-04",
+      days: ["2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04"],
+      raw: {
+        spending: [100, 100, 100, 100] as (number | undefined)[],
+      } as Record<string, (number | undefined)[]>,
+      metrics: ["spending"] as import("./dailySeries").DailyMetric[],
+    };
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).toContain("→");
+  });
+
+  it("no trend when present.length < 4", () => {
+    const s = {
+      from: "2026-01-01",
+      to: "2026-01-03",
+      days: ["2026-01-01", "2026-01-02", "2026-01-03"],
+      raw: {
+        spending: [100, 200, 300] as (number | undefined)[],
+      } as Record<string, (number | undefined)[]>,
+      metrics: ["spending"] as import("./dailySeries").DailyMetric[],
+    };
+    const out = formatDailySeries(s, [], "zero");
+    // No trend arrow when length < 4 (summariseMetric only adds trend for >= 4).
+    expect(out).not.toContain("↑");
+    expect(out).not.toContain("↓");
+    expect(out).not.toContain("→");
+  });
+});
+
+// ─── formatDailySeries — truncation when days > MAX_TABLE_ROWS (90) ──────────
+
+describe("formatDailySeries — table truncation for large date ranges", () => {
+  it("shows truncation label when range has more than 90 days", () => {
+    // Build a 100-day range.
+    const days: string[] = [];
+    const raw: (number | undefined)[] = [];
+    const start = Date.parse("2026-01-01T12:00:00Z");
+    for (let i = 0; i < 100; i++) {
+      const d = new Date(start + i * 86_400_000);
+      days.push(
+        `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`,
+      );
+      raw.push(i + 1);
+    }
+    const s = {
+      from: days[0]!,
+      to: days[days.length - 1]!,
+      days,
+      raw: { spending: raw } as Record<string, (number | undefined)[]>,
+      metrics: ["spending"] as import("./dailySeries").DailyMetric[],
+    };
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).toContain("останні 90 з 100 днів");
+  });
+
+  it("no truncation label when range is exactly 90 days", () => {
+    const days: string[] = [];
+    const raw: (number | undefined)[] = [];
+    const start = Date.parse("2026-01-01T12:00:00Z");
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(start + i * 86_400_000);
+      days.push(
+        `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`,
+      );
+      raw.push(i + 1);
+    }
+    const s = {
+      from: days[0]!,
+      to: days[days.length - 1]!,
+      days,
+      raw: { spending: raw } as Record<string, (number | undefined)[]>,
+      metrics: ["spending"] as import("./dailySeries").DailyMetric[],
+    };
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).not.toContain("останні");
+    // Should just say "Таблиця:" without qualification.
+    expect(out).toContain("Таблиця:\n");
+  });
+});
+
+// ─── getDailySeries — null/undefined input fallback ──────────────────────────
+
+describe("getDailySeries — null input fallback", () => {
+  it("treats null input as empty metrics → returns missing-metrics error", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input:
+        null as unknown as import("../types").GetDailySeriesAction["input"],
+    });
+    expect(out).toContain("Вкажи 1-");
+  });
+});
+
+// ─── parseMetrics — MAX_METRICS cap ─────────────────────────────────────────
+
+describe("getDailySeries — MAX_METRICS capping", () => {
+  it("ignores metrics beyond the MAX_METRICS (6) limit", () => {
+    // All 10 metrics requested; only the first 6 should appear in output.
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: {
+        metrics: [
+          "spending",
+          "income",
+          "kcal",
+          "protein",
+          "water",
+          "workout_volume",
+          "workouts", // this and below should be silently dropped
+          "weight",
+          "wellbeing",
+          "habit_rate",
+        ],
+        date_from: "2026-04-22",
+        date_to: "2026-04-22",
+      },
+    });
+    // Header lists only the first 6 metrics with their units.
+    expect(out).toContain("spending");
+    expect(out).toContain("workout_volume");
+    // workouts is the 7th → should NOT appear in the metrics header.
+    expect(out).not.toContain("workouts=шт");
+  });
+
+  it("silently drops unknown metric names before applying the cap", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: {
+        metrics: ["spending", "NOT_A_METRIC", "kcal"],
+        date_from: "2026-04-22",
+        date_to: "2026-04-22",
+      },
+    });
+    // Valid metrics appear; unknown string silently dropped.
+    expect(out).toContain("spending");
+    expect(out).toContain("kcal");
+    expect(out).not.toContain("NOT_A_METRIC");
+  });
+});
+
+// ─── resolveRange — explicit date_to ─────────────────────────────────────────
+
+describe("getDailySeries — explicit date_to overrides today", () => {
+  it("date_to accepted as ISO string sets the upper bound", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: {
+        metrics: ["spending"],
+        date_from: "2026-04-18",
+        date_to: "2026-04-20",
+      },
+    });
+    const header = out.split("\n").find((l) => l.startsWith("Ряди метрик"));
+    expect(header).toContain("2026-04-18");
+    expect(header).toContain("2026-04-20");
+    expect(header).toContain("3 днів");
+  });
+});
+
+// ─── fizruk — item with undefined sets ───────────────────────────────────────
+
+describe("buildDailySeries — fizruk workout item with undefined/empty sets", () => {
+  it("workout_volume: item without sets treated as 0 volume (not stored)", () => {
+    mockReadFizrukWorkouts.mockReturnValue([
+      {
+        startedAt: "2026-04-22T10:00:00Z",
+        endedAt: "2026-04-22T11:00:00Z",
+        items: [{ sets: undefined }],
+      },
+    ]);
+
+    const s = buildDailySeries(["workout_volume"], {
+      from: "2026-04-22",
+      to: "2026-04-22",
+    });
+    // undefined sets → reduce over [] → volume=0 → not stored.
+    expect(s.raw["workout_volume"]![0]).toBeUndefined();
+  });
+
+  it("wellbeing: entry with null moodScore and null mood → not stored (NaN-safe)", () => {
+    mockReadFizrukDailyLog.mockReturnValue([
+      { at: "2026-04-22T09:00:00Z", moodScore: null, mood: null },
+    ]);
+
+    const s = buildDailySeries(["wellbeing"], {
+      from: "2026-04-22",
+      to: "2026-04-22",
+    });
+    // value = null ?? null → null; typeof null !== "number" → not stored.
+    expect(s.raw["wellbeing"]![0]).toBeUndefined();
+  });
+});

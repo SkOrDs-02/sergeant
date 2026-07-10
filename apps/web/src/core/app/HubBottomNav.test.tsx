@@ -340,4 +340,73 @@ describe("HubBottomNav", () => {
       );
     });
   });
+
+  // ─── Migration / cold-start path for Reports tab ─────────────────────────────
+
+  describe("Reports tab cold-start migration path", () => {
+    it("silently sets localStorage flag when mounted with showReports=true and no flag (cold-start/migration)", () => {
+      // No flag in localStorage; component mounts with showReports already=true.
+      // This is the migration path — the tab was already unlocked in a prior session
+      // but the flag wasn't written. No animation; flag is set silently.
+      localStorage.clear();
+      renderNav({ showReports: true });
+      // Flag must be written so the next mount doesn't re-run migration.
+      expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull();
+      // No bounce animation on cold-start mount.
+      const reports = screen.getByRole("tab", { name: /Звіти/ });
+      expect(reports.className).not.toContain("animate-bounce-in");
+    });
+
+    it("does not overwrite flag when localStorage already has a timestamp", () => {
+      localStorage.setItem(STORAGE_KEY, "999");
+      renderNav({ showReports: true });
+      // Value should remain exactly "999" (not overwritten).
+      expect(localStorage.getItem(STORAGE_KEY)).toBe("999");
+    });
+  });
+
+  // ─── handleTablistKeyDown guards ─────────────────────────────────────────────
+
+  describe("handleTablistKeyDown — guard branches", () => {
+    it("does nothing when no role=tab elements are visible in the tablist (empty tabs guard)", () => {
+      // Use showReports=false and no profile — renders dashboard + hidden-reports-slot + settings.
+      // The visible tabs are Головна and Налаштування. This test exercises the path
+      // where all tabs happen to be hidden (we force this via a custom setup).
+      const { container } = renderNav({ showReports: false });
+
+      // Manually hide all tabs via inline style to make visibleTabs.length === 0.
+      const allTabButtons = container.querySelectorAll<HTMLButtonElement>(
+        'button[id^="hub-tab-"]',
+      );
+      const originalStyles: string[] = [];
+      allTabButtons.forEach((btn) => {
+        originalStyles.push(btn.style.visibility);
+        btn.style.visibility = "hidden";
+      });
+
+      const dashboard =
+        container.querySelector<HTMLButtonElement>("#hub-tab-dashboard")!;
+      // KeyDown on a tab when all tabs are hidden — should not throw.
+      expect(() =>
+        fireEvent.keyDown(dashboard, { key: "ArrowRight" }),
+      ).not.toThrow();
+
+      // Restore styles.
+      allTabButtons.forEach((btn, i) => {
+        btn.style.visibility = originalStyles[i] ?? "";
+      });
+    });
+
+    it("action tab (Увійти) does not receive keyboard navigation handler", () => {
+      const onShowAuth = vi.fn();
+      renderNav({ onShowAuth });
+      const signIn = screen.getByRole("button", { name: /Увійти/ });
+      // Firing a keyboard event on the action tab should not throw and
+      // should NOT call onShowAuth (keyboard handler is not attached to action tabs).
+      expect(() =>
+        fireEvent.keyDown(signIn, { key: "ArrowRight" }),
+      ).not.toThrow();
+      expect(onShowAuth).not.toHaveBeenCalled();
+    });
+  });
 });

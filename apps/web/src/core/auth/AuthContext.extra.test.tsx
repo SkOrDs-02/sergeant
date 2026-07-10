@@ -310,4 +310,100 @@ describe("AuthContext — action catch paths (thrown errors)", () => {
     });
     expect(result.current.authError).toMatch(/Забагато спроб/);
   });
+
+  it("login: thrown non-object (e.g. a number) → asAuthErrorLike returns null → fallback message", async () => {
+    setUser(undefined);
+    // Throwing a number exercises the `typeof err !== 'object'` branch
+    // in `asAuthErrorLike`, which returns null, so translateAuthError
+    // falls back to the provided fallback string.
+    signInEmail.mockRejectedValueOnce(42 as unknown as Error);
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      const success = await result.current.login("a@b.c", "pw");
+      expect(success).toBe(false);
+    });
+    expect(result.current.authError).toBe("Помилка входу");
+  });
+
+  it("register: thrown non-string/non-object → falls back to register fallback", async () => {
+    setUser(undefined);
+    signUpEmail.mockRejectedValueOnce(true as unknown as Error);
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      const success = await result.current.register("a@b.c", "pw", "A");
+      expect(success).toBe(false);
+    });
+    expect(result.current.authError).toBe("Помилка реєстрації");
+  });
+});
+
+// ─── translateAuthError — string-input edge cases ────────────────────────────
+
+describe("translateAuthError — string and empty inputs", () => {
+  it("message-level: 'user already exists' in string → userAlreadyExists", () => {
+    expect(
+      translateAuthError("user already exists right here", "fallback"),
+    ).toBe(messages.auth.userAlreadyExists);
+  });
+
+  it("message-level: 'password too short' in string → passwordTooShort", () => {
+    expect(translateAuthError("password too short now", "fallback")).toBe(
+      messages.auth.passwordTooShort,
+    );
+  });
+
+  it("message-level: 'invalid email or password' → invalidEmailOrPassword (composite before narrow)", () => {
+    expect(
+      translateAuthError("Invalid email or password entered", "fallback"),
+    ).toBe(messages.auth.invalidEmailOrPassword);
+  });
+
+  it("message-level: 'Invalid email' (narrow) → invalidEmail", () => {
+    expect(translateAuthError("Invalid email format", "fallback")).toBe(
+      messages.auth.invalidEmail,
+    );
+  });
+
+  it("message-level: 'invalid password' → invalidPassword", () => {
+    expect(translateAuthError("invalid password length", "fallback")).toBe(
+      messages.auth.invalidPassword,
+    );
+  });
+
+  it("unknown message string passes through as-is (non-empty)", () => {
+    expect(translateAuthError("Some totally unknown error", "fallback")).toBe(
+      "Some totally unknown error",
+    );
+  });
+
+  it("empty string input → fallback", () => {
+    expect(translateAuthError("", "my-fallback")).toBe("my-fallback");
+  });
+});
+
+// ─── asAuthErrorLike — indirect coverage via statusText field ─────────────────
+
+describe("translateAuthError — error object with statusText", () => {
+  it("statusText field is captured by asAuthErrorLike (no direct mapping → message fallback)", async () => {
+    // statusText is recorded in asAuthErrorLike but has no dedicated
+    // translation path — just verify the catch doesn't crash.
+    const { Wrapper } = makeWrapper();
+    setUser(undefined);
+    const err = Object.assign(new Error("unknown"), {
+      statusText: "Bad Gateway",
+      code: "UNKNOWN_CODE",
+      message: "Some detail",
+    });
+    // signInEmail throws with a statusText field.
+    signInEmail.mockRejectedValueOnce(err);
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      const success = await result.current.login("a@b.c", "pw");
+      expect(success).toBe(false);
+    });
+    // The message field is non-empty and not a recognized pattern → returned as-is.
+    expect(result.current.authError).toBe("Some detail");
+  });
 });

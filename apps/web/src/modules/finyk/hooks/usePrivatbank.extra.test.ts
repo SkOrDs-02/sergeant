@@ -319,3 +319,259 @@ describe("usePrivatbank (extra) — data.data response format", () => {
     expect(result.current.transactions[0]!.amount).toBe(-10000);
   });
 });
+
+// ── connect — outer catch: AuthError from balance fetch ──────────────────────
+
+describe("usePrivatbank (extra) — connect outer catch: AuthError from balance", () => {
+  it("sets 'Невірні credentials' error when balance API returns 401", async () => {
+    // No cached balance → apiFetch is called, throws AuthError
+    const { ApiError } = await import("@shared/api");
+    const authErr = new ApiError({
+      kind: "http",
+      status: 401,
+      message: "Unauthorized",
+      url: "/api/privat/statements/balance/final",
+    });
+    mockedRequest.mockImplementation(
+      async (_creds: unknown, path: string): Promise<unknown> => {
+        if (path.includes("/balance/final")) throw authErr;
+        return { data: [] };
+      },
+    );
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid-auth-fail", "tok-auth-fail");
+    });
+
+    expect(result.current.error).toContain("Невірні credentials");
+    expect(result.current.connected).toBe(false);
+  });
+});
+
+// ── connect — outer catch: generic non-AuthError from balance fetch ──────────
+
+describe("usePrivatbank (extra) — connect outer catch: generic error from balance", () => {
+  it("sets error.message when balance API throws a generic Error", async () => {
+    mockedRequest.mockImplementation(
+      async (_creds: unknown, path: string): Promise<unknown> => {
+        if (path.includes("/balance/final"))
+          throw new Error("Мережева помилка");
+        return { data: [] };
+      },
+    );
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid-net", "tok-net");
+    });
+
+    expect(result.current.error).toBe("Мережева помилка");
+    expect(result.current.connected).toBe(false);
+  });
+
+  it("sets fallback message when balance throws Error with no message", async () => {
+    mockedRequest.mockImplementation(
+      async (_creds: unknown, path: string): Promise<unknown> => {
+        if (path.includes("/balance/final")) throw new Error("");
+        return { data: [] };
+      },
+    );
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid-empty", "tok-empty");
+    });
+
+    expect(result.current.error).toBe("Помилка підключення до PrivatBank");
+  });
+});
+
+// ── loadTxCache — TTL expired ────────────────────────────────────────────────
+
+describe("usePrivatbank (extra) — loadTxCache TTL expired", () => {
+  it("calls the API instead of using the cache when cache is older than 30 min", async () => {
+    // Write a cache that is 31 minutes old
+    const oldTimestamp = Date.now() - 31 * 60 * 1000;
+    writeJSON("finyk_privat_tx_cache", {
+      txs: [
+        {
+          id: "stale-tx",
+          time: 1717200000,
+          amount: -100,
+          source: "privatbank",
+          accountId: "acc-1",
+          description: "Old",
+          mcc: 0,
+          category: "other",
+          categoryOverride: null,
+          splitFrom: null,
+          manualEntry: false,
+          linkedBudgetId: null,
+        },
+      ],
+      timestamp: oldTimestamp,
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid", "tok");
+    });
+
+    // Stale cache → fetchTransactions called → transactions endpoint hit
+    const txCalls = (
+      mockedRequest.mock.calls as Array<[unknown, string]>
+    ).filter(([, path]) => path.includes("/transactions"));
+    expect(txCalls.length).toBeGreaterThan(0);
+  });
+});
+
+// ── loadTxCache — empty txs array ────────────────────────────────────────────
+
+describe("usePrivatbank (extra) — loadTxCache empty txs", () => {
+  it("calls the API instead of using cache when cache has empty txs", async () => {
+    writeJSON("finyk_privat_tx_cache", {
+      txs: [], // empty
+      timestamp: Date.now(),
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid", "tok");
+    });
+
+    // Empty txs cache → treated as no cache → fetchTransactions called
+    const txCalls = (
+      mockedRequest.mock.calls as Array<[unknown, string]>
+    ).filter(([, path]) => path.includes("/transactions"));
+    expect(txCalls.length).toBeGreaterThan(0);
+  });
+});
+
+// ── disconnect — full state reset ────────────────────────────────────────────
+
+describe("usePrivatbank (extra) — disconnect()", () => {
+  it("clears credentials, accounts, transactions and resets syncState", async () => {
+    writeRaw("finyk_privat_id", "mid");
+    writeRaw("finyk_privat_token", "tok");
+    const { result } = renderHook(() => usePrivatbank());
+
+    // Wait for the auto-connect to run
+    await waitFor(() => expect(result.current.connected).toBe(true));
+
+    act(() => {
+      result.current.disconnect();
+    });
+
+    expect(result.current.connected).toBe(false);
+    expect(result.current.accounts).toHaveLength(0);
+    expect(result.current.transactions).toHaveLength(0);
+    expect(result.current.error).toBe("");
+    expect(result.current.syncState.status).toBe("idle");
+    expect(result.current.syncState.source).toBe("none");
+  });
+
+  it("removes localStorage keys on disconnect", async () => {
+    writeRaw("finyk_privat_id", "mid");
+    writeRaw("finyk_privat_token", "tok");
+    const { result } = renderHook(() => usePrivatbank());
+    await waitFor(() => expect(result.current.connected).toBe(true));
+
+    act(() => {
+      result.current.disconnect();
+    });
+
+    expect(localStorage.getItem("finyk_privat_id")).toBeNull();
+    expect(localStorage.getItem("finyk_privat_token")).toBeNull();
+  });
+});
+
+// ── clearCache — resets tx/accounts/lastUpdated ──────────────────────────────
+
+describe("usePrivatbank (extra) — clearCache()", () => {
+  it("clears transactions, accounts and lastUpdated after clearCache()", async () => {
+    writeRaw("finyk_privat_id", "mid");
+    writeRaw("finyk_privat_token", "tok");
+    const { result } = renderHook(() => usePrivatbank());
+    await waitFor(() => expect(result.current.accounts).toHaveLength(1));
+
+    act(() => {
+      result.current.clearCache();
+    });
+
+    expect(result.current.transactions).toHaveLength(0);
+    expect(result.current.accounts).toHaveLength(0);
+    expect(result.current.lastUpdated).toBeNull();
+  });
+
+  it("removes cache keys from localStorage on clearCache()", async () => {
+    writeJSON("finyk_privat_tx_cache", { txs: [], timestamp: Date.now() });
+    writeJSON("finyk_privat_balance_cache", {
+      accounts: [],
+      timestamp: Date.now(),
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+    act(() => {
+      result.current.clearCache();
+    });
+
+    expect(localStorage.getItem("finyk_privat_tx_cache")).toBeNull();
+    expect(localStorage.getItem("finyk_privat_balance_cache")).toBeNull();
+  });
+});
+
+// ── connect — empty merchantId / token guard ─────────────────────────────────
+
+describe("usePrivatbank (extra) — connect input guard", () => {
+  it("sets error and returns without API call when merchantId is empty", async () => {
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("", "tok");
+    });
+    expect(result.current.error).toBe("Введи Merchant ID та токен");
+    expect(mockedRequest).not.toHaveBeenCalled();
+  });
+
+  it("sets error and returns without API call when token is whitespace only", async () => {
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid", "   ");
+    });
+    expect(result.current.error).toBe("Введи Merchant ID та токен");
+    expect(mockedRequest).not.toHaveBeenCalled();
+  });
+});
+
+// ── loadBalanceCache — TTL expired ───────────────────────────────────────────
+
+describe("usePrivatbank (extra) — loadBalanceCache TTL expired", () => {
+  it("calls the balance API when balance cache is older than 30 min", async () => {
+    const oldTimestamp = Date.now() - 31 * 60 * 1000;
+    writeJSON("finyk_privat_balance_cache", {
+      accounts: [
+        {
+          id: "acc-stale",
+          balance: 100000,
+          creditLimit: 0,
+          currency: "UAH",
+          type: "privatbank",
+          alias: "Stale",
+          _source: "privatbank",
+        },
+      ],
+      timestamp: oldTimestamp,
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid", "tok");
+    });
+
+    // Balance cache expired → real balance API call must be made
+    const balanceCalls = (
+      mockedRequest.mock.calls as Array<[unknown, string]>
+    ).filter(([, path]) => path.includes("/balance/final"));
+    expect(balanceCalls.length).toBeGreaterThan(0);
+  });
+});

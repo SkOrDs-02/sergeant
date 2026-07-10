@@ -377,3 +377,113 @@ describe("webVitals — lifecycle events trigger flush", () => {
     expect(sendBeaconSpy).toHaveBeenCalledTimes(1);
   });
 });
+
+// ─── enqueue — all three supported ratings pass through ──────────────────────
+
+describe("webVitals.enqueue — all supported ratings accepted", () => {
+  let sendBeaconSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    const mod = await import("./webVitals");
+    mod.__resetForTests();
+    sendBeaconSpy = vi.fn(() => true);
+    Object.defineProperty(navigator, "sendBeacon", {
+      configurable: true,
+      value: sendBeaconSpy,
+    });
+    Object.defineProperty(globalThis, "fetch", {
+      configurable: true,
+      writable: true,
+      value: vi.fn(() => Promise.resolve(new Response())),
+    });
+  });
+
+  afterEach(async () => {
+    const mod = await import("./webVitals");
+    mod.__resetForTests();
+    vi.restoreAllMocks();
+  });
+
+  it("'good' rating is accepted and flushed", async () => {
+    const { enqueue } = await import("./webVitals");
+    enqueue({ name: "INP", value: 50, rating: "good" });
+    await waitMicrotasks();
+    expect(sendBeaconSpy).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(
+      await (sendBeaconSpy.mock.calls[0]![1] as Blob).text(),
+    );
+    expect(payload.metrics[0]).toMatchObject({ name: "INP", rating: "good" });
+  });
+
+  it("'needs-improvement' rating is accepted and flushed", async () => {
+    const { enqueue } = await import("./webVitals");
+    enqueue({ name: "LCP", value: 2500, rating: "needs-improvement" });
+    await waitMicrotasks();
+    expect(sendBeaconSpy).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(
+      await (sendBeaconSpy.mock.calls[0]![1] as Blob).text(),
+    );
+    expect(payload.metrics[0]).toMatchObject({
+      name: "LCP",
+      rating: "needs-improvement",
+      value: 2500,
+    });
+  });
+
+  it("'poor' rating is accepted and flushed", async () => {
+    const { enqueue } = await import("./webVitals");
+    enqueue({ name: "CLS", value: 0.25, rating: "poor" });
+    await waitMicrotasks();
+    expect(sendBeaconSpy).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(
+      await (sendBeaconSpy.mock.calls[0]![1] as Blob).text(),
+    );
+    expect(payload.metrics[0]).toMatchObject({ name: "CLS", rating: "poor" });
+  });
+});
+
+// ─── initWebVitals — VITE_WEB_VITALS_ENDPOINT=0 guard ───────────────────────
+
+describe("initWebVitals — VITE_WEB_VITALS_ENDPOINT=0 env guard", () => {
+  afterEach(() => {
+    vi.doUnmock("@sergeant/shared");
+    vi.doUnmock("web-vitals");
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it("returns early without wiring when the endpoint env var is disabled", async () => {
+    vi.resetModules();
+    vi.doMock("@sergeant/shared", async () => {
+      const actual =
+        await vi.importActual<typeof import("@sergeant/shared")>(
+          "@sergeant/shared",
+        );
+      return { ...actual, isCapacitor: () => false };
+    });
+
+    const onLCP = vi.fn();
+    vi.doMock("web-vitals", () => ({
+      onLCP,
+      onINP: vi.fn(),
+      onCLS: vi.fn(),
+      onFCP: vi.fn(),
+      onTTFB: vi.fn(),
+    }));
+
+    const mod = await import("./webVitals");
+    mod.__resetForTests();
+
+    // Temporarily override import.meta.env["VITE_WEB_VITALS_ENDPOINT"].
+    // In Vitest+jsdom, import.meta.env is writable via vi.stubEnv.
+    vi.stubEnv("VITE_WEB_VITALS_ENDPOINT", "0");
+
+    await mod.initWebVitals();
+
+    // Because VITE_WEB_VITALS_ENDPOINT === "0", init exits before wiring.
+    // onLCP should not be called.
+    expect(onLCP).not.toHaveBeenCalled();
+
+    vi.unstubAllEnvs();
+  });
+});
