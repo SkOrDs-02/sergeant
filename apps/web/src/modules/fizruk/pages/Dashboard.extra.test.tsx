@@ -618,4 +618,111 @@ describe("Dashboard — navigation callbacks", () => {
     fireEvent.click(screen.getByText("Побий рекорд!"));
     expect(mockNavigate).toHaveBeenCalledWith("workouts");
   });
+
+  it("calls onNavigate('workouts') via openTemplates (hero-open-templates)", () => {
+    render(<Dashboard {...defaultProps} />);
+    fireEvent.click(screen.getByTestId("hero-open-templates"));
+    expect(mockNavigate).toHaveBeenCalledWith("workouts");
+  });
+});
+
+describe("Dashboard — Продовжити confirm flow", () => {
+  function setupRecoveryConflict() {
+    vi.mocked(useExerciseCatalog).mockReturnValueOnce({
+      exercises: [
+        {
+          id: "squat",
+          name: { uk: "Присідання", en: "Squat" },
+          primaryGroup: "quads",
+          muscles: { primary: ["quad"], secondary: [] },
+        },
+      ],
+      musclesUk: { quad: "Квадрицепс" },
+    } as unknown as ReturnType<typeof useExerciseCatalog>);
+    vi.mocked(useWorkoutTemplates).mockReturnValueOnce({
+      templates: [
+        { id: "leg-day", name: "Ноги", exerciseIds: ["squat"] },
+      ] as unknown as ReturnType<typeof useWorkoutTemplates>["templates"],
+      loaded: true,
+      recentlyUsed: [],
+      markTemplateUsed: vi.fn(),
+      addTemplate: vi.fn(),
+      updateTemplate: vi.fn(),
+      removeTemplate: vi.fn(),
+      restoreTemplate: vi.fn(),
+    } as unknown as ReturnType<typeof useWorkoutTemplates>);
+    vi.mocked(useRecovery).mockReturnValueOnce({
+      by: {
+        quad: {
+          id: "quad",
+          label: "Квадрицепс",
+          status: "red" as const,
+          lastAt: Date.now() - 86400000,
+          daysSince: 1,
+          load7d: 0,
+          fatigue: 0,
+        },
+      } as ReturnType<typeof useRecovery>["by"],
+      list: [],
+      ready: [],
+      avoid: [],
+      wellbeingMult: 1,
+    } as ReturnType<typeof useRecovery>);
+  }
+
+  it("clicking Продовжити in confirm sheet navigates to workouts and closes sheet", () => {
+    const createWorkout = vi.fn(() => ({ id: "w-new", items: [] }));
+    const addItem = vi.fn();
+    // Use mockReturnValue (not Once) so re-renders after state changes also get the right createWorkout
+    vi.mocked(useWorkouts).mockReturnValue({
+      workouts: [],
+      loaded: true,
+      createWorkout: createWorkout as unknown as ReturnType<
+        typeof useWorkouts
+      >["createWorkout"],
+      addItem,
+    } as unknown as ReturnType<typeof useWorkouts>);
+    setupRecoveryConflict();
+
+    render(<Dashboard {...defaultProps} />);
+    fireEvent.click(screen.getByText("Ноги"));
+    expect(screen.getByText("Увага")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Продовжити"));
+
+    // Sheet closes
+    expect(screen.queryByText("Увага")).not.toBeInTheDocument();
+    // Navigates to workouts
+    expect(mockNavigate).toHaveBeenCalledWith("workouts");
+  });
+});
+
+describe("Dashboard — program primaryAction hero state", () => {
+  it("calls onStartProgramWorkout when handleStartPrimary is triggered with a program", () => {
+    const onStartProgramWorkout = vi.fn();
+    const activeProgram = {
+      name: "Сила А",
+      sessions: {
+        day1: {
+          name: "День 1",
+          exerciseIds: ["bench"],
+        },
+      },
+    } as unknown as import("@sergeant/fizruk-domain/domain").TrainingProgramDef;
+    const todaySession = { sessionKey: "day1", name: "День 1" };
+
+    render(
+      <Dashboard
+        {...defaultProps}
+        onStartProgramWorkout={onStartProgramWorkout}
+        activeProgram={activeProgram}
+        todaySession={todaySession}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("hero-start-today"));
+    expect(onStartProgramWorkout).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "День 1" }),
+      activeProgram,
+    );
+  });
 });
