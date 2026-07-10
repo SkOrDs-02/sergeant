@@ -48,6 +48,11 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
   const queryClient = useQueryClient();
   const [cacheTick, setCacheTick] = useState(0);
   const tickTimerRef = useRef<number | null>(null);
+  const [evaluatedAt, setEvaluatedAt] = useState(() => Date.now());
+
+  useEffect(() => {
+    setEvaluatedAt(Date.now());
+  }, [cacheTick]);
 
   const scheduleCacheTick = useCallback((): void => {
     if (tickTimerRef.current !== null) return;
@@ -121,7 +126,7 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
 
     return {
       signedUpAt,
-      evaluatedAt: Date.now(),
+      evaluatedAt,
       monoAccountsConnected,
       categorizedTransactions,
       budgetsCreated,
@@ -131,7 +136,7 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
     // inside the memo body. Listing it explicitly keeps the lint rule
     // honest about what triggers the re-evaluation.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional `cacheTick` trigger; see comment above
-  }, [user, queryClient, cacheTick]);
+  }, [user, queryClient, cacheTick, evaluatedAt]);
 
   return useActivationV2(input, options);
 }

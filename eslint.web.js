@@ -500,4 +500,15 @@ export const webBlocks = [
       "react-hooks/preserve-manual-memoization": "error",
     },
   },
+  // react-hooks v7 burndown (initiative 0021) — `purity`, `refs`, and
+  // `set-state-in-effect` cleared apps/web (0 violations measured
+  // 2026-07-10 via `npx eslint apps/web/src --rule '{"react-hooks/<rule>":"error"}'
+  // --no-inline-config`). Promoted from baseline `off` to web-scoped `error`.
+  // Mobile still carries legacy violations — stays `off` in baseline.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/purity": "error",
+    },
+  },
 ];

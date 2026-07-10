@@ -14,7 +14,7 @@
  * the app instead of the user.
  */
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   type DashboardModuleId,
   getFirstEntryCelebrationCopy,
@@ -71,18 +71,19 @@ export function FirstEntryCelebrationModal({
   // the goal, not derived state. `useMemo` snapshots the values on
   // mount so subsequent renders are stable; the impurity is contained.
 
-  const particles = useMemo<ConfettiParticle[]>(() => {
-    return Array.from({ length: 30 }, (_, i) => ({
+  const particles = useState<ConfettiParticle[]>(() =>
+    Array.from({ length: 30 }, (_, i) => ({
       id: i,
       x: 50 + (Math.random() - 0.5) * 80,
       y: 30 + (Math.random() - 0.5) * 40,
       rotation: Math.random() * 360,
       color:
-        CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]!,
+        CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)] ??
+        (CONFETTI_COLORS[0] as string),
       size: 6 + Math.random() * 8,
       delay: Math.random() * 0.3,
-    }));
-  }, []);
+    })),
+  )[0];
 
   const handleClose = useCallback(() => {
     hapticTap();

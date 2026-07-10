@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useExerciseCatalog } from "./useExerciseCatalog";
 import { useWorkouts } from "./useWorkouts";
 import { useDailyLog } from "./useDailyLog";
@@ -12,14 +12,11 @@ export function useRecovery() {
   const { workouts } = useWorkouts();
   const { entries: dailyLogEntries } = useDailyLog();
 
+  const [nowMs] = useState(() => Date.now());
+
   const stats = useMemo(() => {
     const wellbeingMult = computeWellbeingMultiplier(dailyLogEntries);
-    const by = computeRecoveryBy(
-      workouts,
-      musclesUk,
-      Date.now(),
-      dailyLogEntries,
-    );
+    const by = computeRecoveryBy(workouts, musclesUk, nowMs, dailyLogEntries);
 
     const list = Object.values(by)
       .filter((x) => x.id && x.label)
@@ -34,7 +31,7 @@ export function useRecovery() {
     const avoid = list.filter((x) => x.status === "red").slice(0, 4);
 
     return { by, list, ready, avoid, wellbeingMult };
-  }, [workouts, musclesUk, dailyLogEntries]);
+  }, [workouts, musclesUk, dailyLogEntries, nowMs]);
 
   return stats;
 }

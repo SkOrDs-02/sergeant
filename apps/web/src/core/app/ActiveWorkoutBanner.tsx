@@ -28,7 +28,7 @@ export function ActiveWorkoutBanner({ hidden = false }: { hidden?: boolean }) {
   // We use mount time as a proxy for workout start — good enough to give
   // users a "how long have I been away?" signal without needing the exact
   // workout start timestamp from Fizruk's domain.
-  const startRef = useRef(Date.now());
+  const startRef = useRef<number | null>(null);
   const [elapsedMin, setElapsedMin] = useState(0);
 
   useEffect(() => {
@@ -37,7 +37,8 @@ export function ActiveWorkoutBanner({ hidden = false }: { hidden?: boolean }) {
     startRef.current = Date.now();
     setElapsedMin(0);
     const id = setInterval(() => {
-      setElapsedMin(Math.floor((Date.now() - startRef.current) / 60_000));
+      const startedAt = startRef.current ?? Date.now();
+      setElapsedMin(Math.floor((Date.now() - startedAt) / 60_000));
     }, 60_000);
     return () => clearInterval(id);
   }, [activeId]);

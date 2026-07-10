@@ -166,12 +166,13 @@ export const baseline = [
       //   use-memo                     — 0 ✅ promoted to "error" below
       //   immutability                 — web 0 ✅ + mobile 0 ✅ (2026-07-10:
       //       CategoryDonut reduce fix + Sheet Reanimated scoped disables;
-      //       promoted in eslint.mobile.js)
-      //   preserve-manual-memoization  — web 0 ✅ (promoted to "error" for
-      //       apps/web in eslint.web.js after 2026-07-04 burndown) + mobile 4
-      //   purity                       — web ~14 + mobile 3 (still off here)
-      //   refs                         — web ~59 + mobile 164 (still off here)
-      //   set-state-in-effect          — web ~80 + mobile 44 (still off here)
+      //       promoted in eslint.web.js + eslint.mobile.js)
+      //   preserve-manual-memoization  — web 0 ✅ (promoted in eslint.web.js
+      //       after 2026-07-04 burndown) + mobile 4 (still off here)
+      //   purity                       — web 0 ✅ (promoted in eslint.web.js)
+      //       + mobile 3 (still off here)
+      //   refs                         — web ~59 (still off here; mobile ~106 after wave 1)
+      //   set-state-in-effect          — web ~80 (still off here) + mobile 44
       // Promoted per-surface once that surface's count reaches 0. See
       // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
       "react-hooks/set-state-in-effect": "off",

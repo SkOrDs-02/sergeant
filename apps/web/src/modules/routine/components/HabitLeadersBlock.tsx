@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { habitCompletionRate } from "../lib/streaks";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -14,13 +14,15 @@ export function HabitLeadersBlock({
   habits,
   completions,
 }: HabitLeadersBlockProps) {
+  const [windowStartMs] = useState(() => Date.now() - 29 * 86_400_000);
+
   const { best, worst } = useMemo(() => {
     const active = habits.filter((h) => !h.archived);
     if (active.length === 0) return { best: null, worst: null };
 
     // Kyiv-anchored inclusive 30-day window (today + 29 days back).
     const endKey = getKyivDayKey();
-    const startKey = getKyivDayKey(Date.now() - 29 * 86_400_000);
+    const startKey = getKyivDayKey(windowStartMs);
 
     const rates = active
       .map((h) => {
@@ -44,7 +46,7 @@ export function HabitLeadersBlock({
       return { best, worst: null };
 
     return { best, worst };
-  }, [habits, completions]);
+  }, [habits, completions, windowStartMs]);
 
   if (!best) return null;
 
