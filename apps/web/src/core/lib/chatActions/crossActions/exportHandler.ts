@@ -29,7 +29,8 @@ export function exportModuleData(action: ExportModuleDataAction): string {
   // LS key no longer exists (routine: `hub_routine_v1` is tombstoned).
   const exportValue = (value: unknown, label: string) => {
     const raw = JSON.stringify(value);
-    if (!raw || raw === "null" || raw === "{}") return `${label}: немає даних.`;
+    if (!raw || raw === "null" || raw === "{}" || raw === "[]")
+      return `${label}: немає даних.`;
     if (fmt === "json")
       return `${label} (JSON):\n${raw.slice(0, 3000)}${raw.length > 3000 ? "\n…(обрізано)" : ""}`;
     const pretty = JSON.stringify(value, null, 2);
