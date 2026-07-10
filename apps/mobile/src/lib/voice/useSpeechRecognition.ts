@@ -88,8 +88,10 @@ export function useSpeechRecognition({
   // свіжі onResult/onError без де-реєстрації на кожному рендері.
   const onResultRef = useRef(onResult);
   const onErrorRef = useRef(onError);
-  onResultRef.current = onResult;
-  onErrorRef.current = onError;
+  useEffect(() => {
+    onResultRef.current = onResult;
+    onErrorRef.current = onError;
+  }, [onResult, onError]);
 
   // Стартова перевірка доступності native розпізнавача. Виконується
   // 1 раз на mount — `isRecognitionAvailable` синхронний і дешевий.

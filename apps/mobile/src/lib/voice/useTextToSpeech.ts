@@ -84,7 +84,9 @@ export function useTextToSpeech({
   // Snapshot опцій у ref, щоб `speak()` ловив свіжі значення без зміни
   // identity-callback-а.
   const optionsRef = useRef({ lang, pitch, rate });
-  optionsRef.current = { lang, pitch, rate };
+  useEffect(() => {
+    optionsRef.current = { lang, pitch, rate };
+  }, [lang, pitch, rate]);
 
   const setMuted = useCallback((next: boolean) => {
     setMutedState(next);

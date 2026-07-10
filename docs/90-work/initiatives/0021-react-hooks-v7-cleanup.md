@@ -22,12 +22,11 @@
 - [x] `react-hooks/immutability` — web 0 ✅ + mobile 0 ✅ (2026-07-10: CategoryDonut reduce; Sheet SheetContent split + scoped disables for RNGH worklets); promoted to `"error"` in `eslint.mobile.js`
 - [x] `react-hooks/preserve-manual-memoization` — web 0 ✅ + mobile 0 ✅ (2026-07-10: `computeInitialExpenseDate` + centralised `pantryItems`); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
 - [x] `react-hooks/purity` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
-- [ ] `react-hooks/refs` — web ~59 + mobile ~41 після wave 2 ([#156](https://github.com/SkOrDs-02/sergeant/pull/156) wave 1, [#160](https://github.com/SkOrDs-02/sergeant/pull/160) wave 2)
+- [x] `react-hooks/refs` — mobile 0 ✅ (waves 1–3 [#156](https://github.com/SkOrDs-02/sergeant/pull/156), [#160](https://github.com/SkOrDs-02/sergeant/pull/160), wave 3); promoted to `"error"` in `eslint.mobile.js`. Web ~59 ще `off`.
 - [ ] `react-hooks/set-state-in-effect` — web ~80 + mobile 44 (2026-07-10)
 - [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
 - [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
 - [ ] `eslint.baseline.js:146-178` оновлено або видалено (після promotion всіх 5 правил)
-- [ ] mobile: `refs` (~41 після wave 2 [#160](https://github.com/SkOrDs-02/sergeant/pull/160)) — wave 3 для залишку
 
 ## Виконані дії (2026-07-10)
 
@@ -48,7 +47,9 @@
 
 **Mobile refs wave 2 (PR #160):** 8 файлів — core dashboard (AssistantFab, HubInsightsPanel, DraggableDashboard coach mark), Toast, FAB, SyncStatusIndicator, ModuleErrorBoundary, RestTimerOverlay. Патерн: `useRef(new Animated.Value(x)).current` → `useState(() => new Animated.Value(x))`.
 
-**Залишок:** mobile `refs` ~41 після wave 2 + web `refs`/`set-state-in-effect`. Exhaustive-deps catalog-sync — [#148](https://github.com/SkOrDs-02/Sergeant/pull/148); [#152](https://github.com/SkOrDs-02/Sergeant/pull/152) superseded.
+**Mobile refs wave 3:** onboarding intro `useState`, HubSearch destructure, `useChatSessions` boot snapshot, `useLocalStorage`/`voice`/`useRoutineReminders` callback-ref sync via `useEffect`, draggable lists `reduceMotion` shared values + `useLayoutEffect` height buffers. Mobile `refs` → 0; promoted in `eslint.mobile.js`.
+
+**Залишок:** web `refs` (~59) + `set-state-in-effect` (~80 web / 44 mobile).
 
 ## Виконані дії (2026-06-10)
 

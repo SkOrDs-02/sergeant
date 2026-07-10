@@ -172,4 +172,21 @@ export const mobileBlocks = [
       "react-hooks/preserve-manual-memoization": "error",
     },
   },
+  // react-hooks v7 burndown (initiative 0021) — `refs` cleared apps/mobile
+  // across waves 1–3: Animated.Value lazy useState, onboarding intro state,
+  // hook callback-ref sync via useEffect, draggable reduceMotion shared values,
+  // HubSearch destructure. Promoted from baseline `off` to mobile-scoped
+  // `error`. See `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "react-hooks/refs": "error",
+    },
+  },
 ];
