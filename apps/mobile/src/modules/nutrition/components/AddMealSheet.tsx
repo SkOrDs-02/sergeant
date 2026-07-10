@@ -5,7 +5,7 @@
  *  Step "source" — вручну, штрихкод, фото (галерея/камера → analyze-photo).
  *  Step "fill"   — форма; для фото — опційно refine (порція + відповіді на питання).
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react"; // useEffect kept for scan-prefill handler registration below
 import {
   ActivityIndicator,
   Pressable,
@@ -113,31 +113,36 @@ export function AddMealSheet({
     setRefineAnswers({});
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-    if (initialMeal?.id) {
-      const mac = initialMeal.macros || {};
-      setForm({
-        name: String(initialMeal.name || ""),
-        mealType: initialMeal.mealType || "breakfast",
-        time: initialMeal.time || currentTime(),
-        kcal: mac.kcal != null ? String(Math.round(mac.kcal)) : "",
-        protein_g:
-          mac.protein_g != null ? String(Math.round(mac.protein_g)) : "",
-        fat_g: mac.fat_g != null ? String(Math.round(mac.fat_g)) : "",
-        carbs_g: mac.carbs_g != null ? String(Math.round(mac.carbs_g)) : "",
-        err: "",
-      });
-      setMacroSource("manual");
-      setStep("fill");
-      resetPhotoRefine();
-    } else {
-      setForm(emptyForm(null));
-      setMacroSource("manual");
-      setStep("source");
-      resetPhotoRefine();
+  // Render-time form reset on open transition — avoids
+  // `react-hooks/set-state-in-effect` (initiative 0021).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      if (initialMeal?.id) {
+        const mac = initialMeal.macros || {};
+        setForm({
+          name: String(initialMeal.name || ""),
+          mealType: initialMeal.mealType || "breakfast",
+          time: initialMeal.time || currentTime(),
+          kcal: mac.kcal != null ? String(Math.round(mac.kcal)) : "",
+          protein_g:
+            mac.protein_g != null ? String(Math.round(mac.protein_g)) : "",
+          fat_g: mac.fat_g != null ? String(Math.round(mac.fat_g)) : "",
+          carbs_g: mac.carbs_g != null ? String(Math.round(mac.carbs_g)) : "",
+          err: "",
+        });
+        setMacroSource("manual");
+        setStep("fill");
+        resetPhotoRefine();
+      } else {
+        setForm(emptyForm(null));
+        setMacroSource("manual");
+        setStep("source");
+        resetPhotoRefine();
+      }
     }
-  }, [open, initialMeal, resetPhotoRefine]);
+  }
 
   useEffect(() => {
     if (!open) {

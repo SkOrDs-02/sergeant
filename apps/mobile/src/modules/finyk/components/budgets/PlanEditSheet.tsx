@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -30,13 +30,16 @@ export function PlanEditSheet({
   const [income, setIncome] = useState(asStr(initial.income));
   const [expense, setExpense] = useState(asStr(initial.expense));
   const [savings, setSavings] = useState(asStr(initial.savings));
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open) return;
-    setIncome(asStr(initial.income));
-    setExpense(asStr(initial.expense));
-    setSavings(asStr(initial.savings));
-  }, [open, initial.income, initial.expense, initial.savings]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setIncome(asStr(initial.income));
+      setExpense(asStr(initial.expense));
+      setSavings(asStr(initial.savings));
+    }
+  }
 
   const handleSubmit = () => {
     onSubmit({ income, expense, savings });

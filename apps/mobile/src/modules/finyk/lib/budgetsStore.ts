@@ -10,7 +10,7 @@
  * a synchronous first-paint fallback; the SQLite overlay snaps in once
  * warm. Mutations flow solely through the dual-write pipeline.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { DEFAULT_SUBSCRIPTIONS } from "@sergeant/finyk-domain";
 import type { Budget, MonthlyPlan } from "@sergeant/finyk-domain/domain";
@@ -154,20 +154,24 @@ export function useFinykBudgetsStore(
   // Stage 8 PR #057k-tombstone — overlay each persisted slice from
   // the local SQLite cache once it's warm. MMKV reads above stay as
   // a synchronous first-paint fallback; MMKV writes are gone.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFinykSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFinykSqliteState();
-    if (cache.refreshedAt === null) return;
-    setBudgetsState(cache.budgets);
-    setSubscriptionsState(cache.subscriptions);
-    if (cache.monthlyPlan !== null) {
-      // `MonthlyPlan` (cache) is the canonical numeric/string-typed
-      // shape; mobile's `MonthlyPlanInput` accepts both — every field
-      // is `string | number | undefined`, so the assignment is a
-      // structural widening, not a downcast.
-      setMonthlyPlanState(cache.monthlyPlan);
+    if (cache.refreshedAt !== null) {
+      setBudgetsState(cache.budgets);
+      setSubscriptionsState(cache.subscriptions);
+      if (cache.monthlyPlan !== null) {
+        // `MonthlyPlan` (cache) is the canonical numeric/string-typed
+        // shape; mobile's `MonthlyPlanInput` accepts both — every field
+        // is `string | number | undefined`, so the assignment is a
+        // structural widening, not a downcast.
+        setMonthlyPlanState(cache.monthlyPlan);
+      }
     }
-  }, [sqliteCacheTick]);
+  }
 
   const setBudgets = useCallback<UseFinykBudgetsStoreReturn["setBudgets"]>(
     (next) => {

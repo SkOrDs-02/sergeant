@@ -17,7 +17,7 @@
  * PR4 lands.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { toLocalISODate } from "@sergeant/shared";
@@ -152,25 +152,21 @@ export function ManualExpenseSheet({
 
   // When the sheet is re-opened with a different row (e.g. user taps
   // "edit" on a second manual expense) we must pick up the new initial
-  // state. Reset once per `open` transition.
-  useEffect(() => {
-    if (!open) return;
-    setDescription(initialExpense?.description ?? initialDescription ?? "");
-    setAmount(
-      initialExpense?.amount != null ? String(initialExpense.amount) : "",
-    );
-    setCategory(upgradeCategory(initialExpense?.category ?? initialCategory));
-    setDate(computeInitialExpenseDate(initialExpense?.date));
-    setError(null);
-  }, [
-    open,
-    initialExpense?.date,
-    initialExpense?.amount,
-    initialExpense?.category,
-    initialExpense?.description,
-    initialCategory,
-    initialDescription,
-  ]);
+  // state. Reset once per `open` transition (render-time pattern,
+  // avoids `react-hooks/set-state-in-effect`, initiative 0021).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setDescription(initialExpense?.description ?? initialDescription ?? "");
+      setAmount(
+        initialExpense?.amount != null ? String(initialExpense.amount) : "",
+      );
+      setCategory(upgradeCategory(initialExpense?.category ?? initialCategory));
+      setDate(computeInitialExpenseDate(initialExpense?.date));
+      setError(null);
+    }
+  }
 
   const handleSubmit = () => {
     const amt = parseFloat(amount.replace(",", "."));

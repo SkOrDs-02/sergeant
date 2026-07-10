@@ -37,7 +37,7 @@
  *  - No `Card` wrapper — the `Sheet` body is already the visible card.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import {
@@ -132,32 +132,36 @@ export function HabitForm({
   const [showAdvanced, setShowAdvanced] = useState<boolean>(isEditing);
 
   // Reset local state whenever the sheet re-opens with a (potentially
-  // different) editing target. Parallels the `useEffect` reset pattern
-  // used by `ManualExpenseSheet` (PR #453).
-  useEffect(() => {
-    if (!open) return;
-    setDraft(makeInitial(editingHabit));
-    setErrors({});
-    setShowEmoji(false);
-    setShowAdvanced(!!editingHabit);
-  }, [open, editingHabit, makeInitial]);
+  // different) editing target. Render-time pattern avoids
+  // `react-hooks/set-state-in-effect` (initiative 0021).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setDraft(makeInitial(editingHabit));
+      setErrors({});
+      setShowEmoji(false);
+      setShowAdvanced(!!editingHabit);
+    }
+  }
 
   // Clear field errors as the user corrects the relevant field — same
   // UX as the web `RoutineSettingsSection` component.
-  useEffect(() => {
-    if (errors.name && draft.name.trim()) {
-      setErrors((e) => ({ ...e, name: undefined }));
-    }
-  }, [draft.name, errors.name]);
-  useEffect(() => {
-    if (
-      errors.weekdays &&
-      Array.isArray(draft.weekdays) &&
-      draft.weekdays.length > 0
-    ) {
-      setErrors((e) => ({ ...e, weekdays: undefined }));
-    }
-  }, [draft.weekdays, errors.weekdays]);
+  // Derived at render time: clear name error once name is non-empty.
+  let effectiveErrors = errors;
+  if (errors.name && draft.name.trim()) {
+    effectiveErrors = { ...effectiveErrors, name: undefined };
+  }
+  if (
+    effectiveErrors.weekdays &&
+    Array.isArray(draft.weekdays) &&
+    draft.weekdays.length > 0
+  ) {
+    effectiveErrors = { ...effectiveErrors, weekdays: undefined };
+  }
+  if (effectiveErrors !== errors) {
+    setErrors(effectiveErrors);
+  }
 
   // Which reminder preset (if any) matches the current times — drives
   // the "selected" state of the preset chip row.

@@ -36,12 +36,16 @@ export function useNutritionPrefs(): UseNutritionPrefsResult {
   // value-changed listener was dropped — `nutrition_prefs_v1` no
   // longer exists, the cache-tick is the single source of "value
   // changed" notifications.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useNutritionSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    if (cache.prefs) setPrefsState(cache.prefs);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null && cache.prefs) {
+      setPrefsState(cache.prefs);
+    }
+  }
 
   const commit = useCallback((next: NutritionPrefs) => {
     setPrefsState(next);

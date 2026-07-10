@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, ScrollView, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -74,7 +74,20 @@ export function RecipeFormPage({ testID }: { testID?: string }) {
   const [c, setC] = useState("");
   const [idDraft, setIdDraft] = useState("");
 
-  useEffect(() => {
+  // Seed form fields when the `existing` record (or route params) change.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
+  const [prevExisting, setPrevExisting] = useState(existing);
+  const [prevPresetId, setPrevPresetId] = useState(paramId.presetId);
+  const [prevEditId, setPrevEditId] = useState(paramId.editId);
+
+  if (
+    existing !== prevExisting ||
+    paramId.presetId !== prevPresetId ||
+    paramId.editId !== prevEditId
+  ) {
+    setPrevExisting(existing);
+    setPrevPresetId(paramId.presetId);
+    setPrevEditId(paramId.editId);
     if (existing) {
       setTitle(existing.title);
       setTimeStr(
@@ -108,7 +121,7 @@ export function RecipeFormPage({ testID }: { testID?: string }) {
       const pre = paramId.presetId ?? paramId.editId;
       setIdDraft(pre ? String(pre) : "");
     }
-  }, [existing, paramId.presetId, paramId.editId]);
+  }
 
   const onBack = useCallback(() => {
     hapticTap();

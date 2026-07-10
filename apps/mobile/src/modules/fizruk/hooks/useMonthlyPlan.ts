@@ -16,7 +16,7 @@
  * `useFizrukSqliteReadTick` fires.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import {
   applySetDayTemplate,
@@ -131,12 +131,16 @@ export function useMonthlyPlan(): UseMonthlyPlanReturn {
 
   // Stage 12 / PR #057f-tombstone-mobile-stage12: overlay monthly-plan
   // from the SQLite warm cache once it's available.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setState(projectFromCache(cache.monthlyPlan));
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setState(projectFromCache(cache.monthlyPlan));
+    }
+  }
 
   const setDayTemplate = useCallback<UseMonthlyPlanReturn["setDayTemplate"]>(
     (dateKey, templateId) => {

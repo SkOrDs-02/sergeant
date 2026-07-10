@@ -27,7 +27,7 @@ import {
   type WorkoutSetDraft,
   type WorkoutSetDraftErrors,
 } from "@sergeant/fizruk-domain/domain";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Text, View } from "react-native";
 
 import { hapticSuccess, hapticTap, hapticWarning } from "@sergeant/shared";
@@ -88,13 +88,17 @@ export function ActiveSetEditor({
     makeDraft(initialSet),
   );
   const [errors, setErrors] = useState<WorkoutSetDraftErrors>({});
+  const [prevOpen, setPrevOpen] = useState(open);
 
   // Re-seed each time the sheet opens for a (possibly different) set.
-  useEffect(() => {
-    if (!open) return;
-    setDraft(makeDraft(initialSet));
-    setErrors({});
-  }, [open, initialSet]);
+  // Render-time pattern avoids `react-hooks/set-state-in-effect` (init 0021).
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setDraft(makeDraft(initialSet));
+      setErrors({});
+    }
+  }
 
   const handleWeightInc = useCallback(() => {
     hapticTap();

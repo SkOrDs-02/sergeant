@@ -12,7 +12,7 @@
  * wrapper so the selectors stay unit-testable in isolation and we can
  * share them with the web port later.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import {
   normaliseMeasurementDraft,
@@ -132,13 +132,17 @@ export function useMeasurements(): UseMeasurementsResult {
     useState<MobileMeasurementEntry[]>(readInitialFromCache);
 
   // Stage 8 PR #057f-tombstone: overlay measurements from the local
-  // SQLite cache once it's warm.
+  // SQLite cache once it's warm. Render-time update avoids the
+  // `react-hooks/set-state-in-effect` violation (initiative 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setRaw(cache.measurements.map(projectMeasurementForMobile));
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setRaw(cache.measurements.map(projectMeasurementForMobile));
+    }
+  }
 
   const entries = useMemo(
     () => sortMeasurementsDesc(Array.isArray(raw) ? raw : []),

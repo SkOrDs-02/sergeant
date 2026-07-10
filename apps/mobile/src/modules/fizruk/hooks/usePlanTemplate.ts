@@ -94,15 +94,22 @@ export function usePlanTemplate(): UsePlanTemplateResult {
 
   // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5: overlay the
   // plan-template singleton from the SQLite warm cache once it's
-  // available.
+  // available. Render-time update avoids `react-hooks/set-state-in-effect`
+  // (initiative 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    const overlay = projectFromCache(cache.planTemplate);
-    stateRef.current = overlay;
-    setPlan(overlay);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setPlan(projectFromCache(cache.planTemplate));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = plan;
+  }, [plan]);
 
   const setPlanTemplate = useCallback<UsePlanTemplateResult["setPlanTemplate"]>(
     (next) => {

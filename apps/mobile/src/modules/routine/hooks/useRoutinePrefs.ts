@@ -18,7 +18,7 @@
  * Part of the dual-write teardown migration (storage-roadmap).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { RoutinePrefs } from "@sergeant/routine-domain";
 
 import { loadRoutineState, saveRoutineState } from "../lib/routineStore";
@@ -44,10 +44,13 @@ export function useRoutinePrefs(): UseRoutinePrefsReturn {
 
   // Re-read whenever the SQLite cache tick advances (boot warm-up or
   // any `saveRoutineState` write-through from this or other consumers).
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const cacheTick = useRoutineSqliteReadTick();
-  useEffect(() => {
+  const [prevCacheTick, setPrevCacheTick] = useState(cacheTick);
+  if (cacheTick !== prevCacheTick) {
+    setPrevCacheTick(cacheTick);
     setPrefsState(loadRoutineState().prefs);
-  }, [cacheTick]);
+  }
 
   const updatePrefs = useCallback((patch: Partial<RoutinePrefs>) => {
     const current = loadRoutineState();

@@ -97,7 +97,9 @@ export function AnimatedCounter({
     prevValue.current = value;
 
     if (reduceMotion) {
-      setDisplayValue(value);
+      // No setState here — render derives displayValue from `value` when
+      // reduceMotion is true (avoids `react-hooks/set-state-in-effect`,
+      // initiative 0021).
       animatedValue.setValue(value);
       return;
     }
@@ -119,6 +121,10 @@ export function AnimatedCounter({
       animatedValue.removeListener(listenerId);
     };
   }, [value, duration, animatedValue, reduceMotion, haptic]);
+
+  // When reduced motion is on, bypass the animation and return the target
+  // value directly (render-time derivation, no setState needed in effect).
+  const renderedDisplayValue = reduceMotion ? value : displayValue;
 
   const formatNumber = (num: number): string => {
     const fixed = num.toFixed(decimals);
@@ -142,7 +148,7 @@ export function AnimatedCounter({
       style={style}
     >
       {prefix}
-      {formatNumber(displayValue)}
+      {formatNumber(renderedDisplayValue)}
       {suffix}
     </Text>
   );

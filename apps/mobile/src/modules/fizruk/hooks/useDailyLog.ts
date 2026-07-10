@@ -69,14 +69,21 @@ export function useDailyLog(): UseDailyLogResult {
 
   // Stage 12 / PR #057f-tombstone-mobile-stage12: overlay daily-log
   // entries from the SQLite warm cache once it's available.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    const overlay = cache.dailyLog.map(projectFromCache);
-    stateRef.current = overlay;
-    setEntries(overlay);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setEntries(cache.dailyLog.map(projectFromCache));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = entries;
+  }, [entries]);
 
   const persist = useCallback(
     (updater: (prev: DailyLogEntry[]) => DailyLogEntry[]) => {
