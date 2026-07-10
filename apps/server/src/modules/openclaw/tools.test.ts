@@ -405,12 +405,12 @@ describe("readStrategyDoc ENOENT handling (allowlist-prefix exists, target missi
 
   it("throws OpenClawNotFoundError when allowed file missing", async () => {
     await expect(
-      readStrategyDoc({ path: "docs/launch/missing-file.md" }),
+      readStrategyDoc({ path: "docs/01-product/launch/missing-file.md" }),
     ).rejects.toBeInstanceOf(OpenClawNotFoundError);
   });
 
   it("reads existing files inside the allowlist", async () => {
-    const launchDir = path.join(fakeRepoRoot, "docs", "launch");
+    const launchDir = path.join(fakeRepoRoot, "docs", "01-product", "launch");
     await fs.mkdir(launchDir, { recursive: true });
     await fs.writeFile(
       path.join(launchDir, "plan.md"),
@@ -418,7 +418,9 @@ describe("readStrategyDoc ENOENT handling (allowlist-prefix exists, target missi
       "utf-8",
     );
 
-    const result = await readStrategyDoc({ path: "docs/launch/plan.md" });
+    const result = await readStrategyDoc({
+      path: "docs/01-product/launch/plan.md",
+    });
     expect(result.contents).toContain("# Launch plan");
     expect(result.size).toBeGreaterThan(0);
   });

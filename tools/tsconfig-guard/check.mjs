@@ -299,7 +299,7 @@ export function run({ rootDir = ROOT, guardDir, now } = {}) {
     console.error(
       "\nTo allowlist a known override, add an entry to " +
         "tools/tsconfig-guard/allowlist.json.\n" +
-        "See docs/playbooks/tsconfig-strict-guard.md for details.",
+        "See docs/04-governance/governance/rules/19-strict-mode-flag-canonical.md for details.",
     );
     return 1;
   }

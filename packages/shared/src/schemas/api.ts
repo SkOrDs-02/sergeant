@@ -1039,7 +1039,7 @@ export type MonoBackfillProgress = z.infer<typeof MonoBackfillProgressSchema>;
 // ────────────────────── Waitlist (Phase 0 monetization rails) ───────────────
 // Простий sign-up для майбутнього Pro-тіру. Валідується тут, щоб і клієнт
 // (через `@sergeant/api-client`) і сервер (через `validateBody`) мали одне
-// джерело правди. Tier-и навмисно матчать `docs/launch/01-monetization-and-pricing.md`.
+// джерело правди. Tier-и навмисно матчать `docs/01-product/launch/01-monetization-and-pricing.md`.
 
 export const WaitlistTierSchema = z.enum(["free", "plus", "pro", "unsure"]);
 export type WaitlistTier = z.infer<typeof WaitlistTierSchema>;

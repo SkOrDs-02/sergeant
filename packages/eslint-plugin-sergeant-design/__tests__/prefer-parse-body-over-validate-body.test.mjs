@@ -7,7 +7,7 @@
  * існуючі callsite-и на throw-based `parseBody` / `parseQuery`.
  *
  * Rollout: `warn` → `error` через 1 sprint (після підтвердження, що
- * migration повна). Дивись docs/governance/rules/27-prefer-parse-body.md.
+ * migration повна). Дивись docs/04-governance/governance/rules/27-prefer-parse-body.md.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";

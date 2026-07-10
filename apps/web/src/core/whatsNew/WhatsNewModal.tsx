@@ -12,7 +12,7 @@ import type {
 
 /**
  * `<WhatsNewModal />` — in-product release notes overlay (PR-18 у
- * [FTUX master tracker](docs/launch/product-os/ftux-master-tracker.md) §3.3).
+ * [FTUX master tracker](docs/01-product/launch/product-os/ftux-master-tracker.md) §3.3).
  *
  * Render-only — стан / persist / analytics керуються `useWhatsNew()`.
  * Викликач передає `release` і два callback-и:

@@ -25,7 +25,7 @@
  *
  * Default weights ([0.4, 0.2, 0.2, 0.2]) keep `outcome` favoured (since it
  * has been the production mainline) while exposing the three alternatives
- * across ~60% of new traffic. Per `docs/launch/posthog-ftux-dashboards.md`,
+ * across ~60% of new traffic. Per `docs/01-product/launch/posthog-ftux-dashboards.md`,
  * the winning metric is `wizard_started → wizard_completed` per-arm.
  */
 

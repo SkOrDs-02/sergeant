@@ -182,9 +182,9 @@ export const QUERY_APP_DB_TABLE_ALLOWLIST = new Set<string>([
  */
 export const READ_STRATEGY_DOCS_ALLOWED_PATHS = [
   "docs/strategy/",
-  "docs/launch/",
-  "docs/adr/",
+  "docs/01-product/launch/",
+  "docs/04-governance/adr/",
   "docs/decisions/",
-  "docs/integrations/",
-  "docs/governance/",
+  "docs/02-engineering/integrations/",
+  "docs/04-governance/governance/",
 ] as const;

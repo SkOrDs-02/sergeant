@@ -5,7 +5,7 @@ import type { Pool } from "pg";
  * виявлені WF-93 (hard-rules compliance auditor) у post-merge перевірці.
  *
  * Body: {
- *   ruleId: number,                // 1..N з docs/governance/hard-rules.json
+ *   ruleId: number,                // 1..N з docs/04-governance/governance/hard-rules.json
  *   ruleTitle?: string,
  *   severity?: "blocker"|"major"|"minor"|"info",  // default "blocker"
  *   prNumber?: number,
