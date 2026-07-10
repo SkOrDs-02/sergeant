@@ -1,6 +1,6 @@
 # 0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding)
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-10 by @github-actions[bot]. **Next review:** 2026-10-08.
 > **Status:** Proposed (2026-06-28) — драфт плану; не почато. Чекає на founder-greenlight по скоупу Фази 1 + рішення по валютній нормалізації та dedup-стратегії (див. § Відкриті рішення).
 > **Agent-ready:** needs-decision
 > **Priority:** P2 (growth / activation lever — не блокер launch-у 0010)
@@ -142,3 +142,15 @@
 **Звички (Фаза-out на потім):**
 
 - [Habitica & Loop Habit Tracker — Data Export](https://habitica.fandom.com/wiki/Data_Export) — `history.csv` / CSV-ZIP по звичці.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                   | Title                                                               | Merged     |
+| ---------------------------------------------------- | ------------------------------------------------------------------- | ---------- |
+| [#54](https://github.com/Skords-01/Sergeant/pull/54) | docs(docs): add initiative 0022 — CSV import from external trackers | 2026-07-10 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
