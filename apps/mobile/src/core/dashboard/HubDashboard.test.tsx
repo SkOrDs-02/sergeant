@@ -25,6 +25,38 @@ jest.mock("expo-router", () => ({
   router: { push: jest.fn() },
 }));
 
+// --- HubModuleStorageBoot hook mocks ---
+// Mock the seven boot hooks so HubDashboard tests don't need real SQLite infra.
+const mockUseFinykDualWriteBoot = jest.fn();
+const mockUseRoutineDualWriteBoot = jest.fn();
+const mockUseFinykSqliteReadBoot = jest.fn();
+const mockUseFinykMonoMirrorBoot = jest.fn();
+const mockUseRoutineSqliteReadBoot = jest.fn();
+const mockUseFizrukSqliteReadBoot = jest.fn();
+const mockUseNutritionSqliteReadBoot = jest.fn();
+
+jest.mock("@/modules/finyk/hooks/useFinykDualWriteBoot", () => ({
+  useFinykDualWriteBoot: () => mockUseFinykDualWriteBoot(),
+}));
+jest.mock("@/modules/routine/hooks/useRoutineDualWriteBoot", () => ({
+  useRoutineDualWriteBoot: () => mockUseRoutineDualWriteBoot(),
+}));
+jest.mock("@/modules/finyk/hooks/useFinykSqliteReadBoot", () => ({
+  useFinykSqliteReadBoot: () => mockUseFinykSqliteReadBoot(),
+}));
+jest.mock("@/modules/finyk/hooks/useFinykMonoMirrorBoot", () => ({
+  useFinykMonoMirrorBoot: () => mockUseFinykMonoMirrorBoot(),
+}));
+jest.mock("@/modules/routine/hooks/useRoutineSqliteReadBoot", () => ({
+  useRoutineSqliteReadBoot: () => mockUseRoutineSqliteReadBoot(),
+}));
+jest.mock("@/modules/fizruk/hooks/useFizrukSqliteReadBoot", () => ({
+  useFizrukSqliteReadBoot: () => mockUseFizrukSqliteReadBoot(),
+}));
+jest.mock("@/modules/nutrition/hooks/useNutritionSqliteReadBoot", () => ({
+  useNutritionSqliteReadBoot: () => mockUseNutritionSqliteReadBoot(),
+}));
+
 jest.mock("@/lib/analytics", () => {
   const { ANALYTICS_EVENTS } = jest.requireActual("@sergeant/shared") as {
     ANALYTICS_EVENTS: Record<string, string>;
@@ -108,6 +140,13 @@ describe("HubDashboard one-hero rule", () => {
     stubDashboardAnimation();
     resetStore();
     mockUserData.data = { user: null };
+    mockUseFinykDualWriteBoot.mockReset();
+    mockUseRoutineDualWriteBoot.mockReset();
+    mockUseFinykSqliteReadBoot.mockReset();
+    mockUseFinykMonoMirrorBoot.mockReset();
+    mockUseRoutineSqliteReadBoot.mockReset();
+    mockUseFizrukSqliteReadBoot.mockReset();
+    mockUseNutritionSqliteReadBoot.mockReset();
   });
 
   afterEach(() => {
@@ -171,6 +210,22 @@ describe("HubDashboard one-hero rule", () => {
     const { getByTestId } = renderDashboard();
 
     expect(getByTestId("dashboard-module-row-nutrition")).toBeTruthy();
+  });
+
+  it("mounts HubModuleStorageBoot — all seven storage boot hooks are called", () => {
+    renderDashboard();
+
+    // Dashboard-first boot guarantee: all SQLite read-caches and dual-write
+    // registrations must be active when the Hub dashboard renders so
+    // coachSnapshot / weeklyDigestAggregates / searchSources see fresh data
+    // even before the user visits any module tab.
+    expect(mockUseFinykDualWriteBoot).toHaveBeenCalled();
+    expect(mockUseRoutineDualWriteBoot).toHaveBeenCalled();
+    expect(mockUseFinykSqliteReadBoot).toHaveBeenCalled();
+    expect(mockUseFinykMonoMirrorBoot).toHaveBeenCalled();
+    expect(mockUseRoutineSqliteReadBoot).toHaveBeenCalled();
+    expect(mockUseFizrukSqliteReadBoot).toHaveBeenCalled();
+    expect(mockUseNutritionSqliteReadBoot).toHaveBeenCalled();
   });
 
   it("navigates to sign-in when SoftAuthPromptCard CTA is tapped", () => {

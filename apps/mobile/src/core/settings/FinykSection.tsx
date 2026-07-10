@@ -26,33 +26,25 @@
  *    обґрунтуванням.
  *  - **Privat24.** На web `PRIVAT_ENABLED = false`, тобто й там
  *    секція прихована. Ніякого UI для неї не портуємо.
+ *
+ * Storage: custom categories are now persisted exclusively through the
+ * SQLite dual-write pipeline via `useFinykCustomCategories` — the legacy
+ * `useLocalStorage(STORAGE_KEYS.FINYK_CUSTOM_CATS)` MMKV path is retired.
  */
 
 import { useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
-import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
-import { useLocalStorage } from "@/lib/storage";
+import { useFinykCustomCategories } from "@/modules/finyk/hooks/useFinykCustomCategories";
 
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
-
-interface CustomCategory {
-  id: string;
-  label: string;
-}
-
-const CUSTOM_CATS_KEY = STORAGE_KEYS.FINYK_CUSTOM_CATS;
 const MAX_LABEL_LENGTH = 80;
 
 function makeCategoryId(): string {
-  // `Math.random().toString(36)` is good enough for a local-only id —
-  // mirrors the web `useStorage` hook that also seeds its ids from
-  // `crypto.randomUUID()` + fallback. We keep it simple here to avoid
-  // pulling in `expo-crypto` for a sub-categorical affordance.
   const ts = Date.now().toString(36);
   const rand = Math.random().toString(36).slice(2, 10);
   return `c_${ts}_${rand}`;
@@ -67,9 +59,7 @@ function DeferredNotice({ children }: { children: string }) {
 }
 
 export function FinykSection() {
-  const [customCategories, setCustomCategories] = useLocalStorage<
-    CustomCategory[]
-  >(CUSTOM_CATS_KEY, []);
+  const { customCategories, setCustomCategories } = useFinykCustomCategories();
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 

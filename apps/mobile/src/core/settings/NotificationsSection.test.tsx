@@ -8,8 +8,9 @@
  *    plus the three sub-group titles (Habits / Fizruk / Nutrition);
  *  - tapping "Дозволити" calls `Notifications.requestPermissionsAsync`
  *    and flips the status label;
- *  - the routine-reminders toggle persists into the shared
- *    `@routine_prefs_v1` MMKV slice;
+ *  - the routine-reminders toggle calls `saveRoutineState` with
+ *    `routineRemindersEnabled: true` (dual-write teardown — the legacy
+ *    `@routine_prefs_v1` MMKV orphan key is no longer written);
  *  - the nutrition reminder toggle/hour picker persists into the shared
  *    nutrition prefs via the SQLite-backed dual-write trigger (the
  *    MMKV `nutrition_prefs_v1` slice was tombstoned in Stage 8 PR #073,
@@ -48,6 +49,19 @@ jest.mock("@/modules/nutrition/lib/dualWrite", () => ({
   }),
 }));
 
+// `useRoutinePrefs` writes through `saveRoutineState` (the canonical
+// dual-write pipeline). Mock it to avoid booting the SQLite stack.
+const mockSaveRoutineState = jest.fn();
+jest.mock("@/modules/routine/lib/routineStore", () => {
+  const actual = jest.requireActual<
+    typeof import("@/modules/routine/lib/routineStore")
+  >("@/modules/routine/lib/routineStore");
+  return {
+    ...actual,
+    saveRoutineState: (...args: unknown[]) => mockSaveRoutineState(...args),
+  };
+});
+
 jest.mock("expo-notifications", () => {
   const getPermissionsAsync = jest.fn();
   const requestPermissionsAsync = jest.fn();
@@ -72,13 +86,19 @@ const mockedGetPerms = Notifications.getPermissionsAsync as jest.Mock;
 const mockedRequestPerms = Notifications.requestPermissionsAsync as jest.Mock;
 const mockedOpenSettings = Linking.openSettings as unknown as jest.Mock;
 
+import { clearSqliteRoutineStateCache } from "@/modules/routine/lib/sqliteReader";
+import { __resetRoutineSqliteReadGateForTests } from "@/modules/routine/lib/sqliteReadGate";
+
 beforeEach(() => {
   _getMMKVInstance().clearAll();
+  clearSqliteRoutineStateCache();
+  __resetRoutineSqliteReadGateForTests();
   mockedGetPerms.mockReset();
   mockedRequestPerms.mockReset();
   mockedOpenSettings.mockClear();
   mockTriggerNutritionDualWrite.mockReset();
   mockIsNutritionDualWriteRegistered.mockReset().mockReturnValue(true);
+  mockSaveRoutineState.mockReset();
   mockedGetPerms.mockResolvedValue({
     granted: false,
     status: "undetermined",
@@ -164,7 +184,7 @@ describe("NotificationsSection", () => {
     expect(mockedOpenSettings).toHaveBeenCalledTimes(1);
   });
 
-  it("persists the routine-reminders toggle into @routine_prefs_v1", async () => {
+  it("calls saveRoutineState with routineRemindersEnabled on toggle (no @routine_prefs_v1 MMKV write)", async () => {
     const { getByText, getByTestId } = render(<NotificationsSection />);
 
     fireEvent.press(getByText("Сповіщення"));
@@ -175,11 +195,14 @@ describe("NotificationsSection", () => {
 
     fireEvent(getByTestId("notifications-routine-toggle"), "valueChange", true);
 
-    const stored = _getMMKVInstance().getString("@routine_prefs_v1");
-    expect(stored).toBeTruthy();
-    expect(JSON.parse(stored as string)).toMatchObject({
-      routineRemindersEnabled: true,
-    });
+    // Dual-write teardown: the legacy @routine_prefs_v1 MMKV key is no
+    // longer written by `useRoutinePrefs`. Assert via the dual-write path.
+    expect(_getMMKVInstance().getString("@routine_prefs_v1")).toBeFalsy();
+    expect(mockSaveRoutineState).toHaveBeenCalled();
+    const savedState = mockSaveRoutineState.mock.calls[
+      mockSaveRoutineState.mock.calls.length - 1
+    ]![0] as { prefs: { routineRemindersEnabled?: boolean } };
+    expect(savedState.prefs.routineRemindersEnabled).toBe(true);
   });
 
   it("persists nutrition reminder toggle and hour through the dual-write trigger (no MMKV write)", async () => {

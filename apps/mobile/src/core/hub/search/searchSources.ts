@@ -1,95 +1,81 @@
 /**
  * HubSearch — mobile per-module data sources.
  *
- * Mirror of `apps/web/src/core/hub/search/searchSources.ts`. The shape
- * of the localStorage keys is identical because the mobile dual-write
- * adapters (`apps/mobile/src/modules/{routine,fizruk,nutrition,finyk}/
- * lib/dualWrite`) write through the shared `safeWriteLS` helper. So we
- * can re-use the same key names and parser logic, swapping
- * `apps/web/src/shared/lib/storage` for `apps/mobile/src/lib/storage`.
+ * All module data is now read from SQLite warm caches — the MMKV shard
+ * reads (`finyk_tx_cache`, `finyk_subs`, `fizruk_workouts_v1`,
+ * `fizruk_custom_exercises_v1`, `nutrition_log_v1`) are retired.
  *
- * `FizrukData.EXERCISES` comes from the cross-platform `@sergeant/fizruk-domain`
- * package and is safe to import from mobile.
+ * Cache → source mapping after teardown:
+ *  - Finyk transactions → `getCachedFinykMonoMirrorState().transactions`
+ *  - Finyk subscriptions → `getCachedFinykSqliteState().subscriptions`
+ *  - Fizruk workouts     → `getCachedFizrukSqliteState().workouts`
+ *  - Fizruk custom exs   → `getCachedFizrukSqliteState().customExercises`
+ *  - Nutrition log       → `getCachedNutritionSqliteState().log`
+ *  - Routine habits      → `getCachedSqliteRoutineState()` (already migrated)
+ *
+ * `FizrukData.EXERCISES` (built-in catalogue) is domain-pure and not
+ * MMKV-backed — it is kept as-is.
  */
 
 import { FizrukData } from "@sergeant/fizruk-domain";
-import { formatMoney, formatMoneyFromKopecks } from "@sergeant/shared";
+import { formatMoney } from "@sergeant/shared";
 
-import { safeReadStringLS } from "@/lib/storage";
+import { getCachedFinykSqliteState } from "@/modules/finyk/lib/sqliteReader";
+import { getCachedFinykMonoMirrorState } from "@/modules/finyk/lib/monoMirrorReader";
+import { getCachedFizrukSqliteState } from "@/modules/fizruk/lib/sqliteReader";
+import { getCachedNutritionSqliteState } from "@/modules/nutrition/lib/sqliteReader";
+import { getCachedSqliteRoutineState } from "@/modules/routine/lib/sqliteReader";
 
 import { tokenize } from "./hubSearchRecents";
 import { searchActions, searchAiHandoff } from "./searchActions";
-import {
-  parseFizrukCustomExercises,
-  parseFizrukWorkouts,
-  safeParseLS,
-} from "./searchCache";
 import { searchAssistantTools, searchSettings } from "./searchSettings";
 import { type Hit, localDateKey, pushScored } from "./searchTypes";
-
-interface FinykTx {
-  id?: string;
-  time?: number;
-  amount?: number;
-  description?: string;
-  comment?: string;
-}
-
-interface FinykSub {
-  id?: string;
-  name?: string;
-  amount?: number;
-}
 
 function searchFinyk(tokens: string[]): Hit[] {
   const results: Hit[] = [];
 
-  const txList = safeParseLS<FinykTx[]>("finyk_tx_cache", []);
-  if (Array.isArray(txList)) {
-    for (const tx of txList) {
-      if (!tx || typeof tx !== "object") continue;
-      const amtRaw = Number(tx.amount);
-      const amount = (Number.isFinite(amtRaw) ? amtRaw : 0) / 100;
-      const time = tx.time ?? 0;
-      const stop = pushScored(
-        results,
-        {
-          id: `finyk_tx_${tx.id || time}`,
-          module: "finyk",
-          moduleLabel: "Фінік",
-          title: tx.description || tx.comment || "Транзакція",
-          subtitle: `${formatMoney(amount, { signed: true, maxFractionDigits: 2 })} · ${time > 1e10 ? localDateKey(new Date(time)) : localDateKey(new Date(time * 1000))}`,
-          icon: "💳",
-          target: { kind: "module", moduleId: "finyk" },
-        },
-        tokens,
-        20,
-      );
-      if (stop) break;
-    }
+  // Mono transactions from the SQLite mirror cache (tombstoned `finyk_tx_cache`).
+  const txList = getCachedFinykMonoMirrorState().transactions;
+  for (const tx of txList) {
+    const amtRaw = Number(tx.amount);
+    const amount = (Number.isFinite(amtRaw) ? amtRaw : 0) / 100;
+    const time = tx.time ?? 0;
+    const stop = pushScored(
+      results,
+      {
+        id: `finyk_tx_${tx.id || time}`,
+        module: "finyk",
+        moduleLabel: "Фінік",
+        title: tx.description || tx.note || "Транзакція",
+        subtitle: `${formatMoney(amount, { signed: true, maxFractionDigits: 2 })} · ${time > 1e10 ? localDateKey(new Date(time)) : localDateKey(new Date(time * 1000))}`,
+        icon: "💳",
+        target: { kind: "module", moduleId: "finyk" },
+      },
+      tokens,
+      20,
+    );
+    if (stop) break;
   }
 
-  const subs = safeParseLS<FinykSub[]>("finyk_subs", []);
-  if (Array.isArray(subs)) {
-    for (const s of subs) {
-      if (!s || typeof s !== "object") continue;
-      const amtRaw = Number(s.amount);
-      const amt = Number.isFinite(amtRaw) && amtRaw > 0 ? amtRaw : 0;
-      pushScored(
-        results,
-        {
-          id: `finyk_sub_${s.id}`,
-          module: "finyk",
-          moduleLabel: "Фінік",
-          title: s.name || "Підписка",
-          subtitle: `Підписка · ${amt ? formatMoneyFromKopecks(amt) : ""}`,
-          icon: "🔄",
-          target: { kind: "module", moduleId: "finyk" },
-        },
-        tokens,
-        25,
-      );
-    }
+  // Subscriptions from the SQLite warm cache (tombstoned `finyk_subs` key).
+  // `monthlyCost` is in UAH (display units) — use `formatMoney` directly.
+  const subs = getCachedFinykSqliteState().subscriptions;
+  for (const s of subs) {
+    const cost = s.monthlyCost;
+    pushScored(
+      results,
+      {
+        id: `finyk_sub_${s.id}`,
+        module: "finyk",
+        moduleLabel: "Фінік",
+        title: s.name || "Підписка",
+        subtitle: `Підписка · ${cost != null && Number.isFinite(cost) && cost > 0 ? formatMoney(cost) : ""}`,
+        icon: "🔄",
+        target: { kind: "module", moduleId: "finyk" },
+      },
+      tokens,
+      25,
+    );
   }
 
   return results.sort((a, b) => b._score - a._score).slice(0, 10);
@@ -99,9 +85,7 @@ function searchFizruk(tokens: string[]): Hit[] {
   const results: Hit[] = [];
 
   // Built-in catalogue from `@sergeant/fizruk-domain` — пошук «жим» (Жим
-  // лежачи) знаходить вправу навіть без кастомного запису. Беремо
-  // невеликий ліміт, бо це не основний фокус — користувацькі вправи +
-  // тренування мають пріоритет вище.
+  // лежачи) знаходить вправу навіть без кастомного запису.
   for (const ex of FizrukData.EXERCISES) {
     if (!ex || typeof ex !== "object") continue;
     const nameUk = ex.name?.uk;
@@ -141,20 +125,18 @@ function searchFizruk(tokens: string[]): Hit[] {
     r.subtitle = `${groupUk} · з каталогу Фізрука`;
   }
 
-  const workouts = parseFizrukWorkouts(
-    safeReadStringLS("fizruk_workouts_v1", null),
-  );
+  // Workouts from the SQLite warm cache (tombstoned `fizruk_workouts_v1` key).
+  // `Workout.items[].nameUk` is the exercise name in the typed schema.
+  const workouts = getCachedFizrukSqliteState().workouts;
   for (const w of workouts) {
-    if (!w || typeof w !== "object") continue;
-    const itemsRaw = Array.isArray(w.items) ? w.items : [];
-    const exNames = itemsRaw
+    const exNames = w.items
       .slice(0, 2)
-      .map((i) => (i && (i.exerciseName || i.name)) || "")
+      .map((i) => i.nameUk)
       .filter(Boolean);
     const dateLabel = w.startedAt ? localDateKey(new Date(w.startedAt)) : "";
     const combinedTitle = w.note || exNames.join(", ") || "Тренування";
-    const fullTokensText = itemsRaw
-      .map((i) => (i && (i.exerciseName || i.name)) || "")
+    const fullTokensText = w.items
+      .map((i) => i.nameUk)
       .filter(Boolean)
       .join(" ");
     const stop = pushScored(
@@ -166,8 +148,8 @@ function searchFizruk(tokens: string[]): Hit[] {
         title: combinedTitle,
         subtitle:
           dateLabel +
-          (itemsRaw.length
-            ? ` · ${itemsRaw.length} вправ · ${fullTokensText}`
+          (w.items.length
+            ? ` · ${w.items.length} вправ · ${fullTokensText}`
             : ""),
         icon: "🏋️",
         target: { kind: "module", moduleId: "fizruk" },
@@ -178,21 +160,21 @@ function searchFizruk(tokens: string[]): Hit[] {
     if (stop) break;
   }
 
-  const exercises = parseFizrukCustomExercises(
-    safeReadStringLS("fizruk_custom_exercises_v1", null),
-  );
-  for (const e of exercises) {
-    if (!e || typeof e !== "object") continue;
+  // Custom exercises from the SQLite warm cache (tombstoned `fizruk_custom_exercises_v1`).
+  // `RawExerciseDef.name` is `{ uk, en }` and `muscles` is `{ primary, secondary }`.
+  const customExercises = getCachedFizrukSqliteState().customExercises;
+  for (const e of customExercises) {
     const stop = pushScored(
       results,
       {
         id: `fizruk_ex_${e.id}`,
         module: "fizruk",
         moduleLabel: "Фізрук",
-        title: e.name || "Вправа",
+        title: e.name?.uk || "Вправа",
         subtitle:
-          (Array.isArray(e.muscles) ? e.muscles : []).join(", ") ||
-          "Власна вправа",
+          [...(e.muscles?.primary ?? []), ...(e.muscles?.secondary ?? [])].join(
+            ", ",
+          ) || "Власна вправа",
         icon: "💪",
         target: { kind: "module", moduleId: "fizruk" },
       },
@@ -213,16 +195,12 @@ interface RoutineHabit {
   recurrence?: string;
 }
 
-interface RoutineState {
-  habits?: RoutineHabit[];
-}
-
 function searchRoutine(tokens: string[]): Hit[] {
   const results: Hit[] = [];
-  const state = safeParseLS<RoutineState | null>("hub_routine_v1", null);
-  if (!state) return results;
-
-  const habits = Array.isArray(state.habits) ? state.habits : [];
+  // Read from the SQLite warm cache (tombstoned `hub_routine_v1` MMKV key).
+  const sqliteState = getCachedSqliteRoutineState();
+  if (sqliteState.refreshedAt === null) return results;
+  const habits: RoutineHabit[] = sqliteState.habits;
   for (const h of habits) {
     if (!h || typeof h !== "object") continue;
     const title = `${h.emoji || ""} ${h.name || "Звичка"}`.trim();
@@ -245,30 +223,15 @@ function searchRoutine(tokens: string[]): Hit[] {
   return results.sort((a, b) => b._score - a._score).slice(0, 10);
 }
 
-interface NutritionMeal {
-  id?: string;
-  name?: string;
-  items?: Array<{ name?: string; emoji?: string }>;
-  note?: string;
-  type?: string;
-  macros?: { kcal?: number; protein?: number; fat?: number; carbs?: number };
-}
-
-interface NutritionDayLog {
-  meals?: NutritionMeal[];
-}
-
-type NutritionLog = Record<string, NutritionDayLog>;
-
 function searchNutrition(tokens: string[]): Hit[] {
   const results: Hit[] = [];
   const seen = new Set<string>();
-  const log = safeParseLS<NutritionLog>("nutrition_log_v1", {});
+  // Read from the SQLite warm cache (tombstoned `nutrition_log_v1` MMKV key).
+  const log = getCachedNutritionSqliteState().log;
   const dates = Object.keys(log).sort().reverse();
 
   for (const date of dates) {
-    const dayLog = log[date] as NutritionDayLog | undefined;
-    const meals = Array.isArray(dayLog?.meals) ? dayLog.meals : [];
+    const meals = log[date]?.meals ?? [];
     for (const m of meals) {
       if (!m || typeof m !== "object") continue;
       const key = m.name || `${date}_${m.id}`;
@@ -281,7 +244,7 @@ function searchNutrition(tokens: string[]): Hit[] {
           module: "nutrition",
           moduleLabel: "Харчування",
           title: m.name || "Прийом їжі",
-          subtitle: `${date} · ${m.macros?.kcal ?? 0} ккал`,
+          subtitle: `${date} · ${m.macros.kcal ?? 0} ккал`,
           icon: "🥗",
           target: { kind: "module", moduleId: "nutrition" },
         },
