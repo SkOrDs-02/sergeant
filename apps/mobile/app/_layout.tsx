@@ -17,7 +17,10 @@ import { ErrorBoundary as RootErrorBoundary } from "@/core/ErrorBoundary";
 import { SegmentErrorBoundary } from "@/core/SegmentErrorBoundary";
 import { SyncStatusOverlay } from "@/core/SyncStatusOverlay";
 import { useBackToExit } from "@/core/useBackToExit";
-import { bootSyncEngineWriter } from "@/core/syncEngine/singleton";
+import {
+  bootSyncEngineWriter,
+  bootSyncEngineReader,
+} from "@/core/syncEngine/singleton";
 import { ColorSchemeBridge } from "@/core/theme/ColorSchemeBridge";
 import { AnalyticsIdentityBridge } from "@/features/analytics/AnalyticsIdentityBridge";
 import { PushRegistrar } from "@/features/push/PushRegistrar";
@@ -200,6 +203,12 @@ export default function RootLayout() {
         // where `bootSyncEngineWriter` runs after storage migrations.
         // See `apps/mobile/src/core/syncEngine/singleton.ts`.
         void bootSyncEngineWriter({ captureException: captureError });
+        // Sync v2 reader-runtime boot. Runs after the writer so the
+        // outbox schema is guaranteed to be present. The reader polls
+        // the server for remote changes; auth is resolved per-tick via
+        // `authClient.getSession()`, so booting before the user is
+        // known is safe — unauthenticated ticks return early.
+        void bootSyncEngineReader({ captureException: captureError });
       });
 
     return () => {

@@ -6,6 +6,7 @@ import {
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { enqueueOutboxUpsert } from "@/core/syncEngine/enqueueOutboxUpsert";
 import type { FizrukItemSnapshot, FizrukWorkoutSnapshot } from "./diff";
 
 // -----------------------------------------------------------------------
@@ -126,6 +127,27 @@ export async function upsertWorkout(
     clientTs,
   ]);
 
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_workouts",
+    op: "insert",
+    row: {
+      id: w.id,
+      user_id: userId,
+      started_at: w.startedAt,
+      ended_at: w.endedAt ?? null,
+      note: w.note ?? "",
+      groups_json: groupsJson,
+      warmup_json: warmupJson,
+      cooldown_json: cooldownJson,
+      wellbeing_json: wellbeingJson,
+      created_at: clientTs,
+      deleted_at: null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
+
   const items = w.items ?? [];
   for (let i = 0; i < items.length; i++) {
     await upsertWorkoutItem(client, items[i]!, w.id, userId, clientTs, i);
@@ -170,6 +192,30 @@ async function upsertWorkoutItem(
     clientTs,
     clientTs,
   ]);
+
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_workout_items",
+    op: "insert",
+    row: {
+      id: item.id,
+      user_id: userId,
+      workout_id: workoutId,
+      exercise_id: item.exerciseId ?? "",
+      name_uk: item.nameUk ?? "",
+      primary_group: item.primaryGroup ?? "",
+      muscles_primary: musclesPrimary,
+      muscles_secondary: musclesSecondary,
+      type: item.type ?? "strength",
+      duration_sec: item.durationSec ?? null,
+      distance_m: item.distanceM ?? null,
+      sort_order: sortOrder,
+      created_at: clientTs,
+      deleted_at: null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 
   const sets = item.sets ?? [];
   for (let s = 0; s < sets.length; s++) {
@@ -222,6 +268,25 @@ async function upsertWorkoutSet(
     clientTs,
     clientTs,
   ]);
+
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_workout_sets",
+    op: "insert",
+    row: {
+      id: setId,
+      user_id: userId,
+      workout_item_id: workoutItemId,
+      weight_kg: set.weightKg ?? 0,
+      reps: set.reps ?? 0,
+      rpe: set.rpe ?? null,
+      sort_order: sortOrder,
+      created_at: clientTs,
+      deleted_at: null,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 export async function softDeleteWorkout(
@@ -229,6 +294,27 @@ export async function softDeleteWorkout(
   workoutId: string,
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
+  // Pre-query cascaded children so we can enqueue their deletes after
+  // the SQL runs — mirrors the web version's pre-cascade collect.
+  const cascadeItemRows = await client.all<{ id: string }>(
+    `SELECT id FROM fizruk_workout_items
+     WHERE workout_id = ? AND user_id = ? AND deleted_at IS NULL`,
+    [workoutId, userId],
+  );
+  const itemIds = cascadeItemRows.map((r) => r.id);
+
+  let cascadeSetIds: string[] = [];
+  if (itemIds.length > 0) {
+    const placeholders = itemIds.map(() => "?").join(",");
+    const cascadeSetRows = await client.all<{ id: string }>(
+      `SELECT id FROM fizruk_workout_sets
+       WHERE workout_item_id IN (${placeholders})
+         AND user_id = ? AND deleted_at IS NULL`,
+      [...itemIds, userId],
+    );
+    cascadeSetIds = cascadeSetRows.map((r) => r.id);
+  }
+
   await client.run(
     `UPDATE fizruk_workouts
         SET deleted_at = ?, updated_at = ?
@@ -249,6 +335,37 @@ export async function softDeleteWorkout(
       ) AND user_id = ? AND deleted_at IS NULL`,
     [clientTs, clientTs, workoutId, userId],
   );
+
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_workouts",
+    op: "delete",
+    row: { id: workoutId, user_id: userId },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
+
+  for (const itemId of itemIds) {
+    void enqueueOutboxUpsert(client, {
+      userId,
+      table: "fizruk_workout_items",
+      op: "delete",
+      row: { id: itemId, user_id: userId },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
+  }
+
+  for (const setId of cascadeSetIds) {
+    void enqueueOutboxUpsert(client, {
+      userId,
+      table: "fizruk_workout_sets",
+      op: "delete",
+      row: { id: setId, user_id: userId },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
+  }
 }
 
 // -----------------------------------------------------------------------

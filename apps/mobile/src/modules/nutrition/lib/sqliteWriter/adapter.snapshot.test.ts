@@ -16,9 +16,18 @@
  * навмисно містить один item — це пінить і child-row цикл
  * (`nutrition_pantry_items`), і cleanup-гілку `NOT IN (…)`.
  *
+ * Note: `enqueueOutboxUpsert` is mocked so sync-outbox INSERT calls do NOT
+ * appear in the recorded (sql, params) sequence. The snapshot captures only
+ * production-table writes; outbox wiring is verified in the integration tests.
+ *
  * AI-DANGER: не оновлюй `__snapshots__/adapter.snapshot.test.ts.snap`
  * «щоб тест пройшов» — розберись, чому SQL змінився.
  */
+// Must be placed before all imports — Jest hoists jest.mock() to the top.
+jest.mock("@/core/syncEngine/enqueueOutboxUpsert", () => ({
+  enqueueOutboxUpsert: jest.fn().mockResolvedValue({ id: 1, inserted: true }),
+}));
+
 import { applyNutritionDualWriteOps } from "./adapter";
 import type { NutritionDualWriteOp } from "./diff";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -30,6 +39,9 @@ function makeRecordingClient() {
       calls.push({ sql, params: params ?? [] });
       return Promise.resolve(undefined);
     }),
+    // `softDeletePantry` queries items before cascade so we can enqueue
+    // their deletes. Return [] so the recording is unaffected.
+    all: jest.fn(() => Promise.resolve([])),
   } as unknown as SqliteMigrationClient;
   return { client, calls };
 }

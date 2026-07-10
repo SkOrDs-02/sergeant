@@ -7,6 +7,7 @@ import {
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { enqueueOutboxUpsert } from "@/core/syncEngine/enqueueOutboxUpsert";
 import type { FizrukMeasurementSnapshot } from "./diff";
 
 // -----------------------------------------------------------------------
@@ -70,6 +71,26 @@ export async function upsertMeasurement(
     clientTs,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_measurements",
+    op: "insert",
+    row: {
+      id: m.id,
+      user_id: userId,
+      measured_at: m.at,
+      weight_kg: toIntOrNull(m.weightKg),
+      waist_cm: toIntOrNull(m.waistCm),
+      chest_cm: toIntOrNull(m.chestCm),
+      hips_cm: toIntOrNull(m.hipsCm),
+      bicep_cm: toIntOrNull(m.bicepCm),
+      sleep_hours: toIntOrNull(m.sleepHours),
+      energy_level: toIntOrNull(m.energyLevel),
+      mood: toIntOrNull(m.mood),
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }
 
 export async function softDeleteMeasurement(
@@ -84,4 +105,12 @@ export async function softDeleteMeasurement(
     userId,
     clientTs,
   ]);
+  void enqueueOutboxUpsert(client, {
+    userId,
+    table: "fizruk_measurements",
+    op: "delete",
+    row: { id: measurementId, user_id: userId },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {});
 }

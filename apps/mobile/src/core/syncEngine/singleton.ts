@@ -1,23 +1,23 @@
 /**
- * Mobile sync v2 writer-runtime singleton.
+ * Mobile sync v2 writer + reader runtime singletons.
  *
  * Mirrors `apps/web/src/core/syncEngine/singleton.ts` — same
- * `bootSyncEngineWriter` / `getSyncEngineWriter` surface so any code
+ * `bootSyncEngineWriter` / `getSyncEngineWriter` and
+ * `bootSyncEngineReader` / `getSyncEngineReader` surface so any code
  * that needs to nudge the writer (`runtime.notifyEnqueued()`,
- * status reads, etc.) can rely on a single boot path.
+ * status reads, etc.) or trigger a pull can rely on a single boot path.
  *
  * Differences vs web:
  *   - Resolves the migration client through
  *     `getSqliteMigrationClient()` instead of
- *     `getSqliteDb().migrationClient()` (mobile exposes the migrate
- *     handle directly; see `apps/mobile/src/core/db/sqlite.ts`).
- *   - Uses the mobile `apiClient` instance from
- *     `@/api/apiClient` (web binds via `@shared/api`).
+ *     `getSqliteDb().migrationClient()`.
+ *   - Uses the mobile `apiClient` instance from `@/api/apiClient`.
  *   - Sentry is the React Native SDK (`apps/mobile/src/lib/observability.ts`).
- *   - Reconnect listens via NetInfo (`createNetInfoEventTarget`)
- *     with `kind: 'online'` only — React Native has no
- *     `document.visibilityState` so the visibility branch from web
- *     would never fire.
+ *   - Writer reconnect listens via NetInfo (`createNetInfoEventTarget`)
+ *     with `kind: 'online'` only.
+ *   - Reader foreground listens via an AppState-backed event target that
+ *     emits `"visibilitychange"` when `AppState === "active"` (replaces
+ *     `document.visibilityState` from the web version).
  *
  * @see docs/planning/storage-roadmap.md (Stage 5 mobile writer wiring)
  */
@@ -33,8 +33,13 @@ import {
   createSyncEngineWriterRuntime,
   type SyncEngineWriterRuntime,
 } from "./syncEngineWriter";
+import {
+  createSyncEngineReaderRuntime,
+  type SyncEngineReaderRuntime,
+} from "./syncEngineReader";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
+type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
 
 export interface BootSyncEngineWriterOptions {
   readonly createRuntime?: RuntimeFactory;
@@ -77,10 +82,109 @@ export function bootSyncEngineWriter(
   return inFlight;
 }
 
+export interface BootSyncEngineReaderOptions {
+  readonly createRuntime?: ReaderRuntimeFactory;
+  readonly captureException?: (
+    error: unknown,
+    context?: Record<string, unknown>,
+  ) => void;
+}
+
+let readerRuntime: SyncEngineReaderRuntime | null = null;
+let readerInFlight: Promise<SyncEngineReaderRuntime | null> | null = null;
+
+export function getSyncEngineReader(): SyncEngineReaderRuntime | null {
+  return readerRuntime;
+}
+
+export function bootSyncEngineReader(
+  options: BootSyncEngineReaderOptions = {},
+): Promise<SyncEngineReaderRuntime | null> {
+  if (readerRuntime) return Promise.resolve(readerRuntime);
+  if (readerInFlight) return readerInFlight;
+
+  const createRuntime = options.createRuntime ?? createDefaultReaderRuntime;
+  const captureException = options.captureException;
+
+  readerInFlight = createRuntime()
+    .then((created) => {
+      readerRuntime = created;
+      readerRuntime.start();
+      return readerRuntime;
+    })
+    .catch((error: unknown) => {
+      captureException?.(error, { scope: "sync-v2-reader-boot" });
+      return null;
+    })
+    .finally(() => {
+      readerInFlight = null;
+    });
+
+  return readerInFlight;
+}
+
 export function __resetSyncEngineWriterForTests(): void {
   runtime?.stop();
   runtime = null;
   inFlight = null;
+  readerRuntime?.stop();
+  readerRuntime = null;
+  readerInFlight = null;
+}
+
+async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
+  const [
+    { getSqliteMigrationClient },
+    { apiClient },
+    observability,
+    { authClient },
+    AppStateModule,
+  ] = await Promise.all([
+    import("@/core/db/sqlite"),
+    import("@/api/apiClient"),
+    import("@/lib/observability"),
+    import("@/auth/authClient"),
+    import("react-native"),
+  ]);
+
+  const client = await getSqliteMigrationClient();
+
+  const resolveUserId = async (): Promise<string | null> => {
+    const session = await authClient.getSession();
+    return session.data?.user?.id ?? null;
+  };
+
+  const originDeviceId = resolveOriginDeviceId({ store: mobileKVStore });
+  const pullIntervalMs = randomizeIntervalMs(60_000, 0.2);
+
+  // AppState-backed event target: fires "visibilitychange" when the app
+  // transitions to foreground ("active"). This replaces
+  // `document.visibilityState` from the web version and gives the
+  // reader a foreground-trigger pull in addition to the periodic timer.
+  const appStateTarget = createAppStateEventTarget(AppStateModule.AppState);
+
+  return createSyncEngineReaderRuntime({
+    pull: (since, opts) =>
+      apiClient.syncV2.pullV2(since, {
+        limit: opts.limit,
+        originDeviceId: opts.originDeviceId,
+      }),
+    resolveClient: async () => client,
+    resolveUserId,
+    originDeviceId,
+    setInterval: (handler, ms) =>
+      (globalThis.setInterval as (h: () => void, ms: number) => unknown)(
+        handler,
+        ms,
+      ),
+    clearInterval: (handle) =>
+      (globalThis.clearInterval as (h: unknown) => void)(handle),
+    eventTarget: appStateTarget,
+    intervalMs: pullIntervalMs,
+    limit: 100,
+    captureException: (error, context) =>
+      observability.captureError(error, context),
+  });
 }
 
 async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
@@ -104,12 +208,6 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
 
   const client = await getSqliteMigrationClient();
 
-  // Boot-time retention sweep — mirrors the web singleton. Drops
-  // terminal `sync_op_outbox` rows older than the TTL window so the
-  // client DLQ cannot grow unbounded
-  // (docs/audits/2026-08-XX-sync-engine-roast.md). Best-effort:
-  // `sweepStaleTerminalOutbox` swallows purge errors and emits a
-  // `sync_op_outbox.retention` breadcrumb on a non-zero purge.
   await sweepStaleTerminalOutbox({
     purge: () =>
       dbSchema.purgeStaleTerminalOutbox(client, {
@@ -124,32 +222,14 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     netInfoModule.default,
   );
 
-  // Per-tick userId resolver. The runtime itself is user-agnostic; the
-  // drain wrapper closes over `authClient.getSession()` to scope reads
-  // to the currently signed-in user (Hard finding T3#2). When no user
-  // is signed in we return an empty drain — the next tick will retry.
   const resolveUserId = async (): Promise<string | null> => {
     const session = await authClient.getSession();
     return session.data?.user?.id ?? null;
   };
 
-  // Stable per-install device id — same reasoning as web (see
-  // `apps/web/src/core/syncEngine/singleton.ts`). Persisted in MMKV
-  // via the shared `mobileKVStore` adapter so it survives across
-  // launches and the encrypted-storage swap on bootstrap (the swap
-  // happens transparently behind the adapter; see
-  // `apps/mobile/src/lib/storage.ts`).
   const originDeviceId = resolveOriginDeviceId({ store: mobileKVStore });
-
-  // Per-install ±20% interval randomization — see the matching
-  // helper in `apps/web/src/core/syncEngine/singleton.ts`. Picking
-  // the period once at boot from `[24s, 36s]` desynchronizes the
-  // fleet after an outage without changing average throughput.
   const intervalMs = randomizeIntervalMs(30_000, 0.2);
 
-  // T3 audit HIGH#3: forward every poison-row quarantine to Sentry.
-  // Mirrors the web singleton — see
-  // `apps/web/src/core/syncEngine/singleton.ts` for the rationale.
   const onOutboxQuarantine = (event: {
     readonly id: number;
     readonly tableName: string;
@@ -181,9 +261,6 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
         dbSchema.markOutboxRejected(client, id, reason),
       planRetry: dbSchema.planRetry,
       now: () => new Date(),
-      // Retry jitter on transient batch failures. Same shape as web:
-      // a per-row sample in `[0, SYNC_OP_JITTER_WINDOW_MS]` desynchronizes
-      // the retry schedule for a batch that failed together.
       jitterMs: () => Math.random() * dbSchema.SYNC_OP_JITTER_WINDOW_MS,
     },
     setInterval: (handler, ms) =>
@@ -203,7 +280,67 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     intervalMs,
     limit: 100,
     originDeviceId,
+    onTickComplete: (result) => {
+      if (result.pushed > 0) {
+        void bootSyncEngineReader().then((reader) => {
+          void reader?.pullOnce();
+        });
+      }
+    },
   });
+}
+
+/**
+ * Minimal AppState-backed event target for the reader.
+ * Fires "visibilitychange" listeners when the app becomes active
+ * (foreground), mirroring `document.visibilityState === "visible"` on web.
+ */
+function createAppStateEventTarget(AppState: {
+  addEventListener: (
+    type: "change",
+    listener: (state: string) => void,
+  ) => { remove: () => void };
+}): {
+  addEventListener: (type: string, listener: () => void) => void;
+  removeEventListener: (type: string, listener: () => void) => void;
+} {
+  const visibilityListeners = new Set<() => void>();
+  let subscription: { remove: () => void } | null = null;
+
+  const ensureSubscription = (): void => {
+    if (subscription !== null) return;
+    subscription = AppState.addEventListener("change", (state: string) => {
+      if (state === "active" && visibilityListeners.size > 0) {
+        for (const listener of [...visibilityListeners]) {
+          try {
+            listener();
+          } catch {
+            /* listener faults must not break siblings */
+          }
+        }
+      }
+    });
+  };
+
+  const teardownIfIdle = (): void => {
+    if (visibilityListeners.size === 0 && subscription !== null) {
+      subscription.remove();
+      subscription = null;
+    }
+  };
+
+  return {
+    addEventListener(type: string, listener: () => void): void {
+      if (type !== "visibilitychange") return;
+      visibilityListeners.add(listener);
+      ensureSubscription();
+    },
+    removeEventListener(type: string, listener: () => void): void {
+      if (type !== "visibilitychange") return;
+      visibilityListeners.delete(listener);
+      teardownIfIdle();
+    },
+  };
 }
 
 /**
