@@ -174,7 +174,7 @@ export const baseline = [
       //   refs                         — web 0 ✅ (promoted in eslint.web.js)
       //       + mobile 0 ✅ (promoted in eslint.mobile.js)
       //   set-state-in-effect          — web 0 ✅ promoted in eslint.web.js (2026-07-10)
-      //       + mobile ~46 remaining
+      //       + mobile 2 remaining (OS permission async)
       // Promoted per-surface once that surface's count reaches 0. See
       // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
       "react-hooks/set-state-in-effect": "off",
