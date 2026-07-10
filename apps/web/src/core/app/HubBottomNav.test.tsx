@@ -12,6 +12,7 @@ function renderNav(props: {
   showReports?: boolean;
   showProfile?: boolean;
   onChange?: (v: TestHubView) => void;
+  onShowAuth?: (() => void) | undefined;
 }) {
   const onChange = props.onChange ?? vi.fn();
   return {
@@ -22,6 +23,7 @@ function renderNav(props: {
         onChange={onChange}
         showReports={props.showReports ?? true}
         showProfile={props.showProfile}
+        onShowAuth={props.onShowAuth}
       />,
     ),
   };
@@ -207,6 +209,135 @@ describe("HubBottomNav", () => {
       expect(hiddenReports).not.toBeNull();
       fireEvent.click(hiddenReports!);
       expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── onShowAuth — «Увійти» action tab ───────────────────────────────────────
+
+  describe("onShowAuth action tab (guest «Увійти»)", () => {
+    it("рендерить «Увійти» коли onShowAuth надано і showProfile=false", () => {
+      const onShowAuth = vi.fn();
+      renderNav({ onShowAuth });
+      const signIn = screen.getByRole("button", { name: /Увійти/ });
+      expect(signIn).toBeInTheDocument();
+    });
+
+    it("«Увійти» — action tab: не має role=tab і aria-selected", () => {
+      const onShowAuth = vi.fn();
+      renderNav({ onShowAuth });
+      const signIn = screen.getByRole("button", { name: /Увійти/ });
+      expect(signIn).not.toHaveAttribute("role", "tab");
+      expect(signIn).not.toHaveAttribute("aria-selected");
+    });
+
+    it("«Увійти» відсутній коли showProfile=true (залогінений)", () => {
+      const onShowAuth = vi.fn();
+      renderNav({ onShowAuth, showProfile: true });
+      expect(screen.queryByRole("button", { name: /Увійти/ })).toBeNull();
+    });
+
+    it("«Увійти» відсутній коли onShowAuth не надано", () => {
+      renderNav({});
+      expect(screen.queryByRole("button", { name: /Увійти/ })).toBeNull();
+    });
+
+    it("клік на «Увійти» викликає onShowAuth", () => {
+      const onShowAuth = vi.fn();
+      renderNav({ onShowAuth });
+      fireEvent.click(screen.getByRole("button", { name: /Увійти/ }));
+      expect(onShowAuth).toHaveBeenCalledOnce();
+    });
+
+    it("клік на «Увійти» НЕ викликає onChange", () => {
+      const onChange = vi.fn();
+      const onShowAuth = vi.fn();
+      renderNav({ onChange, onShowAuth });
+      fireEvent.click(screen.getByRole("button", { name: /Увійти/ }));
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── Keyboard navigation (WAI-ARIA roving tabindex) ──────────────────────────
+
+  describe("keyboard navigation — ArrowLeft/ArrowRight/Home/End", () => {
+    it("ArrowRight переміщує фокус на наступний таб", () => {
+      renderNav({ hubView: "dashboard" });
+      const dashboard = screen.getByRole("tab", { name: /Головна/ });
+      dashboard.focus();
+      fireEvent.keyDown(dashboard, { key: "ArrowRight" });
+      expect(document.activeElement).toBe(
+        screen.getByRole("tab", { name: /Звіти/ }),
+      );
+    });
+
+    it("ArrowLeft переміщує фокус на попередній таб", () => {
+      renderNav({ hubView: "reports" });
+      const reports = screen.getByRole("tab", { name: /Звіти/ });
+      reports.focus();
+      fireEvent.keyDown(reports, { key: "ArrowLeft" });
+      expect(document.activeElement).toBe(
+        screen.getByRole("tab", { name: /Головна/ }),
+      );
+    });
+
+    it("Home переміщує фокус на перший таб", () => {
+      renderNav({ hubView: "settings" });
+      const settings = screen.getByRole("tab", { name: /Налаштування/ });
+      settings.focus();
+      fireEvent.keyDown(settings, { key: "Home" });
+      expect(document.activeElement).toBe(
+        screen.getByRole("tab", { name: /Головна/ }),
+      );
+    });
+
+    it("End переміщує фокус на останній таб", () => {
+      renderNav({ hubView: "dashboard" });
+      const dashboard = screen.getByRole("tab", { name: /Головна/ });
+      dashboard.focus();
+      fireEvent.keyDown(dashboard, { key: "End" });
+      expect(document.activeElement).toBe(
+        screen.getByRole("tab", { name: /Налаштування/ }),
+      );
+    });
+
+    it("ArrowRight зациклюється: останній → перший", () => {
+      renderNav({ hubView: "settings" });
+      const settings = screen.getByRole("tab", { name: /Налаштування/ });
+      settings.focus();
+      fireEvent.keyDown(settings, { key: "ArrowRight" });
+      expect(document.activeElement).toBe(
+        screen.getByRole("tab", { name: /Головна/ }),
+      );
+    });
+
+    it("ArrowLeft зациклюється: перший → останній", () => {
+      renderNav({ hubView: "dashboard" });
+      const dashboard = screen.getByRole("tab", { name: /Головна/ });
+      dashboard.focus();
+      fireEvent.keyDown(dashboard, { key: "ArrowLeft" });
+      expect(document.activeElement).toBe(
+        screen.getByRole("tab", { name: /Налаштування/ }),
+      );
+    });
+
+    it("нерелевантні клавіші не переміщують фокус", () => {
+      renderNav({ hubView: "dashboard" });
+      const dashboard = screen.getByRole("tab", { name: /Головна/ });
+      dashboard.focus();
+      fireEvent.keyDown(dashboard, { key: "Enter" });
+      expect(document.activeElement).toBe(dashboard);
+    });
+
+    it("ArrowRight від незфокусованого tablist переміщується на перший таб (currentIndex===-1 branch)", () => {
+      renderNav({ hubView: "settings" });
+      // Ensure no tab is focused so currentIndex will be -1.
+      (document.activeElement as HTMLElement)?.blur?.();
+      const settings = screen.getByRole("tab", { name: /Налаштування/ });
+      fireEvent.keyDown(settings, { key: "ArrowRight" });
+      // With currentIndex=-1 the handler falls back to nextIndex=0 (Головна).
+      expect(document.activeElement).toBe(
+        screen.getByRole("tab", { name: /Головна/ }),
+      );
     });
   });
 });
