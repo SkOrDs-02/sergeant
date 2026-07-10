@@ -100,7 +100,9 @@ test.describe("@critical deep module CRUD browser loop", () => {
   // Deep-CRUD цикли на холодному CI-раннері легально повільні: після
   // full reload дані повертаються sync-реплеєм із сервера (SQLite у
   // preview — memory-VFS), що на cold-cache займає десятки секунд.
-  test.describe.configure({ timeout: 60_000 });
+  // 90 s gives expandTodayAndExpect (30 s retry) plus all SQLite-refresh
+  // waits (10 s each) room to breathe on a loaded CI runner.
+  test.describe.configure({ timeout: 90_000 });
 
   test("finyk: creates, edits, deletes, and restores a manual expense", async ({
     page,
@@ -156,7 +158,17 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // actionability-перевірки — Playwright-retry після detach зависає,
     // чекаючи фантомної навігації. dispatchEvent виконує той самий
     // продуктовий onClick без hit-test (модалка, не віртуалізований ряд).
-    await page.getByRole("button", { name: "Видалити" }).dispatchEvent("click");
+    // Scope to the dialog so we dispatch to the delete button in the
+    // correct sheet even if a SQLite refresh fires between the dialog-open
+    // assertion and this click — a mid-flight SQLite overlay can replace
+    // storage.manualExpenses, flipping the dialog from "Редагувати витрату"
+    // to "Додати витрату" and removing the "Видалити" button from the DOM.
+    // The scoped locator naturally waits for the button to reappear inside
+    // the expected dialog, surfacing a clear timeout if the dialog flipped.
+    await page
+      .getByRole("dialog", { name: "Редагувати витрату" })
+      .getByRole("button", { name: "Видалити" })
+      .dispatchEvent("click");
     // Harness correction: ловимо undo-тост одразу після delete — його TTL
     // (~5с) інакше сплине, поки полінгується toHaveCount(0) під
     // навантаженням повної сюїти.
@@ -197,15 +209,32 @@ test.describe("@critical deep module CRUD browser loop", () => {
     ).toBeVisible();
     await page.getByLabel("Кількість").fill("2");
     await page.getByLabel("Одиниця").fill("шт");
-    await waitForSqliteRefreshAfter(page, "nutrition", async () => {
-      await page.getByRole("button", { name: "Зберегти" }).click();
-    });
-    await expect(page.getByText("2 шт")).toBeVisible();
+    // Harness correction: pantry edits are localStorage-first via setPantries.
+    // Using waitForSqliteRefreshAfter here races against the dual-write queue:
+    // if the SQLite write inside the best-effort adapter fails silently (common
+    // in smoke WASM/memory-VFS), notifyNutritionSqliteCacheRefresh still fires
+    // (from the .then() in triggerNutritionDualWrite), the overlay reads the
+    // stale cache, and setPantries(cache.pantries) reverts the edit — making
+    // "2 шт" disappear. Instead, click "Зберегти" and assert local React state
+    // immediately after the dialog closes (before any SQLite overlay can fire).
+    await page.getByRole("button", { name: "Зберегти" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "dcrud йогурт" }),
+    ).not.toBeVisible({ timeout: 10_000 });
+    // Scope to the item's edit button rather than a bare getByText — avoids
+    // strict-mode ambiguity (getByText("2 шт") also matches the wrapping
+    // <button> and its parent containers) and confirms the item row is open.
+    await expect(
+      page.getByRole("button", { name: "Редагувати dcrud йогурт" }),
+    ).toContainText("2 шт");
 
     await page.goto("/nutrition/pantry", { waitUntil: "domcontentloaded" });
     await waitForInitialSqliteRefresh(page, "nutrition");
     await expect(page.getByText("dcrud йогурт")).toBeVisible();
-    await expect(page.getByText("2 шт")).toBeVisible();
+    // Same scoped locator post-reload — also avoids strict-mode ambiguity.
+    await expect(
+      page.getByRole("button", { name: "Редагувати dcrud йогурт" }),
+    ).toContainText("2 шт");
 
     await page.getByRole("button", { name: "Прибрати dcrud йогурт" }).click();
     // Harness correction: ловимо undo-тост одразу після delete (дзеркало

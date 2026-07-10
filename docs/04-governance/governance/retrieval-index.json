@@ -3,8 +3,8 @@
   "version": 1,
   "generated_at": "2026-07-10",
   "sourceHashes": {
-    "knowledge-graph": "c42fd1e16751bce01987084bed05a5a1f8ef18c7d42f5d91e0d83a89cf590999",
-    "symbol-index": "ec1e448546c4513df16adfc673d7f644aa3c94a0dc609f4a77b3bad3340ae673"
+    "knowledge-graph": "c47517831ed6edcf65dc88d999e9c39522ab61346cd48e30314b36c73a10bd5a",
+    "symbol-index": "b5170ce558df3dbc76b56096b7f1467d71deb3d2a24c33bb5ec0cc2e170e72ff"
   },
   "counts": {
     "adr": 70,
@@ -12,9 +12,9 @@
     "export": 304,
     "hard-rule": 26,
     "initiative": 51,
-    "playbook": 61,
+    "playbook": 62,
     "skill": 24,
-    "total": 560
+    "total": 561
   },
   "chunks": [
     {
@@ -782,8 +782,8 @@
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-04 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
-      "contentHash": "2968eed9371006cdde0dfff0327d74d24f8852a67da9dbe644fd36090050d5b1"
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-10 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
+      "contentHash": "7302a8a4158b6c6781f849fcb4a99b199434568131dcc445095ac2484e4f4836"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
@@ -2585,8 +2585,8 @@
       "path": "packages/api-client/src/endpoints/syncV2",
       "title": "SyncV2PullOp (re-export)",
       "tier": "extended",
-      "text": "SyncV2PullOp · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2 · used 0× · dead export unused",
-      "contentHash": "0245f1b8a0291c6bc53debdbcbda7c116a9647b7102ad00f1016d126bc2524ed"
+      "text": "SyncV2PullOp · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2 · used 2×",
+      "contentHash": "4e901da27a1b6c4e5dea47805e58308bd805d5d7037565366201900b0e41d628"
     },
     {
       "id": "export:@sergeant/api-client:SyncV2PullOptions",
@@ -2603,8 +2603,8 @@
       "path": "packages/api-client/src/endpoints/syncV2",
       "title": "SyncV2PullResponse (re-export)",
       "tier": "extended",
-      "text": "SyncV2PullResponse · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2 · used 0× · dead export unused",
-      "contentHash": "f58adfed99ad62c4eda942e0d28ebc15465a51da7f7e96c76c9f110ffcd8c6f3"
+      "text": "SyncV2PullResponse · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2 · used 2×",
+      "contentHash": "64b3dc605e3b52a268d242090d5330bca12b9a3955dbf02f3891631678d2c267"
     },
     {
       "id": "export:@sergeant/api-client:SyncV2PushFn",
@@ -4107,9 +4107,9 @@
       "line": 1,
       "title": "0021 — React-hooks v7 ESLint cleanup",
       "tier": "core",
-      "status": "In progress",
-      "text": "0021 — React-hooks v7 ESLint cleanup · initiative:0021 · initiative · In progress · 21 · Проблема · Скоуп · Acceptance criteria · Виконані дії (2026-07-10) · Виконані дії (2026-06-10) · Timeline · Recent PRs",
-      "contentHash": "38c2bca91b5e1877b3966419fb7359b4c8f5b8cfd3f95545e811854ff64f01a5"
+      "status": "Done",
+      "text": "0021 — React-hooks v7 ESLint cleanup · initiative:0021 · initiative · Done · 21 · Closure (2026-07-10) · Проблема · Скоуп · Acceptance criteria · Виконані дії (2026-07-10) · Виконані дії (2026-06-10) · Timeline · Recent PRs",
+      "contentHash": "6bb5cd5a1b48df7adec5e51f261b68edc93b9a1d95380fb92d4ad67b940bd3d0"
     },
     {
       "id": "initiative:follow-ups",
@@ -4814,6 +4814,17 @@
       "status": "Active",
       "text": "Оголошення інциденту · playbook:declare-incident · playbook · Active · Playbook: Оголошення інциденту · Owner surface · Required context · Steps · 1. Класифікувати severity · 2. Відкрити один incident log · 3. Стабілізувати · 4. Верифікувати відновлення · 5. Маршрутизувати фоллов-ап · Verification · Коли цей playbook не застосовується · Related playbooks and skills",
       "contentHash": "a27f9f7d0a7474724a68e5617bb007b98d8892e9be8d5ce938182ed9a123f8a9"
+    },
+    {
+      "id": "playbook:dependency-sweeper",
+      "type": "playbook",
+      "path": "docs/00-start/playbooks/dependency-sweeper.md",
+      "line": 1,
+      "title": "Dependency Sweeper (періодичний тріаж залежностей)",
+      "tier": "core",
+      "status": "Active",
+      "text": "Dependency Sweeper (періодичний тріаж залежностей) · playbook:dependency-sweeper · playbook · Active · Playbook: Dependency Sweeper (періодичний тріаж залежностей) · Owner surface · Чим це відрізняється від Renovate · Фази патерна · Safety-модель (фазовий rollout — СТАРТ З L1) · Human-gates (завжди ескалувати, ніколи не автофіксити) · L1: готова до запуску /schedule-рутина (report-only) · Verification · Як власнику підняти L1 → L2 · Коли цей playbook НЕ використовувати · Споріднені playbook-и та skills",
+      "contentHash": "c629a27e0c33b785328b6264ff68a44b92a85f39320561ea37d655697ca39d72"
     },
     {
       "id": "playbook:deploy-config-change",

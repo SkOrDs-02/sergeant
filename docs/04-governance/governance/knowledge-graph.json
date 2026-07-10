@@ -1,14 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-06",
+  "generated_at": "2026-07-10",
   "counts": {
     "adr": 70,
     "audit": 24,
     "hard-rule": 26,
     "initiative": 51,
-    "playbook": 61,
-    "pr": 226,
+    "playbook": 62,
+    "pr": 232,
     "skill": 24
   },
   "nodes": [
@@ -793,7 +793,7 @@
       "tier": "core",
       "meta": {
         "number": 73,
-        "last_validated": "2026-07-04"
+        "last_validated": "2026-07-10"
       }
     },
     {
@@ -1453,7 +1453,7 @@
       "type": "initiative",
       "title": "0021 — React-hooks v7 ESLint cleanup",
       "path": "docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md",
-      "status": "In progress",
+      "status": "Done",
       "tier": "core",
       "meta": {
         "number": 21
@@ -2031,6 +2031,15 @@
       "type": "playbook",
       "title": "Оголошення інциденту",
       "path": "docs/00-start/playbooks/declare-incident.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "playbook:dependency-sweeper",
+      "type": "playbook",
+      "title": "Dependency Sweeper (періодичний тріаж залежностей)",
+      "path": "docs/00-start/playbooks/dependency-sweeper.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2614,6 +2623,16 @@
       }
     },
     {
+      "id": "pr:156",
+      "type": "pr",
+      "title": "PR #156",
+      "tier": "extended",
+      "meta": {
+        "number": 156,
+        "url": "https://github.com/Skords-01/Sergeant/pull/156"
+      }
+    },
+    {
       "id": "pr:1567",
       "type": "pr",
       "title": "PR #1567",
@@ -2621,6 +2640,16 @@
       "meta": {
         "number": 1567,
         "url": "https://github.com/Skords-01/Sergeant/pull/1567"
+      }
+    },
+    {
+      "id": "pr:159",
+      "type": "pr",
+      "title": "PR #159",
+      "tier": "extended",
+      "meta": {
+        "number": 159,
+        "url": "https://github.com/Skords-01/Sergeant/pull/159"
       }
     },
     {
@@ -2634,6 +2663,16 @@
       }
     },
     {
+      "id": "pr:160",
+      "type": "pr",
+      "title": "PR #160",
+      "tier": "extended",
+      "meta": {
+        "number": 160,
+        "url": "https://github.com/Skords-01/Sergeant/pull/160"
+      }
+    },
+    {
       "id": "pr:1600",
       "type": "pr",
       "title": "PR #1600",
@@ -2641,6 +2680,16 @@
       "meta": {
         "number": 1600,
         "url": "https://github.com/Skords-01/Sergeant/pull/1600"
+      }
+    },
+    {
+      "id": "pr:162",
+      "type": "pr",
+      "title": "PR #162",
+      "tier": "extended",
+      "meta": {
+        "number": 162,
+        "url": "https://github.com/Skords-01/Sergeant/pull/162"
       }
     },
     {
@@ -2774,6 +2823,16 @@
       }
     },
     {
+      "id": "pr:169",
+      "type": "pr",
+      "title": "PR #169",
+      "tier": "extended",
+      "meta": {
+        "number": 169,
+        "url": "https://github.com/Skords-01/Sergeant/pull/169"
+      }
+    },
+    {
       "id": "pr:1705",
       "type": "pr",
       "title": "PR #1705",
@@ -2811,6 +2870,16 @@
       "meta": {
         "number": 1728,
         "url": "https://github.com/Skords-01/Sergeant/pull/1728"
+      }
+    },
+    {
+      "id": "pr:177",
+      "type": "pr",
+      "title": "PR #177",
+      "tier": "extended",
+      "meta": {
+        "number": 177,
+        "url": "https://github.com/Skords-01/Sergeant/pull/177"
       }
     },
     {
@@ -5477,6 +5546,11 @@
     },
     {
       "from": "adr:0073",
+      "to": "pr:169",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0073",
       "to": "pr:57",
       "type": "touched-by"
     },
@@ -6268,6 +6342,31 @@
     {
       "from": "initiative:0017",
       "to": "pr:3403",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0021",
+      "to": "pr:156",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0021",
+      "to": "pr:159",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0021",
+      "to": "pr:160",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0021",
+      "to": "pr:162",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0021",
+      "to": "pr:177",
       "type": "touched-by"
     },
     {

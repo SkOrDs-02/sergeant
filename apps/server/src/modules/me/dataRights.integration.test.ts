@@ -162,7 +162,7 @@ describe("GET /api/me/export — GDPR data export", () => {
     // Seed an ai_usage_daily row (no FK to user — uses subject_key = 'u:<id>').
     await pool.query(
       `INSERT INTO ai_usage_daily (subject_key, usage_day, bucket, request_count, usd_micros)
-       VALUES ($1, CURRENT_DATE, 'chat:claude-3-5-haiku', 3, 900)
+       VALUES ($1, CURRENT_DATE, 'anthropic:claude-3-5-haiku', 3, 900)
        ON CONFLICT (subject_key, usage_day, bucket) DO NOTHING`,
       [`u:${TEST_USER_ID}`],
     );

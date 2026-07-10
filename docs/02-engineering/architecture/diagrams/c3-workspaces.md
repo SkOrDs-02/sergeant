@@ -84,11 +84,11 @@ The packages most other workspaces depend on. `Importers` = unique file count ac
 
 | Rank | Workspace                    | Importers | Exports |
 | ---- | ---------------------------- | --------- | ------- |
-| 1    | `@sergeant/shared`           | 370       | 1       |
-| 2    | `@sergeant/nutrition-domain` | 91        | 1       |
-| 3    | `@sergeant/fizruk-domain`    | 84        | 1       |
-| 4    | `@sergeant/routine-domain`   | 64        | 1       |
-| 5    | `@sergeant/api-client`       | 39        | 200     |
+| 1    | `@sergeant/shared`           | 374       | 1       |
+| 2    | `@sergeant/nutrition-domain` | 93        | 1       |
+| 3    | `@sergeant/fizruk-domain`    | 88        | 1       |
+| 4    | `@sergeant/routine-domain`   | 68        | 1       |
+| 5    | `@sergeant/api-client`       | 43        | 200     |
 
 ## Drift detection
 

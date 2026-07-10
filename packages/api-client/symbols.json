@@ -6,8 +6,8 @@
   "entryFile": "packages/api-client/src/index.ts",
   "stats": {
     "exportCount": 200,
-    "totalImporters": 39,
-    "deadExports": 108
+    "totalImporters": 43,
+    "deadExports": 106
   },
   "exports": [
     {
@@ -274,8 +274,11 @@
       "name": "SyncV2PullOp",
       "kind": "re-export",
       "fromFile": "./endpoints/syncV2",
-      "usedBy": [],
-      "usageCount": 0
+      "usedBy": [
+        "apps/mobile/src/core/syncEngine/applyPullOp.ts",
+        "apps/web/src/core/syncEngine/applyPullOp.ts"
+      ],
+      "usageCount": 2
     },
     {
       "name": "SyncV2PullOptions",
@@ -288,8 +291,11 @@
       "name": "SyncV2PullResponse",
       "kind": "re-export",
       "fromFile": "./endpoints/syncV2",
-      "usedBy": [],
-      "usageCount": 0
+      "usedBy": [
+        "apps/mobile/src/core/syncEngine/syncEngineReader.ts",
+        "apps/web/src/core/syncEngine/syncEngineReader.ts"
+      ],
+      "usageCount": 2
     },
     {
       "name": "SyncV2PushOp",

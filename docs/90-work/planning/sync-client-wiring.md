@@ -169,7 +169,7 @@ pnpm check
 - [x] **1d. Integration test** — client round-trip vitest (`syncRoundTrip.test.ts`) + server `syncV2.integration.test.ts`. (PR-5)
 - [x] **1e. Scheduler wiring** — pull on boot + after successful push + periodic/backoff. (PR-1 merged)
 
-**Гейт:** manual E2E за [`sync-client-e2e.md`](../03-operations/runbooks/sync-client-e2e.md) (локальне середовище).
+**Гейт:** manual E2E за [`sync-client-e2e.md`](../../03-operations/runbooks/sync-client-e2e.md) (локальне середовище).
 
 ### Фаза 2 — Full state registry expansion (in progress)
 
@@ -234,7 +234,7 @@ pnpm check
 - [`dualwrite-teardown.md`](./dualwrite-teardown.md) — SQLite SoT на клієнті (виконано)
 - [`storage-roadmap.md`](./storage-roadmap.md) — historical 13 stages
 - [`storage-roadmap/01-overview.md`](./storage-roadmap/01-overview.md) — цільова архітектура sync
-- [`data-exchange-storage-audit.md`](../02-engineering/architecture/data-exchange-storage-audit.md) — audit (§4.1 оновлено 2026-07-10)
+- [`data-exchange-storage-audit.md`](../../02-engineering/architecture/data-exchange-storage-audit.md) — audit (§4.1 оновлено 2026-07-10)
 - [ADR-0004](../../04-governance/adr/0004-cloudsync-lww-conflict-resolution.md) — LWW
 - [ADR-0065](../../04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md) — retention + NOTIFY
 - [ADR-0073](../../04-governance/adr/0073-dualwrite-generic-framework.md) — sqliteWriter framework

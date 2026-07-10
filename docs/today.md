@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last validated:** 2026-07-06 by docs:gen-today. **Next review:** 2026-07-13.
+> **Last validated:** 2026-07-10 by docs:gen-today. **Next review:** 2026-07-17.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
