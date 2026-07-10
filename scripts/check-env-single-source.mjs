@@ -126,6 +126,9 @@ function findOffenders(source) {
 function isAllowlisted(relativePath) {
   if (TEST_SUFFIX.test(relativePath)) return true;
   if (relativePath.split(sep).includes("__tests__")) return true;
+  // Integration harness sets process.env before dynamic app imports (same
+  // rationale as *.test.ts stubs — not production runtime reads).
+  if (relativePath.split(sep).includes("test")) return true;
   return ALLOWLIST.has(relativePath);
 }
 
