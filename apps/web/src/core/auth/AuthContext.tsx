@@ -411,6 +411,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // eager bundle — see `sqlite.lazy.test.ts`.
       void import("../db/sqlite")
         .then((m) => m.setSqliteUser(currentId))
+        .then(() =>
+          import("../syncEngine/singleton.js").then((m) =>
+            m.bootSyncEngineReader({
+              captureException: (error, context) =>
+                logger.warn("[auth.identify] sync reader boot failed", {
+                  error,
+                  context,
+                }),
+            }),
+          ),
+        )
         .catch((err) =>
           logger.warn("[auth.identify] setSqliteUser failed", err),
         );
