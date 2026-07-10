@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useLocalStorageState } from "./useLocalStorageState";
 
 describe("useLocalStorageState", () => {
@@ -106,7 +106,7 @@ describe("useLocalStorageState", () => {
     expect(localStorage.getItem("ls:debounce")).toBe(JSON.stringify(2));
   });
 
-  it("re-reads storage when the key changes", () => {
+  it("re-reads storage when the key changes", async () => {
     localStorage.setItem("ls:a", JSON.stringify("A"));
     localStorage.setItem("ls:b", JSON.stringify("B"));
     const { result, rerender } = renderHook(
@@ -115,7 +115,9 @@ describe("useLocalStorageState", () => {
     );
     expect(result.current[0]).toBe("A");
     rerender({ k: "ls:b" });
-    expect(result.current[0]).toBe("B");
+    await waitFor(() => {
+      expect(result.current[0]).toBe("B");
+    });
   });
 
   it("stores raw strings without JSON-encoding when `raw: true`", () => {

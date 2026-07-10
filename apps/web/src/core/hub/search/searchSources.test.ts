@@ -21,13 +21,15 @@ import {
 import { performSearch } from "./searchSources";
 import type { Hit } from "./searchTypes";
 
-// Each test seeds a *distinct* in-memory cache payload before calling
-// `performSearch`. Finyk bank transactions now come from the SQLite mirror
-// cache (Dual-write teardown Phase 3). Routine / Fizruk / Nutrition are
-// also SQLite-cache-backed — reset all warm caches so fixtures never leak
-// across specs.
+// Each test seeds a *distinct* localStorage payload before calling
+// `performSearch`. Both the module-level `parseCache` and the `scoreLru`
+// (searchCache.ts) key on a snapshot built from the raw stored strings, so
+// different fixture content always produces a fresh snapshot → no cross-test
+// cache bleed even though those caches persist for the module's lifetime.
 beforeEach(() => {
   localStorage.clear();
+  // Routine / Fizruk / Nutrition are SQLite-cache-backed now — reset the warm
+  // caches so seeded fixtures never leak across specs.
   clearSqliteRoutineStateCache();
   clearSqliteCompletionsCache();
   clearFizrukSqliteCache();
@@ -71,22 +73,21 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
   });
 
   it("matches a Finyk transaction by description token", () => {
-    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
     __setFinykMonoMirrorCacheForTests({
       transactions: [
         {
           id: "tx-coffee",
           amount: -4500,
-          time: 1_700_000_000,
+          time: 1_700_000_000_000,
           description: "Кава на районі",
-        } as never,
+        },
         {
           id: "tx-rent",
           amount: -1_200_000,
-          time: 1_700_000_100,
+          time: 1_700_000_100_000,
           description: "Оренда квартири",
-        } as never,
-      ],
+        },
+      ] as never[],
     });
     const results = performSearch("кава");
     const hit = finykHit(results);
@@ -192,17 +193,16 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
   });
 
   it("returns the same cached result set for a repeated query (LRU hit)", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify([
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
         {
           id: "tx-lru",
           amount: -1000,
           time: 1_700_000_200_000,
           description: "Унікальний кеш-маркер",
         },
-      ]),
-    );
+      ] as never[],
+    });
     const first = performSearch("маркер");
     const second = performSearch("маркер");
     // Same snapshot + query → identical array instance from the LRU.
