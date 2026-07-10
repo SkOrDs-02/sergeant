@@ -87,12 +87,15 @@ describe("HubChatPage", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the main landmark and HubChat once resolved", async () => {
+  it("renders the main landmark, page heading, and HubChat once resolved", async () => {
     renderPage();
     await waitFor(() =>
       expect(screen.getByTestId("hub-chat-mock")).toBeTruthy(),
     );
     expect(screen.getByRole("main")).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Чат з асистентом" }),
+    ).toBeTruthy();
   });
 
   it("reads ?q= and passes trimmed value as initialMessage", async () => {

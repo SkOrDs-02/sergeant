@@ -123,6 +123,13 @@ describe("ProfilePage", () => {
   });
 
   describe("rendering", () => {
+    it("exposes an sr-only page heading for screen readers", () => {
+      renderPage();
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Профіль" }),
+      ).toHaveClass("sr-only");
+    });
+
     it("shows user name and email", () => {
       renderPage();
       expect(screen.getByText("Тест")).toBeInTheDocument();

@@ -98,6 +98,15 @@ const SURFACES: Array<{
   { name: "routine-dashboard", path: "/?module=routine", seed: SEEDED_LS },
   { name: "auth-sign-in", path: "/sign-in", seed: SEEDED_LS },
   { name: "design-showcase", path: "/design", seed: SEEDED_LS },
+  { name: "hub-reports-tab", path: "/?tab=reports", seed: SEEDED_LS },
+  { name: "pricing", path: "/pricing", seed: SEEDED_LS },
+  { name: "chat", path: "/chat", seed: SEEDED_LS },
+  { name: "assistant-catalogue", path: "/assistant", seed: SEEDED_LS },
+  { name: "insights", path: "/insights", seed: SEEDED_LS },
+  { name: "settings", path: "/settings", seed: SEEDED_LS },
+  { name: "finyk-transactions", path: "/finyk", seed: SEEDED_LS },
+  { name: "routine-home", path: "/routine", seed: SEEDED_LS },
+  { name: "nutrition-menu", path: "/nutrition/menu", seed: SEEDED_LS },
 ];
 
 for (const { name, path, seed } of SURFACES) {

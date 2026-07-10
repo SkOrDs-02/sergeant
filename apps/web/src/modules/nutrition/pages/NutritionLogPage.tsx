@@ -5,6 +5,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { Meal } from "@sergeant/nutrition-domain";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
+import { messages } from "@shared/i18n/uk";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
 import { LogCard } from "../components/LogCard";
@@ -28,6 +29,7 @@ export function NutritionLogPage({
 }: NutritionLogPageProps) {
   return (
     <SectionErrorBoundary key="page-log" title="Не вдалось показати «Щоденник»">
+      <h1 className="sr-only">{messages.nav.nutritionLog}</h1>
       <LogCard
         log={log.nutritionLog}
         selectedDate={log.selectedDate}
