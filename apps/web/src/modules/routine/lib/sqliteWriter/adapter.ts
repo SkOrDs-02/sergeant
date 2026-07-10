@@ -1,17 +1,31 @@
 import {
-  buildLwwUpsert,
   createApplyOps,
   type ApplyDualWriteOptions as CoreApplyDualWriteOptions,
   type ApplyDualWriteResult as CoreApplyDualWriteResult,
   type DualWriteLogger as CoreDualWriteLogger,
   type DualWriteRuntime,
-  type TableSpec,
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { enqueueOutboxIncrement } from "@sergeant/db-schema/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff.js";
+import {
+  CATEGORY_SOFT_DELETE_SQL,
+  CATEGORY_UPSERT_SQL,
+  COMPLETION_NOTE_SOFT_DELETE_SQL,
+  COMPLETION_NOTE_UPSERT_SQL,
+  ENTRY_SOFT_DELETE_SQL,
+  ENTRY_UPSERT_SQL,
+  HABIT_ORDER_UPSERT_SQL,
+  HABIT_SOFT_DELETE_SQL,
+  HABIT_UPSERT_SQL,
+  PREFS_UPSERT_SQL,
+  PUSHUP_UPSERT_SQL,
+  TAG_SOFT_DELETE_SQL,
+  TAG_UPSERT_SQL,
+} from "./adapter.sql.js";
 
 /**
  * Async SQLite-side adapter for the routine dual-write layer.
@@ -26,9 +40,10 @@ import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff.js";
  * Routine-specific pieces stay hand-written (ADR-0073 § «НЕ абстрагуємо»):
  *
  *   - `completion-add` / `completion-remove` write `routine_entries` and then
- *     fire the sync-v2 outbox bridge (`enqueueOutboxUpsert`, fire-and-forget).
- *     The `client.run` → `enqueueOutboxUpsert` order is load-bearing and pinned
- *     by the SQL snapshot.
+ *     fire the sync-v2 outbox bridge (`enqueueOutboxUpsert` for entries,
+ *     `enqueueOutboxIncrement` for `routine_streaks` delta), fire-and-forget.
+ *     The `client.run` → enqueue order is load-bearing and pinned by the SQL
+ *     snapshot.
  *   - `habit-rename` is a denormalised name cascade over `LIKE '<habitId>:%'`
  *     (a guard over many rows) — no builder.
  *   - the soft-delete handlers keep the routine adapter's own SQL layout
@@ -38,7 +53,8 @@ import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff.js";
  *
  * Op kind → table mapping:
  *
- *   - `completion-add` / `completion-remove` → `routine_entries`
+ *   - `completion-add` / `completion-remove` → `routine_entries` +
+ *     `routine_streaks` (increment ±1, fire-and-forget outbox enqueue)
  *   - `habit-rename` → `routine_entries` (denormalized name cascade)
  *   - `habit-upsert` / `habit-delete` → `routine_habits`
  *   - `tag-upsert` / `tag-delete` → `routine_tags`
@@ -150,188 +166,6 @@ export async function applyRoutineDualWriteOps(
 }
 
 // -----------------------------------------------------------------------
-// Table specs — the routine adapter's SET assignments are unaligned
-// (`alignSetColumns: false`), unlike nutrition/fizruk. ON CONFLICT / SET /
-// WHERE are indented at 9 / 11 spaces respectively.
-// -----------------------------------------------------------------------
-
-const ENTRY_UPSERT_SPEC: TableSpec = {
-  table: "routine_entries",
-  insertClause: `INSERT INTO routine_entries
-           (id, user_id, name, completed_at, created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "name" },
-    { column: "completed_at" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 9,
-  setIndent: 11,
-  alignSetColumns: false,
-};
-
-const HABIT_UPSERT_SPEC: TableSpec = {
-  table: "routine_habits",
-  insertClause: `INSERT INTO routine_habits
-           (id, user_id, name, emoji, tag_ids_json, category_id,
-            archived, paused, recurrence, start_date, end_date,
-            time_of_day, reminder_times_json, weekdays_json,
-            created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "name" },
-    { column: "emoji" },
-    { column: "tag_ids_json" },
-    { column: "category_id" },
-    { column: "archived" },
-    { column: "paused" },
-    { column: "recurrence" },
-    { column: "start_date" },
-    { column: "end_date" },
-    { column: "time_of_day" },
-    { column: "reminder_times_json" },
-    { column: "weekdays_json" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 9,
-  setIndent: 11,
-  alignSetColumns: false,
-};
-
-const TAG_UPSERT_SPEC: TableSpec = {
-  table: "routine_tags",
-  insertClause: `INSERT INTO routine_tags
-           (id, user_id, name, scope, created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "name" },
-    { column: "scope" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 9,
-  setIndent: 11,
-  alignSetColumns: false,
-};
-
-const CATEGORY_UPSERT_SPEC: TableSpec = {
-  table: "routine_categories",
-  insertClause: `INSERT INTO routine_categories
-           (id, user_id, name, emoji, created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, NULL)`,
-  conflictTarget: ["id"],
-  updateColumns: [
-    { column: "name" },
-    { column: "emoji" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 9,
-  setIndent: 11,
-  alignSetColumns: false,
-};
-
-const PREFS_UPSERT_SPEC: TableSpec = {
-  table: "routine_prefs",
-  insertClause: `INSERT INTO routine_prefs (user_id, data_json, updated_at)
-         VALUES (?, ?, ?)`,
-  conflictTarget: ["user_id"],
-  updateColumns: [{ column: "data_json" }, { column: "updated_at" }],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 9,
-  setIndent: 11,
-  alignSetColumns: false,
-};
-
-const PUSHUP_UPSERT_SPEC: TableSpec = {
-  table: "routine_pushups",
-  insertClause: `INSERT INTO routine_pushups (user_id, date_key, reps, updated_at)
-         VALUES (?, ?, ?, ?)`,
-  conflictTarget: ["user_id", "date_key"],
-  updateColumns: [{ column: "reps" }, { column: "updated_at" }],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 9,
-  setIndent: 11,
-  alignSetColumns: false,
-};
-
-const HABIT_ORDER_UPSERT_SPEC: TableSpec = {
-  table: "routine_habit_order",
-  insertClause: `INSERT INTO routine_habit_order (user_id, order_json, updated_at)
-         VALUES (?, ?, ?)`,
-  conflictTarget: ["user_id"],
-  updateColumns: [{ column: "order_json" }, { column: "updated_at" }],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 9,
-  setIndent: 11,
-  alignSetColumns: false,
-};
-
-const COMPLETION_NOTE_UPSERT_SPEC: TableSpec = {
-  table: "routine_completion_notes",
-  insertClause: `INSERT INTO routine_completion_notes
-           (user_id, note_key, note, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, NULL)`,
-  conflictTarget: ["user_id", "note_key"],
-  updateColumns: [
-    { column: "note" },
-    { column: "updated_at" },
-    { column: "deleted_at", value: "NULL" },
-  ],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 9,
-  setIndent: 11,
-  alignSetColumns: false,
-};
-
-const ENTRY_UPSERT_SQL = buildLwwUpsert(ENTRY_UPSERT_SPEC);
-const HABIT_UPSERT_SQL = buildLwwUpsert(HABIT_UPSERT_SPEC);
-const TAG_UPSERT_SQL = buildLwwUpsert(TAG_UPSERT_SPEC);
-const CATEGORY_UPSERT_SQL = buildLwwUpsert(CATEGORY_UPSERT_SPEC);
-const PREFS_UPSERT_SQL = buildLwwUpsert(PREFS_UPSERT_SPEC);
-const PUSHUP_UPSERT_SQL = buildLwwUpsert(PUSHUP_UPSERT_SPEC);
-const HABIT_ORDER_UPSERT_SQL = buildLwwUpsert(HABIT_ORDER_UPSERT_SPEC);
-const COMPLETION_NOTE_UPSERT_SQL = buildLwwUpsert(COMPLETION_NOTE_UPSERT_SPEC);
-
-// Routine's soft-delete SQL keeps its own layout (SET on its own line, one
-// `AND` per line) — the generic `buildDelete` emits a single-line WHERE, so
-// this shape is hand-written to stay byte-identical.
-const ENTRY_SOFT_DELETE_SQL = `UPDATE routine_entries
-            SET deleted_at = ?, updated_at = ?
-          WHERE id = ?
-            AND user_id = ?
-            AND updated_at < ?`;
-const HABIT_SOFT_DELETE_SQL = `UPDATE routine_habits
-            SET deleted_at = ?, updated_at = ?
-          WHERE id = ?
-            AND user_id = ?
-            AND updated_at < ?`;
-const TAG_SOFT_DELETE_SQL = `UPDATE routine_tags
-            SET deleted_at = ?, updated_at = ?
-          WHERE id = ?
-            AND user_id = ?
-            AND updated_at < ?`;
-const CATEGORY_SOFT_DELETE_SQL = `UPDATE routine_categories
-            SET deleted_at = ?, updated_at = ?
-          WHERE id = ?
-            AND user_id = ?
-            AND updated_at < ?`;
-const COMPLETION_NOTE_SOFT_DELETE_SQL = `UPDATE routine_completion_notes
-            SET deleted_at = ?, updated_at = ?
-          WHERE user_id = ?
-            AND note_key = ?
-            AND updated_at < ?`;
-
-// -----------------------------------------------------------------------
 // routine_entries — completions (+ sync-v2 outbox bridge)
 // -----------------------------------------------------------------------
 
@@ -351,9 +185,8 @@ async function addCompletion(
     clientTs,
     clientTs,
   ]);
-  // Enqueue a sync-v2 outbox op so the server learns about this completion.
-  // Fire-and-forget: a sync failure must never break the local write
-  // (consistent with the best-effort adapter contract).
+  // Enqueue routine_entries insert so the server learns about this completion.
+  // Fire-and-forget: a sync failure must never break the local write.
   void enqueueOutboxUpsert(client, {
     userId,
     table: "routine_entries",
@@ -366,6 +199,16 @@ async function addCompletion(
       created_at: clientTs,
       deleted_at: null,
     },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
+  // Enqueue a streak increment (+1) so the server's PN-counter stays current.
+  void enqueueOutboxIncrement(client, {
+    userId,
+    table: "routine_streaks",
+    row: { user_id: userId, delta: 1 },
     clientTs,
     idempotencyKey: crypto.randomUUID(),
   }).catch(() => {
@@ -396,6 +239,16 @@ async function removeCompletion(
       id,
       user_id: userId,
     },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
+  // Enqueue a streak decrement (-1) so the server's PN-counter stays current.
+  void enqueueOutboxIncrement(client, {
+    userId,
+    table: "routine_streaks",
+    row: { user_id: userId, delta: -1 },
     clientTs,
     idempotencyKey: crypto.randomUUID(),
   }).catch(() => {
