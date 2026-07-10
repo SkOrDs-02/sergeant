@@ -35,7 +35,26 @@ vi.mock("@shared/components/ui/Sheet", () => ({
 }));
 
 vi.mock("./BarcodeScanner", () => ({
-  BarcodeScanner: () => <div data-testid="barcode-scanner" />,
+  BarcodeScanner: ({
+    onDetected,
+    onClose,
+  }: {
+    onDetected: (raw: string) => Promise<void>;
+    onClose: () => void;
+  }) => (
+    <div data-testid="barcode-scanner">
+      <button
+        type="button"
+        data-testid="scan-detect"
+        onClick={() => void onDetected("1234567890")}
+      >
+        Scan
+      </button>
+      <button type="button" data-testid="scan-close" onClick={onClose}>
+        Close
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./meal-sheet/MealTemplatesRow", () => ({
@@ -61,11 +80,47 @@ vi.mock("./meal-sheet/NameTimeRow", () => ({
 }));
 
 vi.mock("./meal-sheet/FromPantryRow", () => ({
-  FromPantryRow: () => <div data-testid="from-pantry-row" />,
+  FromPantryRow: ({
+    setFromPantryItem,
+  }: {
+    setFromPantryItem: (v: string | null) => void;
+  }) => (
+    <div data-testid="from-pantry-row">
+      <button
+        type="button"
+        data-testid="pick-pantry"
+        onClick={() => setFromPantryItem("Молоко")}
+      >
+        Зі складу
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./meal-sheet/FoodPickerSection", () => ({
-  FoodPickerSection: () => <div data-testid="food-picker" />,
+  FoodPickerSection: ({
+    setPickedFood,
+  }: {
+    setPickedFood: (
+      f: {
+        id: string;
+        name: string;
+        brand?: string;
+      } | null,
+    ) => void;
+  }) => (
+    <div data-testid="food-picker">
+      <button
+        type="button"
+        data-testid="pick-food"
+        onClick={() =>
+          setPickedFood({ id: "food-1", name: "Банан", brand: "Chiquita" })
+        }
+      >
+        Обрати продукт
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./meal-sheet/BarcodeSection", () => ({
@@ -73,7 +128,19 @@ vi.mock("./meal-sheet/BarcodeSection", () => ({
 }));
 
 vi.mock("./meal-sheet/MacrosEditor", () => ({
-  MacrosEditor: () => <div data-testid="macros-editor" />,
+  MacrosEditor: ({
+    field,
+  }: {
+    field: (key: string) => (v: string) => void;
+  }) => (
+    <div data-testid="macros-editor">
+      <input
+        data-testid="kcal-input"
+        aria-label="Калорії"
+        onChange={(e) => field("kcal")(e.target.value)}
+      />
+    </div>
+  ),
 }));
 
 vi.mock("./meal-sheet/SaveAsFood", () => ({
@@ -173,6 +240,8 @@ function renderSheet(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  stableBarcodeLookup.scannerOpen = false;
+  stableBarcodeLookup.barcode = "";
 });
 
 describe("AddMealSheet — closed state", () => {
@@ -301,5 +370,205 @@ describe("AddMealSheet — editing an existing meal", () => {
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
     // Should NOT show the 'Обрати джерело ↑' link for edited meals
     expect(screen.queryByText("Обрати джерело ↑")).not.toBeInTheDocument();
+  });
+
+  it("preserves foodId from initialMeal when saving an edit", async () => {
+    const onSave = vi.fn();
+    renderSheet({
+      onSave,
+      initialMeal: {
+        id: "existing-meal-1",
+        name: "Гречка",
+        mealType: "lunch",
+        foodId: "food-db-99",
+        amount_g: 150,
+        macros: { kcal: 200, protein_g: 8, fat_g: 2, carbs_g: 40 },
+      },
+    });
+    fireEvent.click(screen.getByText("Зберегти"));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      id: "existing-meal-1",
+      foodId: "food-db-99",
+      amount_g: 150,
+      macroSource: "productDb",
+    });
+  });
+});
+
+describe("AddMealSheet — photoResult import", () => {
+  it("opens at fill step and uses photo dish name on save", async () => {
+    const onSave = vi.fn();
+    renderSheet({
+      onSave,
+      photoResult: {
+        dishName: "Борщ",
+        macros: { kcal: 250, protein_g: 10, fat_g: 5, carbs_g: 30 },
+      },
+    });
+    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+    expect(screen.queryByText("Обрати джерело ↑")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Зберегти"));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      name: "Борщ",
+      source: "photo",
+      macroSource: "photoAI",
+    });
+  });
+});
+
+describe("AddMealSheet — save validation branches", () => {
+  it("saves successfully when name is entered", async () => {
+    const onSave = vi.fn();
+    renderSheet({ mealTemplates: [], onSave });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Суп" },
+    });
+    fireEvent.click(screen.getByText("Зберегти"));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      name: "Суп",
+      source: "manual",
+      macroSource: "manual",
+    });
+  });
+
+  it("shows macro validation error for negative kcal", async () => {
+    renderSheet({ mealTemplates: [] });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Суп" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "-5" },
+    });
+    fireEvent.click(screen.getByText("Зберегти"));
+    await waitFor(() => {
+      expect(screen.getByText("Некоректне значення КБЖВ.")).toBeInTheDocument();
+    });
+  });
+});
+
+describe("AddMealSheet — source step branches", () => {
+  const template = {
+    id: "t1",
+    name: "Вівсянка",
+    mealType: "breakfast" as const,
+    macros: { kcal: 300, protein_g: 10, fat_g: 5, carbs_g: 50 },
+  };
+
+  it("shows pantry row when pantryItems are provided", () => {
+    renderSheet({
+      mealTemplates: [template],
+      pantryItems: [
+        {
+          name: "Молоко",
+          qty: 1,
+          unit: "л",
+          notes: null,
+        },
+      ],
+    });
+    expect(screen.getByTestId("from-pantry-row")).toBeInTheDocument();
+  });
+
+  it("calls onRequestPhoto when photo button is clicked", () => {
+    const onRequestPhoto = vi.fn();
+    renderSheet({
+      mealTemplates: [template],
+      onRequestPhoto,
+    });
+    fireEvent.click(screen.getByLabelText("Сфотографувати страву"));
+    expect(onRequestPhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it("auto-advances to fill when a food is picked", () => {
+    renderSheet({ mealTemplates: [template] });
+    fireEvent.click(screen.getByTestId("pick-food"));
+    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+    expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
+  });
+
+  it("auto-advances to fill when a pantry item is picked", () => {
+    renderSheet({
+      mealTemplates: [template],
+      pantryItems: [
+        {
+          name: "Молоко",
+          qty: 1,
+          unit: "л",
+          notes: null,
+        },
+      ],
+    });
+    fireEvent.click(screen.getByTestId("pick-pantry"));
+    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+  });
+
+  it("shows back arrow after manual forward navigation from source", () => {
+    renderSheet({ mealTemplates: [template] });
+    fireEvent.click(screen.getAllByText("Ввести вручну")[0]!);
+    expect(
+      screen.getByLabelText("Назад до вибору джерела"),
+    ).toBeInTheDocument();
+  });
+
+  it("back arrow returns to source step", () => {
+    renderSheet({ mealTemplates: [template] });
+    fireEvent.click(screen.getAllByText("Ввести вручну")[0]!);
+    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
+    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
+  });
+});
+
+describe("AddMealSheet — pantry consume on save", () => {
+  it("calls onConsumePantryItem when saving a pantry-sourced meal", async () => {
+    const onConsumePantryItem = vi.fn();
+    const onSave = vi.fn();
+    const template = {
+      id: "t1",
+      name: "Вівсянка",
+      mealType: "breakfast" as const,
+      macros: { kcal: 300, protein_g: 10, fat_g: 5, carbs_g: 50 },
+    };
+    renderSheet({
+      mealTemplates: [template],
+      pantryItems: [
+        {
+          name: "Молоко",
+          qty: 1,
+          unit: "л",
+          notes: null,
+        },
+      ],
+      onConsumePantryItem,
+      onSave,
+    });
+    fireEvent.click(screen.getByTestId("pick-pantry"));
+    fireEvent.click(screen.getByText("Зберегти"));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onConsumePantryItem).toHaveBeenCalledWith("Молоко", 100);
+    expect(onSave.mock.calls[0]![0].name).toBe("Молоко");
+  });
+});
+
+describe("AddMealSheet — barcode scanner overlay", () => {
+  it("renders BarcodeScanner when scannerOpen is true", () => {
+    stableBarcodeLookup.scannerOpen = true;
+    renderSheet({ mealTemplates: [] });
+    expect(screen.getByTestId("barcode-scanner")).toBeInTheDocument();
+  });
+
+  it("invokes barcode lookup when scanner detects a code", async () => {
+    stableBarcodeLookup.scannerOpen = true;
+    renderSheet({ mealTemplates: [] });
+    fireEvent.click(screen.getByTestId("scan-detect"));
+    await waitFor(() => {
+      expect(stableBarcodeLookup.setScannerOpen).toHaveBeenCalledWith(false);
+      expect(stableBarcodeLookup.setBarcode).toHaveBeenCalledWith("1234567890");
+      expect(stableBarcodeLookup.handleBarcodeLookup).toHaveBeenCalledWith(
+        "1234567890",
+      );
+    });
   });
 });
