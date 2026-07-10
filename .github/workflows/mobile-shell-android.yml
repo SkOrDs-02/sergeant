@@ -19,23 +19,22 @@ name: Mobile Shell (Android)
 #   - Detox E2E (`.github/workflows/detox-android.yml` already owns that)
 #   - iOS (`.github/workflows/mobile-shell-ios.yml` owns the mac runner)
 
+# Web-focus phase (2026-07): PR/push triggers лише на `apps/mobile-shell/**`
+# — web-only зміни не гонять macOS/Linux shell-build. Ручний прогін:
+# `workflow_dispatch`. Повернути `apps/web/**` у paths, коли mobile знову
+# в обов'язковому CI-контурі.
+
 on:
   push:
     branches: [main]
     paths:
       - "apps/mobile-shell/**"
-      - "apps/web/**"
-      - "apps/server/**"
-      - "packages/**"
       - "pnpm-lock.yaml"
       - "package.json"
       - ".github/workflows/mobile-shell-android.yml"
   pull_request:
     paths:
       - "apps/mobile-shell/**"
-      - "apps/web/**"
-      - "apps/server/**"
-      - "packages/**"
       - "pnpm-lock.yaml"
       - "package.json"
       - ".github/workflows/mobile-shell-android.yml"

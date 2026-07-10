@@ -223,9 +223,11 @@ jobs:
         # Tee full output so the node-import gate below can grep Vite
         # browser-externalization warnings from the @sergeant/web build
         # phase without a duplicate `web-build-smoke` job (audit §11.1).
+        # `check:ci` skips @sergeant/mobile jest — web-focus phase; mobile
+        # tests still run locally via `pnpm check`.
         run: |
           set -o pipefail
-          pnpm check 2>&1 | tee /tmp/check-build.log
+          pnpm check:ci 2>&1 | tee /tmp/check-build.log
 
       - name: Assert no Node-only imports in browser bundle
         # Merged from the former `web-build-smoke` job. Vite emits
@@ -374,7 +376,8 @@ jobs:
         # their vitest.config files (~2pp below baseline). A drop below the
         # floor fails this job. Domain packages are already near 100%, so
         # they don't carry explicit floors yet.
-        run: pnpm test:coverage
+        # `test:coverage:ci` skips @sergeant/mobile jest — web-focus phase.
+        run: pnpm test:coverage:ci
 
       - name: Check coverage threshold (≥75%)
         # Fails CI if any workspace drops below its floor.
@@ -392,6 +395,11 @@ jobs:
             fi
 
             WORKSPACE=$(echo "$summary" | sed 's|/coverage/coverage-summary.json||')
+            # Web-focus phase: @sergeant/mobile jest is out of CI scope.
+            if [ "$WORKSPACE" = "apps/mobile" ]; then
+              echo "⏭️  $WORKSPACE: skipped (mobile excluded from CI gates)"
+              continue
+            fi
             WS_THRESHOLD=$(jq -r --arg ws "$WORKSPACE" '.workspaces[$ws] // .default' coverage-thresholds.json)
             COVERAGE=$(jq -r '.total.lines.pct' "$summary")
 
