@@ -174,6 +174,39 @@ describe("mono/read — integration (real Postgres)", () => {
       expect(res.statusCode).toBe(401);
     });
 
+    it("user A accounts are NOT returned when handler is called as user B", async () => {
+      const USER_B_ID = "test_user_2";
+
+      // Seed user B row so FK from mono_account can reference it later if
+      // needed; more importantly, confirm the handler filters by session user.
+      await testQuery(
+        `INSERT INTO "user" (id, name, email, "emailVerified")
+         VALUES ($1, $2, $3, true)
+         ON CONFLICT (id) DO NOTHING`,
+        [USER_B_ID, "User B", "userb@example.com"],
+      );
+
+      // Seed two accounts for user A (TEST_USER_ID).
+      for (const [acctId, balance] of [
+        ["acct_iso_1", 100_000],
+        ["acct_iso_2", 200_000],
+      ] as const) {
+        await testQuery(
+          `INSERT INTO mono_account
+             (user_id, mono_account_id, type, currency_code, balance, credit_limit)
+           VALUES ($1, $2, 'black', 980, $3, 0)`,
+          [TEST_USER_ID, acctId, balance],
+        );
+      }
+
+      // Call handler as user B → must receive empty array, NOT user A's rows.
+      const res = makeRes();
+      await accountsHandler(makeReq({}, USER_B_ID), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual([]);
+    });
+
     it("orders accounts by currency_code, mono_account_id", async () => {
       // Insert in reverse order to verify sorting
       for (const [acctId, cc] of [
