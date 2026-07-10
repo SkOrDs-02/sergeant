@@ -96,11 +96,11 @@ Soft metered paywall — всі модулі базово безкоштовно
 
 ## Quick wins (можна починати зараз)
 
-| Дія                      | Деталі                                                                                                                 |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Share-картки             | OG-зображення з результатами тижня → [вірусні петлі](./business/02-go-to-market.md#53-вірусні-петлі-viral-loops)       |
-| Telegram-канал           | Збирати аудиторію до запуску → [pre-launch](./business/02-go-to-market.md#2-фаза-0--pre-launch)                        |
-| Founder's story на DOU   | Безкоштовний PR → [українські канали](./business/02-go-to-market.md#українські-канали)                                 |
+| Дія                        | Деталі                                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Share-картки               | OG-зображення з результатами тижня → [вірусні петлі](./business/02-go-to-market.md#53-вірусні-петлі-viral-loops)                                             |
+| Telegram-канал             | Збирати аудиторію до запуску → [pre-launch](./business/02-go-to-market.md#2-фаза-0--pre-launch)                                                              |
+| Founder's story на DOU     | Безкоштовний PR → [українські канали](./business/02-go-to-market.md#українські-канали)                                                                       |
 | Billing scaffold (shipped) | `PaywallModal`, `PricingPage`, `usePlan()`, `/api/billing/*` → [06 — Архітектура](./business/06-monetization-architecture.md); open: prod Stripe env + legal |
-| In-app landing (shipped)   | `LandingPage` на `/` + `WaitlistForm` → [phases §5](./phases/README.md#5-рішення-про-лендінг); open: standalone `sergeant.com.ua` |
-| PWA install optimization | Піднімати % установок → [PWA install rate](./business/05-operations-and-automation.md#зона-1--product)                 |
+| In-app landing (shipped)   | `LandingPage` на `/` + `WaitlistForm` → [phases §5](./phases/README.md#5-рішення-про-лендінг); open: standalone `sergeant.com.ua`                            |
+| PWA install optimization   | Піднімати % установок → [PWA install rate](./business/05-operations-and-automation.md#зона-1--product)                                                       |

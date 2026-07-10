@@ -30,13 +30,13 @@
 - [#3573](https://github.com/Skords-01/Sergeant/pull/3573) — docs(agents): archive initiative 0018 (agent:find, code-complete) _(2026-06-14)_
 - [#3567](https://github.com/Skords-01/Sergeant/pull/3567) — docs(agents): record 0018 semantic measurement + drop orphan 0019 README row _(2026-06-14)_
 
-## 🔵 В роботі — 72 відкритих
+## 🔵 В роботі — 70 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 16       |
 | Планування                       | 15       |
-| Launch / запуск                  | 16       |
+| Launch / запуск                  | 14       |
 | Аудити й прожарки                | 18       |
 | Security hardening               | 2        |
 | Техборг                          | 5        |

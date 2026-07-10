@@ -1,6 +1,6 @@
 # Domain invariants
 
-> **Last validated:** 2026-06-11 by @SkOrDs-02. **Next review:** 2026-09-09.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 > Things that bite hard if assumed wrong. Compact pointer in [`AGENTS.md § Domain invariants`](../../../AGENTS.md#domain-invariants); deep prose lives here. Treat this file as canonical when web ↔ mobile ↔ server logic disagrees.
@@ -74,8 +74,8 @@ The HubChat assistant uses Anthropic tool-calling. Tools are **defined on the se
 
 `apps/server/src/modules/chat/chat.ts` uses two distinct `max_tokens` values, intentionally:
 
-| Request                      | `max_tokens` | Where (chat.ts)                 | Why                                                                                                                                              |
-| ---------------------------- | ------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Request                      | `max_tokens` | Where (chat.ts)                      | Why                                                                                                                                              |
+| ---------------------------- | ------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | First user-message chat call | **1500**     | `chat.ts` ~446, payload to Anthropic | Enough for a tool call + short reply, OR a structured direct-text answer with markdown formatting (3–6 sentences українською).                   |
 | Tool-result continuation     | **2500**     | `chat.ts` ~362, follow-up payload    | Фінальна відповідь юзеру після tool_result — брифінги, підсумки, аналіз бюджету. Markdown-таблиці + кілька секцій легко займають 1.5–2k токенів. |
 
