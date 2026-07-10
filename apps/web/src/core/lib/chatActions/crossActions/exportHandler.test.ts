@@ -1,7 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const { mirrorTxs } = vi.hoisted(() => ({
+  mirrorTxs: { current: [] as unknown[] },
+}));
+
 vi.mock("@shared/lib/storage/storage", () => ({
   safeReadStringLS: vi.fn(),
+}));
+vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: () => ({
+    transactions: mirrorTxs.current,
+    accounts: [],
+    refreshedAt: null,
+  }),
 }));
 vi.mock("../../../../modules/routine/lib/routineStorage", () => ({
   loadRoutineState: vi.fn(),
@@ -31,6 +42,7 @@ const mockWorkouts = vi.mocked(readFizrukWorkouts);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mirrorTxs.current = [];
   mockReadLS.mockReturnValue(null);
   mockRoutine.mockReturnValue(
     {} as unknown as ReturnType<typeof loadRoutineState>,
@@ -55,7 +67,7 @@ describe("exportModuleData", () => {
   });
 
   it("exports finyk module", () => {
-    mockReadLS.mockReturnValue('{"txs":[]}');
+    mirrorTxs.current = [];
     const result = exportModuleData({
       name: "export_module_data",
       input: { module: "finyk" },
@@ -95,7 +107,7 @@ describe("exportModuleData", () => {
   });
 
   it("returns JSON format when requested", () => {
-    mockReadLS.mockReturnValue('{"txs":[]}');
+    mirrorTxs.current = [];
     const result = exportModuleData({
       name: "export_module_data",
       input: { module: "finyk", format: "json" },
@@ -103,12 +115,12 @@ describe("exportModuleData", () => {
     expect(result).toContain("(JSON)");
   });
 
-  it("returns no-data message for finyk when cache is empty", () => {
-    mockReadLS.mockReturnValue(null);
+  it("returns empty transactions label when mirror cache is empty", () => {
+    mirrorTxs.current = [];
     const result = exportModuleData({
       name: "export_module_data",
       input: { module: "finyk" },
     });
-    expect(result).toContain("немає даних");
+    expect(result).toContain("Транзакції: []");
   });
 });

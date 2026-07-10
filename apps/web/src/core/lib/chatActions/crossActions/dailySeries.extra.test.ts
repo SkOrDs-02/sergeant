@@ -14,6 +14,10 @@ import {
   formatDailySeries,
   getDailySeries,
 } from "./dailySeries";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../../../modules/finyk/lib/monoMirrorReader";
 
 // ─── Hoisted mock factories ────────────────────────────────────────────────────
 
@@ -69,6 +73,7 @@ vi.mock("../../../../modules/finyk/utils", () => ({
 
 beforeEach(() => {
   localStorage.clear();
+  clearFinykMonoMirrorCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-04-22T12:00:00Z"));
 
@@ -163,15 +168,12 @@ describe("buildDailySeries — reversed date range", () => {
 describe("buildDailySeries — hidden transactions excluded", () => {
   it("hides a spending tx whose id is in hiddenTransactions", () => {
     const nowSec = Math.floor(Date.now() / 1000);
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [
-          { id: "hidden-1", amount: -5000 * 100, time: nowSec },
-          { id: "visible-1", amount: -2000 * 100, time: nowSec },
-        ],
-      }),
-    );
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "hidden-1", amount: -5000 * 100, time: nowSec },
+        { id: "visible-1", amount: -2000 * 100, time: nowSec },
+      ] as never[],
+    });
     mockCachedFinyk.mockReturnValue({ hiddenTransactions: ["hidden-1"] });
 
     const s = buildDailySeries(["spending"], {
@@ -185,12 +187,11 @@ describe("buildDailySeries — hidden transactions excluded", () => {
 
   it("income path: tx with amount > 0 is included in income metric", () => {
     const nowSec = Math.floor(Date.now() / 1000);
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [{ id: "income-1", amount: 3000 * 100, time: nowSec }],
-      }),
-    );
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "income-1", amount: 3000 * 100, time: nowSec },
+      ] as never[],
+    });
 
     const s = buildDailySeries(["income"], {
       from: "2026-04-22",

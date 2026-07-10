@@ -1,5 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const { mirrorTxs } = vi.hoisted(() => ({
+  mirrorTxs: {
+    current: [] as Array<{
+      id: string;
+      amount: number;
+      time?: number;
+      description?: string;
+      mcc?: number;
+    }>,
+  },
+}));
+
 vi.mock("../../hubChatUtils", () => ({ ls: vi.fn() }));
 vi.mock("../../../../modules/finyk/utils", () => ({
   calcCategorySpent: vi.fn(() => 0),
@@ -14,6 +26,13 @@ vi.mock("../../../../modules/finyk/constants", () => ({
 }));
 vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
   getCachedFinykSqliteState: vi.fn(),
+}));
+vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: () => ({
+    transactions: mirrorTxs.current,
+    accounts: [],
+    refreshedAt: null,
+  }),
 }));
 
 import { ls } from "../../hubChatUtils";
@@ -41,11 +60,9 @@ function makeState() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mirrorTxs.current = [];
   mockGetCached.mockReturnValue(makeState());
-  mockLs.mockImplementation((key: string) => {
-    if (key === "finyk_tx_cache") return { txs: [] };
-    return {};
-  });
+  mockLs.mockImplementation(() => ({}));
   mockGetTxAmount.mockImplementation(
     (t: { amount: number }) => Math.abs(t.amount) / 100,
   );
@@ -85,17 +102,10 @@ describe("spendingTrend", () => {
       ...makeState(),
       hiddenTransactions: ["t_hidden"],
     });
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return {
-          txs: [
-            { id: "t_hidden", amount: -100000, time: RECENT_SEC },
-            { id: "t_visible", amount: -5000, time: RECENT_SEC },
-          ],
-        };
-      }
-      return {};
-    });
+    mirrorTxs.current = [
+      { id: "t_hidden", amount: -100000, time: RECENT_SEC },
+      { id: "t_visible", amount: -5000, time: RECENT_SEC },
+    ];
     const result = spendingTrend({ name: "spending_trend", input: {} });
     expect(result).toContain("Транзакцій: 1");
   });
@@ -105,57 +115,38 @@ describe("spendingTrend", () => {
 
 describe("detectAnomalies", () => {
   it("returns insufficient data message for < 3 expenses", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return { txs: [{ id: "t1", amount: -1000, time: RECENT_SEC }] };
-      }
-      return {};
-    });
+    mirrorTxs.current = [{ id: "t1", amount: -1000, time: RECENT_SEC }];
     const result = detectAnomalies({ name: "detect_anomalies", input: {} });
     expect(result).toContain("Недостатньо");
   });
 
   it("returns no anomalies message when all amounts are similar", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return {
-          txs: [
-            { id: "t1", amount: -1000, time: RECENT_SEC },
-            { id: "t2", amount: -1000, time: RECENT_SEC },
-            { id: "t3", amount: -1000, time: RECENT_SEC },
-          ],
-        };
-      }
-      return {};
-    });
+    mirrorTxs.current = [
+      { id: "t1", amount: -1000, time: RECENT_SEC },
+      { id: "t2", amount: -1000, time: RECENT_SEC },
+      { id: "t3", amount: -1000, time: RECENT_SEC },
+    ];
     const result = detectAnomalies({ name: "detect_anomalies", input: {} });
     expect(result).toContain("аномалій не виявлено");
   });
 
   it("detects large outlier transaction", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return {
-          txs: [
-            { id: "t1", amount: -1000, time: RECENT_SEC, description: "Кава" },
-            { id: "t2", amount: -1000, time: RECENT_SEC, description: "Їжа" },
-            {
-              id: "t3",
-              amount: -1000,
-              time: RECENT_SEC,
-              description: "Транспорт",
-            },
-            {
-              id: "big",
-              amount: -100000,
-              time: RECENT_SEC,
-              description: "Великий платіж",
-            },
-          ],
-        };
-      }
-      return {};
-    });
+    mirrorTxs.current = [
+      { id: "t1", amount: -1000, time: RECENT_SEC, description: "Кава" },
+      { id: "t2", amount: -1000, time: RECENT_SEC, description: "Їжа" },
+      {
+        id: "t3",
+        amount: -1000,
+        time: RECENT_SEC,
+        description: "Транспорт",
+      },
+      {
+        id: "big",
+        amount: -100000,
+        time: RECENT_SEC,
+        description: "Великий платіж",
+      },
+    ];
     const result = detectAnomalies({ name: "detect_anomalies", input: {} });
     expect(result).toContain("Аномальні витрати");
     expect(result).toContain("Великий платіж");

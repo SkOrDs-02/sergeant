@@ -1,11 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const { mirrorTxs } = vi.hoisted(() => ({
+  mirrorTxs: {
+    current: [] as Array<{ id: string; amount: number; time?: number }>,
+  },
+}));
+
 vi.mock("../../hubChatUtils", () => ({ ls: vi.fn() }));
 vi.mock("../../../../modules/finyk/utils", () => ({
   getTxStatAmount: vi.fn((t: { amount: number }) => Math.abs(t.amount) / 100),
 }));
 vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
   getCachedFinykSqliteState: vi.fn(),
+}));
+vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorState: () => ({
+    transactions: mirrorTxs.current,
+    accounts: [],
+    refreshedAt: null,
+  }),
 }));
 
 import { ls } from "../../hubChatUtils";
@@ -18,17 +31,19 @@ const mockGetCached = vi.mocked(getCachedFinykSqliteState);
 // Use a timestamp within the last 7 days so "week" period filter passes
 const TX_EPOCH_SEC = Math.floor((Date.now() - 3600 * 1000) / 1000);
 
-function makeCache(txs: Array<{ id: string; amount: number; time?: number }>) {
-  return { txs };
+function seedMirror(
+  txs: Array<{ id: string; amount: number; time?: number }>,
+): void {
+  mirrorTxs.current = txs;
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mirrorTxs.current = [];
   mockGetCached.mockReturnValue({
     hiddenTransactions: [],
   } as unknown as ReturnType<typeof getCachedFinykSqliteState>);
   mockLs.mockImplementation((key: string) => {
-    if (key === "finyk_tx_cache") return makeCache([]);
     if (key === "finyk_tx_splits") return {};
     return null;
   });
@@ -52,15 +67,10 @@ describe("exportReport", () => {
   });
 
   it("sums expenses (negative amounts)", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return makeCache([
-          { id: "t1", amount: -5000, time: TX_EPOCH_SEC },
-          { id: "t2", amount: -3000, time: TX_EPOCH_SEC },
-        ]);
-      }
-      return {};
-    });
+    seedMirror([
+      { id: "t1", amount: -5000, time: TX_EPOCH_SEC },
+      { id: "t2", amount: -3000, time: TX_EPOCH_SEC },
+    ]);
     const result = exportReport({
       name: "export_report",
       input: { period: "week" },
@@ -69,12 +79,7 @@ describe("exportReport", () => {
   });
 
   it("sums income (positive amounts)", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return makeCache([{ id: "t3", amount: 10000, time: TX_EPOCH_SEC }]);
-      }
-      return {};
-    });
+    seedMirror([{ id: "t3", amount: 10000, time: TX_EPOCH_SEC }]);
     const result = exportReport({
       name: "export_report",
       input: { period: "week" },
@@ -86,15 +91,10 @@ describe("exportReport", () => {
     mockGetCached.mockReturnValue({
       hiddenTransactions: ["t_hidden"],
     } as unknown as ReturnType<typeof getCachedFinykSqliteState>);
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return makeCache([
-          { id: "t_hidden", amount: -20000, time: TX_EPOCH_SEC },
-          { id: "t_visible", amount: -5000, time: TX_EPOCH_SEC },
-        ]);
-      }
-      return {};
-    });
+    seedMirror([
+      { id: "t_hidden", amount: -20000, time: TX_EPOCH_SEC },
+      { id: "t_visible", amount: -5000, time: TX_EPOCH_SEC },
+    ]);
     const result = exportReport({
       name: "export_report",
       input: { period: "week" },
@@ -109,10 +109,7 @@ describe("exportReport", () => {
   });
 
   it("accepts custom period with from/to dates", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") return makeCache([]);
-      return {};
-    });
+    seedMirror([]);
     const result = exportReport({
       name: "export_report",
       input: { period: "custom", from: "2026-04-01", to: "2026-04-30" },
@@ -121,15 +118,10 @@ describe("exportReport", () => {
   });
 
   it("shows correct counts in Транзакцій line", () => {
-    mockLs.mockImplementation((key: string) => {
-      if (key === "finyk_tx_cache") {
-        return makeCache([
-          { id: "t1", amount: -1000, time: TX_EPOCH_SEC },
-          { id: "t2", amount: 500, time: TX_EPOCH_SEC },
-        ]);
-      }
-      return {};
-    });
+    seedMirror([
+      { id: "t1", amount: -1000, time: TX_EPOCH_SEC },
+      { id: "t2", amount: 500, time: TX_EPOCH_SEC },
+    ]);
     const result = exportReport({
       name: "export_report",
       input: { period: "week" },
