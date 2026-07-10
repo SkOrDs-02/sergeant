@@ -521,4 +521,19 @@ export const webBlocks = [
       "react-hooks/refs": "error",
     },
   },
+  // react-hooks v7 burndown (initiative 0021) — `set-state-in-effect` cleared
+  // apps/web in two waves (2026-07-10): wave 1 (81→48) fixed
+  // `useSqliteTickOverlay`, render-time SQLite overlay, `useSyncExternalStore`
+  // patterns; wave 2 (48→0) fixed core hub/onboarding, finyk/nutrition/routine
+  // modules, and shared UI (Toast/Tooltip/PageTransition/voice). Promoted from
+  // baseline `off` to web-scoped `error` so the next regression fails lint
+  // loudly. Stays `off` in the shared baseline because apps/mobile still
+  // carries ~46 legacy violations (separate future bite). See
+  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/set-state-in-effect": "error",
+    },
+  },
 ];

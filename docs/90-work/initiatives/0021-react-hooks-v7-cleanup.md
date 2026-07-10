@@ -23,7 +23,7 @@
 - [x] `react-hooks/preserve-manual-memoization` — web 0 ✅ + mobile 0 ✅ (2026-07-10: `computeInitialExpenseDate` + centralised `pantryItems`); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
 - [x] `react-hooks/purity` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
 - [x] `react-hooks/refs` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js` (mobile waves 1–3 [#156](https://github.com/SkOrDs-02/sergeant/pull/156), [#160](https://github.com/SkOrDs-02/sergeant/pull/160), [#162](https://github.com/SkOrDs-02/sergeant/pull/162); web wave 1 — 26 files).
-- [x] `react-hooks/set-state-in-effect` — web 0 ✅ (2026-07-10 wave 2); mobile 44 remaining
+- [x] `react-hooks/set-state-in-effect` — web 0 ✅ promoted in `eslint.web.js` (2026-07-10 wave 2); mobile ~46 remaining
 - [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
 - [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
 - [ ] `eslint.baseline.js:146-178` оновлено або видалено (після promotion всіх 5 правил)
@@ -52,7 +52,7 @@
 
 **Web refs wave 1:** 26 files — core hooks (activation, SW update, hub UI, speech, chat), HubSearch destructure, nutrition/fizruk/routine reminders, AddMealSheet/BarcodeScanner, DropdownMenu/Tooltip ref composition, useSwipeNavigation `isDragging` state, shared hooks (localStorage, theme). Web `refs` → 0; promoted in `eslint.web.js`.
 
-**Залишок:** `set-state-in-effect` (~80 web / 44 mobile).
+**Залишок:** `set-state-in-effect` (web 0 ✅ promoted 2026-07-10 / mobile ~46 remaining); `exhaustive-deps` та решта baseline suppressions.
 
 ## Виконані дії (2026-06-10)
 
