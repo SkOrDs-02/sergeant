@@ -1,11 +1,10 @@
 // Web-обгортка над чистим фінансовим контекстом з `@sergeant/insights`.
-// Читає `localStorage` один раз і готує похідні дані (canonical-id сумарні,
-// множини transferIds тощо), щоб окремі правила не дублювали парсинг.
+// Банківські транзакції тепер читаються з Mono mirror reader (Dual-write
+// teardown Phase 3). Решта полів (budgets, txCategories, customCategories,
+// hiddenTxIds, manualExpenses, txSplits) лишаються на LS.
 //
-// Навмисно — тут не використовується typedStore: існуючі LS-ключі читаються
-// у старому форматі, а міграція — окрема фіча (див. `migrateFinykStorage`).
 // Правила (у пакеті `@sergeant/insights`) платформо-незалежні; цей файл —
-// єдина точка, де контекст «запікається» з Web-LS.
+// єдина точка, де контекст «запікається» з Web-даних.
 
 import { getCategory } from "../../../modules/finyk/utils";
 import { getCategorySpendList } from "@sergeant/finyk-domain/domain/categories";
@@ -13,6 +12,7 @@ import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
 import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/personalization";
 import { Recommendations } from "@sergeant/insights";
 import { safeReadLS } from "@shared/lib/storage/storage";
+import { getCachedFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 
 type FinanceContext = Recommendations.FinanceContext;
 type Transaction = Recommendations.Transaction;
@@ -51,13 +51,8 @@ export function buildFinanceContext(): FinanceContext {
   const monthStart = startOfCurrentMonth();
   const monthStartMs = monthStart.getTime();
 
-  const txCache = safeLS<{ txs?: Transaction[] } | Transaction[] | null>(
-    "finyk_tx_cache",
-    null,
-  );
-  const transactions: Transaction[] = Array.isArray(txCache)
-    ? txCache
-    : (txCache?.txs ?? []);
+  const transactions: Transaction[] = getCachedFinykMonoMirrorState()
+    .transactions as Transaction[];
 
   const budgets = safeLS<Budget[]>("finyk_budgets", []);
   const txCategories = safeLS<Record<string, string>>("finyk_tx_cats", {});

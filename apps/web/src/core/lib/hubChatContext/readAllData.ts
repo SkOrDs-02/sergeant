@@ -1,30 +1,31 @@
+/* eslint-disable sergeant-design/no-raw-storage-key --
+   All remaining keys in this file (finyk_hidden, finyk_budgets, finyk_debts,
+   finyk_recv, finyk_hidden_txs, finyk_tx_cats, finyk_tx_splits,
+   finyk_custom_cats_v1, finyk_monthly_plan, finyk_subs, finyk_mono_debt_linked)
+   have no SQLite canon yet and are on the 2026-Q3 burn-down list. The two
+   tombstoned keys (finyk_tx_cache / finyk_info_cache) were removed in
+   Dual-write teardown Phase 3 and replaced by the mirror reader below. */
 import { INTERNAL_TRANSFER_ID } from "../../../modules/finyk/constants";
 import { ls } from "../hubChatUtils";
+import { getCachedFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import type {
   AllData,
   Budget,
   Debt,
-  InfoCache,
   MonthlyPlan,
   Receivable,
   Subscription,
-  TxCache,
 } from "./types";
 
 export function readAllData(): AllData {
-  const txCache = ls<TxCache | null>("finyk_tx_cache", null);
-  const rawInfo = ls<{ info?: InfoCache } | InfoCache | null>(
-    "finyk_info_cache",
-    null,
-  );
-  const infoCache: InfoCache | null =
-    (rawInfo && "info" in rawInfo ? rawInfo.info : (rawInfo as InfoCache)) ||
-    null;
+  const mirror = getCachedFinykMonoMirrorState();
 
-  const transactions = txCache?.txs || [];
-  const accounts = infoCache?.accounts || [];
-  const clientName = infoCache?.name || "";
-  const cacheTime = txCache?.timestamp || null;
+  const transactions = mirror.transactions;
+  const accounts = mirror.accounts as AllData["accounts"];
+  const clientName = "";
+  const cacheTime = mirror.refreshedAt
+    ? new Date(mirror.refreshedAt).getTime()
+    : null;
 
   const hiddenAccounts = ls<string[]>("finyk_hidden", []);
   const budgets = ls<Budget[]>("finyk_budgets", []);

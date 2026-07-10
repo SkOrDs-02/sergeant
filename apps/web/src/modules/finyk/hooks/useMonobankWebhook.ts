@@ -21,7 +21,6 @@ import {
   ANALYTICS_EVENTS,
 } from "../../../core/observability/analytics";
 import { fetchAllMonoTransactions } from "./monoTransactionsLoader";
-import { writeJSON, removeItem } from "../lib/finykStorage";
 import { apiQueryKeys } from "@sergeant/api-client/react";
 import type { MeResponse } from "@sergeant/api-client";
 import { getSqliteDb } from "../../../core/db/sqlite";
@@ -39,18 +38,6 @@ import {
   notifyFinykMonoMirrorRefresh,
   useFinykMonoMirrorGate,
 } from "../lib/monoMirrorGate";
-
-/**
- * Legacy localStorage keys still read by other surfaces (Hub previews,
- * Analytics, recommendations engine, daily/weekly digests, hubChat actions,
- * onboarding demo seed). The webhook hook keeps writing them as a
- * forward-compat shim so existing readers keep working without a coordinated
- * migration. Phase-out tracked under Monobank Roadmap follow-up — see
- * `docs/02-engineering/integrations/monobank-roadmap.md` (section A → B).
- */
-const LEGACY_TX_CACHE_KEY = "finyk_tx_cache";
-const LEGACY_TX_CACHE_LAST_GOOD_KEY = "finyk_tx_cache_last_good";
-const LEGACY_INFO_CACHE_KEY = "finyk_info_cache";
 
 const SYNC_STATE_STALE = 30_000;
 const ACCOUNTS_STALE = 5 * 60_000;
@@ -191,33 +178,14 @@ export function useMonobankWebhook({
 
   const loadingTx = txQuery.isLoading && isConnected;
 
-  // Legacy-cache shim: mirror current-month transactions into
-  // `finyk_tx_cache` (+ `_last_good`) so downstream readers (Hub, Analytics,
-  // recommendations, coach, hubChat) keep working unchanged. Was previously
-  // owned by `useMonobankLegacy()`. We invalidate the Hub finyk preview
-  // here too — same place the legacy hook used to fan-out.
-  // Also emits storageUpdated on the hub bus (F3/F10 fix) so Hub Reports
-  // re-aggregates in the same tab without waiting for a storage event.
+  // Invalidate Hub finyk preview and notify same-tab consumers when
+  // new transactions arrive. All production readers now use the SQLite
+  // mirror (Dual-write teardown Phase 3) — no LS shim needed.
   useEffect(() => {
     if (transactions.length === 0) return;
-    const payload = { txs: transactions, timestamp: Date.now() };
-    if (writeJSON(LEGACY_TX_CACHE_KEY, payload)) {
-      queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
-      emitHubBus("storageUpdated", undefined);
-    }
-    if (transactions.length >= 3) {
-      writeJSON(LEGACY_TX_CACHE_LAST_GOOD_KEY, payload);
-    }
+    queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
+    emitHubBus("storageUpdated", undefined);
   }, [transactions, queryClient]);
-
-  // Legacy-cache shim: `finyk_info_cache` shape is `{ token, info }`. In
-  // webhook-mode we have no client-side token (server holds it), so we leave
-  // `token` empty — readers that conditionally branch on it will keep
-  // working since they fall back to `rawCache?.info ?? rawCache`.
-  useEffect(() => {
-    if (!clientInfo) return;
-    writeJSON(LEGACY_INFO_CACHE_KEY, { token: "", info: clientInfo });
-  }, [clientInfo]);
 
   // PR #038 — Mono cache mirror.
   //
@@ -500,9 +468,6 @@ export function useMonobankWebhook({
     queryClient.removeQueries({ queryKey: finykKeys.monoSyncState });
     queryClient.removeQueries({ queryKey: finykKeys.monoWebhookAccounts });
     queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
-    removeItem(LEGACY_TX_CACHE_KEY);
-    removeItem(LEGACY_TX_CACHE_LAST_GOOD_KEY);
-    removeItem(LEGACY_INFO_CACHE_KEY);
     setError("");
     setAuthError("");
   }, [queryClient]);
@@ -511,8 +476,6 @@ export function useMonobankWebhook({
     queryClient.removeQueries({
       queryKey: finykKeys.monoWebhookTransactions(),
     });
-    removeItem(LEGACY_TX_CACHE_KEY);
-    removeItem(LEGACY_TX_CACHE_LAST_GOOD_KEY);
     queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
     setError("");
   }, [queryClient]);

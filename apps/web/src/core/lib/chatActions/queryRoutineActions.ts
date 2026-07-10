@@ -7,6 +7,7 @@ import {
 } from "@shared/lib/time/kyivTime";
 import { ls } from "../hubChatUtils";
 import { readFizrukWorkouts } from "./fizrukActions/shared";
+import { getCachedFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import type { ChatAction, ChatActionResult } from "./types";
 
 /**
@@ -225,24 +226,18 @@ function normalizeMetric(value: unknown): CorrelationMetric {
   return "spending";
 }
 
-/** Per-Kyiv-day expense total (грн) from the bank tx cache. */
+/** Per-Kyiv-day expense total (грн) from the Mono mirror cache. */
 function spendingByDay(days: number): Map<string, number> {
-  const cache = ls<{
-    txs?: Array<{
-      id: string;
-      amount: number;
-      time?: number;
-      description?: string;
-      mcc?: number;
-    }>;
-    // eslint-disable-next-line sergeant-design/no-raw-storage-key -- chat-action executors run outside React, so the finyk `useStorage` hooks are unavailable; the `STORAGE_KEYS.FINYK_*` constants are themselves banned for direct access (no-restricted-syntax, PR #039). Read-only mirror of `queryFinykActions.ts`.
-  } | null>("finyk_tx_cache", null);
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key -- see finyk_tx_cache note above; read-only correlation source.
+  const mirrorTxs = getCachedFinykMonoMirrorState().transactions as Array<{
+    id: string;
+    amount: number;
+    time?: number;
+  }>;
+  // eslint-disable-next-line sergeant-design/no-raw-storage-key -- tx splits are a per-tx user annotation; no SQLite canon yet.
   const txSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
   const byDay = new Map<string, number>();
   const cutoffTs = (Date.now() - days * DAY_MS) / 1000;
-  if (!cache?.txs) return byDay;
-  for (const t of cache.txs) {
+  for (const t of mirrorTxs) {
     if ((t.time || 0) < cutoffTs) continue;
     if (t.amount >= 0) continue; // expenses only (negative amounts)
     const dk = getKyivDayKey((t.time || 0) * 1000);

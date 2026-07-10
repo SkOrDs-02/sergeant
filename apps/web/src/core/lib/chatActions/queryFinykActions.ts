@@ -1,15 +1,8 @@
-/* eslint-disable sergeant-design/no-raw-storage-key --
-   Chat-action executors run synchronously outside React, so the canonical
-   Finyk storage wrappers (`modules/finyk/hooks/useStorage`) — which are hooks —
-   are unavailable here. Manual expenses / per-tx categories / hidden-tx ids
-   now read from the canonical SQLite warm cache; only the bank tx cache
-   (`finyk_tx_cache`, no SQLite canon) is still read raw from localStorage,
-   mirroring the sibling reader in `finykActions/search.ts` (read-only). */
 import { getWeekKey } from "@sergeant/shared";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/utils";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { ls } from "../hubChatUtils";
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
+import { getCachedFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import {
   toDisplayAmount,
   toIsoDay,
@@ -95,12 +88,7 @@ type RawTx = {
 function readQueryTransactions(): FinykSearchTx[] {
   const sqlite = getCachedFinykSqliteState();
   const manual = sqlite.manualExpenses as RawTx[];
-  const cached = ls<RawTx[] | { txs?: RawTx[] }>("finyk_tx_cache", []);
-  const bankTxs = Array.isArray(cached)
-    ? cached
-    : Array.isArray(cached.txs)
-      ? cached.txs
-      : [];
+  const bankTxs = getCachedFinykMonoMirrorState().transactions as RawTx[];
   const txCategories = sqlite.txCategories;
   const hidden = new Set(sqlite.hiddenTransactions);
 
