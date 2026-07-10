@@ -26,14 +26,16 @@ interface UseNutritionPrefsStateResult {
 export function useNutritionPrefsState(
   sqliteCacheTick: number,
 ): UseNutritionPrefsStateResult {
+  const readOverlay = () => {
+    const cache = getCachedNutritionSqliteState();
+    if (cache.refreshedAt === null || !cache.prefs) return undefined;
+    return cache.prefs;
+  };
+
   const [prefs, setPrefs] = useSqliteTickOverlay(
     sqliteCacheTick,
-    () => {
-      const cache = getCachedNutritionSqliteState();
-      if (cache.refreshedAt === null || !cache.prefs) return undefined;
-      return cache.prefs;
-    },
-    () => loadNutritionPrefs(),
+    readOverlay,
+    () => readOverlay() ?? loadNutritionPrefs(),
   );
   const [prefsStorageErr, setPrefsStorageErr] = useState("");
 
@@ -41,7 +43,7 @@ export function useNutritionPrefsState(
     const err = persistNutritionPrefs(prefs)
       ? ""
       : "Не вдалося зберегти налаштування.";
-    void Promise.resolve().then(() => setPrefsStorageErr(err));
+    setPrefsStorageErr(err);
   }, [prefs]);
 
   return { prefs, setPrefs, prefsStorageErr };

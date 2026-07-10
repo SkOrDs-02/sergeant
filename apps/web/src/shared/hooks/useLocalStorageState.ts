@@ -142,22 +142,18 @@ export function useLocalStorageState<T>(
     const raw = webKVStore.getString(key);
     const { deserialize: d, validate: v } = optionsRef.current;
     if (raw === null) {
-      void Promise.resolve().then(() => setValue(resolveInitial(initialValue)));
+      setValue(resolveInitial(initialValue));
       return;
     }
     try {
       const parsed = d ? d(raw) : JSON.parse(raw);
       if (v && !v(parsed)) {
-        void Promise.resolve().then(() =>
-          setValue(resolveInitial(initialValue)),
-        );
+        setValue(resolveInitial(initialValue));
         return;
       }
-      void Promise.resolve().then(() =>
-        setValue((parsed ?? resolveInitial(initialValue)) as T),
-      );
+      setValue((parsed ?? resolveInitial(initialValue)) as T);
     } catch {
-      void Promise.resolve().then(() => setValue(resolveInitial(initialValue)));
+      setValue(resolveInitial(initialValue));
     }
     isFirstWriteRef.current = true;
     // Intentionally depend only on `key` — `initialValue` by design is a
