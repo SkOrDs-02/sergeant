@@ -86,6 +86,8 @@ export { useShortcutGlyph } from "./useShortcutGlyph";
 
 export { useInView } from "./useInView";
 
+export { useSyncedFromKey } from "./useSyncedFromKey";
+
 export {
   useNotificationPermission,
   showReminderNotification,

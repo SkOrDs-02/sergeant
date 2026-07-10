@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSyncedFromKey } from "@shared/hooks/useSyncedFromKey";
 import { useBrowserLocation } from "./useBrowserLocation";
 
 export type HubView = "dashboard" | "reports" | "profile" | "settings";
@@ -95,11 +96,9 @@ export function useHubUIState(): HubUIState {
   );
 
   // Re-sync `hubView` when URL search params change (back/forward, external navigate).
-  const [prevSearch, setPrevSearch] = useState(location.search);
-  if (location.search !== prevSearch) {
-    setPrevSearch(location.search);
+  useSyncedFromKey(location.search, () => {
     setHubViewRaw(readViewFromSearch(location.search));
-  }
+  });
 
   const closeSearch = useCallback(() => setSearchOpen(false), []);
 
