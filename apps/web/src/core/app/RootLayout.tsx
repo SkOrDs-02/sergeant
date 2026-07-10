@@ -6,6 +6,7 @@ import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import { useAuth } from "../auth/AuthContext";
 import { useActivationV2Boot } from "../activation";
+import { NpsSurveyGate } from "../feedback/useNpsSurveyTrigger";
 import { AppLock } from "../security/AppLock";
 import { useAppLockContext } from "../security/AppLockContext";
 import { setFlag, useFlag } from "../lib/featureFlags";
@@ -86,6 +87,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       />
       <NutritionBootGate />
       <FinykBootGate />
+      <NpsSurveyGate />
       <DemoModeBadge />
       {children}
       <HubChatOverlay />

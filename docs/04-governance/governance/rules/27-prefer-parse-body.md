@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `warn` (rollout → `error` after migration complete)
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-10 by @claude. **Next review:** 2026-10-08.
 > **Status:** Active
 
 > ESLint convention enforced by `sergeant-design/prefer-parse-body-over-validate-body` in `packages/eslint-plugin-sergeant-design`. Not a numbered Hard Rule in `hard-rules.json` — this file is the canonical doc body referenced from the plugin and server handler comments.

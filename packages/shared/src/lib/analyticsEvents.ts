@@ -437,6 +437,39 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // first 30 days, then 10 % once Sprint 1+2 optimisations land.
   HUB_TAB_SWITCH_PERF: "hub_tab_switch_perf",
 
+  // Feedback loop (GTM § 3.2 — `docs/01-product/launch/business/02-go-to-market.md`).
+  // In-app feedback widget (Settings → «Фідбек») + NPS через PostHog
+  // Surveys. Ops-довідка: `docs/03-operations/observability/feedback-loop.md`.
+  //
+  // Payload-контракти:
+  //
+  //   FEEDBACK_WIDGET_OPENED { source: "settings" }
+  //   FEEDBACK_SUBMITTED     { category: "idea" | "bug" | "other",
+  //                            message: string,        // free-text, ≤ 2000 chars
+  //                            length: number,
+  //                            has_page_context: boolean,
+  //                            page?: string,          // sanitizeUrl()-ений href
+  //                            viewport?: string }     // "WxH", напр. "390x844"
+  //   NPS_SURVEY_ELIGIBLE    { account_age_days: number }
+  //
+  // `FEEDBACK_SUBMITTED.message` — єдиний event у каталозі з навмисним
+  // user-generated free-text payload-ом. Це усвідомлений виняток із
+  // «minimal, non-sensitive metadata» контракту `trackEvent`: текст
+  // юзер пише саме для того, щоб ми його прочитали. `scrubPII` все одно
+  // проходить по payload (redact відомих key-імен), а DEV-console-шлях
+  // додатково gated value-рівневим `containsPII`.
+  //
+  // `NPS_SURVEY_ELIGIBLE` — client-side тригер для PostHog Survey
+  // (NPS). Стріляє рівно один раз на browser profile, коли вік акаунта
+  // (від `user.createdAt`, цілі доби UTC) сягає ≥ 7 днів; idempotency —
+  // localStorage-флаг `sergeant.nps_survey_eligible_fired`. Survey у
+  // PostHog dashboard таргетиться display-умовою «user sends event
+  // nps_survey_eligible» (див. ops-довідку вище). Назви подій не
+  // міняти — на них зав'язані survey-умови й дашборди у PostHog.
+  FEEDBACK_WIDGET_OPENED: "feedback_widget_opened",
+  FEEDBACK_SUBMITTED: "feedback_submitted",
+  NPS_SURVEY_ELIGIBLE: "nps_survey_eligible",
+
   // [Initiative 0006](../../../../docs/initiatives/0006-frontend-routing-and-code-split.md)
   // Phase 4 — RUM baseline for `route_change_p95_latency_ms`. Fires once
   // per top-level pathname change, after the next two animation frames so
