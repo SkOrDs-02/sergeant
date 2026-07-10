@@ -21,7 +21,14 @@
  *     committed drop, via `@sergeant/shared`.
  */
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   AccessibilityInfo,
   Animated as RNAnimated,
@@ -212,7 +219,7 @@ interface DraggableRowProps {
   onDragStart: (index: number) => void;
   onDragEnd: (index: number, translationY: number) => void;
   onLayoutHeight: (index: number, height: number) => void;
-  reduceMotionRef: React.MutableRefObject<boolean>;
+  reduceMotion: boolean;
   preview?: ModulePreview | null;
   inactive?: boolean;
   testID?: string;
@@ -225,13 +232,18 @@ const DraggableRow = memo(function DraggableRow({
   onDragStart,
   onDragEnd,
   onLayoutHeight,
-  reduceMotionRef,
+  reduceMotion,
   preview,
   inactive,
   testID,
 }: DraggableRowProps) {
   const translationY = useSharedValue(0);
   const lifted = useSharedValue(0);
+  const reduceMotionSV = useSharedValue(reduceMotion ? 1 : 0);
+
+  useEffect(() => {
+    reduceMotionSV.value = reduceMotion ? 1 : 0;
+  }, [reduceMotion, reduceMotionSV]);
 
   const pan = Gesture.Pan()
     .activateAfterLongPress(LONG_PRESS_MS)
@@ -249,7 +261,7 @@ const DraggableRow = memo(function DraggableRow({
       "worklet";
       const finalTranslation =
         event.translationY !== 0 ? event.translationY : translationY.value;
-      const duration = reduceMotionRef.current ? 0 : SNAP_DURATION_MS;
+      const duration = reduceMotionSV.value ? 0 : SNAP_DURATION_MS;
       translationY.value = withTiming(0, { duration });
       lifted.value = withTiming(0, { duration });
       runOnJS(onDragEnd)(index, finalTranslation);
@@ -257,7 +269,7 @@ const DraggableRow = memo(function DraggableRow({
     .onFinalize(() => {
       "worklet";
       if (translationY.value !== 0) {
-        const duration = reduceMotionRef.current ? 0 : SNAP_DURATION_MS;
+        const duration = reduceMotionSV.value ? 0 : SNAP_DURATION_MS;
         translationY.value = withTiming(0, { duration });
         lifted.value = withTiming(0, { duration });
       }
@@ -313,17 +325,22 @@ export function DraggableDashboard({
   testID,
 }: DraggableDashboardProps) {
   const orderRef = useRef<DashboardModuleId[]>([...modules]);
-  orderRef.current = [...modules];
+  useEffect(() => {
+    orderRef.current = [...modules];
+  }, [modules]);
 
   const heightsRef = useRef<number[]>([]);
-  if (heightsRef.current.length !== modules.length) {
-    heightsRef.current = modules.map(
-      (_, i) => heightsRef.current[i] ?? FALLBACK_ROW_HEIGHT,
+  const moduleCount = modules.length;
+  useLayoutEffect(() => {
+    const prev = heightsRef.current;
+    if (prev.length === moduleCount) return;
+    heightsRef.current = Array.from(
+      { length: moduleCount },
+      (_, i) => prev[i] ?? FALLBACK_ROW_HEIGHT,
     );
-  }
+  }, [moduleCount]);
 
   const [reduceMotion, setReduceMotion] = useState(false);
-  const reduceMotionRef = useRef(false);
 
   // Coach mark state
   const [showCoachMark, setShowCoachMark] = useState(() => {
@@ -339,15 +356,12 @@ export function DraggableDashboard({
   useEffect(() => {
     let mounted = true;
     void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (!mounted) return;
-      reduceMotionRef.current = enabled;
-      setReduceMotion(enabled);
+      if (mounted) setReduceMotion(enabled);
     });
     const sub = AccessibilityInfo.addEventListener(
       "reduceMotionChanged",
       (enabled) => {
-        reduceMotionRef.current = enabled;
-        setReduceMotion(enabled);
+        if (mounted) setReduceMotion(enabled);
       },
     );
     return () => {
@@ -385,12 +399,6 @@ export function DraggableDashboard({
     heightsRef.current[index] = height;
   }, []);
 
-  // `reduceMotion` is read inside the worklet via the ref — the state
-  // setter here only exists so re-mounts after OS-level changes pick
-  // up the new value immediately; the value is otherwise unused at
-  // render time.
-  void reduceMotion;
-
   return (
     <View testID={testID ?? "dashboard-module-list"}>
       <DragReorderCoachMark
@@ -407,7 +415,7 @@ export function DraggableDashboard({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onLayoutHeight={handleLayoutHeight}
-            reduceMotionRef={reduceMotionRef}
+            reduceMotion={reduceMotion}
             preview={previews?.[id] ?? null}
             inactive={inactiveModules?.has(id) ?? false}
             testID={testID ?? "dashboard-module-row"}

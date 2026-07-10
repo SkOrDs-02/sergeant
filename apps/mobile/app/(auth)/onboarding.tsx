@@ -1,5 +1,12 @@
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -153,9 +160,9 @@ export default function OnboardingScreen() {
     [heroVariant],
   );
 
-  // Wizard state survives intro-slide navigation: `inWizardRef` gates
-  // whether the carousel or the step machine renders, so the reducer
-  // never resets when the user pages through the intro slides.
+  // Wizard state survives intro-slide navigation: `inWizard` gates whether
+  // the carousel or the step machine renders, so the reducer never resets
+  // when the user pages through the intro slides.
   const [state, dispatch] = useReducer(
     wizardReducer,
     undefined,
@@ -165,10 +172,8 @@ export default function OnboardingScreen() {
       goals: { ...EMPTY_GOALS },
     }),
   );
-  const introIndexRef = useRef(0);
-  const inWizardRef = useRef(false);
-  // Re-render trigger for the ref-backed intro index / phase flag.
-  const [, forceRender] = useReducer((n: number) => n + 1, 0);
+  const [introIndex, setIntroIndex] = useState(0);
+  const [inWizard, setInWizard] = useState(false);
 
   const startedAtRef = useRef<number | null>(null);
   const stepEnteredAtRef = useRef<number>(0);
@@ -223,25 +228,25 @@ export default function OnboardingScreen() {
 
   const skipAll = useCallback(() => {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_SKIPPED, {
-      step: inWizardRef.current ? state.step : "welcome",
+      step: inWizard ? state.step : "welcome",
       durationMs: Math.max(
         0,
         Date.now() - (startedAtRef.current ?? Date.now()),
       ),
     });
     goToSignUp();
-  }, [state.step, goToSignUp]);
+  }, [state.step, goToSignUp, inWizard]);
 
   // Intro carousel navigation. The last slide hands off to the wizard.
   const advanceIntro = useCallback(() => {
-    if (introIndexRef.current < SLIDES.length - 1) {
-      introIndexRef.current += 1;
-      forceRender();
-      return;
-    }
-    inWizardRef.current = true;
-    stepEnteredAtRef.current = Date.now();
-    forceRender();
+    setIntroIndex((idx) => {
+      if (idx < SLIDES.length - 1) {
+        return idx + 1;
+      }
+      setInWizard(true);
+      stepEnteredAtRef.current = Date.now();
+      return idx;
+    });
   }, []);
 
   const handleNext = useCallback(() => {
@@ -339,9 +344,9 @@ export default function OnboardingScreen() {
   }, [state.picks, state.goals, state.step, defaultPicksVariant, goToSignUp]);
 
   // -- Intro carousel -------------------------------------------------------
-  if (!inWizardRef.current) {
-    const slide = SLIDES[introIndexRef.current]!;
-    const isLast = introIndexRef.current === SLIDES.length - 1;
+  if (!inWizard) {
+    const slide = SLIDES[introIndex]!;
+    const isLast = introIndex === SLIDES.length - 1;
     return (
       <SafeAreaView className="flex-1 bg-bg px-6">
         <Pressable
@@ -377,18 +382,15 @@ export default function OnboardingScreen() {
             <Pressable
               key={i}
               onPress={() => {
-                introIndexRef.current = i;
-                forceRender();
+                setIntroIndex(i);
               }}
             >
               <View
                 className="h-2 rounded"
                 style={{
-                  width: i === introIndexRef.current ? 24 : 8,
+                  width: i === introIndex ? 24 : 8,
                   backgroundColor:
-                    i === introIndexRef.current
-                      ? slide.color
-                      : colors.textMuted,
+                    i === introIndex ? slide.color : colors.textMuted,
                 }}
               />
             </Pressable>
@@ -436,8 +438,7 @@ export default function OnboardingScreen() {
               togglePick={togglePick}
               onContinue={handleNext}
               onBack={() => {
-                inWizardRef.current = false;
-                forceRender();
+                setInWizard(false);
               }}
               defaultPicksVariant={defaultPicksVariant}
             />

@@ -302,7 +302,9 @@ export function useLocalStorage<T>(
   fallback: T,
 ): UseLocalStorageReturn<T> {
   const fallbackRef = useRef(fallback);
-  fallbackRef.current = fallback;
+  useEffect(() => {
+    fallbackRef.current = fallback;
+  }, [fallback]);
 
   // Guard against our own writes re-entering the value-changed listener.
   // On web, `StorageEvent` only fires for cross-tab writes, so the
