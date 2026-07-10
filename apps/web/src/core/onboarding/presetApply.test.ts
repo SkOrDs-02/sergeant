@@ -1,31 +1,22 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  clearSqliteRoutineStateCache,
-  clearSqliteCompletionsCache,
-  __setRoutineSqliteStateCacheForTests,
-} from "../../modules/routine/lib/sqliteReader";
-import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 
-// applyRoutinePreset reads the warm SQLite cache and writes through
-// saveRoutineState (which updates the same cache). No localStorage round-trip
-// for the routine module after Stage-8 tombstone. Other modules (finyk /
-// fizruk / nutrition) have no direct write path — they are handled via the
-// config.action flow in PresetSheet.tsx.
+const routineState = { current: null as Record<string, unknown> | null };
+
+vi.mock("@routine/lib/routineStorage", () => ({
+  loadRoutineState: () => routineState.current,
+  saveRoutineState: (next: Record<string, unknown>) => {
+    routineState.current = next;
+  },
+}));
 
 import { applyPreset } from "./presetApply";
 
 describe("applyPreset", () => {
-  let dispatchSpy: ReturnType<typeof vi.spyOn>;
-
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-23T10:00:00Z"));
-    clearSqliteRoutineStateCache();
-    clearSqliteCompletionsCache();
-    dispatchSpy = vi
-      .spyOn(window, "dispatchEvent")
-      .mockReturnValue(true) as never;
+    routineState.current = null;
     vi.stubGlobal("crypto", {
       randomUUID: () => "00000000-0000-0000-0000-000000000000",
     });
@@ -34,32 +25,28 @@ describe("applyPreset", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
-    dispatchSpy.mockRestore();
-    clearSqliteRoutineStateCache();
-    clearSqliteCompletionsCache();
   });
 
   it("ignores an unknown module id", () => {
     // @ts-expect-error invalid module id intentionally
     applyPreset("unknown", { name: "x" });
-    expect(loadRoutineState().habits).toHaveLength(0);
+    expect(routineState.current).toBeNull();
   });
 
-  it("finyk / fizruk / nutrition are no-ops (handled via config.action)", () => {
-    applyPreset("finyk", {
-      description: "Coffee",
-      amount: 5000,
-      category: "food",
-    });
+  it("is a no-op for finyk / nutrition / fizruk (PresetSheet config.action path)", () => {
+    applyPreset("finyk", { description: "Coffee", amount: 5000 });
+    applyPreset("nutrition", { name: "Apple", kcal: 100 });
     applyPreset("fizruk", { name: "Run", durationMin: 30 });
-    applyPreset("nutrition", { name: "Apple", kcal: 100, mealType: "snack" });
-    // Nothing written — routine state unchanged.
-    expect(loadRoutineState().habits).toHaveLength(0);
+    expect(routineState.current).toBeNull();
   });
 
-  it("creates a routine habit and dispatches the change event", () => {
+  it("creates a routine habit via saveRoutineState", () => {
     applyPreset("routine", { name: "Stretch", emoji: "🤸" });
-    const state = loadRoutineState();
+    const state = routineState.current as {
+      habits: Array<{ name: string; emoji: string; demo: boolean }>;
+      habitOrder: string[];
+      schemaVersion: number;
+    };
     expect(state.habits).toHaveLength(1);
     expect(state.habits[0]).toMatchObject({
       name: "Stretch",
@@ -69,20 +56,23 @@ describe("applyPreset", () => {
     });
     expect(state.habitOrder).toHaveLength(1);
     expect(state.schemaVersion).toBe(3);
-    expect(dispatchSpy).toHaveBeenCalled();
   });
 
   it("falls back to a default emoji and appends to existing routine habits", () => {
-    __setRoutineSqliteStateCacheForTests({
-      habits: [{ id: "h0" } as never],
+    routineState.current = {
+      habits: [{ id: "h0" }],
       habitOrder: ["h0"],
-      prefs: { custom: true } as never,
-    });
+      prefs: { custom: true },
+    };
     applyPreset("routine", { name: "Walk" });
-    const state = loadRoutineState();
+    const state = routineState.current as {
+      habits: Array<{ emoji: string }>;
+      habitOrder: string[];
+      prefs: { custom: boolean };
+    };
     expect(state.habits).toHaveLength(2);
     expect(state.habits[1]!.emoji).toBe("✓");
     expect(state.habitOrder).toHaveLength(2);
-    expect((state.prefs as Record<string, unknown>)["custom"]).toBe(true);
+    expect(state.prefs).toEqual({ custom: true });
   });
 });

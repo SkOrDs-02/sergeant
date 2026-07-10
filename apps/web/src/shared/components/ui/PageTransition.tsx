@@ -83,6 +83,13 @@ export function PageTransition({
     typeof window !== "undefined" &&
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
+  // Incremented (render-time state update) each time a reduced-motion swap
+  // fires. The effect below watches this counter to call onTransitionEnd.
+  // Using a counter rather than a ref avoids the react-hooks/refs lint rule
+  // (no ref mutations during render) while keeping the effect flushed
+  // synchronously by RTL's act().
+  const [reducedMotionSwapSeq, setReducedMotionSwapSeq] = useState(0);
+
   const [prevPageKey, setPrevPageKey] = useState(pageKey);
   if (pageKey === displayedKey && isExiting) {
     setIsExiting(false);
@@ -92,11 +99,20 @@ export function PageTransition({
     if (prefersReducedMotion) {
       setDisplayedKey(pageKey);
       setDisplayedChildren(children);
-      void Promise.resolve().then(() => onTransitionEnd?.());
+      setReducedMotionSwapSeq((s) => s + 1);
     } else {
       setIsExiting(true);
     }
   }
+
+  // Fire onTransitionEnd after a reduced-motion swap. Mutating the ref is
+  // safe here (inside an effect, not during render).
+  const prevReducedMotionSwapSeqRef = useRef(0);
+  useEffect(() => {
+    if (reducedMotionSwapSeq === prevReducedMotionSwapSeqRef.current) return;
+    prevReducedMotionSwapSeqRef.current = reducedMotionSwapSeq;
+    onTransitionEnd?.();
+  }, [reducedMotionSwapSeq, onTransitionEnd]);
 
   useLayoutEffect(() => {
     if (pageKey !== displayedKey) return;

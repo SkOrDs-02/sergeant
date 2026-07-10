@@ -223,15 +223,20 @@ export function useRoutineAppState({
   // PWA shortcut entry: when the App-shell receives the
   // `?pwa=add_habit` deep-link it sets `pwaAction` and we open the
   // quick-add dialog once.
-  const [prevPwaAction, setPrevPwaAction] = useState(pwaAction);
-  if (pwaAction === "add_habit" && prevPwaAction !== "add_habit") {
-    setPrevPwaAction("add_habit");
-    setQuickAddHabitOpen(true);
-    setQuickAddFocusTick((t) => t + 1);
-    void Promise.resolve().then(() => onPwaActionConsumed?.());
-  } else if (pwaAction !== prevPwaAction) {
-    setPrevPwaAction(pwaAction ?? null);
-  }
+  const prevPwaActionRef = useRef<string | null | undefined>(null);
+  useEffect(() => {
+    if (pwaAction !== "add_habit") {
+      prevPwaActionRef.current = pwaAction ?? null;
+      return;
+    }
+    if (prevPwaActionRef.current === "add_habit") return;
+    prevPwaActionRef.current = "add_habit";
+    void Promise.resolve().then(() => {
+      setQuickAddHabitOpen(true);
+      setQuickAddFocusTick((t) => t + 1);
+      onPwaActionConsumed?.();
+    });
+  }, [pwaAction, onPwaActionConsumed]);
 
   // Per-module first-run: pop the quick-create dialog the first time
   // the user enters Routine. Habits do not have a small «previous

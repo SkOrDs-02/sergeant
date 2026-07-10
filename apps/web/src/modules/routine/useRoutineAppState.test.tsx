@@ -216,7 +216,9 @@ describe("useRoutineAppState", () => {
     );
 
     rerender({ action: "add_habit", onPwaActionConsumed: onConsumed });
-    expect(result.current.quickAddHabitOpen).toBe(true);
+    await waitFor(() => {
+      expect(result.current.quickAddHabitOpen).toBe(true);
+    });
     await waitFor(() => {
       expect(onConsumed).toHaveBeenCalledOnce();
     });

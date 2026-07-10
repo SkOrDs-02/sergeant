@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, act } from "@testing-library/react";
+import { render, screen, cleanup, act, waitFor } from "@testing-library/react";
 import { PageTransition } from "./PageTransition";
 
 afterEach(cleanup);
@@ -107,7 +107,7 @@ describe("PageTransition", () => {
     expect(screen.queryByText("First")).toBeNull();
   });
 
-  it("skips animation immediately under prefers-reduced-motion", () => {
+  it("skips animation immediately under prefers-reduced-motion", async () => {
     Object.defineProperty(window, "matchMedia", {
       configurable: true,
       value: vi.fn().mockReturnValue({ matches: true }),
@@ -123,9 +123,8 @@ describe("PageTransition", () => {
         <div>B</div>
       </PageTransition>,
     );
-    // No fake timers needed — reduced motion swaps synchronously in the effect.
     expect(screen.getByText("B")).toBeInTheDocument();
-    expect(onTransitionEnd).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onTransitionEnd).toHaveBeenCalledTimes(1));
     // Restore so other suites don't see a forced matchMedia.
     Object.defineProperty(window, "matchMedia", {
       configurable: true,

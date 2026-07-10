@@ -90,9 +90,13 @@ export async function buildMeExport(
   db: Queryable,
   user: MeResponse["user"],
 ): Promise<MeExportResponse> {
+  // AI-NOTE: module_data was dropped by migration 046 (Stage 7 cleanup —
+  // finyk/fizruk/routine/nutrition moved to per-row tables in Stage 4,
+  // coach moved to coach_memory in migration 045). moduleData is kept in
+  // the export schema for backward-compat with any client that expects the
+  // key; it is always [] since the underlying table no longer exists.
   const [
     preferences,
-    moduleData,
     monoConnection,
     monoAccounts,
     monoTransactions,
@@ -103,13 +107,6 @@ export async function buildMeExport(
     aiMemories,
   ] = await Promise.all([
     getUserPreferences(db, user.id),
-    db.query<Record<string, unknown>>(
-      `SELECT module, data, version, client_updated_at, server_updated_at
-         FROM module_data
-        WHERE user_id = $1
-        ORDER BY module`,
-      [user.id],
-    ),
     db.query<Record<string, unknown>>(
       `SELECT status, token_fingerprint, webhook_registered_at,
               last_event_at, last_backfill_at, created_at, updated_at
@@ -181,7 +178,7 @@ export async function buildMeExport(
     user,
     preferences,
     data: {
-      moduleData: rowArray(moduleData.rows),
+      moduleData: [],
       mono: {
         connection: monoConnection.rows[0]
           ? { ...monoConnection.rows[0] }

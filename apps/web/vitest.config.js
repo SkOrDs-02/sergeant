@@ -146,12 +146,24 @@ export default defineConfig({
         //     lines 90.52 / branches 75.84 / fns 82.64 / statements 88.03.
         //   Ratchet: lines → 89, branches → 75, fns → 82, statements → 87.
         //
+        // - 2026-07-10 (web coverage wave 9): ModuleShell + lazy route entries
+        //   (4 modules, settings, onboarding), dualWriteBoot hooks (4 modules),
+        //   HubSearch / PushNotificationToggle / nutritionErrors shells, plus
+        //   partial test-drift fixes for async hub-shell + SQLite overlay.
+        //   Measured (CI=true, maxWorkers=1, reportOnFailure, 737 files /
+        //   7393 tests — 9 legacy fails remain on main sync/overlay drift):
+        //     lines 90.12 / branches 75.64 / fns 82.72 / statements 87.66.
+        //   Ratchet: lines → 89 (coverage-thresholds.json), branches → 75,
+        //   fns → 82, statements → 87. ~0.1–0.4pp headroom on lines — main
+        //   sync-v2 scaffold widened the denominator; next wave targets heavy
+        //   shells (FinykApp, NutritionApp, useRoutineAppState).
+        //
         // - 2026-07-10 (web coverage wave 10): orchestration-shell branch push
         //   (FinykApp/NutritionApp page routing + swipe, pending-action machine,
         //   useRoutineAppState branches, HabitDetailSheet delete-without-snapshot,
         //   CommandPalette Escape, async PWA drift fixes in FinykApp.extra /
         //   useRoutineAppState). Measured (CI=true, maxWorkers=1):
-        //     lines 89.98 / branches 75.48 / fns 82.49 / statements 87.54.
+        //     lines 90.0 / branches 75.49 / fns 82.51 / statements 87.55.
         //   Floors unchanged: 89 / 75 / 82 / 87 (~0.5–2.5pp headroom).
         //
         // Floors set ~1.3–2.5pp below current actuals. Raise per sprint

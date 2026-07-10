@@ -90,9 +90,7 @@ export function HabitQuickCreateDialog({
   const [internalFocusTick, setInternalFocusTick] = useState(0);
   const [errors, setErrors] = useState<HabitFormErrors>({});
 
-  const [prevOpenKey, setPrevOpenKey] = useState(
-    () => `${open}:${editingId ?? ""}:${focusTick ?? 0}`,
-  );
+  const [prevOpenKey, setPrevOpenKey] = useState("");
   const openKey = `${open}:${editingId ?? ""}:${focusTick ?? 0}`;
   if (open && openKey !== prevOpenKey) {
     setPrevOpenKey(openKey);

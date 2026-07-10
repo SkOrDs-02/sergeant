@@ -276,10 +276,10 @@ describe("ProfilePage", () => {
   });
 
   describe("sessions section", () => {
-    it("calls listSessions on mount when online", () => {
+    it("calls listSessions on mount when online", async () => {
       useOnlineStatusMock.mockReturnValue(true);
       renderPage();
-      expect(listSessionsMock).toHaveBeenCalled();
+      await waitFor(() => expect(listSessionsMock).toHaveBeenCalled());
     });
 
     it("does NOT call listSessions when offline", () => {

@@ -37,8 +37,7 @@ function call(action: ChatAction): string {
 /**
  * Seed manual (грн) + bank (kopiykas) transactions for a deterministic
  * dataset. Manual expenses come from the canonical SQLite warm cache
- * (the executors read it off-React, not LS); bank transactions come from
- * the Mono mirror cache (finyk_tx_cache is tombstoned in Phase 3).
+ * (the executors read it off-React, not LS); bank txs from the Mono mirror.
  */
 function seed(): void {
   __setFinykSqliteStateCacheForTests({
@@ -74,7 +73,6 @@ function seed(): void {
       },
     ] as unknown as ManualExpense[],
   });
-  // Bank transactions now live in the Mono mirror cache (Phase 3 teardown).
   __setFinykMonoMirrorCacheForTests({
     transactions: [
       {

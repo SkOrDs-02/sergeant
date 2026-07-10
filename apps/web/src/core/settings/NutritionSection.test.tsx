@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 const navigate = vi.fn();
@@ -79,12 +85,14 @@ describe("NutritionSection", () => {
     expect(lastCall.dailyTargetKcal).toBe(2500);
   });
 
-  it("shows a storage error banner when persisting fails", () => {
+  it("shows a storage error banner when persisting fails", async () => {
     persistNutritionPrefs.mockReturnValue(false);
     renderSection();
-    expect(
-      screen.getByText(/Не вдалося зберегти налаштування/i),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Не вдалося зберегти налаштування/i),
+      ).toBeInTheDocument();
+    });
   });
 
   it("resets daily targets to defaults", () => {
