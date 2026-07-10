@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { FizrukData } from "@sergeant/fizruk-domain";
 import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
 import {
@@ -27,7 +28,14 @@ function norm(s: unknown) {
 export function useExerciseCatalog() {
   const catalogData = FizrukData.EXERCISE_CATALOG;
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  const [customExercises, setCustomExercises] = useState<RawExerciseDef[]>(
+  const [customExercises, setCustomExercises] = useSqliteTickOverlay<
+    RawExerciseDef[]
+  >(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? undefined : cache.customExercises;
+    },
     () => {
       const cache = getCachedFizrukSqliteState();
       return cache.refreshedAt === null ? [] : cache.customExercises;
@@ -39,29 +47,23 @@ export function useExerciseCatalog() {
   const musclesUk = FizrukData.MUSCLES_UK;
   const musclesByPrimaryGroup = FizrukData.MUSCLES_BY_PRIMARY_GROUP;
 
-  // Stage 8 PR #057f-tombstone: overlay the user-added custom
-  // exercises from the SQLite cache once it's warm. Built-in catalogue
-  // entries always come from the static JSON.
-  useEffect(() => {
-    const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setCustomExercises(cache.customExercises);
-  }, [sqliteCacheTick]);
-
-  const persistCustom = useCallback((next: RawExerciseDef[]) => {
-    setCustomExercises(next);
-    const prevDualWrite =
-      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-    const nextDualWrite = {
-      ...prevDualWrite,
-      customExercises: extractCustomExerciseSnapshots(next),
-    };
-    try {
-      triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
-    } catch {
-      /* trigger is fire-and-forget — never propagate */
-    }
-  }, []);
+  const persistCustom = useCallback(
+    (next: RawExerciseDef[]) => {
+      setCustomExercises(next);
+      const prevDualWrite =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      const nextDualWrite = {
+        ...prevDualWrite,
+        customExercises: extractCustomExerciseSnapshots(next),
+      };
+      try {
+        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+      } catch {
+        /* trigger is fire-and-forget — never propagate */
+      }
+    },
+    [setCustomExercises],
+  );
 
   const exercises = useMemo(
     () =>

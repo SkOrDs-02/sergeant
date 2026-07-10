@@ -99,9 +99,11 @@ export function RoutineCalendarPanel({
   const eveningInsight = useTodoEveningInsight(routine);
 
   const [listQueryDraft, setListQueryDraft] = useState(listQuery || "");
-  useEffect(() => {
+  const [prevListQuery, setPrevListQuery] = useState(listQuery);
+  if (listQuery !== prevListQuery) {
+    setPrevListQuery(listQuery);
     setListQueryDraft(listQuery || "");
-  }, [listQuery]);
+  }
   useEffect(() => {
     const id = setTimeout(() => setListQuery(listQueryDraft), 200);
     return () => clearTimeout(id);

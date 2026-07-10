@@ -2,6 +2,7 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import {
@@ -25,20 +26,23 @@ interface UseNutritionPrefsStateResult {
 export function useNutritionPrefsState(
   sqliteCacheTick: number,
 ): UseNutritionPrefsStateResult {
-  const [prefs, setPrefs] = useState(() => loadNutritionPrefs());
+  const [prefs, setPrefs] = useSqliteTickOverlay(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedNutritionSqliteState();
+      if (cache.refreshedAt === null || !cache.prefs) return undefined;
+      return cache.prefs;
+    },
+    () => loadNutritionPrefs(),
+  );
   const [prefsStorageErr, setPrefsStorageErr] = useState("");
 
   useEffect(() => {
-    setPrefsStorageErr(
-      persistNutritionPrefs(prefs) ? "" : "Не вдалося зберегти налаштування.",
-    );
+    const err = persistNutritionPrefs(prefs)
+      ? ""
+      : "Не вдалося зберегти налаштування.";
+    void Promise.resolve().then(() => setPrefsStorageErr(err));
   }, [prefs]);
-
-  useEffect(() => {
-    const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    if (cache.prefs) setPrefs(cache.prefs);
-  }, [sqliteCacheTick]);
 
   return { prefs, setPrefs, prefsStorageErr };
 }

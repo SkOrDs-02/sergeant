@@ -142,9 +142,7 @@ export function HabitForm({
   // the advanced block so the user doesn't lose track of values they
   // already set.
   const [showAdvanced, setShowAdvanced] = useState(() => Boolean(editingId));
-  useEffect(() => {
-    if (editingId) setShowAdvanced(true);
-  }, [editingId]);
+  const advancedOpen = showAdvanced || Boolean(editingId);
 
   useEffect(() => {
     if (!focusTick) return;
@@ -350,17 +348,17 @@ export function HabitForm({
       <button
         type="button"
         onClick={() => setShowAdvanced((v) => !v)}
-        aria-expanded={showAdvanced}
+        aria-expanded={advancedOpen}
         aria-controls={advancedId}
         className="flex items-center gap-1 text-xs text-muted hover:text-text transition-colors"
       >
-        <span>{showAdvanced ? "Менше опцій" : "Більше опцій"}</span>
+        <span>{advancedOpen ? "Менше опцій" : "Більше опцій"}</span>
         <span aria-hidden className="text-2xs">
-          {showAdvanced ? "▲" : "▼"}
+          {advancedOpen ? "▲" : "▼"}
         </span>
       </button>
 
-      {showAdvanced && (
+      {advancedOpen && (
         <div id={advancedId} className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="block text-xs text-subtle" htmlFor={startId}>

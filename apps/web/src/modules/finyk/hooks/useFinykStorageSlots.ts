@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { readJSON, readRaw, finykStorageManager } from "../lib/finykStorage";
 import { useReadonlyPersist, reportSilentError } from "./useStorage.persist";
@@ -169,44 +169,36 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   // gone: the dual-write pipeline (`useFinykDualWriteSync`) is the
   // sole persistence sink.
   const sqliteCacheTick = useFinykSqliteReadTick();
-  useEffect(() => {
+  const [prevSqliteTick, setPrevSqliteTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevSqliteTick) {
+    setPrevSqliteTick(sqliteCacheTick);
     const cache = getCachedFinykSqliteState();
-    if (cache.refreshedAt === null) return;
-    setHiddenAccounts(cache.hiddenAccounts);
-    setHiddenTxIds(cache.hiddenTransactions);
-    setBudgets(cache.budgets);
-    setSubscriptions(cache.subscriptions);
-    setManualAssets(cache.manualAssets);
-    setManualDebts(cache.manualDebts);
-    setReceivables(cache.receivables);
-    setCustomCategories(cache.customCategories);
-    setManualExpenses(cache.manualExpenses);
-    setTxCategories(cache.txCategories);
-    setTxSplits(cache.txSplits);
-    setMonoDebtLinkedTxIds(cache.monoDebtLinkedTxIds);
-    setNetworthHistory(cache.networthHistory);
-    if (cache.monthlyPlan !== null) setMonthlyPlan(cache.monthlyPlan);
-    // Stage 13 / PR #075 — `excluded_stat_tx_ids_json` /
-    // `dismissed_recurring_json` тепер їдуть через `finyk_prefs`,
-    // тож overlay-имо їх із кеша. `null` означає, що prefs-row ще
-    // не існує — лишаємо локальний first-paint state.
-    if (cache.excludedStatTxIds !== null) {
-      setExcludedStatTxIds(cache.excludedStatTxIds);
+    if (cache.refreshedAt !== null) {
+      setHiddenAccounts(cache.hiddenAccounts);
+      setHiddenTxIds(cache.hiddenTransactions);
+      setBudgets(cache.budgets);
+      setSubscriptions(cache.subscriptions);
+      setManualAssets(cache.manualAssets);
+      setManualDebts(cache.manualDebts);
+      setReceivables(cache.receivables);
+      setCustomCategories(cache.customCategories);
+      setManualExpenses(cache.manualExpenses);
+      setTxCategories(cache.txCategories);
+      setTxSplits(cache.txSplits);
+      setMonoDebtLinkedTxIds(cache.monoDebtLinkedTxIds);
+      setNetworthHistory(cache.networthHistory);
+      if (cache.monthlyPlan !== null) setMonthlyPlan(cache.monthlyPlan);
+      if (cache.excludedStatTxIds !== null) {
+        setExcludedStatTxIds(cache.excludedStatTxIds);
+      }
+      if (cache.dismissedRecurring !== null) {
+        setDismissedRecurring(cache.dismissedRecurring);
+      }
+      if (cache.showBalance !== null) {
+        setShowBalance(cache.showBalance);
+      }
     }
-    if (cache.dismissedRecurring !== null) {
-      setDismissedRecurring(cache.dismissedRecurring);
-    }
-    // Stage 13 PR #074 — `finyk_prefs.show_balance` overlay.
-    // `null` means prefs row ще не існує або колонка NULL —
-    // лишаємо LS first-paint value (`true` by default).
-    if (cache.showBalance !== null) {
-      setShowBalance(cache.showBalance);
-    }
-    // `networth_last_snap` ref slot is intentionally NOT mirrored to
-    // SQLite — it's a per-device dashboard hint, not part of the
-    // dual-write contract.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sqliteCacheTick]);
+  }
 
   return {
     hiddenAccounts,

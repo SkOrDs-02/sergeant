@@ -2,7 +2,8 @@
  * Last validated: 2026-07-05
  * Status: Active
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import {
   loadShoppingList,
   persistShoppingList,
@@ -28,34 +29,35 @@ export interface UseShoppingListResult {
 
 export function useShoppingList(): UseShoppingListResult {
   const sqliteCacheTick = useNutritionSqliteReadTick();
-  const [shoppingList, setShoppingList] = useState<ShoppingList>(() =>
-    loadShoppingList(),
+  const [shoppingList, setShoppingList] = useSqliteTickOverlay<ShoppingList>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedNutritionSqliteState();
+      return cache.refreshedAt === null
+        ? undefined
+        : normalizeShoppingList(cache.shoppingList);
+    },
+    () => loadShoppingList(),
   );
 
   useEffect(() => {
     persistShoppingList(shoppingList);
   }, [shoppingList]);
 
-  // Dual-write teardown Phase 1 — overlay the shopping list from the
-  // local SQLite cache once it's warm. Mirrors `useNutritionLog`'s
-  // overlay effect.
-  useEffect(() => {
-    const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    setShoppingList(normalizeShoppingList(cache.shoppingList));
-  }, [sqliteCacheTick]);
-
-  const toggle = useCallback((categoryName: string, itemId: string) => {
-    setShoppingList((list) => toggleShoppingItem(list, categoryName, itemId));
-  }, []);
+  const toggle = useCallback(
+    (categoryName: string, itemId: string) => {
+      setShoppingList((list) => toggleShoppingItem(list, categoryName, itemId));
+    },
+    [setShoppingList],
+  );
 
   const clearChecked = useCallback(() => {
     setShoppingList((list) => removeCheckedItems(list));
-  }, []);
+  }, [setShoppingList]);
 
   const clearAll = useCallback(() => {
     setShoppingList({ categories: [] });
-  }, []);
+  }, [setShoppingList]);
 
   const setGeneratedList = useCallback(
     (categories: ShoppingCategory[] | null | undefined) => {
@@ -63,7 +65,7 @@ export function useShoppingList(): UseShoppingListResult {
         categories: Array.isArray(categories) ? categories : [],
       });
     },
-    [],
+    [setShoppingList],
   );
 
   const checkedItems = getCheckedItems(shoppingList);

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import type {
   ChecklistItem,
   Workout,
@@ -71,24 +72,18 @@ export function makeDefaultCooldown(): ChecklistItem[] {
  */
 export function useWorkouts() {
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  const [workouts, setWorkouts] = useState<Workout[]>(() => {
-    const cache = getCachedFizrukSqliteState();
-    return cache.refreshedAt === null ? [] : cache.workouts;
-  });
-  const [loaded, setLoaded] = useState(() => {
-    return getCachedFizrukSqliteState().refreshedAt !== null;
-  });
-
-  // Stage 8 PR #057f-tombstone: overlay workouts from the local SQLite
-  // cache once it's warm. The hook exposes `loaded=true` after the
-  // first cache refresh so consumers can distinguish "boot in flight"
-  // from "boot complete with empty state".
-  useEffect(() => {
-    const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setWorkouts(cache.workouts);
-    setLoaded(true);
-  }, [sqliteCacheTick]);
+  const [workouts, setWorkouts] = useSqliteTickOverlay<Workout[]>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? undefined : cache.workouts;
+    },
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? [] : cache.workouts;
+    },
+  );
+  const loaded = getCachedFizrukSqliteState().refreshedAt !== null;
 
   /**
    * Persist an updated workouts array. Stage 8 PR #057f-tombstone: the
@@ -137,12 +132,13 @@ export function useWorkouts() {
         return next;
       });
     },
-    [],
+    [setWorkouts],
   );
 
   const createWorkout = useCallback((): Workout => {
     const w: Workout = {
       id: uid("w"),
+      // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
       startedAt: new Date().toISOString(),
       endedAt: null,
       items: [],
@@ -159,6 +155,7 @@ export function useWorkouts() {
     ({ startedAt }: { startedAt: string }): Workout => {
       const w: Workout = {
         id: uid("w"),
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
         startedAt: startedAt || new Date().toISOString(),
         endedAt: null,
         items: [],
@@ -175,6 +172,7 @@ export function useWorkouts() {
 
   const endWorkout = useCallback(
     (id: string): Workout | null => {
+      // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для endedAt (не Kyiv-межа доби)
       const nowIso = new Date().toISOString();
       let ended: Workout | null = null;
       persist((prev: Workout[]) =>

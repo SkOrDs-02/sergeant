@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import type { DailyLogEntry as DomainDailyLogEntry } from "@sergeant/fizruk-domain";
 import { mirrorWeightToBiometrics } from "../../../core/profile/biometrics";
 import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
@@ -53,38 +54,43 @@ function uid() {
  */
 export function useDailyLog() {
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  const [entries, setEntries] = useState<DailyLogEntry[]>(() => {
-    const cache = getCachedFizrukSqliteState();
-    return cache.refreshedAt === null
-      ? []
-      : (cache.dailyLog as DailyLogEntry[]);
-  });
+  const [entries, setEntries] = useSqliteTickOverlay<DailyLogEntry[]>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null
+        ? undefined
+        : (cache.dailyLog as DailyLogEntry[]);
+    },
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null
+        ? []
+        : (cache.dailyLog as DailyLogEntry[]);
+    },
+  );
 
-  // Overlay the journal from the SQLite cache once it's warm.
-  useEffect(() => {
-    const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setEntries(cache.dailyLog as DailyLogEntry[]);
-  }, [sqliteCacheTick]);
-
-  const persist = useCallback((next: DailyLogEntry[]) => {
-    setEntries(next);
-    // Stage 12 / PR #070f-dualwrite — persist through the dual-write
-    // pipeline (SQLite is the source of truth for the journal).
-    // Fire-and-forget; trigger is a no-op when the context is not
-    // registered (pre-auth).
-    const prevDualWrite =
-      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-    const nextDualWrite = {
-      ...prevDualWrite,
-      dailyLog: extractDailyLogSnapshots(next),
-    };
-    try {
-      triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
-    } catch {
-      /* trigger is fire-and-forget — never propagate */
-    }
-  }, []);
+  const persist = useCallback(
+    (next: DailyLogEntry[]) => {
+      setEntries(next);
+      // Stage 12 / PR #070f-dualwrite — persist through the dual-write
+      // pipeline (SQLite is the source of truth for the journal).
+      // Fire-and-forget; trigger is a no-op when the context is not
+      // registered (pre-auth).
+      const prevDualWrite =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      const nextDualWrite = {
+        ...prevDualWrite,
+        dailyLog: extractDailyLogSnapshots(next),
+      };
+      try {
+        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+      } catch {
+        /* trigger is fire-and-forget — never propagate */
+      }
+    },
+    [setEntries],
+  );
 
   const addEntry = useCallback(
     (data: Partial<DailyLogEntry>) => {
