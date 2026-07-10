@@ -68,4 +68,66 @@ describe("nutrition backup", () => {
     // (no log payload supplied → no third trigger)
     expect(triggerSpy).toHaveBeenCalledTimes(2);
   });
+
+  it("apply also persists log when a valid object is supplied", () => {
+    applyNutritionBackupPayload({
+      kind: NUTRITION_BACKUP_KIND,
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      data: {
+        stateSchemaVersion: 1,
+        pantries: [],
+        activePantryId: "home",
+        prefs: {},
+        log: { "2025-01-01": { meals: [] } },
+      },
+    });
+    expect(triggerSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("normalizes pantries by dropping blank items and minting ids", () => {
+    const p = buildNutritionBackupPayload();
+    applyNutritionBackupPayload({
+      kind: NUTRITION_BACKUP_KIND,
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      data: {
+        stateSchemaVersion: 1,
+        pantries: [
+          {
+            name: "Без id",
+            text: "",
+            items: [{ name: "  " }, { name: "Сир", qty: "2", unit: " кг " }],
+          },
+        ],
+        activePantryId: "",
+        prefs: {
+          goal: "",
+          servings: "x",
+          dailyTargetKcal: -5,
+          reminderHour: 99,
+          waterGoalMl: -100,
+        },
+        log: [],
+      },
+    });
+    expect(p.data.activePantryId).toBeTruthy();
+    expect(triggerSpy).toHaveBeenCalled();
+  });
+
+  it.each([
+    [null, "Некоректний бекап харчування."],
+    [{ kind: "other" }, "Некоректний тип бекапу харчування."],
+    [
+      { kind: NUTRITION_BACKUP_KIND, schemaVersion: "1" },
+      "Некоректна версія схеми бекапу харчування.",
+    ],
+    [
+      { kind: NUTRITION_BACKUP_KIND, schemaVersion: 1, data: null },
+      "Некоректні дані бекапу харчування.",
+    ],
+  ])("apply rejects invalid payload %#", (payload, message) => {
+    expect(() => applyNutritionBackupPayload(payload)).toThrow(message);
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
 });
