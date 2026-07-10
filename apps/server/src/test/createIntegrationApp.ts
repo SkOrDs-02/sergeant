@@ -22,7 +22,7 @@ export const INTEGRATION_TIMEOUT_MS = 240_000;
 
 export interface IntegrationHarness {
   pool: pg.Pool;
-  app: Express;
+  app?: Express | undefined;
   container: StartedTestContainer;
   connectionUri: string;
 }
@@ -108,12 +108,10 @@ export async function bootIntegrationHarness(
   activePool = pool;
   activeUri = connectionUri;
 
-  let app: Express;
+  let app: Express | undefined;
   if (wantApp) {
     const { createApp } = await import("../app.js");
     app = createApp();
-  } else {
-    app = undefined as unknown as Express;
   }
 
   return { pool, app, container, connectionUri };

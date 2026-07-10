@@ -150,7 +150,7 @@ vi.mock("./hooks/useNutritionUiState", () => ({
   })),
 }));
 
-const mockPhotoRef = { current: null };
+const mockPhotoRef = { current: null as HTMLInputElement | null };
 vi.mock("./hooks/usePhotoAnalysis", () => ({
   usePhotoAnalysis: vi.fn(() => ({
     fileRef: mockPhotoRef,
@@ -502,10 +502,39 @@ describe("NutritionApp — handleSaveToLog", () => {
   it("calls log.setAddMealPhotoResult with photoResult and opens the add-meal sheet", () => {
     render(<NutritionApp />);
     fireEvent.click(screen.getByTestId("save-to-log"));
-    // photoResult comes from usePhotoAnalysis mock (returns { meals: [] })
     expect(
       vi.mocked(useNutritionLog)().setAddMealPhotoResult,
     ).toHaveBeenCalledWith(expect.objectContaining({ meals: [] }));
+    expect(
+      vi.mocked(useNutritionLog)().setAddMealSheetOpen,
+    ).toHaveBeenCalledWith(true);
+  });
+});
+
+describe("NutritionApp — handleRequestAddMeal", () => {
+  it("opens the add-meal sheet once the log page commits", () => {
+    let activePage: NutritionPage = "start";
+    vi.mocked(useNutritionRoute).mockImplementation(() => ({
+      activePage,
+      setActivePage: vi.fn(),
+      setActivePageAndHash: vi.fn((page: NutritionPage) => {
+        activePage = page;
+      }),
+      pantrySubTab: "items",
+      menuSubTab: "plan",
+      setPantrySubTab: vi.fn(),
+      setMenuSubTab: vi.fn(),
+    }));
+
+    const { rerender } = render(<NutritionApp />);
+    fireEvent.click(screen.getByTestId("request-add-meal"));
+    expect(vi.mocked(useNutritionLog)().setSelectedDate).toHaveBeenCalled();
+    expect(activePage).toBe("log");
+
+    rerender(<NutritionApp />);
+    expect(
+      vi.mocked(useNutritionLog)().setAddMealPhotoResult,
+    ).toHaveBeenCalledWith(null);
     expect(
       vi.mocked(useNutritionLog)().setAddMealSheetOpen,
     ).toHaveBeenCalledWith(true);
@@ -617,6 +646,52 @@ describe("NutritionApp — handleRequestMealPhoto", () => {
     expect(log.setAddMealPhotoResult).toHaveBeenCalledWith(null);
     const route = vi.mocked(useNutritionRoute)();
     expect(route.setActivePageAndHash).toHaveBeenCalledWith("start");
+  });
+
+  it("clicks the hidden file input after start page + disclosure commit", () => {
+    const click = vi.fn();
+    mockPhotoRef.current = { click } as unknown as HTMLInputElement;
+
+    let activePage: NutritionPage = "log";
+    vi.mocked(useNutritionRoute).mockImplementation(() => ({
+      activePage,
+      setActivePage: vi.fn(),
+      setActivePageAndHash: vi.fn((page: NutritionPage) => {
+        activePage = page;
+      }),
+      pantrySubTab: "items",
+      menuSubTab: "plan",
+      setPantrySubTab: vi.fn(),
+      setMenuSubTab: vi.fn(),
+    }));
+
+    const raf = vi
+      .spyOn(globalThis, "requestAnimationFrame")
+      .mockImplementation((cb: FrameRequestCallback) => {
+        cb(0);
+        return 1;
+      });
+
+    const { rerender } = render(<NutritionApp />);
+    fireEvent.click(screen.getByTestId("request-meal-photo"));
+    expect(activePage).toBe("start");
+
+    rerender(<NutritionApp />);
+    expect(click).toHaveBeenCalledTimes(1);
+    raf.mockRestore();
+    mockPhotoRef.current = null;
+  });
+});
+
+describe("NutritionApp — page shells", () => {
+  it.each([
+    ["log", "nutrition-log-page"],
+    ["pantry", "nutrition-pantry-page"],
+    ["menu", "nutrition-menu-page"],
+  ] as const)("renders the %s page", (page, testId) => {
+    vi.mocked(useNutritionRoute).mockReturnValue(mockRoute(page));
+    render(<NutritionApp />);
+    expect(screen.getByTestId(testId)).toBeInTheDocument();
   });
 });
 

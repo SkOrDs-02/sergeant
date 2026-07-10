@@ -1,6 +1,6 @@
 # Playbook: Dependency Sweeper (періодичний тріаж залежностей)
 
-> **Last touched:** 2026-07-10 by @claude. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 **Trigger:** запланований періодичний прогін (`/schedule`, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».
@@ -29,13 +29,13 @@ Renovate у цьому репо вже відкриває PR-и на бампи 
 
 ## Фази патерна
 
-| Фаза | Що робить | Наш примітив |
-| --- | --- | --- |
-| **scan** | знайти застаріле + відомі CVE + license-дрейф | `pnpm -r outdated --format json`, `pnpm audit --json`, `pnpm licenses:check` |
-| **triage-risk** | класифікувати кожен апдейт: safe vs risky | движок: major/unknown → risky; patch/minor → safe |
-| **patch-safe** *(L2+)* | безпечні застосувати в **ізольованому** worktree, окремим bump-PR | `/wt <topic>` → `pnpm up <pkg>@<v>` → commit `chore(deps): …` |
-| **verify-worktree** *(L2+)* | у тому ж worktree прогнати гейт | `pnpm check` (мін. `--filter` typecheck+test зачепленого) |
-| **escalate-risky** | major / high-CVE / denylist → людині | `mcp__ccd_session__spawn_task` чіп |
+| Фаза                        | Що робить                                                         | Наш примітив                                                                 |
+| --------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **scan**                    | знайти застаріле + відомі CVE + license-дрейф                     | `pnpm -r outdated --format json`, `pnpm audit --json`, `pnpm licenses:check` |
+| **triage-risk**             | класифікувати кожен апдейт: safe vs risky                         | движок: major/unknown → risky; patch/minor → safe                            |
+| **patch-safe** _(L2+)_      | безпечні застосувати в **ізольованому** worktree, окремим bump-PR | `/wt <topic>` → `pnpm up <pkg>@<v>` → commit `chore(deps): …`                |
+| **verify-worktree** _(L2+)_ | у тому ж worktree прогнати гейт                                   | `pnpm check` (мін. `--filter` typecheck+test зачепленого)                    |
+| **escalate-risky**          | major / high-CVE / denylist → людині                              | `mcp__ccd_session__spawn_task` чіп                                           |
 
 **safe** = patch/minor bump у devDep або добре покритому пакеті. **risky** = major bump, high-sev CVE, denylist-пакет, unknown-range.
 
@@ -43,11 +43,11 @@ Renovate у цьому репо вже відкриває PR-и на бампи 
 
 ## Safety-модель (фазовий rollout — СТАРТ З L1)
 
-| Рівень | Поведінка | Комітить? | Дозвіл |
-| --- | --- | --- | --- |
-| **L1** *(DEFAULT, тиждень 1)* | report-only: пише звіт «що застаріло / CVE / що безпечно бампнути» | ❌ ні | стартовий, безпечний |
-| **L2** | застосовує лише **safe**-патчі в ізольованому worktree з верифікацією; ризиковане ескалує | ⚠️ так, окремим bump-PR | явний дозвіл власника |
-| **L3** | unattended для **allowlisted** (напр. лише `@types/*` patch) | ⚠️ так, автомерж allowlisted | окремий явний дозвіл; **не вмикати** без нього |
+| Рівень                        | Поведінка                                                                                 | Комітить?                    | Дозвіл                                         |
+| ----------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------- |
+| **L1** _(DEFAULT, тиждень 1)_ | report-only: пише звіт «що застаріло / CVE / що безпечно бампнути»                        | ❌ ні                        | стартовий, безпечний                           |
+| **L2**                        | застосовує лише **safe**-патчі в ізольованому worktree з верифікацією; ризиковане ескалує | ⚠️ так, окремим bump-PR      | явний дозвіл власника                          |
+| **L3**                        | unattended для **allowlisted** (напр. лише `@types/*` patch)                              | ⚠️ так, автомерж allowlisted | окремий явний дозвіл; **не вмикати** без нього |
 
 L1 безпечно ганяти unattended саме тому, що движок [`dependency-sweeper-report.mjs`](../../../scripts/dependency-sweeper-report.mjs) **фізично не може** змінити стан — лише читає й друкує Markdown.
 

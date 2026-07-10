@@ -213,6 +213,13 @@ describe("CommandPaletteUI", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("Escape closes the palette via the focus-trap handler", () => {
+    render(<Harness commands={cmds()} />);
+    const input = screen.getByPlaceholderText("Знайди команду…");
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("renders a 'Нещодавні' group when there are recent commands", () => {
     RECENTS_STORE.set(["b"]);
     render(<Harness commands={cmds()} />);

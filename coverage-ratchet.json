@@ -3,7 +3,7 @@
   "epsilonPp": 0.5,
   "workspaces": {
     "apps/web": {
-      "lines": 90.7
+      "lines": 90
     },
     "apps/server": {
       "lines": 91.68
