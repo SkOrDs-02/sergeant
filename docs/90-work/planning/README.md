@@ -1,6 +1,6 @@
 # Планування
 
-> **Last validated:** 2026-07-10 by @cursor-agent (catalog syncv2 plan after `plans/` relocation). **Next review:** 2026-10-08.
+> **Last validated:** 2026-07-10 by @cursoragent (pr-plan-revenue ADR-0068). **Next review:** 2026-10-08.
 > **Status:** Active
 
 Активні roadmap-и, дослідницькі плани і decision-rationale документи розвитку Sergeant.

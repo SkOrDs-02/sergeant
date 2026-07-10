@@ -872,7 +872,7 @@ Baseline (виміряно через `npx tsc -p tsconfig.json --noEmit` per-wo
 | `packages/shared`           |       26 |       7 | `false`  |
 | `apps/mobile`               |       25 |      14 | `false`  |
 | `packages/routine-domain`   |     ✅ 0 |       — | inherit  |
-| `tools/openclaw`            |     ✅ 0 |       — | inherit  |
+| `packages/openclaw-plugin`  |     ✅ 0 |       — | inherit  |
 | `packages/db-schema`        |     ✅ 0 |       — | inherit  |
 | `apps/mobile-shell`         |     ✅ 0 |       — | inherit  |
 | **Total**                   | **1225** | **280** |          |

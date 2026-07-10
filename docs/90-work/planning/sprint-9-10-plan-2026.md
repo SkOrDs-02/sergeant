@@ -1,7 +1,9 @@
 # Sergeant — план Спринтів 9-10 (2026-07-07 – 2026-08-01)
 
-> **Last validated:** 2026-07-02 by @claude (cadence bump — Next review сплив 2026-07-01 і блокував docs-freshness gate; план утверджується перед стартом Спринту 9 2026-07-07 — фінальна звірка за власником). Раніше: 2026-06-07 by Codex (S9-F1 evidence reconcile). **Next review:** 2026-07-21.
+> **Last validated:** 2026-07-10 by @cursoragent (revenue roast items partially shipped). **Next review:** 2026-10-08.
 > **Status:** Draft — формується на основі 10 прожарок 2026-05-13 (`docs/90-work/audits/2026-05-13-*-roast.md`). Утверджується перед стартом Спринту 9 (2026-07-07).
+
+> **Оновлено 2026-07-10:** revenue cross-roast #1–#4 (portal, checkout return, PlanSection, paywall) — **largely shipped** у коді; залишились founder blockers (live Stripe/ФОП) і product gaps (standalone landing, EN locale). Pricing canon — ADR-0068.
 
 > Документ-наступник для [`sprint-roadmap-q2q3-2026.md`](./sprint-roadmap-q2q3-2026.md): продовжує спринтовий трекер після Спринту 8.
 > Скоуп — два спринти по 10 робочих днів, ~6-8 задач на спринт, mix фічі / tech debt / docs.
@@ -176,7 +178,7 @@
 | P1-5 — LiqPay payment gateway placeholder                | UA-локальний шлюз; залежить від launch + EN-locale priority. Може зайти в Sprint 11. |
 | P2-1 — GTM hero copy A/B (PostHog feature flag)          | Post-launch ритуал; залежить від baseline metrics з S10-R1.                          |
 | P2-2 — Revenue dashboards в admin-панелі                 | Post-launch analytics; ROI росте з користувацькою базою.                             |
-| P2-3 — Subscription change proration (upgrade/downgrade) | ADR-grade; ADR-0051 згадує лише monthly. Після Sprint 10 launch traction.            |
+| P2-3 — Subscription change proration (upgrade/downgrade) | ADR-grade; [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) фіксує monthly/yearly UAH tiers. Після Sprint 10 launch traction. |
 | P2-4 — Invoice PDF generation + email                    | Post-launch ритуал.                                                                  |
 | P2-5 — Referral / promo code system                      | Post-launch ритуал.                                                                  |
 | P2-6 — Annual billing option                             | ADR amendment + Stripe Price + UI toggle. Post-launch ритуал.                        |

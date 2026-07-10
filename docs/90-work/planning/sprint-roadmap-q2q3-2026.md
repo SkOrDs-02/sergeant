@@ -1,7 +1,9 @@
 # Sergeant — Спринтовий роадмап Q2–Q3 2026
 
-> **Last validated:** 2026-07-02 by @claude (partial re-verify у рамках tech-debt assessment 2026-07-01: T5 Lighthouse — досі warn-only, gated на LCP-baseline; далі — cadence bump, бо Next review 2026-07-01 блокував docs-freshness gate). Раніше: 2026-05-31 by Claude (child session — Спринт 8 close-out звірка: T4-B react-markdown swap підтверджено shipped; решта cuts (@dnd-kit / react-virtuoso / vendor-sqlite-lazy / drizzle tree-shake / replayIntegration drop) — досі open у коді; size gate дрейфнув 870→880 kB; T5 Lighthouse — досі warn-only. Раніше того ж дня — Спринт 6 close-out: O4 dedup + T1 HubDashboard зашиплені; O3 first-pass). Раніше: 2026-05-13 by Devin (T5 closed; T2/T3/T6/T10/O6/O7 закриті раніше). **Next review:** 2026-08-13.
+> **Last validated:** 2026-07-10 by @cursoragent (OpenClaw paths historical). **Next review:** 2026-10-08.
 > **Status:** Active — Спринти 6-7 реалізаційно закриті; Спринт 8 частковий (T4-A + T4-B react-markdown + T6 shipped; решта T4-B cuts + T5 tightening open); за календарем активне вікно — Спринт 7
+
+> **Примітка (2026-07-10):** посилання на `tools/openclaw/src/...` у Спринтах 5–7 — **historical** (directory removed; prod = ADR-0055 external gateway + `packages/openclaw-plugin`).
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.
 > Джерела: [`docs/90-work/audits/archive/2026-04-28-implementation-roadmap.md`](../audits/archive/2026-04-28-implementation-roadmap.md),

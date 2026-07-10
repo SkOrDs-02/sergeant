@@ -1,6 +1,6 @@
 # Engineering Initiatives
 
-> **Last validated:** 2026-05-13 by Devin (batch archival 2026-05-13 — 7 initiatives [0001, 0004, 0005, 0007, 0008, 0009, 0012] перенесено у `archive/`; 90-day waiting period skipped за рішенням founder-а). **Next review:** 2026-08-11.
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 Цей розділ — **операційний плейлист** для інженерної команди. Кожен файл — одна окрема ініціатива, яка описує проблему, обсяг змін, план виконання та критерії готовності.

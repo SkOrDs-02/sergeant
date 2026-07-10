@@ -1,7 +1,9 @@
 # PR-план revenue + monetization (2026-05)
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-07-10 by @cursoragent (ADR-0068 pricing canon; shipped billing inventory). **Next review:** 2026-10-08.
 > **Status:** Active
+
+> **Оновлено 2026-07-10 (freshness pass).** **Pricing canon — [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md)** (₴199/₴1490, reverse trial 7d, Free AI 15/day; supersedes ADR-0051). У коді shipped: `TrialBanner`, `PlanSection`, Customer Portal, `?checkout=success`, paywall у HubChat. **Founder/external blockers:** live Stripe (ФОП), production price IDs. Нижче — historical PR-картки; $7/₴99 — контекст прожарки 2026-05.
 
 > **Оновлено 2026-06-01 (drift reconcile).** Вже **shipped** у коді (звірено sweep-ом): **PR-2** — Customer Portal endpoint (`apps/server/src/routes/billing.ts:90` `POST /api/billing/portal`) + Settings `PlanSection.tsx` «Керувати підпискою»; **PR-3 (checkout part)** — `?checkout=success|cancel` handler у `PricingPage.tsx:177-188` (env exit-1 валідація лишається open); **PR-4 (AI-chat part)** — `<PaywallModal surface="ai_chat_limit">` wired у `HubChat.tsx:152-155` через `useChatSend`+`usePlan`; **PR-9** — `TrialBanner.tsx` має повну логіку (countdown + lifecycle states). Перевір перед тим, як брати у роботу. (Live-mode Stripe + ФОП — окремий founder/external блокер, не code.)
 
@@ -13,19 +15,19 @@ PR-план виконавчих кроків, що закриває outstanding
 - **Source roast (попередня, baseline):** [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md) — «56 k LOC docs / 0 paying users», wedge-позиціонування, owner-decisions (pricing v3, Apple+Google+Email auth, activation v2, no OpenClaw freeze).
 - **Initiative tracker:** [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md) — 6-фазний план; Phase 0–5.1 done, Phase 2/3 active.
 - **ADR-0001:** [`docs/04-governance/adr/0001-monetization-architecture.md`](../../04-governance/adr/0001-monetization-architecture.md) — 16 архітектурних рішень (Stripe primary, single-row-per-user `subscriptions`, RQ `staleTime: 60s`, idempotency keys, webhook retention, dunning, proration, observability/SLO).
-- **ADR-0051:** [`docs/04-governance/adr/0051-pricing-v3-single-tier.md`](../../04-governance/adr/0051-pricing-v3-single-tier.md) — Free + Pro, $7/міс або $49/рік, ₴ UA-only на старті, 7-day trial без картки.
+- **ADR-0068 (pricing canon):** [`docs/04-governance/adr/0068-pricing-v4-uah-reverse-trial.md`](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — Free + Pro, **₴199/₴1490**, reverse trial 7d, Free AI 15/day. Supersedes ADR-0051.
+- **ADR-0051 (historical):** [`docs/04-governance/adr/0051-pricing-v3-single-tier.md`](../../04-governance/adr/0051-pricing-v3-single-tier.md) — $7/міс / $49/рік snapshot; **не чинний** після ADR-0068.
 - **apps/web paywall/billing surface (статус 2026-05-13):**
   - `apps/web/src/core/billing/usePlan.ts` (shipped) — `useQuery(billingKeys.status)` → `{ plan, isPro, isLoading, subscription }`.
   - `apps/web/src/core/billing/PaywallModal.tsx` (shipped) — fires `PAYWALL_VIEWED`, CTA → `/pricing?source=paywall`.
   - `apps/web/src/core/billing/index.ts` (shipped) — barrel re-exports.
   - `apps/web/src/shared/lib/api/queryKeys.ts` (`billingKeys` factory, lines 101–111) — Hard Rule #2 ✓.
-  - `apps/web/src/core/PricingPage.tsx` — 2-tier UI, PostHog `PRICING_VIEWED` instrumented, `WaitlistForm` ще присутній (тимчасово до P1-8 PR-3 нижче).
-  - **Gaps:** немає `TrialBanner`, немає `PlanSection` у Settings, немає paywall-integration points у `core/chat/ChatInput.tsx` / finyk Mono hooks, немає Customer Portal endpoint, немає `?checkout=success` обробки.
+  - `apps/web/src/core/PricingPage.tsx` — 2-tier UI (₴199/₴1490 per ADR-0068), PostHog `PRICING_VIEWED` instrumented.
+  - **Gaps (2026-07-10):** live Stripe env + ФОП (founder); EN locale / standalone `sergeant.com.ua` landing — product track. Code scaffold для portal/checkout/paywall/trial — shipped.
 - **apps/server billing surface (статус 2026-05-13):**
   - `apps/server/src/modules/billing/stripe.ts` (shipped) — checkout, webhook (`subscription_started` / `subscription_renewed` / `subscription_canceled` lifecycle ✓).
   - `apps/server/src/modules/billing/getUserPlan.ts`, `requirePlan.ts`, `effectiveLimits.ts` (shipped).
-  - `apps/server/src/routes/billing.ts` — `POST /api/billing/checkout`, `POST /api/billing/webhook`. **Gap:** немає `POST /api/billing/portal`.
-  - `apps/server/src/config/env.ts` — Stripe `secret_key` ✓, але `price_id` ще ad-hoc (P0-7 gap).
+  - `apps/server/src/routes/billing.ts` — `POST /api/billing/checkout`, `POST /api/billing/portal`, webhook. **Gap:** live `STRIPE_PRICE_ID_*` + ФОП (founder/external).
 
 ## TL;DR
 
@@ -457,14 +459,14 @@ Targeted impact (за PR-2 ... PR-10, після baseline-instrumentation з XS 
 - **Hero copy** (PR-6 landing) — copy-only, no Stripe price change. PostHog FF `landing-hero-variant` з 2–4 arms. Decision rule: **min sample 500 LANDING_VIEWED per arm, 14 days, MDE on EMAIL_CAPTURE rate ≥20% rel**.
 - **CTA microcopy** (`Спробувати безкоштовно` vs `Активувати Pro`) — copy-only. Min sample 200 conversions per arm.
 - **Paywall surface copy** (PR-4 paywall modal) — copy-only. Per-surface FF; min sample 100 paywall-views per arm.
-- **Trial length** (7 vs 14 днів) — ADR-0051 фіксує 7d як default. Будь-яка зміна — потребує **ADR amendment** + ≥50 paying users baseline + statistical-significance plan **до** старту експерименту.
 
 ### Що ЗАБОРОНЕНО без формального процесу (red zone)
 
-- **Зміна `STRIPE_PRICE_ID_PRO_MONTHLY` чи `STRIPE_PRICE_ID_PRO_YEARLY` price-amount.** Це не A/B — це permanent customer-base change → **ADR-0051 amendment + grandfather-policy ADR (ADR-1.4 — withdrawn, потрібен новий)**. Old subs зберігають old price (Stripe-default), new subs — new price. Migration plan — пишемо ДО price-change-PR.
-- **Видалення Pro tier або зміна features set Pro.** ADR-0051 amendment обов'язково.
-- **Інтродукція 3-го tier (Plus).** Замінює ADR-0051 повністю — окремий ADR.
-- **«Lifetime deal» promo.** Видалено з ADR-0051 (-LTV). Будь-яка реактивація — повний бізнес-аналіз + ADR.
+- **Trial length** (7 vs 14 днів) — ADR-0068 фіксує reverse trial 7d. Будь-яка зміна — потребує **ADR amendment** + ≥50 paying users baseline + statistical-significance plan **до** старту експерименту.
+- **Зміна `STRIPE_PRICE_ID_PRO_MONTHLY` чи `STRIPE_PRICE_ID_PRO_YEARLY` price-amount.** Це не A/B — це permanent customer-base change → **ADR-0068 amendment + grandfather-policy ADR (ADR-1.4 — withdrawn, потрібен новий)**. Old subs зберігають old price (Stripe-default), new subs — new price. Migration plan — пишемо ДО price-change-PR.
+- **Видалення Pro tier або зміна features set Pro.** ADR-0068 amendment обов'язково.
+- **Інтродукція 3-го tier (Plus).** Замінює ADR-0068 — окремий ADR.
+- **«Lifetime deal» promo.** Видалено з ADR-0068 (-LTV). Будь-яка реактивація — повний бізнес-аналіз + ADR.
 - **Зміна currency (₴ → $ для UA-користувачів)** — ADR-1.9 amendment.
 
 ### Pre-experimentation checklist (PR-template addendum)
