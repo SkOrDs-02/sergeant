@@ -14,6 +14,10 @@ import {
   __setNutritionSqliteCacheForTests,
   clearNutritionSqliteCache,
 } from "@nutrition/lib/sqliteReader";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "@finyk/lib/monoMirrorReader";
 import { performSearch } from "./searchSources";
 import type { Hit } from "./searchTypes";
 
@@ -30,6 +34,7 @@ beforeEach(() => {
   clearSqliteCompletionsCache();
   clearFizrukSqliteCache();
   clearNutritionSqliteCache();
+  clearFinykMonoMirrorCache();
 });
 
 function finykHit(results: Hit[]): Hit | undefined {
@@ -68,9 +73,8 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
   });
 
   it("matches a Finyk transaction by description token", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify([
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
         {
           id: "tx-coffee",
           amount: -4500,
@@ -83,8 +87,8 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
           time: 1_700_000_100_000,
           description: "Оренда квартири",
         },
-      ]),
-    );
+      ] as never[],
+    });
     const results = performSearch("кава");
     const hit = finykHit(results);
     expect(hit).toBeDefined();
@@ -189,17 +193,16 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
   });
 
   it("returns the same cached result set for a repeated query (LRU hit)", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify([
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
         {
           id: "tx-lru",
           amount: -1000,
           time: 1_700_000_200_000,
           description: "Унікальний кеш-маркер",
         },
-      ]),
-    );
+      ] as never[],
+    });
     const first = performSearch("маркер");
     const second = performSearch("маркер");
     // Same snapshot + query → identical array instance from the LRU.

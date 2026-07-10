@@ -738,13 +738,10 @@ describe("useMonobankWebhook — current-month tx sort and legacy cache", () => 
       expect(result.current.transactions.length).toBe(3);
     });
 
-    // Sorted descending by time
+    // Sorted descending by time — proves the >=3 tx branch ran. Last-good
+    // snapshots now live in monoMirrorReader memory (Phase 3), not LS.
     expect(result.current.transactions[0]!.id).toBe("tx-newest");
     expect(result.current.transactions[2]!.id).toBe("tx-oldest");
-
-    // The legacy last-good cache is written when length >= 3
-    // (line 209: writeJSON(LEGACY_TX_CACHE_LAST_GOOD_KEY, payload))
-    expect(localStorage.getItem("finyk_tx_cache_last_good")).not.toBeNull();
   });
 });
 

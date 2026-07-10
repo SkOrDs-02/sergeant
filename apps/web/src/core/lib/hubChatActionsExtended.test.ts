@@ -18,6 +18,10 @@ import {
   __setFinykSqliteStateCacheForTests,
   clearFinykSqliteCache,
 } from "../../modules/finyk/lib/sqliteReader";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../modules/finyk/lib/monoMirrorReader";
 import type { ManualExpense } from "../../modules/finyk/hooks/useStorage.types";
 import { executeAction } from "./hubChatActions";
 import { triggerFizrukDualWrite } from "../../modules/fizruk/lib/sqliteWriter/index";
@@ -115,6 +119,7 @@ beforeEach(() => {
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   clearFinykSqliteCache();
+  clearFinykMonoMirrorCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
 });
@@ -123,6 +128,7 @@ afterEach(() => {
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   clearFinykSqliteCache();
+  clearFinykMonoMirrorCache();
   vi.useRealTimers();
 });
 
@@ -170,26 +176,22 @@ describe("find_transaction", () => {
   });
 
   it("шукає bank cache transactions і не показує hidden ids", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [
-          {
-            id: "mono_ok",
-            amount: -12500,
-            description: "Сільпо",
-            time: 1718376000,
-          },
-          {
-            id: "mono_hidden",
-            amount: -12500,
-            description: "Сільпо",
-            time: 1718376000,
-          },
-        ],
-      }),
-    );
-    // Bank tx cache stays on LS; hidden-tx ids are read from SQLite now.
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        {
+          id: "mono_ok",
+          amount: -12500,
+          description: "Сільпо",
+          time: 1718376000,
+        },
+        {
+          id: "mono_hidden",
+          amount: -12500,
+          description: "Сільпо",
+          time: 1718376000,
+        },
+      ] as never[],
+    });
     __setFinykSqliteStateCacheForTests({ hiddenTransactions: ["mono_hidden"] });
     const msg = executeAction({
       name: "find_transaction",

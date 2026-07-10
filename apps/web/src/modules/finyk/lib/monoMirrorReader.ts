@@ -77,6 +77,26 @@ export function clearFinykMonoMirrorCache(): void {
   lastGoodTransactions = [];
 }
 
+/** Test-only: seed the in-memory mirror without SQLite I/O. */
+export function __setFinykMonoMirrorCacheForTests(
+  partial: Partial<SqliteMonoMirrorCache>,
+): void {
+  cache = {
+    transactions: partial.transactions ?? [],
+    accounts: partial.accounts ?? [],
+    refreshedAt:
+      partial.refreshedAt === undefined
+        ? partial.transactions?.length
+          ? // eslint-disable-next-line no-restricted-syntax -- test-only refreshedAt stamp
+            new Date().toISOString()
+          : null
+        : partial.refreshedAt,
+  };
+  if (cache.transactions.length > 0) {
+    lastGoodTransactions = cache.transactions;
+  }
+}
+
 interface TxRow extends Record<string, unknown> {
   data_json: string;
   mono_time: number;
