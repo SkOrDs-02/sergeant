@@ -8,7 +8,7 @@
  * на web). Weekly-plan source поки disabled — мобільний клієнт ще не
  * зберігає week-plan локально (web equivalent — Phase 7 backlog).
  */
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -62,11 +62,7 @@ export function Shopping({ testID }: { testID?: string }) {
     setGeneratedList,
   } = useShoppingList();
   const { recipes } = useSavedRecipesList();
-  const { activePantry } = useNutritionPantries();
-  const pantryItems = useMemo(
-    () => (Array.isArray(activePantry?.items) ? activePantry.items : []),
-    [activePantry?.items],
-  );
+  const { pantryItems } = useNutritionPantries();
 
   const [draft, setDraft] = useState("");
   const [source, setSource] = useState<ShoppingSource>("recipes");

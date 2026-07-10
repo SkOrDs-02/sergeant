@@ -30,7 +30,6 @@ import {
   labelForMealType,
   mealTypeByNow,
   type NutritionPrefs,
-  type PantryItem,
 } from "@sergeant/nutrition-domain";
 import { hapticTap, toLocalISODate } from "@sergeant/shared";
 
@@ -70,13 +69,8 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
   const api = useApiClient();
   const toast = useToast();
   const { prefs, updatePrefs } = useNutritionPrefs();
-  const { activePantry, activePantryId } = useNutritionPantries();
+  const { activePantry, activePantryId, pantryItems } = useNutritionPantries();
   const { addMeal } = useNutritionLog();
-
-  const pantryItems = useMemo<PantryItem[]>(
-    () => (Array.isArray(activePantry?.items) ? activePantry.items : []),
-    [activePantry?.items],
-  );
 
   const recipeCacheKey = useMemo(
     () => buildRecipeCacheKey(activePantryId, pantryItems, prefs),

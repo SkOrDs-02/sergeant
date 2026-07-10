@@ -158,4 +158,18 @@ export const mobileBlocks = [
       "react-hooks/purity": "error",
     },
   },
+  // react-hooks v7 burndown (initiative 0021) — `preserve-manual-memoization`
+  // cleared apps/mobile: 4 call-sites fixed by extracting `computeInitialExpenseDate`
+  // (ManualExpenseSheet — drop the memo the Compiler couldn't preserve) and by
+  // centralising `pantryItems` in `useNutritionPantries` with a narrowed
+  // `activePantryItems` dependency (mirrors web hook). Promoted from the
+  // baseline `off` to mobile-scoped `error` so the next regression fails lint
+  // loudly. Stays `off` in the shared baseline until other surfaces clear.
+  // See `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/preserve-manual-memoization": "error",
+    },
+  },
 ];

@@ -25,6 +25,8 @@ export interface UseNutritionPantriesResult {
   pantries: Pantry[];
   activePantryId: string;
   activePantry: Pantry;
+  /** Normalised `activePantry.items` — stable empty array when missing. */
+  pantryItems: readonly PantryItem[];
   setActivePantryId: (id: string) => void;
   addLine: (line: string) => void;
   /** Результат `parsePantry` (сервер) — злиття в активний склад. */
@@ -56,6 +58,12 @@ export function useNutritionPantries(): UseNutritionPantriesResult {
       arr.find((p) => p.id === activePantryId) || arr[0] || makeDefaultPantry()
     );
   }, [pantries, activePantryId]);
+
+  const activePantryItems = activePantry?.items;
+  const pantryItems = useMemo(
+    () => (Array.isArray(activePantryItems) ? activePantryItems : []),
+    [activePantryItems],
+  );
 
   const persist = useCallback((list: Pantry[], activeId: string) => {
     const norm = normalizePantries(list);
@@ -153,6 +161,7 @@ export function useNutritionPantries(): UseNutritionPantriesResult {
     pantries,
     activePantryId,
     activePantry,
+    pantryItems,
     setActivePantryId,
     addLine,
     applyParsedItems,
