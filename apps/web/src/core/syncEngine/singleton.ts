@@ -19,8 +19,13 @@ import {
   createSyncEngineWriterRuntime,
   type SyncEngineWriterRuntime,
 } from "./syncEngineWriter";
+import {
+  createSyncEngineReaderRuntime,
+  type SyncEngineReaderRuntime,
+} from "./syncEngineReader";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
+type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
 
 export interface BootSyncEngineWriterOptions {
   readonly createRuntime?: RuntimeFactory;
@@ -67,9 +72,97 @@ export function __resetSyncEngineWriterForTests(): void {
   runtime?.stop();
   runtime = null;
   inFlight = null;
+  readerRuntime?.stop();
+  readerRuntime = null;
+  readerInFlight = null;
 }
 
-async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
+export interface BootSyncEngineReaderOptions {
+  readonly createRuntime?: ReaderRuntimeFactory;
+  readonly captureException?: (
+    error: unknown,
+    context?: Record<string, unknown>,
+  ) => void;
+}
+
+let readerRuntime: SyncEngineReaderRuntime | null = null;
+let readerInFlight: Promise<SyncEngineReaderRuntime | null> | null = null;
+
+export function getSyncEngineReader(): SyncEngineReaderRuntime | null {
+  return readerRuntime;
+}
+
+export function bootSyncEngineReader(
+  options: BootSyncEngineReaderOptions = {},
+): Promise<SyncEngineReaderRuntime | null> {
+  if (readerRuntime) return Promise.resolve(readerRuntime);
+  if (readerInFlight) return readerInFlight;
+
+  const createRuntime = options.createRuntime ?? createDefaultReaderRuntime;
+  const captureException = options.captureException;
+
+  readerInFlight = createRuntime()
+    .then((created) => {
+      readerRuntime = created;
+      readerRuntime.start();
+      return readerRuntime;
+    })
+    .catch((error: unknown) => {
+      captureException?.(error, { scope: "sync-v2-reader-boot" });
+      return null;
+    })
+    .finally(() => {
+      readerInFlight = null;
+    });
+
+  return readerInFlight;
+}
+
+async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
+  const shared = await createSyncSharedContext();
+  const pullIntervalMs = randomizeIntervalMs(60_000, 0.2);
+
+  return createSyncEngineReaderRuntime({
+    pull: (since, opts) =>
+      shared.apiClient.syncV2.pullV2(since, {
+        limit: opts.limit,
+        originDeviceId: opts.originDeviceId,
+      }),
+    resolveClient: shared.resolveClient,
+    resolveUserId: shared.resolveUserId,
+    originDeviceId: shared.originDeviceId,
+    setInterval: (handler, ms) => window.setInterval(handler, ms),
+    clearInterval: (handle) => window.clearInterval(handle as number),
+    eventTarget: window,
+    intervalMs: pullIntervalMs,
+    limit: 100,
+    captureException: shared.captureException,
+  });
+}
+
+interface SyncSharedContext {
+  readonly resolveClient: () => Promise<SqliteMigrationClient>;
+  readonly resolveUserId: () => Promise<string | null>;
+  readonly originDeviceId: string;
+  readonly apiClient: typeof import("@shared/api").apiClient;
+  readonly dbSchema: typeof import("@sergeant/db-schema/sqlite");
+  readonly captureException: (
+    error: unknown,
+    context?: Record<string, unknown>,
+  ) => void;
+  readonly addBreadcrumb: (
+    breadcrumb: import("./syncEngineWriter.js").SentryBreadcrumb,
+  ) => void;
+  readonly onOutboxQuarantine: (event: {
+    readonly id: number;
+    readonly tableName: string;
+    readonly op: string;
+    readonly reason: string;
+  }) => void;
+  readonly writerIntervalMs: number;
+}
+
+async function createSyncSharedContext(): Promise<SyncSharedContext> {
   if (typeof window === "undefined") {
     throw new Error("sync v2 writer boot requires a browser window");
   }
@@ -271,20 +364,8 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   const originDeviceId = resolveOriginDeviceId({ store: webKVStore });
   sentry.setSentryTag("sync.origin_device_id_present", "true");
 
-  // Per-install ±20% interval randomization. After a fleet-wide outage
-  // every client resumes its periodic drain on the same wall-clock
-  // grid (30s base), which produces a synchronized thundering herd at
-  // each boundary. Picking the period once at boot from `[24s, 36s]`
-  // desynchronizes the fleet without changing average throughput per
-  // device (T3 audit MEDIUM finding; pairs with `jitterMs` below).
-  const intervalMs = randomizeIntervalMs(30_000, 0.2);
+  const writerIntervalMs = randomizeIntervalMs(30_000, 0.2);
 
-  // T3 audit HIGH#3: surface every poison-row quarantine via Sentry
-  // so SRE has visibility on the corruption class that was previously
-  // a silent head-of-line stall. The breadcrumb is enough — we do NOT
-  // captureException because a single corrupt row in an otherwise
-  // healthy outbox is not an "error" to alert on; the alerting layer
-  // builds a Grafana counter off these breadcrumbs.
   const onOutboxQuarantine = (event: {
     readonly id: number;
     readonly tableName: string;
@@ -298,49 +379,76 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     });
   };
 
+  const captureException = (
+    error: unknown,
+    context?: Record<string, unknown>,
+  ) =>
+    sentry.captureException(
+      error,
+      context !== undefined ? { extra: context } : undefined,
+    );
+
+  return {
+    resolveClient,
+    resolveUserId,
+    originDeviceId,
+    apiClient,
+    dbSchema,
+    captureException,
+    addBreadcrumb: sentry.addSentryBreadcrumb,
+    onOutboxQuarantine,
+    writerIntervalMs,
+  };
+}
+
+async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
+  const shared = await createSyncSharedContext();
+
   return createSyncEngineWriterRuntime({
     pushDeps: {
       drain: async (options) => {
-        const userId = await resolveUserId();
+        const userId = await shared.resolveUserId();
         if (!userId) return [];
-        return dbSchema.drainSyncOpOutbox(await resolveClient(), {
+        return shared.dbSchema.drainSyncOpOutbox(await shared.resolveClient(), {
           ...options,
           userId,
-          onQuarantine: onOutboxQuarantine,
+          onQuarantine: shared.onOutboxQuarantine,
         });
       },
-      push: (ops, options) => apiClient.syncV2.pushV2(ops, options),
+      push: (ops, options) => shared.apiClient.syncV2.pushV2(ops, options),
       markSuccess: async (id) =>
-        dbSchema.markOutboxSuccess(await resolveClient(), id),
+        shared.dbSchema.markOutboxSuccess(await shared.resolveClient(), id),
       markRetry: async (id, plan) =>
-        dbSchema.markOutboxRetry(await resolveClient(), id, plan),
+        shared.dbSchema.markOutboxRetry(await shared.resolveClient(), id, plan),
       markRejected: async (id, reason) =>
-        dbSchema.markOutboxRejected(await resolveClient(), id, reason),
-      planRetry: dbSchema.planRetry,
+        shared.dbSchema.markOutboxRejected(
+          await shared.resolveClient(),
+          id,
+          reason,
+        ),
+      planRetry: shared.dbSchema.planRetry,
       now: () => new Date(),
-      // Retry jitter on transient batch failures. Spreads each row's
-      // `next_retry_at` across `[0, SYNC_OP_JITTER_WINDOW_MS]` so a
-      // batch that fails together does not retry together. Called once
-      // per `planRetry` invocation within a tick (per-row, not
-      // per-batch) — the caching boundary is the `now` value pinned at
-      // the tick start, NOT the jitter sample.
-      jitterMs: () => Math.random() * dbSchema.SYNC_OP_JITTER_WINDOW_MS,
+      jitterMs: () => Math.random() * shared.dbSchema.SYNC_OP_JITTER_WINDOW_MS,
     },
     setInterval: (handler, ms) => window.setInterval(handler, ms),
     clearInterval: (handle) => window.clearInterval(handle as number),
     eventTarget: window,
-    getStatus: async () => dbSchema.countOutboxByStatus(await resolveClient()),
+    getStatus: async () =>
+      shared.dbSchema.countOutboxByStatus(await shared.resolveClient()),
     recoverDeadLetter: async (selector: RecoverDeadLetterSelector) =>
-      dbSchema.recoverDeadLetter(await resolveClient(), selector),
-    addBreadcrumb: sentry.addSentryBreadcrumb,
-    captureException: (error, context) =>
-      sentry.captureException(
-        error,
-        context !== undefined ? { extra: context } : undefined,
-      ),
-    intervalMs,
+      shared.dbSchema.recoverDeadLetter(await shared.resolveClient(), selector),
+    addBreadcrumb: shared.addBreadcrumb,
+    captureException: shared.captureException,
+    intervalMs: shared.writerIntervalMs,
     limit: 100,
-    originDeviceId,
+    originDeviceId: shared.originDeviceId,
+    onTickComplete: (result) => {
+      if (result.pushed > 0) {
+        void bootSyncEngineReader().then((reader) => {
+          void reader?.pullOnce();
+        });
+      }
+    },
   });
 }
 

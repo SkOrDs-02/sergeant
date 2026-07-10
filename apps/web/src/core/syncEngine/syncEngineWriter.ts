@@ -62,6 +62,7 @@ export interface SyncEngineWriterDeps {
   readonly intervalMs: number;
   readonly limit: number;
   readonly originDeviceId?: string;
+  readonly onTickComplete?: (result: SyncEnginePushResult) => void;
 }
 
 export function createSyncEngineWriterRuntime(
@@ -81,6 +82,7 @@ export function createSyncEngineWriterRuntime(
       message: "sync v2 push tick complete",
       data: toBreadcrumbData(result),
     });
+    deps.onTickComplete?.(result);
   };
 
   const onTickError = (error: unknown) => {
