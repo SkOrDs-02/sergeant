@@ -60,18 +60,17 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { X } from "lucide-react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
-  runOnJS,
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button } from "./Button";
+import { createSheetPanGesture } from "./sheetPanGesture";
 
 export interface SheetProps {
   open: boolean;
@@ -100,14 +99,7 @@ function cx(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
 }
 
-const SPRING_CONFIG = {
-  damping: 20,
-  stiffness: 200,
-  mass: 0.5,
-};
-
 const DISMISS_THRESHOLD = 100;
-const VELOCITY_THRESHOLD = 500;
 
 export function Sheet({ open, ...contentProps }: SheetProps) {
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -231,34 +223,13 @@ function SheetContent({
     };
   });
 
-  const panGesture = Gesture.Pan()
-    .enabled(!disableGestureDismiss && !reduceMotion)
-    .onUpdate((event) => {
-      if (event.translationY > 0) {
-        // eslint-disable-next-line react-hooks/immutability -- Reanimated shared value in RNGH worklet
-        translateY.value = event.translationY;
-      }
-    })
-    .onEnd((event) => {
-      const shouldDismiss =
-        event.translationY > DISMISS_THRESHOLD ||
-        event.velocityY > VELOCITY_THRESHOLD;
-
-      if (shouldDismiss) {
-        // eslint-disable-next-line react-hooks/immutability -- Reanimated shared value in RNGH worklet
-        translateY.value = withSpring(
-          windowHeight,
-          { ...SPRING_CONFIG, stiffness: 300 },
-          (finished) => {
-            if (finished) {
-              runOnJS(handleClose)();
-            }
-          },
-        );
-      } else {
-        translateY.value = withSpring(0, SPRING_CONFIG);
-      }
-    });
+  const panGesture = createSheetPanGesture({
+    translateY,
+    windowHeight,
+    disableGestureDismiss,
+    reduceMotion,
+    onDismiss: handleClose,
+  });
 
   return (
     <Modal

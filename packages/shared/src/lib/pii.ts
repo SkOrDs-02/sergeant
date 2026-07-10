@@ -4,8 +4,9 @@
  * Why this lives in `@sergeant/shared` instead of `apps/server/src/obs/logger.ts`:
  * the same key list must drive **three** enforcers across packages that do not
  * share a runtime — pino redaction (server logs), `Sentry.beforeSend` PII
- * scrubbing (server **and** web SDK), and OTel attribute denylist
- * (`apps/server/src/obs/tracing.ts`). Keeping it here closes the historical
+ * scrubbing (server **and** web SDK). Historical OTel attribute denylist was
+ * removed with ADR-0035; parity is now enforced by `apps/server/src/obs/tracing.test.ts`
+ * against `redactKeysRecursively`. Keeping the list here closes the historical
  * gap where `apps/web/src/core/observability/sentry.ts:beforeSend` only
  * deleted cookies and missed every other field listed in
  * [`docs/security/pii-handling.md`](../../../../docs/security/pii-handling.md)

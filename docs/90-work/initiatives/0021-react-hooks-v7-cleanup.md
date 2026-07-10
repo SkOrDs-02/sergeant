@@ -1,6 +1,6 @@
 # 0021 — React-hooks v7 ESLint cleanup
 
-> **Last touched:** 2026-07-10 by @claude. **Next review:** 2026-09-12.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-09-12.
 > **Status:** In progress
 > **Agent-ready:** yes
 
@@ -32,7 +32,7 @@
 
 **Web-правила:**
 
-- `immutability` (mobile) — promoted to `"error"` у `eslint.mobile.js` (2026-07-10): CategoryDonut immutable reduce; Sheet → `SheetContent` mount-only subtree + 2 scoped `eslint-disable-next-line` на RNGH worklet `.value` writes.
+- `immutability` (mobile) — promoted to `"error"` у `eslint.mobile.js` (2026-07-10): CategoryDonut immutable reduce; Sheet pan gesture → `sheetPanGesture.ts` (file-level disable for RNGH worklets) + `SheetContent` mount-only subtree.
 - `preserve-manual-memoization` (mobile) — 4 call-sites fixed; promoted to `"error"` у `eslint.mobile.js` ([#159](https://github.com/SkOrDs-02/sergeant/pull/159)).
 - `preserve-manual-memoization` (web) — promoted to `"error"` у `eslint.web.js` (рядок 500) після burndown 2026-07-04 (6 fix, 3 scoped-disable з обґрунтуванням); web 0.
 - `purity` (mobile) — promoted to `"error"` у `eslint.mobile.js` (2026-07-10): OnboardingWizard ref placeholder + `useRecovery` `nowMs` state (web parity).
