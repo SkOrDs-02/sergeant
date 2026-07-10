@@ -99,6 +99,6 @@ pnpm add @anthropic-ai/sdk@^1.0.0
 
 ## Refs
 
-- [Anthropic SDK migration guide](https://docs.anthropic.com/en/api/migrating)
+- [Anthropic TypeScript SDK migration guide](https://github.com/anthropics/anthropic-sdk-typescript/blob/main/MIGRATION.md)
 - [Anthropic prompt caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
 - ADR-0032 tools/openclaw (formerly tools/console) architecture (існує — раніше посилалося на `tools/console`)
