@@ -4,7 +4,7 @@
   "summary": {
     "packages": 18,
     "totalExports": 304,
-    "totalDeadExports": 200
+    "totalDeadExports": 198
   },
   "packages": [
     {
@@ -13,8 +13,8 @@
       "entryFile": "packages/api-client/src/index.ts",
       "stats": {
         "exportCount": 200,
-        "totalImporters": 39,
-        "deadExports": 108
+        "totalImporters": 43,
+        "deadExports": 106
       },
       "exports": [
         {
@@ -281,8 +281,11 @@
           "name": "SyncV2PullOp",
           "kind": "re-export",
           "fromFile": "./endpoints/syncV2",
-          "usedBy": [],
-          "usageCount": 0
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/applyPullOp.ts",
+            "apps/web/src/core/syncEngine/applyPullOp.ts"
+          ],
+          "usageCount": 2
         },
         {
           "name": "SyncV2PullOptions",
@@ -295,8 +298,11 @@
           "name": "SyncV2PullResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/syncV2",
-          "usedBy": [],
-          "usageCount": 0
+          "usedBy": [
+            "apps/mobile/src/core/syncEngine/syncEngineReader.ts",
+            "apps/web/src/core/syncEngine/syncEngineReader.ts"
+          ],
+          "usageCount": 2
         },
         {
           "name": "SyncV2PushOp",
@@ -1716,7 +1722,7 @@
       "entryFile": "packages/dualwrite-core/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 18,
+        "totalImporters": 20,
         "deadExports": 0
       },
       "exports": [
@@ -1765,7 +1771,7 @@
       "entryFile": "packages/fizruk-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 84,
+        "totalImporters": 88,
         "deadExports": 0
       },
       "exports": [
@@ -1874,7 +1880,7 @@
       "entryFile": "packages/nutrition-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 91,
+        "totalImporters": 93,
         "deadExports": 0
       },
       "exports": [
@@ -2037,7 +2043,7 @@
       "entryFile": "packages/routine-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 64,
+        "totalImporters": 68,
         "deadExports": 0
       },
       "exports": [
@@ -2067,7 +2073,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 370,
+        "totalImporters": 374,
         "deadExports": 0
       },
       "exports": [

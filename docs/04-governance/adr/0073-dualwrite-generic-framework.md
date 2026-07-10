@@ -283,6 +283,6 @@ Rollback-важіль: кожен крок — ізольований PR, яки
 
 - Tech-debt assessment 2026-07-01 § Група 4 — рекласифікація (виміри: pairwise diff 209–467 рядків, пайплайни 1442–2170 LOC).
 - Stage 10 PR #070-dualwrite-refactor — існуючий `shared/lib/sqliteWriter/core.ts`.
-- DCRUD-007 — single-flight черга finyk-orchestrator-а (коментар у `apps/web/src/modules/finyk/lib/dualWrite/index.ts`).
+- DCRUD-007 — single-flight черга finyk-orchestrator-а (коментар у `apps/web/src/modules/finyk/lib/sqliteWriter/index.ts`).
 - PR #057{r,f,k}-tombstone — residualImport-и зі `STALE_TIMESTAMP`-патерном.
 - ADR-0004 (LWW), ADR-0011 (local-first), ADR-0064 (серверний реєстр apply-функцій), ADR-0065 (sync-v2 outbox, суміжна межа для routine side-effect-а).

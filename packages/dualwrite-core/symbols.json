@@ -6,7 +6,7 @@
   "entryFile": "packages/dualwrite-core/src/index.ts",
   "stats": {
     "exportCount": 1,
-    "totalImporters": 18,
+    "totalImporters": 20,
     "deadExports": 0
   },
   "exports": [

@@ -1,6 +1,6 @@
 # Storage & Sync — PR-плани: Stage 8–9 (SQLite cut-over та KV store swap)
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 > **Частина** [storage-roadmap](../storage-roadmap.md) · [← Stage 6–7](./05-stage-6-7.md) · [→ Stage 13](./07-stage-13.md)
@@ -29,7 +29,7 @@
 >   ([`ff92dbb4`](https://github.com/Skords-01/Sergeant/commit/ff92dbb4)) —
 >   `apps/web/src/core/observability/dualWriteTelemetry.ts` Sentry
 >   sink that powers the `<m>.sqlite.dualwrite.*` decision-gate
->   metrics; consumed by Routine `dualWrite/index.ts` + Finyk `dualWrite/index.ts`.
+>   metrics; consumed by Routine `sqliteWriter/index.ts` + Finyk `sqliteWriter/index.ts`.
 >
 > **Re-rolled out (post-2026-05-08):** read-default-on quartet flipped
 > back to `defaultValue: true` per-module after the PWA-canary fix
@@ -446,7 +446,7 @@ mobile dualwrite → tombstone). Stage 11 — повторюваний applicati
   `apps/mobile/src/modules/fizruk/lib/dualWrite/{diff,adapter,parity}.ts`
   - mobile `sqliteReader.ts` warm cache extended до 6 entity classes;
     `fizrukDualWriteState.ts` extractors для `dailyLog` / `monthlyPlan` /
-    `workoutTemplates`; `dualWrite/index.ts` orchestrator wired до
+    `workoutTemplates`; `sqliteWriter/index.ts` orchestrator wired до
     shared dual-write telemetry sink (`recordDualWriteOutcome`,
     `recordParityCheck`, `recordReadFallback`); `useDailyLog` /
     `useMonthlyPlan` / `useWorkoutTemplates` hook callbacks тригерять
@@ -707,7 +707,7 @@ NUTRITION_ACTIVE_PANTRY, NUTRITION_PREFS}` помічені
   (`finyk_mono_transactions`, `finyk_mono_accounts`,
   `finyk_mono_account_snapshots`) populated по `mono_time` LWW;
   consumed by `apps/web/src/modules/finyk/lib/monoMirror.ts` +
-  `apps/web/src/modules/finyk/lib/dualWrite/index.ts`.
+  `apps/web/src/modules/finyk/lib/sqliteWriter/index.ts`.
 - **PR #055k2** ✅ LANDED (`24616449`) — default-on
   `feature.finyk.sqlite_v2.read_sqlite`
   (`feat(web,mobile): flip Finyk read_sqlite default-on`,
@@ -789,8 +789,8 @@ NUTRITION_ACTIVE_PANTRY, NUTRITION_PREFS}` помічені
 
 - Adds `apps/web/src/core/observability/dualWriteTelemetry.ts`
   Sentry sink (`recordDualWriteOutcome`) consumed by Routine
-  (`apps/web/src/modules/routine/lib/dualWrite/index.ts`) and Finyk
-  (`apps/web/src/modules/finyk/lib/dualWrite/index.ts`) dual-write
+  (`apps/web/src/modules/routine/lib/sqliteWriter/index.ts`) and Finyk
+  (`apps/web/src/modules/finyk/lib/sqliteWriter/index.ts`) dual-write
   pipelines, plus `monoMirror.ts` write-path. Powers the
   `<m>.sqlite.dualwrite.error_rate` /
   `<m>.sqlite.dualwrite.parity` decision-gate metrics referenced у
