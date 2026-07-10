@@ -21,9 +21,9 @@
 - [x] 2 eslint-disable в useWorkoutsLifecycle.ts виправлені (mount-only, stable deps)
 - [x] `react-hooks/immutability` — web 0 ✅, promoted to `"error"` у `eslint.web.js` (після web burndown)
 - [x] `react-hooks/preserve-manual-memoization` — web 0 ✅, promoted to `"error"` у `eslint.web.js` (2026-07-04 burndown: 6 fixed, 3 kept behind scoped eslint-disable з обґрунтуванням)
-- [x] `react-hooks/purity` — виміряно 0 порушень apps/web (2026-07-10); promotion до `"error"` — окремий агент (`eslint.web.js`)
-- [x] `react-hooks/refs` — виміряно 0 порушень apps/web (2026-07-10); promotion до `"error"` — окремий агент (`eslint.web.js`)
-- [x] `react-hooks/set-state-in-effect` — виміряно 0 порушень apps/web (2026-07-10); promotion до `"error"` — окремий агент (`eslint.web.js`)
+- [ ] `react-hooks/purity` — web ~14 + mobile 3 (2026-07-10 re-measure у `eslint.baseline.js` scoreboard); promotion blocked until burndown
+- [ ] `react-hooks/refs` — web ~59 + mobile 164 (2026-07-10); найбільший залишок на mobile UI primitives
+- [ ] `react-hooks/set-state-in-effect` — web ~80 + mobile 44 (2026-07-10); promotion blocked until burndown
 - [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
 - [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
 - [ ] `eslint.baseline.js:146-178` оновлено або видалено (після promotion всіх 5 правил)
