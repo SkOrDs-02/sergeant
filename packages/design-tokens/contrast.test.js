@@ -12,7 +12,7 @@
  * retune), update the WCAG-AA proposal doc + BRANDBOOK in the same PR.
  */
 import { describe, it, expect } from "vitest";
-import { brandColors, moduleColors } from "./tokens.js";
+import { brandColors, moduleColors, inkTheme } from "./tokens.js";
 
 function luminance(hex) {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -70,4 +70,25 @@ describe("@sergeant/design-tokens — WCAG AA contrast", () => {
       }
     });
   }
+});
+
+describe("@sergeant/design-tokens — «Чорнило» ink contrast", () => {
+  // Locks the ink text tiers against the ink surfaces (spec § 1). If a
+  // retune darkens the surface or lifts the text, these guard the AA/AAA
+  // floors the direction promises so the swap can't silently regress.
+  const { bg, surface } = inkTheme.surface;
+  const { strong, fg, muted, subtle } = inkTheme.text;
+
+  it("fg-strong on bg ≥ 7:1 (AAA)", () => {
+    expect(contrastRatio(strong, bg)).toBeGreaterThanOrEqual(7);
+  });
+  it("fg on bg ≥ 7:1 (AAA)", () => {
+    expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(7);
+  });
+  it("muted on surface ≥ 4.5:1 (AA)", () => {
+    expect(contrastRatio(muted, surface)).toBeGreaterThanOrEqual(4.5);
+  });
+  it("subtle on surface ≥ 3:1 (AA large / ≥12px labels)", () => {
+    expect(contrastRatio(subtle, surface)).toBeGreaterThanOrEqual(3);
+  });
 });

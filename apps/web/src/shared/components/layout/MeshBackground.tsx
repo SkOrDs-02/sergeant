@@ -4,10 +4,11 @@
  * @lifecycle experimental (introduced 2026-05 у PR-5; promote to active after PR-8)
  * @see docs/design/redesign-v2/governance.md § Mesh background
  *
- * Base layout layer that renders the v2 mesh-gradient surface. Composites
- * four corner radial gradients (`--bg-mesh-1..4` defined in
- * `apps/web/src/styles/theme.css`) over `--c-bg-base`. Background
- * uses `background-attachment: fixed` для infinite-scroll-feel
+ * Base layout layer that renders the mesh-gradient surface. «Чорнило»
+ * composites THREE radial glows (`--bg-mesh-1..3` defined in
+ * `apps/web/src/styles/theme.css`) over `--c-bg-base` — emerald top-right,
+ * cyan left, coral bottom (spec § 1), down from the legacy 4-corner mesh.
+ * Background uses `background-attachment: fixed` для infinite-scroll-feel
  * (iOS Capacitor WebView has a known regression — fall back is
  * disabled-mesh on `prefers-reduced-motion: reduce`).
  *
@@ -16,7 +17,7 @@
  * `<ModuleAccentProvider>` так, що accent ставиться першим, mesh — поверх.
  *
  * HC theme override (handoff не покривав, додано в PR-1): `html.hc`
- * виставляє всі `--bg-mesh-{1..4}` у `rgba(0,0,0,0)` → mesh stripped,
+ * виставляє всі `--bg-mesh-{1..3}` у `rgba(0,0,0,0)` → mesh stripped,
  * background → solid `--c-bg-base`. AAA contrast зберігається.
  *
  * Usage:
@@ -67,7 +68,7 @@ export function MeshBackground({
         "h-dvh flex flex-col overflow-hidden",
         // `.bg-mesh` utility class — defined in
         // `apps/web/src/styles/theme.css` § MESH BACKGROUND UTILITY.
-        // Composites the four corner radials + sets background-attachment:
+        // Composites the three ink glows + sets background-attachment:
         // fixed. Auto-degrades to solid `rgb(var(--c-bg-base))` on
         // `html.hc` and `prefers-reduced-motion: reduce`.
         "bg-mesh",
