@@ -450,7 +450,7 @@ help - Список всіх команд
 Stripe webhook (subscription.created)
   → Validate signature
   → Update БД user.plan = 'pro'
-  → Send Telegram: "🎉 Нова Pro: user@email (yearly, ₴799)"
+  → Send Telegram: "🎉 Нова Pro: user@email (yearly, ₴1490)"
   → Send Resend email: welcome to Pro
   → Increment PostHog event: plan_upgraded
 ```
@@ -538,7 +538,7 @@ Cron 08:30 Kyiv
   → Генерує текст ≤ 8 рядків
   → Telegram #digest:
     "Доброго ранку. За ніч:
-     ├ MRR: ₴12.4K (+₴99 нова Pro річна)
+     ├ MRR: ₴12.4K (+₴199 нова Pro місячна)
      ├ Сігнапи: 23 (медіана 18, +28%)
      ├ Errors: 0 нових
      ├ Support: 2 тікети чекають
@@ -1163,7 +1163,7 @@ OpenClaw weekly report → GitHub Issue (label: weekly-action-items)
 
 **Поріг окупності:**
 
-| Сценарій   | Break-even при ₴99/міс Pro | Break-even при ₴799/рік Pro |
+| Сценарій   | Break-even при ₴199/міс Pro | Break-even при ₴1490/рік Pro |
 | ---------- | -------------------------- | --------------------------- |
 | **Small**  | ~12 підписників            | ~5 річних                   |
 | **Medium** | ~50 підписників            | ~20 річних                  |

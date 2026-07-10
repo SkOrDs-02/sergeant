@@ -1,9 +1,9 @@
 # 00 — Launch readiness audit: 4 поверхні Sergeant
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
-> **Канон 2026-05-19:** це все ще launch-readiness baseline, але billing/landing rows треба читати з поточним code snapshot: Stripe billing routes і API client уже є; shipped `/` landing + waitlist flow існує в `apps/web`; public launch і далі блокується legal/live Stripe configuration/cookie/store readiness, а не відсутністю billing/landing коду з нуля.
+> **Канон 2026-07-10:** billing scaffold і in-app landing shipped (`LandingPage` на `/`, `PaywallModal`, `PricingPage`, `usePlan()`, `/api/billing/*`). Public launch блокується legal publish, live Stripe env/cookie consent/store readiness — не відсутністю коду. Окремий marketing-домен `sergeant.com.ua` — ще TBD.
 
 > Read-only zoom-out на готовність 4 продуктових поверхонь (Web, Server, Capacitor shell, Native Expo) + Landing-питання — до запуску з реальними юзерами. Цей документ — baseline для 3 наступних phase-роадмапів (web/Capacitor/native). Зміни статусів — через окремі PR-и.
 
@@ -21,7 +21,7 @@
 
 ## 1. TL;DR
 
-Sergeant фактично вже **технічно деплоїться у прод**: `apps/web` живе на Vercel, `apps/server` — на Railway (`Dockerfile.api`), Capacitor-shell має повний AAB+APK release-pipeline для Android і scaffold для iOS. Але **public launch заблокований не кодом, а legal-/billing-/landing-шаром**: немає опублікованих Privacy Policy + ToS, реальний Stripe-білінг ще в роботі (initiative 0010 у Phase 2–4), Apple/Google sign-in не залитий, окремого лендінгу не існує (його роль зараз виконує `/welcome` всередині `apps/web`). Native Expo — все ще internal dev-client (production EAS-profile є, store-listing-у нема). Реалістичний наступний крок — **web closed beta з 10–30 запрошеними юзерами** на поточному стеку (без Stripe, з flag-gated paywall), і паралельно довести Phase 2–4 з 0010, щоб через 4–6 тижнів вийти на public web → потім Capacitor Play Internal/TestFlight → потім native як «pro-channel» через ще ~6–10 тижнів.
+Sergeant фактично вже **технічно деплоїться у прод**: `apps/web` живе на Vercel, `apps/server` — на Railway (`Dockerfile.api`), Capacitor-shell має повний AAB+APK release-pipeline для Android і scaffold для iOS. **In-app landing** (`LandingPage` на `/` + waitlist) і **billing scaffold** уже shipped. **Public launch заблокований не кодом, а legal-/config-/store-шаром**: legal pages потребують publish/review, live Stripe production keys + ФОП, Apple/Google SSO — UI shipped (env-gated), **окремого marketing-сайту** на `sergeant.com.ua` ще немає (in-app `/` покриває cold-start). Native Expo — internal dev-client (production EAS-profile є, store-listing-у нема). Реалістичний наступний крок — **web closed beta з 10–30 запрошеними юзерами** на поточному стеку, паралельно довести legal + live Stripe env для public launch → Capacitor Play Internal/TestFlight → native як «pro-channel».
 
 ---
 
@@ -33,11 +33,11 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 | Surface                        | Deploy ready?                                  | Auth ready?                                             | Observability?                  | Release playbook?                                                                                                                                    | Real-user tested?        | Top blockers                                                                                                         |
 | ------------------------------ | ---------------------------------------------- | ------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| **Web** (`apps/web`)           | ✅ Vercel prod + preview-per-PR                | 🟡 Email/password live; Apple/Google — 0010 §4.3        | ✅ Sentry + PostHog + CSP-RO    | ✅ [`release.md §1`](../../../00-start/playbooks/release.md#1-web--api)                                                                              | 🟥 (0 paying)            | Privacy/ToS pages, Stripe billing, Apple/Google SSO, cookie banner                                                   |
-| **Server** (`apps/server`)     | ✅ Railway `Dockerfile.api`                    | ✅ Better Auth (cookie + bearer)                        | ✅ Sentry + Prom + alert-bot    | ✅ [`release.md §1`](../../../00-start/playbooks/release.md#1-web--api)                                                                              | n/a (B2C-фронт)          | `subscriptions` таблиця + Stripe webhook handlers, прод APNs/FCM creds, Voyage cost alerts уже є                     |
+| **Web** (`apps/web`)           | ✅ Vercel prod + preview-per-PR                | 🟡 Email/password live; Apple/Google UI shipped (env-gated) | ✅ Sentry + PostHog + CSP-RO    | ✅ [`release.md §1`](../../../00-start/playbooks/release.md#1-web--api)                                                                              | 🟥 (0 paying)            | Legal publish; live Stripe env; cookie banner                                                   |
+| **Server** (`apps/server`)     | ✅ Railway `Dockerfile.api`                    | ✅ Better Auth (cookie + bearer)                        | ✅ Sentry + Prom + alert-bot    | ✅ [`release.md §1`](../../../00-start/playbooks/release.md#1-web--api)                                                                              | n/a (B2C-фронт)          | Live Stripe prod keys; прод APNs/FCM creds                                                       |
 | **Capacitor** (`mobile-shell`) | 🟡 Android signing live; iOS — secrets pending | ✅ Bearer через Keychain/EncryptedSharedPrefs (PR #505) | 🟡 web-side observability reuse | ✅ [`release.md §2`](../../../00-start/playbooks/release.md#2-mobile-shell-capacitor) + [`mobile/shell.md`](../../../02-engineering/mobile/shell.md) | 🟥                       | Apple secrets для iOS release CI, Play store listing assets, internal track config                                   |
 | **Native** (`apps/mobile`)     | 🟡 EAS `production` profile є, без submit      | ✅ Better Auth Expo + bearer                            | 🟡 PostHog wired, Sentry TBD    | ✅ [`release.md §3`](../../../00-start/playbooks/release.md#3-expo) + [`mobile/overview.md`](../../../02-engineering/mobile/overview.md)             | 🟥 (internal dev-client) | Store-listing (icons, privacy manifest, data safety), photo-AI / pantry parity, Expo flaky-test green 20/20 baseline |
-| **Landing**                    | 🟥 окремого сайту немає                        | n/a                                                     | n/a                             | n/a                                                                                                                                                  | 🟥                       | Рішення «окремий лендінг vs `/welcome`», домен `sergeant.com.ua`, SEO/OG, demo-video                                 |
+| **Landing**                    | 🟡 in-app `/` shipped (`LandingPage`); standalone domain TBD | n/a                                                     | n/a                             | n/a                                                                                                                                                  | 🟡 (in-app only)         | `sergeant.com.ua` Astro one-pager для SEO/OG; demo-video                                           |
 
 ---
 
@@ -46,16 +46,16 @@ Sergeant фактично вже **технічно деплоїться у пр
 ### 3.1 Web (`apps/web`)
 
 - **Стан:** `active` за [`apps-status-matrix.md`](../../../02-engineering/architecture/apps-status-matrix.md). React 18 + Vite 8 PWA, Tailwind 4, TanStack Query, Better Auth cookie-сесії, Service Worker (`src/sw.ts`). Деплой — Vercel (статика + Edge Middleware-проксі на Railway API), per-PR preview-середовища.
-- **Auth:** реалізовано email/password через Better Auth (`AuthContext` у [`apps/web/src/core/auth/AuthContext.tsx`](../../../../apps/web/src/core/auth/AuthContext.tsx)), UA-помилки мапляться за стабільним Better Auth `error.code`. **Apple + Google SSO ще не залиті** — це Phase 4.3 ініціативи [`0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) (signup-friction blocker).
+- **Auth:** реалізовано email/password через Better Auth (`AuthContext` у [`apps/web/src/core/auth/AuthContext.tsx`](../../../../apps/web/src/core/auth/AuthContext.tsx)), UA-помилки мапляться за стабільним Better Auth `error.code`. **Apple + Google SSO — UI + server wiring shipped** (`GoogleSignInButton`, `AppleSignInButton` у `AuthPage.tsx`); production rollout залежить від OAuth env secrets (initiative [`0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) §4.3).
 - **FTUX:** `WelcomeScreen` + `OnboardingWizard` на `/welcome`, lazy-loaded chunk; demo-режим `?demo=1` через `seedDemoData/*`. За [`ftux-master-tracker.md`](../product-os/ftux-master-tracker.md): **27 з 35 sprint-items закрито** в `main`, 8-step PostHog activation funnel живе на web, D1/D7 dashboard зеленіє. Real-world conversion поки **TBD** (когорта стартувала ~2026-04-28).
 - **Observability:** Sentry ([`apps/web/src/core/observability/sentry.ts`](../../../../apps/web/src/core/observability/sentry.ts)) + PostHog (8 FTUX events + identify), Web Vitals, Lighthouse CI workflow заплановано (T5 у тех-боргу), `size-limit` уже у CI.
 - **Security:** CSP report-only активний (CSP/COOP/COEP у [`apps/web/vercel.json`](../../../../apps/web/vercel.json)), Permissions-Policy жорстка.
 - **Billing UI/API:** scaffold уже в коді — `PricingPage`, `core/billing/PaywallModal`, `usePlan()` hook, server `/api/billing/status`, `/checkout`, `/portal`, `/stripe-webhook`, а також API-client billing helpers. **Public launch work — live Stripe env/account/legal rollout + remaining placement polish**, не побудова billing skeleton з нуля.
-- **Висновок для запуску:** web уже **запускається для closed beta з 10–30 запрошеними юзерами** на поточному стеку (без Stripe, з manual «дай людині акаунт» onboard-ом). Public launch потребує: legal-сторінки, cookie-banner, Stripe-Checkout (бо paywall за ADR-0051), Apple/Google SSO, окремого або dedicated landing.
+- **Висновок для запуску:** web уже **запускається для closed beta з 10–30 запрошеними юзерами** на поточному стеку. Public launch потребує: legal publish, cookie-banner, live Stripe env, Apple/Google OAuth prod secrets, standalone marketing site (in-app landing уже є).
 
 ### 3.2 Server (`apps/server`)
 
-- **Стан:** `active`. Node 20 + Express + Postgres 16 + Better Auth + Anthropic + Voyage embeddings. Деплой — Railway через [`Dockerfile.api`](../../../../Dockerfile.api); pre-deploy запускає `pnpm db:migrate` (`MIGRATE_DATABASE_URL`). Health-check `/health` p95 < 100ms (informal SLO).
+- **Стан:** `active`. Node 22 + Express + Postgres 16 + Better Auth + Anthropic + Voyage embeddings. Деплой — Railway через [`Dockerfile.api`](../../../../Dockerfile.api); pre-deploy запускає `pnpm db:migrate` (`MIGRATE_DATABASE_URL`). Health-check `/health` p95 < 100ms (informal SLO).
 - **API:** v1 + v2 surfaces; sync v2 (SQLite-WASM + outbox) живе у проді; Voyage daily cost alert, alert-bot 60/120-min escalation, `/ai_cost` slash-команда — все мерджено за останні 50 коммітів.
 - **Auth secrets / Hard Rule #20:** OpenClaw PATs заборонені в проді, ротація через [`docs/00-start/playbooks/rotate-secrets.md`](../../../00-start/playbooks/rotate-secrets.md). `BETTER_AUTH_TOKEN_ENC_KEY` + `NUTRITION_BACKUP_KEY_SECRET` — required у проді (з `.env.example`).
 - **Observability:** Pino JSON + ALS-контекст + redaction policy (Hard Rule #21), Prometheus `prom-client` (`GET /metrics` за `METRICS_TOKEN`), Sentry із trace-sampling-presets, GCS log-retention archive cron, n8n webhook events Grafana dashboard.
@@ -84,13 +84,14 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 ### 3.5 Landing site
 
-- **Стан:** окремого лендінг-сайту **немає**. Маркетингова поверхня = `apps/web/src/core/app/WelcomeScreen.tsx` на `/welcome` (full-page cold-start з 2×2 bento), PricingPage на `/pricing`. Demo-режим `?demo=1` — first-class CTA (PR-05 #1986).
+- **Стан:** **in-app landing shipped** — `apps/web/src/core/LandingPage.tsx` на `/` для cold visitors (non-auth), `WaitlistForm`, analytics `LANDING_VIEWED`. `/welcome` — onboarding entry для returning users. `PricingPage` на `/pricing`. Demo-режим `?demo=1` — first-class CTA (PR-05 #1986).
+- **Ще немає:** окремого marketing-домену `sergeant.com.ua` (Astro/Framer SSG) для SEO і share-cards без SPA-shell.
 - **План у docs:**
   - [`02-go-to-market.md`](../business/02-go-to-market.md) § 2.2 пропонує **окремий лендінг на `sergeant.com.ua`** (Astro/Framer/Vite SSG) + `app.sergeant.com.ua` для PWA + `sergeant.com.ua/blog` для SEO.
   - Pre-launch checklist [`02-go-to-market.md`](../business/02-go-to-market.md) § 2.1 рядок #2 «Задеплоїти landing page» — **🟥 open**.
-  - [`04-launch-readiness.md`](../business/04-launch-readiness.md) § 7 пункт #13 «Landing page» — **🟥 open**, owner Dev, deadline «Місяць 1 W1».
+  - [`04-launch-readiness.md`](../business/04-launch-readiness.md) § 7 пункт #13 «Landing page» — **[x] in-app**; **[ ] standalone** `sergeant.com.ua`.
 - **Trade-off:** Astro SSG лендінг = +2–5 днів сетапу, але дає SEO juice і не вимагає завантажити React-бандл для маркетингового відвідувача. `/welcome` всередині `apps/web` дає швидкий time-to-launch, але вимагає вантажити SPA-shell + service-worker.
-- **Висновок (детально у § 4):** на **closed beta** окремий лендінг не потрібен — `?demo=1` + invite-only link достатньо. На **public web launch** окремий мінімальний Astro/Framer-лендінг на `sergeant.com.ua` + waitlist-CTA — high-leverage step.
+- **Висновок (детально у § 4):** на **closed beta** in-app `/` достатньо. На **public web launch** додатково потрібен standalone Astro one-pager на `sergeant.com.ua` для SEO (in-app landing уже покриває product entry).
 
 ---
 

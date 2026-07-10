@@ -1,8 +1,9 @@
 # Paywall UX placement — sketch + decision doc
 
-> **Last validated:** 2026-05-13 by @Skords-01.
-> **Next review:** 2026-08-11 (post-PR-20 implementation review).
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active draft (sketch). Закриває tracker `PR-19` per [ftux-master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr).
+>
+> **Update 2026-07-10:** trial-механіка в коді — ADR-0068 **reverse trial 7 днів** (авто Pro → downgrade), не 14d opt-in trial без картки з §1 нижче. Placement sketch (post-first-real-entry sheet) лишається валідним; trial copy оновити під ADR-0068.
 > **Owner:** @Skords-01 + Devin (sketch session 2026-05-06).
 
 > Тільки UX-placement sketch для FTUX-релевантного paywall touch-point-у. Технічний skeleton (Stripe, webhooks, gating-middleware, ADR list) — у [Архітектура монетизації v2](../business/06-monetization-architecture.md) та [Initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md). Цей документ — **тільки про те, ДЕ і КОЛИ** показуємо paywall новому юзеру, а не **ЯК** його технічно реалізуємо. Імплементація — `PR-20`.
@@ -13,7 +14,7 @@
 
 ## 1. TL;DR
 
-Перший paywall-контакт нового юзера = **post-first-real-entry sheet** (sheet, не модал, не повноекранна wall) з offering 14-day Pro trial, БЕЗ payment method, з очевидним «Залишитись на free» secondary CTA. Тригер — той самий момент, який зараз стріляє `first_real_entry` PostHog event ([`apps/web/src/core/onboarding/firstRealEntry.ts`](../../../../apps/web/src/core/onboarding/firstRealEntry.ts)) і відкриває [`FirstEntryCelebrationModal`](../../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx). Sheet з'являється **після** celebration-аніма­ції (4 sec delay), не замість. FF-gated за `paywall_post_ftux_v1` (default OFF до 0010 phase 3).
+Перший paywall-контакт нового юзера = **post-first-real-entry sheet** (sheet, не модал, не повноекранна wall) з offering **reverse trial 7 днів** (ADR-0068: автоматичний Pro → downgrade), з очевидним «Залишитись на free» secondary CTA. _(Historical sketch нижче згадував 14d opt-in trial — superseded by ADR-0068.)_ Тригер — той самий момент, який стріляє `first_real_entry` PostHog event ([`apps/web/src/core/onboarding/firstRealEntry.ts`](../../../../apps/web/src/core/onboarding/firstRealEntry.ts)) і відкриває [`FirstEntryCelebrationModal`](../../../../apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx). Sheet з'являється **після** celebration-анімації (4 sec delay), не замість. FF-gated за `paywall_post_ftux_v1`.
 
 **Чому не «у момент signup»:** [audit-roast 2026-05-03 §B-1](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) і вся `disciplined-helper` рамка PR-04 — paywall до першої цінності = бренд-самогубство. Чекаємо на `first_real_entry` як proof-of-fit signal.
 

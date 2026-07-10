@@ -1,7 +1,9 @@
 # Telegram surfaces — план покращень
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
+>
+> **Snapshot banner (2026-07-10):** статуси PR нижче — зріз **2026-05-03**. Перед імплементацією нових пунктів звіряй з `tools/openclaw/` і [openclaw-migration-plan](../../../90-work/planning/archive/openclaw-migration-plan.md).
 
 > Поетапний план покращень Telegram-частини Sergeant — двох ботів
 > (`@Sergeant_alert_bot`, `@OpenClaw_sergeant_bot`), супергрупи

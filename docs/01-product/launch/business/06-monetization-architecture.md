@@ -98,11 +98,11 @@ export const SubscriptionSchema = z.object({
 
 export const PLAN_GATES = {
   free: {
-    aiChatPerDay: 5,
+    aiChatPerDay: 15, // ADR-0068 — matches effectiveLimits.ts
     aiBriefing: false,
     aiDaySummary: false,
     aiPhotoPerDay: 3,
-    cloudSync: false,
+    cloudSync: 2, // 2 devices (ADR-0068)
     monoAutoSync: false,
     crossModuleReports: false,
     exportCsvPdf: false,
@@ -258,7 +258,7 @@ export async function effectiveLimits(userId: string | null): Promise<Limits> {
     return PRO_LIMITS; // null = unlimited
   }
   return {
-    chatPerDay: PLAN_GATES.free.aiChatPerDay, // 5
+    chatPerDay: PLAN_GATES.free.aiChatPerDay, // 15 (ADR-0068)
     photoPerDay: PLAN_GATES.free.aiPhotoPerDay, // 3
     // ... інші AI-related обмеження
   };
@@ -479,7 +479,7 @@ export const billingKeys = {
 │ PR-M.6  feat(server): refactor effectiveLimits to use plan      │  ~200 LOC, medium risk
 │         · apps/server/src/modules/chat/aiQuota.ts                    │
 │         · Pro → null limit (unlimited skip)                     │
-│         · Free → PLAN_GATES.free.aiChatPerDay (5)               │
+│         · Free → PLAN_GATES.free.aiChatPerDay (15, ADR-0068)     │
 │         · Backward-compat snapshot tests                        │
 │         · `requireAiQuota` уже навісила на /api/chat —          │
 │           тут лише читаємо план, не додаємо middleware          │

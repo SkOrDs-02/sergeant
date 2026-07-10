@@ -17,7 +17,7 @@
                    FRONTEND                          BACKEND                          DATA
               +-------------------+             +---------------------+         +----------------+
               | apps/web          |    HTTPS    | apps/server         |         | PostgreSQL     |
-              | Vite + React 18   |------------>| Express + Node 20   |-------->| Railway managed|
+              | Vite + React 18   |------------>| Express + Node 22   |-------->| Railway managed|
               | PWA (Workbox)     |   API       | Better Auth         |         | + pgvector ext.|
               | Tailwind CSS 4    |             | Pino logging        |         | Migrations 044+|
               | Sentry (@sentry/  |             | Helmet + CSP        |         +----------------+
@@ -62,7 +62,7 @@
 | Сервіс / бібліотека         | Де в коді                                                                                                                 | Статус                       |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
 | Vite + React 18 SPA         | `apps/web/package.json` → `vite`, `react ^18`                                                                             | in use                       |
-| Express + Node 20           | `apps/server/package.json` → `express ^4.22`                                                                              | in use                       |
+| Express + Node 22           | `apps/server/package.json` → `express ^4.22`; root `package.json` → Node 22.x (Volta 22.19.0) | in use                       |
 | PostgreSQL (pg + pgvector)  | `apps/server/package.json` → `pg ^8.20`; `docker-compose.yml` → `pgvector/pgvector:pg17`                                  | in use                       |
 | Redis (ioredis)             | `apps/server/src/lib/redis.ts`, `ioredis ^5.6`                                                                            | in use                       |
 | Better Auth                 | `apps/server/package.json` → `better-auth ^1.6`                                                                           | in use                       |

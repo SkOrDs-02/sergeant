@@ -1,8 +1,9 @@
 # Sergeant — Launch phases plan-guide
 
-> **Last validated:** 2026-05-13 by Devin (parent synthesis of 4 paralel child-sessions).
-> **Next review:** 2026-08-11.
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active — draft master plan-guide for sequencing launch with real users.
+>
+> **Update 2026-07-10:** in-app landing (`LandingPage` на `/`) і billing scaffold shipped; public launch блокується legal/live Stripe env/cookie consent, не відсутністю коду. Окремий marketing-домен `sergeant.com.ua` — ще TBD.
 
 > Цей файл — **master synthesis** трьох послідовних фаз запуску Sergeant з реальними юзерами:
 > Web (Phase 1) → Capacitor (Phase 2) → Native Expo (Phase 3).
@@ -35,10 +36,13 @@
 
 Sergeant фактично **технічно деплоїться у прод**: `apps/web` живе на Vercel, `apps/server` —
 на Railway, Capacitor-shell (`apps/mobile-shell`) має повний AAB+APK release-pipeline для
-Android і scaffold для iOS, native Expo (`apps/mobile`) — internal dev-client. **Public launch
-заблокований не кодом, а legal-/billing-/landing-/store-шарами**: немає опублікованих
-Privacy Policy + ToS, Stripe-білінг в роботі (initiative 0010 phase 2–4), Apple/Google
-SSO не залитий, Apple Developer Program не куплений, окремого лендінгу не існує.
+Android і scaffold для iOS, native Expo (`apps/mobile`) — internal dev-client. **In-app landing**
+(`LandingPage` на `/` + waitlist) і **billing scaffold** (`/api/billing/*`, `PaywallModal`,
+`PricingPage`, `usePlan()`) уже shipped. **Public launch заблокований не кодом, а
+legal-/config-/store-шарами**: legal pages потребують publish/review, live Stripe production
+keys + ФОП, Apple Developer Program не куплений, **окремого marketing-сайту** на
+`sergeant.com.ua` ще немає. Apple/Google SSO — UI + server wiring shipped, production env
+може бути не налаштований.
 
 **Рекомендована послідовність:**
 
@@ -87,16 +91,16 @@ SSO не залитий, Apple Developer Program не куплений, окре
 
 | Поверхня                        | Deploy?                                                         | Auth?                               | Observability?                       | Release playbook?                                                                                                                      | Real-user tested?          | Найбільший блокер                                                                         |
 | ------------------------------- | --------------------------------------------------------------- | ----------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
-| `apps/web`                      | ✅ prod Vercel                                                  | ✅ email+password (no Apple/Google) | ✅ Sentry+PostHog+CSP-RO             | ✅ [release.md](../../../00-start/playbooks/release.md) + [release-web-and-api.md](../../../00-start/playbooks/release-web-and-api.md) | 🟡 internal+demo only      | Legal pages (Privacy/ToS); Apple/Google SSO; Stripe                                       |
-| `apps/server`                   | ✅ prod Railway (Dockerfile.api)                                | ✅ Better Auth bearer/cookie        | ✅ Pino+Prom+Sentry+alert-bot        | ✅ [release-web-and-api.md](../../../00-start/playbooks/release-web-and-api.md)                                                        | 🟡 internal only           | Stripe billing tables (subscriptions, stripe_webhook_events)                              |
+| `apps/web`                      | ✅ prod Vercel                                                  | 🟡 email+password live; Apple/Google UI shipped (env-gated) | ✅ Sentry+PostHog+CSP-RO             | ✅ [release.md](../../../00-start/playbooks/release.md) + [release-web-and-api.md](../../../00-start/playbooks/release-web-and-api.md) | 🟡 internal+demo only      | Legal publish; live Stripe env; cookie banner                                             |
+| `apps/server`                   | ✅ prod Railway (Dockerfile.api)                                | ✅ Better Auth bearer/cookie        | ✅ Pino+Prom+Sentry+alert-bot        | ✅ [release-web-and-api.md](../../../00-start/playbooks/release-web-and-api.md)                                                        | 🟡 internal only           | Live Stripe prod keys + webhook endpoint verification                                     |
 | `apps/mobile-shell` (Capacitor) | 🟡 Android AAB/APK CI ready, iOS CI scaffold (no Apple secrets) | ✅ bearer reuses web                | ✅ Sentry WebView                    | ✅ [release-mobile-shell.md](../../../00-start/playbooks/release-mobile-shell.md)                                                      | ❌ no external testers yet | Apple Developer enrollment ($99 + D-U-N-S); store metadata + assets                       |
 | `apps/mobile` (Expo)            | ❌ internal dev-client only                                     | ✅ bearer                           | 🟡 Sentry+PostHog wired, no prod DSN | ✅ [release-expo-mobile.md](../../../00-start/playbooks/release-expo-mobile.md)                                                        | ❌ no external testers     | EAS prod profile lock; Apple/Google accounts; Nutrition Phase 7 (recipes AI, photo-AI) 🟥 |
-| Landing site                    | ❌ немає окремого                                               | n/a                                 | n/a                                  | n/a                                                                                                                                    | n/a                        | Рішення: окремий сайт vs `/welcome`-only (див. § 5)                                       |
+| Landing site                    | 🟡 in-app `/` shipped; standalone domain TBD                     | n/a                                 | n/a                                  | n/a                                                                                                                                    | n/a                        | `sergeant.com.ua` Astro one-pager для SEO (див. § 5)                                        |
 
 **Ключові ADRs / initiatives:**
 
 - [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor PRIMARY до Expo parity (Accepted 2026-05-06)
-- [ADR-0051](../../../04-governance/adr/0051-pricing-v3-single-tier.md) — Free + Pro $7/міс / $49/рік, UAH UA-only на старті
+- [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — Free + Pro ₴199/міс / ₴1490/рік, reverse trial 7 днів (Supersedes ADR-0051)
 - [Initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md) — revenue-first sprint (Stripe billing у Phase 2-4)
 - [Initiative 0002](../../../90-work/initiatives/archive/_0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
 
@@ -214,12 +218,12 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 | #   | Блокер                                                                                                                                                                                                  | Owner / Surface           | Estimate  | Phase                        |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | --------- | ---------------------------- |
 | 1   | **Privacy Policy + ToS публічні URLs** ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи))                                                                                         | Founder + (юрист consult) | 1-2 тижні | Web public + Capacitor       |
-| 2   | **Stripe billing pipeline** (subscriptions + stripe_webhook_events міграції, Checkout, Customer Portal) — [Initiative 0010 phase 2-4](../../../90-work/initiatives/0010-revenue-first-launch.md)        | Devin + founder           | 2-3 тижні | Web public (paywall live)    |
+| 2   | **Stripe billing pipeline** (scaffold shipped; prod env + ФОП pending) — [Initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md) | Devin + founder           | 1–2 тижні | Web public (paywall live)    |
 | 3   | **Apple Developer Program enrollment** ($99 + D-U-N-S Number; ~2 тижні delay)                                                                                                                           | Founder                   | 2-3 тижні | Capacitor iOS                |
 | 4   | **Google Play Developer Console enrollment** ($25 one-time)                                                                                                                                             | Founder                   | 1-2 дні   | Capacitor Android            |
 | 5   | **ФОП реєстрація + банк-рахунок для UA-Stripe** (UAH support)                                                                                                                                           | Founder                   | 2-4 тижні | Web paywall live             |
-| 6   | **Apple + Google Sign-in via Better Auth** ([0010 phase 4.3](../../../90-work/initiatives/0010-revenue-first-launch.md))                                                                                | Devin                     | 1-2 тижні | Web public (signup friction) |
-| 7   | **Окремий лендінг live** (single-page Astro на sergeant.com.ua, опція C)                                                                                                                                | Founder + Devin           | 3-5 днів  | Web public                   |
+| 6   | **Apple + Google Sign-in** (UI shipped; prod OAuth env pending) — [0010 phase 4.3](../../../90-work/initiatives/0010-revenue-first-launch.md) | Devin                     | 1–2 тижні | Web public (signup friction) |
+| 7   | **Standalone marketing landing** (`sergeant.com.ua` Astro one-pager; in-app `/` already shipped) | Founder + Devin           | 3-5 днів  | Web public SEO               |
 | 8   | **Store-listing assets** (іконки, screenshots, demo-video, App Privacy / Data Safety форми)                                                                                                             | Founder + designer        | 1 тиждень | Capacitor                    |
 | 9   | **Cookie consent banner для EU** (ePrivacy compliance)                                                                                                                                                  | Devin                     | 1-2 дні   | Web public                   |
 | 10  | **DB backups end-to-end verified** ([04 § 7 item 20](../business/04-launch-readiness.md#7-pre-launch-чеклист) + [playbooks/test-backup-restore.md](../../../00-start/playbooks/test-backup-restore.md)) | Devin                     | 1 день    | Web closed beta              |
@@ -319,7 +323,7 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 - [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) — feature parity матриця (SSOT)
 - [`docs/02-engineering/architecture/apps-status-matrix.md`](../../../02-engineering/architecture/apps-status-matrix.md)
 - [`docs/02-engineering/architecture/hosting-evolution.md`](../../../02-engineering/architecture/hosting-evolution.md)
-- [ADR-0051 — Pricing v3 single tier](../../../04-governance/adr/0051-pricing-v3-single-tier.md)
+- [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — Free + Pro ₴199/міс / ₴1490/рік (Supersedes ADR-0051)
 - [ADR-0052 — Mobile strategy: Capacitor primary](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md)
 
 ### Initiatives
