@@ -30,9 +30,7 @@
 
 ## Core / Hub / Search (`apps/web/src/core/hub/search/`)
 
-| Файл / функція       | Фактичні deps                       | Інваріант                                                                                                                                                                                           |
-| -------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useSearchEngine.ts` | `[flat, activeIdx, onClose, query]` | `openHit` і `commitQuery` — plain-функції у тілі хука (без `useCallback`); включення як deps спричиняє нескінченний re-subscribe keydown listener. Пріоритет для wave 2: обгорнути у `useCallback`. |
+_Немає активних винятків — `useSearchEngine.ts` wave 2 (2026-07-10): `openHit`/`commitQuery`/`escalateToChat` у `useCallback`, disable прибрано._
 
 ## Auth та активація (`apps/web/src/core/`)
 
@@ -87,7 +85,7 @@
 
 ---
 
-**Загальна кількість файлів:** 24 (деякі файли містять кілька навмисних винятків у різних функціях).
+**Загальна кількість файлів:** 23 (деякі файли містять кілька навмисних винятків у різних функціях).
 
 **Знято у wave 1 (2026-07-10):** `usePwaAction.ts` (ref-fix), `settings/hubPrefs.ts` (read усередині ефекту), `nutrition/useNutritionPwaAction.ts` (стабільні deps додано). Раніше знято попередніми агентами: `useLocalStorageState.ts`, `useHubNavigation.ts`, `NutritionSection.tsx`, `ManualExpenseSheet.tsx`, `useFinykStorageSlots.ts`, `HabitQuickCreateDialog.tsx`, `useFoodSearch.ts`.
 
