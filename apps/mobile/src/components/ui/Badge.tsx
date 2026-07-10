@@ -22,7 +22,7 @@
  *   variables as web (see `apps/mobile/global.css`).
  */
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Animated, Text, View, type ViewProps } from "react-native";
 
 export type BadgeVariant =
@@ -181,9 +181,13 @@ export function Badge({
   children,
   ...props
 }: BadgeProps) {
-  // Pulse animation for live indicators
-  const pulseScale = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(1)).current;
+  // Pulse animation for live indicators.
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [pulseScale] = useState(() => new Animated.Value(1));
+  const [pulseOpacity] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     if (!pulse || !dot) return;

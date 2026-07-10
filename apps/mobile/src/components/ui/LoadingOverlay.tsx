@@ -15,7 +15,7 @@
  * />
  * ```
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -55,7 +55,11 @@ export function LoadingOverlay({
   color = colors.accent,
 }: LoadingOverlayProps) {
   const reduceMotion = useReduceMotion();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [fadeAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (visible) {

@@ -121,11 +121,15 @@ export function Tooltip({
   const reduceMotion = useReduceMotion();
   const triggerRef = useRef<View>(null);
 
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(reduceMotion ? 1 : 0.9)).current;
-  const translateY = useRef(
-    new Animated.Value(reduceMotion ? 0 : position === "top" ? 5 : -5),
-  ).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [scale] = useState(() => new Animated.Value(reduceMotion ? 1 : 0.9));
+  const [translateY] = useState(
+    () => new Animated.Value(reduceMotion ? 0 : position === "top" ? 5 : -5),
+  );
 
   const showTooltip = useCallback(() => {
     if (disabled) return;
