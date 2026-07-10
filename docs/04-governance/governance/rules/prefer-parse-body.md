@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `warn` (rollout → `error` after migration complete)
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-10 by @github-actions[bot]. **Next review:** 2026-10-08.
 > **Status:** Active
 
 > ESLint convention enforced by `sergeant-design/prefer-parse-body-over-validate-body` in `packages/eslint-plugin-sergeant-design`. Not a numbered Hard Rule in `hard-rules.json` — this file is the canonical doc body referenced from the plugin and server handler comments.
@@ -41,3 +41,15 @@ const body = parseBody(MySchema, req);
 
 - **initiative** — `docs/90-work/planning/archive/pr-plan-backend-perf-2026-05.md` (PR-09, PR-10, PR-11)
 - **eslint** — `packages/eslint-plugin-sergeant-design/index.js` (`prefer-parse-body-over-validate-body`)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#214](https://github.com/Skords-01/Sergeant/pull/214) | fix(docs): reconcile docs drift, broken links, and generator outputs | 2026-07-10 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
