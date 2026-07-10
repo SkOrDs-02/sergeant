@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-05-12 by Devin (update 18:00 UTC — Row 3 corrected: real shape є `agents.list[]` array, не `agents.<id>` keys і не `agents.defaults.tools`. Причина правки — production gateway crash-loop 16:40–18:00 UTC після merge Stage 5a (PR #2480)). **Next review:** 2026-08-10.
 > **Status:** Archived
-> **Owner:** @Skords-01 · **Created:** 2026-05-12
+> **Owner:** @SkOrDs-02 · **Created:** 2026-05-12
 > **Roadmap reference:** [`docs/90-work/planning/openclaw-migration-plan.md` § Reality update 2026-05-12](../../../90-work/planning/archive/openclaw-migration-plan.md) — Stage спайк рядок (`🔬 Spike`).
 > **Supersedes (for SDK shape claims):** [`docs/02-engineering/notes/spikes/openclaw-poc.md`](./openclaw-poc.md) § "SDK contract type-safely fits". PoC `sdk-types.ts` був локальним guess-ом; цей спайк фіксує реальний SDK.
 

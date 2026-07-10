@@ -38,4 +38,4 @@ graph TD
 
 - Quota + circuit breaker: `apps/server/src/modules/chat/aiQuotaCircuitBreaker.ts`
 - Prompt cache: `docs/04-governance/adr/0039-anthropic-prompt-cache-policy.md`
-- Runtime issues: `@Skords-01` (поки TBD secondary)
+- Runtime issues: `@SkOrDs-02` (поки TBD secondary)

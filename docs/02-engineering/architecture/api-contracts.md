@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 >
-> **v2 (persona-extend) coverage:** 10 consumer interactions → 8 provider replays + 2 `it.todo` markers. Diff from PR-42 v1: +5 endpoints (`mono/sync-state`, `mono/transactions`, `coach/memory`, `barcode`, `nutrition/day-plan`).
+> **v2 (persona-extend) coverage:** 22 consumer interactions → 14 unique routes; 8+ provider replays у `provider.test.ts` (решта — `it.todo` або auth-stubbed). Див. header comment у `apps/server/src/__tests__/contracts/provider.test.ts`.
 
 Pact-based **runtime** contract verification for `@sergeant/api-client ↔ @sergeant/server`. Доповнює, а не замінює, **type-level** sync через Hard Rule #3 ([`03-api-contract-server-client-test.md`](../../04-governance/governance/rules/03-api-contract-server-client-test.md)) + `pnpm api:check-openapi` / `pnpm api:check-openapi-types`.
 
@@ -12,8 +12,8 @@ Pact-based **runtime** contract verification for `@sergeant/api-client ↔ @serg
 | Гарантія                                             | Як забезпечується                                                                            | Surface                                                   |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | **Типи клієнт ↔ сервер ↔ тест синхронізовані**       | Hard Rule #3 + `pnpm api:check-openapi` + `*.contract.test.ts` фікстури в `@sergeant/shared` | Build-time / pre-PR                                       |
-| **Wire-shape клієнт ↔ сервер ідентична на рантаймі** | Pact-контракт: consumer описує запит+відповідь, провайдер реплеює це проти `createApp()`     | `.github/workflows/pact-contract-test.yml` + `pnpm check` |
-| **Pact-файли як артефакт між сервісами**             | `actions/upload-artifact` у consumer-job → download у provider-job; retention 14 днів        | GH Actions                                                |
+| **Wire-shape клієнт ↔ сервер ідентична на рантаймі** | Pact-контракт: consumer описує запит+відповідь, провайдер реплеює це проти `createApp()`     | `pnpm check` → `turbo run test` (consumer + `provider.test.ts` у `@sergeant/server`) |
+| **Pact-файли як артефакт між сервісами**             | Локально: `packages/api-client/pacts/*.json`. Окремий GH Actions artifact-upload — optional follow-up | Repo checkout (не split-job CI)                                                       |
 
 ## 🎯 Чому Pact поверх OpenAPI sync
 
@@ -66,7 +66,7 @@ OpenAPI sync (`pnpm api:check-openapi`) — обовʼязковий, дешев
 
 ### CI workflow
 
-Обидва suite-и вже покриті `pnpm check` у [`ci.yml`](../../../.github/workflows/ci.yml). Окремий dedicated workflow (`.github/workflows/pact-contract-test.yml`) — TODO у follow-up PR від користувача з `workflow`-scope (OAuth App, яким devin push-ає, не має workflow scope і remote rejects YAML-файл у `.github/workflows/`).
+Consumer (`packages/api-client/src/__tests__/contracts/*.contract.test.ts`) і provider replay (`apps/server/src/__tests__/contracts/provider.test.ts`) бігають у стандартному `pnpm test` / `pnpm check` (`turbo run test`). Окремий `.github/workflows/pact-contract-test.yml` **не закомічений** — шаблон нижче для optional split-job CI (потрібен `workflow` scope на OAuth App).
 
 Готовий шаблон, який треба коммітнути окремо:
 

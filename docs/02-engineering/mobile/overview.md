@@ -1,11 +1,9 @@
 # Mobile client — API contract
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-05-13 by @SkOrDs-02 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
-Референс для Expo/React Native клієнта Sergeant. Сервер уже підготовлений
-(ця сесія: API v1, bearer-auth, push/register). Сам мобільний код —
-наступна сесія.
+Референс для Expo/React Native клієнта Sergeant (`apps/mobile`). Сервер і bearer-auth контракт готові; мобільний застосунок — internal dev-client з 4 модулями, Detox E2E і Universal Links (див. [`react-native-migration.md`](./react-native-migration.md)).
 
 ## Auth
 

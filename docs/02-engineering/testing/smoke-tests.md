@@ -1,15 +1,17 @@
 # Post-deploy smoke tests — runbook
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-08.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
+
+> **Статус автоматизації:** `.github/workflows/post-deploy-smoke.yml` **відсутній** у репо (лише CLI [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) + [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json)). Прогін — вручну або після ручного додавання workflow через GH UI (шаблон у § Workflow YAML).
 
 Цей runbook описує, як працюють **post-deploy smoke tests** для Sergeant API — і що робити, коли cron / deploy-hook каже, що щось зламалось.
 
 Sister-сторінки:
 
-- [`docs/02-engineering/testing/pact-drift-runbook.md`](./pact-drift-runbook.md) — daily check, чи **wire shape** staging-у відповідає Pact-контрактам (schema regression).
+- [`docs/02-engineering/testing/pact-drift-runbook.md`](./pact-drift-runbook.md) — optional daily staging drift check (CLI; workflow не закомічений).
 - [`docs/02-engineering/architecture/api-contracts.md`](../architecture/api-contracts.md) — як працює Pact pipeline загалом.
-- `.github/workflows/post-deploy-smoke.yml` — workflow (потрібно створити вручну — див. § Workflow YAML).
+- `.github/workflows/post-deploy-smoke.yml` — **не в репо**; створити вручну з § Workflow YAML (якщо потрібна автоматизація).
 - [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) — CLI runner.
 - [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json) — конфіг із списком endpoint-ів.
 
@@ -167,7 +169,7 @@ node scripts/post-deploy-smoke.mjs --tier all --strict
 ```yaml
 name: Post-deploy smoke
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Triage: if this job fails, an issue tagged `smoke-test-fail` is auto-opened
 #         (idempotent — same pattern as pact-drift / db-backup-verify). Runbook:
 #         `docs/02-engineering/testing/smoke-tests.md`.
@@ -342,7 +344,7 @@ jobs:
               '',
               '</details>',
               '',
-              'cc @Skords-01',
+              'cc @SkOrDs-02',
             ].join('\n');
 
             const { data: issues } = await github.rest.issues.listForRepo({

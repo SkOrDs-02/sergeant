@@ -74,4 +74,4 @@
 - Різні мінорні версії React між веб і моб — вирівнювати при нагоді
 - Частина `core` у `.jsx` — поступова міграція на TS підвищує консистентність
 - PWA + великі ліниві модулі — контролювати бандл (`pnpm build:analyze` у `@sergeant/web`)
-- Sync cutover: finyk і nutrition reads ще частково на legacy paths до увімкнення `feature.*.sqlite_v2.read_sqlite` флагів у prod
+- Sync v2 read-overlay: Stage 8 PR #057\* зняв `feature.*.sqlite_v2.read_sqlite` флаги — SQLite read unconditional після boot; залишковий LS/MMKV fallback для first-paint трекається окремими tombstone-PR-ами

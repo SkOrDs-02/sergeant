@@ -1,7 +1,9 @@
 # Pact contract drift — runbook
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
+
+> **Статус автоматизації:** `.github/workflows/pact-drift.yml` **відсутній** у репо. Drift-перевірка — через CLI [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs) (вручну / cron поза GH). Шаблон workflow — § Workflow YAML.
 
 > **Single source of truth → [`docs/02-engineering/architecture/api-contracts.md`](../architecture/api-contracts.md).** Той файл описує **що** живе у Pact-контракті і **як** працює consumer/provider pipeline. Цей runbook описує **що робити**, коли daily-cron детектує drift проти live staging.
 
@@ -18,7 +20,7 @@
 - Файл (потрібно створити вручну — див. § Workflow YAML): `.github/workflows/pact-drift.yml`.
 - Тригери: cron `0 6 * * *` (06:00 UTC щодня) + `workflow_dispatch` з опціями (`base_url`, `include_mutations`, `strict`).
 - Скрипт: [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs).
-- Контракти: `packages/api-client/pacts/*.json` (зараз — один файл `sergeant-api-client-sergeant-server.json` з 10 інтеракціями).
+- Контракти: `packages/api-client/pacts/*.json` (зараз — один файл `sergeant-api-client-sergeant-server.json` з 22 інтеракціями).
 - Idempotent issue logic: один open issue `[Pact drift] …` із label `contract-drift`. Наступні детекції → comment у той самий issue, а не дубльований issue. Mirrors `db-backup-verify.yml`.
 
 > **Why the YAML lives in docs and not under `.github/workflows/`:** PR-42 (#2675) і ця PR використовують OAuth App без `workflow` scope, тож автоматизований push нової workflow-файла remote rejected-иться (`refusing to allow an OAuth App to create or update workflow … without 'workflow' scope`). До отримання scope-а — скопіюй YAML нижче у `.github/workflows/pact-drift.yml` вручну (через GH UI: "Add file" → "Create new file" → шлях `.github/workflows/pact-drift.yml`).
@@ -105,7 +107,7 @@ node scripts/pact-drift-check.mjs --base-url http://127.0.0.1:3000
 
 Це означає що або:
 
-- Drift досі не виправлений → escalate owner-а (CODEOWNERS → `@Skords-01`).
+- Drift досі не виправлений → escalate owner-а (CODEOWNERS → `@SkOrDs-02`).
 - Workflow flaky (network до staging) → запусти `workflow_dispatch` вручну з `strict: false` і подивись чи repro-ситься. Якщо ні — додай коммент у issue («tried `workflow_dispatch` at HH:MM UTC — clean. Marking flaky and watching for tomorrow's cron.») і close.
 
 ### Крок 5 — Якщо `flake-rate` > 2x/тиждень
@@ -128,7 +130,7 @@ node scripts/pact-drift-check.mjs --base-url http://127.0.0.1:3000
 ```yaml
 name: Pact contract drift (daily cron)
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created `contract-drift` issue
 #         з коментарем; reopen якщо повторюється > 2x за тиждень. Full runbook:
 #         `docs/02-engineering/testing/pact-drift-runbook.md`.
@@ -295,7 +297,7 @@ jobs:
               '',
               '</details>',
               '',
-              'cc @Skords-01',
+              'cc @SkOrDs-02',
             ].join('\n');
 
             // Idempotent: refresh the existing open issue rather than creating

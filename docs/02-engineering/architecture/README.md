@@ -14,7 +14,7 @@ System architecture and runtime surface inventory for Sergeant.
 | Document                                         | Purpose                                                                        | Last updated  |
 | ------------------------------------------------ | ------------------------------------------------------------------------------ | ------------- |
 | [`service-catalog.md`](./service-catalog.md)     | Runtime inventory: owners, targets, dependencies, healthchecks, rollback paths | 2026-05-15 ✅ |
-| [`platforms.md`](./platforms.md)                 | Web / RN mobile / Capacitor shell — статус, feature-parity матриця, роадмап    | 2026-06-01 ✅ |
+| [`platforms.md`](./platforms.md)                 | Web / RN mobile / Capacitor shell — статус, feature-parity матриця (ADR-0052) | 2026-07-10 ✅ |
 | [`hosting-evolution.md`](./hosting-evolution.md) | Hosting evolution, infra phases, migration triggers                            | 2026-05-13 ✅ |
 
 ### Архітектурні діаграми та потоки

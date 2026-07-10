@@ -36,4 +36,4 @@ graph TD
 
 - USDA FDC docs: [fdc.nal.usda.gov/api-guide](https://fdc.nal.usda.gov/api-guide.html)
 - Claude vision: `docs/04-governance/adr/0039-anthropic-prompt-cache-policy.md`
-- Runtime issues: `@Skords-01` (поки TBD secondary)
+- Runtime issues: `@SkOrDs-02` (поки TBD secondary)
