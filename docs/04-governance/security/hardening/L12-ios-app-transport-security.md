@@ -24,7 +24,7 @@ iOS's ATS default already blocks arbitrary cleartext).
 The L12 spec listed a `.sh` script driven by PlistBuddy. We shipped it
 as Node (`.mjs`) instead because:
 
-1. The iOS CI workflows already run `setup-node` (Node 20) before any
+1. The iOS CI workflows already run `setup-node` (Node **22**) before any
    iOS step, so no extra runtime dependency is needed on the macOS
    runners.
 2. The Node script's hand-rolled XML-plist parser (`parseAtsDict`) runs

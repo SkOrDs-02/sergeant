@@ -1,6 +1,6 @@
 # ADR-0050: TypeScript major-version policy + `@types/node` pinning
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Accepted
 
 - **Status:** Accepted
@@ -14,7 +14,7 @@
 
 ## Context and Problem Statement
 
-Sergeant uses **TypeScript 6.x** at the root and in `apps/server`, `apps/web`, and `packages/*`, but **TypeScript 5.9.x** in `apps/mobile` (Expo SDK 52 constraint) and **TypeScript 5.7.x** in `tools/openclaw`. Additionally, `@types/node` was at `^25.6.0` across all workspaces while the production runtime is **Node 20.20.2** (pinned via Volta). Node 25 types describe APIs that do not exist on the runtime: `node:sqlite`, `fs.glob`, `import.meta.dirname`, new stream overloads. These could silently compile but crash at runtime.
+Sergeant uses **TypeScript 6.x** across the monorepo (including `apps/mobile` on `~6.0.3`). Production runtime is **Node 22.x** (Volta `22.19.0`, `Dockerfile.api` → `node:22.16.0-alpine`). `@types/node` remains pinned to `^20.19.x` via `pnpm.overrides` until a dedicated bump to `@types/node@22` in the same PR as any further runtime pin change. Historical `tools/openclaw` TS pin removed — directory deleted; OpenClaw lives in external gateway + `packages/openclaw-plugin` per ADR-0055.
 
 Stack-pulse finding C5 identified this as a Critical risk.
 
@@ -28,7 +28,7 @@ All workspaces use `@types/node@^20.19.0`. Enforced by:
 - `renovate.json` rule `allowedVersions: "<21"` — prevents Renovate from auto-bumping past major 20.
 - Per-workspace explicit `devDependencies` entries set to `^20.19.0`.
 
-If Node runtime is upgraded (e.g., to Node 22 LTS), bump `@types/node` to the matching major in the same PR that changes the Volta pin and CI `node-version`.
+If Node runtime is upgraded, bump `@types/node` to the matching major in the same PR that changes the Volta pin and CI `node-version`. **As of 2026-07-10:** runtime is already Node 22.x; `@types/node@20` is intentional interim until `@types/node@22` audit PR.
 
 ### 2. TypeScript 6.x at root — accepted, with fallback plan
 
@@ -40,8 +40,8 @@ TypeScript 6.0 is a first major release. We accept it for the benefits:
 
 Known risk mitigations:
 
-- `apps/mobile` is pinned to TS 5.9 (Expo SDK hard constraint) — separate tsconfig, no shared compilation target.
-- `tools/openclaw` will be bumped to TS 6.x in a follow-up PR once `@anthropic-ai/sdk` ships TS 6 compat types.
+- `apps/mobile` runs TS 6.x alongside server/web/packages (Expo SDK 52; see ADR-0063 pre-flight).
+- OpenClaw TypeScript surface — `packages/openclaw-plugin` (TS 6.x); legacy `tools/openclaw` removed.
 - Any tooling (ESLint plugin, vitest) that is incompatible will get `resolutions`/`overrides` in the affected workspace until the ecosystem catches up.
 
 ### 3. Fallback plan to TS 5.9
@@ -61,4 +61,4 @@ If TS 6 causes unresolvable breakage in >3 packages simultaneously:
 
 - `pnpm typecheck` must pass with `@types/node@20` — any code using Node 22+ APIs that relied on the wrong types will now fail to compile (desired: surface the bug).
 - Renovate will not auto-bump `@types/node` past major 20 until the Volta `node` version in `package.json` is updated.
-- `tools/openclaw` TypeScript version remains at 5.7 until a dedicated PR bumps it alongside an `@anthropic-ai/sdk` TS 6 compat update.
+- `tools/openclaw` TypeScript version — **N/A** (directory removed; see ADR-0055).

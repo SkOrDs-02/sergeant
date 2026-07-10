@@ -1,7 +1,9 @@
 # 04 · Governance — правила, рішення, безпека
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
+>
+> **Update 2026-07-10:** pricing canon — [ADR-0068](./adr/0068-pricing-v4-uah-reverse-trial.md) (supersedes ADR-0051). ADR index table нижче синхронізовано з тілами файлів.
 
 Шар правил і рішень: hard rules, ADR, security-політики, PR-ledger. Жанр —
 **informational** (policy / архітектурні рішення). Тут — машино-читабельні

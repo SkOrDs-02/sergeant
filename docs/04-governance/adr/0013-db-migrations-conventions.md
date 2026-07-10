@@ -6,7 +6,7 @@
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`apps/server/src/migrations/`](../../../apps/server/src/migrations) — `001_noop.sql` … `021_governance_audit.sql`.
+  - [`apps/server/src/migrations/`](../../../apps/server/src/migrations) — `001_noop.sql` … `080_openclaw_approval_nonce.sql` (forward range; `.down.sql` pairs excluded from count).
   - [`apps/server/build.mjs`](../../../apps/server/build.mjs) — копіює міграції у `dist/` при білді.
   - [`docs/00-start/playbooks/add-sql-migration.md`](../../00-start/playbooks/add-sql-migration.md) — authoring how-to.
   - [`docs/00-start/playbooks/pre-merge-migration-checklist.md`](../../00-start/playbooks/pre-merge-migration-checklist.md) — review-чек-лист.
@@ -53,7 +53,7 @@ accepted.
 ### Decision
 
 **Sequential `NNN_<short_snake_case_desc>.sql`**, починаючи з `001_noop.sql`.
-Поточний range — 001 до 021 (див.
+Поточний range — **001 до 080** (див.
 [`apps/server/src/migrations/`](../../../apps/server/src/migrations)).
 Реальний runner — [`apps/server/migrate.mjs`](../../../apps/server/migrate.mjs) (Railway pre-deploy, читає
 `fs.readdirSync().sort()`).

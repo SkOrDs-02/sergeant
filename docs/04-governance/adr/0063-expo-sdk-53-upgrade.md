@@ -82,7 +82,7 @@ This is recorded as an **accepted risk**: New-Arch-sensitive native deps (`react
 
 ### TypeScript implications
 
-Per [ADR-0050](./0050-typescript-major-version-policy.md), mobile is pinned to **TS 5.9.x** (Expo SDK 52 constraint) while server/web/packages run TS 6.x and `tools/openclaw` runs TS 5.7.x. SDK 53 ships its own `expo/tsconfig.base` and `@types/react` expectations:
+Per [ADR-0050](./0050-typescript-major-version-policy.md), mobile runs **TS 6.x** (`~6.0.3`) alongside server/web/packages. SDK 53 ships its own `expo/tsconfig.base` and `@types/react` expectations:
 
 - Re-validate the mobile TS pin against the SDK-53 toolchain. If SDK 53 raises the supported TS floor, bump the mobile pin **within** ADR-0050's policy and update that ADR's matrix in the bump PR — do not silently drift.
 - `@types/node` stays pinned to `^20` via the root `pnpm.overrides` (ADR-0050); SDK 53 does not change that.

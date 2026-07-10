@@ -1,6 +1,6 @@
 # `INTERNAL_API_KEY` — rotation, audit & revocation runbook
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-07-10 by @cursoragent (OpenClaw consumer path → external gateway). **Next review:** 2026-10-08.
 > **Status:** Scaffolded.
 > **Owner:** ops + server.
 > **Related:** [`api-internal-hmac.md`](./api-internal-hmac.md), [`secret-ownership-register.md`](./secret-ownership-register.md), [`secret-rotation.md`](./secret-rotation.md), [`docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md).
@@ -51,7 +51,7 @@ Because it is a single shared secret, a rotation is a coordinated, brief-downtim
 2. **Set** the new value as `INTERNAL_API_KEY` on the **server** Railway env (this is the source of truth the guard compares against). Redeploy.
 3. **Update every consumer** to send the new bearer, in lockstep:
    - n8n: the ~25 `INTERNAL_API_KEY`-using workflows (set `INTERNAL_API_KEY` on the n8n Railway env; see [`api-internal-hmac.md`](./api-internal-hmac.md) for the workflow list pattern).
-   - `tools/openclaw` / `packages/openclaw-plugin`: the OpenClaw Gateway service env.
+   - External OpenClaw Gateway + `packages/openclaw-plugin`: the gateway service env (historical `tools/openclaw` removed — see ADR-0055).
    - Monobank webhook secret config, if it references this key.
 4. **Verify** internal traffic recovers: watch `401` rate on `/api/internal/*` in Grafana / Sentry. A spike means a consumer wasn't updated.
 5. If compromise is suspected, also rotate `WEBHOOK_HMAC_SECRET` per [`api-internal-hmac.md`](./api-internal-hmac.md) so a captured signature is invalidated immediately (the 5-minute replay window means a leaked signature is useless after a few minutes regardless).
@@ -70,7 +70,7 @@ PR-27 replaces the single shared secret with named, scoped, TTL'd keys stored ha
 
 ## Planned: `/internal-key` CLI (planned — not yet live)
 
-PR-27 adds a `/internal-key` command group to the OpenClaw Telegram bot (`tools/openclaw/src/agents/ops/internalKey.ts`), gated by the `ops` role. **These commands are stubs in this doc — they are not implemented yet.** Update this section to remove the "planned" tag once the implementing code merges.
+PR-27 adds a `/internal-key` command group to the OpenClaw Telegram bot (planned surface on the external gateway; historical stub was `tools/openclaw/src/agents/ops/internalKey.ts`), gated by the `ops` role. **These commands are stubs in this doc — they are not implemented yet.** Update this section to remove the "planned" tag once the implementing code merges.
 
 | Command                                           | Purpose (planned)                                                                              |
 | ------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
