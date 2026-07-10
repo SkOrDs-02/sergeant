@@ -1,6 +1,6 @@
 # Sergeant — PR-план для тестів
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-07-10 by @cursoragent (PR-T13–T17 S10-X1 closure). **Next review:** 2026-10-08.
 > **Status:** Active
 >
 > Repo: `Skords-01/Sergeant`. Базується на [`2026-05-05-tests-review.md`](./2026-05-05-tests-review.md) (попередній аналіз).
@@ -23,6 +23,11 @@
 | PR-T31  | `packages/insights` per-rule + barrel + smoke index | merged      | [#2013](https://github.com/Skords-01/Sergeant/pull/2013) — 2026-05-06             |
 | PR-T32  | `packages/nutrition-domain` pure helpers (partial)  | merged      | [#2019](https://github.com/Skords-01/Sergeant/pull/2019) — 2026-05-06             |
 | PR-T39  | `tools/openclaw` bot e2e через `handleUpdate`       | merged      | [#2022](https://github.com/Skords-01/Sergeant/pull/2022) — 2026-05-06             |
+| PR-T13  | Web smoke E2E: Finyk (S10-X1 scope)                 | merged      | S10-X1 — `finyk-smoke.spec.ts` — 2026-07-10                                       |
+| PR-T14  | Web smoke E2E: Fizruk (S10-X1 scope)                | merged      | S10-X1 — `fizruk-smoke.spec.ts` — 2026-07-10                                      |
+| PR-T15  | Web smoke E2E: Nutrition (S10-X1 scope)             | merged      | S10-X1 — `nutrition-smoke.spec.ts` — 2026-07-10                                   |
+| PR-T16  | Web smoke E2E: Routine (S10-X1 scope)               | merged      | S10-X1 — `routine-smoke.spec.ts` — 2026-07-10                                     |
+| PR-T17  | Web smoke E2E: HubChat (S10-X1 scope)               | merged      | S10-X1 — `hub-chat-smoke.spec.ts` — 2026-07-10                                    |
 
 ## Як читати
 
@@ -166,7 +171,7 @@
 
 ### PR-T13 — Web smoke E2E: Finyk
 
-- **Branch:** `devin/{ts}-web-smoke-finyk`
+- **Status:** ✅ S10-X1 scope closed (2026-07-10) — `apps/web/tests/smoke/finyk-smoke.spec.ts` (cold-load + empty → `Додати витрату` CTA). Deep add-transaction flow (`finyk-add-transaction.spec.ts`) — backlog.
 - **Files:** `apps/web/tests/smoke/finyk-add-transaction.spec.ts`, можливо `data-testid` додати в 2-3 компонентах.
 - **Scope:** додати manual transaction → видно у списку → balance оновився. Тег `@critical` щоб ловив `critical-flow` lane.
 - **Acceptance:** spec зелений у `playwright.smoke.config.ts` з реальним server + Postgres.
@@ -175,7 +180,7 @@
 
 ### PR-T14 — Web smoke E2E: Fizruk
 
-- **Branch:** `devin/{ts}-web-smoke-fizruk`
+- **Status:** ✅ S10-X1 scope closed (2026-07-10) — `apps/web/tests/smoke/fizruk-smoke.spec.ts` (cold-load + workouts empty → `Почати тренування` CTA). Deep log-set flow — backlog.
 - **Files:** `apps/web/tests/smoke/fizruk-log-set.spec.ts`.
 - **Scope:** start training → log set → метрика змінилась.
 - **Size:** ~120 LoC.
@@ -183,7 +188,7 @@
 
 ### PR-T15 — Web smoke E2E: Nutrition
 
-- **Branch:** `devin/{ts}-web-smoke-nutrition`
+- **Status:** ✅ S10-X1 scope closed (2026-07-10) — `apps/web/tests/smoke/nutrition-smoke.spec.ts` (cold-load + today → `Додати прийом їжі` CTA). Deep add-meal/barcode flow — backlog.
 - **Files:** `apps/web/tests/smoke/nutrition-add-meal.spec.ts`, `apps/web/src/test/msw/nutritionHandlers.ts` (мокаємо OFF + Anthropic для `parse-pantry`).
 - **Scope:** додати meal → barcode-сценарій → AI-підказка → запис у БД.
 - **Size:** ~180 LoC.
@@ -191,7 +196,7 @@
 
 ### PR-T16 — Web smoke E2E: Routine
 
-- **Branch:** `devin/{ts}-web-smoke-routine`
+- **Status:** ✅ S10-X1 scope closed (2026-07-10) — `apps/web/tests/smoke/routine-smoke.spec.ts` (cold-load + calendar → `Додати звичку` CTA). Deep check-in flow — backlog.
 - **Files:** `apps/web/tests/smoke/routine-checkin.spec.ts`.
 - **Scope:** check-in → стрік++ → календар відмалював сьогодні.
 - **Size:** ~100 LoC.
@@ -199,7 +204,7 @@
 
 ### PR-T17 — Web smoke E2E: HubChat
 
-- **Branch:** `devin/{ts}-web-smoke-hubchat`
+- **Status:** ✅ S10-X1 scope closed (2026-07-10) — `apps/web/tests/smoke/hub-chat-smoke.spec.ts` (cold-load + empty suggestion chip → composer prefilled; degraded-send path retained). Deep tool-call cross-module flow — backlog.
 - **Files:** `apps/web/tests/smoke/hubchat-tool-call.spec.ts`, мок Anthropic у server side через AI_QUOTA_DISABLED + responses fixture.
 - **Scope:** надіслати команду коучу → tool execution → візуальний ефект на іншому модулі (наприклад: «додай витрату 100 грн на каву» → у Finyk транзакція).
 - **Size:** ~200 LoC.
