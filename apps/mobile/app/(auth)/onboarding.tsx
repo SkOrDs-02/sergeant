@@ -171,7 +171,7 @@ export default function OnboardingScreen() {
   const [, forceRender] = useReducer((n: number) => n + 1, 0);
 
   const startedAtRef = useRef<number | null>(null);
-  const stepEnteredAtRef = useRef<number>(Date.now());
+  const stepEnteredAtRef = useRef<number>(0);
   const submittingRef = useRef(false);
 
   // Mount: fire `onboarding_started` + the welcome step view +

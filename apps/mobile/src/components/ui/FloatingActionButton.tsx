@@ -140,19 +140,20 @@ export function FloatingActionButton({
   const hasActions = actions.length > 0;
   const Icon = CustomIcon || Plus;
 
-  // Animation values
-  const rotation = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(1)).current;
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  // Animation values — lazy `useState` (not `useRef(...).current`) keeps
+  // render free of ref reads (react-hooks/refs) without touching animation behavior.
+  const [rotation] = useState(() => new Animated.Value(0));
+  const [scale] = useState(() => new Animated.Value(1));
+  const [backdropOpacity] = useState(() => new Animated.Value(0));
 
-  // Action animations
-  const actionAnimations = useRef(
+  // Action animations — same lazy-init pattern; length is fixed at mount.
+  const [actionAnimations] = useState(() =>
     actions.map(() => ({
       opacity: new Animated.Value(0),
       translateY: new Animated.Value(20),
       scale: new Animated.Value(0.8),
     })),
-  ).current;
+  );
 
   // Auto-collapse timer
   useEffect(() => {

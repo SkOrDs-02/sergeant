@@ -38,7 +38,7 @@
  *    extension).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AccessibilityInfo, Animated, Text, View } from "react-native";
 import { pluralUa } from "@sergeant/shared";
 
@@ -79,7 +79,11 @@ function cx(...classes: Array<string | false | null | undefined>): string {
  * components feel part of the same motion family.
  */
 function usePulse(active: boolean): Animated.AnimatedInterpolation<number> | 1 {
-  const progress = useRef(new Animated.Value(0)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [progress] = useState(() => new Animated.Value(0));
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {

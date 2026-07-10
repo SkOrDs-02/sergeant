@@ -22,12 +22,12 @@
 - [x] `react-hooks/immutability` — web 0 ✅ + mobile 0 ✅ (2026-07-10: CategoryDonut reduce; Sheet SheetContent split + scoped disables for RNGH worklets); promoted to `"error"` in `eslint.mobile.js`
 - [x] `react-hooks/preserve-manual-memoization` — web 0 ✅ + mobile 0 ✅ (2026-07-10: `computeInitialExpenseDate` + centralised `pantryItems`); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
 - [x] `react-hooks/purity` — web 0 ✅ + mobile 0 ✅ (2026-07-10); promoted to `"error"` in `eslint.web.js` / `eslint.mobile.js`
-- [ ] `react-hooks/refs` — web ~59 + mobile ~106 після wave 1 ([#156](https://github.com/SkOrDs-02/sergeant/pull/156))
+- [ ] `react-hooks/refs` — web ~59 + mobile ~41 після wave 2 ([#156](https://github.com/SkOrDs-02/sergeant/pull/156) wave 1, [#160](https://github.com/SkOrDs-02/sergeant/pull/160) wave 2)
 - [ ] `react-hooks/set-state-in-effect` — web ~80 + mobile 44 (2026-07-10)
 - [ ] react-hooks/exhaustive-deps violations в інших файлах виправлені
 - [ ] baseline suppressions в `eslint.baseline.js` скорочені на 50%
 - [ ] `eslint.baseline.js:146-178` оновлено або видалено (після promotion всіх 5 правил)
-- [ ] mobile: `refs` (~106 після wave 1 [#156](https://github.com/SkOrDs-02/sergeant/pull/156)) — окрема хвиля
+- [ ] mobile: `refs` (~41 після wave 2 [#160](https://github.com/SkOrDs-02/sergeant/pull/160)) — wave 3 для залишку
 
 ## Виконані дії (2026-07-10)
 
@@ -46,7 +46,9 @@
 - `useNutritionPantries.ts` — `pantryItems` з вузькою залежністю `activePantryItems` (паритет web).
 - `Dashboard.tsx`, `RecipeRecommender.tsx`, `Shopping.tsx` — споживають `pantryItems` з хука.
 
-**Залишок:** mobile-хвиля (`refs` ~106 після wave 1 [#156](https://github.com/SkOrDs-02/sergeant/pull/156)) + web `refs`/`set-state-in-effect` + exhaustive-deps catalog-sync (done).
+**Mobile refs wave 2 (PR #160):** 8 файлів — core dashboard (AssistantFab, HubInsightsPanel, DraggableDashboard coach mark), Toast, FAB, SyncStatusIndicator, ModuleErrorBoundary, RestTimerOverlay. Патерн: `useRef(new Animated.Value(x)).current` → `useState(() => new Animated.Value(x))`.
+
+**Залишок:** mobile `refs` ~41 після wave 2 + web `refs`/`set-state-in-effect`. Exhaustive-deps catalog-sync — [#148](https://github.com/SkOrDs-02/Sergeant/pull/148); [#152](https://github.com/SkOrDs-02/Sergeant/pull/152) superseded.
 
 ## Виконані дії (2026-06-10)
 
