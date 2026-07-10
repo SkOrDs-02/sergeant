@@ -215,10 +215,7 @@ export function useHubDashboardState(props: {
   // path, else the event never emits and the activation funnel stays at 0%.
   detectFirstActionCompletedPerModule();
   const celebration = useFirstEntryCelebration(hasRealEntry);
-  const [sessionDays, setSessionDays] = useState(-1);
-  useEffect(() => {
-    setSessionDays(recordSessionDay() || getSessionDays());
-  }, []);
+  const [sessionDays] = useState(() => recordSessionDay() || getSessionDays());
   const entryCount = useMemo(() => countRealEntries(localStorageStore), []);
 
   const [reengagement, setReengagement] = useState(() =>
@@ -331,18 +328,20 @@ export function useHubDashboardState(props: {
   }, [focus, rest]);
 
   const [adaptiveNow, setAdaptiveNow] = useState(() => new Date());
+  const adaptiveTickerOn = adaptivePref && !editMode;
+  const [prevAdaptiveTickerOn, setPrevAdaptiveTickerOn] =
+    useState(adaptiveTickerOn);
+  if (adaptiveTickerOn !== prevAdaptiveTickerOn) {
+    setPrevAdaptiveTickerOn(adaptiveTickerOn);
+    if (adaptiveTickerOn) {
+      void Promise.resolve().then(() => setAdaptiveNow(new Date()));
+    }
+  }
   useEffect(() => {
-    // Тікер потрібен лише коли adaptive-rebuild активний; інакше
-    // `pickAdaptiveLift` нижче одразу повертає `{ liftedId: null }`, тож
-    // щохвилинний re-render усього HubDashboard був би марним battery/CPU-cost-ом
-    // (page-audit-02 F8).
-    if (!adaptivePref || editMode) return;
-    // Refresh immediately on (re-)enable so the lift calc isn't stale for up
-    // to a minute until the first tick (cubic review on this PR).
-    setAdaptiveNow(new Date());
+    if (!adaptiveTickerOn) return;
     const id = setInterval(() => setAdaptiveNow(new Date()), 60_000);
     return () => clearInterval(id);
-  }, [adaptivePref, editMode]);
+  }, [adaptiveTickerOn]);
 
   const activeSet = useMemo(
     () => new Set<string>(activeModules),

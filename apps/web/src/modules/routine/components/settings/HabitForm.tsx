@@ -142,6 +142,11 @@ export function HabitForm({
   // the advanced block so the user doesn't lose track of values they
   // already set.
   const [showAdvanced, setShowAdvanced] = useState(() => Boolean(editingId));
+  const [prevEditingId, setPrevEditingId] = useState(editingId);
+  if (editingId !== prevEditingId) {
+    setPrevEditingId(editingId);
+    if (editingId) setShowAdvanced(true);
+  }
 
   useEffect(() => {
     if (!focusTick) return;

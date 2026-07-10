@@ -13,7 +13,7 @@
  *
  * @last-validated 2026-05-19
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -114,62 +114,52 @@ export function AddMealSheet({
     setForm,
   });
 
-  useEffect(() => {
-    if (open) {
-      if (initialMeal?.id) {
-        const mac = initialMeal.macros ?? {
-          kcal: null,
-          protein_g: null,
-          fat_g: null,
-          carbs_g: null,
-        };
-        setForm({
-          name: String(initialMeal.name || ""),
-          mealType: initialMeal.mealType || "breakfast",
-          time: initialMeal.time || currentTime(),
-          kcal: mac.kcal != null ? String(Math.round(mac.kcal)) : "",
-          protein_g:
-            mac.protein_g != null ? String(Math.round(mac.protein_g)) : "",
-          fat_g: mac.fat_g != null ? String(Math.round(mac.fat_g)) : "",
-          carbs_g: mac.carbs_g != null ? String(Math.round(mac.carbs_g)) : "",
-          err: "",
-        });
-      } else {
-        setForm(emptyForm(photoResult));
-      }
-      setFoodQuery("");
-      setPickedFood(null);
-      setPickedGrams(
-        initialMeal?.amount_g != null
-          ? String(Math.round(Number(initialMeal.amount_g) || 100))
-          : "100",
-      );
-      setFoodErr("");
-      setBarcode("");
-      setBarcodeStatus("");
-      setScannerOpen(false);
-      setFromPantryItem(null);
-      // Jump directly to fill when we already have content to edit, or when
-      // there are no sources to pick from (no templates, no pre-fill, no
-      // photo) — the "source" step would be a pointless click-through.
-      const autoSkip =
-        !initialMeal?.id && !photoResult && mealTemplates.length === 0;
-      const initialStep =
-        initialMeal?.id || photoResult ? "fill" : autoSkip ? "fill" : "source";
-      setWasAutoSkipped(autoSkip && initialStep === "fill");
-      setStep(initialStep);
-      void ensureSeedFoods();
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    if (initialMeal?.id) {
+      const mac = initialMeal.macros ?? {
+        kcal: null,
+        protein_g: null,
+        fat_g: null,
+        carbs_g: null,
+      };
+      setForm({
+        name: String(initialMeal.name || ""),
+        mealType: initialMeal.mealType || "breakfast",
+        time: initialMeal.time || currentTime(),
+        kcal: mac.kcal != null ? String(Math.round(mac.kcal)) : "",
+        protein_g:
+          mac.protein_g != null ? String(Math.round(mac.protein_g)) : "",
+        fat_g: mac.fat_g != null ? String(Math.round(mac.fat_g)) : "",
+        carbs_g: mac.carbs_g != null ? String(Math.round(mac.carbs_g)) : "",
+        err: "",
+      });
+    } else {
+      setForm(emptyForm(photoResult));
     }
-  }, [
-    open,
-    photoResult,
-    initialMeal,
-    mealTemplates,
-    setBarcode,
-    setBarcodeStatus,
-    setFoodErr,
-    setScannerOpen,
-  ]);
+    setFoodQuery("");
+    setPickedFood(null);
+    setPickedGrams(
+      initialMeal?.amount_g != null
+        ? String(Math.round(Number(initialMeal.amount_g) || 100))
+        : "100",
+    );
+    setFoodErr("");
+    setBarcode("");
+    setBarcodeStatus("");
+    setScannerOpen(false);
+    setFromPantryItem(null);
+    const autoSkip =
+      !initialMeal?.id && !photoResult && mealTemplates.length === 0;
+    const initialStep =
+      initialMeal?.id || photoResult ? "fill" : autoSkip ? "fill" : "source";
+    setWasAutoSkipped(autoSkip && initialStep === "fill");
+    setStep(initialStep);
+    void ensureSeedFoods();
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   function field(key: keyof MealFormState) {
     return (v: string) =>
@@ -178,11 +168,9 @@ export function AddMealSheet({
 
   // Auto-advance to fill step whenever a source selection lands (linked
   // food from search/barcode or pantry item).
-  useEffect(() => {
-    if (step === "source" && (pickedFood || fromPantryItem)) {
-      setStep("fill");
-    }
-  }, [pickedFood, fromPantryItem, step]);
+  if (step === "source" && (pickedFood || fromPantryItem)) {
+    setStep("fill");
+  }
 
   function handleSave() {
     // Fall back to the picked source's name when the user emptied the name

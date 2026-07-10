@@ -13,7 +13,8 @@
  * F7 (docs/audits/2026-05-13-page-audit-08-nutrition.md) to comply with
  * Hard Rule #18 (max-lines: 600).
  */
-import { useEffect, useRef, useState } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
+import { useEffect, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
@@ -68,20 +69,25 @@ export function RecipesCard({
   selectedDate,
 }: RecipesCardProps) {
   const toast = useToast();
-  const [saved, setSaved] = useState<SavedRecipe[]>([]);
-  const [savedBusy, setSavedBusy] = useState(false);
+  const sqliteCacheTick = useNutritionSqliteReadTick();
+  const [saved, setSaved] = useSqliteTickOverlay(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedNutritionSqliteState();
+      if (cache.refreshedAt === null) return undefined;
+      return cache.recipes;
+    },
+    () => [] as SavedRecipe[],
+  );
+  const [savedBusy, setSavedBusy] = useState(true);
   const [portionById, setPortionById] = useState<Record<string, string>>({});
   const [deleteRecipeConfirm, setDeleteRecipeConfirm] =
     useState<SavedRecipe | null>(null);
   const [openSavedId, setOpenSavedId] = useState<string | null>(null);
   const [savedOpen, setSavedOpen] = useState(false);
-  const prevSavedLen = useRef(0);
-  const sqliteCacheTick = useNutritionSqliteReadTick();
-
   useEffect(() => {
     let cancelled = false;
-    setSavedBusy(true);
-    (async () => {
+    void (async () => {
       const list = await listSavedRecipes(200);
       if (!cancelled) setSaved(list);
     })()
@@ -92,24 +98,15 @@ export function RecipesCard({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setSaved]);
 
-  // Stage 4 PR #033 + Stage 8 PR #057n: overlay saved recipes from
-  // the SQLite cache once it's warm. The IDB read above stays as the
-  // synchronous fallback.
-  useEffect(() => {
-    const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    setSaved(cache.recipes);
-  }, [sqliteCacheTick]);
-
-  // Auto-open when first recipe is saved during this session
-  useEffect(() => {
-    if (saved.length > prevSavedLen.current && prevSavedLen.current === 0) {
-      setSavedOpen(true);
-    }
-    prevSavedLen.current = saved.length;
-  }, [saved.length]);
+  const [prevSavedLen, setPrevSavedLen] = useState(saved.length);
+  if (saved.length > prevSavedLen && prevSavedLen === 0) {
+    setPrevSavedLen(saved.length);
+    setSavedOpen(true);
+  } else if (saved.length !== prevSavedLen) {
+    setPrevSavedLen(saved.length);
+  }
 
   async function refreshSaved() {
     setSavedBusy(true);

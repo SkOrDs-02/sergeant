@@ -108,14 +108,21 @@ export function useCustomExercises(): UseCustomExercisesResult {
 
   // Stage 8 PR #057f-tombstone: overlay custom exercises from the
   // SQLite warm cache once it's available.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    const overlay = cache.customExercises.map(projectFromCache);
-    stateRef.current = overlay;
-    setExercises(overlay);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setExercises(cache.customExercises.map(projectFromCache));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = exercises;
+  }, [exercises]);
 
   const persist = useCallback(
     (updater: (prev: CustomExercise[]) => CustomExercise[]) => {

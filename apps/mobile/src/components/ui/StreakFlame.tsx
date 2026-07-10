@@ -170,6 +170,7 @@ export function StreakFlame({
   // Celebration state
   const [showParticles, setShowParticles] = useState(false);
   const prevDays = useRef(days);
+  const [prevCelebrate, setPrevCelebrate] = useState(celebrate);
 
   // Determine flame color based on streak length
   const getFlameColor = () => {
@@ -195,15 +196,22 @@ export function StreakFlame({
     prevDays.current = days;
   }, [days]);
 
-  // Trigger celebration
-  useEffect(() => {
+  // Trigger celebration — detect rising edge of `celebrate` at render time
+  // to avoid `react-hooks/set-state-in-effect` (initiative 0021).
+  if (celebrate !== prevCelebrate) {
+    setPrevCelebrate(celebrate);
     if (celebrate && !reduceMotion) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
       setShowParticles(true);
-      setTimeout(() => setShowParticles(false), 1000);
     }
+  }
+
+  useEffect(() => {
+    if (!celebrate || reduceMotion) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+      () => {},
+    );
+    const timer = setTimeout(() => setShowParticles(false), 1000);
+    return () => clearTimeout(timer);
   }, [celebrate, reduceMotion]);
 
   // Pulsing animation for active streaks

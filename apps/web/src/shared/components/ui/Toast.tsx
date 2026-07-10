@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -92,15 +91,14 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
 
   const isLeaving = !!toast.leaving;
 
-  useEffect(() => {
-    // Reset any in-flight swipe offset once the row enters exit-animation
-    // so the exit translate doesn't compound with the swipe translate.
-    if (isLeaving) {
-      setDragX(0);
-      setDragging(false);
-      touchStartXRef.current = null;
-    }
-  }, [isLeaving]);
+  const [prevIsLeaving, setPrevIsLeaving] = useState(isLeaving);
+  if (isLeaving && !prevIsLeaving) {
+    setPrevIsLeaving(true);
+    setDragX(0);
+    setDragging(false);
+  } else if (!isLeaving && prevIsLeaving) {
+    setPrevIsLeaving(false);
+  }
 
   const onMouseEnter = useCallback(() => {
     setPaused(true);

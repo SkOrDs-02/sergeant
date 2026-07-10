@@ -236,7 +236,9 @@ export function usePrivatbank(enabled = true) {
   const [connecting, setConnecting] = useState(false);
   const [loadingTx, setLoadingTx] = useState(false);
   const [error, setError] = useState("");
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(
+    () => !!(credentials.id && credentials.token),
+  );
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [syncState, setSyncState] = useState<{
     status: string;
@@ -494,7 +496,6 @@ export function usePrivatbank(enabled = true) {
   useEffect(() => {
     if (!enabled) return;
     if (storedId && storedToken) {
-      setConnected(true);
       connectRef.current(storedId, storedToken, false);
     }
   }, [enabled, storedId, storedToken]);

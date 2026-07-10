@@ -16,7 +16,7 @@
  * (goal/servings/timeMinutes/exclude) пишемо у MMKV через `updatePrefs`,
  * як web `setPrefs`.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -86,7 +86,10 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
 
   // Hydrate з session-кеша при зміні ключа (склад/налаштування). Показуємо
   // останній результат + підказку про оновлення — паритет з web banner-ом.
-  useEffect(() => {
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
+  const [prevCacheKey, setPrevCacheKey] = useState(recipeCacheKey);
+  if (recipeCacheKey !== prevCacheKey) {
+    setPrevCacheKey(recipeCacheKey);
     const cached = readRecipeCache<RecommendedRecipe>(recipeCacheKey);
     if (cached && cached.recipes.length > 0) {
       setRecipes(cached.recipes);
@@ -96,7 +99,7 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
     } else {
       setFromCache(false);
     }
-  }, [recipeCacheKey]);
+  }
 
   const { recommendRecipes, isPending } = useNutritionRemoteActions({
     api,

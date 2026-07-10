@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import type {
@@ -75,12 +75,15 @@ export function AddBudgetSheet({
 }: AddBudgetSheetProps) {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [error, setError] = useState<string | null>(null);
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open) return;
-    setForm(EMPTY);
-    setError(null);
-  }, [open]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setForm(EMPTY);
+      setError(null);
+    }
+  }
 
   const handleSubmit = () => {
     if (form.type === "limit") {

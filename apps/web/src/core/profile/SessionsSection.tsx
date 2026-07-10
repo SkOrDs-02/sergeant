@@ -62,7 +62,7 @@ export function SessionsSection({ online }: { online: boolean }) {
   }, [online]);
 
   useEffect(() => {
-    load();
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   const handleRevoke = async (id: string, token: string) => {

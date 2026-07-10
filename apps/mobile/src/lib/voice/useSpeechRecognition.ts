@@ -82,7 +82,16 @@ export function useSpeechRecognition({
   onError,
 }: UseSpeechRecognitionOptions = {}): UseSpeechRecognitionReturn {
   const [listening, setListening] = useState(false);
-  const [supported, setSupported] = useState(false);
+  // Стартова перевірка доступності native розпізнавача — синхронна
+  // і дешева, тому ініціалізуємо lazy useState замість useEffect+setState
+  // (`react-hooks/set-state-in-effect`, initiative 0021).
+  const [supported] = useState<boolean>(() => {
+    try {
+      return Boolean(ExpoSpeechRecognitionModule.isRecognitionAvailable());
+    } catch {
+      return false;
+    }
+  });
 
   // Тримаємо ref-и на колбеки, щоб event-listener-и стабільно бачили
   // свіжі onResult/onError без де-реєстрації на кожному рендері.
@@ -92,18 +101,6 @@ export function useSpeechRecognition({
     onResultRef.current = onResult;
     onErrorRef.current = onError;
   }, [onResult, onError]);
-
-  // Стартова перевірка доступності native розпізнавача. Виконується
-  // 1 раз на mount — `isRecognitionAvailable` синхронний і дешевий.
-  useEffect(() => {
-    try {
-      setSupported(
-        Boolean(ExpoSpeechRecognitionModule.isRecognitionAvailable()),
-      );
-    } catch {
-      setSupported(false);
-    }
-  }, []);
 
   // Реєструємо native-event-листенери один раз. `addListener` повертає
   // `EventSubscription`, який знімаємо в cleanup-у.

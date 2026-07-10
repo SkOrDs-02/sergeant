@@ -225,8 +225,10 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
       if (fetchingRef.current.has(key)) return;
       if (monthCache[key]) return;
       fetchingRef.current.add(key);
-      setLoading(true);
-      setFetchError(null);
+      void Promise.resolve().then(() => {
+        setLoading(true);
+        setFetchError(null);
+      });
       mono
         .fetchMonth(y, m1 - 1)
         .then((txs) => {
@@ -261,13 +263,13 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
 
   useEffect(() => {
     if (!isCurrentMonth) ensureMonth(year, month, monthKey);
-  }, [year, month, isCurrentMonth, monthKey, ensureMonth]);
+  }, [isCurrentMonth, year, month, monthKey, ensureMonth]);
 
   useEffect(() => {
     ensureMonth(prevYear, prevMonth, prevKey);
   }, [prevYear, prevMonth, prevKey, ensureMonth]);
 
-  // Manual expenses for the currently selected month. These live in
+  // Manual expenses for the currently selected month.
   // storage (localStorage-backed), not in the server tx stream, so they
   // must be merged into `activeTx` explicitly — otherwise Analytics shows
   // 0 ₴ even when Transactions clearly lists them. See useTransactionFilters

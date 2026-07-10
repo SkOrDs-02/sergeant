@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
@@ -90,11 +90,12 @@ export function HabitQuickCreateDialog({
   const [internalFocusTick, setInternalFocusTick] = useState(0);
   const [errors, setErrors] = useState<HabitFormErrors>({});
 
-  // Seed the draft every time the dialog opens. In create mode we reset
-  // to an empty draft so reopens feel fresh; in edit mode we load the
-  // current habit so the form reflects its latest persisted state.
-  useEffect(() => {
-    if (!open) return;
+  const [prevOpenKey, setPrevOpenKey] = useState(
+    () => `${open}:${editingId ?? ""}:${focusTick ?? 0}`,
+  );
+  const openKey = `${open}:${editingId ?? ""}:${focusTick ?? 0}`;
+  if (open && openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
     if (editingId) {
       const habit = routine.habits.find((h) => h.id === editingId);
       setDraft(habit ? habitToDraft(habit) : emptyHabitDraft());
@@ -103,27 +104,18 @@ export function HabitQuickCreateDialog({
     }
     setErrors({});
     setInternalFocusTick((t) => t + 1);
-    // Depend on `editingId` + `focusTick` — not `routine`, otherwise the
-    // draft resets on every keystroke-driven routine update.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editingId, focusTick]);
+  }
 
-  // Clear field errors as soon as the user touches the relevant field
-  // so the red border doesn't linger once they start fixing the input.
-  useEffect(() => {
-    if (errors.name && draft.name.trim()) {
-      setErrors((e) => ({ ...e, name: undefined }));
-    }
-  }, [draft.name, errors.name]);
-  useEffect(() => {
-    if (
-      errors.weekdays &&
-      Array.isArray(draft.weekdays) &&
-      draft.weekdays.length > 0
-    ) {
-      setErrors((e) => ({ ...e, weekdays: undefined }));
-    }
-  }, [draft.weekdays, errors.weekdays]);
+  if (errors.name && draft.name.trim()) {
+    setErrors((e) => ({ ...e, name: undefined }));
+  }
+  if (
+    errors.weekdays &&
+    Array.isArray(draft.weekdays) &&
+    draft.weekdays.length > 0
+  ) {
+    setErrors((e) => ({ ...e, weekdays: undefined }));
+  }
 
   if (!open) return null;
 

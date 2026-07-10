@@ -52,9 +52,11 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
 
   const close = useCallback(() => setOpen(false), []);
 
+  const menuOpen = open && count > 0;
+
   // Close on outside click + ESC; focus returns to the trigger.
   useEffect(() => {
-    if (!open) return;
+    if (!menuOpen) return;
     const handleClick = (event: MouseEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
@@ -74,14 +76,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
       document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("keydown", handleKey);
     };
-  }, [open, close]);
-
-  // If the last pending notification clears while the menu is open (e.g. the
-  // user installs the PWA → `canInstall` flips false), collapse the popover
-  // so it doesn't linger empty.
-  useEffect(() => {
-    if (count === 0) setOpen(false);
-  }, [count]);
+  }, [menuOpen, close]);
 
   if (count === 0) return null;
 
@@ -91,7 +86,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
         ref={buttonRef}
         type="button"
         aria-haspopup="menu"
-        aria-expanded={open}
+        aria-expanded={menuOpen}
         aria-controls={menuId}
         aria-label={`Сповіщення: ${count}`}
         onClick={() => setOpen((value) => !value)}
@@ -110,7 +105,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
         </span>
       </button>
 
-      {open && (
+      {menuOpen && (
         <div
           ref={menuRef}
           id={menuId}

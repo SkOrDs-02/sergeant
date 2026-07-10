@@ -13,7 +13,7 @@
  *     `useInlineAiRail.ts`), same single-shot semantics as web.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"; // useEffect kept for autoFocus and debounced search
 import type { TextInput as RNTextInput } from "react-native";
 import { type Href, useRouter } from "expo-router";
 
@@ -82,12 +82,20 @@ export function useSearchEngine({
     return () => clearTimeout(t);
   }, [autoFocus]);
 
-  useEffect(() => {
+  // When query clears (< 2 chars), reset results at render time to avoid
+  // `react-hooks/set-state-in-effect` (initiative 0021). The debounced
+  // search for longer queries remains in useEffect (genuine side-effect).
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
     if (query.trim().length < 2) {
       setResults(performSearch(""));
       setActiveIdx(0);
-      return;
     }
+  }
+
+  useEffect(() => {
+    if (query.trim().length < 2) return;
     const timer = setTimeout(() => {
       setResults(performSearch(query));
       setActiveIdx(0);

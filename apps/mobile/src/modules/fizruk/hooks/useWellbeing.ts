@@ -103,14 +103,21 @@ export function useWellbeing(): UseWellbeingResult {
 
   // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5: overlay
   // wellbeing entries from the SQLite warm cache once it's available.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    const overlay = cache.wellbeing.map(projectFromCache);
-    stateRef.current = overlay;
-    setEntries(overlay);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setEntries(cache.wellbeing.map(projectFromCache));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = entries;
+  }, [entries]);
 
   const persist = useCallback(
     (updater: (prev: WellbeingEntry[]) => WellbeingEntry[]) => {

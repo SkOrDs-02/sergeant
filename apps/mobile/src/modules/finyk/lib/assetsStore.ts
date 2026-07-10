@@ -10,7 +10,7 @@
  * once warm. Mutations flow solely through the dual-write pipeline.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { FINYK_BACKUP_STORAGE_KEYS } from "@sergeant/finyk-domain";
 import type {
@@ -94,20 +94,24 @@ export function useFinykAssetsStore(
   // Stage 8 PR #057k-tombstone — overlay each persisted slice from
   // the local SQLite cache once it's warm. MMKV reads above stay as
   // a synchronous first-paint fallback; MMKV writes are gone.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFinykSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFinykSqliteState();
-    if (cache.refreshedAt === null) return;
-    setAssetsState(cache.manualAssets);
-    // The Assets page consumes its own debt/receivable shapes
-    // (`AssetsDebt`/`AssetsReceivable`) which extend the domain
-    // primitives in `finyk-domain`; the SQLite cache stores the
-    // canonical domain `Debt`/`Receivable` blob. The runtime shape is
-    // identical (same JSON columns), so a structural cast is safe.
-    setDebtsState(cache.manualDebts as AssetsDebt[]);
-    setRecvState(cache.receivables as AssetsReceivable[]);
-    setHiddenState(cache.hiddenAccounts);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setAssetsState(cache.manualAssets);
+      // The Assets page consumes its own debt/receivable shapes
+      // (`AssetsDebt`/`AssetsReceivable`) which extend the domain
+      // primitives in `finyk-domain`; the SQLite cache stores the
+      // canonical domain `Debt`/`Receivable` blob. The runtime shape is
+      // identical (same JSON columns), so a structural cast is safe.
+      setDebtsState(cache.manualDebts as AssetsDebt[]);
+      setRecvState(cache.receivables as AssetsReceivable[]);
+      setHiddenState(cache.hiddenAccounts);
+    }
+  }
 
   const setManualAssets = useCallback(
     (next: ManualAsset[]) => {

@@ -14,7 +14,7 @@
  * Part of the dual-write teardown migration tracked in the storage-roadmap.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
 import { useFinykSqliteReadTick } from "../lib/sqliteReadGate";
@@ -49,15 +49,22 @@ export function useFinykCustomCategories(): UseFinykCustomCategoriesReturn {
   });
 
   // Overlay from the warm cache every time the SQLite tick advances
-  // (after boot or after a write-through).
+  // (after boot or after a write-through). Render-time update avoids
+  // the `react-hooks/set-state-in-effect` violation (initiative 0021).
   const sqliteCacheTick = useFinykSqliteReadTick();
-  useEffect(() => {
-    const cached = getCachedFinykSqliteState().customCategories;
-    if (getCachedFinykSqliteState().refreshedAt === null) return;
-    setLocalState(cached.map(({ id, label }) => ({ id, label: label ?? "" })));
-    // sqliteCacheTick is the dependency; the getter is intentionally
-    // called inside the effect so it always reads the latest snapshot.
-  }, [sqliteCacheTick]);
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
+    const cache = getCachedFinykSqliteState();
+    if (cache.refreshedAt !== null) {
+      setLocalState(
+        cache.customCategories.map(({ id, label }) => ({
+          id,
+          label: label ?? "",
+        })),
+      );
+    }
+  }
 
   const setCustomCategories: SetCustomCategories = useCallback((updater) => {
     setLocalState((prev) => {

@@ -7,7 +7,7 @@
  * bottom-sheet affordance used by every other form (Habits, …).
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import type { ManualAsset } from "@sergeant/finyk-domain/domain";
@@ -61,13 +61,16 @@ export function ManualAssetSheet({
   const [draft, setDraft] = useState<DraftState>(() => toDraft(asset));
   const [nameError, setNameError] = useState(false);
   const [amountError, setAmountError] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open) return;
-    setDraft(toDraft(asset));
-    setNameError(false);
-    setAmountError(false);
-  }, [open, asset]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setDraft(toDraft(asset));
+      setNameError(false);
+      setAmountError(false);
+    }
+  }
 
   const isEditing = !!asset;
 

@@ -60,14 +60,10 @@ export function useSearchEngine({
   onOpenModule,
 }: UseSearchEngineOptions): UseSearchEngineResult {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Hit[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [recents, setRecents] = useState<string[]>(() => getRecentQueries());
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
-  // HubSearch is rendered inside the BrowserRouter (via HubModals → AppInner),
-  // so it can navigate to the URL-addressable Settings tab and the Assistant
-  // catalogue without plumbing extra callbacks through the modal stack.
   const navigate = useNavigate();
   const inlineAi = useInlineAiRail();
 
@@ -75,28 +71,33 @@ export function useSearchEngine({
     inputRef.current?.focus();
   }, []);
 
+  const trimmed = query.trim();
+  const syncResults = useMemo(
+    () => (trimmed.length < 2 ? performSearch("") : null),
+    [trimmed],
+  );
+  const [asyncResults, setAsyncResults] = useState<Hit[]>(() =>
+    performSearch(""),
+  );
+  const results = syncResults ?? asyncResults;
+
+  const [prevTrimmed, setPrevTrimmed] = useState(trimmed);
+  if (trimmed !== prevTrimmed) {
+    setPrevTrimmed(trimmed);
+    setActiveIdx(0);
+  }
+
   useEffect(() => {
-    // Empty/short query — skip the timer + localStorage scan and surface
-    // the launcher landing (just the four quick-add Actions) synchronously
-    // so the palette feels instant when first opened.
-    if (query.trim().length < 2) {
-      setResults(performSearch(""));
-      setActiveIdx(0);
-      return;
-    }
+    if (trimmed.length < 2) return;
     const timer = setTimeout(() => {
       const next = performSearch(query);
-      // Wrap state updates in startTransition so the heavy localStorage
-      // parse + scoring work doesn't block the input from accepting the
-      // next keystroke. React can interrupt this low-priority update if
-      // new input arrives.
       startTransition(() => {
-        setResults(next);
+        setAsyncResults(next);
         setActiveIdx(0);
       });
     }, 120);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, trimmed]);
 
   // Готуємо плоский список для keyboard-nav (↑/↓/Enter працюють по
   // порядку рендеру, а не по groups-first). Actions go first so the

@@ -102,14 +102,21 @@ export function useWorkoutTemplates(): UseWorkoutTemplatesResult {
 
   // Stage 12 / PR #057f-tombstone-mobile-stage12: overlay templates
   // from the SQLite warm cache once it's available.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    const overlay = cache.workoutTemplates.map(projectFromCache);
-    stateRef.current = overlay;
-    setTemplates(overlay);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setTemplates(cache.workoutTemplates.map(projectFromCache));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = templates;
+  }, [templates]);
 
   const persist = useCallback(
     (updater: (prev: WorkoutTemplate[]) => WorkoutTemplate[]) => {

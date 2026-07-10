@@ -84,9 +84,9 @@ export default function App({
     useModuleFirstRun("finyk");
   const [firstRunFinykSurface, setFirstRunFinykSurface] =
     useState(firstRunFinyk);
-  useEffect(() => {
-    if (firstRunFinyk) setFirstRunFinykSurface(true);
-  }, [firstRunFinyk]);
+  if (firstRunFinyk && !firstRunFinykSurface) {
+    setFirstRunFinykSurface(true);
+  }
   const firstRunFinykActive = firstRunFinykSurface && page === "budgets";
 
   // State
@@ -127,30 +127,39 @@ export default function App({
     if (page !== "budgets") navigate("budgets");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // PWA action effect (navigate is stable)
+  // PWA action: open add-expense sheet when the OS deep-link fires.
+  const prevPwaActionRef = useRef(pwaAction);
   useEffect(() => {
-    if (pwaAction !== "add_expense") return;
-    const prefill = consumePresetPrefill("finyk");
-    navigate("transactions");
-    setEditingManualExpenseId(null);
-    setQuickAddCategory(
-      typeof prefill?.["category"] === "string" ? prefill["category"] : null,
-    );
-    setQuickAddDescription(
-      typeof prefill?.["description"] === "string"
-        ? prefill["description"]
-        : null,
-    );
-    setShowExpenseSheet(true);
-    onPwaActionConsumed?.();
+    if (pwaAction !== "add_expense") {
+      prevPwaActionRef.current = pwaAction;
+      return;
+    }
+    if (prevPwaActionRef.current === "add_expense") return;
+    prevPwaActionRef.current = "add_expense";
+
+    void Promise.resolve().then(() => {
+      const prefill = consumePresetPrefill("finyk");
+      navigate("transactions");
+      setEditingManualExpenseId(null);
+      setQuickAddCategory(
+        typeof prefill?.["category"] === "string" ? prefill["category"] : null,
+      );
+      setQuickAddDescription(
+        typeof prefill?.["description"] === "string"
+          ? prefill["description"]
+          : null,
+      );
+      setShowExpenseSheet(true);
+      onPwaActionConsumed?.();
+    });
   }, [
-    navigate,
     pwaAction,
-    onPwaActionConsumed,
+    navigate,
     setEditingManualExpenseId,
     setQuickAddCategory,
     setQuickAddDescription,
     setShowExpenseSheet,
+    onPwaActionConsumed,
   ]);
 
   const { mergedMono } = useUnifiedFinanceData({ mono, privat });
@@ -182,11 +191,9 @@ export default function App({
   const swipeDx = swipe.dragDx;
 
   // Auto-close login overlay on successful connect
-  useEffect(() => {
-    if (clientInfo && showLoginOverlay) {
-      setShowLoginOverlay(false);
-    }
-  }, [clientInfo, showLoginOverlay]);
+  if (clientInfo && showLoginOverlay) {
+    setShowLoginOverlay(false);
+  }
 
   const showNoBankBanner = !clientInfo && !manualOnly;
 

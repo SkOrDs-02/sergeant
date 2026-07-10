@@ -239,20 +239,37 @@ export default function NutritionApp({
   }, [log, setActivePageAndHash]);
 
   // Resolve "open-add-meal" deterministically once the Log page is committed.
-  useEffect(() => {
-    if (pendingAction?.kind !== "open-add-meal") return;
-    if (activePage !== "log") return;
+  const [prevPendingAddMeal, setPrevPendingAddMeal] =
+    useState<PendingNutritionAction>(null);
+  if (
+    pendingAction?.kind === "open-add-meal" &&
+    activePage === "log" &&
+    pendingAction !== prevPendingAddMeal
+  ) {
+    setPrevPendingAddMeal(pendingAction);
     log.setAddMealPhotoResult(null);
     log.setAddMealSheetOpen(true);
     setPendingAction(null);
-  }, [pendingAction, activePage, log]);
+  }
 
   // Resolve "open-photo-picker" once the Start page + force-open disclosure
   // have committed. One rAF lets the freshly-mounted <input> paint before we
   // synthesise the click; the handle is cleared on unmount (effect above).
+  const [photoPickerTick, setPhotoPickerTick] = useState(0);
+  const [prevPendingPhotoPicker, setPrevPendingPhotoPicker] =
+    useState<PendingNutritionAction>(null);
+  if (
+    pendingAction?.kind === "open-photo-picker" &&
+    activePage === "start" &&
+    photoCardForceOpen &&
+    pendingAction !== prevPendingPhotoPicker
+  ) {
+    setPrevPendingPhotoPicker(pendingAction);
+    setPendingAction(null);
+    setPhotoPickerTick((t) => t + 1);
+  }
   useEffect(() => {
-    if (pendingAction?.kind !== "open-photo-picker") return;
-    if (activePage !== "start" || !photoCardForceOpen) return;
+    if (photoPickerTick === 0) return;
     pendingRafRef.current = requestAnimationFrame(() => {
       pendingRafRef.current = null;
       try {
@@ -261,8 +278,13 @@ export default function NutritionApp({
         /* noop — picker may be blocked without a user gesture */
       }
     });
-    setPendingAction(null);
-  }, [pendingAction, activePage, photoCardForceOpen, photo.fileRef]);
+    return () => {
+      if (pendingRafRef.current !== null) {
+        cancelAnimationFrame(pendingRafRef.current);
+        pendingRafRef.current = null;
+      }
+    };
+  }, [photoPickerTick, photo.fileRef]);
 
   // Requested from inside AddMealSheet's source-step (S13). Close the
   // sheet, route to the Start page where PhotoAnalyzeCard lives, force

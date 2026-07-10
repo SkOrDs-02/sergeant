@@ -71,17 +71,13 @@ export function useGroqVoiceInput({
 }: UseGroqVoiceInputOptions = {}): UseGroqVoiceInputReturn {
   const [listening, setListening] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [supported, setSupported] = useState(false);
+  const [supported] = useState(() => isGroqSupported());
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const startedAtRef = useRef<number>(0);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    setSupported(isGroqSupported());
-  }, []);
 
   const cleanup = useCallback(() => {
     if (stopTimerRef.current) {

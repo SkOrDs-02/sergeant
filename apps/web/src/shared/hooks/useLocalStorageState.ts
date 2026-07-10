@@ -130,36 +130,36 @@ export function useLocalStorageState<T>(
     }
   });
 
-  const isFirstWriteRef = useRef(true);
+  const [persistGate, setPersistGate] = useState(0);
+  const lastPersistedGateRef = useRef(persistGate);
+  const skipInitialWriteRef = useRef(true);
 
-  // Track the key the last write was for — if `key` changes between
-  // renders we re-initialize state from the new slot on the next read.
-  const lastKeyRef = useRef(key);
-  useEffect(() => {
-    if (lastKeyRef.current === key) return;
-    lastKeyRef.current = key;
-    if (!hasLocalStorage()) return;
-    const raw = webKVStore.getString(key);
-    const { deserialize: d, validate: v } = optionsRef.current;
-    if (raw === null) {
+  const [prevKey, setPrevKey] = useState(key);
+  if (key !== prevKey) {
+    setPrevKey(key);
+    if (!hasLocalStorage()) {
       setValue(resolveInitial(initialValue));
-      return;
-    }
-    try {
-      const parsed = d ? d(raw) : JSON.parse(raw);
-      if (v && !v(parsed)) {
+    } else {
+      const raw = webKVStore.getString(key);
+      if (raw === null) {
         setValue(resolveInitial(initialValue));
-        return;
+      } else {
+        try {
+          const parsed = effectiveDeserialize
+            ? effectiveDeserialize(raw)
+            : JSON.parse(raw);
+          if (validate && !validate(parsed)) {
+            setValue(resolveInitial(initialValue));
+          } else {
+            setValue((parsed ?? resolveInitial(initialValue)) as T);
+          }
+        } catch {
+          setValue(resolveInitial(initialValue));
+        }
       }
-      setValue((parsed ?? resolveInitial(initialValue)) as T);
-    } catch {
-      setValue(resolveInitial(initialValue));
     }
-    isFirstWriteRef.current = true;
-    // Intentionally depend only on `key` — `initialValue` by design is a
-    // seed and changing it after mount should not re-initialise state.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+    setPersistGate((g) => g + 1);
+  }
 
   // Skip the write on the very first render: `value` was just read from
   // storage (or is the seeded initial for a missing key), so writing it
@@ -167,8 +167,13 @@ export function useLocalStorageState<T>(
   // Subsequent `setValue` calls go through this effect normally.
   useEffect(() => {
     if (!hasLocalStorage()) return undefined;
-    if (isFirstWriteRef.current) {
-      isFirstWriteRef.current = false;
+    if (skipInitialWriteRef.current) {
+      skipInitialWriteRef.current = false;
+      lastPersistedGateRef.current = persistGate;
+      return undefined;
+    }
+    if (lastPersistedGateRef.current !== persistGate) {
+      lastPersistedGateRef.current = persistGate;
       return undefined;
     }
     const write = () => {
@@ -188,7 +193,7 @@ export function useLocalStorageState<T>(
     }
     const id = setTimeout(write, debounceMs);
     return () => clearTimeout(id);
-  }, [key, value, debounceMs]);
+  }, [key, value, debounceMs, persistGate]);
 
   const setStable = useCallback<Dispatch<SetStateAction<T>>>((next) => {
     setValue(next);

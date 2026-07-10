@@ -9,7 +9,7 @@
  * presentational and the same rules apply wherever the draft shape
  * is consumed.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Text, View } from "react-native";
 
 import {
@@ -64,14 +64,18 @@ export function MeasurementEntryForm({
     makeInitial(editingEntry),
   );
   const [errors, setErrors] = useState<MeasurementDraftErrors>({});
+  const [prevOpen, setPrevOpen] = useState(open);
 
   // Re-seed the form each time the sheet opens for a (possibly new)
-  // target entry — mirrors the pattern used by `HabitForm`.
-  useEffect(() => {
-    if (!open) return;
-    setDraft(makeInitial(editingEntry));
-    setErrors({});
-  }, [open, editingEntry]);
+  // target entry. Render-time pattern avoids `react-hooks/set-state-in-effect`
+  // (initiative 0021).
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setDraft(makeInitial(editingEntry));
+      setErrors({});
+    }
+  }
 
   const handleSubmit = useCallback(() => {
     const next = validateMeasurementDraft(draft);

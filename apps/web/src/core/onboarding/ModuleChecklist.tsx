@@ -351,11 +351,11 @@ export function useModuleChecklistVisible(
   const [visible, setVisible] = useState(() =>
     isChecklistVisible(localStorageStore, moduleId),
   );
-
-  useEffect(() => {
-    // Re-check on mount in case state changed
+  const [prevModuleId, setPrevModuleId] = useState(moduleId);
+  if (moduleId !== prevModuleId) {
+    setPrevModuleId(moduleId);
     setVisible(isChecklistVisible(localStorageStore, moduleId));
-  }, [moduleId]);
+  }
 
   return visible;
 }

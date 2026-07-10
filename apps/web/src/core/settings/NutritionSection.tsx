@@ -46,15 +46,13 @@ function NumberField({
   // Keep the input in sync if `value` changes from the outside (e.g. user
   // imports prefs from another device). Avoid clobbering while the user is
   // mid-edit by comparing against the committed number.
-  useEffect(() => {
-    const canonical = numberOrNullToInput(value);
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     if (parseOptionalPositiveInt(draft) !== value) {
-      setDraft(canonical);
+      setDraft(numberOrNullToInput(value));
     }
-    // `draft` is intentionally excluded — comparing against it would re-run
-    // the effect every keystroke and clobber the user's in-progress edit.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }
 
   return (
     <label className="flex items-center gap-3 min-h-[44px]">
@@ -98,11 +96,10 @@ export function NutritionSection() {
   // copy of prefs via `loadNutritionPrefs()` + `useEffect`; the next time
   // the Nutrition module mounts it will pick the updated prefs from LS.
   useEffect(() => {
-    setStorageErr(
-      persistNutritionPrefs(prefs)
-        ? ""
-        : "Не вдалося зберегти налаштування Харчування.",
-    );
+    const err = persistNutritionPrefs(prefs)
+      ? ""
+      : "Не вдалося зберегти налаштування Харчування.";
+    void Promise.resolve().then(() => setStorageErr(err));
   }, [prefs]);
 
   const activePantry = useMemo(

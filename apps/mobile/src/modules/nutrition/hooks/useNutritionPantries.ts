@@ -83,13 +83,17 @@ export function useNutritionPantries(): UseNutritionPantriesResult {
   // pantry from the local SQLite cache once it's warm. MMKV
   // first-paint reads above stay as a synchronous fallback so the
   // first paint never blocks on SQLite.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useNutritionSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    setPantries(cache.pantries);
-    if (cache.activePantryId) setActivePantryIdState(cache.activePantryId);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setPantries(cache.pantries);
+      if (cache.activePantryId) setActivePantryIdState(cache.activePantryId);
+    }
+  }
 
   const setActivePantryId = useCallback((id: string) => {
     if (!id) return;

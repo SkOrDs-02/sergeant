@@ -43,7 +43,7 @@ export function useNutritionPrefsState(
     const err = persistNutritionPrefs(prefs)
       ? ""
       : "Не вдалося зберегти налаштування.";
-    setPrefsStorageErr(err);
+    void Promise.resolve().then(() => setPrefsStorageErr(err));
   }, [prefs]);
 
   return { prefs, setPrefs, prefsStorageErr };

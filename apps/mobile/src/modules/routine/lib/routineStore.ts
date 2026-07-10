@@ -19,7 +19,7 @@
  * MMKV to the SQLite cache.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   applyCreateHabit,
   applyDeleteHabit,
@@ -246,15 +246,15 @@ export function useRoutineStore(): UseRoutineStoreReturn {
     setRoutineState(loadRoutineState());
   }, []);
 
-  // Re-read whenever the SQLite warm cache tick advances (boot
-  // warm-up or write-through after a `saveRoutineState`). The tick
-  // hook bumps via `useSyncExternalStore` so React schedules a
-  // re-render automatically; the `useEffect` below pulls the fresh
-  // snapshot into local state for downstream consumers.
+  // Re-read whenever the SQLite warm cache tick advances (boot warm-up
+  // or write-through after a `saveRoutineState`). Render-time update
+  // avoids `react-hooks/set-state-in-effect` (initiative 0021).
   const cacheTick = useRoutineSqliteReadTick();
-  useEffect(() => {
+  const [prevCacheTick, setPrevCacheTick] = useState(cacheTick);
+  if (cacheTick !== prevCacheTick) {
+    setPrevCacheTick(cacheTick);
     refresh();
-  }, [cacheTick, refresh]);
+  }
 
   const setRoutine = useCallback((next: RoutineState) => {
     setRoutineState(next);

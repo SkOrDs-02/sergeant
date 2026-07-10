@@ -2,7 +2,7 @@
  * Last validated: 2026-05-20
  * Status: Active
  */
-import { useState, useEffect, useId, useMemo } from "react";
+import { useState, useId, useMemo, useEffect } from "react";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
@@ -243,21 +243,49 @@ export function ManualExpenseSheet({
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
   const [descFocused, setDescFocused] = useState(false);
 
+  const openInitKey = useMemo(
+    () =>
+      open
+        ? [
+            initialExpense?.id ?? "new",
+            initialCategory ?? "",
+            initialDescription ?? "",
+            frequentCategories.map((c) => c.id).join(","),
+          ].join("|")
+        : "",
+    [
+      open,
+      initialExpense,
+      initialCategory,
+      initialDescription,
+      frequentCategories,
+    ],
+  );
+  const [prevOpenInitKey, setPrevOpenInitKey] = useState("");
+
   useEffect(() => {
-    if (open) {
+    if (!open) {
+      void Promise.resolve().then(() => {
+        setPrevOpenInitKey("");
+      });
+      return;
+    }
+    if (openInitKey === prevOpenInitKey) return;
+
+    void Promise.resolve().then(() => {
+      setPrevOpenInitKey(openInitKey);
+
       if (initialExpense?.id) {
         reset({
           description: String(initialExpense.description || ""),
           amount:
             initialExpense.amount != null ? String(initialExpense.amount) : "",
-          // upgradeCategory handles Era 1/2/3 stored values.
           category: upgradeCategory(initialExpense.category),
-          date: toLocalISODate(initialExpense.date || Date.now()),
+          date: initialExpense.date
+            ? toLocalISODate(initialExpense.date)
+            : toLocalISODate(),
         });
       } else {
-        // Пріоритет: явна initialCategory (клік з дашборду) > найчастіша
-        // категорія з статистики > дефолт ("other"). Будь-яка legacy
-        // мітка (Era 1/2) оновлюється до slug (Era 3).
         let startCategory: CategorySlug = DEFAULT_CATEGORY;
         if (initialCategory) {
           startCategory = upgradeCategory(initialCategory);
@@ -284,22 +312,21 @@ export function ManualExpenseSheet({
           date: toLocalISODate(),
         });
       }
-      // UI-only state (категорії розгорнуті / фокус у полі Назва) зберігається
-      // між відкриттями, бо компонент змонтований постійно (FinykApp тримає
-      // його як always-rendered). Скидаємо до дефолтів, щоб новий «Додати
-      // витрату» не успадковував стан попереднього відкриття.
       setCategoriesExpanded(false);
       setDescFocused(false);
       setShowDateField(false);
-      // 6.3: clear AI-applied state when the sheet reopens — stale
-      // suggestion from a previous session shouldn't carry over.
       setAiAppliedCategory(null);
-    }
-    // frequentCategories/initialCategory/initialDescription лише задають
-    // стартовий стан при відкритті — навмисно не реагуємо на їхні
-    // оновлення у відкритому sheet.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialExpense]);
+    });
+  }, [
+    open,
+    openInitKey,
+    prevOpenInitKey,
+    initialExpense,
+    initialCategory,
+    initialDescription,
+    frequentCategories,
+    reset,
+  ]);
 
   const sortedCategories = useMemo(
     () => sortCategoriesByFrequency(frequentCategories),

@@ -2,7 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
@@ -225,11 +225,9 @@ export function Progress({ onNavigate }: ProgressProps) {
   // user filtered by "chest", deleted all chest sets in Workouts, then came
   // back to a stale filter that would otherwise show only an empty state
   // (07 F18).
-  useEffect(() => {
-    if (prFilter !== "all" && !prs.some((p) => p.muscleGroup === prFilter)) {
-      setPrFilter("all");
-    }
-  }, [prFilter, prs]);
+  if (prFilter !== "all" && !prs.some((p) => p.muscleGroup === prFilter)) {
+    setPrFilter("all");
+  }
 
   const hasAny = (workouts?.length || 0) > 0 || (entries?.length || 0) > 0;
 
