@@ -10,6 +10,7 @@ import { enqueueOutboxIncrement } from "@sergeant/db-schema/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
+import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
 import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff.js";
 import {
   CATEGORY_SOFT_DELETE_SQL,
@@ -301,6 +302,29 @@ async function upsertHabit(
     h.createdAt ?? clientTs,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_habits",
+    op: "insert",
+    clientTs,
+    row: {
+      id: h.id,
+      user_id: userId,
+      name: h.name,
+      emoji: h.emoji ?? "",
+      tag_ids_json: JSON.stringify(h.tagIds ?? []),
+      category_id: h.categoryId ?? null,
+      archived: h.archived ? 1 : 0,
+      paused: h.paused ? 1 : 0,
+      recurrence: h.recurrence ?? "daily",
+      start_date: h.startDate ?? null,
+      end_date: h.endDate ?? null,
+      time_of_day: h.timeOfDay ?? "",
+      reminder_times_json: JSON.stringify(h.reminderTimes ?? []),
+      weekdays_json: JSON.stringify(h.weekdays ?? [0, 1, 2, 3, 4, 5, 6]),
+      created_at: h.createdAt ?? clientTs,
+    },
+  });
 }
 
 async function softDeleteHabit(
@@ -315,6 +339,13 @@ async function softDeleteHabit(
     userId,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_habits",
+    op: "delete",
+    clientTs,
+    row: { id: habitId, user_id: userId },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -334,6 +365,19 @@ async function upsertTag(
     clientTs,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_tags",
+    op: "insert",
+    clientTs,
+    row: {
+      id: t.id,
+      user_id: userId,
+      name: t.name,
+      scope: t.scope ?? "",
+      created_at: clientTs,
+    },
+  });
 }
 
 async function softDeleteTag(
@@ -348,6 +392,13 @@ async function softDeleteTag(
     userId,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_tags",
+    op: "delete",
+    clientTs,
+    row: { id: tagId, user_id: userId },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -367,6 +418,19 @@ async function upsertCategory(
     clientTs,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_categories",
+    op: "insert",
+    clientTs,
+    row: {
+      id: c.id,
+      user_id: userId,
+      name: c.name,
+      emoji: c.emoji ?? "",
+      created_at: clientTs,
+    },
+  });
 }
 
 async function softDeleteCategory(
@@ -381,6 +445,13 @@ async function softDeleteCategory(
     userId,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_categories",
+    op: "delete",
+    clientTs,
+    row: { id: categoryId, user_id: userId },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -393,6 +464,13 @@ async function setPrefs(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(PREFS_UPSERT_SQL, [userId, JSON.stringify(prefs), clientTs]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_prefs",
+    op: "insert",
+    clientTs,
+    row: { user_id: userId, data_json: JSON.stringify(prefs) },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -406,6 +484,13 @@ async function upsertPushup(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(PUSHUP_UPSERT_SQL, [userId, dateKey, reps, clientTs]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_pushups",
+    op: "insert",
+    clientTs,
+    row: { user_id: userId, date_key: dateKey, reps },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -422,6 +507,13 @@ async function setHabitOrder(
     JSON.stringify(orderedIds),
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_habit_order",
+    op: "insert",
+    clientTs,
+    row: { user_id: userId, order_json: JSON.stringify(orderedIds) },
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -440,6 +532,13 @@ async function upsertCompletionNote(
     note,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_completion_notes",
+    op: "insert",
+    clientTs,
+    row: { user_id: userId, note_key: noteKey, note },
+  });
 }
 
 async function deleteCompletionNote(
@@ -454,4 +553,11 @@ async function deleteCompletionNote(
     noteKey,
     clientTs,
   ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_completion_notes",
+    op: "delete",
+    clientTs,
+    row: { user_id: userId, note_key: noteKey },
+  });
 }
