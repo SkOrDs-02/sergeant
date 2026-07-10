@@ -24,8 +24,6 @@ const deps = vi.hoisted(() => ({
   groupLabel: "Фінік · підписки",
   storageKeys: {
     FINYK_SUBS: "finyk_subs",
-    FINYK_TX_CACHE: "finyk_tx_cache",
-    FINYK_TX_CACHE_LAST_GOOD: "finyk_tx_cache_last_good",
   },
   safeReadLS: vi.fn(),
   buildPure: vi.fn(
@@ -54,6 +52,14 @@ const deps = vi.hoisted(() => ({
       lastTx: tx ?? null,
     };
   }),
+  // Mirror cache mock — replaced by vi.mock below.
+  // Explicit casts widen the inferred types so mockReturnValue() with
+  // non-empty transactions / non-null refreshedAt passes tsc.
+  getMirrorState: vi.fn(() => ({
+    transactions: [] as Array<{ id: string; amount: number }>,
+    accounts: [] as unknown[],
+    refreshedAt: null as string | null,
+  })),
 }));
 
 vi.mock("@shared/lib/storage/storage", () => ({
@@ -73,11 +79,21 @@ vi.mock("@sergeant/routine-domain", () => ({
   FINYK_SUB_GROUP_LABEL: deps.groupLabel,
 }));
 
+vi.mock("../../finyk/lib/monoMirrorReader", () => ({
+  getCachedFinykMonoMirrorStateWithLastGood: () => deps.getMirrorState(),
+}));
+
 describe("finykSubscriptionCalendar", () => {
   beforeEach(() => {
     deps.safeReadLS.mockReset();
     deps.buildPure.mockClear();
     deps.getAmountMeta.mockClear();
+    deps.getMirrorState.mockReset();
+    deps.getMirrorState.mockReturnValue({
+      transactions: [],
+      accounts: [],
+      refreshedAt: null,
+    });
   });
 
   it("re-exports the routine-domain Finyk subscription group label", () => {
@@ -115,34 +131,26 @@ describe("finykSubscriptionCalendar", () => {
     expect(loadFinykSubscriptionsFromStorage()).toBe(stored);
   });
 
-  it("loads transactions from the primary cache before the last-good cache", () => {
-    const primaryTxs = [{ id: "tx-primary", amount: -999 }];
-    deps.safeReadLS.mockReturnValueOnce({ txs: primaryTxs });
+  it("loads transactions from the mirror cache with last-good fallback", () => {
+    const mirrorTxs = [{ id: "tx-mirror", amount: -999 }];
+    deps.getMirrorState.mockReturnValue({
+      transactions: mirrorTxs,
+      accounts: [],
+      refreshedAt: "2026-07-05T10:00:00.000Z",
+    });
 
-    expect(loadFinykTransactionsFromStorage()).toBe(primaryTxs);
-    expect(deps.safeReadLS).toHaveBeenCalledTimes(1);
-    expect(deps.safeReadLS).toHaveBeenCalledWith(
-      deps.storageKeys.FINYK_TX_CACHE,
-      null,
-    );
+    const result = loadFinykTransactionsFromStorage();
+    expect(result).toBe(mirrorTxs);
+  });
 
-    const fallbackTxs = [{ id: "tx-fallback", amount: -777 }];
-    deps.safeReadLS.mockReset();
-    deps.safeReadLS
-      .mockReturnValueOnce({ txs: [] })
-      .mockReturnValueOnce({ txs: fallbackTxs });
+  it("returns empty array when mirror cache is empty", () => {
+    deps.getMirrorState.mockReturnValue({
+      transactions: [],
+      accounts: [],
+      refreshedAt: null,
+    });
 
-    expect(loadFinykTransactionsFromStorage()).toBe(fallbackTxs);
-    expect(deps.safeReadLS).toHaveBeenNthCalledWith(
-      1,
-      deps.storageKeys.FINYK_TX_CACHE,
-      null,
-    );
-    expect(deps.safeReadLS).toHaveBeenNthCalledWith(
-      2,
-      deps.storageKeys.FINYK_TX_CACHE_LAST_GOOD,
-      null,
-    );
+    expect(loadFinykTransactionsFromStorage()).toEqual([]);
   });
 
   it("bridges stored subscriptions and cached transactions into the pure builder", () => {
@@ -154,10 +162,15 @@ describe("finykSubscriptionCalendar", () => {
       currency: "USD",
     };
     const txs = [{ id: "tx-notion", amount: -12345 }];
-    deps.safeReadLS.mockImplementation((key) => {
+
+    deps.safeReadLS.mockImplementation((key: string) => {
       if (key === deps.storageKeys.FINYK_SUBS) return [storedSub];
-      if (key === deps.storageKeys.FINYK_TX_CACHE) return { txs };
       return null;
+    });
+    deps.getMirrorState.mockReturnValue({
+      transactions: txs,
+      accounts: [],
+      refreshedAt: "2026-07-05T10:00:00.000Z",
     });
 
     const range = {

@@ -3,17 +3,21 @@
  * surface. Mirrors `apps/web/src/core/hub/RoutineCard.tsx`: reads the
  * routine state shard and aggregates habit-completion % per day.
  *
- * Reads via the legacy `hub_routine_v1` MMKV key, the same cross-module
- * read path `coachSnapshot.ts` uses on native (the SQLite `routine_*`
- * tables are canonical for the routine module itself, but the legacy key
- * remains the shared cross-module read shard mirrored from web).
+ * Migrated (dual-write teardown) to read from the SQLite warm cache
+ * (`getCachedSqliteRoutineState` + `getCachedSqliteCompletions`) instead
+ * of the now-tombstoned `hub_routine_v1` MMKV key. Reactivity is provided
+ * by `useRoutineSqliteReadTick` so the card re-aggregates whenever the
+ * routine cache is refreshed (boot warm-up or habit mutation).
  */
 
 import { useMemo } from "react";
 import { Text, View } from "react-native";
 
-import { safeReadLS } from "@/lib/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import {
+  getCachedSqliteCompletions,
+  getCachedSqliteRoutineState,
+} from "@/modules/routine/lib/sqliteReader";
+import { useRoutineSqliteReadTick } from "@/modules/routine/lib/sqliteReadGate";
 
 import {
   aggregateHabits,
@@ -31,8 +35,18 @@ export interface RoutineCardProps {
 }
 
 export default function RoutineCard({ period, offset }: RoutineCardProps) {
+  const cacheTick = useRoutineSqliteReadTick();
+
   const { cur, prev, dates } = useMemo(() => {
-    const state = safeReadLS<RoutineState | null>(STORAGE_KEYS.ROUTINE, null);
+    const sqliteState = getCachedSqliteRoutineState();
+    const completionsCache = getCachedSqliteCompletions();
+    const state: RoutineState | null =
+      sqliteState.refreshedAt !== null || completionsCache.refreshedAt !== null
+        ? {
+            habits: sqliteState.habits,
+            completions: completionsCache.completions,
+          }
+        : null;
     const curRange = getPeriodRange(period, offset);
     const prevRange = getPeriodRange(period, offset - 1);
     const curDates = datesInRange(curRange.start, curRange.end);
@@ -42,7 +56,9 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
       prev: aggregateHabits(state, prevDates),
       dates: curDates,
     };
-  }, [period, offset]);
+    // cacheTick is the reactivity dependency; period/offset control the window.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, offset, cacheTick]);
 
   return (
     <ReportCardShell

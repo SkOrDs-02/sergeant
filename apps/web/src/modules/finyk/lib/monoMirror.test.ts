@@ -17,6 +17,7 @@ import {
 import {
   clearFinykMonoMirrorCache,
   getCachedFinykMonoMirrorState,
+  getCachedFinykMonoMirrorStateWithLastGood,
   refreshFinykMonoMirrorState,
 } from "./monoMirrorReader";
 import {
@@ -213,5 +214,76 @@ describe("refreshFinykMonoMirrorState", () => {
     expect(getCachedFinykMonoMirrorState().transactions).toHaveLength(1);
     await refreshFinykMonoMirrorState(handle.client, "");
     expect(getCachedFinykMonoMirrorState().transactions).toEqual([]);
+  });
+});
+
+describe("getCachedFinykMonoMirrorStateWithLastGood (last-good fallback)", () => {
+  it("returns current cache when transactions are non-empty", async () => {
+    await writeMonoTransactions(handle.client, UID, [
+      tx({ id: "a", time: 1 }),
+      tx({ id: "b", time: 2 }),
+    ]);
+    await refreshFinykMonoMirrorState(handle.client, UID);
+
+    const result = getCachedFinykMonoMirrorStateWithLastGood();
+    expect(result.transactions).toHaveLength(2);
+    expect(result.transactions.map((t) => t.id).sort()).toEqual(["a", "b"]);
+  });
+
+  it("falls back to last-good when current cache is empty after a non-empty refresh", async () => {
+    // First populate with real data
+    await writeMonoTransactions(handle.client, UID, [
+      tx({ id: "good-tx", time: 99 }),
+    ]);
+    await refreshFinykMonoMirrorState(handle.client, UID);
+    expect(getCachedFinykMonoMirrorState().transactions).toHaveLength(1);
+
+    // Now simulate a transitional empty refresh (e.g. user scoped to different userId)
+    await refreshFinykMonoMirrorState(handle.client, "other-user");
+    expect(getCachedFinykMonoMirrorState().transactions).toHaveLength(0);
+
+    // getCachedFinykMonoMirrorStateWithLastGood should return the previous good snapshot
+    const withFallback = getCachedFinykMonoMirrorStateWithLastGood();
+    expect(withFallback.transactions).toHaveLength(1);
+    expect(withFallback.transactions[0]!.id).toBe("good-tx");
+  });
+
+  it("returns empty when no good snapshot has ever been populated", async () => {
+    // Fresh cache, no previous data
+    const result = getCachedFinykMonoMirrorStateWithLastGood();
+    expect(result.transactions).toEqual([]);
+  });
+
+  it("clearFinykMonoMirrorCache resets lastGood so fallback returns empty", async () => {
+    // Populate a good snapshot
+    await writeMonoTransactions(handle.client, UID, [tx({ id: "c", time: 5 })]);
+    await refreshFinykMonoMirrorState(handle.client, UID);
+
+    // Clear (test isolation) — both current cache and lastGood should reset
+    clearFinykMonoMirrorCache();
+    await refreshFinykMonoMirrorState(handle.client, "nobody");
+
+    const result = getCachedFinykMonoMirrorStateWithLastGood();
+    expect(result.transactions).toEqual([]);
+  });
+
+  it("updates lastGood on each non-empty refresh", async () => {
+    await writeMonoTransactions(handle.client, UID, [
+      tx({ id: "first", time: 1 }),
+    ]);
+    await refreshFinykMonoMirrorState(handle.client, UID);
+
+    // Overwrite with a newer transaction
+    await writeMonoTransactions(handle.client, UID, [
+      tx({ id: "second", time: 2 }),
+    ]);
+    await refreshFinykMonoMirrorState(handle.client, UID);
+
+    // Empty the live cache without clearing lastGood
+    await refreshFinykMonoMirrorState(handle.client, "nobody");
+
+    const result = getCachedFinykMonoMirrorStateWithLastGood();
+    // lastGood should reflect the second (most recent) non-empty snapshot
+    expect(result.transactions.map((t) => t.id).sort()).toContain("second");
   });
 });

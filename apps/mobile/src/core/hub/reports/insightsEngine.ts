@@ -10,8 +10,13 @@
  * surface does not fork that aggregation. Returns up to 4 insights.
  */
 
-import { safeReadLS, safeReadStringLS } from "@/lib/storage";
+import { safeReadStringLS } from "@/lib/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
+
+import {
+  getCachedSqliteCompletions,
+  getCachedSqliteRoutineState,
+} from "@/modules/routine/lib/sqliteReader";
 
 import { localDateKey, type RoutineState } from "./hubReports.aggregation";
 
@@ -103,10 +108,20 @@ function workoutDayInsight(): Insight | null {
 /**
  * Insight: best habit-completion month in history. Requires ≥ 28 total
  * completions AND ≥ 4 distinct ISO weeks with any completion.
+ *
+ * Reads from the SQLite warm cache (migrated from tombstoned `hub_routine_v1`
+ * MMKV key). Returns `null` before the cache is warm (pre-boot window).
  */
 function bestHabitMonthInsight(): Insight | null {
-  const state = safeReadLS<RoutineState | null>(STORAGE_KEYS.ROUTINE, null);
-  if (!state) return null;
+  const sqliteState = getCachedSqliteRoutineState();
+  const completionsCache = getCachedSqliteCompletions();
+  if (sqliteState.refreshedAt === null && completionsCache.refreshedAt === null)
+    return null;
+
+  const state: RoutineState = {
+    habits: sqliteState.habits,
+    completions: completionsCache.completions,
+  };
 
   const habits = (state.habits ?? []).filter((h) => !h.archived);
   const completions = state.completions ?? {};

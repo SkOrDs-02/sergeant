@@ -1,4 +1,5 @@
 import { safeReadStringLS } from "@shared/lib/storage/storage";
+import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
 import {
   loadNutritionLog,
@@ -37,7 +38,11 @@ export function exportModuleData(action: ExportModuleDataAction): string {
   switch (mod) {
     case "finyk": {
       const parts: string[] = ["Експорт Фінік:"];
-      parts.push(exportData("finyk_tx_cache", "Транзакції"));
+      // Bank transactions are now stored in the SQLite mirror; serialize
+      // the in-memory cache the same way exportData would serialize a LS value.
+      parts.push(
+        exportValue(getCachedFinykMonoMirrorState().transactions, "Транзакції"),
+      );
       return parts.join("\n");
     }
     case "fizruk": {

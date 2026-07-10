@@ -13,12 +13,12 @@
  *    settings" hint but actionable on mobile (iOS/Android bury the
  *    system-notifications toggle deep enough that a one-tap shortcut
  *    is the whole UX).
- *  - Routine-reminders toggle — persists a plain boolean into the
- *    shared `@routine_prefs_v1` MMKV slice used by `RoutineSection`.
- *    The preference rides cloud-sync under the same envelope as the
- *    rest of the routine prefs, so when `@sergeant/routine` ports the
- *    scheduler (Phase 5) it can pick this flag up without a data
- *    migration.
+ *  - Routine-reminders toggle — persists `routineRemindersEnabled` into
+ *    the canonical `useRoutinePrefs` hook (SQLite `routine_prefs` table,
+ *    written via `saveRoutineState` / dual-write pipeline). The legacy
+ *    `@routine_prefs_v1` MMKV orphan path is retired; the preference is
+ *    merged with the calendar-visibility flags already stored by
+ *    `RoutineSection` in the same prefs record.
  *
  * Deferred (tracked in `docs/mobile/react-native-migration.md` Phase 2 /
  * Hub-core, section 2.4) — rendered as `DeferredNotice` cards mirroring
@@ -47,8 +47,8 @@ import * as Notifications from "expo-notifications";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { useLocalStorage } from "@/lib/storage";
 import { useNutritionPrefs } from "@/modules/nutrition/hooks/useNutritionPrefs";
+import { useRoutinePrefs } from "@/modules/routine/hooks/useRoutinePrefs";
 
 import {
   SettingsGroup,
@@ -69,17 +69,6 @@ const PERM_TEXT_CLASS: Record<PermStatus, string> = {
   denied: "text-rose-600",
   undetermined: "text-amber-600",
 };
-
-// Mirrors the web `routine.prefs.routineRemindersEnabled` slice; the
-// mobile `RoutineSection` uses the same key for its calendar-visibility
-// flags so both port together when the shared routine store lands.
-const ROUTINE_PREFS_KEY = "@routine_prefs_v1";
-
-interface RoutinePrefs {
-  routineRemindersEnabled?: boolean;
-  showFizrukInCalendar?: boolean;
-  showFinykSubscriptionsInCalendar?: boolean;
-}
 
 function DeferredNotice({ children }: { children: string }) {
   return (
@@ -109,10 +98,8 @@ function clampReminderHour(value: number): number {
 
 export function NotificationsSection() {
   const [permStatus, setPermStatus] = useState<PermStatus>("undetermined");
-  const [routinePrefs, setRoutinePrefs] = useLocalStorage<RoutinePrefs>(
-    ROUTINE_PREFS_KEY,
-    {},
-  );
+  const { prefs: routinePrefs, updatePrefs: updateRoutinePrefs } =
+    useRoutinePrefs();
   const { prefs: nutritionPrefs, updatePrefs: updateNutritionPrefs } =
     useNutritionPrefs();
 
@@ -227,10 +214,7 @@ export function NotificationsSection() {
           description="Спрацьовує у встановлений в кожній звичці час. Повноцінне планування нагадувань підключиться з портом модуля Рутина (Phase 5) — зараз значення зберігається і буде підхоплено автоматично."
           checked={routineEnabled}
           onChange={(next) =>
-            setRoutinePrefs((prev) => ({
-              ...prev,
-              routineRemindersEnabled: next,
-            }))
+            updateRoutinePrefs({ routineRemindersEnabled: next })
           }
           testID="notifications-routine-toggle"
         />

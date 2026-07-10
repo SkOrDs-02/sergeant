@@ -4,6 +4,7 @@ import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
+import { getCachedFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
 import { tokenize } from "../hubSearchEngine";
 import { searchActions, searchAiHandoff } from "./searchActions";
 import { safeParseLS, scoreLru } from "./searchCache";
@@ -27,8 +28,7 @@ interface FinykSub {
 function searchFinyk(tokens: string[]): Hit[] {
   const results: Hit[] = [];
 
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key
-  const txList = safeParseLS<FinykTx[]>("finyk_tx_cache", []);
+  const txList = getCachedFinykMonoMirrorState().transactions as FinykTx[];
   if (Array.isArray(txList)) {
     for (const tx of txList) {
       if (!tx || typeof tx !== "object") continue;
@@ -276,10 +276,20 @@ function storageSnapshot(): string {
   // SQLite warm caches (their `*_v1` LS keys are tombstoned). Build the cache
   // half from the canonical readers so the LRU still invalidates when that
   // data changes (counts + ids + habit/meal names catch add/remove/rename).
-  const lsParts = ["finyk_tx_cache", "finyk_subs"].map((k) => {
-    const v = safeReadStringLS(k);
-    return v === null ? "0" : `${v.length}:${v.slice(0, 24)}:${v.slice(-24)}`;
-  });
+  // finyk_tx_cache is now tombstoned — derive change-signal from the mirror cache
+  // (same semantics: length change + prefix/suffix fingerprint).
+  const mirrorTxs = getCachedFinykMonoMirrorState().transactions;
+  const mirrorSnapshot =
+    mirrorTxs.length === 0
+      ? "0"
+      : `${mirrorTxs.length}:${mirrorTxs[0]?.id ?? ""}:${mirrorTxs[mirrorTxs.length - 1]?.id ?? ""}`;
+  const lsParts = [
+    mirrorSnapshot,
+    ...["finyk_subs"].map((k) => {
+      const v = safeReadStringLS(k);
+      return v === null ? "0" : `${v.length}:${v.slice(0, 24)}:${v.slice(-24)}`;
+    }),
+  ];
   const routine = loadRoutineState();
   const fizruk = getCachedFizrukSqliteState();
   const nutrition = loadNutritionLog();

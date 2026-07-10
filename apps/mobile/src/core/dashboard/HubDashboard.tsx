@@ -81,6 +81,7 @@ import { WeeklyDigestFooter } from "./WeeklyDigestFooter";
 import { useHints } from "../hints/useHints";
 import { mobileKVStore as mmkvStore } from "@/lib/storage";
 import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
+import { HubModuleStorageBoot } from "@/core/settings/HubModuleStorageBoot";
 
 /**
  * AssistantFab — floating action button with pulse glow animation.
@@ -420,6 +421,12 @@ export function HubDashboard() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg dark:bg-bg" edges={["top", "bottom"]}>
+      {/* Boot all module SQLite read-caches and dual-write registrations so
+          Hub aggregators (coachSnapshot, weeklyDigestAggregates, searchSources)
+          and settings mutations see fresh data even before the user visits any
+          module tab. No-ops when the module-level boot hooks have already run. */}
+      <HubModuleStorageBoot />
+
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 16 }}

@@ -1,11 +1,12 @@
 /**
  * Render smoke test for the Hub-core Settings shell.
  *
- * Keeps the scope tight: the shell renders the screen title and all
- * nine Hub-core section headers (General / Notifications / Routine /
- * Finyk / Fizruk / AIDigest / Assistant / Experimental / Account).
- * Section-level behaviour
- * is covered by the per-section suites.
+ * Keeps the scope tight:
+ *  1. The shell renders the screen title and all nine Hub-core section headers.
+ *  2. `HubModuleStorageBoot` is mounted — all four module storage boot hooks
+ *     are called on render (settings-first boot guarantee).
+ *
+ * Section-level behaviour is covered by per-section suites.
  */
 
 import { render } from "@testing-library/react-native";
@@ -14,6 +15,37 @@ import { ApiClientProvider } from "@sergeant/api-client/react";
 
 import { apiClient } from "@/api/apiClient";
 import { _getMMKVInstance } from "@/lib/storage";
+
+// --- module storage boot hook mocks (via HubModuleStorageBoot) ---
+const mockUseFinykDualWriteBoot = jest.fn();
+const mockUseRoutineDualWriteBoot = jest.fn();
+const mockUseFinykSqliteReadBoot = jest.fn();
+const mockUseFinykMonoMirrorBoot = jest.fn();
+const mockUseRoutineSqliteReadBoot = jest.fn();
+const mockUseFizrukSqliteReadBoot = jest.fn();
+const mockUseNutritionSqliteReadBoot = jest.fn();
+
+jest.mock("@/modules/finyk/hooks/useFinykDualWriteBoot", () => ({
+  useFinykDualWriteBoot: () => mockUseFinykDualWriteBoot(),
+}));
+jest.mock("@/modules/routine/hooks/useRoutineDualWriteBoot", () => ({
+  useRoutineDualWriteBoot: () => mockUseRoutineDualWriteBoot(),
+}));
+jest.mock("@/modules/finyk/hooks/useFinykSqliteReadBoot", () => ({
+  useFinykSqliteReadBoot: () => mockUseFinykSqliteReadBoot(),
+}));
+jest.mock("@/modules/finyk/hooks/useFinykMonoMirrorBoot", () => ({
+  useFinykMonoMirrorBoot: () => mockUseFinykMonoMirrorBoot(),
+}));
+jest.mock("@/modules/routine/hooks/useRoutineSqliteReadBoot", () => ({
+  useRoutineSqliteReadBoot: () => mockUseRoutineSqliteReadBoot(),
+}));
+jest.mock("@/modules/fizruk/hooks/useFizrukSqliteReadBoot", () => ({
+  useFizrukSqliteReadBoot: () => mockUseFizrukSqliteReadBoot(),
+}));
+jest.mock("@/modules/nutrition/hooks/useNutritionSqliteReadBoot", () => ({
+  useNutritionSqliteReadBoot: () => mockUseNutritionSqliteReadBoot(),
+}));
 
 // `AIDigestSection` calls `useWeeklyDigest`, which subscribes to a
 // TanStack Query that fires a `setState` on the next microtask. The
@@ -65,6 +97,13 @@ jest.mock("expo-notifications", () => ({
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
+  mockUseFinykDualWriteBoot.mockReset();
+  mockUseRoutineDualWriteBoot.mockReset();
+  mockUseFinykSqliteReadBoot.mockReset();
+  mockUseFinykMonoMirrorBoot.mockReset();
+  mockUseRoutineSqliteReadBoot.mockReset();
+  mockUseFizrukSqliteReadBoot.mockReset();
+  mockUseNutritionSqliteReadBoot.mockReset();
 });
 
 function renderPage() {
@@ -105,5 +144,20 @@ describe("HubSettingsPage", () => {
     );
     expect(getAllByText("Експериментальне").length).toBeGreaterThanOrEqual(1);
     expect(getAllByText("Акаунт").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("mounts HubModuleStorageBoot — all seven storage boot hooks are called", () => {
+    renderPage();
+
+    // Settings-first boot guarantee: all write registrations and read-caches
+    // must be active before any settings mutation or Hub aggregator can fire,
+    // even if the user has never visited the module tabs.
+    expect(mockUseFinykDualWriteBoot).toHaveBeenCalled();
+    expect(mockUseRoutineDualWriteBoot).toHaveBeenCalled();
+    expect(mockUseFinykSqliteReadBoot).toHaveBeenCalled();
+    expect(mockUseFinykMonoMirrorBoot).toHaveBeenCalled();
+    expect(mockUseRoutineSqliteReadBoot).toHaveBeenCalled();
+    expect(mockUseFizrukSqliteReadBoot).toHaveBeenCalled();
+    expect(mockUseNutritionSqliteReadBoot).toHaveBeenCalled();
   });
 });

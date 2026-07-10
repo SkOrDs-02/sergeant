@@ -10,6 +10,12 @@
  * the hook today (`transactions`, `accounts`); historical snapshot
  * rows (`finyk_mono_account_snapshots`) are written but not read
  * here — analytics / dashboards consume them directly.
+ *
+ * Dual-write teardown (Phase 3): all production readers that previously
+ * read from `finyk_tx_cache` / `finyk_info_cache` LS keys now consume
+ * this module instead. The last-non-empty-transactions fallback preserves
+ * `finykSubscriptionCalendar` subscription-date data during empty
+ * transitional refreshes (mirrors the old `finyk_tx_cache_last_good` key).
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -37,14 +43,38 @@ const EMPTY_CACHE: SqliteMonoMirrorCache = {
 
 let cache: SqliteMonoMirrorCache = EMPTY_CACHE;
 
+/**
+ * Last-non-empty snapshot of transactions. Preserved across refreshes so
+ * that a transitional empty refresh (e.g. page load before the first
+ * Monobank fetch) does not erase subscription-calendar subscription data.
+ * Cleared only by `clearFinykMonoMirrorCache` (test isolation).
+ */
+let lastGoodTransactions: Transaction[] = [];
+
 /** Sync getter used by the read overlay inside the hook. */
 export function getCachedFinykMonoMirrorState(): SqliteMonoMirrorCache {
   return cache;
 }
 
+/**
+ * Sync getter with automatic last-non-empty-transactions fallback.
+ *
+ * Returns the current cache, but when `transactions` is empty and a
+ * previous non-empty snapshot exists, substitutes the last-good list.
+ * Use this wherever an empty transitional state would degrade UX
+ * (e.g. `finykSubscriptionCalendar` — subscription dates are derived
+ * from historical transactions and must survive cold-start refreshes).
+ */
+export function getCachedFinykMonoMirrorStateWithLastGood(): SqliteMonoMirrorCache {
+  if (cache.transactions.length > 0) return cache;
+  if (lastGoodTransactions.length === 0) return cache;
+  return { ...cache, transactions: lastGoodTransactions };
+}
+
 /** Test-only escape hatch: clears the cache between specs. */
 export function clearFinykMonoMirrorCache(): void {
   cache = EMPTY_CACHE;
+  lastGoodTransactions = [];
 }
 
 interface TxRow extends Record<string, unknown> {
@@ -104,9 +134,14 @@ export async function refreshFinykMonoMirrorState(
     if (acc && typeof acc.id === "string") accounts.push(acc);
   }
 
+  if (transactions.length > 0) {
+    lastGoodTransactions = transactions;
+  }
+
   cache = {
     transactions,
     accounts,
+    // eslint-disable-next-line no-restricted-syntax -- refreshedAt is a UTC wall-clock "last synced at" stamp, not a Kyiv business-day key.
     refreshedAt: new Date().toISOString(),
   };
   return cache;

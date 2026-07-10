@@ -173,10 +173,11 @@ describe("useMonobankWebhook — extra callbacks", () => {
     expect(result.current.error).toBe("Помилка backfill");
   });
 
-  it("clearTxCache removes legacy LS caches and clears the error", async () => {
+  it("clearTxCache invalidates the finyk preview query and clears the error", async () => {
+    // Dualwrite-teardown Phase 3: the hook no longer writes finyk_tx_cache /
+    // finyk_tx_cache_last_good to LS, so clearTxCache no longer removes them.
+    // The behavioural contract is: RQ cache is cleared and error is reset.
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
-    localStorage.setItem("finyk_tx_cache", "{}");
-    localStorage.setItem("finyk_tx_cache_last_good", "{}");
     const { result } = renderHook(() => useMonobankWebhook(), {
       wrapper: makeWrapper(),
     });
@@ -186,8 +187,6 @@ describe("useMonobankWebhook — extra callbacks", () => {
     await act(async () => {
       result.current.clearTxCache();
     });
-    expect(localStorage.getItem("finyk_tx_cache")).toBeNull();
-    expect(localStorage.getItem("finyk_tx_cache_last_good")).toBeNull();
     expect(result.current.error).toBe("");
   });
 
@@ -341,11 +340,12 @@ describe("useMonobankWebhook — connect error branches", () => {
 });
 
 describe("useMonobankWebhook — disconnect", () => {
-  it("clears queries and legacy LS keys after successful disconnect", async () => {
+  it("clears RQ queries and resets error state after successful disconnect", async () => {
+    // Dualwrite-teardown Phase 3: the hook no longer writes finyk_tx_cache /
+    // finyk_tx_cache_last_good / finyk_info_cache to LS, so disconnect no
+    // longer removes them. Behavioural contract: RQ cache is cleared and
+    // error/authError are reset.
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
-    localStorage.setItem("finyk_tx_cache", "{}");
-    localStorage.setItem("finyk_tx_cache_last_good", "{}");
-    localStorage.setItem("finyk_info_cache", "{}");
     vi.mocked(monoWebhookApi.disconnect).mockResolvedValue({ ok: true });
 
     const { result } = renderHook(() => useMonobankWebhook(), {
@@ -357,9 +357,6 @@ describe("useMonobankWebhook — disconnect", () => {
     await act(async () => {
       await result.current.disconnect();
     });
-    expect(localStorage.getItem("finyk_tx_cache")).toBeNull();
-    expect(localStorage.getItem("finyk_tx_cache_last_good")).toBeNull();
-    expect(localStorage.getItem("finyk_info_cache")).toBeNull();
     expect(result.current.error).toBe("");
     expect(result.current.authError).toBe("");
   });
