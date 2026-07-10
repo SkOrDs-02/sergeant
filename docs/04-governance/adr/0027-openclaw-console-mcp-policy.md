@@ -1,21 +1,22 @@
 # ADR-0027: політика OpenClaw, Console та MCP
 
 - **Статус:** accepted
-- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
+- **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 - **Дата:** 2026-04-27
 - **Рецензенти:** @Skords-01
 - **Замінює:** —
-- **Пов'язане:** —
+- **Пов'язане:** [ADR-0055](./0055-openclaw-external-gateway.md) — prod canonical surface
+- **Update 2026-07-10:** `tools/openclaw` видалено з репо; історичний контекст нижче. Prod — external OpenClaw Gateway + `packages/openclaw-plugin`.
 
 ---
 
 ## Контекст
 
-OpenClaw починався як launch-проза, а `tools/openclaw` зараз існує як внутрішній адмін-інструмент у Telegram. Без політики кожен AI- або MCP-PR має наново вирішувати, чи console — це продуктовий surface, які інструменти можуть мутувати дані та як версіонувати зміни промптів.
+OpenClaw починався як launch-проза, а **`tools/openclaw`** (видалено) існував як внутрішній адмін-інструмент у Telegram. Prod-канон — [ADR-0055](./0055-openclaw-external-gateway.md) (external gateway + `packages/openclaw-plugin`). Без політики кожен AI- або MCP-PR має наново вирішувати, чи console — це продуктовий surface, які інструменти можуть мутувати дані та як версіонувати зміни промптів.
 
 ## Рішення
 
-Phase 1 випускає `tools/openclaw` як внутрішній адмін-інструмент, не як user-facing продукт.
+Phase 1 випускав `tools/openclaw` як внутрішній адмін-інструмент, не як user-facing продукт. **Superseded in production** external gateway (ADR-0055).
 
 - Console — allowlist по Telegram user id. У продакшні має fail-closed, якщо `ALLOWED_USER_IDS` порожній.
 - Вивід агента вважається untrusted-текстом і екранується перед рендером у Telegram Markdown.

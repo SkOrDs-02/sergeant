@@ -25,7 +25,7 @@ The registry lives at `.kilo/harness-versions.json`:
 ```json
 {
   "schemaVersion": 1,
-  "current": "0.1.0",
+  "current": "0.1.3",
   "versions": {
     "0.1.0": {
       "releasedAt": "YYYY-MM-DD",

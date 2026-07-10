@@ -7,12 +7,12 @@
 - **Supersedes:** —
 - **Related:**
   - [`docs/04-governance/adr/0001-monetization-architecture.md`](./0001-monetization-architecture.md) — ADR-1.1 (Stripe primary), ADR-1.8 (webhook event-id retention), ADR-1.11 (cancel-at-period-end).
-  - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md) — тіри і ціни (Pro $7/міс, $49/рік). <!-- price updated 2026-06-09: ₴99/міс → $7/міс per ADR-0051 -->
+  - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md) — тіри і ціни (Pro **₴199/міс**, **₴1490/рік** per ADR-0068).
   - [`docs/01-product/launch/business/06-monetization-architecture.md`](../../01-product/launch/business/06-monetization-architecture.md) — risk register #8 («нічого про refund / proration»).
 
 ---
 
-> **Примітка (2026-06-08):** ціни «Pro ₴99/міс / ₴799/рік» у тілі — історичні (v1/v2). Чинні тарифи — **$7/міс / $49/рік per [ADR-0051](./0051-pricing-v3-single-tier.md)**. Аргумент про dispute-економіку лишається валідним (Stripe-комісія за dispute з'їдає кілька місяців оплати на будь-якому тарифі).
+> **Примітка (2026-07-10):** ціни «Pro ₴99/міс / ₴799/рік» і «$7/міс / $49/рік» у тілі — історичні. **Чинні тарифи — [ADR-0068](./0068-pricing-v4-uah-reverse-trial.md)** (₴199/₴1490). Аргумент про dispute-економіку лишається валідним (Stripe-комісія за dispute з'їдає кілька місяців оплати на будь-якому тарифі).
 
 ## 0. TL;DR
 
@@ -22,7 +22,7 @@ ADR-0001 явно винісь refund / dispute flow в окремий ADR (ди
 app — Pro у юзера лишається активним, навіть якщо платіж вже відкликано; (б)
 без явної політики повернень ми порушуємо вимоги Stripe Standard Acceptable
 Use Policy (refund policy має бути доступна юзеру **до** оплати); (в) при ціні
-Pro $7/міс <!-- price updated 2026-06-09: ₴99/міс → $7/міс per ADR-0051 -->
+Pro ₴199/міс (ADR-0068)
 комісія Stripe за один dispute (€15) повністю з'їдає кілька місяців оплати —
 політика чисто-grace для disputes економічно нестійка.
 

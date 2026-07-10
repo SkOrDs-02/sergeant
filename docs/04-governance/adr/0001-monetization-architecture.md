@@ -1,10 +1,10 @@
 # ADR-0001: Monetization architecture (16 рішень перед стартом)
 
 - **Status:** Accepted
-- **Note:** Історичний архітектурний baseline; pricing/trial уточнено ADR-0051.
+- **Note:** Історичний архітектурний baseline; pricing/trial superseded by [ADR-0068](./0068-pricing-v4-uah-reverse-trial.md) (2026-06-27).
 - **Date:** 2026-04-27
-- **Last validated:** 2026-05-19 by Codex. **Next review:** 2026-08-17.
-- **Поточний канон:** ADR-0051 володіє активним pricing (`Free + Pro`, `$7/$49`, 7-day trial). [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../90-work/planning/pr-plan-revenue-2026-05.md) володіє delivery-статусом. Старі приклади про 14-day trial, UAH-only price IDs, `billingKeys.plan()` і `POST /api/billing/checkout-session` нижче є історичним контекстом, якщо їх не повторює ADR-0051 або поточний код.
+- **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+- **Поточний канон:** [ADR-0068](./0068-pricing-v4-uah-reverse-trial.md) володіє активним pricing (`Free + Pro`, **₴199/₴1490**, reverse trial 7d, Free AI 15/day). [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../90-work/planning/pr-plan-revenue-2026-05.md) володіє delivery-статусом. Старі приклади про 14-day trial, ₴99/799, `billingKeys.plan()` і `POST /api/billing/checkout-session` нижче — **historical context** з моменту ухвалення ADR-0001.
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
