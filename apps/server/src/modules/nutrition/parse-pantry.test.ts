@@ -162,4 +162,22 @@ describe("nutrition parse-pantry handler", () => {
       code: "ANTHROPIC_ERROR",
     });
   });
+
+  it("passes userId to anthropicMessages when session user is present", async () => {
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text('{"items":[]}'),
+    );
+
+    await handler(
+      {
+        anthropicKey: "sk-test",
+        body: { text: "яблука", locale: "uk-UA" },
+        user: { id: "u_parse_pantry" },
+      } as unknown as Request,
+      makeRes(),
+    );
+
+    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
+    expect(options["userId"]).toBe("u_parse_pantry");
+  });
 });

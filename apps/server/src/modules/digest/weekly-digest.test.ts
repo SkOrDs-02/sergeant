@@ -453,6 +453,22 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     await handler(req, res);
     expect(res.statusCode).toBe(200);
   });
+
+  it("balanced braces with invalid JSON token → ANTHROPIC_PARSE_ERROR", async () => {
+    const { handler } = buildHandler(
+      okResult('prefix { "finyk": { "summary": bad-token } } suffix'),
+    );
+    const req = asReq({
+      anthropicKey: "k",
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+    });
+
+    await expect(handler(req, makeRes())).rejects.toMatchObject({
+      name: "ExternalServiceError",
+      status: 502,
+      code: "ANTHROPIC_PARSE_ERROR",
+    });
+  });
 });
 
 describe("weekly-digest handler · PR-25 stub mode + fallback-on-error", () => {

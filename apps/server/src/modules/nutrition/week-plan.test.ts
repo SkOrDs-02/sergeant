@@ -188,4 +188,41 @@ describe("week-plan handler", () => {
       message: "network down",
     });
   });
+
+  it("returns empty plan when JSON extraction throws", async () => {
+    const jsonSafe = await import("../../http/jsonSafe.js");
+    vi.spyOn(jsonSafe, "extractJsonFromText").mockImplementationOnce(() => {
+      throw new Error("parse exploded");
+    });
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text("не json відповідь"),
+    );
+
+    const res = makeRes();
+    await handler(makeReq({ pantry: [], locale: "uk-UA" }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({
+      plan: { days: [], shoppingList: [] },
+      rawText: "не json відповідь",
+    });
+  });
+
+  it("passes userId to anthropicMessages when session user is present", async () => {
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(JSON.stringify({ days: [], shoppingList: [] })),
+    );
+
+    await handler(
+      {
+        anthropicKey: "test-anthropic-key",
+        body: { pantry: [], locale: "uk-UA" },
+        user: { id: "u_week_plan" },
+      } as unknown as Request,
+      makeRes(),
+    );
+
+    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
+    expect(options["userId"]).toBe("u_week_plan");
+  });
 });
