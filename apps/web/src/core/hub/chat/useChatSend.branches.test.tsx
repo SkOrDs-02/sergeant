@@ -261,3 +261,96 @@ describe("useChatSend — SSE success path", () => {
     expect(flat.some((m) => m.text.includes("Готово!"))).toBe(true);
   });
 });
+
+describe("useChatSend — TTS paths", () => {
+  it("fromVoice=true triggers speak after a plain reply", async () => {
+    sendMock.mockResolvedValue({ text: "Привіт!" });
+    const { result } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("привіт", true /* fromVoice */);
+    });
+    expect(speakMock).toHaveBeenCalledWith("Привіт!");
+    expect(result.current.speaking).toBe(true);
+  });
+
+  it("auto-TTS via stored key triggers speak when VOICE_KEYWORDS match", async () => {
+    sendMock.mockResolvedValue({ text: "Ось відповідь." });
+    localStorage.setItem("sergeant:hub-chat:auto-tts:v1", "true");
+    const { result } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("голосом розкажи мені");
+    });
+    expect(speakMock).toHaveBeenCalledWith("Ось відповідь.");
+    localStorage.removeItem("sergeant:hub-chat:auto-tts:v1");
+  });
+});
+
+describe("useChatSend — initialMessage handling", () => {
+  it("autoSendInitial=true fires send with the initial message", async () => {
+    sendMock.mockResolvedValue({ text: "Відповідь" });
+    const { result, captured } = (() => {
+      const msgs: ChatMessage[][] = [];
+      const setMessages = vi.fn((updater: unknown) => {
+        if (typeof updater === "function") {
+          const prev = msgs.at(-1) ?? [];
+          msgs.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+        } else {
+          msgs.push(updater as ChatMessage[]);
+        }
+      });
+      const hook = renderHook(
+        () =>
+          useChatSend({
+            messages: [],
+            setMessages,
+            initialMessage: "автостарт",
+            autoSendInitial: true,
+          }),
+        { wrapper: makeWrapper() },
+      );
+      return { result: hook.result, captured: msgs };
+    })();
+    await waitFor(() => expect(sendMock).toHaveBeenCalledTimes(1));
+    expect(result.current).toBeDefined();
+    const flat = captured.flat();
+    expect(flat.some((m) => m.role === "user" && m.text === "автостарт")).toBe(
+      true,
+    );
+  });
+
+  it("autoSendInitial=false pre-fills the input field only", async () => {
+    const { result } = renderHook(
+      () =>
+        useChatSend({
+          messages: [],
+          setMessages: vi.fn(),
+          initialMessage: "попередня назва",
+          autoSendInitial: false,
+        }),
+      { wrapper: makeWrapper() },
+    );
+    await waitFor(() => expect(result.current.input).toBe("попередня назва"));
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("useChatSend — parse error rewrite", () => {
+  it("rewrites a parse ApiError to a friendly Ukrainian message", async () => {
+    sendMock.mockRejectedValue(
+      new ApiError({
+        kind: "parse",
+        message: "Unexpected token",
+        url: "/api/chat",
+      }),
+    );
+    const { result, captured } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("питання");
+    });
+    const flat = captured.flat();
+    const assistantMsg = flat.find((m) => m.role === "assistant");
+    expect(assistantMsg).toBeDefined();
+    // friendlyChatError handles parse errors; just verify a message is appended.
+    expect(assistantMsg!.text.length).toBeGreaterThan(0);
+  });
+});
