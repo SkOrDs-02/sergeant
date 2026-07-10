@@ -16,41 +16,42 @@
  * — to stay platform-agnostic.
  */
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import {
   setVisualKeyboardInsetAdapter,
   type VisualKeyboardInsetAdapter,
 } from "@sergeant/shared";
 
+function readVisualKeyboardInsetPx(): number {
+  const vv = window.visualViewport;
+  if (!vv) return 0;
+  const gap = window.innerHeight - vv.height - vv.offsetTop;
+  return gap > 56 ? Math.round(gap) : 0;
+}
+
+function subscribeVisualViewport(onStoreChange: () => void): () => void {
+  const vv = window.visualViewport;
+  if (!vv) return () => {};
+  vv.addEventListener("resize", onStoreChange);
+  vv.addEventListener("scroll", onStoreChange);
+  return () => {
+    vv.removeEventListener("resize", onStoreChange);
+    vv.removeEventListener("scroll", onStoreChange);
+  };
+}
+
 /** Піднімає bottom sheet над віртуальною клавіатурою (iOS/Android Chrome). */
 export const useWebVisualKeyboardInset: VisualKeyboardInsetAdapter = (
   active: boolean,
 ): number => {
-  const [insetPx, setInsetPx] = useState<number>(0);
+  const insetPx = useSyncExternalStore(
+    subscribeVisualViewport,
+    readVisualKeyboardInsetPx,
+    () => 0,
+  );
 
-  useEffect(() => {
-    if (!active) {
-      setInsetPx(0);
-      return;
-    }
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => {
-      const ih = window.innerHeight;
-      const gap = ih - vv.height - vv.offsetTop;
-      setInsetPx(gap > 56 ? Math.round(gap) : 0);
-    };
-    update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-    };
-  }, [active]);
-
-  return insetPx;
+  return active ? insetPx : 0;
 };
 
 setVisualKeyboardInsetAdapter(useWebVisualKeyboardInset);

@@ -47,18 +47,23 @@ export function CommandPaletteUI() {
   const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    setRawQuery("");
+    setQuery("");
+    setActiveIndex(0);
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   useDialogFocusTrap(open, panelRef, {
     onEscape: closePalette,
     inertBackground: true,
   });
 
-  // Reset state and focus on each open.
   useEffect(() => {
     if (!open) return;
-    setRawQuery("");
-    setQuery("");
-    setActiveIndex(0);
     const handle = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(handle);
   }, [open]);
@@ -94,15 +99,10 @@ export function CommandPaletteUI() {
     [allCommands, recents, query],
   );
   const flat = useMemo(() => groups.flatMap((g) => g.commands), [groups]);
+  const safeActiveIndex =
+    flat.length === 0 ? 0 : Math.min(activeIndex, flat.length - 1);
 
-  // Clamp activeIndex when the visible list shrinks.
-  useEffect(() => {
-    setActiveIndex((i) =>
-      flat.length === 0 ? 0 : Math.min(i, flat.length - 1),
-    );
-  }, [flat.length]);
-
-  const activeId = flat[activeIndex]?.id;
+  const activeId = flat[safeActiveIndex]?.id;
 
   const activate = useCallback(
     (command: PaletteCommand) => {
@@ -147,11 +147,11 @@ export function CommandPaletteUI() {
       }
       if (key === "Enter") {
         event.preventDefault();
-        const cmd = flat[activeIndex];
+        const cmd = flat[safeActiveIndex];
         if (cmd) activate(cmd);
       }
     },
-    [activate, activeIndex, flat],
+    [activate, flat, safeActiveIndex],
   );
 
   if (!open) return null;

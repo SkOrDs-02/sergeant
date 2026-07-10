@@ -90,9 +90,10 @@ export function useTransactionFilters({
   const [showHidden, setShowHidden] = useState(false);
   const [selMonth, setSelMonth] = useState(() => kyivNowMonth());
 
+  const effectiveFilter = categoryFilter ?? filter;
+
   useEffect(() => {
     if (categoryFilter) {
-      setFilter(categoryFilter);
       onClearCategoryFilter?.();
     }
   }, [categoryFilter, onClearCategoryFilter]);
@@ -246,18 +247,18 @@ export function useTransactionFilters({
   const filtered = useMemo(() => {
     const m = perfMark("finyk:tx:filter");
     const res = sortedTxs.filter((t) => {
-      if (filter === "all") return true;
-      if (filter === "income") return t.amount > 0;
-      if (filter === "expense") return t.amount < 0;
-      if (filter === "credit")
+      if (effectiveFilter === "all") return true;
+      if (effectiveFilter === "income") return t.amount > 0;
+      if (effectiveFilter === "expense") return t.amount < 0;
+      if (effectiveFilter === "credit")
         return (
           typeof t._accountId === "string" && creditAccIds.has(t._accountId)
         );
-      return getEffectiveCat(t).id === filter;
+      return getEffectiveCat(t).id === effectiveFilter;
     });
     perfEnd(m, { n: res.length });
     return res;
-  }, [sortedTxs, filter, creditAccIds, getEffectiveCat]);
+  }, [sortedTxs, effectiveFilter, creditAccIds, getEffectiveCat]);
 
   const groupedByDate = useMemo(() => {
     const m = perfMark("finyk:tx:groupByDate");
@@ -350,7 +351,7 @@ export function useTransactionFilters({
 
   return {
     // month + filter state
-    filter,
+    filter: effectiveFilter,
     setFilter,
     showHidden,
     setShowHidden,

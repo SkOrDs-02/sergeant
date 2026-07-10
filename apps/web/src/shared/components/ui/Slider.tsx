@@ -5,7 +5,6 @@
 import {
   forwardRef,
   useCallback,
-  useEffect,
   useId,
   useRef,
   useState,
@@ -145,13 +144,13 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
     const isVertical = orientation === "vertical";
 
     // ── State ────────────────────────────────────────────────────────────
+    const singleDefault = (props as SingleSliderProps).defaultValue;
+    const rangeDefault = (props as RangeSliderProps).defaultValue;
     const defaultSingle =
-      !isRange && (props as SingleSliderProps).defaultValue !== undefined
-        ? (props as SingleSliderProps).defaultValue!
-        : min;
+      !isRange && singleDefault !== undefined ? singleDefault : min;
     const defaultRange: RangeValue =
-      isRange && (props as RangeSliderProps).defaultValue !== undefined
-        ? (props as RangeSliderProps).defaultValue!
+      isRange && rangeDefault !== undefined
+        ? rangeDefault
         : ([min, max] as RangeValue);
 
     const [internalSingle, setInternalSingle] = useState<number>(defaultSingle);
@@ -310,18 +309,16 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
     );
 
     // Release tooltip when focus leaves both thumbs.
-    useEffect(() => {
-      if (activeThumb !== null) setTooltipThumb(activeThumb);
-    }, [activeThumb]);
+    const highlightedThumb = activeThumb ?? tooltipThumb;
 
     // ── Render ───────────────────────────────────────────────────────────
     const percent = (n: number) => ((n - min) / Math.max(1, max - min)) * 100;
-    const [valA, valB] = isRange
-      ? (currentValue as RangeValue)
-      : [currentValue as number, null];
-
-    const lower = isRange ? percent(valA!) : 0;
-    const upper = isRange ? percent(valB!) : percent(valA!);
+    const rangeValues = isRange ? (currentValue as RangeValue) : null;
+    const singleValue = !isRange ? (currentValue as number) : null;
+    const lower = rangeValues ? percent(rangeValues[0]) : 0;
+    const upper = rangeValues
+      ? percent(rangeValues[1])
+      : percent(singleValue ?? min);
 
     const renderThumb = (thumb: 0 | 1) => {
       const v = valueAt(thumb);
@@ -329,7 +326,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
       const positionStyle = isVertical
         ? { bottom: `calc(${pct}% - ${size === "sm" ? 8 : 10}px)` }
         : { left: `calc(${pct}% - ${size === "sm" ? 8 : 10}px)` };
-      const focused = tooltipThumb === thumb;
+      const focused = highlightedThumb === thumb;
 
       return (
         <div
@@ -338,8 +335,12 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
           tabIndex={disabled ? -1 : 0}
           aria-orientation={orientation}
           aria-disabled={disabled || undefined}
-          aria-valuemin={isRange && thumb === 1 ? valA! : min}
-          aria-valuemax={isRange && thumb === 0 ? valB! : max}
+          aria-valuemin={
+            isRange && thumb === 1 ? (rangeValues?.[0] ?? min) : min
+          }
+          aria-valuemax={
+            isRange && thumb === 0 ? (rangeValues?.[1] ?? max) : max
+          }
           aria-valuenow={v}
           aria-valuetext={formatValue ? fmt(v) : undefined}
           aria-label={ariaLabel && !ariaLabelledBy ? ariaLabel : undefined}

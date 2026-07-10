@@ -1,6 +1,6 @@
 # Tech-debt assessment 2026-07-01 — групи, інструкції до фіксу, burndown-план
 
-> **Last touched:** 2026-07-10 by @claude. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
 > **Status:** Active
 
 > **Методологія:** повний прогін механічних гейтів (pnpm lint, knip, janitors doc-drift/dep-cycles, lint:ai-legacy) + воркфло з 11 підагентів (6 verify-агентів звіряли кожну групу з живим кодом точними вимірами — ESLint per-rule прогони, effective-LOC через саме правило `max-lines`, pairwise diff; 5 instruct-агентів писали рецепти). Числа в цьому документі — виміряні 2026-07-01 на HEAD, не переписані зі старих доків.

@@ -2,6 +2,7 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
@@ -54,8 +55,13 @@ export function useNutritionLog() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const sqliteCacheTick = useNutritionSqliteReadTick();
-  const [nutritionLog, setNutritionLog] = useState<NutritionLog>(() =>
-    loadNutritionLog(NUTRITION_LOG_KEY),
+  const [nutritionLog, setNutritionLog] = useSqliteTickOverlay<NutritionLog>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedNutritionSqliteState();
+      return cache.refreshedAt === null ? undefined : cache.log;
+    },
+    () => loadNutritionLog(NUTRITION_LOG_KEY),
   );
   const [selectedDate, setSelectedDate] = useState<string>(() =>
     getKyivDayKey(),
@@ -70,23 +76,11 @@ export function useNutritionLog() {
 
   useEffect(() => {
     const ok = persistNutritionLog(nutritionLog, NUTRITION_LOG_KEY);
-    setStorageErr(
-      ok
-        ? ""
-        : "Не вдалося зберегти журнал (переповнення сховища або приватний режим).",
-    );
+    const err = ok
+      ? ""
+      : "Не вдалося зберегти журнал (переповнення сховища або приватний режим).";
+    void Promise.resolve().then(() => setStorageErr(err));
   }, [nutritionLog]);
-
-  // Stage 4 PR #033 + Stage 8 PR #057n-tombstone: overlay the meal
-  // log from the local SQLite cache once it's warm. The next persist
-  // effect that fires with this cache snapshot diffs the SQLite cache
-  // against itself and emits zero ops, so the warm-cache hydration is
-  // a no-op for the dual-write orchestrator.
-  useEffect(() => {
-    const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    setNutritionLog(cache.log);
-  }, [sqliteCacheTick]);
 
   // AI-CONTEXT: cleanup ref for pending thumbnail deletes — on unmount the undo window is gone, so timers are cancelled and thumbnails deleted immediately
   // Flush scheduled thumbnail deletes on unmount. The 6 s grace window
@@ -193,7 +187,7 @@ export function useNutritionLog() {
    */
   const duplicateYesterday = useCallback(() => {
     setNutritionLog((log) => duplicatePreviousDayMeals(log, selectedDate));
-  }, [selectedDate]);
+  }, [selectedDate, setNutritionLog]);
 
   /**
    * Replace the entire log with data parsed from a JSON string.
@@ -222,7 +216,7 @@ export function useNutritionLog() {
       });
       return true;
     },
-    [toast],
+    [toast, setNutritionLog],
   );
 
   /**
@@ -246,7 +240,7 @@ export function useNutritionLog() {
       setNutritionLog((log) => mergeNutritionLogs(log, parsed));
       return true;
     },
-    [toast],
+    [toast, setNutritionLog],
   );
 
   /**
@@ -254,14 +248,17 @@ export function useNutritionLog() {
    * Garbage-collects photo thumbnails for removed entries.
    * @param {number} keepDays - Number of most-recent days to keep.
    */
-  const trimLogToLastDays = useCallback((keepDays: number) => {
-    setNutritionLog((prev) => {
-      const next = trimLogOldestDays(prev, keepDays);
-      const keep = collectMealIds(next);
-      void gcMealThumbnails(keep, { maxDeletes: 2000 });
-      return next;
-    });
-  }, []);
+  const trimLogToLastDays = useCallback(
+    (keepDays: number) => {
+      setNutritionLog((prev) => {
+        const next = trimLogOldestDays(prev, keepDays);
+        const keep = collectMealIds(next);
+        void gcMealThumbnails(keep, { maxDeletes: 2000 });
+        return next;
+      });
+    },
+    [setNutritionLog],
+  );
 
   return {
     nutritionLog,

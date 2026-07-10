@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -85,14 +85,15 @@ export function QuickStartSheet({
   );
   const kbInsetPx = useVisualKeyboardInset(open && step === "pick");
 
-  // Reset to the chooser whenever the sheet is reopened.
-  useEffect(() => {
-    if (!open) {
-      setStep("choose");
-      setQ("");
-      setSelectedIds(new Set());
-    }
-  }, [open]);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    setStep("choose");
+    setQ("");
+    setSelectedIds(new Set());
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   const groups: QuickStartGroup[] = useMemo(() => {
     if (step !== "pick") return [];

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
@@ -31,62 +32,55 @@ function uid() {
   return `tpl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function readInitialTemplates(): WorkoutTemplate[] {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt !== null) {
+    return cache.workoutTemplates as WorkoutTemplate[];
+  }
+  const parsed = safeReadLS(KEY, []);
+  return Array.isArray(parsed) ? (parsed as WorkoutTemplate[]) : [];
+}
+
 export function useWorkoutTemplates() {
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
-  // `loaded` lets consumers distinguish "first paint before the read"
-  // from "read complete, genuinely empty" — without it the Dashboard
-  // computes its hero/KPI state from an empty array and flashes the
-  // empty/zero UI for returning users before hydration.
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    // Cache-first: prefer the warm SQLite cache over the LS blob.
-    // Teardown Phase 3 removed the LS write-mirror; the `safeReadLS`
-    // below is only a pre-warm fallback reading whatever
-    // `residualImport.ts` drained on boot (empty once drained).
-    const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt !== null) {
-      setTemplates(cache.workoutTemplates as WorkoutTemplate[]);
-      setLoaded(true);
-      return;
-    }
-    const parsed = safeReadLS(KEY, []);
-    if (Array.isArray(parsed)) setTemplates(parsed as WorkoutTemplate[]);
-    setLoaded(true);
-  }, []);
-
-  // Overlay templates from the SQLite cache once it's warm.
-  useEffect(() => {
-    const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setTemplates(cache.workoutTemplates as WorkoutTemplate[]);
-    setLoaded(true);
-  }, [sqliteCacheTick]);
+  const [templates, setTemplates] = useSqliteTickOverlay<WorkoutTemplate[]>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null
+        ? undefined
+        : (cache.workoutTemplates as WorkoutTemplate[]);
+    },
+    readInitialTemplates,
+  );
+  const loaded = true;
 
   // Функціональний updater через setTemplates, щоб уникнути stale closure:
   // колбеки в undo-toast можуть викликатись після того, як state оновився
   // (див. AGENTS.md §5.11).
-  const persist = useCallback((updater: TemplatesUpdater) => {
-    setTemplates((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      // Teardown Phase 3 — SQLite-only write via the dual-write pipeline;
-      // the LS mirror was removed. Fire-and-forget; the trigger is a no-op
-      // when no dual-write context is registered.
-      const prevDualWrite =
-        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-      const nextDualWrite = {
-        ...prevDualWrite,
-        workoutTemplates: extractWorkoutTemplateSnapshots(next),
-      };
-      try {
-        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
-      } catch {
-        /* trigger is fire-and-forget — never propagate */
-      }
-      return next;
-    });
-  }, []);
+  const persist = useCallback(
+    (updater: TemplatesUpdater) => {
+      setTemplates((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        // Teardown Phase 3 — SQLite-only write via the dual-write pipeline;
+        // the LS mirror was removed. Fire-and-forget; the trigger is a no-op
+        // when no dual-write context is registered.
+        const prevDualWrite =
+          peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+        const nextDualWrite = {
+          ...prevDualWrite,
+          workoutTemplates: extractWorkoutTemplateSnapshots(next),
+        };
+        try {
+          triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+        } catch {
+          /* trigger is fire-and-forget — never propagate */
+        }
+        return next;
+      });
+    },
+    [setTemplates],
+  );
 
   const addTemplate = useCallback(
     (

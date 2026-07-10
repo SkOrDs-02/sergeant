@@ -411,31 +411,35 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
-     DARK THEME — Rich, Cozy, Premium
-     Contrast tuned to WCAG AA: tertiary text (subtle) ≥ 4.5:1, prominent
-     dividers (border-strong) ≥ 3:1 against the page background.
+     DARK THEME — «Чорнило» (Ink): deep, luminescent, premium
+     Dark-first visual direction (spec:
+     docs/90-work/planning/specs/chornylo-visual-direction.md § 1). A single
+     deep green-black surface; depth comes from surface tint + accent border +
+     glow, not neutral dividers. Neutral hairlines are intentionally subtle
+     (white/6–12%) — the accessible high-contrast dividers live in
+     `html.hc.dark` below (≥4.5:1, untouched by this direction). Text tiers
+     keep WCAG AA: muted ≥ 4.5:1, subtle ≥ 3:1 on the ink surface.
      ═══════════════════════════════════════════════════════════════════════ */
   .dark {
     color-scheme: dark;
 
-    /* Page background — deep warm charcoal */
-    --c-bg: 23 20 18; /* #171412 — warm dark */
+    /* Page background — «Чорнило» ink base */
+    --c-bg: 13 21 18; /* #0d1512 — ink base */
 
-    /* Cards/panels — elevated warm surface. `panel-hi` is bumped so hover
-       and input backgrounds are distinguishable from the base panel. */
-    --c-panel: 32 28 25; /* #201c19 — warm elevated */
-    --c-panel-hi: 48 42 37; /* #302a25 — warm input/hover (was #292420) */
+    /* Cards/panels — solid ink surface. `panel-hi` lifts one tint step so
+       hover and input backgrounds separate from the base surface. */
+    --c-panel: 18 28 23; /* #121c17 — cards, rows, nav, fields */
+    --c-panel-hi: 23 35 29; /* #17231d — hover / input bg */
 
-    /* Borders — warm muted. Raised from #3a342e (≈1.5:1) so card edges,
-       dividers, and input outlines are actually visible. */
-    --c-line: 82 74 65; /* #524a41 — warm border (was #3a342e) */
+    /* Border — ink hairline ≈ white/6% over the surface. Depth is carried by
+       accent borders + glow, so the neutral edge stays quiet. */
+    --c-line: 31 42 37; /* #1f2a25 — ink hairline (≈ white/6%) */
 
-    /* Text hierarchy — `subtle` raised from #57534e (≈2.4:1) to meet WCAG
-       AA for small tertiary copy (eyebrow headings, captions, meta). */
-    --c-text: 250 247 241; /* #faf7f1 — warm white */
-    --c-muted: 180 174 169; /* #b4aea9 — medium warm gray (brightened) */
-    --c-subtle: 135 128 121; /* #878079 — readable tertiary (was #57534e) */
-    --c-primary: 250 247 241; /* reversed */
+    /* Text hierarchy — ink tiers (spec § 1). */
+    --c-text: 242 246 242; /* #f2f6f2 — display / headings, 14.9:1 on bg */
+    --c-muted: 138 150 142; /* #8a968e — meta, AA 5.6:1 on surface */
+    --c-subtle: 95 107 100; /* #5f6b64 — labels ≥12px only */
+    --c-primary: 242 246 242; /* reversed */
 
     /* Dark counterparts of the elevation scale. In dark mode the
        surface itself can't get darker than the bg, so we lean on a
@@ -463,10 +467,10 @@
       0 10px 28px rgba(0, 0, 0, 0.5), 0 36px 72px rgba(0, 0, 0, 0.7),
       inset 0 1px 0 rgba(255, 255, 255, 0.07);
 
-    /* Dark-theme overrides for the new semantic tokens added above.
-       `border-strong` now clears the 3:1 UI-contrast threshold so
-       separators between sections read clearly on the dark bg. */
-    --c-border-strong: 112 102 90; /* #70665a — prominent divider (was #4a423a) */
+    /* Prominent divider — ink `line-strong` ≈ white/12% (spec § 1). Reads a
+       step above `--c-line` for major section splits; the AAA divider for
+       low-vision users lives in `html.hc.dark`. */
+    --c-border-strong: 74 84 78; /* #4a544e — prominent ink divider (≈ white/12%) */
 
     /* Dark-theme A11y / states overrides. Focus ring shifts to
        emerald-400 so it clears ≥3:1 against the warm-charcoal panel
@@ -475,16 +479,16 @@
        sit just above the panel/border floor. */
     --c-ring: 52 211 153; /* emerald-400 — brighter for dark panels */
     --c-ring-strong: 110 231 183; /* emerald-300 — solid, punchy */
-    --c-ring-offset: 32 28 25; /* panel — matches `--c-panel` */
+    --c-ring-offset: 18 28 23; /* panel — matches `--c-panel` */
     --c-selection-bg: 4 120 87; /* emerald-700 */
     --c-selection-fg: 209 250 229; /* emerald-100 */
     --c-caret: 52 211 153; /* emerald-400 — visible in dark inputs */
-    --c-scrollbar-track: 32 28 25; /* panel */
-    --c-scrollbar-thumb: 82 74 65; /* matches --c-line */
-    --c-scrollbar-thumb-hover: 135 128 121; /* matches --c-subtle */
-    --c-divider-weak: 60 53 47; /* between panel and line */
-    --c-divider: 82 74 65; /* matches --c-line */
-    --c-divider-strong: 112 102 90; /* matches --c-border-strong */
+    --c-scrollbar-track: 18 28 23; /* panel */
+    --c-scrollbar-thumb: 31 42 37; /* matches --c-line */
+    --c-scrollbar-thumb-hover: 95 107 100; /* matches --c-subtle */
+    --c-divider-weak: 23 31 27; /* between panel and line */
+    --c-divider: 31 42 37; /* matches --c-line */
+    --c-divider-strong: 74 84 78; /* matches --c-border-strong */
     --c-success-soft: 6 95 70; /* slightly brighter emerald-900 */
     --c-warning-soft: 146 64 14; /* slightly brighter amber-900 */
     --c-danger-soft: 153 27 27; /* red-800 — brighter than red-900 */
@@ -602,16 +606,16 @@
      ═══════════════════════════════════════════════════════════════════════ */
   [data-theme-preview="dark"] {
     color-scheme: dark;
-    --c-bg: 23 20 18;
-    --c-panel: 32 28 25;
-    --c-panel-hi: 48 42 37;
-    --c-line: 82 74 65;
-    --c-text: 250 247 241;
-    --c-muted: 180 174 169;
-    --c-subtle: 135 128 121;
-    --c-primary: 250 247 241;
+    --c-bg: 13 21 18; /* #0d1512 — ink base */
+    --c-panel: 18 28 23; /* #121c17 */
+    --c-panel-hi: 23 35 29; /* #17231d */
+    --c-line: 31 42 37; /* #1f2a25 */
+    --c-text: 242 246 242; /* #f2f6f2 */
+    --c-muted: 138 150 142; /* #8a968e */
+    --c-subtle: 95 107 100; /* #5f6b64 */
+    --c-primary: 242 246 242;
     --c-border: var(--c-line);
-    --c-border-strong: 112 102 90;
+    --c-border-strong: 74 84 78; /* #4a544e */
     --c-fg: var(--c-text);
     --c-fg-muted: var(--c-muted);
     --c-brand-soft: 6 78 59;
@@ -831,13 +835,14 @@
     --line-v2: rgba(0, 0, 0, 0.06);
     --line-strong-v2: rgba(0, 0, 0, 0.1);
 
-    /* Mesh background — four corner radial gradients composited over
-       --c-bg-base. Tuned to surface coral / teal / lime / emerald glows
-       that hint at the four Sergeant modules without dominating. */
-    --bg-mesh-1: rgba(255, 180, 166, 0.32); /* coral glow — top-left */
-    --bg-mesh-2: rgba(20, 184, 166, 0.22); /* teal glow — top-right */
-    --bg-mesh-3: rgba(146, 204, 23, 0.22); /* lime glow — bottom-right */
-    --bg-mesh-4: rgba(16, 185, 129, 0.2); /* emerald glow — bottom-left */
+    /* Mesh background — 3 radial glows composited over --c-bg-base by the
+       shared `.bg-mesh` utility (positions: 1 = top-right, 2 = left,
+       3 = bottom-right). «Чорнило» collapsed the old 4-corner mesh to 3
+       (spec § Рішення — cheaper on mobile). Light keeps warm brand glows
+       here; the §5 light-inversion palette is a later step. */
+    --bg-mesh-1: rgba(16, 185, 129, 0.2); /* emerald glow — top-right */
+    --bg-mesh-2: rgba(20, 184, 166, 0.22); /* teal glow — left */
+    --bg-mesh-3: rgba(255, 180, 166, 0.28); /* coral glow — bottom-right */
 
     /* Shadows — glass-surface recipes (inset highlight + outer drop). */
     --shadow-card-v2:
@@ -873,30 +878,34 @@
   }
 
   .dark {
-    /* Dark base — deep warm charcoal (handoff `--bg-base` dark). */
-    --c-bg-base: 14 22 20; /* #0e1614 */
+    /* «Чорнило» ink base — the solid surface under the mesh glows. */
+    --c-bg-base: 13 21 18; /* #0d1512 — ink base */
 
-    /* Inverted ink scale. */
-    --c-ink: 240 233 216; /* #f0e9d8 — warm white body */
-    --c-ink-strong: 255 255 255; /* pure white headings */
-    --c-muted-v2: 138 144 136; /* #8a9088 — meta */
-    --c-subtle-v2: 106 112 104; /* #6a7068 — hints */
+    /* Ink text scale (spec § 1). */
+    --c-ink: 231 240 234; /* #e7f0ea — body */
+    --c-ink-strong: 242 246 242; /* #f2f6f2 — display / headings */
+    --c-muted-v2: 138 150 142; /* #8a968e — meta */
+    --c-subtle-v2: 95 107 100; /* #5f6b64 — hints */
 
-    /* Dark glass — much lower alpha so surface reads as "lifted from"
-       the dark base, not solid panels. */
-    --surface-glass: rgba(255, 255, 255, 0.06);
-    --surface-strong-glass: rgba(255, 255, 255, 0.1);
-    --surface-soft-glass: rgba(255, 255, 255, 0.04);
-    --surface-line: rgba(255, 255, 255, 0.08);
+    /* Glass → solid ink surface. `--surface-glass*` and `backdrop-blur` are
+       deprecated under «Чорнило» (spec § Рішення): depth is surface tint +
+       accent border + glow, not translucency. These stay as back-compat
+       aliases so existing `bg-surface-glass*` call sites resolve to the solid
+       ink surface without a per-component rewrite. */
+    --surface-glass: rgba(18, 28, 23, 1); /* #121c17 — solid surface */
+    --surface-strong-glass: rgba(18, 28, 23, 1); /* #121c17 — navs, pills */
+    --surface-soft-glass: rgba(18, 28, 23, 1); /* #121c17 — tinted bg */
+    --surface-line: rgba(255, 255, 255, 0.06); /* ink hairline */
 
-    --line-v2: rgba(255, 255, 255, 0.08);
-    --line-strong-v2: rgba(255, 255, 255, 0.14);
+    --line-v2: rgba(255, 255, 255, 0.06); /* ink hairline (white/6%) */
+    --line-strong-v2: rgba(255, 255, 255, 0.12); /* ink divider (white/12%) */
 
-    /* Mesh dark — alphas tuned for dark base. */
-    --bg-mesh-1: rgba(249, 112, 102, 0.18); /* coral */
-    --bg-mesh-2: rgba(20, 184, 166, 0.2); /* teal */
-    --bg-mesh-3: rgba(146, 204, 23, 0.15); /* lime */
-    --bg-mesh-4: rgba(16, 185, 129, 0.22); /* emerald */
+    /* Mesh dark — «Чорнило» fingerprint: 3 radial glows over #0d1512
+       (spec § 1). Positions live in `.bg-mesh`: 1 = emerald top-right,
+       2 = cyan left, 3 = coral bottom. No 4th corner (perf on mobile). */
+    --bg-mesh-1: rgba(52, 211, 153, 0.12); /* emerald-400 — top-right */
+    --bg-mesh-2: rgba(34, 211, 238, 0.08); /* cyan-400 — left */
+    --bg-mesh-3: rgba(255, 140, 120, 0.08); /* coral-400 — bottom */
 
     /* Shadows dark — much stronger outer drops + faint bright inset. */
     --shadow-card-v2:
@@ -922,11 +931,10 @@
      See docs/design/redesign-v2/governance.md § HC contract.
      ═══════════════════════════════════════════════════════════════════════ */
   html.hc {
-    /* Solid bg-base — no mesh. */
+    /* Solid bg-base — no mesh (3 glows off). */
     --bg-mesh-1: rgba(0, 0, 0, 0);
     --bg-mesh-2: rgba(0, 0, 0, 0);
     --bg-mesh-3: rgba(0, 0, 0, 0);
-    --bg-mesh-4: rgba(0, 0, 0, 0);
 
     /* Glass → opaque. */
     --surface-glass: rgba(255, 255, 255, 1);
@@ -955,10 +963,15 @@
   }
 
   html.hc.dark {
-    /* Dark HC — same mesh OFF + opaque glass strategy, dark colours. */
-    --surface-glass: rgba(32, 28, 25, 1); /* matches --c-panel */
-    --surface-strong-glass: rgba(48, 42, 37, 1); /* matches --c-panel-hi */
-    --surface-soft-glass: rgba(32, 28, 25, 0.95);
+    /* Dark HC — same mesh OFF + opaque glass strategy, ink colours. */
+    --surface-glass: rgba(18, 28, 23, 1); /* matches --c-panel (#121c17) */
+    --surface-strong-glass: rgba(
+      23,
+      35,
+      29,
+      1
+    ); /* matches --c-panel-hi (#17231d) */
+    --surface-soft-glass: rgba(18, 28, 23, 0.95);
     --surface-line: rgba(255, 255, 255, 0.7);
 
     --c-ink-strong: 255 255 255;
@@ -980,21 +993,27 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MESH BACKGROUND UTILITY — `.bg-mesh` class consumed by
-   `MeshBackground.tsx` component (PR-5). Composites four corner radial
-   gradients (`--bg-mesh-1..4`) over `--c-bg-base`. Uses
-   `background-attachment: fixed` for an infinite-scroll feel; iOS
-   Safari has a known bug here, so Capacitor preview should verify.
+   `MeshBackground.tsx` component (PR-5). «Чорнило» composites THREE radial
+   glows (`--bg-mesh-1..3`) over `--c-bg-base` (spec § 1) — down from the
+   legacy 4-corner mesh (cheaper on mobile, no blur). Positions:
+     1 → top-right   2 → left   3 → bottom-right
+   The per-theme glow colours/alphas live in the `:root` / `.dark` blocks
+   above. Uses `background-attachment: fixed` for an infinite-scroll feel;
+   iOS Safari has a known bug here, so Capacitor preview should verify.
 
    Disabled automatically by:
-     - `html.hc` (HC mode — all four mesh alphas → 0)
+     - `html.hc` (HC mode — all three mesh alphas → 0)
      - `prefers-reduced-motion: reduce` (Hard Rule #17 AMBIENT motion)
    ═══════════════════════════════════════════════════════════════════════════ */
 .bg-mesh {
   background:
-    radial-gradient(at 12% 14%, var(--bg-mesh-1) 0px, transparent 50%),
-    radial-gradient(at 88% 8%, var(--bg-mesh-2) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, var(--bg-mesh-3) 0px, transparent 50%),
-    radial-gradient(at 0% 95%, var(--bg-mesh-4) 0px, transparent 50%),
+    radial-gradient(75% 40% at 85% -5%, var(--bg-mesh-1) 0px, transparent 60%),
+    radial-gradient(65% 35% at 0% 40%, var(--bg-mesh-2) 0px, transparent 60%),
+    radial-gradient(
+      70% 40% at 100% 100%,
+      var(--bg-mesh-3) 0px,
+      transparent 60%
+    ),
     rgb(var(--c-bg-base));
   background-attachment: fixed;
 }

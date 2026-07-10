@@ -1,179 +1,402 @@
 // @vitest-environment jsdom
 /**
- * Smoke tests for the Workouts page.
- * Mounts the page with mocked hooks to verify key elements render
- * and no crash occurs on mount.
+ * Tests for the Workouts page — the main workouts orchestration surface.
+ * Heavy sub-components and the orchestrator hook are stubbed so the tests
+ * stay focused on view-switching logic and prop wiring, not internals.
  */
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
-import { ToastProvider } from "@shared/hooks/useToast";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
-// Stub kvStoreBoot (requires @sergeant/db-schema/sqlite WASM artefact)
-vi.mock("../../../core/db/kvStoreBoot", () => ({
-  getActiveSqliteKvStore: () => null,
-  bootstrapKvStore: () => Promise.resolve(),
+// ── Stubs ────────────────────────────────────────────────────────────────────
+
+vi.mock("../hooks/useWorkoutsOrchestrator", () => ({
+  useWorkoutsOrchestrator: vi.fn(),
 }));
 
-// Mock the entire orchestrator — it chains dozens of hooks and reads from
-// SQLite, localStorage, context providers. A page-level smoke test should
-// not re-exercise the orchestrator's logic.
-vi.mock("../hooks/useWorkoutsOrchestrator", () => ({
-  useWorkoutsOrchestrator: () => ({
-    view: "home" as const,
-    mode: "catalog" as const,
-    setView: vi.fn(),
+vi.mock("@shared/hooks/useCloudPullPending", () => ({
+  useCloudPullPending: vi.fn(() => false),
+}));
+
+vi.mock("@shared/components/ui/PullToRefresh", () => ({
+  PullToRefresh: ({
+    children,
+    onRefresh,
+  }: {
+    children: React.ReactNode;
+    onRefresh: () => void;
+  }) => (
+    <div data-testid="pull-to-refresh" onScroll={onRefresh}>
+      {children}
+    </div>
+  ),
+}));
+
+vi.mock("../components/workouts/WorkoutsHeader", () => ({
+  WorkoutsHeader: ({
+    view,
+    onBack,
+    onAddCatalog,
+  }: {
+    view: string;
+    onBack: () => void;
+    onAddCatalog: () => void;
+  }) => (
+    <div data-testid="workouts-header" data-view={view}>
+      <button type="button" onClick={onBack} data-testid="back-btn">
+        Назад
+      </button>
+      <button
+        type="button"
+        onClick={onAddCatalog}
+        data-testid="add-catalog-btn"
+      >
+        Додати
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock("../components/workouts/WorkoutsHome", () => ({
+  WorkoutsHome: ({
+    onOpenSession,
+    onOpenCatalog,
+    onOpenTemplates,
+  }: {
+    onOpenSession: () => void;
+    onOpenCatalog: () => void;
+    onOpenTemplates: () => void;
+  }) => (
+    <div data-testid="workouts-home">
+      <button type="button" onClick={onOpenSession} data-testid="open-session">
+        Журнал
+      </button>
+      <button type="button" onClick={onOpenCatalog} data-testid="open-catalog">
+        Каталог
+      </button>
+      <button
+        type="button"
+        onClick={onOpenTemplates}
+        data-testid="open-templates"
+      >
+        Шаблони
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock("../components/workouts/WorkoutJournalSection", () => ({
+  WorkoutJournalSection: () => <div data-testid="workout-journal-section" />,
+}));
+
+vi.mock("../components/workouts/WorkoutCatalogSection", () => ({
+  WorkoutCatalogSection: () => <div data-testid="workout-catalog-section" />,
+}));
+
+vi.mock("../components/WorkoutTemplatesSection", () => ({
+  WorkoutTemplatesSection: () => (
+    <div data-testid="workout-templates-section" />
+  ),
+}));
+
+vi.mock("../components/workouts/ExerciseDetailSheet", () => ({
+  ExerciseDetailSheet: () => null,
+}));
+
+vi.mock("../components/workouts/AddExerciseSheet", () => ({
+  AddExerciseSheet: () => null,
+}));
+
+vi.mock("../components/workouts/QuickStartSheet", () => ({
+  QuickStartSheet: () => null,
+}));
+
+vi.mock("../components/workouts/WorkoutFinishSheets", () => ({
+  WorkoutFinishSheets: () => null,
+}));
+
+vi.mock("../components/workouts/WorkoutsConfirmDialogs", () => ({
+  WorkoutsConfirmDialogs: () => null,
+}));
+
+vi.mock("@shared/components/ui/DataState", () => ({
+  DataState: ({
+    children,
+  }: {
+    children: () => React.ReactNode;
+    query: unknown;
+    skeleton: React.ReactNode;
+  }) => <>{children()}</>,
+}));
+
+vi.mock("@shared/components/ui/Skeleton", () => ({
+  Skeleton: () => <div data-testid="skeleton" />,
+}));
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
+import { Workouts } from "./Workouts";
+
+const mockedOrchestrator = vi.mocked(useWorkoutsOrchestrator);
+
+function makeOrchestrator(view: string = "home", overrides: object = {}) {
+  return {
+    view,
+    mode: view === "log" ? "log" : "catalog",
     activeWorkout: null,
-    activeDuration: null,
+    activeDuration: 0,
     recentWorkouts: [],
-    finishedCount: 0,
     workouts: [],
-    journalQuery: { status: "success" as const },
-    exercises: [],
-    search: vi.fn(() => []),
-    primaryGroupsUk: {},
-    equipmentUk: {},
-    musclesUk: {},
-    musclesByPrimaryGroup: {},
+    activeWorkoutId: null,
+    finishedCount: 0,
+    journalQuery: {},
     q: "",
     setQ: vi.fn(),
     equipmentFilter: [],
     setEquipmentFilter: vi.fn(),
+    equipmentUk: {},
     grouped: [],
     open: {},
     setOpen: vi.fn(),
-    addOpen: false,
-    setAddOpen: vi.fn(),
-    quickStartOpen: false,
-    setQuickStartOpen: vi.fn(),
-    activeWorkoutId: null,
-    setActiveWorkoutId: vi.fn(),
     selected: null,
-    setSelected: vi.fn(),
+    addOpen: false,
+    quickStartOpen: false,
+    retroOpen: false,
+    retroDate: "",
+    setRetroDate: vi.fn(),
+    retroTime: "",
+    setRetroTime: vi.fn(),
     finishFlash: null,
     setFinishFlash: vi.fn(),
-    deleteExerciseConfirm: false,
-    setDeleteExerciseConfirm: vi.fn(),
-    riskyTemplateConfirm: null,
-    setRiskyTemplateConfirm: vi.fn(),
-    retroOpen: false,
-    setRetroOpen: vi.fn(),
-    retroDate: "2026-06-04",
-    setRetroDate: vi.fn(),
-    retroTime: "18:00",
-    setRetroTime: vi.fn(),
+    toast: vi.fn(),
     form: {
       nameUk: "",
-      primaryGroup: "chest",
+      primaryGroup: "",
       musclesPrimary: [],
       musclesSecondary: [],
-      equipment: ["bodyweight"],
+      equipment: [],
       description: "",
     },
     setForm: vi.fn(),
-    rec: { by: {}, list: [], ready: [], avoid: [], wellbeingMult: 1 },
+    exercises: [],
+    search: [],
+    musclesUk: {},
+    primaryGroupsUk: {},
+    musclesByPrimaryGroup: {},
+    rec: { by: {} },
     lastByExerciseId: {},
+    deleteExerciseConfirm: false,
+    riskyTemplateConfirm: null,
+    setView: vi.fn(),
+    setAddOpen: vi.fn(),
+    setQuickStartOpen: vi.fn(),
+    setRetroOpen: vi.fn(),
+    setDeleteExerciseConfirm: vi.fn(),
+    setRiskyTemplateConfirm: vi.fn(),
+    setActiveWorkoutId: vi.fn(),
+    setSelected: vi.fn(),
+    createWorkout: vi.fn(),
+    endWorkout: vi.fn(),
+    updateWorkout: vi.fn(),
+    updateItem: vi.fn(),
+    removeItemWithUndo: vi.fn(),
+    addItem: vi.fn(),
+    addExercise: vi.fn(),
+    addExerciseToActive: vi.fn(),
+    handleExerciseInListClick: vi.fn(),
+    handlePullRefresh: vi.fn(),
+    handleDeleteExerciseConfirm: vi.fn(),
+    handleRiskyTemplateConfirm: vi.fn(),
+    handleQuickStartConfirm: vi.fn(),
+    startWorkoutFromTemplate: vi.fn(),
+    summarizeWorkoutForFinish: vi.fn(),
+    submitRetroWorkout: vi.fn(),
+    deleteWorkout: vi.fn(),
+    restoreWorkout: vi.fn(),
+    setRestTimer: vi.fn(),
+    workoutsLoaded: true,
+    restTimer: null,
+    now: Date.now(),
+    recoveryConflictsForExercise: vi.fn(() => ({
+      hasWarning: false,
+      hasHardBlock: false,
+      red: [],
+      yellow: [],
+    })),
     templateApi: {
       templates: [],
-      recentlyUsed: [],
       addTemplate: vi.fn(),
       updateTemplate: vi.fn(),
       removeTemplate: vi.fn(),
       restoreTemplate: vi.fn(),
-      markTemplateUsed: vi.fn(),
     },
-    toast: {
-      info: vi.fn(),
-      warning: vi.fn(),
-      success: vi.fn(),
-      error: vi.fn(),
-    },
-    createWorkout: vi.fn(() => ({
-      id: "w1",
-      startedAt: new Date().toISOString(),
-      items: [],
-      groups: [],
-      warmup: null,
-      cooldown: null,
-      note: "",
-    })),
-    createWorkoutWithTimes: vi.fn(),
-    updateWorkout: vi.fn(),
-    deleteWorkout: vi.fn(),
-    restoreWorkout: vi.fn(),
-    endWorkout: vi.fn(),
-    addItem: vi.fn(),
-    updateItem: vi.fn(),
-    removeItemWithUndo: vi.fn(),
-    addExercise: vi.fn(),
-    handleExerciseInListClick: vi.fn(),
-    handlePullRefresh: vi.fn(),
-    handleQuickStartConfirm: vi.fn(),
-    startWorkoutFromTemplate: vi.fn(),
-    addExerciseToActive: vi.fn(),
-    recoveryConflictsForExercise: vi.fn(() => ({
-      hasWarning: false,
-      conflicts: [],
-    })),
-    submitRetroWorkout: vi.fn(),
-    handleDeleteExerciseConfirm: vi.fn(),
-    handleRiskyTemplateConfirm: vi.fn(),
-    summarizeWorkoutForFinish: vi.fn(),
-    setRestTimer: vi.fn(),
-    restTimer: null,
-  }),
-}));
-
-vi.mock("@shared/hooks/useCloudPullPending", () => ({
-  useCloudPullPending: () => false,
-}));
-
-// RestTimerContext is used deep in the tree; provide a minimal stub
-vi.mock("../context/RestTimerContext", () => ({
-  useRestTimer: () => ({ restTimer: null, setRestTimer: vi.fn() }),
-}));
-
-import { Workouts } from "./Workouts";
-
-// The page mounts AddExerciseSheet, which calls useToast() — wrap every
-// render in a ToastProvider so the hook resolves its context.
-const renderWorkouts = () =>
-  render(
-    <ToastProvider>
-      <Workouts />
-    </ToastProvider>,
-  );
+    ...overrides,
+  };
+}
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
 
-describe("Workouts page smoke tests", () => {
-  it("mounts without crashing in home view", () => {
-    expect(() => renderWorkouts()).not.toThrow();
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe("Workouts page — home view", () => {
+  beforeEach(() => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home") as unknown as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
   });
 
-  it("renders the WorkoutsHome default state (no active workout)", () => {
-    renderWorkouts();
-    expect(screen.getByText("Немає активного тренування")).toBeInTheDocument();
+  it("renders WorkoutsHome in home view", () => {
+    render(<Workouts />);
+    expect(screen.getByTestId("workouts-home")).toBeInTheDocument();
   });
 
-  it("renders the 'Почати тренування' button in home view", () => {
-    renderWorkouts();
+  it("does not render journal or catalog sections in home view", () => {
+    render(<Workouts />);
     expect(
-      screen.getByRole("button", { name: /Почати тренування/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders the 'Внести проведене заняття' retro button", () => {
-    renderWorkouts();
+      screen.queryByTestId("workout-journal-section"),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Внести проведене заняття/i }),
-    ).toBeInTheDocument();
+      screen.queryByTestId("workout-catalog-section"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("Workouts page — log view", () => {
+  beforeEach(() => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("log") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
   });
 
-  it("renders recent workouts section", () => {
-    renderWorkouts();
-    expect(screen.getByLabelText("Останні тренування")).toBeInTheDocument();
+  it("renders journal and catalog sections in log view", () => {
+    render(<Workouts />);
+    expect(screen.getByTestId("workout-journal-section")).toBeInTheDocument();
+    expect(screen.getByTestId("workout-catalog-section")).toBeInTheDocument();
+  });
+
+  it("does not render WorkoutsHome in log view", () => {
+    render(<Workouts />);
+    expect(screen.queryByTestId("workouts-home")).not.toBeInTheDocument();
+  });
+});
+
+describe("Workouts page — catalog view", () => {
+  beforeEach(() => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("catalog") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+  });
+
+  it("renders catalog section in catalog view", () => {
+    render(<Workouts />);
+    expect(screen.getByTestId("workout-catalog-section")).toBeInTheDocument();
+  });
+
+  it("does not render journal section in catalog view", () => {
+    render(<Workouts />);
+    expect(
+      screen.queryByTestId("workout-journal-section"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("Workouts page — templates view", () => {
+  beforeEach(() => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("templates") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+  });
+
+  it("renders templates section in templates view", () => {
+    render(<Workouts />);
+    expect(screen.getByTestId("workout-templates-section")).toBeInTheDocument();
+  });
+});
+
+describe("Workouts page — header wiring", () => {
+  it("passes view prop to WorkoutsHeader", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("log") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    render(<Workouts />);
+    expect(screen.getByTestId("workouts-header")).toHaveAttribute(
+      "data-view",
+      "log",
+    );
+  });
+
+  it("back button calls setView('home')", () => {
+    const setView = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("log", { setView }) as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    render(<Workouts />);
+    fireEvent.click(screen.getByTestId("back-btn"));
+    expect(setView).toHaveBeenCalledWith("home");
+  });
+
+  it("add catalog button calls setAddOpen(true)", () => {
+    const setAddOpen = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home", { setAddOpen }) as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    render(<Workouts />);
+    fireEvent.click(screen.getByTestId("add-catalog-btn"));
+    expect(setAddOpen).toHaveBeenCalledWith(true);
+  });
+});
+
+describe("Workouts page — home action wiring", () => {
+  it("'open-session' button sets view to 'log'", () => {
+    const setView = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home", { setView }) as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    render(<Workouts />);
+    fireEvent.click(screen.getByTestId("open-session"));
+    expect(setView).toHaveBeenCalledWith("log");
+  });
+
+  it("'open-catalog' button sets view to 'catalog'", () => {
+    const setView = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home", { setView }) as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    render(<Workouts />);
+    fireEvent.click(screen.getByTestId("open-catalog"));
+    expect(setView).toHaveBeenCalledWith("catalog");
+  });
+
+  it("'open-templates' button sets view to 'templates'", () => {
+    const setView = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home", { setView }) as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    render(<Workouts />);
+    fireEvent.click(screen.getByTestId("open-templates"));
+    expect(setView).toHaveBeenCalledWith("templates");
   });
 });

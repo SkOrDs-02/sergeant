@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
 import { safeReadLS } from "@shared/lib/storage/storage";
@@ -83,34 +84,41 @@ function saveState(s: MonthlyPlanState): void {
 
 export function useMonthlyPlan() {
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  const [state, setState] = useState(loadInitialState);
+  const [state, setState] = useSqliteTickOverlay<MonthlyPlanState>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      if (cache.refreshedAt === null || !cache.monthlyPlan) return undefined;
+      return cache.monthlyPlan;
+    },
+    loadInitialState,
+  );
 
-  // Overlay the singleton plan from the SQLite cache once it's warm.
-  useEffect(() => {
-    const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    if (cache.monthlyPlan) setState(cache.monthlyPlan);
-  }, [sqliteCacheTick]);
+  const setReminder = useCallback(
+    (hour: number, minute: number) => {
+      setState((prev) => {
+        const next = {
+          ...prev,
+          reminderHour: Math.max(0, Math.min(23, hour)),
+          reminderMinute: Math.max(0, Math.min(59, minute)),
+        };
+        saveState(next);
+        return next;
+      });
+    },
+    [setState],
+  );
 
-  const setReminder = useCallback((hour: number, minute: number) => {
-    setState((prev) => {
-      const next = {
-        ...prev,
-        reminderHour: Math.max(0, Math.min(23, hour)),
-        reminderMinute: Math.max(0, Math.min(59, minute)),
-      };
-      saveState(next);
-      return next;
-    });
-  }, []);
-
-  const setReminderEnabled = useCallback((enabled: boolean) => {
-    setState((prev) => {
-      const next = { ...prev, reminderEnabled: !!enabled };
-      saveState(next);
-      return next;
-    });
-  }, []);
+  const setReminderEnabled = useCallback(
+    (enabled: boolean) => {
+      setState((prev) => {
+        const next = { ...prev, reminderEnabled: !!enabled };
+        saveState(next);
+        return next;
+      });
+    },
+    [setState],
+  );
 
   const setDayTemplate = useCallback(
     (dateKey: string, templateId: string | null) => {
@@ -126,7 +134,7 @@ export function useMonthlyPlan() {
         return next;
       });
     },
-    [],
+    [setState],
   );
 
   const getTemplateForDate = useCallback(
