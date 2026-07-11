@@ -227,7 +227,9 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
     );
     expect(trackEventMock).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
-      expect.objectContaining({ cta: "stripe_checkout" }),
+      // Phase 7 UA billing: provider-aware label. Без mock-нутого
+      // /providers список порожній → default-flow → cta "checkout".
+      expect.objectContaining({ cta: "checkout" }),
     );
     expect(trackEventMock).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.CHECKOUT_OPENED,

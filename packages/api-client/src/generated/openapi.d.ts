@@ -2121,6 +2121,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/billing/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payment-провайдери, доступні юзеру (кнопки на /pricing) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description UA → увімкнені liqpay/plata; інші країни → stripe. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BillingProvidersResponse"];
+                    };
+                };
+                /** @description Unauthorized — потрібна активна сесія. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Скасувати Pro (власна кнопка; LiqPay/Plata без Customer Portal)
+         * @description Скасовує активну підписку через provider.cancelSubscription (LiqPay unsubscribe / Plata stop-scheduler). Доступ лишається до кінця оплаченого періоду (cancel_at_period_end).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Скасування прийнято. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BillingCancelResponse"];
+                    };
+                };
+                /** @description Unauthorized — потрібна активна сесія. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Billing env is not configured. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/stripe-webhook": {
         parameters: {
             query?: never;
@@ -2137,6 +2239,103 @@ export interface paths {
                 header: {
                     /** @description Stripe webhook signature header (`v1` HMAC). */
                     "stripe-signature": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                /** @description Bad request — payload не пройшов zod-валідацію. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/liqpay-callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** LiqPay server callback (form data+signature, sha1) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                /** @description Bad request — payload не пройшов zod-валідацію. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/plata-webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Plata/monopay webhook (JSON, X-Sign ECDSA) */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description monopay ECDSA signature over the raw request body. */
+                    "x-sign": string;
                 };
                 path?: never;
                 cookie?: never;
@@ -2881,6 +3080,8 @@ export interface components {
         BillingCheckoutRequest: {
             /** @enum {string} */
             plan: "plus" | "pro";
+            /** @enum {string} */
+            provider?: "stripe" | "liqpay" | "plata";
         };
         /** @description POST /api/metrics/web-vitals — батч Core Web Vitals (LCP/INP/FCP/TTFB/CLS). */
         WebVitalsPayload: {
@@ -3066,7 +3267,7 @@ export interface components {
         BillingStatusResponse: {
             subscription: {
                 id: number | null;
-                provider: "stripe" | null;
+                provider: ("stripe" | "liqpay" | "plata" | "manual") | null;
                 plan: ("plus" | "pro") | null;
                 status: string | null;
                 active: boolean;
@@ -3079,6 +3280,15 @@ export interface components {
             ok: true;
             /** Format: uri */
             url: string;
+        };
+        /** @description GET /api/billing/providers — payment-провайдери, доступні юзеру (UA → liqpay/plata; інші → stripe). */
+        BillingProvidersResponse: {
+            providers: ("stripe" | "liqpay" | "plata")[];
+        };
+        /** @description Відповідь POST /api/billing/cancel — власне скасування Pro (LiqPay/Plata не мають Customer Portal). */
+        BillingCancelResponse: {
+            /** @constant */
+            ok: true;
         };
         /** @description Відповідь на POST /api/transcribe — розпізнаний текст + тривалість аудіо. */
         TranscribeResponse: {

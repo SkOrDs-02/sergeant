@@ -1091,8 +1091,31 @@ export type WaitlistSubmitResponse = z.infer<
 export const BillingPlanSchema = z.enum(["plus", "pro"]);
 export type BillingPlan = z.infer<typeof BillingPlanSchema>;
 
+// Web payment providers (Phase 7 UA billing) — те, що юзер може ОБРАТИ на
+// checkout. `stripe` — dormant (ніколи не пропонується UA); `liqpay`
+// (ПриватБанк) + `plata` (monobank) — live UA.
+export const BillingProviderIdSchema = z.enum(["stripe", "liqpay", "plata"]);
+export type BillingProviderId = z.infer<typeof BillingProviderIdSchema>;
+
+// Provider, що може бути ЗАПИСАНИЙ у subscriptions.provider — ширший за
+// checkout-набір: включає `manual` (founder/comp-акаунти через
+// /api/internal/billing/upgrade, DB DEFAULT з m056). Read-side (status)
+// мусить серіалізувати такі рядки, тож окрема схема від checkout-enum.
+export const BillingSubscriptionProviderSchema = z.enum([
+  "stripe",
+  "liqpay",
+  "plata",
+  "manual",
+]);
+export type BillingSubscriptionProvider = z.infer<
+  typeof BillingSubscriptionProviderSchema
+>;
+
 export const BillingCheckoutRequestSchema = z.object({
   plan: BillingPlanSchema,
+  // Optional для back-compat зі старими `{plan}`-only Stripe-викликами: коли
+  // не передано, server бере перший enabled-provider для країни юзера.
+  provider: BillingProviderIdSchema.optional(),
 });
 export type BillingCheckoutRequest = z.infer<
   typeof BillingCheckoutRequestSchema
@@ -1110,7 +1133,7 @@ export type BillingCheckoutResponse = z.infer<
 
 export const BillingSubscriptionSchema = z.object({
   id: z.number().int().positive().nullable(),
-  provider: z.literal("stripe").nullable(),
+  provider: BillingSubscriptionProviderSchema.nullable(),
   plan: BillingPlanSchema.nullable(),
   status: z.string().nullable(),
   active: z.boolean(),
@@ -1134,6 +1157,25 @@ export const BillingPortalResponseSchema = z.object({
   url: z.string().url(),
 });
 export type BillingPortalResponse = z.infer<typeof BillingPortalResponseSchema>;
+
+// `POST /api/billing/cancel` (Phase 7 UA billing) — власна кнопка «Скасувати
+// Pro» замість Customer Portal (якого немає в LiqPay/Plata). Тіла запиту
+// немає (діє над поточним юзером). Доступ лишається до кінця оплаченого
+// періоду (`cancel_at_period_end`).
+export const BillingCancelResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type BillingCancelResponse = z.infer<typeof BillingCancelResponseSchema>;
+
+// `GET /api/billing/providers` — список payment-provider-ів, доступних
+// поточному юзеру (для кнопок на /pricing). UA → увімкнені liqpay/plata;
+// інші країни → stripe.
+export const BillingProvidersResponseSchema = z.object({
+  providers: z.array(BillingProviderIdSchema),
+});
+export type BillingProvidersResponse = z.infer<
+  typeof BillingProvidersResponseSchema
+>;
 
 // ────────────────────── Transcribe (Groq Whisper proxy) ─────────────────────
 // `POST /api/transcribe` приймає сире audio-тіло (Content-Type: `audio/*`),

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@shared/lib/ui/cn";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { Button } from "@shared/components/ui/Button";
@@ -64,10 +64,28 @@ const PREMIUM_PRICE_MONTHLY = "₴199";
 const ALLOWED_CHECKOUT_HOSTS: ReadonlySet<string> = new Set([
   "checkout.stripe.com",
   "billing.stripe.com",
+  // Phase 7 UA billing — LiqPay (ПриватБанк) checkout host.
+  "www.liqpay.ua",
+  // Plata by mono (monopay) invoice-page hosts.
+  "pay.mbnk.biz",
+  "pay.monobank.ua",
 ]);
 
+// Людські назви провайдерів для кнопок checkout-у.
+const PROVIDER_LABELS: Record<string, string> = {
+  liqpay: "LiqPay",
+  plata: "Plata by mono",
+  stripe: "Карткою",
+};
+
 function assertAllowedCheckoutUrl(raw: string): string {
-  const parsed = new URL(raw);
+  const parsed = new URL(raw, window.location.origin);
+  // Same-origin manage-URL (LiqPay/Plata не мають зовнішнього Customer
+  // Portal → повертають `${app}/settings?billing=manage`) безпечний за
+  // визначенням — не проганяємо через host-allow-list зовнішніх checkout-ів.
+  if (parsed.origin === window.location.origin) {
+    return parsed.toString();
+  }
   if (!ALLOWED_CHECKOUT_HOSTS.has(parsed.host)) {
     throw new Error(`checkout url host not in allow-list: ${parsed.host}`);
   }
@@ -136,6 +154,15 @@ export function PricingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
   const { isPro: isPremiumActive } = usePlan();
+  // Payment-провайдери, доступні юзеру (UA → liqpay/plata). Джерело кнопок
+  // checkout-у. 401 → fall through до порожнього списку (default-flow).
+  const providersQuery = useQuery({
+    queryKey: billingKeys.providers,
+    queryFn: ({ signal }) => billingApi.providers({ signal }),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const enabledProviders = providersQuery.data?.providers ?? [];
   // i18n. Resolved messages frozen per-locale у resolver → memo identity
   // stable, `tiers` recomputes лише при locale-flip (rare).
   const { messages } = useLocale();
@@ -185,19 +212,23 @@ export function PricingPage() {
     toast.info(t.toast.paymentCanceled);
   }, [searchParams, setSearchParams, queryClient, toast, navigate, t]);
 
-  async function handlePremiumCta(): Promise<void> {
+  async function handlePremiumCta(provider?: string): Promise<void> {
     trackEvent(ANALYTICS_EVENTS.PRICING_CTA_CLICKED, {
       tier: "pro",
-      cta: "stripe_checkout",
+      cta: provider ? `checkout_${provider}` : "checkout",
     });
     setCheckoutPlan("premium");
     setCheckoutError(null);
     setCheckoutResult(null);
     try {
       // Server `BillingPlan` enum усе ще `"plus" | "pro"` — D3 змінює лише
-      // UI-label, не серверний контракт. Майбутній PR на бекенд може
-      // переіменувати у `"premium"`, але це окрема міграція.
-      const checkout = await billingApi.createCheckout({ plan: "pro" });
+      // UI-label, не серверний контракт. `provider` (Phase 7 UA billing) —
+      // LiqPay/Plata; коли не передано, server бере перший enabled для країни.
+      const checkout = await billingApi.createCheckout(
+        provider
+          ? { plan: "pro", provider: provider as "liqpay" | "plata" | "stripe" }
+          : { plan: "pro" },
+      );
       setCheckoutResult(checkout);
       trackEvent(ANALYTICS_EVENTS.CHECKOUT_OPENED, {
         plan: "pro",
@@ -357,9 +388,15 @@ export function PricingPage() {
                   // (вже ваш план) і для Premium-юзера (downgrade flow
                   // живе у Stripe portal через Settings, не тут).
                   true;
+              // NB: handlePremiumCta приймає optional `provider` — не можна
+              // передавати його прямо в onClick (MouseEvent став би provider).
               const onPremiumClick = isPremiumActive
                 ? handleManageSubscription
-                : handlePremiumCta;
+                : () => void handlePremiumCta(enabledProviders[0]);
+              // Кілька UA-провайдерів → показуємо кнопку на кожен (вибір на
+              // checkout). Один/нуль → звичайна одна CTA (server-default).
+              const showProviderChoice =
+                isPremium && !isPremiumActive && enabledProviders.length > 1;
 
               return (
                 <Card
@@ -426,14 +463,32 @@ export function PricingPage() {
                     })}
                   </ul>
 
-                  <Button
-                    variant={isPremium ? "primary" : "secondary"}
-                    size="md"
-                    onClick={isPremium ? onPremiumClick : handleFreeCta}
-                    disabled={ctaDisabled}
-                  >
-                    {ctaLabel}
-                  </Button>
+                  {showProviderChoice ? (
+                    <div className="flex flex-col gap-2">
+                      {enabledProviders.map((p) => (
+                        <Button
+                          key={p}
+                          variant="primary"
+                          size="md"
+                          onClick={() => void handlePremiumCta(p)}
+                          disabled={checkoutLoading}
+                        >
+                          {checkoutLoading
+                            ? t.cta.openingCheckout
+                            : `${t.cta.tryPremium} · ${PROVIDER_LABELS[p] ?? p}`}
+                        </Button>
+                      ))}
+                    </div>
+                  ) : (
+                    <Button
+                      variant={isPremium ? "primary" : "secondary"}
+                      size="md"
+                      onClick={isPremium ? onPremiumClick : handleFreeCta}
+                      disabled={ctaDisabled}
+                    >
+                      {ctaLabel}
+                    </Button>
+                  )}
                 </Card>
               );
             })}

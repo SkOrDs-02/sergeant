@@ -67,6 +67,7 @@ import {
 } from "./obs/securityEventsRoom.js";
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
+import { PlataRecurringPoller } from "./modules/billing/plataScheduler.js";
 import { Sentry } from "./sentry.js";
 
 const app = createApp({
@@ -204,6 +205,12 @@ const logArchivePoller = new LogArchivePoller({
   bucket: env.GCS_LOG_ARCHIVE_BUCKET,
 });
 logArchivePoller.start();
+
+// Plata (monobank) self-managed recurring — щодня списує due-підписки по
+// збереженому card-token-у. Off, поки `PLATA_ENABLED=false`. Той самий
+// Tier-A in-process poller-патерн, idempotent start/stop.
+const plataRecurringPoller = new PlataRecurringPoller({ pool });
+plataRecurringPoller.start();
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Graceful shutdown
@@ -351,6 +358,15 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
           err: serializeError(err, { includeStack: false }),
         });
       }
+    }
+
+    try {
+      await plataRecurringPoller.stop();
+    } catch (err) {
+      logger.warn({
+        msg: "plata_recurring_poller_stop_error",
+        err: serializeError(err, { includeStack: false }),
+      });
     }
 
     try {

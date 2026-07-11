@@ -226,6 +226,16 @@ const BillingPortalResponse = schemas.BillingPortalResponseSchema.meta({
   description:
     "Відповідь POST /api/billing/portal: short-lived redirect URL у Stripe Customer Portal.",
 });
+const BillingCancelResponse = schemas.BillingCancelResponseSchema.meta({
+  id: "BillingCancelResponse",
+  description:
+    "Відповідь POST /api/billing/cancel — власне скасування Pro (LiqPay/Plata не мають Customer Portal).",
+});
+const BillingProvidersResponse = schemas.BillingProvidersResponseSchema.meta({
+  id: "BillingProvidersResponse",
+  description:
+    "GET /api/billing/providers — payment-провайдери, доступні юзеру (UA → liqpay/plata; інші → stripe).",
+});
 const TranscribeQuery = schemas.TranscribeQuerySchema.meta({
   id: "TranscribeQuery",
   description:
@@ -328,6 +338,8 @@ export const namedSchemas = {
   BillingCheckoutResponse,
   BillingStatusResponse,
   BillingPortalResponse,
+  BillingCancelResponse,
+  BillingProvidersResponse,
   TranscribeQuery,
   TranscribeResponse,
   WebVitalsPayload,

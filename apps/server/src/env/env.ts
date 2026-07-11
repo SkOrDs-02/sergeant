@@ -852,6 +852,43 @@ const envSchema = z.object({
    * тестування resolver-а — production checkout кине NotImplementedError.
    */
   LIQPAY_ENABLED: boolFromEnv(false),
+  /**
+   * LiqPay кабінет-ключі (ПриватБанк-еквайринг, привʼязані до ФОП).
+   * `public_key` іде у `data`-payload checkout/subscribe; `private_key`
+   * підписує кожен запит і верифікує кожен callback. Обовʼязкові, коли
+   * `LIQPAY_ENABLED=true` (fail-fast в `assertStartupEnv`). Секрети — лише
+   * Railway env, ніколи в код/лог (Hard Rule #20/21). Sandbox-ключі мають
+   * префікс `sandbox_` у public_key → з нього виводимо `mode: test|live`.
+   */
+  LIQPAY_PUBLIC_KEY: z.string().optional(),
+  LIQPAY_PRIVATE_KEY: z.string().optional(),
+
+  // ── Plata by mono billing (Phase 7 UA billing) ─────────────────────
+  /**
+   * Feature-flag для Plata by mono (monobank-еквайринг) як UA-provider-а.
+   * Default `false`. Незалежний від LIQPAY_ENABLED — вмикаються по черзі
+   * (rollout: спершу LiqPay, потім Plata). `getEnabledProviders('UA')`
+   * додає `plata` у список UI-кнопок лише коли `true`.
+   */
+  PLATA_ENABLED: boolFromEnv(false),
+  /**
+   * monopay merchant-token (`X-Token`) з кабінету моно-еквайрингу,
+   * привʼязаний до ФОП. Обовʼязковий, коли `PLATA_ENABLED=true`. Секрет —
+   * лише Railway env (Hard Rule #20/21).
+   */
+  PLATA_TOKEN: z.string().optional(),
+  /**
+   * monopay не маркує середовище в токені (на відміну від Stripe
+   * `sk_live_`/LiqPay `sandbox_`), тож `mode: test|live` у
+   * `BillingCheckoutResponse` виводимо з явного env. Default `test`.
+   */
+  PLATA_MODE: z.enum(["test", "live"]).default("test"),
+  /**
+   * Ціна Pro/міс у копійках (minor units як number — Hard Rule #1).
+   * LiqPay бере гривні (`amount: 199.00`) → ділимо на 100 на межі виклику;
+   * monopay бере копійки (`amount: 19900`, `ccy: 980`) → передаємо як є.
+   */
+  PRO_MONTHLY_UAH_KOPIYKAS: coerceInt.positive().default(19900),
 
   // ── Nutrition backups ──────────────────────────────────────────────
   /**
@@ -1540,6 +1577,25 @@ export function assertStartupEnv(): void {
         "STRIPE_WEBHOOK_TOLERANCE_SECONDS must be > 0 in production when STRIPE_SECRET_KEY is set. A value of 0 (or negative) disables the timestamp replay-window check entirely, turning any captured signed webhook payload into an unbounded replay primitive against the billing endpoint. Default 300s; only set explicitly if your platform has unusual clock skew, and never set <= 0 in production. See https://stripe.com/docs/webhooks/signatures § 'Preventing replay attacks'.",
       );
     }
+  }
+
+  // Phase 7 UA billing: fail-fast, коли UA-provider увімкнено, але його
+  // ключі порожні — інакше `/api/billing/checkout` кине
+  // BillingConfigurationError → 503 на першому кліку Upgrade (той самий
+  // lifecycle, що STRIPE_PRICE_ID). Guard і в prod, і локально (dev-тест
+  // з `*_ENABLED=true` без ключів — теж явна помилка конфігу).
+  if (
+    env.LIQPAY_ENABLED &&
+    (!env.LIQPAY_PUBLIC_KEY || !env.LIQPAY_PRIVATE_KEY)
+  ) {
+    throw new Error(
+      "LIQPAY_ENABLED=true requires LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY. Without them /api/billing/checkout throws BillingConfigurationError → 503 the first time a UA user picks LiqPay. Set both from the LiqPay merchant cabinet (ФОП), or flip LIQPAY_ENABLED off.",
+    );
+  }
+  if (env.PLATA_ENABLED && !env.PLATA_TOKEN) {
+    throw new Error(
+      "PLATA_ENABLED=true requires PLATA_TOKEN (monopay merchant X-Token). Without it /api/billing/checkout and the Plata recurring scheduler fail. Set it from the monobank acquiring cabinet (ФОП), or flip PLATA_ENABLED off.",
+    );
   }
 
   // D3 (2026-05-15 deep-audit): mirror the Stripe wired-without-secret

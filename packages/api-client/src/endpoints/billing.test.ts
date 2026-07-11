@@ -14,7 +14,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHttpClient } from "../httpClient";
 import { firstCall } from "../__test-utils/firstCall";
 import {
+  BillingCancelResponseBodySchema,
   BillingPortalResponseBodySchema,
+  BillingProvidersResponseBodySchema,
   createBillingEndpoints,
 } from "./billing";
 
@@ -74,6 +76,43 @@ describe("createBillingEndpoints.createPortal", () => {
         ok: true,
         url: "not-a-url",
       }),
+    ).toThrow();
+  });
+});
+
+describe("createBillingEndpoints.cancel", () => {
+  it("POSTs /api/v1/billing/cancel with an empty body", async () => {
+    const fetchMock = mockFetchOnce({ ok: true });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+    const res = await billing.cancel();
+    expect(res).toEqual({ ok: true });
+    const [url, init] = firstCall(fetchMock);
+    expect(String(url)).toBe("https://api.example.com/api/v1/billing/cancel");
+    expect((init as RequestInit).method).toBe("POST");
+  });
+});
+
+describe("createBillingEndpoints.providers", () => {
+  it("GETs /api/v1/billing/providers and parses the enabled list", async () => {
+    const fetchMock = mockFetchOnce({ providers: ["liqpay", "plata"] });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+    const res = await billing.providers();
+    expect(res).toEqual({ providers: ["liqpay", "plata"] });
+    const [url, init] = firstCall(fetchMock);
+    expect(String(url)).toBe(
+      "https://api.example.com/api/v1/billing/providers",
+    );
+    expect((init as RequestInit).method ?? "GET").toBe("GET");
+  });
+
+  it("rejects an unknown provider id via the canonical schema", () => {
+    expect(() =>
+      BillingProvidersResponseBodySchema.parse({ providers: ["paypal"] }),
+    ).toThrow();
+    expect(() =>
+      BillingCancelResponseBodySchema.parse({ ok: false }),
     ).toThrow();
   });
 });
