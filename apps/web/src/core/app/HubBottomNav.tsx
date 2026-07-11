@@ -29,10 +29,14 @@ import { messages } from "@shared/i18n/uk";
  *   rounded only at the top. The panel background fills the safe-area
  *   strip so there's no page-coloured dead space below the labels
  *   (user report 2026-06-05 / bottom-nav-gap).
- * - Active indicator: a rounded outline (`rounded-2xl border
- *   border-ink-strong/25`) framing the active tab — outline only, no
- *   fill. Module-agnostic by design.
- * - Active label + icon: `text-ink-strong`; inactive: `text-muted`.
+ * - Active indicator:
+ *   - Light (default): a rounded outline (`rounded-2xl border
+ *     border-ink-strong/25`) framing the active tab — outline only, no
+ *     fill. Active label + icon `text-ink-strong`.
+ *   - Dark («Чорнило»): a solid emerald (`brand-400`, the hub's default
+ *     accent) square with an ink foreground (`dark:text-bg` → #0d1512),
+ *     per spec § 4. Module-agnostic — the hub carries emerald, not a
+ *     per-module accent. The `dark:` fill leaves the light default intact.
  * - `role="tablist"` + `aria-selected` for AT.
  *
  * Layout contract:
@@ -126,7 +130,7 @@ function HubBottomNavTab({
         "active:scale-95",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
         active
-          ? "text-ink-strong border-ink-strong/25"
+          ? "text-ink-strong border-ink-strong/25 dark:bg-brand-400 dark:border-transparent dark:text-bg"
           : "text-text border-transparent hover:text-text/80",
         hiddenSlot && "invisible pointer-events-none",
         className,

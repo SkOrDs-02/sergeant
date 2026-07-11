@@ -41,4 +41,27 @@ describe("ModuleBottomNav", () => {
     expect(statsTab.className).toContain("justify-end");
     expect(statsTab.className).toContain("pb-1.5");
   });
+
+  it("active tab gets the «Чорнило» dark accent fill + ink foreground", () => {
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const activeTab = screen.getByRole("button", { name: "Overview" });
+    const inactiveTab = screen.getByRole("button", { name: "Stats" });
+
+    // Dark: solid tier-400 accent square + ink foreground; light keeps the
+    // module-accent outline. Both are `dark:`-scoped, so the light default
+    // is unchanged.
+    expect(activeTab.className).toContain("dark:bg-brand-400");
+    expect(activeTab.className).toContain("dark:text-bg");
+    expect(activeTab.className).toContain("border-finyk/40");
+    expect(inactiveTab.className).not.toContain("dark:bg-brand-400");
+  });
 });
