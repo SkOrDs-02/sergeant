@@ -29,6 +29,7 @@ import type {
   PluginHookLlmInputResult,
 } from "openclaw/plugin-sdk/plugin-entry";
 import { OpenClawHttpError, type OpenClawHttpClient } from "../http-client.js";
+import { defaultLog, type HookLogger } from "../types/logger.js";
 
 export interface BudgetCheckResponse {
   allowed: boolean;
@@ -47,11 +48,7 @@ export interface BudgetGateOptions {
    * Logger hook — taken from `api.logger` when available; falls back to
    * `console`. Kept injectable so unit tests can assert log calls.
    */
-  log?: (
-    level: "debug" | "info" | "warn" | "error",
-    message: string,
-    fields?: Record<string, unknown>,
-  ) => void;
+  log?: HookLogger;
 }
 
 export type LlmInputHookHandler = (
@@ -118,15 +115,4 @@ function formatBlockReason(r: BudgetCheckResponse): string {
   return `Daily OpenClaw budget reached: spent $${spent} of $${budget} (server reason: ${
     r.reason ?? "budget_exceeded"
   }).`;
-}
-
-function defaultLog(
-  level: "debug" | "info" | "warn" | "error",
-  message: string,
-  fields?: Record<string, unknown>,
-): void {
-  const payload = fields ? ` ${JSON.stringify(fields)}` : "";
-  if (level === "error") console.error(`[sergeant] ${message}${payload}`);
-  else if (level === "warn") console.warn(`[sergeant] ${message}${payload}`);
-  else console.log(`[sergeant] ${message}${payload}`);
 }

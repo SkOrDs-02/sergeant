@@ -42,12 +42,9 @@ import type {
 import type { CheapRouterClassifier } from "../cheap-router/types.js";
 import { ShortcutRouter } from "../shortcuts/router.js";
 import type { ShortcutDefinition, ToolExecutor } from "../shortcuts/types.js";
+import type { HookLogger } from "../types/logger.js";
 
-export type CheapRouterHookLogger = (
-  level: "debug" | "info" | "warn" | "error",
-  message: string,
-  fields?: Record<string, unknown>,
-) => void;
+export type CheapRouterHookLogger = HookLogger;
 
 export interface CheapRouterHookOptions {
   classifier: CheapRouterClassifier;

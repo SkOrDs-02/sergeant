@@ -31,6 +31,7 @@ import type {
   PluginHookBeforeToolCallResult,
 } from "openclaw/plugin-sdk/plugin-entry";
 import type { OpenClawHttpClient } from "../http-client.js";
+import { defaultLog, type HookLogger } from "../types/logger.js";
 
 /**
  * The 5 write-tools registered in Stage 3 (PR #2463). Anything outside
@@ -56,11 +57,7 @@ export interface WriteApprovalOptions {
   founderTgUserId?: number | undefined;
   /** ms to wait for founder decision before forcing `timeoutBehavior`. */
   timeoutMs?: number;
-  log?: (
-    level: "debug" | "info" | "warn" | "error",
-    message: string,
-    fields?: Record<string, unknown>,
-  ) => void;
+  log?: HookLogger;
 }
 
 export type BeforeToolCallHookHandler = (
@@ -244,15 +241,4 @@ function strField(v: unknown, max: number): string {
 function arrField(v: unknown): string[] | undefined {
   if (!Array.isArray(v)) return undefined;
   return v.filter((x): x is string => typeof x === "string");
-}
-
-function defaultLog(
-  level: "debug" | "info" | "warn" | "error",
-  message: string,
-  fields?: Record<string, unknown>,
-): void {
-  const payload = fields ? ` ${JSON.stringify(fields)}` : "";
-  if (level === "error") console.error(`[sergeant] ${message}${payload}`);
-  else if (level === "warn") console.warn(`[sergeant] ${message}${payload}`);
-  else console.log(`[sergeant] ${message}${payload}`);
 }

@@ -25,30 +25,17 @@ export const DEFAULT_LOOKAHEAD_DAYS = 14;
 
 export interface GetNextPlanSessionOptions {
   readonly plan: MonthlyPlanState;
-  readonly templatesById:
-    | ReadonlyMap<string, DashboardTemplateLike>
-    | Record<string, DashboardTemplateLike>
-    | readonly DashboardTemplateLike[];
+  readonly templatesById: readonly DashboardTemplateLike[];
   readonly now?: Date;
   readonly lookaheadDays?: number;
 }
 
 function resolveTemplate(
   id: string,
-  catalogue: GetNextPlanSessionOptions["templatesById"],
+  catalogue: readonly DashboardTemplateLike[],
 ): DashboardTemplateLike | null {
   if (!id) return null;
-  if (catalogue instanceof Map) {
-    return catalogue.get(id) ?? null;
-  }
-  if (Array.isArray(catalogue)) {
-    return catalogue.find((t) => t?.id === id) ?? null;
-  }
-  if (catalogue && typeof catalogue === "object") {
-    const rec = catalogue as Record<string, DashboardTemplateLike>;
-    return rec[id] ?? null;
-  }
-  return null;
+  return catalogue.find((t) => t?.id === id) ?? null;
 }
 
 /**

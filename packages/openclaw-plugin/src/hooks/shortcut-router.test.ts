@@ -26,7 +26,6 @@ const pingShortcut: ShortcutDefinition = {
 const thinkShortcut: ShortcutDefinition = {
   slug: "think",
   patterns: [/^\/think\s+(?<q>.+)$/i],
-  captureGroups: ["q"],
   toolCalls: [],
   render: (_r, p) => `${ESCALATE_PREFIX}thinking:cofounder:${p["q"] ?? ""}`,
 };

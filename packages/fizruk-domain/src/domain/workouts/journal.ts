@@ -8,6 +8,7 @@
  * lets both platforms share the same counting rules.
  */
 
+import { compareIsoDesc } from "../../lib/workoutStats.js";
 import type {
   Workout,
   WorkoutForJournal,
@@ -39,14 +40,7 @@ export function compareWorkoutsByStartedAtDesc<W extends WorkoutForJournal>(
   a: W,
   b: W,
 ): number {
-  const at = a?.startedAt ? Date.parse(a.startedAt) : NaN;
-  const bt = b?.startedAt ? Date.parse(b.startedAt) : NaN;
-  const aOk = Number.isFinite(at);
-  const bOk = Number.isFinite(bt);
-  if (!aOk && !bOk) return 0;
-  if (!aOk) return 1;
-  if (!bOk) return -1;
-  return bt - at;
+  return compareIsoDesc(a?.startedAt, b?.startedAt);
 }
 
 /** Newest-first sort. Does not mutate `workouts`. */

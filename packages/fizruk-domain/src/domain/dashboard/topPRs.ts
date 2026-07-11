@@ -11,6 +11,7 @@
  * "Присід · 120 × 5 · 20 кві".
  */
 
+import { epley1rm } from "../../lib/workoutStats.js";
 import type { DashboardPRItem, DashboardWorkoutInput } from "./types.js";
 
 /** Default top-N rendered on the dashboard. */
@@ -20,11 +21,6 @@ function toFiniteNumber(v: unknown): number | null {
   if (v == null || v === "") return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
-}
-
-function epley1rm(weight: number, reps: number): number {
-  if (weight <= 0 || reps <= 0) return 0;
-  return weight * (1 + reps / 30);
 }
 
 interface Candidate {

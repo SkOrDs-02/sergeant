@@ -5,8 +5,8 @@
 //   few (n mod 10 in 2..4, n mod 100 not in 12..14) → "дні"
 //   many (все інше, вкл. 0) → "днів"
 //
-// Перенесено з intl-плаг: залежностей не додаємо, бо потрібні лише лічильники
-// без локалей, а intl.PluralRules не дасть саму форму слова.
+// Категорію рахує Intl.PluralRules("uk") (стандартна реалізація CLDR);
+// саму форму слова (one/few/many) підставляє виклик — Intl не знає слів.
 
 export type UaPluralForms = {
   one: string;
@@ -14,13 +14,12 @@ export type UaPluralForms = {
   many: string;
 };
 
+const UA_PLURAL_RULES = new Intl.PluralRules("uk");
+
 export function pluralUa(n: number, forms: UaPluralForms): string {
-  const abs = Math.abs(Math.trunc(n));
-  const mod100 = abs % 100;
-  if (mod100 >= 11 && mod100 <= 14) return forms.many;
-  const mod10 = abs % 10;
-  if (mod10 === 1) return forms.one;
-  if (mod10 >= 2 && mod10 <= 4) return forms.few;
+  const category = UA_PLURAL_RULES.select(Math.abs(Math.trunc(n)));
+  if (category === "one") return forms.one;
+  if (category === "few") return forms.few;
   return forms.many;
 }
 

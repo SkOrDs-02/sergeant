@@ -101,28 +101,4 @@ describe("getNextPlanSession", () => {
       exerciseCount: null,
     });
   });
-
-  it("accepts a Map as the template catalogue", () => {
-    const plan = stateWithDays({ "2026-04-22": "tpl-push" });
-    const byId = new Map<string, DashboardTemplateLike>(
-      TEMPLATES.map((t) => [t.id, t]),
-    );
-    const result = getNextPlanSession({
-      plan,
-      templatesById: byId,
-      now: FROZEN_NOW,
-    });
-    expect(result?.templateName).toBe("Push");
-  });
-
-  it("accepts a Record object as the template catalogue", () => {
-    const plan = stateWithDays({ "2026-04-22": "tpl-push" });
-    const byId = Object.fromEntries(TEMPLATES.map((t) => [t.id, t]));
-    const result = getNextPlanSession({
-      plan,
-      templatesById: byId,
-      now: FROZEN_NOW,
-    });
-    expect(result?.templateName).toBe("Push");
-  });
 });

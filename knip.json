@@ -140,9 +140,6 @@
     },
     "packages/shared": {
       "project": ["src/**/*.ts"],
-      // kvStore.ts — @deprecated re-export barrel; @removeBy 2026-09-01; zero real importers
-      //   (check-kvstore-deep-imports tests the lint rule against this path, not an actual import)
-      "ignore": ["src/lib/kvStore.ts"],
       "ignoreDependencies": [
         "@stryker-mutator/vitest-runner",
         // jsdom — used via // @vitest-environment jsdom in deepLinkChannel.test.ts (hoisted)

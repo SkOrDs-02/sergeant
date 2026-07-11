@@ -11,16 +11,13 @@
  */
 
 import type { OpenClawHttpClient } from "../http-client.js";
+import type { HookLogger } from "../types/logger.js";
 import type {
   CheapRouterClassification,
   CheapRouterClassifier,
 } from "./types.js";
 
-export type CheapRouterLogger = (
-  level: "debug" | "info" | "warn" | "error",
-  message: string,
-  fields?: Record<string, unknown>,
-) => void;
+export type CheapRouterLogger = HookLogger;
 
 export interface HttpCheapRouterClassifierOptions {
   http: OpenClawHttpClient;

@@ -1,6 +1,7 @@
 /** UI-agnostic helpers for workout logging (pure, no React / no DOM). */
 
 import type { Workout } from "../domain/types";
+import { workoutTonnageKg } from "./workoutStats";
 
 export { ACTIVE_WORKOUT_KEY } from "../constants";
 
@@ -23,15 +24,7 @@ export function summarizeWorkoutForFinish(
   if (!Number.isFinite(end)) return null;
   const durationSec = Math.max(0, Math.floor((end - start) / 1000));
   const items = (w.items || []).length;
-  let tonnageKg = 0;
-  for (const it of w.items || []) {
-    if (it.type === "strength") {
-      for (const s of it.sets || []) {
-        tonnageKg += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);
-      }
-    }
-  }
-  return { durationSec, items, tonnageKg };
+  return { durationSec, items, tonnageKg: workoutTonnageKg(w) };
 }
 
 export function formatDurShort(sec: number): string {

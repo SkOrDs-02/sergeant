@@ -92,7 +92,6 @@ describe("ShortcutRouter.match", () => {
         {
           slug: "echo",
           patterns: [/^\/echo\s+(?<msg>.+)$/i],
-          captureGroups: ["msg"],
           toolCalls: [],
           render: (_results, params) => `echo: ${params["msg"]}`,
         },
@@ -188,7 +187,6 @@ describe("ShortcutRouter.match", () => {
         {
           slug: "search",
           patterns: [/^\/search\s+(?<query>.+)$/i],
-          captureGroups: ["query"],
           toolCalls: [
             {
               toolName: "mem",

@@ -56,5 +56,3 @@ export const FINYK_BACKUP_STORAGE_KEYS = Object.freeze({
   customCategories: "finyk_custom_cats_v1",
   dismissedRecurring: "finyk_rec_dismissed",
 } as const);
-
-export type FinykBackupField = keyof typeof FINYK_BACKUP_STORAGE_KEYS;

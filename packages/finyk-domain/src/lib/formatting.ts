@@ -1,16 +1,11 @@
-import { CURRENCY } from "../constants";
+import { CURRENCY, CURRENCY_SYMBOL } from "../constants";
 
 export function fmtAmt(
   amount: number,
   cc: number = CURRENCY.UAH as number,
 ): string {
   const v = amount / 100;
-  const sym =
-    cc === (CURRENCY.UAH as number)
-      ? "₴"
-      : cc === (CURRENCY.USD as number)
-        ? "$"
-        : "€";
+  const sym = CURRENCY_SYMBOL[cc] ?? "₴";
   return `${v > 0 ? "+" : ""}${v.toLocaleString("uk-UA", { minimumFractionDigits: 2 })}${sym}`;
 }
 

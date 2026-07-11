@@ -39,15 +39,12 @@ import type {
 
 import { ShortcutRouter } from "../shortcuts/router.js";
 import type { ShortcutDefinition, ToolExecutor } from "../shortcuts/types.js";
+import type { HookLogger } from "../types/logger.js";
 
 /** Sentinel prefix marking a Layer 2 escalation (e.g. `/think`). */
 export const ESCALATE_PREFIX = "__ESCALATE_LAYER2__:";
 
-export type ShortcutHookLogger = (
-  level: "debug" | "info" | "warn" | "error",
-  message: string,
-  fields?: Record<string, unknown>,
-) => void;
+export type ShortcutHookLogger = HookLogger;
 
 export interface ShortcutRouterHookOptions {
   shortcuts: ShortcutDefinition[];

@@ -3,6 +3,5 @@
 // будь-яких платформних залежностей (`localStorage`, `window`, `document`).
 export * from "./constants.js";
 export * from "./domain/index.js";
-export * as FizrukDomain from "./domain/index.js";
 export * as FizrukData from "./data/index.js";
 export * from "./lib/index.js";

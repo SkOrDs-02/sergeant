@@ -17,6 +17,7 @@
  */
 
 import { kyivMondayStartMs, toLocalISODate } from "@sergeant/shared";
+import { compareIsoDesc } from "../../lib/workoutStats.js";
 
 import {
   epley1rm,
@@ -169,16 +170,9 @@ export function collectExerciseHistory(
       out.push({ workout: w, item: it });
     }
   }
-  out.sort((a, b) => {
-    const at = a.workout?.startedAt ? Date.parse(a.workout.startedAt) : NaN;
-    const bt = b.workout?.startedAt ? Date.parse(b.workout.startedAt) : NaN;
-    const aOk = Number.isFinite(at);
-    const bOk = Number.isFinite(bt);
-    if (!aOk && !bOk) return 0;
-    if (!aOk) return 1;
-    if (!bOk) return -1;
-    return bt - at;
-  });
+  out.sort((a, b) =>
+    compareIsoDesc(a.workout?.startedAt, b.workout?.startedAt),
+  );
   return out;
 }
 

@@ -59,7 +59,6 @@ export * from "./lib/activeModules";
 
 // Defaults shared by web/mobile undo-toast helpers.
 export * from "./lib/undoToast";
-export * from "./lib/undoTombstone";
 
 // Onboarding gate helpers (first-launch detection, done flag, splash taxonomy).
 export * from "./lib/onboarding";
@@ -135,9 +134,6 @@ export * from "./lib/analyticsEvents";
 
 // DOM-free haptic contract (platform adapters register at app bootstrap).
 export * from "./lib/haptic";
-
-// Shared animation presets — timing, easing, spring configs, stagger helpers.
-export * from "./lib/animations";
 
 // Platform feature-detect (Capacitor WebView vs browser). DOM-free; reads
 // the `Capacitor` global injected by the native runtime, so `@sergeant/web`

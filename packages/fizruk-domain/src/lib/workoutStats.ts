@@ -113,6 +113,26 @@ export function suggestNextSet(
   return { weightKg: roundToStep(w * 1.05, 2.5), reps: r };
 }
 
+/**
+ * Newest-first ISO-timestamp comparator. Unparseable/missing timestamps
+ * sink to the bottom so one malformed entry never hides valid rows.
+ * Shared by every "sort by startedAt/at desc" call-site across workouts,
+ * measurements, and exercise history.
+ */
+export function compareIsoDesc(
+  aIso: string | null | undefined,
+  bIso: string | null | undefined,
+): number {
+  const at = aIso ? Date.parse(aIso) : NaN;
+  const bt = bIso ? Date.parse(bIso) : NaN;
+  const aOk = Number.isFinite(at);
+  const bOk = Number.isFinite(bt);
+  if (!aOk && !bOk) return 0;
+  if (!aOk) return 1;
+  if (!bOk) return -1;
+  return bt - at;
+}
+
 export function workoutTonnageKg(w: StatsWorkout | null | undefined): number {
   let t = 0;
   for (const it of w?.items || []) {

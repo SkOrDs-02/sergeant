@@ -14,7 +14,6 @@ export const remindShortcut: ShortcutDefinition = {
     /^\/remind\s+(?<when>.+?)\s+(?<what>.+)$/i,
     /^нагадай\s+(?<when>.+?)\s+(?<what>.+)$/i,
   ],
-  captureGroups: ["when", "what"],
   toolCalls: [
     {
       toolName: "set_reminder",

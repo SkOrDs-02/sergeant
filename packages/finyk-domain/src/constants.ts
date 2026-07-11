@@ -297,10 +297,17 @@ export const PAGES = [
   { id: "assets", label: "🏦 Активи та пасиви" },
 ];
 
-export const TX_CACHE_TTL = 15 * 60 * 1000; // 15 хвилин
-
 export const CURRENCY = {
   UAH: 980,
   USD: 840,
   EUR: 978,
+};
+
+/** ISO-4217 numeric currency code → display symbol. Unknown codes are the
+ *  caller's responsibility to fall back (defaults to `₴` in practice —
+ *  every currency the app supports is one of the three keys above). */
+export const CURRENCY_SYMBOL: Record<number, string> = {
+  [CURRENCY.UAH]: "₴",
+  [CURRENCY.USD]: "$",
+  [CURRENCY.EUR]: "€",
 };

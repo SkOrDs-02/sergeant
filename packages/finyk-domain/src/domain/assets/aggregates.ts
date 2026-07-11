@@ -13,7 +13,7 @@
 
 import { calcDebtRemaining, calcReceivableRemaining } from "../debtEngine.js";
 import { getMonoTotals, type MonoAccount } from "../../lib/accounts.js";
-import { CURRENCY } from "../../constants.js";
+import { CURRENCY_SYMBOL } from "../../constants.js";
 import type { Transaction } from "../types.js";
 import type {
   AssetsDebt,
@@ -81,12 +81,6 @@ export function filterVisibleAccounts(
   return accounts.filter((a) => !(a.id !== undefined && hidden.has(a.id)));
 }
 
-const CURRENCY_SYMBOL_BY_CODE: Record<number, string> = {
-  [CURRENCY.UAH as number]: "₴",
-  [CURRENCY.USD as number]: "$",
-  [CURRENCY.EUR as number]: "€",
-};
-
 /**
  * Map an ISO-4217 numeric currency code to its symbol. Defaults to `₴`
  * so unknown / missing codes render as the local currency — same
@@ -96,7 +90,7 @@ export function getAccountCurrencySymbol(
   currencyCode: number | null | undefined,
 ): string {
   if (currencyCode == null) return "₴";
-  return CURRENCY_SYMBOL_BY_CODE[currencyCode] ?? "₴";
+  return CURRENCY_SYMBOL[currencyCode] ?? "₴";
 }
 
 /**

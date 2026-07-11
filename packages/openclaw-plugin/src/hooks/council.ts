@@ -57,12 +57,9 @@ import {
   matchCouncil,
   type CouncilGateOutcome,
 } from "../council/index.js";
+import type { HookLogger } from "../types/logger.js";
 
-export type CouncilHookLogger = (
-  level: "debug" | "info" | "warn" | "error",
-  message: string,
-  fields?: Record<string, unknown>,
-) => void;
+export type CouncilHookLogger = HookLogger;
 
 // ─────────────────────────────────────────────────────────────────────────
 // before_dispatch — budget pre-flight gate
