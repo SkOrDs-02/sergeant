@@ -14,6 +14,7 @@
 import type { Pool } from "pg";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
+import { billingRecurringChargeTotal } from "../../obs/metrics.js";
 import { decryptToken } from "../mono/crypto.js";
 
 const MONOPAY_WALLET_PAYMENT_URL =
@@ -118,6 +119,7 @@ export async function chargeDuePlataSubscriptions(
           WHERE user_id = $1 AND provider = 'plata'`,
         [row.user_id],
       );
+      billingRecurringChargeTotal.inc({ provider: "plata", result: "charged" });
       charged += 1;
     } else {
       await pool.query(
@@ -126,6 +128,10 @@ export async function chargeDuePlataSubscriptions(
           WHERE user_id = $1 AND provider = 'plata' AND status = 'active'`,
         [row.user_id],
       );
+      billingRecurringChargeTotal.inc({
+        provider: "plata",
+        result: "past_due",
+      });
       pastDue += 1;
     }
   }
