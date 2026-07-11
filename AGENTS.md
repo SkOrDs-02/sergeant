@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-07-04 by @dimastahov16012003. **Next review:** 2026-10-02.
+> **Last touched:** 2026-07-11 by @dimastahov16012003. **Next review:** 2026-10-09.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -210,7 +210,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 ## Deployment & test users
 
 - **Frontend:** Vercel (preview deploy on each PR; free tier may rate-limit).
-- **Backend:** Railway via `Dockerfile.api`. Pre-deploy: `pnpm db:migrate`. Health endpoint: `/health`. Migrations require `MIGRATE_DATABASE_URL` (= public DB URL).
+- **Backend:** Hetzner CX23 VPS під Coolify (self-hosted PaaS) via `Dockerfile.api` — образ білдить GitHub Actions (`deploy-api.yml`) → `ghcr.io`, Coolify тягне й деплоїть. Pre-deploy: `node dist-server/migrate.js` (Coolify `pre_deployment_command`). Health endpoint: `/health`. Міграції потребують `MIGRATE_DATABASE_URL`. Топологія та rationale — [ADR-0074](./docs/04-governance/adr/0074-hosting-hetzner-coolify.md) (superseded ADR-0009 у частині бекенду). Railway виведено з експлуатації.
 - **Test users:** primary test-user ID живе поза репо (Railway variables / локальний `.env`-нотатник власника) — репо публічне, не комітьте реальні user ID чи фінансову топологію.
 
 ## See also
