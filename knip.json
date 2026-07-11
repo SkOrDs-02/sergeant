@@ -68,11 +68,7 @@
     "apps/server": {
       "project": ["src/**/*.{js,ts}"],
       // Scaffolded server barrels — all carry @scaffolded + @nextStep markers.
-      "ignore": [
-        "src/lib/ragEval/index.ts",
-        "src/modules/ai-memory/index.ts",
-        "src/modules/billing/index.ts"
-      ],
+      "ignore": ["src/lib/ragEval/index.ts", "src/modules/ai-memory/index.ts"],
       "ignoreDependencies": [
         "pino-pretty",
         // pino-loki — used as string reference `target: "pino-loki"` in lokiTransport.ts,
