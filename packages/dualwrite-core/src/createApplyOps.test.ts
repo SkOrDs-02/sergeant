@@ -1,10 +1,8 @@
 /**
  * Unit tests for `createApplyOps` (ADR-0073, крок 2).
  *
- * Covers both error policies and exhaustive handler dispatch. The
- * `"best-effort"` counters must match the legacy hand-written loop; the
- * `"atomic-batch"` branch must BEGIN/COMMIT on success and ROLLBACK with
- * `errored = ops.length` on any failure.
+ * Covers the `"best-effort"` error policy and exhaustive handler dispatch.
+ * Counters must match the legacy hand-written loop it replaces.
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -71,34 +69,5 @@ describe("createApplyOps — best-effort", () => {
       "dual-write op failed",
       expect.objectContaining({ op: "boom", error: "boom" }),
     );
-  });
-});
-
-describe("createApplyOps — atomic-batch", () => {
-  it("wraps a successful batch in BEGIN/COMMIT", async () => {
-    const apply = createApplyOps<Op>({ errorPolicy: "atomic-batch", handlers });
-    const { client, exec } = makeClient();
-    const result = await apply(
-      client,
-      [{ kind: "add", n: 1 }, { kind: "skip" }],
-      OPTS,
-    );
-    expect(result).toEqual({ applied: 1, errored: 0, skipped: 1 });
-    expect(exec).toHaveBeenNthCalledWith(1, "BEGIN");
-    expect(exec).toHaveBeenLastCalledWith("COMMIT");
-  });
-
-  it("ROLLBACKs and reports errored = ops.length on any failure", async () => {
-    const logger = vi.fn();
-    const apply = createApplyOps<Op>({ errorPolicy: "atomic-batch", handlers });
-    const { client, exec } = makeClient();
-    const result = await apply(
-      client,
-      [{ kind: "add", n: 1 }, { kind: "boom" }, { kind: "add", n: 2 }],
-      { ...OPTS, logger },
-    );
-    expect(result).toEqual({ applied: 0, errored: 3, skipped: 0 });
-    expect(exec).toHaveBeenNthCalledWith(1, "BEGIN");
-    expect(exec).toHaveBeenLastCalledWith("ROLLBACK");
   });
 });

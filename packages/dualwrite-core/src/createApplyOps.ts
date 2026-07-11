@@ -1,20 +1,15 @@
 /**
  * Op-loop factory with a parameterised error policy (ADR-0073, крок 2).
  *
- * Generalises the two apply shapes that live in the module adapters today:
- *
- *  - `"best-effort"` — per-op try/catch; a single failed op is counted and
- *    logged but never aborts the rest (finyk/nutrition/routine + all mobile).
- *  - `"atomic-batch"` — BEGIN/COMMIT/ROLLBACK; any failure rolls the whole
- *    batch back and reports `errored = ops.length` (web-fizruk only; kept in
- *    the API for крок 4, currently unused by any migrated pipeline).
+ * `"best-effort"` — per-op try/catch; a single failed op is counted and
+ * logged but never aborts the rest. All 8 module adapters (finyk/fizruk/
+ * nutrition/routine × web/mobile) use this policy.
  *
  * The handler map is keyed by `Op["kind"]`, so the type system enforces an
  * exhaustive handler set at the call site.
  *
  * AI-CONTEXT: platform-neutral — the logger is injected (ADR-0073 § Risks #2);
- * no DOM/RN/Sentry. The `"best-effort"` branch is byte-behaviourally identical
- * to the hand-written loop it replaces (see `apply.ts` `applyDualWriteOps`).
+ * no DOM/RN/Sentry.
  */
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
@@ -25,7 +20,7 @@ import type {
   DualWriteLogger,
 } from "./apply.js";
 
-export type ErrorPolicy = "best-effort" | "atomic-batch";
+export type ErrorPolicy = "best-effort";
 
 /** Runtime passed to every op handler. */
 export interface DualWriteRuntime {
@@ -71,9 +66,6 @@ export function createApplyOps<Op extends { readonly kind: string }>(
       clientTs: options.clientTs,
     };
 
-    if (spec.errorPolicy === "atomic-batch") {
-      return applyAtomicBatch(spec, client, ops, rt, logger);
-    }
     return applyBestEffort(spec, client, ops, rt, logger);
   };
 }
@@ -117,32 +109,4 @@ async function applyBestEffort<Op extends { readonly kind: string }>(
   }
 
   return { applied, errored, skipped };
-}
-
-async function applyAtomicBatch<Op extends { readonly kind: string }>(
-  spec: ApplyOpsSpec<Op>,
-  client: SqliteMigrationClient,
-  ops: readonly Op[],
-  rt: DualWriteRuntime,
-  logger: DualWriteLogger,
-): Promise<ApplyDualWriteResult> {
-  let applied = 0;
-  let skipped = 0;
-
-  await client.exec("BEGIN");
-  try {
-    for (const op of ops) {
-      const outcome = await runHandler(spec, client, op, rt);
-      if (outcome === "applied") applied += 1;
-      else skipped += 1;
-    }
-    await client.exec("COMMIT");
-    return { applied, errored: 0, skipped };
-  } catch (err) {
-    await client.exec("ROLLBACK");
-    logger("warn", "dual-write batch failed", {
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return { applied: 0, errored: ops.length, skipped: 0 };
-  }
 }
