@@ -669,3 +669,45 @@ describe("assertStartupEnv — SENTRY_DSN required in production (audit 2026-06-
     expect(() => assertStartupEnv()).not.toThrow();
   });
 });
+
+describe("assertStartupEnv — Phase 7 UA billing provider keys", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("throws when LIQPAY_ENABLED=true but keys are missing", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      LIQPAY_ENABLED: "true",
+    });
+    expect(() => assertStartupEnv()).toThrow(/LIQPAY_PUBLIC_KEY/);
+  });
+
+  it("does NOT throw when LIQPAY_ENABLED=true and both keys are set", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      LIQPAY_ENABLED: "true",
+      LIQPAY_PUBLIC_KEY: "sandbox_pub",
+      LIQPAY_PRIVATE_KEY: "sandbox_priv",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("throws when PLATA_ENABLED=true but PLATA_TOKEN is missing", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      PLATA_ENABLED: "true",
+    });
+    expect(() => assertStartupEnv()).toThrow(/PLATA_TOKEN/);
+  });
+
+  it("does NOT throw when PLATA_ENABLED=true and PLATA_TOKEN is set", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      PLATA_ENABLED: "true",
+      PLATA_TOKEN: "test-merchant-token",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});

@@ -34,6 +34,7 @@ import {
 import { ensurePlataPubkey, plataProvider } from "../modules/billing/plata.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
 import { logger } from "../obs/logger.js";
+import { billingCheckoutTotal, billingWebhookTotal } from "../obs/metrics.js";
 
 type AuthedRequest = Request & {
   user?: { id: string; email?: string | null };
@@ -106,9 +107,10 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       const parsed = parseBody(BillingCheckoutRequestSchema, req);
       const country = userCountry(req);
 
+      let providerId: ProviderId = "stripe";
       try {
         // Явний provider → валідуємо; інакше беремо перший enabled для країни.
-        const providerId: ProviderId = parsed.provider
+        providerId = parsed.provider
           ? resolveProvider(parsed.provider, { country })
           : (getEnabledProviders({ country })[0] ??
             (() => {
@@ -122,8 +124,25 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
             plan: parsed.plan,
           }),
         );
+        billingCheckoutTotal.inc({ provider: providerId, result: "ok" });
+        logger.info({
+          msg: "billing_checkout_created",
+          provider: providerId,
+          plan: parsed.plan,
+          mode: payload.mode,
+        });
         res.json(payload);
       } catch (err) {
+        const result =
+          err instanceof ProviderNotAvailableError
+            ? "unavailable"
+            : err instanceof BillingConfigurationError
+              ? "unavailable"
+              : "error";
+        billingCheckoutTotal.inc({
+          provider: parsed.provider ?? providerId,
+          result,
+        });
         if (handleBillingError(err, res)) return;
         throw err;
       }
@@ -234,9 +253,11 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
             ? "stripe signature header missing"
             : "stripe signature mismatch",
       });
+      billingWebhookTotal.inc({ provider: "stripe", status: "bad_sig" });
       res.status(400).json({ error: "Invalid Stripe signature" });
       return;
     }
+    billingWebhookTotal.inc({ provider: "stripe", status: "verified" });
     const event = JSON.parse(raw.toString("utf8")) as {
       id?: unknown;
       type?: unknown;
@@ -278,9 +299,11 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
               ? "liqpay data/signature missing"
               : "liqpay signature mismatch",
         });
+        billingWebhookTotal.inc({ provider: "liqpay", status: "bad_sig" });
         res.status(400).json({ error: "Invalid LiqPay signature" });
         return;
       }
+      billingWebhookTotal.inc({ provider: "liqpay", status: "verified" });
       await liqpayProvider.processWebhook(pool, data);
       res.json({ ok: true });
     },
@@ -309,9 +332,11 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
             ? "plata X-Sign missing"
             : "plata signature mismatch",
       });
+      billingWebhookTotal.inc({ provider: "plata", status: "bad_sig" });
       res.status(400).json({ error: "Invalid Plata signature" });
       return;
     }
+    billingWebhookTotal.inc({ provider: "plata", status: "verified" });
     await plataProvider.processWebhook(pool, raw);
     res.json({ ok: true });
   });

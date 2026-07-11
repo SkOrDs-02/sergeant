@@ -236,4 +236,70 @@ describe("billing routes", () => {
     // No Stripe API call when we know the user has no customer record.
     expect(vi.mocked(fetchMock)).not.toHaveBeenCalled();
   });
+
+  // ── Phase 7 UA billing: multi-provider routes ──────────────────────
+  it("GET /providers lists enabled UA providers by geo", async () => {
+    setEnv("LIQPAY_ENABLED", "true");
+    setEnv("PLATA_ENABLED", "true");
+    const app = createTestApp(createQueryPool(vi.fn()));
+
+    const res = await request(app)
+      .get("/api/billing/providers")
+      .set("x-vercel-ip-country", "UA");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ providers: ["liqpay", "plata"] });
+  });
+
+  it("checkout with provider=liqpay returns a LiqPay checkout URL", async () => {
+    setEnv("LIQPAY_ENABLED", "true");
+    setEnv("LIQPAY_PUBLIC_KEY", "sandbox_i123");
+    setEnv("LIQPAY_PRIVATE_KEY", "sandbox_priv");
+    setEnv("PRO_MONTHLY_UAH_KOPIYKAS", "19900");
+    const app = createTestApp(createQueryPool(vi.fn()));
+
+    const res = await request(app)
+      .post("/api/billing/checkout")
+      .set("x-vercel-ip-country", "UA")
+      .send({ plan: "pro", provider: "liqpay" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.mode).toBe("test"); // sandbox_ public key
+    expect(String(res.body.url)).toContain("liqpay.ua");
+  });
+
+  it("rejects provider=stripe for a UA user with 400 PROVIDER_UNAVAILABLE", async () => {
+    setEnv("LIQPAY_ENABLED", "true");
+    const app = createTestApp(createQueryPool(vi.fn()));
+
+    const res = await request(app)
+      .post("/api/billing/checkout")
+      .set("x-vercel-ip-country", "UA")
+      .send({ plan: "pro", provider: "stripe" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ code: "PROVIDER_UNAVAILABLE" });
+  });
+
+  it("POST /cancel is best-effort and returns ok when user has no subscription", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const app = createTestApp(createQueryPool(query));
+
+    const res = await request(app).post("/api/billing/cancel");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+  });
+
+  it("liqpay-callback with missing signature → 400 (no processing)", async () => {
+    const query = vi.fn();
+    const app = createTestApp(createQueryPool(query));
+
+    const res = await request(app)
+      .post("/api/billing/liqpay-callback")
+      .send("data=abc"); // signature missing
+
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+  });
 });

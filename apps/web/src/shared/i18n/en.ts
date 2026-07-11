@@ -590,7 +590,7 @@ export const messagesEn: Partial<MessageCatalog> = {
       freeTagline:
         "All modules, unlimited manual tracking. AI — 15 messages/day.",
       premiumName: "Premium",
-      premiumCadence: "/ month, or ₴1,490 / year (≈₴124/mo, −37%)",
+      premiumCadence: "/ month (yearly plan — coming soon)",
       premiumTagline: "Everything unlocked. One plan — no tiers, no add-ons.",
     },
     features: {

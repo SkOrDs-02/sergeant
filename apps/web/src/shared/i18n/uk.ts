@@ -850,7 +850,7 @@ export const messages = {
       freeTagline:
         "Усі модулі, ручний трекінг без лімітів. AI — 15 повідомлень/день.",
       premiumName: "Premium",
-      premiumCadence: "/ місяць, або ₴1490 / рік (≈₴124/міс, −37%)",
+      premiumCadence: "/ місяць (річний тариф — скоро)",
       premiumTagline: "Усе розблоковано. Один план — без рівнів і доплат.",
     },
     features: {
