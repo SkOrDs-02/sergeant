@@ -34,6 +34,7 @@ import {
 import { ensurePlataPubkey, plataProvider } from "../modules/billing/plata.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
 import { logger } from "../obs/logger.js";
+import { ValidationError } from "../obs/errors.js";
 
 type AuthedRequest = Request & {
   user?: { id: string; email?: string | null };
@@ -234,8 +235,7 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
             ? "stripe signature header missing"
             : "stripe signature mismatch",
       });
-      res.status(400).json({ error: "Invalid Stripe signature" });
-      return;
+      throw new ValidationError("Invalid Stripe signature");
     }
     const event = JSON.parse(raw.toString("utf8")) as {
       id?: unknown;
@@ -243,8 +243,7 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       data?: unknown;
     };
     if (typeof event.id !== "string" || typeof event.type !== "string") {
-      res.status(400).json({ error: "Invalid Stripe event" });
-      return;
+      throw new ValidationError("Invalid Stripe event");
     }
     const stripeEvent =
       event.data && typeof event.data === "object"

@@ -4,6 +4,7 @@ import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createBillingRouter } from "./billing.js";
+import { errorHandler } from "../http/errorHandler.js";
 
 /**
  * Route-level e2e для `POST /api/billing/stripe-webhook`. Закриває gap D1
@@ -53,6 +54,10 @@ function makeApp(pool: ReturnType<typeof makePool>) {
     express.raw({ type: "application/json" }),
   );
   app.use(createBillingRouter({ pool: pool as never }));
+  // Signature/event-shape guards throw AppError; the terminal errorHandler
+  // serialises them into the canonical `{ error, message, code }` envelope —
+  // same as in `apps/server/src/app.ts`.
+  app.use(errorHandler);
   return app;
 }
 
@@ -135,7 +140,11 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .send(tampered.toString("utf8"));
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: "Invalid Stripe signature" });
+    expect(res.body).toEqual({
+      error: "Invalid Stripe signature",
+      message: "Invalid Stripe signature",
+      code: "VALIDATION",
+    });
     expect(pool.connect).not.toHaveBeenCalled();
   });
 
@@ -149,7 +158,11 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .send(payload.toString("utf8"));
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: "Invalid Stripe signature" });
+    expect(res.body).toEqual({
+      error: "Invalid Stripe signature",
+      message: "Invalid Stripe signature",
+      code: "VALIDATION",
+    });
     expect(pool.connect).not.toHaveBeenCalled();
   });
 
@@ -165,7 +178,11 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .send(payload.toString("utf8"));
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: "Invalid Stripe signature" });
+    expect(res.body).toEqual({
+      error: "Invalid Stripe signature",
+      message: "Invalid Stripe signature",
+      code: "VALIDATION",
+    });
     expect(pool.connect).not.toHaveBeenCalled();
   });
 
@@ -183,7 +200,11 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .send(payload.toString("utf8"));
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: "Invalid Stripe event" });
+    expect(res.body).toEqual({
+      error: "Invalid Stripe event",
+      message: "Invalid Stripe event",
+      code: "VALIDATION",
+    });
     expect(pool.connect).not.toHaveBeenCalled();
   });
 
@@ -201,7 +222,11 @@ describe("POST /api/billing/stripe-webhook (route-level e2e)", () => {
       .send(payload.toString("utf8"));
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: "Invalid Stripe event" });
+    expect(res.body).toEqual({
+      error: "Invalid Stripe event",
+      message: "Invalid Stripe event",
+      code: "VALIDATION",
+    });
     expect(pool.connect).not.toHaveBeenCalled();
   });
 
