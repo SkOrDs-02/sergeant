@@ -1,9 +1,9 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-10",
+  "generated_at": "2026-07-11",
   "counts": {
-    "adr": 70,
+    "adr": 71,
     "audit": 24,
     "hard-rule": 26,
     "initiative": 52,
@@ -105,7 +105,7 @@
       "type": "adr",
       "title": "ADR-0009: Hosting split — Railway (API + Postgres) + Vercel (web)",
       "path": "docs/04-governance/adr/0009-hosting-split-railway-vercel.md",
-      "status": "accepted",
+      "status": "superseded by ADR-0074 (backend-частина; Vercel + edge-proxy топологія збережена в ADR-0074)",
       "tier": "core",
       "meta": {
         "number": 9
@@ -539,7 +539,7 @@
       "tier": "core",
       "meta": {
         "number": 50,
-        "last_validated": "2026-06-09"
+        "last_validated": "2026-07-10"
       }
     },
     {
@@ -794,6 +794,17 @@
       "meta": {
         "number": 73,
         "last_validated": "2026-07-10"
+      }
+    },
+    {
+      "id": "adr:0074",
+      "type": "adr",
+      "title": "ADR-0074: Backend hosting — Hetzner VPS + Coolify (замість Railway)",
+      "path": "docs/04-governance/adr/0074-hosting-hetzner-coolify.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 74
       }
     },
     {
@@ -5571,6 +5582,11 @@
       "from": "adr:0073",
       "to": "pr:70",
       "type": "touched-by"
+    },
+    {
+      "from": "adr:0074",
+      "to": "adr:0009",
+      "type": "supersedes"
     },
     {
       "from": "audit:2026-05-06-ux-roast-pr-plan",

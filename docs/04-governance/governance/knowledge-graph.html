@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-07-10)</title>
+    <title>Sergeant — Knowledge Graph (2026-07-11)</title>
     <style>
       body {
         font-family:
@@ -97,11 +97,11 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-07-10 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-07-11 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
-      <span class="chip chip-adr">adr: <b>70</b></span>
+      <span class="chip chip-adr">adr: <b>71</b></span>
       <span class="chip chip-audit">audit: <b>24</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>52</b></span>
@@ -111,7 +111,7 @@
     </div>
 
     <details open>
-      <summary>Nodes (251 core)</summary>
+      <summary>Nodes (252 core)</summary>
       <table>
         <thead>
           <tr>
@@ -234,7 +234,10 @@
                 (web)</a
               >
             </td>
-            <td>accepted</td>
+            <td>
+              superseded by ADR-0074 (backend-частина; Vercel + edge-proxy
+              топологія збережена в ADR-0074)
+            </td>
             <td>number=9</td>
           </tr>
           <tr>
@@ -717,7 +720,7 @@
               >
             </td>
             <td>Accepted</td>
-            <td>number=50 · last_validated=2026-06-09</td>
+            <td>number=50 · last_validated=2026-07-10</td>
           </tr>
           <tr>
             <td>adr</td>
@@ -992,6 +995,19 @@
             </td>
             <td>Accepted</td>
             <td>number=73 · last_validated=2026-07-10</td>
+          </tr>
+          <tr>
+            <td>adr</td>
+            <td><code>adr:0074</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md"
+                >ADR-0074: Backend hosting — Hetzner VPS + Coolify (замість
+                Railway)</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=74</td>
           </tr>
           <tr>
             <td>audit</td>
@@ -3823,7 +3839,7 @@
     </details>
 
     <details>
-      <summary>Edges (460 total, first 500 core-to-core)</summary>
+      <summary>Edges (461 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -4032,6 +4048,11 @@
             <td><code>adr:0073</code></td>
             <td>references</td>
             <td><code>hard-rule:18</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0074</code></td>
+            <td>supersedes</td>
+            <td><code>adr:0009</code></td>
           </tr>
           <tr>
             <td><code>audit:2026-05-06-ux-roast-pr-plan</code></td>
@@ -4640,7 +4661,8 @@
   adr_0028[&quot;ADR-0028: pgvector + Voyage embeddings for AI semantic memor&quot;]
   adr_0030[&quot;ADR-0030: Структура Telegram-каналів для n8n reporting&quot;]
   adr_0031[&quot;ADR-0031: OpenClaw v0 — Telegram-only co-founder bot&quot;]
-  adr_0052 --|supersedes|--&gt; adr_0010</code></pre>
+  adr_0052 --|supersedes|--&gt; adr_0010
+  adr_0074 --|supersedes|--&gt; adr_0009</code></pre>
       <p>
         <em
           >Tip: paste the block above into
