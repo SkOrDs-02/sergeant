@@ -115,56 +115,9 @@ export function moduleHasRealEntry(
  * module. Pure scan of storage — safe to call on every render.
  */
 export function hasAnyRealEntry(store: KVStore): boolean {
-  // Finyk — manual expenses.
-  const manual = readJSON(store, FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL);
-  if (hasNonDemoItem(manual)) return true;
-
-  // A synced monobank tx cache counts as real data by definition.
-  const finykCache = readJSON<{ transactions?: unknown[] }>(
-    store,
-    FIRST_REAL_ENTRY_SOURCES.FINYK_TX_CACHE,
+  return DASHBOARD_MODULE_IDS.some((moduleId) =>
+    moduleHasRealEntry(store, moduleId),
   );
-  if (
-    finykCache &&
-    Array.isArray(finykCache.transactions) &&
-    finykCache.transactions.length > 0
-  ) {
-    return true;
-  }
-
-  // Fizruk — workouts. The cache may be either an array or an object
-  // whose `.workouts` slot holds the array.
-  const fizruk = readJSON<unknown[] | { workouts?: unknown[] }>(
-    store,
-    FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS,
-  );
-  const workouts = Array.isArray(fizruk)
-    ? fizruk
-    : fizruk && Array.isArray(fizruk.workouts)
-      ? fizruk.workouts
-      : [];
-  if (hasNonDemoItem(workouts)) return true;
-
-  // Routine — habits. Demo habits are flagged `demo: true`.
-  const routine = readJSON<{ habits?: unknown[] }>(
-    store,
-    FIRST_REAL_ENTRY_SOURCES.ROUTINE,
-  );
-  if (routine && hasNonDemoItem(routine.habits)) return true;
-
-  // Nutrition — meal log keyed by date; inspect meals across all days.
-  const nutrition = readJSON<Record<string, { meals?: unknown }>>(
-    store,
-    FIRST_REAL_ENTRY_SOURCES.NUTRITION_LOG,
-  );
-  if (nutrition && typeof nutrition === "object" && !Array.isArray(nutrition)) {
-    for (const day of Object.values(nutrition)) {
-      const meals = day?.meals;
-      if (hasNonDemoItem(meals)) return true;
-    }
-  }
-
-  return false;
 }
 
 /**
@@ -183,50 +136,11 @@ export function hasAnyRealEntry(store: KVStore): boolean {
 export function getFirstRealEntryModule(
   store: KVStore,
 ): DashboardModuleId | null {
-  // Finyk — manual expenses, then synced monobank cache.
-  const manual = readJSON(store, FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL);
-  if (hasNonDemoItem(manual)) return "finyk";
-  const finykCache = readJSON<{ transactions?: unknown[] }>(
-    store,
-    FIRST_REAL_ENTRY_SOURCES.FINYK_TX_CACHE,
+  return (
+    DASHBOARD_MODULE_IDS.find((moduleId) =>
+      moduleHasRealEntry(store, moduleId),
+    ) ?? null
   );
-  if (
-    finykCache &&
-    Array.isArray(finykCache.transactions) &&
-    finykCache.transactions.length > 0
-  ) {
-    return "finyk";
-  }
-
-  const fizruk = readJSON<unknown[] | { workouts?: unknown[] }>(
-    store,
-    FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS,
-  );
-  const workouts = Array.isArray(fizruk)
-    ? fizruk
-    : fizruk && Array.isArray(fizruk.workouts)
-      ? fizruk.workouts
-      : [];
-  if (hasNonDemoItem(workouts)) return "fizruk";
-
-  const routine = readJSON<{ habits?: unknown[] }>(
-    store,
-    FIRST_REAL_ENTRY_SOURCES.ROUTINE,
-  );
-  if (routine && hasNonDemoItem(routine.habits)) return "routine";
-
-  const nutrition = readJSON<Record<string, { meals?: unknown }>>(
-    store,
-    FIRST_REAL_ENTRY_SOURCES.NUTRITION_LOG,
-  );
-  if (nutrition && typeof nutrition === "object" && !Array.isArray(nutrition)) {
-    for (const day of Object.values(nutrition)) {
-      const meals = day?.meals;
-      if (hasNonDemoItem(meals)) return "nutrition";
-    }
-  }
-
-  return null;
 }
 
 /**
