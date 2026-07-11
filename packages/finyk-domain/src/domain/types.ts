@@ -56,9 +56,6 @@ export interface Category {
   color?: string | undefined;
 }
 
-/** Тип бюджету. */
-export type BudgetType = "limit" | "goal";
-
 /**
  * Бюджет-ліміт — стеля витрат на одну категорію за місяць.
  */
@@ -179,17 +176,6 @@ export interface MerchantStat {
   name: string;
   count: number;
   total: number;
-}
-
-/** Агрегат місячного бюджету. */
-export interface MonthBudgetSummary {
-  totalPlan: number;
-  planIncome: number;
-  totalFact: number;
-  totalRemaining: number;
-  safePerDay: number;
-  isOverall: boolean;
-  daysLeft: number;
 }
 
 /** Результат обчислень calculateRemainingBudget. */

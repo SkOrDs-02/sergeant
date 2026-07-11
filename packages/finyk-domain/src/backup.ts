@@ -92,20 +92,19 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
 
   const out: FinykBackup = {};
 
-  const b = needArr(obj["budgets"], "budgets");
-  if (b) out.budgets = b;
-  const s = needArr(obj["subscriptions"], "subscriptions");
-  if (s) out.subscriptions = s;
-  const ma = needArr(obj["manualAssets"], "manualAssets");
-  if (ma) out.manualAssets = ma;
-  const md = needArr(obj["manualDebts"], "manualDebts");
-  if (md) out.manualDebts = md;
-  const r = needArr(obj["receivables"], "receivables");
-  if (r) out.receivables = r;
-  const ha = needArr(obj["hiddenAccounts"], "hiddenAccounts");
-  if (ha) out.hiddenAccounts = ha;
-  const ht = needArr(obj["hiddenTxIds"], "hiddenTxIds");
-  if (ht) out.hiddenTxIds = ht;
+  const ARRAY_FIELDS = [
+    "budgets",
+    "subscriptions",
+    "manualAssets",
+    "manualDebts",
+    "receivables",
+    "hiddenAccounts",
+    "hiddenTxIds",
+  ] as const;
+  for (const field of ARRAY_FIELDS) {
+    const v = needArr(obj[field], field);
+    if (v) out[field] = v;
+  }
 
   if (obj["monthlyPlan"] !== undefined && obj["monthlyPlan"] !== null) {
     if (
@@ -117,12 +116,15 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
     out.monthlyPlan = obj["monthlyPlan"] as Record<string, unknown>;
   }
 
-  const tc = needObj(obj["txCategories"], "txCategories");
-  if (tc) out.txCategories = tc;
-  const ts = needObj(obj["txSplits"], "txSplits");
-  if (ts) out.txSplits = ts;
-  const mdl = needObj(obj["monoDebtLinkedTxIds"], "monoDebtLinkedTxIds");
-  if (mdl) out.monoDebtLinkedTxIds = mdl;
+  const OBJECT_FIELDS = [
+    "txCategories",
+    "txSplits",
+    "monoDebtLinkedTxIds",
+  ] as const;
+  for (const field of OBJECT_FIELDS) {
+    const v = needObj(obj[field], field);
+    if (v) out[field] = v;
+  }
 
   if (obj["networthHistory"] !== undefined && obj["networthHistory"] !== null) {
     const nh = needArr(obj["networthHistory"], "networthHistory");
