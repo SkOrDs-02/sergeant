@@ -6,8 +6,36 @@ import type {
   UserPreferences,
   UserPreferencesPatch,
 } from "@sergeant/shared";
+import { logger } from "../../obs/logger.js";
+import { providerRegistry, type ProviderId } from "../billing/index.js";
 
 type Queryable = Pick<Pool | PoolClient, "query">;
+
+/**
+ * ADR-0016: перед SQL-cancel мусимо сказати провайдеру зупинити списання —
+ * інакше LiqPay продовжить знімати з видаленого юзера, а в Plata лишиться
+ * card-token (PII). Best-effort: провайдер-помилка НЕ валить deletion
+ * (логуємо й продовжуємо). Кожен `cancelSubscription` — no-op, якщо своєї
+ * підписки нема, тож безпечно кликати всі три.
+ */
+async function notifyProvidersCancel(
+  pool: Pool,
+  userId: string,
+): Promise<void> {
+  await Promise.all(
+    (["stripe", "liqpay", "plata"] as ProviderId[]).map(async (id) => {
+      try {
+        await providerRegistry[id].cancelSubscription(pool, userId);
+      } catch (err) {
+        logger.warn({
+          msg: "delete_user_provider_cancel_failed",
+          provider: id,
+          err: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }),
+  );
+}
 
 const DEFAULT_PREFERENCES: Omit<UserPreferences, "updatedAt"> = {
   analytics: true,
@@ -205,6 +233,11 @@ export async function deleteUserData(
   pool: Pool,
   userId: string,
 ): Promise<MeDeleteResponse> {
+  // Best-effort provider-cancel ПЕРЕД транзакцією (робить зовнішні HTTP —
+  // не місце в DB-txn). plata.cancelSubscription сам видаляє card-token;
+  // DELETE FROM "user" нижче каскадно добиває plata_card_token, якщо лишився.
+  await notifyProvidersCancel(pool, userId);
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");

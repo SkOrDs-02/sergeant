@@ -133,6 +133,9 @@ export const syncKeys = {
 export const billingKeys = {
   all: ["billing"] as const,
   status: ["billing", "status"] as const,
+  // Phase 7 UA billing: список payment-провайдерів, доступних юзеру
+  // (`/api/billing/providers`) — джерело для кнопок на /pricing.
+  providers: ["billing", "providers"] as const,
 };
 
 // ─── Token hashing helper ─────────────────────────────────────────────────

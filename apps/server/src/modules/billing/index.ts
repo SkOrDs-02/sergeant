@@ -19,14 +19,21 @@ export {
   verifyStripeSignature,
   BillingConfigurationError,
 } from "./stripe.js";
-// Multi-provider scaffold (0010 PR-8). LiqPay live — Phase 7.
-export { getProviderForCountry } from "./provider.js";
+// Multi-provider billing (Phase 7 UA billing — LiqPay + Plata live).
+export {
+  getEnabledProviders,
+  resolveProvider,
+  ProviderNotAvailableError,
+} from "./provider.js";
 export type {
   BillingProvider,
   ProviderId,
   ProviderCheckoutInput,
   ProviderPortalInput,
   ProviderSessionUser,
-  ResolveProviderOptions,
+  EnabledProvidersOptions,
 } from "./provider.js";
-export { liqpayProvider, NotImplementedError } from "./liqpay.js";
+export { liqpayProvider } from "./liqpay.js";
+export { plataProvider } from "./plata.js";
+export { stripeProvider } from "./stripeProvider.js";
+export { providerRegistry } from "./registry.js";

@@ -6,7 +6,12 @@ import type {
   BillingStatusResponse,
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
+import { BillingConfigurationError } from "./provider.js";
 import { isoOrNull } from "./stripeShared.js";
+
+// Re-export канонічного класу (тепер живе у provider.ts) — зберігає
+// імпорт-шлях `billing/stripe.js` для routes і тестів.
+export { BillingConfigurationError };
 
 // Stripe webhook (`verifyStripeSignature` / `processStripeWebhook` /
 // `DEFAULT_STRIPE_WEBHOOK_TOLERANCE_SECONDS`) винесено у `./stripeWebhook.ts`,
@@ -54,13 +59,6 @@ interface BillingRow {
   plan: BillingPlan;
   status: string;
   current_period_end: Date | string | null;
-}
-
-export class BillingConfigurationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "BillingConfigurationError";
-  }
 }
 
 /**

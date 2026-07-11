@@ -1,5 +1,10 @@
 import { Router } from "express";
 import type { Pool } from "pg";
+import { logger } from "../../obs/logger.js";
+import {
+  providerRegistry,
+  type ProviderId,
+} from "../../modules/billing/index.js";
 
 /**
  * Internal (bearer-guarded) manual billing controls — admin/ops tooling for
@@ -53,6 +58,22 @@ export function createBillingInternalRouter({ pool }: { pool: Pool }): Router {
       res.status(400).json({ error: "userId is required" });
       return;
     }
+    // Провайдер-керовані підписки (liqpay/plata/stripe) НЕ зупиняться від
+    // самого SQL-cancel — спершу best-effort сигналимо провайдеру зупинити
+    // списання (кожен — no-op без своєї підписки). Помилка не валить downgrade.
+    await Promise.all(
+      (["stripe", "liqpay", "plata"] as ProviderId[]).map(async (id) => {
+        try {
+          await providerRegistry[id].cancelSubscription(pool, userId);
+        } catch (err) {
+          logger.warn({
+            msg: "internal_downgrade_provider_cancel_failed",
+            provider: id,
+            err: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }),
+    );
     const { rows } = await pool.query<{
       id: number;
       plan: string;

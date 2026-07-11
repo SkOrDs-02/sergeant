@@ -28,6 +28,8 @@ import { logger } from "./logger.js";
 export type SecurityEventName =
   | "mono_webhook_bad_payload"
   | "stripe_webhook_bad_sig"
+  | "liqpay_webhook_bad_sig"
+  | "plata_webhook_bad_sig"
   | "auth_session_ua_drift"
   | "auth_apple_client_secret_failed"
   | "prompt_injection_attempt"

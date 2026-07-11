@@ -127,6 +127,20 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
     type: "application/json",
   },
   {
+    pathPrefix: "/api/billing/liqpay-callback",
+    kind: "raw",
+    limit: "128kb",
+    reason: "LiqPay callback (sha1 signature over form `data` field)",
+    type: "application/x-www-form-urlencoded",
+  },
+  {
+    pathPrefix: "/api/billing/plata-webhook",
+    kind: "raw",
+    limit: "128kb",
+    reason: "Plata/monopay webhook (ECDSA X-Sign over raw body)",
+    type: "application/json",
+  },
+  {
     pathPrefix: "/api/metrics/web-vitals",
     kind: "json",
     limit: "10kb",

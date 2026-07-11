@@ -809,6 +809,51 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/billing/providers": {
+    get: {
+      summary: "Payment-провайдери, доступні юзеру (кнопки на /pricing)",
+      tags: ["monetization"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "UA → увімкнені liqpay/plata; інші країни → stripe.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.BillingProvidersResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/billing/cancel": {
+    post: {
+      summary:
+        "Скасувати Pro (власна кнопка; LiqPay/Plata без Customer Portal)",
+      description:
+        "Скасовує активну підписку через provider.cancelSubscription " +
+        "(LiqPay unsubscribe / Plata stop-scheduler). Доступ лишається до " +
+        "кінця оплаченого періоду (cancel_at_period_end).",
+      tags: ["monetization"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Скасування прийнято.",
+          content: {
+            "application/json": { schema: namedSchemas.BillingCancelResponse },
+          },
+        },
+        "401": unauthorized,
+        "503": {
+          description: "Billing env is not configured.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
   "/api/billing/stripe-webhook": {
     post: {
       summary: "Stripe webhook delivery endpoint",
@@ -818,6 +863,33 @@ export const paths: ZodOpenApiPathsObject = {
           "stripe-signature": z
             .string()
             .describe("Stripe webhook signature header (`v1` HMAC)."),
+        }),
+      },
+      responses: {
+        "200": okEmpty,
+        "400": validationError,
+      },
+    },
+  },
+  "/api/billing/liqpay-callback": {
+    post: {
+      summary: "LiqPay server callback (form data+signature, sha1)",
+      tags: ["monetization"],
+      responses: {
+        "200": okEmpty,
+        "400": validationError,
+      },
+    },
+  },
+  "/api/billing/plata-webhook": {
+    post: {
+      summary: "Plata/monopay webhook (JSON, X-Sign ECDSA)",
+      tags: ["monetization"],
+      requestParams: {
+        header: z.object({
+          "x-sign": z
+            .string()
+            .describe("monopay ECDSA signature over the raw request body."),
         }),
       },
       responses: {

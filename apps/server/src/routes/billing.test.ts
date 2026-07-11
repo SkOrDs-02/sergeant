@@ -113,8 +113,12 @@ describe("billing routes", () => {
     const query = vi.fn().mockResolvedValue({ rows: [] });
     const app = createTestApp(createQueryPool(query));
 
+    // Non-UA geo → resolver picks Stripe (dormant для UA лише); Stripe env
+    // відсутній у тесті → BillingConfigurationError → 503. Для UA-юзера з
+    // вимкненими флагами відповідь була б 400 PROVIDER_UNAVAILABLE.
     const res = await request(app)
       .post("/api/billing/checkout")
+      .set("x-vercel-ip-country", "US")
       .send({ plan: "plus" });
 
     expect(res.status).toBe(503);
@@ -207,15 +211,15 @@ describe("billing routes", () => {
   });
 
   it("returns BILLING_UNAVAILABLE when Stripe env is missing", async () => {
-    const query = vi.fn();
+    // Portal тепер читає провайдера з ВЛАСНОЇ підписки юзера (bug_018 fix);
+    // немає рядка → fallback на geo → stripe → env відсутній → 503.
+    const query = vi.fn().mockResolvedValue({ rows: [] });
     const app = createTestApp(createQueryPool(query));
 
     const res = await request(app).post("/api/billing/portal");
 
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({ code: "BILLING_UNAVAILABLE" });
-    // Guard: we should never hit Stripe or DB if env is misconfigured.
-    expect(query).not.toHaveBeenCalled();
   });
 
   it("returns NO_BILLING_CUSTOMER when user has no Stripe customer record", async () => {

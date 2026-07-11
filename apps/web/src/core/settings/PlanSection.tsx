@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { billingApi } from "@shared/api";
+import { billingKeys } from "@shared/lib/api/queryKeys";
 import { usePlan } from "../billing/usePlan";
 import { SettingsGroup } from "./SettingsPrimitives";
 import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
@@ -27,13 +29,21 @@ import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
  */
 
 const BILLING_PORTAL_UNAVAILABLE =
-  "Stripe Portal тимчасово недоступний. Спробуй ще раз за хвилину.";
+  "Портал підписки тимчасово недоступний. Спробуй ще раз за хвилину.";
+const BILLING_CANCEL_FAILED =
+  "Не вдалося скасувати. Спробуй ще раз за хвилину.";
 
 export function PlanSection() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { isPro, isLoading, subscription } = usePlan();
   const [redirecting, setRedirecting] = useState(false);
   const [portalError, setPortalError] = useState("");
+  // Власне скасування (LiqPay/Plata без Customer Portal): двокрокове
+  // підтвердження без окремого модалу.
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
 
   const status = subscription?.status ?? null;
   const periodEnd = formatKyivLongDate(subscription?.currentPeriodEnd);
@@ -53,6 +63,20 @@ export function PlanSection() {
 
   function handleUpgrade() {
     navigate("/pricing?source=settings");
+  }
+
+  async function handleCancel() {
+    setCanceling(true);
+    setCancelError("");
+    try {
+      await billingApi.cancel();
+      setConfirmingCancel(false);
+      await queryClient.invalidateQueries({ queryKey: billingKeys.status });
+    } catch {
+      setCancelError(BILLING_CANCEL_FAILED);
+    } finally {
+      setCanceling(false);
+    }
   }
 
   return (
@@ -133,17 +157,54 @@ export function PlanSection() {
 
         <div className="flex flex-col sm:flex-row gap-2">
           {isPro ? (
-            <Button
-              variant="primary"
-              size="md"
-              onClick={handleManage}
-              disabled={redirecting}
-              data-testid="plan-manage-button"
-              className="gap-2"
-            >
-              <Icon name="credit-card" size={16} />
-              Керувати підпискою
-            </Button>
+            <>
+              {/* Customer Portal є лише у Stripe. Для liqpay/plata/manual
+                  керування = кнопка «Скасувати Pro» нижче (порталу нема). */}
+              {subscription?.provider === "stripe" && (
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={handleManage}
+                  disabled={redirecting}
+                  data-testid="plan-manage-button"
+                  className="gap-2"
+                >
+                  <Icon name="credit-card" size={16} />
+                  Керувати підпискою
+                </Button>
+              )}
+              {status !== "canceled" &&
+                (confirmingCancel ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="danger"
+                      size="md"
+                      onClick={handleCancel}
+                      disabled={canceling}
+                      data-testid="plan-cancel-confirm-button"
+                    >
+                      {canceling ? "Скасовуємо…" : "Точно скасувати?"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="md"
+                      onClick={() => setConfirmingCancel(false)}
+                      disabled={canceling}
+                    >
+                      Ні, лишити
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={() => setConfirmingCancel(true)}
+                    data-testid="plan-cancel-button"
+                  >
+                    Скасувати Pro
+                  </Button>
+                ))}
+            </>
           ) : (
             <Button
               variant="primary"
@@ -164,6 +225,15 @@ export function PlanSection() {
             className="text-sm text-danger-strong"
           >
             {portalError}
+          </p>
+        ) : null}
+        {cancelError ? (
+          <p
+            role="alert"
+            data-testid="plan-cancel-error"
+            className="text-sm text-danger-strong"
+          >
+            {cancelError}
           </p>
         ) : null}
       </div>

@@ -2049,6 +2049,93 @@
         }
       }
     },
+    "/api/billing/providers": {
+      "get": {
+        "summary": "Payment-провайдери, доступні юзеру (кнопки на /pricing)",
+        "tags": [
+          "monetization"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "UA → увімкнені liqpay/plata; інші країни → stripe.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingProvidersResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/billing/cancel": {
+      "post": {
+        "summary": "Скасувати Pro (власна кнопка; LiqPay/Plata без Customer Portal)",
+        "description": "Скасовує активну підписку через provider.cancelSubscription (LiqPay unsubscribe / Plata stop-scheduler). Доступ лишається до кінця оплаченого періоду (cancel_at_period_end).",
+        "tags": [
+          "monetization"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Скасування прийнято.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingCancelResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Billing env is not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/billing/stripe-webhook": {
       "post": {
         "summary": "Stripe webhook delivery endpoint",
@@ -2065,6 +2152,82 @@
             },
             "required": true,
             "description": "Stripe webhook signature header (`v1` HMAC)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/billing/liqpay-callback": {
+      "post": {
+        "summary": "LiqPay server callback (form data+signature, sha1)",
+        "tags": [
+          "monetization"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/billing/plata-webhook": {
+      "post": {
+        "summary": "Plata/monopay webhook (JSON, X-Sign ECDSA)",
+        "tags": [
+          "monetization"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-sign",
+            "schema": {
+              "type": "string",
+              "description": "monopay ECDSA signature over the raw request body."
+            },
+            "required": true,
+            "description": "monopay ECDSA signature over the raw request body."
           }
         ],
         "responses": {
@@ -4378,6 +4541,14 @@
               "plus",
               "pro"
             ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "stripe",
+              "liqpay",
+              "plata"
+            ]
           }
         },
         "required": [
@@ -5396,7 +5567,12 @@
                 "anyOf": [
                   {
                     "type": "string",
-                    "const": "stripe"
+                    "enum": [
+                      "stripe",
+                      "liqpay",
+                      "plata",
+                      "manual"
+                    ]
                   },
                   {
                     "type": "null"
@@ -5476,6 +5652,41 @@
         ],
         "additionalProperties": false,
         "description": "Відповідь POST /api/billing/portal: short-lived redirect URL у Stripe Customer Portal."
+      },
+      "BillingProvidersResponse": {
+        "type": "object",
+        "properties": {
+          "providers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "stripe",
+                "liqpay",
+                "plata"
+              ]
+            }
+          }
+        },
+        "required": [
+          "providers"
+        ],
+        "additionalProperties": false,
+        "description": "GET /api/billing/providers — payment-провайдери, доступні юзеру (UA → liqpay/plata; інші → stripe)."
+      },
+      "BillingCancelResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/billing/cancel — власне скасування Pro (LiqPay/Plata не мають Customer Portal)."
       },
       "TranscribeResponse": {
         "type": "object",
