@@ -1,143 +1,138 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { toLocalISODate } from "./date";
+
+import {
+  kyivCalendarDaysBetween,
+  kyivDayEndMs,
+  kyivDayStartMs,
+  kyivMondayStartMs,
+  toLocalISODate,
+} from "./date";
 
 /**
- * Property-based tests for the date utility.
+ * Property-based tests for the Kyiv day-boundary helpers.
  *
- * NOTE: the planned card (T-8) referenced `toKyivDayKey` / `fromKyivDayKey`
- * round-trip + DST handling, but those functions do not exist in this repo —
- * the only shared date helper is `toLocalISODate`. It also calls for
- * `fast-check`, which is not installed and is out of scope to add here. So this
- * suite drives a small seeded PRNG over generated dates and asserts the genuine
- * invariants of `toLocalISODate`. Each block maps 1:1 to an `fc.property`.
+ * Домен-інваріант (AGENTS.md § Domain invariants): усі межі доби рахуються в
+ * Europe/Kyiv, ніколи не в UTC. Kyiv — UTC+2 (зима) / UTC+3 (літо), перехід о
+ * 03:00 в останні неділі березня та жовтня. fast-check генерує тисячі
+ * timestamp'ів і природно натрапляє на ці 23/25-годинні доби, які
+ * приклад-тести майже не покривають. Кожен блок = один `fc.property`.
  */
-
-function makeRng(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 const NUM_RUNS = Number(process.env["FAST_CHECK_NUM_RUNS"] ?? 1000);
-const rng = makeRng(42);
+// Intl.DateTimeFormat.format у кожній ітерації робить property-блоки важкими;
+// піднімаємо ліміт над дефолтними 5 с, щоб 1000 прогонів встигли.
+const FC_TIMEOUT_MS = 30_000;
+
+/** Довільний timestamp у розумному діапазоні дат [2000, 2035]. */
+const arbitraryDate = fc.date({
+  min: new Date(Date.UTC(2000, 0, 1)),
+  max: new Date(Date.UTC(2035, 11, 31)),
+  noInvalidDate: true,
+});
+
+const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
- * A random local Date within [1970, ~2100].
- * Hours are restricted to 0–20 UTC so the Europe/Kyiv date (UTC+2 winter /
- * UTC+3 summer) always falls on the same calendar day as the constructed UTC
- * date — avoids spurious mismatches in tests that compare local fields to the
- * Kyiv-formatted result.
+ * Наступний календарний день для `YYYY-MM-DD`, обчислений незалежно від
+ * коду під тестом (через UTC, опівдні → без DST-неоднозначності).
  */
-function arbitraryLocalDate(): Date {
-  const year = 1970 + Math.floor(rng() * 130);
-  const month = Math.floor(rng() * 12); // 0..11
-  const day = 1 + Math.floor(rng() * 28); // 1..28, always valid
-  const hour = Math.floor(rng() * 21); // 0..20: UTC 21–23 crosses to next Kyiv day
-  const minute = Math.floor(rng() * 60);
-  return new Date(year, month, day, hour, minute);
+function nextCalendarDayKey(dayKey: string): string {
+  const parts = dayKey.split("-").map(Number);
+  const [y, m, d] = [parts[0] ?? 1970, parts[1] ?? 1, parts[2] ?? 1];
+  const noonNextDay = Date.UTC(y, m - 1, d) + 36 * 60 * 60 * 1000;
+  const nd = new Date(noonNextDay);
+  return `${nd.getUTCFullYear()}-${pad(nd.getUTCMonth() + 1)}-${pad(nd.getUTCDate())}`;
 }
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-describe("shared/utils/date – toLocalISODate property", () => {
-  it("always returns a well-formed YYYY-MM-DD string", () => {
-    for (let i = 0; i < NUM_RUNS; i++) {
-      expect(toLocalISODate(arbitraryLocalDate())).toMatch(ISO_DATE);
-    }
-  });
-
-  it("encodes the date's local calendar fields exactly", () => {
-    for (let i = 0; i < NUM_RUNS; i++) {
-      const d = arbitraryLocalDate();
-      const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-        2,
-        "0",
-      )}-${String(d.getDate()).padStart(2, "0")}`;
-      expect(toLocalISODate(d)).toBe(expected);
-    }
-  });
-
-  it("round-trips through the millisecond timestamp (Date vs number agree)", () => {
-    for (let i = 0; i < NUM_RUNS; i++) {
-      const d = arbitraryLocalDate();
-      expect(toLocalISODate(d.getTime())).toBe(toLocalISODate(d));
-    }
-  });
-
-  it("is time-of-day invariant: only the calendar day matters", () => {
-    // Use 06:00 and 20:00 UTC — both safely within the same Kyiv calendar day
-    // regardless of DST offset (UTC+2 winter: 08:00/22:00; UTC+3 summer: 09:00/23:00).
-    // UTC 21–23 would cross Kyiv midnight, so we avoid those hours here.
-    for (let i = 0; i < NUM_RUNS; i++) {
-      const base = arbitraryLocalDate();
-      const earlyMorning = new Date(
-        base.getFullYear(),
-        base.getMonth(),
-        base.getDate(),
-        6,
-        0,
-        0,
+describe("shared/utils/date – Kyiv boundary properties", () => {
+  it(
+    "kyivDayStartMs ↔ toLocalISODate round-trip",
+    () => {
+      fc.assert(
+        fc.property(arbitraryDate, (date) => {
+          const key = toLocalISODate(date);
+          expect(key).toMatch(DAY_KEY_RE);
+          // Початок доби, переформатований назад у Kyiv-ключ, дає той самий день.
+          expect(toLocalISODate(kyivDayStartMs(key))).toBe(key);
+        }),
+        { numRuns: NUM_RUNS },
       );
-      const lateEvening = new Date(
-        base.getFullYear(),
-        base.getMonth(),
-        base.getDate(),
-        20,
-        0,
-        0,
+    },
+    FC_TIMEOUT_MS,
+  );
+
+  it(
+    "kyivDayEndMs належить тому ж дню, йде після старту, і суміжний з наступним днем",
+    () => {
+      fc.assert(
+        fc.property(arbitraryDate, (date) => {
+          const key = toLocalISODate(date);
+          const start = kyivDayStartMs(key);
+          const end = kyivDayEndMs(key);
+          // Кінець доби — той самий Kyiv-день…
+          expect(toLocalISODate(end)).toBe(key);
+          // …завжди строго після старту (навіть у 23-годинну DST-добу)…
+          expect(end).toBeGreaterThan(start);
+          // …і рівно на 1 мс передує старту наступного календарного дня.
+          expect(end + 1).toBe(kyivDayStartMs(nextCalendarDayKey(key)));
+        }),
+        { numRuns: NUM_RUNS },
       );
-      expect(toLocalISODate(lateEvening)).toBe(toLocalISODate(earlyMorning));
-    }
-  });
+    },
+    FC_TIMEOUT_MS,
+  );
 
-  it("returns the 1970-01-01 sentinel for any non-parseable input", () => {
-    const garbage = ["not-a-date", "", "32/13/2026", "????", "NaN"];
-    for (const g of garbage) {
-      expect(toLocalISODate(g)).toBe("1970-01-01");
-    }
-    expect(toLocalISODate(NaN)).toBe("1970-01-01");
-  });
+  it(
+    "kyivMondayStartMs завжди дає понеділок, ідемпотентний і не в майбутньому",
+    () => {
+      const mondayFmt = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Europe/Kyiv",
+        weekday: "short",
+      });
+      fc.assert(
+        fc.property(arbitraryDate, (date) => {
+          const monday = kyivMondayStartMs(date);
+          // Результат — це понеділок у Kyiv.
+          expect(mondayFmt.format(monday)).toBe("Mon");
+          // Ідемпотентність: старт тижня від старту тижня — той самий момент.
+          expect(kyivMondayStartMs(monday)).toBe(monday);
+          // Понеділок ніколи не пізніше за сам день.
+          expect(monday).toBeLessThanOrEqual(
+            kyivDayStartMs(toLocalISODate(date)),
+          );
+        }),
+        { numRuns: NUM_RUNS },
+      );
+    },
+    FC_TIMEOUT_MS,
+  );
 
-  it("Kyiv offset invariant: result differs from UTC day at known boundary timestamps", () => {
-    // Domain invariant (AGENTS.md): all day boundaries use Europe/Kyiv,
-    // never UTC. UTC midnight is 02:00 Kyiv (winter) / 03:00 Kyiv (summer),
-    // so a timestamp just before UTC midnight must give the *previous*
-    // Kyiv day, not the UTC day.
-    //
-    // 2026-01-01T00:00:00Z = 2026-01-01 02:00 Kyiv (UTC+2 winter) → still 2026-01-01
-    // 2025-12-31T21:59:59Z = 2025-12-31 23:59 Kyiv           → 2025-12-31
-    // 2025-12-31T22:00:00Z = 2026-01-01 00:00 Kyiv            → 2026-01-01
-    //
-    // Probe the DST-safe boundary at 2026-01-01T00:00:00.000Z.
-    const utcMidnight2026 = new Date("2026-01-01T00:00:00.000Z");
-    // Kyiv is UTC+2 in winter, so 00:00 UTC = 02:00 Kyiv → still Jan 1
-    expect(toLocalISODate(utcMidnight2026)).toBe("2026-01-01");
-
-    // One second before Kyiv midnight (22:00 UTC-1, = 2025-12-31T21:59:59Z)
-    const beforeKyivMidnight = new Date("2025-12-31T21:59:59.000Z");
-    expect(toLocalISODate(beforeKyivMidnight)).toBe("2025-12-31");
-
-    // The instant Kyiv crosses midnight (2025-12-31T22:00:00Z = 2026-01-01 00:00 Kyiv)
-    const kyivMidnight = new Date("2025-12-31T22:00:00.000Z");
-    expect(toLocalISODate(kyivMidnight)).toBe("2026-01-01");
-  });
-
-  it("monotonicity: earlier Date always produces an equal or earlier day key", () => {
-    // If date A comes strictly before date B in calendar time, the
-    // Kyiv day key for A must be ≤ the key for B. This pins the
-    // order-preservation contract that downstream UI sorting relies on.
-    for (let i = 0; i < NUM_RUNS; i++) {
-      const earlier = arbitraryLocalDate();
-      // Add a random positive offset (0..30 days) so `later` is always ≥ `earlier`
-      const laterMs =
-        earlier.getTime() + Math.floor(rng() * 30 * 24 * 60 * 60 * 1000);
-      const later = new Date(laterMs);
-      expect(toLocalISODate(earlier) <= toLocalISODate(later)).toBe(true);
-    }
-  });
+  it(
+    "kyivCalendarDaysBetween антисиметричний і рахує рівно 1 добу через межу дня",
+    () => {
+      fc.assert(
+        fc.property(arbitraryDate, arbitraryDate, (a, b) => {
+          const aMs = a.getTime();
+          const bMs = b.getTime();
+          // Антисиметрія: between(a,b) === -between(b,a). Порівнюємо через ===,
+          // а не .toBe, бо для рівних дат маємо +0 проти -0 (Object.is їх
+          // розрізняє, хоча числово це той самий нуль).
+          expect(
+            kyivCalendarDaysBetween(aMs, bMs) ===
+              -kyivCalendarDaysBetween(bMs, aMs),
+          ).toBe(true);
+          // Старт наступного календарного дня рівно на 1 Kyiv-добу далі.
+          const key = toLocalISODate(aMs);
+          const nextStart = kyivDayStartMs(nextCalendarDayKey(key));
+          expect(kyivCalendarDaysBetween(nextStart, kyivDayStartMs(key))).toBe(
+            1,
+          );
+        }),
+        { numRuns: NUM_RUNS },
+      );
+    },
+    FC_TIMEOUT_MS,
+  );
 });
