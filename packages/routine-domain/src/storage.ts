@@ -14,6 +14,7 @@
  */
 
 import { dateKeyFromDate } from "./dateKeys.js";
+import { reconcileHabitOrder } from "./habitOrder.js";
 import type { Habit, RoutineState } from "./types.js";
 
 /** localStorage / MMKV key for the whole routine state blob. */
@@ -131,12 +132,7 @@ export function ensureHabitOrder(state: RoutineState): {
   changed: boolean;
 } {
   const active = state.habits.filter((h) => !h.archived).map((h) => h.id);
-  const order = [...(state.habitOrder || [])].filter((id) =>
-    active.includes(id),
-  );
-  for (const id of active) {
-    if (!order.includes(id)) order.push(id);
-  }
+  const order = reconcileHabitOrder(active, state.habitOrder || []);
   const prev = state.habitOrder || [];
   const same =
     order.length === prev.length && order.every((id, i) => id === prev[i]);

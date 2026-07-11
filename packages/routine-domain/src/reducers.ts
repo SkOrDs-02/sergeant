@@ -14,6 +14,7 @@
 import { dateKeyFromDate } from "./dateKeys.js";
 import { habitScheduledOnDate } from "./schedule.js";
 import { completionNoteKey } from "./completionNoteKey.js";
+import { reconcileHabitOrder } from "./habitOrder.js";
 import {
   normalizeCompletionList,
   normalizeHabit,
@@ -316,12 +317,7 @@ export function applyMoveHabitInOrder(
   delta: number,
 ): RoutineState {
   const active = state.habits.filter((h) => !h.archived).map((h) => h.id);
-  const order = [...(state.habitOrder || [])].filter((id) =>
-    active.includes(id),
-  );
-  for (const id of active) {
-    if (!order.includes(id)) order.push(id);
-  }
+  const order = reconcileHabitOrder(active, state.habitOrder || []);
   const i = order.indexOf(habitId);
   if (i < 0) return state;
   const j = i + delta;
@@ -342,17 +338,7 @@ export function applySetHabitOrder(
   orderedActiveIds: string[],
 ): RoutineState {
   const active = state.habits.filter((h) => !h.archived).map((h) => h.id);
-  const seen = new Set<string>();
-  const order: string[] = [];
-  for (const id of orderedActiveIds) {
-    if (active.includes(id) && !seen.has(id)) {
-      order.push(id);
-      seen.add(id);
-    }
-  }
-  for (const id of active) {
-    if (!seen.has(id)) order.push(id);
-  }
+  const order = reconcileHabitOrder(active, orderedActiveIds);
   const prev = state.habitOrder || [];
   if (order.length === prev.length && order.every((id, i) => id === prev[i])) {
     return state;

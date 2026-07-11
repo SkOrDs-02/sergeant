@@ -12,7 +12,7 @@
  * aggregation trivially testable.
  */
 
-import { dateKeyFromDate, parseDateKey } from "../../dateKeys.js";
+import { dateKeyFromDate } from "../../dateKeys.js";
 import type { Habit } from "../../types.js";
 import {
   HEATMAP_DAYS,
@@ -278,12 +278,4 @@ export function findCellByDateKey(
     }
   }
   return null;
-}
-
-/**
- * Re-export helper used by tests to construct a Date from a date-key
- * without re-importing `parseDateKey`.
- */
-export function dateFromHeatmapKey(dateKey: string): Date {
-  return parseDateKey(dateKey);
 }
