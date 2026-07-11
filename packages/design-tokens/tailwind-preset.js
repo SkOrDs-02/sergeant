@@ -547,6 +547,14 @@ const preset = {
         "glow-teal": "0 0 0 3px rgba(20, 184, 166, 0.15)",
         "glow-coral": "0 0 0 3px rgba(249, 112, 102, 0.15)",
         "glow-lime": "0 0 0 3px rgba(146, 204, 23, 0.15)",
+        // «Чорнило» accent glow — a luminescent tier-400 halo for solid
+        // accent controls (module Buttons, spec § 4: glow 24px/35%),
+        // replacing the drop shadow under the dark ink direction. Applied
+        // `dark:`-only so the light default keeps its shadow.
+        "glow-accent-emerald": "0 0 24px rgba(52, 211, 153, 0.35)",
+        "glow-accent-cyan": "0 0 24px rgba(34, 211, 238, 0.35)",
+        "glow-accent-coral": "0 0 24px rgba(255, 140, 120, 0.35)",
+        "glow-accent-lime": "0 0 24px rgba(176, 230, 54, 0.35)",
         // «Чорнило» hero inset-glow — a luminescent tier-400 halo inside
         // the card edge (spec § 3: depth = glow, not down-shadow). 40px
         // blur / 8% alpha; theme-invariant (the halo colour is the module

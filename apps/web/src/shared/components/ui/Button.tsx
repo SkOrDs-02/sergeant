@@ -76,15 +76,21 @@ const variants: Record<ButtonVariant, string> = {
   success:
     "bg-brand-soft text-brand-soft-fg border border-brand-soft-border/50 hover:bg-brand-soft-hover active:scale-[0.98]",
 
-  // Module-specific branded buttons
+  // Module-specific branded buttons. Light keeps the AA-safe `-strong`
+  // fill + white text. Dark «Чорнило» (spec § 4): the button is the
+  // luminescent tier-400 module accent (`dark:bg-{module}` → theme-aware
+  // accent) with an ink foreground (`dark:text-bg` → #0d1512) and a resting
+  // accent glow instead of a drop shadow — depth reads as light, not
+  // elevation. Text over the accent is ink, never white (Rule #9 needs no
+  // `-strong` companion here).
   finyk:
-    "bg-finyk-strong text-white shadow-sm hover:bg-emerald-800 hover:shadow-glow active:bg-emerald-900 active:scale-[0.98]",
+    "bg-finyk-strong text-white shadow-sm hover:bg-emerald-800 hover:shadow-glow active:bg-emerald-900 active:scale-[0.98] dark:bg-finyk dark:text-bg dark:shadow-glow-accent-emerald",
   fizruk:
-    "bg-fizruk-strong text-white shadow-sm hover:bg-teal-800 hover:shadow-glow-teal active:bg-teal-900 active:scale-[0.98]",
+    "bg-fizruk-strong text-white shadow-sm hover:bg-teal-800 hover:shadow-glow-teal active:bg-teal-900 active:scale-[0.98] dark:bg-fizruk dark:text-bg dark:shadow-glow-accent-cyan",
   routine:
-    "bg-routine-strong text-white shadow-sm hover:bg-coral-800 hover:shadow-glow-coral active:bg-coral-900 active:scale-[0.98]",
+    "bg-routine-strong text-white shadow-sm hover:bg-coral-800 hover:shadow-glow-coral active:bg-coral-900 active:scale-[0.98] dark:bg-routine dark:text-bg dark:shadow-glow-accent-coral",
   nutrition:
-    "bg-nutrition-strong text-white shadow-sm hover:bg-lime-900 hover:shadow-glow-lime active:scale-[0.98]",
+    "bg-nutrition-strong text-white shadow-sm hover:bg-lime-900 hover:shadow-glow-lime active:scale-[0.98] dark:bg-nutrition dark:text-bg dark:shadow-glow-accent-lime",
 
   // Soft module variants (for secondary actions within modules).
   // Dark mode keeps the saturated accent at low opacity for the FILL so the
