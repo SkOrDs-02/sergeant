@@ -128,6 +128,22 @@ describe("Button", () => {
       },
     );
 
+    it("module primary carries the «Чорнило» dark treatment (accent fill + ink + glow)", () => {
+      // Light keeps `-strong` + white; dark swaps to the luminescent
+      // tier-400 accent (`dark:bg-{module}`) + ink text (`dark:text-bg`)
+      // + a resting accent glow. Locked so the dark ink look can't
+      // silently regress to the flat `-strong` fill.
+      const { getByRole } = render(
+        <Button module="routine" variant="primary">
+          Go
+        </Button>,
+      );
+      const cls = getByRole("button").className;
+      expect(cls).toContain("dark:bg-routine");
+      expect(cls).toContain("dark:text-bg");
+      expect(cls).toContain("dark:shadow-glow-accent-coral");
+    });
+
     it.each([
       ["finyk", "text-finyk-soft-fg"],
       ["fizruk", "text-fizruk-soft-fg"],
