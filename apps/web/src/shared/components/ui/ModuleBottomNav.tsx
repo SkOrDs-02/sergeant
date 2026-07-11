@@ -20,16 +20,15 @@ import { cn } from "../../lib/ui/cn";
  *   rounded only at the top. The panel background fills the safe-area
  *   strip so there's no page-coloured dead space below the labels
  *   (user report 2026-06-05 / bottom-nav-gap).
- * - Active indicator:
- *   - Light (default): a rounded outline (`rounded-2xl border`) framing
- *     the active tab, tinted with the module accent (`tokens.outline`) —
- *     outline only, no fill. Active icon picks up `tokens.text`
- *     (module-colored); label stays `text-text`.
- *   - Dark («Чорнило»): the active tab is a solid module-accent square
- *     (`tokens.fill` = luminescent tier-400) with an **ink foreground**
- *     (`dark:text-bg` → #0d1512), per spec § 4. No drop-shadow glow.
- *   The `dark:`-scoped fill leaves the light default untouched (the
- *   light § 5 nav treatment is a later step).
+ * - Active indicator (fix spec v2 § 1 — light mirrors dark, solid not
+ *   outline):
+ *   - Light: a solid module-accent square (`tokens.fillLight` =
+ *     strong-tier, e.g. `bg-finyk-strong`) with an ink-on-cream
+ *     foreground (`text-bg`).
+ *   - Dark («Чорнило»): a solid module-accent square (`tokens.fillDark`
+ *     = luminescent tier-400) with the same ink foreground (`text-bg`
+ *     resolves to `#0d1512` under `.dark`, so one bare class covers both
+ *     themes). No drop-shadow glow.
  * - Labels `text-style-caption` (12px) per Hard Rule #16.
  *
  * Routine special-case (FAB):
@@ -73,39 +72,33 @@ export interface ModuleBottomNavProps {
 }
 
 type ColorTokens = {
-  /** Active icon tint (light). Module-colored text token. */
-  text: string;
-  /** Active-tab outline border (light) — module accent at low opacity. */
-  outline: string;
+  /** Active-tab solid fill (light) — module strong-tier accent. */
+  fillLight: string;
   /** Active-tab solid fill (dark «Чорнило») — luminescent tier-400 accent. */
-  fill: string;
+  fillDark: string;
   /** Tiny unread/attention dot color. */
   badge: string;
 };
 
 const COLORS: Record<ModuleNavColor, ColorTokens> = {
   finyk: {
-    text: "text-finyk",
-    outline: "border-finyk/40",
-    fill: "dark:bg-brand-400",
+    fillLight: "bg-finyk-strong",
+    fillDark: "dark:bg-brand-400",
     badge: "bg-finyk",
   },
   fizruk: {
-    text: "text-fizruk",
-    outline: "border-fizruk/40",
-    fill: "dark:bg-cyan-400",
+    fillLight: "bg-fizruk-strong",
+    fillDark: "dark:bg-cyan-400",
     badge: "bg-fizruk",
   },
   routine: {
-    text: "text-routine",
-    outline: "border-routine/40",
-    fill: "dark:bg-coral-400",
+    fillLight: "bg-routine-strong",
+    fillDark: "dark:bg-coral-400",
     badge: "bg-routine",
   },
   nutrition: {
-    text: "text-nutrition",
-    outline: "border-nutrition/40",
-    fill: "dark:bg-lime-400",
+    fillLight: "bg-nutrition-strong",
+    fillDark: "dark:bg-lime-400",
     badge: "bg-nutrition",
   },
 };
@@ -127,7 +120,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
       aria-label={ariaLabel}
       className={cn(
         "shrink-0 relative z-30",
-        "bottom-nav-shell border border-line bg-panel shadow-lg",
+        "bottom-nav-shell border border-line dark:border-white/8 bg-panel shadow-lg",
         className,
       )}
     >
@@ -152,18 +145,18 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               onClick={() => onChange(item.id)}
               className={cn(
                 "relative flex-1 flex flex-col items-center justify-end gap-1 pb-1.5",
-                "my-1.5 rounded-2xl border min-h-touch-target",
+                "my-1.5 rounded-xl border min-h-touch-target",
                 "transition-all duration-200",
                 "active:scale-95",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 active
                   ? cn(
-                      // Light: module-accent outline. Dark «Чорнило»: solid
-                      // tier-400 fill + ink foreground (#0d1512 via text-bg).
-                      "text-text",
-                      tokens.outline,
-                      tokens.fill,
-                      "dark:border-transparent dark:text-bg",
+                      // Solid module-accent fill in both themes (fix spec
+                      // v2 § 1) — light: strong-tier, dark: tier-400. `text-bg`
+                      // is itself theme-aware (cream in light, ink in dark).
+                      "text-bg border-transparent",
+                      tokens.fillLight,
+                      tokens.fillDark,
                     )
                   : "text-text border-transparent hover:text-text/80",
               )}
@@ -171,9 +164,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               <span
                 className={cn(
                   "relative transition-all duration-200",
-                  // Light: module-colored icon. Dark: ink icon on the
-                  // accent fill (overrides tokens.text under «Чорнило»).
-                  active && cn(tokens.text, "dark:text-bg"),
+                  active && "text-bg",
                 )}
                 aria-hidden
               >

@@ -77,20 +77,21 @@ describe("HubBottomNav", () => {
     expect(dashboard).toHaveAttribute("aria-selected", "false");
   });
 
-  it("позначає активний таб контуром (border), решту — без нього", () => {
+  it("позначає активний таб суцільною заливкою (border-transparent), решту — без неї", () => {
     renderNav({ hubView: "settings" });
 
     const settings = screen.getByRole("tab", { name: /Налаштування/ });
-    expect(settings.className).toContain("border-ink-strong/25");
-    // Dark «Чорнило»: active hub tab becomes a solid emerald square with an
-    // ink foreground; light keeps the outline. `dark:`-scoped, so the light
-    // default is unchanged.
+    // Fix spec v2 § 1: light mirrors dark — solid emerald fill + ink-on-
+    // cream foreground, not an outline. `text-bg` is theme-aware, so one
+    // bare class covers both themes' foreground.
+    expect(settings.className).toContain("bg-brand-strong");
     expect(settings.className).toContain("dark:bg-brand-400");
-    expect(settings.className).toContain("dark:text-bg");
+    expect(settings.className).toContain("text-bg");
+    expect(settings.className).toContain("border-transparent");
 
     const home = screen.getByRole("tab", { name: /Головна/ });
     expect(home.className).toContain("border-transparent");
-    expect(home.className).not.toContain("border-ink-strong/25");
+    expect(home.className).not.toContain("bg-brand-strong");
     expect(home.className).not.toContain("dark:bg-brand-400");
   });
 

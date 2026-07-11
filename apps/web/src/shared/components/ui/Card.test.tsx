@@ -94,7 +94,7 @@ describe("Card", () => {
       // both themes, soft down-shadow instead of elevation.
       expect(cls).toContain("bg-hero-grad-finyk");
       expect(cls).toContain("shadow-hero-finyk");
-      expect(cls).toContain("border-finyk-soft-border/50");
+      expect(cls).toContain("border-white/20");
       // «Чорнило» v3.1 § 2: tonal ink gradient instead of the `-900`
       // `-soft` fill — identity carried by border + glow, not saturation.
       expect(cls).toContain("dark:bg-hero-ink-finyk");
