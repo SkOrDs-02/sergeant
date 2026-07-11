@@ -5,7 +5,8 @@
    only `@import` directives + the Tailwind v3-config compatibility hook.
    All actual rules live in `./styles/*.css`:
 
-     - theme.css           — light/dark CSS-vars, DM Sans fallback metrics
+     - theme.css           — light/dark CSS-vars, DM Sans fallback metrics,
+                             `.bg-mesh` (ink-mesh background utility)
      - base.css            — html/body resets, ::selection, reduced-motion,
                              iOS input-zoom fix
      - animations.css      — `@keyframes`, page/module entry transitions
@@ -38,7 +39,6 @@
 @import "@fontsource-variable/jetbrains-mono" layer(base);
 @import "@fontsource-variable/dm-sans" layer(base);
 @import "./styles/animations.css" layer(base);
-@import "./styles/background.css" layer(base);
 @import "./styles/module-surfaces.css";
 @import "tailwindcss";
 @import "./styles/theme.css";
