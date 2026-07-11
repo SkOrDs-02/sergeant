@@ -550,3 +550,9 @@ export {
   aiMemoryIngestDurationMs,
   aiMemoryIngestQueueDepth,
 } from "./metrics/jobs.js";
+
+export {
+  billingCheckoutTotal,
+  billingWebhookTotal,
+  billingRecurringChargeTotal,
+} from "./metrics/billing.js";

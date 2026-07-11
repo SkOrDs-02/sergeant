@@ -190,4 +190,31 @@ describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
     expect(queryArgs).toContain("ROLLBACK");
     expect(client.release).toHaveBeenCalledOnce();
   });
+
+  // Phase 7 UA billing (ADR-0016): provider-cancel перед видаленням —
+  // best-effort. Помилка провайдера (напр. LiqPay 5xx / mono down) НЕ мусить
+  // валити deletion. notifyProvidersCancel іде через pool.query (top-level),
+  // транзакція — через client.query; тут top-level query падає, а deletion
+  // усе одно завершується успішно.
+  it("still deletes the user when provider-cancel fails (best-effort)", async () => {
+    const client = {
+      query: vi.fn().mockResolvedValue({ rows: [] }),
+      release: vi.fn(),
+    };
+    const pool = {
+      // Провайдер-cancel читає/пише через pool.query — імітуємо збій провайдера.
+      query: vi.fn().mockRejectedValue(new Error("provider down")),
+      connect: vi.fn().mockResolvedValue(client),
+    } as unknown as Pool;
+
+    const result = await deleteUserData(pool, "user-1");
+
+    expect(result.ok).toBe(true);
+    // Транзакція видалення все одно виконалась (BEGIN … COMMIT через client).
+    const queryArgs = (client.query as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c: unknown[]) => c[0],
+    );
+    expect(queryArgs[0]).toBe("BEGIN");
+    expect(queryArgs[queryArgs.length - 1]).toBe("COMMIT");
+  });
 });
