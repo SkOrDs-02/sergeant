@@ -548,6 +548,17 @@
     --c-nutrition-soft-border: 86 124 15; /* lime-700 */
     --c-nutrition-soft-hover: 86 124 15; /* lime-700 */
 
+    /* Hero-ink gradients (dark) — «Чорнило» v3.1 § 2. The module hero
+       Card fill sits one quiet tonal step off the ink base — identity
+       comes from the accent border/25 + inset-glow already on the hero
+       class, not from fill saturation. Replaces the `-900` `--c-*-soft`
+       fill hero previously borrowed above (soft tokens are untouched —
+       they stay for soft-buttons/badges, spec § 2 point 3). */
+    --hero-ink-finyk: linear-gradient(160deg, #12201a 0%, #0f1a15 100%);
+    --hero-ink-fizruk: linear-gradient(160deg, #101d20 0%, #0e1719 100%);
+    --hero-ink-routine: linear-gradient(160deg, #1d1614 0%, #171110 100%);
+    --hero-ink-nutrition: linear-gradient(160deg, #171f10 0%, #12180d 100%);
+
     /* Soft-fill FOREGROUND (dark) — bright `-300` accent tier. The module
        DEFAULT accent used previously (`dark:text-<m>` = emerald-500 /
        cyan-700 / coral-500 / lime-500) sat at the SAME tone as the
@@ -853,7 +864,12 @@
        without a per-component rewrite (mirrors the `.dark` step-2 treatment). */
     --surface-glass: rgba(255, 255, 255, 1); /* #ffffff — solid card */
     --surface-strong-glass: rgba(255, 255, 255, 1); /* #ffffff — navs, pills */
-    --surface-soft-glass: rgba(250, 247, 240, 1); /* #faf7f0 — surface-hi tint */
+    --surface-soft-glass: rgba(
+      250,
+      247,
+      240,
+      1
+    ); /* #faf7f0 — surface-hi tint */
     /* Card hairline — warm dark edge so glass cards read against the cream
        mesh background (and against each other) in light mode. The white
        inset highlight that sells the "glass" look lives in --shadow-card-v2,

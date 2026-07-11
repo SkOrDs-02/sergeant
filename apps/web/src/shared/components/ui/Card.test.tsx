@@ -92,8 +92,9 @@ describe("Card", () => {
       const cls = container.firstElementChild!.className;
       expect(cls).toContain("bg-hero-emerald");
       expect(cls).toContain("border-finyk-soft-border/50");
-      // Dark-mode parity: deep `-900` token instead of bg-panel + faint overlay.
-      expect(cls).toContain("dark:bg-finyk-soft");
+      // «Чорнило» v3.1 § 2: tonal ink gradient instead of the `-900`
+      // `-soft` fill — identity carried by border + glow, not saturation.
+      expect(cls).toContain("dark:bg-hero-ink-finyk");
       // «Чорнило» hero (dark): luminescent tier-400 accent border /25 +
       // inset-glow, replacing the old faint soft-border/40 + drop shadow.
       expect(cls).toContain("dark:border-brand-400/25");
@@ -149,7 +150,7 @@ describe("Card", () => {
       );
       const cls = container.firstElementChild!.className;
       expect(cls).toContain("bg-hero-emerald");
-      expect(cls).toContain("dark:bg-finyk-soft");
+      expect(cls).toContain("dark:bg-hero-ink-finyk");
     });
 
     it("module without prominence defaults to prominence='hero'", () => {
