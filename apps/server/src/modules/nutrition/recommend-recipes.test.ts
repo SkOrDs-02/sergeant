@@ -202,4 +202,44 @@ describe("recommend-recipes handler", () => {
       message: "network down",
     });
   });
+
+  it("renders exclude placeholder and string pantry items in the prompt", async () => {
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(JSON.stringify({ recipes: [] })),
+    );
+
+    await handler(
+      makeReq({
+        pantry: ["гречка", "рис"],
+        preferences: { exclude: "", goal: "low-carb" },
+        locale: "uk-UA",
+      }),
+      makeRes(),
+    );
+
+    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
+    const messages = JSON.stringify(payload["messages"]);
+    expect(messages).toContain("Не використовувати/алергени: —");
+    expect(messages).toContain("гречка");
+    expect(messages).toContain("рис");
+    expect(messages).toContain("Ціль: low-carb");
+  });
+
+  it("passes userId to anthropicMessages when session user is present", async () => {
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(JSON.stringify({ recipes: [] })),
+    );
+
+    await handler(
+      {
+        anthropicKey: "test-anthropic-key",
+        body: { pantry: [], locale: "uk-UA" },
+        user: { id: "u_recipes" },
+      } as unknown as Request,
+      makeRes(),
+    );
+
+    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
+    expect(options["userId"]).toBe("u_recipes");
+  });
 });

@@ -94,4 +94,21 @@ describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
     // retry=false in the hook contract — the mock fires exactly once.
     expect(statusMock).toHaveBeenCalledTimes(1);
   });
+
+  it("treats trialing subscription with active=true as plan='pro'", async () => {
+    statusMock.mockResolvedValue({
+      subscription: {
+        id: 7,
+        provider: "stripe",
+        plan: "pro",
+        status: "trialing",
+        active: true,
+        currentPeriodEnd: "2026-07-15T00:00:00.000Z",
+      },
+    });
+    const { result } = renderHook(() => usePlan(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isPro).toBe(true));
+    expect(result.current.plan).toBe("pro");
+    expect(result.current.subscription?.status).toBe("trialing");
+  });
 });

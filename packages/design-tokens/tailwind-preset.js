@@ -547,6 +547,15 @@ const preset = {
         "glow-teal": "0 0 0 3px rgba(20, 184, 166, 0.15)",
         "glow-coral": "0 0 0 3px rgba(249, 112, 102, 0.15)",
         "glow-lime": "0 0 0 3px rgba(146, 204, 23, 0.15)",
+        // «Чорнило» hero inset-glow — a luminescent tier-400 halo inside
+        // the card edge (spec § 3: depth = glow, not down-shadow). 40px
+        // blur / 8% alpha; theme-invariant (the halo colour is the module
+        // accent, it does not flip with the surface). Applied `dark:`-only
+        // by Card hero surfaces so the light default is untouched.
+        "glow-inset-emerald": "inset 0 0 40px rgba(52, 211, 153, 0.08)",
+        "glow-inset-cyan": "inset 0 0 40px rgba(34, 211, 238, 0.08)",
+        "glow-inset-coral": "inset 0 0 40px rgba(255, 140, 120, 0.08)",
+        "glow-inset-lime": "inset 0 0 40px rgba(176, 230, 54, 0.08)",
         // «Чорнило» FAB glow — a luminescent module-accent halo (spec § 4:
         // FAB = module accent + glow 24px/40%), replacing the drop shadow
         // under the dark ink direction. Routine is the only module with a

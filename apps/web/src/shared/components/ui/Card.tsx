@@ -132,54 +132,69 @@ const NON_MODULE_PROMINENCE: Record<
   elevated: "bg-panel border border-line shadow-e3",
   ghost: "bg-transparent border border-transparent",
   // Sergeant v2 glass — translucent floating surface. `bg-surface-glass`
-  // is alpha-baked (0.82 light / 0.06 dark / 1.0 HC); `surface-line` is
-  // the inset hairline. `shadow-card-v2` includes an inset top-highlight
-  // recipe tuned for the glass look. Auto-degrades when `html.hc` strips
-  // mesh + alpha (see theme.css § High-Contrast v2 overrides).
+  // is alpha-baked (0.82 light / 1.0 dark under «Чорнило» / 1.0 HC);
+  // `surface-line` is the inset hairline. `shadow-card-v2` keeps the
+  // inset top-highlight. Under «Чорнило» the dark surface is fully
+  // opaque, so `backdrop-blur` is a pure no-op — `dark:backdrop-blur-none`
+  // drops the wasted compositing layer (mobile perf) while leaving the
+  // light default frost untouched.
   glass:
-    "bg-surface-glass backdrop-blur-md border border-surface-line shadow-card-v2",
+    "bg-surface-glass backdrop-blur-md dark:backdrop-blur-none border border-surface-line shadow-card-v2",
 };
 
 // ─── Module-branded surfaces ───────────────────────────────────────────
 // Each module owns 3 prominence treatments. Light + dark are encoded
 // together so call-sites never need to re-implement the dark variant.
 //
-//   hero    — full saturated identity (light: bg-hero-{module} gradient;
-//             dark: bg-{module}-soft, the deep -900 family token).
+//   hero    — full saturated identity (light: bg-hero-{module} gradient +
+//             down-shadow; dark «Чорнило»: bg-{module}-soft tint + a
+//             luminescent tier-400 accent border /25 + inset-glow instead
+//             of a drop shadow — depth reads as glow, not elevation).
 //   soft    — branded surface on a panel (single token, no /50 wash).
 //             Replaces the legacy `bg-{module}-soft/50` pattern that
 //             washed out in light and dropped to ~6% in dark.
-//   tinted  — neutral panel with a module-tinted hairline. Quietest
-//             form of identity — module belongs to this card but its
-//             content is the focus.
+//   tinted  — "selected" surface. Light: neutral panel + module hairline.
+//             Dark «Чорнило»: accent/10 wash + accent/35 border, flat (no
+//             shadow) — the quiet accent-tinted state of a picked row/card.
+//
+// The «Чорнило» treatment is `dark:`-scoped so the light theme (the
+// product default) is byte-for-byte unchanged until the § 5 inversion
+// (step 6). Accent tier-400 = the module's own luminescent tone, so
+// module-accent containment (Hard Rule #12) holds. The accent only ever
+// appears as a translucent border/wash/glow — never a saturated solid
+// behind text — so no `text-white`/`-strong` companion is needed here.
 const MODULE_PROMINENCE: Record<
   CardModule,
   Record<"hero" | "soft" | "tinted", string>
 > = {
   finyk: {
     // `dark:bg-none` resets the light `bg-hero-emerald` linear-gradient
-    // (a background-image set in tailwind-preset.js:548) which otherwise
+    // (a background-image set in tailwind-preset.js) which otherwise
     // renders ON TOP of `dark:bg-finyk-soft` (background-color) and
     // washes the card bright in dark mode. Same fix applies to all 4
     // modules below — see screenshot bug report 2026-05-18.
-    hero: "border shadow-card bg-hero-emerald dark:bg-none border-finyk-soft-border/50 dark:bg-finyk-soft dark:border-finyk-soft-border/40",
+    hero: "border shadow-card bg-hero-emerald dark:bg-none border-finyk-soft-border/50 dark:bg-finyk-soft dark:border-brand-400/25 dark:shadow-glow-inset-emerald",
     soft: "border bg-finyk-soft border-finyk-soft-border backdrop-blur-sm",
-    tinted: "bg-panel border border-finyk-soft-border shadow-card",
+    tinted:
+      "bg-panel border border-finyk-soft-border shadow-card dark:bg-brand-400/10 dark:border-brand-400/35 dark:shadow-none",
   },
   fizruk: {
-    hero: "border shadow-card bg-hero-teal dark:bg-none border-fizruk-soft-border/50 dark:bg-fizruk-soft dark:border-fizruk-soft-border/40",
+    hero: "border shadow-card bg-hero-teal dark:bg-none border-fizruk-soft-border/50 dark:bg-fizruk-soft dark:border-cyan-400/25 dark:shadow-glow-inset-cyan",
     soft: "border bg-fizruk-soft border-fizruk-soft-border backdrop-blur-sm",
-    tinted: "bg-panel border border-fizruk-soft-border shadow-card",
+    tinted:
+      "bg-panel border border-fizruk-soft-border shadow-card dark:bg-cyan-400/10 dark:border-cyan-400/35 dark:shadow-none",
   },
   routine: {
-    hero: "border shadow-card bg-hero-coral dark:bg-none border-coral-200/50 dark:bg-routine-soft dark:border-routine-soft-border/40",
+    hero: "border shadow-card bg-hero-coral dark:bg-none border-routine-soft-border/50 dark:bg-routine-soft dark:border-coral-400/25 dark:shadow-glow-inset-coral",
     soft: "border bg-routine-soft border-routine-soft-border backdrop-blur-sm",
-    tinted: "bg-panel border border-routine-soft-border shadow-card",
+    tinted:
+      "bg-panel border border-routine-soft-border shadow-card dark:bg-coral-400/10 dark:border-coral-400/35 dark:shadow-none",
   },
   nutrition: {
-    hero: "border shadow-card bg-hero-lime dark:bg-none border-lime-200/50 dark:bg-nutrition-soft dark:border-nutrition-soft-border/40",
+    hero: "border shadow-card bg-hero-lime dark:bg-none border-nutrition-soft-border/50 dark:bg-nutrition-soft dark:border-lime-400/25 dark:shadow-glow-inset-lime",
     soft: "border bg-nutrition-soft border-nutrition-soft-border backdrop-blur-sm",
-    tinted: "bg-panel border border-nutrition-soft-border shadow-card",
+    tinted:
+      "bg-panel border border-nutrition-soft-border shadow-card dark:bg-lime-400/10 dark:border-lime-400/35 dark:shadow-none",
   },
 };
 

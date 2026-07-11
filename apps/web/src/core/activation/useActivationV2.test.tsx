@@ -18,6 +18,19 @@ vi.mock("@sergeant/insights", async () => {
     ...actual,
     evaluateActivationV2: (input: ActivationInput) => evaluateMock(input),
   };
+
+  it("fires when input transitions from null to an activated snapshot", () => {
+    evaluateMock.mockReturnValue(ACTIVATED_RESULT);
+
+    const { rerender } = renderHook(
+      ({ input }: { input: ActivationInput | null }) => useActivationV2(input),
+      { initialProps: { input: null as ActivationInput | null } },
+    );
+    expect(trackEventMock).not.toHaveBeenCalled();
+
+    rerender({ input: ACTIVATED_INPUT });
+    expect(trackEventMock).toHaveBeenCalledTimes(1);
+  });
 });
 
 vi.mock("../observability/analytics", async () => {
@@ -27,6 +40,19 @@ vi.mock("../observability/analytics", async () => {
     trackEvent: (name: string, payload?: unknown) =>
       trackEventMock(name, payload),
   };
+
+  it("fires when input transitions from null to an activated snapshot", () => {
+    evaluateMock.mockReturnValue(ACTIVATED_RESULT);
+
+    const { rerender } = renderHook(
+      ({ input }: { input: ActivationInput | null }) => useActivationV2(input),
+      { initialProps: { input: null as ActivationInput | null } },
+    );
+    expect(trackEventMock).not.toHaveBeenCalled();
+
+    rerender({ input: ACTIVATED_INPUT });
+    expect(trackEventMock).toHaveBeenCalledTimes(1);
+  });
 });
 
 import { useActivationV2 } from "./useActivationV2";
@@ -139,5 +165,18 @@ describe("useActivationV2 (web-side capture — initiative 0010 Phase 5 / audit 
       ANALYTICS_EVENTS.ACTIVATION_V2_HIT,
       expect.objectContaining({ variant: "vibe_picks" }),
     );
+  });
+
+  it("fires when input transitions from null to an activated snapshot", () => {
+    evaluateMock.mockReturnValue(ACTIVATED_RESULT);
+
+    const { rerender } = renderHook(
+      ({ input }: { input: ActivationInput | null }) => useActivationV2(input),
+      { initialProps: { input: null as ActivationInput | null } },
+    );
+    expect(trackEventMock).not.toHaveBeenCalled();
+
+    rerender({ input: ACTIVATED_INPUT });
+    expect(trackEventMock).toHaveBeenCalledTimes(1);
   });
 });

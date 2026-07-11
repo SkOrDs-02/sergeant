@@ -160,4 +160,38 @@ describe("nutrition day-hint handler", () => {
     expect(messages[0]?.content).toContain("без КБЖВ");
     expect(messages[0]?.content).toContain('"ai":3');
   });
+
+  it("falls back to raw Anthropic text when JSON extraction throws", async () => {
+    const jsonSafe = await import("../../http/jsonSafe.js");
+    vi.spyOn(jsonSafe, "extractJsonFromText").mockImplementationOnce(() => {
+      throw new Error("parse exploded");
+    });
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text("Порада без JSON обгортки"),
+    );
+
+    const res = makeRes();
+    await handler(makeReq({ macros: {}, locale: "uk-UA" }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ hint: "Порада без JSON обгортки" });
+  });
+
+  it("passes userId to anthropicMessages when session user is present", async () => {
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text('{"hint":"ok"}'),
+    );
+
+    await handler(
+      {
+        anthropicKey: "sk-test",
+        body: { macros: {}, locale: "uk-UA" },
+        user: { id: "u_day_hint" },
+      } as unknown as Request,
+      makeRes(),
+    );
+
+    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
+    expect(options["userId"]).toBe("u_day_hint");
+  });
 });

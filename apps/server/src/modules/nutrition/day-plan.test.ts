@@ -229,4 +229,57 @@ describe("nutrition day-plan handler", () => {
       code: "ANTHROPIC_ERROR",
     });
   });
+
+  it("uses default targets prompt when kcal target is absent", async () => {
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text('{"meals":[]}'),
+    );
+
+    await handler(
+      makeReq({
+        targets: { protein_g: 100 },
+        pantry: [],
+        locale: "uk-UA",
+      }),
+      makeRes(),
+    );
+
+    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
+    const messages = payload["messages"] as Array<{ content: string }>;
+    expect(messages[0]?.content).toContain("Цілі не задані");
+  });
+
+  it("filters null meal entries from normalization", async () => {
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(
+        '{"meals":[null,{"type":"lunch","name":"Суп","label":"Обід"}]}',
+      ),
+    );
+
+    const res = makeRes();
+    await handler(makeReq({ pantry: [], locale: "uk-UA" }), res);
+
+    const plan = asRecord(asRecord(res.body)["plan"]);
+    expect(plan["meals"]).toEqual([
+      expect.objectContaining({ type: "lunch", name: "Суп" }),
+    ]);
+  });
+
+  it("passes userId to anthropicMessages when session user is present", async () => {
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text('{"meals":[]}'),
+    );
+
+    await handler(
+      {
+        anthropicKey: "sk-test",
+        body: { pantry: [], locale: "uk-UA" },
+        user: { id: "u_day_plan" },
+      } as unknown as Request,
+      makeRes(),
+    );
+
+    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
+    expect(options["userId"]).toBe("u_day_plan");
+  });
 });
