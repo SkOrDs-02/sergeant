@@ -1,6 +1,6 @@
 # 0021 — React-hooks v7 ESLint cleanup
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-09-12.
+> **Last touched:** 2026-07-11 by @github-actions[bot]. **Next review:** 2026-10-09.
 > **Status:** Done
 > **Agent-ready:** yes
 
@@ -84,5 +84,4 @@ Initiative closed via PR [#177](https://github.com/Skords-01/Sergeant/pull/177).
 | [#3560](https://github.com/Skords-01/Sergeant/pull/3560) | fix: heal governance/format drift + dualWrite logger lint debt | 2026-06-14 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
-
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

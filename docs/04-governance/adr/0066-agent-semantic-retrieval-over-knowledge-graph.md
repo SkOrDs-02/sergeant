@@ -1,6 +1,6 @@
 # ADR-0066: Agent semantic retrieval over the knowledge graph
 
-> **Last touched:** 2026-06-22 by @claude. **Next review:** 2026-09-20.
+> **Last touched:** 2026-07-11 by @github-actions[bot]. **Next review:** 2026-10-09.
 > **Status:** Active
 
 - **Status:** Accepted
@@ -100,5 +100,4 @@
 | [#3573](https://github.com/Skords-01/Sergeant/pull/3573) | docs(agents): archive initiative 0018 (agent:find, code-complete) | 2026-06-14 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
-
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
