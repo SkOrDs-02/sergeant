@@ -173,6 +173,16 @@
     /* Brand accent for focus states */
     --c-accent: 16 185 129; /* emerald-500 */
 
+    /* «Чорнило» theme-aware module accents (spec § 5). Light = the strong
+       AA tier (the bare `text-finyk` etc. now clears AA as accent text on
+       the light surface); dark counterparts (luminescent tier-400) live in
+       `.dark`. Consumed by the web-only `{module}` DEFAULT override in
+       apps/web/tailwind.config.js. */
+    --c-finyk-accent: 4 120 87; /* #047857 — emerald-700 */
+    --c-fizruk-accent: 14 116 144; /* #0e7490 — cyan-700 */
+    --c-routine-accent: 194 58 58; /* #c23a3a — coral-700 */
+    --c-nutrition-accent: 86 124 15; /* #567c0f — lime-ink */
+
     /* Semantic aliases (design-token contract) — map 1:1 to existing vars.
        Prefer these names in new code: surface / surface-muted / fg / fg-muted.
        Existing bg / panel / text / muted remain valid for back-compat. */
@@ -445,6 +455,13 @@
     --c-muted: 138 150 142; /* #8a968e — meta, AA 5.6:1 on surface */
     --c-subtle: 95 107 100; /* #5f6b64 — labels ≥12px only */
     --c-primary: 242 246 242; /* reversed */
+
+    /* «Чорнило» module accents — dark tier-400 (luminescent), the
+       counterpart of the light strong tier in `:root` (spec § 5). */
+    --c-finyk-accent: 52 211 153; /* #34d399 — emerald-400 */
+    --c-fizruk-accent: 34 211 238; /* #22d3ee — cyan-400 */
+    --c-routine-accent: 255 140 120; /* #ff8c78 — coral-400 */
+    --c-nutrition-accent: 176 230 54; /* #b0e636 — lime-400 */
 
     /* Dark counterparts of the elevation scale. In dark mode the
        surface itself can't get darker than the bg, so we lean on a
@@ -830,9 +847,13 @@
 
     /* Glass surfaces — alpha BAKED IN by design intent. Do not use
        Tailwind opacity modifiers on these tokens. */
-    --surface-glass: rgba(255, 255, 255, 0.82); /* default card */
-    --surface-strong-glass: rgba(255, 255, 255, 0.92); /* navs, pills */
-    --surface-soft-glass: rgba(255, 255, 255, 0.5); /* tinted backgrounds */
+    /* Glass → solid under «Чорнило» (spec § 5: depth = surface tint +
+       border + shadow, not translucency). Back-compat aliases so existing
+       `bg-surface-glass*` call sites resolve to the solid light surface
+       without a per-component rewrite (mirrors the `.dark` step-2 treatment). */
+    --surface-glass: rgba(255, 255, 255, 1); /* #ffffff — solid card */
+    --surface-strong-glass: rgba(255, 255, 255, 1); /* #ffffff — navs, pills */
+    --surface-soft-glass: rgba(250, 247, 240, 1); /* #faf7f0 — surface-hi tint */
     /* Card hairline — warm dark edge so glass cards read against the cream
        mesh background (and against each other) in light mode. The white
        inset highlight that sells the "glass" look lives in --shadow-card-v2,
