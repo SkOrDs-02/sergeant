@@ -35,7 +35,6 @@ export {
   enqueueOutboxIncrement,
   type OutboxIncrementInput,
   type EnqueueOutboxIncrementOk,
-  type EnqueueOutboxIncrementResult,
 } from "./syncOpOutboxEnqueue.js";
 export {
   drainSyncOpOutbox,

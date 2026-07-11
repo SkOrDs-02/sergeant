@@ -120,8 +120,6 @@ export interface EnqueueOutboxIncrementOk {
   readonly inserted: boolean;
 }
 
-export type EnqueueOutboxIncrementResult = EnqueueOutboxIncrementOk;
-
 /**
  * Durably append an `op='increment'` envelope to the client-side
  * `sync_op_outbox`. Idempotent on `idempotencyKey` — see module
@@ -135,7 +133,7 @@ export type EnqueueOutboxIncrementResult = EnqueueOutboxIncrementOk;
 export async function enqueueOutboxIncrement(
   client: SqliteMigrationClient,
   input: OutboxIncrementInput,
-): Promise<EnqueueOutboxIncrementResult> {
+): Promise<EnqueueOutboxIncrementOk> {
   const { userId, table, row, clientTs, idempotencyKey } = input;
   if (typeof userId !== "string" || userId.length === 0) {
     throw new Error(

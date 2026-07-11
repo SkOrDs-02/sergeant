@@ -90,6 +90,11 @@ import type { SqliteMigrationClient } from "../migrate/adapters/sqlite.js";
  * the `attempts` / `next_retry_at` / `last_error` reset is total.
  */
 
+// ponytail: {ids} selector unused until dev-panel ships — the only real
+// callers (web/mobile syncEngineWriter.ts) always pass {all: true}.
+// Collapsing this to recoverAllDeadLetter(client) would mean deleting
+// ~15 test cases covering the ids branch (dedup, validation, skip logic),
+// which fails the "green tests without edits" equivalence gate.
 export type RecoverDeadLetterSelector =
   | { readonly ids: readonly number[]; readonly all?: undefined }
   | { readonly all: true; readonly ids?: undefined };
