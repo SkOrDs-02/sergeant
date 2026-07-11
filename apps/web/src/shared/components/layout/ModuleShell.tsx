@@ -65,16 +65,13 @@ export function ModuleShell({
 
   // Sergeant v2 redesign (2026-05, PR-6) — module shell wraps content in
   // <MeshBackground> so the mesh-gradient surface renders behind every
-  // module screen. MeshBackground bakes `h-dvh flex flex-col overflow-hidden`
-  // + the `.bg-mesh` utility; remaining shell-level classes (`text-text`,
-  // `module-bg`) slot through via className. Inline `shellStyle` (the
-  // `--bottom-nav-height` CSS var) passes through MeshBackground's `style`
-  // prop so descendants still see it.
+  // module screen, identical to the hub («Чорнило» v3.1 § 1). MeshBackground
+  // bakes `h-dvh flex flex-col overflow-hidden` + the `.bg-mesh` utility;
+  // remaining shell-level classes (`text-text`) slot through via className.
+  // Inline `shellStyle` (the `--bottom-nav-height` CSS var) passes through
+  // MeshBackground's `style` prop so descendants still see it.
   const inner = (
-    <MeshBackground
-      style={shellStyle}
-      className={cn("text-text module-bg", className)}
-    >
+    <MeshBackground style={shellStyle} className={cn("text-text", className)}>
       {header}
       {overlays}
       {banner}
