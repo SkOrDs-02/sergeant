@@ -4,7 +4,6 @@ import type { ShortcutDefinition } from "./types.js";
 export const recallShortcut: ShortcutDefinition = {
   slug: "recall",
   patterns: [/^\/recall\s+(?<query>.+)$/i],
-  captureGroups: ["query"],
   toolCalls: [
     {
       toolName: "recall_memory",

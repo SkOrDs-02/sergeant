@@ -48,6 +48,7 @@ import type {
   PluginHookBeforeAgentStartEvent,
 } from "openclaw/plugin-sdk/plugin-entry";
 import type { OpenClawHttpClient } from "../http-client.js";
+import { defaultLog, type HookLogger } from "../types/logger.js";
 
 const VALID_STATUS = new Set([
   "success",
@@ -113,11 +114,7 @@ export interface AuditHookOptions {
    */
   founderTgUserId?: number | undefined;
   correlator: InvocationCorrelator;
-  log?: (
-    level: "debug" | "info" | "warn" | "error",
-    message: string,
-    fields?: Record<string, unknown>,
-  ) => void;
+  log?: HookLogger;
 }
 
 export type BeforeAgentStartHookHandler = (
@@ -264,15 +261,4 @@ export function createAgentEndHook(
       });
     }
   };
-}
-
-function defaultLog(
-  level: "debug" | "info" | "warn" | "error",
-  message: string,
-  fields?: Record<string, unknown>,
-): void {
-  const payload = fields ? ` ${JSON.stringify(fields)}` : "";
-  if (level === "error") console.error(`[sergeant] ${message}${payload}`);
-  else if (level === "warn") console.warn(`[sergeant] ${message}${payload}`);
-  else console.log(`[sergeant] ${message}${payload}`);
 }

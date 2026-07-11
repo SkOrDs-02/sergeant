@@ -42,6 +42,7 @@
  */
 
 import { OpenClawHttpError, type OpenClawHttpClient } from "../http-client.js";
+import type { HookLogger } from "../types/logger.js";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Sequence + audit constants (Locked decision #8)
@@ -219,9 +220,7 @@ export type CouncilGateOutcome =
       reason: string;
       /** Distinguishes "no daily budget left at all" from "headroom < council cap". */
       kind:
-        | "daily_cap_exceeded"
-        | "headroom_below_council_cap"
-        | "service_error";
+        "daily_cap_exceeded" | "headroom_below_council_cap" | "service_error";
       /** Echoed when available; useful for log / audit. */
       remainingUsd?: number;
     };
@@ -234,11 +233,7 @@ export interface CouncilBudgetGateOptions {
   /** Optional IANA tz override (defaults to server-side Europe/Kyiv). */
   tzName?: string;
   /** Logger hook — injected from SDK; default no-op. */
-  log?: (
-    level: "debug" | "info" | "warn" | "error",
-    message: string,
-    fields?: Record<string, unknown>,
-  ) => void;
+  log?: HookLogger;
 }
 
 /**

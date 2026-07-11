@@ -56,12 +56,9 @@ import type {
   StrategicModeDefinition,
   StrategicModeMatch,
 } from "../strategic-modes/types.js";
+import type { HookLogger } from "../types/logger.js";
 
-export type StrategicModeHookLogger = (
-  level: "debug" | "info" | "warn" | "error",
-  message: string,
-  fields?: Record<string, unknown>,
-) => void;
+export type StrategicModeHookLogger = HookLogger;
 
 export interface StrategicModeHookOptions {
   modes?: readonly StrategicModeDefinition[];

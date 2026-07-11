@@ -14,7 +14,6 @@ import type { ShortcutDefinition } from "./types.js";
 export const thinkShortcut: ShortcutDefinition = {
   slug: "think",
   patterns: [/^\/think\s+(?<question>.+)$/i],
-  captureGroups: ["question"],
   toolCalls: [],
   render: (_results, params) => {
     return `__ESCALATE_LAYER2__:thinking:cofounder:${params["question"] ?? ""}`;

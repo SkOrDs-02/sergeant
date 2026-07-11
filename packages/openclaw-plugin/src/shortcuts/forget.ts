@@ -51,14 +51,6 @@ export const forgetShortcut: ShortcutDefinition = {
     /^\/forget\s+cancel\s+(?<cancelToken>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/i,
     /^\/forget\s+query\s+(?<query>.+)$/i,
   ],
-  captureGroups: [
-    "memoryId",
-    "topic",
-    "sinceDate",
-    "confirmToken",
-    "cancelToken",
-    "query",
-  ],
   toolCalls: [
     {
       toolName: "forget_memory",

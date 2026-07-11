@@ -4,7 +4,6 @@ import type { ShortcutDefinition } from "./types.js";
 export const digestShortcut: ShortcutDefinition = {
   slug: "digest",
   patterns: [/^\/digest\s+(?<period>day|week)$/i, /^\/digest$/i, /^дайджест$/i],
-  captureGroups: ["period"],
   toolCalls: [
     { toolName: "get_posthog_stats", buildParams: () => ({}) },
     { toolName: "get_stripe_metrics", buildParams: () => ({}) },

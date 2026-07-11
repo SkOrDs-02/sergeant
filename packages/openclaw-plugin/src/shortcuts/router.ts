@@ -24,12 +24,9 @@ import type {
   ToolExecutor,
   ToolResult,
 } from "./types.js";
+import type { HookLogger } from "../types/logger.js";
 
-export type ShortcutRouterLogger = (
-  level: "debug" | "info" | "warn" | "error",
-  message: string,
-  fields?: Record<string, unknown>,
-) => void;
+export type ShortcutRouterLogger = HookLogger;
 
 export interface ShortcutRouterOptions {
   shortcuts: ShortcutDefinition[];

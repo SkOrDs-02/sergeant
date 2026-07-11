@@ -54,8 +54,6 @@ export interface ShortcutDefinition {
   slug: string;
   /** Patterns that trigger this shortcut. First-match wins (per pattern). */
   patterns: RegExp[];
-  /** Optional list of expected named-capture groups (for documentation). */
-  captureGroups?: string[];
   /** Tool calls to execute when the shortcut matches. */
   toolCalls: ShortcutToolCall[];
   /** Whether tool calls run in parallel. Default: true. */
