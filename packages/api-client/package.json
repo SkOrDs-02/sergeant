@@ -34,12 +34,12 @@
   "devDependencies": {
     "@pact-foundation/pact": "^16.4.0",
     "@sergeant/config": "workspace:*",
-    "@tanstack/react-query": "^5.99.0",
+    "@tanstack/react-query": "^5.101.2",
     "@types/node": "^20.19.41",
     "@types/react": "^18.3.29",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.10",
     "react": "^18.2.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.10"
   }
 }
