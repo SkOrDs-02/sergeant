@@ -29,14 +29,14 @@ import { messages } from "@shared/i18n/uk";
  *   rounded only at the top. The panel background fills the safe-area
  *   strip so there's no page-coloured dead space below the labels
  *   (user report 2026-06-05 / bottom-nav-gap).
- * - Active indicator:
- *   - Light (default): a rounded outline (`rounded-2xl border
- *     border-ink-strong/25`) framing the active tab — outline only, no
- *     fill. Active label + icon `text-ink-strong`.
+ * - Active indicator (fix spec v2 § 1 — light mirrors dark, solid not
+ *   outline):
+ *   - Light: a solid emerald (`brand-strong`) square with an ink-on-cream
+ *     foreground (`text-bg`). Module-agnostic — the hub carries emerald,
+ *     not a per-module accent.
  *   - Dark («Чорнило»): a solid emerald (`brand-400`, the hub's default
- *     accent) square with an ink foreground (`dark:text-bg` → #0d1512),
- *     per spec § 4. Module-agnostic — the hub carries emerald, not a
- *     per-module accent. The `dark:` fill leaves the light default intact.
+ *     accent) square with the same ink foreground (`text-bg` resolves to
+ *     `#0d1512` under `.dark`, so one bare class covers both themes).
  * - `role="tablist"` + `aria-selected` for AT.
  *
  * Layout contract:
@@ -126,11 +126,11 @@ function HubBottomNavTab({
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
         "relative flex-1 flex flex-col items-center justify-end gap-1 pb-1.5",
-        "my-1.5 rounded-2xl border transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
+        "my-1.5 rounded-xl border transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-95",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
         active
-          ? "text-ink-strong border-ink-strong/25 dark:bg-brand-400 dark:border-transparent dark:text-bg"
+          ? "text-bg border-transparent bg-brand-strong dark:bg-brand-400"
           : "text-text border-transparent hover:text-text/80",
         hiddenSlot && "invisible pointer-events-none",
         className,
@@ -322,7 +322,7 @@ export function HubBottomNav({
       aria-label={messages.nav.hubSections}
       className={cn(
         "shrink-0 relative z-30",
-        "bottom-nav-shell border border-line bg-panel shadow-lg",
+        "bottom-nav-shell border border-line dark:border-white/8 bg-panel shadow-lg",
       )}
     >
       <div className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1">

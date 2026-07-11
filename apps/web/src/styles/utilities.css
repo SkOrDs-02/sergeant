@@ -440,9 +440,9 @@
      Inset from screen edges so the page background shows through the
      surround gap — reads as a distinct panel "lying on" the mesh surface.
      The bottom margin clears the home indicator / browser chrome. */
-  margin-left: 0.75rem;
-  margin-right: 0.75rem;
-  margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  margin-left: 1rem;
+  margin-right: 1rem;
+  margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
   border-radius: 1.5rem; /* rounded-3xl */
 
   /* ── PWA standalone: edge-to-edge dock ──────────────────────────────

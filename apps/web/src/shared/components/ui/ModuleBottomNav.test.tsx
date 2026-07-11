@@ -42,7 +42,7 @@ describe("ModuleBottomNav", () => {
     expect(statsTab.className).toContain("pb-1.5");
   });
 
-  it("active tab gets the «Чорнило» dark accent fill + ink foreground", () => {
+  it("active tab gets a solid accent fill + ink foreground in both themes (fix spec v2 § 1)", () => {
     render(
       <ModuleBottomNav
         items={items}
@@ -56,12 +56,13 @@ describe("ModuleBottomNav", () => {
     const activeTab = screen.getByRole("button", { name: "Overview" });
     const inactiveTab = screen.getByRole("button", { name: "Stats" });
 
-    // Dark: solid tier-400 accent square + ink foreground; light keeps the
-    // module-accent outline. Both are `dark:`-scoped, so the light default
-    // is unchanged.
+    // Light: strong-tier solid fill. Dark: luminescent tier-400 solid
+    // fill. `text-bg` is theme-aware (cream in light, ink in dark), so
+    // one bare class covers the foreground in both themes.
+    expect(activeTab.className).toContain("bg-finyk-strong");
     expect(activeTab.className).toContain("dark:bg-brand-400");
-    expect(activeTab.className).toContain("dark:text-bg");
-    expect(activeTab.className).toContain("border-finyk/40");
+    expect(activeTab.className).toContain("text-bg");
+    expect(activeTab.className).toContain("border-transparent");
     expect(inactiveTab.className).not.toContain("dark:bg-brand-400");
   });
 });
