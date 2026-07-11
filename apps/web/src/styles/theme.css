@@ -73,21 +73,26 @@
     /* Semantic UI colors as space-separated RGB triplets.
        Format required for Tailwind opacity modifiers (bg-panel/95 etc.). */
 
-    /* Page background — warm cream instead of cold blue-gray */
-    --c-bg: 253 249 243; /* #fdf9f3 — warm ivory */
+    /* Page background — «Чорнило» light pair (spec § 5): a warm beige with
+       a faint green-ink undertone so the light theme reads as the paired
+       inverse of the dark ink base, not an unrelated warm cream. */
+    --c-bg: 242 236 223; /* #f2ecdf — ink-light page bg (spec § 5) */
 
     /* Cards/panels — pure white for contrast */
-    --c-panel: 255 255 255; /* #ffffff — white cards */
-    --c-panel-hi: 250 247 241; /* #faf7f1 — warm hover/input bg */
+    --c-panel: 255 255 255; /* #ffffff — white cards (spec § 5 surface) */
+    --c-panel-hi: 250 247 240; /* #faf7f0 — warm hover/input bg */
 
     /* Borders — warm gray with cream undertone */
     --c-line: 235 228 218; /* #ebe4da — warm border */
 
-    /* Text hierarchy */
-    --c-text: 28 25 23; /* #1c1917 — warm near-black (stone-900) */
-    --c-muted: 87 83 78; /* #57534e — warm medium gray (stone-600) */
-    --c-subtle: 107 100 93; /* #6b645d — warm stone (tertiary), WCAG AA ≥4.5:1 on panel/panel-hi/bg */
-    --c-primary: 28 25 23; /* #1c1917 — ink (same as text) */
+    /* Text hierarchy — «Чорнило» light pair (spec § 5): green-ink tiers,
+       the tonal inverse of the dark ink text. `--c-subtle` stays at the
+       AA-safe #6b645d — spec's #98a09a is a ≥12px-labels-only tone (~3:1)
+       and would drop normal tertiary text below AA if used here. */
+    --c-text: 15 23 19; /* #0f1713 — green near-black (spec § 5 fg-strong) */
+    --c-muted: 92 102 95; /* #5c665f — green medium gray (spec § 5 muted), AA on white */
+    --c-subtle: 107 100 93; /* #6b645d — tertiary, WCAG AA ≥4.5:1 on panel/panel-hi/bg */
+    --c-primary: 15 23 19; /* #0f1713 — ink (same as text) */
 
     /* ═══════════════════════════════════════════════════════════════════
        ELEVATION SCALE — e0..e5
@@ -167,6 +172,16 @@
 
     /* Brand accent for focus states */
     --c-accent: 16 185 129; /* emerald-500 */
+
+    /* «Чорнило» theme-aware module accents (spec § 5). Light = the strong
+       AA tier (the bare `text-finyk` etc. now clears AA as accent text on
+       the light surface); dark counterparts (luminescent tier-400) live in
+       `.dark`. Consumed by the web-only `{module}` DEFAULT override in
+       apps/web/tailwind.config.js. */
+    --c-finyk-accent: 4 120 87; /* #047857 — emerald-700 */
+    --c-fizruk-accent: 14 116 144; /* #0e7490 — cyan-700 */
+    --c-routine-accent: 194 58 58; /* #c23a3a — coral-700 */
+    --c-nutrition-accent: 86 124 15; /* #567c0f — lime-ink */
 
     /* Semantic aliases (design-token contract) — map 1:1 to existing vars.
        Prefer these names in new code: surface / surface-muted / fg / fg-muted.
@@ -440,6 +455,13 @@
     --c-muted: 138 150 142; /* #8a968e — meta, AA 5.6:1 on surface */
     --c-subtle: 95 107 100; /* #5f6b64 — labels ≥12px only */
     --c-primary: 242 246 242; /* reversed */
+
+    /* «Чорнило» module accents — dark tier-400 (luminescent), the
+       counterpart of the light strong tier in `:root` (spec § 5). */
+    --c-finyk-accent: 52 211 153; /* #34d399 — emerald-400 */
+    --c-fizruk-accent: 34 211 238; /* #22d3ee — cyan-400 */
+    --c-routine-accent: 255 140 120; /* #ff8c78 — coral-400 */
+    --c-nutrition-accent: 176 230 54; /* #b0e636 — lime-400 */
 
     /* Dark counterparts of the elevation scale. In dark mode the
        surface itself can't get darker than the bg, so we lean on a
@@ -810,20 +832,28 @@
      `docs/design/redesign-v2/governance.md` for the full token contract.
      ═══════════════════════════════════════════════════════════════════════ */
   :root {
-    /* Background base — warm cream (handoff `--bg-base`). */
-    --c-bg-base: 240 233 216; /* #f0e9d8 */
+    /* Background base — «Чорнило» light pair (spec § 5): warm beige with a
+       faint green-ink undertone, matching the legacy `--c-bg`. */
+    --c-bg-base: 242 236 223; /* #f2ecdf — ink-light page bg (spec § 5) */
 
-    /* Ink (text) — body + display tiers. */
-    --c-ink: 14 28 23; /* #0e1c17 — body text */
-    --c-ink-strong: 6 78 59; /* #064e3b — display / headings (emerald-900) */
-    --c-muted-v2: 107 107 102; /* #6b6b66 — meta, captions */
+    /* Ink (text) — «Чорнило» light pair (spec § 5): green-ink body + display
+       tiers (display drops the emerald tint for a near-black green ink).
+       `--c-subtle-v2` stays put — it is already a ≥12px hint tier and spec's
+       #98a09a would only lower its contrast. */
+    --c-ink: 23 32 27; /* #17201b — body text (spec § 5 fg) */
+    --c-ink-strong: 15 23 19; /* #0f1713 — display / headings (spec § 5 fg-strong) */
+    --c-muted-v2: 92 102 95; /* #5c665f — meta, captions (spec § 5 muted), AA on white */
     --c-subtle-v2: 138 138 130; /* #8a8a82 — hints */
 
     /* Glass surfaces — alpha BAKED IN by design intent. Do not use
        Tailwind opacity modifiers on these tokens. */
-    --surface-glass: rgba(255, 255, 255, 0.82); /* default card */
-    --surface-strong-glass: rgba(255, 255, 255, 0.92); /* navs, pills */
-    --surface-soft-glass: rgba(255, 255, 255, 0.5); /* tinted backgrounds */
+    /* Glass → solid under «Чорнило» (spec § 5: depth = surface tint +
+       border + shadow, not translucency). Back-compat aliases so existing
+       `bg-surface-glass*` call sites resolve to the solid light surface
+       without a per-component rewrite (mirrors the `.dark` step-2 treatment). */
+    --surface-glass: rgba(255, 255, 255, 1); /* #ffffff — solid card */
+    --surface-strong-glass: rgba(255, 255, 255, 1); /* #ffffff — navs, pills */
+    --surface-soft-glass: rgba(250, 247, 240, 1); /* #faf7f0 — surface-hi tint */
     /* Card hairline — warm dark edge so glass cards read against the cream
        mesh background (and against each other) in light mode. The white
        inset highlight that sells the "glass" look lives in --shadow-card-v2,

@@ -92,3 +92,45 @@ describe("@sergeant/design-tokens — «Чорнило» ink contrast", () => {
     expect(contrastRatio(subtle, surface)).toBeGreaterThanOrEqual(3);
   });
 });
+
+describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)", () => {
+  // The light theme is the tonal inverse of the dark ink base: a warm-beige
+  // page (#f2ecdf) + white cards, green-ink text tiers, and strong-tier
+  // module accents. These literals mirror the values applied to the light
+  // `:root` in apps/web/src/styles/theme.css; the test pins their AA/AAA
+  // floors so the § 5 swap can't silently regress the DEFAULT theme.
+  const bg = "#f2ecdf"; // page background
+  const surface = "#ffffff"; // cards
+  const fgStrong = "#0f1713"; // display / headings
+  const fg = "#17201b"; // body
+  const muted = "#5c665f"; // meta / captions
+  const onAccent = "#fdf9f3"; // text over an accent fill
+  // Strong-tier module accents (AA on white / cream).
+  const accents = {
+    finyk: "#047857",
+    fizruk: "#0e7490",
+    routine: "#c23a3a",
+    nutrition: "#567c0f",
+  };
+
+  it("fg-strong ≥ 7:1 on both bg and surface (AAA)", () => {
+    expect(contrastRatio(fgStrong, bg)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(fgStrong, surface)).toBeGreaterThanOrEqual(7);
+  });
+  it("fg (body) ≥ 7:1 on bg (AAA)", () => {
+    expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(7);
+  });
+  it("muted ≥ 4.5:1 on both bg and surface (AA)", () => {
+    expect(contrastRatio(muted, bg)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(muted, surface)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  for (const [name, hex] of Object.entries(accents)) {
+    it(`${name} strong accent ≥ 4.5:1 on white (AA text)`, () => {
+      expect(contrastRatio(hex, surface)).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`on-accent text (#fdf9f3) ≥ 4.5:1 on the ${name} accent fill (AA)`, () => {
+      expect(contrastRatio(onAccent, hex)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+});
