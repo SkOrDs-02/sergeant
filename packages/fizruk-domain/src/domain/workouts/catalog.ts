@@ -8,6 +8,7 @@
  * lets vitest exercise the branches without a React host.
  */
 
+import { matchesExerciseSearch } from "../../data/index.js";
 import type {
   WorkoutCatalogGroup,
   WorkoutExerciseCatalogEntry,
@@ -57,22 +58,7 @@ export function filterExercisesBySearch(
 ): WorkoutExerciseCatalogEntry[] {
   const q = norm(query);
   if (!q) return exercises.slice();
-  return exercises.filter((ex) => {
-    const nameUk = norm(ex?.name?.uk);
-    const nameEn = norm(ex?.name?.en);
-    const aliases = (ex?.aliases || []).map(norm).join(" ");
-    const desc = norm(ex?.description);
-    const group = norm(ex?.primaryGroup);
-    const groupUk = norm(ex?.primaryGroupUk);
-    return (
-      nameUk.includes(q) ||
-      nameEn.includes(q) ||
-      aliases.includes(q) ||
-      desc.includes(q) ||
-      group.includes(q) ||
-      groupUk.includes(q)
-    );
-  });
+  return exercises.filter((ex) => matchesExerciseSearch(ex, q));
 }
 
 /**

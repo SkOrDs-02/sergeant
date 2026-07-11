@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { BUILTIN_PROGRAMS } from "../index.js";
 import type { TrainingProgramDef } from "../domain/programs/index.js";
-import { getDefaultRestSec, getTodaySession } from "./trainingPrograms.js";
+import { getTodaySession } from "./trainingPrograms.js";
 
 describe("BUILTIN_PROGRAMS integrity", () => {
   it("exports at least 4 programs", () => {
@@ -117,12 +117,5 @@ describe("BUILTIN_PROGRAMS integrity", () => {
     vi.setSystemTime(new Date(2026, 0, 6, 12, 0, 0, 0));
     expect(getTodaySession(program)).toBeNull();
     vi.useRealTimers();
-  });
-
-  it("legacy getDefaultRestSec maps known muscle groups", () => {
-    expect(getDefaultRestSec(null)).toBe(90);
-    expect(getDefaultRestSec("chest")).toBe(90);
-    expect(getDefaultRestSec("biceps")).toBe(60);
-    expect(getDefaultRestSec("cardio")).toBe(30);
   });
 });

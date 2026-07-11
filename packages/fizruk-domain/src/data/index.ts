@@ -123,6 +123,40 @@ export function toExerciseDef(
   };
 }
 
+/** Structural shape needed by {@link matchesExerciseSearch} — satisfied by
+ *  both `RawExerciseDef` and the mobile-side `WorkoutExerciseCatalogEntry`. */
+export interface SearchableExerciseDef {
+  name?: { uk?: string; en?: string };
+  aliases?: string[];
+  description?: string;
+  primaryGroup?: string;
+  primaryGroupUk?: string;
+}
+
+/**
+ * Full-text match across uk/en names, aliases, description and primary
+ * group. `query` must already be normalized (see `norm`).
+ */
+export function matchesExerciseSearch(
+  ex: SearchableExerciseDef | null | undefined,
+  normalizedQuery: string,
+): boolean {
+  const nameUk = norm(ex?.name?.uk);
+  const nameEn = norm(ex?.name?.en);
+  const aliases = (ex?.aliases || []).map(norm).join(" ");
+  const desc = norm(ex?.description);
+  const group = norm(ex?.primaryGroup);
+  const groupUk = norm(ex?.primaryGroupUk);
+  return (
+    nameUk.includes(normalizedQuery) ||
+    nameEn.includes(normalizedQuery) ||
+    aliases.includes(normalizedQuery) ||
+    desc.includes(normalizedQuery) ||
+    group.includes(normalizedQuery) ||
+    groupUk.includes(normalizedQuery)
+  );
+}
+
 /**
  * Повнотекстовий пошук по локальному каталогу (uk/en назви, aliases,
  * description, primary group). Повертає всі вправи, якщо query порожній.
@@ -133,22 +167,7 @@ export function searchExercises(
 ): RawExerciseDef[] {
   const q = norm(query);
   if (!q) return pool.slice();
-  return pool.filter((ex) => {
-    const nameUk = norm(ex?.name?.uk);
-    const nameEn = norm(ex?.name?.en);
-    const aliases = (ex?.aliases || []).map(norm).join(" ");
-    const desc = norm(ex?.description);
-    const group = norm(ex?.primaryGroup);
-    const groupUk = norm(ex?.primaryGroupUk);
-    return (
-      nameUk.includes(q) ||
-      nameEn.includes(q) ||
-      aliases.includes(q) ||
-      desc.includes(q) ||
-      group.includes(q) ||
-      groupUk.includes(q)
-    );
-  });
+  return pool.filter((ex) => matchesExerciseSearch(ex, q));
 }
 
 /**
