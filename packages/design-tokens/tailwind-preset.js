@@ -655,6 +655,14 @@ const preset = {
         "card-routine-dark": "var(--gradient-card-routine-dark)",
         "card-nutrition-dark": "var(--gradient-card-nutrition-dark)",
 
+        // Hero-ink gradients (dark) — «Чорнило» v3.1 § 2. CSS vars defined
+        // in theme.css `.dark`. Module hero Card variant fill; identity
+        // carried by the accent border/glow, not fill saturation.
+        "hero-ink-finyk": "var(--hero-ink-finyk)",
+        "hero-ink-fizruk": "var(--hero-ink-fizruk)",
+        "hero-ink-routine": "var(--hero-ink-routine)",
+        "hero-ink-nutrition": "var(--hero-ink-nutrition)",
+
         // Module hero gradients — CSS vars defined in theme.css:705-708.
         // Used by PR-E..PR-H module page headers (bg-hero-grad-* utility).
         "hero-grad-finyk": "var(--hero-grad-finyk)",
