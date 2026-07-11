@@ -73,6 +73,7 @@ export function RoutineCalendarHero({
             max={dayProgress.scheduled}
             entranceFrom={0}
             duration={800}
+            maxTone="hero-ink"
           />
         }
         ring={
@@ -85,6 +86,7 @@ export function RoutineCalendarHero({
       />
       <KpiRowCompact
         module="routine"
+        tone="hero-ink"
         items={[
           { label: "Подій", value: filteredCount },
           { label: "Звичок", value: activeHabitsCount },

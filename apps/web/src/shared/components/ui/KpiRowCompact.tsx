@@ -23,6 +23,12 @@ import { cn } from "@shared/lib/ui/cn";
  * module identity. Pass it when the host card is module-branded so the
  * dot separator picks up `text-{module}` instead of the neutral line.
  *
+ * `tone="hero-ink"` (default `"default"`) switches label/value/icon to
+ * the theme-invariant hero-ink tone for use inside a `prominence="hero"`
+ * Card — the saturated hero gradient («Чорнило» v3.1 § 3) makes the
+ * default `text-text`/`text-subtle` pairing invisible. Leave the default
+ * when the host card is neutral (e.g. the no-module edge case).
+ *
  * Truncation: each item shrinks-but-doesn't-wrap on mobile via
  * `min-w-0` on the children. On very narrow viewports horizontal
  * scrolling kicks in (`overflow-x-auto`).
@@ -39,6 +45,7 @@ export interface KpiItem {
 export interface KpiRowCompactProps {
   items: KpiItem[];
   module?: KpiModule;
+  tone?: "default" | "hero-ink";
   className?: string;
 }
 
@@ -53,10 +60,15 @@ const separatorClass: Record<KpiModule | "neutral", string> = {
 export function KpiRowCompact({
   items,
   module,
+  tone = "default",
   className,
 }: KpiRowCompactProps) {
   if (items.length === 0) return null;
   const sepClass = separatorClass[module ?? "neutral"];
+  const isHero = tone === "hero-ink";
+  const iconClass = isHero ? "text-hero-ink/60" : "text-subtle";
+  const labelClass = isHero ? "text-hero-ink/60" : "text-subtle";
+  const valueClass = isHero ? "text-hero-ink" : "text-text";
 
   return (
     <ul
@@ -76,12 +88,19 @@ export function KpiRowCompact({
             </span>
           )}
           {item.icon != null && (
-            <span aria-hidden="true" className="shrink-0 text-subtle">
+            <span aria-hidden="true" className={cn("shrink-0", iconClass)}>
               {item.icon}
             </span>
           )}
-          <span className="text-style-caption text-subtle">{item.label}</span>
-          <span className="text-style-label font-medium text-text tabular-nums">
+          <span className={cn("text-style-caption", labelClass)}>
+            {item.label}
+          </span>
+          <span
+            className={cn(
+              "text-style-label font-medium tabular-nums",
+              valueClass,
+            )}
+          >
             {item.value}
           </span>
         </li>

@@ -68,10 +68,15 @@ export function HeroValueLine({
           align === "center" && "sm:items-center",
         )}
       >
-        <div className="text-style-display-hero text-text tabular-nums">
+        {/* «Чорнило» v3.1 § 3 — the only production consumer is a
+            `prominence="hero"` Card (RoutineCalendarHero); theme-flipping
+            `text-text`/`text-subtle` go invisible on the saturated hero
+            gradient, so this primitive uses the theme-invariant hero-ink
+            tone directly rather than per-call-site overrides. */}
+        <div className="text-style-display-hero text-hero-ink tabular-nums">
           {metric}
         </div>
-        <div className="text-style-body-sm text-subtle">{narrative}</div>
+        <div className="text-style-body-sm text-hero-ink/70">{narrative}</div>
       </div>
     </div>
   );

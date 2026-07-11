@@ -34,13 +34,23 @@ export function Atlas() {
             style={{ background: "var(--hero-grad-fizruk)", opacity: 0.08 }}
           />
           <div className="relative p-5">
-            <SectionHeading size="sm" variant="fizruk" as="p">
+            {/* «Чорнило» v3.1 § 3: overrides `variant="fizruk"`'s
+                `text-fizruk-strong` light color (invisible on the new
+                saturated hero gradient) with the theme-invariant
+                hero-ink tone; the existing `dark:text-fizruk-300/70`
+                already reads fine on the dark hero and stays. */}
+            <SectionHeading
+              size="sm"
+              variant="fizruk"
+              as="p"
+              className="text-hero-ink/80"
+            >
               Атлас мʼязів
             </SectionHeading>
-            <h1 className="text-hero font-black text-teal-900 dark:text-white mt-2 leading-tight">
+            <h1 className="text-hero font-black text-hero-ink mt-2 leading-tight">
               Стан відновлення
             </h1>
-            <p className="text-xs text-teal-700 dark:text-white/70 mt-2">
+            <p className="text-xs text-hero-ink/75 mt-2">
               Карта втоми, давності тренувань і обʼєму по групах мʼязів.
             </p>
           </div>

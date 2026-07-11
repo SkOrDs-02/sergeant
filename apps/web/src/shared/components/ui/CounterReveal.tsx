@@ -28,6 +28,12 @@ import { cn } from "@shared/lib/ui/cn";
  * `value` re-renders restart the tween from the current display value
  * (not from `entranceFrom`) so live counters animate smoothly between
  * subsequent updates.
+ *
+ * `maxTone="hero-ink"` (default `"default"`) switches the `/ max` suffix
+ * to the theme-invariant hero-ink tone for use inside a `prominence="hero"`
+ * Card — the saturated hero gradient («Чорнило» v3.1 § 3) makes the
+ * default `text-subtle` invisible. Leave the default in a plain/neutral
+ * wrapper (e.g. the Storybook default demo).
  */
 
 export interface CounterRevealProps {
@@ -43,6 +49,8 @@ export interface CounterRevealProps {
   /** Locale for default formatting. Default `uk-UA`. */
   locale?: string;
   className?: string;
+  /** Tone for the `/ max` suffix — see doc block above. */
+  maxTone?: "default" | "hero-ink";
 }
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -61,6 +69,7 @@ export const CounterReveal = memo(function CounterReveal({
   max,
   locale = "uk-UA",
   className,
+  maxTone = "default",
 }: CounterRevealProps) {
   const prefersReducedMotion =
     typeof window !== "undefined" &&
@@ -125,7 +134,14 @@ export const CounterReveal = memo(function CounterReveal({
     <span className={cn("tabular-nums", className)}>
       {formatted}
       {maxFormatted !== null && (
-        <span className="text-subtle"> / {maxFormatted}</span>
+        <span
+          className={
+            maxTone === "hero-ink" ? "text-hero-ink/60" : "text-subtle"
+          }
+        >
+          {" "}
+          / {maxFormatted}
+        </span>
       )}
     </span>
   );

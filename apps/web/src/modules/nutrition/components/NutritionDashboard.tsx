@@ -32,7 +32,12 @@ import {
 import { WaterTrackerCard } from "./WaterTrackerCard";
 import { useToast } from "@shared/hooks/useToast";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { getKyivDayKey, getKyivWeekStartKey } from "@shared/lib/time/kyivTime";
+import {
+  getKyivDayKey,
+  getKyivMondayIndex,
+  getKyivWeekStartKey,
+  parseKyivDate,
+} from "@shared/lib/time/kyivTime";
 
 type WeekRow = MacrosRow;
 
@@ -85,8 +90,10 @@ function MiniBar({
   const dayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
   const weekSummary = rows
     .map((r) => {
-      const dow = new Date(r.date + "T00:00:00").getDay();
-      return `${dayLabels[(dow + 6) % 7]} ${Math.round(r.kcal)} ккал`;
+      const mondayIndex = getKyivMondayIndex(
+        parseKyivDate(r.date) ?? undefined,
+      );
+      return `${dayLabels[mondayIndex]} ${Math.round(r.kcal)} ккал`;
     })
     .join(", ");
   return (
@@ -98,8 +105,10 @@ function MiniBar({
       {rows.map((r) => {
         const h = max > 0 ? Math.max(2, (r.kcal / max) * 100) : 2;
         const isToday = r.date === todayISO();
-        const dayOfWeek = new Date(r.date + "T00:00:00").getDay();
-        const label = dayLabels[(dayOfWeek + 6) % 7];
+        const mondayIndex = getKyivMondayIndex(
+          parseKyivDate(r.date) ?? undefined,
+        );
+        const label = dayLabels[mondayIndex];
         return (
           <div
             key={r.date}
@@ -243,8 +252,8 @@ export function NutritionDashboard({
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <div className="text-style-label text-text">Сьогодні</div>
-              <div className="text-xs text-subtle">
+              <div className="text-style-label text-hero-ink">Сьогодні</div>
+              <div className="text-xs text-hero-ink/60">
                 {summary.mealCount}{" "}
                 {pluralUa(summary.mealCount, {
                   one: "прийом",
@@ -283,10 +292,10 @@ export function NutritionDashboard({
                   aria-label={`Калорії: ${kcalConsumed} з ${kcalGoal}`}
                   label={
                     <span className="flex flex-col items-center leading-none gap-0.5">
-                      <span className="text-style-title text-text tabular-nums">
+                      <span className="text-style-title text-hero-ink tabular-nums">
                         {kcalConsumed}
                       </span>
-                      <span className="text-style-caption text-subtle">
+                      <span className="text-style-caption text-hero-ink/60">
                         / {kcalGoal} ккал
                       </span>
                     </span>
@@ -330,13 +339,22 @@ export function NutritionDashboard({
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3 py-2">
-              <SectionHeading as="div" size="xs" variant="nutrition">
+              {/* «Чорнило» v3.1 § 3 — `variant="nutrition"`'s light
+                  `text-nutrition-strong` is invisible on the saturated
+                  hero gradient; dark's `text-nutrition/70` already reads
+                  fine and stays. */}
+              <SectionHeading
+                as="div"
+                size="xs"
+                variant="nutrition"
+                className="text-hero-ink/80"
+              >
                 Встанови ціль калорій щоб бачити прогрес дня
               </SectionHeading>
               <button
                 type="button"
                 onClick={onGoToDailyPlan ?? onGoToLog}
-                className="text-style-caption min-h-[44px] min-w-[44px] px-4 text-nutrition-strong dark:text-nutrition hover:underline text-center"
+                className="text-style-caption min-h-[44px] min-w-[44px] px-4 text-hero-ink hover:underline text-center"
               >
                 Налаштувати денні цілі КБЖВ →
               </button>
@@ -390,7 +408,7 @@ export function NutritionDashboard({
               type="button"
               onClick={onFetchDayHint}
               disabled={dayHintBusy}
-              className="shrink-0 px-3 h-8 rounded-xl text-style-caption bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50"
+              className="shrink-0 px-3 h-8 pointer-coarse:min-h-[44px] rounded-xl text-style-caption bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50"
             >
               {dayHintBusy ? "…" : "Отримати"}
             </button>
