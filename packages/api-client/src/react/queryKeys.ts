@@ -8,7 +8,6 @@
  */
 export const apiQueryKeys = {
   me: {
-    all: ["me"] as const,
     current: () => ["me", "current"] as const,
   },
   coach: {
@@ -19,24 +18,19 @@ export const apiQueryKeys = {
   },
   /** Кеш тижневого дайджеста після генерації. */
   weeklyDigest: {
-    all: ["weekly-digest"] as const,
     byWeek: (weekKey: string) => ["weekly-digest", weekKey] as const,
     history: ["weekly-digest", "history"] as const,
   },
   push: {
-    all: ["push"] as const,
     vapidPublic: () => ["push", "vapid-public"] as const,
   },
   foodSearch: {
-    all: ["food-search"] as const,
     query: (q: string) => ["food-search", q] as const,
   },
   barcode: {
-    all: ["barcode"] as const,
     lookup: (barcode: string) => ["barcode", barcode] as const,
   },
   privat: {
-    all: ["privat"] as const,
     balanceFinal: (merchantId: string) =>
       ["privat", "balance-final", merchantId] as const,
   },
@@ -50,13 +44,11 @@ export const apiQueryKeys = {
  */
 export const apiMutationKeys = {
   push: {
-    all: ["push"] as const,
     register: () => ["push", "register"] as const,
     test: () => ["push", "test"] as const,
     unregister: () => ["push", "unregister"] as const,
   },
   nutrition: {
-    all: ["nutrition"] as const,
     /** AI-рекомендації рецептів (`/api/nutrition/recommend-recipes`). */
     recommendRecipes: () => ["nutrition", "recommend-recipes"] as const,
   },
