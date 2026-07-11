@@ -397,6 +397,17 @@ export function PricingPage() {
               // checkout). Один/нуль → звичайна одна CTA (server-default).
               const showProviderChoice =
                 isPremium && !isPremiumActive && enabledProviders.length > 1;
+              // «Чорнило» v3.1 § 3 — Premium renders `prominence="hero"`
+              // (the new saturated finyk gradient); Free stays the
+              // neutral default card. Same JSX block serves both tiers,
+              // so ink tone must branch on `isPremium` rather than using
+              // a fixed text-* class.
+              const headingTone = isPremium ? "text-hero-ink" : "text-text";
+              const mutedTone = isPremium ? "text-hero-ink/70" : "text-muted";
+              const subtleTone = isPremium ? "text-hero-ink/60" : "text-subtle";
+              const checkTone = isPremium
+                ? "text-hero-ink"
+                : "text-brand-strong";
 
               return (
                 <Card
@@ -414,19 +425,24 @@ export function PricingPage() {
                   aria-current={isCurrent ? "true" : undefined}
                 >
                   <header className="space-y-1">
-                    <h3 className="text-style-headline text-text">
+                    <h3 className={cn("text-style-headline", headingTone)}>
                       {tier.name}
                     </h3>
-                    <p className="text-style-body-sm text-muted">
+                    <p className={cn("text-style-body-sm", mutedTone)}>
                       {tier.tagline}
                     </p>
                   </header>
 
                   <div className="space-y-1">
-                    <span className="text-style-display-hero text-text tabular-nums">
+                    <span
+                      className={cn(
+                        "text-style-display-hero tabular-nums",
+                        headingTone,
+                      )}
+                    >
                       {tier.price}
                     </span>
-                    <span className="block text-style-body-sm text-muted">
+                    <span className={cn("block text-style-body-sm", mutedTone)}>
                       {tier.cadence}
                     </span>
                   </div>
@@ -439,7 +455,7 @@ export function PricingPage() {
                           key={f.label}
                           className={cn(
                             "flex items-start gap-2 text-style-body-sm",
-                            excluded ? "text-subtle" : "text-text",
+                            excluded ? subtleTone : headingTone,
                           )}
                         >
                           <Icon
@@ -447,13 +463,18 @@ export function PricingPage() {
                             size={16}
                             className={cn(
                               "mt-0.5 shrink-0",
-                              excluded ? "text-subtle" : "text-brand-strong",
+                              excluded ? subtleTone : checkTone,
                             )}
                           />
                           <span className="min-w-0">
                             <span>{f.label}</span>
                             {f.limit ? (
-                              <span className="block text-style-caption text-subtle">
+                              <span
+                                className={cn(
+                                  "block text-style-caption",
+                                  subtleTone,
+                                )}
+                              >
                                 {f.limit}
                               </span>
                             ) : null}

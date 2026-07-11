@@ -36,6 +36,12 @@ export function DayProgressRing({
           viewBox={`0 0 ${SIZE} ${SIZE}`}
           className="transform -rotate-90"
         >
+          {/* «Чорнило» v3.1 § 3 — only rendered inside the routine hero's
+              `ring` slot. `text-routine-strong`/`dark:text-routine`
+              coincide almost exactly with the two ends of the new
+              `--hero-grad-routine` gradient (same coral hues), so the
+              arc would nearly vanish depending on ring position; the
+              track/arc/label all use hero-ink for guaranteed contrast. */}
           <circle
             cx={SIZE / 2}
             cy={SIZE / 2}
@@ -43,7 +49,7 @@ export function DayProgressRing({
             fill="none"
             stroke="currentColor"
             strokeWidth={STROKE}
-            className="text-line/30"
+            className="text-hero-ink/20"
           />
           <circle
             cx={SIZE / 2}
@@ -55,16 +61,16 @@ export function DayProgressRing({
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
             strokeDashoffset={offset}
-            className="text-routine-strong dark:text-routine transition-colors duration-700 ease-out"
+            className="text-hero-ink transition-colors duration-700 ease-out"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-style-title text-text tabular-nums">
+          <span className="text-style-title text-hero-ink tabular-nums">
             {completed}/{scheduled}
           </span>
         </div>
       </div>
-      <span className="text-style-caption text-subtle font-medium group-hover:text-text transition-colors">
+      <span className="text-style-caption text-hero-ink/60 font-medium group-hover:text-hero-ink transition-colors">
         {messages.routine.dayReport}
       </span>
     </button>

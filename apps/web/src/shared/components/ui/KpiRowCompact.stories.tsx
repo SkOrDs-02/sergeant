@@ -26,6 +26,7 @@ export const Default: Story = {
     <Card module="routine" prominence="hero" radius="xl">
       <KpiRowCompact
         module="routine"
+        tone="hero-ink"
         items={[
           { label: "Подій", value: 12 },
           { label: "Виконано", value: 8 },

@@ -21,10 +21,25 @@ export default meta;
 
 type Story = StoryObj<typeof Card>;
 
-const SampleContent = () => (
+// «Чорнило» v3.1 § 3 — `hero` switches to the theme-invariant hero-ink
+// tone for the `ModuleHeroes` story below; the default (neutral Card)
+// stories keep the normal text/muted pairing.
+const SampleContent = ({ hero = false }: { hero?: boolean }) => (
   <div className="p-4">
-    <h3 className="text-base font-semibold">Витрати за тиждень</h3>
-    <p className="text-text-muted mt-1 text-sm">
+    <h3
+      className={
+        hero
+          ? "text-base font-semibold text-hero-ink"
+          : "text-base font-semibold"
+      }
+    >
+      Витрати за тиждень
+    </h3>
+    <p
+      className={
+        hero ? "text-hero-ink/75 mt-1 text-sm" : "text-muted mt-1 text-sm"
+      }
+    >
       ₴ 4 320 · 18 транзакцій · Mono + готівка
     </p>
   </div>
@@ -59,16 +74,16 @@ export const ModuleHeroes: Story = {
   render: () => (
     <div className="grid gap-4 sm:grid-cols-2">
       <Card module="finyk" prominence="hero" radius="xl">
-        <SampleContent />
+        <SampleContent hero />
       </Card>
       <Card module="fizruk" prominence="hero" radius="xl">
-        <SampleContent />
+        <SampleContent hero />
       </Card>
       <Card module="routine" prominence="hero" radius="xl">
-        <SampleContent />
+        <SampleContent hero />
       </Card>
       <Card module="nutrition" prominence="hero" radius="xl">
-        <SampleContent />
+        <SampleContent hero />
       </Card>
     </div>
   ),

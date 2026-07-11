@@ -99,8 +99,8 @@ export function ElevationSection() {
           {(["finyk", "fizruk", "routine", "nutrition"] as const).map(
             (module) => (
               <Card key={module} module={module} prominence="hero" padding="lg">
-                <div className="text-sm font-bold">{module}</div>
-                <div className="text-2xs text-muted mt-1">
+                <div className="text-sm font-bold text-hero-ink">{module}</div>
+                <div className="text-2xs text-hero-ink/70 mt-1">
                   module=&quot;{module}&quot; prominence=&quot;hero&quot;
                 </div>
               </Card>

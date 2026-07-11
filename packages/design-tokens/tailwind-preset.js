@@ -160,6 +160,14 @@ const preset = {
         "module-accent-strong":
           "rgb(var(--module-accent-strong-rgb) / <alpha-value>)",
 
+        // Hero-surface text — «Чорнило» v3.1 § 3. Content nested inside a
+        // `prominence="hero"` Card sits on a saturated module gradient in
+        // BOTH themes (light: the new `--hero-grad-*` anchor; dark: the
+        // `--hero-ink-*` near-black fill from § 2) — the surface is always
+        // dark enough to need light text, so this is one flat colour with
+        // no `.dark` flip. `text-hero-ink/75` is the eyebrow/muted tier.
+        "hero-ink": "#fdf9f3",
+
         // ═══════════════════════════════════════════════════════════════════
         // BRAND COLORS — Soft & Organic palette with Emerald/Teal accent
         // ═══════════════════════════════════════════════════════════════════
@@ -564,6 +572,15 @@ const preset = {
         "glow-inset-cyan": "inset 0 0 40px rgba(34, 211, 238, 0.08)",
         "glow-inset-coral": "inset 0 0 40px rgba(255, 140, 120, 0.08)",
         "glow-inset-lime": "inset 0 0 40px rgba(176, 230, 54, 0.08)",
+        // «Чорнило» hero light glow (spec § 3 point 2) — a soft downward
+        // colour shadow, not a halo. Colour = the light-tier
+        // `--c-{module}-accent` hex baked in (box-shadow colour can't take
+        // a CSS-var opacity modifier). Replaces the generic `shadow-card`
+        // on the hero surface; dark keeps its own `glow-inset-*` override.
+        "hero-finyk": "0 8px 20px rgba(4, 120, 87, 0.22)",
+        "hero-fizruk": "0 8px 20px rgba(14, 116, 144, 0.22)",
+        "hero-routine": "0 8px 20px rgba(194, 58, 58, 0.22)",
+        "hero-nutrition": "0 8px 20px rgba(86, 124, 15, 0.22)",
         // «Чорнило» FAB glow — a luminescent module-accent halo (spec § 4:
         // FAB = module accent + glow 24px/40%), replacing the drop shadow
         // under the dark ink direction. Routine is the only module with a

@@ -29,7 +29,7 @@ export const Default: Story = {
     <Card module="routine" prominence="hero" radius="xl">
       <HeroValueLine
         ring={<ProgressRing variant="routine" value={4} max={6} size="lg" />}
-        metric={<CounterReveal value={4} max={6} />}
+        metric={<CounterReveal value={4} max={6} maxTone="hero-ink" />}
         narrative="Сьогодні · 4 з 6 звичок · Серія 12 днів"
       />
     </Card>

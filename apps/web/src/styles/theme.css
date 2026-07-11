@@ -899,28 +899,31 @@
       0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 12px 32px rgba(20, 40, 30, 0.12);
     --shadow-fab: 0 8px 22px rgba(15, 118, 110, 0.45);
 
-    /* Hero gradients — bright module-tinted linear gradients for
-       hero cards (Finyk balance, Fizruk overview, etc.). */
+    /* Hero gradients — «Чорнило» v3.1 § 3 brand anchor: the SAME saturated
+       gradient in both themes (Card hero light bg + the decorative
+       low-opacity wash HeroCard/Atlas/PrBadge layer on top in both
+       themes). Start stop matches `--c-{module}-accent` (light tier)
+       above so the two token families stay visually locked. */
     --hero-grad-finyk: linear-gradient(
       135deg,
-      #0f766e,
-      #14b8a6
-    ); /* teal-700 → teal-500 (legacy emerald-teal mix kept for finyk balance card) */
+      #047857,
+      #10b981
+    ); /* emerald-700 → emerald-500 */
     --hero-grad-fizruk: linear-gradient(
       135deg,
       #0e7490,
       #14b8a6
-    ); /* cyan-700 → teal-500 — v2 spec; cyan primary with teal accent stop */
+    ); /* cyan-700 → teal-500 */
     --hero-grad-routine: linear-gradient(
       135deg,
-      #ff8c78,
-      #c23a3a
-    ); /* coral-400 → coral-700 */
+      #c23a3a,
+      #ff8c78
+    ); /* coral-700 → coral-400 */
     --hero-grad-nutrition: linear-gradient(
       135deg,
-      #b0e636,
-      #71a30d
-    ); /* lime-400 → lime-600 */
+      #567c0f,
+      #b0e636
+    ); /* lime-ink → lime-400 */
   }
 
   .dark {

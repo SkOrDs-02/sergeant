@@ -77,11 +77,14 @@ export function MacroBarRow({ macros, className }: MacroBarRowProps) {
 
         return (
           <li key={`${macro.label}-${idx}`} className="flex flex-col gap-1">
+            {/* «Чорнило» v3.1 § 3 — primary consumer is the Nutrition hero
+                (`prominence="hero"`); hero-ink keeps label/value readable
+                on the saturated hero gradient. */}
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-style-caption text-subtle">
+              <span className="text-style-caption text-hero-ink/60">
                 {macro.label}
               </span>
-              <span className="text-style-label font-medium text-text tabular-nums">
+              <span className="text-style-label font-medium text-hero-ink tabular-nums">
                 {valueLabel}
               </span>
             </div>

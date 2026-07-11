@@ -228,7 +228,15 @@ function HeroKicker({
   readonly today: string;
 }) {
   return (
-    <SectionHeading as="p" size="sm" variant="fizruk">
+    // «Чорнило» v3.1 § 3: overrides the light `text-fizruk-strong` (now
+    // invisible on the saturated hero gradient) with hero-ink;
+    // `dark:text-fizruk-300/70` already reads fine on the dark hero.
+    <SectionHeading
+      as="p"
+      size="sm"
+      variant="fizruk"
+      className="text-hero-ink/80"
+    >
       {greeting} · {today}
     </SectionHeading>
   );
@@ -236,16 +244,13 @@ function HeroKicker({
 
 /**
  * Secondary eyebrow that labels each state ("Тренування триває", etc.)
- * Sits directly under the `HeroKicker` and uses the lighter `white/80`
- * ink so it reads as an overlay label on the teal hero background.
+ * Sits directly under the `HeroKicker` and uses the theme-invariant
+ * `hero-ink/80` so it reads as an overlay label on the saturated fizruk
+ * hero gradient («Чорнило» v3.1 § 3 — same treatment in both themes).
  */
 function HeroStateLabel({ children }: { readonly children: ReactNode }) {
   return (
-    <SectionHeading
-      as="p"
-      size="sm"
-      className="mt-3 text-teal-800 dark:text-white/80"
-    >
+    <SectionHeading as="p" size="sm" className="mt-3 text-hero-ink/80">
       {children}
     </SectionHeading>
   );
@@ -293,13 +298,13 @@ function ActiveState({
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Тренування триває</HeroStateLabel>
       <p
-        className="mt-1 text-hero font-black text-teal-900 dark:text-white leading-none tabular-nums"
+        className="mt-1 text-hero font-black text-hero-ink leading-none tabular-nums"
         aria-live="polite"
         aria-label={`Час тренування ${formatElapsed(elapsedSec)}`}
       >
         {formatElapsed(elapsedSec)}
       </p>
-      <p className="mt-2 text-sm text-teal-700 dark:text-white/75">{meta}</p>
+      <p className="mt-2 text-sm text-hero-ink/75">{meta}</p>
       <div className="mt-6">
         <button
           type="button"
@@ -349,10 +354,10 @@ function TodayState({
     <HeroShell ariaLabel="Сьогоднішнє тренування" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Сьогоднішнє тренування</HeroStateLabel>
-      <h1 className="text-hero font-black text-teal-900 dark:text-white mt-1 leading-tight truncate">
+      <h1 className="text-hero font-black text-hero-ink mt-1 leading-tight truncate">
         {state.label}
       </h1>
-      <p className="mt-2 text-sm text-teal-700 dark:text-white/75 truncate">
+      <p className="mt-2 text-sm text-hero-ink/75 truncate">
         {metaParts.join(" · ")}
       </p>
       <div className="mt-6">
@@ -408,10 +413,10 @@ function UpcomingState({
     <HeroShell ariaLabel="Наступне тренування" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Наступне тренування</HeroStateLabel>
-      <h1 className="text-hero font-black text-teal-900 dark:text-white mt-1 leading-tight truncate">
+      <h1 className="text-hero font-black text-hero-ink mt-1 leading-tight truncate">
         {state.label}
       </h1>
-      <p className="mt-2 text-sm text-teal-700 dark:text-white/75 truncate">
+      <p className="mt-2 text-sm text-hero-ink/75 truncate">
         {metaParts.join(" · ")}
       </p>
       <div className="mt-6">
@@ -448,11 +453,11 @@ function EmptyState({
     <HeroShell ariaLabel="План на сьогодні порожній" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>План порожній</HeroStateLabel>
-      <h1 className="text-hero font-black text-teal-900 dark:text-white mt-1 leading-tight">
+      <h1 className="text-hero font-black text-hero-ink mt-1 leading-tight">
         Обери шаблон або <br />
         заплануй день
       </h1>
-      <p className="mt-2 text-sm text-teal-700 dark:text-white/75">
+      <p className="mt-2 text-sm text-hero-ink/75">
         {state.hasTemplates
           ? "Нічого не заплановано — запусти готовий шаблон або відкрий програми."
           : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}

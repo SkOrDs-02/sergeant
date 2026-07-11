@@ -90,7 +90,10 @@ describe("Card", () => {
     it("variant='finyk' maps to module='finyk' prominence='hero'", () => {
       const { container } = render(<Card variant="finyk">hero</Card>);
       const cls = container.firstElementChild!.className;
-      expect(cls).toContain("bg-hero-emerald");
+      // «Чорнило» v3.1 § 3: the same saturated brand-anchor gradient in
+      // both themes, soft down-shadow instead of elevation.
+      expect(cls).toContain("bg-hero-grad-finyk");
+      expect(cls).toContain("shadow-hero-finyk");
       expect(cls).toContain("border-finyk-soft-border/50");
       // «Чорнило» v3.1 § 2: tonal ink gradient instead of the `-900`
       // `-soft` fill — identity carried by border + glow, not saturation.
@@ -149,13 +152,15 @@ describe("Card", () => {
         </Card>,
       );
       const cls = container.firstElementChild!.className;
-      expect(cls).toContain("bg-hero-emerald");
+      expect(cls).toContain("bg-hero-grad-finyk");
       expect(cls).toContain("dark:bg-hero-ink-finyk");
     });
 
     it("module without prominence defaults to prominence='hero'", () => {
       const { container } = render(<Card module="fizruk">hero</Card>);
-      expect(container.firstElementChild!.className).toContain("bg-hero-teal");
+      expect(container.firstElementChild!.className).toContain(
+        "bg-hero-grad-fizruk",
+      );
     });
 
     it("module='routine' prominence='soft' uses the full soft token", () => {
