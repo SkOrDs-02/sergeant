@@ -16,11 +16,36 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
 import { messages } from "@shared/i18n/uk";
 
-const VARIANT: Record<ToastType, string> = {
-  success: "bg-brand-700 text-white",
-  error: "bg-danger-strong text-white",
-  warning: "bg-warning-strong text-white",
-  info: "bg-primary text-bg",
+// «Чорнило» v3.1 § 5 — hybrid toast, not a full saturated fill. Base is the
+// same `surface-hi` (#17231d dark / #faf7f0 light) + `text-ink` for every
+// type; only the left stripe, icon, and Undo-action carry the semantic
+// colour. Error additionally gets a full-perimeter `danger/35` border
+// instead of the neutral `line/8` hairline. Colour-coding reads from the
+// stripe + icon alone — a saturated fill is no longer needed.
+const BASE = "bg-panelHi text-ink";
+
+const BORDER: Record<ToastType, string> = {
+  success: "border border-line/8",
+  error: "border border-danger/35",
+  warning: "border border-line/8",
+  info: "border border-line/8",
+};
+
+// Semantic accent — light uses the AA `-strong` tier, dark the
+// luminescent tier-400 shade (spec eталон: success #34d399, error
+// #f87171 — Tailwind's own emerald-400/red-400, so no new token needed).
+const ACCENT_TEXT: Record<ToastType, string> = {
+  success: "text-success-strong dark:text-emerald-400",
+  error: "text-danger-strong dark:text-red-400",
+  warning: "text-warning-strong dark:text-amber-400",
+  info: "text-info-strong dark:text-sky-400",
+};
+
+const ACCENT_STRIPE: Record<ToastType, string> = {
+  success: "bg-success-strong dark:bg-emerald-400",
+  error: "bg-danger-strong dark:bg-red-400",
+  warning: "bg-warning-strong dark:bg-amber-400",
+  info: "bg-info-strong dark:bg-sky-400",
 };
 
 const ICON_WRAP: Record<ToastType, string> = {
@@ -39,15 +64,15 @@ const ICON_NAME: Record<ToastType, IconName> = {
 
 /**
  * Countdown progress bar for toasts that own a recoverable side-effect
- * (the undo-pattern). On the `info` variant we use a dark-on-light tint
- * because the surface is `bg-primary text-bg`; on the saturated white-on-X
- * variants we use a translucent-white bar so it remains visible.
+ * (the undo-pattern). Tints with the same semantic accent as the stripe/
+ * icon, at low opacity, so it reads as part of the same colour signal
+ * rather than a fifth arbitrary tone.
  */
 const COUNTDOWN_BAR_TINT: Record<ToastType, string> = {
-  success: "bg-white/45",
-  error: "bg-white/55",
-  warning: "bg-white/55",
-  info: "bg-bg/35",
+  success: "bg-success-strong/45 dark:bg-emerald-400/45",
+  error: "bg-danger-strong/45 dark:bg-red-400/45",
+  warning: "bg-warning-strong/45 dark:bg-amber-400/45",
+  info: "bg-info-strong/45 dark:bg-sky-400/45",
 };
 
 /**
@@ -197,14 +222,15 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
         // Elevation e5 — toast tier. Toasts are the top-most
         // ephemeral surface; pairing with `z-toast` (300) keeps them
         // above modals/sheets even when both stacks are visible.
-        "text-style-label pointer-events-auto w-full px-4 py-3 rounded-2xl shadow-e5 relative overflow-hidden",
+        "text-style-label pointer-events-auto w-full pl-5 pr-4 py-3 rounded-2xl shadow-e5 relative overflow-hidden",
         "flex items-center gap-2.5 outline-none",
-        "focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+        "focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         "touch-pan-y", // allow vertical scroll, capture horizontal swipe
         isLeaving
           ? "motion-safe:animate-toast-exit"
           : "motion-safe:animate-toast-enter",
-        VARIANT[toast.type] || VARIANT.info,
+        BASE,
+        BORDER[toast.type],
       )}
       role={assertive ? "alert" : "status"}
       aria-live={assertive ? "assertive" : "polite"}
@@ -224,8 +250,16 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
       data-toast-type={toast.type}
     >
       <span
+        aria-hidden
+        className={cn(
+          "absolute left-0 top-0 bottom-0 w-[3px]",
+          ACCENT_STRIPE[toast.type],
+        )}
+      />
+      <span
         className={cn(
           "shrink-0 inline-flex items-center justify-center",
+          ACCENT_TEXT[toast.type],
           ICON_WRAP[toast.type],
         )}
       >
@@ -248,8 +282,9 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
             }
           }}
           className={cn(
-            "shrink-0 px-2.5 py-1 rounded-xl bg-white/15 hover:bg-white/25 transition-colors",
-            "outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
+            "shrink-0 px-2.5 py-1 rounded-xl bg-line/10 hover:bg-line/20 transition-colors font-semibold",
+            ACCENT_TEXT[toast.type],
+            "outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
           )}
         >
           {toast.action.label || "Дія"}
@@ -260,7 +295,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
         onClick={() => dismiss(toast.id)}
         className={cn(
           "shrink-0 opacity-70 hover:opacity-100 transition-opacity touch-target",
-          "outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent rounded-md",
+          "outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent rounded-md",
         )}
         aria-label={messages.actions.close}
       >

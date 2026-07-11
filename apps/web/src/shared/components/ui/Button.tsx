@@ -48,9 +48,13 @@ export type ButtonVariant =
 export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 const variants: Record<ButtonVariant, string> = {
-  // Core variants
+  // Core variants. Dark «Чорнило» (spec § 7): the hub-level primary takes
+  // the same treatment as module buttons (§ 4, #237) — luminescent
+  // tier-400 fill + ink foreground + resting accent glow instead of a
+  // drop shadow. `primary-ink` stays the alternative for module-less
+  // contexts (auth, settings, legal). Light is unchanged.
   primary:
-    "bg-brand-strong text-white shadow-sm hover:bg-brand-800 hover:shadow-glow active:bg-brand-900 active:scale-[0.98]",
+    "bg-brand-strong text-white shadow-sm hover:bg-brand-800 hover:shadow-glow active:bg-brand-900 active:scale-[0.98] dark:bg-brand-400 dark:text-bg dark:shadow-glow-accent-emerald",
   // `secondary` is the neutral outline button. Its fill is `bg-panel`
   // (white in light / warm-charcoal in dark) — the SAME token as the
   // card & sheet surfaces it most often sits on, so the fill alone

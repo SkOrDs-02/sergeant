@@ -884,11 +884,12 @@
     /* Mesh background — 3 radial glows composited over --c-bg-base by the
        shared `.bg-mesh` utility (positions: 1 = top-right, 2 = left,
        3 = bottom-right). «Чорнило» collapsed the old 4-corner mesh to 3
-       (spec § Рішення — cheaper on mobile). Light keeps warm brand glows
-       here; the §5 light-inversion palette is a later step. */
-    --bg-mesh-1: rgba(16, 185, 129, 0.2); /* emerald glow — top-right */
-    --bg-mesh-2: rgba(20, 184, 166, 0.22); /* teal glow — left */
-    --bg-mesh-3: rgba(255, 180, 166, 0.28); /* coral glow — bottom-right */
+       (spec § Рішення — cheaper on mobile). § 4 (PR D): retuned to the
+       §5 tier-500/700 palette — mirrors the dark mesh structure, alpha
+       lowered so the light mesh reads quieter than the dark one. */
+    --bg-mesh-1: rgba(16, 185, 129, 0.14); /* emerald-500 — top-right */
+    --bg-mesh-2: rgba(14, 116, 144, 0.09); /* cyan-700 — left */
+    --bg-mesh-3: rgba(249, 112, 102, 0.1); /* coral-500 — bottom-right */
 
     /* Shadows — glass-surface recipes (inset highlight + outer drop). */
     --shadow-card-v2:
