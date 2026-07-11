@@ -1,0 +1,107 @@
+name: Deploy API image (ghcr.io)
+
+# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
+#
+# Будує Hub API-образ з `Dockerfile.api` і пушить у GitHub Container
+# Registry (`ghcr.io/<owner>/sergeant-api`). Coolify на Hetzner VPS тягне
+# цей образ і деплоїть (ADR — hosting-hetzner-coolify). Білд НАВМИСНО тут,
+# а не на VPS: distroless multi-stage + pnpm-install монорепи впирається в
+# RAM/CPU, яких на CX23 (4 GB) бракує. GA-раннер amd64 → образ нативний,
+# без QEMU (`--platform=linux/amd64` пінено на FROM у Dockerfile.api).
+#
+# Міграції на образ НЕ запускаються тут — це pre-deploy Coolify-крок
+# (`node dist-server/migrate.js`, requires MIGRATE_DATABASE_URL), дзеркало
+# колишнього `railway.toml` → `[deploy].preDeployCommand`.
+#
+# Build-surface дзеркалить `container-scan.yml` (той самий набір шляхів, що
+# реально потрапляє в образ) — щоб scan і deploy тригерились синхронно.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile.api"
+      - ".dockerignore"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+      - "patches/**"
+      - "apps/server/**"
+      - "packages/shared/**"
+      - "packages/config/**"
+      - "packages/db-schema/**"
+      - "packages/finyk-domain/**"
+      - ".github/workflows/deploy-api.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  # Не переривати деплой на півдорозі — черга, а не cancel.
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    name: Build & push sergeant-api
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned, як у решті workflow-ів)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # docker/setup-buildx-action v4.0.0 (SHA-pinned)
+      - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
+
+      - name: Log in to ghcr.io
+        # Без окремої login-action: `docker login` через GITHUB_TOKEN
+        # (packages: write) — менше SHA-пінів для супроводу.
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Compute image tags
+        id: tags
+        # GHCR namespace мусить бути lowercase (owner "SkOrDs-02" → "skords-02").
+        run: |
+          owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          image="ghcr.io/${owner}/sergeant-api"
+          {
+            echo "tags<<EOF"
+            echo "${image}:latest"
+            echo "${image}:${{ github.sha }}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # docker/build-push-action v7.1.0 (SHA-pinned)
+      - name: Build & push
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
+        with:
+          context: .
+          file: Dockerfile.api
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          # Спільний gha-кеш прискорює важкий pnpm-install шар. Окремий
+          # scope, щоб не битись за кеш із container-scan.
+          cache-from: type=gha,scope=deploy-api
+          cache-to: type=gha,mode=max,scope=deploy-api
+
+      - name: Trigger Coolify deploy
+        # No-op, поки секрет не заданий (до підняття VPS). Coolify deploy
+        # webhook: повний URL у COOLIFY_DEPLOY_WEBHOOK, опційний Bearer у
+        # COOLIFY_DEPLOY_TOKEN. Не фейлимо деплой образу, якщо hook відпав —
+        # образ уже в registry, Coolify можна дернути вручну.
+        continue-on-error: true
+        env:
+          HOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
+          TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "COOLIFY_DEPLOY_WEBHOOK not set — skipping (image is pushed; deploy manually)."
+            exit 0
+          fi
+          if [ -n "$TOKEN" ]; then
+            curl -fsSL -X POST "$HOOK" -H "Authorization: Bearer $TOKEN"
+          else
+            curl -fsSL -X POST "$HOOK"
+          fi
