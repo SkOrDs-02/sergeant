@@ -54,16 +54,17 @@ export interface SegmentedProps<V extends string = string> {
   className?: string;
 }
 
-// Solid mode pairs `bg-{c}-strong text-white` (5.0–7.0:1) so the active
-// segment label stays readable at 12 px. Border keeps the brand `*-500`
-// for visual continuity with siblings; borders aren't text. See
-// docs/design/archive/brand-palette-wcag-aa-proposal.md § 2.2.
+// Solid mode active chip is inverted-ink («Чорнило» v3.1 § 6): dark —
+// `bg-ink` (#e7f0ea) + `text-bg` (#0d1512, fg-as-bg); light — the mirror
+// inversion (`bg-ink` #17201b + `text-bg` #f2ecdf). Both tokens are
+// already theme-aware CSS vars, so one pair covers both themes. Border
+// keeps the module accent for visual continuity with siblings.
 const VARIANT_SOLID: Record<SegmentedVariant, string> = {
-  brand: "bg-brand-strong text-white border-brand",
-  fizruk: "bg-fizruk-strong text-white border-fizruk",
-  routine: "bg-routine-strong text-white border-routine",
-  nutrition: "bg-nutrition-strong text-white border-nutrition",
-  finyk: "bg-finyk-strong text-white border-finyk",
+  brand: "bg-ink text-bg border-brand",
+  fizruk: "bg-ink text-bg border-fizruk",
+  routine: "bg-ink text-bg border-routine",
+  nutrition: "bg-ink text-bg border-nutrition",
+  finyk: "bg-ink text-bg border-finyk",
 };
 
 // Soft mode active label uses the theme-aware `text-{c}-soft-fg` token

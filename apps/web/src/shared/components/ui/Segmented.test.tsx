@@ -46,7 +46,7 @@ describe("Segmented", () => {
     expect(onChange).toHaveBeenCalledWith("month");
   });
 
-  it("style='solid' + variant='fizruk' paints the active tab with fizruk-solid palette", () => {
+  it("style='solid' + variant='fizruk' paints the active tab inverted-ink", () => {
     const { getAllByRole } = render(
       <Segmented
         items={ITEMS}
@@ -57,10 +57,12 @@ describe("Segmented", () => {
       />,
     );
     const active = getAllByRole("tab")[0];
-    // `bg-fizruk-strong` (= teal-700) clears 5.47:1 against text-white.
-    // The previous `bg-fizruk` (= teal-500) only cleared ~2.5:1.
-    expect(active!.className!).toContain("bg-fizruk-strong");
-    expect(active!.className!).toContain("text-white");
+    // «Чорнило» v3.1 § 6 — solid active is inverted-ink (bg-ink/text-bg,
+    // theme-aware) instead of a saturated module fill; border keeps the
+    // module accent for continuity with siblings.
+    expect(active!.className!).toContain("bg-ink");
+    expect(active!.className!).toContain("text-bg");
+    expect(active!.className!).toContain("border-fizruk");
   });
 
   it("style='soft' (default) + variant='routine' paints the active tab with routine-soft palette", () => {

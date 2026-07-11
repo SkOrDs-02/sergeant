@@ -71,6 +71,18 @@ describe("Button", () => {
     expect(cls).not.toContain("active:bg-brand-700");
   });
 
+  it("hub-level primary carries the «Чорнило» v3.1 § 7 dark treatment (accent fill + ink + glow)", () => {
+    // No `module` — this is the hub-chrome primary. Light keeps `-strong`
+    // + white; dark swaps to the luminescent `brand-400` accent (identical
+    // construction to the module primary buttons from #237) + ink text +
+    // a resting accent glow instead of a drop shadow.
+    const { getByRole } = render(<Button variant="primary">Go</Button>);
+    const cls = getByRole("button").className;
+    expect(cls).toContain("dark:bg-brand-400");
+    expect(cls).toContain("dark:text-bg");
+    expect(cls).toContain("dark:shadow-glow-accent-emerald");
+  });
+
   it.each([
     ["finyk", "hover:bg-emerald-800", "active:bg-emerald-900"],
     ["fizruk", "hover:bg-teal-800", "active:bg-teal-900"],

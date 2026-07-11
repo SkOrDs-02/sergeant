@@ -11,9 +11,9 @@ import { Segmented, type SegmentedProps } from "./Segmented";
  *   - `variant` — accent колір (`brand` за замовчуванням; чотири module-токени
  *                 скоупують активний стан до конкретного модуля).
  *   - `style`   — візуальне трактування активного chip-а:
- *                 - `solid` — фон `bg-{c}-strong` + `text-white` (5.0–7.0:1
- *                   contrast на 12 px → проходить WCAG AA для звичайного
- *                   тексту, не покладаючись на large-text exemption).
+ *                 - `solid` — інвертований ink («Чорнило» v3.1 § 6):
+ *                   `bg-ink text-bg` (theme-aware — dark #e7f0ea/#0d1512,
+ *                   light дзеркально), бордер тримає module-акцент.
  *                 - `soft`  — `bg-{c}-soft` + accent-border + `text-{c}-strong`,
  *                   більш subtle treatment для filtering chips.
  *
