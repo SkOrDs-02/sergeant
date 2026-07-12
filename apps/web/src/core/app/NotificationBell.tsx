@@ -11,9 +11,9 @@
  * tap reveals the same actions inside a dropdown.
  *
  * Dropdown chrome (trigger a11y, outside-click + ESC close, focus return)
- * mirrors `ThemeSwitcher`'s `DropdownSwitcher` so the header keeps one
- * popover idiom. iOS-install and Trial banners stay inline for now — they
- * carry their own bespoke UX (step-by-step instructions / billing CTA).
+ * mirrors `HubHeaderMenu`'s popover so the header keeps one idiom.
+ * iOS-install and Trial banners stay inline for now — they carry their own
+ * bespoke UX (step-by-step instructions / billing CTA).
  */
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";

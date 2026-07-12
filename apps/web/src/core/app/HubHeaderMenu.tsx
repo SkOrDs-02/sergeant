@@ -3,10 +3,11 @@
  *
  * Overflow "⋯" menu for the hub header. Folds the secondary controls
  * (calm mode, theme, privacy status) out of the top-bar so the header keeps
- * to ≤5 affordances on mobile (mobile-audit A3). The popover pattern mirrors
- * `ThemeSwitcher`'s dropdown — outside-click + Esc close, focus returns to
- * the trigger. All visible copy arrives via `labels` props (interpolated,
- * never JSX-text) so the module stays clear of raw Cyrillic literals.
+ * to ≤5 affordances on mobile (mobile-audit A3). The popover closes on
+ * outside-click + Esc, returning focus to the trigger (same pattern as
+ * `NotificationBell`). All visible copy arrives via `labels` props
+ * (interpolated, never JSX-text) so the module stays clear of raw Cyrillic
+ * literals.
  */
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
@@ -145,7 +146,7 @@ export function HubHeaderMenu({
             <span className="block text-style-label text-text mb-1.5">
               {labels.theme}
             </span>
-            <ThemeSwitcher variant="segmented" />
+            <ThemeSwitcher />
           </div>
 
           {/* Privacy — de-emphasised status row (data locality) that opens

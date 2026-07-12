@@ -12,6 +12,7 @@ const FizrukApp = lazyDefault(() => import("./FizrukApp"));
 export function Component() {
   const {
     goBackOrHub,
+    goToHub,
     goToModuleSettings,
     openModule,
     pwaAction,
@@ -23,6 +24,7 @@ export function Component() {
       <SuspenseWithMinDelay fallback={<ModulePageLoader module="fizruk" />}>
         <FizrukApp
           onBackToHub={goBackOrHub}
+          onGoToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("fizruk")}
           onOpenModule={openModule}
           pwaAction={pwaAction}

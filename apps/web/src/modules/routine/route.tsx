@@ -12,6 +12,7 @@ const RoutineApp = lazyDefault(() => import("./RoutineApp"));
 export function Component() {
   const {
     goBackOrHub,
+    goToHub,
     goToModuleSettings,
     openModule,
     pwaAction,
@@ -23,6 +24,7 @@ export function Component() {
       <SuspenseWithMinDelay fallback={<ModulePageLoader module="routine" />}>
         <RoutineApp
           onBackToHub={goBackOrHub}
+          onGoToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("routine")}
           onOpenModule={openModule}
           pwaAction={pwaAction}

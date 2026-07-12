@@ -58,9 +58,17 @@ export function ModuleShell({
   // Expose the bottom-nav height as a CSS variable so descendants
   // (e.g. bottom sheets rendered inside this shell) can lift themselves
   // above it without having to know whether the current page renders a
-  // nav. Defaults to 0px when no nav is slotted.
+  // nav. Defaults to 0px when no nav is slotted. Includes the nav's own
+  // `padding-top: env(safe-area-inset-bottom)` (round-2 UI audit X1 —
+  // `bottom-nav-shell` mirrors its bottom safe-area padding to the top so
+  // the tab row isn't pinned against the rounded corner); consumers that
+  // add `env(safe-area-inset-bottom)` again on top of this variable
+  // (Sheet.tsx, Toast.tsx) are accounting for the nav's *own* bottom
+  // padding, which is separate from this top one.
   const shellStyle: CSSProperties = {
-    "--bottom-nav-height": nav ? "60px" : "0px",
+    "--bottom-nav-height": nav
+      ? "calc(60px + env(safe-area-inset-bottom, 0px))"
+      : "0px",
   } as CSSProperties;
 
   // Sergeant v2 redesign (2026-05, PR-6) — module shell wraps content in

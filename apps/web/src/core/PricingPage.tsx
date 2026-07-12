@@ -245,9 +245,14 @@ export function PricingPage() {
       setCheckoutError(t.errors.checkoutUnavailable);
       const anchor = document.getElementById("waitlist-anchor");
       if (anchor && typeof anchor.scrollIntoView === "function") {
+        // `block: "nearest"` (not "start") — the waitlist section sits near
+        // the end of the page; aligning it to the viewport TOP over-scrolls
+        // past it, revealing the trailing padding below the footer as a
+        // dead empty zone (round-2 UI audit X5). "nearest" scrolls only as
+        // far as needed to bring it into view.
         anchor.scrollIntoView({
           behavior: motionScrollBehavior(),
-          block: "start",
+          block: "nearest",
         });
       }
     } finally {
@@ -316,7 +321,12 @@ export function PricingPage() {
           paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
         }}
       >
-        <div className="max-w-5xl mx-auto px-5 pb-12 space-y-10">
+        {/* `pb-4`, not `pb-12`: `<main>` already reserves
+            `max(1.25rem, env(safe-area-inset-bottom))` below this div, and
+            the footer is the last element — stacking a full 48px on top of
+            that left a dead scrollable gap under the footer, most visible
+            after the waitlist-redirect auto-scroll (round-2 UI audit X5). */}
+        <div className="max-w-5xl mx-auto px-5 pb-4 space-y-10">
           <header className="flex items-center gap-3 pt-6 pb-2">
             <Button
               variant="ghost"

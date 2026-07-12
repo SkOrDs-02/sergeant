@@ -17,8 +17,17 @@ describe("RoutineHeader", () => {
   it("shows hub back button when onBackToHub is provided", () => {
     const onBackToHub = vi.fn();
     render(<RoutineHeader onBackToHub={onBackToHub} />);
-    fireEvent.click(screen.getByRole("button", { name: "До хабу" }));
+    fireEvent.click(screen.getByRole("button", { name: "Назад" }));
     expect(onBackToHub).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a dedicated hub button when onGoToHub is provided", () => {
+    const onBackToHub = vi.fn();
+    const onGoToHub = vi.fn();
+    render(<RoutineHeader onBackToHub={onBackToHub} onGoToHub={onGoToHub} />);
+    fireEvent.click(screen.getByRole("button", { name: "На хаб" }));
+    expect(onGoToHub).toHaveBeenCalledTimes(1);
+    expect(onBackToHub).not.toHaveBeenCalled();
   });
 
   it("opens settings when onOpenSettings is provided", () => {

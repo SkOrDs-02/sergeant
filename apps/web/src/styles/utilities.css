@@ -442,8 +442,19 @@
      safe-area strip via padding-bottom, so there's no page-coloured dead
      space below the labels and the nav never floats above the home
      indicator. One navigation shape everywhere
-     (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1). */
+     (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1).
+
+     `padding-top` mirrors `padding-bottom` so the icon+label row reads as
+     centered in the pill instead of pinned against the top rounded corner
+     with all the reserved safe-area space stacked below it (round-2 UI
+     audit X1 — on a notched phone the row previously had ~0px above it and
+     ~34px below). Any consumer that offsets itself above this nav via
+     `--bottom-nav-height` / the `60px` inner-track constant must add this
+     same `env(safe-area-inset-bottom)` term now that the shell is taller —
+     see MeshBackground.tsx, HubHomeView.tsx, ModuleShell.tsx,
+     TransactionsBatchToolbar.tsx. */
   border-radius: 1.5rem 1.5rem 0 0;
+  padding-top: env(safe-area-inset-bottom, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 

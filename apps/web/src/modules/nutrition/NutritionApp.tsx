@@ -62,6 +62,7 @@ import { useNutritionFirstRun } from "./hooks/useNutritionFirstRun";
 
 interface NutritionAppProps {
   onBackToHub?: () => void;
+  onGoToHub?: () => void;
   onOpenSettings?: () => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
@@ -74,6 +75,7 @@ type PendingNutritionAction =
 
 export default function NutritionApp({
   onBackToHub,
+  onGoToHub,
   onOpenSettings,
   pwaAction,
   onPwaActionConsumed,
@@ -500,6 +502,7 @@ export default function NutritionApp({
         <NutritionHeader
           busy={busy}
           onBackToHub={onBackToHub}
+          onGoToHub={onGoToHub}
           onOpenSettings={onOpenSettings}
         />
 

@@ -7,6 +7,7 @@ import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderHubButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
@@ -20,6 +21,7 @@ export interface FizrukHeaderProps {
   page: FizrukPage;
   activeProgram?: ActiveProgramHeaderView | null | undefined;
   onBackToHub?: (() => void) | undefined;
+  onGoToHub?: (() => void) | undefined;
   /**
    * Called when the user taps the contextual back arrow on a sub-page
    * (atlas / exercise / measurements). The parent decides where each
@@ -152,6 +154,7 @@ export function FizrukHeader({
   page,
   activeProgram,
   onBackToHub,
+  onGoToHub,
   onContextualBack,
   onOpenSettings,
 }: FizrukHeaderProps) {
@@ -173,7 +176,14 @@ export function FizrukHeader({
       />
     );
   } else if (typeof onBackToHub === "function") {
-    left = <ModuleHeaderBackButton onClick={onBackToHub} />;
+    left = (
+      <div className="flex items-center gap-1">
+        <ModuleHeaderBackButton onClick={onBackToHub} />
+        {typeof onGoToHub === "function" && (
+          <ModuleHeaderHubButton onClick={onGoToHub} />
+        )}
+      </div>
+    );
   } else {
     left = <DumbbellBadge />;
   }

@@ -6,6 +6,7 @@ import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderHubButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
@@ -45,17 +46,24 @@ function AppleBadge() {
 interface NutritionHeaderProps {
   busy?: boolean | undefined;
   onBackToHub?: (() => void) | undefined;
+  onGoToHub?: (() => void) | undefined;
   onOpenSettings?: (() => void) | undefined;
 }
 
 export function NutritionHeader({
   busy: _busy,
   onBackToHub,
+  onGoToHub,
   onOpenSettings,
 }: NutritionHeaderProps) {
   const left =
     typeof onBackToHub === "function" ? (
-      <ModuleHeaderBackButton onClick={onBackToHub} />
+      <div className="flex items-center gap-1">
+        <ModuleHeaderBackButton onClick={onBackToHub} />
+        {typeof onGoToHub === "function" && (
+          <ModuleHeaderHubButton onClick={onGoToHub} />
+        )}
+      </div>
     ) : (
       <AppleBadge />
     );

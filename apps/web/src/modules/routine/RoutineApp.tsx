@@ -28,6 +28,7 @@ import { useRoutineAppState } from "./useRoutineAppState";
 
 export interface RoutineAppProps {
   onBackToHub?: () => void;
+  onGoToHub?: () => void;
   onOpenSettings?: () => void;
   onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
   pwaAction?: string | null;
@@ -36,6 +37,7 @@ export interface RoutineAppProps {
 
 export default function RoutineApp({
   onBackToHub,
+  onGoToHub,
   onOpenSettings,
   onOpenModule,
   pwaAction,
@@ -71,6 +73,7 @@ export default function RoutineApp({
       <MeshBackground>
         <RoutineHeader
           onBackToHub={onBackToHub}
+          onGoToHub={onGoToHub}
           onOpenSettings={onOpenSettings}
         />
 

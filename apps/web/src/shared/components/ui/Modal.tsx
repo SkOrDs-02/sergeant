@@ -1,12 +1,7 @@
-import {
-  useEffect,
-  useId,
-  useRef,
-  type ReactNode,
-  type KeyboardEvent,
-} from "react";
+import { useId, useRef, type ReactNode, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { Button } from "./Button";
@@ -103,14 +98,7 @@ export function Modal({
   const coarse = useCoarsePointer();
   const useSheet = coarse && !hideClose && Boolean(title);
 
-  useEffect(() => {
-    if (!open || useSheet) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open, useSheet]);
+  useBodyScrollLock(open && !useSheet);
 
   if (!open) return null;
   if (typeof document === "undefined") return null;

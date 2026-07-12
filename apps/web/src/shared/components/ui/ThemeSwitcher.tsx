@@ -6,11 +6,13 @@
  * ThemeSwitcher — uniform UI control for the 4-mode theme contract
  * (`useTheme`): light · dark · system · HC.
  *
- * Two surfaces in one primitive:
- *   - `variant="segmented"` (default) — compact 4-icon segmented control,
- *     good fit for header chrome and dense settings rows.
- *   - `variant="dropdown"` — single trigger button with a labelled
- *     menu, good fit for verbose surfaces (Settings → "Тема", DesignShowcase).
+ * Compact segmented control (icon + short label per choice) — the one
+ * surface used app-wide (header "⋯" menu). A verbose `dropdown` variant
+ * existed here until round-2 UI audit X4: it had zero production
+ * call-sites (only its own tests/story rendered it) — the app-wide menu
+ * always passed `variant="segmented"` — so the labels a prior round wrote
+ * into it never actually shipped to users. Deleted rather than kept
+ * "just in case" (YAGNI); this file is the single surface now.
  *
  * Token-only styling: усі стани йдуть через семантичні токени
  * (`bg-panel`, `text-text`, `border-line`, `bg-brand-soft`, …) — жодного
@@ -18,14 +20,12 @@
  * Focus індикатори — `focus-visible:` only (Hard Rule #14).
  */
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import {
   THEME_CHOICES,
   THEME_CHOICE_ICONS,
   THEME_CHOICE_LABELS,
-  THEME_CHOICE_SHORT_LABELS,
   type ThemeChoice,
   useTheme,
 } from "@shared/hooks/useTheme";
@@ -34,40 +34,40 @@ import { hapticTap } from "@shared/lib/adapters/haptic";
 const FOCUS_RING =
   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
-type ThemeSwitcherVariant = "segmented" | "dropdown";
-
 export interface ThemeSwitcherProps {
-  /** Compact segmented control (default) or verbose dropdown. */
-  variant?: ThemeSwitcherVariant | undefined;
   /** Override container className (extra layout slot — gap, margin). */
   className?: string | undefined;
 }
+
+/**
+ * Under-icon captions (round-2 UI audit X4 — owner decision: name every
+ * theme, not just show icons). Distinct from `THEME_CHOICE_SHORT_LABELS`
+ * (used elsewhere for a single-line trigger): "Системна" reads clearer
+ * than "Авто" once it's sitting under an icon rather than next to one.
+ */
+const SEGMENTED_CAPTIONS: Record<ThemeChoice, string> = {
+  light: "Світла",
+  dark: "Темна",
+  system: "Системна",
+  hc: "Контраст",
+};
 
 interface SwitchButtonProps {
   choice: ThemeChoice;
   isActive: boolean;
   onSelect: (next: ThemeChoice) => void;
-  size?: "sm" | "md";
 }
 
-function SwitchIconButton({
-  choice,
-  isActive,
-  onSelect,
-  size = "md",
-}: SwitchButtonProps) {
+function SwitchIconButton({ choice, isActive, onSelect }: SwitchButtonProps) {
   const icon = THEME_CHOICE_ICONS[choice];
   const label = THEME_CHOICE_LABELS[choice];
-  const short = THEME_CHOICE_SHORT_LABELS[choice];
-  const dimensions =
-    size === "sm" ? "w-9 h-9 sm:w-9 sm:h-9" : "w-11 h-11 sm:w-10 sm:h-10";
+  const caption = SEGMENTED_CAPTIONS[choice];
   return (
     <button
       type="button"
       role="radio"
       aria-checked={isActive}
       aria-label={label}
-      title={short}
       onClick={() => {
         if (!isActive) {
           hapticTap();
@@ -75,34 +75,27 @@ function SwitchIconButton({
         }
       }}
       className={cn(
-        dimensions,
-        "flex items-center justify-center rounded-xl border transition-[background-color,border-color,color,box-shadow] motion-reduce:transition-none",
+        "flex-1 min-h-11 flex flex-col items-center justify-center gap-1 px-1 py-1.5 rounded-xl border transition-[background-color,border-color,color,box-shadow] motion-reduce:transition-none",
         FOCUS_RING,
         isActive
           ? "bg-brand-soft border-brand-soft-border text-brand-strong dark:text-brand shadow-sm"
           : "bg-transparent border-transparent text-muted hover:text-text hover:bg-panelHi",
       )}
     >
-      <Icon name={icon} size="md" />
+      <Icon name={icon} size="md" aria-hidden />
+      <span className="text-style-caption leading-none">{caption}</span>
     </button>
   );
 }
 
-function SegmentedSwitcher({
-  choice,
-  setChoice,
-  className,
-}: {
-  choice: ThemeChoice;
-  setChoice: (next: ThemeChoice) => void;
-  className?: string | undefined;
-}) {
+export function ThemeSwitcher({ className }: ThemeSwitcherProps) {
+  const { choice, setChoice } = useTheme();
   return (
     <div
       role="radiogroup"
       aria-label="Тема"
       className={cn(
-        "inline-flex items-center gap-1 rounded-2xl border border-line bg-panel/80 backdrop-blur-sm p-1",
+        "inline-flex items-stretch gap-1 rounded-2xl border border-line bg-panel/80 backdrop-blur-sm p-1",
         className,
       )}
     >
@@ -112,222 +105,8 @@ function SegmentedSwitcher({
           choice={value}
           isActive={choice === value}
           onSelect={setChoice}
-          size="sm"
         />
       ))}
     </div>
-  );
-}
-
-interface DropdownItemProps {
-  choice: ThemeChoice;
-  isActive: boolean;
-  onSelect: (next: ThemeChoice) => void;
-  description: string;
-}
-
-function DropdownItem({
-  choice,
-  isActive,
-  onSelect,
-  description,
-}: DropdownItemProps) {
-  return (
-    <button
-      type="button"
-      role="menuitemradio"
-      aria-checked={isActive}
-      onClick={() => onSelect(choice)}
-      className={cn(
-        "w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-colors motion-reduce:transition-none",
-        FOCUS_RING,
-        isActive
-          ? "bg-brand-soft text-brand-strong dark:text-brand"
-          : "text-text hover:bg-panelHi",
-      )}
-    >
-      <span
-        className={cn(
-          "shrink-0 mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-md border",
-          isActive
-            ? "border-brand-soft-border bg-panel/60"
-            : "border-line bg-panel/60",
-        )}
-      >
-        <Icon name={THEME_CHOICE_ICONS[choice]} size="md" />
-      </span>
-      <span className="flex-1 min-w-0">
-        <span className="block text-style-label leading-tight">
-          {THEME_CHOICE_LABELS[choice]}
-        </span>
-        <span className="block text-xs text-muted leading-snug mt-0.5">
-          {description}
-        </span>
-      </span>
-      {isActive && (
-        <Icon
-          name="check"
-          size="sm"
-          className="shrink-0 mt-1.5 text-brand-strong dark:text-brand"
-          aria-hidden="true"
-        />
-      )}
-    </button>
-  );
-}
-
-const DROPDOWN_DESCRIPTIONS: Record<ThemeChoice, string> = {
-  light: "Тепла світла палітра на день.",
-  dark: "Глибока тепла темрява — для вечора та OLED-екранів.",
-  system: "Слідує за налаштуванням телефона.",
-  hc: "Максимальний контраст і помітніший фокус.",
-};
-
-function DropdownSwitcher({
-  choice,
-  setChoice,
-  isHighContrast,
-  className,
-}: {
-  choice: ThemeChoice;
-  setChoice: (next: ThemeChoice) => void;
-  isHighContrast: boolean;
-  className?: string | undefined;
-}) {
-  const [open, setOpen] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuId = useId();
-
-  const close = useCallback(() => {
-    setOpen(false);
-  }, []);
-
-  // Close on outside click + ESC; focus returns to the trigger.
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (menuRef.current?.contains(target)) return;
-      if (buttonRef.current?.contains(target)) return;
-      close();
-    };
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        close();
-        buttonRef.current?.focus();
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [open, close]);
-
-  const handleSelect = useCallback(
-    (next: ThemeChoice) => {
-      setChoice(next);
-      hapticTap();
-      close();
-      buttonRef.current?.focus();
-    },
-    [setChoice, close],
-  );
-
-  const activeIcon = THEME_CHOICE_ICONS[choice];
-  // Compact label for the header trigger — full "Висока контрастність"
-  // (20 chars) overflowed the right-cluster on 393px mobile viewports
-  // and pushed the dropdown anchor (and its menu) off-screen. Bug
-  // report 2026-05-18. The full label is still shown inside the
-  // dropdown menu items where there's room.
-  const activeLabel = THEME_CHOICE_SHORT_LABELS[choice];
-  const fullLabel = THEME_CHOICE_LABELS[choice];
-
-  return (
-    <div className={cn("relative inline-block text-left", className)}>
-      <button
-        ref={buttonRef}
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={menuId}
-        aria-label={`Тема: ${fullLabel}`}
-        onClick={() => setOpen((value) => !value)}
-        className={cn(
-          "inline-flex h-11 w-11 items-center justify-center gap-1 rounded-xl touch-target border border-line bg-panel text-style-label text-text hover:bg-panelHi transition-colors motion-reduce:transition-none",
-          "min-[420px]:h-10 min-[420px]:w-auto min-[420px]:gap-2 min-[420px]:rounded-2xl min-[420px]:px-3",
-          FOCUS_RING,
-        )}
-      >
-        <Icon name={activeIcon} size="md" />
-        {/* Label visible from `sm:` (640px) up. On mobile the trigger
-            is icon-only + chevron — the full right-cluster (search +
-            «Тільки ти» pill + theme) overflowed the 393 px viewport
-            otherwise, even with `THEME_CHOICE_SHORT_LABELS`. AT users
-            still hear the full label via `aria-label` on the button. */}
-        <span className="hidden sm:inline">{activeLabel}</span>
-        {/* Compact "HC" pill — informs the user that HC is layered
-            on top of the current choice. Avoids the eyebrow combo
-            (no `uppercase`+`tracking-*`+`text-*`) so it stays inside
-            the design-system primitive contract. */}
-        {isHighContrast && choice !== "hc" && (
-          <span className="ml-1 text-style-caption font-bold text-muted bg-panelHi px-1.5 py-0.5 rounded-md">
-            HC
-          </span>
-        )}
-        <Icon
-          name="chevron-down"
-          size="sm"
-          aria-hidden="true"
-          className="hidden text-muted min-[420px]:block"
-        />
-      </button>
-      {open && (
-        <div
-          ref={menuRef}
-          id={menuId}
-          role="menu"
-          aria-label="Вибір теми"
-          className="absolute right-0 mt-2 w-72 rounded-2xl border border-line bg-panel shadow-float p-1.5 z-50"
-        >
-          {THEME_CHOICES.map((value) => (
-            <DropdownItem
-              key={value}
-              choice={value}
-              isActive={choice === value}
-              onSelect={handleSelect}
-              description={DROPDOWN_DESCRIPTIONS[value]}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function ThemeSwitcher({
-  variant = "segmented",
-  className,
-}: ThemeSwitcherProps) {
-  const { choice, setChoice, isHighContrast } = useTheme();
-  if (variant === "dropdown") {
-    return (
-      <DropdownSwitcher
-        choice={choice}
-        setChoice={setChoice}
-        isHighContrast={isHighContrast}
-        className={className}
-      />
-    );
-  }
-  return (
-    <SegmentedSwitcher
-      choice={choice}
-      setChoice={setChoice}
-      className={className}
-    />
   );
 }

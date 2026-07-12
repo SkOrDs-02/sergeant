@@ -3,9 +3,8 @@ import { ThemeSwitcher } from "./ThemeSwitcher";
 
 /**
  * `ThemeSwitcher` — uniform UI control for the 4-mode theme contract
- * (`useTheme`): light · dark · system · HC. Two surfaces: compact
- * segmented control (default) for header chrome, and a verbose
- * dropdown variant for Settings / DesignShowcase.
+ * (`useTheme`): light · dark · system · HC. Compact segmented control
+ * with an icon + short caption per choice (round-2 UI audit X4).
  *
  * Storybook NOTE: the component invokes `useTheme()` internally, which
  * toggles `dark`/`hc` classes on the live `<html>` element. Clicking
@@ -17,29 +16,10 @@ const meta: Meta<typeof ThemeSwitcher> = {
   component: ThemeSwitcher,
   parameters: { layout: "centered" },
   tags: ["autodocs"],
-  argTypes: {
-    variant: { control: "radio", options: ["segmented", "dropdown"] },
-  },
-  args: { variant: "segmented" },
 };
 export default meta;
 
 type Story = StoryObj<typeof ThemeSwitcher>;
 
-/** Compact segmented control — header-chrome variant. */
+/** Segmented control — icon + caption per theme choice. */
 export const Segmented: Story = {};
-
-/** Verbose dropdown — Settings / verbose surfaces variant. */
-export const Dropdown: Story = {
-  args: { variant: "dropdown" },
-};
-
-/** Both variants side by side for direct comparison. */
-export const SideBySide: Story = {
-  render: () => (
-    <div className="flex flex-col items-start gap-4">
-      <ThemeSwitcher />
-      <ThemeSwitcher variant="dropdown" />
-    </div>
-  ),
-};
