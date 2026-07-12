@@ -154,6 +154,63 @@ describe("billing routes", () => {
     });
   });
 
+  // ── Round-2 UI audit S1: founder bypass must match getUserPlan() ────
+  // Root cause was this route reading `subscriptions` directly while
+  // `requirePlan()` read `getUserPlan()` — a founder passed the gate but
+  // still saw the paywall because this route never checked the allowlist.
+  it("GET /status grants a synthetic pro subscription to a founder id", async () => {
+    setEnv("AI_QUOTA_FOUNDER_IDS", "founder_1,founder_2");
+    getSessionUserMock.mockResolvedValue({
+      id: "founder_2",
+      email: "founder@example.com",
+    });
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const app = createTestApp(createQueryPool(query));
+
+    const res = await request(app).get("/api/billing/status");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      subscription: {
+        id: null,
+        provider: "manual",
+        plan: "pro",
+        status: "active",
+        active: true,
+        currentPeriodEnd: null,
+      },
+    });
+    // Founder never needs the DB — same short-circuit as getUserPlan().
+    expect(query).not.toHaveBeenCalled();
+    unsetEnv("AI_QUOTA_FOUNDER_IDS");
+  });
+
+  it("GET /status still reads subscriptions for a non-founder even when the allowlist is set", async () => {
+    setEnv("AI_QUOTA_FOUNDER_IDS", "founder_1");
+    getSessionUserMock.mockResolvedValue({
+      id: "user_1",
+      email: "billing@example.com",
+    });
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const app = createTestApp(createQueryPool(query));
+
+    const res = await request(app).get("/api/billing/status");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      subscription: {
+        id: null,
+        provider: null,
+        plan: null,
+        status: null,
+        active: false,
+        currentPeriodEnd: null,
+      },
+    });
+    expect(query).toHaveBeenCalled();
+    unsetEnv("AI_QUOTA_FOUNDER_IDS");
+  });
+
   // ───────── POST /api/billing/portal (P0-6) ─────────
   // Happy path: user with an active Stripe subscription gets a fresh
   // Customer Portal URL. Edge cases:

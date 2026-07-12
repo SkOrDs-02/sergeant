@@ -2,23 +2,9 @@ import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { Pool } from "pg";
 import type { BillingPlan } from "@sergeant/shared";
 import { env } from "../../env/env.js";
-import { getUserPlan } from "./getUserPlan.js";
+import { getUserPlan, isFounderUser } from "./getUserPlan.js";
 
 type AuthedRequest = Request & { user?: { id: string } };
-
-/**
- * Founder / internal-team Better-Auth user IDs that bypass plan gates
- * entirely — comma-separated in env `AI_QUOTA_FOUNDER_IDS` (the same list the
- * AI daily-quota bypass uses, so internal dogfooding stays plan-agnostic in
- * one place). Read from `process.env` directly to match `aiQuota.isFounderUser`
- * — flippable in tests without re-importing the validated env. Empty / unset →
- * nobody bypasses.
- */
-function isFounderUser(userId: string): boolean {
-  const raw = process.env["AI_QUOTA_FOUNDER_IDS"];
-  if (!raw) return false;
-  return raw.split(",").some((id) => id.trim() !== "" && id.trim() === userId);
-}
 
 /**
  * Express middleware that gates a route behind an active Pro subscription.
