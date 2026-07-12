@@ -9,7 +9,6 @@ import {
 import { z } from "zod";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Label } from "@shared/components/ui/FormField";
-import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms/useApiForm";
 import { messages } from "@shared/i18n/uk";
@@ -29,7 +28,6 @@ import { statusColors, chartSeries, chartPalette } from "@shared/charts";
 
 // Модуль фізичного щоденника: форма запису + графіки динаміки + журнал.
 interface BodyProps {
-  onOpenMeasurements?: () => void;
   /** Navigates the shell to the Atlas silhouette page (passed in by the router to avoid hash coupling). */
   onOpenAtlas?: () => void;
 }
@@ -41,7 +39,7 @@ interface BodyProps {
  * client-side валідація працює на string-полях, а конверсія в number
  * відбувається в `onSubmit`.
  */
-const bodyFormSchema = z.object({
+const bodyFormObjectSchema = z.object({
   weightKg: z
     .string()
     .refine(
@@ -63,7 +61,25 @@ const bodyFormSchema = z.object({
   note: z.string().max(200, messages.validation.noteMax200),
 });
 
-type BodyFormValues = z.infer<typeof bodyFormSchema>;
+/** True when at least one metric was filled in — an empty submit is a no-op. */
+export function hasAnyBodyEntryValue(
+  v: z.infer<typeof bodyFormObjectSchema>,
+): boolean {
+  return (
+    v.weightKg !== "" ||
+    v.sleepHours !== "" ||
+    v.energyLevel !== null ||
+    v.moodScore !== null ||
+    v.note.trim() !== ""
+  );
+}
+
+const bodyFormSchema = bodyFormObjectSchema.refine(hasAnyBodyEntryValue, {
+  message: messages.fizruk.body.entryEmpty,
+  path: ["note"],
+});
+
+type BodyFormValues = z.infer<typeof bodyFormObjectSchema>;
 
 const DEFAULT_VALUES: BodyFormValues = {
   weightKg: "",
@@ -73,7 +89,7 @@ const DEFAULT_VALUES: BodyFormValues = {
   note: "",
 };
 
-export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
+export function Body({ onOpenAtlas }: BodyProps) {
   const { entries, addEntry, deleteEntry, restoreEntry, recentWith } =
     useDailyLog();
   const toast = useToast();
@@ -135,9 +151,22 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
 
   const energyLevel = watch("energyLevel");
   const moodScore = watch("moodScore");
+  const weightKg = watch("weightKg");
+  const sleepHours = watch("sleepHours");
+  const note = watch("note");
   const weightError = formState.errors.weightKg?.message;
   const sleepError = formState.errors.sleepHours?.message;
   const noteError = formState.errors.note?.message;
+  // Native `disabled` blocks an empty submit outright (rung 4 — no JS
+  // validation round-trip needed); the schema `.refine` above is the
+  // defense-in-depth backstop for programmatic/paste submits.
+  const isEntryEmpty = !hasAnyBodyEntryValue({
+    weightKg,
+    sleepHours,
+    energyLevel,
+    moodScore,
+    note,
+  });
 
   /**
    * Arrow-key navigation for radiogroup score buttons (WCAG 2.1 §4.1.2 /
@@ -313,16 +342,6 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
                   : "—"}
               </div>
             </div>
-            {onOpenMeasurements && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onOpenMeasurements}
-                className="text-style-caption text-subtle hover:text-text"
-              >
-                {messages.fizruk.body.measurements}
-              </Button>
-            )}
           </div>
         </div>
 
@@ -496,7 +515,10 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isEntryEmpty}
+              aria-describedby={
+                isEntryEmpty && !submitSuccess ? "body-entry-empty" : undefined
+              }
               className={cn(
                 "focus-ring w-full py-3 rounded-xl text-style-label transition-[background-color,box-shadow,opacity,transform]",
                 // WHY: the resting CTA carries the module accent (fizruk teal)
@@ -507,11 +529,16 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
                 submitSuccess
                   ? "bg-success-strong text-white"
                   : "bg-fizruk-strong text-white hover:bg-teal-800 active:scale-[0.98]",
-                isSubmitting && "opacity-60",
+                (isSubmitting || isEntryEmpty) && "opacity-60",
               )}
             >
               {submitSuccess ? "Записано ✓" : "Записати"}
             </button>
+            {isEntryEmpty && !submitSuccess && (
+              <p id="body-entry-empty" className="text-xs text-subtle -mt-2">
+                {messages.fizruk.body.entryEmpty}
+              </p>
+            )}
           </form>
         </Card>
 

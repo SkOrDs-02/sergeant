@@ -57,12 +57,10 @@ function backLabelFor(page: FizrukPage): string {
     case "exercise":
       return "Тренування";
     case "measurements":
-      // Measurements is now entered from the «Моє тіло» page (the only
-      // surface that exposes the «Виміри» button), so the back arrow
-      // must lead the user back there. Previously it advertised
-      // «Прогрес і заміри» but redirected to the dashboard, which the
-      // user flagged as confusing.
-      return "Моє тіло";
+      // Measurements is entered exclusively from the «Прогрес і заміри»
+      // stat, so the back arrow leads there (mirrors
+      // FizrukApp.contextualBackTarget for "measurements").
+      return "Прогрес і заміри";
     default:
       return "ФІЗРУК";
   }

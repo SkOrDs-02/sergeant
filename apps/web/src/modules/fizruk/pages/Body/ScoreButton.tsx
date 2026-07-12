@@ -57,7 +57,7 @@ export function ScoreButton({
       <span className="text-base leading-none">{value}</span>
       <span
         className={cn(
-          "text-xs leading-none truncate max-w-full px-1",
+          "text-style-caption leading-tight text-center break-words px-0.5",
           selected ? "text-white/80" : "text-muted",
         )}
       >
