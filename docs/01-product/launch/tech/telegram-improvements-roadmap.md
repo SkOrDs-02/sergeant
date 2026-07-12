@@ -1,6 +1,6 @@
 # Telegram surfaces — план покращень
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-12 by @dimastahov16012003. **Next review:** 2026-10-10.
 > **Status:** Active
 >
 > **Snapshot banner (2026-07-10):** статуси PR нижче — зріз **2026-05-03**. Перед імплементацією нових пунктів звіряй з `tools/openclaw/` і [openclaw-migration-plan](../../../90-work/planning/archive/openclaw-migration-plan.md).
@@ -210,7 +210,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 **Acceptance:**
 
 - 0 `Bad request` errors у WF-15 за 7-day window після merge — track через `n8n_API` `/executions?status=error&workflowId=CygZ4vLxTm2ltuRW`.
-- Railway webhook payload-schema задокументовано у [`ops/n8n-workflows/15-railway-deployment-notify.README.md`](../../../../ops/n8n-workflows/15-railway-deployment-notify.README.md).
+- Railway webhook payload-schema (WF-15 `15-railway-deployment-notify.*` — видалено 2026-07-12 разом з міграцією Railway → Hetzner/Coolify, ADR-0074; історичний запис).
 
 **Bundle з §3.7 alert dedup** для повного fix story (без dedup нова правильна версія може теж spam-нути).
 
