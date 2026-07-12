@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@shared/hooks/useTheme";
+import { useAppViewportHeight } from "@shared/hooks/useAppViewportHeight";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
 import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
 import { SkipLink } from "@shared/components/ui/SkipLink";
@@ -107,6 +108,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
  */
 export function RootLayout() {
   const chatOverlay = useHubChatOverlayState();
+  useAppViewportHeight();
   return (
     <HubChatOverlayProvider value={chatOverlay}>
       <RootLayoutInner />

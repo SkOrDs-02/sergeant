@@ -82,10 +82,10 @@ describe("WelcomeScreen — /welcome scroll-layer audit-guard", () => {
     // be cropped without any scroll affordance.
     expect(pageWrapper.className).not.toMatch(/\boverflow-hidden\b/);
     // The wrapper must own viewport height so its `overflow-y-auto`
-    // has a finite scroll viewport. `h-dvh` (not `min-h-dvh`) is the
-    // contract — `min-h-dvh` would let the wrapper grow with content
-    // and defeat the inner scroll.
-    expect(pageWrapper.className).toMatch(/\bh-dvh\b/);
+    // has a finite scroll viewport. `h-app-dvh` (fixed height, not
+    // `min-h-*`) is the contract — a min-height would let the wrapper
+    // grow with content and defeat the inner scroll.
+    expect(pageWrapper.className).toMatch(/\bh-app-dvh\b/);
     expect(pageWrapper.className).not.toMatch(/\bmin-h-dvh\b/);
   });
 

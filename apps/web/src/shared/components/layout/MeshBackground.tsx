@@ -62,10 +62,11 @@ export function MeshBackground({
     <div
       style={style}
       className={cn(
-        // Full-viewport shell — same h-dvh flex pattern as the legacy
-        // `<div className="h-dvh bg-bg flex flex-col">` wrappers that
-        // this replaces.
-        "h-dvh flex flex-col overflow-hidden",
+        // Full-viewport shell — same flex pattern as the legacy
+        // `<div className="h-dvh bg-bg flex flex-col">` wrappers this
+        // replaces; `h-app-dvh` (not `h-dvh`) so the shell tracks the
+        // real visible height on iOS (see utilities.css).
+        "h-app-dvh flex flex-col overflow-hidden",
         // `.bg-mesh` utility class — defined in
         // `apps/web/src/styles/theme.css` § MESH BACKGROUND UTILITY.
         // Composites the three ink glows + sets background-attachment:
