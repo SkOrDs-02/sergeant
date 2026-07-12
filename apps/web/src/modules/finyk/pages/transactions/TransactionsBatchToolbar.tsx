@@ -41,10 +41,12 @@ export function TransactionsBatchToolbar({
     <>
       {selectMode && (
         <div className="fixed bottom-0 left-0 right-0 z-60 safe-area-pb">
-          {/* `2*env(safe-area-inset-bottom)`: bottom-nav-shell now mirrors its
-              bottom safe-area padding to the top too (round-2 UI audit X1),
-              so clearing the taller nav needs the term twice. */}
-          <div className="max-w-4xl mx-auto px-4 pb-[calc(60px+2*env(safe-area-inset-bottom,0)+0.5rem)] pt-3">
+          {/* Clears the nav: 60px track + 0.375rem shell top padding
+              (round-3 UI audit — reverted the round-2 2*env() term together
+              with the shell's env() top mirror) + 0.5rem breathing room;
+              the outer `safe-area-pb` already covers the nav's bottom
+              inset. */}
+          <div className="max-w-4xl mx-auto px-4 pb-[calc(60px+0.375rem+0.5rem)] pt-3">
             <div className="bg-panel border border-line rounded-2xl shadow-float px-4 py-3 flex items-center justify-between gap-3">
               <span className="text-style-label text-text">
                 {selectedSize > 0
