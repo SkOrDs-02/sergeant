@@ -1,7 +1,9 @@
 # Еволюція хостингу — що де хоститься і коли мігрувати
 
 > **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
-> **Status:** Active
+> **Status:** Deprecated — рішення «коли мігрувати з Railway» вже прийняте й виконане.
+>
+> **⚠️ Superseded by [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Документ зберігається як історичний контекст рішення; секції «поточний стан» нижче описують доміграційний Railway-стек і НЕ актуальні. Актуальна топологія — ADR-0074 + [`platforms.md`](./platforms.md).
 
 Reference-документ: де зараз живе кожен сервіс Sergeant, коли має сенс
 мігрувати на інший хостинг / self-host, і чого робити **не** треба. Рішення
