@@ -17,10 +17,10 @@ describe("ScoreButton", () => {
       />,
     );
 
-    const btn = screen.getByRole("radio", { name: /3/ });
+    const btn = screen.getByRole("radio", { name: "Нормально" });
     expect(btn).toHaveAttribute("aria-checked", "true");
     expect(btn).toHaveAttribute("tabIndex", "0");
-    expect(screen.getByText("Нормально")).toBeInTheDocument();
+    expect(btn).toHaveTextContent("3");
   });
 
   it("calls onClick with value and skips tab stop when not tabbable", () => {
@@ -35,7 +35,7 @@ describe("ScoreButton", () => {
       />,
     );
 
-    const btn = screen.getByRole("radio");
+    const btn = screen.getByRole("radio", { name: "Відмінно" });
     expect(btn).toHaveAttribute("tabIndex", "-1");
     fireEvent.click(btn);
     expect(onClick).toHaveBeenCalledWith(5);

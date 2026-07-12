@@ -14,6 +14,8 @@ export const fizrukPageMessages = {
   progress: {
     title: "Прогрес",
     measurementsCount: "Заміри",
+    measurementsTitle: "Заміри тіла",
+    measurementsSubtitle: "Обхвати й динаміка",
     measurementOne: "замір",
     measurementFew: "заміри",
     measurementMany: "замірів",
@@ -89,6 +91,7 @@ export const fizrukPageMessages = {
     weightLabel: "Вага (кг)",
     sleepLabel: "Сон (год)",
     energyLevel: "Рівень енергії",
+    energyShort: "Енергія",
     mood: "Настрій",
     note: "Нотатка",
     notePlaceholder: "Як почуваєшся сьогодні…",

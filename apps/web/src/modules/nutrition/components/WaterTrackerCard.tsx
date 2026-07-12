@@ -14,6 +14,12 @@ function fmt(ml: number) {
   return ml >= 1000 ? `${(ml / 1000).toFixed(1)} л` : `${ml} мл`;
 }
 
+// Round-3 UI audit T4: undo has to invert whatever the last mutation was —
+// an add (subtract it back) or a reset (add the pre-reset total back) —
+// so it never shows up with nothing left to undo, and never no-ops after
+// a reset the way a bare "last added amount" number did.
+type LastAction = { type: "add" | "reset"; amount: number } | null;
+
 interface WaterTrackerCardProps {
   goalMl?: number;
 }
@@ -23,20 +29,24 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
   const [resetPending, setResetPending] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
   const [customMl, setCustomMl] = useState("");
-  const [lastAddedMl, setLastAddedMl] = useState(0);
+  const [lastAction, setLastAction] = useState<LastAction>(null);
 
   const handleAdd = (ml: number) => {
     const n = Number(ml);
     if (!Number.isFinite(n) || n <= 0) return;
     const clamped = Math.min(Math.floor(n), 5000);
     add(clamped);
-    setLastAddedMl(clamped);
+    setLastAction({ type: "add", amount: clamped });
   };
 
   const handleUndo = () => {
-    if (lastAddedMl <= 0) return;
-    subtract(lastAddedMl);
-    setLastAddedMl(0);
+    if (!lastAction) return;
+    if (lastAction.type === "add") {
+      subtract(lastAction.amount);
+    } else {
+      add(lastAction.amount);
+    }
+    setLastAction(null);
   };
 
   const handleCustomAdd = () => {
@@ -145,15 +155,23 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
         >
           + Додати
         </button>
-        {lastAddedMl > 0 && (
+        {lastAction && (
           <button
             type="button"
             onClick={handleUndo}
-            title="Відмінити останнє додавання"
+            title={
+              lastAction.type === "add"
+                ? "Відмінити останнє додавання"
+                : "Відмінити скидання"
+            }
             className="h-11 px-3 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors shrink-0 whitespace-nowrap"
-            aria-label={`Відмінити останнє додавання (${lastAddedMl} мл)`}
+            aria-label={
+              lastAction.type === "add"
+                ? `Відмінити останнє додавання (${lastAction.amount} мл)`
+                : `Відмінити скидання (повернути ${lastAction.amount} мл)`
+            }
           >
-            ↶ {lastAddedMl}
+            ↶ {lastAction.amount}
           </button>
         )}
         {todayMl > 0 && (
@@ -168,8 +186,12 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
                   clearTimeout(resetTimerRef.current);
                   resetTimerRef.current = null;
                 }
+                const preResetMl = todayMl;
                 reset();
                 setResetPending(false);
+                setLastAction(
+                  preResetMl > 0 ? { type: "reset", amount: preResetMl } : null,
+                );
               } else {
                 // Скидаємо попередній таймер, якщо користувач натиснув двічі
                 // поспіль — інакше перше повернення в idle зніматиме нове pending.
