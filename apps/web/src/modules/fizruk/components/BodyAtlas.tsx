@@ -2,7 +2,7 @@
  * Last validated: 2026-06-12
  * Status: Active
  */
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState, type CSSProperties } from "react";
 import {
   ATLAS_VIEWBOX,
   BODY_ATLAS_GEOMETRY,
@@ -31,9 +31,63 @@ const SIDES: Array<{ id: BodyAtlasSide; label: string }> = [
   { id: "back", label: "Ззаду" },
 ];
 
-const MUSCLE_NEUTRAL = "#cbc7ba";
-const SILHOUETTE_FILL = "#dad7cc";
-const SELECTED_STROKE = "#5f5e5a";
+/**
+ * Cold (unworked) muscles and silhouette fill with a theme-aware neutral
+ * derived from design tokens — warm-gray on the cream theme, slate on ink.
+ * Exposed as a CSS var so it flips with the active theme (no raw light/dark
+ * hex pair). Muscle `<path>`s reference `NEUTRAL_BASE`; the SVG sets the var.
+ */
+const NEUTRAL_BASE = "var(--atlas-neutral)";
+const NEUTRAL_VAR =
+  "color-mix(in srgb, rgb(var(--c-muted)) 42%, rgb(var(--c-panel)))";
+const SELECTED_STROKE = "rgb(var(--c-fg))";
+
+/**
+ * Vertical gloss stops that turn a flat fill into a sculpted, lit volume:
+ * lightened top highlight → base → darkened bottom, plus a matching edge.
+ */
+function glossStops(base: string) {
+  return {
+    top: `color-mix(in srgb, ${base}, #ffffff 30%)`,
+    mid: base,
+    bottom: `color-mix(in srgb, ${base}, #000000 30%)`,
+    stroke: `color-mix(in srgb, ${base}, #000000 42%)`,
+  };
+}
+
+/** Parse a `"x y x y …"` points string into coordinate pairs. */
+function parsePts(s: string): Array<[number, number]> {
+  const n = s.trim().split(/\s+/).map(Number);
+  const out: Array<[number, number]> = [];
+  for (let i = 0; i + 1 < n.length; i += 2)
+    out.push([n[i] ?? 0, n[i + 1] ?? 0]);
+  return out;
+}
+
+/**
+ * Closed Catmull-Rom → cubic-bézier path. Runs the same atlas polygons through
+ * a smoothing pass so the angular keyspace reads as anatomical muscle curves.
+ */
+function smoothPath(points: string): string {
+  const pts = parsePts(points);
+  const n = pts.length;
+  if (n < 3) return `M ${pts.map((p) => p.join(" ")).join(" L ")} Z`;
+  const at = (i: number): [number, number] => pts[((i % n) + n) % n] ?? [0, 0];
+  const [sx, sy] = at(0);
+  let d = `M ${sx.toFixed(2)} ${sy.toFixed(2)} `;
+  for (let i = 0; i < n; i++) {
+    const p0 = at(i - 1);
+    const p1 = at(i);
+    const p2 = at(i + 1);
+    const p3 = at(i + 2);
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += `C ${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${p2[0].toFixed(2)} ${p2[1].toFixed(2)} `;
+  }
+  return `${d}Z`;
+}
 
 /** Parse a `#rrggbb` string into an [r, g, b] tuple. */
 function toRgb(hex: string): [number, number, number] {
@@ -121,6 +175,7 @@ export function BodyAtlas({
   compact = false,
   onAskCoach,
 }: BodyAtlasProps) {
+  const uid = useId();
   const [side, setSide] = useState<BodyAtlasSide>("front");
   const [mode, setMode] = useState<AtlasMode>("recovery");
   const [selected, setSelected] = useState<BodyAtlasMuscleId | null>(null);
@@ -143,8 +198,8 @@ export function BodyAtlas({
 
   function fillFor(id: BodyAtlasMuscleId): string {
     const d = data[id];
-    if (!d) return MUSCLE_NEUTRAL;
-    return heatColor(metricFor(d, mode, maxLoad)) ?? MUSCLE_NEUTRAL;
+    if (!d) return NEUTRAL_BASE;
+    return heatColor(metricFor(d, mode, maxLoad)) ?? NEUTRAL_BASE;
   }
 
   function pickSide(next: BodyAtlasSide) {
@@ -190,7 +245,7 @@ export function BodyAtlas({
                   className="flex-1"
                   style={{
                     background:
-                      heatColor(Math.max(0.03, i / 23)) ?? MUSCLE_NEUTRAL,
+                      heatColor(Math.max(0.03, i / 23)) ?? NEUTRAL_BASE,
                   }}
                 />
               ))}
@@ -201,16 +256,49 @@ export function BodyAtlas({
           <svg
             viewBox={ATLAS_VIEWBOX}
             className="mx-auto block w-full max-w-[300px]"
+            style={{ "--atlas-neutral": NEUTRAL_VAR } as CSSProperties}
             role="img"
             aria-label={`Атлас м'язів, вигляд ${side === "front" ? "спереду" : "ззаду"}`}
           >
+            <defs>
+              {geometry.muscles.flatMap((m) => {
+                const g = glossStops(fillFor(m.id));
+                return m.polygons.map((_, i) => {
+                  const gid = `${uid}-${side}-${m.id}-${i}`;
+                  return (
+                    <linearGradient
+                      key={gid}
+                      id={gid}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="0%" stopColor={g.top} />
+                      <stop offset="38%" stopColor={g.mid} />
+                      <stop offset="100%" stopColor={g.bottom} />
+                    </linearGradient>
+                  );
+                });
+              })}
+            </defs>
+
             {geometry.neutral.map((s) => (
-              <polygon key={s.id} points={s.points} fill={SILHOUETTE_FILL} />
+              <path
+                key={s.id}
+                d={smoothPath(s.points)}
+                style={{
+                  fill: NEUTRAL_BASE,
+                  stroke: `color-mix(in srgb, ${NEUTRAL_BASE}, #000000 18%)`,
+                  strokeWidth: 0.4,
+                  strokeLinejoin: "round",
+                }}
+              />
             ))}
 
             {geometry.muscles.map((m) => {
               const isSel = selected === m.id;
-              const fill = fillFor(m.id);
+              const edge = glossStops(fillFor(m.id)).stroke;
               return (
                 <g
                   key={m.id}
@@ -218,13 +306,14 @@ export function BodyAtlas({
                   tabIndex={0}
                   aria-label={BODY_ATLAS_MUSCLE_LABELS_UK[m.id]}
                   className={cn(
-                    "cursor-pointer [&>polygon]:transition-colors",
+                    "cursor-pointer",
                     // Kill the browser default SVG focus outline (renders as a
                     // black bounding-box rect on the <g> when clicked); keep a
-                    // tidy keyboard focus-visible cue via the polygon stroke.
+                    // tidy keyboard focus-visible cue by overriding the muscle
+                    // edge stroke (driven by --atlas-edge so this can win).
                     "focus:outline-none",
-                    "[&:focus-visible>polygon]:stroke-line",
-                    "[&:focus-visible>polygon]:[stroke-width:1px]",
+                    "[&:focus-visible>path]:[stroke:rgb(var(--c-fg))]",
+                    "[&:focus-visible>path]:[stroke-width:1px]",
                   )}
                   onClick={() => setSelected(m.id)}
                   onKeyDown={(e) => {
@@ -234,19 +323,33 @@ export function BodyAtlas({
                     }
                   }}
                 >
+                  <title>{BODY_ATLAS_MUSCLE_LABELS_UK[m.id]}</title>
                   {m.polygons.map((p, i) => (
-                    <polygon
+                    <path
                       key={i}
-                      points={p}
-                      style={{
-                        fill,
-                        stroke: isSel ? SELECTED_STROKE : "none",
-                        strokeWidth: isSel ? 0.8 : 0,
-                      }}
-                    >
-                      <title>{BODY_ATLAS_MUSCLE_LABELS_UK[m.id]}</title>
-                    </polygon>
+                      d={smoothPath(p)}
+                      className="[stroke:var(--atlas-edge)] [stroke-linejoin:round] [stroke-width:0.5]"
+                      style={
+                        {
+                          fill: `url(#${uid}-${side}-${m.id}-${i})`,
+                          "--atlas-edge": edge,
+                        } as CSSProperties
+                      }
+                    />
                   ))}
+                  {isSel &&
+                    m.polygons.map((p, i) => (
+                      <path
+                        key={`sel-${i}`}
+                        d={smoothPath(p)}
+                        style={{
+                          fill: "none",
+                          stroke: SELECTED_STROKE,
+                          strokeWidth: 1,
+                          strokeLinejoin: "round",
+                        }}
+                      />
+                    ))}
                 </g>
               );
             })}
