@@ -83,7 +83,6 @@ export const fizrukPageMessages = {
     subtitle: "Вага · сон · самопочуття",
     weight: "Вага",
     sleep: "Сон",
-    measurements: "Виміри",
     formAriaLabel: "Записати показники",
     formHeading: "Записати сьогодні",
     weightLabel: "Вага (кг)",

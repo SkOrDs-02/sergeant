@@ -12,7 +12,7 @@
  *  - the empty state shows when there is no data at all.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
 vi.mock("../../../core/db/kvStoreBoot", () => ({
   getActiveSqliteKvStore: () => null,
@@ -97,6 +97,15 @@ describe("Progress page", () => {
     expect(
       screen.getByRole("heading", { name: "Прогрес" }),
     ).toBeInTheDocument();
+  });
+
+  it("navigates to measurements when the заміри stat is tapped (Z3)", () => {
+    setHooks({
+      entries: [{ id: "a", at: "2026-05-07T08:00:00Z", weightKg: 80 }],
+    });
+    render(<Progress onNavigate={onNavigate} />);
+    fireEvent.click(screen.getByRole("button", { name: /Заміри/ }));
+    expect(onNavigate).toHaveBeenCalledWith("measurements");
   });
 
   it("shows a weight delta between the two latest measurements", () => {

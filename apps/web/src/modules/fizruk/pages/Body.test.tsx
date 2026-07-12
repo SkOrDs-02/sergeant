@@ -86,6 +86,22 @@ describe("Body page", () => {
     expect(addEntry).not.toHaveBeenCalled();
   });
 
+  it("disables the submit button and shows a hint when every field is empty (Z1)", () => {
+    render(<Body />);
+    expect(screen.getByRole("button", { name: "Записати" })).toBeDisabled();
+    expect(
+      screen.getByText("Заповни хоч одне поле, щоб зберегти запис"),
+    ).toBeInTheDocument();
+  });
+
+  it("enables the submit button once any single field is filled (Z1)", () => {
+    render(<Body />);
+    fireEvent.change(screen.getByLabelText(/Вага \(кг\)/), {
+      target: { value: "70" },
+    });
+    expect(screen.getByRole("button", { name: "Записати" })).toBeEnabled();
+  });
+
   it("submits a valid entry", async () => {
     render(<Body />);
     fireEvent.change(screen.getByLabelText(/Вага \(кг\)/), {

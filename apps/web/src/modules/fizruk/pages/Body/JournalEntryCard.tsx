@@ -36,16 +36,12 @@ export function JournalEntryCard({
     year: "numeric",
   });
 
-  // Cyrillic abbreviations matching the expanded labels («Енергія» / «Настрій»)
-  // — the previous Latin "E"/"M" mix read as English on a Ukrainian-only
-  // surface and "M" in particular wasn't legible as Mood/Настрій.
+  // Collapsed summary shows only weight/sleep — energy and mood are visible
+  // in the expanded state, so surfacing them here doubled the same values
+  // on screen at once.
   const summaryParts: string[] = [];
   if (entry.weightKg != null) summaryParts.push(`${entry.weightKg} кг`);
   if (entry.sleepHours != null) summaryParts.push(`${entry.sleepHours} год`);
-  if (entry.energyLevel != null)
-    summaryParts.push(`Енергія ${entry.energyLevel}/5`);
-  if (entry.moodScore != null)
-    summaryParts.push(`Настрій ${entry.moodScore}/5`);
   const summary = summaryParts.join(" · ");
 
   return (

@@ -252,7 +252,11 @@ export function Progress({ onNavigate }: ProgressProps) {
                 {quickStats.prsCount}
               </div>
             </div>
-            <div className="text-center">
+            <button
+              type="button"
+              onClick={() => onNavigate("measurements")}
+              className="focus-ring touch-target text-center rounded-xl -m-1 p-1"
+            >
               <div className="text-xs text-subtle">
                 {messages.fizruk.progress.measurementsCount}
               </div>
@@ -267,7 +271,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                   )}
                 </span>
               </div>
-            </div>
+            </button>
           </div>
         </div>
 

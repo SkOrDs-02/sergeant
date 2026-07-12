@@ -23,7 +23,7 @@ const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
   atlas: "Не вдалось показати «Атлас»",
   workouts: "Не вдалось показати «Тренування»",
   progress: "Не вдалось показати «Прогрес»",
-  measurements: "Не вдалось показати «Виміри»",
+  measurements: "Не вдалось показати «Заміри»",
   programs: "Не вдалось показати «Програми»",
   body: "Не вдалось показати «Склад тіла»",
   exercise: "Не вдалось показати вправу",
@@ -126,12 +126,7 @@ function renderPage(props: FizrukRouterProps) {
         />
       );
     case "body":
-      return (
-        <Body
-          onOpenMeasurements={() => onNavigate("measurements")}
-          onOpenAtlas={() => onNavigate("atlas")}
-        />
-      );
+      return <Body onOpenAtlas={() => onNavigate("atlas")} />;
     case "exercise":
       return <Exercise exerciseId={exerciseId ?? ""} onNavigate={onNavigate} />;
     default:

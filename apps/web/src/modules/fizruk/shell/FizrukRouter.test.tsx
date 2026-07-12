@@ -72,9 +72,8 @@ vi.mock("../pages/Measurements", () => ({
   Measurements: () => <div data-testid="page-measurements" />,
 }));
 vi.mock("../pages/Body", () => ({
-  Body: (p: { onOpenMeasurements: () => void; onOpenAtlas: () => void }) => (
+  Body: (p: { onOpenAtlas: () => void }) => (
     <div data-testid="page-body">
-      <button onClick={p.onOpenMeasurements}>body-open-meas</button>
       <button onClick={p.onOpenAtlas}>body-open-atlas</button>
     </div>
   ),
@@ -178,12 +177,10 @@ describe("FizrukRouter — prop wiring", () => {
     expect(onNavigate).toHaveBeenCalledWith("dashboard");
   });
 
-  it("body onOpenMeasurements / onOpenAtlas map to navigate targets", async () => {
+  it("body onOpenAtlas maps to the atlas navigate target", async () => {
     const onNavigate = vi.fn();
     render(<FizrukRouter {...baseProps({ page: "body", onNavigate })} />);
-    fireEvent.click(await screen.findByText("body-open-meas"));
-    expect(onNavigate).toHaveBeenCalledWith("measurements");
-    fireEvent.click(screen.getByText("body-open-atlas"));
+    fireEvent.click(await screen.findByText("body-open-atlas"));
     expect(onNavigate).toHaveBeenCalledWith("atlas");
   });
 

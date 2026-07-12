@@ -113,13 +113,6 @@ describe("Body page — stats + optional CTAs", () => {
     expect(screen.getByText("7.0 год")).toBeInTheDocument();
   });
 
-  it("renders the Measurements CTA and fires onOpenMeasurements", () => {
-    const onOpenMeasurements = vi.fn();
-    render(<Body onOpenMeasurements={onOpenMeasurements} />);
-    fireEvent.click(screen.getByRole("button", { name: "Виміри" }));
-    expect(onOpenMeasurements).toHaveBeenCalledTimes(1);
-  });
-
   it("renders the RecoveryFocusCard only when onOpenAtlas is provided", () => {
     const onOpenAtlas = vi.fn();
     render(<Body onOpenAtlas={onOpenAtlas} />);

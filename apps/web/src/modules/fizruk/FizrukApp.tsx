@@ -117,7 +117,7 @@ export default function FizrukApp({
       case "exercise":
         return "workouts";
       case "measurements":
-        return "body";
+        return "progress";
       default:
         return "dashboard";
     }
