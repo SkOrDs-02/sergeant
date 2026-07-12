@@ -1,24 +1,44 @@
+import { useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
+import { cn } from "@shared/lib/ui/cn";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useSyncStatus } from "../cloudSync/hook/useSyncStatus";
 import { pluralUa } from "@sergeant/shared";
-import { messages } from "@shared/i18n/uk";
+import { SyncStatusSheet } from "./SyncStatusSheet";
 
 /**
  * Subtle connectivity-and-sync indicator — a small floating pill in the
  * top-right corner. For a PWA designed to work offline, screaming
  * "NO INTERNET!" felt like a critical error, so this stays compact.
  *
- * Three states:
- *   - **online + nothing pending:** invisible (returns `null`).
+ * Three visible states (idle → renders `null`):
  *   - **online + queue/dirty > 0:** "Синхронізація · N в черзі" with an
- *     animated `refresh` icon. Tells the user that their last few
- *     changes have not yet reached the cloud — useful on flaky 3G or
- *     while a long push is in flight.
- *   - **offline:** "Офлайн" or "Офлайн · N в черзі" with the wifi-off
- *     icon, so the user knows their data is safe and waiting.
+ *     animated `refresh` icon.
+ *   - **offline:** "Офлайн" or "Офлайн · N в черзі" with the wifi-off icon.
+ *   - **blocked (dead-letter > 0):** sync errors that need a retry.
+ *
+ * The pill is a button — tapping it opens {@link SyncStatusSheet} with the
+ * full state (connection, queue, errors + retry). The safe-area inset is
+ * applied to the `top` position (not padding) so the `rounded-full` shape
+ * stays symmetric on notched devices (mobile-audit A6).
  */
+
+// Safe-area on the `top` OFFSET, not on the pill's padding — padding-top
+// distorted the round pill into an asymmetric blob on devices with a notch.
+const PILL_CLS =
+  "fixed top-[calc(0.75rem+env(safe-area-inset-top,0px))] right-3 z-toast flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+
+type BannerState = "blocked" | "offline" | "syncing";
+
+const queueLabel = (count: number) =>
+  `${count} ${pluralUa(count, {
+    one: "в черзі",
+    few: "в черзі",
+    many: "в черзі",
+  })}`;
+
 export function OfflineBanner() {
+  const [sheetOpen, setSheetOpen] = useState(false);
   const online = useOnlineStatus();
   const {
     syncV2PendingCount = 0,
@@ -27,81 +47,69 @@ export function OfflineBanner() {
   } = useSyncStatus();
   const pending = syncV2PendingCount;
 
-  if (syncV2DeadLetterCount > 0) {
-    return (
-      <div
-        role="status"
-        aria-live="polite"
-        data-testid="offline-banner"
-        data-state="blocked"
-        className="fixed top-3 right-3 z-toast flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
-      >
-        <Icon name="refresh-cw" size={12} strokeWidth={2.5} aria-hidden />
-        <span>{`${syncV2DeadLetterCount} ${pluralUa(syncV2DeadLetterCount, {
-          one: "помилка синхронізації",
-          few: "помилки синхронізації",
-          many: "помилок синхронізації",
-        })}`}</span>
-        <button
-          type="button"
-          onClick={() => {
-            void retrySyncV2DeadLetters?.();
-          }}
-          // data-compact: глобальний 44px safety-net роздув би компактний
-          // pill у dead-letter-стані; натомість hit-area розширено вручну
-          // негативними марджинами, не змінюючи візуальну геометрію pill-а.
-          data-compact
-          className="focus-ring rounded-full ml-1 -my-2 py-2 -mr-1 px-1 text-style-caption text-accent underline underline-offset-2"
-        >
-          {messages.actions.retry}
-        </button>
-      </div>
-    );
-  }
+  const state: BannerState | null =
+    syncV2DeadLetterCount > 0
+      ? "blocked"
+      : !online
+        ? "offline"
+        : pending > 0
+          ? "syncing"
+          : null;
 
   // Online and nothing waiting — the happy path needs no chrome.
-  if (online && pending === 0) return null;
+  if (state === null) return null;
 
-  const queueLabel = (count: number) =>
-    `${count} ${pluralUa(count, {
-      one: "в черзі",
-      few: "в черзі",
-      many: "в черзі",
-    })}`;
+  const view =
+    state === "blocked"
+      ? {
+          icon: "refresh-cw" as const,
+          iconClass: undefined as string | undefined,
+          label: `${syncV2DeadLetterCount} ${pluralUa(syncV2DeadLetterCount, {
+            one: "помилка синхронізації",
+            few: "помилки синхронізації",
+            many: "помилок синхронізації",
+          })}`,
+        }
+      : state === "offline"
+        ? {
+            icon: "wifi-off" as const,
+            iconClass: undefined,
+            label: pending > 0 ? `Офлайн · ${queueLabel(pending)}` : "Офлайн",
+          }
+        : {
+            icon: "refresh-cw" as const,
+            iconClass: "motion-safe:animate-spin-slow",
+            label: `Синхронізація · ${queueLabel(pending)}`,
+          };
 
-  if (!online) {
-    const label = pending > 0 ? `Офлайн · ${queueLabel(pending)}` : "Офлайн";
-    return (
-      <div
-        role="status"
+  return (
+    <>
+      <button
+        type="button"
         aria-live="polite"
         data-testid="offline-banner"
-        data-state="offline"
-        className="fixed top-3 right-3 z-toast flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
+        data-state={state}
+        onClick={() => setSheetOpen(true)}
+        aria-label={`${view.label}. Відкрити деталі синхронізації`}
+        className={PILL_CLS}
       >
-        <Icon name="wifi-off" size={12} strokeWidth={2.5} aria-hidden />
-        <span>{label}</span>
-      </div>
-    );
-  }
-
-  // online && pending > 0
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      data-testid="offline-banner"
-      data-state="syncing"
-      className="fixed top-3 right-3 z-toast flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
-    >
-      <Icon
-        name="refresh-cw"
-        size={12}
-        strokeWidth={2.5}
-        aria-hidden
-        className="motion-safe:animate-spin-slow"
+        <Icon
+          name={view.icon}
+          size={12}
+          strokeWidth={2.5}
+          aria-hidden
+          className={cn(view.iconClass)}
+        />
+        <span>{view.label}</span>
+      </button>
+      <SyncStatusSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        online={online}
+        pending={pending}
+        deadLetter={syncV2DeadLetterCount}
+        onRetry={retrySyncV2DeadLetters}
       />
-      <span>{`Синхронізація · ${queueLabel(pending)}`}</span>
-    </div>
+    </>
   );
 }

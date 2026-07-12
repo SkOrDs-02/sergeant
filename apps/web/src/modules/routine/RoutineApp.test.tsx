@@ -142,10 +142,6 @@ vi.mock("./RoutineActions", () => ({
   },
 }));
 
-vi.mock("@shared/components/ui/AIPill", () => ({
-  AIPill: () => <div data-testid="ai-pill" />,
-}));
-
 import RoutineApp from "./RoutineApp";
 
 describe("RoutineApp", () => {
@@ -161,7 +157,6 @@ describe("RoutineApp", () => {
     expect(screen.getByTestId("routine-header")).toBeInTheDocument();
     expect(screen.getByTestId("routine-timeline")).toBeInTheDocument();
     expect(screen.getByTestId("routine-actions")).toBeInTheDocument();
-    expect(screen.getByTestId("ai-pill")).toBeInTheDocument();
   });
 
   it("wires onBackToHub through RoutineHeader", () => {

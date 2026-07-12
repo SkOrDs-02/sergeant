@@ -26,6 +26,7 @@ export interface HubShellValue {
   activeModule: HubModuleId | null;
   openModule: HubNavigation["openModule"];
   goToHub: HubNavigation["goToHub"];
+  goBackOrHub: HubNavigation["goBackOrHub"];
   goToModuleSettings: HubNavigation["goToModuleSettings"];
   moduleAnimClass: HubNavigation["moduleAnimClass"];
 

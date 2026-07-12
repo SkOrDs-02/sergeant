@@ -79,7 +79,7 @@ function NumberField({
   );
 }
 
-const STORAGE_ERR_MSG = "Не вдалося зберегти налаштування Харчування.";
+const STORAGE_ERR_MSG = "Не вдалося зберегти налаштування Їжі.";
 
 function persistAndCaptureErr(prefs: NutritionPrefs): string {
   return persistNutritionPrefs(prefs) ? "" : STORAGE_ERR_MSG;
@@ -153,7 +153,7 @@ export function NutritionSection() {
   }, [navigate]);
 
   return (
-    <SettingsGroup title="Харчування" emoji="🥗">
+    <SettingsGroup title="Їжа" emoji="🥗">
       {storageErr && (
         <div className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger-strong dark:text-danger">
           {storageErr}
@@ -162,8 +162,8 @@ export function NutritionSection() {
 
       <SettingsSubGroup title="Денні цілі (KБЖУ)" defaultOpen>
         <p className="text-xs text-subtle leading-snug">
-          Значення показуються у прогрес-кільці на головному екрані Харчування і
-          в денних підсумках. Залиш порожнім, щоб ціль не враховувалась.
+          Значення показуються у прогрес-кільці на головному екрані Їжі і в
+          денних підсумках. Залиш порожнім, щоб ціль не враховувалась.
         </p>
         <div className="space-y-1">
           <NumberField
@@ -208,7 +208,7 @@ export function NutritionSection() {
 
       <SettingsSubGroup title="Вода">
         <p className="text-xs text-subtle leading-snug">
-          Денна норма для трекера води в картці дня Харчування.
+          Денна норма для трекера води в картці дня Їжі.
         </p>
         <NumberField
           label="Денна норма"
@@ -253,7 +253,7 @@ export function NutritionSection() {
         </label>
         <p className="text-xs text-subtle">
           Деталі продуктів і перейменування комор — у менеджері комори всередині
-          модуля Харчування.
+          модуля Їжі.
         </p>
         <Button
           type="button"

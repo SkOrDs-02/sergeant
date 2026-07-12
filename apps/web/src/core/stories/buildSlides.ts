@@ -50,7 +50,7 @@ export function buildSlides(
     slides.push({
       id: "nutrition",
       kind: "nutrition",
-      label: "Харчування",
+      label: "Їжа",
       bg: BG_GRADIENTS.nutrition,
       agg: nutritionAgg,
       ai: digest?.["nutrition"] ?? null,

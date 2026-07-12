@@ -341,7 +341,7 @@ describe("TodayFocusCard", () => {
       />,
     );
 
-    const secondaryBtn = screen.getByText("Відкрити Харчування");
+    const secondaryBtn = screen.getByText("Відкрити Їжу");
     fireEvent.click(secondaryBtn);
     expect(onAction).toHaveBeenCalledWith("nutrition");
   });

@@ -300,10 +300,6 @@ vi.mock("@shared/components/ui/Banner", () => ({
   ),
 }));
 
-vi.mock("@shared/components/ui/AIPill", () => ({
-  AIPill: () => <div data-testid="ai-pill" />,
-}));
-
 vi.mock("@shared/components/layout", () => ({
   MeshBackground: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="mesh-background">{children}</div>
@@ -351,7 +347,6 @@ describe("NutritionApp — smoke tests", () => {
     expect(screen.getByTestId("nutrition-header")).toBeInTheDocument();
     expect(screen.getByTestId("nutrition-bottom-nav")).toBeInTheDocument();
     expect(screen.getByTestId("nutrition-overlays")).toBeInTheDocument();
-    expect(screen.getByTestId("ai-pill")).toBeInTheDocument();
   });
 
   it("renders the start page when activePage is 'start'", () => {

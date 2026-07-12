@@ -222,7 +222,7 @@ function checkNutritionReminders() {
   recordNotified(storageKey);
 
   self.registration
-    .showNotification("Харчування", {
+    .showNotification("Їжа", {
       body: "Час відмітити прийом їжі! Відкрий застосунок.",
       tag: storageKey,
       icon: "/icon-192.png",

@@ -39,7 +39,7 @@ export const ROUTE_TITLES: Readonly<Record<string, string>> = {
 const MODULE_TITLES: Readonly<Record<string, string>> = {
   finyk: "Фінік",
   fizruk: "Фізрук",
-  nutrition: "Харчування",
+  nutrition: "Їжа",
   routine: "Рутина",
 };
 

@@ -248,7 +248,7 @@ function searchNutrition(tokens: string[]): Hit[] {
         {
           id: `nutrition_m_${m.id || date}`,
           module: "nutrition",
-          moduleLabel: "Харчування",
+          moduleLabel: "Їжа",
           title: m.name || "Прийом їжі",
           subtitle: `${date} · ${m.macros?.kcal ?? 0} ккал`,
           icon: "🥗",

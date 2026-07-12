@@ -6,9 +6,9 @@ import { useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { useShortcutGlyph } from "@shared/hooks";
 import { Icon } from "@shared/components/ui/Icon";
-import { ThemeSwitcher } from "@shared/components/ui/ThemeSwitcher";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { BrandLogo } from "./BrandLogo";
+import { HubHeaderMenu } from "./HubHeaderMenu";
 import { messages } from "@shared/i18n/uk";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -168,68 +168,27 @@ export function HubHeader({
             </button>
           </Tooltip>
 
-          <Tooltip
-            content={
-              calmMode
-                ? "Показати підказки та інсайти"
-                : "Чистий вигляд — сховати підказки"
-            }
-            placement="bottom-center"
-          >
-            <button
-              type="button"
-              onClick={() => setCalmMode(!calmMode)}
-              aria-pressed={calmMode}
-              aria-label={
-                calmMode ? "Чистий режим: увімкнено" : "Чистий режим: вимкнено"
-              }
-              className={cn(
-                ICON_BUTTON_CLS,
-                calmMode &&
-                  "bg-brand-soft text-brand-strong hover:bg-brand-soft",
-              )}
-            >
-              <Icon name={calmMode ? "eye-off" : "eye"} size="lg" />
-            </button>
-          </Tooltip>
-
           <NotificationBell notifications={notifications ?? []} />
 
-          {onOpenPrivacy && (
-            <Tooltip
-              content={messages.privacy.chipTooltip}
-              placement="bottom-center"
-            >
-              <button
-                type="button"
-                onClick={onOpenPrivacy}
-                aria-label={messages.privacy.chip}
-                className={cn(
-                  "inline-flex h-11 w-11 items-center justify-center rounded-xl touch-target",
-                  "min-[420px]:h-8 min-[420px]:w-auto min-[420px]:gap-1.5 min-[420px]:rounded-full min-[420px]:px-2.5",
-                  "bg-brand-soft text-text border border-brand-soft-border",
-                  "text-style-caption font-semibold",
-                  "hover:bg-brand-soft-hover transition-colors",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-                )}
-              >
-                <Icon name="shield" size="xs" strokeWidth={2} aria-hidden />
-                <span className="hidden min-[420px]:inline">
-                  {messages.privacy.chip}
-                </span>
-              </button>
-            </Tooltip>
-          )}
-
-          {/* Theme switcher: 4-mode (`light` / `dark` / `system` / `hc`).
-              Header uses the `dropdown` variant (single trigger, ~50px)
-              so the right-cluster (search + privacy pill + theme + auth)
-              fits on 375px mobile viewports. The segmented variant
-              (4 icons, ~155px wide) clipped past the right edge on
-              narrow phones — see bug report 2026-05-18. Settings →
-              GeneralSection keeps the segmented variant where space
-              allows. */}
-          <ThemeSwitcher variant="dropdown" />
+          {/* Secondary controls fold into a single "⋯" overflow menu so the
+              top-bar stays to ≤5 affordances on 375px phones (mobile-audit
+              A3): calm mode, theme, and the privacy status row. */}
+          <HubHeaderMenu
+            triggerClassName={ICON_BUTTON_CLS}
+            calmMode={calmMode}
+            onToggleCalmMode={() => setCalmMode(!calmMode)}
+            onOpenPrivacy={onOpenPrivacy}
+            labels={{
+              trigger: "Більше",
+              menu: "Швидкі налаштування",
+              calm: "Чистий режим",
+              calmOn: "Підказки приховано",
+              calmOff: "Сховати підказки та інсайти",
+              theme: "Тема",
+              privacy: messages.privacy.chip,
+              privacyDetail: messages.privacy.chipTooltip,
+            }}
+          />
 
           {/* Sign-in entry-point for guests only. Signed-in users reach
               their account via the `Профіль` bottom-nav tab. */}

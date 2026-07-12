@@ -23,7 +23,6 @@ import { NutritionPantryPage } from "./pages/NutritionPantryPage";
 import { NutritionLogPage } from "./pages/NutritionLogPage";
 import { NutritionMenuPage } from "./pages/NutritionMenuPage";
 import { Banner } from "@shared/components/ui/Banner";
-import { AIPill } from "@shared/components/ui/AIPill";
 import {
   MeshBackground,
   ModuleAccentProvider,
@@ -71,9 +70,7 @@ interface NutritionAppProps {
 // One-shot imperative follow-ups that must run *after* a page/state change has
 // committed. Resolved by effects keyed on the relevant page/state, not timers.
 type PendingNutritionAction =
-  | { kind: "open-add-meal" }
-  | { kind: "open-photo-picker" }
-  | null;
+  { kind: "open-add-meal" } | { kind: "open-photo-picker" } | null;
 
 export default function NutritionApp({
   onBackToHub,
@@ -636,9 +633,6 @@ export default function NutritionApp({
           applyRestorePayload={applyRestorePayload}
           onRequestMealPhoto={handleRequestMealPhoto}
         />
-
-        {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance. */}
-        <AIPill />
       </MeshBackground>
     </ModuleAccentProvider>
   );

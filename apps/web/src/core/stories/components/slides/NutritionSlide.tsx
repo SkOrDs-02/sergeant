@@ -16,7 +16,7 @@ export function NutritionSlide({ slide }: { slide: NutritionSlideData }) {
   return (
     <StoryShell slide={slide}>
       <p className="text-xs uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
-        Харчування
+        Їжа
       </p>
 
       <div className="mb-5">

@@ -285,10 +285,6 @@ vi.mock("./components/FinykLoginScreen", () => ({
   ),
 }));
 
-vi.mock("@shared/components/ui/AIPill", () => ({
-  AIPill: () => null,
-}));
-
 vi.mock("@shared/components/ui/FloatingActionButton", () => ({
   FloatingActionButton: ({
     onClick,

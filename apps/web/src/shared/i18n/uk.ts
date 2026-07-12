@@ -207,7 +207,7 @@ export const messages = {
     finykSections: "Розділи Фініка",
     fizrukSections: "Розділи Фізрука",
     routineSections: "Розділи Рутини",
-    nutritionSections: "Розділи Харчування",
+    nutritionSections: "Розділи Їжі",
     openAssistant: "Відкрити AI-асистента",
     globalSearch: "Глобальний пошук",
     searchPlaceholder: "Пошук по всіх модулях…",
@@ -478,7 +478,7 @@ export const messages = {
     mealType: "Прийом їжі",
     templates: "Шаблони",
     // HubReports NutritionCard
-    reportHeading: "Харчування (ккал/день)",
+    reportHeading: "Їжа (ккал/день)",
     kcalUnit: "ккал",
   },
 
@@ -784,7 +784,7 @@ export const messages = {
     heroHeadline:
       "Один помічник для фінансів, тренувань,\nхарчування і рутини.",
     heroSubcopy:
-      "Sergeant обʼєднує чотири модулі — Фінік, Фізрук, Харчування, Рутина" +
+      "Sergeant обʼєднує чотири модулі — Фінік, Фізрук, Їжа, Рутина" +
       " — в один AI-чат, що памʼятає твої цілі і пропонує наступний крок." +
       " Без хмари за замовчуванням, з повним контролем над даними.",
     registerCta: "Створити акаунт",

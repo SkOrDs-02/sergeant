@@ -59,7 +59,7 @@ const ACTIONS: Record<ModuleId, FirstActionEntry> = {
     title: "Запиши перший прийом їжі",
     desc: "Калорії порахую я.",
     accent: "text-nutrition-strong dark:text-nutrition bg-nutrition-soft",
-    chipLabel: "Харчування",
+    chipLabel: "Їжа",
   },
   fizruk: {
     icon: "dumbbell",

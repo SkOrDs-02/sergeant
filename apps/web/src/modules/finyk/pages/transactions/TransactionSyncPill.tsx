@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
+import { useRelativeTime } from "@shared/hooks/useRelativeTime";
 
 export interface TransactionSyncPillProps {
   syncState:
@@ -28,6 +29,10 @@ export function TransactionSyncPill({
   syncState,
   lastUpdated,
 }: TransactionSyncPillProps) {
+  // Live relative label — re-renders on a ~30s tick so it never freezes at
+  // an absolute "21:57" (mobile-audit A6). Called before the early return to
+  // keep the hook order stable.
+  const lastUpdatedLabel = useRelativeTime(lastUpdated ?? null);
   const showSyncRow = syncState?.status !== "idle" || lastUpdated;
   if (!showSyncRow) return null;
 
@@ -65,13 +70,6 @@ export function TransactionSyncPill({
       : syncState?.source === "cache"
         ? "кеш"
         : "нема";
-  const lastUpdatedLabel = lastUpdated
-    ? lastUpdated.toLocaleTimeString("uk-UA", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
-
   return (
     <div className="flex items-center gap-2 flex-wrap text-style-caption">
       {syncState?.status !== "idle" && statusLabel && (

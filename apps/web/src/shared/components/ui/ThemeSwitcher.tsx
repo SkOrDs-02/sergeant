@@ -177,10 +177,10 @@ function DropdownItem({
 }
 
 const DROPDOWN_DESCRIPTIONS: Record<ThemeChoice, string> = {
-  light: "Світла поверхня, тепла кремова палітра.",
-  dark: "Глибокий warm-charcoal для вечора та OLED.",
-  system: "Слідує за prefers-color-scheme операційної системи.",
-  hc: "AAA-leaning контраст: товстіші дільники, ширший focus ring.",
+  light: "Тепла світла палітра на день.",
+  dark: "Глибока тепла темрява — для вечора та OLED-екранів.",
+  system: "Слідує за налаштуванням телефона.",
+  hc: "Максимальний контраст і помітніший фокус.",
 };
 
 function DropdownSwitcher({

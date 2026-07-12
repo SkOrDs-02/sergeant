@@ -64,7 +64,7 @@ describe("NutritionSection", () => {
 
   it("renders the daily target fields and persists prefs on mount", () => {
     renderSection();
-    expect(screen.getByText("Харчування")).toBeInTheDocument();
+    expect(screen.getByText("Їжа")).toBeInTheDocument();
     expect(screen.getByText("Калорії")).toBeInTheDocument();
     // persistNutritionPrefs is invoked by the mount effect
     expect(persistNutritionPrefs).toHaveBeenCalled();

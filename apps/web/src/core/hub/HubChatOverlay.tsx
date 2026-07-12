@@ -21,7 +21,7 @@ const HubChat = lazyDefault(() => import("./HubChat"));
  * is purely an additive Hub-UX surface.
  *
  * Snap-points caveat: the canonical `<Sheet>` primitive does not yet
- * support a snap-point API (single `max-h-[90vh]` panel with swipe-down
+ * support a snap-point API (single `max-h-[90dvh]` panel with swipe-down
  * to dismiss). The product spec called for `["60%", "100%"]` with
  * pull-up expansion; that is captured as a follow-up rather than
  * blocking this surface. The overlay currently opens at the full Sheet

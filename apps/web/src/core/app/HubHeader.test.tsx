@@ -102,16 +102,17 @@ describe("HubHeader", () => {
     expect(props.onOpenSearch).toHaveBeenCalledTimes(1);
   });
 
-  it("toggles calm mode and persists via the hub pref", () => {
+  it("toggles calm mode from the overflow menu and persists via the hub pref", () => {
     render(<HubHeader {...baseProps()} />);
-    const calmBtn = screen.getByRole("button", {
-      name: "Чистий режим: вимкнено",
+    fireEvent.click(screen.getByRole("button", { name: "Більше" }));
+    const calmBtn = screen.getByRole("menuitemcheckbox", {
+      name: /Чистий режим/,
     });
-    expect(calmBtn).toHaveAttribute("aria-pressed", "false");
+    expect(calmBtn).toHaveAttribute("aria-checked", "false");
     fireEvent.click(calmBtn);
     expect(
-      screen.getByRole("button", { name: "Чистий режим: увімкнено" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      screen.getByRole("menuitemcheckbox", { name: /Чистий режим/ }),
+    ).toHaveAttribute("aria-checked", "true");
   });
 
   it("shows the sign-in button for guests and calls onShowAuth", () => {
@@ -137,15 +138,18 @@ describe("HubHeader", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders the privacy chip only when onOpenPrivacy is provided", () => {
-    const onOpenPrivacy = vi.fn();
-    const { rerender } = render(<HubHeader {...baseProps()} />);
+  it("shows the privacy status row in the overflow menu only when onOpenPrivacy is provided", () => {
     const privacyName = /Тільки ти/i;
-    expect(screen.queryByLabelText(privacyName)).not.toBeInTheDocument();
 
-    rerender(<HubHeader {...baseProps()} onOpenPrivacy={onOpenPrivacy} />);
-    const chip = screen.getByLabelText(privacyName);
-    fireEvent.click(chip);
+    const { unmount } = render(<HubHeader {...baseProps()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Більше" }));
+    expect(screen.queryByText(privacyName)).not.toBeInTheDocument();
+    unmount();
+
+    const onOpenPrivacy = vi.fn();
+    render(<HubHeader {...baseProps()} onOpenPrivacy={onOpenPrivacy} />);
+    fireEvent.click(screen.getByRole("button", { name: "Більше" }));
+    fireEvent.click(screen.getByRole("button", { name: privacyName }));
     expect(onOpenPrivacy).toHaveBeenCalledTimes(1);
   });
 

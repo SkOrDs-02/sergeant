@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { MODULE_LABELS, type HubModuleId } from "./moduleLabels";
 
 // PR-06 — canonical Cyrillic naming sweep. The four module display
-// names are the single SSOT for «Фінік / Фізрук / Рутина / Харчування».
+// names are the single SSOT for «Фінік / Фізрук / Рутина / Їжа».
 // Drift across surfaces (welcome peek, settings, notifications,
 // reports) was the visible symptom we observed before PR-06.
 describe("MODULE_LABELS — canonical Cyrillic without emoji (PR-06)", () => {
@@ -10,7 +10,7 @@ describe("MODULE_LABELS — canonical Cyrillic without emoji (PR-06)", () => {
     expect(MODULE_LABELS.finyk).toBe("Фінік");
     expect(MODULE_LABELS.fizruk).toBe("Фізрук");
     expect(MODULE_LABELS.routine).toBe("Рутина");
-    expect(MODULE_LABELS.nutrition).toBe("Харчування");
+    expect(MODULE_LABELS.nutrition).toBe("Їжа");
   });
 
   it("no label leaks an emoji prefix or suffix", () => {

@@ -83,7 +83,7 @@ export const SETTINGS_INDEX: ReadonlyArray<{
   },
   {
     id: "nutrition",
-    title: "Харчування",
+    title: "Їжа",
     description: "Калорії, макроси, комора",
     keywords:
       "харчування їжа nutrition meals food kбжу калорії kcal білки жири вуглеводи вода комора pantry скан штрихкод barcode",

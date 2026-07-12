@@ -31,7 +31,7 @@ describe("NutritionCard", () => {
     loadNutritionLog.mockReturnValue(logForToday(2000));
     render(<NutritionCard period="week" offset={0} />);
 
-    const toggle = screen.getByRole("button", { name: /Харчування/i });
+    const toggle = screen.getByRole("button", { name: /Їжа/i });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     // kcal unit label is shown in the collapsed summary
     expect(screen.getAllByText(/ккал/i).length).toBeGreaterThan(0);
@@ -45,14 +45,14 @@ describe("NutritionCard", () => {
   it("renders the no-data placeholder when expanded with an empty log", () => {
     loadNutritionLog.mockReturnValue({});
     render(<NutritionCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Харчування/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Їжа/i }));
     expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
   });
 
   it("renders the bar chart and supports selecting/deselecting a bar", () => {
     loadNutritionLog.mockReturnValue(logForToday(1500));
     render(<NutritionCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Харчування/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Їжа/i }));
 
     const chart = screen.getByLabelText("Графік");
     const bars = chart.querySelectorAll("button");
@@ -71,7 +71,7 @@ describe("NutritionCard", () => {
   it("renders month period without crashing", () => {
     loadNutritionLog.mockReturnValue(logForToday(1800));
     render(<NutritionCard period="month" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Харчування/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Їжа/i }));
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
   });
 });

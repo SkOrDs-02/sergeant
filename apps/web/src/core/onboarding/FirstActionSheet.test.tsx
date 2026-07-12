@@ -47,9 +47,7 @@ describe("FirstActionHeroCard — inline chips (S2.3)", () => {
     // Chip row exposes the three non-primary modules by their short
     // labels (icon-only would be ambiguous).
     expect(screen.getByRole("button", { name: /Фінік/ })).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Харчування/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Їжа/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Фізрук/ })).toBeInTheDocument();
   });
 

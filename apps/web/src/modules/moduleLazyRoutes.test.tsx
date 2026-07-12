@@ -9,6 +9,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 
 const hubShell = {
   goToHub: vi.fn(),
+  goBackOrHub: vi.fn(),
   goToModuleSettings: vi.fn(),
   openModule: vi.fn(),
   pwaAction: null as string | null,
@@ -92,7 +93,7 @@ describe("module lazy route entries", () => {
       (lastLazyProps!["onOpenSettings"] as () => void)();
       (lastLazyProps!["onPwaActionConsumed"] as () => void)();
 
-      expect(hubShell.goToHub).toHaveBeenCalledTimes(1);
+      expect(hubShell.goBackOrHub).toHaveBeenCalledTimes(1);
       expect(hubShell.goToModuleSettings).toHaveBeenCalledWith(moduleId);
       expect(hubShell.clearPwaAction).toHaveBeenCalledTimes(1);
       expect(lastLazyProps!["pwaAction"]).toBeNull();

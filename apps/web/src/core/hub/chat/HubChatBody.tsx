@@ -74,7 +74,7 @@ export function HubChatBody({
     <div
       ref={chatRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 min-h-0"
+      className="flex-1 overflow-y-auto overscroll-contain touch-pan-y px-4 py-3 space-y-3 min-h-0"
       aria-busy={loading}
     >
       {/* Visually-hidden live region for streaming status — announced to

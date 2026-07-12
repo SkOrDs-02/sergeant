@@ -94,11 +94,6 @@ vi.mock("./components/workouts/RestTimerOverlayConnected", () => ({
   RestTimerOverlayConnected: () => null,
 }));
 
-// Stub AIPill
-vi.mock("@shared/components/ui/AIPill", () => ({
-  AIPill: () => null,
-}));
-
 // Stub StorageErrorBanner
 vi.mock("@shared/components/layout", async () => {
   const actual = await vi.importActual<

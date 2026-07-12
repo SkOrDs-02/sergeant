@@ -62,7 +62,7 @@ const PEEK_CARDS = [
   },
   {
     id: "nutrition",
-    label: "Харчування",
+    label: "Їжа",
     cardBg: "bg-nutrition-soft/40 dark:bg-nutrition-surface-dark/8",
     iconClass:
       "bg-nutrition-soft text-nutrition dark:bg-nutrition-surface-dark/15",

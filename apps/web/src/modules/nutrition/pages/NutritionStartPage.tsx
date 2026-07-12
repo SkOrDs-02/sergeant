@@ -66,10 +66,7 @@ export function NutritionStartPage({
     void photo.analyzePhoto();
   };
   return (
-    <SectionErrorBoundary
-      key="page-start"
-      title="Не вдалось показати «Харчування»"
-    >
+    <SectionErrorBoundary key="page-start" title="Не вдалось показати «Їжа»">
       <>
         <h1 className="sr-only">{messages.nav.nutritionOverview}</h1>
         <NutritionDashboard
