@@ -81,4 +81,38 @@ describe("useLocale", () => {
     const { result } = renderHook(() => useLocale());
     expect(result.current.locale).toBe("en");
   });
+
+  it("updates the locale on a popstate change when the query parameter changes", () => {
+    const { result } = renderHook(() => useLocale());
+    expect(result.current.locale).toBe("uk");
+
+    window.history.pushState({}, "", "/?lang=en");
+    act(() => window.dispatchEvent(new PopStateEvent("popstate")));
+
+    expect(result.current.locale).toBe("en");
+  });
+
+  it("keeps the current locale when popstate resolves to the same locale", () => {
+    window.history.replaceState({}, "", "/?lang=en");
+    const { result } = renderHook(() => useLocale());
+
+    window.history.pushState({}, "", "/?lang=en-US");
+    act(() => window.dispatchEvent(new PopStateEvent("popstate")));
+
+    expect(result.current.locale).toBe("en");
+  });
+
+  it("falls back to uk when localStorage throws while resolving the initial locale", () => {
+    const getItem = window.localStorage.getItem;
+    window.localStorage.getItem = () => {
+      throw new DOMException("blocked", "SecurityError");
+    };
+
+    try {
+      const { result } = renderHook(() => useLocale());
+      expect(result.current.locale).toBe("uk");
+    } finally {
+      window.localStorage.getItem = getItem;
+    }
+  });
 });

@@ -1,6 +1,6 @@
 # ADR-0073: Generic dual-write framework для 4 модульних пайплайнів
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-12 by @dimastahov16012003. **Next review:** 2026-10-10.
 > **Status:** Accepted
 
 - **Status:** Accepted
@@ -13,7 +13,7 @@
   - [`docs/04-governance/adr/0004-cloudsync-lww-conflict-resolution.md`](./0004-cloudsync-lww-conflict-resolution.md) — базова LWW-семантика
   - [`docs/04-governance/adr/0011-local-first-storage.md`](./0011-local-first-storage.md) — local-first контекст, у якому живе dual-write
   - [`docs/02-engineering/architecture/domain-invariants.md`](../../02-engineering/architecture/domain-invariants.md) — Kyiv time, day keys, identity
-  - [`apps/web/src/shared/lib/sqliteWriter/core.ts`](../../../apps/web/src/shared/lib/sqliteWriter/core.ts) — web re-export shim для `@sergeant/dualwrite-core` (колишній `dualWrite/core`, перейменовано Phase 5 teardown 2026-07-10)
+  - [`packages/dualwrite-core/src/index.ts`](../../../packages/dualwrite-core/src/index.ts) — canonical shared core для `@sergeant/dualwrite-core`; старий web shim видалено під час Phase 5 teardown 2026-07-10.
 
 ---
 
@@ -23,7 +23,7 @@
 
 Assessment 2026-07-01 (§ Група 4) верифікаційним агентом **спростував** стару гіпотезу F-004/F-005 «це дублікати»: pairwise diff копій `residualImport.ts` = 209–467 рядків на файлах 110–310 LOC (2–4× власного розміру), а dualWrite-пайплайни (1442–2170 LOC кожен за виміром assessment-у; наш повторний вимір 2026-07-03 по web-копіях без тестів: finyk 2193, fizruk 1764, nutrition 1491, routine 1491) мають **різну структуру каталогів і різну семантику** — спільним є лише архітектурний патерн: best-effort try/catch, `ON CONFLICT ... DO UPDATE ... WHERE excluded.updated_at > <table>.updated_at`, soft-delete з `updated_at < ?`. Отже «вилучення у спільний фреймворк» — це **побудова generic-фреймворку** (архітектурне рішення), а не механічний dedup.
 
-Додатковий факт: мінімальний shared core **вже існує** (`apps/web/src/shared/lib/sqliteWriter/core.ts`, re-export `@sergeant/dualwrite-core`), але фактично мертвий як框架: його цикл `applyDualWriteOps` не використовує **жоден** адаптер; лише web-fizruk імпортує звідти типи і `toIntOrNull`/`toRealOrNull`. Кожен інший адаптер тримає локальні копії типів, дефолтного логера і apply-циклу.
+Додатковий факт (historical snapshot): shared core спочатку жив у web shim, але тепер canonical implementation уже знаходиться у `packages/dualwrite-core`; цей ADR зберігає попередній стан як rationale, а не як поточний file map.
 
 Проблема, яку вирішуємо: (1) кожен новий op-kind чи 5-й модуль повторює той самий скелет; (2) інваріанти (LWW-guard `>` строго, tombstone-семантика, best-effort контракт) захищені лише конвенцією і копі-пейстом — регресію в одній копії тести інших копій не ловлять; (3) web і mobile копії одного модуля вже дрейфують (див. inventory нижче: web-fizruk транзакційний, mobile-fizruk — ні).
 
@@ -200,11 +200,11 @@ export function createDualWriteOrchestrator<S, Op>(
 
 ## Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці)
 
-Порядок — від найпростішого до найризиковішого; **один PR = один крок**; scope-и `shared`/`web`/`mobile` за touched surface. Спільний гейт кожного кроку: `pnpm check` зелений; `apps/web/src/shared/lib/sqliteWriter/core.test.ts` і всі per-module `adapter/diff/parity/integration` тести проходять **без змін у самих тестах** (тести — специфікація поведінки; правити їх у міграційному PR заборонено, крім додавання нових).
+Порядок — від найпростішого до найризиковішого; **один PR = один крок**; scope-и `shared`/`web`/`mobile` за touched surface. Спільний гейт кожного кроку: `pnpm check` зелений; `packages/dualwrite-core/src/*.test.ts` і всі per-module `adapter/diff/parity/integration` тести проходять **без змін у самих тестах** (тести — специфікація поведінки; правити їх у міграційному PR заборонено, крім додавання нових).
 
 **Крок 0 — SQL-snapshot гейт (передумова, окремий PR).** Для кожного з 8 адаптерів (4 web + 4 mobile) додати snapshot-тест: прогнати фіксований op-stream через adapter із mock-`client`, зафіксувати **послідовність `(sql, params)`** як snapshot. Це і є визначення «byte-identical»: після будь-якого міграційного кроку snapshot не має змінитись на жоден байт (нормалізація whitespace заборонена — порівнюємо literal). Для op-kinds, що пишуть НЕ в SQL (mobile-fizruk `active-workout-set` → KV, див. § «НЕ абстрагуємо» п.7), `(sql, params)`-snapshot сліпий — для них додатково фіксуються виклики KV-адаптера (mock-KV, послідовність `(key, value)`), інакше Крок 0 не покриває явно дивергентний mobile-шлях. Гейт: нові snapshot-тести зелені на HEAD до початку міграції.
 
-**Крок 1 — пакет `@sergeant/dualwrite-core`.** Перенести/розширити код `apps/web/src/shared/lib/sqliteWriter/core.ts` у пакет; web-шлях стає re-export-ом (Soft rule: re-export зі старого файлу, grep імпортів по монорепо). Гейт: `core.test.ts` зелений через re-export; Knip 0 нових знахідок; жоден адаптер ще не змінено.
+**Крок 1 — пакет `@sergeant/dualwrite-core`.** Цей крок уже виконано: canonical implementation живе у `packages/dualwrite-core`, а package tests покривають `apply`, `convert` і table specs. Подальша робота — лише якщо з'явиться новий adapter contract; не повертати web shim як canonical path.
 
 **Крок 2 — nutrition (web).** Найпростіша повна міграція з parent/child: адаптер переходить на `createApplyOps` + `buildLwwUpsert`/`buildDelete`/`buildReconcileChildren`; TableSpec-и для 7 таблиць (для `water_log`/`shopping_list` — `createdAt: "absent"`). Гейт: SQL-snapshot з кроку 0 байт-ідентичний; `nutrition/dualWrite/__tests__/*` зелені; parity-тест `parity.test.ts` зелений.
 

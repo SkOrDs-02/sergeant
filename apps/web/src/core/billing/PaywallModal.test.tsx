@@ -101,4 +101,49 @@ describe("PaywallModal", () => {
     fireEvent.click(screen.getByRole("button", { name: /Перейти до Pro/ }));
     expect(navigateSpy).toHaveBeenLastCalledWith("/pricing?source=paywall");
   });
+
+  it("uses custom labels/features and closes from the dismiss CTA", () => {
+    const onClose = vi.fn();
+    render(
+      <MemoryRouter>
+        <PaywallModal
+          open
+          onClose={onClose}
+          surface="themes"
+          title="Themes"
+          description="Custom description"
+          features={["Feature A", "Feature B"]}
+          ctaLabel="Upgrade now"
+          dismissLabel="Later"
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Feature A")).toBeInTheDocument();
+    expect(screen.getByText("Feature B")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Later" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("fires once per open transition, including after a close and reopen", () => {
+    const onClose = vi.fn();
+    const view = (open: boolean) => (
+      <MemoryRouter>
+        <PaywallModal
+          open={open}
+          onClose={onClose}
+          surface="cloud_sync"
+          title="CloudSync"
+          description="Sync."
+        />
+      </MemoryRouter>
+    );
+    const { rerender } = render(view(true));
+    expect(trackEventMock).toHaveBeenCalledTimes(1);
+    rerender(view(true));
+    expect(trackEventMock).toHaveBeenCalledTimes(1);
+    rerender(view(false));
+    rerender(view(true));
+    expect(trackEventMock).toHaveBeenCalledTimes(2);
+  });
 });
