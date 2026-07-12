@@ -473,7 +473,8 @@ export function HabitForm({
           )}
           <Button
             type="button"
-            className={cn("w-full", C.primary)}
+            variant="routine"
+            className="w-full"
             onClick={onSave}
           >
             {editingId ? "Зберегти зміни" : "Додати звичку"}

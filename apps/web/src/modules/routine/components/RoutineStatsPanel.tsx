@@ -3,7 +3,6 @@ import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { Stat } from "@shared/components/ui/Stat";
-import { PushupsWidget } from "./PushupsWidget";
 import { HabitHeatmap } from "./HabitHeatmap";
 import { HabitLeadersBlock } from "./HabitLeadersBlock";
 import { completionRateForRange, maxStreakAllTime } from "../lib/streaks";
@@ -108,8 +107,6 @@ export function RoutineStatsPanel({
           </div>
         </div>
       </Card>
-
-      <PushupsWidget />
 
       <HabitHeatmap habits={routine.habits} completions={routine.completions} />
 

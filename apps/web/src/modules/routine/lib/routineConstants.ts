@@ -58,7 +58,7 @@ export const ROUTINE_THEME = {
 
   // Primary button
   primary:
-    "bg-routine-strong hover:bg-routine-hover text-white border-0 shadow-sm transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 active:scale-[0.98]",
+    "bg-routine-strong hover:bg-routine-hover text-white border-0 shadow-sm transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 active:scale-[0.98] dark:bg-routine dark:text-bg dark:hover:bg-routine/90",
   primarySoft:
     "bg-routine-surface hover:bg-coral-100 text-routine-strong dark:text-routine border border-routine-ring/50 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200",
 

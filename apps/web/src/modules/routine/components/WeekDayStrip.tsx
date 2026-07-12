@@ -45,34 +45,36 @@ export function WeekDayStrip({
       >
         ‹
       </IconButton>
-      <div className="grid min-w-0 flex-1 grid-cols-7 gap-0.5 sm:gap-1">
-        {keys.map((k, i) => {
-          const isSel = k === selectedDay;
-          const isToday = k === todayKey;
-          const dom = parseDateKey(k).getDate();
-          return (
-            <button
-              key={k}
-              type="button"
-              onClick={() => onSelectDay(k)}
-              className={cn(
-                "focus-ring flex min-h-[44px] flex-col items-center justify-center rounded-xl border py-1 text-style-caption font-semibold transition-colors sm:text-xs",
-                isSel
-                  ? "border-routine-ring dark:border-routine-border-dark/40 bg-routine-surface2 dark:bg-routine-surface-dark/15 text-text shadow-sm ring-1 ring-routine-line/50 dark:ring-routine-border-dark/30"
-                  : "border-transparent bg-panelHi/50 text-muted hover:bg-panelHi hover:text-text",
-                isToday && !isSel && "ring-1 ring-routine/40",
-              )}
-            >
-              {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                  Day-of-week caption at text-style-caption inside a compact day-picker
-                  tile — smaller than SectionHeading xs's text-style-caption. */}
-              <span className="text-style-caption uppercase tracking-wide text-subtle">
-                {short[i]}
-              </span>
-              <span className="tabular-nums text-sm text-text">{dom}</span>
-            </button>
-          );
-        })}
+      <div className="min-w-0 flex-1 overflow-x-auto scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-1.5 sm:gap-2">
+          {keys.map((k, i) => {
+            const isSel = k === selectedDay;
+            const isToday = k === todayKey;
+            const dom = parseDateKey(k).getDate();
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => onSelectDay(k)}
+                className={cn(
+                  "focus-ring flex min-h-[44px] min-w-[44px] flex-1 shrink-0 snap-center flex-col items-center justify-center rounded-xl border py-1 text-style-caption font-semibold transition-colors sm:text-xs",
+                  isSel
+                    ? "border-routine-ring dark:border-routine-border-dark/40 bg-routine-surface2 dark:bg-routine-surface-dark/15 text-text shadow-sm ring-1 ring-routine-line/50 dark:ring-routine-border-dark/30"
+                    : "border-transparent bg-panelHi/50 text-muted hover:bg-panelHi hover:text-text",
+                  isToday && !isSel && "ring-1 ring-routine/40",
+                )}
+              >
+                {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
+                    Day-of-week caption at text-style-caption inside a compact day-picker
+                    tile — smaller than SectionHeading xs's text-style-caption. */}
+                <span className="text-style-caption uppercase tracking-wide text-subtle">
+                  {short[i]}
+                </span>
+                <span className="tabular-nums text-sm text-text">{dom}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <IconButton
         size="md"

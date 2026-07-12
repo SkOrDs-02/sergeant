@@ -2,9 +2,9 @@
 /**
  * Unit tests for RoutineStatsPanel.
  *
- * The component composes several heavy children (PushupsWidget, HabitHeatmap,
+ * The component composes several heavy children (HabitHeatmap,
  * HabitLeadersBlock) and delegates stats computation to routineStatss helpers.
- * We stub all three children and the Kyiv-time helper so the suite is fast and
+ * We stub these children and the Kyiv-time helper so the suite is fast and
  * deterministic.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -20,9 +20,6 @@ vi.mock("@shared/lib/time/kyivTime", () => ({
 }));
 
 // Stub heavy children to lightweight markers.
-vi.mock("./PushupsWidget", () => ({
-  PushupsWidget: () => <div data-testid="pushups-widget" />,
-}));
 vi.mock("./HabitHeatmap", () => ({
   HabitHeatmap: () => <div data-testid="habit-heatmap" />,
 }));
@@ -95,9 +92,8 @@ describe("RoutineStatsPanel", () => {
     expect(screen.getByText("Зведення")).toBeInTheDocument();
   });
 
-  it("mounts all three child widgets", () => {
+  it("mounts child widgets", () => {
     render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={0} />);
-    expect(screen.getByTestId("pushups-widget")).toBeInTheDocument();
     expect(screen.getByTestId("habit-heatmap")).toBeInTheDocument();
     expect(screen.getByTestId("habit-leaders-block")).toBeInTheDocument();
   });

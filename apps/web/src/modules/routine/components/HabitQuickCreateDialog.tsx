@@ -13,7 +13,6 @@ import {
 } from "../lib/routineDraftUtils";
 import { dateKeyFromDate } from "../lib/hubCalendarAggregate";
 import { Button } from "@shared/components/ui/Button";
-import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import { HabitForm, type HabitFormErrors } from "./settings/HabitForm";
 import type { Habit, HabitDraft, RoutineState } from "../lib/types";
 import type { Dispatch, SetStateAction } from "react";
@@ -241,7 +240,8 @@ export function HabitQuickCreateDialog({
             )}
             <Button
               type="button"
-              className={cn("w-full", C.primary)}
+              variant="routine"
+              className="w-full"
               onClick={handleSave}
             >
               {editingId ? "Зберегти зміни" : "Додати звичку"}

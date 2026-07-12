@@ -76,7 +76,8 @@ export function seedRoutine(): void {
     completions[habit.id] = dates;
   }
 
-  // 14 days of push-ups to populate «Віджимання дня» widget.
+  // 14 days of push-ups — consumed by Fizruk's pushup-activity widget
+  // (usePushupActivity), the Routine module no longer renders this data.
   const pushupsByDate: Record<string, number> = {};
   const pushupPlan = [25, 30, 28, 35, 40, 30, 32, 45, 50, 42, 38, 40, 55, 48];
   for (let i = 0; i < pushupPlan.length; i++) {
