@@ -16,10 +16,31 @@ export interface UserPlanResult {
  *
  * userId is a TEXT primary key matching the "user" table (Better Auth / session id).
  */
+/**
+ * Founder Better-Auth user IDs get a permanent Pro entitlement, independent
+ * of any subscriptions row. Same allowlist as the AI-quota bypass
+ * (`chat/aiQuota.ts` isFounderUser) — one env var, one meaning.
+ */
+function isFounderUser(userId: string): boolean {
+  const raw = process.env["AI_QUOTA_FOUNDER_IDS"];
+  if (!raw) return false;
+  return raw.split(",").some((id) => id.trim() !== "" && id.trim() === userId);
+}
+
 export async function getUserPlan(
   pool: Pool,
   userId: string,
 ): Promise<UserPlanResult> {
+  if (isFounderUser(userId)) {
+    return {
+      plan: "pro",
+      status: "active",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      provider: "manual",
+    };
+  }
+
   const result = await pool.query<{
     plan: string;
     status: string;

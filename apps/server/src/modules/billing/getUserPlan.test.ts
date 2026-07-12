@@ -52,6 +52,24 @@ describe("getUserPlan", () => {
     expect(result.provider).toBe("apple");
   });
 
+  it("grants pro to a founder id without querying the DB", async () => {
+    vi.stubEnv("AI_QUOTA_FOUNDER_IDS", "founder_1,founder_2");
+    const pool = mockPool([]);
+    const result = await getUserPlan(pool, "founder_2");
+    expect(result.plan).toBe("pro");
+    expect(pool.query).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
+  it("leaves a non-founder user on the normal DB-driven plan", async () => {
+    vi.stubEnv("AI_QUOTA_FOUNDER_IDS", "founder_1");
+    const pool = mockPool([]);
+    const result = await getUserPlan(pool, "user_1");
+    expect(result.plan).toBe("free");
+    expect(pool.query).toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
   it("queries with the correct userId parameter", async () => {
     const pool = mockPool([]);
     await getUserPlan(pool, "user_abc");
