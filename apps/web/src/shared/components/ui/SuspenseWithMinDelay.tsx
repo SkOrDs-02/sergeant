@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { cn } from "@shared/lib/ui/cn";
 
 /**
  * SuspenseWithMinDelay
@@ -34,21 +35,34 @@ export interface SuspenseWithMinDelayProps {
    * out, short enough that genuinely slow loads don't feel artificial.
    */
   minDelayMs?: number;
+  /**
+   * Merged onto the host <div> around BOTH the fallback and the
+   * resolved content. Needed when this wrapper sits inside a flex
+   * height chain: the plain block host otherwise breaks
+   * `flex-1`/`min-h-0` propagation, the child's inner scroller never
+   * overflows, and overflow gets clipped by the parent instead of
+   * scrolling (hub chat sheet — its message list was unscrollable once
+   * content grew past the panel).
+   */
+  className?: string;
   children: ReactNode;
 }
 
 export function SuspenseWithMinDelay({
   fallback,
   minDelayMs = 300,
+  className,
   children,
 }: SuspenseWithMinDelayProps) {
   return (
     <Suspense
       fallback={
-        <MinDelayFallback minDelayMs={minDelayMs}>{fallback}</MinDelayFallback>
+        <MinDelayFallback minDelayMs={minDelayMs} className={className}>
+          {fallback}
+        </MinDelayFallback>
       }
     >
-      <FadeInContent>{children}</FadeInContent>
+      <FadeInContent className={className}>{children}</FadeInContent>
     </Suspense>
   );
 }
@@ -65,9 +79,11 @@ export function SuspenseWithMinDelay({
 function MinDelayFallback({
   children,
   minDelayMs,
+  className,
 }: {
   children: ReactNode;
   minDelayMs: number;
+  className?: string | undefined;
 }) {
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -80,15 +96,31 @@ function MinDelayFallback({
   // delay) without changing the public API.
   void ready;
   return (
-    <div className="motion-safe:animate-fade-in motion-safe:duration-200">
+    <div
+      className={cn(
+        "motion-safe:animate-fade-in motion-safe:duration-200",
+        className,
+      )}
+    >
       {children}
     </div>
   );
 }
 
-function FadeInContent({ children }: { children: ReactNode }) {
+function FadeInContent({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string | undefined;
+}) {
   return (
-    <div className="motion-safe:animate-fade-in motion-safe:duration-200">
+    <div
+      className={cn(
+        "motion-safe:animate-fade-in motion-safe:duration-200",
+        className,
+      )}
+    >
       {children}
     </div>
   );

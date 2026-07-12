@@ -81,7 +81,14 @@ export function HubChatOverlay() {
       bodyClassName="!p-0 !overflow-hidden flex flex-col"
       closeLabel={messages.hub.closeChat}
     >
-      <SuspenseWithMinDelay fallback={<PageLoader />}>
+      {/* `className`: цей wrapper — flex-item між body Sheet-а і HubChat;
+          без flex-1/min-h-0/flex-col він рвав ланцюг висот, HubChatBody
+          ніколи не переповнювався і список повідомлень не скролився
+          (round-3 UI audit — «чат заблокований по скролу»). */}
+      <SuspenseWithMinDelay
+        fallback={<PageLoader />}
+        className="flex-1 min-h-0 flex flex-col"
+      >
         <HubChat
           onClose={handleClose}
           initialMessage={initialMessage}
