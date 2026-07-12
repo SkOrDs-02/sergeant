@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-Node 22 + Express + PostgreSQL 17 (`pg`) + Better Auth (cookie + bearer) + Anthropic Claude (tool-use, streaming) + Voyage embeddings (AI memory). Деплой: Railway via [`Dockerfile.api`](../../Dockerfile.api). Тести: Vitest unit + Testcontainers (real Postgres) інтеграційні.
+Node 22 + Express + PostgreSQL 18 (pgvector, `pg`) + Better Auth (cookie + bearer) + Anthropic Claude (tool-use, streaming) + Voyage embeddings (AI memory). Деплой: Hetzner CX23 + Coolify — образ `ghcr.io/.../sergeant-api` (GitHub Actions [`deploy-api.yml`](../../.github/workflows/deploy-api.yml)); [`Dockerfile.api`](../../Dockerfile.api) без змін. Rationale: [ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md). Тести: Vitest unit + Testcontainers (real Postgres) інтеграційні.
 
 ## Quick commands
 
@@ -39,7 +39,7 @@ pnpm api:check-openapi                                # freshness gate (CI-block
 
 ## Health & deploy
 
-`/health` p95 < 100 ms (formalized: [`SLO.md § 2.1`](../../docs/03-operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` — design-only, не wired — див. SLO.md § Статус wiring). Railway health-probe і pre-deploy job задані як config-as-code у [`railway.toml`](../../railway.toml) → `[deploy]` (`healthcheckPath = "/health"`, `preDeployCommand = "node dist-server/migrate.js"`), а не лише у дашборді. Pre-deploy виконує міграції (requires `MIGRATE_DATABASE_URL` = public DB URL). Anthropic `/api/chat` p95 first token < 1.5 s. AI memory endpoints require `VOYAGE_API_KEY` when `AI_MEMORY_ENABLED=true`.
+`/health` p95 < 100 ms (formalized: [`SLO.md § 2.1`](../../docs/03-operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` — design-only, не wired — див. SLO.md § Статус wiring). Health-probe віддає сам Node через Coolify proxy; pre-deploy міграції — Coolify `pre_deployment_command = node dist-server/migrate.js` (дзеркало колишнього `railway.toml` → `[deploy].preDeployCommand`). Pre-deploy виконує міграції (requires `MIGRATE_DATABASE_URL` = public DB URL). Деталі — [ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md). Anthropic `/api/chat` p95 first token < 1.5 s. AI memory endpoints require `VOYAGE_API_KEY` when `AI_MEMORY_ENABLED=true`.
 
 ## Deeper docs
 
