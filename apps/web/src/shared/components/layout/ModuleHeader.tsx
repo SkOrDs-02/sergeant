@@ -269,42 +269,41 @@ export function ModuleHeaderAssistantButton({
 
 export interface ModuleHeaderBackButtonProps {
   onClick: () => void;
-  /** Visible label next to the chevron (e.g. "Хаб"). */
+  /** Visible label next to the chevron. Defaults to "Назад". */
   label?: string;
   ariaLabel?: string;
   className?: string;
 }
 
 /**
- * "Back" button variant — used for top-level "to hub" navigation. Renders
- * a chevron + optional label inside the same 40-tall pill as icon buttons.
+ * "Back" button — steps back one in-app entry (`useHubNavigation.goBackOrHub`
+ * falls back to the hub itself when there's no history to step through).
+ * Always reads "Назад": the adjacent {@link ModuleHeaderHubButton} is the
+ * dedicated always-hub affordance, so this button no longer needs to lie
+ * about its destination on a fresh/deep-link entry (round-2 UI audit X3 —
+ * users landing on a deep link never saw a way to reach the hub because
+ * this button rendered but the label/behavior split was implicit).
  */
 export function ModuleHeaderBackButton({
   onClick,
-  label,
-  ariaLabel,
+  label = "Назад",
+  ariaLabel = "Назад",
   className,
 }: ModuleHeaderBackButtonProps) {
-  // When the app has in-session history to step back through the button reads
-  // as "Назад"; on a fresh / deep-link entry (idx 0) the back action lands on
-  // the hub, so it reads as "Хаб". Kept in sync with the actual navigation in
-  // `useHubNavigation.goBackOrHub` (both key off `window.history.state.idx`).
-  // In unit tests (no browser history) idx is 0, preserving the "Хаб" default.
-  const steppingBack =
-    typeof window !== "undefined" &&
-    ((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0;
-  const resolvedLabel = label ?? (steppingBack ? "Назад" : "Хаб");
-  const resolvedAriaLabel = ariaLabel ?? (steppingBack ? "Назад" : "До хабу");
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "shrink-0 h-10 min-h-[40px] -ml-1 pl-2 pr-3 gap-1.5 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",
+        // `h-11 min-h-[44px]` — round-2 UI audit X3 requires this pair
+        // (back + hub) meet the 44px touch-target floor explicitly, even
+        // though other module-header icon buttons in this file stayed at
+        // 40px (pre-existing, out of scope here).
+        "shrink-0 h-11 min-h-[44px] -ml-1 pl-2 pr-3 gap-1.5 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",
         className,
       )}
-      aria-label={resolvedAriaLabel}
-      title={resolvedAriaLabel}
+      aria-label={ariaLabel}
+      title={ariaLabel}
     >
       <svg
         width="20"
@@ -319,10 +318,52 @@ export function ModuleHeaderBackButton({
       >
         <path d="M15 18l-6-6 6-6" />
       </svg>
-      {resolvedLabel ? (
-        <span className="text-style-label">{resolvedLabel}</span>
-      ) : null}
+      {label ? <span className="text-style-label">{label}</span> : null}
     </button>
+  );
+}
+
+export interface ModuleHeaderHubButtonProps {
+  onClick: () => void;
+  ariaLabel?: string;
+  className?: string;
+}
+
+/**
+ * Dedicated "always go to hub" icon button — pairs with
+ * {@link ModuleHeaderBackButton} so a one-tap hub exit is reachable from any
+ * navigation depth, including a cold-start deep link where `goBackOrHub`
+ * would otherwise be the only exit and history-dependent (round-2 UI audit
+ * X3, owner decision 2026-07-12).
+ */
+export function ModuleHeaderHubButton({
+  onClick,
+  ariaLabel = "На хаб",
+  className,
+}: ModuleHeaderHubButtonProps) {
+  return (
+    <ModuleHeaderIconButton
+      onClick={onClick}
+      ariaLabel={ariaLabel}
+      // Overrides `ModuleHeaderIconButton`'s 40px default — round-2 UI
+      // audit X3 explicitly requires this pair (back + hub) at 44px.
+      className={cn("w-11 h-11 min-w-[44px] min-h-[44px]", className)}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V20a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V9.5" />
+      </svg>
+    </ModuleHeaderIconButton>
   );
 }
 

@@ -13,14 +13,20 @@ const FinykApp = lazyDefault(() => import("./FinykApp"));
  * Renders `ModuleShell` (shared UI) + `FinykApp` (domain UI).
  */
 export function Component() {
-  const { goBackOrHub, goToModuleSettings, pwaAction, clearPwaAction } =
-    useHubShell();
+  const {
+    goBackOrHub,
+    goToHub,
+    goToModuleSettings,
+    pwaAction,
+    clearPwaAction,
+  } = useHubShell();
 
   return (
     <ModuleShell moduleId="finyk">
       <SuspenseWithMinDelay fallback={<ModulePageLoader module="finyk" />}>
         <FinykApp
           onBackToHub={goBackOrHub}
+          onGoToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("finyk")}
           pwaAction={pwaAction}
           onPwaActionConsumed={clearPwaAction}

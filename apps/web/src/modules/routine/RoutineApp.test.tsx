@@ -115,7 +115,7 @@ vi.mock("./RoutineHeader", () => ({
       <div data-testid="routine-header">
         {typeof props.onBackToHub === "function" ? (
           <button type="button" onClick={props.onBackToHub}>
-            До хабу
+            Назад
           </button>
         ) : null}
         {typeof props.onOpenSettings === "function" ? (
@@ -163,7 +163,7 @@ describe("RoutineApp", () => {
     const onBackToHub = vi.fn();
     render(<RoutineApp onBackToHub={onBackToHub} />);
     expect(routineAppMocks.headerProps?.onBackToHub).toBe(onBackToHub);
-    fireEvent.click(screen.getByRole("button", { name: "До хабу" }));
+    fireEvent.click(screen.getByRole("button", { name: "Назад" }));
     expect(onBackToHub).toHaveBeenCalledTimes(1);
   });
 

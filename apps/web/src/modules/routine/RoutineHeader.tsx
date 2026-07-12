@@ -11,6 +11,7 @@ import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderHubButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
@@ -18,11 +19,13 @@ import { ROUTINE_THEME as C } from "./lib/routineConstants";
 
 export interface RoutineHeaderProps {
   onBackToHub?: (() => void) | undefined;
+  onGoToHub?: (() => void) | undefined;
   onOpenSettings?: (() => void) | undefined;
 }
 
 export function RoutineHeader({
   onBackToHub,
+  onGoToHub,
   onOpenSettings,
 }: RoutineHeaderProps) {
   return (
@@ -30,7 +33,12 @@ export function RoutineHeader({
       module="routine"
       left={
         typeof onBackToHub === "function" ? (
-          <ModuleHeaderBackButton onClick={onBackToHub} />
+          <div className="flex items-center gap-1">
+            <ModuleHeaderBackButton onClick={onBackToHub} />
+            {typeof onGoToHub === "function" && (
+              <ModuleHeaderHubButton onClick={onGoToHub} />
+            )}
+          </div>
         ) : (
           <div
             className={cn(

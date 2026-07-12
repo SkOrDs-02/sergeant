@@ -25,8 +25,23 @@ describe("FizrukHeader", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "До хабу" }));
+    fireEvent.click(screen.getByRole("button", { name: "Назад" }));
     expect(onBackToHub).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a dedicated hub button when onGoToHub is provided", () => {
+    const onGoToHub = vi.fn();
+    render(
+      <FizrukHeader
+        page="dashboard"
+        onContextualBack={vi.fn()}
+        onBackToHub={vi.fn()}
+        onGoToHub={onGoToHub}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "На хаб" }));
+    expect(onGoToHub).toHaveBeenCalledTimes(1);
   });
 
   it("shows active program subtitle on programs page", () => {

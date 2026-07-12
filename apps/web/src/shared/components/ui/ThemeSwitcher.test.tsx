@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * Tests for `ThemeSwitcher` — segmented + dropdown surfaces over `useTheme`.
+ * Tests for `ThemeSwitcher` — the segmented control over `useTheme`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, fireEvent, act, screen } from "@testing-library/react";
+import { render, fireEvent, screen } from "@testing-library/react";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 
 function setSystemDark(dark: boolean): void {
@@ -68,50 +68,12 @@ describe("ThemeSwitcher — segmented (default)", () => {
     );
     expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
-});
 
-describe("ThemeSwitcher — dropdown", () => {
-  it("renders a closed trigger by default", () => {
-    render(<ThemeSwitcher variant="dropdown" />);
-    const trigger = screen.getByRole("button");
-    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
-    expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("menu")).toBeNull();
-  });
-
-  it("opens the menu on trigger click and lists all choices", () => {
-    render(<ThemeSwitcher variant="dropdown" />);
-    fireEvent.click(screen.getByRole("button"));
-    expect(
-      screen.getByRole("menu", { name: "Вибір теми" }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole("menuitemradio")).toHaveLength(4);
-  });
-
-  it("selecting an item updates the theme and closes the menu", () => {
-    render(<ThemeSwitcher variant="dropdown" />);
-    fireEvent.click(screen.getByRole("button"));
-    fireEvent.click(screen.getByRole("menuitemradio", { name: /Темна/ }));
-    expect(screen.queryByRole("menu")).toBeNull();
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
-  });
-
-  it("closes on Escape", () => {
-    render(<ThemeSwitcher variant="dropdown" />);
-    fireEvent.click(screen.getByRole("button"));
-    act(() => {
-      fireEvent.keyDown(document, { key: "Escape" });
-    });
-    expect(screen.queryByRole("menu")).toBeNull();
-  });
-
-  it("closes on outside mousedown", () => {
-    render(<ThemeSwitcher variant="dropdown" />);
-    fireEvent.click(screen.getByRole("button"));
-    expect(screen.getByRole("menu")).toBeInTheDocument();
-    act(() => {
-      fireEvent.mouseDown(document.body);
-    });
-    expect(screen.queryByRole("menu")).toBeNull();
+  it("shows a caption under each icon (round-2 UI audit X4)", () => {
+    render(<ThemeSwitcher />);
+    expect(screen.getByText("Світла")).toBeInTheDocument();
+    expect(screen.getByText("Темна")).toBeInTheDocument();
+    expect(screen.getByText("Системна")).toBeInTheDocument();
+    expect(screen.getByText("Контраст")).toBeInTheDocument();
   });
 });

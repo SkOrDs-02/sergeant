@@ -380,7 +380,7 @@ describe("FizrukApp (extra) — header callbacks", () => {
   it("calls onBackToHub from the hub back button on dashboard", () => {
     const onBackToHub = vi.fn();
     render(<FizrukApp onBackToHub={onBackToHub} />);
-    fireEvent.click(screen.getByLabelText("До хабу"));
+    fireEvent.click(screen.getByLabelText("Назад"));
     expect(onBackToHub).toHaveBeenCalled();
   });
 

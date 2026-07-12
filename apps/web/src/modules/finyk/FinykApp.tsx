@@ -16,6 +16,7 @@ import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderHubButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { NoBankBanner } from "./components/NoBankBanner";
@@ -61,6 +62,7 @@ const PRIVAT_ENABLED = false;
 
 interface FinykAppProps {
   onBackToHub?: () => void;
+  onGoToHub?: () => void;
   onOpenSettings?: () => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
@@ -68,6 +70,7 @@ interface FinykAppProps {
 
 export default function App({
   onBackToHub,
+  onGoToHub,
   onOpenSettings,
   pwaAction,
   onPwaActionConsumed,
@@ -327,7 +330,12 @@ export default function App({
           module="finyk"
           left={
             typeof onBackToHub === "function" ? (
-              <ModuleHeaderBackButton onClick={onBackToHub} />
+              <div className="flex items-center gap-1">
+                <ModuleHeaderBackButton onClick={onBackToHub} />
+                {typeof onGoToHub === "function" && (
+                  <ModuleHeaderHubButton onClick={onGoToHub} />
+                )}
+              </div>
             ) : (
               <FinykHeaderIcon />
             )

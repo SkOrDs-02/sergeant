@@ -74,7 +74,12 @@ export function HubChatBody({
     <div
       ref={chatRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto overscroll-contain touch-pan-y px-4 py-3 space-y-3 min-h-0"
+      // `overscroll-none`: `HubChatOverlay` overrides Sheet's own
+      // `bodyClassName` (`!overflow-hidden`), so THIS is the actual
+      // scrollable element for the chat — `-contain` alone still let the
+      // browser paint its own rubber-band glow at this element's edge
+      // (round-2 UI audit X2).
+      className="flex-1 overflow-y-auto overscroll-none touch-pan-y px-4 py-3 space-y-3 min-h-0"
       aria-busy={loading}
     >
       {/* Visually-hidden live region for streaming status — announced to

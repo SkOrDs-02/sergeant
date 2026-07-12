@@ -7,6 +7,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
+import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
 import { useSwipeToDismiss } from "../../hooks/useSwipeToDismiss";
 import { useAnnounce } from "./ScreenReaderAnnouncer";
@@ -119,16 +120,9 @@ export function Sheet({
     onDismiss: onClose,
   });
 
-  // Lock body scroll while sheet is open. Matches the ad-hoc patterns
-  // several existing sheets already implemented inconsistently.
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  // Lock body scroll while sheet is open — iOS-safe (position: fixed),
+  // not just `overflow: hidden` (round-2 UI audit X2).
+  useBodyScrollLock(open);
 
   // Announce the sheet title to assistive tech when it opens. The
   // `aria-labelledby` wiring already exposes the title to screen
@@ -277,11 +271,13 @@ export function Sheet({
         )}
         <div
           className={cn(
-            // `overscroll-contain` prevents rubber-band scroll from
-            // leaking out to the page under the sheet — on iOS this
-            // would otherwise scroll the body behind the modal while
-            // the sheet is open, which is disorienting.
-            "flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-4",
+            // `overscroll-none` (not `-contain`) — `contain` still lets the
+            // browser paint its own rubber-band/glow effect at this
+            // element's own scroll boundary; `none` suppresses that too
+            // (round-2 UI audit X2: this was the light border/frame seen
+            // on overscroll). Chaining to the page behind the sheet is
+            // additionally blocked by `useBodyScrollLock` above.
+            "flex-1 min-h-0 overflow-y-auto overscroll-none px-5 pb-4",
             bodyClassName,
           )}
         >

@@ -6,6 +6,9 @@ import { useBodyScrollLock } from "./useBodyScrollLock";
 describe("useBodyScrollLock", () => {
   afterEach(() => {
     document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.width = "";
   });
 
   it("locks body overflow on mount and restores on unmount", () => {
@@ -14,6 +17,22 @@ describe("useBodyScrollLock", () => {
     expect(document.body.style.overflow).toBe("hidden");
     unmount();
     expect(document.body.style.overflow).toBe("auto");
+  });
+
+  it("pins body to fixed position at the current scroll offset (iOS rubber-band fix)", () => {
+    Object.defineProperty(window, "scrollY", {
+      value: 240,
+      configurable: true,
+    });
+    const { unmount } = renderHook(() => useBodyScrollLock());
+    expect(document.body.style.position).toBe("fixed");
+    expect(document.body.style.top).toBe("-240px");
+    expect(document.body.style.width).toBe("100%");
+    unmount();
+    expect(document.body.style.position).toBe("");
+    expect(document.body.style.top).toBe("");
+    expect(document.body.style.width).toBe("");
+    Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
   });
 
   it("is refcounted: nested overlays share the lock, last unmount restores", () => {
