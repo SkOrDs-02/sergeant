@@ -113,8 +113,8 @@ describe("HubBottomNav", () => {
     expect(nav.className).toContain("bottom-nav-shell");
     expect(nav.className).toContain("bg-panel");
     expect(nav.className).toContain("border");
-    expect(settingsTab.className).toContain("justify-end");
-    expect(settingsTab.className).toContain("pb-1.5");
+    expect(settingsTab.className).toContain("justify-center");
+    expect(settingsTab.className).toContain("my-1.5");
   });
 
   it("tablist semantics: кожен таб має aria-controls", () => {

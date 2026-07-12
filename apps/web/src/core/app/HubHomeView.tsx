@@ -148,14 +148,13 @@ export function HubHomeView(props: HubHomeViewProps) {
     // 60px floor instead of 0px. Closes M4 + M6 (Sheet positioning on
     // hub) with the same single edit. The 60px matches the inner
     // `h-[60px]` track of HubBottomNav (see HubBottomNav.tsx tablist); the
-    // added `env(safe-area-inset-bottom)` matches `bottom-nav-shell`'s
-    // mirrored top padding (round-2 UI audit X1).
+    // added `0.375rem` matches `bottom-nav-shell`'s fixed top padding
+    // (round-3 UI audit — the round-2 env() mirror was reverted).
     <MeshBackground
       className="safe-area-pt page-enter"
       style={
         {
-          "--bottom-nav-height":
-            "calc(60px + env(safe-area-inset-bottom, 0px))",
+          "--bottom-nav-height": "calc(60px + 0.375rem)",
         } as CSSProperties
       }
     >

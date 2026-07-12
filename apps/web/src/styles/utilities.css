@@ -444,18 +444,36 @@
      indicator. One navigation shape everywhere
      (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1).
 
-     `padding-top` mirrors `padding-bottom` so the icon+label row reads as
-     centered in the pill instead of pinned against the top rounded corner
-     with all the reserved safe-area space stacked below it (round-2 UI
-     audit X1 — on a notched phone the row previously had ~0px above it and
-     ~34px below). Any consumer that offsets itself above this nav via
-     `--bottom-nav-height` / the `60px` inner-track constant must add this
-     same `env(safe-area-inset-bottom)` term now that the shell is taller —
-     see MeshBackground.tsx, HubHomeView.tsx, ModuleShell.tsx,
-     TransactionsBatchToolbar.tsx. */
+     `padding-top` is a small fixed gap, NOT a mirror of the safe-area
+     bottom padding: mirroring `env(safe-area-inset-bottom)` (round-2 UI
+     audit X1) grew the shell by ~34px on notched phones and the owner
+     rejected the taller nav (round-3 UI audit). The home-indicator strip
+     below the labels reads as a system gutter, so a slim top inset is
+     enough to detach the row from the rounded corner. Any consumer that
+     offsets itself above this nav via `--bottom-nav-height` / the `60px`
+     inner-track constant must add this same `0.375rem` term — see
+     HubHomeView.tsx, ModuleShell.tsx, TransactionsBatchToolbar.tsx.
+
+     The `::after` apron paints the panel background one extra step below
+     the shell: iOS Safari/PWA transiently re-resolves `env()` and the
+     visual viewport after route changes and modal open/close, which used
+     to expose a page-coloured strip under the nav until the next repaint
+     (round-3 UI audit — «смужка під фігурою»). */
+  position: relative;
   border-radius: 1.5rem 1.5rem 0 0;
-  padding-top: env(safe-area-inset-bottom, 0px);
+  padding-top: 0.375rem;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 4rem;
+    background: inherit;
+    pointer-events: none;
+  }
 }
 
 @utility no-scrollbar {
