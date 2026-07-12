@@ -107,7 +107,7 @@ export function seedFizruk(): void {
 
   writeJSON(FIZRUK_WORKOUTS_KEY, { schemaVersion: 1, workouts });
 
-  // One recent measurement row so «Виміри» is populated.
+  // One recent measurement row so «Заміри» is populated.
   writeJSON(FIZRUK_MEASUREMENTS_KEY, [
     {
       id: shortId("demo_m", 1),
