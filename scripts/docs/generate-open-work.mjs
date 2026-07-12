@@ -210,6 +210,10 @@ export function classifyStatus(rawStatus) {
   if (/^scaffolded\b/i.test(t)) return "open";
   if (/^open\b/i.test(t)) return "open";
   if (/^planned\b/i.test(t)) return "open";
+  // Proposed initiatives are open work, but may still be gated on a founder
+  // decision; preserve them in the dashboard instead of classifying them as
+  // unknown.
+  if (/^proposed\b/i.test(t)) return "open";
   // Multi-phase status (`Phase 1 ✅ done; Phase 2 blocked`) — surface as
   // open because at least one phase is unfinished.
   if (/^phase\s*\d/i.test(t)) return "open";
@@ -678,7 +682,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   );
   lines.push("");
   lines.push(
-    "Зведений single-pane view усього, що зараз НЕ доробленого у репо — згрупований по 7 трекерах. Source = `> **Status:**` header у кожному документі (Rule #10 lifecycle marker). У дашборд потрапляють документи зі статусами `Active` / `Draft` / `In progress` / `Scaffolded` / `Open` / `Planned` / `Phase *`. Документи зі статусом `Closed` / `Done` / `Archived` / `Implemented` / `Reference` / `Frozen` — виключені.",
+    "Зведений single-pane view усього, що зараз НЕ доробленого у репо — згрупований по 7 трекерах. Source = `> **Status:**` header у кожному документі (Rule #10 lifecycle marker). У дашборд потрапляють документи зі статусами `Active` / `Draft` / `In progress` / `Scaffolded` / `Open` / `Planned` / `Proposed` / `Phase *`. Документи зі статусом `Closed` / `Done` / `Archived` / `Implemented` / `Reference` / `Frozen` — виключені.",
   );
   lines.push("");
   lines.push(
@@ -729,7 +733,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   lines.push("## Як додати документ у дашборд");
   lines.push("");
   lines.push(
-    "Документ автоматично з'являється тут, якщо: (1) лежить під одним із трекерів зі списку вище, (2) має `> **Status:**` header з відкритим статусом (Active / Draft / In progress / Scaffolded / Open / Planned / Phase *), (3) не є README.md / follow-ups.md / open-work.md і не лежить під `archive/` (і не починається з `_`).",
+    "Документ автоматично з'являється тут, якщо: (1) лежить під одним із трекерів зі списку вище, (2) має `> **Status:**` header з відкритим статусом (Active / Draft / In progress / Scaffolded / Open / Planned / Proposed / Phase *), (3) не є README.md / follow-ups.md / open-work.md і не лежить під `archive/` (і не починається з `_`).",
   );
   lines.push("");
   lines.push("Після зміни статусу:");

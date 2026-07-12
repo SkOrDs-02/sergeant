@@ -25,4 +25,25 @@ describe("OutcomeCard", () => {
     fireEvent.click(screen.getByLabelText(/Побачити гроші/i));
     expect(onOpenModule).toHaveBeenCalledWith("finyk");
   });
+
+  it("falls back to the first module when there is no preferred or active module", () => {
+    const onOpenModule = vi.fn();
+    render(<OutcomeCard activeModules={[]} onOpenModule={onOpenModule} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Відкрити/i }));
+    expect(onOpenModule).toHaveBeenCalledWith("finyk");
+  });
+
+  it("uses the first active known module when primaryModule is absent", () => {
+    const onOpenModule = vi.fn();
+    render(
+      <OutcomeCard
+        activeModules={["unknown", "routine"]}
+        onOpenModule={onOpenModule}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /^Відкрити/i }));
+    expect(onOpenModule).toHaveBeenCalledWith("routine");
+  });
 });

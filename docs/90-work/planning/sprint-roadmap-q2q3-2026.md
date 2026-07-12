@@ -1,11 +1,13 @@
 # Sergeant — Спринтовий роадмап Q2–Q3 2026
 
 > **Last validated:** 2026-07-10 by @cursoragent (OpenClaw paths historical). **Next review:** 2026-10-08.
-> **Status:** Active — Спринти 6-7 реалізаційно закриті; Спринт 8 частковий (T4-A + T4-B react-markdown + T6 shipped; решта T4-B cuts + T5 tightening open); за календарем активне вікно — Спринт 7
+> **Status:** Reference/carry-over — Спринти 6-8 містять історичні записи; актуальний execution tracker — `sprint-9-10-plan-2026.md`. T4/T5 залишаються open follow-ups лише там, де це підтверджено поточним manifest/workflow.
 
 > **Примітка (2026-07-10):** посилання на `tools/openclaw/src/...` у Спринтах 5–7 — **historical** (directory removed; prod = ADR-0055 external gateway + `packages/openclaw-plugin`).
 
 > Єдиний спринтовий трекер платформи Sergeant: продуктові фічі + технічний борг.
+
+> **Code reality reconciliation (2026-07-13):** старі 870/880 KB та Sprint 7 календарні значення — historical baseline. Поточні budgets беруться з `AGENTS.md`, `apps/web/package.json` і `scripts/check-bundle-size.mjs`; не трактуйте historical target як актуальний gate.
 > Джерела: [`docs/90-work/audits/archive/2026-04-28-implementation-roadmap.md`](../audits/archive/2026-04-28-implementation-roadmap.md),
 > [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/tech/openclaw-roadmap.md),
 > [`docs/01-product/launch/tech/telegram-improvements-roadmap.md`](../../01-product/launch/tech/telegram-improvements-roadmap.md).
@@ -339,11 +341,12 @@ apps/web/src/core/hub/
 **Статус:** NutritionApp — [`52624c67`](https://github.com/Skords-01/Sergeant/commit/52624c67); Workouts/LogCard — [PR #2530](https://github.com/Skords-01/Sergeant/pull/2530) `2a3d740b`.
 
 **Файли:**
-| Файл | LOC (було) | LOC (зараз) | Ціль |
-|------|-----------|-----------|------|
-| `modules/fizruk/pages/Workouts.tsx` | 744 | 213 | < 250 |
-| `modules/fizruk/components/LogCard.tsx` | 736 | 216 | < 250 |
-| `modules/nutrition/NutritionApp.tsx` | 728 | — | < 250 |
+
+| Файл                                    | LOC (було) | LOC (зараз) | Ціль  |
+| --------------------------------------- | ---------- | ----------- | ----- |
+| `modules/fizruk/pages/Workouts.tsx`     | 744        | 213         | < 250 |
+| `modules/fizruk/components/LogCard.tsx` | 736        | 216         | < 250 |
+| `modules/nutrition/NutritionApp.tsx`    | 728        | —           | < 250 |
 
 **Acceptance:**
 

@@ -14,7 +14,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import type { BillingStatusResponse } from "@sergeant/shared";
 
-const { statusMock, createPortalMock } = vi.hoisted(() => ({
+const { statusMock, createPortalMock, cancelMock } = vi.hoisted(() => ({
   statusMock:
     vi.fn<
       (opts?: { signal?: AbortSignal }) => Promise<BillingStatusResponse>
@@ -23,6 +23,7 @@ const { statusMock, createPortalMock } = vi.hoisted(() => ({
     vi.fn<
       (opts?: { signal?: AbortSignal }) => Promise<{ ok: true; url: string }>
     >(),
+  cancelMock: vi.fn<() => Promise<{ ok: true }>>(),
 }));
 
 vi.mock("@shared/api", () => ({
@@ -30,6 +31,7 @@ vi.mock("@shared/api", () => ({
     status: statusMock,
     createCheckout: vi.fn(),
     createPortal: createPortalMock,
+    cancel: cancelMock,
   },
 }));
 
@@ -95,10 +97,22 @@ const PRO_CANCELED_RESPONSE: BillingStatusResponse = {
   },
 };
 
+const PRO_TRIAL_RESPONSE: BillingStatusResponse = {
+  subscription: {
+    id: 44,
+    provider: "stripe",
+    plan: "pro",
+    status: "trialing",
+    active: true,
+    currentPeriodEnd: "2026-06-07T10:00:00.000Z",
+  },
+};
+
 describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () => {
   beforeEach(() => {
     statusMock.mockReset();
     createPortalMock.mockReset();
+    cancelMock.mockReset();
     createPortalMock.mockResolvedValue({
       ok: true,
       url: "https://billing.stripe.com/session/bps_test_42",
@@ -171,5 +185,37 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     expect(screen.getByTestId("plan-manage-button")).toBeInTheDocument();
     expect(screen.queryByTestId("plan-active-info")).not.toBeInTheDocument();
     expect(screen.queryByTestId("plan-trial-info")).not.toBeInTheDocument();
+  });
+
+  it("shows the trial end date and requires confirmation before canceling", async () => {
+    statusMock.mockResolvedValue(PRO_TRIAL_RESPONSE);
+    renderSection();
+    await openSection();
+
+    expect(await screen.findByTestId("plan-trial-info")).toHaveTextContent(
+      /7 червня 2026/,
+    );
+    fireEvent.click(screen.getByTestId("plan-cancel-button"));
+    expect(
+      screen.getByTestId("plan-cancel-confirm-button"),
+    ).toBeInTheDocument();
+    expect(cancelMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the cancel error and leaves confirmation open when cancellation fails", async () => {
+    statusMock.mockResolvedValue(PRO_TRIAL_RESPONSE);
+    cancelMock.mockRejectedValue(new Error("cancel failed"));
+    renderSection();
+    await openSection();
+
+    fireEvent.click(await screen.findByTestId("plan-cancel-button"));
+    fireEvent.click(screen.getByTestId("plan-cancel-confirm-button"));
+
+    expect(await screen.findByTestId("plan-cancel-error")).toHaveTextContent(
+      /Не вдалося скасувати/,
+    );
+    expect(
+      screen.getByTestId("plan-cancel-confirm-button"),
+    ).toBeInTheDocument();
   });
 });

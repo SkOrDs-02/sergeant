@@ -54,7 +54,10 @@ function unsetEnv(key: string): void {
   delete process.env[key];
 }
 
-import { BillingPortalResponseSchema } from "@sergeant/shared";
+import {
+  BillingPortalResponseSchema,
+  BillingStatusResponseSchema,
+} from "@sergeant/shared";
 
 import { createBillingRouter } from "./billing.js";
 
@@ -150,6 +153,35 @@ describe("billing routes", () => {
         status: "active",
         active: true,
         currentPeriodEnd: "2026-06-01T00:00:00.000Z",
+      },
+    });
+  });
+
+  it("coerces a Postgres bigint and preserves trialing contract fields", async () => {
+    const query = vi.fn().mockResolvedValue({
+      rows: [
+        {
+          id: 42n,
+          provider: "liqpay",
+          plan: "pro",
+          status: "trialing",
+          current_period_end: null,
+        },
+      ],
+    });
+    const app = createTestApp(createQueryPool(query));
+
+    const res = await request(app).get("/api/billing/status");
+
+    expect(res.status).toBe(200);
+    expect(BillingStatusResponseSchema.parse(res.body)).toEqual({
+      subscription: {
+        id: 42,
+        provider: "liqpay",
+        plan: "pro",
+        status: "trialing",
+        active: true,
+        currentPeriodEnd: null,
       },
     });
   });
