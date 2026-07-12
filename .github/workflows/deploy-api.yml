@@ -105,8 +105,9 @@ jobs:
             echo "COOLIFY_DEPLOY_WEBHOOK not set — skipping (image is pushed; deploy manually)."
             exit 0
           fi
+          # Coolify /api/v1/deploy is a GET endpoint (uuid in query string).
           if [ -n "$TOKEN" ]; then
-            curl -fsSL -X POST "$HOOK" -H "Authorization: Bearer $TOKEN"
+            curl -fsSL "$HOOK" -H "Authorization: Bearer $TOKEN"
           else
-            curl -fsSL -X POST "$HOOK"
+            curl -fsSL "$HOOK"
           fi
