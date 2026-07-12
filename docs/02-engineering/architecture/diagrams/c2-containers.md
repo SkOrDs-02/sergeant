@@ -21,17 +21,21 @@ flowchart TB
         Mobile["apps/mobile<br/><i>Expo + RN 0.76</i>"]
     end
 
-    subgraph Railway["Railway (production region: eu-west)"]
+    subgraph Hetzner["Hetzner CX23 + Coolify (ADR-0074)"]
         direction TB
         Server["apps/server<br/><i>Express + better-auth<br/>+ BullMQ workers in-process</i>"]
-        N8N["n8n service<br/><i>cron, mono enrich,<br/>morning briefing</i>"]
-        Console["tools/openclaw<br/><i>Telegram bot (grammy)</i>"]
 
         subgraph DB["Stateful"]
-            PG[("PostgreSQL 16<br/><i>+ pgvector</i>")]
-            R[("Redis<br/><i>BullMQ queues</i>")]
+            PG[("PostgreSQL 18<br/><i>pgvector/pgvector:pg18</i>")]
+            R[("Redis 7.2<br/><i>BullMQ queues</i>")]
         end
     end
+
+    subgraph Railway["Railway (OpenClaw only — поза ADR-0074)"]
+        Console["tools/openclaw<br/><i>Telegram bot (grammy)</i>"]
+    end
+
+    N8N["n8n<br/><i>cron, mono enrich, morning briefing<br/>(self-host; статус — див. observability-нотатки)</i>"]
 
     Anthropic{{"Anthropic API"}}
     Sentry{{"Sentry SaaS"}}
@@ -114,9 +118,9 @@ flowchart TB
 ## Network boundaries
 
 - `User → Web/Mobile/Shell`: HTTPS (Vercel cert / app store).
-- `Web/Mobile → Server`: HTTPS through Vercel proxy → Railway internal HTTP. CSP заблокує усе нелисловане (див. `helmet` setup).
-- `n8n → Server`: same Railway VPC, але запит проходить публічний URL із **internal token** (`INTERNAL_API_KEY`).
-- `Server → Postgres / Redis`: Railway internal network, `*.railway.internal` DNS.
+- `Web/Mobile → Server`: HTTPS через Vercel edge-proxy (env `BACKEND_URL`) → Coolify Traefik → app. CSP заблокує усе нелисловане (див. `helmet` setup). ⚠️ ланцюг `Vercel edge → Traefik → app` (кілька hop-ів) впливає на `TRUST_PROXY` — калібрування у ADR-0074 позначене TBD.
+- `n8n → Server`: запит проходить публічний URL із **internal token** (`INTERNAL_API_KEY`).
+- `Server → Postgres / Redis`: Coolify internal Docker network (той самий VPS).
 
 ## Деталі деплоя
 

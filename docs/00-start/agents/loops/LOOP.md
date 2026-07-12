@@ -104,7 +104,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 
 ### deploy-watch
 
-- **Goal:** React to deploy health, Sentry alerts, env drift, Railway incidents.
+- **Goal:** React to deploy health, Sentry alerts, env drift, Coolify/infra incidents.
 - **Phases:** detect → classify → page-human → file-postmortem.
 - **Gates:** prod outage, secret rotation, DB migration on prod.
 - **Hard rules:** #6, #21.

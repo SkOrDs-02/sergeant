@@ -18,7 +18,7 @@ flowchart TB
         Console["tools/openclaw<br/><i>Telegram бот (ops + marketing)</i>"]
     end
 
-    Postgres[("🗄️ PostgreSQL<br/><i>Railway managed</i>")]
+    Postgres[("🗄️ PostgreSQL 18<br/><i>Coolify (Hetzner), pgvector</i>")]
     Redis[("⚡ Redis<br/><i>BullMQ queues</i>")]
     Anthropic{{"🤖 Anthropic Claude API<br/><i>chat, coach, weekly-digest</i>"}}
     Sentry{{"🔭 Sentry<br/><i>error & perf telemetry</i>"}}
@@ -62,7 +62,7 @@ flowchart TB
 
 ## Зауваження
 
-- Всі external systems — managed: Railway (Postgres, Redis, n8n self-host), Vercel (web hosting), Sentry SaaS, Anthropic SaaS, Monobank — банк-партнер.
+- Хостинг: бекенд (API + Postgres + Redis) — Hetzner CX23 + Coolify (self-host PaaS, [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md)); Vercel (web hosting + edge-proxy); Sentry SaaS, Anthropic SaaS, Monobank — банк-партнер. OpenClaw-бот лишається на Railway.
 - Sergeant як software system НЕ зберігає секрети у браузері; cookies сесії — `httpOnly` + `secure` (Better Auth standard).
 - `tools/openclaw` — окремий surface для внутрішніх ops/marketing задач, не для kінцевого користувача.
 - `apps/mobile-shell` обгортає `apps/web` через Capacitor; це той самий фронтенд-bundle, тільки з нативними API (camera, push).

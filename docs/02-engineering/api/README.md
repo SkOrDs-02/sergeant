@@ -51,7 +51,7 @@ npx @redocly/cli preview-docs docs/02-engineering/api/openapi.json
 
 | Path                                                       | Чому                                                                                |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `/livez`, `/readyz`, `/startupz`, `/health`, `/healthz`    | Kubernetes/Railway probes; не product API — споживаються лише оркестратором/uptime. |
+| `/livez`, `/readyz`, `/startupz`, `/health`, `/healthz`    | Оркестратор/uptime probes (Coolify Traefik + external); не product API. |
 | `/health/liveness`, `/health/readiness`, `/health/startup` | Альтернативні шляхи тих самих probe-ів. Семантично дублюються з `*z`-варіантами.    |
 | `/health/workers`                                          | Внутрішня діагностика воркерів. Не для клієнтів.                                    |
 | `/metrics`                                                 | Prom-scrape endpoint. Не JSON, не для клієнтів.                                     |

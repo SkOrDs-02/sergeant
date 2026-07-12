@@ -47,7 +47,7 @@
 | Термін                | Що це                                                                                             |
 | --------------------- | ------------------------------------------------------------------------------------------------- |
 | **apps/web**          | Frontend (React + Vite, PWA). Деплой — Vercel.                                                    |
-| **apps/server**       | Backend (Express, Drizzle). Деплой — Railway через `Dockerfile.api`.                              |
+| **apps/server**       | Backend (Express, Drizzle). Деплой — Hetzner + Coolify (образ `ghcr.io/.../sergeant-api`, `Dockerfile.api`; ADR-0074). |
 | **apps/mobile**       | Expo / React Native застосунок (NativeWind).                                                      |
 | **apps/mobile-shell** | Тонка нативна оболонка навколо web (Capacitor-стиль), MMKV-сховище.                               |
 | **api-client**        | `@sergeant/api-client` — типізований HTTP-клієнт; контракт server ↔ client ↔ test (Hard Rule #3). |

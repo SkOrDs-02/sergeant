@@ -211,7 +211,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 - **Frontend:** Vercel (preview deploy on each PR; free tier may rate-limit).
 - **Backend:** Hetzner CX23 VPS під Coolify (self-hosted PaaS) via `Dockerfile.api` — образ білдить GitHub Actions (`deploy-api.yml`) → `ghcr.io`, Coolify тягне й деплоїть. Pre-deploy: `node dist-server/migrate.js` (Coolify `pre_deployment_command`). Health endpoint: `/health`. Міграції потребують `MIGRATE_DATABASE_URL`. Топологія та rationale — [ADR-0074](./docs/04-governance/adr/0074-hosting-hetzner-coolify.md) (superseded ADR-0009 у частині бекенду). Railway виведено з експлуатації.
-- **Test users:** primary test-user ID живе поза репо (Railway variables / локальний `.env`-нотатник власника) — репо публічне, не комітьте реальні user ID чи фінансову топологію.
+- **Test users:** primary test-user ID живе поза репо (Coolify env vars / локальний `.env`-нотатник власника) — репо публічне, не комітьте реальні user ID чи фінансову топологію.
 
 ## See also
 

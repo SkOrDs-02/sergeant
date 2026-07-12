@@ -54,7 +54,7 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 - **Testing:** Vitest, Testing Library, MSW (API mocking), Testcontainers (real Postgres in tests), Playwright (E2E)
 - **Linting:** ESLint 9, Prettier, commitlint, Husky (pre-commit hooks)
 - **CI/CD:** GitHub Actions
-- **Deploy:** Vercel (frontend), Railway (backend + PostgreSQL)
+- **Deploy:** Vercel (frontend), Hetzner CX23 + Coolify (backend: API + PostgreSQL + Redis; see [ADR-0074](docs/04-governance/adr/0074-hosting-hetzner-coolify.md))
 - **Monitoring:** Sentry (errors), PostHog (analytics), Grafana (metrics), Web Vitals
 - **Telegram bot:** grammy + Anthropic (internal ops)
 
@@ -65,7 +65,7 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 | Directory           | What it is               | Stack                   | Deployed to             |
 | ------------------- | ------------------------ | ----------------------- | ----------------------- |
 | `apps/web`          | Web app (primary UI)     | React + Vite + Tailwind | Vercel                  |
-| `apps/server`       | API server (backend)     | Express + PostgreSQL    | Railway                 |
+| `apps/server`       | API server (backend)     | Express + PostgreSQL    | Hetzner + Coolify       |
 | `apps/mobile`       | Mobile app (native)      | Expo + React Native     | App Store / Google Play |
 | `apps/mobile-shell` | Mobile app (web wrapper) | Capacitor               | App Store / Google Play |
 | `tools/openclaw`    | Telegram bot (internal)  | grammy + Anthropic      | Railway                 |
@@ -125,7 +125,7 @@ Architecture overview lives in [docs/02-engineering/architecture/README.md](./do
                     ▼
         ┌───────────────────────┐     ┌─────────────────┐
         │   PostgreSQL          │     │  tools/openclaw   │
-        │ (Railway / Docker)    │     │  (Telegram bot)  │
+        │ (Coolify / pgvector)  │     │  (Telegram bot)  │
         └───────────────────────┘     └─────────────────┘
 ```
 
@@ -285,7 +285,7 @@ Test stacks by surface:
 | Service                  | Deployed to                          | How                                                            |
 | ------------------------ | ------------------------------------ | -------------------------------------------------------------- |
 | Web (frontend)           | Vercel                               | Auto preview deploy on every PR, production on merge to `main` |
-| Server (API)             | Railway                              | Dockerfile.api, pre-deploy migrations                          |
+| Server (API)             | Hetzner CX23 + Coolify               | `deploy-api.yml` → `ghcr.io/.../sergeant-api` → Coolify; `Dockerfile.api`, pre-deploy migrate (ADR-0074) |
 | Mobile (Expo)            | EAS Build → TestFlight / Google Play | Via Expo Application Services                                  |
 | Mobile Shell (Capacitor) | App Store / Google Play              | Via Capacitor build                                            |
 

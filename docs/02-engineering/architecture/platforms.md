@@ -69,7 +69,7 @@
 **Build & Deploy:**
 
 - Statika на Vercel (edge nodes, immutable cache, preview deploys на кожен PR)
-- `/api/*` поінтовує на Railway (`apps/server`)
+- `/api/*` поінтовує на бекенд `apps/server` (Hetzner CX23 + Coolify; Vercel env `BACKEND_URL` — див. [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md))
 
 **CI/CD:** `ci.yml` — lint, typecheck, vitest, build. Preview-déploі на Vercel працюють коректно після fix `vercel.json#outputDirectory → apps/server/dist` (див. PR [#508](https://github.com/Skords-01/Sergeant/pull/508)).
 
