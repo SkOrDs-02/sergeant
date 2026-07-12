@@ -2,8 +2,8 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { Dispatch, RefObject, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
@@ -59,6 +59,51 @@ export const PRESETS: readonly Preset[] = [
   },
 ];
 
+// Popup menu width + the gap kept from either screen edge (round-2 UI
+// audit M6).
+const MENU_WIDTH_PX = 240;
+const MENU_EDGE_GAP_PX = 8;
+
+/**
+ * `left` offset (in px, relative to `trigger`'s own positioned ancestor —
+ * both triggers below are wrapped in `position: relative`) that keeps a
+ * `MENU_WIDTH_PX`-wide popup fully on-screen. Centers under the trigger by
+ * default, then slides just enough to clear whichever screen edge the
+ * trigger is closest to.
+ *
+ * `position: fixed` was tried first and rejected: this page renders inside
+ * a route wrapper with its own `transform` (the `.page-enter` entry
+ * animation — see `Sheet.tsx`'s identical note), which makes `fixed`
+ * resolve against that ancestor's box instead of the real viewport. Live
+ * 375px verification showed the menu landing off-screen either way until
+ * this JS-computed `absolute` offset replaced both attempts.
+ */
+function clampedMenuLeftPx(trigger: HTMLElement): number {
+  const rect = trigger.getBoundingClientRect();
+  const centered = rect.width / 2 - MENU_WIDTH_PX / 2;
+  const min = MENU_EDGE_GAP_PX - rect.left;
+  const max = window.innerWidth - MENU_EDGE_GAP_PX - MENU_WIDTH_PX - rect.left;
+  return Math.min(Math.max(centered, min), max);
+}
+
+/**
+ * Reads `triggerRef.current` in a `useLayoutEffect`, not during render —
+ * refs are an escape hatch for effects/handlers, and the project's
+ * `react-hooks/refs` lint rule (React Compiler) correctly flags a direct
+ * `ref.current` read in JSX as unsafe to rely on for the next render.
+ */
+function useClampedMenuLeft(
+  open: boolean,
+  triggerRef: RefObject<HTMLElement | null>,
+): number {
+  const [left, setLeft] = useState(0);
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+    setLeft(clampedMenuLeftPx(triggerRef.current));
+  }, [open, triggerRef]);
+  return left;
+}
+
 interface DailyPlanGoalSelectorsProps {
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
@@ -82,9 +127,11 @@ export function DailyPlanGoalSelectors({
 }: DailyPlanGoalSelectorsProps) {
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
   const presetMenuRef = useRef<HTMLDivElement | null>(null);
+  const presetMenuLeft = useClampedMenuLeft(presetMenuOpen, presetMenuRef);
 
   const [tdeeMenuOpen, setTdeeMenuOpen] = useState(false);
   const tdeeMenuRef = useRef<HTMLDivElement | null>(null);
+  const tdeeMenuLeft = useClampedMenuLeft(tdeeMenuOpen, tdeeMenuRef);
   const { biometrics } = useBiometrics();
 
   const tdeeTargets = useMemo<Record<
@@ -190,11 +237,8 @@ export function DailyPlanGoalSelectors({
         {tdeeMenuOpen && (
           <div
             role="menu"
-            className={cn(
-              "absolute right-0 top-full mt-1 z-10 min-w-[240px]",
-              "max-w-[calc(100vw-2rem)]",
-              "rounded-xl border border-line bg-bg shadow-lg overflow-hidden",
-            )}
+            className="absolute top-full mt-1 z-10 rounded-xl border border-line bg-bg shadow-lg overflow-hidden"
+            style={{ width: MENU_WIDTH_PX, left: tdeeMenuLeft }}
           >
             {tdeeTargets ? (
               NUTRITION_GOALS.map((goal) => {
@@ -261,10 +305,10 @@ export function DailyPlanGoalSelectors({
         {presetMenuOpen && (
           <div
             role="menu"
-            className={cn(
-              "absolute right-0 top-full mt-1 z-10 min-w-[200px]",
-              "rounded-xl border border-line bg-bg shadow-lg overflow-hidden",
-            )}
+            // Same fix as the TDEE menu above (round-2 UI audit M6) — this
+            // menu previously had no width cap at all.
+            className="absolute top-full mt-1 z-10 rounded-xl border border-line bg-bg shadow-lg overflow-hidden"
+            style={{ width: MENU_WIDTH_PX, left: presetMenuLeft }}
           >
             {PRESETS.map((preset) => (
               <button

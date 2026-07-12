@@ -47,7 +47,12 @@ export function ScoreButton({
       // is in the tab sequence; all others are skipped.
       tabIndex={tabbable ? 0 : -1}
       className={cn(
-        "focus-ring flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl border text-style-caption transition-[background-color,border-color,color,opacity]",
+        // `min-h-20` reserves room for a 2-line caption up front and
+        // `justify-center` centers the number+caption within it, so a
+        // one-line tile (stretched to match a 2-line sibling via the row's
+        // default `align-items: stretch`) doesn't end up with its content
+        // pinned to the top and a dead gap below (round-2 UI audit M2).
+        "focus-ring flex-1 min-h-20 flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border text-style-caption transition-[background-color,border-color,color,opacity]",
         selected
           ? "bg-success-strong text-white border-success-strong"
           : "border-line text-subtle hover:border-success/50 hover:text-text",

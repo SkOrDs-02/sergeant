@@ -101,7 +101,7 @@ describe("WaterTrackerCard", () => {
       screen.getByLabelText("Підтвердити скидання води за сьогодні"),
     ).toBeInTheDocument();
     act(() => {
-      vi.advanceTimersByTime(2500);
+      vi.advanceTimersByTime(5000);
     });
     expect(
       screen.getByLabelText("Скинути воду за сьогодні"),

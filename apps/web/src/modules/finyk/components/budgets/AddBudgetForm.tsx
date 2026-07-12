@@ -363,9 +363,13 @@ function AddBudgetFormComponent({
             )}
           </div>
           <Input
+            id="budget-goal-target-date"
             type="date"
-            placeholder="Дата завершення"
-            aria-label="Дата завершення"
+            // Visible label, not `placeholder` — iOS Safari's native
+            // `type="date"` control never renders a placeholder at all
+            // (round-2 UI audit M1), so the field silently had no visible
+            // hint on the one platform where it mattered most.
+            label="Дата завершення"
             className="w-full min-w-0"
             disabled={isSubmitting}
             {...goalForm.register("targetDate")}

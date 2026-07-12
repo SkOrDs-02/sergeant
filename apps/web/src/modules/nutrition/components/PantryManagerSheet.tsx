@@ -178,7 +178,13 @@ export function PantryManagerSheet({
           variant="nutrition"
           aria-pressed={pantryForm.mode === "create"}
           className={cn(
-            "w-full h-12 min-h-[44px]",
+            // `variant="nutrition"` ships its own lime glow shadow
+            // (hover + a persistent one in dark mode) — suppressed here so
+            // this sheet's two nutrition buttons read as one visual
+            // language instead of one glowing and one not (round-2 UI
+            // audit M4). Local override only — `Button.tsx` itself is
+            // shared across every module and out of scope here.
+            "w-full h-12 min-h-[44px] shadow-none hover:shadow-none dark:shadow-none",
             pantryForm.mode === "create" && "ring-2 ring-nutrition/60",
           )}
           onClick={onBeginCreate}
@@ -241,7 +247,8 @@ export function PantryManagerSheet({
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Button
               type="button"
-              className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover"
+              variant="nutrition"
+              className="h-12 min-h-[44px] shadow-none hover:shadow-none dark:shadow-none"
               onClick={() => {
                 const name = String(pantryForm.name || "").trim();
                 if (!name) {

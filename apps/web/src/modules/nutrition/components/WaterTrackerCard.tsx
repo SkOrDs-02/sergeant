@@ -109,28 +109,36 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
         ))}
       </div>
 
-      {/* Custom amount + undo */}
-      <div className="mt-2 flex items-center gap-1.5">
-        <Input
-          value={customMl}
-          onChange={(e) => setCustomMl(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleCustomAdd();
-            }
-          }}
-          placeholder="мл"
-          inputMode="numeric"
-          className="h-11 flex-1"
-          aria-label="Свій об'єм у мл"
-        />
+      {/* Custom amount + undo. `flex-wrap` — if the row (input + 3 possible
+          buttons) genuinely can't fit at 320px, it wraps to a second line
+          instead of clipping (round-2 UI audit M5). */}
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        {/* `Input`'s `className` prop lands on the inner `<input>`, not its
+            own wrapping div — that wrapper is the actual flex item in this
+            row, so it needs its own `flex-1 min-w-0` to be the thing that
+            shrinks (round-2 UI audit M5). */}
+        <div className="flex-1 min-w-0">
+          <Input
+            value={customMl}
+            onChange={(e) => setCustomMl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleCustomAdd();
+              }
+            }}
+            placeholder="мл"
+            inputMode="numeric"
+            className="h-11 w-full"
+            aria-label="Свій об'єм у мл"
+          />
+        </div>
         <button
           type="button"
           onClick={handleCustomAdd}
           disabled={!customMl || Number(customMl) <= 0}
           className={cn(
-            "h-11 px-3 rounded-xl text-style-caption transition-colors",
+            "h-11 px-3 rounded-xl text-style-caption transition-colors shrink-0 whitespace-nowrap",
             "bg-info-soft text-info-strong dark:text-info border border-info/20",
             "hover:bg-info/20 disabled:opacity-50 active:scale-95",
           )}
@@ -142,7 +150,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             type="button"
             onClick={handleUndo}
             title="Відмінити останнє додавання"
-            className="h-11 px-3 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors"
+            className="h-11 px-3 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors shrink-0 whitespace-nowrap"
             aria-label={`Відмінити останнє додавання (${lastAddedMl} мл)`}
           >
             ↶ {lastAddedMl}
@@ -152,9 +160,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           <button
             type="button"
             title={
-              resetPending
-                ? "Підтвердити скидання"
-                : "Скинути воду за сьогодні"
+              resetPending ? "Підтвердити скидання" : "Скинути воду за сьогодні"
             }
             onClick={() => {
               if (resetPending) {
@@ -171,14 +177,18 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
                   clearTimeout(resetTimerRef.current);
                 }
                 setResetPending(true);
+                // 5s (was 2.5s) — round-2 UI audit M5: on a 320-375px
+                // screen the confirm label ("Скинути?") is wider than the
+                // idle icon, and 2.5s wasn't reliably enough time to
+                // register the wider target and tap it.
                 resetTimerRef.current = window.setTimeout(() => {
                   setResetPending(false);
                   resetTimerRef.current = null;
-                }, 2500);
+                }, 5000);
               }
             }}
             className={cn(
-              "h-11 px-3 rounded-xl text-style-caption transition-colors border",
+              "h-11 px-3 rounded-xl text-style-caption transition-colors border shrink-0 whitespace-nowrap",
               resetPending
                 ? "text-danger border-danger/40"
                 : "text-subtle hover:text-danger border-line",
