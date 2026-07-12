@@ -192,6 +192,7 @@ export function DailyPlanGoalSelectors({
             role="menu"
             className={cn(
               "absolute right-0 top-full mt-1 z-10 min-w-[240px]",
+              "max-w-[calc(100vw-2rem)]",
               "rounded-xl border border-line bg-bg shadow-lg overflow-hidden",
             )}
           >

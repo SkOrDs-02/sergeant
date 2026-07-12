@@ -175,9 +175,10 @@ export function PantryManagerSheet({
       <div className="mb-4">
         <Button
           type="button"
+          variant="nutrition"
           aria-pressed={pantryForm.mode === "create"}
           className={cn(
-            "w-full h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover",
+            "w-full h-12 min-h-[44px]",
             pantryForm.mode === "create" && "ring-2 ring-nutrition/60",
           )}
           onClick={onBeginCreate}
