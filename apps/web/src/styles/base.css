@@ -24,7 +24,14 @@
   #root {
     width: 100%;
     height: 100%;
+    /* `--app-dvh` is kept in sync with `visualViewport.height` by
+       `useAppViewportHeight` (RootLayout): iOS Safari resolves a stale
+       `100dvh` after loads/route changes until the next scroll gesture,
+       which leaves a page-coloured strip below the shell and offsets tap
+       hit-testing near the bottom edge (round-3 UI audit). The plain
+       `100dvh` line stays as the pre-JS / non-iOS fallback. */
     height: 100dvh;
+    height: var(--app-dvh, 100dvh);
     overscroll-behavior: none;
   }
 

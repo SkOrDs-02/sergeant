@@ -435,6 +435,16 @@
   height: calc(60px + env(safe-area-inset-bottom, 0px));
 }
 
+@utility h-app-dvh {
+  /* Viewport-height shell that tracks the REAL visible height: `--app-dvh`
+     follows `visualViewport.height` (useAppViewportHeight in RootLayout),
+     sidestepping iOS Safari's lazily-updated `100dvh` (round-3 UI audit —
+     stale dvh left a strip below full-height shells and shifted tap
+     targets). Use instead of `h-dvh` on top-level page shells. */
+  height: 100dvh;
+  height: var(--app-dvh, 100dvh);
+}
+
 @utility bottom-nav-shell {
   /* Docked flush against the screen bottom in both browser and PWA
      standalone — no horizontal insets, flat bottom, rounded only at the
