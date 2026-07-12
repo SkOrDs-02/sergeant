@@ -1,8 +1,30 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-12",
   "prs": [
+    {
+      "number": 4521,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "PENDING",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0066-entropy-janitors.md",
+        "docs/04-governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
+      ]
+    },
+    {
+      "number": 273,
+      "title": "test(root): increase coverage and reconcile planning drift",
+      "merged_at": "2026-07-12T23:11:55Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/04-governance/adr/0073-dualwrite-generic-framework.md",
+        "docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
+        "docs/90-work/initiatives/0010-revenue-first-launch.md"
+      ]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
@@ -185,17 +207,6 @@
       "touchedDocs": [
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
-      ]
-    },
-    {
-      "number": 4521,
-      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
-      "merged_at": "PENDING",
-      "author": "@Skords-01",
-      "touchedDocs": [
-        "docs/04-governance/adr/0066-entropy-janitors.md",
-        "docs/04-governance/governance/entropy-janitors/README.md",
-        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     }
   ]

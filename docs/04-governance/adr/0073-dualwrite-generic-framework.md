@@ -1,6 +1,6 @@
 # ADR-0073: Generic dual-write framework для 4 модульних пайплайнів
 
-> **Last touched:** 2026-07-12 by @dimastahov16012003. **Next review:** 2026-10-10.
+> **Last touched:** 2026-07-12 by @github-actions[bot]. **Next review:** 2026-10-10.
 > **Status:** Accepted
 
 - **Status:** Accepted
@@ -286,3 +286,14 @@ Rollback-важіль: кожен крок — ізольований PR, яки
 - DCRUD-007 — single-flight черга finyk-orchestrator-а (коментар у `apps/web/src/modules/finyk/lib/sqliteWriter/index.ts`).
 - PR #057{r,f,k}-tombstone — residualImport-и зі `STALE_TIMESTAMP`-патерном.
 - ADR-0004 (LWW), ADR-0011 (local-first), ADR-0064 (серверний реєстр apply-функцій), ADR-0065 (sync-v2 outbox, суміжна межа для routine side-effect-а).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                      | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------- | ---------- |
+| [#273](https://github.com/Skords-01/Sergeant/pull/273) | test(root): increase coverage and reconcile planning drift | 2026-07-12 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

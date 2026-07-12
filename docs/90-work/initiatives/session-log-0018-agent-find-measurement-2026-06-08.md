@@ -1,6 +1,6 @@
 # Session log — 0018 `agent:find` lexical measurement (2026-06-08)
 
-> **Last touched:** 2026-06-22 by @claude. **Next review:** 2026-09-20.
+> **Last touched:** 2026-07-12 by @github-actions[bot]. **Next review:** 2026-10-10.
 > **Status:** Reference
 
 Лог одного заміру для останнього DONE-критерію [Ініціативи 0018](./archive/_0018-agent-semantic-retrieval.md):
@@ -125,5 +125,4 @@ playbook / export), у який і треба тицьнути носом.
 | [#3573](https://github.com/Skords-01/Sergeant/pull/3573) | docs(agents): archive initiative 0018 (agent:find, code-complete) | 2026-06-14 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
-
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

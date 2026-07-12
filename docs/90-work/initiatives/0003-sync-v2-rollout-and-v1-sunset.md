@@ -270,3 +270,14 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
 - ~~`packages/shared/src/openapi/registry.ts` — drop entries~~ — **already dropped in PR #076** (together with the schemas above).
 
 **Risk.** Якщо клієнт усе ще встромляє v1 запити після removal — отримує 404 (raw Express), а не 410 Gone. Acceptable після 8-week zero signal або 90-day deprecation window.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                      | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------- | ---------- |
+| [#273](https://github.com/Skords-01/Sergeant/pull/273) | test(root): increase coverage and reconcile planning drift | 2026-07-12 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
