@@ -5,9 +5,18 @@ const { getUserPlanMock } = vi.hoisted(() => ({
   getUserPlanMock: vi.fn(),
 }));
 
-vi.mock("./getUserPlan.js", () => ({
-  getUserPlan: getUserPlanMock,
-}));
+vi.mock("./getUserPlan.js", async () => {
+  // Keep the real `isFounderUser` (env-var driven, exercised by the founder
+  // tests below) while only stubbing `getUserPlan` itself.
+  const actual =
+    await vi.importActual<typeof import("./getUserPlan.js")>(
+      "./getUserPlan.js",
+    );
+  return {
+    ...actual,
+    getUserPlan: getUserPlanMock,
+  };
+});
 
 /**
  * `requirePlan` читає `env.STRIPE_ENABLED` із Zod-схеми (audit 2026-06-11

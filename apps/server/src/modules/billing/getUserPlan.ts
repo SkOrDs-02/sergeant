@@ -19,9 +19,12 @@ export interface UserPlanResult {
 /**
  * Founder Better-Auth user IDs get a permanent Pro entitlement, independent
  * of any subscriptions row. Same allowlist as the AI-quota bypass
- * (`chat/aiQuota.ts` isFounderUser) — one env var, one meaning.
+ * (`chat/aiQuota.ts` isFounderUser) — one env var, one meaning. Exported so
+ * every plan-reading code path (`requirePlan` gate, `/api/billing/status`
+ * route) shares this single check instead of re-implementing it — a prior
+ * duplication let the two paths drift out of sync (round-2 UI audit S1).
  */
-function isFounderUser(userId: string): boolean {
+export function isFounderUser(userId: string): boolean {
   const raw = process.env["AI_QUOTA_FOUNDER_IDS"];
   if (!raw) return false;
   return raw.split(",").some((id) => id.trim() !== "" && id.trim() === userId);

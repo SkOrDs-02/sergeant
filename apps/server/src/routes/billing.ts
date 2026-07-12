@@ -31,6 +31,7 @@ import {
   verifyStripeSignature,
   processStripeWebhook,
 } from "../modules/billing/index.js";
+import { isFounderUser } from "../modules/billing/getUserPlan.js";
 import { ensurePlataPubkey, plataProvider } from "../modules/billing/plata.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
 import { logger } from "../obs/logger.js";
@@ -154,10 +155,31 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
     "/api/billing/status",
     requireSession(),
     async (req: AuthedRequest, res: Response) => {
+      const userId = req.user!.id;
+      // Founder bypass first — same `isFounderUser` check `requirePlan()`
+      // gates on, so a founder never sees a paywall the status read didn't
+      // also clear (round-2 UI audit S1: these two paths used to diverge
+      // because `getUserPlan()` had the bypass but this route read straight
+      // from `subscriptions` instead).
+      if (isFounderUser(userId)) {
+        res.json(
+          BillingStatusResponseSchema.parse({
+            subscription: {
+              id: null,
+              provider: "manual",
+              plan: "pro",
+              status: "active",
+              active: true,
+              currentPeriodEnd: null,
+            },
+          }),
+        );
+        return;
+      }
       // Уніфіковано через subscriptions — читаємо будь-яким провайдером
       // (усі три віддають ту саму serialize-форму з таблиці).
       const payload = BillingStatusResponseSchema.parse(
-        await liqpayProvider.getSubscriptionStatus(pool, req.user!.id),
+        await liqpayProvider.getSubscriptionStatus(pool, userId),
       );
       res.json(payload);
     },
