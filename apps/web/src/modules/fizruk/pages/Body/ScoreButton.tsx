@@ -42,32 +42,45 @@ export function ScoreButton({
       type="button"
       role="radio"
       aria-checked={selected}
+      aria-label={label}
       onClick={() => onClick(value)}
       // In a roving tabIndex pattern the selected item (or first if none)
       // is in the tab sequence; all others are skipped.
       tabIndex={tabbable ? 0 : -1}
+      // Round-3 UI audit T2: tile shows only the digit — the word label
+      // moved to `aria-label` + the selected-level caption rendered once
+      // under the whole row (`Body.tsx`), not repeated inside each tile.
       className={cn(
-        // `min-h-20` reserves room for a 2-line caption up front and
-        // `justify-center` centers the number+caption within it, so a
-        // one-line tile (stretched to match a 2-line sibling via the row's
-        // default `align-items: stretch`) doesn't end up with its content
-        // pinned to the top and a dead gap below (round-2 UI audit M2).
-        "focus-ring flex-1 min-h-20 flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border text-style-caption transition-[background-color,border-color,color,opacity]",
+        "focus-ring flex-1 aspect-square min-h-11 flex items-center justify-center rounded-xl border text-style-title transition-[background-color,border-color,color]",
         selected
           ? "bg-success-strong text-white border-success-strong"
           : "border-line text-subtle hover:border-success/50 hover:text-text",
       )}
       title={label}
     >
-      <span className="text-base leading-none">{value}</span>
-      <span
-        className={cn(
-          "text-style-caption leading-tight text-center break-words px-0.5",
-          selected ? "text-white/80" : "text-muted",
-        )}
-      >
-        {label}
-      </span>
+      {value}
     </button>
+  );
+}
+
+/** Renders the chosen level's name once under a `ScoreButton` row, since
+ * the tiles themselves now show only the digit (round-3 UI audit T2). */
+export function SelectedLevelLabel({
+  shortLabel,
+  value,
+  labels,
+}: {
+  shortLabel: string;
+  value: number | null;
+  labels: readonly string[];
+}) {
+  if (value == null) return null;
+  return (
+    <p
+      className="mt-1.5 text-style-caption text-subtle text-center"
+      aria-live="polite"
+    >
+      {shortLabel}: {labels[value]}
+    </p>
   );
 }

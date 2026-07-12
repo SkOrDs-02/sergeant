@@ -186,6 +186,7 @@ function AddBudgetFormComponent({
   const goalSavedError = goalForm.formState.errors.savedAmount?.message;
 
   const goalEmoji = goalForm.watch("emoji");
+  const goalTargetDate = goalForm.watch("targetDate");
   const limitCategoryId = limitForm.watch("categoryId");
 
   const isSubmitting =
@@ -362,18 +363,29 @@ function AddBudgetFormComponent({
               </p>
             )}
           </div>
-          <Input
-            id="budget-goal-target-date"
-            type="date"
-            // Visible label, not `placeholder` — iOS Safari's native
-            // `type="date"` control never renders a placeholder at all
-            // (round-2 UI audit M1), so the field silently had no visible
-            // hint on the one platform where it mattered most.
-            label="Дата завершення"
-            className="w-full min-w-0"
-            disabled={isSubmitting}
-            {...goalForm.register("targetDate")}
-          />
+          <div className="relative">
+            <Input
+              id="budget-goal-target-date"
+              type="date"
+              aria-label="Дата завершення"
+              // iOS Safari's native `type="date"` never renders a
+              // `placeholder`, and the owner rejected an external label
+              // (round-2 M1) as inconsistent with the sibling fields —
+              // wants the same in-field placeholder look. `text-transparent`
+              // hides the browser's own empty-state guide text (which
+              // inherits `color`) while a value is unset; the overlay
+              // below fills that same spot, same as `placeholder:` on
+              // the text/number inputs above.
+              className={cn(!goalTargetDate && "text-transparent")}
+              disabled={isSubmitting}
+              {...goalForm.register("targetDate")}
+            />
+            {!goalTargetDate && (
+              <span className="pointer-events-none absolute inset-0 flex items-center px-4 text-base text-subtle/70">
+                Дата завершення
+              </span>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button
               type="submit"

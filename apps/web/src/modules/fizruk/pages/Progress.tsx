@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
@@ -245,35 +246,47 @@ export function Progress({ onNavigate }: ProgressProps) {
                 : "Аналітика тренувань"}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="text-center">
-              <div className="text-xs text-subtle">PR</div>
-              <div className="text-base font-extrabold text-text tabular-nums">
-                {quickStats.prsCount}
-              </div>
+          <div className="text-center">
+            <div className="text-xs text-subtle">PR</div>
+            <div className="text-base font-extrabold text-text tabular-nums">
+              {quickStats.prsCount}
             </div>
-            <button
-              type="button"
-              onClick={() => onNavigate("measurements")}
-              className="focus-ring touch-target text-center rounded-xl -m-1 p-1"
-            >
-              <div className="text-xs text-subtle">
-                {messages.fizruk.progress.measurementsCount}
-              </div>
-              <div className="text-base font-extrabold text-text tabular-nums">
-                {entries.length}{" "}
-                <span className="text-style-caption">
-                  {pluralize(
-                    entries.length,
-                    messages.fizruk.progress.measurementOne,
-                    messages.fizruk.progress.measurementFew,
-                    messages.fizruk.progress.measurementMany,
-                  )}
-                </span>
-              </div>
-            </button>
           </div>
         </div>
+
+        {/* Round-3 UI audit T3: the old version was clickable text with no
+            visual affordance — owner: "не зрозуміло що то кнопка". Now a
+            bordered card-button with icon/title/subtitle/chevron, same
+            shape as other tappable rows in the module. */}
+        <button
+          type="button"
+          onClick={() => onNavigate("measurements")}
+          className="focus-ring touch-target w-full flex items-center gap-3 rounded-2xl border border-line bg-panelHi hover:bg-panel active:scale-[0.99] transition-[background-color,transform] px-4 py-3 text-left"
+        >
+          <div className="shrink-0 w-9 h-9 rounded-xl bg-fizruk/10 text-fizruk-strong dark:text-fizruk flex items-center justify-center">
+            <Icon name="ruler" size="md" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-style-label text-text">
+              {messages.fizruk.progress.measurementsTitle}
+            </div>
+            <div className="text-style-caption text-subtle truncate">
+              {messages.fizruk.progress.measurementsSubtitle} · {entries.length}{" "}
+              {pluralize(
+                entries.length,
+                messages.fizruk.progress.measurementOne,
+                messages.fizruk.progress.measurementFew,
+                messages.fizruk.progress.measurementMany,
+              )}
+            </div>
+          </div>
+          <Icon
+            name="chevron-right"
+            size="sm"
+            className="shrink-0 text-subtle"
+            aria-hidden
+          />
+        </button>
 
         {!hasAny && (
           <EmptyState

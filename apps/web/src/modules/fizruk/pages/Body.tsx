@@ -19,7 +19,12 @@ import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { CollapsibleTrendCard } from "./Body/CollapsibleTrendCard";
 import { JournalSection } from "./Body/JournalSection";
-import { ENERGY_LABELS, MOOD_LABELS, ScoreButton } from "./Body/ScoreButton";
+import {
+  ENERGY_LABELS,
+  MOOD_LABELS,
+  ScoreButton,
+  SelectedLevelLabel,
+} from "./Body/ScoreButton";
 import { firstValidValue, lastValidValue } from "./Body/trendUtils";
 import { RecoveryFocusCard } from "../components/RecoveryFocusCard";
 import { safeRemoveLS } from "@shared/lib/storage/storage";
@@ -451,6 +456,11 @@ export function Body({ onOpenAtlas }: BodyProps) {
                   />
                 ))}
               </div>
+              <SelectedLevelLabel
+                shortLabel={messages.fizruk.body.energyShort}
+                value={energyLevel}
+                labels={ENERGY_LABELS}
+              />
             </div>
 
             <div>
@@ -485,6 +495,11 @@ export function Body({ onOpenAtlas }: BodyProps) {
                   />
                 ))}
               </div>
+              <SelectedLevelLabel
+                shortLabel={messages.fizruk.body.mood}
+                value={moodScore}
+                labels={MOOD_LABELS}
+              />
             </div>
 
             <div>
