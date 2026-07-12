@@ -180,7 +180,9 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     const { onSubmit } = setup();
     fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
 
-    fireEvent.click(screen.getByRole("button", { name: /Емодзі 🏠/ }));
+    fireEvent.change(screen.getByLabelText("Іконка цілі"), {
+      target: { value: "🏠" },
+    });
 
     fireEvent.change(screen.getByLabelText("Назва цілі"), {
       target: { value: "Хата" },

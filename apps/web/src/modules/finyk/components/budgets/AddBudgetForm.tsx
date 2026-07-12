@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms/useApiForm";
 import { messages } from "@shared/i18n/uk";
@@ -42,17 +43,17 @@ interface AddBudgetFormProps {
   onCancel: () => void;
 }
 
-const GOAL_EMOJIS = [
-  "🎯",
-  "🏠",
-  "🚗",
-  "✈️",
-  "💻",
-  "📱",
-  "💍",
-  "🎓",
-  "🏋️",
-  "💰",
+const GOAL_EMOJI_OPTIONS: readonly { emoji: string; label: string }[] = [
+  { emoji: "🎯", label: "Ціль" },
+  { emoji: "🏠", label: "Житло" },
+  { emoji: "🚗", label: "Авто" },
+  { emoji: "✈️", label: "Подорож" },
+  { emoji: "💻", label: "Техніка" },
+  { emoji: "📱", label: "Гаджет" },
+  { emoji: "💍", label: "Подія" },
+  { emoji: "🎓", label: "Освіта" },
+  { emoji: "🏋️", label: "Спорт" },
+  { emoji: "💰", label: "Заощадження" },
 ];
 
 // Item #8 round-13: form-engine — `useApiForm` + zod для inline-create
@@ -197,25 +198,27 @@ function AddBudgetFormComponent({
           type="button"
           onClick={() => setFormType("limit")}
           className={cn(
-            "flex-1 py-2 text-style-label rounded-xl border transition-colors",
+            "flex-1 py-2 flex items-center justify-center gap-1.5 text-style-label rounded-xl border transition-colors",
             formType === "limit"
               ? "bg-primary border-primary text-bg"
               : "border-line text-subtle",
           )}
         >
-          🔴 Ліміт
+          <Icon name="flag" size="sm" />
+          Ліміт
         </button>
         <button
           type="button"
           onClick={() => setFormType("goal")}
           className={cn(
-            "flex-1 py-2 text-style-label rounded-xl border transition-colors",
+            "flex-1 py-2 flex items-center justify-center gap-1.5 text-style-label rounded-xl border transition-colors",
             formType === "goal"
               ? "bg-success-strong border-success-strong text-white"
               : "border-line text-subtle",
           )}
         >
-          🟢 Ціль
+          <Icon name="target" size="sm" />
+          Ціль
         </button>
       </div>
       {formType === "limit" ? (
@@ -290,27 +293,22 @@ function AddBudgetFormComponent({
           className="space-y-3"
           aria-label="Нова ціль бюджету"
         >
-          <div className="flex flex-wrap gap-2">
-            {GOAL_EMOJIS.map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() =>
-                  goalForm.setValue("emoji", e, { shouldDirty: true })
-                }
-                className={cn(
-                  "text-xl p-1.5 rounded-xl border transition-colors",
-                  goalEmoji === e
-                    ? "border-primary bg-primary/10"
-                    : "border-transparent",
-                )}
-                aria-label={`Емодзі ${e}${goalEmoji === e ? " (вибрано)" : ""}`}
-                aria-pressed={goalEmoji === e}
-              >
-                {e}
-              </button>
+          <select
+            className="input-focus-finyk w-full h-10 min-w-0 rounded-xl border border-line bg-bg px-3 text-sm text-text"
+            value={goalEmoji}
+            aria-label="Іконка цілі"
+            onChange={(e) =>
+              goalForm.setValue("emoji", e.target.value, {
+                shouldDirty: true,
+              })
+            }
+          >
+            {GOAL_EMOJI_OPTIONS.map((opt) => (
+              <option key={opt.emoji} value={opt.emoji}>
+                {opt.emoji} {opt.label}
+              </option>
             ))}
-          </div>
+          </select>
           <div>
             <Input
               placeholder="Назва цілі"
@@ -366,7 +364,9 @@ function AddBudgetFormComponent({
           </div>
           <Input
             type="date"
-            aria-label="Дедлайн"
+            placeholder="Дата завершення"
+            aria-label="Дата завершення"
+            className="w-full min-w-0"
             disabled={isSubmitting}
             {...goalForm.register("targetDate")}
           />

@@ -1,6 +1,7 @@
 import { DebtCard } from "../components/DebtCard";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
+import { Card } from "@shared/components/ui/Card";
 import {
   getRecvPaid,
   calcReceivableRemaining,
@@ -40,7 +41,8 @@ export function AssetsAssetsSection({ state }: { state: State }) {
   } = state;
 
   return (
-    <div className="mb-3 space-y-2">
+    <div className="mb-3 space-y-3">
+      <Card radius="lg" padding="sm" className="space-y-2">
       <SectionHeading as="div" size="sm" className="pt-1">
         <span className="inline-flex items-center gap-1.5">
           <Icon name="credit-card" size={14} className="text-muted" />
@@ -89,7 +91,9 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             </div>
           );
         })}
+      </Card>
 
+      <Card radius="lg" padding="sm" className="space-y-2">
       <SectionHeading as="div" size="sm" className="pt-2">
         <span className="inline-flex items-center gap-1.5">
           <Icon name="hand-coins" size={14} className="text-success" />
@@ -141,7 +145,9 @@ export function AssetsAssetsSection({ state }: { state: State }) {
           + Додати актив «мені винні»
         </button>
       )}
+      </Card>
 
+      <Card radius="lg" padding="sm" className="space-y-2">
       <SectionHeading as="div" size="sm" className="pt-2">
         <span className="inline-flex items-center gap-1.5">
           <Icon name="piggy-bank" size={14} className="text-muted" />
@@ -242,6 +248,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
           </div>
         </div>
       ))}
+      </Card>
     </div>
   );
 }
