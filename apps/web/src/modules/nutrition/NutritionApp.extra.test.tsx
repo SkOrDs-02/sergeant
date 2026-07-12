@@ -428,10 +428,6 @@ vi.mock("@shared/components/ui/Banner", () => ({
   ),
 }));
 
-vi.mock("@shared/components/ui/AIPill", () => ({
-  AIPill: () => <div data-testid="ai-pill" />,
-}));
-
 vi.mock("@shared/components/layout", () => ({
   MeshBackground: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="mesh-background">{children}</div>

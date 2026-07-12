@@ -301,12 +301,8 @@ export {
 } from "./CommandPalette";
 export type { PaletteCommand } from "./CommandPalette";
 
-// Sergeant v2 redesign (2026-05, PR-7a) — AI push/pull surfaces.
-// `<AIPill>` sits above bottom-nav as persistent chat-entry affordance;
+// Sergeant v2 redesign (2026-05, PR-7a) — AI push surface.
 // `<InsightCard>` shows AI-detected actionable insights with dismissal
 // tracked via `@shared/lib/insights/useInsightDismissal`.
-export { AIPill } from "./AIPill";
-export type { AIPillProps } from "./AIPill";
-
 export { InsightCard } from "./InsightCard";
 export type { InsightCardProps } from "./InsightCard";

@@ -75,7 +75,7 @@ interface CreateResponse {
 const PERSONA_LABELS: Record<StrategicGoalPersona, string> = {
   finyk: "Фінік (фінанси)",
   fizruk: "Фізрук (фітнес)",
-  nutrition: "Харчування",
+  nutrition: "Їжа",
   routine: "Рутина",
 };
 

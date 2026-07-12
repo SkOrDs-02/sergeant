@@ -98,10 +98,6 @@ vi.mock("./components/workouts/RestTimerOverlayConnected", () => ({
   RestTimerOverlayConnected: () => null,
 }));
 
-vi.mock("@shared/components/ui/AIPill", () => ({
-  AIPill: () => null,
-}));
-
 vi.mock("@shared/components/layout", async () => {
   const actual = await vi.importActual<
     typeof import("@shared/components/layout")

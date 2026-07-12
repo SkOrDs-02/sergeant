@@ -9,6 +9,7 @@
 
 import {
   ModuleHeader,
+  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
@@ -57,6 +58,7 @@ export function RoutineHeader({
       subtitle="Звички · план Фізрука · один розклад"
       right={
         <div className="flex items-center gap-2">
+          <ModuleHeaderAssistantButton />
           {onOpenSettings && (
             <ModuleHeaderSettingsButton onClick={onOpenSettings} />
           )}

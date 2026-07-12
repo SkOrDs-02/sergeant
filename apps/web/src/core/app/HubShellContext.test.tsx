@@ -14,6 +14,7 @@ function makeShellValue(over: Partial<HubShellValue> = {}): HubShellValue {
     activeModule: null,
     openModule: () => {},
     goToHub: () => {},
+    goBackOrHub: () => {},
     goToModuleSettings: () => {},
     moduleAnimClass: "module-enter",
     ui: {

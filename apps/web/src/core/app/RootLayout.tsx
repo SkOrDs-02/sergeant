@@ -143,6 +143,7 @@ function RootLayoutInner() {
     activeModule,
     openModule,
     goToHub,
+    goBackOrHub,
     goToModuleSettings,
     moduleAnimClass,
   } = navigation;
@@ -233,6 +234,7 @@ function RootLayoutInner() {
     activeModule,
     openModule,
     goToHub,
+    goBackOrHub,
     goToModuleSettings,
     moduleAnimClass,
     ui,

@@ -10,14 +10,19 @@ const FizrukApp = lazyDefault(() => import("./FizrukApp"));
  * Lazy route entry for `/fizruk/*` (initiative 0006 Phase 5).
  */
 export function Component() {
-  const { goToHub, goToModuleSettings, openModule, pwaAction, clearPwaAction } =
-    useHubShell();
+  const {
+    goBackOrHub,
+    goToModuleSettings,
+    openModule,
+    pwaAction,
+    clearPwaAction,
+  } = useHubShell();
 
   return (
     <ModuleShell moduleId="fizruk">
       <SuspenseWithMinDelay fallback={<ModulePageLoader module="fizruk" />}>
         <FizrukApp
-          onBackToHub={goToHub}
+          onBackToHub={goBackOrHub}
           onOpenSettings={() => goToModuleSettings("fizruk")}
           onOpenModule={openModule}
           pwaAction={pwaAction}

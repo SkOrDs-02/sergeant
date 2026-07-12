@@ -59,15 +59,8 @@ const MODULE_OPEN_CTA = {
   finyk: "Відкрити Фінік",
   fizruk: "Відкрити Фізрук",
   routine: "Відкрити Рутину",
-  nutrition: "Відкрити Харчування",
+  nutrition: "Відкрити Їжу",
   hub: "Подивитись",
-};
-
-const MODULE_SHORT_LABEL: Record<HubModuleId, string> = {
-  finyk: "Фінік",
-  fizruk: "Фізрук",
-  routine: "Рутина",
-  nutrition: "Харчування",
 };
 
 /**
@@ -172,8 +165,10 @@ export function TodayFocusCard({
   const secondary =
     focus.pwaAction && onAction
       ? {
-          label:
-            `Відкрити ${MODULE_SHORT_LABEL[focus.module as HubModuleId] ?? ""}`.trim(),
+          // Reuse the grammatically-correct accusative CTA ("Відкрити Їжу",
+          // "Відкрити Рутину") instead of stitching "Відкрити " + a nominative
+          // label ("Відкрити Їжа" read wrong for the renamed module).
+          label: MODULE_OPEN_CTA[focus.module] || "Відкрити",
           run: () => onAction(focus.action),
         }
       : null;

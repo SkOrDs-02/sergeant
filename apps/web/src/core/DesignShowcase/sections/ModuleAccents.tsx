@@ -68,7 +68,7 @@ const MODULES: readonly ModuleEntry[] = [
   },
   {
     id: "nutrition",
-    label: "Харчування",
+    label: "Їжа",
     hue: "Lime",
     role: "Калорії, KBJU, рецепти",
     textCls: "text-nutrition",

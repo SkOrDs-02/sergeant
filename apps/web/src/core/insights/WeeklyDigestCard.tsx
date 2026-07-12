@@ -57,7 +57,7 @@ const MODULE_CONFIG: Record<
   },
   nutrition: {
     icon: "🥗",
-    label: "Харчування",
+    label: "Їжа",
     colorClass: "text-nutrition-strong dark:text-nutrition",
     bgClass: "bg-nutrition-soft",
     borderClass: "border-nutrition-soft-border/60",

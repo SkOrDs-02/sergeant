@@ -194,10 +194,6 @@ vi.mock("./components/FinykLoginScreen", () => ({
   FinykLoginScreen: () => <div data-testid="finyk-login-screen" />,
 }));
 
-vi.mock("@shared/components/ui/AIPill", () => ({
-  AIPill: () => null,
-}));
-
 vi.mock("@shared/components/ui/FloatingActionButton", () => ({
   FloatingActionButton: () => null,
 }));

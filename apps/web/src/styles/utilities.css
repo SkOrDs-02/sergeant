@@ -206,12 +206,12 @@
 
 @utility page-tabbar-pad {
   /* ═══════════════════════════════════════════════════════════════════════
-     BOTTOM CLEARANCE — floating bottom-nav + AIPill FAB + iOS home indicator
-     132px clears the AIPill (bottom: 84px + h-11 = 128px top) so module
-     content can always scroll above the floating assistant pill instead of
-     parking under it (mobile audit M-005a). Was 88px — cleared only the nav.
+     BOTTOM CLEARANCE — docked bottom-nav + iOS home indicator. 88px clears
+     the nav so module content scrolls fully above it. The extra +44px that
+     used to clear the floating AIPill was dropped when the assistant moved
+     into the module header (mobile-audit A4).
      ═══════════════════════════════════════════════════════════════════════ */
-  padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
 }
 
 @utility routine-main-pad {
@@ -436,28 +436,15 @@
 }
 
 @utility bottom-nav-shell {
-  /* ── Browser mode: floating pill ────────────────────────────────────
-     Inset from screen edges so the page background shows through the
-     surround gap — reads as a distinct panel "lying on" the mesh surface.
-     The bottom margin clears the home indicator / browser chrome. */
-  margin-left: 1rem;
-  margin-right: 1rem;
-  margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
-  border-radius: 1.5rem; /* rounded-3xl */
-
-  /* ── PWA standalone: edge-to-edge dock ──────────────────────────────
-     No horizontal insets, no bottom gap, rounded only at the top so the
-     nav panel sits flush against the screen bottom. The panel background
-     (bg-panel) extends into the safe-area strip, filling what would
-     otherwise be page-coloured dead space below the labels
-     (user report 2026-06-05 / bottom-nav-gap). */
-  @media (display-mode: standalone) {
-    margin-left: 0;
-    margin-right: 0;
-    margin-bottom: 0;
-    border-radius: 1.5rem 1.5rem 0 0; /* rounded-t-3xl */
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
+  /* Docked flush against the screen bottom in both browser and PWA
+     standalone — no horizontal insets, flat bottom, rounded only at the
+     top (rounded-t-3xl). The panel background (bg-panel) extends into the
+     safe-area strip via padding-bottom, so there's no page-coloured dead
+     space below the labels and the nav never floats above the home
+     indicator. One navigation shape everywhere
+     (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1). */
+  border-radius: 1.5rem 1.5rem 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @utility no-scrollbar {

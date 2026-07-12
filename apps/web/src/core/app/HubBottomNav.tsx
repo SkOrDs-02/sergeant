@@ -20,15 +20,12 @@ import { messages } from "@shared/i18n/uk";
  *
  * Canonical shape:
  * - 60 px height (64 px on coarse-pointer devices).
- * - Browser: floating pill via `bottom-nav-shell` utility — `mx-3`,
- *   `mb-[calc(env(safe-area-inset-bottom)+0.5rem)]`, `rounded-3xl`.
- *   Inset + rounded so it reads as a distinct panel "lying on" the
- *   page background.
- * - PWA standalone: `bottom-nav-shell` docks the nav edge-to-edge
- *   against the screen bottom — no horizontal margins, flat bottom,
- *   rounded only at the top. The panel background fills the safe-area
- *   strip so there's no page-coloured dead space below the labels
- *   (user report 2026-06-05 / bottom-nav-gap).
+ * - Docked edge-to-edge against the screen bottom in both browser and PWA
+ *   standalone via `bottom-nav-shell` — no horizontal margins, flat bottom,
+ *   rounded only at the top. The panel background fills the safe-area strip
+ *   (padding-bottom) so there's no page-coloured dead space below the labels
+ *   and the nav never floats above the home indicator
+ *   (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1).
  * - Active indicator (fix spec v2 § 1 — light mirrors dark, solid not
  *   outline):
  *   - Light: a solid emerald (`brand-strong`) square with an ink-on-cream
@@ -125,7 +122,7 @@ function HubBottomNavTab({
       // accessible name (`label`), і тести з `name: /Звіти/` падали б.
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
-        "relative flex-1 flex flex-col items-center justify-end gap-1 pb-1.5",
+        "relative flex-1 flex flex-col items-center justify-center gap-1",
         "my-1.5 rounded-xl border transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-95",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",

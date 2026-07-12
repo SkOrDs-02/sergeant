@@ -149,7 +149,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
         <path d="M17.41 3.59a10 10 0 1 0 3 3" />
       </svg>
     ),
-    label: "Харчування",
+    label: "Їжа",
     emoji: "\uD83E\uDD57",
     module: "nutrition",
     iconClass:

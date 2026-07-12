@@ -48,7 +48,7 @@ describe("OfflineBanner", () => {
     const { getByTestId } = render(<OfflineBanner />);
     const pill = getByTestId("offline-banner");
     expect(pill.getAttribute("data-state")).toBe("offline");
-    expect(pill.getAttribute("role")).toBe("status");
+    expect(pill.tagName).toBe("BUTTON");
     expect(pill.getAttribute("aria-live")).toBe("polite");
     expect(pill.textContent).toContain("Офлайн");
     // No queue — should not include a count.
@@ -72,7 +72,7 @@ describe("OfflineBanner", () => {
     const { getByTestId } = render(<OfflineBanner />);
     const pill = getByTestId("offline-banner");
     expect(pill.getAttribute("data-state")).toBe("syncing");
-    expect(pill.getAttribute("role")).toBe("status");
+    expect(pill.tagName).toBe("BUTTON");
     expect(pill.textContent).toContain("Синхронізація");
     expect(pill.textContent).toContain("5");
     expect(pill.textContent).toContain("в черзі");
@@ -103,7 +103,7 @@ describe("OfflineBanner", () => {
     expect(queryByTestId("offline-banner")).toBeNull();
   });
 
-  it("shows a retry action when sync v2 has dead-letter rows", async () => {
+  it("opens the sync sheet and retries dead-letter rows", async () => {
     onlineRef.value = true;
     syncStatusRef.syncV2DeadLetterCount = 3;
     const { getByRole, getByTestId } = render(<OfflineBanner />);
@@ -115,6 +115,10 @@ describe("OfflineBanner", () => {
     expect(pill.textContent).toContain("помилки синхронізації");
     expect(pill.textContent).not.toMatch(/blocked/i);
 
+    // Tap the pill to open the detail sheet, then retry from there.
+    await act(async () => {
+      pill.click();
+    });
     await act(async () => {
       getByRole("button", { name: /Повторити/i }).click();
     });

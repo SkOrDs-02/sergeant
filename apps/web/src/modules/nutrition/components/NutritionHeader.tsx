@@ -4,6 +4,7 @@
  */
 import {
   ModuleHeader,
+  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
@@ -63,10 +64,11 @@ export function NutritionHeader({
     <ModuleHeader
       module="nutrition"
       left={left}
-      title="ХАРЧУВАННЯ"
+      title="ЇЖА"
       subtitle="Мій раціон"
       right={
         <div className="flex items-center gap-2">
+          <ModuleHeaderAssistantButton />
           {onOpenSettings && (
             <ModuleHeaderSettingsButton onClick={onOpenSettings} />
           )}

@@ -48,8 +48,7 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
       )}
     >
       <p className="font-semibold text-text leading-snug">
-        Резервна копія всього Hub (Фінік, Фізрук, Рутина, Харчування) у
-        JSON-файл.
+        Резервна копія всього Hub (Фінік, Фізрук, Рутина, Їжа) у JSON-файл.
       </p>
       <p className="leading-relaxed text-xs">
         Токен Monobank і кеш транзакцій не входять у файл — після імпорту

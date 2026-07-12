@@ -306,14 +306,16 @@ export function PricingPage() {
   }
 
   return (
-    <MeshBackground
-      className="overflow-y-auto"
-      style={{
-        paddingTop: "max(1.25rem, env(safe-area-inset-top))",
-        paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
-      }}
-    >
-      <main id="main" tabIndex={-1} className="w-full outline-none">
+    <MeshBackground>
+      <main
+        id="main"
+        tabIndex={-1}
+        className="flex-1 min-h-0 w-full overflow-y-auto outline-none"
+        style={{
+          paddingTop: "max(1.25rem, env(safe-area-inset-top))",
+          paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
+        }}
+      >
         <div className="max-w-5xl mx-auto px-5 pb-12 space-y-10">
           <header className="flex items-center gap-3 pt-6 pb-2">
             <Button

@@ -5,21 +5,16 @@ import { cn } from "../../lib/ui/cn";
  * Sergeant Design System — ModuleBottomNav
  *
  * Shared bottom-navigation shell for Фінік / Фізрук / Рутина /
- * Харчування. Renders as a floating pill inset from the screen edges
- * (matches `HubBottomNav` shape) so the whole app reads under one
- * navigation pattern.
+ * Харчування. Docked edge-to-edge against the screen bottom (matches
+ * `HubBottomNav`) so the whole app reads under one navigation pattern.
  *
  * Canonical shape:
  * - Height 60 px (64 px on coarse-pointer devices).
- * - Browser: floating pill via `bottom-nav-shell` utility — `mx-3`,
- *   `mb-[calc(env(safe-area-inset-bottom)+0.5rem)]`, `rounded-3xl`.
- *   Inset + rounded so it reads as a distinct panel with the page
- *   background continuing behind and below it.
- * - PWA standalone: `bottom-nav-shell` docks the nav edge-to-edge
- *   against the screen bottom — no horizontal margins, flat bottom,
- *   rounded only at the top. The panel background fills the safe-area
- *   strip so there's no page-coloured dead space below the labels
- *   (user report 2026-06-05 / bottom-nav-gap).
+ * - Docked edge-to-edge in both browser and PWA standalone via
+ *   `bottom-nav-shell` — no horizontal margins, flat bottom, rounded only
+ *   at the top. The panel background fills the safe-area strip
+ *   (padding-bottom) so there's no page-coloured dead space below the
+ *   labels (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1).
  * - Active indicator (fix spec v2 § 1 — light mirrors dark, solid not
  *   outline):
  *   - Light: a solid module-accent square (`tokens.fillLight` =

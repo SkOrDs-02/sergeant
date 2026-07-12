@@ -9,12 +9,12 @@ import { readRaw } from "./lib/finykStorage";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { messages } from "@shared/i18n/uk";
-import { AIPill } from "@shared/components/ui/AIPill";
 import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
 import {
   MeshBackground,
   ModuleAccentProvider,
   ModuleHeader,
+  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
@@ -340,6 +340,7 @@ export default function App({
                 showBalance={showBalance}
                 setShowBalance={setShowBalance}
               />
+              <ModuleHeaderAssistantButton />
               {onOpenSettings && (
                 <ModuleHeaderSettingsButton onClick={onOpenSettings} />
               )}
@@ -455,16 +456,6 @@ export default function App({
           module="finyk"
           ariaLabel={messages.nav.finykSections}
         />
-
-        {!showLoginOverlay && (
-          <AIPill
-            besideFab={
-              page === "overview" ||
-              page === "transactions" ||
-              page === "budgets"
-            }
-          />
-        )}
 
         {showLoginOverlay && (
           <div

@@ -73,7 +73,7 @@ describe("buildSlides", () => {
     const slides = buildSlides(null, "2026-W17", undefined);
     const nutritionSlide = slides.find((s) => s.kind === "nutrition");
     expect(nutritionSlide).toBeDefined();
-    expect(nutritionSlide!.label).toBe("Харчування");
+    expect(nutritionSlide!.label).toBe("Їжа");
   });
 
   it("adds routine slide when aggregate has habitCount > 0", () => {

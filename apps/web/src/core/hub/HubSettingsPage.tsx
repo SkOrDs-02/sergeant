@@ -281,7 +281,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
       },
       {
         id: "nutrition",
-        title: "Харчування",
+        title: "Їжа",
         keywords:
           "харчування їжа nutrition meals food kбжу калорії kcal білки жири вуглеводи вода комора pantry скан штрихкод barcode",
         render: () => <NutritionSection />,

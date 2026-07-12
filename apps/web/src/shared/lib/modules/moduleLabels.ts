@@ -17,5 +17,5 @@ export const MODULE_LABELS: Record<HubModuleId, string> = {
   finyk: "Фінік",
   fizruk: "Фізрук",
   routine: "Рутина",
-  nutrition: "Харчування",
+  nutrition: "Їжа",
 };

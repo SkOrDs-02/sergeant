@@ -62,7 +62,7 @@ const ACTIONS: ActionDef[] = [
     moduleId: "nutrition",
     action: MODULE_PRIMARY_ACTION.nutrition.action,
     title: MODULE_PRIMARY_ACTION.nutrition.label,
-    subtitle: "Харчування · прийом їжі без модалки",
+    subtitle: "Їжа · прийом їжі без модалки",
     icon: "🥗",
     keywords:
       "їжа їсти прийом сніданок обід вечеря перекус калорії білок meal eat food breakfast lunch dinner snack ккал nutrition харчування",

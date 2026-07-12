@@ -68,7 +68,7 @@ export function useNutritionReminders(prefs: NutritionReminderPrefs): void {
       writeLastNotifyKey(key);
 
       showReminderNotification(
-        "Харчування",
+        "Їжа",
         "Час записати прийоми їжі.",
         `nutrition-reminder-${key}`,
       ).catch(() => {

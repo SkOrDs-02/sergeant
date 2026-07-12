@@ -281,10 +281,20 @@ export interface ModuleHeaderBackButtonProps {
  */
 export function ModuleHeaderBackButton({
   onClick,
-  label = "Хаб",
-  ariaLabel = "До хабу",
+  label,
+  ariaLabel,
   className,
 }: ModuleHeaderBackButtonProps) {
+  // When the app has in-session history to step back through the button reads
+  // as "Назад"; on a fresh / deep-link entry (idx 0) the back action lands on
+  // the hub, so it reads as "Хаб". Kept in sync with the actual navigation in
+  // `useHubNavigation.goBackOrHub` (both key off `window.history.state.idx`).
+  // In unit tests (no browser history) idx is 0, preserving the "Хаб" default.
+  const steppingBack =
+    typeof window !== "undefined" &&
+    ((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0;
+  const resolvedLabel = label ?? (steppingBack ? "Назад" : "Хаб");
+  const resolvedAriaLabel = ariaLabel ?? (steppingBack ? "Назад" : "До хабу");
   return (
     <button
       type="button"
@@ -293,8 +303,8 @@ export function ModuleHeaderBackButton({
         "shrink-0 h-10 min-h-[40px] -ml-1 pl-2 pr-3 gap-1.5 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",
         className,
       )}
-      aria-label={ariaLabel}
-      title={ariaLabel}
+      aria-label={resolvedAriaLabel}
+      title={resolvedAriaLabel}
     >
       <svg
         width="20"
@@ -309,7 +319,9 @@ export function ModuleHeaderBackButton({
       >
         <path d="M15 18l-6-6 6-6" />
       </svg>
-      {label ? <span className="text-style-label">{label}</span> : null}
+      {resolvedLabel ? (
+        <span className="text-style-label">{resolvedLabel}</span>
+      ) : null}
     </button>
   );
 }

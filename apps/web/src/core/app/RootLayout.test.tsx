@@ -99,6 +99,7 @@ vi.mock("../hooks/useHubNavigation", () => ({
     activeModule: navigationState.activeModule,
     openModule: openModuleMock,
     goToHub: goToHubMock,
+    goBackOrHub: goToHubMock,
     goToModuleSettings: vi.fn(),
     moduleAnimClass: "",
   }),

@@ -182,7 +182,7 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Харчування" defaultOpen>
+      <SettingsSubGroup title="Їжа" defaultOpen>
         <ToggleRow
           label="Нагадування про їжу"
           description="Щоденне нагадування записати прийоми їжі, навіть коли застосунок закрито."

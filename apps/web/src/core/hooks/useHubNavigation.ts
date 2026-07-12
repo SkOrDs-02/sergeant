@@ -33,6 +33,13 @@ export interface HubNavigation {
   activeModule: HubModuleId | null;
   openModule: (id: string | null | undefined, opts?: OpenModuleOptions) => void;
   goToHub: () => void;
+  /**
+   * History-aware "back" for the module header back button: steps back one
+   * in-app entry when the browser history has one (idx > 0), otherwise falls
+   * back to the hub. Distinct from {@link goToHub}, which always hard-navigates
+   * to `/` (used by swipe-back and the module error boundary).
+   */
+  goBackOrHub: () => void;
   /** Navigate to hub and scroll to the given module's settings section. */
   goToModuleSettings: (moduleId: HubModuleId) => void;
   moduleAnimClass: "module-enter" | "hub-enter";
@@ -62,6 +69,17 @@ function parsePathnameModule(pathname: string): HubModuleId | null {
   return firstSegment as HubModuleId;
 }
 
+/**
+ * History depth within the current app session. React Router 7 stores an
+ * incrementing `idx` on `window.history.state`; `idx > 0` means there is a
+ * previous in-app entry we can safely `navigate(-1)` to (mobile-audit A5).
+ */
+function readHistoryIdx(): number {
+  if (typeof window === "undefined") return 0;
+  const state = window.history.state as { idx?: number } | null;
+  return typeof state?.idx === "number" ? state.idx : 0;
+}
+
 export function useHubNavigation(): HubNavigation {
   const navigate = useNavigate();
   const routerLocation = useLocation();
@@ -83,6 +101,19 @@ export function useHubNavigation(): HubNavigation {
   >("module-enter");
 
   const goToHub = useCallback(() => {
+    setModuleAnimClass("hub-enter");
+    setActiveModule(null);
+    navigate("/", { replace: false });
+  }, [navigate]);
+
+  const goBackOrHub = useCallback(() => {
+    if (readHistoryIdx() > 0) {
+      // A previous in-app entry exists — step back through history so the
+      // deep-page → module-overview → hub chain unwinds naturally.
+      navigate(-1);
+      return;
+    }
+    // Fresh entry / deep link with no in-app history — land on the hub.
     setModuleAnimClass("hub-enter");
     setActiveModule(null);
     navigate("/", { replace: false });
@@ -167,6 +198,7 @@ export function useHubNavigation(): HubNavigation {
     activeModule,
     openModule,
     goToHub,
+    goBackOrHub,
     goToModuleSettings,
     moduleAnimClass,
   };
