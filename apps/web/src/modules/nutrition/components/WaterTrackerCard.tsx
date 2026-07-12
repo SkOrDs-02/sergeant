@@ -76,40 +76,6 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             </div>
           </div>
         </div>
-        {todayMl > 0 && (
-          <button
-            type="button"
-            onClick={() => {
-              if (resetPending) {
-                if (resetTimerRef.current !== null) {
-                  clearTimeout(resetTimerRef.current);
-                  resetTimerRef.current = null;
-                }
-                reset();
-                setResetPending(false);
-              } else {
-                // Скидаємо попередній таймер, якщо користувач натиснув двічі
-                // поспіль — інакше перше повернення в idle зніматиме нове pending.
-                if (resetTimerRef.current !== null) {
-                  clearTimeout(resetTimerRef.current);
-                }
-                setResetPending(true);
-                resetTimerRef.current = window.setTimeout(() => {
-                  setResetPending(false);
-                  resetTimerRef.current = null;
-                }, 2500);
-              }
-            }}
-            className="text-xs text-subtle hover:text-danger transition-colors px-2 py-1 rounded-xl"
-            aria-label={
-              resetPending
-                ? "Підтвердити скидання води за сьогодні"
-                : "Скинути воду за сьогодні"
-            }
-          >
-            {resetPending ? "Скинути?" : <span aria-hidden="true">↺</span>}
-          </button>
-        )}
       </div>
 
       {/* Progress bar */}
@@ -175,10 +141,55 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           <button
             type="button"
             onClick={handleUndo}
+            title="Відмінити останнє додавання"
             className="h-11 px-3 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors"
             aria-label={`Відмінити останнє додавання (${lastAddedMl} мл)`}
           >
             ↶ {lastAddedMl}
+          </button>
+        )}
+        {todayMl > 0 && (
+          <button
+            type="button"
+            title={
+              resetPending
+                ? "Підтвердити скидання"
+                : "Скинути воду за сьогодні"
+            }
+            onClick={() => {
+              if (resetPending) {
+                if (resetTimerRef.current !== null) {
+                  clearTimeout(resetTimerRef.current);
+                  resetTimerRef.current = null;
+                }
+                reset();
+                setResetPending(false);
+              } else {
+                // Скидаємо попередній таймер, якщо користувач натиснув двічі
+                // поспіль — інакше перше повернення в idle зніматиме нове pending.
+                if (resetTimerRef.current !== null) {
+                  clearTimeout(resetTimerRef.current);
+                }
+                setResetPending(true);
+                resetTimerRef.current = window.setTimeout(() => {
+                  setResetPending(false);
+                  resetTimerRef.current = null;
+                }, 2500);
+              }
+            }}
+            className={cn(
+              "h-11 px-3 rounded-xl text-style-caption transition-colors border",
+              resetPending
+                ? "text-danger border-danger/40"
+                : "text-subtle hover:text-danger border-line",
+            )}
+            aria-label={
+              resetPending
+                ? "Підтвердити скидання води за сьогодні"
+                : "Скинути воду за сьогодні"
+            }
+          >
+            {resetPending ? "Скинути?" : <span aria-hidden="true">↺</span>}
           </button>
         )}
       </div>

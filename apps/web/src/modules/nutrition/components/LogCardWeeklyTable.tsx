@@ -27,7 +27,7 @@ export function LogCardWeeklyTable({
   );
 
   return (
-    <>
+    <div className="rounded-2xl border border-line bg-panel/40 px-3 py-2">
       <SectionHeading
         as="button"
         size="xs"
@@ -49,35 +49,33 @@ export function LogCardWeeklyTable({
       </SectionHeading>
 
       {weekOpen && (
-        <div className="rounded-2xl border border-line bg-panel/40 px-3 py-3">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="text-subtle">
-                  <th className="py-1 pr-2">Дата</th>
-                  <th className="py-1 pr-2">Ккал</th>
-                  <th className="py-1 pr-2">Б</th>
-                  <th className="py-1 pr-2">Ж</th>
-                  <th className="py-1">В</th>
+        <div className="overflow-x-auto mt-2">
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="text-subtle">
+                <th className="py-1 pr-2">Дата</th>
+                <th className="py-1 pr-2">Ккал</th>
+                <th className="py-1 pr-2">Б</th>
+                <th className="py-1 pr-2">Ж</th>
+                <th className="py-1">В</th>
+              </tr>
+            </thead>
+            <tbody>
+              {weekRows.map((r) => (
+                <tr key={r.date} className="border-t border-line/40">
+                  <td className="py-1 pr-2 font-mono text-style-caption">
+                    {r.date.slice(5)}
+                  </td>
+                  <td className="py-1 pr-2">{Math.round(r.kcal)}</td>
+                  <td className="py-1 pr-2">{Math.round(r.protein_g)}</td>
+                  <td className="py-1 pr-2">{Math.round(r.fat_g)}</td>
+                  <td className="py-1">{Math.round(r.carbs_g)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {weekRows.map((r) => (
-                  <tr key={r.date} className="border-t border-line/40">
-                    <td className="py-1 pr-2 font-mono text-style-caption">
-                      {r.date.slice(5)}
-                    </td>
-                    <td className="py-1 pr-2">{Math.round(r.kcal)}</td>
-                    <td className="py-1 pr-2">{Math.round(r.protein_g)}</td>
-                    <td className="py-1 pr-2">{Math.round(r.fat_g)}</td>
-                    <td className="py-1">{Math.round(r.carbs_g)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
-    </>
+    </div>
   );
 }
