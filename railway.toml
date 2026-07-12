@@ -1,3 +1,8 @@
+# ⚠️ DEPRECATED (2026-07-12): Railway виведено з експлуатації — бекенд мігровано на
+# Hetzner VPS під Coolify (ADR-0074). Цей файл БІЛЬШЕ НЕ використовується для деплою;
+# збережений лише тому, що на нього посилаються immutable ADR-0009 / ADR-0024.
+# Актуальний деплой: `.github/workflows/deploy-api.yml` → ghcr.io → Coolify.
+#
 # Деплой API на Railway через Dockerfile.api (без зайвого vite build).
 [build]
 builder = "DOCKERFILE"

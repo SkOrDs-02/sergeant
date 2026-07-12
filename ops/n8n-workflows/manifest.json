@@ -174,23 +174,6 @@
       ],
       "notes": "Debt reminders; keep inactive until debt schema and push copy are verified."
     },
-    "15-railway-deployment-notify.json": {
-      "owner": "ops",
-      "status": "prod-ready",
-      "riskTier": "P2",
-      "telegramTopic": "ops|incidents",
-      "audienceTier": "P2",
-      "hmacSigned": false,
-      "requiredEnv": [
-        "TELEGRAM_ALERT_CHAT_ID",
-        "TELEGRAM_TOPIC_OPS",
-        "TELEGRAM_TOPIC_INCIDENTS",
-        "PUBLIC_API_BASE_URL",
-        "INTERNAL_API_KEY"
-      ],
-      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Railway webhook notifications. Active; webhook path /webhook/railway-deploy. Railway-side wiring is per-project: Project Settings → Webhooks → Add URL https://n8n-production-09ac.up.railway.app/webhook/railway-deploy → Save → Test Webhook. Required on humorous-eagerness (sergeant-api) and grateful-nurturing (n8n). See docs/02-engineering/integrations/railway-vercel.md §8 for full procedure incl. event-type reference and cleanup of stale rules. Post-ADR-0038 W3 §3.2 (O9) also writes idempotent tg_alert_acks row with dynamic topic (success→ops/P2, failure→incidents/P1) + renders 3-button ack-keyboard."
-    },
     "16-posthog-daily-metrics.json": {
       "owner": "growth",
       "status": "prod-ready",

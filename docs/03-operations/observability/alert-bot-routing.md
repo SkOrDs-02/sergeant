@@ -51,25 +51,23 @@ The 17 broadcast workflows currently emitting ack rows. Cross-reference with
 [`REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md) for
 cadence + owner. PR column links the wave that wired the ack pattern.
 
-| WF    | Workflow                              | Topic                           | Severity               | `alertId` shape                                 | PR                      |
-| ----- | ------------------------------------- | ------------------------------- | ---------------------- | ----------------------------------------------- | ----------------------- |
-| WF-01 | `01-stripe-pro-upgrade.json`          | `incidents`                     | P0                     | `<wfId>:<execId>`                               | W3 PR-3 batch 2         |
-| WF-02 | `02-stripe-payment-failed.json`       | `incidents`                     | P0                     | `<wfId>:<execId>`                               | W3 PR-3 batch 2         |
-| WF-03 | `03-anthropic-budget-guard.json`      | `incidents`/`ops`               | P0 (fatal) / P1 (warn) | `<wfId>:<execId>:<branch>`                      | W3 PR-3 batch 1 (#1503) |
-| WF-04 | `04-daily-backup-verification.json`   | `incidents`                     | P1                     | `<wfId>:<execId>`                               | W3 PR-2 (#1480)         |
-| WF-05 | `05-renovate-nonpatch.json`           | `engineering`                   | P1                     | `<wfId>:<execId>`                               | W3 PR-3 batch 2         |
-| WF-06 | `06-mono-monthly-budget.json`         | `ops`                           | P1                     | `<wfId>:<execId>`                               | W3 PR-3 batch 2         |
-| WF-08 | `08-weekly-financial-digest.json`     | `digest`                        | P2                     | `<wfId>:<execId>:weekly-digest`                 | W3 PR-4 (O9 batch)      |
-| WF-15 | `15-railway-deployment-notify.json`   | `ops` (ok) / `incidents` (fail) | P2 (ok) / P1 (fail)    | `<wfId>:<execId>:railway-<branch>-<commitHash>` | W3 PR-4 (O9 batch)      |
-| WF-16 | `16-posthog-daily-metrics.json`       | `growth`                        | P2                     | `<wfId>:<execId>:posthog-daily`                 | W3 PR-4 (O9 batch)      |
-| WF-17 | `17-github-pr-stale-alert.json`       | `engineering`                   | P2                     | `<wfId>:<execId>`                               | W3 PR-3 batch 2         |
-| WF-18 | `18-nightly-security-audit.json`      | `incidents`                     | P1                     | `<wfId>:<execId>`                               | W3 PR-3 batch 1 (#1503) |
-| WF-19 | `19-db-health-report.json`            | `ops`                           | P1                     | `<wfId>:<execId>`                               | W3 PR-3 batch 2         |
-| WF-30 | `30-ai-memory-daily-digest.json`      | `digest`                        | P2                     | `<wfId>:<execId>:ai-memory-digest`              | W3 PR-4 (O9 batch)      |
-| WF-60 | `60-growth-funnel-snapshot.json`      | `growth`                        | P2                     | `<wfId>:<execId>:growth-funnel`                 | W3 PR-4 (O9 batch)      |
-| WF-63 | `63-growth-acquisition-snapshot.json` | `growth`                        | P2                     | `<wfId>:<execId>:growth-acquisition`            | W3 PR-4 (O9 batch)      |
-| WF-98 | `98-error-handler.json`               | `meta`                          | P0                     | `wf98:<failed_wfId>:<error_signature>`          | W3 PR-4 (O9 batch)      |
-| WF-99 | `99-heartbeat.json`                   | `meta`                          | P3                     | `<wfId>:<execId>:heartbeat`                     | W3 PR-4 (O9 batch)      |
+| WF    | Workflow                              | Topic             | Severity               | `alertId` shape                        | PR                      |
+| ----- | ------------------------------------- | ----------------- | ---------------------- | -------------------------------------- | ----------------------- | --- | ----- | ------------------------------- | -------- | --- | ------------------------------- | ------------------ |
+| WF-01 | `01-stripe-pro-upgrade.json`          | `incidents`       | P0                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-02 | `02-stripe-payment-failed.json`       | `incidents`       | P0                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-03 | `03-anthropic-budget-guard.json`      | `incidents`/`ops` | P0 (fatal) / P1 (warn) | `<wfId>:<execId>:<branch>`             | W3 PR-3 batch 1 (#1503) |
+| WF-04 | `04-daily-backup-verification.json`   | `incidents`       | P1                     | `<wfId>:<execId>`                      | W3 PR-2 (#1480)         |
+| WF-05 | `05-renovate-nonpatch.json`           | `engineering`     | P1                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-06 | `06-mono-monthly-budget.json`         | `ops`             | P1                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-08 | `08-weekly-financial-digest.json`     | `digest`          | P2                     | `<wfId>:<execId>:weekly-digest`        | W3 PR-4 (O9 batch)      |     | WF-16 | `16-posthog-daily-metrics.json` | `growth` | P2  | `<wfId>:<execId>:posthog-daily` | W3 PR-4 (O9 batch) |
+| WF-17 | `17-github-pr-stale-alert.json`       | `engineering`     | P2                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-18 | `18-nightly-security-audit.json`      | `incidents`       | P1                     | `<wfId>:<execId>`                      | W3 PR-3 batch 1 (#1503) |
+| WF-19 | `19-db-health-report.json`            | `ops`             | P1                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-30 | `30-ai-memory-daily-digest.json`      | `digest`          | P2                     | `<wfId>:<execId>:ai-memory-digest`     | W3 PR-4 (O9 batch)      |
+| WF-60 | `60-growth-funnel-snapshot.json`      | `growth`          | P2                     | `<wfId>:<execId>:growth-funnel`        | W3 PR-4 (O9 batch)      |
+| WF-63 | `63-growth-acquisition-snapshot.json` | `growth`          | P2                     | `<wfId>:<execId>:growth-acquisition`   | W3 PR-4 (O9 batch)      |
+| WF-98 | `98-error-handler.json`               | `meta`            | P0                     | `wf98:<failed_wfId>:<error_signature>` | W3 PR-4 (O9 batch)      |
+| WF-99 | `99-heartbeat.json`                   | `meta`            | P3                     | `<wfId>:<execId>:heartbeat`            | W3 PR-4 (O9 batch)      |
 
 ### Notes per row
 

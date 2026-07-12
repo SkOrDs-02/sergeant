@@ -32,7 +32,6 @@ ops/
     ├── 09-habit-streak-alert.json        # Cron 21:00 Kyiv → push habit reminder
     ├── 10-debt-receivable-reminder.json  # Cron 10:00 → debts due in 3 days → push + Telegram
     │  — Developer / Ops —
-    ├── 15-railway-deployment-notify.json # Railway webhook → Telegram #ops / #incidents
     ├── 16-posthog-daily-metrics.json     # Cron 09:00 → PostHog HogQL → Telegram #growth
     ├── 17-github-pr-stale-alert.json     # Cron 10:00 Mon–Fri → PRs >48h → Telegram
     ├── 18-nightly-security-audit.json    # Cron 04:00 UTC → GitHub audit run → Telegram

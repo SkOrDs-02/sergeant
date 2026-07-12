@@ -1,3 +1,7 @@
+# ⚠️ DEPRECATED (2026-07-12): Railway виведено з експлуатації (ADR-0074). Цей файл
+# БІЛЬШЕ НЕ використовується; збережений лише через посилання з immutable ADR-0055.
+# OpenClaw Gateway на Railway треба або мігрувати на Coolify, або підтвердити deprecated.
+#
 # Railway config-as-code for the OpenClaw Gateway service.
 # In Railway Service settings → "Config-as-code Path" set this file path.
 # Service name: sergeant-openclaw-gateway (same Railway project as apps/server).
