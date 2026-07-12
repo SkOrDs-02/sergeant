@@ -1,12 +1,5 @@
 import { logger } from "../obs/logger.js";
-
-function isDeployedProduction(): boolean {
-  return (
-    process.env["NODE_ENV"] === "production" ||
-    Boolean(process.env["RAILWAY_ENVIRONMENT"]) ||
-    Boolean(process.env["RAILWAY_SERVICE_NAME"])
-  );
-}
+import { isDeployedProduction } from "./env.js";
 
 function resolveBetterAuthBaseURL(): string {
   if (process.env["BETTER_AUTH_URL"]) return process.env["BETTER_AUTH_URL"];

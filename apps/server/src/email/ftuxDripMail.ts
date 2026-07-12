@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { Pool } from "pg";
 
+import { isDeployedProduction } from "../env/env.js";
 import {
   enqueueFtuxDripMail,
   registerFtuxDripDispatcher,
@@ -85,14 +86,6 @@ function emailFingerprint(email: string): string {
     .update(email.toLowerCase(), "utf8")
     .digest("hex")
     .slice(0, 12);
-}
-
-function isDeployedProduction(): boolean {
-  return (
-    process.env["NODE_ENV"] === "production" ||
-    Boolean(process.env["RAILWAY_ENVIRONMENT"]) ||
-    Boolean(process.env["RAILWAY_SERVICE_NAME"])
-  );
 }
 
 function getAppUrl(): string {
@@ -254,9 +247,7 @@ async function sendViaResend(args: {
  */
 export class FtuxDripSkip extends Error {
   readonly outcome:
-    | "skipped_optout"
-    | "skipped_already_sent"
-    | "skipped_user_deleted";
+    "skipped_optout" | "skipped_already_sent" | "skipped_user_deleted";
   constructor(outcome: FtuxDripSkip["outcome"], message: string) {
     super(message);
     this.outcome = outcome;

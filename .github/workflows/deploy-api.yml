@@ -81,6 +81,11 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ steps.tags.outputs.tags }}
+          # Bake the commit SHA into the image — Coolify pulls a prebuilt image
+          # and injects no runtime SHA, so this is the only per-deploy release
+          # identity (Sentry release, X-Server-Build-Id, app_build_info).
+          build-args: |
+            GIT_SHA=${{ github.sha }}
           # Спільний gha-кеш прискорює важкий pnpm-install шар. Окремий
           # scope, щоб не битись за кеш із container-scan.
           cache-from: type=gha,scope=deploy-api
