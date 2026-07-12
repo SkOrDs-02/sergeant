@@ -56,7 +56,7 @@ CI hard-rules ловляться різними механізмами. Стар
 - **«HubChat tool, action card, prompt cache»** → `sergeant-hubchat`.
 - **«OpenClaw Gateway, console agent, openclaw-plugin»** → `sergeant-openclaw`.
 - **«auth, login, session cookies, Better Auth»** → `better-auth-best-practices`.
-- **«deploy config, Vercel/Railway, env vars, Sentry»** → `sergeant-deploy-and-observability`.
+- **«deploy config, Vercel/Coolify, env vars, Sentry»** → `sergeant-deploy-and-observability`.
 - **«review-and-merge / PR review / safe to ship»** → `sergeant-review-and-merge`.
 - **«фіксую регресію / прод-баг / flaky test»** → `sergeant-bugfix-and-regression`.
 - **«не впевнений / multi-surface / cross-package»** → `sergeant-monorepo-boundaries`.

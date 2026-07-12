@@ -96,7 +96,7 @@
 1. Start with `sergeant-start-here`.
 2. Load `sergeant-openclaw`.
 3. If the change also modifies HubChat tool defs or executors → also load `sergeant-hubchat`.
-4. If the change requires Railway env vars or health verification → also load `sergeant-deploy-and-observability`.
+4. If the change requires Coolify env vars or health verification → also load `sergeant-deploy-and-observability`.
 5. `pnpm --filter @sergeant/openclaw-plugin build` locally before pushing.
 6. After deploy: verify `sergeant-openclaw-gateway` Railway service health + test `@OpenClaw_sergeant_v2_bot` responds.
 
@@ -132,5 +132,5 @@ Use when the trigger is «виконай N тасків з планінгу» / 
 Не кожен сценарій потребує decision-tree з кількома скілами. Для трьох поширених single-surface задач канонічний порядок виконання живе прямо в playbook — завантаж governing skill, тоді виконуй playbook як recipe:
 
 - **Write or debug a Playwright E2E test** → skill `sergeant-e2e-testing`, recipe [`docs/00-start/playbooks/write-e2e-test.md`](../playbooks/write-e2e-test.md). seedFTUX, web-first assertions, прогін проти `vite preview`, trace-дебаг.
-- **Change an auth flow (Better Auth)** → skill `better-auth-best-practices`, recipe [`docs/00-start/playbooks/change-auth-flow.md`](../playbooks/change-auth-flow.md). Вузький обсяг, сервер+клієнт в одній зміні, верифікація кукі на парі Vercel ↔ Railway. Якщо це governance привілейованого доступу — натомість `access-governance.md`.
+- **Change an auth flow (Better Auth)** → skill `better-auth-best-practices`, recipe [`docs/00-start/playbooks/change-auth-flow.md`](../playbooks/change-auth-flow.md). Вузький обсяг, сервер+клієнт в одній зміні, верифікація кукі на парі Vercel ↔ Coolify. Якщо це governance привілейованого доступу — натомість `access-governance.md`.
 - **Author or edit a SKILL.md** → skill `sergeant-writing-skills`, recipe [`docs/00-start/playbooks/author-skill.md`](../playbooks/author-skill.md). RED → GREEN → REFACTOR для інструкцій, далі `pnpm lint:skills && pnpm skills:lock` + рядок у `agent-skills-catalog.md`.

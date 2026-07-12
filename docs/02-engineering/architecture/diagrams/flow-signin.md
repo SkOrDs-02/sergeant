@@ -55,7 +55,7 @@ sequenceDiagram
 | ------------------------------ | -------------------------------- | ------------------------------------------------------------------------------ |
 | 401 спайк після deploy         | rotated `BETTER_AUTH_SECRET`     | переконатись, що secret не змінювався без міграції; пере-логінити користувачів |
 | 403 `email_not_verified` спайк | SMTP queue лагає або mail bounce | Sentry → BullMQ Auth Mail dashboard, перевірити SMTP relay                     |
-| Cookie не виставляється        | proxy strips `Set-Cookie`        | перевірити Vercel rewrites + Railway proxy ланцюг                              |
+| Cookie не виставляється        | proxy strips `Set-Cookie`        | перевірити Vercel edge-proxy (`BACKEND_URL`) + Coolify Traefik ланцюг                              |
 
 ## Тести
 
