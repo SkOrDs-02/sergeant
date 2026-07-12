@@ -85,6 +85,7 @@ export const fizrukPageMessages = {
     sleep: "Сон",
     formAriaLabel: "Записати показники",
     formHeading: "Записати сьогодні",
+    entryEmpty: "Заповни хоч одне поле, щоб зберегти запис",
     weightLabel: "Вага (кг)",
     sleepLabel: "Сон (год)",
     energyLevel: "Рівень енергії",

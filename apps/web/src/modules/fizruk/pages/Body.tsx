@@ -75,7 +75,7 @@ export function hasAnyBodyEntryValue(
 }
 
 const bodyFormSchema = bodyFormObjectSchema.refine(hasAnyBodyEntryValue, {
-  message: messages.validation.bodyEntryEmpty,
+  message: messages.fizruk.body.entryEmpty,
   path: ["note"],
 });
 
@@ -536,7 +536,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
             </button>
             {isEntryEmpty && !submitSuccess && (
               <p id="body-entry-empty" className="text-xs text-subtle -mt-2">
-                {messages.validation.bodyEntryEmpty}
+                {messages.fizruk.body.entryEmpty}
               </p>
             )}
           </form>
