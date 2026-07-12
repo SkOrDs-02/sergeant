@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { isDeployedProduction } from "../env.js";
+
 // Re-imports `env/env.ts` from scratch each test so the zod schema reads the
 // current `process.env` snapshot. Without this every test would see whatever
 // state the first import froze.
@@ -45,6 +47,35 @@ const PROD_BASELINE = {
   SENTRY_DSN: "https://examplePublicKey@o0.ingest.sentry.io/0",
 };
 
+describe("isDeployedProduction — host-agnostic prod detection", () => {
+  it("returns true under the Coolify env shape (NODE_ENV=production, no RAILWAY_*)", () => {
+    expect(isDeployedProduction({ NODE_ENV: "production" })).toBe(true);
+  });
+
+  it("returns true via the generic APP_ENV signal (NODE_ENV unset/non-prod)", () => {
+    expect(isDeployedProduction({ APP_ENV: "production" })).toBe(true);
+    expect(
+      isDeployedProduction({ NODE_ENV: "test", APP_ENV: "production" }),
+    ).toBe(true);
+  });
+
+  it("returns true via legacy Railway signals", () => {
+    expect(
+      isDeployedProduction({ NODE_ENV: "test", RAILWAY_ENVIRONMENT: "prod" }),
+    ).toBe(true);
+    expect(
+      isDeployedProduction({ NODE_ENV: "test", RAILWAY_SERVICE_NAME: "api" }),
+    ).toBe(true);
+  });
+
+  it("returns false for local/dev shapes and non-'production' APP_ENV", () => {
+    expect(isDeployedProduction({ NODE_ENV: "development" })).toBe(false);
+    expect(isDeployedProduction({ NODE_ENV: "test" })).toBe(false);
+    expect(isDeployedProduction({ APP_ENV: "staging" })).toBe(false);
+    expect(isDeployedProduction({})).toBe(false);
+  });
+});
+
 describe("assertStartupEnv — AI_QUOTA_DISABLED hard-block (H9)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -82,6 +113,16 @@ describe("assertStartupEnv — AI_QUOTA_DISABLED hard-block (H9)", () => {
       ...PROD_BASELINE,
       NODE_ENV: "test",
       RAILWAY_SERVICE_NAME: "sergeant-api",
+      AI_QUOTA_DISABLED: "true",
+    });
+    expect(() => assertStartupEnv()).toThrow(/AI_QUOTA_DISABLED/);
+  });
+
+  it("throws via APP_ENV=production on Coolify (no NODE_ENV=production, no RAILWAY_*)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      NODE_ENV: "test",
+      APP_ENV: "production",
       AI_QUOTA_DISABLED: "true",
     });
     expect(() => assertStartupEnv()).toThrow(/AI_QUOTA_DISABLED/);

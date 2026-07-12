@@ -5,15 +5,8 @@ import {
   registerAuthMailDispatcher,
   type AuthMailJobData,
 } from "../lib/jobs/authMail.js";
+import { isDeployedProduction } from "../env/env.js";
 import { logger } from "../obs/logger.js";
-
-function isDeployedProduction(): boolean {
-  return (
-    process.env["NODE_ENV"] === "production" ||
-    Boolean(process.env["RAILWAY_ENVIRONMENT"]) ||
-    Boolean(process.env["RAILWAY_SERVICE_NAME"])
-  );
-}
 
 function emailFingerprint(email: string): string {
   return createHash("sha256")

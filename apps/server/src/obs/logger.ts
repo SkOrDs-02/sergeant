@@ -223,9 +223,10 @@ const pinoOptions: LoggerOptions = {
   base: {
     service: "sergeant-api",
     env: env.NODE_ENV,
-    ...(env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA
+    ...(env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA || env.GIT_SHA
       ? {
-          release: env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA,
+          release:
+            env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA || env.GIT_SHA,
         }
       : {}),
   },

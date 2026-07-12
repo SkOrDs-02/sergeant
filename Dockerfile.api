@@ -166,6 +166,14 @@ ENV PATH="/nodejs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/b
 
 ENV NODE_ENV=production
 
+# Per-deploy commit SHA. No PaaS injects one at runtime here (Coolify pulls a
+# prebuilt ghcr image), so `deploy-api.yml` passes `--build-arg GIT_SHA=${{
+# github.sha }}` and we bake it as an env var. Feeds `resolveSentryRelease`,
+# `resolveServerBuildId`, and `app_build_info` so Sentry releases + the
+# X-Server-Build-Id header stop reading "unknown". Empty in local `docker build`.
+ARG GIT_SHA=""
+ENV GIT_SHA=${GIT_SHA}
+
 # OpenClaw `read_strategy_docs` (ADR-0031 §5) reads from repo-relative
 # `docs/<allowlisted-prefix>/`. `OPENCLAW_REPO_ROOT=/app` робить tool
 # детермінованим у container-i (без цього `resolveRepoRoot()` ішов 5 рівнів

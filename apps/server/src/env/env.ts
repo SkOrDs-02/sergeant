@@ -110,6 +110,15 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["production", "development", "test"])
     .default("development"),
+  /**
+   * Host-agnostic production signal. `NODE_ENV` alone couples prod-detection
+   * to a single var that a PaaS may or may not set (Railway injected
+   * `RAILWAY_ENVIRONMENT`; Coolify/Hetzner sets neither — the image bakes
+   * `NODE_ENV=production`, but that is one fragile signal). Set
+   * `APP_ENV=production` on any deploy to force prod guards on regardless of
+   * host. Consumed by {@link isDeployedProduction}.
+   */
+  APP_ENV: z.string().optional(),
   /** HTTP-порт. Railway інжектить автоматично. */
   PORT: coerceInt.default(3000),
   /**
@@ -330,6 +339,13 @@ const envSchema = z.object({
   RAILWAY_ENVIRONMENT: z.string().optional(),
   RAILWAY_SERVICE_NAME: z.string().optional(),
   RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
+  /**
+   * Coolify/ghcr equivalent of `RAILWAY_GIT_COMMIT_SHA`. The API image is
+   * built by `deploy-api.yml` and pulled by Coolify, so no PaaS injects a
+   * per-deploy SHA at runtime — `Dockerfile.api` bakes `GIT_SHA=${github.sha}`
+   * as a build-arg instead. Feeds the same Sentry-release / build-id cascades.
+   */
+  GIT_SHA: z.string().optional(),
   /** Generic CI commit SHA fallback (GitHub Actions, GitLab, тощо). */
   GIT_COMMIT: z.string().optional(),
   /** Vercel build commit SHA — fallback для Sentry / app_build_info. */
@@ -1408,14 +1424,38 @@ function parseEnv(): Env {
 export const env: Env = parseEnv();
 
 /**
+ * Host-agnostic "are we running a real deployment" check. Single source of
+ * truth for every prod-only guard (`assertStartupEnv`, `betterAuthEnv`, the
+ * transactional/FTUX mail send-gates) so they cannot drift apart.
+ *
+ * Signals, any of which flips it on:
+ *   - `NODE_ENV=production`      — baked into `Dockerfile.api`; the default.
+ *   - `APP_ENV=production`       — host-agnostic override; set this on
+ *                                  Coolify/Hetzner so guards fire even if the
+ *                                  platform overwrites `NODE_ENV`.
+ *   - `RAILWAY_ENVIRONMENT` / `RAILWAY_SERVICE_NAME` — legacy Railway signals,
+ *                                  kept for zero-regression during migration.
+ *
+ * Reads `process.env` at call time (not the parsed `env`) so tests can flip it
+ * via `vi.stubEnv` without re-importing, matching `isAiQuotaDisabled`.
+ */
+export function isDeployedProduction(
+  procEnv: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return (
+    procEnv["NODE_ENV"] === "production" ||
+    procEnv["APP_ENV"] === "production" ||
+    Boolean(procEnv["RAILWAY_ENVIRONMENT"]) ||
+    Boolean(procEnv["RAILWAY_SERVICE_NAME"])
+  );
+}
+
+/**
  * Startup assertions для production. Виклик у `index.ts` після імпорту.
  * Не дублює `betterAuthEnv.ts` — лише перевіряє змінні поза auth-скоупом.
  */
 export function assertStartupEnv(): void {
-  const isProduction =
-    env.NODE_ENV === "production" ||
-    Boolean(env.RAILWAY_ENVIRONMENT) ||
-    Boolean(env.RAILWAY_SERVICE_NAME);
+  const isProduction = isDeployedProduction();
 
   const warnings: string[] = [];
 
@@ -1625,7 +1665,7 @@ export function assertStartupEnv(): void {
   // boot instead of at the next billing cycle.
   if (isProduction && env.AI_QUOTA_DISABLED) {
     throw new Error(
-      "AI_QUOTA_DISABLED MUST NOT be set in production. It disables every per-user / per-IP AI cap and lets clients burn the entire Anthropic budget. If you really need this in production (e.g. emergency disable of the quota subsystem itself), unset NODE_ENV / RAILWAY_ENVIRONMENT for that run, document the reason in the runbook, and remove the override immediately after.",
+      "AI_QUOTA_DISABLED MUST NOT be set in production. It disables every per-user / per-IP AI cap and lets clients burn the entire Anthropic budget. If you really need this in production (e.g. emergency disable of the quota subsystem itself), unset NODE_ENV / APP_ENV / RAILWAY_ENVIRONMENT for that run, document the reason in the runbook, and remove the override immediately after.",
     );
   }
 
@@ -1725,7 +1765,7 @@ export function assertStartupEnv(): void {
   // emitting their own specific errors when several misconfigs coexist.
   if (isProduction && !env.SENTRY_DSN) {
     throw new Error(
-      "SENTRY_DSN is required in production. Without it server exceptions are invisible — the Sentry → n8n → Telegram alert chain never fires while /health stays green. Copy the DSN from sentry.io → Project Settings → Client Keys (DSN). For a deliberate no-Sentry run, unset NODE_ENV/RAILWAY_ENVIRONMENT for that run and document the reason in the runbook.",
+      "SENTRY_DSN is required in production. Without it server exceptions are invisible — the Sentry → n8n → Telegram alert chain never fires while /health stays green. Copy the DSN from sentry.io → Project Settings → Client Keys (DSN). For a deliberate no-Sentry run, unset NODE_ENV/APP_ENV/RAILWAY_ENVIRONMENT for that run and document the reason in the runbook.",
     );
   } else if (!env.SENTRY_DSN) {
     warnings.push("SENTRY_DSN is not set — error tracking is disabled.");
