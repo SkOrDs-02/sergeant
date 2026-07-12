@@ -95,13 +95,13 @@ export function TransactionsHeader({
             )}
             <button
               onClick={() => setSelectMode(true)}
-              className="text-xs px-3 py-2 rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors min-h-[36px]"
+              className="w-11 h-11 flex items-center justify-center rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors"
               title="Вибрати кілька"
               aria-label="Режим вибору"
             >
               <svg
-                width="14"
-                height="14"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"

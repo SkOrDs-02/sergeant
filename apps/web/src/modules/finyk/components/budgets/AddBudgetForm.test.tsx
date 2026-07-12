@@ -120,7 +120,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.change(screen.getByLabelText("Вже відкладено"), {
       target: { value: "5000" },
     });
-    fireEvent.change(screen.getByLabelText("Дедлайн"), {
+    fireEvent.change(screen.getByLabelText("Дата завершення"), {
       target: { value: "2026-12-31" },
     });
     fireEvent.submit(screen.getByRole("form", { name: "Нова ціль бюджету" }));
@@ -180,7 +180,9 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     const { onSubmit } = setup();
     fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
 
-    fireEvent.click(screen.getByRole("button", { name: /Емодзі 🏠/ }));
+    fireEvent.change(screen.getByLabelText("Іконка цілі"), {
+      target: { value: "🏠" },
+    });
 
     fireEvent.change(screen.getByLabelText("Назва цілі"), {
       target: { value: "Хата" },

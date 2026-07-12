@@ -22,6 +22,7 @@ import { NoBankBanner } from "./components/NoBankBanner";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { tryShowCrossModulePrompt } from "@shared/lib/modules/crossModulePrompt";
@@ -335,11 +336,16 @@ export default function App({
           subtitle="Monobank · бюджети"
           right={
             <div className="flex items-center gap-2">
-              <SyncPill
-                syncTone={syncTone}
-                showBalance={showBalance}
-                setShowBalance={setShowBalance}
-              />
+              <SyncPill syncTone={syncTone} />
+              <button
+                type="button"
+                onClick={() => setShowBalance(!showBalance)}
+                className="focus-ring w-11 h-11 flex items-center justify-center rounded-full text-subtle hover:text-text hover:bg-panelHi transition-colors"
+                aria-label={showBalance ? "Приховати суми" : "Показати суми"}
+                title={showBalance ? "Приховати суми" : "Показати суми"}
+              >
+                <Icon name={showBalance ? "eye" : "eye-off"} size="lg" />
+              </button>
               <ModuleHeaderAssistantButton />
               {onOpenSettings && (
                 <ModuleHeaderSettingsButton onClick={onOpenSettings} />
@@ -512,15 +518,9 @@ function FinykHeaderIcon(): React.ReactElement {
 
 interface SyncPillProps {
   syncTone: { dot: string; text: string; pill: string };
-  showBalance: boolean;
-  setShowBalance: (v: boolean) => void;
 }
 
-function SyncPill({
-  syncTone,
-  showBalance,
-  setShowBalance,
-}: SyncPillProps): React.ReactElement {
+function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
   return (
     <div
       className={cn(
@@ -534,54 +534,7 @@ function SyncPill({
     >
       <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", syncTone.dot)} />
       <span className="sr-only sm:not-sr-only">{syncTone.text}</span>
-      <button
-        type="button"
-        onClick={() => setShowBalance(!showBalance)}
-        className="focus-ring w-11 h-11 flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
-        aria-label={showBalance ? "Приховати суми" : "Показати суми"}
-        title={showBalance ? "Приховати суми" : "Показати суми"}
-      >
-        {showBalance ? <EyeOpenIcon /> : <EyeClosedIcon />}
-      </button>
     </div>
-  );
-}
-
-function EyeOpenIcon(): React.ReactElement {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeClosedIcon(): React.ReactElement {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
   );
 }
 
