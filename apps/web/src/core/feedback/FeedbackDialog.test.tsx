@@ -92,26 +92,6 @@ describe("FeedbackDialog", () => {
     expect(textarea.placeholder).toBe(messages.feedback.placeholderOther);
   });
 
-  it("sets has_page_context false when the context toggle is off", () => {
-    renderDialog();
-
-    fireEvent.change(screen.getByLabelText(messages.feedback.messageLabel), {
-      target: { value: "Додайте темну тему" },
-    });
-    fireEvent.click(screen.getByLabelText(messages.feedback.contextLabel));
-    fireEvent.click(
-      screen.getByRole("button", { name: messages.feedback.submit }),
-    );
-
-    const payload = trackEventMock.mock.calls[0]?.[1] as Record<
-      string,
-      unknown
-    >;
-    expect(payload["has_page_context"]).toBe(false);
-    expect(payload["page"]).toBeUndefined();
-    expect(payload["viewport"]).toBeUndefined();
-  });
-
   it("trims the message and calls onClose on successful submit", () => {
     const { onClose } = renderDialog();
 

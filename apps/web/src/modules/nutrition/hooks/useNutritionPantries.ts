@@ -134,7 +134,7 @@ export function useNutritionPantries({
       pantries,
       activePantryId,
     );
-    setPantryStorageErr(ok ? "" : "Не вдалося зберегти дані складів.");
+    setPantryStorageErr(ok ? "" : "Не вдалося зберегти дані комор.");
   }, [pantries, activePantryId]);
 
   const pantrySummary = useMemo(() => {
@@ -237,7 +237,7 @@ export function useNutritionPantries({
   };
 
   const beginRenamePantry = () => {
-    const curName = String(activePantry?.name || "").trim() || "Склад";
+    const curName = String(activePantry?.name || "").trim() || "Комора";
     setPantryForm({ mode: "rename", name: curName, err: "" });
     setPantryManagerOpen(true);
   };

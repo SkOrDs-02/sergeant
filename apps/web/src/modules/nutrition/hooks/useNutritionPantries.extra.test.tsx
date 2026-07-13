@@ -103,7 +103,7 @@ describe("useNutritionPantries — persist + SQLite overlay branches", () => {
     act(() => result.current.setPantryText("яйця"));
     await waitFor(() =>
       expect(result.current.pantryStorageErr).toBe(
-        "Не вдалося зберегти дані складів.",
+        "Не вдалося зберегти дані комор.",
       ),
     );
   });

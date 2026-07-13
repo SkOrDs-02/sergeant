@@ -102,7 +102,7 @@ export function DailyPlanCard({
       <div className="text-style-label text-text">Денний план</div>
       <div className="text-xs text-muted mt-0.5">
         AI генерує персоналізований план прийомів їжі з урахуванням твоїх цілей
-        та продуктів зі складу.
+        та продуктів з комори.
       </div>
 
       <div className="mt-4 space-y-4">
@@ -289,7 +289,7 @@ export function DailyPlanCard({
 
         {pantryItems?.length === 0 && (
           <div className="text-xs text-muted text-center -mt-2">
-            Додай продукти на склад — AI врахує їх у плані
+            Додай продукти в комору — AI врахує їх у плані
           </div>
         )}
 

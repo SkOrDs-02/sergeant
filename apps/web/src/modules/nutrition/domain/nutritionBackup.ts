@@ -91,7 +91,7 @@ function normalizePantry(x: unknown): NutritionBackupPantry | null {
   if (!x || typeof x !== "object") return null;
   const rec = x as Record<string, unknown>;
   const id = safeString(rec["id"], "").trim();
-  const name = safeString(rec["name"], "").trim() || "Склад";
+  const name = safeString(rec["name"], "").trim() || "Комора";
   const text = safeString(rec["text"], "");
   const items = Array.isArray(rec["items"])
     ? rec["items"]

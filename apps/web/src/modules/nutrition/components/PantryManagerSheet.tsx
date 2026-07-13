@@ -70,7 +70,7 @@ export function PantryManagerSheet({
   const safePantries = Array.isArray(pantries) ? pantries : [];
   const activePantry =
     safePantries.find((p) => p.id === activePantryId) ?? null;
-  const activeName = activePantry?.name?.trim() || "Склад";
+  const activeName = activePantry?.name?.trim() || "Комора";
   // Гарантуємо хоча б один склад: останній не показуємо в розділі
   // «Інше → Видалити», бо `onConfirmDeletePantry` для нього no-op
   // (щоб не залишити користувача зовсім без сховища).
@@ -116,17 +116,17 @@ export function PantryManagerSheet({
   const formTitle =
     pantryForm.mode === "rename"
       ? `Перейменувати «${activeName}»`
-      : "Новий склад";
+      : "Нова комора";
   const formHint =
     pantryForm.mode === "rename"
       ? "Введи нову назву та збережи."
-      : "Введи назву нового складу та натисни «Створити».";
+      : "Введи назву нової комори та натисни «Створити».";
 
   return (
     <Sheet
       open={open}
       onClose={onClose}
-      title="Склади продуктів"
+      title="Комори продуктів"
       description="Створи окремо для Дім / Робота або по дієті"
       panelClassName="nutrition-sheet"
       zIndex={100}
@@ -159,7 +159,7 @@ export function PantryManagerSheet({
                       "underline decoration-nutrition/30 underline-offset-2",
                   )}
                 >
-                  {p.name || "Склад"}
+                  {p.name || "Комора"}
                 </div>
                 {active ? (
                   <span className="text-style-caption px-2 py-0.5 rounded-full bg-nutrition/15 text-nutrition-strong dark:text-nutrition border border-nutrition/25">
@@ -189,7 +189,7 @@ export function PantryManagerSheet({
           )}
           onClick={onBeginCreate}
         >
-          + Новий склад
+          + Нова комора
         </Button>
       </div>
 
@@ -229,7 +229,7 @@ export function PantryManagerSheet({
               }
               disabled={busy}
               aria-label={
-                pantryForm.mode === "rename" ? "Нова назва" : "Назва складу"
+                pantryForm.mode === "rename" ? "Нова назва" : "Назва комори"
               }
             />
             {pantryForm.err ? (
@@ -299,7 +299,7 @@ export function PantryManagerSheet({
                 Небезпечна зона
               </SectionHeading>
               <p className="text-xs text-subtle leading-relaxed mt-1">
-                Видалить активний склад «{activeName}» разом з усіма продуктами
+                Видалить активну комору «{activeName}» разом з усіма продуктами
                 в ньому. Дію не можна відмінити.
               </p>
               <button
@@ -312,7 +312,7 @@ export function PantryManagerSheet({
                   "transition-colors",
                 )}
               >
-                🗑 Видалити активний склад
+                🗑 Видалити активну комору
               </button>
             </div>
           )}

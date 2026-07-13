@@ -474,7 +474,7 @@ export const messages = {
   },
 
   nutrition: {
-    fromPantry: "Зі складу",
+    fromPantry: "З комори",
     mealType: "Прийом їжі",
     templates: "Шаблони",
     // HubReports NutritionCard

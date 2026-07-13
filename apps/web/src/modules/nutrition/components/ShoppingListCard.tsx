@@ -79,7 +79,7 @@ export function ShoppingListCard({
       <div className="text-style-label text-text">Список покупок</div>
       <div className="text-xs text-subtle mt-0.5">
         AI складає список з рецептів або тижневого плану, автоматично виключаючи
-        продукти зі складу.
+        продукти з комори.
       </div>
 
       <div className="mt-4 space-y-3">
@@ -159,7 +159,7 @@ export function ShoppingListCard({
                     size="sm"
                     onClick={onAddCheckedToPantry}
                   >
-                    + До складу
+                    + До комори
                   </Button>
                 )}
                 {checked > 0 && (

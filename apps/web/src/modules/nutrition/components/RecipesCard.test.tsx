@@ -353,8 +353,8 @@ describe("RecipesCard — recipe generator section", () => {
     expect(setPrefs).toHaveBeenCalledTimes(1);
   });
 
-  it("uses 'Склад' fallback when activePantry is null", () => {
+  it("uses 'Комора' fallback when activePantry is null", () => {
     renderCard(makeProps({ activePantry: null }));
-    expect(screen.getByText(/Рецепти \(Склад\)/i)).toBeTruthy();
+    expect(screen.getByText(/Рецепти \(Комора\)/i)).toBeTruthy();
   });
 });

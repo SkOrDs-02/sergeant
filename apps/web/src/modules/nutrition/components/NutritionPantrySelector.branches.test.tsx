@@ -20,7 +20,7 @@ describe("NutritionPantrySelector", () => {
     } as never;
     render(<NutritionPantrySelector pantry={pantry} />);
     expect(screen.getByText("1 продуктів збережено")).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText("Керування складами"));
+    fireEvent.click(screen.getByLabelText("Керування коморами"));
     expect(setPantryManagerOpen).toHaveBeenCalledWith(true);
   });
 
@@ -33,7 +33,7 @@ describe("NutritionPantrySelector", () => {
       setPantryManagerOpen: vi.fn(),
     } as never;
     render(<NutritionPantrySelector pantry={pantry} />);
-    expect(screen.getByText("Склад порожній")).toBeInTheDocument();
+    expect(screen.getByText("Комора порожня")).toBeInTheDocument();
   });
 
   it("shows select when multiple pantries exist", () => {
@@ -49,7 +49,7 @@ describe("NutritionPantrySelector", () => {
       setPantryManagerOpen: vi.fn(),
     } as never;
     render(<NutritionPantrySelector pantry={pantry} />);
-    fireEvent.change(screen.getByLabelText("Обрати склад"), {
+    fireEvent.change(screen.getByLabelText("Обрати комору"), {
       target: { value: "p2" },
     });
     expect(setActivePantryId).toHaveBeenCalledWith("p2");

@@ -112,7 +112,7 @@ describe("PantryManagerSheet (PR-37 / §3.2 + 2026-05 §3.4)", () => {
     expect(screen.queryByRole("button", { name: "Створити" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Скасувати" })).toBeNull();
     // The action triggers (still visible) confirm the sheet is interactive.
-    expect(screen.getByRole("button", { name: "+ Новий склад" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "+ Нова комора" })).toBeTruthy();
   });
 
   it("triggers onBeginRename when tapping the active pantry row", () => {
@@ -175,14 +175,14 @@ describe("PantryManagerSheet (PR-37 / §3.2 + 2026-05 §3.4)", () => {
     // Collapsed by default — danger zone copy/button is not rendered yet.
     expect(screen.queryByText(/Небезпечна зона/)).toBeNull();
     expect(
-      screen.queryByRole("button", { name: /Видалити активний склад/ }),
+      screen.queryByRole("button", { name: /Видалити активну комору/ }),
     ).toBeNull();
 
     // Expand the «Інше» section.
     fireEvent.click(screen.getByRole("button", { name: /Інше/ }));
 
     const deleteBtn = screen.getByRole("button", {
-      name: /Видалити активний склад/,
+      name: /Видалити активну комору/,
     });
     expect(deleteBtn).toBeTruthy();
     fireEvent.click(deleteBtn);
@@ -202,7 +202,7 @@ describe("PantryManagerSheet (PR-37 / §3.2 + 2026-05 §3.4)", () => {
     expect(screen.queryByRole("button", { name: /Інше/ })).toBeNull();
     expect(screen.queryByText(/Небезпечна зона/)).toBeNull();
     expect(
-      screen.queryByRole("button", { name: /Видалити активний склад/ }),
+      screen.queryByRole("button", { name: /Видалити активну комору/ }),
     ).toBeNull();
   });
 });

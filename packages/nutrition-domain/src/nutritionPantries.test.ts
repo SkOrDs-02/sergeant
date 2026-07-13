@@ -72,13 +72,13 @@ describe("normalizePantries", () => {
     expect(res[1]!.id).not.toBe(res[2]!.id); // index-частина різна
   });
 
-  it("name відсутній → 'Склад' (не пустий рядок)", () => {
+  it("name відсутній → 'Комора' (не пустий рядок)", () => {
     expect(normalizePantries([{ id: "p1", items: [] }])).toMatchObject([
-      { name: "Склад" },
+      { name: "Комора" },
     ]);
     expect(
       normalizePantries([{ id: "p1", name: "   ", items: [] }]),
-    ).toMatchObject([{ name: "Склад" }]);
+    ).toMatchObject([{ name: "Комора" }]);
   });
 
   it("text == null → '' (не лишає undefined у State)", () => {
