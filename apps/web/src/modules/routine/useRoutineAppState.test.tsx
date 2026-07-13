@@ -247,13 +247,13 @@ describe("useRoutineAppState", () => {
     );
   });
 
-  it("opens first-run quick add and consumes valid routineDay deep links", async () => {
+  it("does not auto-open first-run quick add and consumes valid routineDay deep links", async () => {
     routineAppMocks.firstRun.firstRun = true;
     routineAppMocks.location.search = "?routineDay=2026-06-20&keep=1";
     const { result } = renderHook(() => useRoutineAppState({}));
 
-    expect(result.current.quickAddHabitOpen).toBe(true);
-    expect(result.current.quickAddFirstRunHint).toBe(true);
+    expect(result.current.quickAddHabitOpen).toBe(false);
+    expect(result.current.quickAddFirstRunHint).toBe(false);
     await waitFor(() => {
       expect(routineAppMocks.markSeen).toHaveBeenCalledOnce();
     });

@@ -52,6 +52,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const cellRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
   useEffect(() => {
@@ -200,14 +201,41 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     }
     return null;
   }, [selected, weeks]);
+  const todayCell = useMemo(() => {
+    for (const week of weeks) {
+      for (const cell of week) {
+        if (cell.isToday) return cell;
+      }
+    }
+    return null;
+  }, [weeks]);
+  const detailCell = selectedCell ?? todayCell;
+
+  useEffect(() => {
+    if (!todayCell) return;
+    const todayButton = cellRefs.current.get(todayCell.key);
+    todayButton?.scrollIntoView?.({
+      block: "nearest",
+      inline: "start",
+      behavior: "auto",
+    });
+    if (viewportRef.current && todayButton) {
+      viewportRef.current.scrollLeft = Math.max(0, todayButton.offsetLeft - 8);
+    }
+  }, [todayCell]);
 
   return (
     <Card ref={rootRef} radius="lg">
       <SectionHeading as="p" size="sm" className="mb-3">
-        Активність за рік
+        Активність: сьогодні та історія
       </SectionHeading>
 
-      <div className="overflow-x-auto -mx-1 px-1 pb-1">
+      <div className="mb-2 text-style-caption text-subtle">
+        Горизонтальна історія за 12 місяців відкривається на сьогоднішньому
+        дні.
+      </div>
+
+      <div ref={viewportRef} className="overflow-x-auto -mx-1 px-1 pb-1">
         <div style={{ display: "flex", gap: 0, alignItems: "flex-start" }}>
           <div
             aria-hidden="true"
@@ -275,6 +303,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                       cell.total === 1 ? "звички" : "звичок"
                     }`}
                     aria-pressed={cell.key === selected}
+                    data-today={cell.isToday ? "true" : undefined}
                     className={cn(
                       "rounded-sm transition-opacity focus-visible:outline focus-visible:outline-2",
                       HEATMAP.outline,
@@ -293,23 +322,24 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
 
       {/* Persistent aria-live region: SR announces when a cell is selected */}
       <div aria-live="polite" aria-atomic="true" className="mt-3">
-        {selectedCell ? (
+        {detailCell ? (
           <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2 text-xs">
             <span className="text-subtle truncate">
-              {selectedCell.dt.toLocaleDateString("uk-UA", {
+              {detailCell.dt.toLocaleDateString("uk-UA", {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
                 year: "numeric",
               })}
+              {detailCell.isToday ? " · сьогодні" : ""}
             </span>
             <span className="font-semibold text-text shrink-0">
-              {selectedCell.isFuture
+              {detailCell.isFuture
                 ? "ще не настало"
-                : selectedCell.total === 0
+                : detailCell.total === 0
                   ? "немає звичок"
-                  : `${selectedCell.cnt} з ${selectedCell.total} ${
-                      selectedCell.total === 1 ? "звички" : "звичок"
+                  : `${detailCell.cnt} з ${detailCell.total} ${
+                      detailCell.total === 1 ? "звички" : "звичок"
                     } виконано`}
             </span>
           </div>

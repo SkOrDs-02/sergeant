@@ -149,7 +149,7 @@ describe("ChatInput", () => {
   it("renders help button", () => {
     render(<TestWrapper />);
     expect(
-      screen.getByRole("button", { name: "Показати список команд" }),
+      screen.getByRole("button", { name: "Команди: показати довідку" }),
     ).toBeInTheDocument();
   });
 
@@ -157,7 +157,7 @@ describe("ChatInput", () => {
     const onHelp = vi.fn();
     render(<TestWrapper onHelp={onHelp} />);
     fireEvent.click(
-      screen.getByRole("button", { name: "Показати список команд" }),
+      screen.getByRole("button", { name: "Команди: показати довідку" }),
     );
     expect(onHelp).toHaveBeenCalledTimes(1);
   });

@@ -174,9 +174,9 @@ function renderPantryPage(
 afterEach(() => cleanup());
 
 describe("NutritionPantryPage", () => {
-  it("renders without crashing — shows SubTabs with Склад and Покупки", () => {
+  it("renders without crashing — shows SubTabs with Комора and Покупки", () => {
     renderPantryPage();
-    expect(screen.getByRole("tab", { name: "Склад" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Комора" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Покупки" })).toBeTruthy();
   });
 

@@ -250,6 +250,14 @@ describe("generatePDFReport", () => {
     const html = generatePDFReport({ title: "T", sections: [] });
     expect(html).toMatch(/Згенеровано .+ о .+/);
   });
+
+  it("renders explicit preview actions for the PDF flow", () => {
+    const html = generatePDFReport({ title: "T", sections: [] });
+    expect(html).toContain("Перегляд і збереження PDF");
+    expect(html).toContain("Назад");
+    expect(html).toContain("Друкувати / зберегти PDF");
+    expect(html).toContain(".print-preview-toolbar");
+  });
 });
 
 describe("exportToPDF", () => {
@@ -257,7 +265,7 @@ describe("exportToPDF", () => {
     vi.restoreAllMocks();
   });
 
-  it("відкриває нове вікно, пише HTML і запускає print після onload", () => {
+  it("opens a new window, writes preview HTML and focuses it without auto-printing", () => {
     const printSpy = vi.fn();
     const focusSpy = vi.fn();
     const writeSpy = vi.fn();
@@ -281,13 +289,14 @@ describe("exportToPDF", () => {
 
     expect(window.open).toHaveBeenCalledWith("", "_blank");
     expect(writeSpy).toHaveBeenCalledTimes(1);
+    expect(writeSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Друкувати / зберегти PDF"),
+    );
     expect(closeSpy).toHaveBeenCalledTimes(1);
 
-    // onload встановлено — стрельнемо вручну.
-    expect(typeof fakeWindow.onload).toBe("function");
-    fakeWindow.onload!();
     expect(focusSpy).toHaveBeenCalledTimes(1);
-    expect(printSpy).toHaveBeenCalledTimes(1);
+    expect(fakeWindow.onload).toBeNull();
+    expect(printSpy).not.toHaveBeenCalled();
   });
 
   it("якщо window.open повернув null — нічого не падає", () => {

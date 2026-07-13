@@ -53,6 +53,15 @@ describe("HabitHeatmap", () => {
     expect(focusable[0]?.getAttribute("aria-label")).toBe(
       "2026-06-16: 1 з 1 звички",
     );
+    expect(focusable[0]).toHaveAttribute("data-today", "true");
+  });
+
+  it("shows today's status before the user picks a historical day", () => {
+    const { getAllByText, getByText } = render(
+      <HabitHeatmap habits={habits} completions={completions} />,
+    );
+    expect(getAllByText(/сьогодні/).length).toBeGreaterThan(0);
+    expect(getByText("1 з 1 звички виконано")).toBeInTheDocument();
   });
 
   it("keeps real historical dates a year back on the oldest cells (does not rewrite history)", () => {

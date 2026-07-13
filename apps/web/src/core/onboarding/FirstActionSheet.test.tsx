@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { FirstActionHeroCard } from "./FirstActionSheet";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// Stub the analytics sink so we can assert on `via`. The real impl
-// fires console + posthog, neither of which is interesting to this
-// component-level test.
+import { FirstActionHeroCard } from "./FirstActionSheet";
+import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
+
 vi.mock("../observability/analytics", async () => {
   const actual = await vi.importActual<
     typeof import("../observability/analytics")
@@ -16,12 +15,9 @@ vi.mock("../observability/analytics", async () => {
   };
 });
 
-import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
-
 const VIBE_PICKS_KEY = "hub_onboarding_vibes_v1";
 
-describe("FirstActionHeroCard — inline chips (S2.3)", () => {
-  // The repo's vitest setup does not auto-cleanup RTL renders.
+describe("FirstActionHeroCard", () => {
   afterEach(cleanup);
 
   beforeEach(() => {
@@ -29,127 +25,31 @@ describe("FirstActionHeroCard — inline chips (S2.3)", () => {
     vi.mocked(trackEvent).mockClear();
   });
 
-  it("renders chip-row labels for non-primary picks", () => {
-    // PRIORITY = ["routine", "finyk", "nutrition", "fizruk"], so with all
-    // four picked the primary is `routine` and the chips cover the rest.
-    localStorage.setItem(
-      VIBE_PICKS_KEY,
-      JSON.stringify(["routine", "finyk", "nutrition", "fizruk"]),
-    );
+  it("asks the user to choose when no modules were picked", () => {
     render(<FirstActionHeroCard />);
 
-    // The legacy «Інший модуль» accordion is gone.
-    expect(screen.queryByText(/Інший модуль/)).not.toBeInTheDocument();
-
-    // Primary card surfaces the routine title.
-    expect(screen.getByText("Створи першу звичку")).toBeInTheDocument();
-
-    // Chip row exposes the three non-primary modules by their short
-    // labels (icon-only would be ambiguous).
-    expect(screen.getByRole("button", { name: /Фінік/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Їжа/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Фізрук/ })).toBeInTheDocument();
-  });
-
-  it('tracks chip taps with via="chip" so dashboards can compute switch-rate', () => {
-    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["routine", "finyk"]));
-    render(<FirstActionHeroCard />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
-
-    const calls = vi
-      .mocked(trackEvent)
-      .mock.calls.filter(
-        ([event]) => event === ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED,
-      );
-    expect(calls).toHaveLength(1);
-    expect(calls[0]![1]).toMatchObject({
-      module: "finyk",
-      primary: "routine",
-      via: "chip",
-      // PR-11: PostHog faceting field — no goals, multiple picks → static.
-      primary_reason: "multi-pick-static",
-    });
-  });
-
-  it('tracks primary-card taps with via="primary"', () => {
-    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["routine", "finyk"]));
-    render(<FirstActionHeroCard />);
-
-    // The primary CTA is the only button carrying the routine title.
-    fireEvent.click(screen.getByText("Створи першу звичку"));
-
-    const calls = vi
-      .mocked(trackEvent)
-      .mock.calls.filter(
-        ([event]) => event === ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED,
-      );
-    expect(calls).toHaveLength(1);
-    expect(calls[0]![1]).toMatchObject({
-      module: "routine",
-      primary: "routine",
-      via: "primary",
-      primary_reason: "multi-pick-static",
-    });
-  });
-
-  it("hides the chip row when only one module is picked", () => {
-    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["routine"]));
-    render(<FirstActionHeroCard />);
-    expect(screen.queryByRole("group", { name: /Інший модуль/ })).toBeNull();
+    expect(screen.getByText("З чого хочеш почати?")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /Фінік/ }),
-    ).not.toBeInTheDocument();
-  });
-});
-
-describe("FirstActionHeroCard — goal-aware primary (S2.1)", () => {
-  afterEach(cleanup);
-
-  beforeEach(() => {
-    localStorage.clear();
-    vi.mocked(trackEvent).mockClear();
-  });
-
-  it("promotes finyk when finykBudget is set, even if routine is the static default", () => {
-    localStorage.setItem(
-      VIBE_PICKS_KEY,
-      JSON.stringify(["routine", "finyk", "nutrition", "fizruk"]),
-    );
-    localStorage.setItem(
-      "hub_onboarding_goals_v1",
-      JSON.stringify({ finykBudget: 30000 }),
-    );
-
-    render(<FirstActionHeroCard />);
-
-    // Primary CTA is now finyk's title, not routine's.
-    expect(screen.getByText("Додай першу витрату")).toBeInTheDocument();
-    // Routine drops into the chip row.
+      screen.getByText(/Routine не відкриється автоматично/),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Рутина/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Фінік/ })).toBeInTheDocument();
+    expect(
+      vi
+        .mocked(trackEvent)
+        .mock.calls.some(
+          ([event]) => event === ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_SHOWN,
+        ),
+    ).toBe(false);
   });
 
-  it("promotes nutrition when nutritionGoal is set", () => {
-    localStorage.setItem(
-      VIBE_PICKS_KEY,
-      JSON.stringify(["routine", "nutrition"]),
-    );
-    localStorage.setItem(
-      "hub_onboarding_goals_v1",
-      JSON.stringify({ nutritionGoal: "lose" }),
-    );
+  it("keeps picked modules equal when several modules were picked", () => {
+    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["routine", "finyk"]));
 
     render(<FirstActionHeroCard />);
 
-    expect(screen.getByText("Запиши перший прийом їжі")).toBeInTheDocument();
-  });
-
-  it("falls back to static priority when no goals are set", () => {
-    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk", "fizruk"]));
-
-    render(<FirstActionHeroCard />);
-
-    // No goals → highest-priority pick (finyk over fizruk) wins.
-    expect(screen.getByText("Додай першу витрату")).toBeInTheDocument();
+    expect(screen.getByText("З чого хочеш почати?")).toBeInTheDocument();
+    expect(screen.getByText(/без прихованого пріоритету/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Фінік/ })).toBeInTheDocument();
   });
 });

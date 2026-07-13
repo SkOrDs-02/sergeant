@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 // `kvStoreBoot` pulls in `@sergeant/db-schema/sqlite` (WASM — only available
 // when the package is built). Stub it at the boundary so the full import chain
@@ -60,6 +60,7 @@ vi.mock("../lib/insightsEngine", () => ({
 
 import { act } from "@testing-library/react";
 import { generateInsights } from "../lib/insightsEngine";
+import { exportToPDF } from "@shared/lib/ui/export";
 
 import { HubReports } from "./HubReports";
 
@@ -141,6 +142,22 @@ describe("HubReports — render smoke (F23)", () => {
     expect(
       screen.getByRole("button", { name: /Експортувати PDF/i }),
     ).toBeInTheDocument();
+  });
+
+  it("export PDF sends period and report-state sections to the preview generator", () => {
+    render(<HubReports />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Експортувати PDF/i }));
+
+    expect(exportToPDF).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Sergeant — звіт",
+        sections: expect.arrayContaining([
+          expect.objectContaining({ title: "Період" }),
+          expect.objectContaining({ title: "Стан звіту" }),
+        ]),
+      }),
+    );
   });
 
   // ── F4: touch-target floor + aria-labels ──────────────────────────────────

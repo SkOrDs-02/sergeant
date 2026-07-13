@@ -63,7 +63,7 @@ export function RoutineHeader({
         )
       }
       title="РУТИНА"
-      subtitle="Звички · план Фізрука · один розклад"
+      subtitle="Сьогоднішні звички й найближчі події"
       right={
         <div className="flex items-center gap-2">
           <ModuleHeaderAssistantButton />

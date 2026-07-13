@@ -220,9 +220,65 @@ export function generatePDFReport(options: PDFReportOptions): string {
           color: ${mutedColor};
           text-align: center;
         }
+        .print-preview-toolbar {
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin: -24px -24px 24px;
+          padding: 12px 24px;
+          border-bottom: 1px solid ${borderColor};
+          background: ${bgColor};
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+        .print-preview-title {
+          min-width: 180px;
+        }
+        .print-preview-title strong {
+          display: block;
+          font-size: 14px;
+        }
+        .print-preview-title span {
+          display: block;
+          margin-top: 2px;
+          color: ${mutedColor};
+          font-size: 12px;
+        }
+        .print-preview-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .print-preview-button {
+          min-height: 40px;
+          border-radius: 999px;
+          border: 1px solid ${borderColor};
+          padding: 0 14px;
+          background: ${isDark ? "#252525" : "#f8fafc"};
+          color: ${textColor};
+          font: inherit;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .print-preview-button.primary {
+          border-color: ${isDark ? "#d4d4d4" : "#111827"};
+          background: ${isDark ? "#f5f5f5" : "#111827"};
+          color: ${isDark ? "#111827" : "#ffffff"};
+        }
+        .print-preview-button:focus-visible {
+          outline: 2px solid #2563eb;
+          outline-offset: 2px;
+        }
         @media print {
           body {
             padding: 0;
+          }
+          .print-preview-toolbar {
+            display: none;
           }
           .section {
             page-break-inside: avoid;
@@ -231,6 +287,16 @@ export function generatePDFReport(options: PDFReportOptions): string {
       </style>
     </head>
     <body>
+      <div class="print-preview-toolbar" aria-label="Дії з PDF-звітом">
+        <div class="print-preview-title">
+          <strong>Перегляд і збереження PDF</strong>
+          <span>Перевір звіт, потім відкрий системний друк і збережи як PDF.</span>
+        </div>
+        <div class="print-preview-actions">
+          <button type="button" class="print-preview-button" onclick="if (window.opener && !window.opener.closed) { window.close(); } else { window.history.back(); }">Назад</button>
+          <button type="button" class="print-preview-button primary" onclick="window.focus(); window.print();">Друкувати / зберегти PDF</button>
+        </div>
+      </div>
       <div class="header">
         <div class="header-content">
           <h1>${title}</h1>
@@ -261,7 +327,7 @@ export function generatePDFReport(options: PDFReportOptions): string {
 }
 
 /**
- * Opens a print dialog for PDF generation.
+ * Opens a printable PDF preview with explicit back + print/save actions.
  */
 export function exportToPDF(options: PDFReportOptions): void {
   const html = generatePDFReport(options);
@@ -271,11 +337,7 @@ export function exportToPDF(options: PDFReportOptions): void {
     printWindow.document.write(html);
     printWindow.document.close();
 
-    // Wait for content to load, then print
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-    };
+    printWindow.focus();
   }
 }
 
