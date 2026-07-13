@@ -200,7 +200,10 @@ export function useAppEffects(deps: AppEffectsDeps): void {
       // Always flip the in-memory tab state immediately so the Settings
       // tabpanel mounts even before the URL change is observed via
       // `useLocation().search` — keeps the redirect feeling instant.
-      setHubViewStable("settings");
+      // The explicit navigate below owns the URL transition. Avoid asking
+      // `setHubView` to navigate too, otherwise the privacy prompt produces
+      // two router commits and two scroll/layout passes on iOS.
+      setHubViewStable("settings", { syncUrl: false });
       const target = section
         ? `/?tab=settings#settings-${section}`
         : `/?tab=settings`;
