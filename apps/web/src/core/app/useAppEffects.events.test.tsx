@@ -146,7 +146,7 @@ describe("useAppEffects — global event bridges", () => {
         }),
       );
     });
-    expect(setHubView).toHaveBeenCalledWith("settings");
+    expect(setHubView).toHaveBeenCalledWith("settings", { syncUrl: false });
     expect(navigate).toHaveBeenCalledWith("/?tab=settings#settings-modules");
   });
 

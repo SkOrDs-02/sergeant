@@ -29,7 +29,7 @@ function readViewFromSearch(search: string): HubView {
 export interface HubUIState {
   searchOpen: boolean;
   hubView: HubView;
-  setHubView: (view: HubView) => void;
+  setHubView: (view: HubView, options?: { syncUrl?: boolean }) => void;
   setSearchOpen: (value: boolean) => void;
   closeSearch: () => void;
 }
@@ -53,8 +53,10 @@ export function useHubUIState(): HubUIState {
   }, [location]);
 
   const setHubView = useCallback(
-    (view: HubView) => {
+    (view: HubView, options?: { syncUrl?: boolean }) => {
       setHubViewRaw(view);
+
+      if (options?.syncUrl === false) return;
 
       // Sync the tab to URL search params so deep-links and back button work.
       // CRITICAL: must go through react-router's `navigate` — calling

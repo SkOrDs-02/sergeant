@@ -84,4 +84,17 @@ describe("useAppViewportHeight", () => {
       "",
     );
   });
+
+  it("re-syncs after a route key changes without clearing the old value", () => {
+    const m = mockVisualViewport(700);
+    const { rerender } = renderHook(
+      ({ routeKey }) => useAppViewportHeight(routeKey),
+      { initialProps: { routeKey: "welcome" } },
+    );
+    m.setHeight(812);
+    rerender({ routeKey: "sign-in" });
+    expect(document.documentElement.style.getPropertyValue("--app-dvh")).toBe(
+      "812px",
+    );
+  });
 });

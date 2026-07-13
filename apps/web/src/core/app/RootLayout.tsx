@@ -108,7 +108,6 @@ function AppShell({ children }: { children: React.ReactNode }) {
  */
 export function RootLayout() {
   const chatOverlay = useHubChatOverlayState();
-  useAppViewportHeight();
   return (
     <HubChatOverlayProvider value={chatOverlay}>
       <RootLayoutInner />
@@ -129,6 +128,7 @@ export function RootLayout() {
  */
 function RootLayoutInner() {
   const location = useLocation();
+  useAppViewportHeight(location.key);
   const browserLocation = useBrowserLocation(location);
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(browserLocation.search);
