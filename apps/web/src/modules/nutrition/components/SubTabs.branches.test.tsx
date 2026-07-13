@@ -15,13 +15,13 @@ describe("SubTabs", () => {
         value="pantry"
         onChange={onChange}
         tabs={[
-          { id: "pantry", label: "Склад" },
+          { id: "pantry", label: "Комора" },
           { id: "shopping", label: "Покупки" },
         ]}
         ariaLabel="Підрозділи складу"
       />,
     );
-    expect(screen.getByRole("tab", { name: "Склад" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Комора" })).toHaveAttribute(
       "aria-selected",
       "true",
     );

@@ -238,29 +238,23 @@ export function useRoutineAppState({
     });
   }, [pwaAction, onPwaActionConsumed]);
 
-  // Per-module first-run: pop the quick-create dialog the first time
-  // the user enters Routine. Habits do not have a small «previous
-  // goal» scalar to seed (recurrence/reminders/weekdays all need
-  // explicit input) so the canonical «domivka» is the same
-  // `HabitQuickCreateDialog` every returning user uses; the dialog
-  // itself renders a `<FirstRunHintBanner />` framing this first habit
-  // as preliminary. We mark the seen flag immediately so closing the
-  // dialog without saving still retires the prompt for next time.
-  const routineFirstRun = useModuleFirstRun("routine");
+  // Per-module first-run: entering Routine must not auto-open the
+  // quick-create dialog. The first screen stays about today's habits; the
+  // empty-state / FAB are the explicit "Add habit" affordances. We still mark
+  // the first-run flag as seen so returning to Routine does not keep carrying
+  // stale onboarding state.
+  const { firstRun: isRoutineFirstRun, markSeen: markRoutineFirstRunSeen } =
+    useModuleFirstRun("routine");
   const [quickAddFirstRunHint, setQuickAddFirstRunHint] =
     useState<boolean>(false);
-  const [firstRunDialogOpened, setFirstRunDialogOpened] = useState(false);
-  if (
-    routineFirstRun.firstRun &&
-    pwaAction !== "add_habit" &&
-    !firstRunDialogOpened
-  ) {
-    setFirstRunDialogOpened(true);
-    setQuickAddHabitOpen(true);
-    setQuickAddFocusTick((t) => t + 1);
-    setQuickAddFirstRunHint(true);
-    void Promise.resolve().then(() => routineFirstRun.markSeen());
-  }
+  const firstRunSeenRef = useRef(false);
+  useEffect(() => {
+    if (firstRunSeenRef.current) return;
+    if (!isRoutineFirstRun) return;
+    if (pwaAction === "add_habit") return;
+    firstRunSeenRef.current = true;
+    void Promise.resolve().then(() => markRoutineFirstRunSeen());
+  }, [isRoutineFirstRun, markRoutineFirstRunSeen, pwaAction]);
   const dismissQuickAddFirstRunHint = useCallback(() => {
     setQuickAddFirstRunHint(false);
   }, []);

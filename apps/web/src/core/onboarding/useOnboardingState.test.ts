@@ -98,6 +98,25 @@ describe("useOnboardingState", () => {
     expect(result.current.hero).toBe("today-focus");
   });
 
+  it("clears the first-action slot after the first real entry appears", () => {
+    const storage = makeStorage({
+      isFirstActionPending: vi.fn(() => true),
+    });
+
+    const { result, rerender } = renderHook(
+      (props: UseOnboardingStateOptions) => useOnboardingState(props, storage),
+      { initialProps: { ...BASE, todayFocusAvailable: true } },
+    );
+
+    expect(result.current.showFirstAction).toBe(true);
+
+    rerender({ ...BASE, hasRealEntry: true, todayFocusAvailable: true });
+
+    expect(storage.clearFirstActionPending).toHaveBeenCalledTimes(1);
+    expect(result.current.showFirstAction).toBe(false);
+    expect(result.current.hero).toBe("today-focus");
+  });
+
   it("suppresses soft-auth when user is signed in", () => {
     const { result } = renderHook(() =>
       useOnboardingState(
@@ -230,10 +249,9 @@ describe("useOnboardingState", () => {
 
     expect(result.current.hero).toBe("reengagement");
     expect(result.current.showReengagement).toBe(true);
-    // All four contenders should still be reported.
+    // A completed first real entry clears the first-action candidate.
     expect(result.current.candidates).toEqual([
       "reengagement",
-      "first-action",
       "soft-auth",
       "today-focus",
     ]);

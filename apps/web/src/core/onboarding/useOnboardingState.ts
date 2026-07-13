@@ -24,7 +24,7 @@
  *     to re-couple to it here.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   resolveOnboardingHero,
@@ -173,6 +173,12 @@ export function useOnboardingState(
   const [softAuthDismissed, setSoftAuthDismissed] = useState(() =>
     storage.isSoftAuthDismissed(),
   );
+  const effectiveFirstActionVisible = firstActionVisible && !hasRealEntry;
+
+  useEffect(() => {
+    if (!hasRealEntry || !firstActionVisible) return;
+    storage.clearFirstActionPending();
+  }, [firstActionVisible, hasRealEntry, storage]);
 
   const softAuthEligible = computeSoftAuthEligible(
     user,
@@ -184,7 +190,7 @@ export function useOnboardingState(
 
   const resolution = resolveOnboardingHero({
     reengagementEligible,
-    firstActionVisible,
+    firstActionVisible: effectiveFirstActionVisible,
     softAuthEligible,
     todayFocusAvailable,
   });

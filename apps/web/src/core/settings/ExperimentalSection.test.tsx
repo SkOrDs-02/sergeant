@@ -6,15 +6,18 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
-import { messages } from "@shared/i18n/uk";
-
 import {
   __experimentalAcknowledgmentStoreForTests,
   ExperimentalSection,
 } from "./ExperimentalSection";
 import { __flagsStoreForTests, FLAG_REGISTRY } from "../lib/featureFlags";
 
-const COPY = messages.experimentalSection;
+const COPY = {
+  title: "Додаткові можливості",
+  warningBanner:
+    "Ці можливості можуть змінюватися або працювати нестабільно. Увімкни їх лише якщо готовий швидко вимкнути назад.",
+  optInLabel: "Я розумію, що це ранні можливості",
+};
 
 function expandSection(): void {
   fireEvent.click(screen.getByText(COPY.title));

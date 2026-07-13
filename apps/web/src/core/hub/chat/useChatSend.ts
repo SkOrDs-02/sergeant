@@ -38,6 +38,13 @@ type ChatMessage = HubChatSession["messages"][number];
 const FREE_DAILY_AI_CHAT_LIMIT = 15;
 const DAILY_CHAT_COUNT_KEY = "sergeant:ai-chat:daily-count:v1";
 const AUTO_TTS_ENABLED_KEY = "sergeant:hub-chat:auto-tts:v1";
+const HUB_CHAT_HELP_TEXT = [
+  "Ось коротка довідка по командам:",
+  "",
+  "• /help — показати цю довідку.",
+  "• Напиши дію звичайними словами: «додай витрату 120 грн на каву», «запиши тренування», «що було цього тижня?»",
+  "• Кнопка з ? біля поля вводу теж відкриває цю довідку.",
+].join("\n");
 
 /**
  * Audit 03 F15 (perf): cap the accumulated assistant text length per stream.
@@ -123,7 +130,6 @@ export function useChatSend({
   setMessages,
   initialMessage,
   autoSendInitial,
-  onOpenCatalogue,
 }: UseChatSendOptions): UseChatSendResult {
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -224,13 +230,14 @@ export function useChatSend({
       if (!msg || loading) return;
 
       if (isHelpCommand(msg)) {
-        // /help no longer renders a wall of markdown — it now opens
-        // the catalogue page so the user can browse and tap
-        // capabilities.
+        // /help is a local command: it must always produce visible chat
+        // feedback and must never spend an AI request.
+        setMessages((m) => [
+          ...m,
+          makeUserMsg(msg),
+          makeAssistantMsg(HUB_CHAT_HELP_TEXT),
+        ]);
         setInput("");
-        if (onOpenCatalogue) {
-          onOpenCatalogue();
-        }
         return;
       }
 
@@ -515,7 +522,6 @@ export function useChatSend({
       loading,
       messages,
       online,
-      onOpenCatalogue,
       maybeSpeak,
       queryClient,
       scheduleContextBuild,

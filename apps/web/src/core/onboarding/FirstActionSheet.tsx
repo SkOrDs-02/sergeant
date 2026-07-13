@@ -137,10 +137,12 @@ interface FirstActionHeroCardProps {
 }
 
 export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
-  const picks = useMemo<string[]>(() => {
+  const picks = useMemo<ModuleId[]>(() => {
     const raw = getVibePicks();
-    return raw.length > 0 ? raw : Object.keys(ACTIONS);
+    return raw.filter((id) => isModuleId(id));
   }, []);
+
+  const [activePresetId, setActivePresetId] = useState<ModuleId | null>(null);
 
   // `rankPrimary` reads onboarding goals once and runs a trivial
   // 4-module scan; memoising would add more bookkeeping than it
@@ -154,13 +156,8 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     [ranking.others],
   );
 
-  // Module id whose PresetSheet is currently open, or `null` if closed.
-  // Keeping the hero card mounted while the sheet is open means the
-  // user can dismiss the sheet and try another module without losing
-  // their FTUX context.
-  const [activePresetId, setActivePresetId] = useState<ModuleId | null>(null);
-
   useEffect(() => {
+    if (picks.length === 0) return;
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_SHOWN, {
       picks,
       primary: primaryId,
@@ -178,12 +175,17 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED, {
       module: id,
       primary: primaryId,
-      primary_reason: ranking.reason,
+      primary_reason: picks.length === 0 ? "no-picks" : ranking.reason,
       // S2.3: "chip" replaces the legacy "expand" tag now that the inline
       // chip row is always-visible. PostHog dashboards reading the raw
       // event can compute switch-rate as `count(via="chip") /
       // count(*)`. Keep the value short (one token) — it's faceted on.
-      via: id === primaryId ? "primary" : "chip",
+      via:
+        picks.length === 1 && id === primaryId
+          ? "primary"
+          : picks.length > 1
+            ? "equal-choice"
+            : "chip",
     });
     setActivePresetId(id);
   };
@@ -207,6 +209,176 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     }
   };
 
+  if (picks.length === 0) {
+    const moduleIds = Object.keys(ACTIONS).filter((id): id is ModuleId =>
+      isModuleId(id),
+    );
+
+    return (
+      <>
+        <section
+          className="relative bg-panel border border-line rounded-2xl p-4 shadow-card space-y-3"
+          aria-label="Перша дія"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <SectionHeading as="div" size="sm" variant="subtle">
+                Старт
+              </SectionHeading>
+              <h2 className="text-base font-bold text-text mt-0.5">
+                З чого хочеш почати?
+              </h2>
+              <p className="text-style-caption text-muted mt-0.5 leading-snug">
+                Обери модуль для першого запису. Routine не відкриється
+                автоматично.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="xs"
+              iconOnly
+              onClick={dismiss}
+              aria-label="Сховати"
+              className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
+            >
+              <Icon name="close" size={16} />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {moduleIds.map((id) => {
+              const action = ACTIONS[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => openPreset(id)}
+                  className={cn(
+                    "w-full min-h-[56px] rounded-xl border border-line bg-panelHi px-3 py-2",
+                    "text-left transition-[background-color,border-color]",
+                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                  )}
+                >
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center",
+                        action.accent,
+                      )}
+                      aria-hidden
+                    >
+                      <Icon name={action.icon} size={20} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-text">
+                        {action.chipLabel}
+                      </span>
+                      <span className="block text-style-caption text-muted">
+                        {action.title}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+        <PresetSheet
+          open={activePresetId != null}
+          moduleId={activePresetId}
+          onClose={() => setActivePresetId(null)}
+          onPick={handlePresetPick}
+        />
+      </>
+    );
+  }
+
+  if (picks.length > 1) {
+    return (
+      <>
+        <section
+          className="relative bg-panel border border-line rounded-2xl p-4 shadow-card space-y-3"
+          aria-label="Перша дія"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <SectionHeading as="div" size="sm" variant="subtle">
+                Старт
+              </SectionHeading>
+              <h2 className="text-base font-bold text-text mt-0.5">
+                З чого хочеш почати?
+              </h2>
+              <p className="text-style-caption text-muted mt-0.5 leading-snug">
+                Ти обрав кілька модулів — кожен може бути першим, без
+                прихованого пріоритету.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="xs"
+              iconOnly
+              onClick={dismiss}
+              aria-label="Сховати"
+              className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
+            >
+              <Icon name="close" size={16} />
+            </Button>
+          </div>
+
+          <div
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+            role="group"
+            aria-label="Обрані модулі для старту"
+          >
+            {picks.map((id) => {
+              const action = ACTIONS[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => openPreset(id)}
+                  className={cn(
+                    "w-full min-h-[60px] rounded-xl border border-line bg-panelHi px-3 py-2",
+                    "text-left transition-[background-color,border-color]",
+                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                  )}
+                >
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center",
+                        action.accent,
+                      )}
+                      aria-hidden
+                    >
+                      <Icon name={action.icon} size={20} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-text">
+                        {action.chipLabel}
+                      </span>
+                      <span className="block text-style-caption text-muted">
+                        {action.title}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+        <PresetSheet
+          open={activePresetId != null}
+          moduleId={activePresetId}
+          onClose={() => setActivePresetId(null)}
+          onPick={handlePresetPick}
+        />
+      </>
+    );
+  }
+
   if (!primary) return null;
 
   return (
@@ -221,10 +393,10 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               Старт
             </SectionHeading>
             <h2 className="text-base font-bold text-text mt-0.5">
-              Один запис — і головна твоя
+              {picks.length > 1 ? "З чого хочеш почати?" : "Почни з однієї дії"}
             </h2>
             <p className="text-xs text-muted mt-0.5 leading-snug">
-              Цифри нижче — приклад. Твої з&apos;являться після першого запису.
+              Твої показники з&apos;являться після першого збереженого запису.
             </p>
           </div>
           <Button

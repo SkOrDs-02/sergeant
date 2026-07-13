@@ -33,8 +33,40 @@ vi.mock("./memoryBank", () => ({
     entries.length ? { health: entries } : {},
   memoryStorageSize: () => "0,1 КБ",
   normalizeMemoryEntry: (x: unknown) => x as MemoryEntry,
+  buildMemoryImportPreview: (existing: MemoryEntry[], parsed: unknown[]) => {
+    const valid = (parsed as MemoryEntry[]).filter((entry) => entry?.fact);
+    const existingIds = new Set(existing.map((entry) => entry.id));
+    const newEntries = valid.filter((entry) => !existingIds.has(entry.id));
+    return {
+      validCount: valid.length,
+      invalidCount: (parsed as unknown[]).length - valid.length,
+      duplicateCount: valid.length - newEntries.length,
+      newEntries,
+    };
+  },
+  upsertMemoryFact: (
+    entries: MemoryEntry[],
+    fact: string,
+    category?: string,
+  ) => ({
+    entries: [
+      { id: "manual-1", fact, category: category ?? "other", createdAt: "x" },
+      ...entries,
+    ],
+    entry: { id: "manual-1", fact, category: category ?? "other" },
+    created: true,
+  }),
   CATEGORY_META: { health: { label: "Здоров'я", emoji: "🩺" } },
   MEMORY_ONBOARDING_PROMPT: "ONBOARDING_PROMPT",
+  MEMORY_ADD_INFO_PROMPT: "ADD_INFO_PROMPT",
+  MEMORY_MANUAL_STEPS: [
+    {
+      category: "goal",
+      label: "Фокус",
+      prompt: "Що важливо?",
+      placeholder: "Наприклад",
+    },
+  ],
 }));
 
 const emitHubBusMock = vi.fn();
@@ -83,7 +115,27 @@ describe("MemoryBankSection — empty state", () => {
 
     expect(emitHubBusMock).toHaveBeenCalledWith("openChat", {
       message: "ONBOARDING_PROMPT",
+      autoSend: true,
     });
+  });
+
+  it("offers a manual step-by-step path that writes only memory entries", () => {
+    storedEntries = [];
+    render(<MemoryBankSection />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Заповнити вручну/ }));
+    fireEvent.change(screen.getByPlaceholderText("Наприклад"), {
+      target: { value: "Хочу більше ходити пішки" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Завершити" }));
+
+    expect(writeMemoryEntriesMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        fact: "Хочу більше ходити пішки",
+        category: "goal",
+      }),
+    ]);
+    expect(toastSuccessMock).toHaveBeenCalledWith("Памʼять профілю оновлено");
   });
 });
 
@@ -118,9 +170,7 @@ describe("MemoryBankSection — populated", () => {
     expect(emitHubBusMock).toHaveBeenCalledTimes(1);
     const [event, payload] = emitHubBusMock.mock.calls[0]!;
     expect(event).toBe("openChat");
-    expect((payload as { message: string }).message).not.toBe(
-      "ONBOARDING_PROMPT",
-    );
+    expect(payload).toEqual({ message: "ADD_INFO_PROMPT", autoSend: true });
   });
 });
 
@@ -165,18 +215,22 @@ describe("MemoryBankSection — import", () => {
     return input;
   }
 
-  it("imports a valid array of entries and merges new ones", async () => {
+  it("previews a valid array of entries before merging new ones", async () => {
     const entries = [{ id: "n1", fact: "Веган", category: "diet" }];
     importFile(JSON.stringify(entries));
 
     await vi.waitFor(() => {
-      expect(writeMemoryEntriesMock).toHaveBeenCalled();
+      expect(screen.getByText(/Перевір імпорт/)).toBeInTheDocument();
     });
-    await vi.waitFor(() => {
-      expect(toastSuccessMock).toHaveBeenCalledWith(
-        expect.stringContaining("Імпортовано"),
-      );
-    });
+
+    expect(writeMemoryEntriesMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Імпортувати нові" }));
+
+    expect(writeMemoryEntriesMock).toHaveBeenCalledWith([
+      expect.objectContaining({ id: "n1", fact: "Веган" }),
+    ]);
+    expect(toastSuccessMock).toHaveBeenCalledWith("Імпортовано 1 запис");
   });
 
   it("rejects a non-array payload", async () => {

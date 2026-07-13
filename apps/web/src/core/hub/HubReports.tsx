@@ -126,9 +126,16 @@ export function HubReports() {
           title: "Період",
           content: `<p>${label}</p>`,
         },
+        {
+          title: "Стан звіту",
+          content:
+            insights.length > 0
+              ? `<p>Звіт готовий. Доступно інсайтів: ${insights.length}.</p>`
+              : "<p>Звіт готовий, але для інсайтів поки замало даних. Додай записи в модулях, щоб наступний експорт містив більше висновків.</p>",
+        },
       ],
     });
-  }, [exportGate, label]);
+  }, [exportGate, insights.length, label]);
 
   return (
     <div className="space-y-4">

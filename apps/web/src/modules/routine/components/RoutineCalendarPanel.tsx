@@ -217,6 +217,7 @@ export function RoutineCalendarPanel({
         size="sm"
         variant="routine"
         ariaLabel="Часовий діапазон"
+        className="overflow-x-auto flex-nowrap sm:flex-wrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>button]:shrink-0"
         items={timeModeItems}
         value={timeMode}
         onChange={applyTimeMode}
@@ -255,11 +256,11 @@ export function RoutineCalendarPanel({
       />
 
       <div
-        className="flex flex-wrap gap-1.5 items-center"
+        className="flex flex-nowrap overflow-x-auto gap-1.5 items-center pb-1 sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="group"
         aria-label="Фільтр за тегом"
       >
-        <SectionHeading as="span" size="xs" className="w-full sm:w-auto">
+        <SectionHeading as="span" size="xs" className="shrink-0 sm:w-auto">
           Теги
         </SectionHeading>
         <button
@@ -267,7 +268,7 @@ export function RoutineCalendarPanel({
           aria-pressed={tagFilter === null}
           onClick={() => setTagFilter(null)}
           className={cn(
-            "text-style-caption px-2.5 py-1.5 rounded-full border min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "shrink-0 text-style-caption px-2.5 py-1.5 rounded-full border min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             tagFilter === null ? C.chipOn : C.chipOff,
           )}
         >
@@ -281,7 +282,7 @@ export function RoutineCalendarPanel({
               setTagFilter((f) => (f === "__fizruk" ? null : "__fizruk"))
             }
             className={cn(
-              "text-style-caption px-2.5 py-1.5 rounded-full border min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "shrink-0 text-style-caption px-2.5 py-1.5 rounded-full border min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               tagFilter === "__fizruk"
                 ? "border-info/50 bg-info/10 text-text"
                 : C.chipOff,
@@ -298,7 +299,7 @@ export function RoutineCalendarPanel({
               setTagFilter((f) => (f === "__finyk_sub" ? null : "__finyk_sub"))
             }
             className={cn(
-              "text-style-caption px-2.5 py-1.5 rounded-full border max-w-[200px] truncate min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "shrink-0 text-style-caption px-2.5 py-1.5 rounded-full border max-w-[75vw] sm:max-w-[200px] whitespace-normal break-words leading-snug min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               tagFilter === "__finyk_sub"
                 ? "border-success/40 bg-success/10 text-text"
                 : C.chipOff,
@@ -314,7 +315,7 @@ export function RoutineCalendarPanel({
             aria-pressed={tagFilter === name}
             onClick={() => setTagFilter((f) => (f === name ? null : name))}
             className={cn(
-              "text-style-caption px-2.5 py-1.5 rounded-full border max-w-[160px] truncate min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "shrink-0 text-style-caption px-2.5 py-1.5 rounded-full border max-w-[70vw] sm:max-w-[160px] whitespace-normal break-words leading-snug min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               tagFilter === name ? C.chipOn : C.chipOff,
             )}
           >

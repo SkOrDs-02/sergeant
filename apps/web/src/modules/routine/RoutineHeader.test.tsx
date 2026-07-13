@@ -10,7 +10,7 @@ describe("RoutineHeader", () => {
     render(<RoutineHeader />);
     expect(screen.getByText("РУТИНА")).toBeInTheDocument();
     expect(
-      screen.getByText("Звички · план Фізрука · один розклад"),
+      screen.getByText("Сьогоднішні звички й найближчі події"),
     ).toBeInTheDocument();
   });
 
