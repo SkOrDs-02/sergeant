@@ -14,7 +14,6 @@ import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import type { User } from "@sergeant/shared";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
-import { useHubPref } from "../settings/hubPrefs";
 import { NotificationBell, type HubNotification } from "./NotificationBell";
 
 // WCAG 2.5.5 AAA «Target Size (Enhanced)» рекомендує ≥44×44 пкс для hit-areas;
@@ -102,12 +101,6 @@ export function HubHeader({
   const dateStr = useMemo(() => formatUkrainianDate(), []);
   const { modK } = useShortcutGlyph();
 
-  // C · Контроль: «Чистий режим» — один тап ховає весь сигнальний шар
-  // головної (інсайти, app-lock-промпт, мотиваційний футер), лишаючи модулі
-  // + AI-pill. Стан живе у HUB_PREFS і реактивно ділиться з HubDashboard
-  // через `useHubPref` (StorageEvent same-tab).
-  const [calmMode, setCalmMode] = useHubPref<boolean>("calmMode", false);
-
   return (
     <header
       className={cn(
@@ -172,18 +165,14 @@ export function HubHeader({
 
           {/* Secondary controls fold into a single "⋯" overflow menu so the
               top-bar stays to ≤5 affordances on 375px phones (mobile-audit
-              A3): calm mode, theme, and the privacy status row. */}
+              A3): theme and the privacy status row. Calm mode moved to
+              Settings → Дашборд → Вигляд. */}
           <HubHeaderMenu
             triggerClassName={ICON_BUTTON_CLS}
-            calmMode={calmMode}
-            onToggleCalmMode={() => setCalmMode(!calmMode)}
             onOpenPrivacy={onOpenPrivacy}
             labels={{
               trigger: "Більше",
               menu: "Швидкі налаштування",
-              calm: "Чистий режим",
-              calmOn: "Підказки приховано",
-              calmOff: "Сховати підказки та інсайти",
               theme: "Тема",
               privacy: messages.privacy.chip,
               privacyDetail: messages.privacy.chipTooltip,

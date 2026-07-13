@@ -76,27 +76,6 @@ describe("FeedbackSection", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("omits page context when the toggle is off", () => {
-    renderSection();
-    openDialog();
-
-    fireEvent.change(screen.getByLabelText(messages.feedback.messageLabel), {
-      target: { value: "Додайте темну тему для віджетів" },
-    });
-    fireEvent.click(screen.getByLabelText(messages.feedback.contextLabel));
-    fireEvent.click(
-      screen.getByRole("button", { name: messages.feedback.submit }),
-    );
-
-    const call = trackEvent.mock.calls.find(
-      ([name]) => name === "feedback_submitted",
-    );
-    const payload = call?.[1] as Record<string, unknown>;
-    expect(payload["has_page_context"]).toBe(false);
-    expect(payload["page"]).toBeUndefined();
-    expect(payload["viewport"]).toBeUndefined();
-  });
-
   it("blocks empty submissions with an inline error instead of firing the event", () => {
     renderSection();
     openDialog();

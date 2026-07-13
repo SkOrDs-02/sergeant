@@ -2,8 +2,9 @@
  * Status: Active
  *
  * Overflow "⋯" menu for the hub header. Folds the secondary controls
- * (calm mode, theme, privacy status) out of the top-bar so the header keeps
- * to ≤5 affordances on mobile (mobile-audit A3). The popover closes on
+ * (theme, privacy status) out of the top-bar so the header keeps
+ * to ≤5 affordances on mobile (mobile-audit A3). Calm mode moved to
+ * Settings → Дашборд → Вигляд. The popover closes on
  * outside-click + Esc, returning focus to the trigger (same pattern as
  * `NotificationBell`). All visible copy arrives via `labels` props
  * (interpolated, never JSX-text) so the module stays clear of raw Cyrillic
@@ -23,9 +24,6 @@ export interface HubHeaderMenuLabels {
   trigger: string;
   /** Accessible name for the popover menu. */
   menu: string;
-  calm: string;
-  calmOn: string;
-  calmOff: string;
   theme: string;
   privacy: string;
   privacyDetail: string;
@@ -33,8 +31,6 @@ export interface HubHeaderMenuLabels {
 
 export interface HubHeaderMenuProps {
   triggerClassName?: string | undefined;
-  calmMode: boolean;
-  onToggleCalmMode: () => void;
   /** When provided, the privacy status row opens the detail sheet on tap. */
   onOpenPrivacy?: (() => void) | undefined;
   labels: HubHeaderMenuLabels;
@@ -42,8 +38,6 @@ export interface HubHeaderMenuProps {
 
 export function HubHeaderMenu({
   triggerClassName,
-  calmMode,
-  onToggleCalmMode,
   onOpenPrivacy,
   labels,
 }: HubHeaderMenuProps) {
@@ -99,48 +93,8 @@ export function HubHeaderMenu({
           id={menuId}
           role="menu"
           aria-label={labels.menu}
-          className="absolute right-0 mt-2 w-72 rounded-2xl border border-line bg-panel shadow-float p-2 z-50 space-y-1"
+          className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-line bg-panel shadow-float p-2 z-50 space-y-1"
         >
-          {/* Calm mode toggle */}
-          <button
-            type="button"
-            role="menuitemcheckbox"
-            aria-checked={calmMode}
-            onClick={() => {
-              hapticTap();
-              onToggleCalmMode();
-            }}
-            className={cn(
-              "w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-colors motion-reduce:transition-none",
-              FOCUS_RING,
-              calmMode
-                ? "bg-brand-soft text-brand-strong dark:text-brand"
-                : "text-text hover:bg-panelHi",
-            )}
-          >
-            <Icon
-              name={calmMode ? "eye-off" : "eye"}
-              size="md"
-              className="shrink-0 mt-0.5"
-            />
-            <span className="flex-1 min-w-0">
-              <span className="block text-style-label leading-tight">
-                {labels.calm}
-              </span>
-              <span className="block text-xs text-muted leading-snug mt-0.5">
-                {calmMode ? labels.calmOn : labels.calmOff}
-              </span>
-            </span>
-            {calmMode && (
-              <Icon
-                name="check"
-                size="sm"
-                className="shrink-0 mt-0.5 text-brand-strong dark:text-brand"
-                aria-hidden
-              />
-            )}
-          </button>
-
           {/* Theme — reuses the shared segmented ThemeSwitcher primitive */}
           <div className="px-3 py-2">
             <span className="block text-style-label text-text mb-1.5">

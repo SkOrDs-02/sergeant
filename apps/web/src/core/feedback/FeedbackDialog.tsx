@@ -8,7 +8,6 @@ import { Button } from "@shared/components/ui/Button";
 import { Textarea } from "@shared/components/ui/Input";
 import { Modal } from "@shared/components/ui/Modal";
 import { Segmented } from "@shared/components/ui/Segmented";
-import { Switch } from "@shared/components/ui/Switch";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { trackEvent } from "../observability/analytics";
@@ -48,7 +47,6 @@ export function FeedbackDialog({ open, onClose }: FeedbackDialogProps) {
   const textareaId = useId();
   const [category, setCategory] = useState<FeedbackCategory>("idea");
   const [message, setMessage] = useState("");
-  const [includeContext, setIncludeContext] = useState(true);
   const [showEmptyError, setShowEmptyError] = useState(false);
 
   const handleSubmit = () => {
@@ -57,11 +55,13 @@ export function FeedbackDialog({ open, onClose }: FeedbackDialogProps) {
       setShowEmptyError(true);
       return;
     }
-    // `has_page_context` віддзеркалює контекст, який РЕАЛЬНО долетів, а не
-    // сам тумблер: якщо `buildPageContext()` повернув null (не-DOM edge),
-    // прапорець має бути false, щоб payload не був внутрішньо
-    // суперечливим (true без `page`/`viewport`).
-    const context = includeContext ? buildPageContext() : null;
+    // Page context (URL + viewport) is attached automatically — the
+    // manual toggle was removed since feedback only opens from Settings,
+    // so asking the user to opt into "this is the settings page" was
+    // meaningless. `has_page_context` still reflects what REALLY landed:
+    // `buildPageContext()` can return null on a non-DOM edge, and the
+    // flag must stay false then so the payload isn't self-contradictory.
+    const context = buildPageContext();
     const payload: Record<string, unknown> = {
       category,
       message: trimmed.slice(0, MAX_MESSAGE_LENGTH),
@@ -127,14 +127,6 @@ export function FeedbackDialog({ open, onClose }: FeedbackDialogProps) {
             }
           }}
         />
-        <div className="min-h-[44px] p-3 rounded-2xl border border-line/60 bg-surface-soft-glass">
-          <Switch
-            checked={includeContext}
-            onChange={setIncludeContext}
-            label={messages.feedback.contextLabel}
-            description={messages.feedback.contextDescription}
-          />
-        </div>
       </div>
     </Modal>
   );

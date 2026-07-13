@@ -29,6 +29,7 @@ import {
 import { useHubPref } from "./hubPrefs";
 
 export function DashboardSection() {
+  const [calmMode, setCalmMode] = useHubPref<boolean>("calmMode", false);
   const [showHints, setShowHints] = useHubPref<boolean>("showHints", true);
   const [adaptiveBento, setAdaptiveBento] = useHubPref<boolean>(
     "adaptiveBento",
@@ -87,6 +88,12 @@ export function DashboardSection() {
   return (
     <SettingsGroup title="Дашборд" emoji="🧭" anchorId="settings-dashboard">
       <SettingsSubGroup title="Вигляд">
+        <ToggleRow
+          label="Чистий режим"
+          description="Ховає підказки, інсайти й мотиваційні блоки — лишає на головній лише модулі."
+          checked={calmMode === true}
+          onChange={setCalmMode}
+        />
         <ToggleRow
           label="Показувати підказки"
           description="Короткі підказки в моменті (без спаму)."
