@@ -1,6 +1,6 @@
 # ADR-0009: Hosting split — Railway (API + Postgres) + Vercel (web)
 
-- **Status:** superseded by ADR-0074 (backend-частина; Vercel + edge-proxy топологія збережена в ADR-0074)
+- **Status:** superseded by ADR-0074 (backend-частина; Vercel + edge-proxy топологія збережена)
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-04-27
 - **Reviewers:** @Skords-01
