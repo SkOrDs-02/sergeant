@@ -9,15 +9,20 @@ const utilitiesCss = readFileSync(
 const themeCss = readFileSync(new URL("./theme.css", import.meta.url), "utf8");
 
 describe("app viewport shell CSS contract", () => {
-  it("locks document scrolling and pins #root to the viewport", () => {
+  it("locks document scrolling without fixing #root to WebKit's inset viewport", () => {
     expect(baseCss).toMatch(/html,\s*body\s*{[^}]*overflow:\s*hidden/s);
-    expect(baseCss).not.toMatch(/html,\s*body,\s*#root/);
+    expect(baseCss).toMatch(/#root\s*{[^}]*height:\s*100dvh/s);
+    expect(baseCss).not.toMatch(/#root\s*{[^}]*position:\s*fixed/s);
+    expect(baseCss).not.toMatch(/#root\s*{[^}]*inset:\s*0/s);
+  });
+
+  it("uses legacy vh for the full safe-area height in standalone PWA mode", () => {
     expect(baseCss).toMatch(
-      /#root\s*{[^}]*position:\s*fixed[^}]*inset:\s*0[^}]*width:\s*auto[^}]*height:\s*auto/s,
+      /@media\s*\(display-mode:\s*standalone\)\s*{\s*html,\s*body,\s*#root\s*{[^}]*height:\s*100vh/s,
     );
   });
 
-  it("sizes app shells from the pinned root instead of visualViewport", () => {
+  it("sizes app shells from the CSS root instead of visualViewport", () => {
     expect(utilitiesCss).toMatch(/@utility h-app-dvh\s*{[^}]*height:\s*100%/s);
     expect(utilitiesCss).not.toContain("var(--app-dvh");
   });
@@ -39,10 +44,9 @@ describe("app viewport shell CSS contract", () => {
 
     expect(bottomNavUtility).toBeDefined();
     expect(bottomNavUtility).not.toContain("&::after");
+    expect(bottomNavUtility).not.toContain("&::before");
     expect(bottomNavUtility).not.toContain("height: 4rem");
     expect(bottomNavUtility).not.toContain("top: 100%");
-    expect(bottomNavUtility).toMatch(
-      /&::before\s*{[^}]*position:\s*fixed[^}]*bottom:\s*0[^}]*height:\s*max\(/s,
-    );
+    expect(bottomNavUtility).not.toContain("position: fixed");
   });
 });

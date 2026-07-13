@@ -284,16 +284,17 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
   );
 
   // 2026-05-08 — окремий scroll-шар на page-wrapper'і.
-  // `html, body, #root` усі зафіксовані на `height: 100dvh`
-  // (`apps/web/src/styles/base.css`), тож натуральний body-scroll
-  // вимкнений. До цього фіксу page-wrapper був
+  // `html`/`body` не прокручуються, а `#root` має точну висоту viewport
+  // (`100dvh` у browser mode, `100vh` у standalone PWA; див.
+  // `apps/web/src/styles/base.css`), тож натуральний body-scroll вимкнений.
+  // До цього фіксу page-wrapper був
   // `min-h-dvh ... overflow-hidden`: коли користувач розгортав
   // модулі через «Що це за розділи?», splash-картка ставала вищою
-  // за viewport, але body не міг прокрутитись (#root зафіксований),
+  // за viewport, але body не міг прокрутитись,
   // а `overflow-hidden` обрізав картку зверху (логотип) і знизу
   // (CTA / «Згорнути») — без можливості скрола взагалі.
   //
-  // Тепер page-wrapper — справжній scroll-контейнер: `h-dvh`
+  // Тепер page-wrapper — справжній scroll-контейнер: `h-app-dvh`
   // (рівно viewport), `overflow-y-auto` (внутрішній скрол),
   // `overscroll-contain` (гасить body-bounce на iOS). `PeekBackdrop`
   // переведено на `fixed inset-0`, тож floating-shapes / blurred

@@ -113,7 +113,8 @@ export const HubMainContent = memo(function HubMainContent({
   // Scroll-to-top when switching hub tabs. Targets the inner scroll
   // container of `PullToRefresh` (the real scroller) — calling
   // `window.scrollTo` on the document does nothing useful here because
-  // `#root` is `100dvh` and `HubHomeView` is `overflow-hidden`, and on
+  // `#root` owns the exact CSS viewport height and `HubHomeView` is
+  // `overflow-hidden`; on
   // iOS Safari / Capacitor it triggers a visual-viewport jump that
   // pushes the bottom nav off-screen (user feedback 2026-05-13).
   const scrollElRef = useRef<HTMLDivElement | null>(null);
