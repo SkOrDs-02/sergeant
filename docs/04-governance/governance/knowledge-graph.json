@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-12",
+  "generated_at": "2026-07-13",
   "counts": {
     "adr": 71,
     "audit": 24,
@@ -105,7 +105,7 @@
       "type": "adr",
       "title": "ADR-0009: Hosting split — Railway (API + Postgres) + Vercel (web)",
       "path": "docs/04-governance/adr/0009-hosting-split-railway-vercel.md",
-      "status": "superseded by ADR-0074 (backend-частина; Vercel + edge-proxy топологія збережена в ADR-0074)",
+      "status": "superseded by ADR-0074 (backend-частина; Vercel + edge-proxy топологія збережена)",
       "tier": "core",
       "meta": {
         "number": 9
@@ -793,7 +793,7 @@
       "tier": "core",
       "meta": {
         "number": 73,
-        "last_validated": "2026-07-10"
+        "last_validated": "2026-07-12"
       }
     },
     {
@@ -1740,7 +1740,7 @@
       "type": "initiative",
       "title": "PR-23: OpenAPI spec contract-tested vs runtime",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md",
-      "status": "Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.",
+      "status": "Active — Phase 1 generation/freshness gate і Phase 2 representative runtime roundtrip shipped; [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) — canonical source-of-truth. Schemathesis property-based testing і full-route expansion залишаються deferred до окремого pinned runtime decision.",
       "tier": "core",
       "meta": {}
     },

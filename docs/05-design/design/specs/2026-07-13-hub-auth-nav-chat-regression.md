@@ -3,6 +3,9 @@
 
 # Регресії Hub, onboarding та AI-чату
 
+> **Last validated:** 2026-07-13 by @claude. **Next review:** 2026-10-13.
+> **Status:** Active
+
 ## Мета
 
 Закрити три пов'язані mobile-web регресії, зафіксовані в аудиті
