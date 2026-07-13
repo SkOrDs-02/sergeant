@@ -12,7 +12,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
-import { exportToPDF } from "@shared/lib/ui/export";
+import { generatePDFReport } from "@shared/lib/ui/export";
 import { messages } from "@shared/i18n/uk";
 import { useLocale } from "@shared/i18n/useLocale";
 import { generateInsights } from "../lib/insightsEngine";
@@ -20,6 +20,7 @@ import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
 import { PaywallModal, useFeatureGate } from "../billing";
 import { getPeriodRange, type Period } from "./hubReports.aggregation";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
+import { PdfPreviewModal } from "./PdfPreviewModal";
 
 // ── Lazy card chunks ──────────────────────────────────────────────────
 
@@ -92,6 +93,8 @@ function InsightCard({ iconName, title, stat, detail }: InsightCardProps) {
 export function HubReports() {
   const [period, setPeriod] = useState<Period>("week");
   const [offset, setOffset] = useState(0);
+  // Holds the generated report HTML while the in-app PDF preview is open.
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   // Locale-resolved paywall copy. `loadingSection` aria-label у CardSkeleton
   // (module-scope) лишається на UK fallback — це screen-reader hint, не
   // user-visible copy, low priority для translation. Paywall surface — це
@@ -118,23 +121,25 @@ export function HubReports() {
   const exportGate = useFeatureGate("analytics-export-pdf");
   const handleExportPdf = useCallback(() => {
     if (!exportGate.requireAccess()) return;
-    exportToPDF({
-      title: "Sergeant — звіт",
-      subtitle: label,
-      sections: [
-        {
-          title: "Період",
-          content: `<p>${label}</p>`,
-        },
-        {
-          title: "Стан звіту",
-          content:
-            insights.length > 0
-              ? `<p>Звіт готовий. Доступно інсайтів: ${insights.length}.</p>`
-              : "<p>Звіт готовий, але для інсайтів поки замало даних. Додай записи в модулях, щоб наступний експорт містив більше висновків.</p>",
-        },
-      ],
-    });
+    setPreviewHtml(
+      generatePDFReport({
+        title: "Sergeant — звіт",
+        subtitle: label,
+        sections: [
+          {
+            title: "Період",
+            content: `<p>${label}</p>`,
+          },
+          {
+            title: "Стан звіту",
+            content:
+              insights.length > 0
+                ? `<p>Звіт готовий. Доступно інсайтів: ${insights.length}.</p>`
+                : "<p>Звіт готовий, але для інсайтів поки замало даних. Додай записи в модулях, щоб наступний експорт містив більше висновків.</p>",
+          },
+        ],
+      }),
+    );
   }, [exportGate, insights.length, label]);
 
   return (
@@ -277,6 +282,13 @@ export function HubReports() {
         title={i18n.paywall["analytics-export-pdf"].title}
         description={i18n.paywall["analytics-export-pdf"].description}
       />
+
+      {previewHtml !== null && (
+        <PdfPreviewModal
+          html={previewHtml}
+          onClose={() => setPreviewHtml(null)}
+        />
+      )}
     </div>
   );
 }

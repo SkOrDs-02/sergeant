@@ -5,7 +5,6 @@ import {
   dataToHTMLTable,
   downloadString,
   exportToCSV,
-  exportToPDF,
   generatePDFReport,
   type ExportColumn,
 } from "./export";
@@ -251,57 +250,14 @@ describe("generatePDFReport", () => {
     expect(html).toMatch(/Згенеровано .+ о .+/);
   });
 
-  it("renders explicit preview actions for the PDF flow", () => {
+  it("does not embed an in-report toolbar (controls live in the React preview modal)", () => {
     const html = generatePDFReport({ title: "T", sections: [] });
-    expect(html).toContain("Перегляд і збереження PDF");
-    expect(html).toContain("Назад");
-    expect(html).toContain("Друкувати / зберегти PDF");
-    expect(html).toContain(".print-preview-toolbar");
-  });
-});
-
-describe("exportToPDF", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("opens a new window, writes preview HTML and focuses it without auto-printing", () => {
-    const printSpy = vi.fn();
-    const focusSpy = vi.fn();
-    const writeSpy = vi.fn();
-    const closeSpy = vi.fn();
-
-    const fakeWindow = {
-      document: { write: writeSpy, close: closeSpy },
-      onload: null as (() => void) | null,
-      focus: focusSpy,
-      print: printSpy,
-    };
-
-    vi.spyOn(window, "open").mockReturnValue(
-      fakeWindow as unknown as Window & typeof globalThis,
-    );
-
-    exportToPDF({
-      title: "Report",
-      sections: [{ title: "X", content: "<p>x</p>" }],
-    });
-
-    expect(window.open).toHaveBeenCalledWith("", "_blank");
-    expect(writeSpy).toHaveBeenCalledTimes(1);
-    expect(writeSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Друкувати / зберегти PDF"),
-    );
-    expect(closeSpy).toHaveBeenCalledTimes(1);
-
-    expect(focusSpy).toHaveBeenCalledTimes(1);
-    expect(fakeWindow.onload).toBeNull();
-    expect(printSpy).not.toHaveBeenCalled();
-  });
-
-  it("якщо window.open повернув null — нічого не падає", () => {
-    vi.spyOn(window, "open").mockReturnValue(null);
-    expect(() => exportToPDF({ title: "T", sections: [] })).not.toThrow();
+    // The old window.open flow baked a sticky toolbar + inline
+    // onclick handlers into the report; the in-app PdfPreviewModal now
+    // owns those controls, so the report HTML must stay chrome-free.
+    expect(html).not.toContain(".print-preview-toolbar");
+    expect(html).not.toContain("window.close()");
+    expect(html).not.toContain("window.history.back()");
   });
 });
 
