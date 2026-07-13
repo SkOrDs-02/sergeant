@@ -91,7 +91,7 @@ vi.mock("./meal-sheet/FromPantryRow", () => ({
         data-testid="pick-pantry"
         onClick={() => setFromPantryItem("Молоко")}
       >
-        Зі складу
+        З комори
       </button>
     </div>
   ),

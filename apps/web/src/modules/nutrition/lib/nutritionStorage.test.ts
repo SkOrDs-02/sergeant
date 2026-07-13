@@ -312,7 +312,7 @@ describe("normalizePantries", () => {
     ]);
     expect(out).toHaveLength(2);
     expect(out[0]!.items.map((i) => i.name)).toEqual(["Хліб"]);
-    expect(out[1]!.name).toBe("Склад");
+    expect(out[1]!.name).toBe("Комора");
     expect(out[1]!.id).toBeTruthy();
   });
 

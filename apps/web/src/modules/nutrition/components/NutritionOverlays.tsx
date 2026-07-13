@@ -84,10 +84,10 @@ export function NutritionOverlays({
 
       <ConfirmDialog
         open={pantry.confirmDeleteOpen}
-        title="Видалити склад?"
+        title="Видалити комору?"
         description={
           (Array.isArray(pantry.pantries) ? pantry.pantries.length : 0) <= 1
-            ? "Не можна видалити останній склад."
+            ? "Не можна видалити останню комору."
             : "Це прибере всі продукти в ньому. Дію не можна відмінити."
         }
         confirmLabel="Видалити"

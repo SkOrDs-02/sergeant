@@ -29,7 +29,7 @@ const NAV = [
   },
   {
     id: "pantry",
-    label: "Склад",
+    label: "Комора",
     icon: (
       <svg
         width="22"

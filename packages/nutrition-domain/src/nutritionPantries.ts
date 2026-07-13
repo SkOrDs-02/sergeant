@@ -33,7 +33,7 @@ export function normalizePantries(raw: unknown): Pantry[] {
     let id = rp["id"] != null ? String(rp["id"]).trim() : "";
     if (!id || seenIds.has(id)) id = `p_${Date.now()}_${out.length}`;
     seenIds.add(id);
-    const name = String(rp["name"] || "Склад").trim() || "Склад";
+    const name = String(rp["name"] || "Комора").trim() || "Комора";
     const items = Array.isArray(rp["items"])
       ? (rp["items"] as unknown[])
           .map(sanitizePantryItem)

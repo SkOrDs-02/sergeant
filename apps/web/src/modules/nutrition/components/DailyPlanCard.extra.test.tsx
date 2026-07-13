@@ -187,7 +187,7 @@ describe("DailyPlanCard — basic render", () => {
         pantryItems={[]}
       />,
     );
-    expect(screen.getByText(/Додай продукти на склад/i)).toBeInTheDocument();
+    expect(screen.getByText(/Додай продукти в комору/i)).toBeInTheDocument();
   });
 });
 

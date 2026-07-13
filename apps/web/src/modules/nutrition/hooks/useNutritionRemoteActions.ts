@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { nutritionApi } from "@shared/api";
 import { toLocalISODate, generatePrefixedId } from "@sergeant/shared";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type {
   NutritionDayMeal,
   NutritionDayPlan as ApiNutritionDayPlan,
@@ -26,8 +27,7 @@ import type {
 import type { ShoppingCategory } from "../lib/shoppingListStorage";
 
 type AnySetter<T = unknown> =
-  | Dispatch<SetStateAction<T>>
-  | ((value: T) => void);
+  Dispatch<SetStateAction<T>> | ((value: T) => void);
 
 interface BuildMutationHandlersParams<TData> {
   setBusy?: AnySetter<boolean>;
@@ -275,7 +275,7 @@ export function useNutritionRemoteActions({
   const weekPlanMutation = useMutation({
     mutationFn: () => {
       const items = pantry.effectiveItems;
-      if (items.length === 0) throw new Error("Додай продукти на склад.");
+      if (items.length === 0) throw new Error("Додай продукти в комору.");
       return nutritionApi.weekPlan({
         pantry: items.slice(0, 50),
         preferences: { goal: prefs.goal },
@@ -290,8 +290,7 @@ export function useNutritionRemoteActions({
     },
     onSuccess: (data) => {
       const plan = (data?.plan ?? null) as
-        | (ApiNutritionWeekPlan & Record<string, unknown>)
-        | null;
+        (ApiNutritionWeekPlan & Record<string, unknown>) | null;
       setWeekPlan(plan);
       setWeekPlanRaw(typeof data?.rawText === "string" ? data.rawText : "");
       hapticSuccess();
@@ -492,8 +491,12 @@ export function useNutritionRemoteActions({
       // (запис "вчора 09:30 ранку" створений увечері). Див. H5 з аудиту.
       const now = new Date();
       const isToday = log.selectedDate === toLocalISODate(now);
+      // Stamp the meal time in Europe/Kyiv (domain-invariant) rather than
+      // host-local — prefer-kyiv-time. Same-tz for Kyiv users, correct for
+      // travellers.
+      const { hour, minute } = getKyivDateParts(now);
       const time = isToday
-        ? `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
+        ? `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
         : "";
       log.handleAddMeal({
         id,

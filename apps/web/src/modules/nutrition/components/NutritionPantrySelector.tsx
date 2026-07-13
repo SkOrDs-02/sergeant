@@ -29,15 +29,15 @@ export function NutritionPantrySelector({
           variant="nutrition"
           className="mb-0.5"
         >
-          Активний склад
+          Активна комора
         </SectionHeading>
         <div className="text-base font-extrabold text-text leading-tight truncate">
-          {pantry.activePantry?.name || "Склад"}
+          {pantry.activePantry?.name || "Комора"}
         </div>
         <div className="text-xs text-subtle mt-0.5">
           {pantry.pantryItems.length > 0
             ? `${pantry.pantryItems.length} продуктів збережено`
-            : "Склад порожній"}
+            : "Комора порожня"}
         </div>
       </div>
       {pantries.length > 1 && (
@@ -46,11 +46,11 @@ export function NutritionPantrySelector({
           onChange={(e) => pantry.setActivePantryId(e.target.value)}
           disabled={busy}
           className="input-focus-nutrition min-h-[44px] rounded-xl bg-panel/60 border border-nutrition/30 px-3 text-sm text-text max-w-[40%]"
-          aria-label="Обрати склад"
+          aria-label="Обрати комору"
         >
           {pantries.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name || "Склад"}
+              {p.name || "Комора"}
             </option>
           ))}
         </select>
@@ -60,8 +60,8 @@ export function NutritionPantrySelector({
         onClick={() => pantry.setPantryManagerOpen(true)}
         disabled={busy}
         className="shrink-0 w-9 h-9 touch-target flex items-center justify-center rounded-xl text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:hover:text-nutrition hover:bg-nutrition/10 transition-colors border border-nutrition/20"
-        aria-label="Керування складами"
-        title="Склади"
+        aria-label="Керування коморами"
+        title="Комори"
       >
         <svg
           width="18"
