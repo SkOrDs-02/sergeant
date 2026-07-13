@@ -321,21 +321,7 @@ export async function initSentry() {
       import.meta.env.MODE ||
       "production",
     release: import.meta.env["VITE_SENTRY_RELEASE"],
-    integrations: [
-      mod.browserTracingIntegration(),
-      // PII roast 2026-05-13 §F3 (errors-pwa-marketing): Sentry defaults
-      // only mask password/email/tel/number inputs; free-text in <div> /
-      // <input type="text"> / <textarea> (AI-chat composer, Фінік notes,
-      // nutrition diary, onboarding) is captured verbatim. With
-      // `replaysOnErrorSampleRate: 1.0` every error uploads a 30 s window
-      // of plaintext — explicit maskAllText + maskAllInputs + blockAllMedia
-      // close the leak (docs/security/pii-handling.md).
-      mod.replayIntegration({
-        maskAllText: true,
-        maskAllInputs: true,
-        blockAllMedia: true,
-      }),
-    ],
+    integrations: [mod.browserTracingIntegration()],
     // Dynamic per-op + per-route sampler (stack-pulse PR-12 / H6).
     // Fallback rate resolves through `defaultWebSampleRate` — either
     // an explicit `VITE_SENTRY_TRACES_SAMPLE_RATE` (deploy override /
@@ -346,11 +332,6 @@ export async function initSentry() {
     // hub=5%) are applied independent of fallback.
     tracesSampler: (samplingContext) =>
       pickWebTracesSampleRate(samplingContext, defaultWebSampleRate()),
-    replaysSessionSampleRate: parseRate(
-      import.meta.env["VITE_SENTRY_REPLAY_SAMPLE_RATE"],
-      0,
-    ),
-    replaysOnErrorSampleRate: 1.0,
     // PII roast 2026-05-13 §P0-S4: drop noise events from health probes
     // (Capacitor WebView occasionally fires a `/health` request during
     // boot) and `chrome-extension://` injections that crash on
