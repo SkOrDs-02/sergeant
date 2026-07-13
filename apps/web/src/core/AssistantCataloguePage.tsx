@@ -136,7 +136,14 @@ export function AssistantCataloguePage({
     <main
       id="main"
       tabIndex={-1}
-      className="min-h-dvh bg-bg outline-none"
+      // `#root` is `100dvh; overflow:hidden` (base.css), so document scroll
+      // is disabled — a full-height page must own its scroll container.
+      // `min-h-dvh` relied on the now-removed body scroll, which clipped
+      // the ~80-item catalogue with no way to reach the rest. Use `h-dvh`
+      // (self-sufficient 100dvh) rather than `h-app-dvh` (=height:100%),
+      // because this standalone route's wrappers have no definite height
+      // for a percentage to resolve against.
+      className="h-dvh overflow-y-auto overscroll-contain bg-bg outline-none"
       style={{
         paddingTop: "max(1.25rem, env(safe-area-inset-top))",
         paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
