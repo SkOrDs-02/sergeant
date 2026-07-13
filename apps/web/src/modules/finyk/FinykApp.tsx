@@ -324,7 +324,7 @@ export default function App({
 
   // Render
   return (
-    <ModuleAccentProvider module="finyk">
+    <ModuleAccentProvider module="finyk" className="contents">
       <MeshBackground>
         <ModuleHeader
           module="finyk"

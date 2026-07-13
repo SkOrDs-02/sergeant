@@ -21,7 +21,10 @@ export function Component() {
 
   return (
     <ModuleShell moduleId="fizruk">
-      <SuspenseWithMinDelay fallback={<ModulePageLoader module="fizruk" />}>
+      <SuspenseWithMinDelay
+        fallback={<ModulePageLoader module="fizruk" />}
+        className="flex-1 min-h-0 flex flex-col"
+      >
         <FizrukApp
           onBackToHub={goBackOrHub}
           onGoToHub={goToHub}

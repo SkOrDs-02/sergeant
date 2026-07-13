@@ -497,7 +497,7 @@ export default function NutritionApp({
     // in MeshBackground. ModuleAccentProvider drops asShellRoot; shell-root
     // role moves to MeshBackground (Hard Rule #12 — accent published
     // first, mesh DOM element inside).
-    <ModuleAccentProvider module="nutrition">
+    <ModuleAccentProvider module="nutrition" className="contents">
       <MeshBackground>
         <NutritionHeader
           busy={busy}

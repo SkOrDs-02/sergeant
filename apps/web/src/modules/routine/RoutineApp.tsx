@@ -69,7 +69,7 @@ export default function RoutineApp({
     // in MeshBackground (shell-root role). ModuleAccentProvider drops
     // asShellRoot so MeshBackground owns h-dvh + bg-mesh; Provider stays
     // as transparent accent context (Hard Rule #12).
-    <ModuleAccentProvider module="routine">
+    <ModuleAccentProvider module="routine" className="contents">
       <MeshBackground>
         <RoutineHeader
           onBackToHub={onBackToHub}
