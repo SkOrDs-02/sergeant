@@ -21,7 +21,10 @@ export function Component() {
 
   return (
     <ModuleShell moduleId="routine">
-      <SuspenseWithMinDelay fallback={<ModulePageLoader module="routine" />}>
+      <SuspenseWithMinDelay
+        fallback={<ModulePageLoader module="routine" />}
+        className="flex-1 min-h-0 flex flex-col"
+      >
         <RoutineApp
           onBackToHub={goBackOrHub}
           onGoToHub={goToHub}

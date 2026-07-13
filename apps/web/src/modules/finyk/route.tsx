@@ -23,7 +23,10 @@ export function Component() {
 
   return (
     <ModuleShell moduleId="finyk">
-      <SuspenseWithMinDelay fallback={<ModulePageLoader module="finyk" />}>
+      <SuspenseWithMinDelay
+        fallback={<ModulePageLoader module="finyk" />}
+        className="flex-1 min-h-0 flex flex-col"
+      >
         <FinykApp
           onBackToHub={goBackOrHub}
           onGoToHub={goToHub}

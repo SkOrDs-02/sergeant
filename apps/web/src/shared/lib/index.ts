@@ -150,7 +150,6 @@ export {
   dataToHTMLTable,
   downloadString,
   exportToCSV,
-  exportToPDF,
   generatePDFReport,
 } from "./ui/export";
 export type {
