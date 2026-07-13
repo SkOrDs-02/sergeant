@@ -351,3 +351,14 @@ n/a (operational rule).
 | Pre-deploy `db:migrate` на Railway                                                    | live   |
 | `SERVER_MODE=railway` autodetect                                                      | live   |
 | Multi-instance / shared session store                                                 | TBD    |
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                         | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------- | ---------- |
+| [#292](https://github.com/Skords-01/Sergeant/pull/292) | docs(docs): fix documentation drift found in 2026-07-13 audit | 2026-07-13 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

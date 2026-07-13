@@ -1,6 +1,6 @@
 # Session log — 0018 `agent:find` semantic (Voyage) measurement (2026-06-14)
 
-> **Last touched:** 2026-07-13 by @claude. **Next review:** 2026-10-11.
+> **Last touched:** 2026-07-13 by @github-actions[bot]. **Next review:** 2026-10-11.
 > **Status:** Reference
 
 Комплемент до [lexical-логу 2026-06-08](./session-log-0018-agent-find-measurement-2026-06-08.md):
@@ -90,8 +90,9 @@ Per-case ранги (`lexRank` → `semRank`; нижче = краще, 1 = ід�
 
 | PR                                                       | Title                                                                        | Merged     |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------- | ---------- |
+| [#292](https://github.com/Skords-01/Sergeant/pull/292)   | docs(docs): fix documentation drift found in 2026-07-13 audit                | 2026-07-13 |
 | [#3573](https://github.com/Skords-01/Sergeant/pull/3573) | docs(agents): archive initiative 0018 (agent:find, code-complete)            | 2026-06-14 |
 | [#3567](https://github.com/Skords-01/Sergeant/pull/3567) | docs(agents): record 0018 semantic measurement + drop orphan 0019 README row | 2026-06-14 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
