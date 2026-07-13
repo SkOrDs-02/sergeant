@@ -159,4 +159,19 @@ describe("WelcomeScreen — handlePicksComplete side-effects", () => {
       picks: expect.any(Array),
     });
   });
+
+  it("marks onboarding skipped before opening auth for a returning account", () => {
+    const onOpenAuth = vi.fn();
+    render(<WelcomeScreen onDone={() => {}} onOpenAuth={onOpenAuth} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "У мене вже є акаунт" }),
+    );
+
+    expect(markOnboardingDoneMock).toHaveBeenCalledTimes(1);
+    expect(onOpenAuth).toHaveBeenCalledTimes(1);
+    expect(markOnboardingDoneMock.mock.invocationCallOrder[0]).toBeLessThan(
+      onOpenAuth.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    );
+  });
 });
