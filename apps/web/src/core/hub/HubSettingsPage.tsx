@@ -139,9 +139,14 @@ function readSettingsGroupParam(search: string): string | null {
 
 export interface HubSettingsPageProps {
   user: User | null;
+  /** The app-owned scroll host. Hash navigation must never scroll document. */
+  scrollContainer?: HTMLElement | null;
 }
 
-export function HubSettingsPage({ user }: HubSettingsPageProps) {
+export function HubSettingsPage({
+  user,
+  scrollContainer,
+}: HubSettingsPageProps) {
   // Mirror the active inner-tab to `?group=…` so a reload / share keeps the
   // user on the same group. Strip the param for the default group (`general`)
   // to keep the canonical URL clean. `replace: true` matches the prior
@@ -200,6 +205,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
   );
   const [query, setQuery] = useState("");
   const refs = useRef<Record<string, HTMLDivElement | null>>({});
+  const stickyHeaderRef = useRef<HTMLDivElement | null>(null);
   const [hashSectionId, setHashSectionId] = useState<string | null>(
     readSettingsSectionHash(location.hash),
   );
@@ -350,9 +356,25 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
   useEffect(() => {
     if (!hashSectionId) return;
     const el = refs.current[hashSectionId];
-    if (!el) return;
-    el.scrollIntoView({ block: "start", behavior: motionScrollBehavior() });
-  }, [hashSectionId, visibleSectionKey]);
+    if (!el || !scrollContainer) return;
+
+    // `Element.scrollIntoView()` walks every scrollable ancestor, including
+    // the document viewport. On iOS that moved the entire fixed-height app
+    // shell under the status bar and made the bottom nav look twice as tall.
+    // Compute the target relative to the one app-owned scroller instead.
+    const hostRect = scrollContainer.getBoundingClientRect();
+    const targetRect = el.getBoundingClientRect();
+    const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 128;
+    const top = Math.max(
+      0,
+      scrollContainer.scrollTop +
+        targetRect.top -
+        hostRect.top -
+        stickyHeight -
+        16,
+    );
+    scrollContainer.scrollTo({ top, behavior: motionScrollBehavior() });
+  }, [hashSectionId, scrollContainer, visibleSectionKey]);
 
   return (
     <div className="flex flex-col gap-4 pt-3 pb-6">
@@ -365,6 +387,7 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
           and the whole block felt empty in light theme (user report
           2026-05-26 / `ui-layout-styling-fixes`). */}
       <div
+        ref={stickyHeaderRef}
         className="flex flex-col gap-3 sticky top-0 z-10 bg-surface-soft-glass backdrop-blur-md border-b border-surface-line -mx-4 px-4 py-2 -mt-3"
         style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))" }}
       >

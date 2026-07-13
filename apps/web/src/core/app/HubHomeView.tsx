@@ -141,7 +141,9 @@ export function HubHomeView(props: HubHomeViewProps) {
     // <MeshBackground> so the mesh-gradient surface (`.bg-mesh` utility
     // from theme.css) renders behind all hub content. `h-dvh flex flex-col
     // overflow-hidden` is baked into MeshBackground; the remaining
-    // `safe-area-pt page-enter` slot through as className.
+    // `safe-area-pt` slots through as className. The full-height shell must
+    // not carry `page-enter`: its translateY keyframe creates document-level
+    // overflow on iOS and moves bottom-edge hit targets during the gesture.
     // Sergeant v2 redesign Phase 1 (T6 synergy) — exposes
     // `--bottom-nav-height` so portaled <Sheet>s
     // resolve their `var(--bottom-nav-height, 0px)` calc against a real
@@ -151,7 +153,7 @@ export function HubHomeView(props: HubHomeViewProps) {
     // added `0.375rem` matches `bottom-nav-shell`'s fixed top padding
     // (round-3 UI audit — the round-2 env() mirror was reverted).
     <MeshBackground
-      className="safe-area-pt page-enter"
+      className="safe-area-pt"
       style={
         {
           "--bottom-nav-height": "calc(60px + 0.375rem)",
