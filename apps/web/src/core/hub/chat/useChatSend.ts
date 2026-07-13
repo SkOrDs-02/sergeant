@@ -130,6 +130,7 @@ export function useChatSend({
   setMessages,
   initialMessage,
   autoSendInitial,
+  onOpenCatalogue,
 }: UseChatSendOptions): UseChatSendResult {
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -230,14 +231,22 @@ export function useChatSend({
       if (!msg || loading) return;
 
       if (isHelpCommand(msg)) {
-        // /help is a local command: it must always produce visible chat
-        // feedback and must never spend an AI request.
+        // `/help` (and the composer's "?" button) open the assistant
+        // capability catalogue — a richer, discoverable, searchable
+        // command list — instead of dumping static text into the thread.
+        // Never spends an AI request. When no catalogue handler is wired
+        // (embedded/test contexts) fall back to the inline help text so
+        // the command is never a silent no-op.
+        setInput("");
+        if (onOpenCatalogue) {
+          onOpenCatalogue();
+          return;
+        }
         setMessages((m) => [
           ...m,
           makeUserMsg(msg),
           makeAssistantMsg(HUB_CHAT_HELP_TEXT),
         ]);
-        setInput("");
         return;
       }
 
@@ -523,6 +532,7 @@ export function useChatSend({
       messages,
       online,
       maybeSpeak,
+      onOpenCatalogue,
       queryClient,
       scheduleContextBuild,
       setMessages,

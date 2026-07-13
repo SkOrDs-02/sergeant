@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { messages } from "@shared/i18n/uk";
@@ -31,10 +31,18 @@ export function HubChatOverlay() {
   const { open, initialMessage, autoSendInitial, closeChat } =
     useHubChatOverlay();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const handleClose = useCallback(() => {
     closeChat();
   }, [closeChat]);
+
+  // `/help` and the composer "?" button open the capability catalogue.
+  // Navigating away auto-dismisses this sheet (see the route-change effect
+  // below), so the catalogue route takes over cleanly.
+  const handleOpenCatalogue = useCallback(() => {
+    navigate("/assistant");
+  }, [navigate]);
 
   // Auto-dismiss on route change. Without this, any `navigate()` triggered
   // from a child of the sheet (PaywallModal CTA → `/pricing`, action-card
@@ -93,6 +101,7 @@ export function HubChatOverlay() {
           onClose={handleClose}
           initialMessage={initialMessage}
           autoSendInitial={autoSendInitial}
+          onOpenCatalogue={handleOpenCatalogue}
         />
       </SuspenseWithMinDelay>
     </Sheet>
