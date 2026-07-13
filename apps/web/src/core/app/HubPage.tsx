@@ -37,7 +37,10 @@ export function HubPage() {
   // `core/db/storageReady.ts`.
   const storageReady = useStorageReady();
 
-  const openAuth = useCallback(() => navigate(SIGN_IN_PATH), [navigate]);
+  const openAuth = useCallback(
+    () => navigate(SIGN_IN_PATH, { flushSync: true }),
+    [navigate],
+  );
 
   // «Поки що пропустити» на /sign-in (same logic as legacy AppInner):
   const leaveAuth = useCallback(() => {

@@ -101,9 +101,13 @@ describe("HubSettingsPage", () => {
 
   it("reveals and scrolls to a hash-linked settings section", async () => {
     window.history.replaceState(null, "", "/?tab=settings#settings-finyk");
+    const scrollContainer = document.createElement("div");
+    const scrollTo = vi.fn();
+    scrollContainer.scrollTo = scrollTo;
 
     renderWithBrowserToast(
       <HubSettingsPage
+        scrollContainer={scrollContainer}
         user={{
           id: "u1",
           email: null,
@@ -123,10 +127,11 @@ describe("HubSettingsPage", () => {
     // waits for that swap instead of asserting against the skeleton.
     expect(await screen.findByText("Finyk section")).toBeInTheDocument();
     expect(finyk).toBeInTheDocument();
-    expect(finyk?.scrollIntoView).toHaveBeenCalledWith({
-      block: "start",
+    expect(scrollTo).toHaveBeenCalledWith({
+      top: expect.any(Number),
       behavior: "smooth",
     });
+    expect(finyk?.scrollIntoView).not.toHaveBeenCalled();
   });
 
   it("mirrors the inner group tab to ?group= so reload keeps the user on Розділи", async () => {
@@ -184,9 +189,13 @@ describe("HubSettingsPage", () => {
     // ховалась за sticky-хедером і користувач бачив «налаштування взагалі»,
     // а не конкретно тогл-лист модулів дашборда (issue 2026-05-08).
     window.history.replaceState(null, "", "/?tab=settings#settings-dashboard");
+    const scrollContainer = document.createElement("div");
+    const scrollTo = vi.fn();
+    scrollContainer.scrollTo = scrollTo;
 
     renderWithToast(
       <HubSettingsPage
+        scrollContainer={scrollContainer}
         user={{
           id: "u1",
           email: null,
@@ -203,9 +212,10 @@ describe("HubSettingsPage", () => {
 
     const dashboard = document.getElementById("settings-dashboard");
     expect(dashboard).toBeInTheDocument();
-    expect(dashboard?.scrollIntoView).toHaveBeenCalledWith({
-      block: "start",
+    expect(scrollTo).toHaveBeenCalledWith({
+      top: expect.any(Number),
       behavior: "smooth",
     });
+    expect(dashboard?.scrollIntoView).not.toHaveBeenCalled();
   });
 });
