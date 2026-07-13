@@ -66,7 +66,7 @@ export function NutritionPantryPage({
           value={pantrySubTab}
           onChange={(id) => setPantrySubTab(id as PantrySubTab)}
           tabs={[
-            { id: "items", label: "Склад" },
+            { id: "items", label: "Комора" },
             { id: "shopping", label: "Покупки" },
           ]}
         />

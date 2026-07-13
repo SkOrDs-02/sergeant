@@ -14,8 +14,52 @@ export const CATEGORY_META: Record<string, { label: string; emoji: string }> = {
   other: { label: "Інше", emoji: "📝" },
 };
 
-export const MEMORY_ONBOARDING_PROMPT =
-  "Привіт! Давай заповнимо мій профіль. Задай мені по черзі кілька запитань: 1) Чи є в мене алергії або обмеження в їжі? 2) Яка моя дієта чи стиль харчування? 3) Яка моя основна ціль (схуднути, набрати масу, підтримка)? 4) Скільки разів на тиждень я тренуюсь і де? 5) Чи є щось ще важливе про моє здоров'я? Запам'ятай кожну відповідь через remember.";
+export const MEMORY_ONBOARDING_PROMPT = [
+  "Проведи коротке AI-інтервʼю, щоб заповнити лише мій профіль і памʼять ШІ.",
+  "Запитуй по одному питанню, простою українською, без довгої анкети.",
+  "Почни з питання: «Що для тебе зараз найважливіше: гроші, тренування, харчування, звички чи щось інше?»",
+  "Потім зʼясуй бажану зміну, типовий день або тиждень, перешкоди, вподобання/обмеження і як мені зручніше отримувати нагадування та поради.",
+  "Після відповідей покажи коротке резюме «Ось що я можу запамʼятати» і попроси підтвердити кожен пункт.",
+  "Медичні, фінансові та інші чутливі факти не зберігай мовчки: окремо запитай явне підтвердження.",
+  "Після підтвердження збережи тільки факти профілю/памʼяті через remember. Не створюй звички, цілі, транзакції чи інші сутності.",
+].join("\n");
+
+export const MEMORY_ADD_INFO_PROMPT =
+  "Хочу додати інформацію про себе у памʼять ШІ. Запитай одне-два уточнення, покажи що саме збережеш, і після мого підтвердження збережи тільки записи памʼяті через remember.";
+
+export const MEMORY_MANUAL_STEPS = [
+  {
+    category: "goal",
+    label: "Фокус",
+    prompt: "Що для тебе зараз найважливіше?",
+    placeholder: "Наприклад: хочу стабільно тренуватись 3 рази на тиждень",
+  },
+  {
+    category: "preference",
+    label: "Вподобання",
+    prompt: "Які вподобання, правила або обмеження варто враховувати?",
+    placeholder: "Наприклад: не люблю ранкові тренування",
+  },
+  {
+    category: "training",
+    label: "Типовий день",
+    prompt: "Як зараз виглядає твій типовий день або тиждень?",
+    placeholder: "Наприклад: сидяча робота, вечорами є 30 хвилин",
+  },
+  {
+    category: "other",
+    label: "Нагадування",
+    prompt: "Як тобі зручніше отримувати нагадування та поради?",
+    placeholder: "Наприклад: коротко, без тиску, ближче до вечора",
+  },
+] as const;
+
+export interface MemoryImportPreview {
+  validCount: number;
+  invalidCount: number;
+  duplicateCount: number;
+  newEntries: MemoryEntry[];
+}
 
 export function normalizeMemoryCategory(category?: string): string {
   const key = (category || "other").trim().toLowerCase();
@@ -43,6 +87,49 @@ export function normalizeMemoryEntry(item: unknown): MemoryEntry | null {
         ? obj["createdAt"]
         : new Date().toISOString(),
   };
+}
+
+export function buildMemoryImportPreview(
+  existing: MemoryEntry[],
+  parsed: unknown[],
+): MemoryImportPreview {
+  const existingIds = new Set(existing.map((entry) => entry.id));
+  const existingFacts = new Set(
+    existing.map((entry) => entry.fact.trim().toLowerCase()),
+  );
+  const incomingIds = new Set<string>();
+  const incomingFacts = new Set<string>();
+  const newEntries: MemoryEntry[] = [];
+  let validCount = 0;
+  let invalidCount = 0;
+  let duplicateCount = 0;
+
+  for (const item of parsed) {
+    const entry = normalizeMemoryEntry(item);
+    if (!entry) {
+      invalidCount += 1;
+      continue;
+    }
+    validCount += 1;
+
+    const factKey = entry.fact.trim().toLowerCase();
+    const duplicate =
+      existingIds.has(entry.id) ||
+      existingFacts.has(factKey) ||
+      incomingIds.has(entry.id) ||
+      incomingFacts.has(factKey);
+
+    if (duplicate) {
+      duplicateCount += 1;
+      continue;
+    }
+
+    incomingIds.add(entry.id);
+    incomingFacts.add(factKey);
+    newEntries.push(entry);
+  }
+
+  return { validCount, invalidCount, duplicateCount, newEntries };
 }
 
 export function readMemoryEntries(): MemoryEntry[] {
@@ -96,8 +183,12 @@ export function upsertMemoryFact(
   );
 
   if (existingIndex >= 0) {
+    const existingEntry = entries[existingIndex];
+    if (!existingEntry) {
+      throw new Error("Не вдалося оновити запис пам'яті.");
+    }
     const updated: MemoryEntry = {
-      ...entries[existingIndex]!,
+      ...existingEntry,
       fact: normalizedFact,
       category: normalizedCategory,
     };

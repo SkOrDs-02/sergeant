@@ -15,7 +15,7 @@ vi.mock("../hooks/useStreakFlame", () => ({
 describe("RoutineCalendarHero", () => {
   afterEach(cleanup);
 
-  it("renders hero narrative and KPI row", () => {
+  it("renders today's progress summary without duplicated KPI counters", () => {
     render(
       <RoutineCalendarHero
         rangeLabel="Сьогодні"
@@ -30,8 +30,10 @@ describe("RoutineCalendarHero", () => {
     );
 
     expect(screen.getByText(/10 липня/)).toBeInTheDocument();
-    expect(screen.getByText("Подій")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByText("Сьогоднішні звички")).toBeInTheDocument();
+    expect(screen.getByText(/2 з 4 звичок виконано/)).toBeInTheDocument();
+    expect(screen.queryByText("Подій")).not.toBeInTheDocument();
+    expect(screen.queryByText("Виконання")).not.toBeInTheDocument();
   });
 
   it("opens day report via progress ring click", () => {

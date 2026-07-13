@@ -189,7 +189,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     await openSection();
 
     const aiMemoryToggle = await screen.findByRole("switch", {
-      name: /AI memory/i,
+      name: /Памʼять для ШІ/i,
     });
     fireEvent.click(aiMemoryToggle);
 
@@ -207,7 +207,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     await openSection();
 
     const pushToggle = await screen.findByRole("switch", {
-      name: /Push-повідомлення/i,
+      name: /Системні сповіщення/i,
     });
     fireEvent.click(pushToggle);
 

@@ -120,11 +120,13 @@ export function PrivacySection() {
 
       <div className="space-y-3">
         <div>
-          <h3 className="text-style-label text-text">Згода та privacy</h3>
+          <h3 className="text-style-label text-text">
+            Згода, дані та сповіщення
+          </h3>
           <p className="mt-1 text-xs text-subtle leading-relaxed">
-            Керуй серверними consent preferences для аналітики, AI memory і
-            push-повідомлень. Essential cookies для входу, безпеки та billing
-            залишаються активними.
+            Обери, що Sergeant може використовувати для якості продукту,
+            персоналізації та нагадувань. Дані для входу, безпеки й оплати
+            залишаються потрібними для роботи застосунку.
           </p>
         </div>
         <ToggleRow
@@ -132,27 +134,27 @@ export function PrivacySection() {
           description={
             savingPreference === "analytics"
               ? "Зберігаю…"
-              : "Допомагає бачити якість funnel, UX і стабільність."
+              : "Допомагає бачити, де інтерфейс незручний або ламається."
           }
           checked={preferences.analytics}
           onChange={(checked) => void updatePreference("analytics", checked)}
         />
         <ToggleRow
-          label="AI memory"
+          label="Памʼять для ШІ"
           description={
             savingPreference === "aiMemory"
               ? "Зберігаю…"
-              : "Дозволяє персоналізувати AI-контекст між сесіями."
+              : "Дозволяє ШІ памʼятати корисні факти між сесіями, щоб відповіді були точнішими."
           }
           checked={preferences.aiMemory}
           onChange={(checked) => void updatePreference("aiMemory", checked)}
         />
         <ToggleRow
-          label="Push-повідомлення"
+          label="Системні сповіщення"
           description={
             savingPreference === "pushNotifications"
               ? "Зберігаю…"
-              : "Керує серверною згодою для нагадувань і системних пушів."
+              : "Дозволяє надсилати нагадування та важливі повідомлення, якщо вони увімкнені в браузері або системі."
           }
           checked={preferences.pushNotifications}
           onChange={(checked) =>

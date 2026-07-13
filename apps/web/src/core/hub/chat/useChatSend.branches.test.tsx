@@ -121,18 +121,39 @@ afterEach(() => {
 });
 
 describe("useChatSend — guard branches", () => {
-  it("/help opens the catalogue and never hits the API", async () => {
+  it("/help appends visible help in chat and never hits the API", async () => {
     const onOpenCatalogue = vi.fn();
+    const captured: ChatMessage[][] = [];
+    const setMessages = vi.fn((updater: unknown) => {
+      if (typeof updater === "function") {
+        const prev = captured.at(-1) ?? [];
+        captured.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+      } else {
+        captured.push(updater as ChatMessage[]);
+      }
+    });
     const { result } = renderHook(
       () =>
-        useChatSend({ messages: [], setMessages: vi.fn(), onOpenCatalogue }),
+        useChatSend({ messages: [], setMessages, onOpenCatalogue }),
       { wrapper: makeWrapper() },
     );
     await act(async () => {
       await result.current.send("/help");
     });
-    expect(onOpenCatalogue).toHaveBeenCalledTimes(1);
+    expect(onOpenCatalogue).not.toHaveBeenCalled();
     expect(sendMock).not.toHaveBeenCalled();
+    const flat = captured.flat();
+    expect(flat.some((m) => m.role === "user" && m.text === "/help")).toBe(
+      true,
+    );
+    expect(
+      flat.some(
+        (m) =>
+          m.role === "assistant" &&
+          m.text.includes("/help") &&
+          m.text.includes("додай витрату"),
+      ),
+    ).toBe(true);
   });
 
   it("offline appends an offline notice and skips the API", async () => {

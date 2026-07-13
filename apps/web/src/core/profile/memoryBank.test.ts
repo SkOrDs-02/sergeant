@@ -12,6 +12,7 @@ import {
   upsertMemoryFact,
   removeMemoryEntry,
   makeMemoryId,
+  buildMemoryImportPreview,
 } from "./memoryBank";
 import type { MemoryEntry } from "./types";
 
@@ -166,6 +167,33 @@ describe("removeMemoryEntry", () => {
     const { entries: next, removed } = removeMemoryEntry(entries, "nope");
     expect(removed).toBeNull();
     expect(next).toBe(entries);
+  });
+});
+
+describe("buildMemoryImportPreview", () => {
+  it("counts valid, invalid, duplicate and new JSON entries without overwriting", () => {
+    const existing: MemoryEntry[] = [
+      {
+        id: "m1",
+        fact: "Любить каву",
+        category: "preference",
+        createdAt: "x",
+      },
+    ];
+
+    const preview = buildMemoryImportPreview(existing, [
+      { id: "m1", fact: "Інший текст", category: "other" },
+      { id: "m2", fact: "любить каву", category: "other" },
+      { id: "m3", fact: "Хоче бігати", category: "goal" },
+      { id: "m4", fact: "Хоче бігати", category: "goal" },
+      { nope: true },
+    ]);
+
+    expect(preview.validCount).toBe(4);
+    expect(preview.invalidCount).toBe(1);
+    expect(preview.duplicateCount).toBe(3);
+    expect(preview.newEntries).toHaveLength(1);
+    expect(preview.newEntries[0]?.fact).toBe("Хоче бігати");
   });
 });
 

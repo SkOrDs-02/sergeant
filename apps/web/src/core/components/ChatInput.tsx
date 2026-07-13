@@ -89,7 +89,8 @@ export function ChatInput({
           type="button"
           onClick={onHelp}
           className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-panel border-line text-muted hover:text-text hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
-          aria-label="Показати список команд"
+          aria-label="Команди: показати довідку"
+          title="Команди"
         >
           <svg
             width="16"

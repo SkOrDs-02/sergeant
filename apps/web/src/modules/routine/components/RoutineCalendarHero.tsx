@@ -4,9 +4,6 @@
  */
 import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
-import { HeroValueLine } from "@shared/components/ui/HeroValueLine";
-import { KpiRowCompact } from "@shared/components/ui/KpiRowCompact";
-import { CounterReveal } from "@shared/components/ui/CounterReveal";
 import { StreakFlame } from "@shared/components/ui/StreakFlame";
 import { DayProgressRing } from "./DayProgressRing";
 import { useStreakFlame } from "../hooks/useStreakFlame";
@@ -38,14 +35,14 @@ export function RoutineCalendarHero({
   rangeLabel,
   headlineDate,
   dayProgress,
-  filteredCount,
-  activeHabitsCount,
-  completionRate,
   currentStreak,
   onOpenDayReport,
 }: RoutineCalendarHeroProps) {
   const habitsGenitive = dayProgress.scheduled === 1 ? "звички" : "звичок";
-  const narrative = `${headlineDate} · ${dayProgress.completed} з ${dayProgress.scheduled} ${habitsGenitive} · Серія ${currentStreak} ${pluralDays(currentStreak)}`;
+  const progressText =
+    dayProgress.scheduled > 0
+      ? `${dayProgress.completed} з ${dayProgress.scheduled} ${habitsGenitive} виконано`
+      : "Звичок на сьогодні ще немає";
   const flame = useStreakFlame(currentStreak);
 
   return (
@@ -65,38 +62,29 @@ export function RoutineCalendarHero({
           <StreakFlame streak={flame.count} size="sm" />
         </span>
       )}
-      <HeroValueLine
-        narrative={narrative}
-        metric={
-          <CounterReveal
-            value={dayProgress.completed}
-            max={dayProgress.scheduled}
-            entranceFrom={0}
-            duration={800}
-            maxTone="hero-ink"
-          />
-        }
-        ring={
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+        <div className="flex shrink-0 items-center justify-center">
           <DayProgressRing
             completed={dayProgress.completed}
             scheduled={dayProgress.scheduled}
             onClick={onOpenDayReport}
           />
-        }
-      />
-      <KpiRowCompact
-        module="routine"
-        tone="hero-ink"
-        items={[
-          { label: "Подій", value: filteredCount },
-          { label: "Звичок", value: activeHabitsCount },
-          {
-            label: "Виконання",
-            value: `${Math.round(completionRate.rate * 100)}%`,
-          },
-          { label: "Серія", value: currentStreak },
-        ]}
-      />
+        </div>
+        <div className="min-w-0 flex-1 pr-12">
+          <p className="text-style-caption font-semibold text-hero-ink/65">
+            Сьогоднішні звички
+          </p>
+          <p className="mt-1 text-style-headline text-hero-ink">
+            {headlineDate}
+          </p>
+          <p className="mt-2 text-style-body-sm text-hero-ink/75">
+            {progressText}
+            {currentStreak > 0
+              ? ` · серія ${currentStreak} ${pluralDays(currentStreak)}`
+              : ""}
+          </p>
+        </div>
+      </div>
     </Card>
   );
 }

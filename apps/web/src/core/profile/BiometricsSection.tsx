@@ -227,7 +227,11 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
   const editingDisabled = !online;
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card
+      radius="lg"
+      padding="none"
+      className="min-w-0 max-w-full overflow-hidden"
+    >
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
         <Icon name="activity" size={18} className="text-muted" />
         <span className="text-style-label text-text">{COPY.sectionTitle}</span>
@@ -257,6 +261,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
             }
             placeholder="175"
             disabled={editingDisabled}
+            className="min-w-0 max-w-full"
           />
         </div>
 
@@ -275,6 +280,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
               setForm((prev) => ({ ...prev, birthDate: e.target.value }))
             }
             disabled={editingDisabled}
+            className="min-w-0 max-w-full"
             helperText={
               ageYears != null
                 ? `${COPY.ageLabel}: ${ageYears} ${COPY.ageYearsSuffix}`
@@ -300,6 +306,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
               }))
             }
             disabled={editingDisabled}
+            className="min-w-0 max-w-full"
           >
             <option value="">{COPY.sexPlaceholder}</option>
             {SEX_VALUES.map((value) => (
@@ -327,6 +334,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
               }))
             }
             disabled={editingDisabled}
+            className="min-w-0 max-w-full"
           >
             <option value="">{COPY.activityPlaceholder}</option>
             {ACTIVITY_LEVELS.map((value) => (
@@ -362,6 +370,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
             }
             placeholder="75.5"
             disabled={editingDisabled}
+            className="min-w-0 max-w-full"
             helperText={COPY.weightSyncHint}
           />
         </div>

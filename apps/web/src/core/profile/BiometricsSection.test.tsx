@@ -168,6 +168,23 @@ describe("BiometricsSection", () => {
     expect(screen.getByText(/Вік:/)).toBeInTheDocument();
   });
 
+  it("keeps date and biometrics controls constrained for narrow mobile cards", () => {
+    render(<BiometricsSection />);
+
+    expect(screen.getByLabelText("Дата народження")).toHaveClass(
+      "min-w-0",
+      "max-w-full",
+    );
+    expect(screen.getByLabelText("Поточна вага (кг)")).toHaveClass(
+      "min-w-0",
+      "max-w-full",
+    );
+    expect(screen.getByLabelText("Рівень активності")).toHaveClass(
+      "min-w-0",
+      "max-w-full",
+    );
+  });
+
   it("disables every input when offline", () => {
     render(<BiometricsSection online={false} />);
 
