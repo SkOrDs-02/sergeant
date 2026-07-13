@@ -303,7 +303,7 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     <main
       id="main"
       tabIndex={-1}
-      className="relative h-app-dvh overflow-y-auto overscroll-contain bg-mesh text-text page-enter outline-none"
+      className="relative h-app-dvh overflow-y-auto overscroll-contain bg-mesh text-text outline-none"
     >
       <PeekBackdrop />
       <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">

@@ -17,11 +17,20 @@
 
 ## Діагностика
 
-- iOS може оновити `100dvh` із затримкою після SPA-навігації та зміни toolbar.
-  `--app-dvh` синхронізується з `visualViewport.height`; при зміні route key
-  значення перевимірюється, але не видаляється між effect-проходами.
+- Корінь проблеми — document-level scroll у застосунку, де всі сторінки вже
+  мають власні внутрішні scroll-контейнери. `page-enter` на full-height welcome
+  створював scrollable overflow, а `visualViewport.height` змінював геометрію
+  shell під час iOS-жесту. `#root` має бути pinned viewport без document scroll;
+  `h-app-dvh` успадковує його висоту без JS-вимірювання `visualViewport`.
 - `hub:open-settings` раніше викликав navigation через `setHubView` і ще раз
   через явний `navigate`, створюючи подвійний layout/scroll pass.
+- Hash-навігація Settings викликала `scrollIntoView`, який на iOS прокручував
+  не лише внутрішній `PullToRefresh`, а й документ. Через це весь Hub shell
+  зсувався під status bar, а нижній nav візуально виростав.
+- Попередній workaround `bottom-nav-shell::after` домальовував під nav ще
+  `4rem` (64 px) поза його layout-box. Коли iOS зсував viewport, цей фартух
+  ставав видимим як майже подвійна висота навігації. Pinned root прибирає
+  потребу в такому позапотоковому заповненні.
 - `SuspenseWithMinDelay` додає host `<div>`. Без `flex-1 min-h-0 flex flex-col`
   цей host не передає висоту Sheet до `HubChatBody`, тому внутрішній scroll
   фактично не має overflow-контейнера.
@@ -29,13 +38,16 @@
 ## Acceptance criteria
 
 - `/welcome` → «У мене вже є акаунт»: pathname `/sign-in`, auth surface
-  змонтований, welcome CTA зникає, а попереднє `--app-dvh` не очищається під
-  час переходу.
+  змонтований, welcome CTA зникає; full-height shell не має transform-анімації,
+  document scroll і JS-залежності від `visualViewport.height`.
 - Privacy → «Налаштувати»: один URL transition до
-  `/?tab=settings#settings-privacy`; висота нижнього nav стабільна.
+  `/?tab=settings#settings-privacy`; scroll виконується лише у внутрішньому
+  контейнері, а висота й позиція нижнього nav стабільні; nav не має
+  псевдоелемента-фартуха за межами власного box.
 - Overlay та `/chat` з довгою історією: `HubChatBody` має доступну висоту,
   прокручується самостійно, а Sheet/body не прокручується разом із ним.
-- Regression-тести покривають route viewport resync, Suspense layout host і
+- Regression-тести покривають pinned-root CSS contract, welcome shell без
+  transform overflow, внутрішній Settings hash-scroll, Suspense layout host і
   privacy navigation.
 
 ## Scope

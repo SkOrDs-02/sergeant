@@ -87,6 +87,10 @@ describe("WelcomeScreen — /welcome scroll-layer audit-guard", () => {
     // grow with content and defeat the inner scroll.
     expect(pageWrapper.className).toMatch(/\bh-app-dvh\b/);
     expect(pageWrapper.className).not.toMatch(/\bmin-h-dvh\b/);
+    // A transform animation on a full-height shell expands the document's
+    // scrollable overflow on iOS. The page owns inner scroll, so the shell
+    // itself must stay geometrically fixed while the CTA is touched.
+    expect(pageWrapper.className).not.toMatch(/\bpage-enter\b/);
   });
 
   it("PeekBackdrop is fixed inset-0 (decoupled from the scroll layer)", () => {

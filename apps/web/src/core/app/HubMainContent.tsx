@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { type User } from "@sergeant/shared";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
@@ -117,9 +117,13 @@ export const HubMainContent = memo(function HubMainContent({
   // iOS Safari / Capacitor it triggers a visual-viewport jump that
   // pushes the bottom nav off-screen (user feedback 2026-05-13).
   const scrollElRef = useRef<HTMLDivElement | null>(null);
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(
+    null,
+  );
   const prevHubViewRef = useRef<HubView | null>(null);
   const handleScrollElement = useCallback((el: HTMLDivElement | null) => {
     scrollElRef.current = el;
+    setScrollElement(el);
   }, []);
   useEffect(() => {
     if (prevHubViewRef.current !== null && prevHubViewRef.current !== hubView) {
@@ -238,7 +242,7 @@ export const HubMainContent = memo(function HubMainContent({
               aria-labelledby="hub-tab-settings"
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
-                <HubSettingsPage user={user} />
+                <HubSettingsPage user={user} scrollContainer={scrollElement} />
                 <TabReadyProbe tab="settings" />
               </SuspenseWithMinDelay>
             </div>

@@ -2,6 +2,7 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { useState } from "react";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { lazyImport } from "../lib/lazyImport";
 import { PageLoader } from "../app/PageLoader";
@@ -23,15 +24,19 @@ const HubSettingsPage = lazyImport(
  */
 export function Component() {
   const { user } = useHubShell();
+  const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(
+    null,
+  );
 
   return (
     <main
+      ref={setScrollContainer}
       id="main"
       tabIndex={-1}
-      className="max-w-lg mx-auto w-full px-5 pb-28 outline-none page-enter"
+      className="h-app-dvh overflow-y-auto max-w-lg mx-auto w-full px-5 pb-28 outline-none"
     >
       <SuspenseWithMinDelay fallback={<PageLoader />}>
-        <HubSettingsPage user={user} />
+        <HubSettingsPage user={user} scrollContainer={scrollContainer} />
       </SuspenseWithMinDelay>
     </main>
   );
