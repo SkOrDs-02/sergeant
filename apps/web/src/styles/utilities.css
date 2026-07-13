@@ -466,11 +466,25 @@
      Do not add an absolutely positioned apron below this box. The old
      4rem `::after` workaround became a visible 64px extension whenever
      iOS moved the layout viewport during navigation (owner repro
-     2026-07-13). The pinned root now owns the viewport boundary. */
+     2026-07-13). The fixed `::before` below is a paint-only underlay anchored
+     to the viewport bottom, wholly behind the nav's normal lower 36px. It
+     cannot change the nav box height or extend below the box; it only keeps
+     the panel colour behind transient iOS safe-area gaps. */
   position: relative;
   border-radius: 1.5rem 1.5rem 0 0;
   padding-top: 0.375rem;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  &::before {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: max(env(safe-area-inset-bottom, 0px), 2.25rem);
+    background: inherit;
+    pointer-events: none;
+  }
 }
 
 @utility no-scrollbar {

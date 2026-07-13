@@ -29,17 +29,28 @@
   зсувався під status bar, а нижній nav візуально виростав.
 - Попередній workaround `bottom-nav-shell::after` домальовував під nav ще
   `4rem` (64 px) поза його layout-box. Коли iOS зсував viewport, цей фартух
-  ставав видимим як майже подвійна висота навігації. Pinned root прибирає
-  потребу в такому позапотоковому заповненні.
+  ставав видимим як майже подвійна висота навігації. Заміна — paint-only
+  underlay, fixed до низу viewport у межах нормальної нижньої зони nav; він не
+  змінює layout-box. Window canvas використовує точний `bg-mesh` composite,
+  а не лише його flat base color, тому exposed iOS safe-area не читається як
+  окрема смуга на welcome.
+- Для відновленої сесії CTA «У мене вже є акаунт» потрапляв у детермінований
+  цикл `/welcome → /sign-in → / → /welcome`: sign-in guard відправляв
+  авторизованого користувача на Hub, але незакритий onboarding gate одразу
+  повертав його назад. CTA тепер спочатку фіксує явний skip onboarding і лише
+  потім відкриває auth; анонімний користувач бачить `/sign-in`, користувач із
+  відновленою сесією входить у Hub.
 - `SuspenseWithMinDelay` додає host `<div>`. Без `flex-1 min-h-0 flex flex-col`
   цей host не передає висоту Sheet до `HubChatBody`, тому внутрішній scroll
   фактично не має overflow-контейнера.
 
 ## Acceptance criteria
 
-- `/welcome` → «У мене вже є акаунт»: pathname `/sign-in`, auth surface
-  змонтований, welcome CTA зникає; full-height shell не має transform-анімації,
-  document scroll і JS-залежності від `visualViewport.height`.
+- `/welcome` → «У мене вже є акаунт»: для анонімної сесії pathname `/sign-in`
+  і auth surface змонтований; для відновленої сесії pathname `/` і Hub
+  змонтований без повернення на welcome. Full-height shell не має
+  transform-анімації, document scroll і JS-залежності від
+  `visualViewport.height`; window canvas та welcome мають ідентичний mesh.
 - Privacy → «Налаштувати»: один URL transition до
   `/?tab=settings#settings-privacy`; scroll виконується лише у внутрішньому
   контейнері, а висота й позиція нижнього nav стабільні; nav не має
@@ -47,8 +58,8 @@
 - Overlay та `/chat` з довгою історією: `HubChatBody` має доступну висоту,
   прокручується самостійно, а Sheet/body не прокручується разом із ним.
 - Regression-тести покривають pinned-root CSS contract, welcome shell без
-  transform overflow, внутрішній Settings hash-scroll, Suspense layout host і
-  privacy navigation.
+  transform overflow, returning-account route loop, внутрішній Settings
+  hash-scroll, Suspense layout host і privacy navigation.
 
 ## Scope
 

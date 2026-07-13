@@ -244,6 +244,17 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     }
   }, []);
 
+  // Returning-account is also an explicit onboarding escape. Without
+  // closing the local gate first, a restored session loops through
+  // `/welcome -> /sign-in -> / -> /welcome`: the sign-in route correctly
+  // redirects an authenticated user home, then the still-open onboarding
+  // gate sends them straight back here. Persist the skip before navigation
+  // so both restored and newly authenticated accounts land in the Hub.
+  const handleOpenAuth = useCallback(() => {
+    markOnboardingDone();
+    onOpenAuth();
+  }, [onOpenAuth]);
+
   // Phase 7 D4 preset-picker submit path. Persists the user's module
   // selection, marks onboarding done, fires the canonical analytics
   // funnel and bubbles the picks up to App-level navigation. Mirrors
@@ -315,7 +326,7 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
               екскурсію"); only this `/welcome` entry point swaps. */}
           <WelcomeModulePicker
             onComplete={handlePicksComplete}
-            onOpenAuth={onOpenAuth}
+            onOpenAuth={handleOpenAuth}
             onSecondaryAction={startDemoAndGoHome}
           />
         </div>
