@@ -20,8 +20,7 @@
      BASE STYLES
      ═══════════════════════════════════════════════════════════════════════ */
   html,
-  body,
-  #root {
+  body {
     width: 100%;
     height: 100%;
     /* App pages own their scroll in explicit inner containers. Keep the
@@ -36,6 +35,10 @@
   #root {
     position: fixed;
     inset: 0;
+    width: auto;
+    height: auto;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
@@ -53,7 +56,8 @@
        glows over) rather than `--c-bg`, so that bottom strip continues the
        gradient surface instead of showing a lighter `bg-bg` band under it
        (navbar-dead-space, 2026-05-29). */
-    background-color: rgb(var(--c-bg-base));
+    background: var(--app-mesh-background, rgb(var(--c-bg-base)));
+    background-attachment: fixed;
     text-rendering: optimizeLegibility;
     -webkit-font-feature-settings:
       "kern" 1,

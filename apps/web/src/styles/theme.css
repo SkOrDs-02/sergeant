@@ -890,6 +890,24 @@
     --bg-mesh-1: rgba(16, 185, 129, 0.14); /* emerald-500 — top-right */
     --bg-mesh-2: rgba(14, 116, 144, 0.09); /* cyan-700 — left */
     --bg-mesh-3: rgba(249, 112, 102, 0.1); /* coral-500 — bottom-right */
+    /* Shared by `.bg-mesh` and the root canvas. iOS standalone can expose
+       the canvas below a full-height child while safe-area geometry settles;
+       using the exact same composite prevents that region from becoming a
+       flat-colour strip on `/welcome`. Token references remain live across
+       dark / high-contrast overrides. */
+    --app-mesh-background:
+      radial-gradient(
+        75% 40% at 85% -5%,
+        var(--bg-mesh-1) 0px,
+        transparent 60%
+      ),
+      radial-gradient(65% 35% at 0% 40%, var(--bg-mesh-2) 0px, transparent 60%),
+      radial-gradient(
+        70% 40% at 100% 100%,
+        var(--bg-mesh-3) 0px,
+        transparent 60%
+      ),
+      rgb(var(--c-bg-base));
 
     /* Shadows — glass-surface recipes (inset highlight + outer drop). */
     --shadow-card-v2:
@@ -1056,15 +1074,7 @@
      - `prefers-reduced-motion: reduce` (Hard Rule #17 AMBIENT motion)
    ═══════════════════════════════════════════════════════════════════════════ */
 .bg-mesh {
-  background:
-    radial-gradient(75% 40% at 85% -5%, var(--bg-mesh-1) 0px, transparent 60%),
-    radial-gradient(65% 35% at 0% 40%, var(--bg-mesh-2) 0px, transparent 60%),
-    radial-gradient(
-      70% 40% at 100% 100%,
-      var(--bg-mesh-3) 0px,
-      transparent 60%
-    ),
-    rgb(var(--c-bg-base));
+  background: var(--app-mesh-background);
   background-attachment: fixed;
 }
 
