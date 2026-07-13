@@ -41,9 +41,8 @@ vi.mock("../onboarding/onboardingGate", async () => {
  *
  * Issue: коли користувач у `/welcome` тиснув «Що це за розділи?»,
  * splash-картка з модулями ставала вищою за viewport, а page-wrapper
- * був `min-h-dvh ... overflow-hidden` — і `html/body/#root` уже
- * зафіксовані на `height: 100dvh` у `apps/web/src/styles/base.css`,
- * тож natural body-scroll вимкнений. У результаті картку обрізало і
+ * був `min-h-dvh ... overflow-hidden` — і natural body-scroll уже
+ * вимкнений у `apps/web/src/styles/base.css`. У результаті картку обрізало і
  * зверху (логотип), і знизу (CTA + «Згорнути»), без можливості
  * прокрутки.
  *

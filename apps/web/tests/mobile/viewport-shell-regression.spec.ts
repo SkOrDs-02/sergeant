@@ -53,12 +53,16 @@ test("settings privacy hash scroll keeps the Hub shell pinned", async ({
   await expect(nav).toBeVisible();
   const geometry = await nav.evaluate((element) => {
     const rect = element.getBoundingClientRect();
-    const rootRect = document.querySelector("#root")?.getBoundingClientRect();
+    const root = document.querySelector<HTMLElement>("#root");
+    const rootRect = root?.getBoundingClientRect();
+    const underlay = getComputedStyle(element, "::before");
     const apron = getComputedStyle(element, "::after");
     return {
       height: rect.height,
       navBottomGap: (rootRect?.bottom ?? window.innerHeight) - rect.bottom,
       rootBottomGap: window.innerHeight - (rootRect?.bottom ?? 0),
+      rootPosition: root ? getComputedStyle(root).position : null,
+      underlayContent: underlay.content,
       apronContent: apron.content,
     };
   });
@@ -66,5 +70,7 @@ test("settings privacy hash scroll keeps the Hub shell pinned", async ({
   expect(geometry.height).toBeLessThan(140);
   expect(Math.abs(geometry.navBottomGap)).toBeLessThanOrEqual(1);
   expect(Math.abs(geometry.rootBottomGap)).toBeLessThanOrEqual(1);
+  expect(geometry.rootPosition).not.toBe("fixed");
+  expect(["none", "normal"]).toContain(geometry.underlayContent);
   expect(["none", "normal"]).toContain(geometry.apronContent);
 });

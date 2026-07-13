@@ -33,12 +33,24 @@
   }
 
   #root {
-    position: fixed;
-    inset: 0;
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100dvh;
     overflow: hidden;
     overscroll-behavior: none;
+  }
+
+  /* WebKit reports `dvh`, `visualViewport.height`, and the fixed-position
+     containing block without the viewport-fit extension in installed PWAs.
+     The result is a root that starts under the status bar but ends one top
+     safe-area inset above the physical bottom (WebKit 237961 / 254868).
+     In standalone there is no collapsible browser toolbar, so legacy `vh`
+     is the stable unit and includes the full edge-to-edge PWA viewport. */
+  @media (display-mode: standalone) {
+    html,
+    body,
+    #root {
+      height: 100vh;
+    }
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
