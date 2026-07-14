@@ -165,6 +165,7 @@ export function Workouts({
           onClose={() => o.setSelected(null)}
           mode={o.mode}
           musclesUk={o.musclesUk}
+          equipmentUk={o.equipmentUk}
           rec={o.rec}
           recoveryConflictsForExercise={o.recoveryConflictsForExercise}
           activeWorkoutId={o.activeWorkoutId}

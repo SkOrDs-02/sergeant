@@ -62,8 +62,7 @@ export function RoutineHeader({
           </div>
         )
       }
-      title="РУТИНА"
-      subtitle="Сьогоднішні звички й найближчі події"
+      title="Рутина"
       right={
         <div className="flex items-center gap-2">
           <ModuleHeaderAssistantButton />

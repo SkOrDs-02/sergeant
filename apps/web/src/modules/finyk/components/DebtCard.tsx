@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 
 function formatDueDate(dueDate: string | null | undefined) {
@@ -36,6 +37,7 @@ interface DebtCardProps {
   paid: number;
   total: number;
   onDelete?: (() => void) | undefined;
+  onEdit?: (() => void) | undefined;
   onLink?: (() => void) | undefined;
   linkedCount?: number | undefined;
   isReceivable?: boolean | undefined;
@@ -47,11 +49,11 @@ interface DebtCardProps {
 // тому memo безпечно зрізає перерендери при оновленнях батька.
 function DebtCardComponent({
   name,
-  emoji,
   remaining,
   paid,
   total,
   onDelete,
+  onEdit,
   onLink,
   linkedCount,
   isReceivable,
@@ -65,10 +67,7 @@ function DebtCardComponent({
   return (
     <div className="bg-panel border border-line rounded-xl p-4 mb-3">
       <div className="flex items-start justify-between mb-3">
-        <span className="text-style-label leading-snug">
-          {emoji ? `${emoji} ` : ""}
-          {name}
-        </span>
+        <span className="text-style-label leading-snug">{name}</span>
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <span
             className={cn(
@@ -82,12 +81,24 @@ function DebtCardComponent({
               ? `${isReceivable ? "+" : "−"}${remaining.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`
               : "••••"}
           </span>
+          {onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="text-subtle hover:text-text"
+              aria-label={`Редагувати ${name}`}
+            >
+              <Icon name="edit" size={16} aria-hidden />
+            </button>
+          )}
           {onDelete && (
             <button
+              type="button"
               onClick={onDelete}
               className="text-subtle hover:text-danger text-sm transition-colors"
+              aria-label={`Видалити ${name}`}
             >
-              🗑
+              <Icon name="trash" size={16} aria-hidden />
             </button>
           )}
         </div>
@@ -114,7 +125,8 @@ function DebtCardComponent({
             isOverdue ? "text-danger-strong dark:text-danger" : "text-muted",
           )}
         >
-          📅 {formatDueDateValue(dueDate)} · {dueText}
+          <Icon name="calendar" size={13} aria-hidden />{" "}
+          {formatDueDateValue(dueDate)} · {dueText}
         </div>
       )}
       {onLink && (
@@ -122,7 +134,8 @@ function DebtCardComponent({
           onClick={onLink}
           className="mt-3 w-full text-xs text-muted border border-dashed border-line rounded-xl py-2 hover:border-primary hover:text-primary transition-colors"
         >
-          🔗 Прив&apos;язати транзакції ({linkedCount || 0})
+          <Icon name="link" size={14} aria-hidden /> Привʼязати транзакції (
+          {linkedCount || 0})
         </button>
       )}
     </div>

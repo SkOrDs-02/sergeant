@@ -14,6 +14,7 @@ export function PWASection() {
   const toast = useToast();
   const [swBusy, setSwBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [swSnapshot, setSwSnapshot] = useState<unknown>(null);
 
   const performClearCaches = async () => {
     setConfirmOpen(false);
@@ -32,7 +33,7 @@ export function PWASection() {
   };
 
   return (
-    <SettingsGroup title="PWA та офлайн" emoji="📡">
+    <SettingsGroup title="PWA та офлайн" icon="smartphone">
       <p className="text-xs text-subtle leading-snug">
         Якщо після оновлення щось «застрягло» (стара версія або дивні дані),
         можна скинути кеш Service Worker і перезавантажити застосунок.
@@ -49,8 +50,9 @@ export function PWASection() {
             try {
               await swSetDebug(true);
               const snap = await swGetDebugSnapshot();
+              setSwSnapshot(snap);
               logger.info("[sw] snapshot", snap);
-              toast.success("SW-діагностика виведена в консоль");
+              toast.success("SW-діагностику підготовлено");
             } catch (err) {
               toast.error("Не вдалося отримати діагностику SW");
               logger.warn("[sw] debug failed", err);
@@ -72,6 +74,29 @@ export function PWASection() {
           Скинути кеш PWA
         </Button>
       </div>
+      {swSnapshot ? (
+        <div className="rounded-xl border border-line bg-panelHi p-3 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-style-label">Результат діагностики</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                void navigator.clipboard?.writeText(
+                  JSON.stringify(swSnapshot, null, 2),
+                );
+                toast.success("Діагностику скопійовано");
+              }}
+            >
+              Скопіювати
+            </Button>
+          </div>
+          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words text-style-caption text-subtle">
+            {JSON.stringify(swSnapshot, null, 2)}
+          </pre>
+        </div>
+      ) : null}
       <ConfirmDialog
         open={confirmOpen}
         title="Скинути кеш PWA?"

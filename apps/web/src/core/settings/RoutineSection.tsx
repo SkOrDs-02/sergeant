@@ -43,7 +43,7 @@ export function RoutineSection() {
   const closeEditDialog = () => setEditingId(null);
 
   return (
-    <SettingsGroup title="Рутина" emoji="✅">
+    <SettingsGroup title="Рутина" icon="check">
       <SettingsSubGroup title="Календар">
         <ToggleRow
           label="Показувати тренування з Фізрука в календарі"

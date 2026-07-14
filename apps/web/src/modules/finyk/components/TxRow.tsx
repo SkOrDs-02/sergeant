@@ -112,9 +112,7 @@ interface TxRowProps {
   hideAmount?: boolean | undefined;
   txSplits?: TxSplitsMap | undefined;
   onSplitChange?:
-    | ((id: string, split: TxSplit[] | null) => void)
-    | null
-    | undefined;
+    ((id: string, split: TxSplit[] | null) => void) | null | undefined;
   customCategories?: readonly CustomCategoryInput[] | undefined;
 }
 
@@ -373,7 +371,7 @@ function TxRowImpl({
               title="Розподілити транзакцію"
               aria-label="Розподілити транзакцію"
             >
-              ⅔
+              <Icon name="target" size={16} aria-hidden />
             </button>
           )}
           {onCatChange && (
@@ -490,7 +488,7 @@ function TxRowImpl({
                   }
                   className="text-danger-strong/50 dark:text-danger/50 hover:text-danger text-sm shrink-0"
                 >
-                  ✕
+                  <Icon name="trash" size={14} aria-hidden />
                 </button>
               )}
             </div>
@@ -547,7 +545,7 @@ function TxRowImpl({
               onClick={() => setSplitEditor(false)}
               className="text-xs py-2 px-3 rounded-xl border border-line text-subtle hover:text-text transition-colors"
             >
-              ✕
+              <Icon name="close" size={14} aria-hidden />
             </button>
           </div>
         </div>

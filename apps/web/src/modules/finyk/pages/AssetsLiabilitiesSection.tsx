@@ -25,6 +25,8 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
     setShowDebtForm,
     newDebt,
     setNewDebt,
+    editingDebtId,
+    setEditingDebtId,
     debtFormRef,
     debtNameInputRef,
     setTxPicker,
@@ -68,6 +70,13 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
           setShowDebtForm={setShowDebtForm}
           debtFormRef={debtFormRef}
           debtNameInputRef={debtNameInputRef}
+          editingId={editingDebtId}
+          onUpdate={(id, value) => {
+            setManualDebts((ds) =>
+              ds.map((item) => (item.id === id ? value : item)),
+            );
+            setEditingDebtId(null);
+          }}
         />
       ) : (
         <button
@@ -105,6 +114,16 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
           key={d.id}
           name={d.name ?? ""}
           emoji={d.emoji ?? ""}
+          onEdit={() => {
+            setEditingDebtId(d.id);
+            setNewDebt({
+              name: d.name ?? "",
+              emoji: d.emoji ?? "",
+              totalAmount: String(d.totalAmount ?? d.amount ?? ""),
+              dueDate: d.dueDate ?? "",
+            });
+            setShowDebtForm(true);
+          }}
           remaining={calcDebtRemaining(d, transactions)}
           paid={getDebtPaid(d, transactions)}
           total={getDebtEffectiveTotal(d, transactions)}

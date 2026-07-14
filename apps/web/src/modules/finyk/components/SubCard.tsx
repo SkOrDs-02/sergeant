@@ -10,6 +10,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { Select } from "@shared/components/ui/Select";
+import { Icon } from "@shared/components/ui/Icon";
 import {
   getLastTxForSubscription,
   getSubscriptionAmountMeta,
@@ -110,7 +111,7 @@ function SubCardComponent({
   if (editing) {
     return (
       <Card variant="finyk-soft" padding="md" className="mb-3 space-y-3">
-        <div className="flex gap-2 flex-wrap">
+        <div className="hidden" aria-hidden="true">
           {EMOJI_OPTIONS.map((e) => (
             <button
               key={e}
@@ -140,6 +141,10 @@ function SubCardComponent({
           value={form.keyword}
           onChange={(e) => setForm((f) => ({ ...f, keyword: e.target.value }))}
         />
+        <p className="text-xs text-subtle">
+          Ключове слово або частина назви транзакції для автоматичного
+          прив&apos;язування.
+        </p>
         <div className="flex gap-2">
           <div className="flex-1">
             <Input
@@ -207,7 +212,12 @@ function SubCardComponent({
         veryClose ? "border-danger/50" : soon ? "border-warning/40" : null,
       )}
     >
-      <span className="text-2xl shrink-0 leading-none">{sub.emoji}</span>
+      <Icon
+        name="refresh-cw"
+        size={22}
+        className="shrink-0 text-finyk"
+        aria-hidden
+      />
       <div className="flex-1 min-w-0">
         <div className="text-style-label truncate">{sub.name}</div>
         <div
@@ -268,7 +278,7 @@ function SubCardComponent({
               onClick={() => setEditing(true)}
               className="text-subtle hover:text-primary"
             >
-              ✏️
+              <Icon name="edit" size={16} aria-hidden />
             </Button>
           )}
           <Button
@@ -279,7 +289,7 @@ function SubCardComponent({
             onClick={onDelete}
             className="text-subtle hover:text-danger"
           >
-            🗑
+            <Icon name="trash" size={16} aria-hidden />
           </Button>
         </div>
       </div>

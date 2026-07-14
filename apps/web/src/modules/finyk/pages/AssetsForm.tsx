@@ -12,6 +12,11 @@ import type {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualAsset, Subscription } from "../hooks/useStorage";
 
+const isPositiveFinite = (value: string) => {
+  const parsed = Number(value);
+  return value.trim() !== "" && Number.isFinite(parsed) && parsed > 0;
+};
+
 // ---------------------------------------------------------------------------
 // Subscription form
 // ---------------------------------------------------------------------------
@@ -60,10 +65,16 @@ export function SubscriptionForm({
           }))
         }
       />
+      {(!newSub.name.trim() || !newSub.billingDay) && (
+        <p className="text-style-caption text-subtle" role="status">
+          Заповни назву та день списання, щоб додати підписку.
+        </p>
+      )}
       <div className="flex gap-2">
         <Button
           className="flex-1"
           size="sm"
+          disabled={!newSub.name.trim() || !newSub.billingDay}
           onClick={() => {
             if (!newSub.name || !newSub.billingDay) return;
             // The day-of-month <input type="number"> exposes min/max only as
@@ -120,6 +131,8 @@ export function ReceivableForm({
   setNewRecv,
   setReceivables,
   setShowRecvForm,
+  editingId,
+  onUpdate,
 }: {
   newRecv: {
     name: string;
@@ -131,6 +144,8 @@ export function ReceivableForm({
   setNewRecv: React.Dispatch<React.SetStateAction<typeof newRecv>>;
   setReceivables: React.Dispatch<React.SetStateAction<Receivable[]>>;
   setShowRecvForm: (v: boolean) => void;
+  editingId?: string | null;
+  onUpdate?: (id: string, value: Receivable) => void;
 }) {
   return (
     <Card variant="flat" radius="md" className="space-y-3">
@@ -159,10 +174,16 @@ export function ReceivableForm({
         value={newRecv.dueDate}
         onChange={(e) => setNewRecv((a) => ({ ...a, dueDate: e.target.value }))}
       />
+      {(!newRecv.name.trim() || !isPositiveFinite(newRecv.amount)) && (
+        <p className="text-style-caption text-subtle" role="status">
+          Заповни імʼя та вкажи позитивну суму.
+        </p>
+      )}
       <div className="flex gap-2">
         <Button
           className="flex-1"
           size="sm"
+          disabled={!newRecv.name.trim() || !isPositiveFinite(newRecv.amount)}
           onClick={() => {
             if (!newRecv.name || !newRecv.amount) return;
             // <input type="number"> accepts negatives + arbitrary precision;
@@ -171,15 +192,17 @@ export function ReceivableForm({
             // as "−1 000 ₴" on a row that is supposed to be an asset.
             const parsedAmount = Number(newRecv.amount);
             if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
-            setReceivables((rs) => [
-              ...rs,
-              {
-                ...newRecv,
-                id: crypto.randomUUID(),
-                amount: parsedAmount,
-                linkedTxIds: [],
-              } as Receivable,
-            ]);
+            const next = {
+              ...newRecv,
+              id: crypto.randomUUID(),
+              amount: parsedAmount,
+              linkedTxIds: [],
+            } as Receivable;
+            if (editingId && onUpdate) {
+              onUpdate(editingId, { ...next, id: editingId });
+            } else {
+              setReceivables((rs) => [...rs, next]);
+            }
             setNewRecv({
               name: "",
               emoji: "\u{1F464}",
@@ -215,6 +238,8 @@ export function AssetForm({
   setShowAssetForm,
   assetFormRef,
   assetNameInputRef,
+  editingId,
+  onUpdate,
 }: {
   newAsset: { name: string; amount: string; currency: string; emoji: string };
   setNewAsset: React.Dispatch<React.SetStateAction<typeof newAsset>>;
@@ -222,6 +247,8 @@ export function AssetForm({
   setShowAssetForm: (v: boolean) => void;
   assetFormRef: React.RefObject<HTMLElement | null>;
   assetNameInputRef: React.RefObject<HTMLInputElement | null>;
+  editingId?: string | null;
+  onUpdate?: (id: string, value: ManualAsset) => void;
 }) {
   // Phase 7 D2 — multi-currency assets (non-UAH) are gated to Premium.
   // UAH stays free for everyone; touching the picker to switch off UAH
@@ -275,10 +302,18 @@ export function AssetForm({
           <option value="EUR">EUR</option>
           <option value="BTC">BTC</option>
         </select>
+        {(!newAsset.name.trim() || !isPositiveFinite(newAsset.amount)) && (
+          <p className="text-style-caption text-subtle" role="status">
+            Заповни назву та вкажи позитивну суму активу.
+          </p>
+        )}
         <div className="flex gap-2">
           <Button
             className="flex-1"
             size="sm"
+            disabled={
+              !newAsset.name.trim() || !isPositiveFinite(newAsset.amount)
+            }
             onClick={() => {
               if (!newAsset.name || !newAsset.amount) return;
               // <input type="number"> accepts negatives + arbitrary precision;
@@ -289,14 +324,16 @@ export function AssetForm({
               // negative.
               const parsedAmount = Number(newAsset.amount);
               if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
-              setManualAssets((a) => [
-                ...a,
-                {
-                  ...newAsset,
-                  id: crypto.randomUUID(),
-                  amount: parsedAmount,
-                } as ManualAsset,
-              ]);
+              const next = {
+                ...newAsset,
+                id: crypto.randomUUID(),
+                amount: parsedAmount,
+              } as ManualAsset;
+              if (editingId && onUpdate) {
+                onUpdate(editingId, { ...next, id: editingId });
+              } else {
+                setManualAssets((a) => [...a, next]);
+              }
               setNewAsset({
                 name: "",
                 amount: "",
@@ -339,6 +376,8 @@ export function DebtForm({
   setShowDebtForm,
   debtFormRef,
   debtNameInputRef,
+  editingId,
+  onUpdate,
 }: {
   newDebt: {
     name: string;
@@ -351,6 +390,8 @@ export function DebtForm({
   setShowDebtForm: (v: boolean) => void;
   debtFormRef: React.RefObject<HTMLElement | null>;
   debtNameInputRef: React.RefObject<HTMLInputElement | null>;
+  editingId?: string | null;
+  onUpdate?: (id: string, value: Debt) => void;
 }) {
   return (
     <Card
@@ -409,22 +450,32 @@ export function DebtForm({
         value={newDebt.dueDate}
         onChange={(e) => setNewDebt((a) => ({ ...a, dueDate: e.target.value }))}
       />
+      {(!newDebt.name.trim() || !isPositiveFinite(newDebt.totalAmount)) && (
+        <p className="text-style-caption text-subtle" role="status">
+          Заповни назву та вкажи позитивну суму пасиву.
+        </p>
+      )}
       <div className="flex gap-2">
         <Button
           className="flex-1"
           size="sm"
+          disabled={
+            !newDebt.name.trim() || !isPositiveFinite(newDebt.totalAmount)
+          }
           onClick={() => {
             if (newDebt.name && newDebt.totalAmount) {
-              setManualDebts((ds) => [
-                ...ds,
-                {
-                  ...newDebt,
-                  id: crypto.randomUUID(),
-                  amount: Number(newDebt.totalAmount),
-                  totalAmount: Number(newDebt.totalAmount),
-                  linkedTxIds: [],
-                } satisfies Debt,
-              ]);
+              const next = {
+                ...newDebt,
+                id: crypto.randomUUID(),
+                amount: Number(newDebt.totalAmount),
+                totalAmount: Number(newDebt.totalAmount),
+                linkedTxIds: [],
+              } satisfies Debt;
+              if (editingId && onUpdate) {
+                onUpdate(editingId, { ...next, id: editingId });
+              } else {
+                setManualDebts((ds) => [...ds, next]);
+              }
               setNewDebt({
                 name: "",
                 emoji: "\u{1F4B8}",

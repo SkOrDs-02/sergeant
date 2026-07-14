@@ -7,6 +7,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
 type RecoveryByMap = Parameters<RecExerciseFn>[1];
@@ -20,6 +21,7 @@ type ExerciseDetailSheetProps = {
   onClose: () => void;
   mode: "log" | "catalog";
   musclesUk: Record<string, string>;
+  equipmentUk?: Record<string, string>;
   rec: { by: RecoveryByMap } | null | undefined;
   recoveryConflictsForExercise: RecExerciseFn;
   activeWorkoutId: string | null | undefined;
@@ -34,6 +36,7 @@ export function ExerciseDetailSheet({
   onClose,
   mode,
   musclesUk,
+  equipmentUk = {},
   rec,
   recoveryConflictsForExercise,
   activeWorkoutId,
@@ -63,7 +66,9 @@ export function ExerciseDetailSheet({
         (eq) => typeof eq === "string",
       )
     : Array.isArray(selected.equipment)
-      ? selected.equipment.filter((eq): eq is string => typeof eq === "string")
+      ? selected.equipment
+          .filter((eq): eq is string => typeof eq === "string")
+          .map((eq) => equipmentUk[eq] || eq)
       : [];
   const tips: string[] = Array.isArray(selected["tips"])
     ? (selected["tips"] as string[]).filter((t) => typeof t === "string")
@@ -239,7 +244,7 @@ export function ExerciseDetailSheet({
               .catch(() => {});
           }}
         >
-          📋 Копіювати назву
+          <Icon name="copy" size={16} aria-hidden /> Копіювати назву
         </Button>
       </div>
     </Sheet>

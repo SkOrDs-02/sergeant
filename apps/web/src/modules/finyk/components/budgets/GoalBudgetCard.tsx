@@ -6,6 +6,7 @@ import { memo, useEffect, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { Icon } from "@shared/components/ui/Icon";
 import { formatMoney, pluralDays } from "@sergeant/shared";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
 
@@ -91,7 +92,7 @@ function GoalBudgetCardComponent({
           <>
             <div className="flex justify-between items-center mb-2">
               <span className="text-style-label">
-                {budget.emoji} {budget.name}
+                <Icon name="target" size={16} aria-hidden /> {budget.name}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted">
@@ -103,7 +104,7 @@ function GoalBudgetCardComponent({
                   className="text-subtle hover:text-text text-sm transition-colors"
                   aria-label="Редагувати ціль"
                 >
-                  ✏️
+                  <Icon name="edit" size={16} aria-hidden />
                 </button>
               </div>
             </div>
@@ -121,7 +122,7 @@ function GoalBudgetCardComponent({
               {daysLeft !== null
                 ? daysLeft > 0
                   ? `${daysLeft} ${pluralDays(daysLeft)} до мети`
-                  : "⏰ Термін минув!"
+                  : "Термін минув"
                 : "Без дедлайну"}
             </div>
           </>
