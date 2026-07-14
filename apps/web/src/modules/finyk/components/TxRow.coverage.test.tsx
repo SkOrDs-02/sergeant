@@ -233,11 +233,11 @@ describe("TxRow", () => {
       fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
       fireEvent.click(screen.getByText("+ Додати частину"));
       expect(screen.getAllByRole("combobox")).toHaveLength(3);
-      // the inline remove buttons appear only when length > 2
-      const removeBtns = screen
-        .getAllByRole("button")
-        .filter((b) => b.textContent === "✕");
-      fireEvent.click(removeBtns[0]!);
+      fireEvent.click(
+        screen.getAllByRole("button", {
+          name: "Видалити частину розподілу",
+        })[0]!,
+      );
       expect(screen.getAllByRole("combobox")).toHaveLength(2);
     });
 
@@ -246,11 +246,9 @@ describe("TxRow", () => {
       render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
       fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
       expect(screen.getByText(/Розподіл/)).toBeInTheDocument();
-      // cancel button is the last ✕ in the action row
-      const cancels = screen
-        .getAllByRole("button")
-        .filter((b) => b.textContent === "✕");
-      fireEvent.click(cancels[cancels.length - 1]!);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Закрити редактор розподілу" }),
+      );
       expect(screen.queryByText(/Розподіл/)).not.toBeInTheDocument();
     });
 

@@ -81,6 +81,12 @@ export function TransactionsBatchToolbar({
                 )}
               </div>
             </div>
+            {selectedSize > 0 && (
+              <p className="mt-1 px-1 text-xs text-subtle">
+                Виключення прибирає вибрані транзакції з підсумків статистики,
+                але не видаляє їх.
+              </p>
+            )}
           </div>
         </div>
       )}

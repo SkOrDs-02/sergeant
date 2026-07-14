@@ -30,6 +30,9 @@ interface GoalBudgetCardProps {
   isEditing: boolean;
   onBeginEdit: () => void;
   onChangeSaved?: (next: number) => void;
+  onChangeName?: (next: string) => void;
+  onChangeTarget?: (next: number) => void;
+  onChangeDate?: (next: string) => void;
   onSave: () => void;
   onDelete: () => void;
 }
@@ -45,6 +48,9 @@ function GoalBudgetCardComponent({
   isEditing,
   onBeginEdit,
   onChangeSaved,
+  onChangeName,
+  onChangeTarget,
+  onChangeDate,
   onSave,
   onDelete,
 }: GoalBudgetCardProps) {
@@ -69,10 +75,30 @@ function GoalBudgetCardComponent({
           <div className="space-y-2">
             <Input
               size="sm"
+              aria-label="Назва цілі"
+              value={budget.name || ""}
+              onChange={(e) => onChangeName?.(e.target.value)}
+            />
+            <Input
+              size="sm"
+              type="number"
+              aria-label="Сума цілі"
+              value={budget.targetAmount || ""}
+              onChange={(e) => onChangeTarget?.(Number(e.target.value))}
+            />
+            <Input
+              size="sm"
               type="number"
               placeholder="Відкладено ₴"
               value={budget.savedAmount || ""}
               onChange={(e) => onChangeSaved?.(Number(e.target.value))}
+            />
+            <Input
+              size="sm"
+              type="date"
+              aria-label="Дата завершення цілі"
+              value={budget.targetDate || ""}
+              onChange={(e) => onChangeDate?.(e.target.value)}
             />
             <div className="flex gap-2">
               <Button className="flex-1" size="sm" onClick={onSave}>

@@ -92,7 +92,7 @@ export function Measurements() {
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
         <a
-          href="https://www.wikihow.com/Take-Body-Measurements"
+          href="https://fitness.net.ua/yak-pravylno-robyty-zamiry-tila/"
           target="_blank"
           rel="noreferrer"
           className="flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"

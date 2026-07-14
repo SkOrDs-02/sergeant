@@ -483,6 +483,8 @@ function TxRowImpl({
               />
               {draftSplits.length > 2 && (
                 <button
+                  type="button"
+                  aria-label="Видалити частину розподілу"
                   onClick={() =>
                     setDraftSplits((prev) => prev.filter((_, j) => j !== i))
                   }
@@ -542,6 +544,8 @@ function TxRowImpl({
               </button>
             )}
             <button
+              type="button"
+              aria-label="Закрити редактор розподілу"
               onClick={() => setSplitEditor(false)}
               className="text-xs py-2 px-3 rounded-xl border border-line text-subtle hover:text-text transition-colors"
             >

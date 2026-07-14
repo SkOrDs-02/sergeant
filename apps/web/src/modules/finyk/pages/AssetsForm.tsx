@@ -51,6 +51,9 @@ export function SubscriptionForm({
         value={newSub.keyword}
         onChange={(e) => setNewSub((a) => ({ ...a, keyword: e.target.value }))}
       />
+      <p className="text-xs text-subtle">
+        Слово або частина назви для пошуку витратних транзакцій.
+      </p>
       <Input
         aria-label="День списання (1-31)"
         placeholder="День списання (1-31)"

@@ -266,6 +266,10 @@ function AddBudgetFormComponent({
                 {limitAmountError}
               </p>
             )}
+            <p className="mt-1 text-xs text-subtle">
+              Ліміт діє щомісяця й автоматично починає новий період на початку
+              календарного місяця.
+            </p>
           </div>
           <div className="flex gap-2">
             <Button

@@ -141,6 +141,33 @@ export function BudgetsGoalsSection({
                   ),
                 )
               }
+              onChangeName={(nextName) =>
+                setBudgets((bs) =>
+                  bs.map((x, j) =>
+                    j === globalIdx && x.type === "goal"
+                      ? { ...x, name: nextName }
+                      : x,
+                  ),
+                )
+              }
+              onChangeTarget={(nextTarget) =>
+                setBudgets((bs) =>
+                  bs.map((x, j) =>
+                    j === globalIdx && x.type === "goal"
+                      ? { ...x, targetAmount: Number(nextTarget) }
+                      : x,
+                  ),
+                )
+              }
+              onChangeDate={(nextDate) =>
+                setBudgets((bs) =>
+                  bs.map((x, j) =>
+                    j === globalIdx && x.type === "goal"
+                      ? { ...x, targetDate: nextDate || undefined }
+                      : x,
+                  ),
+                )
+              }
               onSave={() => setEditIdx(null)}
               onDelete={() => {
                 const removed = b;
