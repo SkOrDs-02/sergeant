@@ -95,15 +95,16 @@ vi.mock("./lib/demoData", () => ({
   enableFinykManualOnly: vi.fn(),
 }));
 
-vi.mock("./components/SyncIndicator", () => ({
-  getSyncTone: vi.fn(() => ({
-    dot: "bg-muted",
-    text: "не підключено",
-    pill: "bg-panelHi text-muted border-line",
-  })),
-  SwipeProgressBar: () => null,
-  SWIPE_THRESHOLD_PX: 80,
-}));
+vi.mock("./components/SyncIndicator", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("./components/SyncIndicator")>();
+  return {
+    ...actual,
+    getSyncTone: vi.fn(actual.getSyncTone),
+    SwipeProgressBar: () => null,
+    SWIPE_THRESHOLD_PX: 80,
+  };
+});
 
 // ── Shared hook stubs ────────────────────────────────────────────────────────
 
@@ -219,6 +220,7 @@ vi.mock("@shared/components/ui/ModuleBottomNav", () => ({
 import FinykApp from "./FinykApp";
 import { useFinykRoute } from "./hooks/useFinykRoute";
 import { useMonobank } from "./hooks/useMonobank";
+import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 
 afterEach(() => {
   cleanup();
@@ -230,9 +232,10 @@ describe("FinykApp smoke tests", () => {
     expect(() => render(<FinykApp />)).not.toThrow();
   });
 
-  it("renders the ФІНІК header title", () => {
+  it("renders the module title with the short finance subtitle", () => {
     render(<FinykApp />);
-    expect(screen.getByText("ФІНІК")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Фінік" })).toBeInTheDocument();
+    expect(screen.getByText("Фінанси")).toBeInTheDocument();
   });
 
   it("renders the bottom navigation bar", () => {
@@ -251,9 +254,44 @@ describe("FinykApp smoke tests", () => {
     expect(screen.getByTestId("finyk-overview")).toBeInTheDocument();
   });
 
-  it("shows the monobank subtitle", () => {
+  it("shows the finance module subtitle", () => {
     render(<FinykApp />);
-    expect(screen.getByText("Monobank · бюджети")).toBeInTheDocument();
+    expect(screen.getByText("Фінанси")).toBeInTheDocument();
+  });
+
+  it("does not show a mysterious sync dot on the idle happy path", () => {
+    render(<FinykApp />);
+    expect(
+      screen.queryByLabelText(/Стан синхронізації:/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows an explicit sync label only while synchronization needs attention", () => {
+    vi.mocked(useMonobank).mockReturnValueOnce({
+      clientInfo: { name: "Тест" },
+      connecting: false,
+      error: null,
+      authError: null,
+      setAuthError: vi.fn(),
+      connect: vi.fn(),
+      accounts: [],
+      transactions: [],
+      syncState: { status: "loading" },
+    } as unknown as ReturnType<typeof useMonobank>);
+    vi.mocked(useUnifiedFinanceData).mockReturnValueOnce({
+      mergedMono: {
+        accounts: [],
+        transactions: [],
+        syncState: { status: "loading" },
+      },
+      mergedRefresh: vi.fn(),
+    } as unknown as ReturnType<typeof useUnifiedFinanceData>);
+
+    render(<FinykApp />);
+
+    expect(
+      screen.getByLabelText("Стан синхронізації: оновлення"),
+    ).toHaveTextContent("оновлення");
   });
 
   it("accepts all optional props without crashing", () => {

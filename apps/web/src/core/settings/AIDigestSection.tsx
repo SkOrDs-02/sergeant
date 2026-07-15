@@ -34,7 +34,7 @@ export function AIDigestSection() {
   // `WeeklyDigestFooter`), тож «Згенерувати/Оновити» було двічі. У
   // налаштуваннях лишився тільки тумблер автогенерації по понеділках.
   return (
-    <SettingsGroup title="AI Звіт тижня" emoji="📋">
+    <SettingsGroup title="AI Звіт тижня" icon="clipboard">
       <div className="space-y-3">
         <p className="text-xs text-subtle leading-snug">
           Тижневий AI-аналіз прогресу по всіх модулях: фінанси, тренування,

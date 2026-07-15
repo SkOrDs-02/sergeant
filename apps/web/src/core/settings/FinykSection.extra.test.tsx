@@ -141,7 +141,7 @@ describe("FinykSection extra branches", () => {
   it("cancels the cache-clear confirm modal without clearing anything", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("🧹 Очистити кеш транзакцій"));
+    fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
 
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByText("Скасувати"));
@@ -261,13 +261,13 @@ describe("FinykSection extra branches", () => {
   it("triggers exactly three invalidations per refresh click", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const btn = await screen.findByText("🔄 Оновити дані");
+    const btn = await screen.findByText("Оновити дані");
     fireEvent.click(btn);
     // refreshAllData calls invalidateQueries three times:
     // finykKeys.mono, finykKeys.monoSyncState, hubKeys.preview("finyk").
     // Just confirm it doesn't throw and the button is still present.
     await waitFor(() =>
-      expect(screen.getByText("🔄 Оновити дані")).toBeInTheDocument(),
+      expect(screen.getByText("Оновити дані")).toBeInTheDocument(),
     );
   });
 
@@ -276,7 +276,7 @@ describe("FinykSection extra branches", () => {
   it("clears tx cache when the confirm modal Очистити button is clicked", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("🧹 Очистити кеш транзакцій"));
+    fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
 
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByText("Очистити"));

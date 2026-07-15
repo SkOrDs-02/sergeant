@@ -41,7 +41,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     description:
       "Захищає твої дані PIN-кодом. Після ввімкнення встанови PIN у розділі «Конфіденційність → Блокування».",
     defaultValue: false,
-    experimental: true,
   },
   {
     id: "finyk_subscriptions_category",

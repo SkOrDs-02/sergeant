@@ -133,7 +133,7 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
 describe("WorkoutFinishSheets — summary step collapsed", () => {
   it("renders a collapsed result button showing duration", () => {
     renderSheets(makeFlash({ step: "summary", collapsed: true }));
-    expect(screen.getByText("✓ Результати")).toBeInTheDocument();
+    expect(screen.getByText("Результати")).toBeInTheDocument();
     // 3600 seconds → formatted as "1:00:00" or "60 хв" depending on formatDurShort
     expect(screen.getByRole("button")).toBeInTheDocument();
   });

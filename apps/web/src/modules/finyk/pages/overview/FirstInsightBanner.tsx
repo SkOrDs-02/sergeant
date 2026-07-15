@@ -26,7 +26,7 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
         className="w-10 h-10 shrink-0 rounded-2xl bg-finyk/15 flex items-center justify-center text-xl"
         aria-hidden
       >
-        💡
+        <Icon name="lightbulb" size={20} aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-style-label text-text">

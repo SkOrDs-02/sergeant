@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { IconButton } from "@shared/components/ui/IconButton";
+import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { ROUTINE_THEME as C } from "../../lib/routineConstants";
 import { REMINDER_PRESETS } from "../../lib/routineDraftUtils";
@@ -103,7 +104,7 @@ export function ReminderPresets({
             }
             aria-label="Видалити час"
           >
-            ✕
+            <Icon name="close" size={14} aria-hidden />
           </IconButton>
         </div>
       ))}

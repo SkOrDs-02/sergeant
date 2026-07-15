@@ -22,10 +22,10 @@ describe("SubCard", () => {
     vi.useRealTimers();
   });
 
-  it("renders the subscription name and emoji in read mode", () => {
+  it("renders the subscription name without action emoji in read mode", () => {
     render(<SubCard sub={baseSub} transactions={[]} onDelete={vi.fn()} />);
     expect(screen.getByText("Netflix")).toBeInTheDocument();
-    expect(screen.getByText("🎬")).toBeInTheDocument();
+    expect(screen.queryByText("🎬")).not.toBeInTheDocument();
   });
 
   it("shows 'ще не списувалось' when there is no matching transaction", () => {

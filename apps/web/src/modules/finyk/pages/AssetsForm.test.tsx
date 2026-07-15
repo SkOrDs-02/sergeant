@@ -52,6 +52,10 @@ describe("SubscriptionForm", () => {
     const buttonLabels = buttons.map((b) => b.textContent?.trim());
     expect(buttonLabels).toContain("Додати");
     expect(buttonLabels).toContain("Скасувати");
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    expect(
+      screen.getByText("Заповни назву та вкажи день списання від 1 до 31."),
+    ).toBeInTheDocument();
   });
 
   it("rejects out-of-range billing days (0, 99) and saves a valid one", () => {
@@ -156,6 +160,7 @@ describe("AssetForm", () => {
     );
     expect(screen.getByText("Новий актив")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Сума")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
   });
 
   it("calls setShowAssetForm(false) on cancel", () => {
@@ -264,6 +269,12 @@ describe("ReceivableForm", () => {
     expect(
       screen.getByPlaceholderText("Нотатка (необов'язково)"),
     ).toBeInTheDocument();
+    const dueDate = screen.getByLabelText("Дата повернення");
+    expect(dueDate).toHaveClass("w-full");
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    expect(
+      screen.getByText("Заповни імʼя та вкажи позитивну суму."),
+    ).toBeInTheDocument();
   });
 
   it("calls setShowRecvForm(false) on cancel", () => {
@@ -362,6 +373,12 @@ describe("DebtForm", () => {
     );
     expect(screen.getByText("Новий пасив")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Загальна сума ₴")).toBeInTheDocument();
+    const dueDate = screen.getByLabelText("Дата погашення");
+    expect(dueDate).toHaveClass("w-full");
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    expect(
+      screen.getByText("Заповни назву та вкажи позитивну суму пасиву."),
+    ).toBeInTheDocument();
   });
 
   it("calls setShowDebtForm(false) on cancel", () => {

@@ -1,6 +1,7 @@
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseExpenseSpeech as parseExpenseVoice } from "@sergeant/shared";
 import { useLocale } from "@shared/i18n/useLocale";
@@ -15,6 +16,11 @@ import type { ManualAsset, Subscription } from "../hooks/useStorage";
 const isPositiveFinite = (value: string) => {
   const parsed = Number(value);
   return value.trim() !== "" && Number.isFinite(parsed) && parsed > 0;
+};
+
+const isValidBillingDay = (value: string | number) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 31;
 };
 
 // ---------------------------------------------------------------------------
@@ -68,16 +74,18 @@ export function SubscriptionForm({
           }))
         }
       />
-      {(!newSub.name.trim() || !newSub.billingDay) && (
+      {(!newSub.name.trim() || !isValidBillingDay(newSub.billingDay)) && (
         <p className="text-style-caption text-subtle" role="status">
-          Заповни назву та день списання, щоб додати підписку.
+          Заповни назву та вкажи день списання від 1 до 31.
         </p>
       )}
       <div className="flex gap-2">
         <Button
           className="flex-1"
           size="sm"
-          disabled={!newSub.name.trim() || !newSub.billingDay}
+          disabled={
+            !newSub.name.trim() || !isValidBillingDay(newSub.billingDay)
+          }
           onClick={() => {
             if (!newSub.name || !newSub.billingDay) return;
             // The day-of-month <input type="number"> exposes min/max only as
@@ -152,6 +160,9 @@ export function ReceivableForm({
 }) {
   return (
     <Card variant="flat" radius="md" className="space-y-3">
+      <div className="text-style-label text-text">
+        {editingId ? "Редагування запису" : "Новий запис «Мені винні»"}
+      </div>
       <Input
         aria-label="Ім'я або назва боржника"
         placeholder="Ім'я або назва"
@@ -171,12 +182,21 @@ export function ReceivableForm({
         value={newRecv.note}
         onChange={(e) => setNewRecv((a) => ({ ...a, note: e.target.value }))}
       />
-      <Input
-        aria-label="Дата повернення"
-        type="date"
-        value={newRecv.dueDate}
-        onChange={(e) => setNewRecv((a) => ({ ...a, dueDate: e.target.value }))}
-      />
+      <div className="space-y-1.5">
+        <Label htmlFor="receivable-due-date" optional>
+          Дата повернення
+        </Label>
+        <Input
+          id="receivable-due-date"
+          aria-label="Дата повернення"
+          className="w-full"
+          type="date"
+          value={newRecv.dueDate}
+          onChange={(e) =>
+            setNewRecv((a) => ({ ...a, dueDate: e.target.value }))
+          }
+        />
+      </div>
       {(!newRecv.name.trim() || !isPositiveFinite(newRecv.amount)) && (
         <p className="text-style-caption text-subtle" role="status">
           Заповни імʼя та вкажи позитивну суму.
@@ -216,7 +236,7 @@ export function ReceivableForm({
             setShowRecvForm(false);
           }}
         >
-          Додати
+          {editingId ? "Зберегти" : "Додати"}
         </Button>
         <Button
           className="flex-1"
@@ -273,7 +293,9 @@ export function AssetForm({
         className="space-y-3"
       >
         <div>
-          <div className="text-style-label text-text">Новий актив</div>
+          <div className="text-style-label text-text">
+            {editingId ? "Редагування активу" : "Новий актив"}
+          </div>
           <div className="text-xs text-muted mt-0.5">
             Готівка, брокерський рахунок, крипта тощо.
           </div>
@@ -346,7 +368,7 @@ export function AssetForm({
               setShowAssetForm(false);
             }}
           >
-            Додати
+            {editingId ? "Зберегти" : "Додати"}
           </Button>
           <Button
             className="flex-1"
@@ -405,7 +427,7 @@ export function DebtForm({
     >
       <div>
         <div className="text-style-label text-danger-strong dark:text-danger">
-          Новий пасив
+          {editingId ? "Редагування пасиву" : "Новий пасив"}
         </div>
         <div className="text-xs text-muted mt-0.5">
           Кредит, борг або інше зобов&#x27;язання.
@@ -447,12 +469,21 @@ export function DebtForm({
           setNewDebt((a) => ({ ...a, totalAmount: e.target.value }))
         }
       />
-      <Input
-        aria-label="Дата погашення"
-        type="date"
-        value={newDebt.dueDate}
-        onChange={(e) => setNewDebt((a) => ({ ...a, dueDate: e.target.value }))}
-      />
+      <div className="space-y-1.5">
+        <Label htmlFor="debt-due-date" optional>
+          Дата погашення
+        </Label>
+        <Input
+          id="debt-due-date"
+          aria-label="Дата погашення"
+          className="w-full"
+          type="date"
+          value={newDebt.dueDate}
+          onChange={(e) =>
+            setNewDebt((a) => ({ ...a, dueDate: e.target.value }))
+          }
+        />
+      </div>
       {(!newDebt.name.trim() || !isPositiveFinite(newDebt.totalAmount)) && (
         <p className="text-style-caption text-subtle" role="status">
           Заповни назву та вкажи позитивну суму пасиву.
@@ -489,7 +520,7 @@ export function DebtForm({
             }
           }}
         >
-          Додати
+          {editingId ? "Зберегти" : "Додати"}
         </Button>
         <Button
           className="flex-1"

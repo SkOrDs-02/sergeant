@@ -509,14 +509,16 @@ export function FinykSection() {
             onClick={refreshAllData}
             disabled={refreshing}
           >
-            {refreshing ? "Оновлення…" : "🔄 Оновити дані"}
+            <Icon name="refresh-cw" size={16} aria-hidden />
+            {refreshing ? "Оновлення…" : "Оновити дані"}
           </Button>
           <Button
             variant="ghost"
             className="w-full h-11"
             onClick={() => setConfirmKind("cache")}
           >
-            🧹 Очистити кеш транзакцій
+            <Icon name="trash" size={16} aria-hidden />
+            Очистити кеш транзакцій
           </Button>
         </SettingsSubGroup>
 
@@ -537,7 +539,7 @@ export function FinykSection() {
               <div className="space-y-3">
                 <div className="flex items-center gap-3 p-3 bg-bg border border-green-500/30 rounded-xl">
                   <div className="w-9 h-9 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-base shrink-0">
-                    🏦
+                    <Icon name="credit-card" size={18} aria-hidden />
                   </div>
                   <div>
                     <div className="text-style-label text-text">
@@ -603,7 +605,11 @@ export function FinykSection() {
                       className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
                       aria-label={showPrivatToken ? "Приховати" : "Показати"}
                     >
-                      {showPrivatToken ? "🙈" : "👁"}
+                      <Icon
+                        name={showPrivatToken ? "eye-off" : "eye"}
+                        size={16}
+                        aria-hidden
+                      />
                     </button>
                   </div>
                 </div>

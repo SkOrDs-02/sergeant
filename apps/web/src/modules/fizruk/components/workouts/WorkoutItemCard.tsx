@@ -5,6 +5,7 @@
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
+import { Icon } from "@shared/components/ui/Icon";
 import {
   recoveryConflictsForWorkoutItem,
   type Workout,
@@ -210,7 +211,7 @@ export function WorkoutItemCard({
             onClick={() => removeItem(activeWorkout.id, it.id)}
             aria-label="Видалити вправу з тренування"
           >
-            ✕
+            <Icon name="trash" size={15} aria-hidden />
           </button>
         )}
       </div>

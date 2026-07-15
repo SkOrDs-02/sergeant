@@ -73,9 +73,10 @@ export function TransactionsBatchToolbar({
                     <button
                       type="button"
                       onClick={onApplyExclude}
+                      aria-label="Не враховувати у статистиці"
                       className="text-style-label px-4 py-2 rounded-xl border border-line bg-panelHi text-text min-h-[40px] transition-colors hover:border-muted"
                     >
-                      Зі статистики
+                      Не враховувати
                     </button>
                   </>
                 )}
@@ -83,8 +84,9 @@ export function TransactionsBatchToolbar({
             </div>
             {selectedSize > 0 && (
               <p className="mt-1 px-1 text-xs text-subtle">
-                Виключення прибирає вибрані транзакції з підсумків статистики,
-                але не видаляє їх.
+                «Не враховувати» прибирає вибрані транзакції з підсумків і
+                графіків, але не видаляє їх. Це зручно для переказів між
+                власними картками та інших технічних операцій.
               </p>
             )}
           </div>

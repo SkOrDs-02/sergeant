@@ -46,12 +46,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
             покаже прогрес «Сплачено N з M».
           </p>
           <div className="flex flex-wrap gap-1.5 px-1">
-            {[
-              "\uD83D\uDCB3 Кредит",
-              "\uD83D\uDCC5 Розстрочка",
-              "\uD83E\uDD1D Позика",
-              "\uD83D\uDCA1 Комуналка",
-            ].map((chip) => (
+            {["Кредит", "Розстрочка", "Позика", "Комуналка"].map((chip) => (
               <span
                 key={chip}
                 className="inline-flex items-center text-meta text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
@@ -67,13 +62,25 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
           newDebt={newDebt}
           setNewDebt={setNewDebt}
           setManualDebts={setManualDebts}
-          setShowDebtForm={setShowDebtForm}
+          setShowDebtForm={(next) => {
+            setShowDebtForm(next);
+            if (!next) setEditingDebtId(null);
+          }}
           debtFormRef={debtFormRef}
           debtNameInputRef={debtNameInputRef}
           editingId={editingDebtId}
           onUpdate={(id, value) => {
             setManualDebts((ds) =>
-              ds.map((item) => (item.id === id ? value : item)),
+              ds.map((item) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      ...value,
+                      id,
+                      linkedTxIds: item.linkedTxIds ?? [],
+                    }
+                  : item,
+              ),
             );
             setEditingDebtId(null);
           }}
@@ -81,7 +88,16 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
       ) : (
         <button
           type="button"
-          onClick={() => setShowDebtForm(true)}
+          onClick={() => {
+            setEditingDebtId(null);
+            setNewDebt({
+              name: "",
+              emoji: "",
+              totalAmount: "",
+              dueDate: "",
+            });
+            setShowDebtForm(true);
+          }}
           className="w-full py-2.5 text-style-label rounded-xl bg-danger/10 text-danger-strong dark:bg-danger/15 dark:text-danger border border-danger/30 hover:bg-danger/15 dark:hover:bg-danger/25 active:scale-[0.99] transition-colors shadow-soft mb-2"
         >
           + Додати пасив

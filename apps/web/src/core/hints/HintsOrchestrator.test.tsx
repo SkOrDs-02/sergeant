@@ -63,6 +63,7 @@ describe("HintsOrchestrator", () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     hubPrefValue.showHints = true;
+    sessionStorage.clear();
     getRetentionHintIdMock.mockReturnValue(null);
     getFirstActionStartedAtMock.mockReturnValue(null);
   });
@@ -87,11 +88,11 @@ describe("HintsOrchestrator", () => {
     expect(toastInfoMock).not.toHaveBeenCalled();
   });
 
-  it("shows an FTUX hint after the 2.5s delay", () => {
+  it("shows an FTUX hint after the calmer 8s delay", () => {
     pickNextHintMock.mockReturnValue("ftux_quick_add");
     render(<HintsOrchestrator inFtuxSession hasFirstRealEntry={false} />);
     act(() => {
-      vi.advanceTimersByTime(2500);
+      vi.advanceTimersByTime(8000);
     });
     expect(pickNextHintMock).toHaveBeenCalled();
     expect(recordHintShownMock).toHaveBeenCalledWith(
@@ -107,7 +108,7 @@ describe("HintsOrchestrator", () => {
       <HintsOrchestrator inFtuxSession={false} hasFirstRealEntry={false} />,
     );
     act(() => {
-      vi.advanceTimersByTime(2500);
+      vi.advanceTimersByTime(8000);
     });
     expect(pickNextHintMock).not.toHaveBeenCalled();
   });
@@ -118,7 +119,7 @@ describe("HintsOrchestrator", () => {
     canShowHintMock.mockReturnValue({ ok: true });
     render(<HintsOrchestrator inFtuxSession={false} hasFirstRealEntry />);
     act(() => {
-      vi.advanceTimersByTime(2500);
+      vi.advanceTimersByTime(8000);
     });
     expect(recordHintShownMock).toHaveBeenCalledWith(
       expect.anything(),
@@ -133,7 +134,7 @@ describe("HintsOrchestrator", () => {
     pickNextHintMock.mockReturnValue("ftux_open_chat");
     render(<HintsOrchestrator inFtuxSession hasFirstRealEntry={false} />);
     act(() => {
-      vi.advanceTimersByTime(2500);
+      vi.advanceTimersByTime(8000);
     });
     const lastCall = toastInfoMock.mock.calls.at(-1)!;
     const action = lastCall[2] as { label: string; onClick: () => void };
@@ -151,12 +152,30 @@ describe("HintsOrchestrator", () => {
     pickNextHintMock.mockReturnValue("module_first_entry");
     render(<HintsOrchestrator inFtuxSession={false} hasFirstRealEntry />);
     act(() => {
-      vi.advanceTimersByTime(2500);
+      vi.advanceTimersByTime(8000);
     });
     expect(pickNextHintMock).toHaveBeenCalled();
     expect(recordHintShownMock).toHaveBeenCalledWith(
       expect.anything(),
       "module_first_entry",
     );
+  });
+
+  it("shows at most one educational toast per browser session", () => {
+    pickNextHintMock.mockReturnValue("ftux_quick_add");
+    const first = render(
+      <HintsOrchestrator inFtuxSession hasFirstRealEntry={false} />,
+    );
+    act(() => {
+      vi.advanceTimersByTime(8000);
+    });
+    expect(toastInfoMock).toHaveBeenCalledTimes(1);
+
+    first.unmount();
+    render(<HintsOrchestrator inFtuxSession hasFirstRealEntry={false} />);
+    act(() => {
+      vi.advanceTimersByTime(8000);
+    });
+    expect(toastInfoMock).toHaveBeenCalledTimes(1);
   });
 });

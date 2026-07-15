@@ -3,6 +3,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import type { FizrukData } from "@sergeant/fizruk-domain";
@@ -177,9 +178,7 @@ export function QuickStartSheet({
             className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl" aria-hidden>
-                📋
-              </span>
+              <Icon name="clipboard" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">За шаблоном</div>
                 <div className="text-xs text-subtle mt-0.5">
@@ -198,9 +197,7 @@ export function QuickStartSheet({
             className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl" aria-hidden>
-                💪
-              </span>
+              <Icon name="dumbbell" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
                   Підібрати вправи
@@ -259,7 +256,7 @@ export function QuickStartSheet({
             onClick={handleConfirm}
             disabled={selectedCount === 0}
           >
-            ▶︎ Почати
+            <Icon name="play" size={16} aria-hidden /> Почати
             {selectedCount > 0 ? ` · ${selectedCount}` : ""}
           </Button>
         </div>
@@ -332,7 +329,9 @@ export function QuickStartSheet({
                             )}
                             aria-hidden
                           >
-                            {active ? "✓" : ""}
+                            {active ? (
+                              <Icon name="check" size={14} aria-hidden />
+                            ) : null}
                           </span>
                           <span className="text-sm text-text truncate flex-1">
                             {name}

@@ -47,6 +47,8 @@ import { cn } from "@shared/lib/ui/cn";
 export interface MeshBackgroundProps {
   children: ReactNode;
   className?: string;
+  /** Stable selector for interaction tests on shell-owned scroll containers. */
+  "data-testid"?: string;
   /** Inline style — used by ModuleShell to expose `--bottom-nav-height`
    *  CSS var to descendants so sheets can lift themselves above the nav.
    *  PR-6 added this; HubHomeView consumer leaves it undefined. */
@@ -57,10 +59,12 @@ export function MeshBackground({
   children,
   className,
   style,
+  "data-testid": testId,
 }: MeshBackgroundProps) {
   return (
     <div
       style={style}
+      data-testid={testId}
       className={cn(
         // Full-viewport shell — same flex pattern as the legacy
         // `<div className="h-dvh bg-bg flex flex-col">` wrappers this

@@ -91,6 +91,15 @@ describe("BodyAtlas · segmented controls", () => {
 });
 
 describe("BodyAtlas · muscle selection", () => {
+  it("keeps the compact recovery preview non-interactive", () => {
+    render(
+      <BodyAtlas compact data={DATA as Record<string, AtlasMuscleDatum>} />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Груди" })).toBeNull();
+    expect(screen.queryByText(/Оберіть м.?яз/)).toBeNull();
+  });
+
   it("muscle groups are role=button with Ukrainian aria-labels", () => {
     renderAtlas();
     expect(screen.getByRole("button", { name: "Груди" })).toBeInTheDocument();

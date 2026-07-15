@@ -51,7 +51,9 @@ describe("TransactionsBatchToolbar (branches)", () => {
     expect(screen.getByText("2 обрано")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Категорія" }));
     fireEvent.click(screen.getByRole("button", { name: "Приховати" }));
-    fireEvent.click(screen.getByRole("button", { name: "Зі статистики" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Не враховувати у статистиці" }),
+    );
     expect(props.onOpenCatPicker).toHaveBeenCalledTimes(1);
     expect(props.onApplyHide).toHaveBeenCalledTimes(1);
     expect(props.onApplyExclude).toHaveBeenCalledTimes(1);

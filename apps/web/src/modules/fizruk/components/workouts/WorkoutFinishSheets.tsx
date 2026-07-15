@@ -2,6 +2,7 @@ import { useRef, type Dispatch, type SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { openHubModule } from "@shared/lib/modules/hubNav";
@@ -193,7 +194,9 @@ export function WorkoutFinishSheets({
               setFinishFlash((f) => f && { ...f, collapsed: false })
             }
           >
-            <span className="text-style-label text-text">✓ Результати</span>
+            <span className="text-style-label text-text inline-flex items-center gap-1.5">
+              <Icon name="check" size={15} aria-hidden /> Результати
+            </span>
             <span className="text-xs text-subtle tabular-nums">
               {formatDurShort(finishFlash.durationSec)}
             </span>
@@ -218,7 +221,7 @@ export function WorkoutFinishSheets({
                   aria-label="Закрити"
                   onClick={() => setFinishFlash(null)}
                 >
-                  ✕
+                  <Icon name="close" size={16} aria-hidden />
                 </button>
               </div>
               <div className="grid grid-cols-3 gap-2 mt-3">
@@ -270,7 +273,7 @@ export function WorkoutFinishSheets({
                     openHubModule("nutrition", "log");
                   }}
                 >
-                  <span aria-hidden>🥩</span>
+                  <Icon name="egg" size={15} aria-hidden />
                   <span>Додати білок після тренування</span>
                   <span aria-hidden>→</span>
                 </button>

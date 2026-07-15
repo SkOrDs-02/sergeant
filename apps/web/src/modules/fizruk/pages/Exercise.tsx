@@ -7,6 +7,7 @@ import type { FizrukPage } from "../shell/fizrukRoute";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { Icon } from "@shared/components/ui/Icon";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { epley1rm, suggestNextSet } from "@sergeant/fizruk-domain";
@@ -220,7 +221,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         {best.isNewPR && (
           <div className="flex items-center gap-2.5 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3">
-            <span className="text-xl leading-none">🏆</span>
+            <Icon name="award" size={20} aria-hidden />
             <div>
               <p className="text-style-label text-warning-strong dark:text-warning">
                 Новий особистий рекорд!

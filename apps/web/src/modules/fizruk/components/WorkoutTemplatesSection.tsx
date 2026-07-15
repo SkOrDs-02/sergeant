@@ -255,6 +255,7 @@ export function WorkoutTemplatesSection({
                 <div className="flex gap-1">
                   <button
                     type="button"
+                    aria-label="Скасувати групування"
                     className="text-xs px-2 py-1 rounded-xl border border-success/40 text-success-strong dark:text-success disabled:opacity-40"
                     disabled={groupSelected.size < 2 || groupSelected.size > 3}
                     onClick={() => handleCreateGroup("superset")}
@@ -279,7 +280,7 @@ export function WorkoutTemplatesSection({
                       setGroupSelected(new Set());
                     }}
                   >
-                    ✕
+                    <Icon name="close" size={14} aria-hidden />
                   </button>
                 </div>
               )}
@@ -376,7 +377,7 @@ export function WorkoutTemplatesSection({
                             aria-label="Прибрати з шаблону"
                             onClick={() => removeAt(idx)}
                           >
-                            ✕
+                            <Icon name="trash" size={15} aria-hidden />
                           </button>
                         </>
                       )}
@@ -469,10 +470,11 @@ export function WorkoutTemplatesSection({
                 <Button
                   size="sm"
                   variant="danger"
+                  aria-label={`Видалити шаблон ${t.name}`}
                   className="h-10 min-w-[44px] px-3"
                   onClick={() => setConfirmDeleteId(t.id)}
                 >
-                  ✕
+                  <Icon name="trash" size={15} aria-hidden />
                 </Button>
               </div>
             </div>

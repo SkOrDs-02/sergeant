@@ -12,7 +12,7 @@ export function FizrukSection() {
   const typedSettings = settings as Record<RestCategory, number>;
 
   return (
-    <SettingsGroup title="Фізрук" emoji="🏋️">
+    <SettingsGroup title="Фізрук" icon="dumbbell">
       <SettingsSubGroup title="Таймер відпочинку">
         <p className="text-xs text-subtle leading-snug">
           Рекомендований час відпочинку підбирається автоматично за типом

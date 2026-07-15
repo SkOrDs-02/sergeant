@@ -38,8 +38,8 @@ function SwipeToActionImpl({
   children,
   onSwipeLeft,
   onSwipeRight,
-  leftLabel = "✓",
-  rightLabel = "🗑",
+  leftLabel = <Icon name="check" size={18} aria-hidden />,
+  rightLabel = <Icon name="trash" size={18} aria-hidden />,
   leftColor = "bg-success",
   rightColor = "bg-danger",
   disabled = false,
@@ -98,9 +98,11 @@ function SwipeToActionImpl({
       // Multi-touch (pinch-zoom, two-finger scroll) should never be
       // interpreted as a horizontal swipe — ignore entirely.
       if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      if (!touch) return;
       setCommitted(false);
-      startX.current = e.touches[0]!.clientX;
-      startY.current = e.touches[0]!.clientY;
+      startX.current = touch.clientX;
+      startY.current = touch.clientY;
       isHorizontal.current = null;
       setIsDragging(true);
     },
@@ -111,8 +113,10 @@ function SwipeToActionImpl({
     (e: TouchEvent<HTMLDivElement>) => {
       if (!isDragging || startX.current === null || startY.current === null)
         return;
-      const dx = e.touches[0]!.clientX - startX.current;
-      const dy = e.touches[0]!.clientY - startY.current;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const dx = touch.clientX - startX.current;
+      const dy = touch.clientY - startY.current;
 
       if (isHorizontal.current === null) {
         if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;

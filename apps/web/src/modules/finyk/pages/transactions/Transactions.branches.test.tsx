@@ -224,7 +224,9 @@ describe("Transactions page (branches)", () => {
       screen.getAllByRole("button", { name: "Приховати" }).length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getAllByRole("button", { name: "Зі статистики" }).length,
+      screen.getAllByRole("button", {
+        name: "Не враховувати у статистиці",
+      }).length,
     ).toBeGreaterThan(0);
   });
 
@@ -249,7 +251,7 @@ describe("Transactions page (branches)", () => {
     });
     enterSelectModeWithExpandedDay();
     fireEvent.click(screen.getByRole("button", { name: "Вибрати" }));
-    clickBatchToolbarButton("Зі статистики");
+    clickBatchToolbarButton("Не враховувати у статистиці");
     expect(toggleExcludeFromStats).toHaveBeenCalledWith("tx-1");
     expect(mockToast.show).toHaveBeenCalled();
   });

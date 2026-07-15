@@ -43,24 +43,6 @@ interface SubCardProps {
   showBalance?: boolean;
 }
 
-const EMOJI_OPTIONS = [
-  "📱",
-  "🎵",
-  "☁️",
-  "▶️",
-  "🎬",
-  "📧",
-  "📸",
-  "🤖",
-  "🎮",
-  "📚",
-  "🏋️",
-  "💊",
-  "🔒",
-  "🌐",
-  "📡",
-];
-
 // Картка підписки. Всередині тримає лише локальний стан редагування,
 // тож memo уникає перерендеру при змінах інших підписок/сторінки.
 function SubCardComponent({
@@ -108,29 +90,16 @@ function SubCardComponent({
     setEditing(false);
   };
 
+  const parsedBillingDay = Math.trunc(Number(form.billingDay));
+  const editValid =
+    form.name.trim().length > 0 &&
+    Number.isFinite(parsedBillingDay) &&
+    parsedBillingDay >= 1 &&
+    parsedBillingDay <= 31;
+
   if (editing) {
     return (
       <Card variant="finyk-soft" padding="md" className="mb-3 space-y-3">
-        <div className="hidden" aria-hidden="true">
-          {EMOJI_OPTIONS.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onClick={() => setForm((f) => ({ ...f, emoji: e }))}
-              aria-label={`Вибрати ${e}`}
-              aria-pressed={form.emoji === e}
-              className={cn(
-                "text-xl w-9 h-9 rounded-xl flex items-center justify-center transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-                form.emoji === e
-                  ? "bg-finyk-soft ring-1 ring-finyk-ring/50"
-                  : "hover:bg-panelHi",
-              )}
-            >
-              {e}
-            </button>
-          ))}
-        </div>
         <Input
           placeholder="Назва"
           value={form.name}
@@ -172,12 +141,18 @@ function SubCardComponent({
             </Select>
           </div>
         </div>
+        {!editValid ? (
+          <p className="text-style-caption text-subtle" role="status">
+            Заповни назву та вкажи день списання від 1 до 31.
+          </p>
+        ) : null}
         <div className="flex gap-2">
           <Button
             variant="finyk-soft"
             size="md"
             className="flex-1"
             onClick={saveEdit}
+            disabled={!editValid}
           >
             Зберегти
           </Button>
@@ -230,11 +205,16 @@ function SubCardComponent({
                 : "text-subtle",
           )}
         >
+          <Icon
+            name={veryClose ? "alert-triangle" : soon ? "clock" : "calendar"}
+            size={13}
+            aria-hidden
+          />{" "}
           {veryClose
-            ? "⚠️ Завтра"
+            ? "Завтра"
             : soon
-              ? `⏰ Через ${days} дні`
-              : `📅 Через ${days} ${pluralDays(days)}`}{" "}
+              ? `Через ${days} дні`
+              : `Через ${days} ${pluralDays(days)}`}{" "}
           · {sub.billingDay}-го
         </div>
         {sub.linkedTxId && lastTx && (

@@ -12,13 +12,14 @@ import {
   buildFinalPicks as sharedBuildFinalPicks,
   hasExistingData as sharedHasExistingData,
   isOnboardingCompletedFired as sharedIsOnboardingCompletedFired,
-  isOnboardingDone as sharedIsOnboardingDone,
   markOnboardingCompletedFired as sharedMarkOnboardingCompletedFired,
-  markOnboardingDone as sharedMarkOnboardingDone,
+  ONBOARDING_DONE_KEY,
   shouldShowOnboarding as sharedShouldShowOnboarding,
 } from "@sergeant/shared";
 import {
+  safeReadStringLSDurable,
   safeReadStringLS,
+  safeWriteStringLSDurable,
   safeRemoveLS,
   webKVStore,
 } from "@shared/lib/storage/storage";
@@ -30,15 +31,21 @@ import { DEMO_FLAG_KEY } from "./seedDemoData/keys";
  * helper eagerly marks "done" when it finds pre-existing data).
  */
 export function shouldShowOnboarding(): boolean {
-  return sharedShouldShowOnboarding(webKVStore);
+  if (isOnboardingDone()) return false;
+  const shouldShow = sharedShouldShowOnboarding(webKVStore);
+  // `sharedShouldShowOnboarding` also closes the gate when it detects existing
+  // domain data. Mirror that side effect durably so a standalone PWA reload
+  // cannot reopen `/welcome` while the SQLite upsert is still flushing.
+  if (!shouldShow) markOnboardingDone();
+  return shouldShow;
 }
 
 export function markOnboardingDone(): void {
-  sharedMarkOnboardingDone(webKVStore);
+  safeWriteStringLSDurable(ONBOARDING_DONE_KEY, "1");
 }
 
 export function isOnboardingDone(): boolean {
-  return sharedIsOnboardingDone(webKVStore);
+  return safeReadStringLSDurable(ONBOARDING_DONE_KEY) === "1";
 }
 
 export function hasExistingData(): boolean {

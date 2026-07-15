@@ -21,6 +21,7 @@ type ExerciseDetailSheetProps = {
   onClose: () => void;
   mode: "log" | "catalog";
   musclesUk: Record<string, string>;
+  primaryGroupsUk?: Record<string, string>;
   equipmentUk?: Record<string, string>;
   rec: { by: RecoveryByMap } | null | undefined;
   recoveryConflictsForExercise: RecExerciseFn;
@@ -36,6 +37,7 @@ export function ExerciseDetailSheet({
   onClose,
   mode,
   musclesUk,
+  primaryGroupsUk = {},
   equipmentUk = {},
   rec,
   recoveryConflictsForExercise,
@@ -78,7 +80,9 @@ export function ExerciseDetailSheet({
     <>
       Основна група:{" "}
       <span className="font-semibold text-muted">
-        {selected.primaryGroupUk || selected.primaryGroup}
+        {selected.primaryGroupUk ||
+          primaryGroupsUk[selected.primaryGroup] ||
+          selected.primaryGroup}
       </span>
       {level ? (
         <>

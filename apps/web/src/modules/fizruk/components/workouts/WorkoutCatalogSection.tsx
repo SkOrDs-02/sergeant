@@ -8,6 +8,7 @@ import type {
   recoveryConflictsForExercise as recoveryConflictsForExerciseFn,
 } from "@sergeant/fizruk-domain";
 import { Input } from "@shared/components/ui/Input";
+import { Icon } from "@shared/components/ui/Icon";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FizrukEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { cn } from "@shared/lib/ui/cn";
@@ -71,10 +72,12 @@ export function WorkoutCatalogSection({
         />
         {q && (
           <button
+            type="button"
             onClick={() => setQ("")}
+            aria-label="Очистити пошук"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-text"
           >
-            ✕
+            <Icon name="close" size={16} aria-hidden />
           </button>
         )}
       </div>
@@ -179,12 +182,12 @@ export function WorkoutCatalogSection({
                                 <div className="text-style-label text-text truncate flex items-center gap-2">
                                   {ex?.name?.uk || ex?.name?.en}
                                   {catCf.hasWarning ? (
-                                    <span
+                                    <Icon
+                                      name="alert-triangle"
+                                      size={15}
                                       className="text-warning shrink-0"
                                       title="Мʼязи ще відновлюються"
-                                    >
-                                      ⚠
-                                    </span>
+                                    />
                                   ) : null}
                                 </div>
                                 <div className="text-xs text-subtle mt-0.5">

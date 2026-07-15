@@ -302,11 +302,13 @@ export function BodyAtlas({
               return (
                 <g
                   key={m.id}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={BODY_ATLAS_MUSCLE_LABELS_UK[m.id]}
+                  role={compact ? undefined : "button"}
+                  tabIndex={compact ? undefined : 0}
+                  aria-label={
+                    compact ? undefined : BODY_ATLAS_MUSCLE_LABELS_UK[m.id]
+                  }
                   className={cn(
-                    "cursor-pointer",
+                    !compact && "cursor-pointer",
                     // Kill the browser default SVG focus outline (renders as a
                     // black bounding-box rect on the <g> when clicked); keep a
                     // tidy keyboard focus-visible cue by overriding the muscle
@@ -315,8 +317,9 @@ export function BodyAtlas({
                     "[&:focus-visible>path]:[stroke:rgb(var(--c-fg))]",
                     "[&:focus-visible>path]:[stroke-width:1px]",
                   )}
-                  onClick={() => setSelected(m.id)}
+                  onClick={compact ? undefined : () => setSelected(m.id)}
                   onKeyDown={(e) => {
+                    if (compact) return;
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       setSelected(m.id);

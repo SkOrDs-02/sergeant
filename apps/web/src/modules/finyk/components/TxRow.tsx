@@ -23,14 +23,14 @@ import { Badge } from "@shared/components/ui/Badge";
 const splitInp =
   "input-focus-finyk flex-1 text-xs h-9 rounded-xl border border-line bg-panelHi px-2 text-text";
 
-const INCOME_ICONS: Record<string, string> = {
-  in_salary: "💰",
-  in_freelance: "💻",
-  [INTERNAL_TRANSFER_ID]: "↔️",
-  in_cashback: "🎁",
-  in_pension: "🏛️",
-  in_other: "📥",
-};
+function stripLeadingEmoji(label: string): string {
+  const firstLetterOrDigit = [...label].findIndex((char) =>
+    /[\p{L}\p{N}]/u.test(char),
+  );
+  return firstLetterOrDigit >= 0
+    ? [...label].slice(firstLetterOrDigit).join("").trim()
+    : label;
+}
 
 /**
  * Maps category IDs to Icon names for the tinted pill.
@@ -207,8 +207,8 @@ function TxRowImpl({
   const mainRowInner = (
     <>
       {highlighted ? (
-        <span className="text-xl shrink-0 leading-none" aria-hidden="true">
-          ✅
+        <span className="text-success shrink-0" aria-hidden="true">
+          <Icon name="check-circle" size={22} />
         </span>
       ) : (
         // 28px tinted circle — decorative, non-interactive (aria-hidden).
@@ -283,7 +283,7 @@ function TxRowImpl({
           )}
           {isCreditCard && (
             <span className="text-style-caption bg-danger/8 text-danger-strong dark:text-danger px-1.5 py-0.5 rounded-full font-semibold">
-              💳 {accountName}
+              <Icon name="credit-card" size={12} aria-hidden /> {accountName}
             </span>
           )}
           {!isCreditCard && account && (
@@ -356,12 +356,13 @@ function TxRowImpl({
           </div>
           {onSplitChange && !isIncome && (
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 openSplitEditor();
               }}
               className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-xl transition-colors text-style-label",
+                "min-h-[44px] min-w-[44px] px-2 flex items-center justify-center gap-1 rounded-xl transition-colors text-style-label",
                 splitEditor
                   ? "text-primary bg-primary/8"
                   : existingSplits.length > 0
@@ -371,7 +372,8 @@ function TxRowImpl({
               title="Розподілити транзакцію"
               aria-label="Розподілити транзакцію"
             >
-              <Icon name="target" size={16} aria-hidden />
+              <Icon name="shuffle" size={16} aria-hidden />
+              <span className="text-style-caption">Розділити</span>
             </button>
           )}
           {onCatChange && (
@@ -503,9 +505,13 @@ function TxRowImpl({
                 : "text-warning-strong dark:text-warning",
             )}
           >
-            {Math.abs(remaining) < 0.01
-              ? "✓ Суми збігаються"
-              : `Залишок: ${formatMoney(remaining, { minFractionDigits: 2 })}`}
+            {Math.abs(remaining) < 0.01 ? (
+              <span className="inline-flex items-center gap-1">
+                <Icon name="check" size={13} aria-hidden /> Суми збігаються
+              </span>
+            ) : (
+              `Залишок: ${formatMoney(remaining, { minFractionDigits: 2 })}`
+            )}
           </div>
           <button
             onClick={() =>
@@ -575,9 +581,7 @@ function TxRowImpl({
                   : "border-line text-subtle hover:border-muted hover:text-text",
               )}
             >
-              {isIncome
-                ? `${INCOME_ICONS[c.id] || "📥"} ${c.label}`
-                : `${c.label.split(" ")[0]} ${c.label.slice(c.label.indexOf(" ") + 1)}`}
+              {stripLeadingEmoji(c.label)}
             </button>
           ))}
           {overrideCatId && (
@@ -588,7 +592,7 @@ function TxRowImpl({
               }}
               className="text-xs px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong/60 dark:text-danger/60 hover:text-danger transition-colors"
             >
-              ✕ скинути
+              <Icon name="close" size={13} aria-hidden /> Скинути
             </button>
           )}
         </div>

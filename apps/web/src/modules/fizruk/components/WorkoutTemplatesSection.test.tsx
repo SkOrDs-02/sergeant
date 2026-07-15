@@ -166,10 +166,9 @@ describe("WorkoutTemplatesSection", () => {
     ] as unknown as WorkoutTemplate[];
     const props = baseProps(templates);
     render(wrap(<WorkoutTemplatesSection {...props} />));
-    // The danger ✕ delete button on the template row.
-    const deleteBtn = screen
-      .getAllByRole("button")
-      .find((b) => b.textContent === "✕")!;
+    const deleteBtn = screen.getByRole("button", {
+      name: "Видалити шаблон Bye",
+    });
     fireEvent.click(deleteBtn);
     // ConfirmDialog appears.
     fireEvent.click(screen.getByText("Видалити"));

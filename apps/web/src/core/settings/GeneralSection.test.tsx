@@ -23,6 +23,7 @@ vi.mock("@sergeant/shared", async (importOriginal) => {
 
 vi.mock("@shared/lib/storage/storage", () => ({
   webKVStore: {},
+  resolveLsStore: () => ({ kind: "durable-mirror" }),
   safeWriteLS: vi.fn(),
   safeReadStringLS: vi.fn(() => null),
   safeRemoveLS: vi.fn(),
@@ -125,7 +126,7 @@ describe("GeneralSection", () => {
       screen.getByRole("button", { name: /Почати знайомство з початку/i }),
     );
     fireEvent.click(screen.getByRole("button", { name: /Почати з початку/i }));
-    expect(resetOnboardingStateMock).toHaveBeenCalledTimes(1);
+    expect(resetOnboardingStateMock).toHaveBeenCalledTimes(2);
     expect(toastSuccessMock).toHaveBeenCalledTimes(1);
   });
 

@@ -4,7 +4,7 @@ import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
-import { webKVStore } from "@shared/lib/storage/storage";
+import { resolveLsStore, webKVStore } from "@shared/lib/storage/storage";
 import { resetOnboardingState, type User } from "@sergeant/shared";
 import { OnboardingWizard } from "../onboarding/OnboardingWizard";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
@@ -25,6 +25,8 @@ export function GeneralSection({ user: _user }: GeneralSectionProps) {
   //      flags, модульні дані залишаються. Завжди через confirm-modal.
   const handleResetConfirm = () => {
     resetOnboardingState(webKVStore);
+    const durableMirror = resolveLsStore();
+    if (durableMirror) resetOnboardingState(durableMirror);
     setResetConfirmOpen(false);
     toast.success(messages.onboarding.tourResetSuccess);
     try {
@@ -35,7 +37,7 @@ export function GeneralSection({ user: _user }: GeneralSectionProps) {
   };
 
   return (
-    <SettingsGroup title="Загальні" emoji="⚙️">
+    <SettingsGroup title="Загальні" icon="settings">
       <SettingsSubGroup title={messages.onboarding.tourSettingsTitle}>
         <p className="text-xs text-subtle leading-snug">
           {messages.onboarding.tourCopyExplanation}

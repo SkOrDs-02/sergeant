@@ -35,6 +35,13 @@ afterEach(() => {
 });
 
 describe("ExperimentalSection (PR-36 / §9.3)", () => {
+  it("does not duplicate the canonical app-lock control from Privacy", () => {
+    render(<ExperimentalSection />);
+    expandSection();
+
+    expect(screen.queryByText(/Блокування додатку \(PIN\)/i)).toBeNull();
+  });
+
   it("renders the warning banner copy from the i18n catalog", () => {
     render(<ExperimentalSection />);
     expandSection();

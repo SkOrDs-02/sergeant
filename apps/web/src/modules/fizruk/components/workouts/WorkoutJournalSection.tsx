@@ -448,7 +448,7 @@ export function WorkoutJournalSection({
                       ? () => handleSwipeDelete(w.id)
                       : undefined
                   }
-                  rightLabel="🗑 Видалити"
+                  rightLabel="Видалити"
                   rightColor="bg-danger"
                 >
                   <WorkoutRow

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
 
 type Cadence = "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
@@ -101,7 +102,12 @@ export function RecurringSuggestions({
         className="w-full flex items-center justify-between px-4 py-3 bg-panelHi border border-line rounded-2xl text-left transition-colors hover:border-muted/50"
       >
         <div className="flex items-center gap-2">
-          <span className="text-lg">💡</span>
+          <Icon
+            name="lightbulb"
+            size={18}
+            className="text-warning"
+            aria-hidden
+          />
           <div>
             <div className="text-style-label text-text">
               Можливі підписки
