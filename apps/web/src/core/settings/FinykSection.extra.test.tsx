@@ -189,12 +189,14 @@ describe("FinykSection extra branches", () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     mockedBackfill.mockRejectedValue("nope");
     renderSection();
-    fireEvent.click(await screen.findByText("Re-sync (backfill)"));
+    fireEvent.click(await screen.findByText("Синхронізувати історію"));
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
     // Component stays connected; the Re-sync button is still in the document.
     // The fallback "Помилка re-sync" is stored in webhookError but is only
     // displayed in the disconnected view — so we just confirm no crash.
-    expect(await screen.findByText("Re-sync (backfill)")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Синхронізувати історію"),
+    ).toBeInTheDocument();
   });
 
   // ── Disconnect error-swallow ─────────────────────────────────────────────
@@ -315,10 +317,12 @@ describe("FinykSection extra branches", () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     mockedBackfill.mockRejectedValue(new Error("Помилка re-sync"));
     renderSection();
-    fireEvent.click(await screen.findByText("Re-sync (backfill)"));
+    fireEvent.click(await screen.findByText("Синхронізувати історію"));
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
     // Component stays in connected state — Re-sync button remains
-    expect(await screen.findByText("Re-sync (backfill)")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Синхронізувати історію"),
+    ).toBeInTheDocument();
   });
 
   // ── Enter key on empty category input ─────────────────────────────────────
@@ -341,8 +345,8 @@ describe("FinykSection extra branches", () => {
       lastEventAt: null,
     });
     renderSection();
-    expect(await screen.findByText("Webhook active")).toBeInTheDocument();
-    const statusSection = screen.getByText("Webhook active").parentElement;
+    expect(await screen.findByText("Webhook активний")).toBeInTheDocument();
+    const statusSection = screen.getByText("Webhook активний").parentElement;
     expect(statusSection?.textContent).not.toContain("·");
   });
 });

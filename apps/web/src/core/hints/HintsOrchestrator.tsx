@@ -72,7 +72,7 @@ export function HintsOrchestrator({
     if (shownThisMount.current) return;
     if (safeReadStringSS(HINT_SHOWN_THIS_SESSION_KEY) === "1") return;
 
-    // Delay hint showing to let the user orient themselves first
+    // Даємо користувачу кілька секунд зорієнтуватися перед підказкою.
     const timer = setTimeout(() => {
       showHintIfEligible();
     }, HINT_REVEAL_DELAY_MS);
@@ -145,9 +145,9 @@ export function HintsOrchestrator({
 
       if (!msg) return;
 
-      // One educational toast per PWA/browser session. Navigating between
-      // Hub and modules remounts this orchestrator; without a session cap the
-      // next eligible hint appeared almost immediately after every return.
+      // Не більше однієї навчальної підказки за сесію PWA/браузера. Переходи
+      // між Хабом і модулями перемонтовують оркестратор, тому без цього ліміту
+      // наступна підказка зʼявлялася майже одразу після кожного повернення.
       safeWriteSS(HINT_SHOWN_THIS_SESSION_KEY, "1");
 
       // Track which hints the user actually engaged with vs. let

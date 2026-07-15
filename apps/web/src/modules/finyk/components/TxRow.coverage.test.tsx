@@ -117,8 +117,10 @@ describe("TxRow", () => {
   });
 
   it("renders the highlighted check icon", () => {
-    const { container } = render(<TxRow tx={mkTx()} highlighted />);
-    expect(container.querySelector("svg")).toBeInTheDocument();
+    render(<TxRow tx={mkTx()} highlighted />);
+    expect(
+      screen.getByRole("img", { name: "Вибрана транзакція" }),
+    ).toBeInTheDocument();
   });
 
   it("invokes onClick when the row body is clicked", () => {

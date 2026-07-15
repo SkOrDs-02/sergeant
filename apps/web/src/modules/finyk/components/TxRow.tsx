@@ -207,8 +207,8 @@ function TxRowImpl({
   const mainRowInner = (
     <>
       {highlighted ? (
-        <span className="text-success shrink-0" aria-hidden="true">
-          <Icon name="check-circle" size={22} />
+        <span className="text-success shrink-0">
+          <Icon name="check-circle" size={22} title="Вибрана транзакція" />
         </span>
       ) : (
         // 28px tinted circle — decorative, non-interactive (aria-hidden).
@@ -362,7 +362,7 @@ function TxRowImpl({
                 openSplitEditor();
               }}
               className={cn(
-                "min-h-[44px] min-w-[44px] px-2 flex items-center justify-center gap-1 rounded-xl transition-colors text-style-label",
+                "touch-target px-2 flex items-center justify-center gap-1 rounded-xl transition-colors text-style-label",
                 splitEditor
                   ? "text-primary bg-primary/8"
                   : existingSplits.length > 0

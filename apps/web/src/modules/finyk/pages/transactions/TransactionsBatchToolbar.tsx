@@ -66,7 +66,7 @@ export function TransactionsBatchToolbar({
                     <button
                       type="button"
                       onClick={onApplyHide}
-                      className="text-style-label px-4 py-2 rounded-xl border border-line bg-panelHi text-text min-h-[40px] transition-colors hover:border-muted"
+                      className="text-style-label touch-target px-4 py-2 rounded-xl border border-line bg-panelHi text-text transition-colors hover:border-muted"
                     >
                       Приховати
                     </button>

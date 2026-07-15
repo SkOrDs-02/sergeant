@@ -184,6 +184,32 @@ describe("SwipeToAction — mobile gesture regressions", () => {
     expect(onSwipeLeft).not.toHaveBeenCalled();
   });
 
+  it("скидає активний drag, якщо під час руху зʼявляється другий дотик", () => {
+    const onSwipeLeft = vi.fn();
+    const { container } = render(
+      <SwipeToAction onSwipeLeft={onSwipeLeft}>
+        <div>tx</div>
+      </SwipeToAction>,
+    );
+    const target = getTouchTarget(container);
+
+    fireEvent.touchStart(target, { touches: touches(200, 50) });
+    fireEvent.touchMove(target, { touches: touches(150, 50) });
+    fireEvent.touchMove(target, {
+      touches: [
+        { clientX: 120, clientY: 50 },
+        { clientX: 100, clientY: 60 },
+      ] as unknown as TouchList,
+    });
+    fireEvent.touchEnd(target);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(onSwipeLeft).not.toHaveBeenCalled();
+    expect(target.getAttribute("style") || "").toMatch(/translateX\(0px\)/);
+  });
+
   it("touchCancel у середині drag повертає offset у 0 та не викликає action", () => {
     const onSwipeLeft = vi.fn();
     const { container } = render(

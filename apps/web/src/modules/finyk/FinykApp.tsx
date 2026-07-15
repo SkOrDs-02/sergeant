@@ -177,11 +177,12 @@ export default function App({
   });
 
   const { clientInfo, connecting, error, authError, connect } = mono;
+  const hasConnectedProvider = clientInfo != null || privat.connected;
   // Pass `connected` so the pill does not claim "ок" when no bank account
   // has ever been linked — clientInfo is null until the first successful sync.
-  const syncTone = getSyncTone(mergedMono?.syncState, clientInfo != null);
+  const syncTone = getSyncTone(mergedMono?.syncState, hasConnectedProvider);
   const showSyncPill =
-    clientInfo != null &&
+    hasConnectedProvider &&
     ["loading", "partial", "error"].includes(
       String(mergedMono?.syncState?.status ?? ""),
     );
@@ -208,7 +209,7 @@ export default function App({
     setShowLoginOverlay(false);
   }
 
-  const showNoBankBanner = !clientInfo && !manualOnly;
+  const showNoBankBanner = !hasConnectedProvider && !manualOnly;
 
   // Page render helpers
   const renderPage = () => {

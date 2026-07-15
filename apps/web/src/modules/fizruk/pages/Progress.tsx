@@ -22,6 +22,7 @@ import { statusColors } from "@shared/charts";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Stat } from "@shared/components/ui/Stat";
+import { PrBoard } from "./Progress/PrBoard";
 
 // F36: minimum bar width (%) so the smallest muscle-volume bar stays
 // visible and tap-able even when its value is a tiny fraction of the max.
@@ -493,140 +494,13 @@ export function Progress({ onNavigate }: ProgressProps) {
           )}
         </Card>
 
-        {/* PR Board */}
-        {(() => {
-          const muscleGroups = [
-            ...new Set(
-              prs
-                .map((p) => p.muscleGroup)
-                .filter((g): g is string => Boolean(g)),
-            ),
-          ].sort();
-          const filtered =
-            prFilter === "all"
-              ? prs
-              : prs.filter((p) => p.muscleGroup === prFilter);
-          return (
-            <Card radius="lg" padding="lg">
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <SectionHeading as="div" size="sm">
-                  {messages.fizruk.progress.recordsHeading} · {prs.length}
-                </SectionHeading>
-                {filtered.length !== prs.length && (
-                  <div className="text-xs text-subtle">
-                    {filtered.length} {messages.fizruk.progress.shown}
-                  </div>
-                )}
-              </div>
-
-              {/* Muscle group filter */}
-              {muscleGroups.length > 1 && (
-                <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none">
-                  <button
-                    type="button"
-                    onClick={() => setPrFilter("all")}
-                    aria-pressed={prFilter === "all"}
-                    className={cn(
-                      "focus-ring shrink-0 px-3 min-h-[44px] rounded-full text-style-caption transition-colors border",
-                      prFilter === "all"
-                        ? "bg-fizruk-strong text-white border-fizruk-strong"
-                        : "bg-panel border-line text-subtle hover:text-text",
-                    )}
-                  >
-                    {messages.fizruk.progress.filterAll}
-                  </button>
-                  {muscleGroups.map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => setPrFilter(g === prFilter ? "all" : g)}
-                      aria-pressed={prFilter === g}
-                      className={cn(
-                        "focus-ring shrink-0 px-3 min-h-[44px] rounded-full text-style-caption transition-colors border whitespace-nowrap",
-                        prFilter === g
-                          ? "bg-fizruk-strong text-white border-fizruk-strong"
-                          : "bg-panel border-line text-subtle hover:text-text",
-                      )}
-                    >
-                      {musclesUk?.[g] || g}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {filtered.length === 0 ? (
-                <EmptyState
-                  compact
-                  title={
-                    prs.length === 0
-                      ? messages.fizruk.progress.noPrTitle
-                      : messages.fizruk.progress.noPrGroupTitle
-                  }
-                  description={
-                    prs.length === 0
-                      ? messages.fizruk.progress.noPrDescription
-                      : messages.fizruk.progress.noPrGroupDescription
-                  }
-                />
-              ) : (
-                <div className="space-y-2">
-                  {filtered.map((p) => {
-                    const globalRank = prs.findIndex((x) => x.id === p.id);
-                    const podiumRank =
-                      globalRank >= 0 && globalRank < 3 ? globalRank + 1 : null;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        className="focus-ring w-full text-left border border-line rounded-2xl p-3 bg-bg hover:bg-panelHi transition-colors"
-                        onClick={() => {
-                          onNavigate(`exercise/${p.id}`);
-                        }}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {podiumRank && (
-                              <span className="shrink-0 inline-flex items-center gap-1 text-xs text-warning-strong dark:text-warning">
-                                <Icon name="award" size={14} aria-hidden />
-                                {podiumRank}
-                              </span>
-                            )}
-                            <div className="text-style-label text-text truncate">
-                              {p.name}
-                            </div>
-                          </div>
-                          <div className="shrink-0 text-style-label text-text tabular-nums">
-                            {p.best1rm.toFixed(0)} {messages.fizruk.kgUnit}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-subtle tabular-nums">
-                            {p.weightKg ?? 0} {messages.fizruk.kgUnit} ×{" "}
-                            {p.reps ?? 0}
-                          </span>
-                          {p.at && (
-                            <span className="text-xs text-muted">
-                              ·{" "}
-                              {new Date(p.at).toLocaleDateString("uk-UA", {
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </span>
-                          )}
-                          {p.muscleGroupLabel && (
-                            <span className="ml-auto text-style-caption px-2 py-0.5 rounded-full bg-fizruk/10 text-fizruk/70 font-medium shrink-0">
-                              {p.muscleGroupLabel}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </Card>
-          );
-        })()}
+        <PrBoard
+          prs={prs}
+          prFilter={prFilter}
+          onPrFilterChange={setPrFilter}
+          musclesUk={musclesUk}
+          onSelect={(id) => onNavigate(`exercise/${id}`)}
+        />
       </div>
     </div>
   );

@@ -255,7 +255,6 @@ export function WorkoutTemplatesSection({
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    aria-label="Скасувати групування"
                     className="text-xs px-2 py-1 rounded-xl border border-success/40 text-success-strong dark:text-success disabled:opacity-40"
                     disabled={groupSelected.size < 2 || groupSelected.size > 3}
                     onClick={() => handleCreateGroup("superset")}
@@ -274,6 +273,7 @@ export function WorkoutTemplatesSection({
                   </button>
                   <button
                     type="button"
+                    aria-label="Скасувати групування"
                     className="text-xs px-2 py-1 rounded-xl border border-line text-subtle"
                     onClick={() => {
                       setGroupSelectMode(false);

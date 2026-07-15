@@ -113,8 +113,15 @@ function SwipeToActionImpl({
     (e: TouchEvent<HTMLDivElement>) => {
       if (!isDragging || startX.current === null || startY.current === null)
         return;
+      if (e.touches.length !== 1) {
+        reset();
+        return;
+      }
       const touch = e.touches[0];
-      if (!touch) return;
+      if (!touch) {
+        reset();
+        return;
+      }
       const dx = touch.clientX - startX.current;
       const dy = touch.clientY - startY.current;
 
@@ -134,7 +141,7 @@ function SwipeToActionImpl({
       if (clamped > 0 && !onSwipeRight) return;
       setOffset(clamped);
     },
-    [isDragging, onSwipeLeft, onSwipeRight],
+    [isDragging, onSwipeLeft, onSwipeRight, reset],
   );
 
   const onTouchEnd = useCallback(() => {

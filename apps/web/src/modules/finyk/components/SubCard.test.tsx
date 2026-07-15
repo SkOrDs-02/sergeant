@@ -115,6 +115,24 @@ describe("SubCard", () => {
     expect(onEdit).not.toHaveBeenCalled();
   });
 
+  it("does not round a fractional billing day", () => {
+    const onEdit = vi.fn();
+    render(
+      <SubCard
+        sub={baseSub}
+        transactions={[]}
+        onDelete={vi.fn()}
+        onEdit={onEdit}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText("Редагувати підписку"));
+    fireEvent.change(screen.getByPlaceholderText("День (1-31)"), {
+      target: { value: "1.5" },
+    });
+    expect(screen.getByRole("button", { name: "Зберегти" })).toBeDisabled();
+    expect(onEdit).not.toHaveBeenCalled();
+  });
+
   it("cancels edit mode and restores the original values", () => {
     render(
       <SubCard

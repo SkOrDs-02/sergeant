@@ -1,9 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Browser proof for public, local-first PWA regressions that do not need the
- * API or an authenticated smoke-test user. Keep this lane independent from
- * Docker so legal pages and onboarding persistence remain testable offline.
+ * Браузерна перевірка публічних local-first PWA-регресій, яким не потрібні API
+ * чи авторизований smoke-користувач. Цей контур не залежить від Docker, щоб
+ * юридичні сторінки та сталість онбордингу можна було тестувати офлайн.
  */
 export default defineConfig({
   testDir: "./tests/smoke",
