@@ -1,6 +1,6 @@
 # Playbook: Cutover OpenClaw на зовнішній Gateway (Stage 7)
 
-> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-15 by @github-actions[bot]. **Next review:** 2026-10-13.
 > **Status:** Active
 
 > **Мовна примітка:** назви команд, сервісів і змінних середовища залишені в оригіналі, бо це буквальні ідентифікатори рантайму; рішення, перевірки та послідовність дій описані українською.
@@ -358,9 +358,10 @@ pnpm dead-code:files
 
 | PR                                                       | Title                                                      | Merged     |
 | -------------------------------------------------------- | ---------------------------------------------------------- | ---------- |
+| [#297](https://github.com/Skords-01/Sergeant/pull/297)   | fix(web): complete finance and module UX feedback          | 2026-07-15 |
 | [#3638](https://github.com/Skords-01/Sergeant/pull/3638) | Audit triage digest (auto, twice-weekly)                   | 2026-06-19 |
 | [#3610](https://github.com/Skords-01/Sergeant/pull/3610) | chore(config): per-package eslint configs — PR-31 Phase 2b | 2026-06-16 |
 | [#3611](https://github.com/Skords-01/Sergeant/pull/3611) | fix(web): clear a11y gate                                  | 2026-06-16 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

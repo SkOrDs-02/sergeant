@@ -1,8 +1,37 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-15",
   "prs": [
+    {
+      "number": 4521,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "PENDING",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0066-entropy-janitors.md",
+        "docs/04-governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
+      ]
+    },
+    {
+      "number": 297,
+      "title": "fix(web): complete finance and module UX feedback",
+      "merged_at": "2026-07-15T00:19:50Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/cutover-openclaw-gateway.md",
+        "docs/04-governance/adr/0058-knowledge-graph-schema.md",
+        "docs/04-governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md",
+        "docs/04-governance/adr/0060-architecture-diagrams-automation-scope.md",
+        "docs/04-governance/adr/0061-pr-backlink-storage.md",
+        "docs/04-governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md",
+        "docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md",
+        "docs/90-work/initiatives/hardening-matrix.md",
+        "docs/90-work/initiatives/session-log-0018-agent-find-measurement-2026-06-08.md",
+        "docs/90-work/initiatives/session-log-0018-semantic-measurement-2026-06-14.md"
+      ]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
@@ -185,17 +214,6 @@
       "touchedDocs": [
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
-      ]
-    },
-    {
-      "number": 4521,
-      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
-      "merged_at": "PENDING",
-      "author": "@Skords-01",
-      "touchedDocs": [
-        "docs/04-governance/adr/0066-entropy-janitors.md",
-        "docs/04-governance/governance/entropy-janitors/README.md",
-        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     }
   ]

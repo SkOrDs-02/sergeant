@@ -1,6 +1,6 @@
 # ADR-0058: Knowledge graph schema and storage format
 
-> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-15 by @github-actions[bot]. **Next review:** 2026-10-13.
 > **Status:** Active
 
 - **Status:** Accepted
@@ -94,7 +94,8 @@ Sergeant має 7 розрізнених каталогів артефактів
 
 | PR                                                       | Title                                                           | Merged     |
 | -------------------------------------------------------- | --------------------------------------------------------------- | ---------- |
+| [#297](https://github.com/Skords-01/Sergeant/pull/297)   | fix(web): complete finance and module UX feedback               | 2026-07-15 |
 | [#2876](https://github.com/Skords-01/Sergeant/pull/2876) | feat(docs): knowledge graph generator (Initiative 0014 Phase 1) | 2026-05-15 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

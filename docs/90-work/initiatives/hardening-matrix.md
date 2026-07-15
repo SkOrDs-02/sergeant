@@ -1,6 +1,6 @@
 # Зведена матриця hardening-карток
 
-> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-15 by @github-actions[bot]. **Next review:** 2026-10-13.
 > **Status:** Active
 
 > **Попередження:** Ручний знімок станом на 2026-06-12; source of truth — самі картки, цей файл НЕ auto-generated і може дрейфувати.
@@ -135,8 +135,9 @@ Agent-OS hardening: lint-гейти проти дрейфу, уніфікаці�
 
 | PR                                                       | Title                                                                            | Merged     |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------- |
+| [#297](https://github.com/Skords-01/Sergeant/pull/297)   | fix(web): complete finance and module UX feedback                                | 2026-07-15 |
 | [#3649](https://github.com/Skords-01/Sergeant/pull/3649) | chore(root): fizruk a11y/UX tidy + reconcile stale tracked-task docs             | 2026-06-19 |
 | [#3536](https://github.com/Skords-01/Sergeant/pull/3536) | docs(docs): doc-layer wave 2 — genre contract, monolith splits, hardening matrix | 2026-06-12 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

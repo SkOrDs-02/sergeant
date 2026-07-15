@@ -1,6 +1,6 @@
 # ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)
 
-> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-15 by @github-actions[bot]. **Next review:** 2026-10-13.
 > **Status:** Active
 
 - **Status:** Accepted
@@ -116,7 +116,8 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
 
 | PR                                                       | Title                                                                | Merged     |
 | -------------------------------------------------------- | -------------------------------------------------------------------- | ---------- |
+| [#297](https://github.com/Skords-01/Sergeant/pull/297)   | fix(web): complete finance and module UX feedback                    | 2026-07-15 |
 | [#2899](https://github.com/Skords-01/Sergeant/pull/2899) | feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5) | 2026-05-15 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
