@@ -73,6 +73,17 @@ const positiveNumberString = (message: string) =>
     return v.length > 0 && !Number.isNaN(n) && n > 0;
   }, message);
 
+const isPositiveNumberString = (value: string) => {
+  const parsed = Number(value);
+  return value.trim() !== "" && Number.isFinite(parsed) && parsed > 0;
+};
+
+const isNonNegativeNumberString = (value: string) => {
+  if (value.trim() === "") return true;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0;
+};
+
 type LimitFormValues = {
   type: "limit";
   categoryId: string;
@@ -188,6 +199,17 @@ function AddBudgetFormComponent({
   const goalEmoji = goalForm.watch("emoji");
   const goalTargetDate = goalForm.watch("targetDate");
   const limitCategoryId = limitForm.watch("categoryId");
+  const limitAmount = limitForm.watch("limit");
+  const goalName = goalForm.watch("name");
+  const goalTargetAmount = goalForm.watch("targetAmount");
+  const goalSavedAmount = goalForm.watch("savedAmount");
+
+  const limitDraftValid =
+    Boolean(limitCategoryId) && isPositiveNumberString(limitAmount);
+  const goalRequiredFieldsValid =
+    goalName.trim() !== "" && isPositiveNumberString(goalTargetAmount);
+  const goalSavedAmountValid = isNonNegativeNumberString(goalSavedAmount);
+  const goalDraftValid = goalRequiredFieldsValid && goalSavedAmountValid;
 
   const isSubmitting =
     formType === "limit" ? limitForm.isSubmitting : goalForm.isSubmitting;
@@ -271,12 +293,17 @@ function AddBudgetFormComponent({
               календарного місяця.
             </p>
           </div>
+          {!limitDraftValid ? (
+            <p className="text-style-caption text-subtle" role="status">
+              Обери категорію та вкажи позитивну суму ліміту.
+            </p>
+          ) : null}
           <div className="flex gap-2">
             <Button
               type="submit"
               className="flex-1"
               size="sm"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !limitDraftValid}
             >
               Додати
             </Button>
@@ -390,12 +417,19 @@ function AddBudgetFormComponent({
               </span>
             )}
           </div>
+          {!goalDraftValid ? (
+            <p className="text-style-caption text-subtle" role="status">
+              {goalRequiredFieldsValid
+                ? "Вкажи відкладену суму 0 або більше."
+                : "Заповни назву та вкажи позитивну суму цілі."}
+            </p>
+          ) : null}
           <div className="flex gap-2">
             <Button
               type="submit"
               className="flex-1"
               size="sm"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !goalDraftValid}
             >
               Додати
             </Button>

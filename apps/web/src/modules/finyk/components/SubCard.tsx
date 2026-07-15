@@ -111,8 +111,8 @@ function SubCardComponent({
           onChange={(e) => setForm((f) => ({ ...f, keyword: e.target.value }))}
         />
         <p className="text-xs text-subtle">
-          Ключове слово або частина назви транзакції для автоматичного
-          прив&apos;язування.
+          Якщо немає ручної прив&apos;язки, для суми підписки знайдемо найновішу
+          витратну транзакцію, опис якої містить це слово.
         </p>
         <div className="flex gap-2">
           <div className="flex-1">

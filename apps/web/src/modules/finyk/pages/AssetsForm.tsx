@@ -58,7 +58,8 @@ export function SubscriptionForm({
         onChange={(e) => setNewSub((a) => ({ ...a, keyword: e.target.value }))}
       />
       <p className="text-xs text-subtle">
-        Слово або частина назви для пошуку витратних транзакцій.
+        Якщо не привʼязувати вручну, для суми підписки знайдемо найновішу
+        витратну транзакцію, опис якої містить це слово.
       </p>
       <Input
         aria-label="День списання (1-31)"

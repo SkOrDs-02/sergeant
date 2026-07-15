@@ -46,6 +46,9 @@ describe("SubscriptionForm", () => {
       screen.getByPlaceholderText("Ключове слово з транзакції"),
     ).toBeInTheDocument();
     expect(
+      screen.getByText(/для суми підписки знайдемо найновішу витратну/),
+    ).toBeInTheDocument();
+    expect(
       screen.getByPlaceholderText("День списання (1-31)"),
     ).toBeInTheDocument();
     const buttons = within(container).getAllByRole("button");

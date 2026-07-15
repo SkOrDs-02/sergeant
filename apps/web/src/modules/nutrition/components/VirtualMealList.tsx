@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
+import { Icon } from "@shared/components/ui/Icon";
 import { type Meal, type MealTypeId } from "@sergeant/nutrition-domain";
 import { MEAL_ORDER, MEAL_META } from "../lib/mealTypes";
 import { MealRow } from "./MealRow";
@@ -74,7 +75,12 @@ export function VirtualMealList({
           <div className="mb-1.5">
             <SwipeToAction
               onSwipeLeft={() => onRemoveMeal?.(selectedDate, item.meal)}
-              rightLabel="🗑 Видалити"
+              rightLabel={
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon name="trash" size={18} aria-hidden />
+                  Видалити
+                </span>
+              }
               rightColor="bg-danger"
             >
               <MealRow
