@@ -29,14 +29,17 @@ vi.mock("@shared/components/ui/SwipeToAction", () => ({
   SwipeToAction: ({
     children,
     onSwipeLeft,
+    rightLabel,
   }: {
     children: ReactNode;
     onSwipeLeft?: () => void;
+    rightLabel?: ReactNode;
   }) => (
     <div>
       <button type="button" data-testid="swipe-left" onClick={onSwipeLeft}>
         swipe
       </button>
+      <div data-testid="swipe-right-label">{rightLabel}</div>
       {children}
     </div>
   ),
@@ -142,6 +145,10 @@ describe("VirtualMealList", () => {
     fireEvent.click(screen.getByTestId("swipe-left"));
     expect(onRemoveMeal).toHaveBeenCalledTimes(2);
     expect(onRemoveMeal).toHaveBeenCalledWith("2026-06-20", meal);
+    expect(screen.getByTestId("swipe-right-label")).toHaveTextContent(
+      "Видалити",
+    );
+    expect(screen.getByTestId("swipe-right-label")).not.toHaveTextContent("🗑");
   });
 
   it("wires onEditMeal only when an edit handler is provided", () => {

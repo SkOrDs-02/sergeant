@@ -7,6 +7,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
 import type { Pantry } from "@sergeant/nutrition-domain";
@@ -312,7 +313,8 @@ export function PantryManagerSheet({
                   "transition-colors",
                 )}
               >
-                🗑 Видалити активну комору
+                <Icon name="trash" size={16} aria-hidden />
+                Видалити активну комору
               </button>
             </div>
           )}

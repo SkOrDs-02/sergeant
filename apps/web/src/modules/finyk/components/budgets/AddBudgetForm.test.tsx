@@ -35,6 +35,43 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     cleanup();
   });
 
+  it("disables an incomplete limit and explains the required fields", () => {
+    setup();
+
+    const submit = screen.getByRole("button", { name: "Додати" });
+    expect(submit).toBeDisabled();
+    expect(
+      screen.getByText("Обери категорію та вкажи позитивну суму ліміту."),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
+      target: { value: "food" },
+    });
+    fireEvent.change(screen.getByLabelText("Ліміт"), {
+      target: { value: "1500" },
+    });
+    expect(submit).toBeEnabled();
+  });
+
+  it("disables an incomplete goal and explains the required fields", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+
+    const submit = screen.getByRole("button", { name: "Додати" });
+    expect(submit).toBeDisabled();
+    expect(
+      screen.getByText("Заповни назву та вкажи позитивну суму цілі."),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Назва цілі"), {
+      target: { value: "Подорож" },
+    });
+    fireEvent.change(screen.getByLabelText("Сума цілі"), {
+      target: { value: "20000" },
+    });
+    expect(submit).toBeEnabled();
+  });
+
   it("submits a valid limit budget with normalized number value", async () => {
     const { onSubmit } = setup();
     fireEvent.change(screen.getByDisplayValue("Обери категорію"), {

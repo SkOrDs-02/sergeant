@@ -203,4 +203,29 @@ describe("AssetsAssetsSection", () => {
     render(wrap(<AssetsAssetsSection state={state} />));
     expect(screen.getByText("Готівка")).toBeInTheDocument();
   });
+
+  it("opens a manual asset in edit mode with its current values", () => {
+    const asset = {
+      id: "asset-1",
+      name: "Готівка",
+      emoji: "",
+      amount: 5000,
+      currency: "UAH",
+    } as State["manualAssets"][number];
+    const state = makeState({ manualAssets: [asset] });
+
+    render(wrap(<AssetsAssetsSection state={state} />));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Редагувати актив Готівка" }),
+    );
+
+    expect(state.setEditingAssetId).toHaveBeenCalledWith("asset-1");
+    expect(state.setNewAsset).toHaveBeenCalledWith({
+      name: "Готівка",
+      emoji: "",
+      amount: "5000",
+      currency: "UAH",
+    });
+    expect(state.setShowAssetForm).toHaveBeenCalledWith(true);
+  });
 });
