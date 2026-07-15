@@ -117,12 +117,12 @@ for (const mod of MODULES) {
       page.getByRole("navigation", { name: "Розділи хабу" }),
     ).toHaveCount(0);
 
-    // Click the canonical "До хабу" back button. All four modules use
-    // `ModuleHeaderBackButton` from `@shared/components/layout/ModuleHeader`,
+    // Click the canonical "На хаб" button. All four modules use
+    // `ModuleHeaderHubButton` from `@shared/components/layout/ModuleHeader`,
     // so this aria-label is the single contract under test.
-    const backButton = page.getByRole("button", { name: "До хабу" }).first();
-    await expect(backButton).toBeVisible();
-    await backButton.click();
+    const hubButton = page.getByRole("button", { name: "На хаб" }).first();
+    await expect(hubButton).toBeVisible();
+    await hubButton.click();
 
     // Returned to hub: BottomNav is back, dashboard tab is selected,
     // and the URL no longer carries a `module=` param.
