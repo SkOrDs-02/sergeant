@@ -39,7 +39,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "app-lock-enabled",
     label: "Блокування додатку (PIN)",
     description:
-      "Захищає дані PIN-кодом. При увімкненні — встановлюй PIN у Конфіденційність → Блокування. PR-1a UX-roast 2026-Q2.",
+      "Захищає твої дані PIN-кодом. Після ввімкнення встанови PIN у розділі «Конфіденційність → Блокування».",
     defaultValue: false,
     experimental: true,
   },
@@ -47,23 +47,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "finyk_subscriptions_category",
     label: "Категорія «Підписки» у швидкому додаванні",
     description:
-      "Додає окрему кнопку для підписок у ManualExpenseSheet (раніше вони потрапляли у «інше»).",
+      "Додає окрему кнопку для підписок під час швидкого додавання витрати (раніше вони потрапляли в «інше»).",
     defaultValue: false,
     experimental: true,
   },
   {
     id: "hub_command_palette",
-    label: "Command Palette (Ctrl/⌘+K)",
+    label: "Швидкі команди (Ctrl / ⌘ + K)",
     description:
-      "Глобальний пошук і дії через клавіатуру. Ранній preview — може не працювати у деяких PWA-кейсах.",
+      "Глобальний пошук і швидкі дії прямо з клавіатури. Рання функція — подекуди може працювати нестабільно.",
     defaultValue: false,
     experimental: true,
   },
   {
     id: "ftux_outcome_card_v1",
-    label: "FTUX outcome-card",
+    label: "Картка результату для новачків",
     description:
-      "Показує outcome-card замість прогресу для cold-start cohort без першого запису.",
+      "Новим користувачам без жодного запису показує картку очікуваного результату замість смуги прогресу.",
     defaultValue: false,
     experimental: true,
   },

@@ -24,7 +24,10 @@ export function Component() {
 
   return (
     <ModuleShell moduleId="nutrition">
-      <SuspenseWithMinDelay fallback={<ModulePageLoader module="nutrition" />}>
+      <SuspenseWithMinDelay
+        fallback={<ModulePageLoader module="nutrition" />}
+        className="flex-1 min-h-0 flex flex-col"
+      >
         <NutritionApp
           onBackToHub={goBackOrHub}
           onGoToHub={goToHub}

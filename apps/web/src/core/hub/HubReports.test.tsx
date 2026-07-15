@@ -45,10 +45,12 @@ vi.mock("../billing", () => ({
   }),
 }));
 
-// `exportToPDF` opens a new window — never invoked in this test but stub
-// defensively so a future click-path test does not surprise jsdom.
+// `generatePDFReport` builds the report HTML that HubReports feeds into
+// the in-app `PdfPreviewModal`. Stub it to a deterministic string so the
+// click-path test can assert the section payload without exercising the
+// full HTML template.
 vi.mock("@shared/lib/ui/export", () => ({
-  exportToPDF: vi.fn(),
+  generatePDFReport: vi.fn(() => "<!DOCTYPE html><html></html>"),
 }));
 
 // Stub `generateInsights` so F7 assertions can control the returned copy
@@ -60,7 +62,7 @@ vi.mock("../lib/insightsEngine", () => ({
 
 import { act } from "@testing-library/react";
 import { generateInsights } from "../lib/insightsEngine";
-import { exportToPDF } from "@shared/lib/ui/export";
+import { generatePDFReport } from "@shared/lib/ui/export";
 
 import { HubReports } from "./HubReports";
 
@@ -149,7 +151,7 @@ describe("HubReports — render smoke (F23)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Експортувати PDF/i }));
 
-    expect(exportToPDF).toHaveBeenCalledWith(
+    expect(generatePDFReport).toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Sergeant — звіт",
         sections: expect.arrayContaining([
@@ -158,6 +160,11 @@ describe("HubReports — render smoke (F23)", () => {
         ]),
       }),
     );
+
+    // The in-app preview overlay opens (replaces the old window.open tab).
+    expect(
+      screen.getByRole("dialog", { name: /Перегляд PDF-звіту/i }),
+    ).toBeInTheDocument();
   });
 
   // ── F4: touch-target floor + aria-labels ──────────────────────────────────

@@ -244,6 +244,17 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     }
   }, []);
 
+  // Returning-account is also an explicit onboarding escape. Without
+  // closing the local gate first, a restored session loops through
+  // `/welcome -> /sign-in -> / -> /welcome`: the sign-in route correctly
+  // redirects an authenticated user home, then the still-open onboarding
+  // gate sends them straight back here. Persist the skip before navigation
+  // so both restored and newly authenticated accounts land in the Hub.
+  const handleOpenAuth = useCallback(() => {
+    markOnboardingDone();
+    onOpenAuth();
+  }, [onOpenAuth]);
+
   // Phase 7 D4 preset-picker submit path. Persists the user's module
   // selection, marks onboarding done, fires the canonical analytics
   // funnel and bubbles the picks up to App-level navigation. Mirrors
@@ -273,16 +284,17 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
   );
 
   // 2026-05-08 — окремий scroll-шар на page-wrapper'і.
-  // `html, body, #root` усі зафіксовані на `height: 100dvh`
-  // (`apps/web/src/styles/base.css`), тож натуральний body-scroll
-  // вимкнений. До цього фіксу page-wrapper був
+  // `html`/`body` не прокручуються, а `#root` має точну висоту viewport
+  // (`100dvh` у browser mode, `100vh` у standalone PWA; див.
+  // `apps/web/src/styles/base.css`), тож натуральний body-scroll вимкнений.
+  // До цього фіксу page-wrapper був
   // `min-h-dvh ... overflow-hidden`: коли користувач розгортав
   // модулі через «Що це за розділи?», splash-картка ставала вищою
-  // за viewport, але body не міг прокрутитись (#root зафіксований),
+  // за viewport, але body не міг прокрутитись,
   // а `overflow-hidden` обрізав картку зверху (логотип) і знизу
   // (CTA / «Згорнути») — без можливості скрола взагалі.
   //
-  // Тепер page-wrapper — справжній scroll-контейнер: `h-dvh`
+  // Тепер page-wrapper — справжній scroll-контейнер: `h-app-dvh`
   // (рівно viewport), `overflow-y-auto` (внутрішній скрол),
   // `overscroll-contain` (гасить body-bounce на iOS). `PeekBackdrop`
   // переведено на `fixed inset-0`, тож floating-shapes / blurred
@@ -315,7 +327,7 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
               екскурсію"); only this `/welcome` entry point swaps. */}
           <WelcomeModulePicker
             onComplete={handlePicksComplete}
-            onOpenAuth={onOpenAuth}
+            onOpenAuth={handleOpenAuth}
             onSecondaryAction={startDemoAndGoHome}
           />
         </div>

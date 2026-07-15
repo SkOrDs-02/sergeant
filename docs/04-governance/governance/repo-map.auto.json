@@ -1,12 +1,12 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-07-10",
+  "generated_at": "2026-07-13",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
     "typescript": "^6.0.3",
-    "turbo": "^2.9.14"
+    "turbo": "^2.10.4"
   },
   "workspaces": [
     {
@@ -18,11 +18,11 @@
       "frameworkDeps": [
         {
           "name": "@tanstack/react-query",
-          "version": "^5.99.2"
+          "version": "^5.101.2"
         },
         {
           "name": "better-auth",
-          "version": "^1.6.20"
+          "version": "^1.6.23"
         },
         {
           "name": "expo",
@@ -50,7 +50,7 @@
         },
         {
           "name": "tailwindcss",
-          "version": "^4.2.4"
+          "version": "^4.3.2"
         },
         {
           "name": "typescript",
@@ -82,7 +82,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",
@@ -102,7 +102,7 @@
         },
         {
           "name": "better-auth",
-          "version": "^1.6.20"
+          "version": "^1.6.23"
         },
         {
           "name": "drizzle-orm",
@@ -114,7 +114,7 @@
         },
         {
           "name": "pg",
-          "version": "^8.20.0"
+          "version": "^8.22.0"
         },
         {
           "name": "pino",
@@ -126,7 +126,7 @@
         },
         {
           "name": "tsx",
-          "version": "^4.21.0"
+          "version": "^4.23.0"
         },
         {
           "name": "typescript",
@@ -134,7 +134,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         },
         {
           "name": "zod",
@@ -154,7 +154,7 @@
       "frameworkDeps": [
         {
           "name": "@playwright/test",
-          "version": "^1.59.1"
+          "version": "^1.61.1"
         },
         {
           "name": "@sentry/react",
@@ -162,11 +162,11 @@
         },
         {
           "name": "@tanstack/react-query",
-          "version": "^5.99.0"
+          "version": "^5.101.2"
         },
         {
           "name": "better-auth",
-          "version": "^1.6.20"
+          "version": "^1.6.23"
         },
         {
           "name": "drizzle-orm",
@@ -174,7 +174,7 @@
         },
         {
           "name": "msw",
-          "version": "^2.14.6"
+          "version": "^2.15.0"
         },
         {
           "name": "react",
@@ -186,7 +186,7 @@
         },
         {
           "name": "tailwindcss",
-          "version": "^4.2.4"
+          "version": "^4.3.2"
         },
         {
           "name": "typescript",
@@ -194,11 +194,11 @@
         },
         {
           "name": "vite",
-          "version": "^8.0.16"
+          "version": "^8.1.4"
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         },
         {
           "name": "zod",
@@ -218,7 +218,7 @@
       "frameworkDeps": [
         {
           "name": "tsx",
-          "version": "*"
+          "version": "^4.23.0"
         },
         {
           "name": "typescript",
@@ -250,7 +250,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",
@@ -281,7 +281,7 @@
         },
         {
           "name": "pg",
-          "version": "^8.20.0"
+          "version": "^8.22.0"
         },
         {
           "name": "typescript",
@@ -289,7 +289,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",
@@ -305,7 +305,7 @@
       "frameworkDeps": [
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",
@@ -325,7 +325,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",
@@ -345,7 +345,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",
@@ -365,7 +365,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",
@@ -385,7 +385,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",
@@ -405,7 +405,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",
@@ -425,7 +425,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         },
         {
           "name": "zod",
@@ -449,7 +449,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         }
       ],
       "testRunner": "vitest",
@@ -469,7 +469,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.5"
+          "version": "^4.1.10"
         },
         {
           "name": "zod",

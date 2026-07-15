@@ -18,7 +18,7 @@ describe("SubTabs", () => {
           { id: "pantry", label: "Комора" },
           { id: "shopping", label: "Покупки" },
         ]}
-        ariaLabel="Підрозділи складу"
+        ariaLabel="Підрозділи комори"
       />,
     );
     expect(screen.getByRole("tab", { name: "Комора" })).toHaveAttribute(

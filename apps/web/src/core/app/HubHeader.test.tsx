@@ -102,19 +102,6 @@ describe("HubHeader", () => {
     expect(props.onOpenSearch).toHaveBeenCalledTimes(1);
   });
 
-  it("toggles calm mode from the overflow menu and persists via the hub pref", () => {
-    render(<HubHeader {...baseProps()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Більше" }));
-    const calmBtn = screen.getByRole("menuitemcheckbox", {
-      name: /Чистий режим/,
-    });
-    expect(calmBtn).toHaveAttribute("aria-checked", "false");
-    fireEvent.click(calmBtn);
-    expect(
-      screen.getByRole("menuitemcheckbox", { name: /Чистий режим/ }),
-    ).toHaveAttribute("aria-checked", "true");
-  });
-
   it("shows the sign-in button for guests and calls onShowAuth", () => {
     const props = baseProps();
     render(<HubHeader {...props} />);

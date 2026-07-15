@@ -347,6 +347,12 @@ function checkDanglingRefs() {
     // `docs/90-work/audits/README.md` is the audit index — refs may point at
     // historical audit subjects.
     if (relPath === "docs/90-work/audits/README.md") return true;
+    // `docs/90-work/audits/archive/` holds superseded/completed audits — they
+    // document a point-in-time snapshot (dead code found, links then-broken),
+    // so their concrete refs are historical by design and must not gate
+    // Rule #15 on current source (e.g. a file the audit flagged as dead and
+    // that has since been deleted).
+    if (relPath.startsWith("docs/90-work/audits/archive/")) return true;
     // Tracker-shaped surfaces (planning, multi-phase rollout). Same
     // semantics as `docs/90-work/initiatives/` — status badge + PR-link table is
     // the source of truth, inline file refs are descriptive.

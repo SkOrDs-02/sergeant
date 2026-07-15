@@ -42,7 +42,7 @@ export function PrivacySection() {
         if (cancelled) return;
         setPreferencesLoaded(false);
         setPreferencesError(
-          "Увійди в акаунт, щоб керувати серверними consent preferences.",
+          "Увійди в акаунт, щоб керувати налаштуваннями згоди на сервері.",
         );
       });
     return () => {
@@ -82,7 +82,7 @@ export function PrivacySection() {
       setPreferencesLoaded(true);
     } catch {
       setPreferences(previous);
-      setPreferencesError("Не вдалося зберегти preference. Спробуй ще раз.");
+      setPreferencesError("Не вдалося зберегти налаштування. Спробуй ще раз.");
     } finally {
       setSavingPreference(null);
     }

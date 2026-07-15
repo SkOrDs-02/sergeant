@@ -163,5 +163,4 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 | [#3551](https://github.com/Skords-01/Sergeant/pull/3551) | fix(ci): finish CI-on-main heal — regenerate SBOM + refresh overdue freshness stamp | 2026-06-13 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
-
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

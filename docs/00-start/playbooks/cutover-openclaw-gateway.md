@@ -1,6 +1,6 @@
 # Playbook: Cutover OpenClaw на зовнішній Gateway (Stage 7)
 
-> **Last touched:** 2026-06-22 by @claude. **Next review:** 2026-09-20.
+> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
 > **Status:** Active
 
 > **Мовна примітка:** назви команд, сервісів і змінних середовища залишені в оригіналі, бо це буквальні ідентифікатори рантайму; рішення, перевірки та послідовність дій описані українською.
@@ -363,5 +363,4 @@ pnpm dead-code:files
 | [#3611](https://github.com/Skords-01/Sergeant/pull/3611) | fix(web): clear a11y gate                                  | 2026-06-16 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
-
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

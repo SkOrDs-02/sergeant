@@ -98,7 +98,7 @@ describe("PantryCard add modes", () => {
 describe("PantryCard inventory", () => {
   it("renders nothing for an empty inventory", () => {
     render(<Card {...baseProps()} />);
-    expect(screen.queryByText("Мій склад")).not.toBeInTheDocument();
+    expect(screen.queryByText("Моя комора")).not.toBeInTheDocument();
   });
 
   it("renders inventory items and routes edit/remove", () => {
@@ -114,7 +114,7 @@ describe("PantryCard inventory", () => {
         })}
       />,
     );
-    expect(screen.getByText("Мій склад")).toBeInTheDocument();
+    expect(screen.getByText("Моя комора")).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Редагувати Молоко"));
     expect(editItemAt).toHaveBeenCalledWith(0);
     fireEvent.click(screen.getByLabelText("Прибрати Молоко"));

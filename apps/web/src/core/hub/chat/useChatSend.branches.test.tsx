@@ -121,7 +121,7 @@ afterEach(() => {
 });
 
 describe("useChatSend — guard branches", () => {
-  it("/help appends visible help in chat and never hits the API", async () => {
+  it("/help opens the capability catalogue and never touches the thread or API", async () => {
     const onOpenCatalogue = vi.fn();
     const captured: ChatMessage[][] = [];
     const setMessages = vi.fn((updater: unknown) => {
@@ -133,14 +133,36 @@ describe("useChatSend — guard branches", () => {
       }
     });
     const { result } = renderHook(
-      () =>
-        useChatSend({ messages: [], setMessages, onOpenCatalogue }),
+      () => useChatSend({ messages: [], setMessages, onOpenCatalogue }),
       { wrapper: makeWrapper() },
     );
     await act(async () => {
       await result.current.send("/help");
     });
-    expect(onOpenCatalogue).not.toHaveBeenCalled();
+    expect(onOpenCatalogue).toHaveBeenCalledTimes(1);
+    expect(sendMock).not.toHaveBeenCalled();
+    // No help text is pushed into the thread — the catalogue replaces it.
+    const flat = captured.flat();
+    expect(flat.some((m) => m.role === "assistant")).toBe(false);
+  });
+
+  it("/help falls back to inline help text when no catalogue handler is wired", async () => {
+    const captured: ChatMessage[][] = [];
+    const setMessages = vi.fn((updater: unknown) => {
+      if (typeof updater === "function") {
+        const prev = captured.at(-1) ?? [];
+        captured.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+      } else {
+        captured.push(updater as ChatMessage[]);
+      }
+    });
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages }),
+      { wrapper: makeWrapper() },
+    );
+    await act(async () => {
+      await result.current.send("/help");
+    });
     expect(sendMock).not.toHaveBeenCalled();
     const flat = captured.flat();
     expect(flat.some((m) => m.role === "user" && m.text === "/help")).toBe(

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-07-10",
+  "generated_at": "2026-07-13",
   "summary": {
     "packages": 18,
     "totalExports": 304,
@@ -1722,7 +1722,7 @@
       "entryFile": "packages/dualwrite-core/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 20,
+        "totalImporters": 19,
         "deadExports": 0
       },
       "exports": [
@@ -1880,7 +1880,7 @@
       "entryFile": "packages/nutrition-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 94,
+        "totalImporters": 97,
         "deadExports": 0
       },
       "exports": [
@@ -2043,7 +2043,7 @@
       "entryFile": "packages/routine-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 68,
+        "totalImporters": 71,
         "deadExports": 0
       },
       "exports": [
@@ -2073,7 +2073,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 376,
+        "totalImporters": 377,
         "deadExports": 0
       },
       "exports": [

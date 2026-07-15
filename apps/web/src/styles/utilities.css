@@ -436,10 +436,10 @@
 }
 
 @utility h-app-dvh {
-  /* `#root` is a pinned `inset: 0` viewport shell. Inherit its exact block
-     size instead of copying `visualViewport.height`: WebKit can mutate that
-     value during a touch/toolbar gesture, moving bottom-edge hit targets
-     between pointerdown and click (owner repro 2026-07-13). */
+  /* Inherit the exact block size from the normal-flow `#root`: browser mode
+     uses `100dvh`, while installed PWA standalone deliberately uses `100vh`
+     to include WebKit's viewport-fit extension. Never copy
+     `visualViewport.height`, which excludes that extension on iOS. */
   height: 100%;
   min-height: 0;
 }
@@ -463,10 +463,11 @@
      inner-track constant must add this same `0.375rem` term — see
      HubHomeView.tsx, ModuleShell.tsx, TransactionsBatchToolbar.tsx.
 
-     Do not add an absolutely positioned apron below this box. The old
-     4rem `::after` workaround became a visible 64px extension whenever
-     iOS moved the layout viewport during navigation (owner repro
-     2026-07-13). The pinned root now owns the viewport boundary. */
+     Do not add an out-of-flow apron below this box. The old 4rem `::after`
+     workaround became a visible 64px extension, while a fixed `::before`
+     still stopped at WebKit's inset fixed-position viewport in standalone
+     mode (owner repro 2026-07-13). The normal-flow root owns the full PWA
+     height; this nav's own background and safe-area padding paint its edge. */
   position: relative;
   border-radius: 1.5rem 1.5rem 0 0;
   padding-top: 0.375rem;

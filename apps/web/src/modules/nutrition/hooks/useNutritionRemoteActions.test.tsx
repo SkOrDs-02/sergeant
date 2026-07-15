@@ -205,7 +205,7 @@ describe("useNutritionRemoteActions", () => {
         result.current.fetchWeekPlan();
       });
       await waitFor(() =>
-        expect(spies.setErr).toHaveBeenCalledWith("Додай продукти на склад."),
+        expect(spies.setErr).toHaveBeenCalledWith("Додай продукти в комору."),
       );
       expect(apiFetchWeekPlan).not.toHaveBeenCalled();
     });

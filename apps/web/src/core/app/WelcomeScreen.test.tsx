@@ -41,9 +41,8 @@ vi.mock("../onboarding/onboardingGate", async () => {
  *
  * Issue: коли користувач у `/welcome` тиснув «Що це за розділи?»,
  * splash-картка з модулями ставала вищою за viewport, а page-wrapper
- * був `min-h-dvh ... overflow-hidden` — і `html/body/#root` уже
- * зафіксовані на `height: 100dvh` у `apps/web/src/styles/base.css`,
- * тож natural body-scroll вимкнений. У результаті картку обрізало і
+ * був `min-h-dvh ... overflow-hidden` — і natural body-scroll уже
+ * вимкнений у `apps/web/src/styles/base.css`. У результаті картку обрізало і
  * зверху (логотип), і знизу (CTA + «Згорнути»), без можливості
  * прокрутки.
  *
@@ -158,5 +157,20 @@ describe("WelcomeScreen — handlePicksComplete side-effects", () => {
       intent: "preset_picker",
       picks: expect.any(Array),
     });
+  });
+
+  it("marks onboarding skipped before opening auth for a returning account", () => {
+    const onOpenAuth = vi.fn();
+    render(<WelcomeScreen onDone={() => {}} onOpenAuth={onOpenAuth} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "У мене вже є акаунт" }),
+    );
+
+    expect(markOnboardingDoneMock).toHaveBeenCalledTimes(1);
+    expect(onOpenAuth).toHaveBeenCalledTimes(1);
+    expect(markOnboardingDoneMock.mock.invocationCallOrder[0]).toBeLessThan(
+      onOpenAuth.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    );
   });
 });

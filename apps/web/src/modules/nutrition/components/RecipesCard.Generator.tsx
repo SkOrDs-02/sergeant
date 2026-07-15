@@ -52,10 +52,10 @@ export function GeneratorCard({
   return (
     <Card className="p-4">
       <div className="text-style-label text-text">
-        Рецепти ({activePantry?.name || "Склад"})
+        Рецепти ({activePantry?.name || "Комора"})
       </div>
       <div className="text-xs text-subtle mt-0.5">
-        Рекомендації на базі продуктів зі складу. Можна вказати час, порції та
+        Рекомендації на базі продуктів з комори. Можна вказати час, порції та
         &quot;не хочу&quot;.
         {(recipeCacheEntry?.recipes?.length ?? 0) > 0 && (
           <span className="ml-1 text-nutrition-strong dark:text-nutrition">

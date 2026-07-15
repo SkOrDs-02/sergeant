@@ -11,7 +11,7 @@ async function documentScrollTop(page: import("@playwright/test").Page) {
   );
 }
 
-test("@critical welcome auth CTA navigates without moving the document", async ({
+test("@critical welcome auth CTA closes onboarding before opening sign-in", async ({
   page,
 }) => {
   await seedFTUX(page, "cold");
@@ -23,9 +23,20 @@ test("@critical welcome auth CTA navigates without moving the document", async (
   await expect(authCta).toBeVisible();
   await expect.poll(() => documentScrollTop(page)).toBe(0);
 
-  await authCta.click();
+  await authCta.tap();
 
   await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(
+    page.getByRole("heading", { name: "З поверненням" }),
+  ).toBeVisible();
+  await expect.poll(() => documentScrollTop(page)).toBe(0);
+
+  await page.getByRole("button", { name: "Поки що пропустити" }).tap();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole("navigation", { name: "Розділи хабу" }),
+  ).toBeVisible();
+  await expect(authCta).not.toBeVisible();
   await expect.poll(() => documentScrollTop(page)).toBe(0);
 });
 
@@ -42,16 +53,24 @@ test("settings privacy hash scroll keeps the Hub shell pinned", async ({
   await expect(nav).toBeVisible();
   const geometry = await nav.evaluate((element) => {
     const rect = element.getBoundingClientRect();
-    const rootRect = document.querySelector("#root")?.getBoundingClientRect();
+    const root = document.querySelector<HTMLElement>("#root");
+    const rootRect = root?.getBoundingClientRect();
+    const underlay = getComputedStyle(element, "::before");
     const apron = getComputedStyle(element, "::after");
     return {
       height: rect.height,
-      bottomGap: (rootRect?.bottom ?? window.innerHeight) - rect.bottom,
+      navBottomGap: (rootRect?.bottom ?? window.innerHeight) - rect.bottom,
+      rootBottomGap: window.innerHeight - (rootRect?.bottom ?? 0),
+      rootPosition: root ? getComputedStyle(root).position : null,
+      underlayContent: underlay.content,
       apronContent: apron.content,
     };
   });
 
   expect(geometry.height).toBeLessThan(140);
-  expect(Math.abs(geometry.bottomGap)).toBeLessThanOrEqual(1);
+  expect(Math.abs(geometry.navBottomGap)).toBeLessThanOrEqual(1);
+  expect(Math.abs(geometry.rootBottomGap)).toBeLessThanOrEqual(1);
+  expect(geometry.rootPosition).not.toBe("fixed");
+  expect(["none", "normal"]).toContain(geometry.underlayContent);
   expect(["none", "normal"]).toContain(geometry.apronContent);
 });

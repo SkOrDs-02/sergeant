@@ -314,7 +314,7 @@ describe("NutritionOverlays", () => {
     );
     const dialogs = screen.getAllByTestId("confirm-dialog");
     const deleteDialog = dialogs.find(
-      (el) => el.getAttribute("data-title") === "Видалити склад?",
+      (el) => el.getAttribute("data-title") === "Видалити комору?",
     );
     expect(deleteDialog).toBeTruthy();
   });
@@ -336,7 +336,7 @@ describe("NutritionOverlays", () => {
     );
     const dialogs = screen.getAllByTestId("confirm-dialog");
     const deleteDialog = dialogs.find(
-      (el) => el.getAttribute("data-title") === "Видалити склад?",
+      (el) => el.getAttribute("data-title") === "Видалити комору?",
     )!;
     fireEvent.click(deleteDialog.querySelector("button")!);
     // Guard: should NOT call actual delete, but should close the dialog
@@ -362,7 +362,7 @@ describe("NutritionOverlays", () => {
     );
     const dialogs = screen.getAllByTestId("confirm-dialog");
     const deleteDialog = dialogs.find(
-      (el) => el.getAttribute("data-title") === "Видалити склад?",
+      (el) => el.getAttribute("data-title") === "Видалити комору?",
     )!;
     fireEvent.click(deleteDialog.querySelector("button")!);
     expect(onConfirmDeletePantry).toHaveBeenCalledTimes(1);

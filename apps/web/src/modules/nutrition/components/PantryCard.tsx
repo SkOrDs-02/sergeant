@@ -194,7 +194,7 @@ function InventoryCard({
       >
         <div className="flex items-center gap-2 min-w-0">
           <ChevronIcon open={mainOpen} />
-          <span className="text-style-label text-text">Мій склад</span>
+          <span className="text-style-label text-text">Моя комора</span>
           <span className="text-style-caption text-subtle">
             ({pantryItemsLength})
           </span>

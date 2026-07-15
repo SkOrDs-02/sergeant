@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-07-12)</title>
+    <title>Sergeant — Knowledge Graph (2026-07-13)</title>
     <style>
       body {
         font-family:
@@ -97,7 +97,7 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-07-12 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-07-13 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
@@ -236,7 +236,7 @@
             </td>
             <td>
               superseded by ADR-0074 (backend-частина; Vercel + edge-proxy
-              топологія збережена в ADR-0074)
+              топологія збережена)
             </td>
             <td>number=9</td>
           </tr>
@@ -994,7 +994,7 @@
               >
             </td>
             <td>Accepted</td>
-            <td>number=73 · last_validated=2026-07-10</td>
+            <td>number=73 · last_validated=2026-07-12</td>
           </tr>
           <tr>
             <td>adr</td>
@@ -2434,13 +2434,12 @@
               >
             </td>
             <td>
-              Active — Phase 1 (generation + freshness gate) shipped +
+              Active — Phase 1 generation/freshness gate і Phase 2
+              representative runtime roundtrip shipped;
               [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md)
-              source-of-truth написаний (2026-06-05); contract roundtrip tests
-              (`tests/contract/`) + Schemathesis property-based testing
-              лишаються deferred. Phase 1 закриває drift-detection use-case
-              (spec ↔ runtime Zod); roundtrip/property-based testing активуються
-              коли з'явиться перший contract-bug у production.
+              — canonical source-of-truth. Schemathesis property-based testing і
+              full-route expansion залишаються deferred до окремого pinned
+              runtime decision.
             </td>
             <td></td>
           </tr>
