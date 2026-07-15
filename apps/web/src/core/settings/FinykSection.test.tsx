@@ -35,7 +35,7 @@ vi.mock("@shared/api", async () => {
   };
 });
 
-vi.mock("../../modules/finyk/hooks/useStorage", () => ({
+vi.mock("@finyk/hooks/useStorage", () => ({
   useStorage: () => ({
     hiddenAccounts: [],
     toggleHideAccount: vi.fn(),

@@ -123,6 +123,27 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it("rejects a decimal limit amount", async () => {
+    const { onSubmit } = setup();
+    fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
+      target: { value: "food" },
+    });
+    fireEvent.change(screen.getByLabelText("Ліміт"), {
+      target: { value: "1500.5" },
+    });
+
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    fireEvent.submit(screen.getByRole("form", { name: "Новий ліміт бюджету" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Ліміт")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it("rejects duplicate limit category via superRefine on existingBudgets", async () => {
     const existing: Budget[] = [
       { id: "b1", type: "limit", categoryId: "food", limit: 1000 },
@@ -209,6 +230,53 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
       expect(
         screen.getByText("Відкладена сума не може бути від'ємною"),
       ).toBeInTheDocument();
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("rejects a decimal goal target amount", async () => {
+    const { onSubmit } = setup();
+    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.change(screen.getByLabelText("Назва цілі"), {
+      target: { value: "Подорож" },
+    });
+    fireEvent.change(screen.getByLabelText("Сума цілі"), {
+      target: { value: "20000.5" },
+    });
+
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    fireEvent.submit(screen.getByRole("form", { name: "Нова ціль бюджету" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Сума цілі")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("rejects a decimal saved goal amount", async () => {
+    const { onSubmit } = setup();
+    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.change(screen.getByLabelText("Назва цілі"), {
+      target: { value: "Подорож" },
+    });
+    fireEvent.change(screen.getByLabelText("Сума цілі"), {
+      target: { value: "20000" },
+    });
+    fireEvent.change(screen.getByLabelText("Вже відкладено"), {
+      target: { value: "100.5" },
+    });
+
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    fireEvent.submit(screen.getByRole("form", { name: "Нова ціль бюджету" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Вже відкладено")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
     });
     expect(onSubmit).not.toHaveBeenCalled();
   });

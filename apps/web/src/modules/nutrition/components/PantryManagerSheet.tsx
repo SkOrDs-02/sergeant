@@ -1,6 +1,6 @@
 /**
- * Last validated: 2026-05-14
- * Status: Active
+ * Востаннє перевірено: 2026-07-16
+ * Статус: Активний
  */
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
@@ -308,7 +308,7 @@ export function PantryManagerSheet({
                 onClick={onBeginDelete}
                 disabled={busy}
                 className={cn(
-                  "mt-3 inline-flex items-center gap-1.5 text-style-caption",
+                  "touch-target mt-3 inline-flex items-center gap-1.5 text-style-caption",
                   "text-danger-strong dark:text-danger hover:text-danger/80 disabled:opacity-50",
                   "transition-colors",
                 )}

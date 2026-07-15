@@ -1,13 +1,13 @@
 /**
- * Last validated: 2026-07-15
- * Status: Active
+ * Востаннє перевірено: 2026-07-16
+ * Статус: Активний
  */
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { useInView } from "@shared/hooks/useInView";
-import { useStorage as useFinykStorage } from "../../modules/finyk/hooks/useStorage";
+import { useStorage as useFinykStorage } from "@finyk/hooks/useStorage";
 import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
 import { FinykWebhookServiceSection } from "./FinykWebhookServiceSection";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";

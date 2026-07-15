@@ -67,22 +67,24 @@ const GOAL_EMOJI_OPTIONS: readonly { emoji: string; label: string }[] = [
 // Goal/limit мають різні набори полів, тож тримаємо два окремі
 // `useApiForm`-інстанси замість discriminated union на одній схемі —
 // uniform pattern, ще й RHF-state не зміщується між type-toggle-ами.
-const positiveNumberString = (message: string) =>
-  z.string().refine((v) => {
-    const n = Number(v);
-    return v.length > 0 && !Number.isNaN(n) && n > 0;
-  }, message);
-
 const isPositiveNumberString = (value: string) => {
   const parsed = Number(value);
-  return value.trim() !== "" && Number.isFinite(parsed) && parsed > 0;
+  return (
+    value.trim() !== "" &&
+    Number.isFinite(parsed) &&
+    Number.isInteger(parsed) &&
+    parsed > 0
+  );
 };
 
 const isNonNegativeNumberString = (value: string) => {
   if (value.trim() === "") return true;
   const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed >= 0;
+  return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed >= 0;
 };
+
+const positiveNumberString = (message: string) =>
+  z.string().refine(isPositiveNumberString, message);
 
 type LimitFormValues = {
   type: "limit";
@@ -104,13 +106,14 @@ const goalFormSchema = z.object({
   name: z.string().trim().min(1, messages.validation.goalNameRequired),
   emoji: z.string(),
   targetAmount: positiveNumberString(messages.validation.goalAmountRequired),
-  // savedAmount порожнє → 0; не порожнє → ≥ 0. Валідатор ловить тільки
-  // явно від'ємні значення; конверсія в number — у `onSubmit`.
-  savedAmount: z.string().refine((v) => {
-    if (!v) return true;
-    const n = Number(v);
-    return !Number.isNaN(n) && n >= 0;
-  }, messages.validation.goalSavedNonNegative),
+  // savedAmount порожнє → 0; не порожнє → ціле число ≥ 0.
+  // Конверсія в number відбувається у `onSubmit`.
+  savedAmount: z
+    .string()
+    .refine(
+      isNonNegativeNumberString,
+      messages.validation.goalSavedNonNegative,
+    ),
   targetDate: z.string(),
 });
 

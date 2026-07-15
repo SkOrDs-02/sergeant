@@ -54,7 +54,7 @@ const storageMock = vi.hoisted(() => ({
   addCustomCategory: vi.fn(),
   removeCustomCategory: vi.fn(),
 }));
-vi.mock("../../modules/finyk/hooks/useStorage", () => ({
+vi.mock("@finyk/hooks/useStorage", () => ({
   useStorage: () => storageMock,
 }));
 
@@ -67,11 +67,11 @@ vi.mock("../billing/usePlan", () => ({
 }));
 
 const removeFinykStorageItem = vi.hoisted(() => vi.fn());
-vi.mock("../../modules/finyk/lib/finykStorage", () => ({
+vi.mock("@finyk/lib/finykStorage", () => ({
   removeItem: removeFinykStorageItem,
 }));
 
-vi.mock("../../modules/finyk/hooks/useMonoBackfillProgress", () => ({
+vi.mock("@finyk/hooks/useMonoBackfillProgress", () => ({
   useMonoBackfillProgress: () => ({
     progress: backfillState.status
       ? {
@@ -256,7 +256,7 @@ describe("FinykSection branch gaps", () => {
     renderSection();
     const label = await screen.findByText("Webhook активний");
     const card = label.closest("[class*='border-']");
-    expect(card?.className).toContain("green-500");
+    expect(card?.className).toContain("border-success/30");
   });
 
   // ── Disconnect confirm copy ───────────────────────────────────────────────

@@ -10,6 +10,7 @@ import {
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
+import { finykKeys } from "@shared/lib/api/queryKeys";
 
 // Extends FinykSection.test.tsx with the interaction-heavy branches: custom
 // categories, webhook connect error handling, backfill, disconnect confirm,
@@ -52,7 +53,7 @@ const storageMock = vi.hoisted(() => ({
   addCustomCategory: vi.fn(),
   removeCustomCategory: vi.fn(),
 }));
-vi.mock("../../modules/finyk/hooks/useStorage", () => ({
+vi.mock("@finyk/hooks/useStorage", () => ({
   useStorage: () => storageMock,
 }));
 
@@ -65,11 +66,11 @@ vi.mock("../billing/usePlan", () => ({
 }));
 
 const removeFinykStorageItem = vi.hoisted(() => vi.fn());
-vi.mock("../../modules/finyk/lib/finykStorage", () => ({
+vi.mock("@finyk/lib/finykStorage", () => ({
   removeItem: removeFinykStorageItem,
 }));
 
-vi.mock("../../modules/finyk/hooks/useMonoBackfillProgress", () => ({
+vi.mock("@finyk/hooks/useMonoBackfillProgress", () => ({
   useMonoBackfillProgress: () => ({
     progress: backfillState.status
       ? {
@@ -111,13 +112,14 @@ function renderSection() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  const view = render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
         <FinykSection />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...view, client };
 }
 
 describe("FinykSection interactions", () => {
@@ -303,11 +305,10 @@ describe("FinykSection interactions", () => {
     });
     renderSection();
     expect(await screen.findByText("Webhook очікує")).toBeInTheDocument();
-    // Check border colour class via className (yellow-500/30).
     const card = screen
       .getByText("Webhook очікує")
       .closest("[class*='border-']");
-    expect(card?.className).toContain("yellow-500");
+    expect(card?.className).toContain("border-warning/30");
   });
 
   it("renders a red error indicator when status is an unknown/error value", async () => {
@@ -323,7 +324,7 @@ describe("FinykSection interactions", () => {
     const card = screen
       .getByText("Помилка webhook")
       .closest("[class*='border-']");
-    expect(card?.className).toContain("red-500");
+    expect(card?.className).toContain("border-danger/30");
   });
 
   it("shows Re-sync… and disables the button when backfill is running", async () => {
@@ -361,7 +362,7 @@ describe("FinykSection interactions", () => {
     expect(mockedBackfill).not.toHaveBeenCalled();
   });
 
-  it("backfill API error is swallowed gracefully (connected state remains)", async () => {
+  it("shows a backfill API error in the connected state and clears it after retry", async () => {
     mockedSyncState.mockResolvedValue({
       status: "active",
       webhookActive: true,
@@ -369,15 +370,46 @@ describe("FinykSection interactions", () => {
       lastBackfillAt: null,
       accountsCount: 2,
     });
-    mockedBackfill.mockRejectedValue(new Error("Помилка re-sync"));
+    mockedBackfill
+      .mockRejectedValueOnce(new Error("Помилка re-sync"))
+      .mockResolvedValueOnce(undefined);
     renderSection();
     const btn = await screen.findByText("Синхронізувати історію");
     fireEvent.click(btn);
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
-    // Component stays in connected state — Re-sync button is still present.
-    await waitFor(() =>
-      expect(screen.getByText("Синхронізувати історію")).toBeInTheDocument(),
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Помилка re-sync",
     );
+
+    fireEvent.click(screen.getByText("Синхронізувати історію"));
+    await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+  });
+
+  it("keeps webhook queries mounted and shows an error when disconnect fails", async () => {
+    const activeState = {
+      status: "active" as const,
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 1,
+    };
+    mockedSyncState.mockResolvedValue(activeState);
+    mockedDisconnect.mockRejectedValue(new Error("Не вдалося від’єднатися"));
+    const { client } = renderSection();
+
+    fireEvent.click(await screen.findByText("Від'єднати"));
+    const removeQueries = vi.spyOn(client, "removeQueries");
+    fireEvent.click(
+      within(await screen.findByRole("dialog")).getByText("Вийти"),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не вдалося від’єднатися",
+    );
+    expect(removeQueries).not.toHaveBeenCalled();
+    expect(client.getQueryData(finykKeys.monoSyncState)).toEqual(activeState);
+    expect(screen.getByText("Webhook активний")).toBeInTheDocument();
   });
 
   it("Enter key in the webhook token input submits the form", async () => {
@@ -406,6 +438,9 @@ describe("FinykSection interactions", () => {
   });
 
   it("shows lastEventAt timestamp when webhook is connected and event exists", async () => {
+    const formatDate = vi
+      .spyOn(Date.prototype, "toLocaleString")
+      .mockReturnValue("15 бер., 16:30");
     mockedSyncState.mockResolvedValue({
       status: "active",
       webhookActive: true,
@@ -415,10 +450,12 @@ describe("FinykSection interactions", () => {
     });
     renderSection();
     await screen.findByText("Webhook активний");
-    // The formatted time should appear somewhere in the rendered output.
-    // The exact locale string depends on the test environment; just check
-    // for a presence of "·" separator (rendered alongside the date).
     const statusSection = screen.getByText("Webhook активний").parentElement;
     expect(statusSection?.textContent).toContain("·");
+    expect(formatDate).toHaveBeenCalledWith(
+      "uk-UA",
+      expect.objectContaining({ timeZone: "Europe/Kyiv" }),
+    );
+    formatDate.mockRestore();
   });
 });
