@@ -243,7 +243,7 @@ describe("FinykSection interactions", () => {
     });
     mockedBackfill.mockResolvedValue(undefined);
     renderSection();
-    const btn = await screen.findByText("Re-sync (backfill)");
+    const btn = await screen.findByText("Синхронізувати історію");
     fireEvent.click(btn);
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
   });
@@ -302,10 +302,10 @@ describe("FinykSection interactions", () => {
       accountsCount: 1,
     });
     renderSection();
-    expect(await screen.findByText("Webhook pending")).toBeInTheDocument();
+    expect(await screen.findByText("Webhook очікує")).toBeInTheDocument();
     // Check border colour class via className (yellow-500/30).
     const card = screen
-      .getByText("Webhook pending")
+      .getByText("Webhook очікує")
       .closest("[class*='border-']");
     expect(card?.className).toContain("yellow-500");
   });
@@ -319,9 +319,9 @@ describe("FinykSection interactions", () => {
       accountsCount: 0,
     });
     renderSection();
-    expect(await screen.findByText("Webhook error")).toBeInTheDocument();
+    expect(await screen.findByText("Помилка webhook")).toBeInTheDocument();
     const card = screen
-      .getByText("Webhook error")
+      .getByText("Помилка webhook")
       .closest("[class*='border-']");
     expect(card?.className).toContain("red-500");
   });
@@ -336,7 +336,7 @@ describe("FinykSection interactions", () => {
       accountsCount: 2,
     });
     renderSection();
-    const btn = await screen.findByText("Re-sync…");
+    const btn = await screen.findByText("Повторна синхронізація…");
     expect(btn).toBeTruthy();
     expect((btn.closest("button") as HTMLButtonElement | null)?.disabled).toBe(
       true,
@@ -353,7 +353,7 @@ describe("FinykSection interactions", () => {
       accountsCount: 2,
     });
     renderSection();
-    const btn = await screen.findByText(/Re-sync/);
+    const btn = await screen.findByText("Синхронізувати історію");
     fireEvent.click(btn);
     expect(
       await screen.findByText("Авто-Mono sync доступний у Pro"),
@@ -371,12 +371,12 @@ describe("FinykSection interactions", () => {
     });
     mockedBackfill.mockRejectedValue(new Error("Помилка re-sync"));
     renderSection();
-    const btn = await screen.findByText("Re-sync (backfill)");
+    const btn = await screen.findByText("Синхронізувати історію");
     fireEvent.click(btn);
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
     // Component stays in connected state — Re-sync button is still present.
     await waitFor(() =>
-      expect(screen.getByText("Re-sync (backfill)")).toBeInTheDocument(),
+      expect(screen.getByText("Синхронізувати історію")).toBeInTheDocument(),
     );
   });
 
@@ -414,11 +414,11 @@ describe("FinykSection interactions", () => {
       accountsCount: 2,
     });
     renderSection();
-    await screen.findByText("Webhook active");
+    await screen.findByText("Webhook активний");
     // The formatted time should appear somewhere in the rendered output.
     // The exact locale string depends on the test environment; just check
     // for a presence of "·" separator (rendered alongside the date).
-    const statusSection = screen.getByText("Webhook active").parentElement;
+    const statusSection = screen.getByText("Webhook активний").parentElement;
     expect(statusSection?.textContent).toContain("·");
   });
 });

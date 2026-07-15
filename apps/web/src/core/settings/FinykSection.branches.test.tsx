@@ -254,7 +254,7 @@ describe("FinykSection branch gaps", () => {
   it("applies green border styling when webhook status is active", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
-    const label = await screen.findByText("Webhook active");
+    const label = await screen.findByText("Webhook активний");
     const card = label.closest("[class*='border-']");
     expect(card?.className).toContain("green-500");
   });

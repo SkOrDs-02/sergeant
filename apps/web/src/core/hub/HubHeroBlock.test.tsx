@@ -76,20 +76,29 @@ vi.mock("./CrossModulePreview", () => ({
   ),
 }));
 
-function renderHero(overrides: Record<string, unknown> = {}) {
-  const props = {
+type HubHeroProps = ComponentProps<typeof HubHeroBlock>;
+
+const defaultOnboardingState: HubHeroProps["onboardingState"] = {
+  hero: null,
+  reason: "none",
+  candidates: [],
+  showFirstAction: false,
+  showSoftAuth: false,
+  showTodayFocus: false,
+  showReengagement: false,
+  dismissFirstAction: vi.fn(),
+  dismissSoftAuth: vi.fn(),
+};
+
+function renderHero(overrides: Partial<HubHeroProps> = {}) {
+  const props: HubHeroProps = {
     onOpenModule: vi.fn(),
     onShowAuth: vi.fn(),
     user: null,
     hasRealEntry: false,
     sessionDays: 2,
     entryCount: 1,
-    onboardingState: {
-      showFirstAction: false,
-      showSoftAuth: false,
-      dismissFirstAction: vi.fn(),
-      dismissSoftAuth: vi.fn(),
-    },
+    onboardingState: defaultOnboardingState,
     reengagement: { show: false, daysInactive: 0 },
     dismissReengagement: vi.fn(),
     crossModulePreviewSource: null,
@@ -99,12 +108,16 @@ function renderHero(overrides: Record<string, unknown> = {}) {
     primaryModule: undefined,
     showChecklist: false,
     activeModules: [],
-    goals: [],
+    goals: {
+      finykBudget: null,
+      fizrukWeeklyGoal: null,
+      routineFirstHabit: null,
+      nutritionGoal: null,
+    },
     hasValueBar: false,
     ...overrides,
   };
-  const typedProps = props as unknown as ComponentProps<typeof HubHeroBlock>;
-  return { ...render(<HubHeroBlock {...typedProps} />), props };
+  return { ...render(<HubHeroBlock {...props} />), props };
 }
 
 describe("HubHeroBlock", () => {
@@ -113,10 +126,8 @@ describe("HubHeroBlock", () => {
     const { props } = renderHero({
       reengagement: { show: true, daysInactive: 14 },
       onboardingState: {
+        ...defaultOnboardingState,
         showFirstAction: true,
-        showSoftAuth: false,
-        dismissFirstAction: vi.fn(),
-        dismissSoftAuth: vi.fn(),
       },
     });
 
@@ -133,9 +144,8 @@ describe("HubHeroBlock", () => {
   ])("selects the %s hero", (label, state) => {
     renderHero({
       onboardingState: {
+        ...defaultOnboardingState,
         ...state,
-        dismissFirstAction: vi.fn(),
-        dismissSoftAuth: vi.fn(),
       },
     });
     expect(screen.getByText(label)).toBeInTheDocument();

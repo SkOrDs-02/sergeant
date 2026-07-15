@@ -4,10 +4,12 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 // ─── Collaborator mocks ───────────────────────────────────────────────────────
 
-const { toastSuccessMock, resetOnboardingStateMock } = vi.hoisted(() => ({
-  toastSuccessMock: vi.fn(),
-  resetOnboardingStateMock: vi.fn(),
-}));
+const { toastSuccessMock, resetOnboardingStateMock, safeRemoveSSMock } =
+  vi.hoisted(() => ({
+    toastSuccessMock: vi.fn(),
+    resetOnboardingStateMock: vi.fn(),
+    safeRemoveSSMock: vi.fn(),
+  }));
 
 vi.mock("@shared/hooks/useToast", () => ({
   useToast: () => ({ success: toastSuccessMock, error: vi.fn() }),
@@ -27,6 +29,7 @@ vi.mock("@shared/lib/storage/storage", () => ({
   safeWriteLS: vi.fn(),
   safeReadStringLS: vi.fn(() => null),
   safeRemoveLS: vi.fn(),
+  safeRemoveSS: safeRemoveSSMock,
 }));
 
 vi.mock("../onboarding/OnboardingWizard", () => ({
@@ -127,6 +130,9 @@ describe("GeneralSection", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /Почати з початку/i }));
     expect(resetOnboardingStateMock).toHaveBeenCalledTimes(2);
+    expect(safeRemoveSSMock).toHaveBeenCalledWith(
+      "sergeant:hints:shown-this-session",
+    );
     expect(toastSuccessMock).toHaveBeenCalledTimes(1);
   });
 

@@ -7,9 +7,9 @@ import { pluralUa } from "@sergeant/shared";
 import { SyncStatusSheet } from "./SyncStatusSheet";
 
 /**
- * Subtle connectivity-and-sync indicator — a small floating pill in the
- * below the app header. For a PWA designed to work offline, screaming
- * "NO INTERNET!" felt like a critical error, so this stays compact.
+ * Стриманий індикатор зʼєднання та синхронізації — невелика плаваюча плашка
+ * під хедером застосунку. Для офлайн-first PWA відсутність мережі не є
+ * критичною помилкою, тому індикатор лишається компактним.
  *
  * Three visible states (idle → renders `null`):
  *   - **online + queue/dirty > 0:** "Синхронізація · N в черзі" with an
@@ -23,8 +23,8 @@ import { SyncStatusSheet } from "./SyncStatusSheet";
  * stays symmetric on notched devices (mobile-audit A6).
  */
 
-// Keep the exceptional-state pill below the 68px app header instead of
-// covering its title/actions. The indicator is absent in the happy path.
+// Плашка виняткового стану розміщується під 68px-хедером і не перекриває
+// його назву та дії. У нормальному стані індикатор не показується.
 const PILL_CLS =
   "fixed top-[calc(4.75rem+env(safe-area-inset-top,0px))] right-3 z-toast flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/95 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 

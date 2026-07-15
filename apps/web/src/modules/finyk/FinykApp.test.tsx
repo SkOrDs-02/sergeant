@@ -25,6 +25,7 @@ vi.mock("./hooks/useMonobank", () => ({
 
 vi.mock("./hooks/usePrivatbank", () => ({
   usePrivatbank: vi.fn(() => ({
+    connected: false,
     accounts: [],
     transactions: [],
     syncState: null,
@@ -220,6 +221,7 @@ vi.mock("@shared/components/ui/ModuleBottomNav", () => ({
 import FinykApp from "./FinykApp";
 import { useFinykRoute } from "./hooks/useFinykRoute";
 import { useMonobank } from "./hooks/useMonobank";
+import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 
 afterEach(() => {
@@ -292,6 +294,31 @@ describe("FinykApp smoke tests", () => {
     expect(
       screen.getByLabelText("Стан синхронізації: оновлення"),
     ).toHaveTextContent("оновлення");
+  });
+
+  it("shows sync state for connected PrivatBank without Monobank", () => {
+    vi.mocked(usePrivatbank).mockReturnValueOnce({
+      connected: true,
+      accounts: [],
+      transactions: [],
+      syncState: { status: "loading" },
+      loadingTx: true,
+    } as unknown as ReturnType<typeof usePrivatbank>);
+    vi.mocked(useUnifiedFinanceData).mockReturnValueOnce({
+      mergedMono: {
+        accounts: [],
+        transactions: [],
+        syncState: { status: "loading" },
+      },
+      mergedRefresh: vi.fn(),
+    } as unknown as ReturnType<typeof useUnifiedFinanceData>);
+
+    render(<FinykApp />);
+
+    expect(
+      screen.getByLabelText("Стан синхронізації: оновлення"),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("no-bank-banner")).not.toBeInTheDocument();
   });
 
   it("accepts all optional props without crashing", () => {

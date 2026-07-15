@@ -81,7 +81,6 @@ function makeExercise(over: Partial<MockExercise> = {}): MockExercise {
   return {
     id: "ex-1",
     primaryGroup: "chest",
-    primaryGroupUk: "Груди",
     name: { uk: "Жим лежачи", en: "Bench press" },
     muscles: { primary: ["pectoralis_major"], secondary: ["triceps"] },
     equipment: ["barbell"],

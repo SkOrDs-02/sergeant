@@ -96,8 +96,8 @@ function TxListItemImpl({
               : undefined
           }
           onSwipeRight={undefined}
-          rightLabel="Приховати"
-          rightColor="bg-warning/80"
+          rightLabel={isManual ? "Видалити" : "Приховати"}
+          rightColor={isManual ? "bg-danger" : "bg-warning/80"}
           // Surface the swipe-affordance peek on the first row of the list
           // for first-time users only — `SwipeToAction` reads/writes a
           // single localStorage flag (`sergeant:swipe_hint_shown`) so the

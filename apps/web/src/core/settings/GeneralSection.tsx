@@ -4,7 +4,11 @@ import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
-import { resolveLsStore, webKVStore } from "@shared/lib/storage/storage";
+import {
+  resolveLsStore,
+  safeRemoveSS,
+  webKVStore,
+} from "@shared/lib/storage/storage";
 import { resetOnboardingState, type User } from "@sergeant/shared";
 import { OnboardingWizard } from "../onboarding/OnboardingWizard";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
@@ -12,6 +16,8 @@ import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 export interface GeneralSectionProps {
   user: User | null;
 }
+
+const HINT_SHOWN_THIS_SESSION_KEY = "sergeant:hints:shown-this-session";
 
 export function GeneralSection({ user: _user }: GeneralSectionProps) {
   const toast = useToast();
@@ -27,6 +33,7 @@ export function GeneralSection({ user: _user }: GeneralSectionProps) {
     resetOnboardingState(webKVStore);
     const durableMirror = resolveLsStore();
     if (durableMirror) resetOnboardingState(durableMirror);
+    safeRemoveSS(HINT_SHOWN_THIS_SESSION_KEY);
     setResetConfirmOpen(false);
     toast.success(messages.onboarding.tourResetSuccess);
     try {

@@ -1,38 +1,18 @@
+/**
+ * Last validated: 2026-07-15
+ * Status: Active
+ */
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useInView } from "@shared/hooks/useInView";
-import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
-import {
-  privatApi,
-  isApiError,
-  monoWebhookApi,
-  type MonoSyncState,
-} from "@shared/api";
-import {
-  safeReadStringLS,
-  safeWriteLS,
-  safeRemoveLS,
-} from "@shared/lib/storage/storage";
-import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
-import { removeItem as removeFinykStorageItem } from "../../modules/finyk/lib/finykStorage";
+import { useInView } from "@shared/hooks/useInView";
 import { useStorage as useFinykStorage } from "../../modules/finyk/hooks/useStorage";
-import { useMonoBackfillProgress } from "../../modules/finyk/hooks/useMonoBackfillProgress";
-import { BackfillProgressPill } from "../../modules/finyk/components/BackfillProgressPill";
-import { PaywallModal } from "../billing/PaywallModal";
-import { usePlan } from "../billing/usePlan";
-import {
-  ConfirmModal,
-  SettingsGroup,
-  SettingsSubGroup,
-} from "./SettingsPrimitives";
+import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
+import { FinykWebhookServiceSection } from "./FinykWebhookServiceSection";
+import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
 const PRIVAT_ENABLED = false;
-
-type ConfirmKind = "cache" | "disconnect" | null;
 
 interface CustomCategory {
   id: string;
@@ -46,279 +26,24 @@ interface FinykStorageShape {
 }
 
 export function FinykSection() {
-  // Initiative 0017 Sprint 1 PR-1.2 — defer Monobank webhook queries
-  // until the Finyk section actually scrolls into view. On a cold open
-  // of the Settings tab the user typically lands on the «Загальні»
-  // group; bootstrapping the Monobank sync-state query + the 2s backfill
-  // poller against an off-screen accordion costs a network round-trip
-  // and a longtask we never get back. `useInView` flips once and stays
-  // true, so the existing query lifecycle (RQ cache, focus refetch) is
-  // unchanged after the first scroll.
+  // Відкладаємо Monobank-запит і poller backfill, доки секція вперше не
+  // потрапить у viewport. Після першого входження useInView лишається true.
   const [sectionRef, inView] = useInView();
-  const queryClient = useQueryClient();
-  const { isPro } = usePlan();
   const { customCategories, addCustomCategory, removeCustomCategory } =
     useFinykStorage({}) as FinykStorageShape;
-
-  const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
-  const [paywallOpen, setPaywallOpen] = useState(false);
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
 
-  const [privatIdInput, setPrivatIdInput] = useState<string>(
-    () =>
-      safeReadStringLS("finyk_privat_id", null) ??
-      sessionStorage.getItem("finyk_privat_id") ??
-      "",
-  );
-  const [privatTokenInput, setPrivatTokenInput] = useState<string>(
-    () =>
-      safeReadStringLS("finyk_privat_token", null) ??
-      sessionStorage.getItem("finyk_privat_token") ??
-      "",
-  );
-  const [showPrivatToken, setShowPrivatToken] = useState(false);
-  const [rememberPrivat, setRememberPrivat] = useState<boolean>(
-    () => !!safeReadStringLS("finyk_privat_id", null),
-  );
-  const [privatError, setPrivatError] = useState("");
-  const [privatConnecting, setPrivatConnecting] = useState(false);
-  const [privatConnected, setPrivatConnected] = useState<boolean>(
-    () =>
-      !!(
-        safeReadStringLS("finyk_privat_id", null) ||
-        sessionStorage.getItem("finyk_privat_id")
-      ),
-  );
-  const [confirmDisconnectPrivat, setConfirmDisconnectPrivat] = useState(false);
-
-  const connectPrivat = async () => {
-    const cleanId = privatIdInput.trim();
-    const cleanToken = privatTokenInput.trim();
-    if (!cleanId || !cleanToken) {
-      setPrivatError("Введи Merchant ID та токен");
-      return;
-    }
-    setPrivatConnecting(true);
-    setPrivatError("");
-    try {
-      try {
-        await privatApi.balanceFinal({
-          merchantId: cleanId,
-          merchantToken: cleanToken,
-        });
-      } catch (err) {
-        if (isApiError(err) && err.kind === "http") {
-          setPrivatError(err.serverMessage || `Помилка ${err.status}`);
-          return;
-        }
-        throw err;
-      }
-      if (rememberPrivat) {
-        safeWriteLS("finyk_privat_id", cleanId);
-        safeWriteLS("finyk_privat_token", cleanToken);
-        sessionStorage.removeItem("finyk_privat_id");
-        sessionStorage.removeItem("finyk_privat_token");
-      } else {
-        sessionStorage.setItem("finyk_privat_id", cleanId);
-        sessionStorage.setItem("finyk_privat_token", cleanToken);
-        safeRemoveLS("finyk_privat_id");
-        safeRemoveLS("finyk_privat_token");
-      }
-      setPrivatConnected(true);
-      window.location.reload();
-    } catch (e) {
-      setPrivatError(
-        e instanceof Error && e.message ? e.message : "Помилка підключення",
-      );
-    } finally {
-      setPrivatConnecting(false);
-    }
-  };
-
-  const disconnectPrivat = () => {
-    safeRemoveLS("finyk_privat_id");
-    safeRemoveLS("finyk_privat_token");
-    sessionStorage.removeItem("finyk_privat_id");
-    sessionStorage.removeItem("finyk_privat_token");
-    safeRemoveLS("finyk_privat_tx_cache");
-    safeRemoveLS("finyk_privat_balance_cache");
-    setPrivatConnected(false);
-    setPrivatIdInput("");
-    setPrivatTokenInput("");
-    setConfirmDisconnectPrivat(false);
-    window.location.reload();
-  };
-
-  // === Webhook mode: server-side connect (only mode after roadmap A cleanup) ===
-  const [webhookTokenInput, setWebhookTokenInput] = useState("");
-  const [webhookConnecting, setWebhookConnecting] = useState(false);
-  const [webhookError, setWebhookError] = useState("");
-  const [showWebhookToken, setShowWebhookToken] = useState(false);
-
-  const syncStateQuery = useQuery<MonoSyncState>({
-    queryKey: finykKeys.monoSyncState,
-    queryFn: ({ signal }) => monoWebhookApi.syncState({ signal }),
-    // `inView` gate — query is dormant until the section enters the
-    // viewport (PR-1.2). 30s staleTime + window-focus refetch keep the
-    // post-mount behaviour identical once enabled.
-    enabled: inView,
-    staleTime: 30_000,
-    refetchOnWindowFocus: true,
-  });
-  const webhookSyncState = syncStateQuery.data ?? null;
-  const webhookConnected =
-    webhookSyncState != null && webhookSyncState.status !== "disconnected";
-
-  // Backfill progress: only worth polling once Monobank is connected AND
-  // the section is in the viewport. The hook itself decides when to stop
-  // polling (server flips out of `running`).
-  const { progress: backfillProgress } = useMonoBackfillProgress({
-    enabled: inView && webhookConnected,
-  });
-
-  const connectWebhook = async () => {
-    if (!isPro) {
-      setPaywallOpen(true);
-      return;
-    }
-    const clean = webhookTokenInput.trim();
-    if (!clean) {
-      setWebhookError("Введи токен");
-      return;
-    }
-    setWebhookConnecting(true);
-    setWebhookError("");
-    try {
-      await monoWebhookApi.connect(clean, {
-        signal: AbortSignal.timeout(30_000),
-      });
-      setWebhookTokenInput("");
-      await queryClient.invalidateQueries({
-        queryKey: finykKeys.monoSyncState,
-      });
-      queryClient.invalidateQueries({
-        queryKey: finykKeys.monoWebhookAccounts,
-      });
-      queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
-    } catch (e) {
-      if (isApiError(e) && e.kind === "http" && e.isAuth) {
-        setWebhookError(
-          e.serverMessage ||
-            "Токен Monobank недійсний або закінчився. Оновіть токен.",
-        );
-      } else if (isApiError(e) && e.kind === "aborted") {
-        setWebhookError("Monobank API не відповідає. Спробуйте пізніше.");
-      } else {
-        setWebhookError(
-          e instanceof Error && e.message ? e.message : "Помилка підключення",
-        );
-      }
-    } finally {
-      setWebhookConnecting(false);
-    }
-  };
-
-  const disconnectWebhook = async () => {
-    try {
-      await monoWebhookApi.disconnect();
-    } catch {
-      /* best-effort */
-    }
-    queryClient.removeQueries({ queryKey: finykKeys.mono });
-    queryClient.removeQueries({ queryKey: finykKeys.monoSyncState });
-    queryClient.removeQueries({ queryKey: finykKeys.monoWebhookAccounts });
-    queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
-  };
-
-  const triggerBackfill = async () => {
-    if (!isPro) {
-      setPaywallOpen(true);
-      return;
-    }
-    try {
-      await monoWebhookApi.backfill();
-      // Refresh sync-state and progress simultaneously: progress flips to
-      // `running` server-side the moment we get a 200 back, so kicking the
-      // poller now means the pill animates in within the next render.
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: finykKeys.monoSyncState }),
-        queryClient.invalidateQueries({
-          queryKey: finykKeys.monoBackfillProgress,
-        }),
-      ]);
-    } catch (e) {
-      setWebhookError(
-        e instanceof Error && e.message ? e.message : "Помилка re-sync",
-      );
-    }
-  };
-
-  const clearTxCache = () => {
-    // The Mono legacy-cache keys (`finyk_tx_cache` / `_last_good`) are retired
-    // from the STORAGE_KEYS registry (PR #039, storage-roadmap), so clear them
-    // through the canonical finyk storage wrapper — the same path the owning
-    // `useMonobankWebhook` hook uses — rather than raw `safeRemoveLS`.
-    removeFinykStorageItem("finyk_tx_cache");
-    removeFinykStorageItem("finyk_tx_cache_last_good");
-    queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
-    queryClient.removeQueries({
-      queryKey: finykKeys.monoWebhookTransactions(),
-    });
-    queryClient.invalidateQueries({ queryKey: finykKeys.monoSyncState });
-  };
-
-  const [refreshing, setRefreshing] = useState(false);
-  const refreshAllData = async () => {
-    if (refreshing) return;
-    setRefreshing(true);
-    try {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: finykKeys.mono }),
-        queryClient.invalidateQueries({ queryKey: finykKeys.monoSyncState }),
-        queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") }),
-      ]);
-    } finally {
-      setRefreshing(false);
-    }
+  const addCategory = () => {
+    addCustomCategory(newCategoryLabel);
+    setNewCategoryLabel("");
   };
 
   const catInputClass =
     "input-focus-finyk flex-1 min-w-0 h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text";
 
   return (
-    // `sectionRef` is the IntersectionObserver sentinel — wrapping the
-    // SettingsGroup keeps the DOM shape backward-compatible (HubSettings
-    // already mounts each section inside its own `id="settings-finyk"`
-    // anchor div, this is one extra inert wrapper just for the observer).
     <div ref={sectionRef}>
       <SettingsGroup title="Фінік" icon="credit-card">
-        <PaywallModal
-          open={paywallOpen}
-          onClose={() => setPaywallOpen(false)}
-          surface="mono_auto_sync"
-          title="Авто-Mono sync доступний у Pro"
-          description="Free лишається для ручного ведення фінансів. Pro підключає серверний Monobank webhook, backfill і автоматичне оновлення транзакцій."
-        />
-        <ConfirmModal
-          open={confirmKind !== null}
-          title={
-            confirmKind === "cache" ? "Очистити кеш?" : "Вийти з Monobank?"
-          }
-          body={
-            confirmKind === "cache"
-              ? "Буде видалено збережені транзакції в кеші. Потім дані підтягнуться з Monobank знову."
-              : "Webhook-з'єднання буде від'єднано. Щоб відновити — введіть токен заново."
-          }
-          confirmLabel={confirmKind === "cache" ? "Очистити" : "Вийти"}
-          danger={confirmKind === "disconnect"}
-          onCancel={() => setConfirmKind(null)}
-          onConfirm={() => {
-            if (confirmKind === "cache") clearTxCache();
-            if (confirmKind === "disconnect") disconnectWebhook();
-            setConfirmKind(null);
-          }}
-        />
-
         <SettingsSubGroup title="Власні категорії витрат">
           <p className="text-xs text-subtle leading-snug">
             Додаються до списку категорій у транзакціях, сплітах і лімітах
@@ -328,39 +53,37 @@ export function FinykSection() {
             <input
               type="text"
               value={newCategoryLabel}
-              onChange={(e) => setNewCategoryLabel(e.target.value)}
+              onChange={(event) => setNewCategoryLabel(event.target.value)}
               placeholder="Напр. 🎨 Хобі"
               maxLength={80}
               className={catInputClass}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && newCategoryLabel.trim()) {
-                  addCustomCategory(newCategoryLabel);
-                  setNewCategoryLabel("");
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && newCategoryLabel.trim()) {
+                  addCategory();
                 }
               }}
             />
             <Button
               type="button"
               className="shrink-0 h-11 px-4"
-              onClick={() => {
-                addCustomCategory(newCategoryLabel);
-                setNewCategoryLabel("");
-              }}
+              onClick={addCategory}
             >
               Додати
             </Button>
           </div>
           {customCategories.length > 0 ? (
             <ul className="space-y-0 -mx-4">
-              {customCategories.map((c) => (
+              {customCategories.map((category) => (
                 <li
-                  key={c.id}
+                  key={category.id}
                   className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line last:border-0"
                 >
-                  <span className="text-style-label truncate">{c.label}</span>
+                  <span className="text-style-label truncate">
+                    {category.label}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => removeCustomCategory(c.id)}
+                    onClick={() => removeCustomCategory(category.id)}
                     className="text-xs font-semibold text-danger/80 hover:text-danger shrink-0"
                   >
                     Видалити
@@ -379,269 +102,8 @@ export function FinykSection() {
           )}
         </SettingsSubGroup>
 
-        {/* ── Webhook mode: Monobank status & connect ── */}
-        <SettingsSubGroup title="Monobank (Webhook)">
-          {webhookConnected && webhookSyncState ? (
-            <div className="space-y-3">
-              <div
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-xl border",
-                  webhookSyncState.status === "active"
-                    ? "bg-bg border-green-500/30"
-                    : webhookSyncState.status === "pending"
-                      ? "bg-bg border-yellow-500/30"
-                      : "bg-bg border-red-500/30",
-                )}
-              >
-                <div
-                  className={cn(
-                    "w-2.5 h-2.5 rounded-full shrink-0",
-                    webhookSyncState.status === "active"
-                      ? "bg-success"
-                      : webhookSyncState.status === "pending"
-                        ? "bg-warning"
-                        : "bg-danger",
-                  )}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="text-style-label">
-                    {webhookSyncState.status === "active"
-                      ? "Webhook active"
-                      : webhookSyncState.status === "pending"
-                        ? "Webhook pending"
-                        : "Webhook error"}
-                  </div>
-                  <div className="text-xs text-subtle mt-0.5">
-                    {webhookSyncState.accountsCount} рахунків
-                    {webhookSyncState.lastEventAt && (
-                      <>
-                        {" · "}
-                        {new Date(webhookSyncState.lastEventAt).toLocaleString(
-                          "uk-UA",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            day: "numeric",
-                            month: "short",
-                          },
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  className="flex-1 h-11"
-                  onClick={triggerBackfill}
-                  disabled={backfillProgress?.status === "running"}
-                >
-                  {backfillProgress?.status === "running"
-                    ? "Re-sync…"
-                    : "Re-sync (backfill)"}
-                </Button>
-                <Button
-                  variant="danger"
-                  className="flex-1 h-11"
-                  onClick={() => setConfirmKind("disconnect")}
-                >
-                  Від{"'"}єднати
-                </Button>
-              </div>
-              <BackfillProgressPill progress={backfillProgress} />
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-xs text-subtle leading-snug">
-                Токен відправляється на сервер і не зберігається у браузері.
-                Mono → Налаштування → Інші → API.
-              </p>
-              <div className="relative">
-                <input
-                  type={showWebhookToken ? "text" : "password"}
-                  value={webhookTokenInput}
-                  onChange={(e) => setWebhookTokenInput(e.target.value)}
-                  placeholder="Токен Monobank API"
-                  autoComplete="off"
-                  className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-sm text-text"
-                  onKeyDown={(e) => e.key === "Enter" && connectWebhook()}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowWebhookToken((v) => !v)}
-                  className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
-                  aria-label={
-                    showWebhookToken ? "Приховати токен" : "Показати токен"
-                  }
-                >
-                  {showWebhookToken ? "\u{1F648}" : "\u{1F441}"}
-                </button>
-              </div>
-              {webhookError && (
-                <p className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2">
-                  {webhookError}
-                </p>
-              )}
-              <Button
-                className="w-full h-11"
-                onClick={connectWebhook}
-                disabled={webhookConnecting}
-              >
-                {webhookConnecting
-                  ? messages.loadingActions.connecting
-                  : "Підключити Monobank"}
-              </Button>
-            </div>
-          )}
-        </SettingsSubGroup>
-
-        <SettingsSubGroup title="Сервіс">
-          <p className="text-xs text-subtle leading-snug">
-            Дані Monobank приходять автоматично через webhook та оновлюються при
-            поверненні у вкладку. Якщо потрібно примусово перепитати сервер —
-            натисни «Оновити дані». Якщо список операцій виглядає некоректно —
-            очисти кеш і синхронізуй знову.
-          </p>
-          <Button
-            variant="ghost"
-            className="w-full h-11"
-            onClick={refreshAllData}
-            disabled={refreshing}
-          >
-            <Icon name="refresh-cw" size={16} aria-hidden />
-            {refreshing ? "Оновлення…" : "Оновити дані"}
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full h-11"
-            onClick={() => setConfirmKind("cache")}
-          >
-            <Icon name="trash" size={16} aria-hidden />
-            Очистити кеш транзакцій
-          </Button>
-        </SettingsSubGroup>
-
-        {PRIVAT_ENABLED && (
-          <SettingsSubGroup title="ПриватБанк (Приват24 для підприємців)">
-            {confirmDisconnectPrivat && (
-              <ConfirmModal
-                open
-                title="Від'єднати ПриватБанк?"
-                body="Credentials та кеш транзакцій ПриватБанку буде видалено з цього браузера."
-                confirmLabel="Від'єднати"
-                danger
-                onCancel={() => setConfirmDisconnectPrivat(false)}
-                onConfirm={disconnectPrivat}
-              />
-            )}
-            {privatConnected ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-bg border border-green-500/30 rounded-xl">
-                  <div className="w-9 h-9 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-base shrink-0">
-                    <Icon name="credit-card" size={18} aria-hidden />
-                  </div>
-                  <div>
-                    <div className="text-style-label text-text">
-                      ПриватБанк підключено
-                    </div>
-                    <div className="text-xs text-subtle mt-0.5 font-mono truncate">
-                      ID: {(privatIdInput || "").slice(0, 6)}••••
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  variant="danger"
-                  className="w-full h-11"
-                  onClick={() => setConfirmDisconnectPrivat(true)}
-                >
-                  Від{"'"}єднати ПриватБанк
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-xs text-subtle leading-snug">
-                  API Приват24 для підприємців. Merchant ID та токен знаходяться
-                  у Приват24 Бізнес → Налаштування → API.
-                </p>
-                <div>
-                  <label
-                    htmlFor="hub-privat-merchant-id"
-                    className="text-xs text-muted mb-1 block"
-                  >
-                    Merchant ID
-                  </label>
-                  <input
-                    id="hub-privat-merchant-id"
-                    type="text"
-                    value={privatIdInput}
-                    onChange={(e) => setPrivatIdInput(e.target.value)}
-                    placeholder="Ваш Merchant ID"
-                    autoComplete="off"
-                    className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="hub-privat-token"
-                    className="text-xs text-muted mb-1 block"
-                  >
-                    Токен / пароль
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="hub-privat-token"
-                      type={showPrivatToken ? "text" : "password"}
-                      value={privatTokenInput}
-                      onChange={(e) => setPrivatTokenInput(e.target.value)}
-                      placeholder="Merchant token"
-                      autoComplete="off"
-                      className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-sm text-text"
-                      onKeyDown={(e) => e.key === "Enter" && connectPrivat()}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPrivatToken((v) => !v)}
-                      className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
-                      aria-label={showPrivatToken ? "Приховати" : "Показати"}
-                    >
-                      <Icon
-                        name={showPrivatToken ? "eye-off" : "eye"}
-                        size={16}
-                        aria-hidden
-                      />
-                    </button>
-                  </div>
-                </div>
-                <label className="flex items-center gap-2.5 cursor-pointer select-none touch-target">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded accent-emerald-600 cursor-pointer"
-                    checked={rememberPrivat}
-                    onChange={(e) => setRememberPrivat(e.target.checked)}
-                  />
-                  <span className="text-sm text-muted">
-                    Запам{"'"}ятати на цьому пристрої
-                  </span>
-                </label>
-                {privatError && (
-                  <p className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2">
-                    {privatError}
-                  </p>
-                )}
-                <Button
-                  className="w-full h-11"
-                  onClick={connectPrivat}
-                  disabled={privatConnecting}
-                >
-                  {privatConnecting
-                    ? messages.loadingActions.connecting
-                    : "Підключити ПриватБанк"}
-                </Button>
-              </div>
-            )}
-          </SettingsSubGroup>
-        )}
+        <FinykWebhookServiceSection inView={inView} />
+        <FinykPrivatBankSection enabled={PRIVAT_ENABLED} />
       </SettingsGroup>
     </div>
   );
