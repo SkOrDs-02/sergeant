@@ -1,6 +1,6 @@
 # Зведена матриця hardening-карток
 
-> **Last touched:** 2026-07-13 by @claude. **Next review:** 2026-10-11.
+> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
 > **Status:** Active
 
 > **Попередження:** Ручний знімок станом на 2026-06-12; source of truth — самі картки, цей файл НЕ auto-generated і може дрейфувати.

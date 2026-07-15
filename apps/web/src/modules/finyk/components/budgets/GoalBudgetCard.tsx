@@ -6,6 +6,7 @@ import { memo, useEffect, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { Icon } from "@shared/components/ui/Icon";
 import { formatMoney, pluralDays } from "@sergeant/shared";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
 
@@ -29,6 +30,9 @@ interface GoalBudgetCardProps {
   isEditing: boolean;
   onBeginEdit: () => void;
   onChangeSaved?: (next: number) => void;
+  onChangeName?: (next: string) => void;
+  onChangeTarget?: (next: number) => void;
+  onChangeDate?: (next: string) => void;
   onSave: () => void;
   onDelete: () => void;
 }
@@ -44,6 +48,9 @@ function GoalBudgetCardComponent({
   isEditing,
   onBeginEdit,
   onChangeSaved,
+  onChangeName,
+  onChangeTarget,
+  onChangeDate,
   onSave,
   onDelete,
 }: GoalBudgetCardProps) {
@@ -68,10 +75,30 @@ function GoalBudgetCardComponent({
           <div className="space-y-2">
             <Input
               size="sm"
+              aria-label="Назва цілі"
+              value={budget.name || ""}
+              onChange={(e) => onChangeName?.(e.target.value)}
+            />
+            <Input
+              size="sm"
+              type="number"
+              aria-label="Сума цілі"
+              value={budget.targetAmount || ""}
+              onChange={(e) => onChangeTarget?.(Number(e.target.value))}
+            />
+            <Input
+              size="sm"
               type="number"
               placeholder="Відкладено ₴"
               value={budget.savedAmount || ""}
               onChange={(e) => onChangeSaved?.(Number(e.target.value))}
+            />
+            <Input
+              size="sm"
+              type="date"
+              aria-label="Дата завершення цілі"
+              value={budget.targetDate || ""}
+              onChange={(e) => onChangeDate?.(e.target.value)}
             />
             <div className="flex gap-2">
               <Button className="flex-1" size="sm" onClick={onSave}>
@@ -91,7 +118,7 @@ function GoalBudgetCardComponent({
           <>
             <div className="flex justify-between items-center mb-2">
               <span className="text-style-label">
-                {budget.emoji} {budget.name}
+                <Icon name="target" size={16} aria-hidden /> {budget.name}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted">
@@ -103,7 +130,7 @@ function GoalBudgetCardComponent({
                   className="text-subtle hover:text-text text-sm transition-colors"
                   aria-label="Редагувати ціль"
                 >
-                  ✏️
+                  <Icon name="edit" size={16} aria-hidden />
                 </button>
               </div>
             </div>
@@ -121,7 +148,7 @@ function GoalBudgetCardComponent({
               {daysLeft !== null
                 ? daysLeft > 0
                   ? `${daysLeft} ${pluralDays(daysLeft)} до мети`
-                  : "⏰ Термін минув!"
+                  : "Термін минув"
                 : "Без дедлайну"}
             </div>
           </>

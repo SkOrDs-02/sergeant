@@ -27,9 +27,9 @@ export function DataExportSection() {
         exportFilename(),
         "application/json",
       );
-      setServerMessage("Серверний export завантажено як JSON.");
+      setServerMessage("Серверний експорт завантажено як JSON.");
     } catch {
-      setServerError("Не вдалося створити серверний export. Перевір вхід.");
+      setServerError("Не вдалося створити серверний експорт. Перевір вхід.");
     } finally {
       setServerExportBusy(false);
     }
@@ -37,7 +37,7 @@ export function DataExportSection() {
 
   const handleDeleteAccount = async () => {
     const confirmed = window.confirm(
-      "Видалити акаунт і запустити deletion orchestration? Частину даних можемо тримати до 30 днів для recovery/audit.",
+      "Видалити акаунт і запустити процес видалення? Частину даних можемо тримати до 30 днів для відновлення та аудиту.",
     );
     if (!confirmed) return;
 
@@ -46,11 +46,11 @@ export function DataExportSection() {
     setServerMessage(null);
     try {
       await meApi.deleteAccount();
-      setServerMessage("Deletion request прийнято. Повертаю на головну…");
+      setServerMessage("Запит на видалення прийнято. Повертаю на головну…");
       window.location.assign("/");
     } catch {
       setServerError(
-        "Не вдалося видалити акаунт. Спробуй ще раз або напиши в support.",
+        "Не вдалося видалити акаунт. Спробуй ще раз або напиши в підтримку.",
       );
     } finally {
       setDeleteBusy(false);
@@ -58,20 +58,20 @@ export function DataExportSection() {
   };
 
   return (
-    <SettingsGroup title="Експорт/імпорт JSON" emoji="💾">
+    <SettingsGroup title="Експорт/імпорт JSON" icon="download">
       <p className="text-xs text-subtle leading-snug">
         Збережи всі свої локальні дані у файл — його потім можна імпортувати
-        назад. Для залогінених користувачів нижче є окремий privacy export із
-        серверних даних акаунта.
+        назад. Для залогінених користувачів нижче є окремий експорт із серверних
+        даних акаунта.
       </p>
       <HubBackupPanel className="" />
 
       <div className="space-y-3 rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
         <div>
-          <h3 className="text-style-label text-text">Data rights</h3>
+          <h3 className="text-style-label text-text">Права на дані</h3>
           <p className="mt-1 text-xs text-subtle leading-relaxed">
-            Серверний export не включає сирі secrets/tokens. Видалення акаунта
-            запускає orchestration із 30-денним recovery/audit grace.
+            Серверний експорт не включає сирі секрети й токени. Видалення
+            акаунта запускає процес із 30-денним періодом відновлення та аудиту.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -82,7 +82,9 @@ export function DataExportSection() {
             onClick={handleServerExport}
             disabled={serverExportBusy || deleteBusy}
           >
-            {serverExportBusy ? "Готую export…" : "Завантажити server export"}
+            {serverExportBusy
+              ? "Готую експорт…"
+              : "Завантажити серверний експорт"}
           </Button>
           <Button
             type="button"

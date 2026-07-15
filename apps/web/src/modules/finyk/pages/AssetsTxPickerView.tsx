@@ -339,6 +339,10 @@ export function AssetsTxPickerView({
             <div className="text-xs text-subtle">
               {item?.emoji} {item?.name}
             </div>
+            <p className="text-xs text-subtle mt-2 leading-relaxed">
+              Обери транзакції, які належать цьому запису. Привʼязані транзакції
+              враховуються в сумі сплаченого та позначаються роллю платежу.
+            </p>
             <div
               className={cn(
                 "text-style-hero mt-1",

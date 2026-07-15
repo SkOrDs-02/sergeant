@@ -41,7 +41,9 @@ describe("DataExportSection", () => {
   it("renders the backup panel and data-rights actions", () => {
     render(<DataExportSection />);
     expect(screen.getByTestId("hub-backup-panel")).toBeInTheDocument();
-    expect(screen.getByText("Завантажити server export")).toBeInTheDocument();
+    expect(
+      screen.getByText("Завантажити серверний експорт"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Видалити акаунт")).toBeInTheDocument();
   });
 
@@ -49,7 +51,7 @@ describe("DataExportSection", () => {
     apiMocks.exportData.mockResolvedValue({ user: { id: "u1" } });
     render(<DataExportSection />);
 
-    fireEvent.click(screen.getByText("Завантажити server export"));
+    fireEvent.click(screen.getByText("Завантажити серверний експорт"));
 
     await waitFor(() => {
       expect(apiMocks.exportData).toHaveBeenCalledTimes(1);
@@ -63,7 +65,7 @@ describe("DataExportSection", () => {
     expect(mime).toBe("application/json");
 
     expect(
-      await screen.findByText("Серверний export завантажено як JSON."),
+      await screen.findByText("Серверний експорт завантажено як JSON."),
     ).toBeInTheDocument();
   });
 
@@ -71,11 +73,11 @@ describe("DataExportSection", () => {
     apiMocks.exportData.mockRejectedValue(new Error("nope"));
     render(<DataExportSection />);
 
-    fireEvent.click(screen.getByText("Завантажити server export"));
+    fireEvent.click(screen.getByText("Завантажити серверний експорт"));
 
     expect(
       await screen.findByText(
-        "Не вдалося створити серверний export. Перевір вхід.",
+        "Не вдалося створити серверний експорт. Перевір вхід.",
       ),
     ).toBeInTheDocument();
     expect(downloadString).not.toHaveBeenCalled();
@@ -107,7 +109,7 @@ describe("DataExportSection", () => {
     });
     expect(
       await screen.findByText(
-        "Deletion request прийнято. Повертаю на головну…",
+        "Запит на видалення прийнято. Повертаю на головну…",
       ),
     ).toBeInTheDocument();
     expect(assign).toHaveBeenCalledWith("/");
@@ -122,7 +124,7 @@ describe("DataExportSection", () => {
 
     expect(
       await screen.findByText(
-        "Не вдалося видалити акаунт. Спробуй ще раз або напиши в support.",
+        "Не вдалося видалити акаунт. Спробуй ще раз або напиши в підтримку.",
       ),
     ).toBeInTheDocument();
   });

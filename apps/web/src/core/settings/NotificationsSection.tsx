@@ -123,7 +123,7 @@ export function NotificationsSection() {
   const permColor = permColors[permStatus] ?? "text-muted";
 
   return (
-    <SettingsGroup title="Сповіщення" emoji="🔔">
+    <SettingsGroup title="Сповіщення" icon="bell">
       <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-bg border border-line">
         <div>
           <p className="text-style-label text-text">Push-сповіщення</p>

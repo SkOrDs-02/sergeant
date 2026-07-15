@@ -89,7 +89,7 @@ export function PrivacySection() {
   };
 
   return (
-    <SettingsGroup title={m.sectionTitle} emoji="🔒">
+    <SettingsGroup title={m.sectionTitle} icon="lock">
       <ToggleRow
         label={m.enableLabel}
         description={m.enableDescription}
@@ -148,18 +148,6 @@ export function PrivacySection() {
           }
           checked={preferences.aiMemory}
           onChange={(checked) => void updatePreference("aiMemory", checked)}
-        />
-        <ToggleRow
-          label="Системні сповіщення"
-          description={
-            savingPreference === "pushNotifications"
-              ? "Зберігаю…"
-              : "Дозволяє надсилати нагадування та важливі повідомлення, якщо вони увімкнені в браузері або системі."
-          }
-          checked={preferences.pushNotifications}
-          onChange={(checked) =>
-            void updatePreference("pushNotifications", checked)
-          }
         />
         {!preferencesLoaded && preferencesError ? (
           <p className="text-xs text-danger-strong" role="alert">

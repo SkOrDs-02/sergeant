@@ -266,6 +266,10 @@ function AddBudgetFormComponent({
                 {limitAmountError}
               </p>
             )}
+            <p className="mt-1 text-xs text-subtle">
+              Ліміт діє щомісяця й автоматично починає новий період на початку
+              календарного місяця.
+            </p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -306,7 +310,7 @@ function AddBudgetFormComponent({
           >
             {GOAL_EMOJI_OPTIONS.map((opt) => (
               <option key={opt.emoji} value={opt.emoji}>
-                {opt.emoji} {opt.label}
+                {opt.label}
               </option>
             ))}
           </select>
@@ -376,7 +380,7 @@ function AddBudgetFormComponent({
               // inherits `color`) while a value is unset; the overlay
               // below fills that same spot, same as `placeholder:` on
               // the text/number inputs above.
-              className={cn(!goalTargetDate && "text-transparent")}
+              className={cn("w-full", !goalTargetDate && "text-transparent")}
               disabled={isSubmitting}
               {...goalForm.register("targetDate")}
             />

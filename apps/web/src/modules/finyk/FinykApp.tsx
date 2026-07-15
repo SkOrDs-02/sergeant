@@ -340,8 +340,7 @@ export default function App({
               <FinykHeaderIcon />
             )
           }
-          title="ФІНІК"
-          subtitle="Monobank · бюджети"
+          title="Фінанси"
           right={
             <div className="flex items-center gap-2">
               <SyncPill syncTone={syncTone} />

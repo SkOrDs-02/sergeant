@@ -32,23 +32,8 @@ export interface FizrukHeaderProps {
   onOpenSettings?: (() => void) | undefined;
 }
 
-function titleFor(page: FizrukPage): string {
-  switch (page) {
-    case "atlas":
-      return "Атлас тіла";
-    case "exercise":
-      return "Вправа";
-    case "programs":
-      return "Програми";
-    case "body":
-      return "Моє тіло";
-    case "progress":
-      return "Прогрес і заміри";
-    case "measurements":
-      return "Заміри тіла";
-    default:
-      return "ФІЗРУК";
-  }
+function titleFor(_page: FizrukPage): string {
+  return "Фізрук";
 }
 
 /** The nav item label the user came from — used for contextual back title. */
@@ -105,22 +90,6 @@ function ContextualBackButton({
   );
 }
 
-function subtitleFor(
-  page: FizrukPage,
-  activeProgram?: ActiveProgramHeaderView | null,
-): string {
-  switch (page) {
-    case "programs":
-      return activeProgram
-        ? `Активна: ${activeProgram.name}`
-        : "Оберіть тренувальну програму";
-    case "body":
-      return "Вага · сон · самопочуття";
-    default:
-      return "Тренування · прогрес";
-  }
-}
-
 function DumbbellBadge() {
   return (
     <div
@@ -152,7 +121,6 @@ function DumbbellBadge() {
 
 export function FizrukHeader({
   page,
-  activeProgram,
   onBackToHub,
   onGoToHub,
   onContextualBack,
@@ -193,9 +161,7 @@ export function FizrukHeader({
       module={showContextualBack ? undefined : "fizruk"}
       left={left}
       title={titleFor(page)}
-      subtitle={
-        showContextualBack ? undefined : subtitleFor(page, activeProgram)
-      }
+      subtitle={undefined}
       right={
         <div className="flex items-center gap-2">
           <ModuleHeaderAssistantButton />

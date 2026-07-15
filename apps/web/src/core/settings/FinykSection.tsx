@@ -291,7 +291,7 @@ export function FinykSection() {
     // already mounts each section inside its own `id="settings-finyk"`
     // anchor div, this is one extra inert wrapper just for the observer).
     <div ref={sectionRef}>
-      <SettingsGroup title="Фінік" emoji="💳">
+      <SettingsGroup title="Фінік" icon="credit-card">
         <PaywallModal
           open={paywallOpen}
           onClose={() => setPaywallOpen(false)}

@@ -2,7 +2,7 @@
 
 # PWA usability polish: перша перемога, довіра до дій та Routine
 
-> **Last validated:** 2026-07-13 by @claude. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
 > **Status:** Active
 
 > **Статус:** Draft — спостереження з ручного тестування PWA на телефоні; реалізація не почата.

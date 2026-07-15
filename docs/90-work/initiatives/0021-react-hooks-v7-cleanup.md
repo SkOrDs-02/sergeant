@@ -1,6 +1,6 @@
 # 0021 — React-hooks v7 ESLint cleanup
 
-> **Last touched:** 2026-07-13 by @claude. **Next review:** 2026-10-11.
+> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
 > **Status:** Done
 > **Agent-ready:** yes
 

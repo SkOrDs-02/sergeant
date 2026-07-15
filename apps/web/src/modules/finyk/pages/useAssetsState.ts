@@ -93,6 +93,9 @@ export function useAssetsState({
   const [showDebtForm, setShowDebtForm] = useState(initialOpenDebt);
   const [showRecvForm, setShowRecvForm] = useState(false);
   const [showSubForm, setShowSubForm] = useState(false);
+  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
+  const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
+  const [editingRecvId, setEditingRecvId] = useState<string | null>(null);
   const [newAsset, setNewAsset] = useState({
     name: "",
     amount: "",
@@ -276,6 +279,12 @@ export function useAssetsState({
     setShowRecvForm,
     showSubForm,
     setShowSubForm,
+    editingAssetId,
+    setEditingAssetId,
+    editingDebtId,
+    setEditingDebtId,
+    editingRecvId,
+    setEditingRecvId,
 
     // Form data
     newAsset,

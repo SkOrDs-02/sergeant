@@ -79,7 +79,7 @@ describe("PWASection", () => {
     });
     expect(swMocks.swGetDebugSnapshot).toHaveBeenCalledTimes(1);
     expect(toastMocks.success).toHaveBeenCalledWith(
-      "SW-діагностика виведена в консоль",
+      "SW-діагностику підготовлено",
     );
   });
 

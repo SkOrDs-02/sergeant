@@ -3,7 +3,7 @@
 
 # Регресії Hub, onboarding та AI-чату
 
-> **Last validated:** 2026-07-13 by @claude. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
 > **Status:** Active
 
 ## Мета
