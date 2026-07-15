@@ -1,6 +1,6 @@
 /**
- * Last validated: 2026-07-15
- * Status: Active
+ * Востаннє перевірено: 2026-07-16
+ * Статус: Активний
  */
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,9 +10,9 @@ import { Icon } from "@shared/components/ui/Icon";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
-import { BackfillProgressPill } from "../../modules/finyk/components/BackfillProgressPill";
-import { useMonoBackfillProgress } from "../../modules/finyk/hooks/useMonoBackfillProgress";
-import { removeItem as removeFinykStorageItem } from "../../modules/finyk/lib/finykStorage";
+import { BackfillProgressPill } from "@finyk/components/BackfillProgressPill";
+import { useMonoBackfillProgress } from "@finyk/hooks/useMonoBackfillProgress";
+import { removeItem as removeFinykStorageItem } from "@finyk/lib/finykStorage";
 import { PaywallModal } from "../billing/PaywallModal";
 import { usePlan } from "../billing/usePlan";
 import { ConfirmModal, SettingsSubGroup } from "./SettingsPrimitives";
@@ -123,10 +123,16 @@ export function FinykWebhookServiceSection({
   };
 
   const disconnectWebhook = async () => {
+    setWebhookError("");
     try {
       await monoWebhookApi.disconnect();
-    } catch {
-      // Локальний стан запитів очищаємо, навіть якщо відʼєднання не вдалося.
+    } catch (error) {
+      setWebhookError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Не вдалося відʼєднати Monobank",
+      );
+      return;
     }
     queryClient.removeQueries({ queryKey: finykKeys.mono });
     queryClient.removeQueries({ queryKey: finykKeys.monoSyncState });
@@ -139,6 +145,7 @@ export function FinykWebhookServiceSection({
       setPaywallOpen(true);
       return;
     }
+    setWebhookError("");
     try {
       await monoWebhookApi.backfill();
       await Promise.all([
@@ -214,10 +221,10 @@ export function FinykWebhookServiceSection({
               className={cn(
                 "flex items-center gap-3 p-3 rounded-xl border",
                 webhookSyncState.status === "active"
-                  ? "bg-bg border-green-500/30"
+                  ? "bg-bg border-success/30"
                   : webhookSyncState.status === "pending"
-                    ? "bg-bg border-yellow-500/30"
-                    : "bg-bg border-red-500/30",
+                    ? "bg-bg border-warning/30"
+                    : "bg-bg border-danger/30",
               )}
             >
               <div
@@ -250,6 +257,7 @@ export function FinykWebhookServiceSection({
                           minute: "2-digit",
                           day: "numeric",
                           month: "short",
+                          timeZone: "Europe/Kyiv",
                         },
                       )}
                     </>
@@ -304,11 +312,6 @@ export function FinykWebhookServiceSection({
                 />
               </button>
             </div>
-            {webhookError && (
-              <p className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2">
-                {webhookError}
-              </p>
-            )}
             <Button
               className="w-full h-11"
               onClick={connectWebhook}
@@ -319,6 +322,14 @@ export function FinykWebhookServiceSection({
                 : COPY.connect}
             </Button>
           </div>
+        )}
+        {webhookError && (
+          <p
+            className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2"
+            role="alert"
+          >
+            {webhookError}
+          </p>
         )}
       </SettingsSubGroup>
 

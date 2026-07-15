@@ -42,7 +42,7 @@ vi.mock("@shared/api", async () => {
   };
 });
 
-vi.mock("../../modules/finyk/hooks/useStorage", () => ({
+vi.mock("@finyk/hooks/useStorage", () => ({
   useStorage: () => ({
     customCategories: [],
     addCustomCategory: vi.fn(),
@@ -59,11 +59,11 @@ vi.mock("../billing/usePlan", () => ({
 }));
 
 const removeFinykStorageItem = vi.hoisted(() => vi.fn());
-vi.mock("../../modules/finyk/lib/finykStorage", () => ({
+vi.mock("@finyk/lib/finykStorage", () => ({
   removeItem: removeFinykStorageItem,
 }));
 
-vi.mock("../../modules/finyk/hooks/useMonoBackfillProgress", () => ({
+vi.mock("@finyk/hooks/useMonoBackfillProgress", () => ({
   useMonoBackfillProgress: () => ({
     progress: backfillState.status
       ? {
@@ -185,23 +185,20 @@ describe("FinykSection extra branches", () => {
     expect(await screen.findByText("Помилка підключення")).toBeInTheDocument();
   });
 
-  it("handles fallback backfill error (non-Error throw) without crashing", async () => {
+  it("shows fallback backfill error when a non-Error value is thrown", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     mockedBackfill.mockRejectedValue("nope");
     renderSection();
     fireEvent.click(await screen.findByText("Синхронізувати історію"));
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
-    // Component stays connected; the Re-sync button is still in the document.
-    // The fallback "Помилка re-sync" is stored in webhookError but is only
-    // displayed in the disconnected view — so we just confirm no crash.
-    expect(
-      await screen.findByText("Синхронізувати історію"),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Помилка re-sync",
+    );
   });
 
-  // ── Disconnect error-swallow ─────────────────────────────────────────────
+  // ── Помилка відʼєднання ──────────────────────────────────────────────────
 
-  it("swallows disconnect() rejection and still clears queries", async () => {
+  it("shows disconnect() rejection and keeps the connected state", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     mockedDisconnect.mockRejectedValue(new Error("disconnect failed"));
     renderSection();
@@ -210,12 +207,11 @@ describe("FinykSection extra branches", () => {
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByText("Вийти"));
 
-    // disconnectWebhook is best-effort: no error surfaces in the UI
     await waitFor(() => expect(mockedDisconnect).toHaveBeenCalledTimes(1));
-    // The form still doesn't blow up — we land back on the connect form
-    // (the query cache is cleared so syncState returns disconnected on
-    // next load, but no error banner appears).
-    expect(screen.queryByText(/disconnect failed/)).toBeNull();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "disconnect failed",
+    );
+    expect(screen.getByText("Webhook активний")).toBeInTheDocument();
   });
 
   // ── Connect success path ─────────────────────────────────────────────────
@@ -313,16 +309,15 @@ describe("FinykSection extra branches", () => {
 
   // ── triggerBackfill: Error instance → error message stored ─────────────────
 
-  it("does not crash after backfill fails with Error instance", async () => {
+  it("shows the Error message after backfill fails", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     mockedBackfill.mockRejectedValue(new Error("Помилка re-sync"));
     renderSection();
     fireEvent.click(await screen.findByText("Синхронізувати історію"));
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
-    // Component stays in connected state — Re-sync button remains
-    expect(
-      await screen.findByText("Синхронізувати історію"),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Помилка re-sync",
+    );
   });
 
   // ── Enter key on empty category input ─────────────────────────────────────

@@ -185,6 +185,7 @@ describe("PantryManagerSheet (PR-37 / §3.2 + 2026-05 §3.4)", () => {
       name: /Видалити активну комору/,
     });
     expect(deleteBtn).toBeTruthy();
+    expect(deleteBtn).toHaveClass("touch-target");
     expect(deleteBtn).not.toHaveTextContent("🗑");
     fireEvent.click(deleteBtn);
     expect(onBeginDelete).toHaveBeenCalledTimes(1);

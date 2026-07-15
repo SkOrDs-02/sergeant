@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-07-15
- * Status: Active
+ * Востаннє перевірено: 2026-07-16
+ * Статус: Активний
  */
 import { cleanup, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";

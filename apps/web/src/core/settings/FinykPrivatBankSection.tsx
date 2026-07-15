@@ -1,6 +1,6 @@
 /**
- * Last validated: 2026-07-15
- * Status: Active
+ * Востаннє перевірено: 2026-07-16
+ * Статус: Активний
  */
 import { useState } from "react";
 import { isApiError, privatApi } from "@shared/api";
@@ -144,8 +144,8 @@ export function FinykPrivatBankSection({
       )}
       {privatConnected ? (
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-bg border border-green-500/30 rounded-xl">
-            <div className="w-9 h-9 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-base shrink-0">
+          <div className="flex items-center gap-3 p-3 bg-bg border border-success/30 rounded-xl">
+            <div className="w-9 h-9 rounded-xl bg-success/10 border border-success/20 flex items-center justify-center text-base shrink-0">
               <Icon name="credit-card" size={18} aria-hidden />
             </div>
             <div>
