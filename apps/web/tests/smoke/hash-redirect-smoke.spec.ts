@@ -63,7 +63,7 @@ test("@critical hash-redirect: legacy `/#fizruk/workouts` lands on `/fizruk/work
 
   // The fizruk module shell mounts at the redirected path — the hub
   // `<nav>` must be gone (we're inside a module, not on the hub home).
-  await expect(page.getByText("ФІЗРУК", { exact: true })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Фізрук" })).toBeVisible({
     timeout: 10_000,
   });
   await expect(

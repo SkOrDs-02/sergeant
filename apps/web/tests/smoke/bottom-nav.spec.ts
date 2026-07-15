@@ -67,10 +67,10 @@ async function seedLocalStorage(page: Page) {
 }
 
 const MODULES = [
-  { id: "finyk", title: "ФІНІК" },
-  { id: "fizruk", title: "ФІЗРУК" },
-  { id: "routine", title: "РУТИНА" },
-  { id: "nutrition", title: "ХАРЧУВАННЯ" },
+  { id: "finyk", title: "Фінік" },
+  { id: "fizruk", title: "Фізрук" },
+  { id: "routine", title: "Рутина" },
+  { id: "nutrition", title: "ЇЖА" },
 ] as const;
 
 test("@critical bottom-nav: hub root mounts HubBottomNav and tab switching works", async ({
@@ -108,7 +108,9 @@ for (const mod of MODULES) {
     await page.goto(`/?module=${mod.id}`, { waitUntil: "domcontentloaded" });
 
     // Module shell mounted: header title visible AND hub `<nav>` is gone.
-    await expect(page.getByText(mod.title, { exact: true })).toBeVisible({
+    await expect(
+      page.getByRole("heading", { name: mod.title }).first(),
+    ).toBeVisible({
       timeout: 10_000,
     });
     await expect(

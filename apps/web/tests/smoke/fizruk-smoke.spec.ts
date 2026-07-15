@@ -15,7 +15,7 @@ test("@critical fizruk: cold-load mounts module shell", async ({ page }) => {
 
   await page.goto("/?module=fizruk", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByText("ФІЗРУК", { exact: true })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Фізрук" })).toBeVisible({
     timeout: 10_000,
   });
   await expect(

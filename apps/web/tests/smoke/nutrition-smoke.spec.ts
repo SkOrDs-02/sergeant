@@ -15,7 +15,7 @@ test("@critical nutrition: cold-load mounts module shell", async ({ page }) => {
 
   await page.goto("/?module=nutrition", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByText("ХАРЧУВАННЯ", { exact: true })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "ЇЖА" })).toBeVisible({
     timeout: 10_000,
   });
   await expect(
@@ -34,7 +34,11 @@ test("@critical nutrition: today dashboard → add-meal CTA opens sheet", async 
   await page.goto("/nutrition", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "nutrition");
 
-  await expect(page.getByText("Сьогодні")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Сьогодні", { exact: true }).first()).toBeVisible(
+    {
+      timeout: 10_000,
+    },
+  );
 
   await page.getByRole("button", { name: /Додати прийом їжі/ }).click();
   await expect(page.getByText("Звідки страва?")).toBeVisible();

@@ -38,3 +38,29 @@ test("@critical completing module selection survives a hard PWA-style reload", a
     page.getByText("Обери модулі, з яких хочеш почати."),
   ).toHaveCount(0);
 });
+
+test("@critical module headers keep their canonical names after onboarding", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("hub_onboarding_done_v1", "1");
+    window.localStorage.setItem(
+      "hub_onboarding_vibes_v1",
+      JSON.stringify(["finyk", "fizruk", "routine", "nutrition"]),
+    );
+  });
+
+  const modules = [
+    { path: "/?module=finyk", heading: "Фінік" },
+    { path: "/?module=fizruk", heading: "Фізрук" },
+    { path: "/?module=routine", heading: "Рутина" },
+    { path: "/?module=nutrition", heading: "ЇЖА" },
+  ] as const;
+
+  for (const module of modules) {
+    await page.goto(module.path, { waitUntil: "domcontentloaded" });
+    await expect(
+      page.getByRole("heading", { name: module.heading }).first(),
+    ).toBeVisible();
+  }
+});

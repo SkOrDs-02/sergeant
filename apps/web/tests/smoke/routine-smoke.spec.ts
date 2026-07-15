@@ -15,9 +15,9 @@ test("@critical routine: cold-load mounts module shell", async ({ page }) => {
 
   await page.goto("/?module=routine", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByText("РУТИНА", { exact: true })).toBeVisible({
-    timeout: 10_000,
-  });
+  await expect(
+    page.getByRole("heading", { name: "Рутина" }).first(),
+  ).toBeVisible({ timeout: 10_000 });
   await expect(
     page.getByRole("navigation", { name: "Розділи хабу" }),
   ).toHaveCount(0);
